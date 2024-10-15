@@ -1,0 +1,63 @@
+---
+# https://github.com/adrienverge/yamllint
+###########################################
+# These are the rules used for            #
+# linting all the yaml files in the stack #
+# NOTE:                                   #
+# You can disable line with:              #
+# # yamllint disable-line                 #
+###########################################
+rules:
+  braces:
+    level: error
+    min-spaces-inside: 0
+    max-spaces-inside: 0
+    min-spaces-inside-empty: 1
+    max-spaces-inside-empty: 5
+  brackets:
+    level: error
+    min-spaces-inside: 0
+    max-spaces-inside: 0
+    min-spaces-inside-empty: 0
+    max-spaces-inside-empty: 5
+  colons:
+    level: error
+    max-spaces-before: 0
+    max-spaces-after: 1
+  commas:
+    level: error
+    max-spaces-before: 0
+    min-spaces-after: 1
+    max-spaces-after: 1
+  comments:
+    require-starting-space: true
+    ignore-shebangs: true
+    min-spaces-from-content: 1 # Used to follow prettier standard: https://github.com/prettier/prettier/pull/10926
+  comments-indentation: true
+  document-end: disable
+  document-start:
+    level: error
+    present: true
+  empty-lines:
+    level: error
+    max: 2
+    max-start: 0
+    max-end: 0
+  hyphens:
+    level: error
+    max-spaces-after: 1
+  indentation:
+    level: error
+    spaces: consistent
+    indent-sequences: true
+    check-multi-line-strings: false
+  key-duplicates: enable
+  line-length:
+    level: error
+    max: 160
+    allow-non-breakable-words: true
+    allow-non-breakable-inline-mappings: true
+  new-line-at-end-of-file: disable
+  new-lines:
+    type: unix
+  trailing-spaces: disable

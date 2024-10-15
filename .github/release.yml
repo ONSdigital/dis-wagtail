@@ -1,0 +1,20 @@
+changelog:
+  categories:
+    - title: ⚠️ Breaking Changes
+      labels:
+        - Breaking Change
+    - title: New Features
+      labels:
+        - New Feature
+    - title: Enhancements
+      labels:
+        - Enhancement
+    - title: Bug Fixes
+      labels:
+        - Bug Fix
+    - title: Documentation
+      labels:
+        - Documentation
+    - title: Other Changes
+      labels:
+        - "*"

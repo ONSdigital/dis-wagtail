@@ -1,0 +1,21 @@
+# Changes here will be overwritten by Copier
+# Do not modify this file directly
+# To update the project using the original template, run make copier-update
+_commit: v1.0.0
+_src_path: gh:ONSdigital/ons-python-template
+default_branch: main
+dependabot_open_pull_requests_limit: 10
+dismiss_stale_reviews: false
+enable_dependabot_version_updates: true
+module_name: dis_wagtail
+package_manager: poetry
+repo_settings: custom
+repository_description: The Django Wagtail CMS for managing and publishing content
+    for the Office for National Statistics (ONS)
+repository_name: dis-wagtail
+repository_owner: ONSdigital
+repository_visibility: public
+require_conversation_resolution: true
+require_last_push_approval: false
+required_approving_review_count: 2
+set_up_git_repo: true

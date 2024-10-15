@@ -1,0 +1,11 @@
+---
+# https://github.com/bridgecrewio/checkov
+compact: true
+download-external-modules: false
+evaluate-variables: true
+output: cli
+quiet: true
+soft-fail: false
+skip-check:
+  - CKV2_GHA_1 # Not needed
+summary-position: bottom

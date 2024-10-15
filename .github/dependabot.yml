@@ -1,0 +1,48 @@
+---
+# Config for Dependabot updates. See Documentation here:
+# https://docs.github.com/en/code-security/dependabot/dependabot-version-updates/configuration-options-for-the-dependabot.yml-file
+
+version: 2
+updates:
+  # Update GitHub actions in workflows
+  - package-ecosystem: github-actions
+    directory: /
+    # Every week
+    schedule:
+      interval: weekly
+
+    groups:
+      # Group updates into fewer pull requests
+      gh-security-updates:
+        applies-to: security-updates
+        patterns:
+          - "*"
+
+      gh-version-updates:
+        applies-to: version-updates
+        patterns:
+          - "*"
+
+  # Enable Security updates for Python package manager
+  - package-ecosystem: pip
+
+    # When set to 0, version updates are disabled.
+    open-pull-requests-limit: 10
+
+    # Look for a pyproject.toml/requirements.txt/Pipfile.lock in the root directory
+    directory: /
+    # Every weekday
+    schedule:
+      interval: daily
+
+    groups:
+      # Group updates into fewer pull requests
+      py-security-updates:
+        applies-to: security-updates
+        patterns:
+          - "*"
+
+      py-version-updates:
+        applies-to: version-updates
+        patterns:
+          - "*"
