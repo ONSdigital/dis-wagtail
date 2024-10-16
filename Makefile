@@ -17,12 +17,10 @@ clean: ## Clean the temporary files.
 
 .PHONY: format
 format:  ## Format the code.
-	poetry run black .
 	poetry run ruff check . --fix
 
 .PHONY: lint
-lint:  ## Run all linters (black/ruff/pylint/mypy).
-	poetry run black --check .
+lint:  ## Run all linters (ruff/pylint/mypy).
 	poetry run ruff check .
 	make mypy
 
