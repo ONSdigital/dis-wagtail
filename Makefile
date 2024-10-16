@@ -15,14 +15,31 @@ clean: ## Clean the temporary files.
 	rm -rf .ruff_cache
 	rm -rf megalinter-reports
 
-.PHONY: format
+.PHONY: format-py format-html
 format:  ## Format the code.
 	poetry run ruff check . --fix
 
+.PHONY: format-py
+format-py:  ## Format the Python code
+	poetry run black .
+	poetry run ruff check . --fix
+
+.PHONY: format-html
+format-html:  ## Format the HTML code
+	find ons/ -name '*.html' | xargs poetry run djhtml
+
 .PHONY: lint
-lint:  ## Run all linters (ruff/pylint/mypy).
+lint: lint-py lint-html  ## Run all linters (python, html)
+
+.PHONY: lint-py
+lint-py:  ## Run all Python linters (ruff/pylint/mypy).
 	poetry run ruff check .
+	find . -type f -name "*.py" | xargs poetry run pylint --reports=n --output-format=colorized --rcfile=.pylintrc -j 0
 	make mypy
+
+.PHONY: lint-html
+lint-html:  ## Run HTML Linters
+	find ons/ -name '*.html' | xargs poetry run djhtml --check
 
 .PHONY: test
 test:  ## Run the tests and check coverage.
