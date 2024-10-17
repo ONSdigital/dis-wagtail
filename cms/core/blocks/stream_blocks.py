@@ -1,3 +1,5 @@
+from typing import ClassVar
+
 from wagtail.blocks import RichTextBlock, StreamBlock
 from wagtail.embeds.blocks import EmbedBlock
 from wagtail.images.blocks import ImageChooserBlock
@@ -25,4 +27,4 @@ class CoreStoryBlock(StreamBlock):
     ons_embed = ONSEmbedBlock(group="DataVis", label="ONS General Embed")
 
     class Meta:
-        block_counts = {"related_links": {"max_num": 1}}
+        block_counts: ClassVar[dict[str, dict]] = {"related_links": {"max_num": 1}}

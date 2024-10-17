@@ -65,7 +65,7 @@ if settings.DEBUG:
     if apps.is_installed("debug_toolbar"):
         import debug_toolbar
 
-        debug_urlpatterns = [path("__debug__/", include(debug_toolbar.urls))] + debug_urlpatterns
+        debug_urlpatterns = [path("__debug__/", include(debug_toolbar.urls)), *debug_urlpatterns]
 
 # Public URLs that are meant to be cached.
 urlpatterns = [

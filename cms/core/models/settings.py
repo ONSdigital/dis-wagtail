@@ -1,3 +1,5 @@
+from typing import ClassVar
+
 from django.db import models
 from wagtail.admin.panels import FieldPanel, MultiFieldPanel
 from wagtail.contrib.settings.models import BaseSiteSetting, register_setting
@@ -46,7 +48,9 @@ class SystemMessagesSettings(BaseSiteSetting):
         default="<p>You may be trying to find a page that doesn&rsquo;t exist or has been moved.</p>",
     )
 
-    panels = [MultiFieldPanel([FieldPanel("title_404"), FieldPanel("body_404")], "404 page")]
+    panels: ClassVar[list[FieldPanel]] = [
+        MultiFieldPanel([FieldPanel("title_404"), FieldPanel("body_404")], "404 page")
+    ]
 
 
 @register_setting(icon="view")

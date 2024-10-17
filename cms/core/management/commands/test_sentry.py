@@ -3,7 +3,7 @@ from sentry_sdk import capture_exception, capture_message
 
 
 class Command(BaseCommand):
-    """Sends a message to Sentry to test if it's set up correctly
+    """Sends a message to Sentry to test if it's set up correctly.
 
     To test locally specify the SENTRY_DSN for this command only:
     SENTRY_DSN=... ./manage.py test_sentry
