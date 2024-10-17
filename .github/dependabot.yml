@@ -16,12 +16,12 @@ updates:
       gh-security-updates:
         applies-to: security-updates
         patterns:
-          - "*"
+          - '*'
 
       gh-version-updates:
         applies-to: version-updates
         patterns:
-          - "*"
+          - '*'
 
   # Enable Security updates for Python package manager
   - package-ecosystem: pip
@@ -40,9 +40,9 @@ updates:
       py-security-updates:
         applies-to: security-updates
         patterns:
-          - "*"
+          - '*'
 
       py-version-updates:
         applies-to: version-updates
         patterns:
-          - "*"
+          - '*'

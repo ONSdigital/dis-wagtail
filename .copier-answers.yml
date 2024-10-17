@@ -11,7 +11,7 @@ module_name: dis_wagtail
 package_manager: poetry
 repo_settings: custom
 repository_description: The Django Wagtail CMS for managing and publishing content
-    for the Office for National Statistics (ONS)
+  for the Office for National Statistics (ONS)
 repository_name: dis-wagtail
 repository_owner: ONSdigital
 repository_visibility: public

@@ -17,4 +17,4 @@ changelog:
         - Documentation
     - title: Other Changes
       labels:
-        - "*"
+        - '*'
