@@ -175,9 +175,11 @@ copier_scripts/
 #
 
 # DS
-/ons/jinja2/assets/styles/print.css
-/ons/jinja2/components
-/ons/jinja2/layout
+/cms/settings/local.py
+
+/cms/jinja2/assets/styles/print.css
+/cms/jinja2/components
+/cms/jinja2/layout
 
 node_modules/
 

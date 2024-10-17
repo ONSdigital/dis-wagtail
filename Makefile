@@ -28,7 +28,7 @@ format-py:  ## Format the Python code
 
 .PHONY: format-html
 format-html:  ## Format the HTML code
-	find ons/ -name '*.html' | xargs poetry run djhtml
+	find cms/ -name '*.html' | xargs poetry run djhtml
 
 .PHONY: lint
 lint: lint-py lint-html  ## Run all linters (python, html)
@@ -41,15 +41,15 @@ lint-py:  ## Run all Python linters (ruff/pylint/mypy).
 
 .PHONY: lint-html
 lint-html:  ## Run HTML Linters
-	find ons/ -name '*.html' | xargs poetry run djhtml --check
+	find cms/ -name '*.html' | xargs poetry run djhtml --check
 
 .PHONY: test
 test:  ## Run the tests and check coverage.
-	poetry run pytest -n auto --cov=dis_wagtail --cov-report term-missing --cov-fail-under=100
+	poetry run pytest -n auto --cov=cms --cov-report term-missing --cov-fail-under=100
 
 .PHONY: mypy
 mypy:  ## Run mypy.
-	poetry run mypy dis_wagtail
+	poetry run mypy cms
 
 .PHONY: install
 install:  ## Install the dependencies excluding dev.

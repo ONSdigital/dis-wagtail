@@ -1,0 +1,35 @@
+{% extends "templates/base.html" %}
+
+{% block meta %}
+    {% with current_site=wagtail_site() %}
+        <meta name="twitter:card" content="summary" />
+        <meta name="twitter:site" content="@{{ settings.core.SocialMediaSettings.twitter_handle }}" />
+        <meta name="twitter:title" content="{{ page.title }}" />
+        <meta name="twitter:description" content="{{ page|social_text(current_site) }}">
+        {% with social_image=page|social_image(current_site) %}
+            {% if social_image  %}
+                {% with twitter_img=image(social_image, "width-1000") %}
+                    <meta name="twitter:image" content="{{ twitter_img.url }}">
+                    {% if twitter_img.alt %}
+                        <meta name="twitter:image:alt" content="{{ twitter_img.alt }}">
+                    {% endif %}
+                {% endwith %}
+                {% with og_img=image(social_image, "fill-1200x630-c100") %}
+                    <meta property="og:image" content="{{ og_img.url }}" />
+                    <meta property="og:image:width" content="{{ og_img.width }}" />
+                    <meta property="og:image:height" content="{{ og_img.height }}" />
+                {% endwith %}
+            {% endif %}
+        {% endwith %}
+        <meta property="og:type" content="website" />
+        <meta property="og:url" content="{{ site.root_url }}{{ page.url }}" />
+        <meta property="og:title" content="{{ page.title }}" />
+        <meta property="og:description" content="{{ page|social_text(current_site) }}" />
+        <meta property="og:site_name" content="{{ settings.core.SocialMediaSettings.site_name }}" />
+    {% endwith %}
+{% endblock meta %}
+
+{% block preMain %}
+    {{ super() }}
+    {% include "templates/components/navigation/breadcrumbs.html" %}
+{% endblock %}

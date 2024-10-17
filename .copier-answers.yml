@@ -7,7 +7,7 @@ default_branch: main
 dependabot_open_pull_requests_limit: 10
 dismiss_stale_reviews: false
 enable_dependabot_version_updates: true
-module_name: dis_wagtail
+module_name: cms
 package_manager: poetry
 repo_settings: custom
 repository_description: The Django Wagtail CMS for managing and publishing content

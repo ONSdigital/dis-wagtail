@@ -1,0 +1,16 @@
+<section id="{{ slug }}">
+    <h2 >{{ heading }}</h2>
+
+    <ul class="ons-list ons-list--bare">
+        {% for item in value %}
+            <li class="ons-list__item">
+                {% if item.link %}
+                    <a href="{{ item.link.url }}">{{ item.link.text }}</a>
+                {% endif %}
+                {% if item.description %}
+                    <p>{{ item.description }}</p>
+                {% endif %}
+            </li>
+        {% endfor %}
+    </ul>
+</section>

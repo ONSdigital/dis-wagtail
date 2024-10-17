@@ -1,0 +1,9 @@
+{% from "components/panel/_macro.njk" import onsPanel %}
+
+{# fmt:off #}
+{{ onsPanel({
+    "variant": value.variant,
+    "body": value.body,
+    "title": value.title
+}) }}
+{# fmt:on #}

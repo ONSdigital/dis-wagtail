@@ -1,0 +1,18 @@
+{% extends "templates/base_page.html" %}
+
+{% block html_class %}no-scroll-behaviour{% endblock %}
+
+{% block title %}Log in{% endblock %}
+
+{% block body_class %}template-login{% endblock %}
+
+{% block main %}
+    <h1>{{ _("Log in") }}</h1>
+
+    <form method="post" action="{{ url('wagtailcore_login') }}">
+        {% csrf_token %}
+        {{ form }}
+        <button type="submit" class="button">{{ _("Log in") }}</button>
+        <input type="hidden" name="next" value="{{ next }}" />
+    </form>
+{% endblock %}
