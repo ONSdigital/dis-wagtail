@@ -1,3 +1,5 @@
+DESIGN_SYSTEM_VERSION=`cat .design-system-version`
+
 .DEFAULT_GOAL := all
 
 .PHONY: all
@@ -63,3 +65,8 @@ megalint:  ## Run the mega-linter.
 		-v /var/run/docker.sock:/var/run/docker.sock:rw \
 		-v $(shell pwd):/tmp/lint:rw \
 		oxsecurity/megalinter:v7
+
+.PHONY: load-design-system-templates
+load-design-system-templates:  ## 🎨️   - Load the design system templates
+	./scripts/load_release.sh onsdigital/design-system $(DESIGN_SYSTEM_VERSION)
+	./scripts/finalize_design_system_setup.sh $(DESIGN_SYSTEM_VERSION)
