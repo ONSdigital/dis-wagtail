@@ -1,3 +1,5 @@
+from typing import TYPE_CHECKING, ClassVar
+
 from django.utils.decorators import method_decorator
 from django.utils.functional import cached_property
 from wagtail.models import Page
@@ -7,6 +9,9 @@ from cms.core.cache import get_default_cache_control_decorator
 from cms.core.query import order_by_pk_position
 
 from .mixins import ListingFieldsMixin, SocialFieldsMixin
+
+if TYPE_CHECKING:
+    from wagtail.admin.panels import FieldPanel
 
 __all__ = [
     "BasePage",
@@ -21,7 +26,11 @@ class BasePage(ListingFieldsMixin, SocialFieldsMixin, Page):
     class Meta:
         abstract = True
 
-    promote_panels = Page.promote_panels + ListingFieldsMixin.promote_panels + SocialFieldsMixin.promote_panels
+    promote_panels: ClassVar[list["FieldPanel"]] = [
+        *Page.promote_panels,
+        *ListingFieldsMixin.promote_panels,
+        *SocialFieldsMixin.promote_panels,
+    ]
 
     @cached_property
     def related_pages(self) -> PageQuerySet:

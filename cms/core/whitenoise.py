@@ -21,7 +21,7 @@ class CMSWhiteNoiseMiddleware(WhiteNoiseMiddleware):
     """
 
     # NB: If the app isn't in `INSTALLED_APPS`, it doesn't need to be added here.
-    ignore_patterns = {
+    ignore_patterns: tuple[str] = {
         "wagtailadmin/*",
         "django_extensions/*",
         "wagtaildocs/*",

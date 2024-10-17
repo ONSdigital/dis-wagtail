@@ -94,6 +94,10 @@ convention = "google"
     # Allow use of assert statements in tests
     "S101",
 ]
+"cms/*/migrations/*" = [
+    "RUF012"
+]
+"cms/settings/*.py" = ["SIM105"]
 
 [tool.ruff.format]
 quote-style = "double"

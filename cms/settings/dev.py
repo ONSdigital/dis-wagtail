@@ -4,7 +4,8 @@ from .base import *  # noqa: F403  # pylint: disable=wildcard-import,unused-wild
 DEBUG = True
 
 # This key to be used locally only.
-SECRET_KEY = "this_is_not_a_secret_key"  # pragma: allowlist secret
+# pragma: allowlist nextline secret
+SECRET_KEY = "this_is_not_a_secret_key"  # noqa: S105
 
 ALLOWED_HOSTS = ["*"]
 

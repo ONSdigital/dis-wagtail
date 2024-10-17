@@ -7,62 +7,102 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     initial = True
 
     dependencies = [
-        ('images', '__first__'),
-        ('wagtailcore', '0052_pagelogentry'),
+        ("images", "__first__"),
+        ("wagtailcore", "0052_pagelogentry"),
     ]
 
     operations = [
         migrations.CreateModel(
-            name='PageRelatedPage',
+            name="PageRelatedPage",
             fields=[
-                ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False)),
-                ('sort_order', models.IntegerField(blank=True, editable=False, null=True)),
-                ('page', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='+', to='wagtailcore.page')),
-                ('parent', modelcluster.fields.ParentalKey(on_delete=django.db.models.deletion.CASCADE, related_name='page_related_pages', to='wagtailcore.page')),
+                ("id", models.AutoField(auto_created=True, primary_key=True, serialize=False)),
+                ("sort_order", models.IntegerField(blank=True, editable=False, null=True)),
+                (
+                    "page",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE, related_name="+", to="wagtailcore.page"
+                    ),
+                ),
+                (
+                    "parent",
+                    modelcluster.fields.ParentalKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="page_related_pages",
+                        to="wagtailcore.page",
+                    ),
+                ),
             ],
             options={
-                'ordering': ['sort_order'],
-                'abstract': False,
+                "ordering": ["sort_order"],
+                "abstract": False,
             },
         ),
         migrations.CreateModel(
-            name='SocialMediaSettings',
+            name="SocialMediaSettings",
             fields=[
-                ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False)),
-                ('default_sharing_text', models.CharField(blank=True, max_length=255)),
-                ('site_name', models.CharField(blank=True, default='Office for National Statistics', max_length=255)),
-                ('default_sharing_image', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='+', to='images.customimage')),
-                ('site', models.OneToOneField(editable=False, on_delete=django.db.models.deletion.CASCADE, to='wagtailcore.site')),
+                ("id", models.AutoField(auto_created=True, primary_key=True, serialize=False)),
+                ("default_sharing_text", models.CharField(blank=True, max_length=255)),
+                ("site_name", models.CharField(blank=True, default="Office for National Statistics", max_length=255)),
+                (
+                    "default_sharing_image",
+                    models.ForeignKey(
+                        blank=True,
+                        null=True,
+                        on_delete=django.db.models.deletion.SET_NULL,
+                        related_name="+",
+                        to="images.customimage",
+                    ),
+                ),
+                (
+                    "site",
+                    models.OneToOneField(
+                        editable=False, on_delete=django.db.models.deletion.CASCADE, to="wagtailcore.site"
+                    ),
+                ),
             ],
             options={
-                'abstract': False,
+                "abstract": False,
             },
         ),
         migrations.CreateModel(
-            name='SystemMessagesSettings',
+            name="SystemMessagesSettings",
             fields=[
-                ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False)),
-                ('title_404', models.CharField(default='Page not found', max_length=255)),
-                ('body_404', wagtail.fields.RichTextField(default='<p>You may be trying to find a page that doesn&rsquo;t exist or has been moved.</p>')),
-                ('site', models.OneToOneField(editable=False, on_delete=django.db.models.deletion.CASCADE, to='wagtailcore.site')),
+                ("id", models.AutoField(auto_created=True, primary_key=True, serialize=False)),
+                ("title_404", models.CharField(default="Page not found", max_length=255)),
+                (
+                    "body_404",
+                    wagtail.fields.RichTextField(
+                        default="<p>You may be trying to find a page that doesn&rsquo;t exist or has been moved.</p>"
+                    ),
+                ),
+                (
+                    "site",
+                    models.OneToOneField(
+                        editable=False, on_delete=django.db.models.deletion.CASCADE, to="wagtailcore.site"
+                    ),
+                ),
             ],
             options={
-                'verbose_name': 'system messages',
+                "verbose_name": "system messages",
             },
         ),
         migrations.CreateModel(
-            name='Tracking',
+            name="Tracking",
             fields=[
-                ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False)),
-                ('google_tag_manager_id', models.CharField(blank='True', max_length=255)),
-                ('site', models.OneToOneField(editable=False, on_delete=django.db.models.deletion.CASCADE, to='wagtailcore.site')),
+                ("id", models.AutoField(auto_created=True, primary_key=True, serialize=False)),
+                ("google_tag_manager_id", models.CharField(blank="True", max_length=255)),
+                (
+                    "site",
+                    models.OneToOneField(
+                        editable=False, on_delete=django.db.models.deletion.CASCADE, to="wagtailcore.site"
+                    ),
+                ),
             ],
             options={
-                'abstract': False,
+                "abstract": False,
             },
         ),
     ]

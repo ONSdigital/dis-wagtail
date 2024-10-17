@@ -1,3 +1,5 @@
+from typing import ClassVar
+
 from django.db import models
 from modelcluster.fields import ParentalKey
 from wagtail.admin.panels import FieldPanel
@@ -18,4 +20,4 @@ class PageRelatedPage(Orderable):
         related_name="+",
     )
 
-    panels = [FieldPanel("page")]
+    panels: ClassVar[list[FieldPanel]] = [FieldPanel("page")]

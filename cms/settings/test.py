@@ -3,7 +3,8 @@ from .base import *  # noqa: F403  # pylint: disable=wildcard-import,unused-wild
 # #############
 # General
 
-SECRET_KEY = "fake_secret_key_to_run_tests"  # pragma: allowlist secret
+# pragma: allowlist nextline secret
+SECRET_KEY = "fake_secret_key_to_run_tests"  # noqa: S105
 
 ALLOWED_HOSTS = ["*"]
 
@@ -18,7 +19,7 @@ SECURE_HSTS_SECONDS = 0
 
 
 # Quieten down the logging in tests
-LOGGING["handlers"]["console"]["class"] = "logging.NullHandler"
+LOGGING["handlers"]["console"]["class"] = "logging.NullHandler"  # noqa: F405
 
 # Wagtail
 WAGTAILADMIN_BASE_URL = "http://testserver"

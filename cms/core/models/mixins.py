@@ -1,3 +1,5 @@
+from typing import ClassVar
+
 from django.core.paginator import EmptyPage, Paginator
 from django.db import models
 from django.http import Http404
@@ -37,7 +39,7 @@ class ListingFieldsMixin(models.Model):
     class Meta:
         abstract = True
 
-    promote_panels = [
+    promote_panels: ClassVar[list[FieldPanel]] = [
         MultiFieldPanel(
             heading="Listing information",
             children=[
@@ -64,7 +66,7 @@ class SocialFieldsMixin(models.Model):
     class Meta:
         abstract = True
 
-    promote_panels = [
+    promote_panels: ClassVar[list[FieldPanel]] = [
         MultiFieldPanel(
             heading="Social networks",
             children=[

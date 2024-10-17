@@ -43,7 +43,7 @@ if "ALLOWED_HOSTS" in env:
 
 # A list of trusted origins for unsafe requests (e.g. POST).
 # For requests that include the Origin header,
-# Django’s CSRF protection requires that header match
+# Django's CSRF protection requires that header match
 # the origin present in the Host header.
 # Important: values must include the scheme (e.g. https://) and the hostname
 # https://docs.djangoproject.com/en/stable/ref/settings/#csrf-trusted-origins
@@ -146,8 +146,8 @@ TEMPLATES = [
             "app_dirname": "jinja2",
             "undefined": "jinja2.ChainableUndefined",
             "context_processors": context_processors,
-            "extensions": DEFAULT_EXTENSIONS
-            + [
+            "extensions": [
+                *DEFAULT_EXTENSIONS,
                 "wagtail.jinja2tags.core",
                 "wagtail.admin.jinja2tags.userbar",
                 "wagtail.images.jinja2tags.images",
@@ -332,7 +332,7 @@ MEDIA_URL = env.get("MEDIA_URL", "/media/")
 # https://boto3.amazonaws.com/v1/documentation/api/latest/guide/configuration.html#environment-variables
 if "AWS_STORAGE_BUCKET_NAME" in env:
     # Add django-storages to the installed apps
-    INSTALLED_APPS = INSTALLED_APPS + ["storages", "wagtail_storages"]
+    INSTALLED_APPS += ["storages", "wagtail_storages"]
 
     # https://docs.djangoproject.com/en/stable/ref/settings/#std-setting-STORAGES
     STORAGES["default"]["BACKEND"] = "storages.backends.s3.S3Storage"
@@ -611,7 +611,7 @@ SECURE_REFERRER_POLICY = env.get("SECURE_REFERRER_POLICY", "no-referrer-when-dow
 
 
 # Content Security policy settings
-# Most modern browsers don’t honor the X-XSS-Protection HTTP header.
+# Most modern browsers don't honor the X-XSS-Protection HTTP header.
 # You can use Content-Security-Policy without allowing 'unsafe-inline' scripts instead.
 # http://django-csp.readthedocs.io/en/latest/configuration.html
 if "CSP_DEFAULT_SRC" in env:
@@ -708,7 +708,7 @@ WAGTAILIMAGES_MAX_IMAGE_PIXELS = int(pixel_limit) if pixel_limit else 10_000_000
 # in the rich text editor, for example.
 # They should use the image stream block instead
 RICH_TEXT_BASIC = ["bold", "italic", "link", "ol", "ul", "document-link"]
-RICH_TEXT_FULL = ["h3", "h4"] + RICH_TEXT_BASIC
+RICH_TEXT_FULL = ["h3", "h4", *RICH_TEXT_BASIC]
 
 WAGTAILADMIN_RICH_TEXT_EDITORS = {
     "default": {
@@ -728,7 +728,8 @@ WAGTAILDOCS_SERVE_METHOD = "serve_view"
 
 
 WAGTAIL_FRONTEND_LOGIN_TEMPLATE = "templates/pages/login_page.html"  # pragma: allowlist secret
-WAGTAIL_PASSWORD_REQUIRED_TEMPLATE = "templates/pages/wagtail/password_required.html"  # pragma: allowlist secret
+# pragma: allowlist nextline secret
+WAGTAIL_PASSWORD_REQUIRED_TEMPLATE = "templates/pages/wagtail/password_required.html"  # noqa: S105
 
 
 # Default size of the pagination used on the front-end.

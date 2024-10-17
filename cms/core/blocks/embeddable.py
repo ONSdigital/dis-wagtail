@@ -1,3 +1,5 @@
+from typing import ClassVar
+
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.template.defaultfilters import filesizeformat
@@ -52,7 +54,7 @@ class DocumentsBlock(blocks.StreamBlock):
         return context
 
     class Meta:
-        block_counts = {"document": {"min_num": 1}}
+        block_counts: ClassVar[dict[str, dict]] = {"document": {"min_num": 1}}
         icon = "doc-full-inverse"
         template = "templates/components/streamfield/documents_block.html"
 
