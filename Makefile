@@ -70,3 +70,24 @@ megalint:  ## Run the mega-linter.
 load-design-system-templates:  ## 🎨️   - Load the design system templates
 	./scripts/load_release.sh onsdigital/design-system $(DESIGN_SYSTEM_VERSION)
 	./scripts/finalize_design_system_setup.sh $(DESIGN_SYSTEM_VERSION)
+
+.PHONY: docker-build
+docker-build:  ## Build Docker container
+	docker compose pull
+	docker compose build
+
+.PHONY: docker-start
+docker-start:  ## Start Docker containers
+	docker compose up --detach
+
+.PHONY: docker-stop
+docker-stop:  ## Stop Docker containers
+	docker compose stop
+
+.PHONY: docker-shell
+docker-shell:  ## SSH into Docker container
+	docker compose exec web bash
+
+.PHONY: docker-destroy
+docker-destroy:  ## Tear down the Docker containers
+	docker compose down --volumes
