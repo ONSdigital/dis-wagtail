@@ -52,3 +52,10 @@ jobs:
 
       - name: Test
         run: make test
+
+  docker:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build Docker Image
+        run: docker build --target release -t ons .
