@@ -179,7 +179,9 @@ copier_scripts/
 /ons/jinja2/components
 /ons/jinja2/layout
 
-/ons/static_compiled
+node_modules/
+
+/cms/static_compiled
 
 # mkdocs
 /site
