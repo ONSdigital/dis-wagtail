@@ -3,6 +3,7 @@
 import os
 import sys
 from pathlib import Path
+from typing import Any
 
 import dj_database_url
 from django.core.exceptions import ImproperlyConfigured
@@ -190,7 +191,7 @@ DATABASES = {"default": dj_database_url.config(conn_max_age=600, default="postgr
 REDIS_URL = env.get("REDIS_TLS_URL", env.get("REDIS_URL"))
 
 if REDIS_URL:
-    connection_pool_kwargs = {}
+    connection_pool_kwargs: dict[str, str | None] = {}
 
     if REDIS_URL.startswith("rediss"):
         # Heroku Redis uses self-signed certificates for secure redis conections. https://stackoverflow.com/a/66286068
@@ -237,7 +238,7 @@ AUTH_PASSWORD_VALIDATORS = [
 ]
 
 if IS_EXTERNAL_ENV:
-    AUTHENTICATION_BACKENDS = []
+    AUTHENTICATION_BACKENDS: list[str] = []
 
 
 # Internationalization
@@ -476,7 +477,7 @@ if "SENTRY_DSN" in env and not is_in_shell:
     from sentry_sdk.integrations.django import DjangoIntegration
     from sentry_sdk.utils import get_default_release
 
-    sentry_kwargs = {
+    sentry_kwargs: dict[str, str | list[Any] | None] = {
         "dsn": env["SENTRY_DSN"],
         "integrations": [DjangoIntegration()],
     }
@@ -495,7 +496,7 @@ if "SENTRY_DSN" in env and not is_in_shell:
         release = env.get("HEROKU_RELEASE_VERSION", None)
 
     sentry_kwargs.update({"release": release})
-    sentry_sdk.init(**sentry_kwargs)
+    sentry_sdk.init(**sentry_kwargs)  # type: ignore[arg-type]
 
 
 # Front-end cache
@@ -620,21 +621,21 @@ if "CSP_DEFAULT_SRC" in env:
     # The “special” source values of 'self', 'unsafe-inline', 'unsafe-eval', and 'none' must be quoted!
     # e.g.: CSP_DEFAULT_SRC = "'self'" Without quotes they will not work as intended.
 
-    CSP_DEFAULT_SRC = env.get("CSP_DEFAULT_SRC").split(",")
+    CSP_DEFAULT_SRC = env.get("CSP_DEFAULT_SRC", "").split(",")
     if "CSP_SCRIPT_SRC" in env:
-        CSP_SCRIPT_SRC = env.get("CSP_SCRIPT_SRC").split(",")
+        CSP_SCRIPT_SRC = env.get("CSP_SCRIPT_SRC", "").split(",")
     if "CSP_STYLE_SRC" in env:
-        CSP_STYLE_SRC = env.get("CSP_STYLE_SRC").split(",")
+        CSP_STYLE_SRC = env.get("CSP_STYLE_SRC", "").split(",")
     if "CSP_IMG_SRC" in env:
-        CSP_IMG_SRC = env.get("CSP_IMG_SRC").split(",")
+        CSP_IMG_SRC = env.get("CSP_IMG_SRC", "").split(",")
     if "CSP_CONNECT_SRC" in env:
-        CSP_CONNECT_SRC = env.get("CSP_CONNECT_SRC").split(",")
+        CSP_CONNECT_SRC = env.get("CSP_CONNECT_SRC", "").split(",")
     if "CSP_FONT_SRC" in env:
-        CSP_FONT_SRC = env.get("CSP_FONT_SRC").split(",")
+        CSP_FONT_SRC = env.get("CSP_FONT_SRC", "").split(",")
     if "CSP_BASE_URI" in env:
-        CSP_BASE_URI = env.get("CSP_BASE_URI").split(",")
+        CSP_BASE_URI = env.get("CSP_BASE_URI", "").split(",")
     if "CSP_OBJECT_SRC" in env:
-        CSP_OBJECT_SRC = env.get("CSP_OBJECT_SRC").split(",")
+        CSP_OBJECT_SRC = env.get("CSP_OBJECT_SRC", "").split(",")
 
 
 # Basic authentication settings

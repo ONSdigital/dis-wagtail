@@ -1,4 +1,4 @@
-from typing import ClassVar
+from typing import TYPE_CHECKING, ClassVar
 
 from django.conf import settings
 from django.core.exceptions import ValidationError
@@ -7,6 +7,9 @@ from wagtail import blocks
 from wagtail.blocks import StructBlockValidationError
 from wagtail.documents.blocks import DocumentChooserBlock
 from wagtail.images.blocks import ImageChooserBlock
+
+if TYPE_CHECKING:
+    from wagtail.blocks import StreamValue, StructValue
 
 
 class ImageBlock(blocks.StructBlock):
@@ -19,7 +22,7 @@ class ImageBlock(blocks.StructBlock):
 
 
 class DocumentBlockStructValue(blocks.StructValue):
-    def as_macro_data(self):
+    def as_macro_data(self) -> dict[str, str | bool | dict]:
         return {
             "thumbnail": True,
             "url": self["document"].url,
@@ -48,8 +51,8 @@ class DocumentBlock(blocks.StructBlock):
 class DocumentsBlock(blocks.StreamBlock):
     document = DocumentBlock()
 
-    def get_context(self, value, parent_context=None):
-        context = super().get_context(value, parent_context)
+    def get_context(self, value: "StreamValue", parent_context: dict | None = None) -> dict:
+        context: dict = super().get_context(value, parent_context)
         context["macro_data"] = [document.value.as_macro_data() for document in value]
         return context
 
@@ -66,7 +69,7 @@ class ONSEmbedBlock(blocks.StructBlock):
     url = blocks.URLBlock(help_text=f"Must start with <code>{ ONS_EMBED_PREFIX }</code> to your URL.")
     title = blocks.CharBlock(default="Interactive chart")
 
-    def clean(self, value):
+    def clean(self, value: "StructValue") -> "StructValue":
         errors = {}
 
         if not value["url"].startswith(ONS_EMBED_PREFIX):

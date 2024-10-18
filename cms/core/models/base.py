@@ -13,6 +13,7 @@ from .mixins import ListingFieldsMixin, SocialFieldsMixin
 if TYPE_CHECKING:
     from wagtail.admin.panels import FieldPanel
 
+
 __all__ = [
     "BasePage",
 ]
@@ -20,7 +21,7 @@ __all__ = [
 
 # Apply default cache headers on this page model's serve method.
 @method_decorator(get_default_cache_control_decorator(), name="serve")
-class BasePage(ListingFieldsMixin, SocialFieldsMixin, Page):
+class BasePage(ListingFieldsMixin, SocialFieldsMixin, Page):  # type: ignore[django-manager-missing]
     show_in_menus_default = True
 
     class Meta:

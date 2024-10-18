@@ -13,7 +13,9 @@ This will reduce the amount of migrations and therefore speed-up development.
 """
 
 import logging
+from collections.abc import Callable
 from functools import wraps
+from typing import Any
 
 from django.db.migrations.operations import AlterModelOptions
 from django.db.models import Field, FileField
@@ -40,15 +42,15 @@ for attr in MIGRATION_IGNORE_RELATED_FIELD_ATTRS:
     logger.debug(f"Related field {attr} attr will be ignored.")
 
 
-def patch_ignored_model_attrs(cls):
+def patch_ignored_model_attrs(cls: type[AlterModelOptions]) -> None:
     for attribute in MIGRATION_IGNORE_MODEL_ATTRS:
         if attribute in cls.ALTER_OPTION_KEYS:
             cls.ALTER_OPTION_KEYS.remove(attribute)
 
 
-def patch_field_deconstruct(old_func):
+def patch_field_deconstruct(old_func: Callable) -> Callable:
     @wraps(old_func)
-    def deconstruct_with_ignored_attrs(self):
+    def deconstruct_with_ignored_attrs(self: Field) -> tuple[str, str, Any, Any]:
         name, path, args, kwargs = old_func(self)
         for attribute in MIGRATION_IGNORE_FIELD_ATTRS:
             kwargs.pop(attribute, None)
@@ -57,9 +59,9 @@ def patch_field_deconstruct(old_func):
     return deconstruct_with_ignored_attrs
 
 
-def patch_file_field_deconstruct(old_func):
+def patch_file_field_deconstruct(old_func: Callable) -> Callable:
     @wraps(old_func)
-    def deconstruct_with_ignored_attrs(self):
+    def deconstruct_with_ignored_attrs(self: FileField) -> tuple[str, str, Any, Any]:
         name, path, args, kwargs = old_func(self)
         for attribute in MIGRATION_IGNORE_FILE_FIELD_ATTRS:
             kwargs.pop(attribute, None)
@@ -68,9 +70,9 @@ def patch_file_field_deconstruct(old_func):
     return deconstruct_with_ignored_attrs
 
 
-def patch_related_field_deconstruct(old_func):
+def patch_related_field_deconstruct(old_func: Callable) -> Callable:
     @wraps(old_func)
-    def deconstruct_with_ignored_attrs(self):
+    def deconstruct_with_ignored_attrs(self: RelatedField) -> tuple[str, str, Any, Any]:
         name, path, args, kwargs = old_func(self)
         for attribute in MIGRATION_IGNORE_RELATED_FIELD_ATTRS:
             kwargs.pop(attribute, None)

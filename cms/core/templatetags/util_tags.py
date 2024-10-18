@@ -1,3 +1,5 @@
+from typing import TYPE_CHECKING, Optional
+
 import jinja2
 from django import template
 from django.template.loader import render_to_string
@@ -7,21 +9,29 @@ from cms.core.models import SocialMediaSettings
 
 register = template.Library()
 
+if TYPE_CHECKING:
+    from django.utils.safestring import SafeString
+    from wagtail.models import Page, Site
+
+    from cms.images.models import CustomImage
+
 
 # Social text
 @register.filter(name="social_text")
-def social_text(page, site):
-    return getattr(page, "social_text", None) or SocialMediaSettings.for_site(site).default_sharing_text
+def social_text(page: "Page", site: "Site") -> str:
+    social_text_str: str = getattr(page, "social_text", "")
+    return social_text_str or SocialMediaSettings.for_site(site).default_sharing_text
 
 
 # Social image
 @register.filter(name="social_image")
-def social_image(page, site):
-    return getattr(page, "social_image", None) or SocialMediaSettings.for_site(site).default_sharing_image
+def social_image(page: "Page", site: "Site") -> Optional["CustomImage"]:
+    the_social_image: CustomImage | None = getattr(page, "social_image", None)
+    return the_social_image or SocialMediaSettings.for_site(site).default_sharing_image
 
 
 @library.global_function
 @jinja2.pass_context
-def include_django(context, template_name):
+def include_django(context: jinja2.runtime.Context, template_name: str) -> "SafeString":
     """Allow importing a pre-rendered Django template into jinja2."""
     return render_to_string(template_name, context=dict(context), request=context.get("request", None))

@@ -19,7 +19,7 @@ SECURE_HSTS_SECONDS = 0
 
 
 # Quieten down the logging in tests
-LOGGING["handlers"]["console"]["class"] = "logging.NullHandler"  # noqa: F405
+LOGGING["handlers"]["console"]["class"] = "logging.NullHandler"  # type: ignore[index] # noqa: F405
 
 # Wagtail
 WAGTAILADMIN_BASE_URL = "http://testserver"

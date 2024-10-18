@@ -1,3 +1,5 @@
+from typing import TYPE_CHECKING, Union
+
 from django.apps import apps
 from django.conf import settings
 from django.urls import include, path
@@ -10,6 +12,10 @@ from wagtail.documents import urls as wagtaildocs_urls
 from wagtail.utils.urlpatterns import decorate_urlpatterns
 
 from cms.core.cache import get_default_cache_control_decorator
+
+if TYPE_CHECKING:
+    from django.urls import URLPattern, URLResolver
+
 
 # Private URLs are not meant to be cached.
 private_urlpatterns = [
@@ -35,7 +41,7 @@ if getattr(settings, "ENABLE_DJANGO_DEFENDER", False):
     ]
 
 
-debug_urlpatterns = []
+debug_urlpatterns: list[Union["URLResolver", "URLPattern"]] = []
 
 if settings.DEBUG:
     from django.conf.urls.static import static
