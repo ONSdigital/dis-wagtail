@@ -63,7 +63,7 @@ if settings.DEBUG:
 
     # Try to install the django debug toolbar, if exists
     if apps.is_installed("debug_toolbar"):
-        import debug_toolbar
+        import debug_toolbar  # pylint: disable=import-error
 
         debug_urlpatterns = [path("__debug__/", include(debug_toolbar.urls)), *debug_urlpatterns]
 
