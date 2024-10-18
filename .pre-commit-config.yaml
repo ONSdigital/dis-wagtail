@@ -26,12 +26,6 @@ repos:
             '-j 0', # detect number of processors available to use
           ]
 
-  - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: 'v1.12.0' # keep version in sync with pyproject.toml
-    hooks:
-      - id: mypy
-      # note: if adding additional mypy deps, include them here as additional_dependencies
-
   - repo: https://github.com/python-poetry/poetry
     rev: '1.8.4' # keep version in sync with version installed in the Dockerfile
     hooks:
