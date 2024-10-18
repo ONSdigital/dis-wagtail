@@ -93,7 +93,7 @@ class Migration(migrations.Migration):
             name="Tracking",
             fields=[
                 ("id", models.AutoField(auto_created=True, primary_key=True, serialize=False)),
-                ("google_tag_manager_id", models.CharField(blank="True", max_length=255)),
+                ("google_tag_manager_id", models.CharField(blank=True, max_length=255)),
                 (
                     "site",
                     models.OneToOneField(

@@ -1,4 +1,5 @@
 from functools import cached_property
+from typing import TYPE_CHECKING, Any
 
 from django.core.exceptions import ValidationError
 from django.forms.utils import ErrorList
@@ -13,6 +14,10 @@ from wagtail.blocks import (
     StructValue,
     URLBlock,
 )
+
+if TYPE_CHECKING:
+    from wagtail.blocks import Block
+    from wagtail.blocks.list_block import ListValue
 
 
 class LinkBlockStructValue(StructValue):
@@ -45,7 +50,7 @@ class RelatedContentBlock(StructBlock):
         icon = "link"
         value_class = LinkBlockStructValue
 
-    def clean(self, value):
+    def clean(self, value: LinkBlockStructValue) -> LinkBlockStructValue:
         value = super().clean(value)
         page = value["page"]
         external_url = value["external_url"]
@@ -74,14 +79,14 @@ class RelatedContentBlock(StructBlock):
 
 
 class RelatedLinksBlock(ListBlock):
-    def __init__(self, child_block, search_index=True, **kwargs):
+    def __init__(self, child_block: "Block", search_index: bool = True, **kwargs: Any) -> None:
         super().__init__(child_block, search_index=search_index, **kwargs)
 
         self.heading = _("Related links")
         self.slug = slugify(self.heading)
 
-    def get_context(self, value, parent_context=None):
-        context = super().get_context(value, parent_context=parent_context)
+    def get_context(self, value: "ListValue", parent_context: dict | None = None) -> dict:
+        context: dict = super().get_context(value, parent_context=parent_context)
         context["heading"] = self.heading
         context["slug"] = self.slug
 
@@ -91,5 +96,5 @@ class RelatedLinksBlock(ListBlock):
         icon = "list-ul"
         template = "templates/components/streamfield/related_links_block.html"
 
-    def to_table_of_contents_items(self, value):  # pylint: disable=unused-argument
+    def to_table_of_contents_items(self, _value: "ListValue") -> list[dict[str, str]]:
         return [{"url": "#" + self.slug, "text": self.heading}]

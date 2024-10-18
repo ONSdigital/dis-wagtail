@@ -1,8 +1,13 @@
+from typing import TYPE_CHECKING, Any, Optional
+
 from django.conf import settings
 from django.contrib.staticfiles.finders import get_finders
 from django.contrib.staticfiles.storage import staticfiles_storage
 from django.http import Http404
 from whitenoise.middleware import WhiteNoiseMiddleware
+
+if TYPE_CHECKING:
+    from whitenoise.responders import StaticFile
 
 
 class CMSWhiteNoiseMiddleware(WhiteNoiseMiddleware):
@@ -21,7 +26,7 @@ class CMSWhiteNoiseMiddleware(WhiteNoiseMiddleware):
     """
 
     # NB: If the app isn't in `INSTALLED_APPS`, it doesn't need to be added here.
-    ignore_patterns: tuple[str] = {
+    ignore_patterns: tuple[str, ...] = (
         "wagtailadmin/*",
         "django_extensions/*",
         "wagtaildocs/*",
@@ -29,9 +34,10 @@ class CMSWhiteNoiseMiddleware(WhiteNoiseMiddleware):
         "wagtailimages/*",
         "wagtailsnippets/*",
         "wagtailusers/*",
-    }
+    )
+    files: dict = {}  # noqa: RUF012
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
 
         self.known_static_files = set()
@@ -46,7 +52,7 @@ class CMSWhiteNoiseMiddleware(WhiteNoiseMiddleware):
 
         if not settings.IS_EXTERNAL_ENV:
             # Allow manifest in writable environment.
-            self.known_static_files.add(staticfiles_storage.manifest_name)
+            self.known_static_files.add(staticfiles_storage.manifest_name)  # type: ignore[attr-defined]
 
         new_files = {}
 
@@ -60,7 +66,7 @@ class CMSWhiteNoiseMiddleware(WhiteNoiseMiddleware):
 
         self.files = new_files
 
-    def find_file(self, url):
+    def find_file(self, url: str) -> Optional["StaticFile"]:
         if url.startswith(self.static_prefix) and url not in self.known_static_files:
             # Force a 404 here, so Django doesn't try and serve the file itself
             raise Http404

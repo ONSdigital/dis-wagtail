@@ -1,10 +1,14 @@
 import json
+from typing import TYPE_CHECKING, Any
 
 from wagtail.fields import StreamField as WagtailStreamfield
 
+if TYPE_CHECKING:
+    from wagtail.blocks import StreamValue
+
 
 class StreamField(WagtailStreamfield):
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args: Any, **kwargs: Any):
         """Overrides StreamField.__init__() to account for `block_types` no longer
         being received as an arg when migrating (because there is no longer a
         `block_types` value in the migration to provide).
@@ -16,7 +20,7 @@ class StreamField(WagtailStreamfield):
             block_types = kwargs.pop("block_types", [])
         super().__init__(block_types, *args, **kwargs)
 
-    def deconstruct(self):
+    def deconstruct(self) -> tuple[str, str, Any, Any]:
         """Overrides StreamField.deconstruct() to remove `block_types` and
         `verbose_name` values so that migrations remain smaller in size,
         and changes to those attributes do not require a new migration.
@@ -29,7 +33,7 @@ class StreamField(WagtailStreamfield):
         kwargs.pop("verbose_name", None)
         return name, path, args, kwargs
 
-    def to_python(self, value):
+    def to_python(self, value: Any) -> "StreamValue":
         """Overrides StreamField.to_python() to make the return value
         (a `StreamValue`) more useful when migrating. When migrating, block
         definitions are unavailable to the field's underlying StreamBlock,

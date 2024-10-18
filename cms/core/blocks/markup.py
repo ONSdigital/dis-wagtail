@@ -1,3 +1,5 @@
+from typing import Any
+
 from django.utils.text import slugify
 from wagtail import blocks
 
@@ -9,19 +11,19 @@ class HeadingBlock(blocks.CharBlock):
         template = "templates/components/streamfield/heading_block.html"
         label = "Section heading"
 
-    def __init__(self, **kwargs):
+    def __init__(self, **kwargs: Any) -> None:
         self.show_back_to_toc = kwargs.pop("show_back_to_toc", False)
         kwargs.setdefault("help_text", "This is output as level 2 heading (<code>h2</code>)")
 
         super().__init__(**kwargs)
 
-    def get_context(self, value, parent_context=None):
-        context = super().get_context(value, parent_context=parent_context)
+    def get_context(self, value: Any, parent_context: dict[str, Any] | None = None) -> dict[str, Any]:
+        context: dict[str, Any] = super().get_context(value, parent_context=parent_context)
         context["show_back_to_toc"] = self.show_back_to_toc
 
         return context
 
-    def to_table_of_contents_items(self, value):
+    def to_table_of_contents_items(self, value: Any) -> list[dict]:
         return [{"url": "#" + slugify(value), "text": value}]
 
 
