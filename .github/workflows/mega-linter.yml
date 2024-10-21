@@ -79,7 +79,7 @@ jobs:
 
         # You can override MegaLinter flavor used to have faster performances
         # More info at https://megalinter.io/latest/flavors/
-        uses: oxsecurity/megalinter@v7
+        uses: oxsecurity/megalinter@v8
 
         id: ml
 
@@ -118,7 +118,7 @@ jobs:
       # Create pull request if applicable
       # (for now works only on PR from same repository, not from forks)
       - name: Create Pull Request with applied fixes
-        uses: peter-evans/create-pull-request@v6
+        uses: peter-evans/create-pull-request@v7
         id: cpr
         if: >-
           steps.ml.outputs.has_updated_sources == 1 &&
