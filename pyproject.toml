@@ -134,14 +134,40 @@ ignore_errors = true
 django_settings_module = "cms.settings.test"
 
 [tool.coverage.run]
-source = "."
+source = ["cms"]
 omit = [
-   "manage.py",
-   "*venv/*",
-   "*node_modules*",
-   "*migrations*",
-    "*.mypy_cache*"
+    "manage.py",
+    "conftest.py",
+    "*venv/*",
+    "*.mypy_cache*",
+    "**/node_modules/*",
+    "**/migrations/*",
+    "**/tests/*",
 ]
 
 [tool.coverage.report]
 show_missing = true
+skip_covered = true
+
+exclude_also = [
+    # Have to re-enable the standard pragma
+    "pragma: no cover",
+
+    # Don't complain about missing debug-only code:
+    "def __repr__",
+    "if self.debug",
+    "if settings.DEBUG",
+
+    # Don't complain if tests don't hit defensive assertion code:
+    "raise AssertionError",
+    "raise NotImplementedError",
+
+    # Don't complain if non-runnable code isn't run:
+    "if 0:",
+    "if __name__ == .__main__.:",
+
+    # Nor complain about type checking
+    "if TYPE_CHECKING:",
+    "class .*\\bProtocol\\):",
+    "@(abc\\.)?abstractmethod",
+]
