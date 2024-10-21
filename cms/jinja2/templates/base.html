@@ -1,0 +1,72 @@
+{% extends "layout/_template.njk" %}
+
+{% set page_title %}
+    {% if current_site and page.pk == current_site.root_page.pk and current_site.site_name %}{{ current_site.site_name }} | {% endif %}{% block title %}{% if page.seo_title %}{{ page.seo_title }}{% else %}{{ page.title}}{% endif %}{% endblock %}{% block title_suffix %}{% if current_site and page.pk != current_site.root_page.pk and current_site.site_name %} | {{ current_site.site_name }}{% endif %}{% endblock %}
+{% endset %}
+
+{# fmt:off #}
+{% set languages = languages | default([
+    {
+        "url": "#",
+        "ISOCode": "en",
+        "text": "English",
+        "current": true
+    },
+    {
+        "url": "#",
+        "ISOCode": "cy",
+        "text": "Cymraeg",
+        "current": false
+    }
+])
+%}
+
+{% set pageConfig = {
+    "header": {
+        "title": page_title,
+        "phase": {
+            "badge": 'Beta',
+            "html": 'This is a new service.'
+        },
+        "language": {
+            "languages": languages
+        }
+    },
+    "footer": {
+        "rows": [
+            {
+                "itemsList": [
+                    {
+                        "text": 'Contact us',
+                        "url": '#0'
+                    },
+                    {
+                        "text": 'Cookies and privacy',
+                        "url": '#0'
+                    }
+                ]
+            }
+        ],
+        "OGLLink": {
+            "pre": 'All content is available under the',
+            "link": 'Open Government Licence v3.0',
+            "url": 'https://www.nationalarchives.gov.uk/doc/open-government-licence/version/3/',
+            "post": ', except where otherwise stated'
+        }
+    }
+}
+%}
+{# fmt:on #}
+{% block head %}
+    <link rel="stylesheet" href="{{ static('css/main.css') }}">
+{% endblock %}
+
+{% block preMain %}
+    {% if not IS_EXTERNAL_ENV %}
+        {{ wagtailuserbar() }}
+    {% endif %}
+{% endblock %}
+
+{% block scripts %}
+    <script src="{{ static('js/main.js') }}"></script>
+{% endblock %}

@@ -1,0 +1,25 @@
+{% if page and page.get_ancestors()|length > 1 %}
+    {% from "components/breadcrumbs/_macro.njk" import onsBreadcrumbs %}
+
+    {% set breadcrumbs=[] %}
+
+    {% for ancestor_page in page.get_ancestors() %}
+        {% if not ancestor_page.is_root() %}
+            {% if ancestor_page.depth <= 2 %}
+                {% do breadcrumbs.append({"url": "/", "text": _("Home")}) %}
+            {% else %}
+                {% do breadcrumbs.append({"url": pageurl(ancestor_page), "text": ancestor_page.title}) %}
+            {% endif %}
+        {% endif %}
+    {% endfor %}
+
+    {% do breadcrumbs.append({"text": page.title}) %}
+    {# fmt:off #}
+    {{
+        onsBreadcrumbs({
+            "ariaLabel": 'Breadcrumbs',
+            "itemsList": breadcrumbs
+        })
+    }}
+    {# fmt:on #}
+{% endif %}

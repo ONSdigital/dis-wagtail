@@ -1,0 +1,8 @@
+CACHES = {
+    'default': {
+        'BACKEND': 'django.core.cache.backends.dummy.DummyCache',
+    }
+}
+
+# Django Debug Toolbar
+SHOW_TOOLBAR = True
