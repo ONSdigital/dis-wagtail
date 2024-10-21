@@ -69,11 +69,34 @@ Ensure you have the following installed:
     make install
     ```
 
-3. Run the application
+3. Build the docker container
 
     ```bash
-    make run
+    make docker-build
     ```
+
+4. Run the docker container
+
+    ```bash
+    make docker-start
+    make docker-shell
+    $ djrun
+    ```
+
+### Using Docker
+
+```bash
+git clone https://github.com/ONSdigital/dis-wagtail
+cd dis-wagtail
+make docker-build
+make docker-start
+```
+
+This will start the containers in the background, but not Django. To do this, connect to the web container with `make docker-shell` and run `honcho start` to start both
+Django and the scheduler in the foreground, or just `djrun`.
+
+Upon first starting the container, the static files may not exist, or may be out of date.
+To resolve this, run `make load-design-system-templates`.
 
 ## Development
 
@@ -84,6 +107,32 @@ A Makefile is provided to simplify common development tasks. To view all availab
 
 ```bash
 make
+```
+
+### Front-end tooling
+
+Here are the common commands:
+
+```bash
+# Install front-end dependencies.
+npm install
+# Start the Webpack build in watch mode, without live-reload.
+npm run start
+# Start the Webpack server build on port 3000 only with live-reload.
+npm run start:reload
+# Do a one-off Webpack development build.
+npm run build
+# Do a one-off Webpack production build.
+npm run build:prod
+```
+
+### Adding Python packages
+
+Python packages can be installed using `poetry` in the web container:
+
+```bash
+make docker-shell
+poetry add wagtailmedia
 ```
 
 ### Run Tests with Coverage
@@ -116,6 +165,36 @@ To auto-format the Python code, and correct fixable linting issues, run:
 
 ```bash
 make format
+```
+
+## Front-end
+
+```bash
+# lint and format custom CSS/JS
+npm run lint
+# only CSS
+npm run lint:css
+# only JS
+npm run lint:js
+# check css, js, markdown and yaml formatting
+npm run lint:format
+# format
+npm run format
+```
+
+#### pre-commit
+
+Note that this project has configuration for [pre-commit](https://github.com/pre-commit/pre-commit). To set up locally:
+
+```bash
+# if you don't have it yet, globally
+pip install pre-commit
+
+# in the project directory, initialize pre-commit
+$ pre-commit install
+
+# Optional, run all checks once for this, then the checks will run only on the changed files
+$ pre-commit run --all-files
 ```
 
 #### MegaLinter (Lint/Format non-python files)
