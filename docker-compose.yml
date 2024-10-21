@@ -13,7 +13,7 @@ services:
       ENABLE_DJANGO_DEFENDER: 'false'
       MEDIA_DIR: /app/media/
       REDIS_URL: redis://redis
-      SECRET_KEY: local_dev_secret_key
+      SECRET_KEY: local_dev_secret_key # pragma: allowlist secret
       WAGTAILADMIN_BASE_URL: 'http://localhost:8000'
       STATIC_DIR: /app/static/
       STATIC_URL: /static/
