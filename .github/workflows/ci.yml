@@ -67,7 +67,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: static
-          path: ons/static_compiled/
+          path: cms/static_compiled/
 
   test-python:
     runs-on: ubuntu-latest
@@ -111,7 +111,7 @@ jobs:
       - uses: actions/download-artifact@v4
         with:
           name: static
-          path: ons_alpha/static_compiled/
+          path: cms/static_compiled/
 
       - name: Fetch Design System templates
         run: make load-design-system-templates
