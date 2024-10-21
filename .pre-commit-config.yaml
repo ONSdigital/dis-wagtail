@@ -37,7 +37,7 @@ repos:
 
   # Template linting
   - repo: https://github.com/rtts/djhtml
-    rev: 3.0.6
+    rev: 3.0.7
     hooks:
       - id: djhtml
 
