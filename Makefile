@@ -45,7 +45,7 @@ lint-html:  ## Run HTML Linters
 
 .PHONY: test
 test:  ## Run the tests and check coverage.
-	poetry run pytest -n auto --cov=cms --cov-report term-missing
+	poetry run pytest -n auto --ds=cms.settings.test --cov=cms --cov-report term-missing
 
 .PHONY: mypy
 mypy:  ## Run mypy.

@@ -180,10 +180,10 @@ copier_scripts/
 /cms/jinja2/assets/styles/print.css
 /cms/jinja2/components
 /cms/jinja2/layout
+/cms/static_compiled
 
 node_modules/
-
-/cms/static_compiled
+static/
 
 # mkdocs
 /site

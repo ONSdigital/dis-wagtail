@@ -291,7 +291,7 @@ STATICFILES_DIRS = [
 
 
 # This is where Django will put files collected from application directories
-# and custom direcotires set in "STATICFILES_DIRS" when
+# and custom directories set in "STATICFILES_DIRS" when
 # using "django-admin collectstatic" command.
 # https://docs.djangoproject.com/en/stable/ref/settings/#static-root
 STATIC_ROOT = env.get("STATIC_DIR", BASE_DIR / "static")
