@@ -1,4 +1,4 @@
 module.exports = {
-  // See https://github.com/torchbox/stylelint-config-torchbox for rules.
-  extends: 'stylelint-config-torchbox',
+  // See https://github.com/wagtail/stylelint-config-wagtail for rules.
+  extends: '@wagtail/stylelint-config-wagtail',
 };

@@ -2,6 +2,7 @@ node_modules
 coverage
 /cms/jinja2
 /cms/static_compiled
+/static
 venv
 .mypy_cache
 .venv

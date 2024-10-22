@@ -111,6 +111,10 @@ make
 
 ### Front-end tooling
 
+While the end goal is to have all front-end elements in the [Design System](https://service-manual.ons.gov.uk/design-system),
+the new design introduces a number of components that we need to build and contributed to the DS. In order to aid
+development and avoid being blocked by the DS, we will use modern front-end tooling for that.
+
 Here are the common commands:
 
 ```bash
