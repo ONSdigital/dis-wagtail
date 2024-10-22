@@ -1,11 +1,8 @@
 import logging
-from typing import TYPE_CHECKING
 
 import pytest
 from django.conf import settings
-
-if TYPE_CHECKING:
-    from django.test import Client
+from django.test import Client
 
 
 @pytest.fixture
@@ -29,8 +26,6 @@ def enable_console_logging():
 
 
 @pytest.fixture()
-def csrf_check_client() -> "Client":
+def csrf_check_client() -> Client:
     """A Django test client instance that enforces CSRF checks."""
-    from django.test import Client  # pylint: disable=import-outside-toplevel
-
     return Client(enforce_csrf_checks=True)

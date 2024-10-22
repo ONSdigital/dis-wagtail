@@ -137,7 +137,7 @@ django_settings_module = "cms.settings.test"
 [tool.pytest.ini_options]
 DJANGO_SETTINGS_MODULE = "cms.settings.test"
 filterwarnings = [
-    "ignore::django.utils.deprecation.RemovedInDjango60Warning",
+    "ignore::django.utils.deprecation.RemovedInNextVersionWarning",
     "ignore::DeprecationWarning:l18n.translation"
 ]
 

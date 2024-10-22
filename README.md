@@ -44,9 +44,9 @@ Ensure you have the following installed:
 3. **[Docker](https://docs.docker.com/engine/install/)**
 4. **Operation System**: Ubuntu/MacOS
 
-### Installation
+### Setup
 
-1. Clone the repository and install the required dependencies.
+1. Clone the repository
 
     ```bash
     git clone https://github.com/ONSdigital/dis-wagtail.git
@@ -68,7 +68,6 @@ Ensure you have the following installed:
     ```bash
     make install
     ```
-
 3. Build the docker container
 
     ```bash
@@ -79,7 +78,9 @@ Ensure you have the following installed:
 
     ```bash
     make docker-start
+    # ssh into the web container
     make docker-shell
+    # in the web container
     $ djrun
     ```
 

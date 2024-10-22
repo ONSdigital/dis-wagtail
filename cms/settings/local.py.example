@@ -1,8 +1,5 @@
-CACHES = {
-    'default': {
-        'BACKEND': 'django.core.cache.backends.dummy.DummyCache',
-    }
-}
+# uncomment to use memory cache rather than the Redis service (from docker compose)
+# CACHES["default"]["BACKEND"] = "django.core.cache.backends.locmem.LocMemCache"
 
 # Django Debug Toolbar
 SHOW_TOOLBAR = True

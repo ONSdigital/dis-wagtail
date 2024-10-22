@@ -67,9 +67,8 @@ megalint:  ## Run the mega-linter.
 		oxsecurity/megalinter:v7
 
 .PHONY: load-design-system-templates
-load-design-system-templates:  ## 🎨️   - Load the design system templates
-	./scripts/load_release.sh onsdigital/design-system $(DESIGN_SYSTEM_VERSION)
-	./scripts/finalize_design_system_setup.sh $(DESIGN_SYSTEM_VERSION)
+load-design-system-templates:  ## Load the design system templates
+	./scripts/load-design-system-templates.sh $(DESIGN_SYSTEM_VERSION)
 
 .PHONY: docker-build
 docker-build:  ## Build Docker container
