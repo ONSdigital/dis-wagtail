@@ -57,7 +57,7 @@ ignore-paths=.*/migrations
 # Files or directories matching the regular expression patterns are skipped.
 # The regex matches against base names, not paths. The default value ignores
 # Emacs file locks
-ignore-patterns=^\.#,fabfile.py
+ignore-patterns=^\.#
 
 # List of module names for which member attributes should not be checked
 # (useful for modules/projects where namespaces are manipulated during runtime
@@ -81,7 +81,7 @@ limit-inference-results=100
 
 # List of plugins (as comma separated values of python module names) to load,
 # usually to register additional checkers.
-load-plugins=
+load-plugins=pylint_django
 
 # Pickle collected data for later comparisons.
 persistent=yes
@@ -432,16 +432,14 @@ disable=raw-checker-failed,
         use-implicit-booleaness-not-comparison-to-string,
         use-implicit-booleaness-not-comparison-to-zero,
         duplicate-code,
-        missing-docstring,
-        subprocess-run-check,
-        invalid-name,
-        too-few-public-methods,
-        too-many-ancestors,
-        logging-fstring-interpolation,
-        no-member,
-        ungrouped-imports,
-        unsubscriptable-object,
-        protected-access
+        wrong-import-order,
+        missing-module-docstring,
+        too-many-ancestors
+
+# note:
+# - wrong-import-order: covered by ruff
+# - missing-module-docstring: because they should be self-explanatory
+# - too-many-ancestors: because of our and Wagtail's use of mixins
 
 # Enable the message, report, category or checker with the given id(s). You can
 # either give multiple identifier separated by comma (,) or put this option

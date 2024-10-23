@@ -68,6 +68,7 @@ Ensure you have the following installed:
     ```bash
     make install
     ```
+
 3. Build the docker container
 
     ```bash

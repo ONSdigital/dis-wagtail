@@ -5,7 +5,7 @@ default_language_version:
 repos:
   # Python linting and formatting
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: 'v0.6.9' # keep version in sync with pyproject.toml
+    rev: 'v0.7.0' # keep version in sync with pyproject.toml
     hooks:
       - id: ruff
         args: [--fix, --exit-non-zero-on-fix]
@@ -15,14 +15,14 @@ repos:
     hooks:
       - id: pylint
         name: pylint
-        entry: poetry run
+        entry: poetry run pylint
         language: system
         types: [python]
         args: [
-            'pylint',
             '--reports=n', # only display messages
             '--output-format=colorized',
             '--rcfile=.pylintrc',
+            '--django-settings-module=cms.settings.production',
             '-j 0', # detect number of processors available to use
           ]
 
