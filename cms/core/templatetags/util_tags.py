@@ -19,6 +19,7 @@ if TYPE_CHECKING:
 # Social text
 @register.filter(name="social_text")
 def social_text(page: "Page", site: "Site") -> str:
+    """Returns the given page social text, or the default sharing image as defined in the social media settings."""
     social_text_str: str = getattr(page, "social_text", "")
     return social_text_str or SocialMediaSettings.for_site(site).default_sharing_text
 
@@ -26,6 +27,7 @@ def social_text(page: "Page", site: "Site") -> str:
 # Social image
 @register.filter(name="social_image")
 def social_image(page: "Page", site: "Site") -> Optional["CustomImage"]:
+    """Returns the given page social image, or the default sharing image as defined in the social media settings."""
     the_social_image: CustomImage | None = getattr(page, "social_image", None)
     return the_social_image or SocialMediaSettings.for_site(site).default_sharing_image
 

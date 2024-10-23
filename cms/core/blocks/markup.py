@@ -5,7 +5,9 @@ from wagtail import blocks
 
 
 class HeadingBlock(blocks.CharBlock):
-    class Meta:
+    """Seection heading block."""
+
+    class Meta:  # pylint: disable=missing-class-docstring,too-few-public-methods
         icon = "title"
         form_classname = "title"
         template = "templates/components/streamfield/heading_block.html"
@@ -24,13 +26,16 @@ class HeadingBlock(blocks.CharBlock):
         return context
 
     def to_table_of_contents_items(self, value: Any) -> list[dict]:
+        """Convert the value to the TOC macro format."""
         return [{"url": "#" + slugify(value), "text": value}]
 
 
 class QuoteBlock(blocks.StructBlock):
+    """The quote block."""
+
     quote = blocks.CharBlock(form_classname="title")
     attribution = blocks.CharBlock(required=False)
 
-    class Meta:
+    class Meta:  # pylint: disable=missing-class-docstring,too-few-public-methods
         icon = "openquote"
         template = "templates/components/streamfield/quote_block.html"

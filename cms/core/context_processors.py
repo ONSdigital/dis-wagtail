@@ -9,6 +9,7 @@ if TYPE_CHECKING:
 
 
 def global_vars(request: "HttpRequest") -> dict[str, str | bool | None]:
+    """Set our global variables to use in templates."""
     tracking = Tracking.for_request(request)
     return {
         "GOOGLE_TAG_MANAGER_ID": getattr(tracking, "google_tag_manager_id", None),

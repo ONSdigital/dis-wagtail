@@ -11,7 +11,10 @@ from django.core.management.base import BaseCommand
 
 
 class Command(BaseCommand):
+    """APSchedule management command."""
+
     def handle(self, *args: Any, **options: Any) -> None:
+        """Defines the scheduler and its cleanup."""
         self.scheduler = BlockingScheduler(executors={"default": ThreadPoolExecutor()})  # pylint: disable=W0201
 
         self.setup_signals()
@@ -21,19 +24,23 @@ class Command(BaseCommand):
         self.scheduler.start()
 
     def setup_signals(self) -> None:
+        """Sets up the shutdown handlers for termination signals."""
         signal.signal(signal.SIGINT, self.shutdown)
         signal.signal(signal.SIGTERM, self.shutdown)
         atexit.register(self.shutdown)
 
     def shutdown(self, _signum: int | None = None, _frame: Any | None = None) -> None:
+        """Shutdown handler."""
         if self.scheduler.running:
             self.scheduler.shutdown(wait=False)
 
     def add_management_command(self, command_name: str, trigger: CronTrigger, **kwargs: Any) -> None:
+        """Adds the given management command to the list of scheduled jobs."""
         func = partial(call_command, command_name, **kwargs)
         self.scheduler.add_job(func, name=command_name, trigger=trigger)
 
     def configure_scheduler(self) -> None:
+        """Configures the scheduler and triggers."""
         # "second=0" run the task every minute, on the minute (ie when the seconds = 0)
         self.add_management_command("publish_bundles", CronTrigger(second=0))
         # Run every 5 minutes.

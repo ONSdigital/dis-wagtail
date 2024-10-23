@@ -10,7 +10,8 @@ from cms.images.models import CustomImage
 if TYPE_CHECKING:
     from wagtail.contrib.settings.models import BaseSiteSetting as _BaseSiteSetting
 
-    class BaseSiteSetting(_BaseSiteSetting, models.Model): ...
+    class BaseSiteSetting(_BaseSiteSetting, models.Model):
+        """Explicit class definition for type checking. Indicates we're inheriting from Django's model."""
 else:
     from wagtail.contrib.settings.models import BaseSiteSetting
 
@@ -24,6 +25,8 @@ __all__ = [
 
 @register_setting
 class SocialMediaSettings(BaseSiteSetting):
+    """Settings class for social media settings."""
+
     default_sharing_text = models.CharField(
         max_length=255,
         blank=True,
@@ -47,6 +50,8 @@ class SocialMediaSettings(BaseSiteSetting):
 
 @register_setting
 class SystemMessagesSettings(BaseSiteSetting):
+    """Settings class for global system messages."""
+
     class Meta:
         verbose_name = "system messages"
 
@@ -63,6 +68,8 @@ class SystemMessagesSettings(BaseSiteSetting):
 
 @register_setting(icon="view")
 class Tracking(BaseSiteSetting):
+    """Settings class for various trackers."""
+
     google_tag_manager_id = models.CharField(
         max_length=255,
         blank=True,

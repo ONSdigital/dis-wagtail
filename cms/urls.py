@@ -25,12 +25,12 @@ private_urlpatterns = [
 # `wagtail.admin` must always be installed,
 # so check `IS_EXTERNAL_ENV` directly.
 if not settings.IS_EXTERNAL_ENV:
-    from wagtail.admin import urls as wagtailadmin_urls
+    from wagtail.admin import urls as wagtailadmin_urls  # pylint: disable=ungrouped-imports
 
     private_urlpatterns.append(path("admin/", include(wagtailadmin_urls)))
 
 if apps.is_installed("django.contrib.admin"):
-    from django.contrib import admin
+    from django.contrib import admin  # pylint: disable=ungrouped-imports
 
     private_urlpatterns.append(path("django-admin/", admin.site.urls))
 

@@ -16,6 +16,8 @@ from cms.core.blocks import (
 
 
 class CoreStoryBlock(StreamBlock):
+    """The core StreamField block definition."""
+
     heading = HeadingBlock()
     rich_text = RichTextBlock()
     panel = PanelBlock()
@@ -26,5 +28,5 @@ class CoreStoryBlock(StreamBlock):
     equation = MathBlock(group="DataVis", icon="decimal")
     ons_embed = ONSEmbedBlock(group="DataVis", label="ONS General Embed")
 
-    class Meta:
+    class Meta:  # pylint: disable=missing-class-docstring,too-few-public-methods
         block_counts: ClassVar[dict[str, dict]] = {"related_links": {"max_num": 1}}

@@ -22,6 +22,8 @@ __all__ = [
 # Apply default cache headers on this page model's serve method.
 @method_decorator(get_default_cache_control_decorator(), name="serve")
 class BasePage(ListingFieldsMixin, SocialFieldsMixin, Page):  # type: ignore[django-manager-missing]
+    """Base page class with listing and social fields additions as well as cache decorators."""
+
     show_in_menus_default = True
 
     class Meta:

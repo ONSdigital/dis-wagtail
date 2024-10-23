@@ -8,6 +8,11 @@ if TYPE_CHECKING:
 
 
 class StreamField(WagtailStreamfield):
+    """Custom StreamField class that prevents generating a Django migration when elements
+    of the StreamField definition change. The generated migrations only hold the logical representation,
+    as the field itself is a JSONField in the database, so there are no database changes per se.
+    """
+
     def __init__(self, *args: Any, **kwargs: Any):
         """Overrides StreamField.__init__() to account for `block_types` no longer
         being received as an arg when migrating (because there is no longer a
@@ -44,7 +49,7 @@ class StreamField(WagtailStreamfield):
 
         # There is no way to be absolutely sure this is a migration,
         # but the combination of factors below is a pretty decent indicator
-        if not self.stream_block.child_blocks and value and not stream_value._raw_data:
+        if value and not self.stream_block.child_blocks and not stream_value._raw_data:  # pylint: disable=protected-access
             stream_data = None
             if isinstance(value, list):
                 stream_data = value

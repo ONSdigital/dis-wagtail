@@ -7,6 +7,7 @@ from wagtail.models import Site
 
 
 def purge_cache_on_all_sites(path: str) -> None:
+    """Purge the given path on all defined sites."""
     if settings.DEBUG:
         return
 

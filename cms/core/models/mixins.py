@@ -82,9 +82,12 @@ class SocialFieldsMixin(models.Model):
 
 
 class SubpageMixin:
+    """A helper that provides paginated subpages."""
+
     PAGE_SIZE = 24
 
     def get_paginator_page(self, request: "HttpRequest") -> "Page":
+        """Returns the requested page from the list of public and published child pages."""
         children = self.get_children().live().public().specific()  # type: ignore[attr-defined]
         paginator = Paginator(children, per_page=self.PAGE_SIZE)
         try:
@@ -93,6 +96,7 @@ class SubpageMixin:
             raise Http404 from e
 
     def get_context(self, request: "HttpRequest", *args: Any, **kwargs: Any) -> dict:
+        """Add paginage subpages to the template context."""
         context: dict = super().get_context(request, *args, **kwargs)  # type: ignore[misc]
         context["subpages"] = self.get_paginator_page(request)
         return context

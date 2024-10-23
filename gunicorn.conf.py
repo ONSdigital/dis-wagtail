@@ -1,3 +1,4 @@
+# pylint: disable=invalid-name
 import gunicorn
 
 # Tell gunicorn to run our app
@@ -18,3 +19,4 @@ timeout = 25
 
 # Load app pre-fork to save memory and worker startup time
 preload_app = True
+# pylint: enable=invalid-name

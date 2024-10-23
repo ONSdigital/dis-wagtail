@@ -30,25 +30,28 @@ MIGRATION_IGNORE_FILE_FIELD_ATTRS = ["upload_to", "storage"]
 MIGRATION_IGNORE_RELATED_FIELD_ATTRS = ["related_query_name"]
 
 for attr in MIGRATION_IGNORE_MODEL_ATTRS:
-    logger.debug(f"Model {attr} attr will be ignored.")
+    logger.debug("Model %s attr will be ignored.", attr)
 
 for attr in MIGRATION_IGNORE_FIELD_ATTRS:
-    logger.debug(f"Field {attr} attr will be ignored.")
+    logger.debug("Field %s attr will be ignored.", attr)
 
 for attr in MIGRATION_IGNORE_FILE_FIELD_ATTRS:
-    logger.debug(f"File field {attr} attr will be ignored.")
+    logger.debug("File field %s attr will be ignored.", attr)
 
 for attr in MIGRATION_IGNORE_RELATED_FIELD_ATTRS:
-    logger.debug(f"Related field {attr} attr will be ignored.")
+    logger.debug("Related field %s attr will be ignored.", attr)
 
 
 def patch_ignored_model_attrs(cls: type[AlterModelOptions]) -> None:
+    """Patche for AlterModelOptions to ignore the specified attributes."""
     for attribute in MIGRATION_IGNORE_MODEL_ATTRS:
         if attribute in cls.ALTER_OPTION_KEYS:
             cls.ALTER_OPTION_KEYS.remove(attribute)
 
 
 def patch_field_deconstruct(old_func: Callable) -> Callable:
+    """Patch for Field.deconstruct to ignore the specified attributes."""
+
     @wraps(old_func)
     def deconstruct_with_ignored_attrs(self: Field) -> tuple[str, str, Any, Any]:
         name, path, args, kwargs = old_func(self)
@@ -60,6 +63,8 @@ def patch_field_deconstruct(old_func: Callable) -> Callable:
 
 
 def patch_file_field_deconstruct(old_func: Callable) -> Callable:
+    """Patch for FileField.deconstruct to ignore the specified attributes."""
+
     @wraps(old_func)
     def deconstruct_with_ignored_attrs(self: FileField) -> tuple[str, str, Any, Any]:
         name, path, args, kwargs = old_func(self)
@@ -71,6 +76,8 @@ def patch_file_field_deconstruct(old_func: Callable) -> Callable:
 
 
 def patch_related_field_deconstruct(old_func: Callable) -> Callable:
+    """Patch for RelatedField.deconstruct to ignore the specified attributes."""
+
     @wraps(old_func)
     def deconstruct_with_ignored_attrs(self: RelatedField) -> tuple[str, str, Any, Any]:
         name, path, args, kwargs = old_func(self)
