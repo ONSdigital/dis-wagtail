@@ -82,7 +82,12 @@ Ensure you have the following installed:
     # ssh into the web container
     make docker-shell
     # in the web container
-    $ djrun
+    # run the migrations. you can use the 'dj' alias for `django-admin`
+    $ django-admin migrate
+    # create a superuser
+    $ django-admin createsuperuser
+    # run the server. alias: djrun
+    $ django-admin runserver 0.0.0.0:8000
     ```
 
 ### Using Docker
@@ -96,6 +101,8 @@ make docker-start
 
 This will start the containers in the background, but not Django. To do this, connect to the web container with `make docker-shell` and run `honcho start` to start both
 Django and the scheduler in the foreground, or just `djrun`.
+
+Note: don't forget to run `django-admin migrate` and `django-admin createsuperuser` if you've just set the project up.
 
 Upon first starting the container, the static files may not exist, or may be out of date.
 To resolve this, run `make load-design-system-templates`.
