@@ -169,3 +169,21 @@ copier_scripts/
 
 # DS_Store files
 .DS_Store
+
+#
+# Project-specific
+#
+
+# DS
+/cms/settings/local.py
+
+/cms/jinja2/assets/styles/print.css
+/cms/jinja2/components
+/cms/jinja2/layout
+/cms/static_compiled
+
+node_modules/
+static/
+
+# mkdocs
+/site

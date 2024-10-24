@@ -16,10 +16,10 @@ on: # yamllint disable-line rule:truthy
 
   schedule:
     # Run on a daily interval at 12pm UTC
-    - cron: "0 12 * * *"
+    - cron: '0 12 * * *'
 
 concurrency:
-  group: "${{ github.head_ref || github.ref }}-${{ github.workflow }}"
+  group: '${{ github.head_ref || github.ref }}-${{ github.workflow }}'
   cancel-in-progress: true
 
 jobs:

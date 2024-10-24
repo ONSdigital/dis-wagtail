@@ -1,3 +1,5 @@
+DESIGN_SYSTEM_VERSION=`cat .design-system-version`
+
 .DEFAULT_GOAL := all
 
 .PHONY: all
@@ -15,24 +17,39 @@ clean: ## Clean the temporary files.
 	rm -rf .ruff_cache
 	rm -rf megalinter-reports
 
-.PHONY: format
+.PHONY: format-py format-html
 format:  ## Format the code.
+	poetry run ruff check . --fix
+
+.PHONY: format-py
+format-py:  ## Format the Python code
 	poetry run black .
 	poetry run ruff check . --fix
 
+.PHONY: format-html
+format-html:  ## Format the HTML code
+	find cms/ -name '*.html' | xargs poetry run djhtml
+
 .PHONY: lint
-lint:  ## Run all linters (black/ruff/pylint/mypy).
-	poetry run black --check .
+lint: lint-py lint-html  ## Run all linters (python, html)
+
+.PHONY: lint-py
+lint-py:  ## Run all Python linters (ruff/pylint/mypy).
 	poetry run ruff check .
+	find . -type f -name "*.py" | xargs poetry run pylint --reports=n --output-format=colorized --rcfile=.pylintrc --django-settings-module=cms.settings.production -j 0
 	make mypy
+
+.PHONY: lint-html
+lint-html:  ## Run HTML Linters
+	find cms/ -name '*.html' | xargs poetry run djhtml --check
 
 .PHONY: test
 test:  ## Run the tests and check coverage.
-	poetry run pytest -n auto --cov=dis_wagtail --cov-report term-missing --cov-fail-under=100
+	poetry run pytest -n auto --ds=cms.settings.test --cov=cms --cov-report term-missing
 
 .PHONY: mypy
 mypy:  ## Run mypy.
-	poetry run mypy dis_wagtail
+	poetry run mypy cms
 
 .PHONY: install
 install:  ## Install the dependencies excluding dev.
@@ -48,3 +65,28 @@ megalint:  ## Run the mega-linter.
 		-v /var/run/docker.sock:/var/run/docker.sock:rw \
 		-v $(shell pwd):/tmp/lint:rw \
 		oxsecurity/megalinter:v7
+
+.PHONY: load-design-system-templates
+load-design-system-templates:  ## Load the design system templates
+	./scripts/load-design-system-templates.sh $(DESIGN_SYSTEM_VERSION)
+
+.PHONY: docker-build
+docker-build:  ## Build Docker container
+	docker compose pull
+	docker compose build
+
+.PHONY: docker-start
+docker-start:  ## Start Docker containers
+	docker compose up --detach
+
+.PHONY: docker-stop
+docker-stop:  ## Stop Docker containers
+	docker compose stop
+
+.PHONY: docker-shell
+docker-shell:  ## SSH into Docker container
+	docker compose exec web bash
+
+.PHONY: docker-destroy
+docker-destroy:  ## Tear down the Docker containers
+	docker compose down --volumes

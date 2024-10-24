@@ -1,0 +1,14 @@
+build:
+  docker:
+    web:
+      dockerfile: Dockerfile
+      target: release
+release:
+  image: web
+  command:
+    - django-admin createcachetable && django-admin migrate --noinput
+run:
+  scheduler:
+    image: web
+    command:
+      - django-admin scheduler
