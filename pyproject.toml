@@ -44,6 +44,7 @@ pytest-django ="^4.9.0"
 wagtail-factories = "^4.1.0"
 
 dslr = "^0.4.0"
+django-debug-toolbar = "^4.4.6"
 pudb = "^2024.1"
 tblib = "^3.0.0"
 Werkzeug = "~3.0.3"

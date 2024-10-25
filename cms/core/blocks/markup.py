@@ -5,7 +5,7 @@ from wagtail import blocks
 
 
 class HeadingBlock(blocks.CharBlock):
-    """Seection heading block."""
+    """Section heading block."""
 
     class Meta:  # pylint: disable=missing-class-docstring,too-few-public-methods
         icon = "title"

@@ -1,6 +1,6 @@
 # Migration-friendly StreamFields
 
-This project uses a custom field class (`ons.utils.fields.StreamField`) instead of the usual `wagtail.fields.StreamField` field for streamfield content. This customised field helps with a few things that we often struggle with on busy projects, especially in the early stages:
+This project uses a custom field class (`cms.core.fields.StreamField`) instead of the usual `wagtail.fields.StreamField` field for streamfield content. This customised field helps with a few things that we often struggle with on busy projects, especially in the early stages:
 
 1. It keeps block definitions out of migration files, meaning the migrations themselves are much smaller, take less time to lint/format, and keeps the Django's `makemigrations` command nice and snappy.
 2. Making changes to block definition no longer requires an accompanying database migration, leading to fewer migrations overall.

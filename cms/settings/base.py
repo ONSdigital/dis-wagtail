@@ -765,5 +765,11 @@ WAGTAIL_ENABLE_WHATS_NEW_BANNER = False
 # from third-party applications like PayPal or Zoom as needed
 SECURE_CROSS_ORIGIN_OPENER_POLICY = "same-origin"
 
+#
+# ONS CMS specific-settings
+#
+
 # Date formats
 SHORT_DATETIME_FORMAT = "d/m/Y P"
+
+ONS_EMBED_PREFIX = env.get("ONS_EMBED_PREFIX", "https://www.ons.gov.uk/visualisations/")

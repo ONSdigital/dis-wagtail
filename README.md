@@ -9,7 +9,7 @@
 [![poetry-managed](https://img.shields.io/badge/poetry-managed-blue)](https://python-poetry.org/)
 [![License - MIT](https://img.shields.io/badge/licence%20-MIT-1ac403.svg)](https://github.com/ONSdigital/dis-wagtail/blob/main/LICENSE)
 
-The Django Wagtail CMS for managing and publishing content for the Office for National Statistics (ONS)
+The Wagtail CMS for managing and publishing content for the Office for National Statistics (ONS)
 
 ---
 
@@ -21,17 +21,23 @@ The Django Wagtail CMS for managing and publishing content for the Office for Na
 
 -   [Getting Started](#getting-started)
     -   [Pre-requisites](#pre-requisites)
-    -   [Installation](#installation)
+    -   [Setup](#setup)
+        -   [Using Docker](#using-docker)
 -   [Development](#development)
+    -   [Front-end tooling](#front-end-tooling)
+    -   [Adding Python packages](#adding-python-packages)
     -   [Run Tests with Coverage](#run-tests-with-coverage)
     -   [Linting and Formatting](#linting-and-formatting)
+-   [Front-end](#front-end)
 -   [Contributing](#contributing)
 -   [License](#license)
 <!-- markdown-link-check-enable -->
 
+For further developer documentation see [docs](docs/index.md)
+
 ## Getting Started
 
-To get a local copy up and running, follow these simple steps.
+To get a local copy up and running, follow the steps below.
 
 ### Pre-requisites
 
@@ -43,6 +49,7 @@ Ensure you have the following installed:
    environments.
 3. **[Docker](https://docs.docker.com/engine/install/)**
 4. **Operation System**: Ubuntu/MacOS
+5. **[Node](https://nodejs.org/en)** and **[`nvm` (Node Version Manager)](https://github.com/nvm-sh/nvm)** for front-end tooling.
 
 ### Setup
 
@@ -69,40 +76,33 @@ Ensure you have the following installed:
     make install
     ```
 
-3. Build the docker container
-
-    ```bash
-    make docker-build
-    ```
-
-4. Run the docker container
-
-    ```bash
-    make docker-start
-    # ssh into the web container
-    make docker-shell
-    # in the web container
-    # run the migrations. you can use the 'dj' alias for `django-admin`
-    $ django-admin migrate
-    # create a superuser
-    $ django-admin createsuperuser
-    # run the server. alias: djrun
-    $ django-admin runserver 0.0.0.0:8000
-    ```
-
-### Using Docker
+#### Using Docker
 
 ```bash
-git clone https://github.com/ONSdigital/dis-wagtail
-cd dis-wagtail
+# build the container
 make docker-build
+# start the container
 make docker-start
 ```
 
-This will start the containers in the background, but not Django. To do this, connect to the web container with `make docker-shell` and run `honcho start` to start both
-Django and the scheduler in the foreground, or just `djrun`.
+This will start the containers in the background, but not Django. To do this, connect to the web container with
+`make docker-shell` and run `honcho start` to start both Django and the scheduler in the foreground, or just `djrun`:
 
-Note: don't forget to run `django-admin migrate` and `django-admin createsuperuser` if you've just set the project up.
+```bash
+# ssh into the web container
+make docker-shell
+# run the server. alias: djrun
+$ django-admin runserver 0.0.0.0:8000
+```
+
+Note: don't forget to run `django-admin migrate` and `django-admin createsuperuser` if you've just set the project up:
+
+```bash
+# In the web container, run the migrations. you can use the 'dj' alias for `django-admin`
+$ django-admin migrate
+# create a superuser
+$ django-admin createsuperuser
+```
 
 Upon first starting the container, the static files may not exist, or may be out of date.
 To resolve this, run `make load-design-system-templates`.
@@ -208,6 +208,13 @@ $ pre-commit install
 
 # Optional, run all checks once for this, then the checks will run only on the changed files
 $ pre-commit run --all-files
+```
+
+The `detect-secrets` pre-commit hook requires a baseline secrets file to be included. If you need to, \
+you can update this file, e.g. when adding dummy secrets for unit tests:
+
+```bash
+$ detect-secrets scan > .secrets.baseline
 ```
 
 #### MegaLinter (Lint/Format non-python files)

@@ -72,21 +72,18 @@ class DocumentsBlock(blocks.StreamBlock):
         template = "templates/components/streamfield/documents_block.html"
 
 
-ONS_EMBED_PREFIX = "https://www.ons.gov.uk/visualisations/"
-
-
 class ONSEmbedBlock(blocks.StructBlock):
     """An embed block for only pages starting with ONS_EMBED_PREFIX."""
 
-    url = blocks.URLBlock(help_text=f"Must start with <code>{ ONS_EMBED_PREFIX }</code> to your URL.")
+    url = blocks.URLBlock(help_text=f"Must start with <code>{ settings.ONS_EMBED_PREFIX }</code> to your URL.")
     title = blocks.CharBlock(default="Interactive chart")
 
     def clean(self, value: "StructValue") -> "StructValue":
         """Checks that the given URL matches the ONS_EMBED_PREFIX."""
         errors = {}
 
-        if not value["url"].startswith(ONS_EMBED_PREFIX):
-            errors["url"] = ValidationError(f"The URL must start with {ONS_EMBED_PREFIX}")
+        if not value["url"].startswith(settings.ONS_EMBED_PREFIX):
+            errors["url"] = ValidationError(f"The URL must start with {settings.ONS_EMBED_PREFIX}")
 
         if errors:
             raise StructBlockValidationError(errors)
