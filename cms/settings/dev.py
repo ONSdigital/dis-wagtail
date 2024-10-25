@@ -51,9 +51,9 @@ DEBUG_TOOLBAR_CONFIG = {
 
 # Import settings from local.py file if it exists. Please use it to keep
 # settings that are not meant to be checked into Git and never check it in.
-# pylint: disable=unused-wildcard-import
+# pylint: disable=unused-wildcard-import,useless-suppression
 try:
     from .local import *  # noqa: F403  # pylint: disable=wildcard-import  # type: ignore[assignment]
 except ImportError:
     pass
-# pylint: enable=unused-wildcard-import
+# pylint: enable=unused-wildcard-import,useless-suppression
