@@ -17,14 +17,14 @@ clean: ## Clean the temporary files.
 	rm -rf .ruff_cache
 	rm -rf megalinter-reports
 
-.PHONY: format-py format-html
-format:  ## Format the code.
+.PHONY: format
+format: format-py format-html format-frontend ## Format the code.
 	poetry run ruff check . --fix
 
 .PHONY: format-py
 format-py:  ## Format the Python code
-	poetry run black .
 	poetry run ruff check . --fix
+	poetry run ruff format .
 
 .PHONY: format-html
 format-html:  ## Format the HTML code

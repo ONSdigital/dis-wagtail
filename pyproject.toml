@@ -51,6 +51,7 @@ Werkzeug = "~3.0.3"
 
 setuptools = "^70.2.0"
 honcho = "^1.1.0"
+detect-secrets = "^1.5.0"
 
 [tool.ruff]
 target-version = "py312"

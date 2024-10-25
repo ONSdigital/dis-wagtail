@@ -28,7 +28,6 @@ The Wagtail CMS for managing and publishing content for the Office for National 
     -   [Adding Python packages](#adding-python-packages)
     -   [Run Tests with Coverage](#run-tests-with-coverage)
     -   [Linting and Formatting](#linting-and-formatting)
--   [Front-end](#front-end)
 -   [Contributing](#contributing)
 -   [License](#license)
 <!-- markdown-link-check-enable -->
@@ -47,9 +46,10 @@ Ensure you have the following installed:
    managing Python versions.
 2. **[Poetry](https://python-poetry.org/)**: This is used to manage package dependencies and virtual
    environments.
-3. **[Docker](https://docs.docker.com/engine/install/)**
-4. **Operation System**: Ubuntu/MacOS
+3. **[Docker](https://docs.docker.com/engine/install/)** and **[Docker Compose](https://docs.docker.com/compose/)**.
+4. **[PostgreSQL](https://www.postgresql.org/)** for the database. Provided as container via `docker-compose.yml` when using the Docker setup.
 5. **[Node](https://nodejs.org/en)** and **[`nvm` (Node Version Manager)](https://github.com/nvm-sh/nvm)** for front-end tooling.
+6. **Operation System**: Ubuntu/MacOS
 
 ### Setup
 
@@ -78,34 +78,47 @@ Ensure you have the following installed:
 
 #### Using Docker
 
-```bash
-# build the container
-make docker-build
-# start the container
-make docker-start
-```
+Follow these steps to set up and run the project using Docker.
 
-This will start the containers in the background, but not Django. To do this, connect to the web container with
-`make docker-shell` and run `honcho start` to start both Django and the scheduler in the foreground, or just `djrun`:
+1. **Build and Start the Container**
 
-```bash
-# ssh into the web container
-make docker-shell
-# run the server. alias: djrun
-$ django-admin runserver 0.0.0.0:8000
-```
+    ```bash
+    # build the container
+    make docker-build
+    # start the container
+    make docker-start
+    ```
 
-Note: don't forget to run `django-admin migrate` and `django-admin createsuperuser` if you've just set the project up:
+2. **Migrations and Superuser Creation**
 
-```bash
-# In the web container, run the migrations. you can use the 'dj' alias for `django-admin`
-$ django-admin migrate
-# create a superuser
-$ django-admin createsuperuser
-```
+    If this is your first time setting up the project, you’ll need to run migrations to set up the database schema and create an administrative user.
+    Note: `dj` is an alias for `django-admin`
 
-Upon first starting the container, the static files may not exist, or may be out of date.
-To resolve this, run `make load-design-system-templates`.
+    ```bash
+    # ssh into the web container
+    make docker-shell
+
+    # Run database migrations
+    dj migrate
+
+    # Create a superuser for accessing the admin interface
+    dj createsuperuser
+    ```
+
+3. **Start Django Inside the Container**
+
+    Once the containers are running, you need to manually start Django from within the web container. This allows for running both the Django server and any additional background services (e.g., schedulers).
+
+    ```bash
+    # Start both Django and the scheduler using Honcho
+    honcho start
+
+    # To run just the web server. alias: djrun
+    # This is not needed if you used `honcho start`
+    dj runserver 0.0.0.0:8000
+    ```
+
+You can then access the admin at `http://0.0.0.0:8000/admin/` or `http://localhost:8000/admin/`.
 
 ## Development
 
@@ -180,7 +193,7 @@ To auto-format the Python code, and correct fixable linting issues, run:
 make format
 ```
 
-## Front-end
+#### Front-end
 
 ```bash
 # lint and format custom CSS/JS
@@ -204,17 +217,17 @@ Note that this project has configuration for [pre-commit](https://github.com/pre
 pip install pre-commit
 
 # in the project directory, initialize pre-commit
-$ pre-commit install
+pre-commit install
 
 # Optional, run all checks once for this, then the checks will run only on the changed files
-$ pre-commit run --all-files
+pre-commit run --all-files
 ```
 
 The `detect-secrets` pre-commit hook requires a baseline secrets file to be included. If you need to, \
 you can update this file, e.g. when adding dummy secrets for unit tests:
 
 ```bash
-$ detect-secrets scan > .secrets.baseline
+poetry run detect-secrets scan > .secrets.baseline
 ```
 
 #### MegaLinter (Lint/Format non-python files)
@@ -235,6 +248,24 @@ To start the linter and automatically rectify fixable issues, run:
 
 ```bash
 make megalint
+```
+
+#### Django Migrations
+
+Wagtail is built on [Django](https://djangoproject.com/) and changes to its models may require generating and
+running schema migrations. For full details see the [Django documentation on migrations](https://docs.djangoproject.com/en/5.1/topics/migrations/)
+
+Below are the commands you will most commonly use:
+
+```bash
+# Check if you need to generate any new migrations after changes to the model
+django-admin makemigrations --check
+
+# Generate migrations
+django-admin makemigrations
+
+# Apply migrations. Needed if new migrations have been generated (either by you, or via upstream code)
+django-admin migrate
 ```
 
 ## Contributing
