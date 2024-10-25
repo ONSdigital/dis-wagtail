@@ -79,7 +79,7 @@ load-design-system-templates:  ## Load the design system templates
 	./scripts/load-design-system-templates.sh $(DESIGN_SYSTEM_VERSION)
 
 .PHONY: docker-build
-docker-build:  ## Build Docker container
+docker-build: load-design-system-templates  ## Build Docker container
 	docker compose pull
 	docker compose build
 

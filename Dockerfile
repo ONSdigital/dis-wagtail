@@ -66,7 +66,7 @@ RUN <<EOF
 EOF
 
 # Install Poetry in its own virtual environment
-ARG POETRY_VERSION=1.8.3
+ARG POETRY_VERSION=1.8.4
 ARG POETRY_HOME=/opt/poetry
 RUN --mount=type=cache,target=/root/.cache/pip <<EOF
     python -m venv --upgrade-deps $POETRY_HOME
@@ -157,9 +157,14 @@ ENV \
 
 # Copy in built static files and the application code. Run collectstatic so
 # whitenoise can serve static files for us.
-COPY . .
 ARG UID
 ARG GID
+
+COPY --chown=$UID:$GID . .
+
+# Get the Design System templates
+RUN make load-design-system-templates
+
 COPY --chown=$UID:$GID --from=frontend-build --link /build/cms/static_compiled ./cms/static_compiled
 RUN <<EOF
     django-admin collectstatic --noinput --clear
