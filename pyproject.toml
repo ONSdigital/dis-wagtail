@@ -47,7 +47,7 @@ dslr = "^0.4.0"
 django-debug-toolbar = "^4.4.6"
 pudb = "^2024.1"
 tblib = "^3.0.0"
-Werkzeug = "~3.0.3"
+Werkzeug = "~3.0.6"
 
 setuptools = "^70.2.0"
 honcho = "^1.1.0"
