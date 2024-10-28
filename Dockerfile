@@ -32,12 +32,16 @@
 
 FROM python:3.12-slim AS base
 
+ARG DOCKER_BUILDKIT
+
 WORKDIR /app
 
 # Install common OS-level dependencies
-RUN --mount=type=cache,target=/var/lib/apt/lists,sharing=locked \
-    --mount=type=cache,target=/var/cache/apt,sharing=locked \
-    <<EOF
+# TODO: when moving to ONS infrastructure, replace RUN with
+# RUN --mount=type=cache,target=/var/lib/apt/lists,sharing=locked \
+#     --mount=type=cache,target=/var/cache/apt,sharing=locked \
+#     <<<EOF
+RUN <<EOF
     apt --quiet --yes update
     apt --quiet --yes install --no-install-recommends \
         build-essential \
@@ -49,6 +53,7 @@ RUN --mount=type=cache,target=/var/lib/apt/lists,sharing=locked \
         gettext \
     && apt --quiet --yes autoremove
 EOF
+
 
 # Create an unprivileged user and virtual environment for the app
 ARG UID=1000
@@ -68,7 +73,9 @@ EOF
 # Install Poetry in its own virtual environment
 ARG POETRY_VERSION=1.8.4
 ARG POETRY_HOME=/opt/poetry
-RUN --mount=type=cache,target=/root/.cache/pip <<EOF
+# TODO: when moving to ONS infrastructure, replace RUN with
+# RUN --mount=type=cache,target=/root/.cache/pip <<EOF
+RUN <<EOF
     python -m venv --upgrade-deps $POETRY_HOME
     $POETRY_HOME/bin/pip install poetry==$POETRY_VERSION
 EOF
@@ -94,8 +101,10 @@ USER $USERNAME
 # Install the app's production dependencies. That prevents us
 # needing to reinstall all the dependencies every time the app code changes.
 COPY pyproject.toml poetry.lock ./
-RUN --mount=type=cache,target=/home/$USERNAME/.cache/,uid=$UID,gid=$GID \
-    <<EOF
+# TODO: when moving to ONS infrastructure, replace RUN with
+# RUN --mount=type=cache,target=/home/$USERNAME/.cache/,uid=$UID,gid=$GID \
+#     <<EOF
+RUN <<EOF
     # Install the production dependencies
     poetry install --no-root --without dev
 EOF
@@ -120,8 +129,10 @@ ENV CI=true
 
 # Install front-end dependencies
 COPY package.json package-lock.json ./
-RUN --mount=type=cache,target=/root/.npm \
-    npm ci --omit=optional --no-audit --progress=false
+# TODO: when moving to ONS infrastructure, replace RUN with
+# RUN --mount=type=cache,target=/root/.npm \
+#     npm ci --omit=optional --no-audit --progress=false
+RUN npm ci --omit=optional --no-audit --progress=false
 
 
 FROM frontend-deps AS frontend-build
@@ -212,9 +223,11 @@ FROM base AS dev
 # library (Debian's bundled version is normally too old)
 USER root
 ARG POSTGRES_VERSION=16
-RUN --mount=type=cache,target=/var/lib/apt/lists,sharing=locked \
-    --mount=type=cache,target=/var/cache/apt,sharing=locked \
-    <<EOF
+# TODO: when moving to ONS infrastructure, replace RUN with
+# RUN --mount=type=cache,target=/var/lib/apt/lists,sharing=locked \
+#     --mount=type=cache,target=/var/cache/apt,sharing=locked \
+#     <<EOF
+RUN <<EOF
     apt --quiet --yes update
     apt --quiet --yes install \
         git \
@@ -260,8 +273,10 @@ ARG GID
 COPY --chown=$UID:$GID --from=frontend-deps --link /build/node_modules ./node_modules
 
 # Install the dev dependencies (they're omitted in the base stage)
-RUN --mount=type=cache,target=/home/$USERNAME/.cache/,uid=$UID,gid=$GID \
-    poetry install
+# TODO: when moving to ONS infrastructure, replace RUN with
+# RUN --mount=type=cache,target=/home/$USERNAME/.cache/,uid=$UID,gid=$GID \
+ #    poetry install
+RUN poetry install
 
 # Just do nothing forever - exec commands elsewhere
 CMD ["tail", "-f", "/dev/null"]
