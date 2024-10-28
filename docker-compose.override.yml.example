@@ -1,0 +1,8 @@
+# Copy this file to docker-compose.override.yml and modify it to your needs
+
+services:
+  web:
+    # Remove forward for port 3000 so Webpack's dev server can be run locally
+    ports: !override
+      - 8000:8000 # Django development server
+      - 8001:8001 # mkdocs server

@@ -1,0 +1,15 @@
+{% extends "templates/base_page.html" %}
+
+{% from "components/panel/_macro.njk" import onsPanel %}
+
+{% block main %}
+    {% call onsPanel({"variant": 'announcement'}) %}
+        <h2 class="ons-u-mb-no">Welcome to the ONS Wagtail instance</h2>
+
+        <div class="ons-u-fs-r">
+            {% if not IS_EXTERNAL_ENV %}
+                <p>To access the administrative interface, please go to <a href="{{ url('wagtailadmin_home') }}"><code>/admin</code></a></p>
+            {% endif %}
+        </div>
+    {% endcall %}
+{% endblock %}

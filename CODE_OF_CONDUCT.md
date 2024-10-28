@@ -13,9 +13,10 @@ Read the [Civil Service Code](https://www.gov.uk/government/publications/civil-s
 
 > Note:
 >
-> - where the code of conduct says "project" we mean ONS, `ONSdigital` and all repositories hosted within it.
-> - where the code of conduct says "maintainer" we mean `ONSdigital` organisation owners
-> - where the code of conduct says "leadership" we mean both `ONSdigital` organisation owners, line managers, and other
+> -   where the code of conduct says "project" we mean ONS, `ONSdigital` and all repositories hosted within it.
+> -   where the code of conduct says "maintainer" we mean `ONSdigital` organisation owners
+> -   where the code of conduct says "leadership" we mean both `ONSdigital` organisation owners, line managers, and other
+
     leadership within ONS
 
 ## Our Pledge
@@ -35,24 +36,24 @@ diverse, inclusive, and healthy community.
 Examples of behavior that contributes to a positive environment for our
 community include:
 
-- Demonstrating empathy and kindness toward other people
-- Being respectful of differing opinions, viewpoints, and experiences
-- Giving and gracefully accepting constructive feedback
-- Accepting responsibility and apologising to those affected by our mistakes,
-  and learning from the experience
-- Focusing on what is best not just for us as individuals, but for the overall
-  community
+-   Demonstrating empathy and kindness toward other people
+-   Being respectful of differing opinions, viewpoints, and experiences
+-   Giving and gracefully accepting constructive feedback
+-   Accepting responsibility and apologising to those affected by our mistakes,
+    and learning from the experience
+-   Focusing on what is best not just for us as individuals, but for the overall
+    community
 
 Examples of unacceptable behavior include:
 
-- The use of sexualised language or imagery, and sexual attention or advances of
-  any kind
-- Trolling, insulting or derogatory comments, and personal or political attacks
-- Public or private harassment
-- Publishing others' private information, such as a physical or email address,
-  without their explicit permission
-- Other conduct which could reasonably be considered inappropriate in a
-  professional setting
+-   The use of sexualised language or imagery, and sexual attention or advances of
+    any kind
+-   Trolling, insulting or derogatory comments, and personal or political attacks
+-   Public or private harassment
+-   Publishing others' private information, such as a physical or email address,
+    without their explicit permission
+-   Other conduct which could reasonably be considered inappropriate in a
+    professional setting
 
 ## Enforcement Responsibilities
 
@@ -143,11 +144,7 @@ For answers to common questions about this code of conduct, see the FAQ at
 [https://www.contributor-covenant.org/translations][translations].
 
 [homepage]: https://www.contributor-covenant.org
-
 [v2.1]: https://www.contributor-covenant.org/version/2/1/code_of_conduct.html
-
 [Mozilla CoC]: https://github.com/mozilla/diversity
-
 [FAQ]: https://www.contributor-covenant.org/faq
-
 [translations]: https://www.contributor-covenant.org/translations

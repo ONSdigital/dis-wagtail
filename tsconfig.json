@@ -1,0 +1,26 @@
+{
+  "compilerOptions": {
+    // We don't set outDir here because webpack handles actually emitting the
+    // files. This means we need to set noEmit to true here so tooling doesn't
+    // whine about .js files overwriting themselves and override that back to
+    // false in the ts-loader config for webpack.
+    "noEmit": true,
+    // Webpack will convert ES modules to the required format.
+    "module": "esnext",
+    "esModuleInterop": true,
+    // Setting a very low target for IE11 compatibility.
+    "target": "es5",
+    // Make it possible to gradually adopt TypeScript, or not use it at all.
+    "allowJs": true,
+    // Turn on stricter type checking.
+    "strict": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "isolatedModules": true,
+    "sourceMap": true,
+    "jsx": "react",
+    "moduleResolution": "node"
+  },
+  "include": ["cms/static_src"],
+  "exclude": ["node_modules", "cms/static_compiled"]
+}

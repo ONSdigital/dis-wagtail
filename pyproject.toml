@@ -1,29 +1,60 @@
 [tool.poetry]
-name = "dis-wagtail"
+name = "cms"
 version = "0.1.0"
-description = "The Django Wagtail CMS for managing and publishing content for the Office for National Statistics (ONS)"
+description = "The Wagtail CMS for managing and publishing content for the Office for National Statistics (ONS)"
 authors = ["ONSdigital"]
 license = "MIT"
 readme = "README.md"
+package-mode = false
 
 [tool.poetry.dependencies]
-python = "^3.10"
+python = "^3.12"
+django = "~5.1.2"
+wagtail = "~6.2.2"
+dj-database-url = "~2.2.0"
+django-basic-auth-ip-whitelist = "~0.6"
+django-csp = "~3.8"
+django-defender = "~0.9.8"
+django-extensions = "~3.2"
+django-jinja = "^2.11.0"
+django-redis = "~5.4"
+django-storages = { version = "~1.14", extras = ["s3"] }
+gunicorn = "~22.0"
+psycopg = "~3.2.3"
+sentry-sdk = "~2.17"
+wagtail-font-awesome-svg = "^1.0.1"
+apscheduler = "^3.10.4"
+wagtail-storages = "~1.0.0"
+wagtailmath = "~1.3.0"
+whitenoise = "~6.7"
 
 [tool.poetry.group.dev.dependencies]
 # :TODO: Remove pylint when ruff supports all pylint rules
-# :TODO: Remove black when ruff supports all black rules
-pylint = "^3.1.0"
-black = "^24.4.1"
-pytest = "^8.1.1"
-pytest-xdist = "^3.5.0"
-ruff = "^0.4.2"
-pytest-cov = "^5.0.0"
-mypy = "^1.10.0"
+djhtml = "3.0.7"
+mypy = "^1.11.0"  # keep version in sync with .pre-commit-config.yaml
+django-stubs = { version="^5.1.0", extras=["compatible-mypy"]}
+pylint = "^3.3.1"
+pylint-django = "^2.0.0"
+ruff = "^0.7.0"  # keep version in sync with .pre-commit-config.yaml
 
-[tool.black]
-line-length = 120
+pytest = "^8.3.3"
+pytest-cov = "^5.0.0"
+pytest-xdist = "^3.6.1"
+pytest-django ="^4.9.0"
+wagtail-factories = "^4.1.0"
+
+dslr = "^0.4.0"
+django-debug-toolbar = "^4.4.6"
+pudb = "^2024.1"
+tblib = "^3.0.0"
+Werkzeug = "~3.0.3"
+
+setuptools = "^70.2.0"
+honcho = "^1.1.0"
+detect-secrets = "^1.5.0"
 
 [tool.ruff]
+target-version = "py312"
 line-length = 120
 indent-width = 4
 
@@ -57,9 +88,6 @@ ignore = [
     "D205",
     # Allow missing docstring, remove to enforce docstrings across the board
     "D100", "D101", "D102", "D103", "D104", "D105", "D106", "D107",
-    # Disable line length check as it is handled by black
-    # :TODO: Remove E501 when ruff supports all black rules
-    "E501",
     # indentation contains tabs
     "W191",
 ]
@@ -68,10 +96,14 @@ ignore = [
 convention = "google"
 
 [tool.ruff.lint.per-file-ignores]
-"tests/*" = [
+"**/tests/*" = [
     # Allow use of assert statements in tests
     "S101",
 ]
+"cms/*/migrations/*" = [
+    "RUF012"
+]
+"cms/settings/*.py" = ["SIM105"]
 
 [tool.ruff.format]
 quote-style = "double"
@@ -90,3 +122,62 @@ disallow_untyped_defs = "True"
 disallow_untyped_calls = "True"
 disallow_incomplete_defs = "True"
 strict_equality = "True"
+
+plugins = "mypy_django_plugin.main"
+
+[[tool.mypy.overrides]]
+module = "*.migrations.*"
+ignore_errors = true
+
+[[tool.mypy.overrides]]
+module = "*.tests.*"
+ignore_errors = true
+
+[tool.django-stubs]
+django_settings_module = "cms.settings.test"
+
+[tool.pytest.ini_options]
+DJANGO_SETTINGS_MODULE = "cms.settings.test"
+filterwarnings = [
+    "ignore::django.utils.deprecation.RemovedInNextVersionWarning",
+    "ignore::DeprecationWarning:l18n.translation"
+]
+
+[tool.coverage.run]
+source = ["cms"]
+omit = [
+    "manage.py",
+    "conftest.py",
+    "*venv/*",
+    "*.mypy_cache*",
+    "**/node_modules/*",
+    "**/migrations/*",
+    "**/tests/*",
+]
+
+[tool.coverage.report]
+show_missing = true
+skip_covered = true
+
+exclude_also = [
+    # Have to re-enable the standard pragma
+    "pragma: no cover",
+
+    # Don't complain about missing debug-only code:
+    "def __repr__",
+    "if self.debug",
+    "if settings.DEBUG",
+
+    # Don't complain if tests don't hit defensive assertion code:
+    "raise AssertionError",
+    "raise NotImplementedError",
+
+    # Don't complain if non-runnable code isn't run:
+    "if 0:",
+    "if __name__ == .__main__.:",
+
+    # Nor complain about type checking
+    "if TYPE_CHECKING:",
+    "class .*\\bProtocol\\):",
+    "@(abc\\.)?abstractmethod",
+]

@@ -1,0 +1,15 @@
+static_compiled
+*.html
+coverage
+venv
+.venv
+.git
+.mypy_cache
+.coverage
+media
+static
+node_modules
+jinja2
+
+## this line and any new rules added below will be removed when a new project is created
+docs/deployment.md
