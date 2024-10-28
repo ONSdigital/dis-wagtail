@@ -28,6 +28,11 @@ The Wagtail CMS for managing and publishing content for the Office for National 
     -   [Adding Python packages](#adding-python-packages)
     -   [Run Tests with Coverage](#run-tests-with-coverage)
     -   [Linting and Formatting](#linting-and-formatting)
+        -   [Python](#python)
+        -   [Front-end](#front-end)
+        -   [pre-commit](#pre-commit)
+        -   [Megalinter](#megalinter-lintformat-non-python-files)
+    -   [Django Migrations](#django-migrations)
 -   [Contributing](#contributing)
 -   [License](#license)
 <!-- markdown-link-check-enable -->
@@ -250,7 +255,7 @@ To start the linter and automatically rectify fixable issues, run:
 make megalint
 ```
 
-#### Django Migrations
+### Django Migrations
 
 Wagtail is built on [Django](https://djangoproject.com/) and changes to its models may require generating and
 running schema migrations. For full details see the [Django documentation on migrations](https://docs.djangoproject.com/en/5.1/topics/migrations/)
