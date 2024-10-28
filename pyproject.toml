@@ -1,7 +1,7 @@
 [tool.poetry]
 name = "cms"
 version = "0.1.0"
-description = "The Django Wagtail CMS for managing and publishing content for the Office for National Statistics (ONS)"
+description = "The Wagtail CMS for managing and publishing content for the Office for National Statistics (ONS)"
 authors = ["ONSdigital"]
 license = "MIT"
 readme = "README.md"

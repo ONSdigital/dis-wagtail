@@ -259,13 +259,13 @@ Below are the commands you will most commonly use:
 
 ```bash
 # Check if you need to generate any new migrations after changes to the model
-django-admin makemigrations --check
+poetru run django-admin makemigrations --check
 
 # Generate migrations
-django-admin makemigrations
+poetry run django-admin makemigrations
 
 # Apply migrations. Needed if new migrations have been generated (either by you, or via upstream code)
-django-admin migrate
+poetry run django-admin migrate
 ```
 
 ## Contributing

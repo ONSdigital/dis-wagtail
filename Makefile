@@ -19,7 +19,6 @@ clean: ## Clean the temporary files.
 
 .PHONY: format
 format: format-py format-html format-frontend ## Format the code.
-	poetry run ruff check . --fix
 
 .PHONY: format-py
 format-py:  ## Format the Python code

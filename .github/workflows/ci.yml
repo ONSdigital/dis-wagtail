@@ -11,13 +11,16 @@ concurrency:
   group: '${{ github.head_ref || github.ref }}-${{ github.workflow }}'
   cancel-in-progress: true
 
+env:
+  POETRY_VERSION: '1.8.4' # keep in sync with pyproject.toml, Dockerfile
+
 jobs:
   lint:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - name: Install Poetry
-        run: pipx install poetry==1.8.3 # keep in sync with pyproject.toml
+        run: pipx install poetry==${{ env.POETRY_VERSION }}
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -97,7 +100,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Install Poetry
-        run: pipx install poetry==1.8.3 # keep in sync with pyproject.toml
+        run: pipx install poetry==${{ env.POETRY_VERSION }}
 
       - name: Set up Python
         uses: actions/setup-python@v5
