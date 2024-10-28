@@ -27,7 +27,7 @@ updates:
   - package-ecosystem: pip
 
     # When set to 0, version updates are disabled.
-    open-pull-requests-limit: 10
+    open-pull-requests-limit: 0
 
     # Look for a pyproject.toml/requirements.txt/Pipfile.lock in the root directory
     directory: /
