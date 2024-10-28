@@ -14,7 +14,7 @@ class PageRelatedPage(Orderable):
     """Related pages."""
 
     parent = ParentalKey(Page, related_name="page_related_pages")
-    page = models.ForeignKey[Page](
+    page = models.ForeignKey(  # type: ForeignKey["Page"]
         "wagtailcore.Page",
         on_delete=models.CASCADE,
         related_name="+",

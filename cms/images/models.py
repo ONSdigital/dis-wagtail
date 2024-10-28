@@ -15,7 +15,9 @@ class CustomImage(AbstractImage):
 class Rendition(AbstractRendition):
     """Our custom rendition class."""
 
-    image = models.ForeignKey["CustomImage"]("CustomImage", related_name="renditions", on_delete=models.CASCADE)
+    image = models.ForeignKey(  # type: ForeignKey["CustomImage"]
+        "CustomImage", related_name="renditions", on_delete=models.CASCADE
+    )
 
     class Meta:
         unique_together = (("image", "filter_spec", "focal_point_key"),)

@@ -8,6 +8,7 @@ from wagtail.admin.panels import FieldPanel, MultiFieldPanel
 if TYPE_CHECKING:
     from django.core.paginator import Page
     from django.http import HttpRequest
+    from wagtail.admin.panels import Panel
 
 __all__ = [
     "ListingFieldsMixin",
@@ -18,7 +19,7 @@ __all__ = [
 class ListingFieldsMixin(models.Model):
     """Generic listing fields abstract class to add listing image/text to any new content type easily."""
 
-    listing_image = models.ForeignKey(
+    listing_image = models.ForeignKey(  # type: ForeignKey["CustomImage"]
         "images.CustomImage",
         null=True,
         blank=True,
@@ -43,7 +44,7 @@ class ListingFieldsMixin(models.Model):
     class Meta:
         abstract = True
 
-    promote_panels: ClassVar[list[FieldPanel]] = [
+    promote_panels: ClassVar[list["Panel"]] = [
         MultiFieldPanel(
             heading="Listing information",
             children=[
@@ -58,7 +59,7 @@ class ListingFieldsMixin(models.Model):
 class SocialFieldsMixin(models.Model):
     """Generic social fields abstract class to add social image/text to any new content type easily."""
 
-    social_image = models.ForeignKey(
+    social_image = models.ForeignKey(  # type: ForeignKey["CustomImage"]
         "images.CustomImage",
         null=True,
         blank=True,
@@ -70,7 +71,7 @@ class SocialFieldsMixin(models.Model):
     class Meta:
         abstract = True
 
-    promote_panels: ClassVar[list[FieldPanel]] = [
+    promote_panels: ClassVar[list["Panel"]] = [
         MultiFieldPanel(
             heading="Social networks",
             children=[
