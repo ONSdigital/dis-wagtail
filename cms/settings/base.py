@@ -70,6 +70,7 @@ INSTALLED_APPS = [
     "wagtail.contrib.settings",
     "wagtail.contrib.redirects",
     "wagtail.contrib.legacy.richtext",
+    "wagtail.contrib.table_block",
     "wagtail",
     "modelcluster",
     "taggit",

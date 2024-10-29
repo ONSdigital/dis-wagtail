@@ -1,7 +1,9 @@
 from typing import Any
 
+from django.core.exceptions import ValidationError
 from django.utils.text import slugify
 from wagtail import blocks
+from wagtail.contrib.table_block.blocks import TableBlock as WagtailTableBlock
 
 
 class HeadingBlock(blocks.CharBlock):
@@ -39,3 +41,61 @@ class QuoteBlock(blocks.StructBlock):
     class Meta:  # pylint: disable=missing-class-docstring,too-few-public-methods
         icon = "openquote"
         template = "templates/components/streamfield/quote_block.html"
+
+
+class BasicTableBlock(WagtailTableBlock):
+    """Provides a basic table block with data processed for Design System components."""
+
+    class Meta:  # pylint: disable=missing-class-docstring,too-few-public-methods
+        icon = "table"
+        template = "templates/components/streamfield/table_block.html"
+        label = "Basic table"
+
+    def _get_header(self, value) -> list[dict[str, str]]:
+        """Prepares the table header for the Design System."""
+        table_header = []
+        if value.get("data", "") and len(value["data"]) > 0 and value.get("first_row_is_table_header", False):
+            for cell in value["data"][0]:
+                table_header.append({"value": cell or ""})
+        return table_header
+
+    def _get_rows(self, value) -> list[dict[str, list[dict[str, str]]]]:
+        """Prepares the table data rows for the Design System."""
+        trs = []
+        has_header = value.get("data", "") and len(value["data"]) > 0 and value.get("first_row_is_table_header", False)
+        data = value["data"][1:] if has_header else value.get("data", [])
+
+        for row in data:
+            tds = [{"value": cell} for cell in row]
+            trs.append({"tds": tds})
+
+        return trs
+
+    def clean(self, value):
+        """Validate that a header was chosen, and the cells are not empty."""
+        if not value or not value.get("table_header_choice"):
+            raise ValidationError("Select an option for Table headers")
+
+        data = value.get("data", [])
+        all_cells_empty = all(not cell for row in data for cell in row)
+        if all_cells_empty:
+            raise ValidationError("The table cannot be empty")
+
+        return super().clean(value)
+
+    def get_context(self, value, parent_context=None):
+        """Insert the DS-ready options in the template context."""
+        context = super().get_context(value, parent_context=parent_context)
+
+        return {
+            "options": {
+                "caption": value.get("table_caption"),
+                "ths": self._get_header(value),
+                "trs": self._get_rows(value),
+            },
+            **context,
+        }
+
+    def render(self, value, context=None):
+        """The Wagtail core TableBlock has a very custom `render` method. We don't want that."""
+        return super(blocks.FieldBlock, self).render(value, context)
