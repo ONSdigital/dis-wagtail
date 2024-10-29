@@ -32,18 +32,17 @@
 
 FROM python:3.12-slim AS base
 
-ARG DOCKER_BUILDKIT
-
 WORKDIR /app
 
 # Install common OS-level dependencies
-# TODO: when moving to ONS infrastructure, replace RUN with
+# TODO: when moving to ONS infrastructure, replace RUN with:
 # RUN --mount=type=cache,target=/var/lib/apt/lists,sharing=locked \
 #     --mount=type=cache,target=/var/cache/apt,sharing=locked \
-#     <<<EOF
-RUN <<EOF
-    apt --quiet --yes update
-    apt --quiet --yes install --no-install-recommends \
+#     <<EOF
+#     commands
+# EOF
+RUN apt --quiet --yes update \
+    && apt --quiet --yes install --no-install-recommends \
         build-essential \
         curl \
         libpq-dev \
@@ -52,7 +51,6 @@ RUN <<EOF
         unzip \
         gettext \
     && apt --quiet --yes autoremove
-EOF
 
 
 # Create an unprivileged user and virtual environment for the app
@@ -60,25 +58,30 @@ ARG UID=1000
 ARG GID=1000
 ARG USERNAME=cms
 ARG VIRTUAL_ENV=/venv
-RUN <<EOF
-    # Create the unprivileged user and group. If you have issues with file
-    # ownership, you may need to adjust the UID and GID build args to match your
-    # local user.
-    groupadd --gid $GID $USERNAME
-    useradd --gid $GID --uid $UID --create-home $USERNAME
-    python -m venv --upgrade-deps $VIRTUAL_ENV
-    chown -R $UID:$GID /app $VIRTUAL_ENV
-EOF
+# TODO: when moving to ONS infrastructure, replace the RUN command with
+# RUN <<OEF
+#     # Create the unprivileged user and group. If you have issues with file
+#     # ownership, you may need to adjust the UID and GID build args to match your
+#     # local user.
+#    groupadd --gid $GID $USERNAME
+#    useradd --gid $GID --uid $UID --create-home $USERNAME
+#    python -m venv --upgrade-deps $VIRTUAL_ENV
+# EOF
+RUN groupadd --gid $GID $USERNAME \
+    && useradd --gid $GID --uid $UID --create-home $USERNAME \
+    && python -m venv --upgrade-deps $VIRTUAL_ENV \
+    && chown -R $UID:$GID /app $VIRTUAL_ENV
 
 # Install Poetry in its own virtual environment
 ARG POETRY_VERSION=1.8.4
 ARG POETRY_HOME=/opt/poetry
 # TODO: when moving to ONS infrastructure, replace RUN with
 # RUN --mount=type=cache,target=/root/.cache/pip <<EOF
-RUN <<EOF
-    python -m venv --upgrade-deps $POETRY_HOME
-    $POETRY_HOME/bin/pip install poetry==$POETRY_VERSION
-EOF
+#     python -m venv --upgrade-deps $POETRY_HOME
+#     $POETRY_HOME/bin/pip install poetry==$POETRY_VERSION
+# EOF
+RUN python -m venv --upgrade-deps $POETRY_HOME \
+    && $POETRY_HOME/bin/pip install poetry==$POETRY_VERSION
 
 # Set common environment variables
 ENV \
@@ -93,7 +96,8 @@ ENV \
 
 # Install .bashrc for dj shortcuts
 COPY --chown=$UID:$GID ./.docker/bashrc.sh ./.docker/bashrc.sh
-RUN ln -sTf /app/.docker/bashrc.sh /home/$USERNAME/.bashrc
+
+RUN ln -sTfv /app/.docker/bashrc.sh /home/$USERNAME/.bashrc
 
 # Switch to the unprivileged user
 USER $USERNAME
@@ -104,10 +108,10 @@ COPY pyproject.toml poetry.lock ./
 # TODO: when moving to ONS infrastructure, replace RUN with
 # RUN --mount=type=cache,target=/home/$USERNAME/.cache/,uid=$UID,gid=$GID \
 #     <<EOF
-RUN <<EOF
-    # Install the production dependencies
-    poetry install --no-root --without dev
-EOF
+#     # Install the production dependencies
+#     poetry install --no-root --without dev
+# EOF
+RUN poetry install --no-root --without dev
 
 
 ###################
@@ -168,8 +172,12 @@ ENV \
 
 # Copy in built static files and the application code. Run collectstatic so
 # whitenoise can serve static files for us.
-ARG UID
-ARG GID
+# TODO: when moving to ONS infrastructure, replace with:
+# ARG UID
+ARG UID=1000
+# TODO: when moving to ONS infrastructure, replace with:
+# ARG GID
+ARG GID=1000
 
 COPY --chown=$UID:$GID . .
 
@@ -177,9 +185,7 @@ COPY --chown=$UID:$GID . .
 RUN make load-design-system-templates
 
 COPY --chown=$UID:$GID --from=frontend-build --link /build/cms/static_compiled ./cms/static_compiled
-RUN <<EOF
-    django-admin collectstatic --noinput --clear
-EOF
+RUN django-admin collectstatic --noinput --clear
 
 # Run Gunicorn using the config in gunicorn.conf.py (the default location for
 # the config file). To change gunicorn settings without needing to make code
