@@ -16,9 +16,9 @@
 #         │  base  │   │  frontend-*  │
 #         └────────┘   └──────────────┘
 #          /      \     /
-#   ┌───────┐    ┌───────┐   ┌───────────┐
-#   │  dev  │    │  web  │ - │  release  │
-#   └───────┘    └───────┘   └───────────┘
+#   ┌───────┐    ┌───────┐
+#   │  dev  │    │  web  │
+#   └───────┘    └───────┘
 #
 
 ##############
@@ -191,19 +191,6 @@ RUN django-admin collectstatic --noinput --clear
 # the config file). To change gunicorn settings without needing to make code
 # changes and rebuild this image, set the GUNICORN_CMD_ARGS environment variable.
 CMD ["gunicorn"]
-
-
-#################
-# release stage #
-#################
-
-# This stage is run in the relase phase. It's the same as the web
-# stage, it just overrides CMD to run deployment checks and migrations.
-
-FROM web AS release
-
-SHELL ["/bin/bash", "-c"]
-CMD django-admin check --deploy && django-admin createcachetable && django-admin migrate --noinput
 
 
 #############
