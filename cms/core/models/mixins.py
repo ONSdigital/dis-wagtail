@@ -1,5 +1,6 @@
-from typing import TYPE_CHECKING, Any, ClassVar
+from typing import TYPE_CHECKING, Any, ClassVar, Optional
 
+from django.core.exceptions import ValidationError
 from django.core.paginator import EmptyPage, Paginator
 from django.db import models
 from django.http import Http404
@@ -10,10 +11,7 @@ if TYPE_CHECKING:
     from django.http import HttpRequest
     from wagtail.admin.panels import Panel
 
-__all__ = [
-    "ListingFieldsMixin",
-    "SocialFieldsMixin",
-]
+__all__ = ["ListingFieldsMixin", "SocialFieldsMixin", "LinkFieldsMixin", "SubpageMixin"]
 
 
 class ListingFieldsMixin(models.Model):
@@ -78,6 +76,76 @@ class SocialFieldsMixin(models.Model):
                 FieldPanel("social_image"),
                 FieldPanel("social_text"),
             ],
+        )
+    ]
+
+
+class LinkFieldsMixin(models.Model):
+    """Adds fields for internal and external links with some methods to simplify the rendering.
+
+    <a href="{{ obj.get_link_url }}">{{ obj.get_link_text }}</a>.
+    """
+
+    link_page = models.ForeignKey(  # type: ForeignKey[Page]
+        "wagtailcore.Page", blank=True, null=True, on_delete=models.SET_NULL
+    )
+    link_url: str = models.URLField(blank=True)
+    link_text: str = models.CharField(blank=True, max_length=255)
+
+    class Meta:
+        abstract = True
+
+    def clean(self) -> None:
+        """Validates that only link page or url are set, not both.
+
+        And if choosing URL, the link text must be set.
+        """
+        if not self.link_page and not self.link_url:
+            raise ValidationError(
+                {
+                    "link_url": ValidationError("You must specify link page or link url."),
+                    "link_page": ValidationError("You must specify link page or link url."),
+                }
+            )
+
+        if self.link_page and self.link_url:
+            raise ValidationError(
+                {
+                    "link_url": ValidationError("You must specify link page or link url. You can't use both."),
+                    "link_page": ValidationError("You must specify link page or link url. You can't use both."),
+                }
+            )
+
+        if not self.link_page and not self.link_text:
+            raise ValidationError(
+                {"link_text": ValidationError("You must specify link text, if you use the link url field.")}
+            )
+
+    def get_link_text(self) -> str:
+        """Returns the link text or linked_page link text."""
+        if self.link_text:
+            return self.link_text
+
+        if self.link_page_id:
+            return self.link_page.title
+
+        return ""
+
+    def get_link_url(self, request: Optional["HttpRequest"] = None) -> str:
+        """Returns the link URL, with the chosen page taking precedence."""
+        if self.link_page_id:
+            return self.link_page.get_url(request=request)
+
+        return self.link_url
+
+    panels: ClassVar[list["Panel"]] = [
+        MultiFieldPanel(
+            [
+                FieldPanel("link_page", heading="Page"),
+                FieldPanel("link_url", heading="or URL"),
+                FieldPanel("link_text", help_text="Required if adding a URL"),
+            ],
+            "Link",
         )
     ]
 
