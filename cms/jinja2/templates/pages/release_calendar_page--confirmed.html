@@ -1,0 +1,24 @@
+{% extends "templates/pages/release_calendar_page.html" %}
+
+{% block release_meta %}
+    <div class="ons-grid__col ons-grid__col--sticky@m ons-col-4@m ons-col-12@s ons-u-p-no">
+        <span class="ons-u-fs-r--b">{{ _("Release date") }}:</span>
+        <span class="ons-u-nowrap">{{ page.release_date|date("j F Y g:ia") }}</span>
+    </div>
+{% endblock %}
+
+{% block release_note %}
+    <div class="ons-u-pt-s ons-u-pb-m@m ons-u-pb-s@xxs@m">
+        {% from "components/panel/_macro.njk" import onsPanel %}
+    {# fmt:off #}
+        {{
+            onsPanel({
+                "body": '<p>This release is not yet published</p>'
+            })
+        }}
+    {# fmt:on #}
+    </div>
+{% endblock %}
+
+{% block release_content %}{% endblock %} {# we want to show this only for published content #}
+{% block release_content_footer %}{% endblock %}  {# we want to show this only for published content #}

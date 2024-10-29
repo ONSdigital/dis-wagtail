@@ -1,0 +1,118 @@
+{% extends "templates/base_page.html" %}
+
+{% from "components/table-of-contents/_macro.njk" import onsTableOfContents %}
+
+{% block main %}
+    <div class="ons-u-fs-m ons-u-mt-s ons-u-pb-xxs release__document-type">Release</div>
+    <h1 class="ons-u-fs-xxxl ons-u-mb-m">
+        <span>{{ page.title }}</span>
+        {% if page.is_accredited %}
+            <a href="https://uksa.statisticsauthority.gov.uk/about-the-authority/uk-statistical-system/types-of-official-statistics/" class="national-statistics__link ons-u-ml-s">
+                <img src="https://cdn.ons.gov.uk/assets/images/ons-logo/kitemark/v2/uksa-kitemark-en.svg" alt="UK Statistics Authority Kitemark" class="osr__logo" width="90">
+            </a>
+        {% endif %}
+    </h1>
+
+    <div class="ons-grid ons-u-ml-no">
+        {% block release_meta %}
+            <div class="ons-grid__col ons-grid__col--sticky@m ons-col-4@m ons-col-12@s ons-u-p-no">
+                <span class="ons-u-fs-r--b">{{ _("Release date") }}:</span>
+                <span class="ons-u-nowrap">{{ page.release_date|date("j F Y g:ia") }}</span>
+            </div>
+            {% if page.next_release %}
+                <div class="ons-grid__col ons-col-8@m ons-col-12@s ons-u-p-no@xxs@m">
+                    <span class="ons-u-fs-r--b">{{ _("Next release") }}:</span>
+                    <span class="ons-u-nowrap">{{ page.next_release }}</span>
+                </div>
+            {% endif %}
+
+            <p></p>{# added empty p for some margin #}
+        {% endblock release_meta %}
+    </div>
+
+    {% block release_note %}{% endblock %}
+
+    <div class="ons-grid ons-js-toc-container ons-u-ml-no">
+        <div class="ons-grid__col ons-grid__col--sticky@m ons-col-4@m ons-u-p-no">
+            {# fmt:off #}
+            {{-
+                onsTableOfContents({
+                    "title": 'Contents',
+                    "ariaLabel": 'Sections in this page',
+                    "itemsList": table_of_contents
+                })
+            }}
+            {# fmt:on #}
+        </div>
+        <div class="ons-grid__col ons-col-8@m ons-col-12@s ons-u-p-no@xxs@m">
+            {{ page.summary|richtext() }}
+
+            {% block release_content %}
+                {% include_block page.content %}
+                {% if page.datasets %}
+                    {% include_block page.datasets %}
+                {% endif %}
+
+                {% if page.contact_details %}
+                    <section id="contact-details">
+                        <h2>{{ _("Contact details") }}</h2>
+
+                        <div>
+                            <h3 class="ons-u-mb-no ons-u-fs-r--b">Name</h3>
+                            <p>{{ page.contact_details.name }}</p>
+                            <h3 class="ons-u-mb-no ons-u-fs-r--b">Email</h3>
+                            <p><a href="mailto:{{ page.contact_details.email }}">{{ page.contact_details.email }}</a></p>
+                            {% if page.contact_details.phone %}
+                                <h3 class="ons-u-mb-no ons-u-fs-r--b">Phone</h3>
+                                <p><a href="tel:{{ page.contact_details.phone|urlencode() }}">{{ page.contact_details.phone }}</a></p>
+                            {% endif %}
+                        </div>
+                    </section>
+                {% endif %}
+            {% endblock release_content %}
+
+            {% if page.is_accredited %}
+                <section id="about-the-data">
+                    <h2>{{ _("About the data") }}</h2>
+                    <div class="ons-u-mb-l national-statistics">
+                        <h2 class="ons-u-fs-m ons-u-flex-ai-c">
+                            <span>Accredited Official Statistics</span>
+                            <a href="https://uksa.statisticsauthority.gov.uk/about-the-authority/uk-statistical-system/types-of-official-statistics/" class="national-statistics__link ons-u-ml-s">
+                                <img src="https://cdn.ons.gov.uk/assets/images/ons-logo/kitemark/v2/uksa-kitemark-en.svg" alt="UK Statistics Authority Kitemark" class="osr__logo" width="90">
+                            </a>
+                        </h2>
+                        <p>These are accredited official statistics. They have been independently reviewed by the Office for Statistics Regulation (OSR) and found to comply with the standards of trustworthiness, quality and value in the <a href="https://code.statisticsauthority.gov.uk/the-code/">Code of Practice for Statistics</a>. This broadly means that the statistics:</p>
+                        <ul class="ons-list">
+                            <li class="ons-list__item">meet user needs</li>
+                            <li class="ons-list__item">are presented clearly and accessibly</li>
+                            <li class="ons-list__item">are produced using appropriate data and sound methods</li>
+                            <li class="ons-list__item">are managed impartially and objectively in the public interest</li>
+                        </ul>
+                    </div>
+                </section>
+            {% endif %}
+
+            {% block release_content_footer %}
+                {% if related_links %}
+                    {% from "components/related-content/_macro.njk" import onsRelatedContent %}
+                {# fmt:off #}
+                <section id="links">
+                    {{
+                        onsRelatedContent({
+                            "ariaLabel": _('You might also be interested in'),
+                            "rows": [
+                                {
+                                    "id": 'related-links',
+                                    "title": _('You might also be interested in'),
+                                    "itemsList": related_links
+                                }
+                            ]
+                        })
+                    }}
+                </section>
+                {# fmt:on #}
+                {% endif %}
+            {% endblock %}
+        </div>
+    </div>
+{% endblock %}
