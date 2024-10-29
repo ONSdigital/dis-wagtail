@@ -58,6 +58,7 @@ INSTALLED_APPS = [
     "cms.documents",
     "cms.home",
     "cms.images",
+    "cms.release_calendar",
     "cms.users",
     "wagtail.embeds",
     "wagtail.sites",
@@ -709,8 +710,8 @@ WAGTAILIMAGES_MAX_IMAGE_PIXELS = int(pixel_limit) if pixel_limit else 10_000_000
 # We normally don't want editors to use the images
 # in the rich text editor, for example.
 # They should use the image stream block instead
-RICH_TEXT_BASIC = ["bold", "italic", "link", "ol", "ul", "document-link"]
-RICH_TEXT_FULL = ["h3", "h4", *RICH_TEXT_BASIC]
+RICH_TEXT_BASIC = ["bold", "italic", "link", "ol", "ul"]
+RICH_TEXT_FULL = ["h3", "h4", *RICH_TEXT_BASIC, "document-link"]
 
 WAGTAILADMIN_RICH_TEXT_EDITORS = {
     "default": {
