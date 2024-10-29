@@ -134,4 +134,4 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Build Docker Image
-        run: docker build --target release -t ons .
+        run: docker build --target web -t ons .
