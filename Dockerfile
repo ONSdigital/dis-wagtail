@@ -35,10 +35,10 @@ FROM python:3.12-slim AS base
 WORKDIR /app
 
 # Install common OS-level dependencies
-# TODO: when moving to ONS infrastructure, replace RUN
+# TODO: when moving to ONS infrastructure, replace RUN with:
 # RUN --mount=type=cache,target=/var/lib/apt/lists,sharing=locked \
 #     --mount=type=cache,target=/var/cache/apt,sharing=locked \
-#     <<<EOF
+#     <<EOF
 #     commands
 # EOF
 RUN apt --quiet --yes update \
@@ -59,7 +59,7 @@ ARG GID=1000
 ARG USERNAME=cms
 ARG VIRTUAL_ENV=/venv
 # TODO: when moving to ONS infrastructure, replace the RUN command with
-# RUN <<<OEF
+# RUN <<OEF
 #     # Create the unprivileged user and group. If you have issues with file
 #     # ownership, you may need to adjust the UID and GID build args to match your
 #     # local user.
@@ -107,7 +107,7 @@ USER $USERNAME
 COPY pyproject.toml poetry.lock ./
 # TODO: when moving to ONS infrastructure, replace RUN with
 # RUN --mount=type=cache,target=/home/$USERNAME/.cache/,uid=$UID,gid=$GID \
-#     <<< EOF
+#     <<EOF
 #     # Install the production dependencies
 #     poetry install --no-root --without dev
 # EOF
