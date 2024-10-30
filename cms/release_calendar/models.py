@@ -122,20 +122,22 @@ class ReleaseCalendarPage(BasePage):  # type: ignore[django-manager-missing]
                 FieldPanel("notice"),
             ],
             heading=_("Metadata"),
+            icon="cog",
         ),
         FieldPanel("summary"),
-        FieldPanel("content"),
-        FieldPanel("contact_details"),
+        FieldPanel("content", icon="list-ul"),
+        FieldPanel("contact_details", icon="group"),
         MultiFieldPanel(
             [
                 FieldPanel("is_accredited"),
                 FieldPanel("is_census"),
             ],
             heading=_("About the data"),
+            icon="info-circle",
         ),
-        FieldPanel("changes_to_release_date"),
-        FieldPanel("pre_release_access"),
-        InlinePanel("related_links", heading=_("Related links")),
+        FieldPanel("changes_to_release_date", icon="comment"),
+        FieldPanel("pre_release_access", icon="key"),
+        InlinePanel("related_links", heading=_("Related links"), icon="link"),
     ]
 
     def get_template(self, request, *args, **kwargs):
