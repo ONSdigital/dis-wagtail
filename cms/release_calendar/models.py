@@ -1,7 +1,6 @@
 from typing import ClassVar
 
 from django.conf import settings
-from django.core.exceptions import ValidationError
 from django.db import models
 from django.utils.functional import cached_property
 from django.utils.translation import gettext_lazy as _
@@ -12,22 +11,14 @@ from wagtail.models import Orderable, Page
 
 from cms.core.fields import StreamField
 from cms.core.models import BasePage, LinkFieldsMixin
-from cms.release_calendar.blocks import (
+
+from .blocks import (
     ReleaseCalendarChangesStoryBlock,
     ReleaseCalendarPreReleaseAccessStoryBlock,
     ReleaseCalendarStoryBlock,
 )
-
-
-class ReleaseStatus(models.TextChoices):
-    """The release calendar page statuses.
-    Note that both Provisional and Confirmed fall under "Upcoming" on the Release Calendar listing.
-    """
-
-    PROVISIONAL = "PROVISIONAL", _("Provisional")
-    CONFIRMED = "CONFIRMED", _("Confirmed")
-    CANCELLED = "CANCELLED", _("Cancelled")
-    PUBLISHED = "PUBLISHED", _("Published")
+from .enums import ReleaseStatus
+from .forms import ReleaseCalendarPageAdminForm
 
 
 class ReleaseCalendarIndex(BasePage):
@@ -49,6 +40,7 @@ class ReleasePageRelatedLink(LinkFieldsMixin, Orderable):
 class ReleaseCalendarPage(BasePage):  # type: ignore[django-manager-missing]
     """The calendar release page model."""
 
+    base_form_class = ReleaseCalendarPageAdminForm
     template = "templates/pages/release_calendar_page.html"
     parent_page_types: ClassVar[list[str]] = ["ReleaseCalendarIndex"]
     subpage_types: ClassVar[list[str]] = []
@@ -145,12 +137,6 @@ class ReleaseCalendarPage(BasePage):  # type: ignore[django-manager-missing]
         FieldPanel("pre_release_access"),
         InlinePanel("related_links", heading=_("Related links")),
     ]
-
-    def clean(self):
-        """Validate."""
-        super().clean()
-        if self.status == ReleaseStatus.CANCELLED and not self.notice:
-            raise ValidationError({"notice": _("The notice field is required when the release is cancelled")})
 
     def get_template(self, request, *args, **kwargs):
         """Select the correct template based on status."""
