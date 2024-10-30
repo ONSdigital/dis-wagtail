@@ -2,8 +2,9 @@
 
 import os
 import sys
+from copy import deepcopy
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 import dj_database_url
 from django.core.exceptions import ImproperlyConfigured
@@ -179,12 +180,41 @@ WSGI_APPLICATION = "cms.wsgi.application"
 
 
 # Database
-# This setting will use DATABASE_URL environment variable.
-# https://docs.djangoproject.com/en/stable/ref/settings/#databases
-# https://github.com/kennethreitz/dj-database-url
 
-DATABASES = {"default": dj_database_url.config(conn_max_age=600, default="postgres:///ons")}
+if "PG_DB_ADDR" in env:
+    # Use IAM authentication to connect to the Database
+    DATABASES = {
+        "default": cast(
+            dj_database_url.DBConfig,
+            {
+                "ENGINE": "django_iam_dbauth.aws.postgresql",
+                "NAME": env["PG_DB_DATABASE"],
+                "USER": env["PG_DB_USER"],
+                "HOST": env["PG_DB_ADDR"],
+                "PORT": env["PG_DB_PORT"],
+                "CONN_MAX_AGE": 870,  # Just under 15 minutes, to match password expiry
+                "OPTIONS": {"use_iam_auth": True, "sslmode": "require"},
+            },
+        )
+    }
 
+    # Additionally configure a read-replica
+    if "PG_DB_READ_ADDR" in env:
+        DATABASES["read_replica"] = {**deepcopy(DATABASES["default"]), "HOST": env["PG_DB_READ_ADDR"]}
+
+else:
+    DATABASES = {
+        "default": dj_database_url.config(conn_max_age=600, default="postgres:///ons"),
+    }
+
+    if "READ_REPLICA_DATABASE_URL" in env:
+        DATABASES["read_replica"] = dj_database_url.config(env="READ_REPLICA_DATABASE_URL", conn_max_age=600)
+
+if "read_replica" not in DATABASES:
+    DATABASES["read_replica"] = deepcopy(DATABASES["default"])
+
+# Ensure the correct connection is used depending on the query
+DATABASE_ROUTERS = ["cms.core.db_router.ReadReplicaRouter"]
 
 # Server-side cache settings. Do not confuse with front-end cache.
 # https://docs.djangoproject.com/en/stable/topics/cache/
@@ -233,7 +263,7 @@ else:
 # Search
 # https://docs.wagtail.io/en/latest/topics/search/backends.html
 
-WAGTAILSEARCH_BACKENDS = {"default": {"BACKEND": "wagtail.search.backends.database"}}
+WAGTAILSEARCH_BACKENDS = {"default": {"BACKEND": "cms.core.search.ONSPostgresSearchBackend"}}
 
 
 # Password validation
