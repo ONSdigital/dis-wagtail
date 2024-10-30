@@ -11,3 +11,9 @@ class ReleaseStatus(models.TextChoices):
     CONFIRMED = "CONFIRMED", _("Confirmed")
     CANCELLED = "CANCELLED", _("Cancelled")
     PUBLISHED = "PUBLISHED", _("Published")
+
+
+NON_PROVISIONAL_STATUSES = [ReleaseStatus.CONFIRMED, ReleaseStatus.PUBLISHED, ReleaseStatus.CANCELLED]
+NON_PROVISIONAL_STATUS_CHOICES = [
+    (ReleaseStatus[choice].value, ReleaseStatus[choice].label) for choice in NON_PROVISIONAL_STATUSES
+]
