@@ -1,3 +1,5 @@
+from typing import ClassVar
+
 from django.conf import settings
 from django.utils.text import slugify
 from wagtail import blocks
@@ -55,3 +57,4 @@ class ReleaseCalendarPreReleaseAccessStoryBlock(blocks.StreamBlock):
 
     class Meta:  # pylint: disable=missing-class-docstring,too-few-public-methods
         template = "templates/components/streamfield/stream_block.html"
+        block_counts: ClassVar[dict[str, dict[str, int]]] = {"description": {"max_num": 1}, "table": {"max_num": 1}}

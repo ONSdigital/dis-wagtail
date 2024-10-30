@@ -41,7 +41,7 @@ class ReleaseCalendarPage(BasePage):  # type: ignore[django-manager-missing]
     """The calendar release page model."""
 
     base_form_class = ReleaseCalendarPageAdminForm
-    template = "templates/pages/release_calendar_page.html"
+    template = "templates/pages/release_calendar/release_calendar_page.html"
     parent_page_types: ClassVar[list[str]] = ["ReleaseCalendarIndex"]
     subpage_types: ClassVar[list[str]] = []
 
@@ -143,18 +143,18 @@ class ReleaseCalendarPage(BasePage):  # type: ignore[django-manager-missing]
     def get_template(self, request, *args, **kwargs):
         """Select the correct template based on status."""
         if self.status == ReleaseStatus.PROVISIONAL:
-            return "templates/pages/release_calendar_page--provisional.html"
+            return "templates/pages/release_calendar/release_calendar_page--provisional.html"
         if self.status == ReleaseStatus.CONFIRMED:
-            return "templates/pages/release_calendar_page--confirmed.html"
+            return "templates/pages/release_calendar/release_calendar_page--confirmed.html"
         if self.status == ReleaseStatus.CANCELLED:
-            return "templates/pages/release_calendar_page--cancelled.html"
+            return "templates/pages/release_calendar/release_calendar_page--cancelled.html"
         return super().get_template(request, *args, **kwargs)
 
     def get_context(self, request, *args, **kwargs):
         """Additional context for the template."""
         context = super().get_context(request, *args, **kwargs)
         context["related_links"] = self.related_links_for_context
-        context["toc"] = self.table_of_contents
+        context["table_of_contents"] = self.table_of_contents
         return context
 
     @cached_property
@@ -177,13 +177,20 @@ class ReleaseCalendarPage(BasePage):  # type: ignore[django-manager-missing]
             for block in self.content:  # pylint: disable=not-an-iterable
                 items += block.block.to_table_of_contents_items(block.value)
 
+            if self.changes_to_release_date:
+                items += [{"url": "#changes-to-release-date", "text": _("Changes to this release date")}]
+
             if self.contact_details_id:
                 items += [{"url": "#contact-details", "text": _("Contact details")}]
 
         if self.is_accredited or self.is_census:
             items += [{"url": "#about-the-data", "text": _("About the data")}]
 
-        if self.status == ReleaseStatus.PUBLISHED and self.related_links_for_context:
-            items += [{"url": "#links", "text": _("You might also be interested in")}]
+        if self.status == ReleaseStatus.PUBLISHED:
+            if self.pre_release_access:
+                items += [{"url": "#pre-release-access-list", "text": _("Pre-release access list")}]
+
+            if self.related_links_for_context:
+                items += [{"url": "#links", "text": _("You might also be interested in")}]
 
         return items

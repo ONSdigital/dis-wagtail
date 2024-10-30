@@ -1,4 +1,4 @@
-{% extends "templates/pages/release_calendar_page.html" %}
+{% extends "templates/pages/release_calendar/release_calendar_page.html" %}
 {% from "components/table-of-contents/_macro.njk" import onsTableOfContents %}
 
 {% block release_meta %}
@@ -11,15 +11,19 @@
 {% block release_note %}
     <div class="ons-u-pt-s ons-u-pb-m@m ons-u-pb-s@xxs@m">
         {% from "components/panel/_macro.njk" import onsPanel %}
-    {# fmt:off #}
-        {{
-            onsPanel({
-                "body": page.notice
-            })
-        }}
-    {# fmt:on #}
+        {{ onsPanel({"body": page.notice }) }}
     </div>
 {% endblock %}
 
-{% block release_content %}{% endblock %} {# we want to show this only for published content #}
+{% block release_content %}
+    {% if page.changes_to_release_date %}
+        <section id="changes-to-release-date">
+            <h2>{{ _("Changes to this release date") }}</h2>
+
+            <ol class="ons-list ons-list--bare">
+                {% include_block page.changes_to_release_date %}
+            </ol>
+        </section>
+    {% endif %}
+{% endblock %} {# we want to show this only for published content #}
 {% block release_content_footer %}{% endblock %}  {# we want to show this only for published content #}

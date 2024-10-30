@@ -14,15 +14,20 @@
     </h1>
 
     <div class="ons-grid ons-u-ml-no">
+        {% if page.is_census %}
+            <div class="ons-u-pb-s">
+                <img src="https://cdn.ons.gov.uk/assets/images/census-logo/logo-census-2021-purple-landscape.svg" alt="Census 2021 logo" width="171">
+            </div>
+        {% endif %}
         {% block release_meta %}
             <div class="ons-grid__col ons-grid__col--sticky@m ons-col-4@m ons-col-12@s ons-u-p-no">
                 <span class="ons-u-fs-r--b">{{ _("Release date") }}:</span>
-                <span class="ons-u-nowrap">{{ page.release_date|date("j F Y g:ia") }}</span>
+                <span class="ons-u-nowrap">{{ page.release_date|date("j F Y g:ia") or page.release_date_text }}</span>
             </div>
-            {% if page.next_release %}
+            {% if page.next_release_date or page.next_release_text %}
                 <div class="ons-grid__col ons-col-8@m ons-col-12@s ons-u-p-no@xxs@m">
                     <span class="ons-u-fs-r--b">{{ _("Next release") }}:</span>
-                    <span class="ons-u-nowrap">{{ page.next_release }}</span>
+                    <span class="ons-u-nowrap">{{ page.next_release_date|date("j F Y g:ia") or page.next_release_text }}</span>
                 </div>
             {% endif %}
 
@@ -49,8 +54,15 @@
 
             {% block release_content %}
                 {% include_block page.content %}
-                {% if page.datasets %}
-                    {% include_block page.datasets %}
+
+                {% if page.changes_to_release_date %}
+                    <section id="changes-to-release-date">
+                        <h2>{{ _("Changes to this release date") }}</h2>
+
+                        <ol class="ons-list ons-list--bare">
+                            {% include_block page.changes_to_release_date %}
+                        </ol>
+                    </section>
                 {% endif %}
 
                 {% if page.contact_details %}
@@ -71,28 +83,43 @@
                 {% endif %}
             {% endblock release_content %}
 
-            {% if page.is_accredited %}
+            {% if page.is_accredited or page.is_census %}
                 <section id="about-the-data">
                     <h2>{{ _("About the data") }}</h2>
-                    <div class="ons-u-mb-l national-statistics">
-                        <h2 class="ons-u-fs-m ons-u-flex-ai-c">
-                            <span>Accredited Official Statistics</span>
-                            <a href="https://uksa.statisticsauthority.gov.uk/about-the-authority/uk-statistical-system/types-of-official-statistics/" class="national-statistics__link ons-u-ml-s">
-                                <img src="https://cdn.ons.gov.uk/assets/images/ons-logo/kitemark/v2/uksa-kitemark-en.svg" alt="UK Statistics Authority Kitemark" class="osr__logo" width="90">
-                            </a>
-                        </h2>
-                        <p>These are accredited official statistics. They have been independently reviewed by the Office for Statistics Regulation (OSR) and found to comply with the standards of trustworthiness, quality and value in the <a href="https://code.statisticsauthority.gov.uk/the-code/">Code of Practice for Statistics</a>. This broadly means that the statistics:</p>
-                        <ul class="ons-list">
-                            <li class="ons-list__item">meet user needs</li>
-                            <li class="ons-list__item">are presented clearly and accessibly</li>
-                            <li class="ons-list__item">are produced using appropriate data and sound methods</li>
-                            <li class="ons-list__item">are managed impartially and objectively in the public interest</li>
-                        </ul>
-                    </div>
+                    {% if page.is_census %}
+                        <div class="ons-u-mb-l census-2021">
+                            <img src="https://cdn.ons.gov.uk/assets/images/census-logo/logo-census-2021-purple-landscape.svg" alt="Census 2021 logo" class="ons-u-mb-xs" width="171">
+                            <p>This release includes data from Census 2021.</p>
+                        </div>
+                    {% endif %}
+                    {% if page.is_accredited %}
+                        <div class="ons-u-mb-l national-statistics">
+                            <h2 class="ons-u-fs-m ons-u-flex-ai-c">
+                                <span>Accredited Official Statistics</span>
+                                <a href="https://uksa.statisticsauthority.gov.uk/about-the-authority/uk-statistical-system/types-of-official-statistics/" class="national-statistics__link ons-u-ml-s">
+                                    <img src="https://cdn.ons.gov.uk/assets/images/ons-logo/kitemark/v2/uksa-kitemark-en.svg" alt="UK Statistics Authority Kitemark" class="osr__logo" width="90">
+                                </a>
+                            </h2>
+                            <p>These are accredited official statistics. They have been independently reviewed by the Office for Statistics Regulation (OSR) and found to comply with the standards of trustworthiness, quality and value in the <a href="https://code.statisticsauthority.gov.uk/the-code/">Code of Practice for Statistics</a>. This broadly means that the statistics:</p>
+                            <ul class="ons-list">
+                                <li class="ons-list__item">meet user needs</li>
+                                <li class="ons-list__item">are presented clearly and accessibly</li>
+                                <li class="ons-list__item">are produced using appropriate data and sound methods</li>
+                                <li class="ons-list__item">are managed impartially and objectively in the public interest</li>
+                            </ul>
+                        </div>
+                    {% endif %}
                 </section>
             {% endif %}
 
             {% block release_content_footer %}
+                {% if page.pre_release_access %}
+                    <section id="pre-release-access-list">
+                        <h2>{{ _("Pre-release access list") }}</h2>
+                        {% include_block page.pre_release_access %}
+                    </section>
+                {% endif %}
+
                 {% if related_links %}
                     {% from "components/related-content/_macro.njk" import onsRelatedContent %}
                 {# fmt:off #}

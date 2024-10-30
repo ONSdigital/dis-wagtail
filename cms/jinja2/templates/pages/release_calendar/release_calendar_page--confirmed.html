@@ -1,8 +1,8 @@
-{% extends "templates/pages/release_calendar_page.html" %}
+{% extends "templates/pages/release_calendar/release_calendar_page.html" %}
 
 {% block release_meta %}
     <div class="ons-grid__col ons-grid__col--sticky@m ons-col-4@m ons-col-12@s ons-u-p-no">
-        <span class="ons-u-fs-r--b">{{ _("Provisional release date") }}:</span>
+        <span class="ons-u-fs-r--b">{{ _("Release date") }}:</span>
         <span class="ons-u-nowrap">{{ page.release_date|date("j F Y g:ia") }}</span>
     </div>
 {% endblock %}
