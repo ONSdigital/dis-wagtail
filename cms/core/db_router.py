@@ -44,11 +44,7 @@ class ReadReplicaRouter:  # pylint: disable=unused-argument,protected-access
         # No preference
         return None
 
-    def allow_migrate(self, db: str, app_label: str, model_name: str | None = None, **hints: dict) -> bool | None:
+    def allow_migrate(self, db: str, app_label: str, model_name: str | None = None, **hints: dict) -> bool:
         """Can migrations be run for the app on the database?"""
         # Don't allow migrations to run against the replica (they would fail anyway)
-        if db == self.REPLICA_DB_ALIAS:
-            return False
-
-        # No preference
-        return None
+        return db != self.REPLICA_DB_ALIAS
