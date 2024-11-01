@@ -140,6 +140,7 @@ django_settings_module = "cms.settings.test"
 DJANGO_SETTINGS_MODULE = "cms.settings.test"
 filterwarnings = [
     "ignore::django.utils.deprecation.RemovedInNextVersionWarning",
+    "ignore::django.utils.deprecation.RemovedInDjango60Warning",
     "ignore::DeprecationWarning:l18n.translation"
 ]
 
@@ -153,6 +154,10 @@ omit = [
     "**/node_modules/*",
     "**/migrations/*",
     "**/tests/*",
+    "cms/core/management/commands/test_sentry.py",
+    "cms/wsgi.py",
+    "cms/urls.py",
+    "cms/settings/*",
 ]
 
 [tool.coverage.report]
