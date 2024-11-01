@@ -42,6 +42,6 @@ DEFENDER_DISABLE_USERNAME_LOCKOUT = True
 DEFENDER_DISABLE_IP_LOCKOUT = True
 
 
-# Set a different test database name for the replica, in case it's the same
-# as the default.
-DATABASES["read_replica"].setdefault("TEST", {"NAME": "test_read_replica"})  # noqa: F405
+# Read replica should mirror the default database during tests.
+# https://docs.djangoproject.com/en/stable/topics/testing/advanced/#tests-and-multiple-databases
+DATABASES["read_replica"].setdefault("TEST", {"MIRROR": "default"})  # noqa: F405
