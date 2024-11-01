@@ -165,7 +165,7 @@ class SubpageMixin:
             raise Http404 from e
 
     def get_context(self, request: "HttpRequest", *args: Any, **kwargs: Any) -> dict:
-        """Add paginage subpages to the template context."""
+        """Add paginated subpages to the template context."""
         context: dict = super().get_context(request, *args, **kwargs)  # type: ignore[misc]
         context["subpages"] = self.get_paginator_page(request)
         return context
