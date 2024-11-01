@@ -36,9 +36,11 @@ class ReleaseCalendarPageAdminForm(WagtailAdminPageForm):
                     {"release_date": _("The release date field is required when the release is confirmed")}
                 )
 
-            if self.instance.release_date != cleaned_data["release_date"] and len(
-                self.instance.changes_to_release_date
-            ) == len(cleaned_data["changes_to_release_date"]):
+            if (
+                self.instance.release_date
+                and self.instance.release_date != cleaned_data["release_date"]
+                and len(self.instance.changes_to_release_date) == len(cleaned_data["changes_to_release_date"])
+            ):
                 # A change in the release date requires updating changes_to_release_date
                 raise ValidationError(
                     {

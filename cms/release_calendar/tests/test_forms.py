@@ -139,9 +139,23 @@ def test_release_calendar_form__clean__validates_release_date_text_start_end_dat
     assert form.errors["release_date_text"] == ["The end month must be after the start month."]
 
 
+def test_release_calendar_form__clean__adding_a_release_date_when_confirming(release_calendar_page):
+    """Checks that we can set a new release date when the release is confirmed, if previously it was empty."""
+    release_calendar_page.release_date = None
+
+    data = form_data(release_calendar_page)
+    data["release_date"] = timezone.now()
+    data["status"] = ReleaseStatus.CONFIRMED
+
+    form = FORM_CLASS(instance=release_calendar_page, data=data)
+
+    assert form.is_valid()
+
+
 @pytest.mark.parametrize("status", [ReleaseStatus.CONFIRMED, ReleaseStatus.PUBLISHED])
 def test_release_calendar_form__clean__validates_changes_to_release_date_must_be_filled(release_calendar_page, status):
     """Checks that one must add data to changes_to_release_date if the confirmed release data changes."""
+    release_calendar_page.release_date = timezone.now()
     data = form_data(release_calendar_page)
     data["release_date"] = timezone.now()
     data["status"] = status
