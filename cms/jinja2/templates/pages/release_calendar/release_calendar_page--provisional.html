@@ -10,13 +10,9 @@
 {% block release_note %}
     <div class="ons-u-pt-s ons-u-pb-m@m ons-u-pb-s@xxs@m">
         {% from "components/panel/_macro.njk" import onsPanel %}
-    {# fmt:off #}
-        {{
-            onsPanel({
-                "body": '<p>This release is not yet published</p>'
-            })
-        }}
-    {# fmt:on #}
+        {% call onsPanel() %}
+            <p>{{ _("This release is not yet published") }}</p>
+        {% endcall %}
     </div>
 {% endblock %}
 

@@ -17,7 +17,7 @@ from .blocks import (
     ReleaseCalendarPreReleaseAccessStoryBlock,
     ReleaseCalendarStoryBlock,
 )
-from .enums import ReleaseStatus
+from .enums import NON_PROVISIONAL_STATUSES, ReleaseStatus
 from .forms import ReleaseCalendarPageAdminForm
 
 if TYPE_CHECKING:
@@ -182,11 +182,11 @@ class ReleaseCalendarPage(BasePage):  # type: ignore[django-manager-missing]
             for block in self.content:  # pylint: disable=not-an-iterable
                 items += block.block.to_table_of_contents_items(block.value)
 
-            if self.changes_to_release_date:
-                items += [{"url": "#changes-to-release-date", "text": _("Changes to this release date")}]
+        if self.status in NON_PROVISIONAL_STATUSES and self.changes_to_release_date:
+            items += [{"url": "#changes-to-release-date", "text": _("Changes to this release date")}]
 
-            if self.contact_details_id:
-                items += [{"url": "#contact-details", "text": _("Contact details")}]
+        if self.status == ReleaseStatus.PUBLISHED and self.contact_details_id:
+            items += [{"url": "#contact-details", "text": _("Contact details")}]
 
         if self.is_accredited or self.is_census:
             items += [{"url": "#about-the-data", "text": _("About the data")}]

@@ -114,7 +114,7 @@ def test_release_calendar_page_table_of_contents_pre_published__census(rf, relea
         ReleaseStatus.CANCELLED,
     ],
 )
-def test_release_calendar_page_table_of_contents_pre_published__accredited(rf, release_calendar_page, status):
+def test_release_calendar_page__table_of_contents_pre_published__accredited(rf, release_calendar_page, status):
     """Check TOC in a pre-published state shows about the data when accredited."""
     request = rf.get("/")
     release_calendar_page.status = status
@@ -139,7 +139,7 @@ def test_release_calendar_page_table_of_contents_pre_published__accredited(rf, r
     assert release_calendar_page.get_context(request)["table_of_contents"] == expected
 
 
-def test_release_calendar_page_table_of_contents_published(release_calendar_page):
+def test_release_calendar_page__table_of_contents_published(release_calendar_page):
     """Check TOC in a published state."""
     release_calendar_page.status = ReleaseStatus.PUBLISHED
     release_calendar_page.content = [
@@ -164,32 +164,91 @@ def test_release_calendar_page_table_of_contents_published(release_calendar_page
     ]
 
 
-def test_release_calendar_page_table_of_contents_published__changes_to_release_date(release_calendar_page):
-    """Check TOC in a published state contains the changes to release date if added."""
-    release_calendar_page.status = ReleaseStatus.PUBLISHED
+@pytest.mark.parametrize(
+    "status,shown",
+    [
+        (ReleaseStatus.PROVISIONAL, False),
+        (ReleaseStatus.CONFIRMED, True),
+        (ReleaseStatus.PUBLISHED, True),
+        (ReleaseStatus.CANCELLED, True),
+    ],
+)
+def test_release_calendar_page__table_of_contents__changes_to_release_date(release_calendar_page, status, shown):
+    """Check TOC for the changes to release date if added. Should be there for non-provisional."""
+    release_calendar_page.status = status
     release_calendar_page.changes_to_release_date = [
         {"type": "date_change_log", "value": {"previous_date": timezone.now(), "reason_for_change": "The reason"}}
     ]
 
-    expected = [
-        {"url": "#summary", "text": "Summary"},
-        {"url": "#changes-to-release-date", "text": "Changes to this release date"},
+    expected = {"url": "#changes-to-release-date", "text": "Changes to this release date"}
+    assert (expected in release_calendar_page.table_of_contents) == shown
+
+
+@pytest.mark.parametrize(
+    "status,shown",
+    [
+        (ReleaseStatus.PROVISIONAL, False),
+        (ReleaseStatus.CONFIRMED, True),
+        (ReleaseStatus.PUBLISHED, True),
+        (ReleaseStatus.CANCELLED, True),
+    ],
+)
+def test_release_calendar_page__rendered__changes_to_release_date(client, release_calendar_page, status, shown):
+    """Check rendered content for changes to release date. Should show for non-provisional."""
+    release_calendar_page.status = status
+    release_calendar_page.changes_to_release_date = [
+        {"type": "date_change_log", "value": {"previous_date": timezone.now(), "reason_for_change": "The reason"}}
     ]
-    assert release_calendar_page.table_of_contents == expected
+    release_calendar_page.save_revision().publish()
+
+    response = client.get(release_calendar_page.url)
+
+    assert ("The reason" in str(response.content)) == shown
 
 
-def test_release_calendar_page_table_of_contents_published__contact_details(release_calendar_page):
+@pytest.mark.parametrize(
+    "status,shown",
+    [
+        (ReleaseStatus.PROVISIONAL, False),
+        (ReleaseStatus.CONFIRMED, False),
+        (ReleaseStatus.PUBLISHED, True),
+        (ReleaseStatus.CANCELLED, False),
+    ],
+)
+def test_release_calendar_page__table_of_contents__contact_details(release_calendar_page, status, shown):
     """Check TOC in a published state contains contact details if added."""
-    release_calendar_page.status = ReleaseStatus.PUBLISHED
+    release_calendar_page.status = status
     contact_details = ContactDetails(name="PSF team", email="psf@ons.gov.uk")
     contact_details.save()
     release_calendar_page.contact_details = contact_details
 
-    expected = [{"url": "#summary", "text": "Summary"}, {"url": "#contact-details", "text": "Contact details"}]
-    assert release_calendar_page.table_of_contents == expected
+    expected = {"url": "#contact-details", "text": "Contact details"}
+    assert (expected in release_calendar_page.table_of_contents) == shown
 
 
-def test_release_calendar_page_table_of_contents_published__pre_release_access(release_calendar_page):
+@pytest.mark.parametrize(
+    "status,shown",
+    [
+        (ReleaseStatus.PROVISIONAL, False),
+        (ReleaseStatus.CONFIRMED, False),
+        (ReleaseStatus.PUBLISHED, True),
+        (ReleaseStatus.CANCELLED, False),
+    ],
+)
+def test_release_calendar_page__rendered__contact_details(client, release_calendar_page, status, shown):
+    """Check rendered content for contact details."""
+    release_calendar_page.status = status
+    contact_details = ContactDetails(name="PSF team", email="psf@ons.gov.uk")
+    contact_details.save()
+    release_calendar_page.contact_details = contact_details
+    release_calendar_page.save_revision().publish()
+
+    response = client.get(release_calendar_page.url)
+
+    assert ("PSF team" in str(response.content)) == shown
+
+
+def test_release_calendar_page__table_of_contents_published__pre_release_access(release_calendar_page):
     """Check TOC in a published state has the pre-release access section if added."""
     release_calendar_page.status = ReleaseStatus.PUBLISHED
     release_calendar_page.pre_release_access = [{"type": "description", "value": "pre-release access notes"}]
@@ -201,7 +260,7 @@ def test_release_calendar_page_table_of_contents_published__pre_release_access(r
     assert release_calendar_page.table_of_contents == expected
 
 
-def test_release_calendar_page_table_of_contents_published__related_links(release_calendar_page):
+def test_release_calendar_page__table_of_contents_published__related_links(release_calendar_page):
     """Check TOC in a published state has the related links section if added."""
     release_calendar_page.status = ReleaseStatus.PUBLISHED
     # related links section

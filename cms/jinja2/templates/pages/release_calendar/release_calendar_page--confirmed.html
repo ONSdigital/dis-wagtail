@@ -10,15 +10,21 @@
 {% block release_note %}
     <div class="ons-u-pt-s ons-u-pb-m@m ons-u-pb-s@xxs@m">
         {% from "components/panel/_macro.njk" import onsPanel %}
-    {# fmt:off #}
-        {{
-            onsPanel({
-                "body": '<p>This release is not yet published</p>'
-            })
-        }}
-    {# fmt:on #}
+        {% call onsPanel() %}
+            <p>{{ _("This release is not yet published") }}</p>
+        {% endcall %}
     </div>
 {% endblock %}
 
-{% block release_content %}{% endblock %} {# we want to show this only for published content #}
+{% block release_content %}
+    {% if page.changes_to_release_date %}
+        <section id="changes-to-release-date">
+            <h2>{{ _("Changes to this release date") }}</h2>
+
+            <ol class="ons-list ons-list--bare">
+                {% include_block page.changes_to_release_date %}
+            </ol>
+        </section>
+    {% endif %}
+{% endblock %}
 {% block release_content_footer %}{% endblock %}  {# we want to show this only for published content #}
