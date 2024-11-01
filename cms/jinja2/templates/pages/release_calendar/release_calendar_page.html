@@ -7,16 +7,14 @@
     <h1 class="ons-u-fs-xxxl ons-u-mb-m">
         <span>{{ page.title }}</span>
         {% if page.is_accredited %}
-            <a href="https://uksa.statisticsauthority.gov.uk/about-the-authority/uk-statistical-system/types-of-official-statistics/" class="national-statistics__link ons-u-ml-s">
-                <img src="https://cdn.ons.gov.uk/assets/images/ons-logo/kitemark/v2/uksa-kitemark-en.svg" alt="UK Statistics Authority Kitemark" class="osr__logo" width="90">
-            </a>
+            {% include "templates/components/accredited/accredited-logo.html" %}
         {% endif %}
     </h1>
 
     <div class="ons-grid ons-u-ml-no">
         {% if page.is_census %}
             <div class="ons-u-pb-s">
-                <img src="https://cdn.ons.gov.uk/assets/images/census-logo/logo-census-2021-purple-landscape.svg" alt="Census 2021 logo" width="171">
+                {% include "templates/components/census/census-logo.html" %}
             </div>
         {% endif %}
         {% block release_meta %}
@@ -87,27 +85,10 @@
                 <section id="about-the-data">
                     <h2>{{ _("About the data") }}</h2>
                     {% if page.is_census %}
-                        <div class="ons-u-mb-l census-2021">
-                            <img src="https://cdn.ons.gov.uk/assets/images/census-logo/logo-census-2021-purple-landscape.svg" alt="Census 2021 logo" class="ons-u-mb-xs" width="171">
-                            <p>This release includes data from Census 2021.</p>
-                        </div>
+                        {% include "templates/components/census/census-information.html" %}
                     {% endif %}
                     {% if page.is_accredited %}
-                        <div class="ons-u-mb-l national-statistics">
-                            <h2 class="ons-u-fs-m ons-u-flex-ai-c">
-                                <span>Accredited Official Statistics</span>
-                                <a href="https://uksa.statisticsauthority.gov.uk/about-the-authority/uk-statistical-system/types-of-official-statistics/" class="national-statistics__link ons-u-ml-s">
-                                    <img src="https://cdn.ons.gov.uk/assets/images/ons-logo/kitemark/v2/uksa-kitemark-en.svg" alt="UK Statistics Authority Kitemark" class="osr__logo" width="90">
-                                </a>
-                            </h2>
-                            <p>These are accredited official statistics. They have been independently reviewed by the Office for Statistics Regulation (OSR) and found to comply with the standards of trustworthiness, quality and value in the <a href="https://code.statisticsauthority.gov.uk/the-code/">Code of Practice for Statistics</a>. This broadly means that the statistics:</p>
-                            <ul class="ons-list">
-                                <li class="ons-list__item">meet user needs</li>
-                                <li class="ons-list__item">are presented clearly and accessibly</li>
-                                <li class="ons-list__item">are produced using appropriate data and sound methods</li>
-                                <li class="ons-list__item">are managed impartially and objectively in the public interest</li>
-                            </ul>
-                        </div>
+                        {% include "templates/components/accredited/accredited-information.html" %}
                     {% endif %}
                 </section>
             {% endif %}
