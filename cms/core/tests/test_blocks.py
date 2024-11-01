@@ -1,10 +1,72 @@
 import pytest
 from django.conf import settings
 from wagtail.blocks import StreamBlockValidationError, StructBlockValidationError
+from wagtail.rich_text import RichText
 
-from cms.core.blocks import HeadingBlock, ONSEmbedBlock, RelatedContentBlock, RelatedLinksBlock
+from cms.core.blocks import (
+    DocumentBlock,
+    DocumentsBlock,
+    HeadingBlock,
+    ONSEmbedBlock,
+    RelatedContentBlock,
+    RelatedLinksBlock,
+)
 
 pytestmark = pytest.mark.django_db
+
+
+def test_document_block__block_value(document):
+    """Test DocumentBlockStructValue as_macro_data."""
+    block = DocumentBlock()
+    value = block.to_python(
+        {"document": document.pk, "title": "The block document", "description": "Document description"}
+    )
+
+    assert value.as_macro_data() == {
+        "thumbnail": True,
+        "url": document.url,
+        "title": "The block document",
+        "description": RichText("Document description"),
+        "metadata": {
+            "file": {
+                "fileType": "TXT",
+                "fileSize": "25\xa0bytes",
+            }
+        },
+    }
+
+
+def test_documents_block__get_context(document):
+    """Tests the macro data in context."""
+    block = DocumentsBlock()
+    value = block.to_python(
+        [
+            {
+                "type": "document",
+                "value": {
+                    "document": document.pk,
+                    "title": "The block document",
+                    "description": "Document description",
+                },
+            }
+        ]
+    )
+
+    context = block.get_context(value)
+    assert context["macro_data"] == [
+        {
+            "thumbnail": True,
+            "url": document.url,
+            "title": "The block document",
+            "description": RichText("Document description"),
+            "metadata": {
+                "file": {
+                    "fileType": "TXT",
+                    "fileSize": "25\xa0bytes",
+                }
+            },
+        }
+    ]
 
 
 @pytest.mark.parametrize(
@@ -32,14 +94,17 @@ def test_onsemebedblock__clean():
     block = ONSEmbedBlock()
 
     with pytest.raises(StructBlockValidationError) as info:
-        value = block.to_python(
-            {
-                "url": "https://ons.gov.uk",
-            }
-        )
+        value = block.to_python({"url": "https://ons.gov.uk"})
         block.clean(value)
 
     assert info.value.block_errors["url"].message == f"The URL must start with {settings.ONS_EMBED_PREFIX}"
+
+
+def test_onsemebedblock__clean__happy_path():
+    """Check the ONSEmbedBlock clean method returns the value."""
+    block = ONSEmbedBlock()
+    value = block.to_python({"url": settings.ONS_EMBED_PREFIX})
+    assert block.clean(value) == value
 
 
 def test_relatedcontentblock_clean__no_page_nor_url():

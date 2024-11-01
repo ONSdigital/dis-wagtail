@@ -24,7 +24,7 @@ class ImageBlock(blocks.StructBlock):
 
 
 class DocumentBlockStructValue(blocks.StructValue):
-    """Bespoke StructValue to convert a struct block value to DS macro macros data."""
+    """Bespoke StructValue to convert a struct block value to DS macro data."""
 
     def as_macro_data(self) -> dict[str, str | bool | dict]:
         """Return the value as a macro data dict."""
@@ -86,7 +86,7 @@ class ONSEmbedBlock(blocks.StructBlock):
             errors["url"] = ValidationError(f"The URL must start with {settings.ONS_EMBED_PREFIX}")
 
         if errors:
-            raise StructBlockValidationError(errors)
+            raise StructBlockValidationError(block_errors=errors)
 
         return super().clean(value)
 
