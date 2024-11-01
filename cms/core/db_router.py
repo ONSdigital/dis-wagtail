@@ -12,7 +12,7 @@ class ReadReplicaRouter:  # pylint: disable=unused-argument,protected-access
     REPLICA_DBS = frozenset({REPLICA_DB_ALIAS, DEFAULT_DB_ALIAS})
 
     def __init__(self) -> None:
-        if self.REPLICA_DB_ALIAS not in settings.DATABASES:
+        if self.REPLICA_DB_ALIAS not in settings.DATABASES:  # pragma: no cover
             raise ImproperlyConfigured("Read replica is not configured.")
 
     def db_for_read(self, model: type[Model], **hints: dict) -> str | None:
