@@ -51,7 +51,7 @@ def test_release_calendar_page_related_links_for_context(rf, release_calendar_pa
         ReleaseStatus.CANCELLED,
     ],
 )
-def test_release_calendar_page_table_of_contents_pre_published(rf, release_calendar_page, status):
+def test_release_calendar_page_table_of_contents_pre_published__content(rf, release_calendar_page, status):
     """Check TOC in a pre-published state."""
     request = rf.get("/")
     release_calendar_page.status = status
@@ -68,24 +68,75 @@ def test_release_calendar_page_table_of_contents_pre_published(rf, release_calen
     related_link.save()
 
     expected = [{"url": "#summary", "text": "Summary"}]
+
     assert release_calendar_page.table_of_contents == expected
     assert release_calendar_page.get_context(request)["table_of_contents"] == expected
 
-    expected_with_census_or_accredited = [*expected, {"url": "#about-the-data", "text": "About the data"}]
 
-    del release_calendar_page.table_of_contents  # clear the cached property
+@pytest.mark.parametrize(
+    "status",
+    [
+        ReleaseStatus.PROVISIONAL,
+        ReleaseStatus.CONFIRMED,
+        ReleaseStatus.CANCELLED,
+    ],
+)
+def test_release_calendar_page_table_of_contents_pre_published__census(rf, release_calendar_page, status):
+    """Check TOC in a pre-published state shows about the data when is census."""
+    request = rf.get("/")
+    release_calendar_page.status = status
+    release_calendar_page.content = [
+        {
+            "type": "release_content",
+            "value": {"title": "Publications", "links": [{"external_url": "https://ons.gov.uk", "title": "test"}]},
+        }
+    ]
+
+    related_link = ReleasePageRelatedLink(
+        parent=release_calendar_page, link_url="https://ons.gov.uk", link_text="The link"
+    )
+    related_link.save()
+
+    expected = [{"url": "#summary", "text": "Summary"}, {"url": "#about-the-data", "text": "About the data"}]
+
     release_calendar_page.is_census = True
     release_calendar_page.is_accredited = False
 
-    assert release_calendar_page.table_of_contents == expected_with_census_or_accredited
-    assert release_calendar_page.get_context(request)["table_of_contents"] == expected_with_census_or_accredited
+    assert release_calendar_page.table_of_contents == expected
+    assert release_calendar_page.get_context(request)["table_of_contents"] == expected
 
-    del release_calendar_page.table_of_contents  # clear the cached property
+
+@pytest.mark.parametrize(
+    "status",
+    [
+        ReleaseStatus.PROVISIONAL,
+        ReleaseStatus.CONFIRMED,
+        ReleaseStatus.CANCELLED,
+    ],
+)
+def test_release_calendar_page_table_of_contents_pre_published__accredited(rf, release_calendar_page, status):
+    """Check TOC in a pre-published state shows about the data when accredited."""
+    request = rf.get("/")
+    release_calendar_page.status = status
+    release_calendar_page.content = [
+        {
+            "type": "release_content",
+            "value": {"title": "Publications", "links": [{"external_url": "https://ons.gov.uk", "title": "test"}]},
+        }
+    ]
+
+    related_link = ReleasePageRelatedLink(
+        parent=release_calendar_page, link_url="https://ons.gov.uk", link_text="The link"
+    )
+    related_link.save()
+
+    expected = [{"url": "#summary", "text": "Summary"}, {"url": "#about-the-data", "text": "About the data"}]
+
     release_calendar_page.is_census = False
     release_calendar_page.is_accredited = True
 
-    assert release_calendar_page.table_of_contents == expected_with_census_or_accredited
-    assert release_calendar_page.get_context(request)["table_of_contents"] == expected_with_census_or_accredited
+    assert release_calendar_page.table_of_contents == expected
+    assert release_calendar_page.get_context(request)["table_of_contents"] == expected
 
 
 def test_release_calendar_page_table_of_contents_published(release_calendar_page):
@@ -112,35 +163,54 @@ def test_release_calendar_page_table_of_contents_published(release_calendar_page
         {"type": "date_change_log", "value": {"previous_date": timezone.now(), "reason_for_change": "The reason"}}
     ]
 
-    del release_calendar_page.table_of_contents  # clear the cached property
-    expected += [{"url": "#changes-to-release-date", "text": "Changes to this release date"}]
+
+def test_release_calendar_page_table_of_contents_published__changes_to_release_date(release_calendar_page):
+    """Check TOC in a published state contains the changes to release date if added."""
+    release_calendar_page.status = ReleaseStatus.PUBLISHED
+    release_calendar_page.changes_to_release_date = [
+        {"type": "date_change_log", "value": {"previous_date": timezone.now(), "reason_for_change": "The reason"}}
+    ]
+
+    expected = [
+        {"url": "#summary", "text": "Summary"},
+        {"url": "#changes-to-release-date", "text": "Changes to this release date"},
+    ]
     assert release_calendar_page.table_of_contents == expected
 
-    # contact details section
+
+def test_release_calendar_page_table_of_contents_published__contact_details(release_calendar_page):
+    """Check TOC in a published state contains contact details if added."""
+    release_calendar_page.status = ReleaseStatus.PUBLISHED
     contact_details = ContactDetails(name="PSF team", email="psf@ons.gov.uk")
     contact_details.save()
     release_calendar_page.contact_details = contact_details
 
-    del release_calendar_page.table_of_contents  # clear the cached property
-    expected += [{"url": "#contact-details", "text": "Contact details"}]
+    expected = [{"url": "#summary", "text": "Summary"}, {"url": "#contact-details", "text": "Contact details"}]
     assert release_calendar_page.table_of_contents == expected
 
-    # pre-release section
+
+def test_release_calendar_page_table_of_contents_published__pre_release_access(release_calendar_page):
+    """Check TOC in a published state has the pre-release access section if added."""
+    release_calendar_page.status = ReleaseStatus.PUBLISHED
     release_calendar_page.pre_release_access = [{"type": "description", "value": "pre-release access notes"}]
 
-    del release_calendar_page.table_of_contents  # clear the cached property
-    expected += [{"url": "#pre-release-access-list", "text": "Pre-release access list"}]
+    expected = [
+        {"url": "#summary", "text": "Summary"},
+        {"url": "#pre-release-access-list", "text": "Pre-release access list"},
+    ]
     assert release_calendar_page.table_of_contents == expected
 
+
+def test_release_calendar_page_table_of_contents_published__related_links(release_calendar_page):
+    """Check TOC in a published state has the related links section if added."""
+    release_calendar_page.status = ReleaseStatus.PUBLISHED
     # related links section
     related_link = ReleasePageRelatedLink(
         parent=release_calendar_page, link_url="https://ons.gov.uk", link_text="The link"
     )
     related_link.save()
 
-    del release_calendar_page.table_of_contents  # clear the cached property
-    del release_calendar_page.related_links_for_context  # clear the cached property
-    expected += [{"url": "#links", "text": "You might also be interested in"}]
+    expected = [{"url": "#summary", "text": "Summary"}, {"url": "#links", "text": "You might also be interested in"}]
     assert release_calendar_page.table_of_contents == expected
 
 

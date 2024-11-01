@@ -105,6 +105,40 @@ def test_release_calendar_form__clean__validates_release_date_when_confirmed(rel
         assert form.errors["release_date"] == ["The release date field is required when the release is confirmed"]
 
 
+@pytest.mark.parametrize(
+    "text, is_valid",
+    [
+        ("November 2024", True),
+        ("Nov 2024", False),
+        ("November 24", False),
+        ("November 2024 to December 2024", True),
+        ("November 2024 to infinity", False),
+        ("November 2024 to December 2024 to January 2025", False),
+    ],
+)
+def test_release_calendar_form__clean__validates_release_date_text(release_calendar_page, text, is_valid):
+    """Validates that the release date text format."""
+    data = form_data(release_calendar_page)
+    data["release_date_text"] = text
+    form = FORM_CLASS(instance=release_calendar_page, data=data)
+
+    assert form.is_valid() == is_valid
+    if not is_valid:
+        assert form.errors["release_date_text"] == [
+            "The release date text must be in the 'Month YYYY' or 'Month YYYY to Month YYYY' format."
+        ]
+
+
+def test_release_calendar_form__clean__validates_release_date_text_start_end_dates(release_calendar_page):
+    """Validates that the release date text with start and end month make sense."""
+    data = form_data(release_calendar_page)
+    data["release_date_text"] = "November 2024 to September 2024"
+    form = FORM_CLASS(instance=release_calendar_page, data=data)
+
+    assert form.is_valid() is False
+    assert form.errors["release_date_text"] == ["The end month must be after the start month."]
+
+
 @pytest.mark.parametrize("status", [ReleaseStatus.CONFIRMED, ReleaseStatus.PUBLISHED])
 def test_release_calendar_form__clean__validates_changes_to_release_date_must_be_filled(release_calendar_page, status):
     """Checks that one must add data to changes_to_release_date if the confirmed release data changes."""

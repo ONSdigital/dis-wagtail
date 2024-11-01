@@ -1,6 +1,6 @@
 <li class="ons-list__item">
     <h3 class="ons-u-mb-no ons-u-fs-r--b">{{ _("Previous date") }}</h3>
-    <p>{{ value.previous_date|date("j F Y g:ia") }}</p>
+    <p>{{ value.previous_date|date("DATETIME_FORMAT") }}</p>
     <h3 class="ons-u-mb-no ons-u-fs-r--b">{{ _("Reason for change") }}</h3>
     <p>{{ value.reason_for_change }}</p>
 </li>

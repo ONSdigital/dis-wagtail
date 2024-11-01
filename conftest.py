@@ -43,7 +43,7 @@ def root_page() -> Page:
 
 @pytest.fixture()
 def home_page() -> HomePage:
-    """Returns the home page."""
+    """Returns the home page, which is created via a migration."""
     return HomePage.objects.first()
 
 

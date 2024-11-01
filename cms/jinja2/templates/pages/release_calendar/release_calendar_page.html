@@ -22,12 +22,12 @@
         {% block release_meta %}
             <div class="ons-grid__col ons-grid__col--sticky@m ons-col-4@m ons-col-12@s ons-u-p-no">
                 <span class="ons-u-fs-r--b">{{ _("Release date") }}:</span>
-                <span class="ons-u-nowrap">{{ page.release_date|date("j F Y g:ia") or page.release_date_text }}</span>
+                <span class="ons-u-nowrap">{{ page.release_date|date("DATETIME_FORMAT") or page.release_date_text }}</span>
             </div>
             {% if page.next_release_date or page.next_release_text %}
                 <div class="ons-grid__col ons-col-8@m ons-col-12@s ons-u-p-no@xxs@m">
                     <span class="ons-u-fs-r--b">{{ _("Next release") }}:</span>
-                    <span class="ons-u-nowrap">{{ page.next_release_date|date("j F Y g:ia") or page.next_release_text }}</span>
+                    <span class="ons-u-nowrap">{{ page.next_release_date|date("DATETIME_FORMAT") or page.next_release_text }}</span>
                 </div>
             {% endif %}
 

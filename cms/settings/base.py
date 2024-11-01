@@ -771,7 +771,13 @@ SECURE_CROSS_ORIGIN_OPENER_POLICY = "same-origin"
 # ONS CMS specific-settings
 #
 
-# Date formats
-SHORT_DATETIME_FORMAT = "d/m/Y P"
+# See
+# https://docs.djangoproject.com/en/5.1/topics/i18n/formatting/#creating-custom-format-files
+FORMAT_MODULE_PATH = ["cms.settings.formats"]
+
+# Default date formats. Also overridden in cms.settings.forms.en_GB.formats
+# as the locale-based formats take precedence to the global ones and we use the en-gb locale.
+DATE_FORMAT = "j F Y"
+DATETIME_FORMAT = "j F Y g:ia"  # 1 November 2024, 1 p.m.
 
 ONS_EMBED_PREFIX = env.get("ONS_EMBED_PREFIX", "https://www.ons.gov.uk/visualisations/")

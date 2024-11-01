@@ -3,7 +3,7 @@
 {% block release_meta %}
     <div class="ons-grid__col ons-grid__col--sticky@m ons-col-4@m ons-col-12@s ons-u-p-no">
         <span class="ons-u-fs-r--b">{{ _("Provisional release date") }}:</span>
-        <span class="ons-u-nowrap">{{ page.release_date|date("j F Y g:ia") }}</span>
+        <span class="ons-u-nowrap">{{ page.release_date|date("DATETIME_FORMAT") or page.release_date_text }}</span>
     </div>
 {% endblock %}
 

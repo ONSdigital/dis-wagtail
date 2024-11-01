@@ -1,3 +1,4 @@
+from datetime import datetime
 from typing import Any
 
 from django.core.exceptions import ValidationError
@@ -53,4 +54,27 @@ class ReleaseCalendarPageAdminForm(WagtailAdminPageForm):
                     {"changes_to_release_date": _("You cannot remove entries from the 'Changes to release date'.")}
                 )
 
+        if cleaned_data["release_date_text"]:
+            self.validate_release_date_text_format(cleaned_data["release_date_text"])
+
         return cleaned_data
+
+    def validate_release_date_text_format(self, text: str) -> None:
+        """Validates that the release_date_text follows the Month YYYY, or Month YYYY to Month YYYY format."""
+        parts = text.split(" to ", maxsplit=1)
+
+        try:
+            date_from = datetime.strptime(parts[0], "%B %Y")
+            if len(parts) > 1:
+                date_to = datetime.strptime(parts[1], "%B %Y")
+                if date_from >= date_to:
+                    raise ValidationError({"release_date_text": _("The end month must be after the start month.")})
+
+        except ValueError:
+            raise ValidationError(
+                {
+                    "release_date_text": _(
+                        "The release date text must be in the 'Month YYYY' or 'Month YYYY to Month YYYY' format."
+                    )
+                }
+            ) from None
