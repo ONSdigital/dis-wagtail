@@ -1,9 +1,12 @@
-from typing import Any
+from typing import TYPE_CHECKING, Any, Union
 
 from django.core.exceptions import ValidationError
 from django.utils.text import slugify
 from wagtail import blocks
 from wagtail.contrib.table_block.blocks import TableBlock as WagtailTableBlock
+
+if TYPE_CHECKING:
+    from django.utils.safestring import SafeString
 
 
 class HeadingBlock(blocks.CharBlock):
@@ -51,7 +54,7 @@ class BasicTableBlock(WagtailTableBlock):
         template = "templates/components/streamfield/table_block.html"
         label = "Basic table"
 
-    def _get_header(self, value) -> list[dict[str, str]]:
+    def _get_header(self, value: dict) -> list[dict[str, str]]:
         """Prepares the table header for the Design System."""
         table_header = []
         if value.get("data", "") and len(value["data"]) > 0 and value.get("first_row_is_table_header", False):
@@ -59,7 +62,7 @@ class BasicTableBlock(WagtailTableBlock):
                 table_header.append({"value": cell or ""})
         return table_header
 
-    def _get_rows(self, value) -> list[dict[str, list[dict[str, str]]]]:
+    def _get_rows(self, value: dict) -> list[dict[str, list[dict[str, str]]]]:
         """Prepares the table data rows for the Design System."""
         trs = []
         has_header = value.get("data", "") and len(value["data"]) > 0 and value.get("first_row_is_table_header", False)
@@ -71,7 +74,7 @@ class BasicTableBlock(WagtailTableBlock):
 
         return trs
 
-    def clean(self, value):
+    def clean(self, value: dict) -> dict:
         """Validate that a header was chosen, and the cells are not empty."""
         if not value or not value.get("table_header_choice"):
             raise ValidationError("Select an option for Table headers")
@@ -81,11 +84,12 @@ class BasicTableBlock(WagtailTableBlock):
         if all_cells_empty:
             raise ValidationError("The table cannot be empty")
 
-        return super().clean(value)
+        cleaned_value: dict = super().clean(value)
+        return cleaned_value
 
-    def get_context(self, value, parent_context=None):
+    def get_context(self, value: dict, parent_context: dict | None = None) -> dict:
         """Insert the DS-ready options in the template context."""
-        context = super().get_context(value, parent_context=parent_context)
+        context: dict = super().get_context(value, parent_context=parent_context)
 
         return {
             "options": {
@@ -96,6 +100,7 @@ class BasicTableBlock(WagtailTableBlock):
             **context,
         }
 
-    def render(self, value, context=None):
+    def render(self, value: dict, context: dict | None = None) -> Union[str, "SafeString"]:
         """The Wagtail core TableBlock has a very custom `render` method. We don't want that."""
-        return super(blocks.FieldBlock, self).render(value, context)
+        rendered: str | SafeString = super(blocks.FieldBlock, self).render(value, context)
+        return rendered

@@ -1,3 +1,5 @@
+from typing import Any
+
 from django.core.exceptions import ValidationError
 from django.utils.translation import gettext as _
 from wagtail.admin.forms import WagtailAdminPageForm
@@ -8,7 +10,7 @@ from .enums import NON_PROVISIONAL_STATUS_CHOICES, ReleaseStatus
 class ReleaseCalendarPageAdminForm(WagtailAdminPageForm):
     """Convenience administrative form for easier calendar page data validation."""
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
 
         if self.instance.status != ReleaseStatus.PROVISIONAL:
@@ -20,7 +22,7 @@ class ReleaseCalendarPageAdminForm(WagtailAdminPageForm):
 
     def clean(self) -> dict:
         """Validate the submitted release calendar data."""
-        cleaned_data = super().clean()
+        cleaned_data: dict = super().clean()
 
         status = cleaned_data["status"]
 

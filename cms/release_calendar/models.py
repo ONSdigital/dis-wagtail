@@ -1,4 +1,4 @@
-from typing import ClassVar
+from typing import TYPE_CHECKING, Any, ClassVar
 
 from django.conf import settings
 from django.db import models
@@ -20,8 +20,11 @@ from .blocks import (
 from .enums import ReleaseStatus
 from .forms import ReleaseCalendarPageAdminForm
 
+if TYPE_CHECKING:
+    from django.http import HttpRequest
 
-class ReleaseCalendarIndex(BasePage):
+
+class ReleaseCalendarIndex(BasePage):  # type: ignore[django-manager-missing]
     """The release calendar index page placeholder."""
 
     template = "templates/pages/release_index.html"
@@ -76,7 +79,7 @@ class ReleaseCalendarPage(BasePage):  # type: ignore[django-manager-missing]
         blank=True,
         on_delete=models.SET_NULL,
         related_name="+",
-    )  # type: ForeignKey["ContactDetails"]
+    )
 
     # Fields: about the data
     is_accredited = models.BooleanField(
@@ -140,7 +143,7 @@ class ReleaseCalendarPage(BasePage):  # type: ignore[django-manager-missing]
         InlinePanel("related_links", heading=_("Related links"), icon="link"),
     ]
 
-    def get_template(self, request, *args, **kwargs):
+    def get_template(self, request: "HttpRequest", *args: Any, **kwargs: Any) -> str:
         """Select the correct template based on status."""
         if self.status == ReleaseStatus.PROVISIONAL:
             return "templates/pages/release_calendar/release_calendar_page--provisional.html"
@@ -148,17 +151,19 @@ class ReleaseCalendarPage(BasePage):  # type: ignore[django-manager-missing]
             return "templates/pages/release_calendar/release_calendar_page--confirmed.html"
         if self.status == ReleaseStatus.CANCELLED:
             return "templates/pages/release_calendar/release_calendar_page--cancelled.html"
-        return super().get_template(request, *args, **kwargs)
+        # assigning to variable to type hint.
+        template: str = super().get_template(request, *args, **kwargs)
+        return template
 
-    def get_context(self, request, *args, **kwargs):
+    def get_context(self, request: "HttpRequest", *args: Any, **kwargs: Any) -> dict:
         """Additional context for the template."""
-        context = super().get_context(request, *args, **kwargs)
+        context: dict = super().get_context(request, *args, **kwargs)
         context["related_links"] = self.related_links_for_context
         context["table_of_contents"] = self.table_of_contents
         return context
 
     @cached_property
-    def related_links_for_context(self):
+    def related_links_for_context(self) -> list[dict[str, str]]:
         """Related links for context."""
         return [
             {
@@ -169,7 +174,7 @@ class ReleaseCalendarPage(BasePage):  # type: ignore[django-manager-missing]
         ]
 
     @cached_property
-    def table_of_contents(self):
+    def table_of_contents(self) -> list[dict[str, str | object]]:
         """Table of contents formatted to Design System specs."""
         items = [{"url": "#summary", "text": _("Summary")}]
 

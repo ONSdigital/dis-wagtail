@@ -17,7 +17,7 @@ __all__ = ["ListingFieldsMixin", "SocialFieldsMixin", "LinkFieldsMixin", "Subpag
 class ListingFieldsMixin(models.Model):
     """Generic listing fields abstract class to add listing image/text to any new content type easily."""
 
-    listing_image = models.ForeignKey(  # type: ForeignKey["CustomImage"]
+    listing_image = models.ForeignKey(
         "images.CustomImage",
         null=True,
         blank=True,
@@ -57,7 +57,7 @@ class ListingFieldsMixin(models.Model):
 class SocialFieldsMixin(models.Model):
     """Generic social fields abstract class to add social image/text to any new content type easily."""
 
-    social_image = models.ForeignKey(  # type: ForeignKey["CustomImage"]
+    social_image = models.ForeignKey(
         "images.CustomImage",
         null=True,
         blank=True,
@@ -86,11 +86,9 @@ class LinkFieldsMixin(models.Model):
     <a href="{{ obj.get_link_url }}">{{ obj.get_link_text }}</a>.
     """
 
-    link_page = models.ForeignKey(  # type: ForeignKey[Page]
-        "wagtailcore.Page", blank=True, null=True, on_delete=models.SET_NULL
-    )
-    link_url: str = models.URLField(blank=True)
-    link_text: str = models.CharField(blank=True, max_length=255)
+    link_page = models.ForeignKey("wagtailcore.Page", blank=True, null=True, on_delete=models.SET_NULL)
+    link_url = models.URLField(blank=True)
+    link_text = models.CharField(blank=True, max_length=255)
 
     class Meta:
         abstract = True
@@ -127,14 +125,14 @@ class LinkFieldsMixin(models.Model):
             return self.link_text
 
         if self.link_page_id:
-            return self.link_page.title
+            return self.link_page.title  # type: ignore
 
         return ""
 
     def get_link_url(self, request: Optional["HttpRequest"] = None) -> str:
         """Returns the link URL, with the chosen page taking precedence."""
         if self.link_page_id:
-            return self.link_page.get_url(request=request)
+            return self.link_page.get_url(request=request)  # type: ignore
 
         return self.link_url
 

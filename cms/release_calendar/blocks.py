@@ -1,10 +1,13 @@
-from typing import ClassVar
+from typing import TYPE_CHECKING, ClassVar
 
 from django.conf import settings
 from django.utils.text import slugify
 from wagtail import blocks
 
 from cms.core.blocks import BasicTableBlock, RelatedContentBlock
+
+if TYPE_CHECKING:
+    from wagtail.blocks import StructValue
 
 
 class ContentSectionBlock(blocks.StructBlock):
@@ -16,7 +19,7 @@ class ContentSectionBlock(blocks.StructBlock):
     class Meta:  # pylint: disable=missing-class-docstring,too-few-public-methods
         template = "templates/components/streamfield/release_content_section.html"
 
-    def to_table_of_contents_items(self, value) -> list[dict[str, str]]:
+    def to_table_of_contents_items(self, value: "StructValue") -> list[dict[str, str]]:
         """Convert the value to the TOC macro format."""
         return [{"url": "#" + slugify(value["title"]), "text": value["title"]}]
 

@@ -31,5 +31,5 @@ class ContactDetails(index.Indexed, models.Model):
     class Meta:
         verbose_name_plural = "contact details"
 
-    def __str__(self):
+    def __str__(self) -> str:
         return str(self.name)
