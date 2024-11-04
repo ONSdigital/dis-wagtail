@@ -59,6 +59,8 @@ INSTALLED_APPS = [
     "cms.home",
     "cms.images",
     "cms.release_calendar",
+    "cms.themes",
+    "cms.topics",
     "cms.users",
     "wagtail.embeds",
     "wagtail.sites",
