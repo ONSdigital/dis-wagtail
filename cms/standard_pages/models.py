@@ -1,5 +1,4 @@
 from django.db import models
-from django.db.models import DateField
 from wagtail.admin.panels import FieldPanel
 from wagtail.blocks import RichTextBlock
 from wagtail.documents.blocks import DocumentChooserBlock
