@@ -8,13 +8,13 @@ from wagtail.models import Page
 from cms.core.blocks import ONSEmbedBlock, RelatedLinksBlock
 from cms.core.fields import StreamField
 
-
 class InformationPage(Page):
+
+    template = "templates/pages/information_page.html"
 
     description = models.CharField(max_length=255)
     last_updated = models.DateField(blank=True, null=True)
-    content = StreamField(
-        [
+    content = StreamField([
             ('heading', RichTextBlock()),
             ('paragraph', RichTextBlock()),
             ('image', ImageChooserBlock()),
