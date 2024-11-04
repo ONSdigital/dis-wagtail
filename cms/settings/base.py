@@ -263,6 +263,8 @@ else:
 # Search
 # https://docs.wagtail.io/en/latest/topics/search/backends.html
 
+# TODO: revert to using "wagtail.search.backends.database" when
+# https://github.com/wagtail/wagtail/pull/12508 is fixed and released.
 WAGTAILSEARCH_BACKENDS = {"default": {"BACKEND": "cms.core.search.ONSPostgresSearchBackend"}}
 
 
