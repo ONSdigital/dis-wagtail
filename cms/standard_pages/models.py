@@ -1,5 +1,5 @@
+from django.db import models
 from django.db.models import DateField
-from openpyxl.drawing.text import TextField
 from wagtail.admin.panels import FieldPanel
 from wagtail.blocks import RichTextBlock
 from wagtail.documents.blocks import DocumentChooserBlock
@@ -12,17 +12,19 @@ from cms.core.fields import StreamField
 
 class InformationPage(Page):
 
-    description = TextField(max_lenth=255)
-    last_updated = DateField(blank=True)
+    description = models.CharField(max_length=255)
+    last_updated = models.DateField(blank=True, null=True)
     content = StreamField(
         [
-            ('Heading', RichTextBlock()),
-            ('Paragraph', RichTextBlock()),
-            ('Image', ImageChooserBlock()),
-            ('Document', DocumentChooserBlock()),
-            ('Embed', ONSEmbedBlock()),#ONSEmbedBlock
-            ('Related_links', RelatedLinksBlock()),
-        ]
+            ('heading', RichTextBlock()),
+            ('paragraph', RichTextBlock()),
+            ('image', ImageChooserBlock()),
+            ('document', DocumentChooserBlock()),
+            ('embed', ONSEmbedBlock()),
+            ('related_links', RelatedLinksBlock()),
+        ],
+        blank=True,
+        null=True,
     )
 
     content_panels = Page.content_panels + [
