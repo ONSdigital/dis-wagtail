@@ -1,0 +1,19 @@
+<div class="ons-container headline-figures">
+    <h2 class="headline-figures__heading ons-u-fs-l">{{ _("Headline facts and figures") }}</h2>
+    <div class="ons-grid ons-grid-flex-gap ons-grid-flex-gap--24 headline-figures__grid">
+        {% for figure in value %}
+            <div class="ons-grid__col">
+                <div class="headline-figures__block">
+                    <h3 class="headline-figures__title">
+                        {{ figure.title }}
+                    </h3>
+                    <p class="headline-figures__figure">{{ figure.figure }}</p>
+
+                    {% if figure.supporting_text %}
+                        <p class="headline-figures__supporting-text ons-u-fs-r">{{ figure.supporting_text }}</p>
+                    {% endif %}
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+</div>
