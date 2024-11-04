@@ -5,7 +5,10 @@ from django.db.models import Model
 
 
 class ReadReplicaRouter:  # pylint: disable=unused-argument,protected-access
-    """A database router which routes reads to the read replica."""
+    """A database router which routes read queries to a read replica.
+
+    https://docs.djangoproject.com/en/5.1/topics/db/multi-db/#automatic-database-routing
+    """
 
     REPLICA_DB_ALIAS = "read_replica"
 
