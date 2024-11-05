@@ -60,36 +60,36 @@
 
 {# fmt:on #}
 {% block head %}
-  <link rel="stylesheet" href="{{ static('css/main.css') }}">
+    <link rel="stylesheet" href="{{ static('css/main.css') }}">
 
   <!-- Google Tag Manager -->
-  <script>
+    <script>
 
-    function loadGTM(){
-      (function(w,d,s,l,i){
-        w[l]=w[l]||[];
-        w[l].push({
-          'gtm.start': new Date().getTime(),
-          event:'gtm.js'
-        });
-        var f=d.getElementsByTagName(s)[0],
-        j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';
-        j.async=true;
-        j.src='https://www.googletagmanager.com/gtm.js?id='+i+dl;
-        f.parentNode.insertBefore(j,f);
-      })
-      (window,document,'script','dataLayer', "{{ GOOGLE_TAG_MANAGER_CONTAINER_ID }}");
-    }
+        function loadGTM(){
+            (function(w,d,s,l,i){
+                w[l]=w[l]||[];
+                w[l].push({
+                    'gtm.start': new Date().getTime(),
+                    event:'gtm.js'
+                });
+                var f=d.getElementsByTagName(s)[0],
+                    j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';
+                j.async=true;
+                j.src='https://www.googletagmanager.com/gtm.js?id='+i+dl;
+                f.parentNode.insertBefore(j,f);
+            })
+            (window,document,'script','dataLayer', "{{ GOOGLE_TAG_MANAGER_CONTAINER_ID }}");
+        }
 
-    function isUsageCookieAllowed(){
-      var re = /^(.*)?\s*'usage':true\s*[^;]+(.*)?$/;
-      return document.cookie.match(re);
-    }
+        function isUsageCookieAllowed(){
+            var re = /^(.*)?\s*'usage':true\s*[^;]+(.*)?$/;
+            return document.cookie.match(re);
+        }
 
-    if (isUsageCookieAllowed()) {
-        loadGTM();
-    }
-  </script>
+        if (isUsageCookieAllowed()) {
+            loadGTM();
+        }
+    </script>
   <!-- End Google Tag Manager -->
 
 {% endblock  %}
@@ -97,11 +97,11 @@
 
 {% block bodyStart %}
   <!-- Google Tag Manager (noscript) -->
-  <noscript>
-    <iframe src="https://www.googletagmanager.com/ns.html?id={{ GOOGLE_TAG_MANAGER_CONTAINER_ID }}"
-    height="0" width="0" style="display:none;visibility:hidden">
-    </iframe>
-  </noscript>
+    <noscript>
+        <iframe src="https://www.googletagmanager.com/ns.html?id={{ GOOGLE_TAG_MANAGER_CONTAINER_ID }}"
+                height="0" width="0" style="display:none;visibility:hidden">
+        </iframe>
+    </noscript>
   <!-- End Google Tag Manager (noscript) -->
 {% endblock  %}
 
@@ -124,12 +124,12 @@
       See: https://github.com/ONSdigital/design-system/pull/3300
     #}
     {{
-        onsCookiesBanner({
-          'lang': "cy" if LANGUAGE_CODE == "cy" else "en",
-          'serviceName': COOKIE_BANNER_SERVICE_NAME,
-          'settingsLinkText': 'Manage settings',
-          'settingsLinkTextURL': MANAGE_COOKIE_SETTINGS_URL,
-        })
+    onsCookiesBanner({
+    'lang': "cy" if LANGUAGE_CODE == "cy" else "en",
+    'serviceName': COOKIE_BANNER_SERVICE_NAME,
+    'settingsLinkText': 'Manage settings',
+    'settingsLinkTextURL': MANAGE_COOKIE_SETTINGS_URL,
+    })
     }}
 
 {% endblock %}
