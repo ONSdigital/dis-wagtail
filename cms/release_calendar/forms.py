@@ -4,6 +4,7 @@ from typing import Any
 from django.core.exceptions import ValidationError
 from django.utils.translation import gettext as _
 from wagtail.admin.forms import WagtailAdminPageForm
+from wagtail.models import Locale
 
 from .enums import NON_PROVISIONAL_STATUS_CHOICES, ReleaseStatus
 
@@ -56,12 +57,20 @@ class ReleaseCalendarPageAdminForm(WagtailAdminPageForm):
                     {"changes_to_release_date": _("You cannot remove entries from the 'Changes to release date'.")}
                 )
 
-        if cleaned_data["release_date_text"]:
-            self.validate_release_date_text_format(cleaned_data["release_date_text"])
+        if cleaned_data["release_date"] and cleaned_data["release_date_text"]:
+            error = _("Please enter the release date or the release date text, not both.")
+            raise ValidationError({"release_date": error, "release_date_text": error})
+
+        if cleaned_data["next_release_date"] and cleaned_data["next_release_text"]:
+            error = _("Please enter the next release date or the next release text, not both.")
+            raise ValidationError({"next_release_date": error, "next_release_text": error})
+
+        if cleaned_data["release_date_text"] and self.instance.locale_id == Locale.get_default().pk:
+            self.validate_english_release_date_text_format(cleaned_data["release_date_text"])
 
         return cleaned_data
 
-    def validate_release_date_text_format(self, text: str) -> None:
+    def validate_english_release_date_text_format(self, text: str) -> None:
         """Validates that the release_date_text follows the Month YYYY, or Month YYYY to Month YYYY format."""
         parts = text.split(" to ", maxsplit=1)
 

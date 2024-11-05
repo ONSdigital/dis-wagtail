@@ -203,3 +203,31 @@ class ReleaseCalendarPageAdminFormTestCase(TestCase):
                 form = self.form_class(instance=self.page, data=data)
 
                 self.assertTrue(form.is_valid())
+
+    def test_form_clean__validates_either_release_date_or_text(self):
+        """Checks that editors can enter either the release date or the text, not both."""
+        data = self.raw_form_data()
+        data["notice"] = rich_text("")
+        data["release_date"] = timezone.now()
+        data["release_date_text"] = "November 2024"
+        data = nested_form_data(data)
+        form = self.form_class(instance=self.page, data=data)
+
+        self.assertFalse(form.is_valid())
+        message = ["Please enter the release date or the release date text, not both."]
+        self.assertListEqual(form.errors["release_date"], message)
+        self.assertListEqual(form.errors["release_date_text"], message)
+
+    def test_form_clean__validates_either_next_release_date_or_text(self):
+        """Checks that editors can enter either the next release date or the text, not both."""
+        data = self.raw_form_data()
+        data["notice"] = rich_text("")
+        data["next_release_date"] = timezone.now()
+        data["next_release_text"] = "November 2024"
+        data = nested_form_data(data)
+        form = self.form_class(instance=self.page, data=data)
+
+        self.assertFalse(form.is_valid())
+        message = ["Please enter the next release date or the next release text, not both."]
+        self.assertListEqual(form.errors["next_release_date"], message)
+        self.assertListEqual(form.errors["next_release_text"], message)
