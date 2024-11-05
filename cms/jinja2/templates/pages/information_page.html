@@ -1,3 +1,14 @@
 {% extends "templates/base_page.html" %}
-<h1>{{ page.title }}</h1>
-    <div>{{ page.content|richtext }}</div>
+
+{% block main %}
+  <h1>{{ page.title }}</h1>
+
+  {{page.description}}
+
+  {% if page.last_updated %}
+    {{page.last_updated}}
+  {% endif %}
+
+  {{page.content}}
+
+{% endblock %}
