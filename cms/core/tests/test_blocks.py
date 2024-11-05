@@ -1,5 +1,5 @@
-import pytest
 from django.conf import settings
+from django.test import TestCase
 from wagtail.blocks import StreamBlockValidationError, StructBlockValidationError
 from wagtail.rich_text import RichText
 
@@ -11,214 +11,231 @@ from cms.core.blocks import (
     RelatedContentBlock,
     RelatedLinksBlock,
 )
-
-pytestmark = pytest.mark.django_db
-
-
-def test_document_block__block_value(document):
-    """Test DocumentBlockStructValue as_macro_data."""
-    block = DocumentBlock()
-    value = block.to_python(
-        {"document": document.pk, "title": "The block document", "description": "Document description"}
-    )
-
-    assert value.as_macro_data() == {
-        "thumbnail": True,
-        "url": document.url,
-        "title": "The block document",
-        "description": RichText("Document description"),
-        "metadata": {
-            "file": {
-                "fileType": "TXT",
-                "fileSize": "25\xa0bytes",
-            }
-        },
-    }
+from cms.core.tests.utils import get_test_document
+from cms.home.models import HomePage
 
 
-def test_documents_block__get_context(document):
-    """Tests the macro data in context."""
-    block = DocumentsBlock()
-    value = block.to_python(
-        [
+class CoreBlocksTestCase(TestCase):
+    """Test for core blocks."""
+
+    @classmethod
+    def setUpTestData(cls):
+        cls.home_page = HomePage.objects.first()
+        cls.document = get_test_document()
+
+    def test_document_block__block_value(self):
+        """Test DocumentBlockStructValue as_macro_data."""
+        block = DocumentBlock()
+        value = block.to_python(
+            {"document": self.document.pk, "title": "The block document", "description": "Document description"}
+        )
+
+        self.assertDictEqual(
+            value.as_macro_data(),
             {
-                "type": "document",
-                "value": {
-                    "document": document.pk,
-                    "title": "The block document",
-                    "description": "Document description",
+                "thumbnail": True,
+                "url": self.document.url,
+                "title": "The block document",
+                "description": RichText("Document description"),
+                "metadata": {
+                    "file": {
+                        "fileType": "TXT",
+                        "fileSize": "25\xa0bytes",
+                    }
                 },
-            }
-        ]
-    )
-
-    context = block.get_context(value)
-    assert context["macro_data"] == [
-        {
-            "thumbnail": True,
-            "url": document.url,
-            "title": "The block document",
-            "description": RichText("Document description"),
-            "metadata": {
-                "file": {
-                    "fileType": "TXT",
-                    "fileSize": "25\xa0bytes",
-                }
             },
-        }
-    ]
+        )
 
+    def test_documents_block__get_context(self):
+        """Tests the macro data in context."""
+        block = DocumentsBlock()
+        value = block.to_python(
+            [
+                {
+                    "type": "document",
+                    "value": {
+                        "document": self.document.pk,
+                        "title": "The block document",
+                        "description": "Document description",
+                    },
+                }
+            ]
+        )
 
-@pytest.mark.parametrize(
-    "show_back_to_toc",
-    [None, False, True],
-)
-def test_headingblock__get_context(show_back_to_toc):
-    """Checks that the headingblock context has the TOC."""
-    block = HeadingBlock(show_back_to_toc=show_back_to_toc)
-    value = block.to_python("The Heading")
+        context = block.get_context(value)
+        self.assertListEqual(
+            context["macro_data"],
+            [
+                {
+                    "thumbnail": True,
+                    "url": self.document.url,
+                    "title": "The block document",
+                    "description": RichText("Document description"),
+                    "metadata": {
+                        "file": {
+                            "fileType": "TXT",
+                            "fileSize": "25\xa0bytes",
+                        }
+                    },
+                }
+            ],
+        )
 
-    assert block.get_context(value)["show_back_to_toc"] == show_back_to_toc
+    def test_headingblock__get_context(self):
+        """Checks that the headingblock context has the TOC."""
+        for show_back_to_toc in [None, False, True]:
+            with self.subTest(show_back_to_toc=show_back_to_toc):
+                block = HeadingBlock(show_back_to_toc=show_back_to_toc)
+                value = block.to_python("The Heading")
+                self.assertEqual(block.get_context(value)["show_back_to_toc"], show_back_to_toc)
 
+    def test_headingblock__toc(self):
+        """Checks the headingblock TOC."""
+        block = HeadingBlock()
 
-def test_headingblock__toc():
-    """Checks the headingblock TOC."""
-    block = HeadingBlock()
-    value = block.to_python("The Heading")
+        self.assertListEqual(
+            block.to_table_of_contents_items(block.to_python("The Heading")),
+            [{"url": "#the-heading", "text": "The Heading"}],
+        )
 
-    assert block.to_table_of_contents_items(value) == [{"url": "#the-heading", "text": "The Heading"}]
+    def test_onsemebedblock__clean(self):
+        """Check the ONSEmbedBlock validates the supplied URL."""
+        block = ONSEmbedBlock()
 
+        with self.assertRaises(StructBlockValidationError) as info:
+            value = block.to_python({"url": "https://ons.gov.uk"})
+            block.clean(value)
 
-def test_onsemebedblock__clean():
-    """Check the ONSEmbedBlock validates the supplied URL."""
-    block = ONSEmbedBlock()
+        self.assertEqual(
+            info.exception.block_errors["url"].message, f"The URL must start with {settings.ONS_EMBED_PREFIX}"
+        )
 
-    with pytest.raises(StructBlockValidationError) as info:
-        value = block.to_python({"url": "https://ons.gov.uk"})
-        block.clean(value)
+    def test_onsemebedblock__clean__happy_path(self):
+        """Check the ONSEmbedBlock clean method returns the value."""
+        block = ONSEmbedBlock()
+        value = block.to_python({"url": settings.ONS_EMBED_PREFIX})
+        self.assertEqual(block.clean(value), value)
 
-    assert info.value.block_errors["url"].message == f"The URL must start with {settings.ONS_EMBED_PREFIX}"
+    def test_relatedcontentblock_clean__no_page_nor_url(self):
+        """Checks that the RelatedContentBlock validates that one of page or URL is supplied."""
+        block = RelatedContentBlock()
+        value = block.to_python({})
 
+        with self.assertRaises(StreamBlockValidationError) as info:
+            block.clean(value)
 
-def test_onsemebedblock__clean__happy_path():
-    """Check the ONSEmbedBlock clean method returns the value."""
-    block = ONSEmbedBlock()
-    value = block.to_python({"url": settings.ONS_EMBED_PREFIX})
-    assert block.clean(value) == value
+        self.assertEqual(info.exception.block_errors["page"].message, "Either Page or External Link is required.")
+        self.assertEqual(
+            info.exception.block_errors["external_url"].message, "Either Page or External Link is required."
+        )
 
+    def test_relatedcontentblock_clean__page_and_url(self):
+        """Checks that the RelatedContentBlock validates either page or URL is supplied."""
+        block = RelatedContentBlock()
+        value = block.to_python(
+            {
+                "page": 1,
+                "external_url": "https://ons.gov.uk",
+            }
+        )
 
-def test_relatedcontentblock_clean__no_page_nor_url():
-    """Checks that the RelatedContentBlock validates that one of page or URL is supplied."""
-    block = RelatedContentBlock()
-    value = block.to_python({})
+        with self.assertRaises(StreamBlockValidationError) as info:
+            block.clean(value)
 
-    with pytest.raises(StreamBlockValidationError) as info:
-        block.clean(value)
+        self.assertEqual(info.exception.block_errors["page"].message, "Please select either a page or a URL, not both.")
+        self.assertEqual(
+            info.exception.block_errors["external_url"].message, "Please select either a page or a URL, not both."
+        )
 
-    assert info.value.block_errors["page"].message == "Either Page or External Link is required."
-    assert info.value.block_errors["external_url"].message == "Either Page or External Link is required."
+    def test_relatedcontentblock_clean__url_no_title(self):
+        """Checks that the title is supplied if checking an external url."""
+        block = RelatedContentBlock()
+        value = block.to_python(
+            {
+                "external_url": "https://ons.gov.uk",
+            }
+        )
 
+        with self.assertRaises(StreamBlockValidationError) as info:
+            block.clean(value)
 
-def test_relatedcontentblock_clean__page_and_url():
-    """Checks that the RelatedContentBlock validates either page or URL is supplied."""
-    block = RelatedContentBlock()
-    value = block.to_python(
-        {
-            "page": 1,
-            "external_url": "https://ons.gov.uk",
-        }
-    )
+        self.assertEqual(info.exception.block_errors["title"].message, "Title is required for external links.")
 
-    with pytest.raises(StreamBlockValidationError) as info:
-        block.clean(value)
+    def test_relatedcontentblock_clean__happy_path(self):
+        """Happy path for the RelatedContentBlock validation."""
+        block = RelatedContentBlock()
+        value = block.to_python({"external_url": "https://ons.gov.uk", "title": "The link", "description": ""})
 
-    assert info.value.block_errors["page"].message == "Please select either a page or a URL, not both."
-    assert info.value.block_errors["external_url"].message == "Please select either a page or a URL, not both."
+        self.assertEqual(block.clean(value), value)
 
+    def test_relatedcontentblock_clean__link_value(self):
+        """Checks the RelatedContentValue link value."""
+        block = RelatedContentBlock()
 
-def test_relatedcontentblock_clean__url_no_title():
-    """Checks that the title is supplied if checking an external url."""
-    block = RelatedContentBlock()
-    value = block.to_python(
-        {
-            "external_url": "https://ons.gov.uk",
-        }
-    )
+        value = block.to_python({})
+        self.assertIsNone(value.link)
 
-    with pytest.raises(StreamBlockValidationError) as info:
-        block.clean(value)
+        value = block.to_python(
+            {
+                "external_url": "https://ons.gov.uk",
+                "title": "Example",
+                "description": "A link",
+            }
+        )
 
-    assert info.value.block_errors["title"].message == "Title is required for external links."
+        self.assertDictEqual(
+            value.link,
+            {
+                "url": "https://ons.gov.uk",
+                "text": "Example",
+                "description": "A link",
+            },
+        )
 
+        value = block.to_python(
+            {
+                "page": self.home_page.pk,
+                "title": "Example",
+                "description": "A link",
+            }
+        )
 
-def test_relatedcontentblock_clean__happy_path():
-    """Happy path for the RelatedContentBlock validation."""
-    block = RelatedContentBlock()
-    value = block.to_python({"external_url": "https://ons.gov.uk", "title": "The link", "description": ""})
+        self.assertDictEqual(
+            value.link,
+            {
+                "url": self.home_page.url,
+                "text": "Example",
+                "description": "A link",
+            },
+        )
 
-    assert block.clean(value) == value
+        value = block.to_python(
+            {
+                "page": self.home_page.pk,
+            }
+        )
 
+        self.assertDictEqual(
+            value.link,
+            {
+                "url": self.home_page.url,
+                "text": self.home_page.title,
+                "description": "",
+            },
+        )
 
-def test_relatedcontentblock_clean__link_value(home_page):
-    """Checks the RelatedContentValue link value."""
-    block = RelatedContentBlock()
+    def test_relatedlinksblock__get_context(self):
+        """Check that RelatedLinksBlock heading and slug are in the context."""
+        block = RelatedLinksBlock(child_block=RelatedContentBlock)
+        value = block.to_python([])
 
-    value = block.to_python({})
-    assert value.link is None
+        context = block.get_context(value)
+        self.assertEqual(context["heading"], "Related links")
+        self.assertEqual(context["slug"], "related-links")
 
-    value = block.to_python(
-        {
-            "external_url": "https://ons.gov.uk",
-            "title": "Example",
-            "description": "A link",
-        }
-    )
-
-    assert value.link == {
-        "url": "https://ons.gov.uk",
-        "text": "Example",
-        "description": "A link",
-    }
-
-    value = block.to_python(
-        {
-            "page": home_page.pk,
-            "title": "Example",
-            "description": "A link",
-        }
-    )
-
-    assert value.link == {
-        "url": home_page.url,
-        "text": "Example",
-        "description": "A link",
-    }
-
-    value = block.to_python(
-        {
-            "page": home_page.pk,
-        }
-    )
-
-    assert value.link == {
-        "url": home_page.url,
-        "text": home_page.title,
-        "description": "",
-    }
-
-
-def test_relatedlinksblock__get_context():
-    """Check that RelatedLinksBlock heading and slug are in the context."""
-    block = RelatedLinksBlock(child_block=RelatedContentBlock)
-    value = block.to_python([])
-
-    context = block.get_context(value)
-    assert context["heading"] == "Related links"
-    assert context["slug"] == "related-links"
-
-
-def test_relatedlinksblock__toc():
-    """Check the RelatedLinksBlock TOC."""
-    block = RelatedLinksBlock(child_block=RelatedContentBlock)
-    value = block.to_python([])
-    assert block.to_table_of_contents_items(value) == [{"url": "#related-links", "text": "Related links"}]
+    def test_relatedlinksblock__toc(self):
+        """Check the RelatedLinksBlock TOC."""
+        block = RelatedLinksBlock(child_block=RelatedContentBlock)
+        self.assertEqual(
+            block.to_table_of_contents_items(block.to_python([])), [{"url": "#related-links", "text": "Related links"}]
+        )

@@ -1,376 +1,365 @@
-import pytest
 from django.core.exceptions import ValidationError
+from django.test import RequestFactory, TestCase
 from django.utils import timezone
 
 from cms.core.models import ContactDetails
 from cms.release_calendar.enums import ReleaseStatus
 from cms.release_calendar.models import ReleasePageRelatedLink
-
-pytestmark = pytest.mark.django_db
-
-
-@pytest.mark.parametrize(
-    "status,suffix",
-    [
-        (ReleaseStatus.PROVISIONAL, "--provisional.html"),
-        (ReleaseStatus.CONFIRMED, "--confirmed.html"),
-        (ReleaseStatus.CANCELLED, "--cancelled.html"),
-        (ReleaseStatus.PUBLISHED, ".html"),
-    ],
-)
-def test_release_calendar_page_template(rf, release_calendar_page, status, suffix):
-    """Check the template used."""
-    request = rf.get("/")
-    release_calendar_page.status = status
-    assert (
-        release_calendar_page.get_template(request)
-        == f"templates/pages/release_calendar/release_calendar_page{ suffix }"
-    )
+from cms.release_calendar.tests.factories import ReleaseCalendarPageFactory
 
 
-def test_release_calendar_page_related_links_for_context(rf, release_calendar_page):
-    """Check that the correct related links are passed to the context."""
-    request = rf.get("/")
-    related_link = ReleasePageRelatedLink(
-        parent=release_calendar_page, link_url="https://ons.gov.uk", link_text="The link"
-    )
-    related_link.save()
+class ReleaseCalendarPageTestCase(TestCase):
+    """Test Release CalendarPage model properties and logic."""
 
-    expected = [
-        {"text": "The link", "url": "https://ons.gov.uk"},
-    ]
-    assert release_calendar_page.related_links_for_context == expected
-    assert release_calendar_page.get_context(request)["related_links"] == expected
+    def setUp(self):
+        self.page = ReleaseCalendarPageFactory()
 
+        # Request is created with each test to avoid mutation side effects
+        self.request = RequestFactory().get("/")
 
-@pytest.mark.parametrize(
-    "status",
-    [
-        ReleaseStatus.PROVISIONAL,
-        ReleaseStatus.CONFIRMED,
-        ReleaseStatus.CANCELLED,
-    ],
-)
-def test_release_calendar_page_table_of_contents_pre_published__content(rf, release_calendar_page, status):
-    """Check TOC in a pre-published state."""
-    request = rf.get("/")
-    release_calendar_page.status = status
-    release_calendar_page.content = [
-        {
-            "type": "release_content",
-            "value": {"title": "Publications", "links": [{"external_url": "https://ons.gov.uk", "title": "test"}]},
-        }
-    ]
+    def test_template(self):
+        """Check the template used."""
+        cases = [
+            (ReleaseStatus.PROVISIONAL, "--provisional.html"),
+            (ReleaseStatus.CONFIRMED, "--confirmed.html"),
+            (ReleaseStatus.CANCELLED, "--cancelled.html"),
+            (ReleaseStatus.PUBLISHED, ".html"),
+        ]
+        for status, suffix in cases:
+            with self.subTest(status=status, suffix=suffix):
+                self.page.status = status
+                self.assertEqual(
+                    self.page.get_template(self.request),
+                    f"templates/pages/release_calendar/release_calendar_page{ suffix }",
+                )
 
-    related_link = ReleasePageRelatedLink(
-        parent=release_calendar_page, link_url="https://ons.gov.uk", link_text="The link"
-    )
-    related_link.save()
+    def test_related_links_for_context(self):
+        """Check that the correct related links are passed to the context."""
+        related_link = ReleasePageRelatedLink(parent=self.page, link_url="https://ons.gov.uk", link_text="The link")
+        related_link.save()
 
-    expected = [{"url": "#summary", "text": "Summary"}]
+        expected = [
+            {"text": "The link", "url": "https://ons.gov.uk"},
+        ]
+        self.assertListEqual(self.page.related_links_for_context, expected)
+        self.assertListEqual(self.page.get_context(self.request)["related_links"], expected)
 
-    assert release_calendar_page.table_of_contents == expected
-    assert release_calendar_page.get_context(request)["table_of_contents"] == expected
-
-
-@pytest.mark.parametrize(
-    "status",
-    [
-        ReleaseStatus.PROVISIONAL,
-        ReleaseStatus.CONFIRMED,
-        ReleaseStatus.CANCELLED,
-    ],
-)
-def test_release_calendar_page_table_of_contents_pre_published__census(rf, release_calendar_page, status):
-    """Check TOC in a pre-published state shows about the data when is census."""
-    request = rf.get("/")
-    release_calendar_page.status = status
-    release_calendar_page.content = [
-        {
-            "type": "release_content",
-            "value": {"title": "Publications", "links": [{"external_url": "https://ons.gov.uk", "title": "test"}]},
-        }
-    ]
-
-    related_link = ReleasePageRelatedLink(
-        parent=release_calendar_page, link_url="https://ons.gov.uk", link_text="The link"
-    )
-    related_link.save()
-
-    expected = [{"url": "#summary", "text": "Summary"}, {"url": "#about-the-data", "text": "About the data"}]
-
-    release_calendar_page.is_census = True
-    release_calendar_page.is_accredited = False
-
-    assert release_calendar_page.table_of_contents == expected
-    assert release_calendar_page.get_context(request)["table_of_contents"] == expected
-
-
-@pytest.mark.parametrize(
-    "status",
-    [
-        ReleaseStatus.PROVISIONAL,
-        ReleaseStatus.CONFIRMED,
-        ReleaseStatus.CANCELLED,
-    ],
-)
-def test_release_calendar_page__table_of_contents_pre_published__accredited(rf, release_calendar_page, status):
-    """Check TOC in a pre-published state shows about the data when accredited."""
-    request = rf.get("/")
-    release_calendar_page.status = status
-    release_calendar_page.content = [
-        {
-            "type": "release_content",
-            "value": {"title": "Publications", "links": [{"external_url": "https://ons.gov.uk", "title": "test"}]},
-        }
-    ]
-
-    related_link = ReleasePageRelatedLink(
-        parent=release_calendar_page, link_url="https://ons.gov.uk", link_text="The link"
-    )
-    related_link.save()
-
-    expected = [{"url": "#summary", "text": "Summary"}, {"url": "#about-the-data", "text": "About the data"}]
-
-    release_calendar_page.is_census = False
-    release_calendar_page.is_accredited = True
-
-    assert release_calendar_page.table_of_contents == expected
-    assert release_calendar_page.get_context(request)["table_of_contents"] == expected
-
-
-def test_release_calendar_page__table_of_contents__published(release_calendar_page):
-    """Check TOC in a published state."""
-    release_calendar_page.status = ReleaseStatus.PUBLISHED
-    release_calendar_page.content = [
-        {
-            "type": "release_content",
-            "value": {
-                "title": "Publications",
-                "links": [{"type": "item", "value": {"external_url": "https://ons.gov.uk", "title": "test"}}],
-            },
-        }
-    ]
-
-    expected = [
-        {"url": "#summary", "text": "Summary"},
-        {"url": "#publications", "text": "Publications"},
-    ]
-    assert release_calendar_page.table_of_contents == expected
-
-    # changes to the release date section
-    release_calendar_page.changes_to_release_date = [
-        {"type": "date_change_log", "value": {"previous_date": timezone.now(), "reason_for_change": "The reason"}}
-    ]
-
-
-@pytest.mark.parametrize(
-    "status,shown",
-    [
-        (ReleaseStatus.PROVISIONAL, False),
-        (ReleaseStatus.CONFIRMED, False),
-        (ReleaseStatus.PUBLISHED, True),
-        (ReleaseStatus.CANCELLED, False),
-    ],
-)
-def test_release_calendar_page__rendered__content(client, release_calendar_page, status, shown):
-    """Check TOC in a published state."""
-    release_calendar_page.status = status
-    release_calendar_page.content = [
-        {
-            "type": "release_content",
-            "value": {
-                "title": "Publications",
-                "links": [
+    def test_table_of_contents_pre_published__content(self):
+        """Check TOC in a pre-published state."""
+        for status in [ReleaseStatus.PROVISIONAL, ReleaseStatus.CONFIRMED, ReleaseStatus.CANCELLED]:
+            with self.subTest(status=status):
+                self.page.status = status
+                self.page.content = [
                     {
-                        "id": "123",
-                        "type": "item",
-                        "value": {"external_url": "https://ons.gov.uk", "title": "The publication link"},
+                        "type": "release_content",
+                        "value": {
+                            "title": "Publications",
+                            "links": [{"external_url": "https://ons.gov.uk", "title": "test"}],
+                        },
                     }
-                ],
-            },
-        }
-    ]
-    release_calendar_page.save_revision().publish()
+                ]
 
-    response = client.get(release_calendar_page.url)
+                related_link = ReleasePageRelatedLink(
+                    parent=self.page, link_url="https://ons.gov.uk", link_text="The link"
+                )
+                related_link.save()
 
-    assert ("The publication link" in str(response.content)) == shown
+                expected = [{"url": "#summary", "text": "Summary"}]
+
+                self.assertListEqual(self.page.table_of_contents, expected)
+                self.assertListEqual(self.page.get_context(self.request)["table_of_contents"], expected)
+
+    def test_table_of_contents_pre_published__census(self):
+        """Check TOC in a pre-published state shows about the data when is census."""
+        for status in [ReleaseStatus.PROVISIONAL, ReleaseStatus.CONFIRMED, ReleaseStatus.CANCELLED]:
+            with self.subTest(status=status):
+                self.page.status = status
+                self.page.content = [
+                    {
+                        "type": "release_content",
+                        "value": {
+                            "title": "Publications",
+                            "links": [{"external_url": "https://ons.gov.uk", "title": "test"}],
+                        },
+                    }
+                ]
+
+                related_link = ReleasePageRelatedLink(
+                    parent=self.page, link_url="https://ons.gov.uk", link_text="The link"
+                )
+                related_link.save()
+
+                expected = [
+                    {"url": "#summary", "text": "Summary"},
+                    {"url": "#about-the-data", "text": "About the data"},
+                ]
+
+                self.page.is_census = True
+                self.page.is_accredited = False
+
+                self.assertListEqual(self.page.table_of_contents, expected)
+                self.assertListEqual(self.page.get_context(self.request)["table_of_contents"], expected)
+
+    def test_table_of_contents_pre_published__accredited(self):
+        """Check TOC in a pre-published state shows about the data when accredited."""
+        for status in [ReleaseStatus.PROVISIONAL, ReleaseStatus.CONFIRMED, ReleaseStatus.CANCELLED]:
+            with self.subTest(status=status):
+                self.page.status = status
+                self.page.content = [
+                    {
+                        "type": "release_content",
+                        "value": {
+                            "title": "Publications",
+                            "links": [{"external_url": "https://ons.gov.uk", "title": "test"}],
+                        },
+                    }
+                ]
+
+                expected = [
+                    {"url": "#summary", "text": "Summary"},
+                    {"url": "#about-the-data", "text": "About the data"},
+                ]
+
+                self.page.is_census = False
+                self.page.is_accredited = True
+
+                self.assertListEqual(self.page.table_of_contents, expected)
+                self.assertListEqual(self.page.get_context(self.request)["table_of_contents"], expected)
+
+    def test_table_of_contents__published(self):
+        """Check TOC in a published state."""
+        self.page.status = ReleaseStatus.PUBLISHED
+        self.page.content = [
+            {
+                "type": "release_content",
+                "value": {
+                    "title": "Publications",
+                    "links": [{"type": "item", "value": {"external_url": "https://ons.gov.uk", "title": "test"}}],
+                },
+            }
+        ]
+
+        self.assertListEqual(
+            self.page.table_of_contents,
+            [
+                {"url": "#summary", "text": "Summary"},
+                {"url": "#publications", "text": "Publications"},
+            ],
+        )
+
+    def test_table_of_contents__changes_to_release_date(self):
+        """Check TOC for the changes to release date if added. Should be there for non-provisional."""
+        cases = [
+            (ReleaseStatus.PROVISIONAL, False),
+            (ReleaseStatus.CONFIRMED, True),
+            (ReleaseStatus.PUBLISHED, True),
+            (ReleaseStatus.CANCELLED, True),
+        ]
+        for status, is_shown in cases:
+            with self.subTest(status=status, is_shown=is_shown):
+                self.page.status = status
+                self.page.changes_to_release_date = [
+                    {
+                        "type": "date_change_log",
+                        "value": {"previous_date": timezone.now(), "reason_for_change": "The reason"},
+                    }
+                ]
+
+                expected = {"url": "#changes-to-release-date", "text": "Changes to this release date"}
+                self.assertEqual(expected in self.page.table_of_contents, is_shown)
+                del self.page.table_of_contents  # clear the cached property
+
+    def test_table_of_contents__contact_details(self):
+        """Check TOC in a published state contains contact details if added."""
+        cases = [
+            (ReleaseStatus.PROVISIONAL, False),
+            (ReleaseStatus.CONFIRMED, False),
+            (ReleaseStatus.PUBLISHED, True),
+            (ReleaseStatus.CANCELLED, False),
+        ]
+        contact_details = ContactDetails(name="PSF team", email="psf@ons.gov.uk")
+        contact_details.save()
+        self.page.contact_details = contact_details
+        for status, is_shown in cases:
+            with self.subTest(status=status, is_shown=is_shown):
+                self.page.status = status
+
+                expected = {"url": "#contact-details", "text": "Contact details"}
+                self.assertEqual(expected in self.page.table_of_contents, is_shown)
+                del self.page.table_of_contents  # clear the cached property
+
+    def test_table_of_contents__pre_release_access(self):
+        """Check TOC in a published state has the pre-release access section if added."""
+        cases = [
+            (ReleaseStatus.PROVISIONAL, False),
+            (ReleaseStatus.CONFIRMED, False),
+            (ReleaseStatus.PUBLISHED, True),
+            (ReleaseStatus.CANCELLED, False),
+        ]
+        self.page.pre_release_access = [{"type": "description", "value": "pre-release access notes"}]
+        expected = {"url": "#pre-release-access-list", "text": "Pre-release access list"}
+
+        for status, is_shown in cases:
+            with self.subTest(status=status, is_shown=is_shown):
+                self.page.status = status
+
+                self.assertEqual(expected in self.page.table_of_contents, is_shown)
+                del self.page.table_of_contents  # clear the cached property
+
+    def test_table_of_contents_published__related_links(self):
+        """Check TOC in a published state has the related links section if added."""
+        self.page.status = ReleaseStatus.PUBLISHED
+        # related links section
+        related_link = ReleasePageRelatedLink(parent=self.page, link_url="https://ons.gov.uk", link_text="The link")
+        related_link.save()
+
+        self.assertListEqual(
+            self.page.table_of_contents,
+            [{"url": "#summary", "text": "Summary"}, {"url": "#links", "text": "You might also be interested in"}],
+        )
+
+    def test_releasepagerelated_links__clean_validates_page_or_link(self):
+        """Check related links validation."""
+        related = ReleasePageRelatedLink()
+        with self.assertRaises(ValidationError) as info:
+            related.clean()
+
+        error = "You must specify link page or link url."
+        assert info.exception.error_dict["link_page"][0].message == error
+        assert info.exception.error_dict["link_url"][0].message == error
+
+        related = ReleasePageRelatedLink(link_page=self.page, link_url="https://ons.gov.uk")
+        with self.assertRaises(ValidationError) as info:
+            related.clean()
+
+        error = "You must specify link page or link url. You can't use both."
+        assert info.exception.error_dict["link_page"][0].message == error
+        assert info.exception.error_dict["link_url"][0].message == error
+
+        related = ReleasePageRelatedLink(link_url="https://ons.gov.uk")
+        with self.assertRaises(ValidationError) as info:
+            related.clean()
+
+        assert (
+            info.exception.error_dict["link_text"][0].message
+            == "You must specify link text, if you use the link url field."
+        )
+
+    def test_releasepagerelated_links__get_link_text(self):
+        """Test the get_link_text method output."""
+        related = ReleasePageRelatedLink(link_page=self.page)
+        assert related.get_link_text() == self.page.title
+
+        related = ReleasePageRelatedLink(link_page=self.page, link_text="The link")
+        assert related.get_link_text() == "The link"
+
+    def test_releasepagerelated_links__get_link_url(self):
+        """Test the get_link_url method output."""
+        related = ReleasePageRelatedLink(link_page=self.page)
+        assert related.get_link_url() == self.page.url
+
+        related = ReleasePageRelatedLink(link_url="https://ons.gov.uk")
+        assert related.get_link_url() == "https://ons.gov.uk"
 
 
-@pytest.mark.parametrize(
-    "status,shown",
-    [
-        (ReleaseStatus.PROVISIONAL, False),
-        (ReleaseStatus.CONFIRMED, True),
-        (ReleaseStatus.PUBLISHED, True),
-        (ReleaseStatus.CANCELLED, True),
-    ],
-)
-def test_release_calendar_page__table_of_contents__changes_to_release_date(release_calendar_page, status, shown):
-    """Check TOC for the changes to release date if added. Should be there for non-provisional."""
-    release_calendar_page.status = status
-    release_calendar_page.changes_to_release_date = [
-        {"type": "date_change_log", "value": {"previous_date": timezone.now(), "reason_for_change": "The reason"}}
-    ]
+class ReleaseCalendarPageRenderTestCase(TestCase):
+    """Tests for rendered release calendar pages."""
 
-    expected = {"url": "#changes-to-release-date", "text": "Changes to this release date"}
-    assert (expected in release_calendar_page.table_of_contents) == shown
+    def setUp(self):
+        self.page = ReleaseCalendarPageFactory()
 
+    def test_rendered__content(self):
+        """Check TOC in a published state."""
+        cases = [
+            (ReleaseStatus.PROVISIONAL, False),
+            (ReleaseStatus.CONFIRMED, False),
+            (ReleaseStatus.PUBLISHED, True),
+            (ReleaseStatus.CANCELLED, False),
+        ]
+        for status, is_shown in cases:
+            with self.subTest(status=status, is_shown=is_shown):
+                self.page.status = status
+                self.page.content = [
+                    {
+                        "type": "release_content",
+                        "value": {
+                            "title": "Publications",
+                            "links": [
+                                {
+                                    "id": "123",
+                                    "type": "item",
+                                    "value": {"external_url": "https://ons.gov.uk", "title": "The publication link"},
+                                }
+                            ],
+                        },
+                    }
+                ]
+                self.page.save_revision().publish()
 
-@pytest.mark.parametrize(
-    "status,shown",
-    [
-        (ReleaseStatus.PROVISIONAL, False),
-        (ReleaseStatus.CONFIRMED, True),
-        (ReleaseStatus.PUBLISHED, True),
-        (ReleaseStatus.CANCELLED, True),
-    ],
-)
-def test_release_calendar_page__rendered__changes_to_release_date(client, release_calendar_page, status, shown):
-    """Check rendered content for changes to release date. Should show for non-provisional."""
-    release_calendar_page.status = status
-    release_calendar_page.changes_to_release_date = [
-        {"type": "date_change_log", "value": {"previous_date": timezone.now(), "reason_for_change": "The reason"}}
-    ]
-    release_calendar_page.save_revision().publish()
+                response = self.client.get(self.page.url)
 
-    response = client.get(release_calendar_page.url)
+                self.assertEqual("The publication link" in str(response.content), is_shown)
 
-    assert ("The reason" in str(response.content)) == shown
+    def test_rendered__changes_to_release_date(self):
+        """Check rendered content for changes to release date. Should show for non-provisional."""
+        cases = [
+            (ReleaseStatus.PROVISIONAL, False),
+            (ReleaseStatus.CONFIRMED, True),
+            (ReleaseStatus.PUBLISHED, True),
+            (ReleaseStatus.CANCELLED, True),
+        ]
+        for status, is_shown in cases:
+            with self.subTest(status=status, is_shown=is_shown):
+                self.page.status = status
+                self.page.changes_to_release_date = [
+                    {
+                        "type": "date_change_log",
+                        "value": {"previous_date": timezone.now(), "reason_for_change": "The reason"},
+                    }
+                ]
+                self.page.save_revision().publish()
 
+                response = self.client.get(self.page.url)
 
-@pytest.mark.parametrize(
-    "status,shown",
-    [
-        (ReleaseStatus.PROVISIONAL, False),
-        (ReleaseStatus.CONFIRMED, False),
-        (ReleaseStatus.PUBLISHED, True),
-        (ReleaseStatus.CANCELLED, False),
-    ],
-)
-def test_release_calendar_page__table_of_contents__contact_details(release_calendar_page, status, shown):
-    """Check TOC in a published state contains contact details if added."""
-    release_calendar_page.status = status
-    contact_details = ContactDetails(name="PSF team", email="psf@ons.gov.uk")
-    contact_details.save()
-    release_calendar_page.contact_details = contact_details
+                self.assertEqual("The reason" in str(response.content), is_shown)
 
-    expected = {"url": "#contact-details", "text": "Contact details"}
-    assert (expected in release_calendar_page.table_of_contents) == shown
+    def test_rendered__contact_details(self):
+        """Check rendered content for contact details."""
+        cases = [
+            (ReleaseStatus.PROVISIONAL, False),
+            (ReleaseStatus.CONFIRMED, False),
+            (ReleaseStatus.PUBLISHED, True),
+            (ReleaseStatus.CANCELLED, False),
+        ]
 
+        contact_details = ContactDetails(name="PSF team", email="psf@ons.gov.uk")
+        contact_details.save()
+        self.page.contact_details = contact_details
 
-@pytest.mark.parametrize(
-    "status,shown",
-    [
-        (ReleaseStatus.PROVISIONAL, False),
-        (ReleaseStatus.CONFIRMED, False),
-        (ReleaseStatus.PUBLISHED, True),
-        (ReleaseStatus.CANCELLED, False),
-    ],
-)
-def test_release_calendar_page__rendered__contact_details(client, release_calendar_page, status, shown):
-    """Check rendered content for contact details."""
-    release_calendar_page.status = status
-    contact_details = ContactDetails(name="PSF team", email="psf@ons.gov.uk")
-    contact_details.save()
-    release_calendar_page.contact_details = contact_details
-    release_calendar_page.save_revision().publish()
+        for status, is_shown in cases:
+            with self.subTest(status=status, is_shown=is_shown):
+                self.page.status = status
+                self.page.save_revision().publish()
 
-    response = client.get(release_calendar_page.url)
+                response = self.client.get(self.page.url)
 
-    assert ("PSF team" in str(response.content)) == shown
+                self.assertEqual("PSF team" in str(response.content), is_shown)
 
+    def test_rendered__pre_release_access(self):
+        """Check TOC in a published state."""
+        cases = [
+            (ReleaseStatus.PROVISIONAL, False),
+            (ReleaseStatus.CONFIRMED, False),
+            (ReleaseStatus.PUBLISHED, True),
+            (ReleaseStatus.CANCELLED, False),
+        ]
+        self.page.pre_release_access = [{"type": "description", "value": "pre-release access notes"}]
 
-@pytest.mark.parametrize(
-    "status,shown",
-    [
-        (ReleaseStatus.PROVISIONAL, False),
-        (ReleaseStatus.CONFIRMED, False),
-        (ReleaseStatus.PUBLISHED, True),
-        (ReleaseStatus.CANCELLED, False),
-    ],
-)
-def test_release_calendar_page__table_of_contents__pre_release_access(release_calendar_page, status, shown):
-    """Check TOC in a published state has the pre-release access section if added."""
-    release_calendar_page.status = status
-    release_calendar_page.pre_release_access = [{"type": "description", "value": "pre-release access notes"}]
+        for status, is_shown in cases:
+            with self.subTest(status=status, is_shown=is_shown):
+                self.page.status = status
+                self.page.save_revision().publish()
 
-    expected = {"url": "#pre-release-access-list", "text": "Pre-release access list"}
-    assert (expected in release_calendar_page.table_of_contents) == shown
+                response = self.client.get(self.page.url)
 
-
-@pytest.mark.parametrize(
-    "status,shown",
-    [
-        (ReleaseStatus.PROVISIONAL, False),
-        (ReleaseStatus.CONFIRMED, False),
-        (ReleaseStatus.PUBLISHED, True),
-        (ReleaseStatus.CANCELLED, False),
-    ],
-)
-def test_release_calendar_page__rendered__pre_release_access(client, release_calendar_page, status, shown):
-    """Check TOC in a published state."""
-    release_calendar_page.status = status
-    release_calendar_page.pre_release_access = [{"type": "description", "value": "pre-release access notes"}]
-    release_calendar_page.save_revision().publish()
-
-    response = client.get(release_calendar_page.url)
-
-    assert ("pre-release access notes" in str(response.content)) == shown
-
-
-def test_release_calendar_page__table_of_contents_published__related_links(release_calendar_page):
-    """Check TOC in a published state has the related links section if added."""
-    release_calendar_page.status = ReleaseStatus.PUBLISHED
-    # related links section
-    related_link = ReleasePageRelatedLink(
-        parent=release_calendar_page, link_url="https://ons.gov.uk", link_text="The link"
-    )
-    related_link.save()
-
-    expected = [{"url": "#summary", "text": "Summary"}, {"url": "#links", "text": "You might also be interested in"}]
-    assert release_calendar_page.table_of_contents == expected
-
-
-def test_releasepagerelated_links__clean_validates_page_or_link(release_calendar_page):
-    """Check related links validation."""
-    related = ReleasePageRelatedLink()
-    with pytest.raises(ValidationError) as info:
-        related.clean()
-
-    error = "You must specify link page or link url."
-    assert info.value.error_dict["link_page"][0].message == error
-    assert info.value.error_dict["link_url"][0].message == error
-
-    related = ReleasePageRelatedLink(link_page=release_calendar_page, link_url="https://ons.gov.uk")
-    with pytest.raises(ValidationError) as info:
-        related.clean()
-
-    error = "You must specify link page or link url. You can't use both."
-    assert info.value.error_dict["link_page"][0].message == error
-    assert info.value.error_dict["link_url"][0].message == error
-
-    related = ReleasePageRelatedLink(link_url="https://ons.gov.uk")
-    with pytest.raises(ValidationError) as info:
-        related.clean()
-
-    assert info.value.error_dict["link_text"][0].message == "You must specify link text, if you use the link url field."
-
-
-def test_releasepagerelated_links__get_link_text(release_calendar_page):
-    """Test the get_link_text method output."""
-    related = ReleasePageRelatedLink(link_page=release_calendar_page)
-    assert related.get_link_text() == release_calendar_page.title
-
-    related = ReleasePageRelatedLink(link_page=release_calendar_page, link_text="The link")
-    assert related.get_link_text() == "The link"
-
-
-def test_releasepagerelated_links__get_link_url(release_calendar_page):
-    """Test the get_link_url method output."""
-    related = ReleasePageRelatedLink(link_page=release_calendar_page)
-    assert related.get_link_url() == release_calendar_page.url
-
-    related = ReleasePageRelatedLink(link_url="https://ons.gov.uk")
-    assert related.get_link_url() == "https://ons.gov.uk"
+                self.assertEqual("pre-release access notes" in str(response.content), is_shown)
