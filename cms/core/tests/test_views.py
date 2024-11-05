@@ -1,14 +1,18 @@
 import logging
 
-import pytest
+from django.test import Client, TestCase
 
 
-@pytest.mark.django_db
-def test_csrf_token_mismatch_logs_an_error(csrf_check_client, caplog, enable_console_logging):  # pylint: disable=unused-argument
-    """Check that the custom csrf error view logs CSRF failures."""
-    csrf_check_client.cookies["csrftoken"] = "wrong"
+class CSRFTestCase(TestCase):
+    """Tests for CSRF enforcement."""
+    def setUp(self):
+        self.client = Client(enforce_csrf_checks=True)
 
-    with caplog.at_level(logging.ERROR, logger="django.security.csrf"):
-        csrf_check_client.post("/admin/login/", {})
+    def test_csrf_token_mismatch_logs_an_error(self):
+        """Check that the custom csrf error view logs CSRF failures."""
+        self.client.cookies["csrftoken"] = "wrong"
 
-    assert "CSRF Failure: CSRF cookie" in caplog.text
+        with self.assertLogs(logger="django.security.csrf", level=logging.ERROR) as logs:
+            self.client.post("/admin/login/", {})
+
+        self.assertIn("CSRF Failure: CSRF cookie", logs.output[0])
