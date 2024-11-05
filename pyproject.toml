@@ -37,11 +37,8 @@ pylint = "^3.3.1"
 pylint-django = "^2.0.0"
 ruff = "^0.7.1"  # keep version in sync with .pre-commit-config.yaml
 
-pytest = "^8.3.3"
-pytest-cov = "^5.0.0"
-pytest-xdist = "^3.6.1"
-pytest-django ="^4.9.0"
 wagtail-factories = "^4.1.0"
+coverage = "^7.6.4"
 
 dslr = "^0.4.0"
 django-debug-toolbar = "^4.4.6"
@@ -136,14 +133,6 @@ ignore_errors = true
 [tool.django-stubs]
 django_settings_module = "cms.settings.test"
 
-[tool.pytest.ini_options]
-DJANGO_SETTINGS_MODULE = "cms.settings.test"
-filterwarnings = [
-    "ignore::django.utils.deprecation.RemovedInNextVersionWarning",
-    "ignore::django.utils.deprecation.RemovedInDjango60Warning",
-    "ignore::DeprecationWarning:l18n.translation"
-]
-
 [tool.coverage.run]
 source = ["cms"]
 omit = [
@@ -159,6 +148,8 @@ omit = [
     "cms/urls.py",
     "cms/settings/*",
 ]
+parallel = true
+concurrency = ["multiprocessing", "thread"]
 
 [tool.coverage.report]
 show_missing = true
