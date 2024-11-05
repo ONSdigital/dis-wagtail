@@ -73,5 +73,5 @@ class Tracking(BaseSiteSetting):
     google_tag_manager_id = models.CharField(
         max_length=255,
         blank=True,
-        help_text="Your Google Tag Manager ID",
+        help_text="Your Google Tag Manager Container ID",
     )

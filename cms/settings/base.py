@@ -737,7 +737,7 @@ WAGTAIL_PASSWORD_REQUIRED_TEMPLATE = "templates/pages/wagtail/password_required.
 DEFAULT_PER_PAGE = 20
 
 # Google Tag Manager ID from env
-GOOGLE_TAG_MANAGER_ID = env.get("GOOGLE_TAG_MANAGER_ID")
+GOOGLE_TAG_MANAGER_ID = env.get("GOOGLE_TAG_MANAGER_ID", "EXAMPLE-TESTING")
 
 
 # Allows us to toggle search indexing via an environment variable.
@@ -773,3 +773,8 @@ SECURE_CROSS_ORIGIN_OPENER_POLICY = "same-origin"
 SHORT_DATETIME_FORMAT = "d/m/Y P"
 
 ONS_EMBED_PREFIX = env.get("ONS_EMBED_PREFIX", "https://www.ons.gov.uk/visualisations/")
+
+# ONS Cookie banner constants
+ONS_COOKIE_BANNER_SERVICE_NAME = env.get("ONS_COOKIE_BANNER_SERVICE_NAME", "www.ons.gov.uk")
+GOOGLE_TAG_MANAGER_CONTAINER_ID = env.get("GOOGLE_TAG_MANAGER_CONTAINER_ID", "GTM-123456")
+MANAGE_COOKIE_SETTINGS_URL = env.get("MANAGE_COOKIE_SETTINGS_URL", "https://www.ons.gov.uk/cookies")
