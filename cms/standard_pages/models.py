@@ -1,6 +1,6 @@
 from django.db import models
 from wagtail.admin.panels import FieldPanel
-from wagtail.blocks import RichTextBlock
+from wagtail.blocks import RichTextBlock, URLBlock
 from wagtail.documents.blocks import DocumentChooserBlock
 from wagtail.images.blocks import ImageChooserBlock
 from wagtail.models import Page
@@ -12,7 +12,7 @@ class InformationPage(Page):
 
     template = "templates/pages/information_page.html"
 
-    description = models.CharField(max_length=255)
+    description = models.TextField(max_length=255)
     last_updated = models.DateField(blank=True, null=True)
     content = StreamField([
             ('heading', RichTextBlock()),
@@ -20,7 +20,7 @@ class InformationPage(Page):
             ('image', ImageChooserBlock()),
             ('document', DocumentChooserBlock()),
             ('embed', ONSEmbedBlock()),
-            ('related_links', RelatedLinksBlock()),
+            ('related_links', RelatedLinksBlock(child_block= URLBlock())),
         ],
         blank=True,
         null=True,
