@@ -168,12 +168,13 @@ poetry add wagtailmedia
 
 ### Run Tests with Coverage
 
-The unit tests are written using the [pytest](https://docs.pytest.org/en/stable/) framework. To run the tests and check
-coverage, run:
+To run the tests and check coverage, run:
 
 ```bash
 make test
 ```
+
+During tests, the `cms.settings.test` settings module is used. When running test without using `make test`, ensure this settings module is used.
 
 ### Linting and Formatting
 
