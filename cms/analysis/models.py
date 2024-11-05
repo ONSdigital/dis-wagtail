@@ -3,8 +3,11 @@ from typing import TYPE_CHECKING, Any, ClassVar
 
 from django.conf import settings
 from django.db import models
+from django.http import Http404
+from django.shortcuts import redirect
 from django.utils.translation import gettext_lazy as _
-from wagtail.admin.panels import FieldPanel, FieldRowPanel, MultiFieldPanel, TitleFieldPanel
+from wagtail.admin.panels import FieldPanel, FieldRowPanel, HelpPanel, MultiFieldPanel, TitleFieldPanel
+from wagtail.contrib.routable_page.models import RoutablePageMixin, path
 from wagtail.fields import RichTextField
 from wagtail.models import Page
 from wagtail.search import index
@@ -16,16 +19,53 @@ from cms.core.models import BasePage
 
 if TYPE_CHECKING:
     from django.http import HttpRequest
+    from django.http.response import HttpResponseRedirect
+    from django.template.response import TemplateResponse
     from wagtail.admin.panels import Panel
 
 
-class AnalysisSeries(Page):  # type: ignore[django-manager-missing]
+class AnalysisSeries(RoutablePageMixin, Page):  # type: ignore[django-manager-missing]
     """The analysis series model."""
 
     parent_page_types: ClassVar[list[str]] = ["topics.TopicPage"]
     subpage_types: ClassVar[list[str]] = ["AnalysisPage"]
     preview_modes: ClassVar[list[str]] = []  # Disabling the preview mode due to it being a container page.
     page_description = "A container for Analysis series"
+
+    content_panels: ClassVar[list["Panel"]] = [
+        *Page.content_panels,
+        HelpPanel(
+            content="This is a container for Analysis series. It provides the <code>/latest</code>,"
+            "<code>/previous-release</code> evergreen paths, as well as the actual analysis pages. "
+            "Add a new Analysis page under this container."
+        ),
+    ]
+
+    def get_latest(self) -> "AnalysisPage":
+        """Returns the latest published analysis page."""
+        return AnalysisPage.objects.live().child_of(self).order_by("-release_date").first()
+
+    @path("")
+    def index(self, request: "HttpRequest") -> "HttpResponseRedirect":
+        """Redirect to /latest as this is a container page without its own content."""
+        return redirect(self.get_url(request) + self.reverse_subpage("latest_release"))
+
+    @path("latest/")
+    def latest_release(self, request: "HttpRequest") -> "TemplateResponse":
+        """Serves the latest analysis page in the series."""
+        latest = self.get_latest()
+        if not latest:
+            raise Http404
+        return latest.serve(request)
+
+    @path("previous-releases/")
+    def previous_releases(self, request: "HttpRequest"):
+        """Render the previous releases template."""
+        return self.render(
+            request,
+            context_overrides={"pages": AnalysisPage.objects.live().child_of(self).order_by("-release_date")},
+            template="templates/pages/analysis_page--previous-releases.html",
+        )
 
 
 class AnalysisPage(BasePage):  # type: ignore[django-manager-missing]
@@ -151,6 +191,14 @@ class AnalysisPage(BasePage):  # type: ignore[django-manager-missing]
         if self.contact_details_id:
             items += [{"url": "#contact-details", "text": _("Contact details")}]
         return items
+
+    @property
+    def is_latest(self) -> bool:
+        """Returns True if the analysis page is latest in its series based on the release date."""
+        latest_id = (
+            AnalysisPage.objects.sibling_of(self).live().order_by("-release_date").values_list("id", flat=True).first()
+        )
+        return self.pk == latest_id
 
     @cached_property
     def has_equations(self) -> bool:

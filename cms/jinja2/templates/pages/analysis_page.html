@@ -52,7 +52,14 @@
                         <span class="ons-u-fs-r--b analysis-header__releases-label">{{ _("Next release") }}:</span>
                         <span class="ons-u-nowrap">{{ page.next_release_date|date("DATE_FORMAT") or _("To be announced") }}</span>
                     </div>
-                    <div class="ons-grid__col ons-col-4@m"></div>
+                    <div class="ons-grid__col ons-col-4@m">
+                        <span class="ons-u-fs-r--b bulletin-header__releases-label">{{ _("Releases") }}:</span>
+                        {% if page.is_latest %}
+                            <a href="{{ routablepageurl(page.get_parent().specific, "previous_releases") }}">{{ _("View previous releases") }}</a>
+                        {% else %}
+                            <a href="{{  routablepageurl(page.get_parent().specific, "latest_release") }}">{{ _("View latest release") }}</a>
+                        {% endif %}
+                    </div>
                 </div>
             </div>
         {% endblock %}
