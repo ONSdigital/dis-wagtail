@@ -59,7 +59,7 @@ INSTALLED_APPS = [
     "cms.home",
     "cms.images",
     "cms.users",
-    "cms.standard_pages"
+    "cms.standard_pages",
     "wagtail.embeds",
     "wagtail.sites",
     "wagtail.users",
