@@ -5,7 +5,10 @@ from wagtail.documents.blocks import DocumentChooserBlock
 from wagtail.images.blocks import ImageChooserBlock
 from wagtail.models import Page
 
-from cms.core.blocks import ONSEmbedBlock, RelatedLinksBlock
+from cms.core.blocks import (
+    ONSEmbedBlock,
+    RelatedLinksBlock,
+    RelatedContentBlock)
 from cms.core.fields import StreamField
 
 class InformationPage(Page):
@@ -20,7 +23,7 @@ class InformationPage(Page):
             ('image', ImageChooserBlock()),
             ('document', DocumentChooserBlock()),
             ('embed', ONSEmbedBlock()),
-            ('related_links', RelatedLinksBlock(child_block= URLBlock())),
+            ('related_links', RelatedLinksBlock(RelatedContentBlock())),
         ],
         blank=True,
         null=True,
