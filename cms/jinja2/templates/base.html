@@ -123,10 +123,10 @@
     #}
     {{
         onsCookiesBanner({
-            'lang': "en" if LANGUAGE_CODE == "en-gb" else "cy",
-            'serviceName': COOKIE_BANNER_SERVICE_NAME,
-            'settingsLinkText': 'Manage settings',
-            'settingsLinkTextURL': MANAGE_COOKIE_SETTINGS_URL,
+          'lang': "cy" if LANGUAGE_CODE == "cy" else "en",
+          'serviceName': COOKIE_BANNER_SERVICE_NAME,
+          'settingsLinkText': 'Manage settings',
+          'settingsLinkTextURL': MANAGE_COOKIE_SETTINGS_URL,
         })
     }}
 
