@@ -51,7 +51,10 @@ lint-frontend:  ## Run front-end linters
 
 .PHONY: test
 test:  ## Run the tests and check coverage.
+	poetry run coverage erase
 	poetry run coverage run ./manage.py test --parallel --settings=cms.settings.test
+	poetry run coverage combine
+	poetry run coverage report
 
 .PHONY: mypy
 mypy:  ## Run mypy.
