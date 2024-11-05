@@ -10,6 +10,7 @@ class ContextProcessorTestCase(TestCase):
     def setUp(self):
         request_factory = RequestFactory()
 
+        # Request is created with each test to avoid mutation side-effects
         self.request = request_factory.get("/")
 
     def test_when_no_tracking_settings_defined(self):
