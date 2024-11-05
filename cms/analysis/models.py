@@ -19,6 +19,7 @@ if TYPE_CHECKING:
 class AnalysisSeries(Page):  # type: ignore[django-manager-missing]
     """The analysis series model."""
 
+    parent_page_types: ClassVar[list[str]] = ["topics.TopicPage"]
     subpage_types: ClassVar[list[str]] = ["AnalysisPage"]
     preview_modes: ClassVar[list[str]] = []  # Disabling the preview mode due to it being a container page.
     page_description = "A container for Analysis series"
@@ -27,6 +28,7 @@ class AnalysisSeries(Page):  # type: ignore[django-manager-missing]
 class AnalysisPage(BasePage):  # type: ignore[django-manager-missing]
     """The analysis page model."""
 
+    parent_page_types: ClassVar[list[str]] = ["AnalysisSeries"]
     subpage_types: ClassVar[list[str]] = []
     template = "templates/pages/analysis_page.html"
 
