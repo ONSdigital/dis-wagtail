@@ -11,7 +11,6 @@ all: ## Show the available make targets.
 
 .PHONY: clean
 clean: ## Clean the temporary files.
-	rm -rf .pytest_cache
 	rm -rf .mypy_cache
 	rm -rf .coverage
 	rm -rf .ruff_cache
@@ -52,7 +51,10 @@ lint-frontend:  ## Run front-end linters
 
 .PHONY: test
 test:  ## Run the tests and check coverage.
-	poetry run pytest -n auto --ds=cms.settings.test --cov=cms --cov-report term-missing
+	poetry run coverage erase
+	poetry run coverage run ./manage.py test --parallel --settings=cms.settings.test
+	poetry run coverage combine
+	poetry run coverage report
 
 .PHONY: mypy
 mypy:  ## Run mypy.
