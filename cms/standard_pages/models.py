@@ -8,7 +8,12 @@ from wagtail.models import Page
 from cms.core.blocks import (
     ONSEmbedBlock,
     RelatedLinksBlock,
-    RelatedContentBlock)
+    RelatedContentBlock,
+)
+
+#could use...
+from cms.core.blocks.stream_blocks import CoreStoryBlock
+
 from cms.core.fields import StreamField
 
 class InformationPage(Page):
