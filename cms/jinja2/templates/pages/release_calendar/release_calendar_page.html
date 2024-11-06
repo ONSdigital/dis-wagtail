@@ -53,16 +53,6 @@
             {% block release_content %}
                 {% include_block page.content %}
 
-                {% if page.changes_to_release_date %}
-                    <section id="changes-to-release-date">
-                        <h2>{{ _("Changes to this release date") }}</h2>
-
-                        <ol class="ons-list ons-list--bare">
-                            {% include_block page.changes_to_release_date %}
-                        </ol>
-                    </section>
-                {% endif %}
-
                 {% if page.contact_details %}
                     <section id="contact-details">
                         <h2>{{ _("Contact details") }}</h2>
@@ -77,6 +67,16 @@
                                 <p><a href="tel:{{ page.contact_details.phone|urlencode() }}">{{ page.contact_details.phone }}</a></p>
                             {% endif %}
                         </div>
+                    </section>
+                {% endif %}
+
+                {% if page.changes_to_release_date %}
+                    <section id="changes-to-release-date">
+                        <h2>{{ _("Changes to this release date") }}</h2>
+
+                        <ol class="ons-list ons-list--bare">
+                            {% include_block page.changes_to_release_date %}
+                        </ol>
                     </section>
                 {% endif %}
             {% endblock release_content %}
