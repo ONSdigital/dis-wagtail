@@ -101,24 +101,12 @@
                     </section>
                 {% endif %}
 
-                {% if related_links %}
-                    {% from "components/related-content/_macro.njk" import onsRelatedContent %}
-                {# fmt:off #}
-                <section id="links">
-                    {{
-                        onsRelatedContent({
-                            "ariaLabel": _('You might also be interested in'),
-                            "rows": [
-                                {
-                                    "id": 'related-links',
-                                    "title": _('You might also be interested in'),
-                                    "itemsList": related_links
-                                }
-                            ]
-                        })
-                    }}
-                </section>
-                {# fmt:on #}
+                {% if page.related_links %}
+                    <section id="links">
+                        <h2>{{ _("You might also be interested in") }}</h2>
+
+                        {% include_block page.related_links %}
+                    </section>
                 {% endif %}
             {% endblock %}
         </div>

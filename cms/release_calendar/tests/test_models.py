@@ -1,4 +1,3 @@
-from django.core.exceptions import ValidationError
 from django.test import RequestFactory, TestCase
 from django.urls import reverse
 from django.utils import timezone
@@ -6,7 +5,6 @@ from wagtail.test.utils.wagtail_tests import WagtailTestUtils
 
 from cms.core.models import ContactDetails
 from cms.release_calendar.enums import ReleaseStatus
-from cms.release_calendar.models import ReleasePageRelatedLink
 from cms.release_calendar.tests.factories import ReleaseCalendarPageFactory
 
 
@@ -35,17 +33,6 @@ class ReleaseCalendarPageTestCase(WagtailTestUtils, TestCase):
                     f"templates/pages/release_calendar/release_calendar_page{ suffix }",
                 )
 
-    def test_related_links_for_context(self):
-        """Check that the correct related links are passed to the context."""
-        related_link = ReleasePageRelatedLink(parent=self.page, link_url="https://ons.gov.uk", link_text="The link")
-        related_link.save()
-
-        expected = [
-            {"text": "The link", "url": "https://ons.gov.uk"},
-        ]
-        self.assertListEqual(self.page.related_links_for_context, expected)
-        self.assertListEqual(self.page.get_context(self.request)["related_links"], expected)
-
     def test_table_of_contents_pre_published__content(self):
         """Check TOC in a pre-published state."""
         for status in [ReleaseStatus.PROVISIONAL, ReleaseStatus.CONFIRMED, ReleaseStatus.CANCELLED]:
@@ -60,11 +47,12 @@ class ReleaseCalendarPageTestCase(WagtailTestUtils, TestCase):
                         },
                     }
                 ]
-
-                related_link = ReleasePageRelatedLink(
-                    parent=self.page, link_url="https://ons.gov.uk", link_text="The link"
-                )
-                related_link.save()
+                self.page.related_links = [
+                    {
+                        "type": "link",
+                        "value": {"external_url": "https://ons.gov.uk", "title": "The link"},
+                    }
+                ]
 
                 expected = [{"url": "#summary", "text": "Summary"}]
 
@@ -86,10 +74,12 @@ class ReleaseCalendarPageTestCase(WagtailTestUtils, TestCase):
                     }
                 ]
 
-                related_link = ReleasePageRelatedLink(
-                    parent=self.page, link_url="https://ons.gov.uk", link_text="The link"
-                )
-                related_link.save()
+                self.page.related_links = [
+                    {
+                        "type": "link",
+                        "value": {"external_url": "https://ons.gov.uk", "title": "The link"},
+                    }
+                ]
 
                 expected = [
                     {"url": "#summary", "text": "Summary"},
@@ -211,57 +201,12 @@ class ReleaseCalendarPageTestCase(WagtailTestUtils, TestCase):
     def test_table_of_contents_published__related_links(self):
         """Check TOC in a published state has the related links section if added."""
         self.page.status = ReleaseStatus.PUBLISHED
-        # related links section
-        related_link = ReleasePageRelatedLink(parent=self.page, link_url="https://ons.gov.uk", link_text="The link")
-        related_link.save()
+        self.page.related_links = [{"type": "link", "value": {"url": "https://ons.gov.uk", "text": "The link"}}]
 
         self.assertListEqual(
             self.page.table_of_contents,
             [{"url": "#summary", "text": "Summary"}, {"url": "#links", "text": "You might also be interested in"}],
         )
-
-    def test_releasepagerelated_links__clean_validates_page_or_link(self):
-        """Check related links validation."""
-        related = ReleasePageRelatedLink()
-        with self.assertRaises(ValidationError) as info:
-            related.clean()
-
-        error = "You must specify link page or link url."
-        assert info.exception.error_dict["link_page"][0].message == error
-        assert info.exception.error_dict["link_url"][0].message == error
-
-        related = ReleasePageRelatedLink(link_page=self.page, link_url="https://ons.gov.uk")
-        with self.assertRaises(ValidationError) as info:
-            related.clean()
-
-        error = "You must specify link page or link url. You can't use both."
-        assert info.exception.error_dict["link_page"][0].message == error
-        assert info.exception.error_dict["link_url"][0].message == error
-
-        related = ReleasePageRelatedLink(link_url="https://ons.gov.uk")
-        with self.assertRaises(ValidationError) as info:
-            related.clean()
-
-        assert (
-            info.exception.error_dict["link_text"][0].message
-            == "You must specify link text, if you use the link url field."
-        )
-
-    def test_releasepagerelated_links__get_link_text(self):
-        """Test the get_link_text method output."""
-        related = ReleasePageRelatedLink(link_page=self.page)
-        assert related.get_link_text() == self.page.title
-
-        related = ReleasePageRelatedLink(link_page=self.page, link_text="The link")
-        assert related.get_link_text() == "The link"
-
-    def test_releasepagerelated_links__get_link_url(self):
-        """Test the get_link_url method output."""
-        related = ReleasePageRelatedLink(link_page=self.page)
-        assert related.get_link_url() == self.page.url
-
-        related = ReleasePageRelatedLink(link_url="https://ons.gov.uk")
-        assert related.get_link_url() == "https://ons.gov.uk"
 
     def test_delete_redirects_back_to_edit(self):
         """Test that we get redirected back to edit when trying to delete a release calendar page."""

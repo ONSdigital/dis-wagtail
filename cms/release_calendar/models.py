@@ -5,17 +5,17 @@ from django.db import models
 from django.utils.functional import cached_property
 from django.utils.text import slugify
 from django.utils.translation import gettext_lazy as _
-from modelcluster.fields import ParentalKey
-from wagtail.admin.panels import FieldPanel, FieldRowPanel, InlinePanel, MultiFieldPanel
+from wagtail.admin.panels import FieldPanel, FieldRowPanel, MultiFieldPanel
 from wagtail.fields import RichTextField
-from wagtail.models import Orderable, Page
+from wagtail.models import Page
 
 from cms.core.fields import StreamField
-from cms.core.models import BasePage, LinkFieldsMixin
+from cms.core.models import BasePage
 
 from .blocks import (
     ReleaseCalendarChangesStoryBlock,
     ReleaseCalendarPreReleaseAccessStoryBlock,
+    ReleaseCalendarRelatedLinksStoryBlock,
     ReleaseCalendarStoryBlock,
 )
 from .enums import NON_PROVISIONAL_STATUSES, ReleaseStatus
@@ -33,12 +33,6 @@ class ReleaseCalendarIndex(BasePage):  # type: ignore[django-manager-missing]
     parent_page_types: ClassVar[list[str]] = ["home.HomePage"]
     subpage_types: ClassVar[list[str]] = ["ReleaseCalendarPage"]
     max_count_per_parent = 1
-
-
-class ReleasePageRelatedLink(LinkFieldsMixin, Orderable):
-    """Related links. e.g. https://www.ons.gov.uk/releases/welshlanguagecensus2021inwales."""
-
-    parent = ParentalKey("ReleaseCalendarPage", related_name="related_links", on_delete=models.CASCADE)
 
 
 class ReleaseCalendarPage(BasePage):  # type: ignore[django-manager-missing]
@@ -103,6 +97,7 @@ class ReleaseCalendarPage(BasePage):  # type: ignore[django-manager-missing]
         help_text=_("Required if making changes to confirmed release dates."),
     )
     pre_release_access = StreamField(ReleaseCalendarPreReleaseAccessStoryBlock(), blank=True)
+    related_links = StreamField(ReleaseCalendarRelatedLinksStoryBlock(), blank=True)
 
     content_panels: ClassVar[list[FieldPanel]] = [
         MultiFieldPanel(
@@ -141,7 +136,7 @@ class ReleaseCalendarPage(BasePage):  # type: ignore[django-manager-missing]
         ),
         FieldPanel("changes_to_release_date", icon="comment"),
         FieldPanel("pre_release_access", icon="key"),
-        InlinePanel("related_links", heading=_("Related links"), icon="link"),
+        FieldPanel("related_links", icon="link"),
     ]
 
     def get_template(self, request: "HttpRequest", *args: Any, **kwargs: Any) -> str:
@@ -161,20 +156,8 @@ class ReleaseCalendarPage(BasePage):  # type: ignore[django-manager-missing]
     def get_context(self, request: "HttpRequest", *args: Any, **kwargs: Any) -> dict:
         """Additional context for the template."""
         context: dict = super().get_context(request, *args, **kwargs)
-        context["related_links"] = self.related_links_for_context
         context["table_of_contents"] = self.table_of_contents
         return context
-
-    @cached_property
-    def related_links_for_context(self) -> list[dict[str, str]]:
-        """Related links for context."""
-        return [
-            {
-                "text": item.get_link_text(),
-                "url": item.get_link_url(),
-            }
-            for item in self.related_links.select_related("link_page")
-        ]
 
     @cached_property
     def table_of_contents(self) -> list[dict[str, str | object]]:
@@ -201,7 +184,7 @@ class ReleaseCalendarPage(BasePage):  # type: ignore[django-manager-missing]
                 text = _("Pre-release access list")
                 items += [{"url": f"#{slugify(text)}", "text": text}]
 
-            if self.related_links_for_context:
+            if self.related_links:
                 items += [{"url": "#links", "text": _("You might also be interested in")}]
 
         return items

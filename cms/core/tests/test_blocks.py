@@ -226,7 +226,7 @@ class CoreBlocksTestCase(TestCase):
 
     def test_relatedlinksblock__get_context(self):
         """Check that RelatedLinksBlock heading and slug are in the context."""
-        block = RelatedLinksBlock(child_block=RelatedContentBlock)
+        block = RelatedLinksBlock()
         value = block.to_python([])
 
         context = block.get_context(value)
@@ -235,7 +235,7 @@ class CoreBlocksTestCase(TestCase):
 
     def test_relatedlinksblock__toc(self):
         """Check the RelatedLinksBlock TOC."""
-        block = RelatedLinksBlock(child_block=RelatedContentBlock)
+        block = RelatedLinksBlock()
         self.assertEqual(
             block.to_table_of_contents_items(block.to_python([])), [{"url": "#related-links", "text": "Related links"}]
         )

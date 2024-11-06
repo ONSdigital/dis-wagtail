@@ -61,3 +61,12 @@ class ReleaseCalendarPreReleaseAccessStoryBlock(blocks.StreamBlock):
     class Meta:  # pylint: disable=missing-class-docstring,too-few-public-methods
         template = "templates/components/streamfield/stream_block.html"
         block_counts: ClassVar[dict[str, dict[str, int]]] = {"description": {"max_num": 1}, "table": {"max_num": 1}}
+
+
+class ReleaseCalendarRelatedLinksStoryBlock(blocks.StreamBlock):
+    """The 'You might also be interested in' StreamField definition."""
+
+    link = RelatedContentBlock()
+
+    class Meta:  # pylint: disable=missing-class-docstring,too-few-public-methods
+        template = "templates/components/streamfield/stream_block--related-links.html"

@@ -1,7 +1,7 @@
 import factory
 import wagtail_factories
 
-from cms.release_calendar.models import ReleaseCalendarIndex, ReleaseCalendarPage, ReleasePageRelatedLink
+from cms.release_calendar.models import ReleaseCalendarIndex, ReleaseCalendarPage
 
 
 class ReleaseCalendarPageFactory(wagtail_factories.PageFactory):
@@ -14,13 +14,3 @@ class ReleaseCalendarPageFactory(wagtail_factories.PageFactory):
 
     title = factory.Faker("text", max_nb_chars=25)
     summary = factory.Faker("text", max_nb_chars=100)
-
-
-class ReleasePageRelatedLinkFactory(factory.django.DjangoModelFactory):
-    """Factory for ReleasePageRelatedLink."""
-
-    class Meta:
-        model = ReleasePageRelatedLink
-
-    link_url = factory.Faker("url")
-    link_text = factory.Faker("text", max_nb_chars=25)

@@ -16,7 +16,6 @@ from wagtail.blocks import (
 )
 
 if TYPE_CHECKING:
-    from wagtail.blocks import Block
     from wagtail.blocks.list_block import ListValue
 
 
@@ -90,8 +89,8 @@ class RelatedContentBlock(StructBlock):
 class RelatedLinksBlock(ListBlock):
     """Defines a list of links block."""
 
-    def __init__(self, child_block: "Block", search_index: bool = True, **kwargs: Any) -> None:
-        super().__init__(child_block, search_index=search_index, **kwargs)
+    def __init__(self, search_index: bool = True, **kwargs: Any) -> None:
+        super().__init__(RelatedContentBlock, search_index=search_index, **kwargs)
 
         self.heading = _("Related links")
         self.slug = slugify(self.heading)

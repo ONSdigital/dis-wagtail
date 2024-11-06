@@ -1,6 +1,6 @@
 from django.test import TestCase
 from django.utils import timezone
-from wagtail.test.utils.form_data import inline_formset, nested_form_data, rich_text, streamfield
+from wagtail.test.utils.form_data import nested_form_data, rich_text, streamfield
 
 from cms.release_calendar.enums import NON_PROVISIONAL_STATUS_CHOICES, ReleaseStatus
 from cms.release_calendar.models import ReleaseCalendarPage
@@ -29,7 +29,7 @@ class ReleaseCalendarPageAdminFormTestCase(TestCase):
             # our values
             "status": ReleaseStatus.PROVISIONAL,
             "notice": '{"entityMap": {},"blocks": []}',  # an empty rich text
-            "related_links": inline_formset([]),
+            "related_links": streamfield([]),
         }
 
     def test_form_init__status_choices(self):
