@@ -772,8 +772,8 @@ SECURE_CROSS_ORIGIN_OPENER_POLICY = "same-origin"
 # https://docs.djangoproject.com/en/5.1/topics/i18n/formatting/#creating-custom-format-files
 FORMAT_MODULE_PATH = ["cms.settings.formats"]
 
-# Default date formats. Also overridden in cms.settings.forms.en_GB.formats
-# as the locale-based formats take precedence to the global ones and we use the en-gb locale.
+# Default date formats. Also overridden in cms.settings.formats.en_GB.formats
+# as the locale-based formats take precedence to the global ones, and we use the en-gb locale.
 DATE_FORMAT = "j F Y"
 DATETIME_FORMAT = "j F Y g:ia"  # 1 November 2024, 1 p.m.
 

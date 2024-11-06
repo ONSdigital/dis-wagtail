@@ -3,6 +3,7 @@ from typing import TYPE_CHECKING, Any, ClassVar
 from django.conf import settings
 from django.db import models
 from django.utils.functional import cached_property
+from django.utils.text import slugify
 from django.utils.translation import gettext_lazy as _
 from modelcluster.fields import ParentalKey
 from wagtail.admin.panels import FieldPanel, FieldRowPanel, InlinePanel, MultiFieldPanel
@@ -60,7 +61,7 @@ class ReleaseCalendarPage(BasePage):  # type: ignore[django-manager-missing]
     )
     next_release_date = models.DateTimeField(blank=True, null=True)
     next_release_text = models.CharField(
-        max_length=255, blank=True, help_text=_("Formats needed: 'DD Month YYYY Time' or 'To be confirmed'.")
+        max_length=255, blank=True, help_text=_("Formats: 'DD Month YYYY Time' or 'To be confirmed'.")
     )
 
     notice = RichTextField(
@@ -145,12 +146,14 @@ class ReleaseCalendarPage(BasePage):  # type: ignore[django-manager-missing]
 
     def get_template(self, request: "HttpRequest", *args: Any, **kwargs: Any) -> str:
         """Select the correct template based on status."""
-        if self.status == ReleaseStatus.PROVISIONAL:
-            return "templates/pages/release_calendar/release_calendar_page--provisional.html"
-        if self.status == ReleaseStatus.CONFIRMED:
-            return "templates/pages/release_calendar/release_calendar_page--confirmed.html"
-        if self.status == ReleaseStatus.CANCELLED:
-            return "templates/pages/release_calendar/release_calendar_page--cancelled.html"
+        template_by_status = {
+            ReleaseStatus.PROVISIONAL: "provisional.html",
+            ReleaseStatus.CONFIRMED: "confirmed.html",
+            ReleaseStatus.CANCELLED: "cancelled.html",
+        }
+        if template_for_status := template_by_status.get(self.status):
+            return f"templates/pages/release_calendar/release_calendar_page--{template_for_status}"
+
         # assigning to variable to type hint.
         template: str = super().get_template(request, *args, **kwargs)
         return template
@@ -186,14 +189,17 @@ class ReleaseCalendarPage(BasePage):  # type: ignore[django-manager-missing]
             items += [{"url": "#changes-to-release-date", "text": _("Changes to this release date")}]
 
         if self.status == ReleaseStatus.PUBLISHED and self.contact_details_id:
-            items += [{"url": "#contact-details", "text": _("Contact details")}]
+            text = _("Contact details")
+            items += [{"url": f"#{slugify(text)}", "text": text}]
 
         if self.is_accredited or self.is_census:
-            items += [{"url": "#about-the-data", "text": _("About the data")}]
+            text = _("About the data")
+            items += [{"url": f"#{slugify(text)}", "text": text}]
 
         if self.status == ReleaseStatus.PUBLISHED:
             if self.pre_release_access:
-                items += [{"url": "#pre-release-access-list", "text": _("Pre-release access list")}]
+                text = _("Pre-release access list")
+                items += [{"url": f"#{slugify(text)}", "text": text}]
 
             if self.related_links_for_context:
                 items += [{"url": "#links", "text": _("You might also be interested in")}]
