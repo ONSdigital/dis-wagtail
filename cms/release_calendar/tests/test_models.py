@@ -1,6 +1,8 @@
 from django.core.exceptions import ValidationError
 from django.test import RequestFactory, TestCase
+from django.urls import reverse
 from django.utils import timezone
+from wagtail.test.utils.wagtail_tests import WagtailTestUtils
 
 from cms.core.models import ContactDetails
 from cms.release_calendar.enums import ReleaseStatus
@@ -8,7 +10,7 @@ from cms.release_calendar.models import ReleasePageRelatedLink
 from cms.release_calendar.tests.factories import ReleaseCalendarPageFactory
 
 
-class ReleaseCalendarPageTestCase(TestCase):
+class ReleaseCalendarPageTestCase(WagtailTestUtils, TestCase):
     """Test Release CalendarPage model properties and logic."""
 
     def setUp(self):
@@ -260,6 +262,22 @@ class ReleaseCalendarPageTestCase(TestCase):
 
         related = ReleasePageRelatedLink(link_url="https://ons.gov.uk")
         assert related.get_link_url() == "https://ons.gov.uk"
+
+    def test_delete_redirects_back_to_edit(self):
+        """Test that we get redirected back to edit when trying to delete a release calendar page."""
+        self.login()  # creates a superuser and logs them in
+        response = self.client.post(
+            reverse("wagtailadmin_pages:delete", args=(self.page.id,)),
+            follow=True,
+        )
+
+        edit_url = reverse("wagtailadmin_pages:edit", args=(self.page.id,))
+        self.assertRedirects(response, edit_url)
+
+        self.assertIn(
+            "Release calendar pages cannot be deleted. You can mark them as cancelled instead.",
+            [msg.message.strip() for msg in response.context["messages"]],
+        )
 
 
 class ReleaseCalendarPageRenderTestCase(TestCase):
