@@ -1,14 +1,21 @@
 {% extends "templates/base_page.html" %}
+{% from "components/related-content/_macro.njk" import onsRelatedContent %}
 
 {% block main %}
-  <h1>{{ page.title }}</h1>
 
-  {{page.description}}
+<h1>{{ page.title }}</h1>
 
+  {% if page.description %}
+    {{ page.description }}
+  {% endif %}
   {% if page.last_updated %}
     {{page.last_updated}}
   {% endif %}
 
-  {{page.content}}
+  {% for block in page.content %}
+    {% if block.block_type == "related_links" %}
+          {{ page.content }}
+    {% endif %}
+  {% endfor %}
 
 {% endblock %}
