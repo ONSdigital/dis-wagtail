@@ -147,9 +147,9 @@ class ReleaseCalendarPage(BasePage):  # type: ignore[django-manager-missing]
     def get_template(self, request: "HttpRequest", *args: Any, **kwargs: Any) -> str:
         """Select the correct template based on status."""
         template_by_status = {
-            ReleaseStatus.PROVISIONAL: "provisional.html",
-            ReleaseStatus.CONFIRMED: "confirmed.html",
-            ReleaseStatus.CANCELLED: "cancelled.html",
+            ReleaseStatus.PROVISIONAL.value: "provisional.html",
+            ReleaseStatus.CONFIRMED.value: "confirmed.html",
+            ReleaseStatus.CANCELLED.value: "cancelled.html",
         }
         if template_for_status := template_by_status.get(self.status):
             return f"templates/pages/release_calendar/release_calendar_page--{template_for_status}"
