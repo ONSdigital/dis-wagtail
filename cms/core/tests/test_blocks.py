@@ -4,6 +4,7 @@ from wagtail.blocks import StreamBlockValidationError, StructBlockValidationErro
 from wagtail.rich_text import RichText
 
 from cms.core.blocks import (
+    BasicTableBlock,
     DocumentBlock,
     DocumentsBlock,
     HeadingBlock,
@@ -238,4 +239,41 @@ class CoreBlocksTestCase(TestCase):
         block = RelatedLinksBlock()
         self.assertEqual(
             block.to_table_of_contents_items(block.to_python([])), [{"url": "#related-links", "text": "Related links"}]
+        )
+
+    def test_basictableblock_get_context(self):
+        """Tests the BasicTableBlock context has DS-compatible options."""
+        block = BasicTableBlock()
+        value = {
+            "first_row_is_table_header": False,
+            "first_col_is_header": False,
+            "table_caption": "Caption",
+            "data": [
+                ["Foo", "Bar"],
+                ["one", "two"],
+            ],
+        }
+
+        context = block.get_context(value)
+        self.assertDictEqual(
+            context["options"],
+            {
+                "caption": "Caption",
+                "ths": [],
+                "trs": [
+                    {"tds": [{"value": "Foo"}, {"value": "Bar"}]},
+                    {"tds": [{"value": "one"}, {"value": "two"}]},
+                ],
+            },
+        )
+
+        value["first_row_is_table_header"] = True
+        context = block.get_context(value)
+        self.assertDictEqual(
+            context["options"],
+            {
+                "caption": "Caption",
+                "ths": [{"value": "Foo"}, {"value": "Bar"}],
+                "trs": [{"tds": [{"value": "one"}, {"value": "two"}]}],
+            },
         )
