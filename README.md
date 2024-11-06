@@ -261,11 +261,11 @@ make megalint
 Wagtail is built on [Django](https://djangoproject.com/) and changes to its models may require generating and
 running schema migrations. For full details see the [Django documentation on migrations](https://docs.djangoproject.com/en/5.1/topics/migrations/)
 
-Below are the commands you will most commonly use:
+Below are the commands you will most commonly use, note that these have to be run inside the container. 
 
 ```bash
 # Check if you need to generate any new migrations after changes to the model
-poetru run django-admin makemigrations --check
+poetry run django-admin makemigrations --check
 
 # Generate migrations
 poetry run django-admin makemigrations
