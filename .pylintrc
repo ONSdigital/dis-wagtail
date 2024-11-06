@@ -434,12 +434,14 @@ disable=raw-checker-failed,
         duplicate-code,
         wrong-import-order,
         missing-module-docstring,
-        too-many-ancestors
+        too-many-ancestors,
+        fixme
 
 # note:
 # - wrong-import-order: covered by ruff
 # - missing-module-docstring: because they should be self-explanatory
 # - too-many-ancestors: because of our and Wagtail's use of mixins
+# - fixme: because we want to leave TODO notes for future features.
 
 # Enable the message, report, category or checker with the given id(s). You can
 # either give multiple identifier separated by comma (,) or put this option

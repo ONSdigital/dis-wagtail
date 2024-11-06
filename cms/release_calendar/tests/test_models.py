@@ -5,6 +5,7 @@ from wagtail.test.utils.wagtail_tests import WagtailTestUtils
 
 from cms.core.models import ContactDetails
 from cms.release_calendar.enums import ReleaseStatus
+from cms.release_calendar.models import ReleaseCalendarIndex
 from cms.release_calendar.tests.factories import ReleaseCalendarPageFactory
 
 
@@ -220,7 +221,7 @@ class ReleaseCalendarPageTestCase(WagtailTestUtils, TestCase):
         self.assertRedirects(response, edit_url)
 
         self.assertIn(
-            "Release calendar pages cannot be deleted. You can mark them as cancelled instead.",
+            "Release Calendar pages cannot be deleted. You can mark them as cancelled instead.",
             [msg.message.strip() for msg in response.context["messages"]],
         )
 
@@ -326,3 +327,26 @@ class ReleaseCalendarPageRenderTestCase(TestCase):
                 response = self.client.get(self.page.url)
 
                 self.assertEqual("pre-release access notes" in str(response.content), is_shown)
+
+
+class ReleaseCalendarIndexTestCase(WagtailTestUtils, TestCase):
+    """Tests for release calendar index."""
+
+    def setUp(self):
+        self.page = ReleaseCalendarIndex.objects.first()
+
+    def test_delete_redirects_back_to_edit(self):
+        """Test that we get redirected back to edit when trying to delete a release calendar index."""
+        self.login()  # creates a superuser and logs them in
+        response = self.client.post(
+            reverse("wagtailadmin_pages:delete", args=(self.page.id,)),
+            follow=True,
+        )
+
+        edit_url = reverse("wagtailadmin_pages:edit", args=(self.page.id,))
+        self.assertRedirects(response, edit_url)
+
+        self.assertIn(
+            "The Release Calendar index cannot be deleted.",
+            [msg.message.strip() for msg in response.context["messages"]],
+        )

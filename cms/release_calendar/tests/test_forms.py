@@ -165,29 +165,6 @@ class ReleaseCalendarPageAdminFormTestCase(TestCase):
                     ],
                 )
 
-    def test_form_clean__validates_changes_to_release_date_cannot_be_removed(self):
-        """Tests that one cannot remove changes_to_release_date data."""
-        self.page.changes_to_release_date = [
-            {"type": "date_change_log", "value": {"previous_date": timezone.now(), "reason_for_change": "The reason"}}
-        ]
-        data = self.raw_form_data(page=self.page)
-        data["notice"] = rich_text("")
-        data["release_date"] = timezone.now()
-        data["changes_to_release_date"] = streamfield([])
-
-        for status in [ReleaseStatus.CONFIRMED, ReleaseStatus.PUBLISHED]:
-            with self.subTest(status=status):
-                data["status"] = status
-
-                data = nested_form_data(data)
-                form = self.form_class(instance=self.page, data=data)
-
-                self.assertFalse(form.is_valid())
-                self.assertListEqual(
-                    form.errors["changes_to_release_date"],
-                    ["You cannot remove entries from the 'Changes to release date'."],
-                )
-
     def test_form_clean__validates_release_date_when_confirmed__happy_path(self):
         """Checks that there are no errors when good data is submitted."""
         data = self.raw_form_data()
@@ -231,3 +208,15 @@ class ReleaseCalendarPageAdminFormTestCase(TestCase):
         message = ["Please enter the next release date or the next release text, not both."]
         self.assertListEqual(form.errors["next_release_date"], message)
         self.assertListEqual(form.errors["next_release_text"], message)
+
+    def test_form_clean__validates_next_release_date_is_after_release_date(self):
+        """Checks that editors enter a release that that is after the release date."""
+        data = self.raw_form_data()
+        data["notice"] = rich_text("")
+        data["release_date"] = data["next_release_date"] = timezone.now()
+        data = nested_form_data(data)
+        form = self.form_class(instance=self.page, data=data)
+
+        self.assertFalse(form.is_valid())
+        message = ["The next release date must be after the release date."]
+        self.assertListEqual(form.errors["next_release_date"], message)

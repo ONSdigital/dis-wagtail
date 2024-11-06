@@ -70,18 +70,18 @@ class LinkBlock(StructBlock):
 
         # Require exactly one link
         if not page and not external_url:
-            error = ValidationError("Either Page or External Link is required.", code="invalid")
+            error = ValidationError(_("Either Page or External Link is required."), code="invalid")
             errors["page"] = ErrorList([error])
             errors["external_url"] = ErrorList([error])
-            non_block_errors.append(ValidationError("Missing required fields"))
+            non_block_errors.append(ValidationError(_("Missing required fields")))
         elif page and external_url:
-            error = ValidationError("Please select either a page or a URL, not both.", code="invalid")
+            error = ValidationError(_("Please select either a page or a URL, not both."), code="invalid")
             errors["page"] = ErrorList([error])
             errors["external_url"] = ErrorList([error])
 
         # Require title for external links
         if not page and external_url and not value["title"]:
-            errors["title"] = ErrorList([ValidationError("Title is required for external links.", code="invalid")])
+            errors["title"] = ErrorList([ValidationError(_("Title is required for external links."), code="invalid")])
 
         if errors:
             raise StreamBlockValidationError(block_errors=errors, non_block_errors=non_block_errors)

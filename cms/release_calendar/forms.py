@@ -52,10 +52,12 @@ class ReleaseCalendarPageAdminForm(WagtailAdminPageForm):
                     }
                 )
 
-            if len(self.instance.changes_to_release_date) > len(cleaned_data["changes_to_release_date"]):
-                raise ValidationError(
-                    {"changes_to_release_date": _("You cannot remove entries from the 'Changes to release date'.")}
-                )
+        if (
+            cleaned_data["release_date"]
+            and cleaned_data["next_release_date"]
+            and cleaned_data["release_date"] >= cleaned_data["next_release_date"]
+        ):
+            raise ValidationError({"next_release_date": _("The next release date must be after the release date.")})
 
         if cleaned_data["release_date"] and cleaned_data["release_date_text"]:
             error = _("Please enter the release date or the release date text, not both.")
@@ -65,6 +67,7 @@ class ReleaseCalendarPageAdminForm(WagtailAdminPageForm):
             error = _("Please enter the next release date or the next release text, not both.")
             raise ValidationError({"next_release_date": error, "next_release_text": error})
 
+        # TODO: expand to validate for non-English locales when adding multi-language.
         if cleaned_data["release_date_text"] and self.instance.locale_id == Locale.get_default().pk:
             self.validate_english_release_date_text_format(cleaned_data["release_date_text"])
 

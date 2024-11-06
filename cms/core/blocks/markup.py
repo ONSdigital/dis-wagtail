@@ -2,6 +2,7 @@ from typing import TYPE_CHECKING, Any, Union
 
 from django.core.exceptions import ValidationError
 from django.utils.text import slugify
+from django.utils.translation import gettext as _
 from wagtail import blocks
 from wagtail.contrib.table_block.blocks import TableBlock as WagtailTableBlock
 
@@ -77,12 +78,12 @@ class BasicTableBlock(WagtailTableBlock):
     def clean(self, value: dict) -> dict:
         """Validate that a header was chosen, and the cells are not empty."""
         if not value or not value.get("table_header_choice"):
-            raise ValidationError("Select an option for Table headers")
+            raise ValidationError(_("Select an option for Table headers"))
 
         data = value.get("data", [])
         all_cells_empty = all(not cell for row in data for cell in row)
         if all_cells_empty:
-            raise ValidationError("The table cannot be empty")
+            raise ValidationError(_("The table cannot be empty"))
 
         cleaned_value: dict = super().clean(value)
         return cleaned_value
