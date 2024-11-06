@@ -27,22 +27,26 @@ class LinkBlockStructValue(StructValue):
         """A convenience property that returns the block value in a consistent way,
         regardless of the chosen values (be it a Wagtail page or external link).
         """
+        value = None
         title = self.get("title")
         desc = self.get("description")
+        has_description = "description" in self
+
         if external_url := self.get("external_url"):
-            return {"url": external_url, "text": title, "description": desc}
+            value = {"url": external_url, "text": title}
+            if has_description:
+                value["description"] = desc
 
         if (page := self.get("page")) and page.live:
-            return {
-                "url": page.url,
-                "text": title or page.title,
-                "description": desc or getattr(page.specific_deferred, "summary", ""),
-            }
-        return None
+            value = {"url": page.url, "text": title or page.title}
+            if has_description:
+                value["description"] = desc or getattr(page.specific_deferred, "summary", "")
+
+        return value
 
 
-class RelatedContentBlock(StructBlock):
-    """Related content block with page or link validation."""
+class LinkBlock(StructBlock):
+    """Related link block with page or link validation."""
 
     page = PageChooserBlock(required=False)
     external_url = URLBlock(required=False, label="or External Link")
@@ -51,7 +55,6 @@ class RelatedContentBlock(StructBlock):
         "When choosing a page, you can leave it blank to use the page's own title",
         required=False,
     )
-    description = CharBlock(required=False)
 
     class Meta:  # pylint: disable=missing-class-docstring,too-few-public-methods
         icon = "link"
@@ -84,6 +87,12 @@ class RelatedContentBlock(StructBlock):
             raise StreamBlockValidationError(block_errors=errors, non_block_errors=non_block_errors)
 
         return value
+
+
+class RelatedContentBlock(LinkBlock):
+    """Related content block with page or link validation."""
+
+    description = CharBlock(required=False)
 
 
 class RelatedLinksBlock(ListBlock):

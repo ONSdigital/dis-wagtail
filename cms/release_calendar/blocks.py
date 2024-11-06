@@ -4,7 +4,7 @@ from django.conf import settings
 from django.utils.text import slugify
 from wagtail import blocks
 
-from cms.core.blocks import BasicTableBlock, RelatedContentBlock
+from cms.core.blocks import BasicTableBlock, LinkBlock, RelatedContentBlock
 
 if TYPE_CHECKING:
     from wagtail.blocks import StructValue
@@ -66,7 +66,7 @@ class ReleaseCalendarPreReleaseAccessStoryBlock(blocks.StreamBlock):
 class ReleaseCalendarRelatedLinksStoryBlock(blocks.StreamBlock):
     """The 'You might also be interested in' StreamField definition."""
 
-    link = RelatedContentBlock()
+    link = LinkBlock()
 
     class Meta:  # pylint: disable=missing-class-docstring,too-few-public-methods
         template = "templates/components/streamfield/stream_block--related-links.html"
