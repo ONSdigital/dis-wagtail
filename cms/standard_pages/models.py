@@ -17,12 +17,6 @@ class InformationPage(Page):
     last_updated = models.DateField(blank=True, null=True)
     body = StreamField(CoreStoryBlock(), use_json_field=True)
 
-    # content_panels = Page.content_panels + [
-    #     FieldPanel("description"),
-    #     FieldPanel("last_updated"),
-    #     FieldPanel("body"),
-    # ]
-
     content_panels: ClassVar[list[FieldPanel]] = [
         *Page.content_panels,
         FieldPanel("description"),
