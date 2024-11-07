@@ -7,6 +7,7 @@ from cms.core.models import Tracking
 
 class ContextProcessorTestCase(TestCase):
     """Tests for context processors."""
+
     def setUp(self):
         request_factory = RequestFactory()
 
