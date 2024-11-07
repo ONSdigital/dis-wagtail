@@ -2,13 +2,13 @@
 {% from "components/related-content/_macro.njk" import onsRelatedContent %}
 
 {% block main %}
-    <h1>{{ page.title }}</h1>
-
-    {% if page.introduction %}
-        <p>{{ page.introduction }}</p>
+    {% if page.summary %}
+        <p>{{ page.summary }}</p>
     {% endif %}
 
-    {% include_block page.body %}
+    <h5>Last Updated: {{ page.last_updated }}</h5>
+
+    {% include_block page.content %}
 
     {% if related_pages %}
         {# fmt:off #}
