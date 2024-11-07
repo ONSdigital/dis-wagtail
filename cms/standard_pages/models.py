@@ -2,6 +2,7 @@ from typing import ClassVar
 
 from django.db import models
 from wagtail.admin.panels import FieldPanel
+from wagtail.search import index
 
 from cms.core.blocks.stream_blocks import CoreStoryBlock
 from cms.core.fields import StreamField
@@ -17,11 +18,17 @@ class InformationPage(BasePage):  # type: ignore[django-manager-missing]
 
     summary = models.TextField(max_length=255, null=True)
     last_updated = models.DateField(blank=True, null=True)
-    body = StreamField(CoreStoryBlock())
+    content = StreamField(CoreStoryBlock())
 
     content_panels: ClassVar[list[FieldPanel]] = [
         *BasePage.content_panels,
         FieldPanel("summary"),
         FieldPanel("last_updated"),
-        FieldPanel("body"),
+        FieldPanel("content"),
+    ]
+
+    search_fields: ClassVar[list[index.SearchField | index.AutocompleteField]] = [
+        *BasePage.search_fields,
+        index.SearchField("summary"),
+        index.SearchField("content"),
     ]
