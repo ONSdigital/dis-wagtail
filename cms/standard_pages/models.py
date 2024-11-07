@@ -8,7 +8,7 @@ from cms.core.fields import StreamField
 from cms.core.models import BasePage
 
 
-class InformationPage(BasePage):
+class InformationPage(BasePage):  # type: ignore[django-manager-missing]
     template = "templates/pages/information_page.html"
 
     summary = models.TextField(max_length=255, null=True)
