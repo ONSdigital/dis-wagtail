@@ -39,3 +39,13 @@ class InformationPage(Page):
         FieldPanel('last_updated'),
         FieldPanel('content')
     ]
+
+    def get_context(self, request, *args, **kwargs):
+        context = super().get_context(request, *args, **kwargs)
+
+        list =[]
+        for block in self.content:
+            if block.block_type == 'related_links':
+                list.extend(block.value)
+        context['links_list'] = list
+        return context
