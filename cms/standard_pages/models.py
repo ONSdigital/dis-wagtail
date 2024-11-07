@@ -3,23 +3,21 @@ from typing import ClassVar
 from django.db import models
 from wagtail.admin.panels import FieldPanel
 
-# from cms.core.models import BasePage
-from wagtail.fields import StreamField
-from wagtail.models import Page
-
 from cms.core.blocks.stream_blocks import CoreStoryBlock
+from cms.core.fields import StreamField
+from cms.core.models import BasePage
 
 
-class InformationPage(Page):
+class InformationPage(BasePage):
     template = "templates/pages/information_page.html"
 
-    description = models.TextField(max_length=255, null=True)
+    summary = models.TextField(max_length=255, null=True)
     last_updated = models.DateField(blank=True, null=True)
-    body = StreamField(CoreStoryBlock(), use_json_field=True)
+    body = StreamField(CoreStoryBlock())
 
     content_panels: ClassVar[list[FieldPanel]] = [
-        *Page.content_panels,
-        FieldPanel("description"),
+        *BasePage.content_panels,
+        FieldPanel("summary"),
         FieldPanel("last_updated"),
         FieldPanel("body"),
     ]
