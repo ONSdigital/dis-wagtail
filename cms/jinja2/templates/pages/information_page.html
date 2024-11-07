@@ -12,10 +12,9 @@
     {{page.last_updated}}
   {% endif %}
 
-  {% for block in page.content %}
-    {% if block.block_type == "related_links" %}
-          {{ page.content }}
-    {% endif %}
-  {% endfor %}
-
+{% if links_list %}
+  {% for link in links_list %}
+                    <a href="{{ link.url }}">{{ link.title }}</a>
+            {% endfor %}
+{% endif %}
 {% endblock %}
