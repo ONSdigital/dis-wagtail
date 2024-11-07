@@ -105,7 +105,7 @@
                     <section id="cite-this-page">
                         <h2 class="heading-2">{{ _("Cite this analysis") }}</h2>
                         <p>
-                            {% set cite_link %}
+                            {%- set cite_link -%}
                                 <a href="{{ fullpageurl(page) }}">{{ page.display_title }}</a>
                             {% endset %}
                             {% trans trimmed release_date=page.release_date|date("DATE_FORMAT"), cite_link=cite_link %}
