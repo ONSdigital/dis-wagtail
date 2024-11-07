@@ -11,15 +11,17 @@
     {% include_block page.body %}
 
     {% if related_pages %}
-        {{ onsRelatedContent({
-        "ariaLabel": 'Related content',
-        "rows": [
-        {
-        "id": 'related-content',
-        "title": 'Related content',
-        "itemsList": related_pages
-        }
-        ]
-        }) }}
+        {# fmt:off #}
+        {{- 
+            onsRelatedContent({
+                "ariaLabel": _('Related content'),
+                "rows": [{
+                    "id": 'related-content',
+                    "title": _('Related content'),
+                    "itemsList": related_pages
+                }]
+            }) 
+        -}}
+        {# fmt:on #}
     {% endif %}
 {% endblock %}
