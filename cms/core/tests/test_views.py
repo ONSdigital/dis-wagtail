@@ -5,6 +5,7 @@ from django.test import Client, TestCase
 
 class CSRFTestCase(TestCase):
     """Tests for CSRF enforcement."""
+
     def setUp(self):
         # Client is created with each test to avoid mutation side-effects
         self.client = Client(enforce_csrf_checks=True)
