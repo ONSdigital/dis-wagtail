@@ -1,5 +1,5 @@
 from functools import cached_property
-from typing import TYPE_CHECKING, Any, ClassVar
+from typing import TYPE_CHECKING, Any, ClassVar, Optional, cast
 
 from django.conf import settings
 from django.db import models
@@ -24,7 +24,7 @@ if TYPE_CHECKING:
     from wagtail.admin.panels import Panel
 
 
-class AnalysisSeries(RoutablePageMixin, Page):  # type: ignore[django-manager-missing]
+class AnalysisSeries(RoutablePageMixin, Page):
     """The analysis series model."""
 
     parent_page_types: ClassVar[list[str]] = ["topics.TopicPage"]
@@ -41,9 +41,9 @@ class AnalysisSeries(RoutablePageMixin, Page):  # type: ignore[django-manager-mi
         ),
     ]
 
-    def get_latest(self) -> "AnalysisPage":
+    def get_latest(self) -> Optional["AnalysisPage"]:
         """Returns the latest published analysis page."""
-        return AnalysisPage.objects.live().child_of(self).order_by("-release_date").first()
+        return cast(AnalysisPage | None, AnalysisPage.objects.live().child_of(self).order_by("-release_date").first())
 
     @path("")
     def index(self, request: "HttpRequest") -> "HttpResponseRedirect":
@@ -56,16 +56,17 @@ class AnalysisSeries(RoutablePageMixin, Page):  # type: ignore[django-manager-mi
         latest = self.get_latest()
         if not latest:
             raise Http404
-        return latest.serve(request)
+        return cast("TemplateResponse", latest.serve(request))
 
     @path("previous-releases/")
-    def previous_releases(self, request: "HttpRequest"):
+    def previous_releases(self, request: "HttpRequest") -> "TemplateResponse":
         """Render the previous releases template."""
-        return self.render(
+        response = self.render(
             request,
             context_overrides={"pages": AnalysisPage.objects.live().child_of(self).order_by("-release_date")},
             template="templates/pages/analysis_page--previous-releases.html",
         )
+        return cast("TemplateResponse", response)
 
 
 class AnalysisPage(BasePage):  # type: ignore[django-manager-missing]
@@ -198,7 +199,7 @@ class AnalysisPage(BasePage):  # type: ignore[django-manager-missing]
         latest_id = (
             AnalysisPage.objects.sibling_of(self).live().order_by("-release_date").values_list("id", flat=True).first()
         )
-        return self.pk == latest_id
+        return bool(self.pk == latest_id)  # to placate mypy
 
     @cached_property
     def has_equations(self) -> bool:
