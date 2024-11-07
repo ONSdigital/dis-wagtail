@@ -28,5 +28,6 @@ class CoreStoryBlock(StreamBlock):
     equation = MathBlock(group="DataVis", icon="decimal")
     ons_embed = ONSEmbedBlock(group="DataVis", label="ONS General Embed")
 
+    # TODO - Do we need a paragraph block?
     class Meta:  # pylint: disable=missing-class-docstring,too-few-public-methods
         block_counts: ClassVar[dict[str, dict]] = {"related_links": {"max_num": 1}}
