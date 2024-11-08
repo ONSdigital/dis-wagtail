@@ -58,6 +58,7 @@ INSTALLED_APPS = [
     "cms.documents",
     "cms.home",
     "cms.images",
+    "cms.release_calendar",
     "cms.users",
     "wagtail.embeds",
     "wagtail.sites",
@@ -70,6 +71,7 @@ INSTALLED_APPS = [
     "wagtail.contrib.settings",
     "wagtail.contrib.redirects",
     "wagtail.contrib.legacy.richtext",
+    "wagtail.contrib.table_block",
     "wagtail",
     "modelcluster",
     "taggit",
@@ -705,8 +707,8 @@ WAGTAILIMAGES_MAX_IMAGE_PIXELS = int(pixel_limit) if pixel_limit else 10_000_000
 # We normally don't want editors to use the images
 # in the rich text editor, for example.
 # They should use the image stream block instead
-RICH_TEXT_BASIC = ["bold", "italic", "link", "ol", "ul", "document-link"]
-RICH_TEXT_FULL = ["h3", "h4", *RICH_TEXT_BASIC]
+RICH_TEXT_BASIC = ["bold", "italic", "link", "ol", "ul"]
+RICH_TEXT_FULL = ["h3", "h4", *RICH_TEXT_BASIC, "document-link"]
 
 WAGTAILADMIN_RICH_TEXT_EDITORS = {
     "default": {
@@ -765,8 +767,14 @@ SECURE_CROSS_ORIGIN_OPENER_POLICY = "same-origin"
 # ONS CMS specific-settings
 #
 
-# Date formats
-SHORT_DATETIME_FORMAT = "d/m/Y P"
+# See
+# https://docs.djangoproject.com/en/5.1/topics/i18n/formatting/#creating-custom-format-files
+FORMAT_MODULE_PATH = ["cms.settings.formats"]
+
+# Default date formats. Also overridden in cms.settings.formats.en_GB.formats
+# as the locale-based formats take precedence to the global ones, and we use the en-gb locale.
+DATE_FORMAT = "j F Y"
+DATETIME_FORMAT = "j F Y g:ia"  # 1 November 2024, 1 p.m.
 
 ONS_EMBED_PREFIX = env.get("ONS_EMBED_PREFIX", "https://www.ons.gov.uk/visualisations/")
 
