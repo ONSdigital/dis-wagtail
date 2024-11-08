@@ -52,7 +52,7 @@ ignore=CVS
 # ignore-list. The regex matches against paths and can be in Posix or Windows
 # format. Because '\\' represents the directory delimiter on Windows systems,
 # it can't be used as an escape character.
-ignore-paths=.*/migrations,.venv,venv,.mypy_cache,node_modules
+ignore-paths=.*/migrations,.venv,venv,.mypy_cache,node_modules,cms/settings/formats
 
 # Files or directories matching the regular expression patterns are skipped.
 # The regex matches against base names, not paths. The default value ignores
@@ -434,12 +434,14 @@ disable=raw-checker-failed,
         duplicate-code,
         wrong-import-order,
         missing-module-docstring,
-        too-many-ancestors
+        too-many-ancestors,
+        fixme
 
 # note:
 # - wrong-import-order: covered by ruff
 # - missing-module-docstring: because they should be self-explanatory
 # - too-many-ancestors: because of our and Wagtail's use of mixins
+# - fixme: because we want to leave TODO notes for future features.
 
 # Enable the message, report, category or checker with the given id(s). You can
 # either give multiple identifier separated by comma (,) or put this option

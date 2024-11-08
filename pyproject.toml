@@ -10,7 +10,7 @@ package-mode = false
 [tool.poetry.dependencies]
 python = "^3.12"
 django = "~5.1.2"
-wagtail = "~6.2.2"
+wagtail = "~6.3"
 dj-database-url = "~2.3.0"
 django-basic-auth-ip-whitelist = "~0.6"
 django-csp = "~3.8"
@@ -143,6 +143,10 @@ omit = [
     "**/node_modules/*",
     "**/migrations/*",
     "**/tests/*",
+    "cms/core/management/commands/test_sentry.py",
+    "cms/wsgi.py",
+    "cms/urls.py",
+    "cms/settings/*",
 ]
 parallel = true
 concurrency = ["multiprocessing", "thread"]
