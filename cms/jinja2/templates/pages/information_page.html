@@ -6,7 +6,9 @@
         <p>{{ page.summary }}</p>
     {% endif %}
 
-    <h5>Last Updated: {{ page.last_updated }}</h5>
+    {% if page.last_updated %}
+        <h5>Last Updated: {{ page.last_updated }}</h5>
+    {% endif %}
 
     {% include_block page.content %}
 
