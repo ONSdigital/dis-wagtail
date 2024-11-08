@@ -60,7 +60,7 @@
 
 {# fmt:on #}
 {% block head %}
-    <link rel="stylesheet" href="{{ static('css/main.css') }}">
+    <link rel="stylesheet" href="{{ static ('css/main.css') }}">
 
     {% if GOOGLE_TAG_MANAGER_CONTAINER_ID and not request.is_preview %}
         <script>
@@ -106,22 +106,20 @@
 
 {% block preHeader %}
 
-    {% if GOOGLE_TAG_MANAGER_CONTAINER_ID and not request.is_preview %}
-      {#
-        NOTE:
-        the "settingsLinkTextURL" setting currently doesn't match what's in the guidelines
-        that's because we're on version 70.0.17 and it has been renamed to "settingsLinkUrl" in 72.0.0
-        See: https://github.com/ONSdigital/design-system/pull/3300
-      #}
-      {# fmt:off #}
-      {{
-        onsCookiesBanner({
-          'lang': "cy" if LANGUAGE_CODE == "cy" else "en",
-          'serviceName': COOKIE_BANNER_SERVICE_NAME,
-          'settingsLinkTextURL': MANAGE_COOKIE_SETTINGS_URL,
-        })
-      }}
-      {# fmt:on #}
-    {% endif %}
+  {#
+    NOTE:
+    the "settingsLinkTextURL" setting currently doesn't match what's in the guidelines
+    that's because we're on version 70.0.17 and it has been renamed to "settingsLinkUrl" in 72.0.0
+    See: https://github.com/ONSdigital/design-system/pull/3300
+  #}
+  {# fmt:off #}
+  {{
+    onsCookiesBanner({
+      'lang': "cy" if LANGUAGE_CODE == "cy" else "en",
+      'serviceName': COOKIE_BANNER_SERVICE_NAME,
+      'settingsLinkTextURL': MANAGE_COOKIE_SETTINGS_URL,
+    })
+  }}
+  {# fmt:on #}
 
 {% endblock %}
