@@ -1,0 +1,7 @@
+{% extends "templates/base_page.html" %}
+
+{% from "components/panel/_macro.njk" import onsPanel %}
+
+{% block main %}
+  {% include_block page.body %}
+{% endblock %}

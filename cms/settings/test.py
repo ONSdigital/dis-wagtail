@@ -17,13 +17,11 @@ SILENCED_SYSTEM_CHECKS = [
 SECURE_SSL_REDIRECT = False
 SECURE_HSTS_SECONDS = 0
 
-
 # Quieten down the logging in tests
 LOGGING["handlers"]["console"]["class"] = "logging.NullHandler"  # type: ignore[index] # noqa: F405
 
 # Wagtail
 WAGTAILADMIN_BASE_URL = "http://testserver"
-
 
 # #############
 # Performance
@@ -34,3 +32,12 @@ PASSWORD_HASHERS = ["django.contrib.auth.hashers.MD5PasswordHasher"]
 
 DEFENDER_DISABLE_USERNAME_LOCKOUT = True
 DEFENDER_DISABLE_IP_LOCKOUT = True
+
+# TODO move to a separate config? # pylint: disable=fixme
+DATABASES = {
+    "default": dj_database_url.config(default="postgres://ons:ons@localhost:15432/ons"),  # noqa F405
+}
+
+REDIS_URL = "redis://localhost:16379"
+
+FIXTURE_DIRS = ["functional_tests/fixtures"]
