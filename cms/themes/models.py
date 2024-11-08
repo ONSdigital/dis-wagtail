@@ -14,7 +14,7 @@ class ThemePage(BasePage):  # type: ignore[django-manager-missing]
     """The Theme page model."""
 
     template = "templates/pages/theme_page.html"
-    parent_page_types: ClassVar[list[str]] = ["home.HomePage"]
+    parent_page_types: ClassVar[list[str]] = ["home.HomePage", "ThemePage"]
     subpage_types: ClassVar[list[str]] = ["ThemePage", "topics.TopicPage"]
     page_description = "A theme page, such as 'Economy'."
 

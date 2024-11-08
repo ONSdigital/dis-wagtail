@@ -2,6 +2,7 @@ from functools import cached_property
 from typing import TYPE_CHECKING, Any, ClassVar, Optional, cast
 
 from django.conf import settings
+from django.core.exceptions import ValidationError
 from django.db import models
 from django.http import Http404
 from django.shortcuts import redirect
@@ -30,7 +31,7 @@ class AnalysisSeries(RoutablePageMixin, Page):
     parent_page_types: ClassVar[list[str]] = ["topics.TopicPage"]
     subpage_types: ClassVar[list[str]] = ["AnalysisPage"]
     preview_modes: ClassVar[list[str]] = []  # Disabling the preview mode due to it being a container page.
-    page_description = "A container for Analysis series"
+    page_description = _("A container for Analysis series")
 
     content_panels: ClassVar[list["Panel"]] = [
         *Page.content_panels,
@@ -164,6 +165,13 @@ class AnalysisPage(BasePage):  # type: ignore[django-manager-missing]
         index.SearchField("news_headline"),
         index.AutocompleteField("news_headline"),
     ]
+
+    def clean(self) -> None:
+        """Additional validation on save."""
+        super().clean()
+
+        if self.next_release_date and self.next_release_date <= self.release_date:
+            raise ValidationError({"next_release_date": _("The next release date must be after the release date.")})
 
     def get_context(self, request: "HttpRequest", *args: Any, **kwargs: Any) -> dict:
         """Additional context for the template."""

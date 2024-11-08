@@ -1,3 +1,4 @@
+from datetime import timedelta
 from typing import ClassVar
 
 import factory
@@ -59,7 +60,7 @@ class AnalysisPageFactory(wagtail_factories.PageFactory):
     news_headline = factory.Faker("text", max_nb_chars=50)
     main_points = factory.Faker("text", max_nb_chars=200)
     release_date = factory.LazyFunction(lambda: timezone.now().date())
-    next_release_date = factory.LazyFunction(lambda: timezone.now().date())
+    next_release_date = factory.LazyAttribute(lambda o: o.release_date + timedelta(days=1))
     contact_details = factory.SubFactory(ContactDetailsFactory)
 
     headline_figures = wagtail_factories.StreamFieldFactory(

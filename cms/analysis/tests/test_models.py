@@ -1,4 +1,7 @@
+from datetime import datetime
+
 from django.conf import settings
+from django.core.exceptions import ValidationError
 from django.test import TestCase
 from django.utils import timezone
 from django.utils.formats import date_format
@@ -148,6 +151,14 @@ class AnalysisPageTestCase(WagtailTestUtils, TestCase):
         del self.page.has_ons_embed  # clear cached property
         self.assertTrue(self.page.has_ons_embed)
 
+    def test_next_date_must_be_after_release_date(self):
+        """Tests the model validates next release date is after the release date."""
+        self.page.next_release_date = self.page.release_date
+        with self.assertRaises(ValidationError) as info:
+            self.page.clean()
+
+        self.assertListEqual(info.exception.messages, ["The next release date must be after the release date."])
+
 
 class AnalysisPageRenderTestCase(WagtailTestUtils, TestCase):
     """Test AnalysisPage model properties and methods."""
@@ -165,10 +176,13 @@ class AnalysisPageRenderTestCase(WagtailTestUtils, TestCase):
 
         # a page with more of the fields filled in
         self.page = AnalysisPageFactory(
-            parent=self.basic_page.get_parent(), title="August 2024", news_headline="Breaking News!"
+            parent=self.basic_page.get_parent(),
+            title="August 2024",
+            news_headline="Breaking News!",
+            release_date=datetime(2024, 8, 15),
         )
         self.page_url = self.page.url
-        self.formatted_date = date_format(self.page.next_release_date, settings.DATE_FORMAT)
+        self.formatted_date = date_format(self.page.release_date, settings.DATE_FORMAT)
 
     def test_display_title(self):
         """Check how the title is displayed on the front-end, with/without news headline."""
