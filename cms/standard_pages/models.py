@@ -10,9 +10,7 @@ from cms.core.models import BasePage
 
 
 class InformationPage(BasePage):  # type: ignore[django-manager-missing]
-    """A Django model for an information page with a template, summary,
-    last_updated date, body content, and content panels.
-    """
+    """A generic information page model."""
 
     template = "templates/pages/information_page.html"
 
