@@ -48,14 +48,20 @@ class ReleaseCalendarPage(BasePage):  # type: ignore[django-manager-missing]
     summary = RichTextField(features=settings.RICH_TEXT_BASIC)
 
     release_date = models.DateTimeField(
-        blank=True, null=True, help_text=_("Required once the release has been confirmed.")
+        blank=True,
+        null=True,
+        help_text=_("Required once the release has been confirmed."),
     )
     release_date_text = models.CharField(
-        max_length=50, blank=True, help_text=_("Format: 'Month YYYY', or 'Month YYYY to Month YYYY'.")
+        max_length=50,
+        blank=True,
+        help_text=_("Format: 'Month YYYY', or 'Month YYYY to Month YYYY'."),
     )
     next_release_date = models.DateTimeField(blank=True, null=True)
     next_release_text = models.CharField(
-        max_length=255, blank=True, help_text=_("Formats: 'DD Month YYYY Time' or 'To be confirmed'.")
+        max_length=255,
+        blank=True,
+        help_text=_("Formats: 'DD Month YYYY Time' or 'To be confirmed'."),
     )
 
     notice = RichTextField(
@@ -169,7 +175,12 @@ class ReleaseCalendarPage(BasePage):  # type: ignore[django-manager-missing]
                 items += block.block.to_table_of_contents_items(block.value)
 
         if self.status in NON_PROVISIONAL_STATUSES and self.changes_to_release_date:
-            items += [{"url": "#changes-to-release-date", "text": _("Changes to this release date")}]
+            items += [
+                {
+                    "url": "#changes-to-release-date",
+                    "text": _("Changes to this release date"),
+                }
+            ]
 
         if self.status == ReleaseStatus.PUBLISHED and self.contact_details_id:
             text = _("Contact details")
