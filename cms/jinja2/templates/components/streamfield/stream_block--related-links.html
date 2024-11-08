@@ -1,0 +1,9 @@
+<ol class="ons-list ons-list--bare ons-u-bt ons-u-mb-l">
+    {% for block in value %}
+        <li class="ons-list__item">
+            {% if block.value.link %}
+                <a href="{{ block.value.link.url }}">{{ block.value.link.text }}</a>
+            {% endif %}
+        </li>
+    {% endfor %}
+</ol>

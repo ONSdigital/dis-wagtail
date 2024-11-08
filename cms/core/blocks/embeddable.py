@@ -3,6 +3,7 @@ from typing import TYPE_CHECKING, ClassVar
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.template.defaultfilters import filesizeformat
+from django.utils.translation import gettext as _
 from wagtail import blocks
 from wagtail.blocks import StructBlockValidationError
 from wagtail.documents.blocks import DocumentChooserBlock
@@ -24,7 +25,7 @@ class ImageBlock(blocks.StructBlock):
 
 
 class DocumentBlockStructValue(blocks.StructValue):
-    """Bespoke StructValue to convert a struct block value to DS macro macros data."""
+    """Bespoke StructValue to convert a struct block value to DS macro data."""
 
     def as_macro_data(self) -> dict[str, str | bool | dict]:
         """Return the value as a macro data dict."""
@@ -83,10 +84,12 @@ class ONSEmbedBlock(blocks.StructBlock):
         errors = {}
 
         if not value["url"].startswith(settings.ONS_EMBED_PREFIX):
-            errors["url"] = ValidationError(f"The URL must start with {settings.ONS_EMBED_PREFIX}")
+            errors["url"] = ValidationError(
+                _("The URL must start with %(prefix)s") % {"prefix": settings.ONS_EMBED_PREFIX}
+            )
 
         if errors:
-            raise StructBlockValidationError(errors)
+            raise StructBlockValidationError(block_errors=errors)
 
         return super().clean(value)
 
