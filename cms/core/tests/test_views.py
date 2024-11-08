@@ -25,9 +25,6 @@ class CSRFTestCase(TestCase):
 class TestCookiesBannerTestCase(TestCase):
     """Test for the cookie banner functionality."""
 
-    def setUp(self):
-        self.client = Client()
-
     def test_google_tag_manager_script_present_when_tracking_consent_given(self):
         """Check that the Google Tag Manager script is present on the page when the user agrees to tracking."""
         self.client.cookies = SimpleCookie({"ons_cookie_policy": "'usage':true"})
