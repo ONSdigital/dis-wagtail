@@ -10,7 +10,6 @@ from cms.core.blocks import (
     HeadingBlock,
     ONSEmbedBlock,
     PanelBlock,
-    RelatedContentBlock,
     RelatedLinksBlock,
 )
 
@@ -24,7 +23,7 @@ class CoreStoryBlock(StreamBlock):
     embed = EmbedBlock()
     image = ImageChooserBlock()
     documents = DocumentsBlock()
-    related_links = RelatedLinksBlock(RelatedContentBlock())
+    related_links = RelatedLinksBlock()
     equation = MathBlock(group="DataVis", icon="decimal")
     ons_embed = ONSEmbedBlock(group="DataVis", label="ONS General Embed")
 
