@@ -225,6 +225,12 @@ class ReleaseCalendarPageTestCase(WagtailTestUtils, TestCase):
             [msg.message.strip() for msg in response.context["messages"]],
         )
 
+        response = self.client.get(
+            reverse("wagtailadmin_pages:delete", args=(self.page.id,)),
+            follow=True,
+        )
+        self.assertRedirects(response, edit_url)
+
 
 class ReleaseCalendarPageRenderTestCase(TestCase):
     """Tests for rendered release calendar pages."""
@@ -338,15 +344,22 @@ class ReleaseCalendarIndexTestCase(WagtailTestUtils, TestCase):
     def test_delete_redirects_back_to_edit(self):
         """Test that we get redirected back to edit when trying to delete a release calendar index."""
         self.login()  # creates a superuser and logs them in
-        response = self.client.post(
-            reverse("wagtailadmin_pages:delete", args=(self.page.id,)),
+        delete_url = reverse("wagtailadmin_pages:delete", args=(self.page.id,))
+        response = self.client.get(
+            delete_url,
             follow=True,
         )
 
-        edit_url = reverse("wagtailadmin_pages:edit", args=(self.page.id,))
-        self.assertRedirects(response, edit_url)
+        self.assertRedirects(response, reverse("wagtailadmin_home"))
 
         self.assertIn(
             "The Release Calendar index cannot be deleted.",
             [msg.message.strip() for msg in response.context["messages"]],
         )
+
+        edit_url = reverse("wagtailadmin_pages:edit", args=(self.page.id,))
+        response = self.client.get(
+            f"{delete_url}?next={edit_url}",
+            follow=True,
+        )
+        self.assertRedirects(response, edit_url)
