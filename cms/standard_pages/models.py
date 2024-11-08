@@ -30,3 +30,8 @@ class InformationPage(BasePage):  # type: ignore[django-manager-missing]
         index.SearchField("summary"),
         index.SearchField("content"),
     ]
+
+    parent_page_types: ClassVar[list[str]] = [
+        "home.HomePage",
+        "standard_pages.InformationPage",
+    ]
