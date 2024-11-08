@@ -1,0 +1,190 @@
+from typing import TYPE_CHECKING, Any, ClassVar
+
+from django.conf import settings
+from django.db import models
+from django.utils.functional import cached_property
+from django.utils.text import slugify
+from django.utils.translation import gettext_lazy as _
+from wagtail.admin.panels import FieldPanel, FieldRowPanel, MultiFieldPanel
+from wagtail.fields import RichTextField
+from wagtail.models import Page
+
+from cms.core.fields import StreamField
+from cms.core.models import BasePage
+
+from .blocks import (
+    ReleaseCalendarChangesStoryBlock,
+    ReleaseCalendarPreReleaseAccessStoryBlock,
+    ReleaseCalendarRelatedLinksStoryBlock,
+    ReleaseCalendarStoryBlock,
+)
+from .enums import NON_PROVISIONAL_STATUSES, ReleaseStatus
+from .forms import ReleaseCalendarPageAdminForm
+
+if TYPE_CHECKING:
+    from django.http import HttpRequest
+
+
+class ReleaseCalendarIndex(BasePage):  # type: ignore[django-manager-missing]
+    """The release calendar index page placeholder."""
+
+    template = "templates/pages/release_index.html"
+
+    parent_page_types: ClassVar[list[str]] = ["home.HomePage"]
+    subpage_types: ClassVar[list[str]] = ["ReleaseCalendarPage"]
+    max_count_per_parent = 1
+
+
+class ReleaseCalendarPage(BasePage):  # type: ignore[django-manager-missing]
+    """The calendar release page model."""
+
+    base_form_class = ReleaseCalendarPageAdminForm
+    template = "templates/pages/release_calendar/release_calendar_page.html"
+    parent_page_types: ClassVar[list[str]] = ["ReleaseCalendarIndex"]
+    subpage_types: ClassVar[list[str]] = []
+
+    # Fields
+    status = models.CharField(choices=ReleaseStatus.choices, default=ReleaseStatus.PROVISIONAL, max_length=32)
+    summary = RichTextField(features=settings.RICH_TEXT_BASIC)
+
+    release_date = models.DateTimeField(
+        blank=True, null=True, help_text=_("Required once the release has been confirmed.")
+    )
+    release_date_text = models.CharField(
+        max_length=50, blank=True, help_text=_("Format: 'Month YYYY', or 'Month YYYY to Month YYYY'.")
+    )
+    next_release_date = models.DateTimeField(blank=True, null=True)
+    next_release_text = models.CharField(
+        max_length=255, blank=True, help_text=_("Formats: 'DD Month YYYY Time' or 'To be confirmed'.")
+    )
+
+    notice = RichTextField(
+        features=settings.RICH_TEXT_BASIC,
+        blank=True,
+        help_text=_(
+            "Used for data change or cancellation notices. The notice is required when the release is cancelled"
+        ),
+    )
+
+    content = StreamField(ReleaseCalendarStoryBlock(), blank=True)
+
+    contact_details = models.ForeignKey(
+        "core.ContactDetails",
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="+",
+    )
+
+    # Fields: about the data
+    is_accredited = models.BooleanField(
+        _("Accredited Official Statistics"),
+        default=False,
+        help_text=_(
+            "If ticked, will display an information block about the data being accredited official statistics "
+            "and include the accredited logo."
+        ),
+    )
+    is_census = models.BooleanField(
+        _("Census"),
+        default=False,
+        help_text=_("If ticked, will display an information block about the data being related to the Census."),
+    )
+
+    changes_to_release_date = StreamField(
+        ReleaseCalendarChangesStoryBlock(),
+        blank=True,
+        help_text=_("Required if making changes to confirmed release dates."),
+    )
+    pre_release_access = StreamField(ReleaseCalendarPreReleaseAccessStoryBlock(), blank=True)
+    related_links = StreamField(ReleaseCalendarRelatedLinksStoryBlock(), blank=True)
+
+    content_panels: ClassVar[list[FieldPanel]] = [
+        MultiFieldPanel(
+            [
+                *Page.content_panels,
+                FieldPanel("status"),
+                FieldRowPanel(
+                    [
+                        FieldPanel("release_date"),
+                        FieldPanel("release_date_text", heading=_("Or, release date text")),
+                    ],
+                    heading="",
+                ),
+                FieldRowPanel(
+                    [
+                        FieldPanel("next_release_date"),
+                        FieldPanel("next_release_text", heading=_("Or, next release text")),
+                    ],
+                    heading="",
+                ),
+                FieldPanel("notice"),
+            ],
+            heading=_("Metadata"),
+            icon="cog",
+        ),
+        FieldPanel("summary"),
+        FieldPanel("content", icon="list-ul"),
+        FieldPanel("contact_details", icon="group"),
+        MultiFieldPanel(
+            [
+                FieldPanel("is_accredited"),
+                FieldPanel("is_census"),
+            ],
+            heading=_("About the data"),
+            icon="info-circle",
+        ),
+        FieldPanel("changes_to_release_date", icon="comment"),
+        FieldPanel("pre_release_access", icon="key"),
+        FieldPanel("related_links", icon="link"),
+    ]
+
+    def get_template(self, request: "HttpRequest", *args: Any, **kwargs: Any) -> str:
+        """Select the correct template based on status."""
+        template_by_status = {
+            ReleaseStatus.PROVISIONAL.value: "provisional.html",
+            ReleaseStatus.CONFIRMED.value: "confirmed.html",
+            ReleaseStatus.CANCELLED.value: "cancelled.html",
+        }
+        if template_for_status := template_by_status.get(self.status):
+            return f"templates/pages/release_calendar/release_calendar_page--{template_for_status}"
+
+        # assigning to variable to type hint.
+        template: str = super().get_template(request, *args, **kwargs)
+        return template
+
+    def get_context(self, request: "HttpRequest", *args: Any, **kwargs: Any) -> dict:
+        """Additional context for the template."""
+        context: dict = super().get_context(request, *args, **kwargs)
+        context["table_of_contents"] = self.table_of_contents
+        return context
+
+    @cached_property
+    def table_of_contents(self) -> list[dict[str, str | object]]:
+        """Table of contents formatted to Design System specs."""
+        items = [{"url": "#summary", "text": _("Summary")}]
+
+        if self.status == ReleaseStatus.PUBLISHED:
+            for block in self.content:  # pylint: disable=not-an-iterable
+                items += block.block.to_table_of_contents_items(block.value)
+
+        if self.status in NON_PROVISIONAL_STATUSES and self.changes_to_release_date:
+            items += [{"url": "#changes-to-release-date", "text": _("Changes to this release date")}]
+
+        if self.status == ReleaseStatus.PUBLISHED and self.contact_details_id:
+            text = _("Contact details")
+            items += [{"url": f"#{slugify(text)}", "text": text}]
+
+        if self.is_accredited or self.is_census:
+            text = _("About the data")
+            items += [{"url": f"#{slugify(text)}", "text": text}]
+
+        if self.status == ReleaseStatus.PUBLISHED:
+            if self.pre_release_access:
+                text = _("Pre-release access list")
+                items += [{"url": f"#{slugify(text)}", "text": text}]
+
+            if self.related_links:
+                items += [{"url": "#links", "text": _("You might also be interested in")}]
+
+        return items

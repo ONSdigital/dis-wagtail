@@ -8,11 +8,9 @@ from wagtail.admin.panels import FieldPanel, MultiFieldPanel
 if TYPE_CHECKING:
     from django.core.paginator import Page
     from django.http import HttpRequest
+    from wagtail.admin.panels import Panel
 
-__all__ = [
-    "ListingFieldsMixin",
-    "SocialFieldsMixin",
-]
+__all__ = ["ListingFieldsMixin", "SocialFieldsMixin", "SubpageMixin"]
 
 
 class ListingFieldsMixin(models.Model):
@@ -43,7 +41,7 @@ class ListingFieldsMixin(models.Model):
     class Meta:
         abstract = True
 
-    promote_panels: ClassVar[list[FieldPanel]] = [
+    promote_panels: ClassVar[list["Panel"]] = [
         MultiFieldPanel(
             heading="Listing information",
             children=[
@@ -70,7 +68,7 @@ class SocialFieldsMixin(models.Model):
     class Meta:
         abstract = True
 
-    promote_panels: ClassVar[list[FieldPanel]] = [
+    promote_panels: ClassVar[list["Panel"]] = [
         MultiFieldPanel(
             heading="Social networks",
             children=[
@@ -96,7 +94,7 @@ class SubpageMixin:
             raise Http404 from e
 
     def get_context(self, request: "HttpRequest", *args: Any, **kwargs: Any) -> dict:
-        """Add paginage subpages to the template context."""
+        """Add paginated subpages to the template context."""
         context: dict = super().get_context(request, *args, **kwargs)  # type: ignore[misc]
         context["subpages"] = self.get_paginator_page(request)
         return context

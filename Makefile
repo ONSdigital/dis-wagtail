@@ -54,7 +54,7 @@ test:  ## Run the tests and check coverage.
 	poetry run coverage erase
 	poetry run coverage run ./manage.py test --parallel --settings=cms.settings.test
 	poetry run coverage combine
-	poetry run coverage report
+	poetry run coverage report --fail-under=90
 
 .PHONY: mypy
 mypy:  ## Run mypy.
