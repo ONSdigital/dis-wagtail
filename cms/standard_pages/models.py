@@ -14,6 +14,13 @@ class InformationPage(BasePage):  # type: ignore[django-manager-missing]
 
     template = "templates/pages/information_page.html"
 
+    parent_page_types: ClassVar[list[str]] = [
+        # Ensures that the information page can only be created under the home page
+        "home.HomePage",
+        # Ensures that the information page can be created under another information page
+        "standard_pages.InformationPage",
+    ]
+
     summary = models.TextField(max_length=255)
     last_updated = models.DateField(blank=True, null=True)
     content = StreamField(CoreStoryBlock())
@@ -29,9 +36,4 @@ class InformationPage(BasePage):  # type: ignore[django-manager-missing]
         *BasePage.search_fields,
         index.SearchField("summary"),
         index.SearchField("content"),
-    ]
-
-    parent_page_types: ClassVar[list[str]] = [
-        "home.HomePage",
-        "standard_pages.InformationPage",
     ]
