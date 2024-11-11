@@ -32,6 +32,8 @@ class InformationPage(BasePage):  # type: ignore[django-manager-missing]
     ]
 
     parent_page_types: ClassVar[list[str]] = [
+        # Ensures that the information page can only be created under the home page
         "home.HomePage",
+        # Ensures that the information page can be created under another information page
         "standard_pages.InformationPage",
     ]
