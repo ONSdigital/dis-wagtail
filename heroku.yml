@@ -7,8 +7,8 @@ release:
   image: web
   command:
     - django-admin check --deploy && django-admin createcachetable && django-admin migrate --noinput
-run:
-  scheduler:
-    image: web
-    command:
-      - django-admin scheduler
+#run:
+#  scheduler:
+#    image: web
+#    command:
+#      - django-admin scheduler
