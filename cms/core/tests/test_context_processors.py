@@ -14,7 +14,7 @@ class ContextProcessorTestCase(TestCase):
         self.request = request_factory.get("/")
 
     def test_context_processor_picks_up_variables_from_env(self):
-        """Check the context processor correctly pick up environment variables."""
+        """Check that the context processor correctly picks up environment variables."""
         self.assertEqual(
             global_vars(self.request),
             {
