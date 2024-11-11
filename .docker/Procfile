@@ -1,3 +1,2 @@
 web: python manage.py runserver 0.0.0.0:8000
-scheduler: python manage.py scheduler
 frontend: npm run start:reload
