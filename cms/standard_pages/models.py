@@ -37,5 +37,3 @@ class InformationPage(BasePage):  # type: ignore[django-manager-missing]
         index.SearchField("summary"),
         index.SearchField("content"),
     ]
-
-
