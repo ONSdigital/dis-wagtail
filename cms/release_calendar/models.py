@@ -44,7 +44,9 @@ class ReleaseCalendarPage(BasePage):  # type: ignore[django-manager-missing]
     subpage_types: ClassVar[list[str]] = []
 
     # Fields
-    status = models.CharField(choices=ReleaseStatus.choices, default=ReleaseStatus.PROVISIONAL, max_length=32)
+    status = models.CharField(
+        choices=ReleaseStatus.choices, default=ReleaseStatus.PROVISIONAL, max_length=32
+    )
     summary = RichTextField(features=settings.RICH_TEXT_BASIC)
 
     release_date = models.DateTimeField(
@@ -94,7 +96,9 @@ class ReleaseCalendarPage(BasePage):  # type: ignore[django-manager-missing]
     is_census = models.BooleanField(
         _("Census"),
         default=False,
-        help_text=_("If ticked, will display an information block about the data being related to the Census."),
+        help_text=_(
+            "If ticked, will display an information block about the data being related to the Census."
+        ),
     )
 
     changes_to_release_date = StreamField(
@@ -102,7 +106,9 @@ class ReleaseCalendarPage(BasePage):  # type: ignore[django-manager-missing]
         blank=True,
         help_text=_("Required if making changes to confirmed release dates."),
     )
-    pre_release_access = StreamField(ReleaseCalendarPreReleaseAccessStoryBlock(), blank=True)
+    pre_release_access = StreamField(
+        ReleaseCalendarPreReleaseAccessStoryBlock(), blank=True
+    )
     related_links = StreamField(ReleaseCalendarRelatedLinksStoryBlock(), blank=True)
 
     content_panels: ClassVar[list[FieldPanel]] = [
@@ -113,14 +119,18 @@ class ReleaseCalendarPage(BasePage):  # type: ignore[django-manager-missing]
                 FieldRowPanel(
                     [
                         FieldPanel("release_date"),
-                        FieldPanel("release_date_text", heading=_("Or, release date text")),
+                        FieldPanel(
+                            "release_date_text", heading=_("Or, release date text")
+                        ),
                     ],
                     heading="",
                 ),
                 FieldRowPanel(
                     [
                         FieldPanel("next_release_date"),
-                        FieldPanel("next_release_text", heading=_("Or, next release text")),
+                        FieldPanel(
+                            "next_release_text", heading=_("Or, next release text")
+                        ),
                     ],
                     heading="",
                 ),
@@ -196,6 +206,8 @@ class ReleaseCalendarPage(BasePage):  # type: ignore[django-manager-missing]
                 items += [{"url": f"#{slugify(text)}", "text": text}]
 
             if self.related_links:
-                items += [{"url": "#links", "text": _("You might also be interested in")}]
+                items += [
+                    {"url": "#links", "text": _("You might also be interested in")}
+                ]
 
         return items
