@@ -22,8 +22,8 @@
 - model: users.user
   pk: 1
   fields:
-    password: pbkdf2_sha256$870000$pbz2ZEqrgb9EIKnoowJYSt$okKLSmxIZEs/x4Q1riFLgAdCDskZNcu0O5iAW9UHQ4Q= # pragma: allowlist secret
-    last_login: 2024-11-08 13:33:00.207597+00:00
+    password: md5$1HaP5gPk9SGfOJdU8cwfzs$1ca9b5049f3d4a16d546270c4e1bbe09 # pragma: allowlist secret
+    last_login: 2024-11-11 08:53:29.918099+00:00
     is_superuser: true
     username: test_admin
     first_name: ''
@@ -31,40 +31,24 @@
     email: testadmin@example.com
     is_staff: true
     is_active: true
-    date_joined: 2024-11-08 13:32:52.999007+00:00
+    date_joined: 2024-11-11 08:53:08.612686+00:00
     groups: []
     user_permissions: []
 - model: users.user
   pk: 2
   fields:
-    password: pbkdf2_sha256$870000$KrMgakLMZqq24Zda9JHklD$zia3XRA/pPgWsyi945HLPqGQ3aqgeyIwfIXgMWEvEPc= # pragma: allowlist secret
+    password: md5$qinc7E7jx26kqwzERDLobH$c3780276d731cff74fd659b256c7f41c # pragma: allowlist secret
     last_login: null
     is_superuser: false
     username: test_editor
-    first_name: test
-    last_name: editor
+    first_name: editor
+    last_name: test
     email: testeditor@example.com
     is_staff: false
     is_active: true
-    date_joined: 2024-11-08 13:33:31.006624+00:00
+    date_joined: 2024-11-11 08:54:28.843016+00:00
     groups:
       - 2
-    user_permissions: []
-- model: users.user
-  pk: 3
-  fields:
-    password: pbkdf2_sha256$870000$fFncUeg1iBRmcAxL9jAnvC$IughNjav+UCxqGz6zoAJuzHH2dBDvOOgnU/ibzeA1AQ= # pragma: allowlist secret
-    last_login: null
-    is_superuser: false
-    username: test_moderator
-    first_name: moderator
-    last_name: test
-    email: testmoderator@example.com
-    is_staff: false
-    is_active: true
-    date_joined: 2024-11-08 13:33:57.883187+00:00
-    groups:
-      - 1
     user_permissions: []
 - model: wagtailcore.locale
   pk: 1
@@ -85,41 +69,13 @@
     label: test_editor
     action: wagtail.create
     data: {}
-    timestamp: 2024-11-08 13:33:31.722648+00:00
-    uuid: 547d8d66-9e95-4724-8242-44f16136fa2e
+    timestamp: 2024-11-11 08:54:28.936877+00:00
+    uuid: 24d833cb-f85f-4024-96ff-2c279981f4d4
     user: 1
     revision: null
     content_changed: true
     deleted: false
     object_id: '2'
-- model: wagtailcore.modellogentry
-  pk: 2
-  fields:
-    content_type: 41
-    label: test_moderator
-    action: wagtail.create
-    data: {}
-    timestamp: 2024-11-08 13:33:58.605670+00:00
-    uuid: 051b2b99-6037-482a-9f78-da4afd77bac1
-    user: 1
-    revision: null
-    content_changed: true
-    deleted: false
-    object_id: '3'
-- model: wagtailcore.modellogentry
-  pk: 3
-  fields:
-    content_type: 41
-    label: test_moderator
-    action: wagtail.edit
-    data: {}
-    timestamp: 2024-11-08 13:34:05.414030+00:00
-    uuid: a8d3fb16-0031-4118-bc12-ec34ff593c60
-    user: 1
-    revision: null
-    content_changed: true
-    deleted: false
-    object_id: '3'
 - model: wagtailcore.collection
   pk: 1
   fields:
@@ -205,7 +161,7 @@
     path: '0001'
     depth: 1
     numchild: 1
-    translation_key: 28eaaa60-4d28-431d-a9a5-894e8a7e4de5
+    translation_key: 335b0370-42d5-4804-820d-7a4d7ec5a167
     locale: 1
     latest_revision: null
     live: true
@@ -236,7 +192,7 @@
     path: '00010001'
     depth: 2
     numchild: 1
-    translation_key: ebe862f5-b04c-4415-9f3c-82aa8a9089dd
+    translation_key: a91e182e-18b5-4066-8708-1025252c7585
     locale: 1
     latest_revision: null
     live: true
@@ -267,13 +223,13 @@
     path: '000100010001'
     depth: 3
     numchild: 0
-    translation_key: 699a0771-a963-42c6-9bc4-6efe1f4b18b4
+    translation_key: ba47e19d-bb0a-4a62-af05-44d58f3683d2
     locale: 1
     latest_revision: null
     live: true
     has_unpublished_changes: false
-    first_published_at: 2024-11-08 13:28:02.800068+00:00
-    last_published_at: 2024-11-08 13:28:02.800068+00:00
+    first_published_at: 2024-11-11 08:51:31.530289+00:00
+    last_published_at: 2024-11-11 08:51:31.530289+00:00
     live_revision: null
     go_live_at: null
     expire_at: null
@@ -1973,7 +1929,7 @@
     app_label: sessions
     model: session
 - model: sessions.session
-  pk: bctfsoqh8rj5qrr205dkf5dtqalbwmxm
+  pk: 8eozwiez054gyzn97a2ze3yzx2xz2ycp
   fields:
-    session_data: .eJxVjEEOwiAQRe_C2hAo0Ha6dO8ZyJQZLGrAlDbRGO-uTbrQ7X_vv5fwuC6TXyvPPpEYhBaH323EcOW8AbpgPhcZSl7mNMpNkTut8lSIb8fd_QtMWKfvuzXGdA6dgUZTjC5Cr3VwOhBbsh2DUi2YBtH0jhptAagHUhBIU2sjb9HKtaaSPT_uaX6KQb0_XrU-lA:1t9P6i:Y8Z7ovAEWBzvwR5NOVesowkHpRvoW8wBu9D0BX42hh8
-    expire_date: 2024-11-22 13:33:00.212097+00:00
+    session_data: .eJxVjMsOwiAQRf-FtSGDQ0G6dO83EB6DRQ0YaBON8d-1SRe6vefc82LWLfNkl07N5shGJtjud_MuXKmsIF5cOVceaplb9nxV-EY7P9VIt-Pm_gUm16fvG4PUlFAmTRqT96iSd0YmZ8CowYsIglCriKAHpUhDCAjigAMkQUbu12in3nMtlh733J5shPcHjHU-sw:1tAQAr:rEip1bvLjL3qoO1-l04qi2C_Th2S0bmkN2BIfHLXAPM
+    expire_date: 2024-11-25 08:53:29.924716+00:00

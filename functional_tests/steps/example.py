@@ -11,7 +11,8 @@ PASSWORD = "test_editor"  # pragma: allowlist secret # noqa S105
 @when("An external user navigates to the ONS beta site")  # pylint: disable=E1102
 def external_user_navigates_to_beta_homepage(context: Context) -> None:
     """Navigates to the ONS beta site."""
-    context.page.goto(BASE_URL)
+    # context.page.goto(BASE_URL)
+    context.page.goto(context.base_url)
 
 
 @then("they can see the beta homepage")  # pylint: disable=E1102
@@ -24,17 +25,19 @@ def user_sees_the_beta_homepage(context: Context) -> None:
     expect(context.page.get_by_text("Beta")).to_be_visible()
 
 
-@fixtures("users.yml")
+@fixtures("initial_state.yml")
 @when("An unauthenticated ONS CMS editor navigates to the beta CMS admin page")  # pylint: disable=E1102
 def cms_admin_navigates_to_beta_homepage(context: Context) -> None:
     """Navigate to admin login page."""
-    context.page.goto(f"{BASE_URL}/admin/login")
+    # context.page.goto(f"{BASE_URL}/admin/login")
+    context.page.goto(f"{context.base_url}/admin/login")
 
 
 @when("they enter a their valid username and password and click login")  # pylint: disable=E1102
 def enter_a_valid_username_and_password_and_sign_in(context: Context) -> None:
     """Enter the username and password and click login."""
-    expect(context.page).to_have_url(f"{BASE_URL}/admin/login/")
+    # expect(context.page).to_have_url(f"{BASE_URL}/admin/login")
+    expect(context.page).to_have_url(f"{context.base_url}/admin/login")
     context.page.get_by_placeholder("Enter your username").fill(USERNAME)
     context.page.get_by_placeholder("Enter password").fill(PASSWORD)
     context.page.get_by_role("button", name="Sign in").click()
@@ -43,8 +46,9 @@ def enter_a_valid_username_and_password_and_sign_in(context: Context) -> None:
 @then("they are taken to the CMS admin homepage")  # pylint: disable=E1102
 def user_sees_admin_homepage(context: Context) -> None:
     """Verify we arrive authenticated on the admin dashboard."""
-    expect(context.page).to_have_url(f"{BASE_URL}/admin/")
+    expect(context.page).to_have_url(f"{context.base_url}/admin/")
     expect(context.page.get_by_role("heading", name="Office For National Statistics")).to_be_visible()
     expect(context.page.get_by_label("Dashboard")).to_be_visible()
     expect(context.page.get_by_role("button", "pages")).to_be_visible()
-    expect(context.page).to_have_url(f"http://{BASE_URL}/admin/")
+    # expect(context.page).to_have_url(f"http://{BASE_URL}/admin")
+    expect(context.page).to_have_url(f"http://{context.base_url}/admin")

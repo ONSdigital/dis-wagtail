@@ -46,6 +46,7 @@ def before_scenario(context: Context, _scenario: Scenario):
     """Runs before each scenario.
     Create a new playwright page to be used by the scenario, through the context.
     """
+    context.databases = "__all__"
     context.page = context.browser.new_page()
 
 
