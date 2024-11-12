@@ -19,7 +19,6 @@ else:
 __all__ = [
     "SocialMediaSettings",
     "SystemMessagesSettings",
-    "Tracking",
 ]
 
 
@@ -64,14 +63,3 @@ class SystemMessagesSettings(BaseSiteSetting):
     panels: ClassVar[list[FieldPanel]] = [
         MultiFieldPanel([FieldPanel("title_404"), FieldPanel("body_404")], "404 page")
     ]
-
-
-@register_setting(icon="view")
-class Tracking(BaseSiteSetting):
-    """Settings class for various trackers."""
-
-    google_tag_manager_id = models.CharField(
-        max_length=255,
-        blank=True,
-        help_text="Your Google Tag Manager ID",
-    )
