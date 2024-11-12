@@ -31,7 +31,7 @@ class SectionContentBlock(StreamBlock):
     ons_embed = ONSEmbedBlock(group="DataVis", label="ONS General Embed")
     related_links = RelatedLinksBlock(RelatedContentBlock(), icon="link")
 
-    class Meta:  # pylint: disable=missing-class-docstring,too-few-public-methods
+    class Meta:  # pylint: disable=missing-class-docstring
         template = "templates/components/streamfield/stream_block.html"
         block_counts: ClassVar[dict[str, dict]] = {"related_links": {"max_num": 1}}
 
@@ -46,7 +46,7 @@ class SectionBlock(StructBlock):
         """Convert the value to the TOC macro format."""
         return [{"url": "#" + slugify(value["title"]), "text": value["title"]}]
 
-    class Meta:  # pylint: disable=missing-class-docstring,too-few-public-methods
+    class Meta:  # pylint: disable=missing-class-docstring
         template = "templates/components/streamfield/analysis_section_block.html"
 
 
@@ -55,5 +55,5 @@ class AnalysisStoryBlock(StreamBlock):
 
     section = SectionBlock()
 
-    class Meta:  # pylint: disable=missing-class-docstring,too-few-public-methods
+    class Meta:  # pylint: disable=missing-class-docstring
         template = "templates/components/streamfield/stream_block.html"

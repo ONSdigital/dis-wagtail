@@ -26,6 +26,6 @@ class PanelBlock(blocks.StructBlock):
     body = blocks.RichTextBlock(features=settings.RICH_TEXT_BASIC)
     title = blocks.CharBlock(required=False, label="Title (optional)")
 
-    class Meta:  # pylint: disable=missing-class-docstring,too-few-public-methods
+    class Meta:  # pylint: disable=missing-class-docstring
         label = "Warning or information panel"
         template = "templates/components/streamfield/panel_block.html"

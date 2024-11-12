@@ -9,28 +9,28 @@ from cms.core.models import ContactDetails
 class DateTimeBlockFactory(BlockFactory):
     """A factory for DateTimeBlock."""
 
-    class Meta:  # pylint: disable=missing-class-docstring,too-few-public-methods
+    class Meta:  # pylint: disable=missing-class-docstring
         model = blocks.DateTimeBlock
 
 
 class DateBlockFactory(BlockFactory):
     """A factory for DateBlock."""
 
-    class Meta:  # pylint: disable=missing-class-docstring,too-few-public-methods
+    class Meta:  # pylint: disable=missing-class-docstring
         model = blocks.DateBlock
 
 
 class URLBlockFactory(BlockFactory):
     """A factory for URLBlock."""
 
-    class Meta:  # pylint: disable=missing-class-docstring,too-few-public-methods
+    class Meta:  # pylint: disable=missing-class-docstring
         model = blocks.URLBlock
 
 
 class RichTextBlockFactory(BlockFactory):
     """A factory for RichTextBlock."""
 
-    class Meta:  # pylint: disable=missing-class-docstring,too-few-public-methods
+    class Meta:  # pylint: disable=missing-class-docstring
         model = blocks.RichTextBlock
 
     @classmethod

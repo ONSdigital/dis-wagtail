@@ -16,7 +16,7 @@ class ContentSectionBlock(blocks.StructBlock):
     title = blocks.CharBlock()
     links = blocks.ListBlock(RelatedContentBlock())
 
-    class Meta:  # pylint: disable=missing-class-docstring,too-few-public-methods
+    class Meta:  # pylint: disable=missing-class-docstring
         template = "templates/components/streamfield/release_content_section.html"
 
     def to_table_of_contents_items(self, value: "StructValue") -> list[dict[str, str]]:
@@ -30,7 +30,7 @@ class ReleaseDateChangeBlock(blocks.StructBlock):
     previous_date = blocks.DateTimeBlock()
     reason_for_change = blocks.TextBlock()
 
-    class Meta:  # pylint: disable=missing-class-docstring,too-few-public-methods
+    class Meta:  # pylint: disable=missing-class-docstring
         template = "templates/components/streamfield/release_date_change_block.html"
 
 
@@ -39,7 +39,7 @@ class ReleaseCalendarStoryBlock(blocks.StreamBlock):
 
     release_content = ContentSectionBlock()
 
-    class Meta:  # pylint: disable=missing-class-docstring,too-few-public-methods
+    class Meta:  # pylint: disable=missing-class-docstring
         template = "templates/components/streamfield/stream_block.html"
 
 
@@ -48,7 +48,7 @@ class ReleaseCalendarChangesStoryBlock(blocks.StreamBlock):
 
     date_change_log = ReleaseDateChangeBlock()
 
-    class Meta:  # pylint: disable=missing-class-docstring,too-few-public-methods
+    class Meta:  # pylint: disable=missing-class-docstring
         template = "templates/components/streamfield/stream_block.html"
 
 
@@ -58,7 +58,7 @@ class ReleaseCalendarPreReleaseAccessStoryBlock(blocks.StreamBlock):
     description = blocks.RichTextBlock(features=settings.RICH_TEXT_BASIC)
     table = BasicTableBlock()
 
-    class Meta:  # pylint: disable=missing-class-docstring,too-few-public-methods
+    class Meta:  # pylint: disable=missing-class-docstring
         template = "templates/components/streamfield/stream_block.html"
         block_counts: ClassVar[dict[str, dict[str, int]]] = {"description": {"max_num": 1}, "table": {"max_num": 1}}
 
@@ -68,5 +68,5 @@ class ReleaseCalendarRelatedLinksStoryBlock(blocks.StreamBlock):
 
     link = LinkBlock()
 
-    class Meta:  # pylint: disable=missing-class-docstring,too-few-public-methods
+    class Meta:  # pylint: disable=missing-class-docstring
         template = "templates/components/streamfield/stream_block--related-links.html"

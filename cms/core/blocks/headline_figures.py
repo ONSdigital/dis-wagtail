@@ -19,7 +19,7 @@ class HeadlineFiguresBlock(ListBlock):
         kwargs.setdefault("max_num", 4)
         super().__init__(HeadlineFiguresItemBlock, search_index=search_index, **kwargs)
 
-    class Meta:  # pylint: disable=missing-class-docstring,too-few-public-methods
+    class Meta:  # pylint: disable=missing-class-docstring
         icon = "data-analysis"
         label = _("Headline figures")
         template = "templates/components/streamfield/headline_figures_block.html"

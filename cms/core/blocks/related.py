@@ -56,7 +56,7 @@ class LinkBlock(StructBlock):
         required=False,
     )
 
-    class Meta:  # pylint: disable=missing-class-docstring,too-few-public-methods
+    class Meta:  # pylint: disable=missing-class-docstring
         icon = "link"
         value_class = LinkBlockStructValue
 
@@ -112,7 +112,7 @@ class RelatedLinksBlock(ListBlock):
 
         return context
 
-    class Meta:  # pylint: disable=missing-class-docstring,too-few-public-methods
+    class Meta:  # pylint: disable=missing-class-docstring
         icon = "list-ul"
         template = "templates/components/streamfield/related_links_block.html"
 
