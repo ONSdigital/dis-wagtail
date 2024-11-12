@@ -21,13 +21,13 @@ class CSRFTestCase(TestCase):
         self.assertIn("CSRF Failure: CSRF cookie", logs.output[0])
 
 
-class TestCookiesBannerTestCase(TestCase):
-    """Tests for the cookie banner functionality."""
+class TestGoogleTagManagerTestCase(TestCase):
+    """Tests for the Google Tag Manager."""
 
-    def test_google_tag_manager_script_present_when_tracking_consent_given(self):
-        """Check that the Google Tag Manager script is present on the page when the user agrees to tracking."""
-        self.client.cookies["ons_cookie_policy"] = {"usage": True}
-
+    def test_google_tag_manager_script_present(self):
+        """Check that the Google Tag Manager script and ID are present on the page.
+        Note: this doesn't check the functionality, only presence.
+        """
         response = self.client.get("/")
 
         self.assertIn("https://www.googletagmanager.com/gtm.js?id=", response.rendered_content)
