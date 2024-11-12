@@ -58,7 +58,7 @@ class AnalysisPageFactory(wagtail_factories.PageFactory):
 
     summary = factory.Faker("text", max_nb_chars=100)
     news_headline = factory.Faker("text", max_nb_chars=50)
-    main_points = factory.Faker("text", max_nb_chars=200)
+    main_points_summary = factory.Faker("text", max_nb_chars=200)
     release_date = factory.LazyFunction(lambda: timezone.now().date())
     next_release_date = factory.LazyAttribute(lambda o: o.release_date + timedelta(days=1))
     contact_details = factory.SubFactory(ContactDetailsFactory)
