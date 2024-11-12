@@ -52,3 +52,8 @@
         </div>
     </main>
 {% endblock %}
+
+{% block scripts %}
+    {{ super() }}
+    {% include "templates/partials/content-scripts.html" %}
+{% endblock %}
