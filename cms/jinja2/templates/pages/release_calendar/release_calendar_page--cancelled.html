@@ -1,0 +1,29 @@
+{% extends "templates/pages/release_calendar/release_calendar_page.html" %}
+{% from "components/table-of-contents/_macro.njk" import onsTableOfContents %}
+
+{% block release_meta %}
+    <div class="ons-grid__col ons-grid__col--sticky@m ons-col-4@m ons-col-12@s ons-u-p-no">
+        <span class="ons-u-fs-r--b">{{ _("Release date") }}:</span>
+        <span class="ons-u-nowrap">{{ _("Cancelled") }}</span>
+    </div>
+{% endblock %}
+
+{% block release_note %}
+    <div class="ons-u-pt-s ons-u-pb-m@m ons-u-pb-s@xxs@m">
+        {% from "components/panel/_macro.njk" import onsPanel %}
+        {{ onsPanel({"body": page.notice }) }}
+    </div>
+{% endblock %}
+
+{% block release_content %}
+    {% if page.changes_to_release_date %}
+        <section id="changes-to-release-date">
+            <h2>{{ _("Changes to this release date") }}</h2>
+
+            <ol class="ons-list ons-list--bare">
+                {% include_block page.changes_to_release_date %}
+            </ol>
+        </section>
+    {% endif %}
+{% endblock %}
+{% block release_content_footer %}{% endblock %}  {# we want to show this only for published content #}
