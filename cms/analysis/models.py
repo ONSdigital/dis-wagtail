@@ -36,9 +36,11 @@ class AnalysisSeries(RoutablePageMixin, Page):
     content_panels: ClassVar[list["Panel"]] = [
         *Page.content_panels,
         HelpPanel(
-            content="This is a container for Analysis series. It provides the <code>/latest</code>,"
-            "<code>/previous-release</code> evergreen paths, as well as the actual analysis pages. "
-            "Add a new Analysis page under this container."
+            content=_(
+                "This is a container for Analysis series. It provides the <code>/latest</code>,"
+                "<code>/previous-release</code> evergreen paths, as well as the actual analysis pages. "
+                "Add a new Analysis page under this container."
+            )
         ),
     ]
 
@@ -64,6 +66,7 @@ class AnalysisSeries(RoutablePageMixin, Page):
         """Render the previous releases template."""
         response = self.render(
             request,
+            # TODO: update to include drafts when looking at previews holistically.
             context_overrides={"pages": AnalysisPage.objects.live().child_of(self).order_by("-release_date")},
             template="templates/pages/analysis_page--previous-releases.html",
         )
@@ -81,7 +84,9 @@ class AnalysisPage(BasePage):  # type: ignore[django-manager-missing]
     news_headline = models.CharField(max_length=255, blank=True)
     summary = RichTextField(features=settings.RICH_TEXT_BASIC)
 
-    main_points = RichTextField(features=settings.RICH_TEXT_BASIC, help_text=_("Used when featured on a topic page."))
+    main_points_summary = RichTextField(
+        features=settings.RICH_TEXT_BASIC, help_text=_("Used when featured on a topic page.")
+    )
 
     # Fields: dates
     release_date = models.DateField()
@@ -146,7 +151,7 @@ class AnalysisPage(BasePage):  # type: ignore[django-manager-missing]
                 ),
                 FieldPanel("contact_details"),
                 FieldPanel("show_cite_this_page"),
-                FieldPanel("main_points"),
+                FieldPanel("main_points_summary"),
             ],
             heading=_("Metadata"),
             icon="cog",

@@ -9,7 +9,7 @@ class HeadlineFiguresItemBlock(StructBlock):
 
     title = CharBlock(label=_("Title"), max_length=60, required=True)
     figure = CharBlock(label=_("Figure"), max_length=10, required=True)
-    supporting_text = CharBlock(label=_("Supporting text"), max_length=100, required=False)
+    supporting_text = CharBlock(label=_("Supporting text"), max_length=100, required=True)
 
 
 class HeadlineFiguresBlock(ListBlock):

@@ -57,7 +57,7 @@
                         {% if page.is_latest %}
                             <a href="{{ routablepageurl(page.get_parent().specific, "previous_releases") }}">{{ _("View previous releases") }}</a>
                         {% else %}
-                            <a href="{{  routablepageurl(page.get_parent().specific, "latest_release") }}">{{ _("View latest release") }}</a>
+                            <a href="{{ routablepageurl(page.get_parent().specific, "latest_release") }}">{{ _("View latest release") }}</a>
                         {% endif %}
                     </div>
                 </div>

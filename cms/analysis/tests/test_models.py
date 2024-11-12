@@ -214,8 +214,8 @@ class AnalysisPageRenderTestCase(WagtailTestUtils, TestCase):
     def test_cite_this_page_is_not_shown_when_unticked(self):
         """Test for the cite this page block not present in the template."""
         expected = (
-            "Office for National Statistics (ONS), released { self.formatted_date }, "
-            "ONS website, analysis, {{ self.basic_page_url }}"
+            f"Office for National Statistics (ONS), released { self.formatted_date }, "
+            f"ONS website, analysis, {{ self.basic_page_url }}"
         )
         response = self.client.get(self.basic_page_url)
         self.assertNotContains(response, expected)

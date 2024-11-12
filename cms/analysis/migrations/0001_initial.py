@@ -57,7 +57,7 @@ class Migration(migrations.Migration):
                 ("social_text", models.CharField(blank=True, max_length=255)),
                 ("news_headline", models.CharField(blank=True, max_length=255)),
                 ("summary", wagtail.fields.RichTextField()),
-                ("main_points", wagtail.fields.RichTextField()),
+                ("main_points_summary", wagtail.fields.RichTextField()),
                 ("release_date", models.DateField()),
                 ("next_release_date", models.DateField(blank=True, null=True)),
                 ("is_accredited", models.BooleanField(default=False)),
