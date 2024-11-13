@@ -17,7 +17,7 @@ class ThemePage(BasePage):  # type: ignore[django-manager-missing]
     template = "templates/pages/theme_page.html"
     parent_page_types: ClassVar[list[str]] = ["home.HomePage", "ThemePage"]
     subpage_types: ClassVar[list[str]] = ["ThemePage", "topics.TopicPage"]
-    page_description: ClassVar[str] = _("A theme page, such as 'Economy'.")
+    page_description = _("A theme page, such as 'Economy'.")
 
     summary = RichTextField(features=settings.RICH_TEXT_BASIC)
 
