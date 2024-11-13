@@ -32,7 +32,7 @@ class HeadingBlock(blocks.CharBlock):
         return context
 
     def to_table_of_contents_items(self, value: Any) -> list[dict]:
-        """Convert the value to the TOC macro format."""
+        """Convert the value to the table of contents component macro format."""
         return [{"url": "#" + slugify(value), "text": value}]
 
 

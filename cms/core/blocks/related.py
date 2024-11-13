@@ -117,5 +117,5 @@ class RelatedLinksBlock(ListBlock):
         template = "templates/components/streamfield/related_links_block.html"
 
     def to_table_of_contents_items(self, _value: "ListValue") -> list[dict[str, str]]:
-        """Returns the TOC macro data."""
+        """Returns the table of contents component macro data."""
         return [{"url": "#" + self.slug, "text": self.heading}]

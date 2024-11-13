@@ -20,7 +20,7 @@ class ContentSectionBlock(blocks.StructBlock):
         template = "templates/components/streamfield/release_content_section.html"
 
     def to_table_of_contents_items(self, value: "StructValue") -> list[dict[str, str]]:
-        """Convert the value to the TOC macro format."""
+        """Convert the value to the table of contents component macro format."""
         return [{"url": "#" + slugify(value["title"]), "text": value["title"]}]
 
 

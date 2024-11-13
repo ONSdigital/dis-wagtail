@@ -35,7 +35,7 @@ class ReleaseCalendarPageTestCase(WagtailTestUtils, TestCase):
                 )
 
     def test_table_of_contents_pre_published__content(self):
-        """Check TOC in a pre-published state."""
+        """Check table of contents in a pre-published state."""
         for status in [ReleaseStatus.PROVISIONAL, ReleaseStatus.CONFIRMED, ReleaseStatus.CANCELLED]:
             with self.subTest(status=status):
                 self.page.status = status
@@ -61,7 +61,7 @@ class ReleaseCalendarPageTestCase(WagtailTestUtils, TestCase):
                 self.assertListEqual(self.page.get_context(self.request)["table_of_contents"], expected)
 
     def test_table_of_contents_pre_published__census(self):
-        """Check TOC in a pre-published state shows about the data when is census."""
+        """Check table of contents in a pre-published state shows about the data when is census."""
         for status in [ReleaseStatus.PROVISIONAL, ReleaseStatus.CONFIRMED, ReleaseStatus.CANCELLED]:
             with self.subTest(status=status):
                 self.page.status = status
@@ -94,7 +94,7 @@ class ReleaseCalendarPageTestCase(WagtailTestUtils, TestCase):
                 self.assertListEqual(self.page.get_context(self.request)["table_of_contents"], expected)
 
     def test_table_of_contents_pre_published__accredited(self):
-        """Check TOC in a pre-published state shows about the data when accredited."""
+        """Check table of contents in a pre-published state shows about the data when accredited."""
         for status in [ReleaseStatus.PROVISIONAL, ReleaseStatus.CONFIRMED, ReleaseStatus.CANCELLED]:
             with self.subTest(status=status):
                 self.page.status = status
@@ -120,7 +120,7 @@ class ReleaseCalendarPageTestCase(WagtailTestUtils, TestCase):
                 self.assertListEqual(self.page.get_context(self.request)["table_of_contents"], expected)
 
     def test_table_of_contents__published(self):
-        """Check TOC in a published state."""
+        """Check table of contents in a published state."""
         self.page.status = ReleaseStatus.PUBLISHED
         self.page.content = [
             {
@@ -141,7 +141,7 @@ class ReleaseCalendarPageTestCase(WagtailTestUtils, TestCase):
         )
 
     def test_table_of_contents__changes_to_release_date(self):
-        """Check TOC for the changes to release date if added. Should be there for non-provisional."""
+        """Check table of contents for the changes to release date if added. Should be there for non-provisional."""
         cases = [
             (ReleaseStatus.PROVISIONAL, False),
             (ReleaseStatus.CONFIRMED, True),
@@ -163,7 +163,7 @@ class ReleaseCalendarPageTestCase(WagtailTestUtils, TestCase):
                 del self.page.table_of_contents  # clear the cached property
 
     def test_table_of_contents__contact_details(self):
-        """Check TOC in a published state contains contact details if added."""
+        """Check table of contents in a published state contains contact details if added."""
         cases = [
             (ReleaseStatus.PROVISIONAL, False),
             (ReleaseStatus.CONFIRMED, False),
@@ -182,7 +182,7 @@ class ReleaseCalendarPageTestCase(WagtailTestUtils, TestCase):
                 del self.page.table_of_contents  # clear the cached property
 
     def test_table_of_contents__pre_release_access(self):
-        """Check TOC in a published state has the pre-release access section if added."""
+        """Check table of contents in a published state has the pre-release access section if added."""
         cases = [
             (ReleaseStatus.PROVISIONAL, False),
             (ReleaseStatus.CONFIRMED, False),
@@ -200,7 +200,7 @@ class ReleaseCalendarPageTestCase(WagtailTestUtils, TestCase):
                 del self.page.table_of_contents  # clear the cached property
 
     def test_table_of_contents_published__related_links(self):
-        """Check TOC in a published state has the related links section if added."""
+        """Check table of contents in a published state has the related links section if added."""
         self.page.status = ReleaseStatus.PUBLISHED
         self.page.related_links = [{"type": "link", "value": {"url": "https://ons.gov.uk", "text": "The link"}}]
 
@@ -239,7 +239,7 @@ class ReleaseCalendarPageRenderTestCase(TestCase):
         self.page = ReleaseCalendarPageFactory()
 
     def test_rendered__content(self):
-        """Check TOC in a published state."""
+        """Check table of contents in a published state."""
         cases = [
             (ReleaseStatus.PROVISIONAL, False),
             (ReleaseStatus.CONFIRMED, False),
@@ -316,7 +316,7 @@ class ReleaseCalendarPageRenderTestCase(TestCase):
                 self.assertEqual("PSF team" in str(response.content), is_shown)
 
     def test_rendered__pre_release_access(self):
-        """Check TOC in a published state."""
+        """Check table of contents in a published state."""
         cases = [
             (ReleaseStatus.PROVISIONAL, False),
             (ReleaseStatus.CONFIRMED, False),
