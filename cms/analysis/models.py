@@ -1,5 +1,5 @@
 from functools import cached_property
-from typing import TYPE_CHECKING, Any, ClassVar, Optional, cast
+from typing import TYPE_CHECKING, Any, ClassVar, Optional
 
 from django.conf import settings
 from django.core.exceptions import ValidationError
@@ -46,7 +46,8 @@ class AnalysisSeries(RoutablePageMixin, Page):
 
     def get_latest(self) -> Optional["AnalysisPage"]:
         """Returns the latest published analysis page."""
-        return cast(AnalysisPage | None, AnalysisPage.objects.live().child_of(self).order_by("-release_date").first())
+        latest: AnalysisPage | None = AnalysisPage.objects.live().child_of(self).order_by("-release_date").first()
+        return latest
 
     @path("")
     def index(self, request: "HttpRequest") -> "HttpResponseRedirect":
@@ -59,18 +60,19 @@ class AnalysisSeries(RoutablePageMixin, Page):
         latest = self.get_latest()
         if not latest:
             raise Http404
-        return cast("TemplateResponse", latest.serve(request))
+        response: TemplateResponse = latest.serve(request)
+        return response
 
     @path("previous-releases/")
     def previous_releases(self, request: "HttpRequest") -> "TemplateResponse":
         """Render the previous releases template."""
-        response = self.render(
+        response: TemplateResponse = self.render(
             request,
             # TODO: update to include drafts when looking at previews holistically.
             context_overrides={"pages": AnalysisPage.objects.live().child_of(self).order_by("-release_date")},
             template="templates/pages/analysis_page--previous-releases.html",
         )
-        return cast("TemplateResponse", response)
+        return response
 
 
 class AnalysisPage(BasePage):  # type: ignore[django-manager-missing]
