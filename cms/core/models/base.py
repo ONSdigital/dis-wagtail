@@ -1,7 +1,7 @@
-from functools import cached_property
 from typing import TYPE_CHECKING, ClassVar
 
 from django.utils.decorators import method_decorator
+from django.utils.functional import cached_property
 from wagtail.models import Page
 from wagtail.query import PageQuerySet
 

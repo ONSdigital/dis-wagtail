@@ -4,7 +4,7 @@
     {% with current_site=wagtail_site() %}
         <meta name="twitter:card" content="summary" />
         <meta name="twitter:site" content="@{{ settings.core.SocialMediaSettings.twitter_handle }}" />
-        <meta name="twitter:title" content="{{ page.title }}" />
+        <meta name="twitter:title" content="{{ page.seo_title or page.title }}" />
         <meta name="twitter:description" content="{{ page|social_text(current_site) }}">
         {% with social_image=page|social_image(current_site) %}
             {% if social_image  %}
@@ -23,7 +23,7 @@
         {% endwith %}
         <meta property="og:type" content="website" />
         <meta property="og:url" content="{{ site.root_url }}{{ page.url }}" />
-        <meta property="og:title" content="{{ page.title }}" />
+        <meta property="og:title" content="{{ page.seo_title or page.title }}" />
         <meta property="og:description" content="{{ page|social_text(current_site) }}" />
         <meta property="og:site_name" content="{{ settings.core.SocialMediaSettings.site_name }}" />
     {% endwith %}

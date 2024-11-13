@@ -1,8 +1,8 @@
-from functools import cached_property
 from typing import TYPE_CHECKING, Any
 
 from django.core.exceptions import ValidationError
 from django.forms.utils import ErrorList
+from django.utils.functional import cached_property
 from django.utils.text import slugify
 from django.utils.translation import gettext as _
 from wagtail.blocks import (

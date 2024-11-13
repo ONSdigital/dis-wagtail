@@ -1,4 +1,3 @@
-from functools import cached_property
 from typing import TYPE_CHECKING, Any, ClassVar, Optional
 
 from django.conf import settings
@@ -6,6 +5,7 @@ from django.core.exceptions import ValidationError
 from django.db import models
 from django.http import Http404
 from django.shortcuts import redirect
+from django.utils.functional import cached_property
 from django.utils.translation import gettext_lazy as _
 from wagtail.admin.panels import FieldPanel, FieldRowPanel, HelpPanel, MultiFieldPanel, TitleFieldPanel
 from wagtail.contrib.routable_page.models import RoutablePageMixin, path
