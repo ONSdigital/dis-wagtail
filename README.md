@@ -51,7 +51,7 @@ Ensure you have the following installed:
    managing Python versions.
 2. **[Poetry](https://python-poetry.org/)**: This is used to manage package dependencies and virtual
    environments.
-3. **[Docker](https://docs.docker.com/engine/install/)** and **[Docker Compose](https://docs.docker.com/compose/)**.
+3. **[Colima](https://github.com/ONSdigital/dp-compose/blob/main/setting-up-colima-locally.md)** for running the project in Docker containers.
 4. **[PostgreSQL](https://www.postgresql.org/)** for the database. Provided as container via `docker-compose.yml` when using the Docker setup.
 5. **[Node](https://nodejs.org/en)** and **[`nvm` (Node Version Manager)](https://github.com/nvm-sh/nvm)** for front-end tooling.
 6. **Operation System**: Ubuntu/MacOS
@@ -261,11 +261,11 @@ make megalint
 Wagtail is built on [Django](https://djangoproject.com/) and changes to its models may require generating and
 running schema migrations. For full details see the [Django documentation on migrations](https://docs.djangoproject.com/en/5.1/topics/migrations/)
 
-Below are the commands you will most commonly use:
+Below are the commands you will most commonly use, note that these have to be run inside the container.
 
 ```bash
 # Check if you need to generate any new migrations after changes to the model
-poetru run django-admin makemigrations --check
+poetry run django-admin makemigrations --check
 
 # Generate migrations
 poetry run django-admin makemigrations
