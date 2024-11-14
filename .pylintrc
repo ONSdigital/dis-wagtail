@@ -436,6 +436,7 @@ disable=raw-checker-failed,
         missing-module-docstring,
         too-many-ancestors,
         too-few-public-methods,
+        missing-class-docstring,
         fixme
 
 # note:
@@ -443,6 +444,7 @@ disable=raw-checker-failed,
 # - missing-module-docstring: because they should be self-explanatory
 # - too-many-ancestors: because of our and Wagtail's use of mixins
 # - too-few-public-methods: because of Django Meta classes
+# - missing-class-docstring: mostly because of Django classes.
 # - fixme: because we want to leave TODO notes for future features.
 
 # Enable the message, report, category or checker with the given id(s). You can

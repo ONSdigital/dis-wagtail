@@ -13,7 +13,7 @@ if TYPE_CHECKING:
 class HeadingBlock(blocks.CharBlock):
     """Section heading block."""
 
-    class Meta:  # pylint: disable=missing-class-docstring
+    class Meta:
         icon = "title"
         form_classname = "title"
         template = "templates/components/streamfield/heading_block.html"
@@ -42,7 +42,7 @@ class QuoteBlock(blocks.StructBlock):
     quote = blocks.CharBlock(form_classname="title")
     attribution = blocks.CharBlock(required=False)
 
-    class Meta:  # pylint: disable=missing-class-docstring
+    class Meta:
         icon = "openquote"
         template = "templates/components/streamfield/quote_block.html"
 
@@ -50,7 +50,7 @@ class QuoteBlock(blocks.StructBlock):
 class BasicTableBlock(WagtailTableBlock):
     """Provides a basic table block with data processed for Design System components."""
 
-    class Meta:  # pylint: disable=missing-class-docstring
+    class Meta:
         icon = "table"
         template = "templates/components/streamfield/table_block.html"
         label = "Basic table"

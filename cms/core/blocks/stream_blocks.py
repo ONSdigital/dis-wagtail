@@ -27,5 +27,5 @@ class CoreStoryBlock(StreamBlock):
     equation = MathBlock(group="DataVis", icon="decimal")
     ons_embed = ONSEmbedBlock(group="DataVis", label="ONS General Embed")
 
-    class Meta:  # pylint: disable=missing-class-docstring
+    class Meta:
         block_counts: ClassVar[dict[str, dict]] = {"related_links": {"max_num": 1}}
