@@ -1,0 +1,29 @@
+{% extends "wagtailadmin/base.html" %}
+{% load i18n wagtailadmin_tags %}
+{% block titletag %}{% blocktrans trimmed with title=page_to_move.specific_deferred.get_admin_display_title %}Add {{ title }} to a bundle{% endblocktrans %}{% endblock %}
+{% block content %}
+    {% include "wagtailadmin/shared/header.html" with title=_("Add") subtitle=page_to_move.specific_deferred.get_admin_display_title icon="boxes-stacked" %}
+
+    <div class="nice-padding">
+        <form action="{% url 'bundles:add_to_bundle' page_to_add.id %}" method="POST" novalidate>
+            {% csrf_token %}
+            {% if next %}<input type="hidden" value="{{ next }}" name="next">{% endif %}
+
+            <ul class="fields">
+                <li>{% formattedfield form.bundle %}</li>
+            </ul>
+
+            <button type="submit" class="button">{% trans 'Confirm' %}</button>
+        </form>
+    </div>
+{% endblock %}
+
+{% block extra_js %}
+    {{ block.super }}
+    {{ form.media.js }}
+{% endblock %}
+
+{% block extra_css %}
+    {{ block.super }}
+    {{ form.media.css }}
+{% endblock %}
