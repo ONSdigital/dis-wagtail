@@ -1,3 +1,5 @@
-{% for block in value %}
-    {% include_block block %}
+{% for content_block in value %}
+    {% with block_id = content_block.id %}
+        {% include_block content_block %}
+    {% endwith %}
 {% endfor %}
