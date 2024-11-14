@@ -19,7 +19,7 @@ class ImageBlock(blocks.StructBlock):
     image = ImageChooserBlock()
     caption = blocks.CharBlock(required=False)
 
-    class Meta:  # pylint: disable=missing-class-docstring,too-few-public-methods
+    class Meta:
         icon = "image"
         template = "templates/components/streamfield/image_block.html"
 
@@ -50,7 +50,7 @@ class DocumentBlock(blocks.StructBlock):
     title = blocks.CharBlock(required=False)
     description = blocks.RichTextBlock(features=settings.RICH_TEXT_BASIC, required=False)
 
-    class Meta:  # pylint: disable=missing-class-docstring,too-few-public-methods
+    class Meta:
         icon = "doc-full-inverse"
         value_class = DocumentBlockStructValue
         template = "templates/components/streamfield/document_block.html"
@@ -67,7 +67,7 @@ class DocumentsBlock(blocks.StreamBlock):
         context["macro_data"] = [document.value.as_macro_data() for document in value]
         return context
 
-    class Meta:  # pylint: disable=missing-class-docstring,too-few-public-methods
+    class Meta:
         block_counts: ClassVar[dict[str, dict]] = {"document": {"min_num": 1}}
         icon = "doc-full-inverse"
         template = "templates/components/streamfield/documents_block.html"
@@ -93,6 +93,6 @@ class ONSEmbedBlock(blocks.StructBlock):
 
         return super().clean(value)
 
-    class Meta:  # pylint: disable=missing-class-docstring,too-few-public-methods
+    class Meta:
         icon = "code"
         template = "templates/components/streamfield/ons_embed_block.html"
