@@ -38,6 +38,7 @@ lint: lint-py lint-html lint-frontend ## Run all linters (python, html, front-en
 .PHONY: lint-py
 lint-py:  ## Run all Python linters (ruff/pylint/mypy).
 	poetry run ruff check .
+	poetry run ruff format --check .
 	find . -type f -name "*.py" | xargs poetry run pylint --reports=n --output-format=colorized --rcfile=.pylintrc --django-settings-module=cms.settings.production -j 0
 	make mypy
 

@@ -12,5 +12,5 @@ class ReleaseCalendarPageFactory(wagtail_factories.PageFactory):
 
     parent = factory.LazyFunction(lambda: ReleaseCalendarIndex.objects.first())  # pylint: disable=unnecessary-lambda
 
-    title = factory.Faker("text", max_nb_chars=25)
+    title = factory.Faker("sentence", nb_words=4)
     summary = factory.Faker("text", max_nb_chars=100)
