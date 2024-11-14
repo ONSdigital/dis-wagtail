@@ -2,17 +2,17 @@
 {% from "components/related-content/_macro.njk" import onsRelatedContent %}
 
 {% block main %}
-    <p>{{ page.summary }}</p>
+<p>{{ page.summary }}</p>
 
-    {% if page.last_updated %}
-        <h5>Last Updated: {{ page.last_updated }}</h5>
-    {% endif %}
+{% if page.last_updated %}
+    <h5>Last Updated: {{ page.last_updated }}</h5>
+{% endif %}
 
-    {% include_block page.content %}
+{% include_block page.content %}
 
-    {% if related_pages %}
+{% if related_pages %}
         {# fmt:off #}
-        {{- 
+        {{-
             onsRelatedContent({
                 "ariaLabel": _('Related content'),
                 "rows": [{
@@ -20,8 +20,8 @@
                     "title": _('Related content'),
                     "itemsList": related_pages
                 }]
-            }) 
+            })
         -}}
         {# fmt:on #}
-    {% endif %}
-{% endblock %}
+{% endif %}
+
