@@ -12,7 +12,7 @@
 
     {% if related_pages %}
         {# fmt:off #}
-        {{- 
+        {{-
             onsRelatedContent({
                 "ariaLabel": _('Related content'),
                 "rows": [{
@@ -20,8 +20,15 @@
                     "title": _('Related content'),
                     "itemsList": related_pages
                 }]
-            }) 
+            })
         -}}
         {# fmt:on #}
     {% endif %}
+
 {% endblock %}
+{% if page.has_equations %}
+    <script async src="{{ mathjax() }}"></script>
+{% endif %}
+{% if page.has_ons_embed %}
+    <script src="{{ static('js/third-party/pym.min.js') }}"></script>
+{% endif %}
