@@ -25,6 +25,9 @@ class BasePage(ListingFieldsMixin, SocialFieldsMixin, Page):  # type: ignore[dja
     """Base page class with listing and social fields additions as well as cache decorators."""
 
     show_in_menus_default = True
+    # Used to check for the existence of equation and ONS embed blocks.
+    # Update in your specific Page class if the StreamField using them is different.
+    content_field_name: str = "content"
 
     class Meta:
         abstract = True
@@ -50,3 +53,29 @@ class BasePage(ListingFieldsMixin, SocialFieldsMixin, Page):  # type: ignore[dja
             pks=ordered_page_pks,
             exclude_non_matches=True,
         )
+
+    @cached_property
+    def has_equations(self) -> bool:
+        """Checks if there are any equation blocks.
+        Override in your specific Page class if the StreamField structure is different.
+        """
+        if streamfield := getattr(self, self.content_field_name):
+            try:
+                return streamfield.first_block_by_name(block_name="equation") is not None
+            except AttributeError:
+                return False
+
+        return False
+
+    @cached_property
+    def has_ons_embed(self) -> bool:
+        """Checks if there are any ONS embed blocks.
+        Override in your specific Page class if the StreamField structure is different.
+        """
+        if streamfield := getattr(self, self.content_field_name):
+            try:
+                return streamfield.first_block_by_name(block_name="ons_embed") is not None
+            except AttributeError:
+                return False
+
+        return False
