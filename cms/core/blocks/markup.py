@@ -13,7 +13,7 @@ if TYPE_CHECKING:
 class HeadingBlock(blocks.CharBlock):
     """Section heading block."""
 
-    class Meta:  # pylint: disable=missing-class-docstring,too-few-public-methods
+    class Meta:
         icon = "title"
         form_classname = "title"
         template = "templates/components/streamfield/heading_block.html"
@@ -32,7 +32,7 @@ class HeadingBlock(blocks.CharBlock):
         return context
 
     def to_table_of_contents_items(self, value: Any) -> list[dict]:
-        """Convert the value to the TOC macro format."""
+        """Convert the value to the table of contents component macro format."""
         return [{"url": "#" + slugify(value), "text": value}]
 
 
@@ -42,7 +42,7 @@ class QuoteBlock(blocks.StructBlock):
     quote = blocks.CharBlock(form_classname="title")
     attribution = blocks.CharBlock(required=False)
 
-    class Meta:  # pylint: disable=missing-class-docstring,too-few-public-methods
+    class Meta:
         icon = "openquote"
         template = "templates/components/streamfield/quote_block.html"
 
@@ -50,7 +50,7 @@ class QuoteBlock(blocks.StructBlock):
 class BasicTableBlock(WagtailTableBlock):
     """Provides a basic table block with data processed for Design System components."""
 
-    class Meta:  # pylint: disable=missing-class-docstring,too-few-public-methods
+    class Meta:
         icon = "table"
         template = "templates/components/streamfield/table_block.html"
         label = "Basic table"
