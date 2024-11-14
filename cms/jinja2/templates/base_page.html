@@ -4,7 +4,7 @@
     {% with current_site=wagtail_site() %}
         <meta name="twitter:card" content="summary" />
         <meta name="twitter:site" content="@{{ settings.core.SocialMediaSettings.twitter_handle }}" />
-        <meta name="twitter:title" content="{{ page.title }}" />
+        <meta name="twitter:title" content="{{ page.seo_title or page.title }}" />
         <meta name="twitter:description" content="{{ page|social_text(current_site) }}">
         {% with social_image=page|social_image(current_site) %}
             {% if social_image  %}
@@ -23,7 +23,7 @@
         {% endwith %}
         <meta property="og:type" content="website" />
         <meta property="og:url" content="{{ site.root_url }}{{ page.url }}" />
-        <meta property="og:title" content="{{ page.title }}" />
+        <meta property="og:title" content="{{ page.seo_title or page.title }}" />
         <meta property="og:description" content="{{ page|social_text(current_site) }}" />
         <meta property="og:site_name" content="{{ settings.core.SocialMediaSettings.site_name }}" />
     {% endwith %}
@@ -32,4 +32,28 @@
 {% block preMain %}
     {{ super() }}
     {% include "templates/components/navigation/breadcrumbs.html" %}
+{% endblock %}
+
+{% block pageContent %}
+    {# Adds a full-width section for the header area before the main page content #}
+    {# Changes the location of the <main> tag from the base template - ensures it surrounds the header area #}
+    <main id="main-content">
+        {# This will contain the hero on individual templates #}
+        {% block header_area %}{% endblock %}
+        <div class="ons-page__container ons-container{{ containerClasses }}">
+            <div class="ons-grid">
+                <div class="ons-grid__col ons-col-{{ pageColNumber }}@m {{ pageColClasses }}">
+                    {# This is the main tag in the base template in the design system #}
+                    <div class="ons-page__main {{ mainColClasses }}">
+                        {% block main %}{% endblock %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+{% endblock %}
+
+{% block scripts %}
+    {{ super() }}
+    {% include "templates/partials/content_scripts.html" %}
 {% endblock %}

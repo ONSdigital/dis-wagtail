@@ -54,11 +54,14 @@ if "CSRF_TRUSTED_ORIGINS" in env:
 # Application definition
 
 INSTALLED_APPS = [
+    "cms.analysis",
     "cms.core",
     "cms.documents",
     "cms.home",
     "cms.images",
     "cms.release_calendar",
+    "cms.themes",
+    "cms.topics",
     "cms.users",
     "wagtail.embeds",
     "wagtail.sites",
@@ -165,6 +168,9 @@ TEMPLATES = [
         "OPTIONS": {
             "context_processors": context_processors,
         },
+        "DIRS": [
+            PROJECT_DIR / "jinja2" / "assets" / "icons",  # for icons registered with register_icons
+        ],
     },
 ]
 
