@@ -38,7 +38,7 @@ class AnalysisSeries(RoutablePageMixin, Page):
         HelpPanel(
             content=_(
                 "This is a container for Analysis series. It provides the <code>/latest</code>,"
-                "<code>/previous-release</code> evergreen paths, as well as the actual analysis pages. "
+                "<code>/previous-releases</code> evergreen paths, as well as the actual analysis pages. "
                 "Add a new Analysis page under this container."
             )
         ),
