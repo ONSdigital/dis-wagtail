@@ -1,0 +1,66 @@
+services:
+  web:
+    build:
+      context: ..
+      target: dev
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      HEROKU_APP_NAME: local # this stops Birdbath's HerokuNotProductionCheck complaining
+      DATABASE_URL: postgres://ons:ons@db:5432/ons # pragma: allowlist secret
+      DJANGO_SETTINGS_MODULE: cms.settings.functional_test
+      ENABLE_DJANGO_DEFENDER: 'false'
+      MEDIA_DIR: /app/media/
+      REDIS_URL: redis://redis
+      SECRET_KEY: local_dev_secret_key # pragma: allowlist secret
+      WAGTAILADMIN_BASE_URL: 'http://localhost:8000'
+      STATIC_DIR: /app/static/
+      STATIC_URL: /static/
+    ports:
+      - 18000:8000 # runserver
+    #      - 3000:3000 # webpack
+    #      - 8001:8001 # mkdocs serve
+    volumes:
+      # Mount the repo at /app/
+      - ../:/app/
+      # Mount a volume at /app/node_modules to prevent Docker trying to sync the
+      # contents between the container and the host. This means that the
+      # node_modules directory can appear to have different contents depending
+      # on whether you are looking at it from the host or the container, so make
+      # sure you consistently run Node.js commands from inside the container or
+      # the host, but not both.
+      - node_modules:/app/node_modules
+    init: true
+    depends_on:
+      - db
+      - redis
+    command: >
+      sh -c "django-admin migrate --noinput &&
+             django-admin runserver 0.0.0.0:8000"
+
+  db:
+    image: postgres:16
+    ports:
+      - '15432:5432'
+    environment:
+      PGDATA: /var/lib/postgresql/data/pgdata
+      # Defaults for createdb/dropdb/pg_restore etc.
+      PGDATABASE: ons
+      PGUSER: ons
+      # Values for initdb
+      POSTGRES_HOST_AUTH_METHOD: trust
+      POSTGRES_USER: ons
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    attach: false
+
+  redis:
+    image: redis:7.2
+    ports:
+      - '16379:6379'
+    attach: false
+
+volumes:
+  node_modules:
+  pgdata:
