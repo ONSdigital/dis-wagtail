@@ -112,22 +112,6 @@ testing = ["PyHamcrest (<2.0)", "PyHamcrest (>=2.0.2)", "assertpy (>=1.1)", "fre
 toml = ["toml (>=0.10.2)", "tomli (>=1.1.0)"]
 
 [[package]]
-name = "behave-django"
-version = "1.5.0"
-description = "Behave BDD integration for Django"
-optional = false
-python-versions = ">=3.8"
-files = [
-    {file = "behave_django-1.5.0-py3-none-any.whl", hash = "sha256:d1cbbd922000109733979863fdc3a947c52754e529d7255c21b1760828bdd4e5"},
-    {file = "behave_django-1.5.0.tar.gz", hash = "sha256:e1c4d7e02ad6343a862246fb20ed9f850aa678d61497aad378b67d9b659f3f59"},
-]
-
-[package.dependencies]
-beautifulsoup4 = "*"
-behave = {version = ">=1.2.7.dev6", extras = ["toml"]}
-django = ">=4.2"
-
-[[package]]
 name = "boto3"
 version = "1.35.54"
 description = "The AWS SDK for Python"
@@ -2326,4 +2310,4 @@ wand = ["Wand (>=0.6,<1.0)"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.12"
-content-hash = "54fcee6baac17c0e2fbd48088ccfcd448caacb49984a053e7f1ae991e061327f"
+content-hash = "72037b1ad430d94d835afd5ebde250c264dec434395987367c8a8eabcb219a64"

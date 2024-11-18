@@ -24,12 +24,6 @@ EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
 # Disable password validators when developing locally.
 AUTH_PASSWORD_VALIDATORS = []
 
-
-# Enable Wagtail's style guide in Wagtail's settings menu.
-# http://docs.wagtail.io/en/stable/contributing/styleguide.html
-INSTALLED_APPS += ["wagtail.contrib.styleguide"]  # noqa: F405
-INSTALLED_APPS += ["behave_django"]
-
 # Disable forcing HTTPS locally since development server supports HTTP only.
 SECURE_SSL_REDIRECT = False
 # For the same reason the HSTS header should not be sent.
@@ -41,5 +35,3 @@ PASSWORD_HASHERS = ["django.contrib.auth.hashers.MD5PasswordHasher"]
 
 DATABASES = {"default": dj_database_url.config(default="postgres://ons:ons@localhost:15432/ons")}  # noqa: F405
 REDIS_URL = "redis://localhost:16379"
-
-FIXTURE_DIRS = ["functional_tests/fixtures"]
