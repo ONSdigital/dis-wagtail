@@ -26,7 +26,7 @@ class ReleaseCalendarPageAdminForm(WagtailAdminPageForm):
         """Validate the submitted release calendar data."""
         cleaned_data: dict = super().clean()
 
-        status = cleaned_data.get("status", "")
+        status = cleaned_data.get("status")
 
         if status == ReleaseStatus.CANCELLED and not cleaned_data.get("notice"):
             raise ValidationError({"notice": _("The notice field is required when the release is cancelled")})
