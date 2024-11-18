@@ -48,6 +48,7 @@ pudb = "^2024.1"
 tblib = "^3.0.0"
 Werkzeug = "~3.0.6"
 playwright = "^1.48.0"
+behave = "^1.2.6"
 
 setuptools = "^75.2.0"
 honcho = "^2.0.0"

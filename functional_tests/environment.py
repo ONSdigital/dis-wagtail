@@ -13,6 +13,12 @@ def before_all(context: Context):
     """Runs once before all tests.
     Sets up playwright browser and context to be used in all scenarios.
     """
+    # Ensure Django uses the functional test settings
+    os.environ["DJANGO_SETTINGS_MODULE"] = "cms.settings.functional_test"
+
+    # This is required for Django to run within a Poetry shell
+    os.environ["DJANGO_ALLOW_ASYNC_UNSAFE"] = "True"
+
     # Register our django test runner so the entire test run is wrapped in a django test runner
     use_fixture(django_test_runner, context=context)
 
@@ -42,7 +48,7 @@ def before_all(context: Context):
 
 def after_all(context: Context):
     """Runs once after all tests.
-    Cleans up playwright browser context.
+    Cleans up playwright objects.
     """
     context.browser_context.close()
     context.browser.close()

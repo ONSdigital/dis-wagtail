@@ -1,4 +1,4 @@
-from behave import given, then, when
+from behave import given, then, when  # pylint: disable=E0611
 from behave.runner import Context
 from playwright.sync_api import expect
 
