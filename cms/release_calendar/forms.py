@@ -26,20 +26,20 @@ class ReleaseCalendarPageAdminForm(WagtailAdminPageForm):
         """Validate the submitted release calendar data."""
         cleaned_data: dict = super().clean()
 
-        status = cleaned_data["status"]
+        status = cleaned_data.get("status", "")
 
-        if status == ReleaseStatus.CANCELLED and not cleaned_data["notice"]:
+        if status == ReleaseStatus.CANCELLED and not cleaned_data.get("notice"):
             raise ValidationError({"notice": _("The notice field is required when the release is cancelled")})
 
         if status in [ReleaseStatus.CONFIRMED, ReleaseStatus.PUBLISHED]:
-            if not cleaned_data["release_date"]:
+            if not cleaned_data.get("release_date"):
                 raise ValidationError(
                     {"release_date": _("The release date field is required when the release is confirmed")}
                 )
 
             if (
                 self.instance.release_date
-                and self.instance.release_date != cleaned_data["release_date"]
+                and self.instance.release_date != cleaned_data.get("release_date")
                 and len(self.instance.changes_to_release_date) == len(cleaned_data.get("changes_to_release_date", []))
             ):
                 # A change in the release date requires updating changes_to_release_date
@@ -53,23 +53,24 @@ class ReleaseCalendarPageAdminForm(WagtailAdminPageForm):
                 )
 
         if (
-            cleaned_data["release_date"]
-            and cleaned_data["next_release_date"]
+            cleaned_data.get("release_date")
+            and cleaned_data.get("next_release_date")
             and cleaned_data["release_date"] >= cleaned_data["next_release_date"]
         ):
             raise ValidationError({"next_release_date": _("The next release date must be after the release date.")})
 
-        if cleaned_data["release_date"] and cleaned_data["release_date_text"]:
+        release_date_text = cleaned_data.get("release_date_text")
+        if cleaned_data.get("release_date") and release_date_text:
             error = _("Please enter the release date or the release date text, not both.")
             raise ValidationError({"release_date": error, "release_date_text": error})
 
-        if cleaned_data["next_release_date"] and cleaned_data["next_release_text"]:
+        if cleaned_data.get("next_release_date") and cleaned_data.get("next_release_text"):
             error = _("Please enter the next release date or the next release text, not both.")
             raise ValidationError({"next_release_date": error, "next_release_text": error})
 
         # TODO: expand to validate for non-English locales when adding multi-language.
-        if cleaned_data["release_date_text"] and self.instance.locale_id == Locale.get_default().pk:
-            self.validate_english_release_date_text_format(cleaned_data["release_date_text"])
+        if release_date_text and self.instance.locale_id == Locale.get_default().pk:
+            self.validate_english_release_date_text_format(release_date_text)
 
         return cleaned_data
 
