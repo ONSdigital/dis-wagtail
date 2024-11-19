@@ -3,8 +3,8 @@
 {% from "components/table-of-contents/_macro.njk" import onsTableOfContents %}
 
 {% block main %}
-    <div class="ons-u-fs-m ons-u-mt-s ons-u-pb-xxs release__document-type">Release</div>
-    <h1 class="ons-u-fs-xxxl ons-u-mb-m">
+    <div class="ons-u-fs-m ons-u-mt-s ons-u-pb-3xs release__document-type">Release</div>
+    <h1 class="ons-u-fs-xxxl ons-u-mb-l">
         <span>{{ page.title }}</span>
         {% if page.is_accredited %}
             {% include "templates/components/accredited/accredited-logo.html" %}
@@ -47,7 +47,7 @@
             }}
             {# fmt:on #}
         </div>
-        <div class="ons-grid__col ons-col-8@m ons-col-12@s ons-u-p-no@xxs@m">
+        <div class="ons-grid__col ons-col-8@m ons-col-12@s ons-u-p-no@3xs@m">
             {{ page.summary|richtext() }}
 
             {% block release_content %}
