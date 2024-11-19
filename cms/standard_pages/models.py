@@ -1,7 +1,7 @@
 from typing import ClassVar
 
 from django.db import models
-from wagtail.admin.panels import FieldPanel
+from wagtail.admin.panels import FieldPanel, InlinePanel
 from wagtail.search import index
 
 from cms.core.blocks.stream_blocks import CoreStoryBlock
@@ -30,6 +30,7 @@ class InformationPage(BasePage):  # type: ignore[django-manager-missing]
         FieldPanel("summary"),
         FieldPanel("last_updated"),
         FieldPanel("content"),
+        InlinePanel("page_related_pages", label="Related pages"),
     ]
 
     search_fields: ClassVar[list[index.SearchField | index.AutocompleteField]] = [

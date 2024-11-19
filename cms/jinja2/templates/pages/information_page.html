@@ -10,7 +10,7 @@
 
     {% include_block page.content %}
 
-    {% if related_pages %}
+    {% if page.related_pages %}
         {# fmt:off #}
         {{-
             onsRelatedContent({
@@ -18,7 +18,7 @@
                 "rows": [{
                     "id": 'related-content',
                     "title": _('Related content'),
-                    "itemsList": related_pages
+                    "itemsList": page.related_pages
                 }]
             })
         -}} 
