@@ -55,3 +55,4 @@ def user_sees_admin_homepage(context: Context) -> None:
     expect(context.page).to_have_url(f"{context.base_url}/admin/")
     expect(context.page.get_by_role("heading", name="Office For National Statistics")).to_be_visible()
     expect(context.page.get_by_label("Dashboard")).to_be_visible()
+    assert False, "Fail a test intentionally"  # noqa: B011, S101
