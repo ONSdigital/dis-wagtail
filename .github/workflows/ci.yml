@@ -138,6 +138,12 @@ jobs:
 
   functional_tests:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        browser:
+          - chromium
+          - firefox
+          - webkit
     needs:
       - lint
       - lint-front-end
@@ -151,6 +157,7 @@ jobs:
       SECRET_KEY: fake_secret_key_to_run_tests # pragma: allowlist secret
       PG_DUMP: /home/linuxbrew/.linuxbrew/opt/postgresql@16/bin/pg_dump
       PG_RESTORE: /home/linuxbrew/.linuxbrew/opt/postgresql@16/bin/pg_restore
+      BROWSER: ${{ matrix.browser }}
 
     services:
       postgres:
@@ -180,9 +187,10 @@ jobs:
         run: make install-dev
 
       - name: Install Playwright
-        run: poetry run python -m playwright install --with-deps
+        run: poetry run python -m playwright install --with-deps ${{ matrix.browser }}
 
       - name: Install/Update Postgres
+        # The Ubuntu runner does come with postgresql, but the wrong version, so we must acquire v16
         run: /home/linuxbrew/.linuxbrew/bin/brew install postgresql@16
 
       - uses: actions/download-artifact@v4
