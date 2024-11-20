@@ -1,8 +1,4 @@
-Feature: Example scenarios
-
-    Scenario: External user can see the homepage
-        When An external user navigates to the ONS beta site
-        Then they can see the beta homepage
+Feature: CMS users can log in to the CMS site
 
     Scenario: A content editor can login to the admin site
         Given the user is a CMS admin
