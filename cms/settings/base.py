@@ -1,7 +1,5 @@
 """Django settings for ons project."""
 
-# pylint: disable=fixme
-
 import os
 import sys
 from copy import deepcopy
