@@ -181,7 +181,7 @@ WSGI_APPLICATION = "cms.wsgi.application"
 
 # Database
 
-db_conn_max_age = env.get("PG_CONN_MAX_AGE", 870)  # Just under 15 minutes, to match password expiry
+db_conn_max_age = int(env.get("PG_CONN_MAX_AGE", 870))  # Just under 15 minutes, to match password expiry
 
 if "PG_DB_ADDR" in env:
     # Use IAM authentication to connect to the Database
