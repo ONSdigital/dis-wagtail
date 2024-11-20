@@ -181,6 +181,8 @@ WSGI_APPLICATION = "cms.wsgi.application"
 
 # Database
 
+db_conn_max_age = env.get("PG_CONN_MAX_AGE", 870)  # Just under 15 minutes, to match password expiry
+
 if "PG_DB_ADDR" in env:
     # Use IAM authentication to connect to the Database
     DATABASES = {
@@ -192,7 +194,7 @@ if "PG_DB_ADDR" in env:
                 "USER": env["PG_DB_USER"],
                 "HOST": env["PG_DB_ADDR"],
                 "PORT": env["PG_DB_PORT"],
-                "CONN_MAX_AGE": 870,  # Just under 15 minutes, to match password expiry
+                "CONN_MAX_AGE": db_conn_max_age,
                 "OPTIONS": {"use_iam_auth": True, "sslmode": "require"},
             },
         )
@@ -204,11 +206,13 @@ if "PG_DB_ADDR" in env:
 
 else:
     DATABASES = {
-        "default": dj_database_url.config(conn_max_age=600, default="postgres:///ons"),
+        "default": dj_database_url.config(conn_max_age=db_conn_max_age, default="postgres:///ons"),
     }
 
     if "READ_REPLICA_DATABASE_URL" in env:
-        DATABASES["read_replica"] = dj_database_url.config(env="READ_REPLICA_DATABASE_URL", conn_max_age=600)
+        DATABASES["read_replica"] = dj_database_url.config(
+            env="READ_REPLICA_DATABASE_URL", conn_max_age=db_conn_max_age
+        )
 
 if "read_replica" not in DATABASES:
     DATABASES["read_replica"] = deepcopy(DATABASES["default"])
