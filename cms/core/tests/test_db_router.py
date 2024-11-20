@@ -3,6 +3,8 @@ from django.db import router, transaction
 from django.test import TransactionTestCase
 from wagtail.models import Page
 
+from cms.home.models import HomePage
+
 
 class DBRouterTestCase(TransactionTestCase):
     databases = frozenset({"default", "read_replica"})
@@ -49,3 +51,8 @@ class DBRouterTestCase(TransactionTestCase):
 
         self.assertIsNotNone(content_type)
         self.assertEqual(content_type._state.db, "default")  # pylint: disable=protected-access
+
+    def test_search_uses_correct_db(self):
+        """Check the read replica is used for search queries."""
+        with self.assertNumQueries(2, using="read_replica"), self.assertNumQueries(0, using="default"):
+            list(HomePage.objects.search("Home"))
