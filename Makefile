@@ -100,3 +100,18 @@ docker-shell:  ## SSH into Docker container
 .PHONY: docker-destroy
 docker-destroy:  ## Tear down the Docker containers
 	docker compose down --volumes
+
+.PHONY: functional-tests-up
+functional-tests-up:  ## Start the functional tests docker compose dependencies
+	docker compose -f functional_tests/docker-compose.yml up -d
+
+.PHONY: functional-tests-down
+functional-tests-down:  ## Stop the functional tests docker compose dependencies
+	docker compose -f functional_tests/docker-compose.yml down
+
+.PHONY: functional-tests-run
+functional-tests-run:  ## Run the functional tests
+	poetry run behave ./functional_tests
+
+.PHONY: functional-tests
+functional-tests: functional-tests-up functional-tests-run functional-tests-down  ## Run the functional tests with backing services (all in one)
