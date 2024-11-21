@@ -125,6 +125,7 @@ class AnalysisPage(BundledPageMixin, BasePage):  # type: ignore[django-manager-m
     show_cite_this_page = models.BooleanField(default=True)
 
     content_panels: ClassVar[list["Panel"]] = [
+        *BundledPageMixin.panels,
         MultiFieldPanel(
             [
                 TitleFieldPanel("title", help_text=_("Also known as the release edition. e.g. 'November 2024'.")),

@@ -4,6 +4,7 @@ from unittest.mock import patch
 
 from django.core.management import call_command
 from django.test import TestCase, override_settings
+from django.urls import reverse
 from django.utils import timezone
 from wagtail.models import ModelLogEntry, PageLogEntry
 
@@ -142,7 +143,10 @@ class PublishBundlesCommandTestCase(TestCase):
         # Verify notification was called with correct URL
         mock_notify.assert_called_once()
         call_kwargs = mock_notify.call_args[1]
-        self.assertTrue(call_kwargs["url"].startswith("https://test.ons.gov.uk"))
+
+        self.assertEqual(
+            call_kwargs["url"], "https://test.ons.gov.uk" + reverse("bundle:inspect", args=(self.bundle.pk,))
+        )
         self.assertIn(str(self.bundle.pk), call_kwargs["url"])
 
 
