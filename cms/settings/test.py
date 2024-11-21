@@ -40,3 +40,7 @@ PASSWORD_HASHERS = ["django.contrib.auth.hashers.MD5PasswordHasher"]
 
 DEFENDER_DISABLE_USERNAME_LOCKOUT = True
 DEFENDER_DISABLE_IP_LOCKOUT = True
+
+
+# Silence Slack notifications by default
+SLACK_NOTIFICATIONS_WEBHOOK_URL = None

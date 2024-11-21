@@ -2,6 +2,9 @@ from typing import TYPE_CHECKING
 
 from django.contrib.auth.models import Permission
 from django.db.models import QuerySet
+from wagtail.models import GroupPagePermission
+
+from cms.home.models import HomePage
 
 if TYPE_CHECKING:
     from django.contrib.auth.models import Group
@@ -44,3 +47,10 @@ def grant_all_bundle_permissions(group: "Group") -> None:
 def grant_view_bundle_permissions(group: "Group") -> None:
     """Adds the view bundle permission to the given group."""
     group.permissions.add(get_view_bundle_permission())
+
+
+def grant_all_page_permissions(group: "Group") -> None:
+    """Adds all the page permissions to the given group."""
+    home = HomePage.objects.first()
+    for permission_type in ["add", "change", "delete", "view"]:
+        GroupPagePermission.objects.create(group=group, page=home, permission_type=permission_type)

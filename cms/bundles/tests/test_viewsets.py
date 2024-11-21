@@ -4,6 +4,7 @@ from unittest import mock
 from django.test import TestCase
 from django.urls import reverse
 from wagtail.test.utils import WagtailTestUtils
+from wagtail.test.utils.form_data import inline_formset, nested_form_data
 
 from cms.analysis.tests.factories import AnalysisPageFactory
 from cms.bundles.enums import BundleStatus
@@ -34,14 +35,23 @@ class BundleViewSetTestCase(WagtailTestUtils, TestCase):
         cls.bundle_index_url = reverse("bundle:index")
         cls.bundle_add_url = reverse("bundle:add")
 
+        cls.released_bundle = BundleFactory(released=True, name="Release Bundle")
+        cls.released_bundle_edit_url = reverse("bundle:edit", args=[cls.released_bundle.id])
+
+        cls.approved_bundle = BundleFactory(approved=True, name="Approve Bundle")
+        cls.approved_bundle_edit_url = reverse("bundle:edit", args=[cls.approved_bundle.id])
+
     def setUp(self):
         self.bundle = BundleFactory(name="Original bundle", created_by=self.publishing_officer)
         self.analysis_page = AnalysisPageFactory(title="PSF")
 
         self.edit_url = reverse("bundle:edit", args=[self.bundle.id])
 
+        self.client.force_login(self.publishing_officer)
+
     def test_bundle_index__unhappy_paths(self):
         """Test bundle list view permissions."""
+        self.client.logout()
         response = self.client.get(self.bundle_index_url)
         self.assertEqual(response.status_code, HTTPStatus.FOUND)
         self.assertRedirects(response, f"/admin/login/?next={self.bundle_index_url}")
@@ -61,7 +71,6 @@ class BundleViewSetTestCase(WagtailTestUtils, TestCase):
 
     def test_bundle_add_view(self):
         """Test bundle creation."""
-        self.client.force_login(self.publishing_officer)
         response = self.client.post(
             self.bundle_add_url,
             {
@@ -81,7 +90,6 @@ class BundleViewSetTestCase(WagtailTestUtils, TestCase):
 
     def test_bundle_add_view__with_page_already_in_a_bundle(self):
         """Test bundle creation."""
-        self.client.force_login(self.publishing_officer)
         response = self.client.post(
             self.bundle_add_url,
             {
@@ -110,27 +118,44 @@ class BundleViewSetTestCase(WagtailTestUtils, TestCase):
 
     def test_bundle_edit_view(self):
         """Test bundle editing."""
-        url = reverse("bundle:edit", args=[self.bundle.id])
-
-        self.client.force_login(self.publishing_officer)
         response = self.client.post(
-            url,
-            {
-                "name": "Updated Bundle",
-                "status": self.bundle.status,
-                "bundled_pages-TOTAL_FORMS": "1",
-                "bundled_pages-INITIAL_FORMS": "1",
-                "bundled_pages-MIN_NUM_FORMS": "0",
-                "bundled_pages-MAX_NUM_FORMS": "1000",
-                "bundled_pages-0-id": "",
-                "bundled_pages-0-page": str(self.analysis_page.id),
-                "bundled_pages-0-ORDER": "0",
-            },
+            self.edit_url,
+            nested_form_data(
+                {
+                    "name": "Updated Bundle",
+                    "status": self.bundle.status,
+                    "bundled_pages": inline_formset([{"page": self.analysis_page.id}]),
+                }
+            ),
         )
 
         self.assertEqual(response.status_code, 302)
         self.bundle.refresh_from_db()
         self.assertEqual(self.bundle.name, "Updated Bundle")
+
+    def test_bundle_edit_view__redirects_to_index_for_released_bundles(self):
+        """Released bundles should no longer be editable."""
+        response = self.client.get(self.released_bundle_edit_url)
+        self.assertRedirects(response, self.bundle_index_url)
+
+    def test_bundle_edit_view__updates_approved_fields_on_save_and_approve(self):
+        """Checks the fields are populated if the user clicks the 'Save and approve' button."""
+        self.client.force_login(self.superuser)
+        self.client.post(
+            self.edit_url,
+            nested_form_data(
+                {
+                    "name": "Updated Bundle",
+                    "status": self.bundle.status,  # correct. "save and approve" should update the status directly
+                    "bundled_pages": inline_formset([]),
+                    "action-save-and-approve": "save-and-approve",
+                }
+            ),
+        )
+        self.bundle.refresh_from_db()
+        self.assertEqual(self.bundle.status, BundleStatus.APPROVED)
+        self.assertIsNotNone(self.bundle.approved_at)
+        self.assertEqual(self.bundle.approved_by, self.superuser)
 
     @mock.patch("cms.bundles.viewsets.notify_slack_of_status_change")
     def test_bundle_approval__happy_path(self, mock_notify_slack):
@@ -191,3 +216,14 @@ class BundleViewSetTestCase(WagtailTestUtils, TestCase):
         self.assertIsNone(self.bundle.approved_by)
 
         self.assertFalse(mock_notify_slack.called)
+
+    def test_index_view(self):
+        """Checks the content of the index page."""
+        response = self.client.get(self.bundle_index_url)
+        self.assertContains(response, self.edit_url)
+        self.assertContains(response, self.approved_bundle_edit_url)
+        self.assertNotContains(response, self.released_bundle_edit_url)
+
+        self.assertContains(response, "Pending", 2)  # status + status filter
+        self.assertContains(response, "Released", 2)  # status + status filter
+        self.assertContains(response, "Approved", 5)  # status + status filter, approved at/by

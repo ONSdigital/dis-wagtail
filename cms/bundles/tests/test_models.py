@@ -77,6 +77,12 @@ class BundleModelTestCase(TestCase):
 
         self.assertNotEqual(self.analysis_page.go_live_at, future_date)
 
+    def test_bundlepage_orderable_str(self):
+        """Checks the BundlePage model __str__ method."""
+        bundle_page = BundlePageFactory(parent=self.bundle, page=self.analysis_page)
+
+        self.assertEqual(str(bundle_page), f"BundlePage: page {self.analysis_page.pk} in bundle {self.bundle.id}")
+
 
 class BundledPageMixinTestCase(TestCase):
     """Test BundledPageMixin properties and methods."""

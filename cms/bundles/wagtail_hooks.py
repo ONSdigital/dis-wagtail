@@ -134,7 +134,7 @@ class LatestBundlesPanel(Component):
     def is_shown(self) -> bool:
         """Determine if the panel is shown based on whether the user can modify it."""
         has_permission: bool = self.permission_policy.user_has_any_permission(
-            self.request.user, {"add", "change", "delete"}
+            self.request.user, {"add", "change", "delete", "view"}
         )
         return has_permission
 

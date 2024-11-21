@@ -70,7 +70,7 @@ def notify_slack_of_publication_start(bundle: Bundle, user: Optional["User"] = N
     )
 
     if response.status_code != HTTPStatus.OK:
-        logger.error("Unable to notify Slack of bundle status change: %s", response.body)
+        logger.error("Unable to notify Slack of bundle publication start: %s", response.body)
 
 
 def notify_slack_of_publish_end(
@@ -101,4 +101,4 @@ def notify_slack_of_publish_end(
     )
 
     if response.status_code != HTTPStatus.OK:
-        logger.error("Unable to notify Slack of bundle status change: %s", response.body)
+        logger.error("Unable to notify Slack of bundle publication finish: %s", response.body)
