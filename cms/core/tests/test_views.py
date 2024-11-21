@@ -1,7 +1,8 @@
 import logging
 
 from django.conf import settings
-from django.test import Client, TestCase
+from django.test import Client, SimpleTestCase, TestCase
+from django.urls import reverse
 
 
 class CSRFTestCase(TestCase):
@@ -32,3 +33,25 @@ class TestGoogleTagManagerTestCase(TestCase):
 
         self.assertIn("https://www.googletagmanager.com/gtm.js?id=", response.rendered_content)
         self.assertIn(settings.GOOGLE_TAG_MANAGER_CONTAINER_ID, response.rendered_content)
+
+
+class ReadinessProbeTestCase(SimpleTestCase):
+    """Tests for the readiness probe endpoint."""
+
+    url = reverse("internal:readiness")
+
+    def test_get(self):
+        """Check the ready endpoint works with a GET request."""
+        response = self.client.get(self.url)
+
+        self.assertEqual(response.status_code, 204)
+        self.assertEqual(response.content, b"")
+        self.assertEqual(response.templates, [])
+
+    def test_head(self):
+        """Check the ready endpoint works with a HEAD request."""
+        response = self.client.head(self.url)
+
+        self.assertEqual(response.status_code, 204)
+        self.assertEqual(response.content, b"")
+        self.assertEqual(response.templates, [])
