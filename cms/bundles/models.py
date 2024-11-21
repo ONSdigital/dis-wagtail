@@ -53,10 +53,10 @@ class BundleManager(models.Manager.from_queryset(BundlesQuerySet)):  # type: ign
     def get_queryset(self) -> BundlesQuerySet:
         """Augments the queryset to order it by the publication date, then name, then reverse id."""
         queryset: BundlesQuerySet = super().get_queryset()
-        queryset = queryset.annotate(
+        queryset = queryset.alias(
             release_date=Coalesce("publication_date", "release_calendar_page__release_date")
         ).order_by(F("release_date").desc(nulls_last=True), "name", "-pk")
-        return queryset
+        return queryset  # note: not returning directly to placate no-any-return
 
 
 class Bundle(index.Indexed, ClusterableModel, models.Model):  # type: ignore[django-manager-missing]
@@ -71,7 +71,7 @@ class Bundle(index.Indexed, ClusterableModel, models.Model):  # type: ignore[dja
         on_delete=models.SET_NULL,
         related_name="bundles",
     )
-    # @see https://docs.wagtail.org/en/stable/advanced_topics/reference_index.html
+    # See https://docs.wagtail.org/en/stable/advanced_topics/reference_index.html
     created_by.wagtail_reference_index_ignore = True  # type: ignore[attr-defined]
 
     approved_at = models.DateTimeField(blank=True, null=True)
@@ -131,7 +131,8 @@ class Bundle(index.Indexed, ClusterableModel, models.Model):  # type: ignore[dja
 
     @property
     def can_be_approved(self) -> bool:
-        """Determines
+        """Determines whether the bundle can be approved (i.e. is not already approved or released).
+
         Note: strictly speaking, the bundle should in "in review" in order for it to be approved.
         """
         return self.status in [BundleStatus.PENDING, BundleStatus.IN_REVIEW]
@@ -188,14 +189,11 @@ class BundledPageMixin:
         return self.bundles.filter(status__in=ACTIVE_BUNDLE_STATUSES)
 
     @cached_property
-    def in_active_bundle(self) -> bool:
-        """Determines whether this instance is in an active bundle (that is not yet released)."""
-        exists: bool = self.bundlepage_set.filter(  # type: ignore[attr-defined]
-            parent__status__in=ACTIVE_BUNDLE_STATUSES
-        ).exists()
-        return exists
-
-    @property
     def active_bundle(self) -> Bundle | None:
         """Helper to return the active bundle this instance is in."""
         return self.active_bundles.first()
+
+    @cached_property
+    def in_active_bundle(self) -> bool:
+        """Determines whether this instance is in an active bundle (that is not yet released)."""
+        return self.active_bundle is not None

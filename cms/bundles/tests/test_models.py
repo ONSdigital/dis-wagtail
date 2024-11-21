@@ -117,6 +117,7 @@ class BundledPageMixinTestCase(TestCase):
         self.bundle.save(update_fields=["status"])
 
         del self.page.in_active_bundle  # clear the cached property
+        del self.page.active_bundle  # clear the cached property
         self.assertFalse(self.page.in_active_bundle)
 
     def test_active_bundle_property(self):
@@ -126,4 +127,5 @@ class BundledPageMixinTestCase(TestCase):
         self.bundle.status = BundleStatus.RELEASED
         self.bundle.save(update_fields=["status"])
 
+        del self.page.active_bundle  # cleared cached property
         self.assertIsNone(self.page.active_bundle)

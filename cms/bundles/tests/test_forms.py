@@ -38,16 +38,15 @@ class AddToBundleFormTestCase(TestCase):
         form = AddToBundleForm(page_to_add=self.page, data={"bundle": self.bundle.pk})
 
         self.assertFalse(form.is_valid())
-        self.assertDictEqual(
-            form.errors,
-            {"bundle": [f"Page '{self.page.get_admin_display_title()}' is already in bundle 'First Bundle'"]},
+        self.assertFormError(
+            form, "bundle", [f"Page '{self.page.get_admin_display_title()}' is already in bundle 'First Bundle'"]
         )
 
     def test_form_clean__validates_page_is_bundleable(self):
         """Checks the given page inherits from BundlePageMixin."""
         form = AddToBundleForm(page_to_add=ReleaseCalendarPageFactory(), data={"bundle": self.bundle.pk})
         self.assertFalse(form.is_valid())
-        self.assertDictEqual(form.errors, {"__all__": ["Pages of this type cannot be added."]})
+        self.assertFormError(form, None, ["Pages of this type cannot be added."])
 
 
 class BundleAdminFormTestCase(TestCase):
@@ -125,9 +124,7 @@ class BundleAdminFormTestCase(TestCase):
 
         form = self.form_class(instance=self.bundle, data=data)
         self.assertFalse(form.is_valid())
-        self.assertDictEqual(
-            form.errors, {"__all__": ["'The Analysis' is already in an active bundle (Another Bundle)"]}
-        )
+        self.assertFormError(form, None, ["'The Analysis' is already in an active bundle (Another Bundle)"])
 
     def test_clean__sets_approved_by_and_approved_at(self):
         """Checks that Bundle gets the approver and approval time set."""

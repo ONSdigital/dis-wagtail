@@ -106,17 +106,17 @@ def preset_golive_date(request: "HttpRequest", page: "Page") -> None:
     if not page.in_active_bundle:
         return
 
-    scheduled_publication_date = page.active_bundle.scheduled_publication_date  # type: ignore[union-attr]
+    scheduled_date = page.active_bundle.scheduled_publication_date  # type: ignore[union-attr]
     # note: ignoring union-attr because we already check that the page is in an active bundle.
-    if not scheduled_publication_date:
+    if not scheduled_date:
         return
 
     # note: ignoring
     # - attr-defined because mypy thinks page is only a BundledPageMixin class, rather than Page and BundledPageMixin.
     # - union-attr because active_bundle can be none, but we check for that above
-    if now() < scheduled_publication_date != page.go_live_at:  # type: ignore[attr-defined]
+    if now() < scheduled_date and scheduled_date != page.go_live_at:  # type: ignore[attr-defined]
         # pre-set the scheduled publishing time
-        page.go_live_at = scheduled_publication_date  # type: ignore[attr-defined]
+        page.go_live_at = scheduled_date  # type: ignore[attr-defined]
 
 
 class LatestBundlesPanel(Component):

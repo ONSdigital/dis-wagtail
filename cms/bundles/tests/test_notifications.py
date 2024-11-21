@@ -62,7 +62,7 @@ class SlackNotificationsTestCase(TestCase):
     @patch("cms.bundles.notifications.WebhookClient")
     def test_notify_slack_of_status_change__error_logging(self, mock_client):
         """Should log error if Slack request fails."""
-        with patch("cms.bundles.notifications.logger") as mock_logger:
+        with self.assertLogs("cms.bundles") as logs_recorder:
             self.mock_response.status_code = HTTPStatus.BAD_REQUEST
             self.mock_response.body = "Error message"
             mock_client.return_value.send.return_value = self.mock_response
@@ -81,9 +81,7 @@ class SlackNotificationsTestCase(TestCase):
                 ],
             )
 
-            mock_logger.error.assert_called_once_with(
-                "Unable to notify Slack of bundle status change: %s", "Error message"
-            )
+            self.assertIn("Unable to notify Slack of bundle status change: Error message", logs_recorder.output[0])
 
     @override_settings(SLACK_NOTIFICATIONS_WEBHOOK_URL="https://slack.ons.gov.uk")
     @patch("cms.bundles.notifications.WebhookClient")
@@ -117,16 +115,14 @@ class SlackNotificationsTestCase(TestCase):
     @patch("cms.bundles.notifications.WebhookClient")
     def test_notify_slack_of_publish_start__error_logging(self, mock_client):
         """Should log error if Slack request fails."""
-        with patch("cms.bundles.notifications.logger") as mock_logger:
+        with self.assertLogs("cms.bundles") as logs_recorder:
             self.mock_response.status_code = HTTPStatus.BAD_REQUEST
             self.mock_response.body = "Error message"
             mock_client.return_value.send.return_value = self.mock_response
 
             notify_slack_of_publication_start(self.bundle, self.user)
 
-            mock_logger.error.assert_called_once_with(
-                "Unable to notify Slack of bundle publication start: %s", "Error message"
-            )
+            self.assertIn("Unable to notify Slack of bundle publication start: Error message", logs_recorder.output[0])
 
     @override_settings(SLACK_NOTIFICATIONS_WEBHOOK_URL="https://slack.ons.gov.uk")
     @patch("cms.bundles.notifications.WebhookClient")
@@ -164,13 +160,11 @@ class SlackNotificationsTestCase(TestCase):
     @patch("cms.bundles.notifications.WebhookClient")
     def test_notify_slack_of_publish_end__error_logging(self, mock_client):
         """Should log error if Slack request fails."""
-        with patch("cms.bundles.notifications.logger") as mock_logger:
+        with self.assertLogs("cms.bundles") as logs_recorder:
             self.mock_response.status_code = HTTPStatus.BAD_REQUEST
             self.mock_response.body = "Error message"
             mock_client.return_value.send.return_value = self.mock_response
 
             notify_slack_of_publish_end(self.bundle, 1.234, self.user, self.inspect_url)
 
-            mock_logger.error.assert_called_once_with(
-                "Unable to notify Slack of bundle publication finish: %s", "Error message"
-            )
+            self.assertIn("Unable to notify Slack of bundle publication finish: Error message", logs_recorder.output[0])

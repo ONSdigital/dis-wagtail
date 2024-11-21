@@ -5,6 +5,7 @@ from django.http import Http404
 from django.shortcuts import get_object_or_404, redirect
 from django.urls import reverse
 from django.utils.http import url_has_allowed_host_and_scheme
+from django.utils.text import get_text_list
 from django.utils.translation import gettext as _
 from django.views.generic import FormView
 from wagtail.admin import messages
@@ -48,13 +49,14 @@ class AddToBundleView(FormView):
             self.goto_next = redirect_to
 
         if self.page_to_add.in_active_bundle:
-            bundles = ", ".join(list(self.page_to_add.active_bundles.values_list("name", flat=True)))
             messages.warning(
                 request,
                 _("Page %(title)s is already in a bundle ('%(bundles)s')")
                 % {
                     "title": self.page_to_add.get_admin_display_title(),  # type: ignore[attr-defined]
-                    "bundles": bundles,
+                    "bundles": get_text_list(
+                        list(self.page_to_add.active_bundles.values_list("name", flat=True)), last_word="and"
+                    ),
                 },
             )
             if self.goto_next:
