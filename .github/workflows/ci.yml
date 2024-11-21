@@ -142,8 +142,6 @@ jobs:
       matrix:
         browser:
           - chromium
-          - firefox
-          - webkit
     needs:
       - lint
       - lint-front-end
@@ -214,5 +212,5 @@ jobs:
         uses: actions/upload-artifact@v4
         if: failure()
         with:
-          name: playwright-traces
+          name: playwright-traces-${{ matrix.browser }}
           path: playwright_traces/

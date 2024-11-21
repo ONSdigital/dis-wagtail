@@ -25,6 +25,7 @@ def user_adds_info_page_contents(context: Context) -> None:
     context.page.get_by_role("textbox", name="Summary*").fill("My test information page")
 
     context.page.get_by_role("textbox", name="Last updated").fill("2024-01-01")
+    context.page.get_by_role("textbox", name="Last updated").press("Enter")
 
     context.page.get_by_role("button", name="Insert a block").click()
     context.page.get_by_role("option", name="Rich text").locator("div").first.click()
