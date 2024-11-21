@@ -62,6 +62,7 @@ INSTALLED_APPS = [
     "cms.home",
     "cms.images",
     "cms.release_calendar",
+    "cms.teams",
     "cms.themes",
     "cms.topics",
     "cms.users",
@@ -124,8 +125,9 @@ MIDDLEWARE = [
 if not IS_EXTERNAL_ENV:
     common_middleware_index = MIDDLEWARE.index("django.middleware.common.CommonMiddleware")
     MIDDLEWARE.insert(common_middleware_index, "django.contrib.messages.middleware.MessageMiddleware")
-    MIDDLEWARE.insert(common_middleware_index, "django.contrib.auth.middleware.AuthenticationMiddleware")
+    MIDDLEWARE.insert(common_middleware_index, "cms.core.auth.ONSAuthMiddleware")
     MIDDLEWARE.insert(common_middleware_index, "django.contrib.sessions.middleware.SessionMiddleware")
+
 
 ROOT_URLCONF = "cms.urls"
 
@@ -755,6 +757,10 @@ WAGTAIL_SITE_NAME = "Office for National Statistics"
 if "WAGTAILADMIN_BASE_URL" in env:
     WAGTAILADMIN_BASE_URL = env["WAGTAILADMIN_BASE_URL"]
 
+# https://docs.wagtail.org/en/latest/reference/settings.html#wagtailadmin-login-url
+if "WAGTAILADMIN_LOGIN_URL" in env:
+    WAGTAILADMIN_LOGIN_URL = env["WAGTAILADMIN_LOGIN_URL"]
+
 # Custom image model
 # https://docs.wagtail.io/en/stable/advanced_topics/images/custom_image_model.html
 WAGTAILIMAGES_IMAGE_MODEL = "images.CustomImage"
@@ -841,3 +847,15 @@ ONS_EMBED_PREFIX = env.get("ONS_EMBED_PREFIX", "https://www.ons.gov.uk/visualisa
 # ONS Cookie banner settings
 ONS_COOKIE_BANNER_SERVICE_NAME = env.get("ONS_COOKIE_BANNER_SERVICE_NAME", "www.ons.gov.uk")
 MANAGE_COOKIE_SETTINGS_URL = env.get("MANAGE_COOKIE_SETTINGS_URL", "https://www.ons.gov.uk/cookies")
+
+WAGTAIL_CORE_ADMIN_LOGIN_ENABLED = env.get("WAGTAIL_CORE_ADMIN_LOGIN_ENABLED", "false").lower() == "true"
+
+PUBLISHING_OFFICERS_GROUP_NAME = "Publishing Officers"
+VIEWERS_GROUP_NAME = "Viewers"
+
+LOGOUT_REDIRECT_URL = env.get("LOGOUT_REDIRECT_URL", env.get("WAGTAILADMIN_LOGIN_URL"))
+
+# Cookie Names
+ACCESS_TOKEN_COOKIE_NAME = "access_token"  # noqa: S105
+REFRESH_TOKEN_COOKIE_NAME = "refresh_token"  # noqa: S105
+ID_TOKEN_COOKIE_NAME = "id_token"  # noqa: S105

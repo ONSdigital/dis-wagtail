@@ -1,11 +1,9 @@
-from typing import TYPE_CHECKING, Union
-
 from django.apps import apps
 from django.conf import settings
-from django.urls import include, path
+from django.urls import URLPattern, URLResolver, include, path
 from django.views.decorators.cache import never_cache
 from django.views.decorators.vary import vary_on_headers
-from django.views.generic import TemplateView
+from django.views.generic import RedirectView, TemplateView
 from wagtail import urls as wagtail_urls
 from wagtail.contrib.sitemaps.views import sitemap
 from wagtail.documents import urls as wagtaildocs_urls
@@ -13,9 +11,7 @@ from wagtail.utils.urlpatterns import decorate_urlpatterns
 
 from cms.core import views as core_views
 from cms.core.cache import get_default_cache_control_decorator
-
-if TYPE_CHECKING:
-    from django.urls import URLPattern, URLResolver
+from cms.core.views import ONSLogoutView
 
 # Internal URLs are not intended for public use.
 internal_urlpatterns = [path("readiness/", core_views.ready, name="readiness")]
@@ -31,9 +27,33 @@ private_urlpatterns = [
 if not settings.IS_EXTERNAL_ENV:
     from wagtail.admin import urls as wagtailadmin_urls  # pylint: disable=ungrouped-imports
 
-    private_urlpatterns.append(path("admin/", include(wagtailadmin_urls)))
+    # Conditionally include Wagtail admin URLs
+    wagtail_admin_patterns = [
+        path(
+            "logout/",
+            ONSLogoutView.as_view(),
+            name="wagtailadmin_logout",
+        ),
+    ]
+    if not settings.WAGTAIL_CORE_ADMIN_LOGIN_ENABLED:
+        # Filter wagtail admin patterns to exclude /login and /password_reset
+        wagtail_admin_patterns += [
+            path(
+                "login/",
+                RedirectView.as_view(url=settings.WAGTAILADMIN_LOGIN_URL, permanent=False),
+                name="wagtailadmin_login",
+            ),
+            path(
+                "password_reset/",
+                RedirectView.as_view(url=settings.WAGTAILADMIN_LOGIN_URL, permanent=False),
+                name="wagtailadmin_password_reset",
+            ),
+        ]
 
-if apps.is_installed("django.contrib.admin"):
+    wagtail_admin_patterns += wagtailadmin_urls.urlpatterns
+    private_urlpatterns.append(path("admin/", include(wagtail_admin_patterns)))
+
+if apps.is_installed("django.contrib.admin") and settings.WAGTAIL_CORE_ADMIN_LOGIN_ENABLED:
     from django.contrib import admin  # pylint: disable=ungrouped-imports
 
     private_urlpatterns.append(path("django-admin/", admin.site.urls))
@@ -45,7 +65,7 @@ if getattr(settings, "ENABLE_DJANGO_DEFENDER", False):
     ]
 
 
-debug_urlpatterns: list[Union["URLResolver", "URLPattern"]] = []
+debug_urlpatterns: list[URLResolver | URLPattern] = []
 
 if settings.DEBUG:
     from django.conf.urls.static import static

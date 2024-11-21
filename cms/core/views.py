@@ -1,10 +1,16 @@
 import logging
 from http import HTTPStatus
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
+from django.conf import settings
+from django.contrib import messages
 from django.http import HttpResponse
 from django.shortcuts import render
+from django.utils.decorators import method_decorator
 from django.views import defaults
+from django.views.decorators.cache import never_cache
+from django.views.decorators.csrf import csrf_protect
+from wagtail.admin.views.account import LogoutView
 
 if TYPE_CHECKING:
     from django.http import HttpRequest
@@ -37,3 +43,23 @@ def csrf_failure(
 def ready(request: "HttpRequest") -> HttpResponse:
     """Readiness probe endpoint."""
     return HttpResponse(status=204)
+
+
+class ONSLogoutView(LogoutView):
+    """Log out the user from Wagtail and delete the auth cookies."""
+
+    next_page = None
+
+    @method_decorator(csrf_protect)
+    @method_decorator(never_cache)
+    def dispatch(self, request: "HttpRequest", *args: Any, **kwargs: Any) -> "HttpResponse":
+        response = super().dispatch(request, *args, **kwargs)
+
+        # HACK: Clear the messages from the request
+        list(messages.get_messages(request))
+
+        # Delete auth cookies
+        response.delete_cookie(settings.ACCESS_TOKEN_COOKIE_NAME)
+        response.delete_cookie(settings.ID_TOKEN_COOKIE_NAME)
+        response.delete_cookie(settings.REFRESH_TOKEN_COOKIE_NAME)
+        return response
