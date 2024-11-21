@@ -149,28 +149,12 @@ jobs:
 
     env:
       DJANGO_SETTINGS_MODULE: cms.settings.functional_test
-      DATABASE_URL: postgres://postgres:postgres@localhost/postgres # pragma: allowlist secret
-      ENABLE_DJANGO_DEFENDER: 'false'
-      POSTGRES_HOST_AUTH_METHOD: trust
       SECRET_KEY: fake_secret_key_to_run_tests # pragma: allowlist secret
       PG_DUMP: /home/linuxbrew/.linuxbrew/opt/postgresql@16/bin/pg_dump
       PG_RESTORE: /home/linuxbrew/.linuxbrew/opt/postgresql@16/bin/pg_restore
       BROWSER: ${{ matrix.browser }}
       PLAYWRIGHT_TRACES_DIR: playwright_traces
       PLAYWRIGHT_TRACE: 'true'
-
-    services:
-      postgres:
-        image: postgres:16
-        env:
-          POSTGRES_USER: postgres
-          POSTGRES_PASSWORD: postgres # pragma: allowlist secret
-          POSTGRES_DB: postgres
-        ports:
-          - 5432:5432
-        options: --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
-
-      # Do we need Redis?
 
     steps:
       - uses: actions/checkout@v4
@@ -199,6 +183,9 @@ jobs:
           name: static
           path: cms/static_compiled/
 
+      - name: Docker Compose Up
+        run: make functional-tests-up
+
       - name: Fetch Design System templates
         run: make load-design-system-templates
 
@@ -207,6 +194,9 @@ jobs:
 
       - name: Run Functional Tests
         run: poetry run behave functional_tests
+
+      - name: Docker Compose Down
+        run: make functional-tests-down
 
       - name: Upload Failure Traces
         uses: actions/upload-artifact@v4
