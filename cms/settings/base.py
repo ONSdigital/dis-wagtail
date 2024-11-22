@@ -88,6 +88,7 @@ INSTALLED_APPS = [
     "django_jinja",
     "wagtailmath",
     "wagtailfontawesomesvg",
+    "django_migration_linter",
 ]
 
 if not IS_EXTERNAL_ENV:
