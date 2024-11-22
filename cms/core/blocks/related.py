@@ -1,8 +1,8 @@
-from functools import cached_property
 from typing import TYPE_CHECKING, Any
 
 from django.core.exceptions import ValidationError
 from django.forms.utils import ErrorList
+from django.utils.functional import cached_property
 from django.utils.text import slugify
 from django.utils.translation import gettext as _
 from wagtail.blocks import (
@@ -56,7 +56,7 @@ class LinkBlock(StructBlock):
         required=False,
     )
 
-    class Meta:  # pylint: disable=missing-class-docstring,too-few-public-methods
+    class Meta:
         icon = "link"
         value_class = LinkBlockStructValue
 
@@ -112,10 +112,10 @@ class RelatedLinksBlock(ListBlock):
 
         return context
 
-    class Meta:  # pylint: disable=missing-class-docstring,too-few-public-methods
+    class Meta:
         icon = "list-ul"
         template = "templates/components/streamfield/related_links_block.html"
 
     def to_table_of_contents_items(self, _value: "ListValue") -> list[dict[str, str]]:
-        """Returns the TOC macro data."""
+        """Returns the table of contents component macro data."""
         return [{"url": "#" + self.slug, "text": self.heading}]
