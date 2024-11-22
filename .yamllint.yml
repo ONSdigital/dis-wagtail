@@ -1,0 +1,6 @@
+---
+
+rules:
+  indentation:
+    level: warning
+    indent-sequences: whatever
