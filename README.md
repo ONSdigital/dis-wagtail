@@ -152,16 +152,15 @@ make createsuperuser
 ```
 
 3. Run the Django server locally via your IDE or with the following command
+
 ```
 make runserver
-```  
-You can specify the runtime configuration either in your IDE (for PyCharm see [here](https://www.jetbrains.com/help/pycharm/run-debug-configuration.html#createExplicitly)), or copy the `.env-dev-example` and rename it to `.env` which will allow Django to pick up the config. 
+```
+
+You can specify the runtime configuration either in your IDE (for PyCharm see [here](https://www.jetbrains.com/help/pycharm/run-debug-configuration.html#createExplicitly)), or copy the `.env-dev-example` and rename it to `.env` which will allow Django to pick up the config.
 
 > [!NOTE]
 > Note that Poetry does not automatically pick up the `.env` file. In order to do that you'll need to install the [poetry-plugin-dotenv](https://github.com/pivoshenko/poetry-plugin-dotenv). However if you installed Poetry with brew rather than pip that currently isn't going to work (see the [issue](https://github.com/pivoshenko/poetry-plugin-dotenv/issues/327)) then you'll need to install an older and seemingly no longer maintained [poetry-dotenv-plugin](https://github.com/mpeteuil/poetry-dotenv-plugin).
-
-
-
 
 ## Development
 
