@@ -1,0 +1,39 @@
+services:
+  db:
+    image: postgres:16
+
+    environment:
+      PGDATA: /var/lib/postgresql/data/pgdata
+      # Defaults for createdb/dropdb/pg_restore etc.
+      PGDATABASE: ons
+      PGUSER: ons
+      # Values for initdb
+      POSTGRES_HOST_AUTH_METHOD: trust
+      POSTGRES_USER: ons
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    attach: false
+    ports:
+      - 5432:5432
+
+  redis:
+    image: redis:7.2
+    attach: false
+    ports:
+        - 6379:6379
+        
+  pgadmin:
+    container_name: pgadmin
+    image: dpage/pgadmin4
+    ports:
+      - "81:80"
+    environment:
+      - PGADMIN_DEFAULT_EMAIL=ons@ons.gov
+      - PGADMIN_DEFAULT_PASSWORD=secret
+    links:
+      - db:postgres
+
+volumes:
+  node_modules:
+  pgdata:
+

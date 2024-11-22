@@ -85,8 +85,8 @@ docker-build: load-design-system-templates  ## Build Docker container
 	docker compose pull
 	docker compose build
 
-.PHONY: docker-start
-docker-start:  ## Start Docker containers
+.PHONY: docker-up
+docker-up:  ## Start Docker containers
 	docker compose up --detach
 
 .PHONY: docker-stop
@@ -100,3 +100,35 @@ docker-shell:  ## SSH into Docker container
 .PHONY: docker-destroy
 docker-destroy:  ## Tear down the Docker containers
 	docker compose down --volumes
+
+.PHONY: docker-dev-pull
+docker-dev-pull: load-design-system-templates  ## Pull dev Docker containers
+	docker compose -f docker-compose-dev.yml pull
+
+.PHONY: docker-dev-up
+docker-dev-up:  ## Start dev Docker containers
+	docker compose -f docker-compose-dev.yml up --detach 
+
+.PHONY: docker-dev-stop
+docker-dev-stop: ## Stop dev Docker containers
+	docker compose -f docker-compose-dev.yml stop
+
+.PHONY: makemigrations
+makemigrations: ## Convenience alias to run makemigrations in venv
+	poetry run python ./manage.py makemigrations
+
+.PHONY: collectstatic
+collectstatic:  ## Convenience alias to run collectstatic in venv
+	poetry run python ./manage.py collectstatic --verbosity 0 --noinput --clear
+	
+.PHONY: migrate
+migrate: ## Convenience alias to run migrate in venv
+	poetry run python ./manage.py migrate 
+
+.PHONY: createsuperuser
+createsuperuser: ## Convenience alias to run createsuperuser in venv
+	poetry run python ./manage.py createsuperuser
+
+.PHONY: runserver
+runserver: # Run the Django application locally	
+	poetry run python ./manage.py runserver
