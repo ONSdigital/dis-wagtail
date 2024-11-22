@@ -43,6 +43,7 @@ wagtail-factories = "^4.1.0"
 coverage = "^7.6.4"
 
 dslr = "^0.4.0"
+psycopg2-binary = "^2.9.10"
 django-debug-toolbar = "^4.4.6"
 pudb = "^2024.1"
 tblib = "^3.0.0"
