@@ -1,9 +1,9 @@
-// temporary css rule so the file is not empty
+//  temporary css rule so the file is not empty
 body {
     display: block;
 }
 
-// Custom CSS from Wagtail doc to enable responsive video embeds
+//  Custom CSS from Wagtail doc to enable responsive video embeds
 .responsive-object {
     position: relative;
 }
@@ -13,8 +13,8 @@ body {
 .responsive-object embed {
     position: absolute;
     top: 0;
-    /* stylelint-disable-next-line property-disallowed-list */
-    left: 0;
-    width: 100%;
-    height: 100%;
+// stylelint-disable-next-line property-disallowed-list
+    left: 0;stylelint-disable-next-lineproperty-disallowed-listleftstylelint-disable-next-lineproperty-disallowed-listleftstylelint-disable-next-lineproperty-disallowed-listleftstylelint-disable-next-lineproperty-disallowed-listleftstylelint-disable-next-lineproperty-disallowed-listleftstylelint-disable-next-lineproperty-disallowed-listleft
+    width: 100%;widthwidthwidthwidthwidth
+    height: 100%;heightheightheightheight
 }

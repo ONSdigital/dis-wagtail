@@ -3,7 +3,8 @@ module.exports = {
   extends: '@wagtail/stylelint-config-wagtail',
 
     "rules": {
-      "indentation": 2
+      "indentation": 2.
+      'no-invalid-double-slash-comments': false
     }
 
 };
