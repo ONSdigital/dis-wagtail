@@ -113,6 +113,14 @@ docker-dev-up:  ## Start dev Docker containers
 docker-dev-stop: ## Stop dev Docker containers
 	docker compose -f docker-compose-dev.yml stop
 
+.PHONY: docker-dev-down
+docker-dev-down: ## Stop dev Docker containers
+	docker compose -f docker-compose-dev.yml down
+
+.PHONY: check-makemigrations
+check-makemigrations: ## Convenience alias to run makemigrations in venv
+	poetry run python ./manage.py makemigrations --check
+
 .PHONY: makemigrations
 makemigrations: ## Convenience alias to run makemigrations in venv
 	poetry run python ./manage.py makemigrations
