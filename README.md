@@ -125,6 +125,41 @@ Follow these steps to set up and run the project using Docker.
 
 You can then access the admin at `http://0.0.0.0:8000/admin/` or `http://localhost:8000/admin/`.
 
+#### Running Wagtail locally with supporting services in Docker
+
+You can also run the main application separately from the supporting backend services such as the Postgres and Redis databases.
+This can be useful when you want to make changes that require the main application to be frequently.
+
+(
+such as config changes, is it also applicable for templates? or UI elements?
+)
+
+In order tu run it:
+
+1. Start the supporting services in Docker.
+
+```
+make docker-dev-pull
+```
+
+2. Run the following steps:
+
+```
+make makemigrations
+make collectstatic
+make migrate
+make createsuperuser
+```
+
+3. Run the Django server locally via your IDE or with the following command
+```
+make runserver
+```  
+You can specify the runtime configuration either in your IDE (for PyCharm see [here](https://www.jetbrains.com/help/pycharm/run-debug-configuration.html#createExplicitly)), or copy the `.env-dev-example` and rename it to `.env` which will allow Django to pick up the config. 
+
+
+
+
 ## Development
 
 Get started with development by running the following commands.
