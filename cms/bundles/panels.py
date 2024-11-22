@@ -1,7 +1,6 @@
 from typing import TYPE_CHECKING, Any, Union
 
 from django.utils.html import format_html, format_html_join
-from django.utils.safestring import mark_safe
 from django.utils.translation import gettext as _
 from wagtail.admin.panels import HelpPanel, PageChooserPanel
 
@@ -39,7 +38,7 @@ class BundleNotePanel(HelpPanel):
                     "<p>{}</p><ul>{}</ul>", _("This page is in the following bundle(s):"), content_html
                 )
             else:
-                content = mark_safe(f"<p>{_('This page is not part of any bundles.')}</p>")  # noqa: S308
+                content = format_html("<p>{}</p>", _("This page is not part of any bundles."))
             return content
 
 
