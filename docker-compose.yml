@@ -1,3 +1,4 @@
+---
 services:
   web:
     build:
@@ -7,19 +8,22 @@ services:
       - path: .env
         required: false
     environment:
-      HEROKU_APP_NAME: local # this stops Birdbath's HerokuNotProductionCheck complaining
-      DATABASE_URL: postgres://ons:ons@db:5432/ons # pragma: allowlist secret
+      # this stops Birdbath's HerokuNotProductionCheck complaining
+      HEROKU_APP_NAME: local
+      # pragma: allowlist secret
+      DATABASE_URL: postgres://ons:ons@db:5432/ons
       DJANGO_SETTINGS_MODULE: cms.settings.dev
       ENABLE_DJANGO_DEFENDER: 'false'
       MEDIA_DIR: /app/media/
       REDIS_URL: redis://redis
-      SECRET_KEY: local_dev_secret_key # pragma: allowlist secret
+      # pragma: allowlist secret
+      SECRET_KEY: local_dev_secret_key
       WAGTAILADMIN_BASE_URL: 'http://localhost:8000'
       STATIC_DIR: /app/static/
       STATIC_URL: /static/
     ports:
       - 3000:3000 # webpack
-      - 8000:8000 # runserver
+      - 8000:8000 # nserver
       - 8001:8001 # mkdocs serve
     volumes:
       # Mount the repo at /app/

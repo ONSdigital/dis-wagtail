@@ -1,8 +1,8 @@
 ---
 # Configuration file for MegaLinter
 #
-# See all available variables at https://megalinter.io/latest/config-file/ and in
-# linters documentation
+# See all available variables at https://megalinter.io/latest/config-file/
+# and in linters documentation
 
 # all, none, or list of linter keys
 APPLY_FIXES: all
@@ -23,10 +23,13 @@ DISABLE:
   - EDITORCONFIG
   - SPELL
 
+# HTMLHINT disabled as part of CMS-70 not compatable withx` djlint
 DISABLE_LINTERS:
   - REPOSITORY_DEVSKIM
   - REPOSITORY_TRUFFLEHOG
   - REPOSITORY_GIT_DIFF
+  - HTML_HTMLHINT
+  - DOCKERFILE_HADOLINT
 
 SHOW_ELAPSED_TIME: true
 
@@ -37,4 +40,16 @@ FILEIO_REPORTER: false
 # Use yml file to allow the use of comments. Megalinter's default is .markdown-lint.json
 MARKDOWN_MARKDOWNLINT_CONFIG_FILE: .markdown-lint.yml
 
-YAML_V8R_FILTER_REGEX_EXCLUDE: 'dependabot.yml' # Dependabot yaml in SchemaStore is currently not up to date. Dependabot is validated on push by GitHub by default.
+# Dependabot yaml in SchemaStore is currently not up to date.
+#  Dependabot is validated on push by GitHub by default.
+YAML_V8R_FILTER_REGEX_EXCLUDE: 'dependabot.yml'
+
+EXCLUDED_DIRECTORIES: ['.github', 'node_modules']
+
+HTML_DJLINT_ARGUMENTS: ['--ignore=H006,H030,H031,H025,H023']
+
+# CKV_DOCKER_9 fires when apt appears as an argument have tried apt-get but this also causes lint error,
+#  CKV2_GHA_1 Ensure top-level permissions are not set to write-all however github allows write for public repository
+#  CKV_DOCKER_2,
+#  CKV_SECRET_4
+REPOSITORY_CHECKOV_ARGUMENTS: ['--skip-check=CKV_DOCKER_9, CKV2_GHA_1, CKV_DOCKER_2, CKV_SECRET_4']
