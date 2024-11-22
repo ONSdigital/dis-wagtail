@@ -27,7 +27,7 @@ items: list[int] = [1]
 mappings: set[int] = {1, 2}
 ```
 
-https://www.python.org/dev/peps/pep-0585/
+<https://www.python.org/dev/peps/pep-0585/>
 
 ## Generic types
 
@@ -85,8 +85,8 @@ def test(self, var: None | int | str) -> None:
 
 ## Abstract vs concrete
 
--   Make argument types as abstract as possible (to be flexible to callers)
--   Make return types as specific as possible (to be predictable to callers)
+- Make argument types as abstract as possible (to be flexible to callers)
+- Make return types as specific as possible (to be predictable to callers)
 
 ```python
 def increment_values(self, values: Sequence[int]) -> list[int]:
@@ -115,7 +115,7 @@ class Circle(Shape):
 ```
 
 This is recommended as forward declarations are now redundant in 3.10
-https://peps.python.org/pep-0673/
+<https://peps.python.org/pep-0673/>
 
 ## Type Alias
 
@@ -236,6 +236,6 @@ def increment_value(self, value: T) -> T:
 
 ## Useful links
 
--   https://www.python.org/dev/peps/pep-0484/
--   https://www.pythonsheets.com/notes/python-typing.html
--   https://google.github.io/styleguide/pyguide.html#319-type-annotations
+- <https://www.python.org/dev/peps/pep-0484/>
+- <https://www.pythonsheets.com/notes/python-typing.html>
+- <https://google.github.io/styleguide/pyguide.html#319-type-annotations>

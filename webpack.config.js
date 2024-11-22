@@ -1,25 +1,25 @@
 /* eslint-disable @typescript-eslint/no-var-requires */
-const path = require('path');
-const CopyPlugin = require('copy-webpack-plugin');
-const MiniCssExtractPlugin = require('mini-css-extract-plugin');
-const sass = require('sass');
-const ESLintPlugin = require('eslint-webpack-plugin');
-const StylelintPlugin = require('stylelint-webpack-plugin');
-const { CleanWebpackPlugin } = require('clean-webpack-plugin');
+const path = require('path')
+const CopyPlugin = require('copy-webpack-plugin')
+const MiniCssExtractPlugin = require('mini-css-extract-plugin')
+const sass = require('sass')
+const ESLintPlugin = require('eslint-webpack-plugin')
+const StylelintPlugin = require('stylelint-webpack-plugin')
+const { CleanWebpackPlugin } = require('clean-webpack-plugin')
 
-const projectRoot = 'cms';
+const projectRoot = 'cms'
 
 const options = {
   entry: {
-    main: `./${projectRoot}/static_src/javascript/main.js`,
+    main: `./${projectRoot}/static_src/javascript/main.js`
   },
   resolve: {
-    extensions: ['.ts', '.js'],
+    extensions: ['.ts', '.js']
   },
   output: {
     path: path.resolve(`./${projectRoot}/static_compiled/`),
     // based on entry name, e.g. main.js
-    filename: 'js/[name].js', // based on entry name, e.g. main.js
+    filename: 'js/[name].js' // based on entry name, e.g. main.js
   },
   plugins: [
     new CopyPlugin({
@@ -31,27 +31,27 @@ const options = {
           context: path.resolve(`./${projectRoot}/static_src/`),
           to: path.resolve(`./${projectRoot}/static_compiled/images`),
           globOptions: {
-            ignore: ['cssBackgrounds/*'],
-          },
-        },
-      ],
+            ignore: ['cssBackgrounds/*']
+          }
+        }
+      ]
     }),
     new MiniCssExtractPlugin({
-      filename: 'css/[name].css',
+      filename: 'css/[name].css'
     }),
     new ESLintPlugin({
       failOnError: false,
       lintDirtyModulesOnly: true,
-      emitWarning: true,
+      emitWarning: true
     }),
     new StylelintPlugin({
       failOnError: false,
       lintDirtyModulesOnly: true,
       emitWarning: true,
-      extensions: ['scss'],
+      extensions: ['scss']
     }),
     //  Automatically remove all unused webpack assets on rebuild
-    new CleanWebpackPlugin(),
+    new CleanWebpackPlugin()
   ],
   module: {
     rules: [
@@ -60,8 +60,8 @@ const options = {
         exclude: /node_modules/,
         use: {
           loader: 'ts-loader',
-          options: { compilerOptions: { noEmit: false } },
-        },
+          options: { compilerOptions: { noEmit: false } }
+        }
       },
       {
         test: /\.(scss|css)$/,
@@ -69,14 +69,14 @@ const options = {
           {
             loader: MiniCssExtractPlugin.loader,
             options: {
-              esModule: false,
-            },
+              esModule: false
+            }
           },
           {
             loader: 'css-loader',
             options: {
-              sourceMap: true,
-            },
+              sourceMap: true
+            }
           },
           {
             loader: 'postcss-loader',
@@ -86,10 +86,10 @@ const options = {
                 plugins: [
                   'autoprefixer',
                   'postcss-custom-properties',
-                  ['cssnano', { preset: 'default' }],
-                ],
-              },
-            },
+                  ['cssnano', { preset: 'default' }]
+                ]
+              }
+            }
           },
           {
             loader: 'sass-loader',
@@ -97,11 +97,11 @@ const options = {
               sourceMap: true,
               implementation: sass,
               sassOptions: {
-                outputStyle: 'compressed',
-              },
-            },
-          },
-        ],
+                outputStyle: 'compressed'
+              }
+            }
+          }
+        ]
       },
       {
         // sync font files referenced by the css to the fonts directory
@@ -114,9 +114,9 @@ const options = {
           options: {
             name: '[name].[ext]',
             outputPath: 'fonts/',
-            publicPath: '../fonts',
-          },
-        },
+            publicPath: '../fonts'
+          }
+        }
       },
       {
         // Handles CSS background images in the cssBackgrounds folder
@@ -128,20 +128,20 @@ const options = {
         type: 'asset',
         parser: {
           dataUrlCondition: {
-            maxSize: 1024,
-          },
+            maxSize: 1024
+          }
         },
         generator: {
-          filename: 'images/cssBackgrounds/[name][ext]',
-        },
-      },
-    ],
+          filename: 'images/cssBackgrounds/[name][ext]'
+        }
+      }
+    ]
   },
   // externals are loaded via base.html and not included in the webpack bundle.
   externals: {
     // gettext: 'gettext',
-  },
-};
+  }
+}
 
 /*
   If a project requires internationalisation, then include `gettext` in base.html
@@ -149,9 +149,9 @@ const options = {
 */
 
 const webpackConfig = (environment, argv) => {
-  const isProduction = argv.mode === 'production';
+  const isProduction = argv.mode === 'production'
 
-  options.mode = isProduction ? 'production' : 'development';
+  options.mode = isProduction ? 'production' : 'development'
 
   if (!isProduction) {
     // https://webpack.js.org/configuration/stats/
@@ -175,14 +175,14 @@ const webpackConfig = (environment, argv) => {
       // Add children information
       children: false,
       // Add asset Information.
-      assets: false,
-    };
+      assets: false
+    }
 
-    options.stats = stats;
+    options.stats = stats
 
     // Create JS source maps in the dev mode
     // See https://webpack.js.org/configuration/devtool/ for more options
-    options.devtool = 'inline-source-map';
+    options.devtool = 'inline-source-map'
 
     // See https://webpack.js.org/configuration/dev-server/.
     options.devServer = {
@@ -195,23 +195,23 @@ const webpackConfig = (environment, argv) => {
       port: 3000,
       proxy: {
         context: () => true,
-        target: 'http://localhost:8000',
+        target: 'http://localhost:8000'
       },
       client: {
         // Shows a full-screen overlay in the browser when there are compiler errors.
         overlay: true,
-        logging: 'error',
+        logging: 'error'
       },
       devMiddleware: {
         index: true,
         publicPath: '/static/',
         writeToDisk: true,
-        stats,
-      },
-    };
+        stats
+      }
+    }
   }
 
-  return options;
-};
+  return options
+}
 
-module.exports = webpackConfig;
+module.exports = webpackConfig
