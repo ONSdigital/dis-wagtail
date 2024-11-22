@@ -26,5 +26,4 @@ services:
       - 6379:6379
 
 volumes:
-  node_modules:
   pgdata:
