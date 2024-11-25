@@ -96,13 +96,66 @@
     {%- endwith -%}
 {%- endset -%}
 
+{% set navigation_settings = settings.navigation.NavigationSettings %}
+
+{% set keyLinksList = [] %}
+
+{% if navigation_settings.main_menu and navigation_settings.main_menu.highlights %}
+    {% for highlight in navigation_settings.main_menu.highlights %}
+        {% if highlight.value.page %}
+            {% set _ = keyLinksList.append({
+                'text': highlight.value.page.title,
+                'description': highlight.value.description,
+                'url': highlight.value.page.url,
+            }) %}
+        {% elif highlight.value.url %}
+            {% set _ = keyLinksList.append({
+                'text': highlight.value.title,
+                'description': highlight.value.description,
+                'url': highlight.value.url,
+            }) %}
+        {% endif %}
+    {% endfor %}
+{% endif %}
+
+{% set itemsList = [] %}
+
+{% if navigation_settings.main_menu and navigation_settings.main_menu.columns %}
+    {% for column in navigation_settings.main_menu.columns %}
+        {% set columnData = {
+            'column': loop.index,
+            'linksList': []
+        } %}
+        
+        {% for section in column.value.sections %}
+            {% set sectionData = {
+                'text': section.section_link.title or (section.section_link.page and section.section_link.page.title) or '',
+                'url': section.section_link.url or (section.section_link.page and section.section_link.page.url) or False,
+                'children': []
+            } %}
+            
+            {% for link in section.links %}
+                {% set _ = sectionData.children.append({
+                    'text': link.title or (link.page and link.page.title) or '',
+                    'url': link.url or (link.page and link.page.url) or False,
+                }) %}
+            {% endfor %}
+            
+            {% set _ = columnData.linksList.append(sectionData) %}
+        {% endfor %}
+        
+        {% set _ = itemsList.append(columnData) %}
+    {% endfor %}
+{% endif %}
+
+
 {# navlinks are hard-code for the prototype #}
 {% set pageConfig = {
     "bodyClasses": body_class,
     "title": page_title,
     "header": {
         "phase": {
-            "badge": 'Alpha',
+            "badge": "Alpha",
             "html": 'This is a prototype. To help us improve it, ' + feedbackLink
         },
         "language": {
@@ -117,23 +170,7 @@
                 "text": 'Menu',
                 "ariaLabel": 'Toggle main menu'
             },
-            "keyLinksList": [
-                {
-                    'text': 'Taking part in a survey?',
-                    'description': 'It’s never been more important.',
-                    "url": False,
-                },
-                {
-                    'text': 'Release calendar',
-                    'description': 'View our latest and upcoming releases.',
-                    "url": False,
-                },
-                {
-                    'text': 'Explore local statistics',
-                    'description': 'Explore statistics across the UK.',
-                    "url": False,
-                }
-            ],
+            "keyLinksList": keyLinksList,
             "itemsList": [
                 {
                     "column": "1",
