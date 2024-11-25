@@ -27,6 +27,7 @@ The Wagtail CMS for managing and publishing content for the Office for National 
     -   [Front-end tooling](#front-end-tooling)
     -   [Adding Python packages](#adding-python-packages)
     -   [Run Tests with Coverage](#run-tests-with-coverage)
+    -   [Functional Tests](#functional-tests)
     -   [Linting and Formatting](#linting-and-formatting)
         -   [Python](#python)
         -   [Front-end](#front-end)
@@ -176,6 +177,65 @@ make test
 ```
 
 During tests, the `cms.settings.test` settings module is used. When running test without using `make test`, ensure this settings module is used.
+
+### Functional Tests
+
+Our suite of functional browser driven tests uses [Behave](), [Playwright]() and [Django Live Server Test Cases]() to
+run BDD Cucumber feature tests against the app from a browser.
+
+#### Installation
+
+Install Playwrights dependencies (including its browser drivers) with:
+
+```shell
+make playwright-install
+```
+
+#### Run the Functional Tests
+
+You can run the tests as an all-in-one command with:
+
+```shell
+make functional-tests
+```
+
+Which will start and stop the docker compose services with the tests
+
+To run the docker compose dependencies (database and redis) separately, e.g. if you want to run individual functional
+tests yourself for development, start the docker compose dependencies with:
+
+```shell
+make functional-tests-up
+```
+
+This will start the dependencies in the background, allowing you to then run the tests separately.
+
+Then once you are finished testing, stop the dependencies with:
+
+```shell
+make functional-tests-down
+```
+
+#### Showing the Tests Browser
+
+By default, the tests will run in headless mode with no visible browser window.
+
+To disable headless mode and show the browser, set `HEADLESS=False` in the environment from which you are running the
+tests.
+In this circumstance, you will probably also find it helpful to enable "slow mo" mode, which slows down the automated
+browser interactions to make it possible to follow what the tests are doing. This is set using the `SLOW_MO`
+environment variable, passing it a value of milliseconds by which to slow each interaction, e.g. `SLOW_MO=1000` will
+cause each individual browser interaction from the tests to be delayed by 1 second.
+
+For example, you can run the tests with visible browser and each interaction slowed by a second by running:
+
+```shell
+HEADLESS=False SLOW_MO=1000 make functional-tests
+```
+
+#### Developing Functional Tests
+
+Refer to the detailed [functional tests development docs](./functional_tests/README.md)
 
 ### Linting and Formatting
 

@@ -115,3 +115,7 @@ functional-tests-run:  ## Run the functional tests
 
 .PHONY: functional-tests
 functional-tests: functional-tests-up functional-tests-run functional-tests-down  ## Run the functional tests with backing services (all in one)
+
+.PHONY: playwright-install
+playwright-install:  ## Install Playwright dependencies
+	poetry run playwright install --with-deps
