@@ -42,20 +42,6 @@ def user_adds_info_page_contents(context: Context) -> None:
     context.page.get_by_role("cell", name="Home", exact=True).get_by_role("link").click()
 
 
-@when("the user clicks publish page")
-def user_clicks_publish_page(context: Context) -> None:
-    """User clicks publish page."""
-    context.page.get_by_role("button", name="More actions").click()
-    context.page.get_by_role("button", name="Publish").click()
-
-
-@when('the user clicks "View Live" on the publish confirmation banner')
-def user_clicks_view_live_on_publish_confirmation_banner(context: Context) -> None:
-    """User clicks "View Live" on the publish confirmation banner."""
-    expect(context.page.get_by_text("Page 'Test Info Page' created and published.")).to_be_visible()
-    context.page.get_by_role("link", name="View live").click()
-
-
 @then("the new information page with the added content is displayed")
 def check_new_information_is_displayed_with_content(context: Context) -> None:
     """Checks the new information page with the added content is displayed."""

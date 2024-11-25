@@ -15,3 +15,14 @@ class UserFactory(DjangoModelFactory):
     is_active = True
     is_staff = True
     is_superuser = True  # This is currently required to log into admin site
+
+
+class ContactDetailsFactory(DjangoModelFactory):
+    """Contact details factory for testing."""
+
+    class Meta:
+        model = "core.ContactDetails"
+
+    name = "Test Contact"
+    email = "test.contact@example.com"
+    phone = "0123456789"
