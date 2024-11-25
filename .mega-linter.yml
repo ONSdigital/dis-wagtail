@@ -38,7 +38,7 @@ FILEIO_REPORTER: false
 
 # Use yml file to allow the use of comments. Megalinter's default is .markdown-lint.json
 MARKDOWN_MARKDOWNLINT_CONFIG_FILE: .markdown-lint.yml
-CSS_STYLELINT_CONFIG_FILE: .stylelintrc.json
+CSS_STYLELINT_CONFIG_FILE: .stylelintrc.js
 
 YAML_V8R_FILTER_REGEX_EXCLUDE: 'dependabot.yml' # Dependabot yaml in SchemaStore is currently not up to date. Dependabot is validated on push by GitHub by default.
 

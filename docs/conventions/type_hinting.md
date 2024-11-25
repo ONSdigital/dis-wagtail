@@ -233,7 +233,8 @@ def increment_value(self, value: T) -> T:
     return value + 1
 ```
 
-`TypeVar` also accepts extra positional arguments to restrict the type parameter for improving code documentation and error prevention.
+`TypeVar` also accepts extra positional arguments to restrict the type parameter for improving code documentation and
+error prevention.
 
 ```python
 T = TypeVar("T", int, float)

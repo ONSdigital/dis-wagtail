@@ -1,0 +1,4 @@
+linters:
+  Indentation:
+    severity: warning
+    width: 4
