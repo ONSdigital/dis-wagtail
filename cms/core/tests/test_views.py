@@ -1,4 +1,5 @@
 import logging
+from http import HTTPMethod
 
 from django.conf import settings
 from django.test import Client, SimpleTestCase, TestCase
@@ -40,18 +41,16 @@ class ReadinessProbeTestCase(SimpleTestCase):
 
     url = reverse("internal:readiness")
 
-    def test_get(self):
-        """Check the ready endpoint works with a GET request."""
-        response = self.client.get(self.url)
+    def test_all_methods(self):
+        """Check the ready endpoint works with all methods."""
+        for method in iter(HTTPMethod):
+            if method == HTTPMethod.CONNECT:
+                # CONNECT isn't a valid method in this context
+                continue
 
-        self.assertEqual(response.status_code, 204)
-        self.assertEqual(response.content, b"")
-        self.assertEqual(response.templates, [])
+            with self.subTest(method):
+                response = getattr(self.client, method.value.lower())(self.url)
 
-    def test_head(self):
-        """Check the ready endpoint works with a HEAD request."""
-        response = self.client.head(self.url)
-
-        self.assertEqual(response.status_code, 204)
-        self.assertEqual(response.content, b"")
-        self.assertEqual(response.templates, [])
+                self.assertEqual(response.status_code, 204)
+                self.assertEqual(response.content, b"")
+                self.assertEqual(response.templates, [])
