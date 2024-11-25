@@ -1,5 +1,5 @@
 from collections.abc import Callable
-from urllib.parse import ParseResult, urlencode, urlunparse
+from urllib.parse import SplitResult, urlencode, urlunsplit
 
 import botocore.session
 import redis
@@ -70,13 +70,12 @@ class ElastiCacheIAMCredentialProvider(redis.CredentialProvider):
 
         self.cache_key = f"elasticache_{user}_{cluster_name}_{region}"
 
-        self.connection_url = urlunparse(
-            ParseResult(
+        self.connection_url = urlunsplit(
+            SplitResult(
                 scheme="https",
                 netloc=self.cluster_name,
                 path="/",
                 query=urlencode({"Action": "connect", "User": self.user}),
-                params="",
                 fragment="",
             )
         )
