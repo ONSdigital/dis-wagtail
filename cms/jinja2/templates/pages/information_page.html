@@ -1,0 +1,27 @@
+{% extends "templates/base_page.html" %}
+{% from "components/related-content/_macro.njk" import onsRelatedContent %}
+
+{% block main %}
+    <p>{{ page.summary }}</p>
+
+    {% if page.last_updated %}
+        <h5>Last Updated: {{ page.last_updated }}</h5>
+    {% endif %}
+
+    {% include_block page.content %}
+
+    {% if page.related_pages %}
+        {# fmt:off #}
+        {{-
+            onsRelatedContent({
+                "ariaLabel": _('Related content'),
+                "rows": [{
+                    "id": 'related-content',
+                    "title": _('Related content'),
+                    "itemsList": page.related_pages
+                }]
+            })
+        -}} 
+        {# fmt:on #}
+    {% endif %}
+{% endblock %}

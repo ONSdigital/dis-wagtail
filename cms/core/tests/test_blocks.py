@@ -35,8 +35,10 @@ class CoreBlocksTestCase(TestCase):
             value.as_macro_data(),
             {
                 "thumbnail": True,
-                "url": self.document.url,
-                "title": "The block document",
+                "title": {
+                    "text": "The block document",
+                    "url": self.document.url,
+                },
                 "description": RichText("Document description"),
                 "metadata": {
                     "file": {
@@ -69,8 +71,10 @@ class CoreBlocksTestCase(TestCase):
             [
                 {
                     "thumbnail": True,
-                    "url": self.document.url,
-                    "title": "The block document",
+                    "title": {
+                        "text": "The block document",
+                        "url": self.document.url,
+                    },
                     "description": RichText("Document description"),
                     "metadata": {
                         "file": {

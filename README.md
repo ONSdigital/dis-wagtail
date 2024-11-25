@@ -54,14 +54,15 @@ Ensure you have the following installed:
 3. **[Colima](https://github.com/ONSdigital/dp-compose/blob/main/setting-up-colima-locally.md)** for running the project in Docker containers.
 4. **[PostgreSQL](https://www.postgresql.org/)** for the database. Provided as container via `docker-compose.yml` when using the Docker setup.
 5. **[Node](https://nodejs.org/en)** and **[`nvm` (Node Version Manager)](https://github.com/nvm-sh/nvm)** for front-end tooling.
-6. **Operation System**: Ubuntu/MacOS
+6. **[JQ](https://jqlang.github.io/jq/)** for the step in the build that installs the design system templates
+7. **Operation System**: Ubuntu/MacOS
 
 ### Setup
 
 1. Clone the repository
 
     ```bash
-    git clone https://github.com/ONSdigital/dis-wagtail.git
+    git clone git@github.com:ONSdigital/dis-wagtail.git
     ```
 
 2. Install dependencies
