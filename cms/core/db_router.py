@@ -1,3 +1,5 @@
+from typing import Any, Optional
+
 from django.conf import settings
 from django.core.exceptions import ImproperlyConfigured
 from django.db import DEFAULT_DB_ALIAS, router, transaction
@@ -18,7 +20,7 @@ class ReadReplicaRouter:  # pylint: disable=unused-argument,protected-access
         if self.REPLICA_DB_ALIAS not in settings.DATABASES:  # pragma: no cover
             raise ImproperlyConfigured("Read replica is not configured.")
 
-    def db_for_read(self, model: type[Model], **hints: dict) -> str | None:
+    def db_for_read(self, model: type[Model], **hints: Any) -> Optional[str]:
         """Which database should be used for read queries?"""
         # If the write database is in a (uncommitted) transaction,
         # a subsequent SELECT (or other read query) may return inconsistent data.
@@ -32,13 +34,13 @@ class ReadReplicaRouter:  # pylint: disable=unused-argument,protected-access
 
         return self.REPLICA_DB_ALIAS
 
-    def db_for_write(self, model: type[Model], **hints: dict) -> str | None:
+    def db_for_write(self, model: type[Model], **hints: Any) -> Optional[str]:
         """Which database should be used for write queries?"""
         # This should always be the "default" database, since the replica
         # doesn't allow writes.
         return DEFAULT_DB_ALIAS
 
-    def allow_relation(self, obj1: Model, obj2: Model, **hints: dict) -> bool | None:
+    def allow_relation(self, obj1: Model, obj2: Model, **hints: Any) -> Optional[bool]:
         """Are two objects allowed to be related?"""
         # If both instances are in the same database (or its replica), allow relations
         if obj1._state.db in self.REPLICA_DBS and obj2._state.db in self.REPLICA_DBS:
@@ -47,7 +49,7 @@ class ReadReplicaRouter:  # pylint: disable=unused-argument,protected-access
         # No preference
         return None
 
-    def allow_migrate(self, db: str, app_label: str, model_name: str | None = None, **hints: dict) -> bool:
+    def allow_migrate(self, db: str, app_label: str, model_name: Optional[str] = None, **hints: Any) -> bool:
         """Can migrations be run for the app on the database?"""
         # Don't allow migrations to run against the replica (they would fail anyway)
         return db != self.REPLICA_DB_ALIAS
