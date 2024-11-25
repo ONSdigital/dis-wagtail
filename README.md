@@ -130,7 +130,7 @@ You can then access the admin at `http://0.0.0.0:8000/admin/` or `http://localho
 
 You can also run the main application locally with the supporting backend services such as the Postgres and Redis running in Docker. This can be useful when you want to make changes that require the app to be frequently restarted to be picked up.
 
-In order tu run it:
+In order to run it:
 
 1. Pull the images of the supporting services.
 
