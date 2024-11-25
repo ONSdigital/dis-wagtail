@@ -4,7 +4,7 @@ services:
       context: .
       target: dev
     env_file:
-      - path: .docker-compose-env
+      - path: .env
         required: false
     environment:
       HEROKU_APP_NAME: local # this stops Birdbath's HerokuNotProductionCheck complaining
