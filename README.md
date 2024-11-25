@@ -127,22 +127,23 @@ You can then access the admin at `http://0.0.0.0:8000/admin/` or `http://localho
 
 #### Running Wagtail locally with supporting services in Docker
 
-You can also run the main application separately from the supporting backend services such as the Postgres and Redis databases.
-This can be useful when you want to make changes that require the main application to be frequently.
-
-(
-such as config changes, is it also applicable for templates? or UI elements?
-)
+You can also run the main application locally with the supporting backend services such as the Postgres and Redis running in Docker. This can be useful when you want to make changes that require the app to be frequently restarted to be picked up.
 
 In order tu run it:
 
-1. Start the supporting services in Docker.
+1. Pull the images of the supporting services.
 
 ```
 make docker-dev-pull
 ```
 
-2. Run the following steps:
+2. Start the supporting services in Docker.
+
+```
+make docker-dev-up
+```
+
+3. Run the following pre-run steps:
 
 ```
 make makemigrations
@@ -151,7 +152,7 @@ make migrate
 make createsuperuser
 ```
 
-3. Run the Django server locally via your IDE or with the following command
+4. Run the Django server locally via your IDE or with the following command:
 
 ```
 make runserver
@@ -160,7 +161,7 @@ make runserver
 You can specify the runtime configuration either in your IDE (for PyCharm see [here](https://www.jetbrains.com/help/pycharm/run-debug-configuration.html#createExplicitly)), or copy the `.env-dev-example` and rename it to `.env` which will allow Django to pick up the config.
 
 > [!NOTE]
-> Note that Poetry does not automatically pick up the `.env` file. In order to do that you'll need to install the [poetry-plugin-dotenv](https://github.com/pivoshenko/poetry-plugin-dotenv). However if you installed Poetry with brew rather than pip that currently isn't going to work (see the [issue](https://github.com/pivoshenko/poetry-plugin-dotenv/issues/327)) then you'll need to install an older and seemingly no longer maintained [poetry-dotenv-plugin](https://github.com/mpeteuil/poetry-dotenv-plugin).
+> When running the application in a virtual environment via Poetry the `.env` file will not be picked up automatically. For this to work you'll need to install the [poetry-plugin-dotenv](https://github.com/pivoshenko/poetry-plugin-dotenv). However if you installed Poetry with `brew` rather than `pip` that currently isn't going to work (see the [issue](https://github.com/pivoshenko/poetry-plugin-dotenv/issues/327)) and you'll need to install an older and seemingly no longer maintained [poetry-dotenv-plugin](https://github.com/mpeteuil/poetry-dotenv-plugin).
 
 ## Development
 
