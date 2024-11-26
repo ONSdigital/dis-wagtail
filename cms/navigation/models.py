@@ -1,14 +1,12 @@
+
+from django.core.exceptions import ValidationError
+from django.db import models
+from wagtail.admin.panels import FieldPanel
+from wagtail.blocks import CharBlock, ListBlock, PageChooserBlock, StructBlock, URLBlock
 from wagtail.contrib.settings.models import BaseSiteSetting, register_setting
 from wagtail.snippets.models import register_snippet
-from cms.core.fields import StreamField
-from wagtail.blocks import StructBlock, CharBlock, PageChooserBlock, URLBlock, ListBlock, StreamBlock
-from wagtail.admin.panels import FieldPanel
-from django.db import models
-from django.core.exceptions import ValidationError
 
-from cms.core.blocks.stream_blocks import CoreStoryBlock  # might not need this import
-from cms.core.models import BasePage  # might not need this import
-from typing import ClassVar  # Type hint everything pls
+from cms.core.fields import StreamField
 
 
 # Custom LinkBlock to support both pages and URLs
