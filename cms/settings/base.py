@@ -331,7 +331,7 @@ LOCALE_PATHS = [PROJECT_DIR / "locale"]
 # http://whitenoise.evans.io/en/stable/#quickstart-for-django-apps
 # https://docs.djangoproject.com/en/stable/ref/settings/#std-setting-STORAGES
 STORAGES = {
-    "default": {"BACKEND": "django.core.files.storage.FileSystemStorage"},
+    "default": {"BACKEND": "cms.private_media.storages.PrivacySettingFileSystemStorage"},
     "staticfiles": {"BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage"},
 }
 
@@ -393,7 +393,7 @@ if "AWS_STORAGE_BUCKET_NAME" in env:
     INSTALLED_APPS += ["storages", "wagtail_storages"]
 
     # https://docs.djangoproject.com/en/stable/ref/settings/#std-setting-STORAGES
-    STORAGES["default"]["BACKEND"] = "storages.backends.s3.S3Storage"
+    STORAGES["default"]["BACKEND"] = "cms.private_media.storages.PrivacySettingS3Storage"
 
     AWS_STORAGE_BUCKET_NAME = env["AWS_STORAGE_BUCKET_NAME"]
 
