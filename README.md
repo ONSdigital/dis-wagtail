@@ -23,6 +23,7 @@ The Wagtail CMS for managing and publishing content for the Office for National 
     -   [Pre-requisites](#pre-requisites)
     -   [Setup](#setup)
         -   [Using Docker](#using-docker)
+        -   [Running locally with supporting services in Docker](#running-locally-with-supporting-services-in-docker)
 -   [Development](#development)
     -   [Front-end tooling](#front-end-tooling)
     -   [Adding Python packages](#adding-python-packages)
@@ -129,7 +130,7 @@ Follow these steps to set up and run the project using Docker.
 
 You can then access the admin at `http://0.0.0.0:8000/admin/` or `http://localhost:8000/admin/`.
 
-#### Running Wagtail locally with supporting services in Docker
+#### Running slocally with supporting services in Docker
 
 You can also run the main application locally with the supporting backend services such as the Postgres and Redis running in Docker. This can be useful when you want to make changes that require the app to be frequently restarted to be picked up.
 
