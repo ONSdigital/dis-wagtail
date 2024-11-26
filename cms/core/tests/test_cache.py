@@ -1,3 +1,5 @@
+# pylint: disable=protected-access
+
 import time
 from urllib.parse import parse_qs
 
@@ -19,24 +21,24 @@ class ElastiCacheIAMCredentialProviderTestCase(SimpleTestCase):
 
         user, signed_url = provider.get_credentials()
 
-        self.assertEqual(user, provider.user)
+        self.assertEqual(user, provider._user)
         self.assertTrue(signed_url.startswith("cluster"))
 
         querystring = parse_qs(signed_url.split("/", 1)[1][1:])
 
         self.assertEqual(querystring["X-Amz-Expires"], [str(provider.TOKEN_TTL)])
         self.assertEqual(querystring["Action"], ["connect"])
-        self.assertEqual(querystring["User"], [provider.user])
+        self.assertEqual(querystring["User"], [provider._user])
 
     def test_cache(self):
         """Test cache is used."""
         provider = ElastiCacheIAMCredentialProvider("user", "cluster", "eu-west-2")
 
-        self.assertFalse(caches["memory"].has_key(provider.cache_key))
+        self.assertFalse(caches["memory"].has_key(provider._cache_key))
 
         credentials = provider.get_credentials()
 
-        self.assertEqual(caches["memory"].get(provider.cache_key), credentials[1])
+        self.assertEqual(caches["memory"].get(provider._cache_key), credentials[1])
 
         # The credentials should be the same, as they're read from a cache
         self.assertEqual(provider.get_credentials(), credentials)
@@ -47,7 +49,7 @@ class ElastiCacheIAMCredentialProviderTestCase(SimpleTestCase):
         # The credentials should still be the same
         self.assertEqual(provider.get_credentials(), credentials)
 
-        caches["memory"].delete(provider.cache_key)
+        caches["memory"].delete(provider._cache_key)
 
         # After deleting the cache, the signature should be different
         self.assertNotEqual(provider.get_credentials(), credentials)

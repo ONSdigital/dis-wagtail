@@ -54,40 +54,40 @@ class ElastiCacheIAMCredentialProvider(redis.CredentialProvider):
     TOKEN_TTL = 900
 
     def __init__(self, user: str, cluster_name: str, region: str):
-        self.user = user
-        self.cluster_name = cluster_name
-        self.region = region
+        self._user = user
+        self._cluster_name = cluster_name
+        self._region = region
 
         session = botocore.session.get_session()
-        self.request_signer = RequestSigner(
+        self._request_signer = RequestSigner(
             ServiceId("elasticache"),
-            self.region,
+            self._region,
             "elasticache",
             "v4",
             session.get_credentials(),
             session.get_component("event_emitter"),
         )
 
-        self.cache_key = f"elasticache_{user}_{cluster_name}_{region}"
+        self._cache_key = f"elasticache_{user}_{cluster_name}_{region}"
 
-        self.connection_url = urlunsplit(
+        self._connection_url = urlunsplit(
             SplitResult(
                 scheme="https",
-                netloc=self.cluster_name,
+                netloc=self._cluster_name,
                 path="/",
-                query=urlencode({"Action": "connect", "User": self.user}),
+                query=urlencode({"Action": "connect", "User": self._user}),
                 fragment="",
             )
         )
 
     def get_credentials(self) -> tuple[str, str]:
         """Get credentials from IAM."""
-        if (signed_url := caches["memory"].get(self.cache_key)) is None:
-            signed_url = self.request_signer.generate_presigned_url(
-                {"method": "GET", "url": self.connection_url, "body": {}, "headers": {}, "context": {}},
+        if (signed_url := caches["memory"].get(self._cache_key)) is None:
+            signed_url = self._request_signer.generate_presigned_url(
+                {"method": "GET", "url": self._connection_url, "body": {}, "headers": {}, "context": {}},
                 operation_name="connect",
                 expires_in=self.TOKEN_TTL,
-                region_name=self.region,
+                region_name=self._region,
             )
             # RequestSigner only seems to work if the URL has a protocol, but
             # Elasticache only accepts the URL without a protocol
@@ -96,6 +96,6 @@ class ElastiCacheIAMCredentialProvider(redis.CredentialProvider):
 
             # Reduce cache TTL a few seconds to ensure the token is still valid
             # by the time it's used
-            caches["memory"].set(self.cache_key, signed_url, self.TOKEN_TTL - 5)
+            caches["memory"].set(self._cache_key, signed_url, self.TOKEN_TTL - 5)
 
-        return self.user, signed_url
+        return self._user, signed_url
