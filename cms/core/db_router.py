@@ -24,7 +24,7 @@ class ReadReplicaRouter:  # pylint: disable=unused-argument,protected-access
             raise ImproperlyConfigured("Read replica is not configured.")
 
     def db_for_read(self, model: type[Model], **hints: Any) -> Optional[str]:
-        """Which database should be used for read queries?"""
+        """Determine which database should be used for read queries."""
         # If the write database is in a (uncommitted) transaction,
         # a subsequent SELECT (or other read query) may return inconsistent data.
         # In this case, use the write connection for reads, with the aim of
@@ -38,13 +38,13 @@ class ReadReplicaRouter:  # pylint: disable=unused-argument,protected-access
         return self.REPLICA_DB_ALIAS
 
     def db_for_write(self, model: type[Model], **hints: Any) -> Optional[str]:
-        """Which database should be used for write queries?"""
+        """Determine which database should be used for write queries."""
         # This should always be the "default" database, since the replica
         # doesn't allow writes.
         return DEFAULT_DB_ALIAS
 
     def allow_relation(self, obj1: Model, obj2: Model, **hints: Any) -> Optional[bool]:
-        """Are two objects allowed to be related?"""
+        """Determine whether a relation is allowed between two models."""
         # If both instances are in the same database (or its replica), allow relations
         if obj1._state.db in self.REPLICA_DBS and obj2._state.db in self.REPLICA_DBS:
             return True
@@ -53,6 +53,6 @@ class ReadReplicaRouter:  # pylint: disable=unused-argument,protected-access
         return None
 
     def allow_migrate(self, db: str, app_label: str, model_name: Optional[str] = None, **hints: Any) -> bool:
-        """Can migrations be run for the app on the database?"""
+        """Determine whether migrations be run for the app on the database."""
         # Don't allow migrations to run against the replica (they would fail anyway)
         return db != self.REPLICA_DB_ALIAS
