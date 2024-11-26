@@ -61,6 +61,7 @@ INSTALLED_APPS = [
     "cms.documents",
     "cms.home",
     "cms.images",
+    "cms.private_media",
     "cms.release_calendar",
     "cms.themes",
     "cms.topics",
