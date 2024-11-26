@@ -1,62 +1,9 @@
 {% extends "layout/_template.njk" %}
 {% from "components/cookies-banner/_macro.njk" import onsCookiesBanner %}
-{% from "component_overrides/header/_macro.njk" import onsHeaderNew %}
-{% from "components/external-link/_macro.njk" import onsExternalLink %}
-{% from "components/footer/_macro.njk" import onsFooter %}
-{% from "components/icon/_macro.njk" import onsIcon %}
 
-{% block meta %}
-    {{ super() }}
-    {% if SEO_NOINDEX %}
-        <meta name="robots" content="noindex">
-    {% endif %}
-{% endblock meta %}
-
-
-{% block head %}
-    <link rel="stylesheet" href="{{ static('css/main.css') }}">
-    {% if GOOGLE_TAG_MANAGER_ID and not request.is_preview %}
-        <!-- Google Tag Manager -->
-        <script>
-            function loadGTM() {
-                (function (w, d, s, l, i) {
-                    w[l] = w[l] || [];
-                    w[l].push({ 'gtm.start': new Date().getTime(), event: 'gtm.js' });
-                    var f = d.getElementsByTagName(s)[0],
-                        j = d.createElement(s),
-                        dl = l != 'dataLayer' ? '&l=' + l : '';
-                    j.async = true;
-                    j.src =
-                        'https://www.googletagmanager.com/gtm.js?id=' +
-                    i +
-                    dl;
-                    f.parentNode.insertBefore(j, f);
-                })(window, document, 'script', 'dataLayer', '{{ GOOGLE_TAG_MANAGER_ID|escape }}');
-            };
-
-            var a = /^(.*)?\s*'usage':true\s*[^;]+(.*)?$/;
-            if (document.cookie.match(a)) {
-                loadGTM();
-            }
-        </script>
-        <!-- End Google Tag Manager -->
-    {% endif %}
-{% endblock %}
-
-{% block bodyStart %}
-    {% if GOOGLE_TAG_MANAGER_ID and not request.is_preview %}
-        <!-- Google Tag Manager (noscript) -->
-        <noscript
-        ><iframe
-            src="https://www.googletagmanager.com/ns.html?id={{ GOOGLE_TAG_MANAGER_ID|escape }}"
-            height="0"
-            width="0"
-            style="display:none;visibility:hidden"
-        ></iframe
-            ></noscript>
-        <!-- End Google Tag Manager (noscript) -->
-    {% endif %}
-{% endblock %}
+{% set page_title %}
+    {% if current_site and page.pk == current_site.root_page.pk and current_site.site_name %}{{ current_site.site_name }} | {% endif %}{% block title %}{% if page.seo_title %}{{ page.seo_title }}{% else %}{{ page.title}}{% endif %}{% endblock %}{% block title_suffix %}{% if current_site and page.pk != current_site.root_page.pk and current_site.site_name %} | {{ current_site.site_name }}{% endif %}{% endblock %}
+{% endset %}
 
 {# fmt:off #}
 {% set languages = languages | default([
@@ -75,103 +22,15 @@
 ])
 %}
 
-{% set feedbackLink %}
-    {{
-        onsExternalLink({
-            "url": PHASE_BANNER_FEEDBACK_URL,
-            "text": "give feedback"
-        })
-    }}
-{% endset %}
-
-{% if page %}
-    {% set body_class = ["template-", page.get_verbose_name()| lower | replace(" ", "-")] | join %}
-{% else %}
-    {% set body_class = '' %}
-{% endif %}
-
-{%- set page_title -%}
-    {%- with current_site=wagtail_site() -%}
-        {% if current_site and page.pk == current_site.root_page.pk and current_site.site_name %}{{ current_site.site_name }} - {% endif %}{% if page.seo_title %}{{ page.seo_title }}{% else %}{{ page.display_title | default(page.title) }}{% endif %}{% if current_site and page.pk != current_site.root_page.pk and current_site.site_name %} - {{ current_site.site_name }}{% endif %}
-    {%- endwith -%}
-{%- endset -%}
-
-{% set navigation_settings = settings.navigation.NavigationSettings %}
-
-{% set keyLinksList = [] %}
-
-{% if navigation_settings.main_menu and navigation_settings.main_menu.highlights %}
-    {% for highlight in navigation_settings.main_menu.highlights %}
-        {% if highlight.value.page %}
-            {% set _ = keyLinksList.append({
-                'text': highlight.value.page.title,
-                'description': highlight.value.description,
-                'url': highlight.value.page.url,
-            }) %}
-        {% elif highlight.value.url %}
-            {% set _ = keyLinksList.append({
-                'text': highlight.value.title,
-                'description': highlight.value.description,
-                'url': highlight.value.url,
-            }) %}
-        {% endif %}
-    {% endfor %}
-{% endif %}
-
-{% set itemsList = [] %}
-
-{% if navigation_settings.main_menu and navigation_settings.main_menu.columns %}
-    {% for column in navigation_settings.main_menu.columns %}
-        {% set columnData = {
-            'column': loop.index,
-            'linksList': []
-        } %}
-        
-        {% for section in column.value.sections %}
-            {% set sectionData = {
-                'text': section.section_link.title or (section.section_link.page and section.section_link.page.title) or '',
-                'url': section.section_link.url or (section.section_link.page and section.section_link.page.url) or False,
-                'children': []
-            } %}
-            
-            {% for link in section.links %}
-                {% set _ = sectionData.children.append({
-                    'text': link.title or (link.page and link.page.title) or '',
-                    'url': link.url or (link.page and link.page.url) or False,
-                }) %}
-            {% endfor %}
-            
-            {% set _ = columnData.linksList.append(sectionData) %}
-        {% endfor %}
-        
-        {% set _ = itemsList.append(columnData) %}
-    {% endfor %}
-{% endif %}
-
-
-{# navlinks are hard-code for the prototype #}
 {% set pageConfig = {
-    "bodyClasses": body_class,
-    "title": page_title,
     "header": {
+        "title": page_title,
         "phase": {
-            "badge": "Alpha",
-            "html": 'This is a prototype. To help us improve it, ' + feedbackLink
+            "badge": 'Beta',
+            "html": 'This is a new service.'
         },
         "language": {
             "languages": languages
-        },
-        "mastheadLogoUrl": "/",
-        "navLinks": {
-            "id": "nav-links-external",
-            "ariaLabel": 'Main menu',
-            "ariaListLabel": 'Menu',
-            "toggleNavButton": {
-                "text": 'Menu',
-                "ariaLabel": 'Toggle main menu'
-            },
-            "keyLinksList": keyLinksList,
-            "itemsList": itemsList,
         }
     },
     "footer": {
@@ -191,33 +50,49 @@
         ],
         "oglLink": {
             "pre": 'All content is available under the',
-            "link": 'Open Government Licence v3.0',
+            "text": 'Open Government Licence v3.0',
             "url": 'https://www.nationalarchives.gov.uk/doc/open-government-licence/version/3/',
             "post": ', except where otherwise stated'
         }
     }
 }
 %}
+
 {# fmt:on #}
+{% block head %}
+    <link rel="stylesheet" href="{{ static ('css/main.css') }}">
 
-{% block preHeader %}
-    {# Use same logic as the header to determine the correct language #}
-    {% set currentLanguage = pageConfig.header.language.languages | selectattr("current") | first %}
-    {% set currentLanguageIsoCode = currentLanguage.isoCode %}
+    {% if GOOGLE_TAG_MANAGER_CONTAINER_ID and not request.is_preview %}
+        <script>
+            function loadGTM(){
+                (function(w,d,s,l,i){
+                    w[l]=w[l]||[];
+                    w[l].push({
+                        'gtm.start': new Date().getTime(),
+                        event:'gtm.js'
+                    });
+                    var f=d.getElementsByTagName(s)[0],
+                        j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';
+                    j.async=true;
+                    j.src='https://www.googletagmanager.com/gtm.js?id='+i+dl;
+                    f.parentNode.insertBefore(j,f);
+                })
+                (window,document,'script','dataLayer', "{{ GOOGLE_TAG_MANAGER_CONTAINER_ID|escape }}");
+            }
 
-    {# fmt:off #}
-    {% if COOKIE_BANNER_ENABLED %}
-        {{
-            onsCookiesBanner({
-                'lang': currentLanguageIsoCode,
-                'serviceName': COOKIE_BANNER_SERVICE_NAME,
-                'settingsLinkText': 'Manage settings',
-                'settingsLinkUrl': MANAGE_COOKIE_SETTINGS_URL,
-            })
-        }}
+            function isUsageCookieAllowed(){
+                var re = /^(.*)?\s*'usage':true\s*[^;]+(.*)?$/;
+                return document.cookie.match(re);
+            }
+
+            if (isUsageCookieAllowed()) {
+                loadGTM();
+            }
+        </script>
     {% endif %}
-    {# fmt:on #}
-{% endblock %}
+
+{% endblock  %}
+
 
 {% block preMain %}
     {% if not IS_EXTERNAL_ENV %}
@@ -225,161 +100,20 @@
     {% endif %}
 {% endblock %}
 
-{% block header %}
-    {{
-    onsHeaderNew({
-    "wide": pageConfig.wide,
-    "fullWidth": pageConfig.fullWidth,
-    "language": pageConfig.header.language,
-    "button": pageConfig.header.signoutButton,
-    "toggleNavigationButton": pageConfig.header.toggleNavigationButton,
-    "navigation": pageConfig.header.navigation,
-    "siteSearchAutosuggest": pageConfig.header.siteSearchAutosuggest,
-    "browserBanner": pageConfig.header.browserBanner,
-    "phase": pageConfig.header.phase,
-    "navLinks": pageConfig.header.navLinks,
-    "variants": pageConfig.header.variants,
-    "classes": pageConfig.header.classes,
-    "mastheadLogo": pageConfig.header.mastheadLogo,
-    "mastheadLogoUrl": pageConfig.header.mastheadLogoUrl,
-    "titleUrl": pageConfig.header.titleUrl,
-    "title": pageConfig.header.title | default(pageConfig.title),
-    "description": pageConfig.header.description,
-    "titleAsH1": pageConfig.header.titleAsH1,
-    "titleLogo": pageConfig.header.titleLogo
-    })
-    }}
-{% endblock %}
-
-{# We want to use the landing page as the link for the footer logo, which means we do a bit of a
-song and a dance here to reset the ons logo - see https://github.com/ONSdigital/design-system/blob/2bdd1f1eebab601b88c4d8f8ca370a177a47efca/src/components/footer/_macro.njk#L11C5-L29C17 #}
-{# fmt:off #}
-{% set onsLogo %}
-    {% if currentLanguageIsoCode == 'cy' %}
-        {{-
-            onsIcon({
-                "iconType": 'ons-logo-cy',
-                "altText": 'Swyddfa Ystadegau Gwladol',
-                "altTextId": 'ons-logo-cy-footer-alt'
-            })
-        -}}
-    {% else %}
-        {{-
-        onsIcon({
-                "iconType": 'ons-logo-en' ,
-                "altText": 'Office for National Statistics',
-                "altTextId": 'ons-logo-en-footer-alt'
-            })
-        -}}
-    {% endif %}
-{% endset %}
-{# fmt:on #}
-
-{# Note that the footer links are hard-coded for the November prototype and do not link anywhere #}
-{% block footer %}
-    {# fmt:off #}
-    {{
-        onsFooter({
-            "cols": [
-                {
-                    "title": 'Help',
-                    "itemsList": [
-                        {
-                            "text": 'Accessibility',
-                            "url": 'https://www.ons.gov.uk/help/accessibility'
-                        },
-                        {
-                            "text": 'Cookies',
-                            "url": MANAGE_COOKIE_SETTINGS_URL
-                        },
-                        {
-                            "text": 'Privacy',
-                            "url": 'https://www.ons.gov.uk/help/privacynotice'
-                        },
-                        {
-                            "text": 'Terms and conditions',
-                            "url": 'https://www.ons.gov.uk/help/termsandconditions'
-                        }
-                    ]
-                },
-                {
-                    "title": 'About ONS',
-                    "itemsList": [
-                        {
-                            "text": 'What we do',
-                            "url": False
-                        },
-                        {
-                            "text": 'Careers',
-                            "url": False
-                        },
-                        {
-                            "text": 'Contact us',
-                            "url": False
-                        },
-                        {
-                            "text": 'News',
-                            "url": False
-                        },
-                        {
-                            "text": 'Freedom of information',
-                            "url": False
-                        }
-                    ]
-                },
-                {
-                    "title": 'Connect with us',
-                    "itemsList": [
-                        {
-                            "text": 'Twitter',
-                            "external": true,
-                            "url": False
-                        },
-                        {
-                            "text": 'Instagram',
-                            "external": true,
-                            "url": False
-                        },
-                        {
-                            "text": 'Facebook',
-                            "external": true,
-                            "url": False
-                        },
-                        {
-                            "text": 'Linkedin',
-                            "external": true,
-                            "url": False
-                        },
-                        {
-                            "text": 'Consultations',
-                            "url": False
-                        },
-                        {
-                            "text": 'Discussion forums',
-                            "url": False
-                        },
-                        {
-                            "text": 'Email alerts',
-                            "url": False
-                        }
-                    ]
-                }
-            ],
-            "legal": [],
-            "oglLink": True,
-            "footerLogo": {
-                "logos": {
-                    "logo1": {
-                        "logoImage": onsLogo | safe,
-                        "logoUrl": '/'
-                    }
-                }
-            }
-        })
-    }}
-    {# fmt:on #}
-{% endblock %}
-
 {% block scripts %}
     <script src="{{ static('js/main.js') }}"></script>
+{% endblock %}
+
+{% block preHeader %}
+
+  {# fmt:off #}
+  {{
+    onsCookiesBanner({
+      'lang': "cy" if LANGUAGE_CODE == "cy" else "en",
+      'serviceName': COOKIE_BANNER_SERVICE_NAME,
+      'settingsLinkURL': MANAGE_COOKIE_SETTINGS_URL,
+    })
+  }}
+  {# fmt:on #}
+
 {% endblock %}
