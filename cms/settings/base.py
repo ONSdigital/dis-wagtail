@@ -783,6 +783,7 @@ WAGTAILADMIN_RICH_TEXT_EDITORS = {
 # Custom document model
 # https://docs.wagtail.io/en/stable/advanced_topics/documents/custom_document_model.html
 WAGTAILDOCS_DOCUMENT_MODEL = "documents.CustomDocument"
+WAGTAILDOCS_DOCUMENT_FORM_BASE = "cms.documents.admin_forms.BaseDocumentForm"
 
 
 # Document serve method - avoid serving files directly from the storage.
