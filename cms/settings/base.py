@@ -118,6 +118,7 @@ MIDDLEWARE = [
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
     "wagtail.contrib.redirects.middleware.RedirectMiddleware",
+    "cms.private_media.middleware.PatchChooserURLsMiddleware",
 ]
 
 # Some middleware isn't needed for a external environment.
