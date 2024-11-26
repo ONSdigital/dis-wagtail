@@ -15,7 +15,7 @@ from wagtail.images import get_image_model
 from wagtail.images.models import AbstractImage, AbstractRendition, Image, ImageQuerySet
 from wagtail.models import ReferenceIndex
 
-from cms.private_media import utils
+from cms.private_media.bulk_operations import bulk_set_file_permissions
 from cms.private_media.manager import PrivateFilesModelManager
 
 if TYPE_CHECKING:
@@ -79,7 +79,7 @@ class PrivateFilesMixin(models.Model):
             self.file_permissions_last_set is None
             or (self.privacy_last_changed and self.file_permissions_last_set < self.privacy_last_changed)
         ):
-            results = utils.bulk_set_file_permissions(self.get_privacy_controlled_files(), self.is_private)
+            results = bulk_set_file_permissions(self.get_privacy_controlled_files(), self.is_private)
             # Only update 'file_permissions_last_set' if all updates were successfull
             if set(results.values()) == {True}:
                 self.file_permissions_last_set = timezone.now()
@@ -328,7 +328,7 @@ class AbstractPrivateImage(ParentDerivedPrivacyMixin, AbstractImage):
         """
         created_renditions: dict[Filter, AbstractRendition] = super().create_renditions(*filters)
         files = [r.file for r in created_renditions.values()]
-        utils.bulk_set_file_permissions(files, self.is_private)
+        bulk_set_file_permissions(files, self.is_private)
         return created_renditions
 
 

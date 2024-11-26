@@ -1,11 +1,14 @@
 import concurrent.futures
 from collections.abc import Callable, Iterable
+from typing import TYPE_CHECKING
 
 from django.conf import settings
-from django.db.models.fields.files import FieldFile
+
+if TYPE_CHECKING:
+    from django.db.models.fields.files import FieldFile
 
 
-def bulk_set_file_permissions(files: Iterable[FieldFile], private: bool) -> dict[FieldFile, bool]:
+def bulk_set_file_permissions(files: Iterable["FieldFile"], private: bool) -> dict["FieldFile", bool]:
     """Set file permissions for an iterable of FieldFile objects, using the
     make_private() or make_public() methods of the storage backend.
 
@@ -20,7 +23,7 @@ def bulk_set_file_permissions(files: Iterable[FieldFile], private: bool) -> dict
     """
     results: dict[FieldFile, bool] = {}
 
-    def set_file_permission_and_report(file: FieldFile) -> None:
+    def set_file_permission_and_report(file: "FieldFile") -> None:
         storage = file.storage
         handler: Callable[[FieldFile], bool] | None
         handler = getattr(storage, "make_private", None) if private else getattr(storage, "make_public", None)

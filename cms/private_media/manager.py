@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING
 from django.db import models
 from django.utils import timezone
 
-from cms.private_media import utils
+from cms.private_media.bulk_operations import bulk_set_file_permissions
 
 if TYPE_CHECKING:
     from django.db.models.fields.files import FieldFile
@@ -69,7 +69,7 @@ class PrivateFilesModelManager(models.Manager):
                 all_files.append(file)
                 files_by_object[obj].append(file)
 
-        results = utils.bulk_set_file_permissions(all_files, private)
+        results = bulk_set_file_permissions(all_files, private)
 
         for obj, files in files_by_object.items():
             if all(results.get(file) for file in files):
@@ -77,8 +77,9 @@ class PrivateFilesModelManager(models.Manager):
                 successfully_updated_objects.append(obj)
 
         if successfully_updated_objects:
-            return self.bulk_update(  # type: ignore[arg-type]
-                successfully_updated_objects, fields=["file_permissions_last_set"]
+            return self.bulk_update(
+                successfully_updated_objects,  # type: ignore[arg-type]
+                fields=["file_permissions_last_set"],
             )
 
         return 0
