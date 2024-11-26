@@ -1,12 +1,13 @@
 from collections.abc import Callable
+from functools import partial
 from urllib.parse import SplitResult, urlencode, urlunsplit
 
 import botocore.session
 import redis
 from botocore.model import ServiceId
 from botocore.signers import RequestSigner
+from cache_memoize import cache_memoize
 from django.conf import settings
-from django.core.cache import caches
 from django.views.decorators.cache import cache_control
 from wagtail.contrib.frontend_cache.utils import purge_url_from_cache
 from wagtail.models import Site
@@ -44,6 +45,9 @@ def get_default_cache_control_decorator() -> Callable:
     return cache_control(**cache_control_kwargs)
 
 
+memory_cache = partial(cache_memoize, cache_alias="memory")
+
+
 class ElastiCacheIAMCredentialProvider(redis.CredentialProvider):
     """A custom redis credential provider to use IAM for authentication.
 
@@ -52,6 +56,10 @@ class ElastiCacheIAMCredentialProvider(redis.CredentialProvider):
 
     # Authentication tokens are only valid for a maximum of 15 minutes.
     TOKEN_TTL = 900
+
+    # Reduce cache TTL a few seconds to ensure the token is still valid
+    # by the time it's used
+    CACHE_TTL = TOKEN_TTL - 5
 
     def __init__(self, user: str, cluster_name: str, region: str):
         self._user = user
@@ -70,7 +78,10 @@ class ElastiCacheIAMCredentialProvider(redis.CredentialProvider):
 
         self._cache_key = f"elasticache_{user}_{cluster_name}_{region}"
 
-        self._connection_url = urlunsplit(
+    @memory_cache(CACHE_TTL, key_generator_callable=lambda self: self._cache_key)
+    def get_credentials(self) -> tuple[str, str]:
+        """Get credentials from IAM."""
+        connection_url = urlunsplit(
             SplitResult(
                 scheme="https",
                 netloc=self._cluster_name,
@@ -80,22 +91,16 @@ class ElastiCacheIAMCredentialProvider(redis.CredentialProvider):
             )
         )
 
-    def get_credentials(self) -> tuple[str, str]:
-        """Get credentials from IAM."""
-        if (signed_url := caches["memory"].get(self._cache_key)) is None:
-            signed_url = self._request_signer.generate_presigned_url(
-                {"method": "GET", "url": self._connection_url, "body": {}, "headers": {}, "context": {}},
-                operation_name="connect",
-                expires_in=self.TOKEN_TTL,
-                region_name=self._region,
-            )
-            # RequestSigner only seems to work if the URL has a protocol, but
-            # Elasticache only accepts the URL without a protocol
-            # So strip it off the signed URL before returning
-            signed_url = signed_url.removeprefix("https://")
+        signed_url = self._request_signer.generate_presigned_url(
+            {"method": "GET", "url": connection_url, "body": {}, "headers": {}, "context": {}},
+            operation_name="connect",
+            expires_in=self.TOKEN_TTL,
+            region_name=self._region,
+        )
 
-            # Reduce cache TTL a few seconds to ensure the token is still valid
-            # by the time it's used
-            caches["memory"].set(self._cache_key, signed_url, self.TOKEN_TTL - 5)
+        # RequestSigner only seems to work if the URL has a protocol, but
+        # Elasticache only accepts the URL without a protocol
+        # So strip it off the signed URL before returning
+        signed_url = signed_url.removeprefix("https://")
 
         return self._user, signed_url

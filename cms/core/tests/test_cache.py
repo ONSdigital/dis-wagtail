@@ -38,7 +38,7 @@ class ElastiCacheIAMCredentialProviderTestCase(SimpleTestCase):
 
         credentials = provider.get_credentials()
 
-        self.assertEqual(caches["memory"].get(provider._cache_key), credentials[1])
+        self.assertEqual(caches["memory"].get(provider._cache_key), credentials)
 
         # The credentials should be the same, as they're read from a cache
         self.assertEqual(provider.get_credentials(), credentials)
