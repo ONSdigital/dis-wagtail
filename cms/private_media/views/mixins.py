@@ -12,7 +12,7 @@ class ParentIdentifyingChooserViewMixin:
 
     def get_initial_data(self) -> dict[str, Any]:
         """Attempt to identify the parent object from the 'parent_url' query parameter."""
-        from_url = self.request.GET.get("from_url")
+        from_url = self.request.GET.get("from_url")  # type: ignore[attr-defined]
         parent_object_content_type = None
         parent_object_id = None
         parent_object_id_outstanding = False
@@ -50,6 +50,9 @@ class ParentIdentifyingChooserViewMixin:
         }
 
     def get_creation_form_kwargs(self) -> dict[str, Any]:
-        kwargs = super().get_creation_form_kwargs()
+        """Extends the superclass method for chooser views, to include
+        initial data from 'get_initial_data'.
+        """
+        kwargs: dict[str, Any] = super().get_creation_form_kwargs()  # type: ignore[misc]
         kwargs["initial"] = self.get_initial_data()
         return kwargs

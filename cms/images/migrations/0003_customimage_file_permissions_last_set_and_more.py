@@ -5,46 +5,47 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('contenttypes', '0002_remove_content_type_name'),
-        ('images', '0002_customimage_description'),
+        ("contenttypes", "0002_remove_content_type_name"),
+        ("images", "0002_customimage_description"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='customimage',
-            name='file_permissions_last_set',
+            model_name="customimage",
+            name="file_permissions_last_set",
             field=models.DateTimeField(editable=False, null=True),
         ),
         migrations.AddField(
-            model_name='customimage',
-            name='is_private',
+            model_name="customimage",
+            name="is_private",
             field=models.BooleanField(default=False, editable=False),
         ),
         migrations.AddField(
-            model_name='customimage',
-            name='parent_object_content_type',
-            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.CASCADE, to='contenttypes.contenttype'),
+            model_name="customimage",
+            name="parent_object_content_type",
+            field=models.ForeignKey(
+                blank=True, null=True, on_delete=django.db.models.deletion.CASCADE, to="contenttypes.contenttype"
+            ),
         ),
         migrations.AddField(
-            model_name='customimage',
-            name='parent_object_deleted',
+            model_name="customimage",
+            name="parent_object_deleted",
             field=models.BooleanField(default=False, editable=False),
         ),
         migrations.AddField(
-            model_name='customimage',
-            name='parent_object_id',
+            model_name="customimage",
+            name="parent_object_id",
             field=models.PositiveIntegerField(blank=True, null=True),
         ),
         migrations.AddField(
-            model_name='customimage',
-            name='parent_object_id_outstanding',
+            model_name="customimage",
+            name="parent_object_id_outstanding",
             field=models.BooleanField(blank=True, default=False),
         ),
         migrations.AddField(
-            model_name='customimage',
-            name='privacy_last_changed',
+            model_name="customimage",
+            name="privacy_last_changed",
             field=models.DateTimeField(editable=False, null=True),
         ),
     ]

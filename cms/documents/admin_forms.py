@@ -1,5 +1,4 @@
 from django import forms
-
 from wagtail.documents.forms import BaseDocumentForm as WagtailBaseDocumentForm
 
 

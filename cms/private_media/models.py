@@ -1,23 +1,26 @@
 import logging
 from collections.abc import Iterator
+from datetime import timedelta
 from enum import StrEnum
-from typing import Any, ClassVar
+from typing import TYPE_CHECKING, Any, ClassVar
 
 from django.contrib.contenttypes.fields import GenericForeignKey
 from django.contrib.contenttypes.models import ContentType
-from django.core.files.base import File
 from django.db import models
-from django.db.models.fields.files import FieldFile
 from django.db.models.functions import Cast
 from django.utils import timezone
 from wagtail.documents import get_document_model
-from wagtail.documents.models import Document, DocumentQuerySet
+from wagtail.documents.models import AbstractDocument, Document, DocumentQuerySet
 from wagtail.images import get_image_model
-from wagtail.images.models import AbstractRendition, Filter, Image, ImageQuerySet
+from wagtail.images.models import AbstractImage, AbstractRendition, Image, ImageQuerySet
 from wagtail.models import ReferenceIndex
 
 from cms.private_media import utils
 from cms.private_media.manager import PrivateFilesModelManager
+
+if TYPE_CHECKING:
+    from django.db.models.fields.files import FieldFile
+    from wagtail.images.models import Filter
 
 logger = logging.getLogger(__name__)
 
@@ -36,7 +39,7 @@ class PrivateFilesMixin(models.Model):
     field (and by extension, whether files should be made private or public).
 
     Subclasses must implement the `get_privacy_controlled_files()` method,
-    which should return an iterator of `FieldFile` objects that are managed
+    which should return an iterable of `FieldFile` objects that are managed
     by the model instance.
 
     Where individual objects are updated (usually via the Wagtail UI), changes to
@@ -56,9 +59,16 @@ class PrivateFilesMixin(models.Model):
     class Meta:
         abstract = True
 
-    objects = PrivateFilesModelManager()
+    objects: ClassVar[models.Manager] = PrivateFilesModelManager()
 
     def save(self, *args: Any, set_file_permissions: bool = True, **kwargs: Any) -> None:
+        """Save the model instance and manage file permissions.
+
+        Args:
+            set_file_permissions: If True, updates file permissions after saving
+            *args: Additional positional arguments passed to parent save method
+            **kwargs: Additional keyword arguments passed to parent save method
+        """
         # Set managed field values
         self.set_privacy()
         # Save model field changes at this point
@@ -78,9 +88,15 @@ class PrivateFilesMixin(models.Model):
 
     @property
     def is_public(self) -> bool:
+        """Return True if the object is not private."""
         return not self.is_private
 
     def file_permissions_are_up_to_date(self) -> bool:
+        """Check if the file permissions are current relative to privacy changes.
+
+        Returns:
+            bool: True if permissions are up to date, False if they need updating
+        """
         if self.privacy_last_changed is None:
             return True
         if self.file_permissions_last_set is None:
@@ -88,9 +104,19 @@ class PrivateFilesMixin(models.Model):
         return self.file_permissions_last_set > self.privacy_last_changed
 
     def determine_privacy(self) -> Privacy:
+        """Determine the correct privacy status of the object based.
+
+        Returns:
+            Privacy: The privacy status of the object
+        """
         raise NotImplementedError
 
     def set_privacy(self) -> bool:
+        """Set the privacy status of the object based on determine_privacy().
+
+        Returns:
+            bool: True if privacy status changed, False otherwise
+        """
         was_private = self.is_private
         privacy_changed = False
 
@@ -100,7 +126,12 @@ class PrivateFilesMixin(models.Model):
             self.privacy_last_changed = timezone.now()
         return privacy_changed
 
-    def get_privacy_controlled_files(self) -> Iterator[FieldFile]:
+    def get_privacy_controlled_files(self) -> Iterator["FieldFile"]:
+        """Return an Iterator of files that are managed by the model instance.
+
+        Returns:
+            Iterator[FieldFile]: An Iterator of files managed by the instance
+        """
         raise NotImplementedError
 
 
@@ -113,7 +144,12 @@ class MediaParentMixin(models.Model):
         abstract = True
 
     @classmethod
-    def get_child_media_models(self) -> Iterator[type[models.Model]]:
+    def get_child_media_models(cls) -> Iterator[type["models.Model"]]:
+        """Return an Iterator of models that are considered 'children' of instances of this model.
+
+        Returns:
+            Iterator[type[models.Model]]: An Iterator of child models
+        """
         image_model = get_image_model()
         if issubclass(image_model, MediaChildMixin):
             yield image_model
@@ -122,9 +158,16 @@ class MediaParentMixin(models.Model):
         if issubclass(document_model, MediaChildMixin):
             yield document_model
 
-        return None
-
     def save(self, *args: Any, **kwargs: Any) -> None:
+        """Save the parent media object and update any associated child media.
+
+        Handles setting parent object IDs for recently created media items
+        that were uploaded before this object was first saved.
+
+        Args:
+            *args: Additional positional arguments passed to parent save method
+            **kwargs: Additional keyword arguments passed to parent save method
+        """
         is_new = not self.pk
         super().save(*args, **kwargs)
         this_content_type = ContentType.objects.get_for_model(self)
@@ -132,20 +175,29 @@ class MediaParentMixin(models.Model):
             # Set missing 'parent_object_ids' for media that is likley to have been
             # uploaded for this object before it was saved for the first time
             for model in self.get_child_media_models():
-                qs = model.objects.filter(
+                qs = model.objects.filter(  # type: ignore[attr-defined]
                     parent_object_id_outstanding=True,
                     parent_object_content_type=this_content_type,
-                    created_at__gte=timezone.now() - timezone.timedelta(hours=2),
+                    created_at__gte=timezone.now() - timedelta(hours=2),
                 )
-                if getattr(self, "owner_id", None):
-                    qs = qs.filter(uploaded_by_user_id=self.owner_id)
+                if owner_id := getattr(self, "owner_id", None):
+                    qs = qs.filter(uploaded_by_user_id=owner_id)
                 qs.update(
                     parent_object_id=self.pk,
                     parent_object_id_outstanding=False,
                 )
 
-    def delete(self, *args, **kwargs) -> None:
-        super().delete(*args, **kwargs)
+    def delete(self, *args: Any, **kwargs: Any) -> tuple[int, dict[str, int]]:
+        """Delete the parent media object and manage associated child media.
+
+        Deletes unreferenced child media and marks referenced media as having
+        a deleted parent.
+
+        Args:
+            *args: Additional positional arguments passed to parent delete method
+            **kwargs: Additional keyword arguments passed to parent delete method
+        """
+        deleted_count, deleted_types = super().delete(*args, **kwargs)
         this_content_type = ContentType.objects.get_for_model(self)
         for model in self.get_child_media_models():
             # Upate 'media children' for this object
@@ -154,15 +206,20 @@ class MediaParentMixin(models.Model):
                 to_content_type=content_type,
                 to_object_id=Cast(models.OuterRef("pk"), models.CharField(max_length=255)),
             ).exclude(content_type=this_content_type, object_id=str(self.pk))
-            for obj in (
-                model.objects.filter(parent_object_id=self.pk)
-                .annotate(referenced_elsewhere=models.Exists(referenced_elsewhere_query))
+            for obj in model.objects.filter(parent_object_id=self.pk).annotate(  # type: ignore[attr-defined]
+                referenced_elsewhere=models.Exists(referenced_elsewhere_query)
             ):
                 if not obj.referenced_elsewhere:
                     obj.delete()
+                    deleted_count += 1
+                    if model._meta.label not in deleted_types:
+                        deleted_types[model._meta.label] = 1
+                    else:
+                        deleted_types[model._meta.label] += 1
                 else:
                     obj.parent_object_deleted = True
                     obj.save(update_fields=["parent_object_deleted"])
+        return deleted_count, deleted_types
 
 
 class MediaChildMixin(models.Model):
@@ -182,13 +239,18 @@ class MediaChildMixin(models.Model):
         abstract = True
 
     def parent_object_is_not_live(self) -> bool:
+        """Check if the parent object is not in a 'live' state.
+
+        Returns:
+            bool: True if parent is not live or is missing, False otherwise
+        """
         if self.parent_object_id_outstanding:
             return True
         if not self.parent_object_id:
             return False
         if self.parent_object_deleted:
             return True
-        return not self.parent_object.live
+        return not self.parent_object.live  # type: ignore[union-attr]
 
 
 class ParentDerivedPrivacyMixin(PrivateFilesMixin, MediaChildMixin):
@@ -200,7 +262,20 @@ class ParentDerivedPrivacyMixin(PrivateFilesMixin, MediaChildMixin):
         abstract = True
 
     def determine_privacy(self) -> Privacy:
+        """Determine the correct privacy status of the object based on the parent object.
+
+        Returns:
+            Privacy: The privacy status of the object
+        """
         return Privacy.PRIVATE if self.parent_object_is_not_live() else Privacy.PUBLIC
+
+    def get_privacy_controlled_files(self) -> Iterator["FieldFile"]:
+        """Return an Iterator of files that are managed by the model instance.
+
+        Returns:
+            Iterator[FieldFile]: An Iterator of files managed by the instance
+        """
+        raise NotImplementedError
 
 
 class PrivateImageManager(PrivateFilesModelManager):
@@ -210,16 +285,17 @@ class PrivateImageManager(PrivateFilesModelManager):
     """
 
     def get_queryset(self) -> ImageQuerySet:
+        """Return an `ImageQuerySet` instance."""
         return ImageQuerySet(self.model, using=self._db)
 
 
-class PrivateImageMixin(ParentDerivedPrivacyMixin):
+class AbstractPrivateImage(ParentDerivedPrivacyMixin, AbstractImage):
     """A mixin class to be applied to a project's custom Image model,
     allowing the privacy to be controlled effectively, depending on the
     status of the parent object.
     """
 
-    objects = PrivateImageManager()
+    objects: ClassVar[models.Manager] = PrivateImageManager()
 
     # This override is necessary to include the parent-object-related
     # fields in the Wagtail admin form as hidden fields
@@ -227,26 +303,36 @@ class PrivateImageMixin(ParentDerivedPrivacyMixin):
         *Image.admin_form_fields,
         "parent_object_id",
         "parent_object_content_type",
-        "parent_object_id_outstanding"
+        "parent_object_id_outstanding",
     ]
 
     class Meta:
         abstract = True
 
-    def get_privacy_controlled_files(self) -> Iterator[File]:
-        if self.file:
-            yield self.file
+    def get_privacy_controlled_files(self) -> Iterator["FieldFile"]:
+        file: FieldFile | None = getattr(self, "file", None)
+        if file:
+            yield file
         for rendition in self.renditions.all():
-            yield rendition.file
+            rendition_file: FieldFile = rendition.file
+            yield rendition_file
 
-    def create_renditions(self, *filters: Filter) -> dict[Filter, AbstractRendition]:
-        created_renditions = super().create_renditions(*filters)
-        files = [r.file for r in created_renditions]
+    def create_renditions(self, *filters: "Filter") -> dict["Filter", AbstractRendition]:
+        """Create image renditions and set their privacy permissions.
+
+        Args:
+            *filters: Filter objects defining the renditions to create
+
+        Returns:
+            dict: Mapping of filters to their corresponding rendition objects
+        """
+        created_renditions: dict[Filter, AbstractRendition] = super().create_renditions(*filters)
+        files = [r.file for r in created_renditions.values()]
         utils.bulk_set_file_permissions(files, self.is_private)
         return created_renditions
 
 
-class PrivateAbstractRendition(AbstractRendition):
+class AbstractPrivateRendition(AbstractRendition):
     """A replacement for Wagtail's built-in `AbstractRendition` model, that should be used as
     a base for rendition models for image models subclassing `PrivateImageMixin`. This
     is necessary to ensure that only users with relevant permissions can view renditions
@@ -257,9 +343,16 @@ class PrivateAbstractRendition(AbstractRendition):
         abstract = True
 
     @staticmethod
-    def construct_cache_key(image, filter_cache_key, filter_spec):
-        """Overrides the implementation from AbstractRendition to include an
-        indication of whether the image is private or not.
+    def construct_cache_key(image: "AbstractImage", filter_cache_key: str, filter_spec: str) -> str:
+        """Construct a cache key for the rendition that includes privacy status.
+
+        Args:
+            image: The source image
+            filter_cache_key: The filter's cache key
+            filter_spec: The filter specification string
+
+        Returns:
+            str: A unique cache key for the rendition
         """
         return "wagtail-rendition-" + "-".join(
             [
@@ -273,19 +366,22 @@ class PrivateAbstractRendition(AbstractRendition):
 
     @property
     def url(self) -> str:
-        """For private images, or images that haven't yet had their file
-        permissions set succesfully, redirect users to a view that is capable
-        of checking permissions and serving the file.
+        """Get the URL for accessing the rendition.
 
-        For public images that have had their file permissions set successfully,
-        return the file URL, so that S3 (or other active storage backend)
-        handles the request.
+        Returns a direct file URL for public images with up-to-date permissions,
+        or a permission-checking view URL for private or unprocessed images.
+
+        Returns:
+            str: URL for accessing the rendition
         """
-        from wagtail.images.views.serve import generate_image_url  # pylint: disable=import-outside-toplevel
+        from wagtail.images.views.serve import generate_image_url  # type: ignore[import-outside-toplevel]
 
-        if self.image.is_public and self.image.file_permissions_are_up_to_date():
-            return self.file.url
-        return generate_image_url(self.image, self.filter_spec)
+        image: AbstractPrivateImage = self.image  # type: ignore[no-member]
+        if image.is_public and image.file_permissions_are_up_to_date():
+            file_url: str = self.file.url
+            return file_url
+        generated_url: str = generate_image_url(image, self.filter_spec)
+        return generated_url
 
 
 class PrivateDocumentManager(PrivateFilesModelManager):
@@ -295,10 +391,11 @@ class PrivateDocumentManager(PrivateFilesModelManager):
     """
 
     def get_queryset(self) -> DocumentQuerySet:
+        """Return a `DocumentQuerySet` instance."""
         return DocumentQuerySet(self.model, using=self._db)
 
 
-class PrivateDocumentMixin(ParentDerivedPrivacyMixin):
+class AbstractPrivateDocument(ParentDerivedPrivacyMixin, AbstractDocument):
     """A mixin class to be applied to a project's custom Document model,
     allowing the privacy to be controlled effectively, depending on the
     collection the image belongs to.
@@ -310,14 +407,15 @@ class PrivateDocumentMixin(ParentDerivedPrivacyMixin):
         *Document.admin_form_fields,
         "parent_object_id",
         "parent_object_content_type",
-        "parent_object_id_outstanding"
+        "parent_object_id_outstanding",
     ]
 
-    objects = PrivateDocumentManager()
+    objects: ClassVar[models.Manager] = PrivateDocumentManager()
 
     class Meta:
         abstract = True
 
-    def get_privacy_controlled_files(self) -> Iterator[FieldFile]:
-        if self.file:
-            yield self.file
+    def get_privacy_controlled_files(self) -> Iterator["FieldFile"]:
+        file: FieldFile | None = getattr(self, "file", None)
+        if file:
+            yield file

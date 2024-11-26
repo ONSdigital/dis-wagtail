@@ -1,5 +1,4 @@
 from django import forms
-
 from wagtail.images.forms import BaseImageForm as WagtailBaseImageForm
 
 

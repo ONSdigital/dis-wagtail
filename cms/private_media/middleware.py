@@ -8,13 +8,14 @@ from cms.private_media.views import document as document_views
 from cms.private_media.views import image as image_views
 
 if TYPE_CHECKING:
-    from django.views import View
     from django.http import HttpRequest, HttpResponse
+
+    from cms.private_media.views.mixint import ParentIdentifyingChooserViewMixin
 
 
 class PatchChooserURLsMiddleware(MiddlewareMixin):
     @classmethod
-    def get_view_overrides(cls) -> dict[str, type[View]]:
+    def get_view_overrides(cls) -> dict[str, type["ParentIdentifyingChooserViewMixin"]]:
         """Return a mapping of 'view names' to be overridden to the views that
         should handle the responses.
         """
@@ -24,7 +25,13 @@ class PatchChooserURLsMiddleware(MiddlewareMixin):
         }
         return overrides
 
-    def process_view(self, request: "HttpRequest", view_func: Callable, view_args: list[Any], view_kwargs: dict[str, Any]) -> "HttpResponse | None":  # pylint: disable=unused-argument
+    def process_view(
+        self,
+        request: "HttpRequest",
+        view_func: Any,  # pylint: disable=unused-argument
+        view_args: list[Any],
+        view_kwargs: dict[str, Any],
+    ) -> "HttpResponse | None":
         """If the resolved url for the request matches one of the overrides,
         use the override view to handle the request.
         """
@@ -32,6 +39,6 @@ class PatchChooserURLsMiddleware(MiddlewareMixin):
         if request.resolver_match:
             replacement_view_class = overrides.get(request.resolver_match.view_name)
             if replacement_view_class:
-                view: Callable[..., "HttpResponse"] = require_admin_access(replacement_view_class.as_view())
+                view: Callable[..., HttpResponse] = require_admin_access(replacement_view_class.as_view())
                 return view(request, *view_args, **view_kwargs)
         return None

@@ -5,46 +5,47 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('contenttypes', '0002_remove_content_type_name'),
-        ('documents', '0002_alter_customdocument_file_size'),
+        ("contenttypes", "0002_remove_content_type_name"),
+        ("documents", "0002_alter_customdocument_file_size"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='customdocument',
-            name='file_permissions_last_set',
+            model_name="customdocument",
+            name="file_permissions_last_set",
             field=models.DateTimeField(editable=False, null=True),
         ),
         migrations.AddField(
-            model_name='customdocument',
-            name='is_private',
+            model_name="customdocument",
+            name="is_private",
             field=models.BooleanField(default=False, editable=False),
         ),
         migrations.AddField(
-            model_name='customdocument',
-            name='parent_object_content_type',
-            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.CASCADE, to='contenttypes.contenttype'),
+            model_name="customdocument",
+            name="parent_object_content_type",
+            field=models.ForeignKey(
+                blank=True, null=True, on_delete=django.db.models.deletion.CASCADE, to="contenttypes.contenttype"
+            ),
         ),
         migrations.AddField(
-            model_name='customdocument',
-            name='parent_object_deleted',
+            model_name="customdocument",
+            name="parent_object_deleted",
             field=models.BooleanField(default=False, editable=False),
         ),
         migrations.AddField(
-            model_name='customdocument',
-            name='parent_object_id',
+            model_name="customdocument",
+            name="parent_object_id",
             field=models.PositiveIntegerField(blank=True, null=True),
         ),
         migrations.AddField(
-            model_name='customdocument',
-            name='parent_object_id_outstanding',
+            model_name="customdocument",
+            name="parent_object_id_outstanding",
             field=models.BooleanField(blank=True, default=False),
         ),
         migrations.AddField(
-            model_name='customdocument',
-            name='privacy_last_changed',
+            model_name="customdocument",
+            name="privacy_last_changed",
             field=models.DateTimeField(editable=False, null=True),
         ),
     ]
