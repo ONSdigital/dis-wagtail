@@ -86,29 +86,32 @@ Ensure you have the following installed:
 
 Follow these steps to set up and run the project using Docker.
 
-1. **Build and Start the Container**
+1. **Build and Start the Containers**
 
     ```bash
-    # build the container
+    # pull the supporting containers 
+    make compose-pull
+
+    # build the main application image
     make docker-build
-    # start the container
-    make docker-start
+
+    # start the containers
+    make compose-up
     ```
 
 2. **Migrations and Superuser Creation**
 
     If this is your first time setting up the project, you’ll need to run migrations to set up the database schema and create an administrative user.
-    Note: `dj` is an alias for `django-admin`
 
     ```bash
     # ssh into the web container
     make docker-shell
 
     # Run database migrations
-    dj migrate
+    make migrate
 
     # Create a superuser for accessing the admin interface
-    dj createsuperuser
+    make createsuperuser
     ```
 
 3. **Start Django Inside the Container**
@@ -121,7 +124,7 @@ Follow these steps to set up and run the project using Docker.
 
     # To run just the web server. alias: djrun
     # This is not needed if you used `honcho start`
-    dj runserver 0.0.0.0:8000
+    make runserver
     ```
 
 You can then access the admin at `http://0.0.0.0:8000/admin/` or `http://localhost:8000/admin/`.
@@ -135,13 +138,13 @@ In order to run it:
 1. Pull the images of the supporting services.
 
 ```
-make docker-dev-pull
+make compose-dev-pull
 ```
 
 2. Start the supporting services in Docker.
 
 ```
-make docker-dev-up
+make compose-dev-up
 ```
 
 3. Run the following pre-run steps:
@@ -304,7 +307,7 @@ Below are the commands you will most commonly use, note that these have to be ru
 
 ```bash
 # Check if you need to generate any new migrations after changes to the model
-make check-makemigrations
+make makemigrations-check
 
 # Generate migrations
 make makemigrations

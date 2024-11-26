@@ -80,61 +80,70 @@ megalint:  ## Run the mega-linter.
 load-design-system-templates:  ## Load the design system templates
 	./scripts/load-design-system-templates.sh $(DESIGN_SYSTEM_VERSION)
 
-.PHONY: docker-build
-docker-build: load-design-system-templates  ## Build Docker container
-	docker compose pull
+# Docker and docker compose make commands
+
+.PHONY: compose-build
+docker-build: load-design-system-templates  ## Build the main application's Docker container
 	docker compose build
 
-.PHONY: docker-up
-docker-up:  ## Start Docker containers
+.PHONY: compose-pull
+compose-pull: ## Pull Docker containers
+	docker compose pull
+
+.PHONY: compose-up
+compose-up:  ## Start Docker containers
 	docker compose up --detach
 
-.PHONY: docker-stop
-docker-stop:  ## Stop Docker containers
+.PHONY: compose-down
+compose-down:   ## Stop and remove Docker containers and networks
+	docker compose down --volumes
+
+.PHONY: compose-stop
+compose-stop:  ## Stop Docker containers
 	docker compose stop
 
 .PHONY: docker-shell
-docker-shell:  ## SSH into Docker container
+docker-shell:  ## SSH into the main application's Docker container
 	docker compose exec web bash
 
-.PHONY: docker-destroy
-docker-destroy:  ## Tear down the Docker containers
-	docker compose down --volumes
+# Docker and docker compose make commands for the dev containers
 
-.PHONY: docker-dev-pull
-docker-dev-pull: load-design-system-templates  ## Pull dev Docker containers
+.PHONY:	compose-dev-pull
+compose-pull-dev: ## Pull dev Docker containers
 	docker compose -f docker-compose-dev.yml pull
 
-.PHONY: docker-dev-up
-docker-dev-up:  ## Start dev Docker containers
+.PHONY: compose-dev-up
+compose-up-dev:  ## Start dev Docker containers
 	docker compose -f docker-compose-dev.yml up --detach 
 
-.PHONY: docker-dev-stop
-docker-dev-stop: ## Stop dev Docker containers
+.PHONY: compose-dev-stop
+compose-stop-dev: ## Stop dev Docker containers
 	docker compose -f docker-compose-dev.yml stop
 
-.PHONY: docker-dev-down
-docker-dev-down: ## Stop dev Docker containers
+.PHONY: compose-dev-down
+compose-down-dev: ## Stop and remove dev Docker containers and networks
 	docker compose -f docker-compose-dev.yml down
 
-.PHONY: check-makemigrations
-check-makemigrations: ## Convenience alias to run makemigrations in venv
+# Django make command
+
+.PHONY: makemigrations-check
+makemigrations-check: ## Check whether there are new migrations to be generated
 	poetry run python ./manage.py makemigrations --check
 
 .PHONY: makemigrations
-makemigrations: ## Convenience alias to run makemigrations in venv
+makemigrations: ## Generate new migrations
 	poetry run python ./manage.py makemigrations
 
 .PHONY: collectstatic
-collectstatic:  ## Convenience alias to run collectstatic in venv
+collectstatic:  ## Collect static files from all Django apps
 	poetry run python ./manage.py collectstatic --verbosity 0 --noinput --clear
 	
 .PHONY: migrate
-migrate: ## Convenience alias to run migrate in venv
+migrate: ## Apply the database migrations
 	poetry run python ./manage.py migrate 
 
 .PHONY: createsuperuser
-createsuperuser: ## Convenience alias to run createsuperuser in venv
+createsuperuser: ## Create a super user 
 	poetry run python ./manage.py createsuperuser
 
 .PHONY: runserver
