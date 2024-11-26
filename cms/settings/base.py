@@ -760,6 +760,7 @@ if "WAGTAILADMIN_BASE_URL" in env:
 # Custom image model
 # https://docs.wagtail.io/en/stable/advanced_topics/images/custom_image_model.html
 WAGTAILIMAGES_IMAGE_MODEL = "images.CustomImage"
+WAGTAILIMAGES_IMAGE_FORM_BASE = "cms.images.admin_forms.BaseImageForm"
 WAGTAILIMAGES_FEATURE_DETECTION_ENABLED = False
 
 pixel_limit = env.get("WAGTAILIMAGES_MAX_IMAGE_PIXELS")
