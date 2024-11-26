@@ -7,7 +7,10 @@ from django.db.models import Model
 
 
 class ReadReplicaRouter:  # pylint: disable=unused-argument,protected-access
-    """A database router which routes read queries to a read replica.
+    """A database router for directing queries between the default database and a read replica.
+
+    This router routes read queries to a read replica while ensuring write queries
+    (and migrations) are directed to the default database.
 
     https://docs.djangoproject.com/en/5.1/topics/db/multi-db/#automatic-database-routing
     """

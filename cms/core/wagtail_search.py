@@ -4,7 +4,7 @@ from wagtail.search.backends.database.postgres.postgres import Index, PostgresSe
 class ONSPostgresSearchBackend(PostgresSearchBackend):
     """A custom search backend which ensures the index uses the correct database backend.
 
-    A work-around until https://github.com/wagtail/wagtail/pull/12508 ships.
+    TODO: Remove when https://github.com/wagtail/wagtail/pull/12508 ships (Wagtail 6.4).
     """
 
     def get_index_for_model(self, model: str, db_alias: str | None = None) -> Index:
