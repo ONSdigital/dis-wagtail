@@ -13,8 +13,10 @@ body {
 .responsive-object embed {
     position: absolute;
     top: 0;
-// stylelint-disable-next-line property-disallowed-list
+    // stylelint-disable-next-line property-disallowed-list
     left: 0;
     width: 100%;
     height: 100%;
+
+   // stylelint-enable-next-line property-allowed-list */
 }

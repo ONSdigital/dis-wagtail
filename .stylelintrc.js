@@ -24,16 +24,15 @@ function autoFixFunc(node, validation, root, config) {
 }
 
 module.exports = {
-  "rules": {
-     "_comment": "See https://github.com/wagtail/stylelint-config-wagtail for rules.",
+// "See https://github.com/wagtail/stylelint-config-wagtail for rules." //,
      "extends": ["@wagtail/stylelint-config-wagtail", "stylelint-config-standard"],
      "rules": {
-       "no-invalid-double-slash-comments": true,
-       "indentation": 4,
-    "scale-unlimited/declaration-strict-value": [
+     "no-invalid-double-slash-comments": null,
+     "scale-unlimited/declaration-strict-value": [
       ["/color$/"], {
       autoFixFunc: autoFixFunc,
       disableFix: true,
     }],
-  }
+  },
 }
+
