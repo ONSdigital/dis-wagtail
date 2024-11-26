@@ -90,7 +90,7 @@ Follow these steps to set up and run the project using Docker.
 1. **Build and Start the Containers**
 
     ```bash
-    # pull the supporting containers 
+    # pull the supporting containers
     make compose-pull
 
     # build the main application image

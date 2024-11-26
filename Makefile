@@ -109,19 +109,19 @@ docker-shell:  ## SSH into the main application's Docker container
 # Docker and docker compose make commands for the dev containers
 
 .PHONY:	compose-dev-pull
-compose-pull-dev: ## Pull dev Docker containers
+compose-dev-pull: ## Pull dev Docker containers
 	docker compose -f docker-compose-dev.yml pull
 
 .PHONY: compose-dev-up
-compose-up-dev:  ## Start dev Docker containers
+compose-dev-up:  ## Start dev Docker containers
 	docker compose -f docker-compose-dev.yml up --detach 
 
 .PHONY: compose-dev-stop
-compose-stop-dev: ## Stop dev Docker containers
+compose-dev-stop: ## Stop dev Docker containers
 	docker compose -f docker-compose-dev.yml stop
 
 .PHONY: compose-dev-down
-compose-down-dev: ## Stop and remove dev Docker containers and networks
+compose-dev-down: ## Stop and remove dev Docker containers and networks
 	docker compose -f docker-compose-dev.yml down
 
 # Django make command
