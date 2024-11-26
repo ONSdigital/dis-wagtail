@@ -65,8 +65,8 @@ jobs:
           python-version-file: .python-version
           cache: poetry
 
-      - name: Install django-migration-linter
-        run: pip install django-migration-linter
+      - name: Install dependencies
+        run: make install-dev
 
       - name: Lint migrations
         run: make lint-migrations
