@@ -52,6 +52,25 @@ jobs:
       - name: Prettier
         run: npm run lint:format
 
+  lint-migrations:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Poetry
+        run: pipx install poetry==${{ env.POETRY_VERSION }}
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version-file: .python-version
+          cache: poetry
+
+      - name: Install django-migration-linter
+        run: pip install django-migration-linter
+
+      - name: Lint migrations
+        run: make lint-migrations
+
   compile_static:
     runs-on: ubuntu-latest
     steps:
