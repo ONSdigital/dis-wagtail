@@ -1,8 +1,6 @@
 services:
   db:
     image: postgres:16
-    expose:
-      - 5432
     environment:
       PGDATA: /var/lib/postgresql/data/pgdata
       # Defaults for createdb/dropdb/pg_restore etc.
@@ -19,8 +17,6 @@ services:
 
   redis:
     image: redis:7.2
-    expose:
-      - 6379
     attach: false
     ports:
       - 6379:6379
