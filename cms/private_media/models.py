@@ -1,19 +1,13 @@
 import logging
 from collections.abc import Iterator
-from datetime import timedelta
 from enum import StrEnum
 from typing import TYPE_CHECKING, Any, ClassVar
 
 from django.contrib.contenttypes.fields import GenericForeignKey
-from django.contrib.contenttypes.models import ContentType
 from django.db import models
-from django.db.models.functions import Cast
 from django.utils import timezone
-from wagtail.documents import get_document_model
 from wagtail.documents.models import AbstractDocument, Document, DocumentQuerySet
-from wagtail.images import get_image_model
 from wagtail.images.models import AbstractImage, AbstractRendition, Image, ImageQuerySet
-from wagtail.models import ReferenceIndex
 
 from cms.private_media.bulk_operations import bulk_set_file_permissions
 from cms.private_media.manager import PrivateFilesModelManager
@@ -142,84 +136,6 @@ class MediaParentMixin(models.Model):
 
     class Meta:
         abstract = True
-
-    @classmethod
-    def get_child_media_models(cls) -> Iterator[type["models.Model"]]:
-        """Return an Iterator of models that are considered 'children' of instances of this model.
-
-        Returns:
-            Iterator[type[models.Model]]: An Iterator of child models
-        """
-        image_model = get_image_model()
-        if issubclass(image_model, MediaChildMixin):
-            yield image_model
-
-        document_model = get_document_model()
-        if issubclass(document_model, MediaChildMixin):
-            yield document_model
-
-    def save(self, *args: Any, **kwargs: Any) -> None:
-        """Save the parent media object and update any associated child media.
-
-        Handles setting parent object IDs for recently created media items
-        that were uploaded before this object was first saved.
-
-        Args:
-            *args: Additional positional arguments passed to parent save method
-            **kwargs: Additional keyword arguments passed to parent save method
-        """
-        is_new = not self.pk
-        super().save(*args, **kwargs)
-        this_content_type = ContentType.objects.get_for_model(self)
-        if is_new:
-            # Set missing 'parent_object_ids' for media that is likley to have been
-            # uploaded for this object before it was saved for the first time
-            for model in self.get_child_media_models():
-                qs = model.objects.filter(  # type: ignore[attr-defined]
-                    parent_object_id_outstanding=True,
-                    parent_object_content_type=this_content_type,
-                    created_at__gte=timezone.now() - timedelta(hours=2),
-                )
-                if owner_id := getattr(self, "owner_id", None):
-                    qs = qs.filter(uploaded_by_user_id=owner_id)
-                qs.update(
-                    parent_object_id=self.pk,
-                    parent_object_id_outstanding=False,
-                )
-
-    def delete(self, *args: Any, **kwargs: Any) -> tuple[int, dict[str, int]]:
-        """Delete the parent media object and manage associated child media.
-
-        Deletes unreferenced child media and marks referenced media as having
-        a deleted parent.
-
-        Args:
-            *args: Additional positional arguments passed to parent delete method
-            **kwargs: Additional keyword arguments passed to parent delete method
-        """
-        deleted_count, deleted_types = super().delete(*args, **kwargs)
-        this_content_type = ContentType.objects.get_for_model(self)
-        for model in self.get_child_media_models():
-            # Upate 'media children' for this object
-            content_type = ContentType.objects.get_for_model(model)
-            referenced_elsewhere_query = ReferenceIndex.objects.filter(
-                to_content_type=content_type,
-                to_object_id=Cast(models.OuterRef("pk"), models.CharField(max_length=255)),
-            ).exclude(content_type=this_content_type, object_id=str(self.pk))
-            for obj in model.objects.filter(parent_object_id=self.pk).annotate(  # type: ignore[attr-defined]
-                referenced_elsewhere=models.Exists(referenced_elsewhere_query)
-            ):
-                if not obj.referenced_elsewhere:
-                    obj.delete()
-                    deleted_count += 1
-                    if model._meta.label not in deleted_types:
-                        deleted_types[model._meta.label] = 1
-                    else:
-                        deleted_types[model._meta.label] += 1
-                else:
-                    obj.parent_object_deleted = True
-                    obj.save(update_fields=["parent_object_deleted"])
-        return deleted_count, deleted_types
 
 
 class MediaChildMixin(models.Model):
