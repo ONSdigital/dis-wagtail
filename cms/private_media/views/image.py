@@ -24,6 +24,10 @@ class ImageChooseView(ParentIdentifyingChooserViewMixin, WagtailImageChooseView)
 
     @classmethod
     def as_view(cls, **kwargs: Any) -> Callable[..., "HttpResponse"]:
+        """Wagtail's version of this view is modified quite heavily by the "ImageChooserViewSet"
+        instance before it is actually registered. This override mimics some of that by retreiving
+        some of those overrides from the viewset instance and applying them here.
+        """
         _kwargs = chooser_viewset.get_common_view_kwargs()
         _kwargs.update(kwargs)
         _kwargs.pop("per_page")
