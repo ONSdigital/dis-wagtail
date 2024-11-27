@@ -677,6 +677,22 @@ files = [
 Django = ">=4.2"
 
 [[package]]
+name = "django-iam-dbauth"
+version = "0.2.1"
+description = "Django database backends to use AWS Database IAM Authentication"
+optional = false
+python-versions = "*"
+files = [
+    {file = "django_iam_dbauth-0.2.1-py2.py3-none-any.whl", hash = "sha256:c3ea606ce62bf872930af948a59c792c26c6372db61911ad93b0e536009f033d"},
+    {file = "django_iam_dbauth-0.2.1.tar.gz", hash = "sha256:a33885c81ecdfc8eef22842a56b6a8f545c3c1a1595945ce8e87453697481a62"},
+]
+
+[package.dependencies]
+boto3 = "*"
+django = ">=4.2"
+dnspython = "*"
+
+[[package]]
 name = "django-jinja"
 version = "2.11.0"
 description = "Jinja2 templating language integrated in Django."
@@ -861,6 +877,26 @@ files = [
 
 [package.extras]
 dev = ["nox", "pre-commit"]
+
+[[package]]
+name = "dnspython"
+version = "2.7.0"
+description = "DNS toolkit"
+optional = false
+python-versions = ">=3.9"
+files = [
+    {file = "dnspython-2.7.0-py3-none-any.whl", hash = "sha256:b4c34b7d10b51bcc3a5071e7b8dee77939f1e878477eeecc965e9835f63c6c86"},
+    {file = "dnspython-2.7.0.tar.gz", hash = "sha256:ce9c432eda0dc91cf618a5cedf1a4e142651196bbcd2c80e89ed5a907e5cfaf1"},
+]
+
+[package.extras]
+dev = ["black (>=23.1.0)", "coverage (>=7.0)", "flake8 (>=7)", "hypercorn (>=0.16.0)", "mypy (>=1.8)", "pylint (>=3)", "pytest (>=7.4)", "pytest-cov (>=4.1.0)", "quart-trio (>=0.11.0)", "sphinx (>=7.2.0)", "sphinx-rtd-theme (>=2.0.0)", "twine (>=4.0.0)", "wheel (>=0.42.0)"]
+dnssec = ["cryptography (>=43)"]
+doh = ["h2 (>=4.1.0)", "httpcore (>=1.0.0)", "httpx (>=0.26.0)"]
+doq = ["aioquic (>=1.0.0)"]
+idna = ["idna (>=3.7)"]
+trio = ["trio (>=0.23)"]
+wmi = ["wmi (>=1.5.1)"]
 
 [[package]]
 name = "draftjs-exporter"
@@ -2287,4 +2323,4 @@ files = [
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.12"
-content-hash = "20424fa2c1322d132f0b996258e9e828d475ac766bc32398684b85fe990d1396"
+content-hash = "59b64fc792937ff825025268f708987a8b9ae9cc16a054549ee19190997d189c"

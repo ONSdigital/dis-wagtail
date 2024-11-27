@@ -11,15 +11,19 @@ from wagtail.contrib.sitemaps.views import sitemap
 from wagtail.documents import urls as wagtaildocs_urls
 from wagtail.utils.urlpatterns import decorate_urlpatterns
 
+from cms.core import views as core_views
 from cms.core.cache import get_default_cache_control_decorator
 
 if TYPE_CHECKING:
     from django.urls import URLPattern, URLResolver
 
+# Internal URLs are not intended for public use.
+internal_urlpatterns = [path("readiness/", core_views.ready, name="readiness")]
 
 # Private URLs are not meant to be cached.
 private_urlpatterns = [
     path("documents/", include(wagtaildocs_urls)),
+    path("-/", include((internal_urlpatterns, "internal"))),
 ]
 
 # `wagtail.admin` must always be installed,
