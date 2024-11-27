@@ -3,7 +3,7 @@ from typing import TYPE_CHECKING, Any
 
 from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import ImproperlyConfigured
-from django.db.models import CharField, Exists, OuterRef
+from django.db.models import CharField, Exists, IntegerField, OuterRef
 from django.db.models.functions import Cast
 from django.db.models.signals import post_delete, post_save
 from django.utils import timezone
@@ -18,7 +18,7 @@ if TYPE_CHECKING:
     from wagtail.models import Page
 
 
-def assign_unparented_child_media_on_first_save(instance: MediaParentMixin, **kwargs: Any) -> None:
+def assign_unparented_child_media_on_save(instance: MediaParentMixin, **kwargs: Any) -> None:
     """Signal handler to be connected to the 'post_save' signal for models that inherit from
     MediaParentMixin. It is responsible for assigning missing parent_object_ids to child
     media that were uploaded for this object before it was saved for the first time.
@@ -28,18 +28,35 @@ def assign_unparented_child_media_on_first_save(instance: MediaParentMixin, **kw
 
     instance_ct = ContentType.objects.get_for_model(instance)
     for model_class in get_parent_derived_privacy_models():
-        unparented_media = model_class.objects.filter(
-            parent_object_id_outstanding=True,
-            parent_object_content_type=instance_ct,
-            created_at__gte=timezone.now() - timedelta(hours=2),
-        )
-        if owner_id := getattr(instance, "owner_id", None):
-            unparented_media = unparented_media.filter(uploaded_by_user_id=owner_id)
-        for obj in unparented_media:
-            # Save objects individually so that the set_privacy() is triggered
-            obj.parent_object_id = instance.pk
-            obj.parent_object_id_outstanding = False
-            obj.save()
+        if kwargs.get("created", False):
+            unparented_media = model_class.objects.filter(
+                parent_object_id_outstanding=True,
+                parent_object_content_type=instance_ct,
+                created_at__gte=timezone.now() - timedelta(hours=1),
+            )
+            if owner_id := getattr(instance, "owner_id", None):
+                unparented_media = unparented_media.filter(uploaded_by_user_id=owner_id)
+        else:
+            # Comb the reference index for any media not previously parented to this page.
+            # We only do this on subsequent saves, because the reference index is unlikley
+            # to be populated first time round
+            model_ct = ContentType.objects.get_for_model(model_class)
+            unparented_media = model_class.objects.filter(
+                parent_object_id_outstanding=True,
+                parent_object_content_type=instance.cached_content_type,
+                id__in=ReferenceIndex.objects.get_references_for_object(instance)
+                .filter(
+                    to_content_type=model_ct,
+                )
+                .annotate(id_int=Cast("to_object_id", output_field=IntegerField()))
+                .values_list("id_int", flat=True),
+            )
+        # Update unparented media
+        unparented_media.update(parent_object_id=instance.pk, parent_object_id_outstanding=False)
+        if instance.live:
+            model_class.objects.bulk_make_public(unparented_media)
+        else:
+            model_class.objects.bulk_make_private(unparented_media)
     return None
 
 
@@ -82,6 +99,7 @@ def publish_media_on_page_publish(instance: "Page", **kwargs: Any) -> None:
         return None
 
     for model_class in get_parent_derived_privacy_models():
+        # Make all child media public
         queryset = model_class.objects.filter(
             is_private=True, parent_object_content_type=instance.cached_content_type, parent_object_id=instance.id
         )
@@ -135,6 +153,6 @@ def register_signal_handlers() -> None:
     page_unpublished.connect(unpublish_media_on_page_unpublish, dispatch_uid="unpublish_media")
     for model_class in get_media_parent_models():
         post_save.connect(
-            assign_unparented_child_media_on_first_save, sender=model_class, dispatch_uid="assign_unparented_media"
+            assign_unparented_child_media_on_save, sender=model_class, dispatch_uid="assign_unparented_media"
         )
         post_delete.connect(remove_child_media_on_delete, sender=model_class, dispatch_uid="remove_child_media")
