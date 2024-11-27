@@ -13,7 +13,7 @@ from wagtail.utils.urlpatterns import decorate_urlpatterns
 
 from cms.core import views as core_views
 from cms.core.cache import get_default_cache_control_decorator
-from cms.images.views import ImageServeView
+from cms.private_media.views.image import PrivateImageServeView
 
 if TYPE_CHECKING:
     from django.urls import URLPattern, URLResolver
@@ -82,7 +82,7 @@ if settings.DEBUG:
 # Public URLs that are meant to be cached.
 urlpatterns = [
     path("sitemap.xml", sitemap),
-    re_path(r"^images/([^/]*)/(\d*)/([^/]*)/[^/]*$", ImageServeView.as_view(), name="wagtailimages_serve"),
+    re_path(r"^images/([^/]*)/(\d*)/([^/]*)/[^/]*$", PrivateImageServeView.as_view(), name="wagtailimages_serve"),
 ]
 # Set public URLs to use the "default" cache settings.
 urlpatterns = decorate_urlpatterns(urlpatterns, get_default_cache_control_decorator())
