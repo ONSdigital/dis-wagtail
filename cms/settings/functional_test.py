@@ -1,3 +1,5 @@
+import copy
+
 from .base import *  # noqa: F403  # pylint: disable=wildcard-import,unused-wildcard-import
 
 # Debugging to be enabled locally only
@@ -33,5 +35,9 @@ SECURE_HSTS_SECONDS = 0
 # We don't need such a strong algorithm in tests, so use MD5
 PASSWORD_HASHERS = ["django.contrib.auth.hashers.MD5PasswordHasher"]
 
-DATABASES = {"default": dj_database_url.config(default="postgres://ons:ons@localhost:15432/ons")}  # noqa: F405
+DATABASES = {
+    "default": dj_database_url.config(default="postgres://ons:ons@localhost:15432/ons"),  # noqa: F405
+}
+DATABASES["read_replica"] = copy.deepcopy(DATABASES["default"])
+
 REDIS_URL = "redis://localhost:16379"

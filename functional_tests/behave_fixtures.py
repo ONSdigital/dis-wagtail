@@ -51,6 +51,9 @@ def django_test_case(context: Context) -> None:
     # use of whitenoise for serving static content.
     context.test_case_class = LiveServerTestCase
 
+    # Ensure the test case matches our multi DB configuration
+    context.test_case_class.databases = frozenset({"default", "read_replica"})
+
     # The LiveServerTestCase setup will start a test server for our app, allowing us to test against a live app
     context.test_case_class.setUpClass()
 
