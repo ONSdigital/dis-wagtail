@@ -130,7 +130,7 @@ Follow these steps to set up and run the project using Docker.
 
 You can then access the admin at `http://0.0.0.0:8000/admin/` or `http://localhost:8000/admin/`.
 
-#### Running slocally with supporting services in Docker
+#### Running locally with supporting services in Docker
 
 You can also run the main application locally with the supporting backend services such as the Postgres and Redis running in Docker. This can be useful when you want to make changes that require the app to be frequently restarted to be picked up.
 
