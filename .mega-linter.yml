@@ -20,15 +20,19 @@ FORMATTERS_DISABLE_ERRORS: false
 DISABLE:
   - COPYPASTE
   - PYTHON
+  - JAVASCRIPT
   - EDITORCONFIG
   - SPELL
 
+# REPOSITORY_TRIVY, REPOSITORY_DUSTILOCK, HTML_HTMLHINT Have been disabled as part of the initial set up
+# CMS_
 DISABLE_LINTERS:
   - REPOSITORY_DEVSKIM
   - REPOSITORY_TRUFFLEHOG
   - REPOSITORY_GIT_DIFF
   - HTML_HTMLHINT
   - REPOSITORY_TRIVY
+  - REPOSITORY_DUSTILOCK
 
 SHOW_ELAPSED_TIME: true
 
@@ -37,9 +41,14 @@ FILEIO_REPORTER: false
 # DISABLE_ERRORS: true
 
 # Use yml file to allow the use of comments. Megalinter's default is .markdown-lint.json
-MARKDOWN_MARKDOWNLINT_CONFIG_FILE: .markdown-lint.yml
-CSS_STYLELINT_CONFIG_FILE: .stylelintrc.js
+CSS_STYLELINT_CONFIG_FILE: .github/linters/.stylelintrc.js
+MARKDOWN_MARKDOWNLINT_CONFIG_FILE: .github/linters/.markdown-lint.yml
+MARKDOWN_MARKDOWN_LINK_CHECK_CONFIG_FILE: .github/linters/.markdown-link-check.json
+REPOSITORY_CHECKOV_CONFIG_FILE: .github/linters/.checkov.yml
+REPOSITORY_GITLEAKS_CONFIG_FILE: .github/linters/.gitleaks.toml
+REPOSITORY_KICS_CONFIG_FILE: .github/linters/kics.config
+YAML_YAMLLINT_CONFIG_FILE: .github/linters/.yamllint.yml
 
 YAML_V8R_FILTER_REGEX_EXCLUDE: 'dependabot.yml' # Dependabot yaml in SchemaStore is currently not up to date. Dependabot is validated on push by GitHub by default.
 
-EXCLUDED_DIRECTORIES: ['node_modules']
+EXCLUDED_DIRECTORIES: ['node_modules', 'static', 'static_compile']
