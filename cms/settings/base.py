@@ -761,7 +761,7 @@ if "WAGTAILADMIN_BASE_URL" in env:
 # Custom image model
 # https://docs.wagtail.io/en/stable/advanced_topics/images/custom_image_model.html
 WAGTAILIMAGES_IMAGE_MODEL = "images.CustomImage"
-WAGTAILIMAGES_IMAGE_FORM_BASE = "cms.images.admin_forms.BaseImageForm"
+WAGTAILIMAGES_IMAGE_FORM_BASE = "cms.private_media.admin_forms.BasePrivateImageForm"
 WAGTAILIMAGES_FEATURE_DETECTION_ENABLED = False
 
 pixel_limit = env.get("WAGTAILIMAGES_MAX_IMAGE_PIXELS")
@@ -784,7 +784,7 @@ WAGTAILADMIN_RICH_TEXT_EDITORS = {
 # Custom document model
 # https://docs.wagtail.io/en/stable/advanced_topics/documents/custom_document_model.html
 WAGTAILDOCS_DOCUMENT_MODEL = "documents.CustomDocument"
-WAGTAILDOCS_DOCUMENT_FORM_BASE = "cms.documents.admin_forms.BaseDocumentForm"
+WAGTAILDOCS_DOCUMENT_FORM_BASE = "cms.private_media.admin_forms.BasePrivateDocumentForm"
 
 
 # Document serve method - avoid serving files directly from the storage.
