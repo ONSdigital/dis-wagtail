@@ -21,7 +21,6 @@ class ReadOnlyConnectionTestCase(TransactionTestCase):
     def _fixture_setup(self):
         """Set up fixtures for test cases."""
         if fixtures := getattr(connections["default"], "_test_serialized_contents", None):
-
             # Parse the fixture directly rather than serializing it into models for performance reasons.
             fixtures = json.loads(fixtures)
 
@@ -56,6 +55,28 @@ class ReadOnlyConnectionTestCase(TransactionTestCase):
         write_queries = sorted(query for query in queries if not query.startswith(self.READ_QUERY_PREFIXES))
 
         self.assertEqual(len(write_queries), 0, "Write queries were executed:\n" + "\n".join(write_queries))
+
+    @contextmanager
+    def assertTotalNumQueries(self, num):  # pylint: disable=invalid-name
+        """Assert the total number of queries, regardless of the connection used."""
+        with (
+            CaptureQueriesContext(connections["default"]) as captured_default_queries,
+            CaptureQueriesContext(connections["read_replica"]) as captured_replica_queries,
+        ):
+            yield
+
+        queries = sorted(
+            [
+                query["sql"]
+                for query in (captured_default_queries.captured_queries + captured_replica_queries.captured_queries)
+            ]
+        )
+
+        self.assertEqual(
+            len(queries),
+            num,
+            f"{len(queries)} queries executed, {num} expected\nCaptured queries were:\n" + "\n".join(queries),
+        )
 
     @contextmanager
     def assertNoDefaultQueries(self):  # pylint: disable=invalid-name
