@@ -2,7 +2,7 @@ from behave import given  # pylint: disable=E0611
 from behave.runner import Context
 
 
-@given("a contact details snippet has been created")
+@given("a contact details snippet exists")
 def create_contact_details_snippet(context: Context):
     """Create a contact details snippet."""
     # TODO this import fails at the top level with error:  pylint: disable=W0511

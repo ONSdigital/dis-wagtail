@@ -24,8 +24,8 @@ def before_all(context: Context):
     use_fixture(django_test_runner, context=context)
 
     context.playwright: Playwright = sync_playwright().start()
-    context.playwright_trace = str_to_bool(os.getenv("PLAYWRIGHT_TRACE", "True"))
-    context.playwright_traces_dir = Path(os.getenv("PLAYWRIGHT_TRACES_DIR", str(Path.cwd().joinpath("tmp_traces"))))
+    context.playwright_trace = str_to_bool(os.getenv("TRACE", "True"))
+    context.playwright_traces_dir = Path(os.getenv("TRACES_DIR", str(Path.cwd().joinpath("tmp_traces"))))
 
     configure_and_launch_playwright_browser(context)
 
@@ -40,7 +40,7 @@ def configure_and_launch_playwright_browser(context: Context) -> None:
     browser_type = os.getenv("BROWSER", "chromium")
     headless = str_to_bool(os.getenv("HEADLESS", "True"))
     slow_mo = int(os.getenv("SLOW_MO", "0"))
-    default_browser_timeout = int(os.getenv("DEFAULT_BROWSER_TIMEOUT", "10_000"))
+    default_browser_timeout = int(os.getenv("DEFAULT_BROWSER_TIMEOUT", "5_000"))
 
     browser_kwargs = {
         "headless": headless,
