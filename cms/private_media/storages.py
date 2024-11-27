@@ -2,7 +2,6 @@ import logging
 from typing import TYPE_CHECKING
 
 from botocore.exceptions import ClientError
-from django.core.files.storage import FileSystemStorage
 from storages.backends.s3 import S3Storage
 
 if TYPE_CHECKING:
@@ -39,16 +38,4 @@ class PrivacySettingS3Storage(S3Storage):
             return False
 
         logger.info("ACL set successfully for %s", file.name)
-        return True
-
-
-class PrivacySettingFileSystemStorage(FileSystemStorage):
-    def make_private(self, file: "FieldFile") -> bool:  # pylint: disable=unused-argument
-        """Make the provided file private in the file system (noop)."""
-        logger.debug("%s does not support setting of individual file permissions.", self.__class__.__name__)
-        return True
-
-    def make_public(self, file: "FieldFile") -> bool:  # pylint: disable=unused-argument
-        """Make the provided file publically readable in the file system (noop)."""
-        logger.debug("%s does not support setting of individual file permissions.", self.__class__.__name__)
         return True

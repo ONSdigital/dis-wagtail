@@ -332,7 +332,7 @@ LOCALE_PATHS = [PROJECT_DIR / "locale"]
 # http://whitenoise.evans.io/en/stable/#quickstart-for-django-apps
 # https://docs.djangoproject.com/en/stable/ref/settings/#std-setting-STORAGES
 STORAGES = {
-    "default": {"BACKEND": "cms.private_media.storages.PrivacySettingFileSystemStorage"},
+    "default": {"BACKEND": "django.core.files.storage.FileSystemStorage"},
     "staticfiles": {"BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage"},
 }
 
