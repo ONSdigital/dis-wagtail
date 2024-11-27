@@ -1,3 +1,4 @@
+import json
 from contextlib import contextmanager
 
 from django.db import connections
@@ -12,9 +13,28 @@ class ReadOnlyConnectionTestCase(TransactionTestCase):
     chooses the correct connection.
     """
 
-    databases = frozenset({"default", "read_replica"})
+    databases = "__all__"
+    serialized_rollback = True
 
     READ_QUERY_PREFIXES = ("SELECT", "BEGIN", "COMMIT")
+
+    def _fixture_setup(self):
+        """Set up fixtures for test cases."""
+        if fixtures := getattr(connections["default"], "_test_serialized_contents", None):
+
+            # Parse the fixture directly rather than serializing it into models for performance reasons.
+            fixtures = json.loads(fixtures)
+
+            eager_fixtures = []
+            for item in list(fixtures):
+                # HACK: Wagtail's locales are read from a pre-save hook, which means they need to exist
+                # very early during model setup.
+                if item["model"] == "wagtailcore.locale":
+                    fixtures.remove(item)
+                    eager_fixtures.append(item)
+            connections["default"]._test_serialized_contents = json.dumps(eager_fixtures + fixtures)
+
+        super()._fixture_setup()
 
     @contextmanager
     def assertNoWriteQueries(self):  # pylint: disable=invalid-name
