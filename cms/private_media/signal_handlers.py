@@ -2,7 +2,6 @@ from datetime import timedelta
 from typing import TYPE_CHECKING, Any
 
 from django.contrib.contenttypes.models import ContentType
-from django.core.exceptions import ImproperlyConfigured
 from django.db.models import CharField, Exists, IntegerField, OuterRef
 from django.db.models.functions import Cast
 from django.db.models.signals import post_delete, post_save
@@ -43,7 +42,7 @@ def assign_unparented_child_media_on_save(instance: MediaParentMixin, **kwargs: 
             model_ct = ContentType.objects.get_for_model(model_class)
             unparented_media = model_class.objects.filter(
                 parent_object_id_outstanding=True,
-                parent_object_content_type=instance.cached_content_type,
+                parent_object_content_type=instance_ct,
                 id__in=ReferenceIndex.objects.get_references_for_object(instance)
                 .filter(
                     to_content_type=model_ct,
@@ -53,10 +52,10 @@ def assign_unparented_child_media_on_save(instance: MediaParentMixin, **kwargs: 
             )
         # Update unparented media
         unparented_media.update(parent_object_id=instance.pk, parent_object_id_outstanding=False)
-        if instance.live:
-            model_class.objects.bulk_make_public(unparented_media)
+        if instance.live:  # type: ignore[attr-defined]
+            model_class.objects.bulk_make_public(unparented_media)  # type: ignore[attr-defined]
         else:
-            model_class.objects.bulk_make_private(unparented_media)
+            model_class.objects.bulk_make_private(unparented_media)  # type: ignore[attr-defined]
     return None
 
 
@@ -101,16 +100,14 @@ def publish_media_on_page_publish(instance: "Page", **kwargs: Any) -> None:
     for model_class in get_parent_derived_privacy_models():
         # Make all child media public
         queryset = model_class.objects.filter(
-            is_private=True, parent_object_content_type=instance.cached_content_type, parent_object_id=instance.id
+            is_private=True,
+            parent_object_content_type=ContentType.objects.get_for_model(instance),
+            parent_object_id=instance.pk,
         )
         if issubclass(model_class, AbstractImage):
             queryset = queryset.prefetch_related("renditions")
-        if hasattr(model_class.objects, "bulk_make_public"):
-            model_class.objects.bulk_make_public(queryset)
-        else:
-            raise ImproperlyConfigured(
-                f"The default manager for {model_class.__name__} does not have a 'bulk_make_private' method."
-            )
+
+        model_class.objects.bulk_make_public(queryset)  # type: ignore[attr-defined]
 
     return None
 
@@ -124,9 +121,10 @@ def unpublish_media_on_page_unpublish(instance: "Page", **kwargs: Any) -> None:
     if not isinstance(instance, MediaParentMixin):
         return None
 
+    instance_ct = ContentType.objects.get_for_model(instance)
     for model_class in get_parent_derived_privacy_models():
         queryset = model_class.objects.filter(
-            is_private=False, parent_object_content_type=instance.cached_content_type, parent_object_id=instance.id
+            is_private=False, parent_object_content_type=instance_ct, parent_object_id=instance.pk
         )
         if issubclass(model_class, AbstractImage):
             queryset = queryset.prefetch_related("renditions")
@@ -135,15 +133,10 @@ def unpublish_media_on_page_unpublish(instance: "Page", **kwargs: Any) -> None:
                 ReferenceIndex.objects.filter(
                     to_content_type=ContentType.objects.get_for_model(model_class),
                     to_object_id=Cast(OuterRef("pk"), output_field=CharField()),
-                ).exclude(content_type=instance.cached_content_type, object_id=str(instance.id))
+                ).exclude(content_type=instance_ct, object_id=str(instance.pk))
             )
         ).filter(is_referenced_elsewhere=False)
-        if hasattr(model_class.objects, "bulk_make_private"):
-            model_class.objects.bulk_make_private(queryset)
-        else:
-            raise ImproperlyConfigured(
-                f"The default manager for {model_class.__name__} does not have a 'bulk_make_private' method."
-            )
+        model_class.objects.bulk_make_private(queryset)  # type: ignore[attr-defined]
     return None
 
 

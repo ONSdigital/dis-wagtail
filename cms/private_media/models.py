@@ -290,9 +290,9 @@ class AbstractPrivateRendition(AbstractRendition):
         Returns:
             str: URL for accessing the rendition
         """
-        from wagtail.images.views.serve import generate_image_url  # type: ignore[import-outside-toplevel]
+        from wagtail.images.views.serve import generate_image_url
 
-        image: AbstractPrivateImage = self.image  # type: ignore[no-member]
+        image: AbstractPrivateImage = self.image
         if image.is_public and image.file_permissions_are_up_to_date():
             file_url: str = self.file.url
             return file_url

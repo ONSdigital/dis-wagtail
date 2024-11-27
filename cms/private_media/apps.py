@@ -6,6 +6,6 @@ class PrivateMediaConfig(AppConfig):
     name = "cms.private_media"
 
     def ready(self) -> None:
-        from .signal_handlers import register_signal_handlers  # type: ignore[import-outside-toplevel]
+        from .signal_handlers import register_signal_handlers
 
         register_signal_handlers()
