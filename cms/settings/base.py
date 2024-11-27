@@ -859,3 +859,6 @@ LOGOUT_REDIRECT_URL = env.get("LOGOUT_REDIRECT_URL", env.get("WAGTAILADMIN_LOGIN
 ACCESS_TOKEN_COOKIE_NAME = "access_token"  # noqa: S105
 REFRESH_TOKEN_COOKIE_NAME = "refresh_token"  # noqa: S105
 ID_TOKEN_COOKIE_NAME = "id_token"  # noqa: S105
+
+# Role Groups
+ROLE_GROUP_IDS = {"role-admin", "role-publisher"}

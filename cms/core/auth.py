@@ -1,3 +1,4 @@
+import logging
 from collections.abc import Iterable, Mapping
 from typing import TYPE_CHECKING
 
@@ -8,10 +9,15 @@ from django.contrib.auth.middleware import AuthenticationMiddleware
 from django.contrib.auth.models import Group
 from jwt import ExpiredSignatureError, InvalidTokenError
 
+from cms.teams.models import Team
+
 if TYPE_CHECKING:
     from django.http import HttpRequest
 
     from cms.users.models import User as UserModel
+
+logger = logging.getLogger(__name__)
+
 
 User = get_user_model()
 
@@ -38,11 +44,11 @@ def extract_and_validate_token(token: str, token_type: str) -> dict | None:
         )
         return payload
     except ExpiredSignatureError:
-        print(f"{token_type} has expired.")
-    except InvalidTokenError as e:
-        print(f"Invalid {token_type}: {e}")
-    except Exception as e:  # pylint: disable=broad-except
-        print(f"Unexpected error during token validation: {e}")
+        logger.exception("%s has expired", token_type)
+    except InvalidTokenError:
+        logger.exception("Invalid %s", token_type)
+    except Exception:  # pylint: disable=broad-except
+        logger.exception("Failed to validate %s", token_type)
     return None
 
 
@@ -55,8 +61,8 @@ def update_user_details(user: "UserModel", email: str, first_name: str, last_nam
         user.set_unusable_password()
 
 
-def assign_roles(user: "UserModel", cognito_groups: Iterable[str]) -> None:
-    """Assign roles and groups to the user based on their Cognito groups."""
+def assign_groups(user: "UserModel", cognito_groups: Iterable[str]) -> None:
+    """Assign groups to the user based on their Cognito groups."""
     publishing_officer_group = Group.objects.get(name=settings.PUBLISHING_OFFICERS_GROUP_NAME)
     viewer_group = Group.objects.get(name=settings.VIEWERS_GROUP_NAME)
 
@@ -69,6 +75,30 @@ def assign_roles(user: "UserModel", cognito_groups: Iterable[str]) -> None:
         user.groups.remove(publishing_officer_group)
 
     user.groups.add(viewer_group)  # Always add viewer group
+
+
+def assign_teams(user: "UserModel", cognito_groups: Iterable[str]) -> None:
+    """Assign teams to the user based on their Cognito groups."""
+    teams_to_add = set(cognito_groups) - set(settings.ROLE_GROUP_IDS)
+    existing_teams = {team.identifier: team for team in Team.objects.filter(identifier__in=teams_to_add)}
+    missing_team_ids = teams_to_add - set(existing_teams.keys())
+
+    # Create missing teams in bulk
+    if missing_team_ids:
+        missing_teams = [
+            Team(
+                identifier=team_id,
+                name=team_id.replace("-", " ").title(),  # Temporary name, will be updated on sync
+            )
+            for team_id in missing_team_ids
+        ]
+        Team.objects.bulk_create(missing_teams)
+        # Refresh the queryset to include newly created teams
+        new_teams = Team.objects.filter(identifier__in=missing_team_ids)
+        existing_teams |= {team.identifier: team for team in new_teams}
+
+    teams_for_user = list(existing_teams.values())
+    user.teams.set(teams_for_user)
 
 
 class ONSAuthMiddleware(AuthenticationMiddleware):
@@ -90,6 +120,10 @@ class ONSAuthMiddleware(AuthenticationMiddleware):
         id_payload = extract_and_validate_token(id_token, settings.ID_TOKEN_COOKIE_NAME)
 
         if not access_payload or not id_payload:
+            if request.user.is_authenticated:
+                # Log out user if token has become invalid or expired
+                logout(request)
+
             return
 
         if request.user.is_authenticated:
@@ -121,11 +155,14 @@ class ONSAuthMiddleware(AuthenticationMiddleware):
         user, created = User.objects.get_or_create(username=email, defaults={"email": email})
         update_user_details(user, email, first_name, last_name, created)
 
-        # Assign roles and authenticate user
+        # Assign groups
         cognito_groups = access_payload.get("cognito:groups", [])
-        assign_roles(user, cognito_groups)
+        assign_groups(user, cognito_groups)
 
-        # Save any changes
+        # Assign teams
+        assign_teams(user, cognito_groups)
+
+        # Save any changes to the user
         user.save()
 
         # Authenticate user

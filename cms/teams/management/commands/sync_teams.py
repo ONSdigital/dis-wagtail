@@ -13,9 +13,6 @@ from cms.teams.models import Team
 
 logger = logging.getLogger(__name__)
 
-# Role Groups
-ROLE_GROUP_IDS: set[str] = {"role-admin", "role-publisher"}
-
 
 class Command(BaseCommand):
     help = "Syncs teams from the identity API"
@@ -73,7 +70,7 @@ class Command(BaseCommand):
         """Updates the local database with the teams fetched from the API."""
         # Fetch existing Teams from the database
         existing_teams: dict[str, Team] = {team.identifier: team for team in Team.objects.all()}
-        teams_from_api: set[str] = {group["id"] for group in groups if group["id"] not in ROLE_GROUP_IDS}
+        teams_from_api: set[str] = {group["id"] for group in groups if group["id"] not in settings.ROLE_GROUP_IDS}
 
         for group in groups:
             self._update_team(group, existing_teams=existing_teams, dry_run=dry_run)
@@ -94,7 +91,7 @@ class Command(BaseCommand):
         """Updates a single team in the database."""
         group_id: str = group["id"]
 
-        if group_id in ROLE_GROUP_IDS:
+        if group_id in settings.ROLE_GROUP_IDS:
             # Skip role groups as they are handled separately
             return
 

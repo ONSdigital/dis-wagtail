@@ -53,7 +53,7 @@ class ONSLogoutView(LogoutView):
     @method_decorator(csrf_protect)
     @method_decorator(never_cache)
     def dispatch(self, request: "HttpRequest", *args: Any, **kwargs: Any) -> "HttpResponse":
-        response = super().dispatch(request, *args, **kwargs)
+        response: HttpResponse = super().dispatch(request, *args, **kwargs)
 
         # HACK: Clear the messages from the request
         list(messages.get_messages(request))
@@ -62,4 +62,5 @@ class ONSLogoutView(LogoutView):
         response.delete_cookie(settings.ACCESS_TOKEN_COOKIE_NAME)
         response.delete_cookie(settings.ID_TOKEN_COOKIE_NAME)
         response.delete_cookie(settings.REFRESH_TOKEN_COOKIE_NAME)
+
         return response
