@@ -7,9 +7,10 @@ from wagtail.search import index
 from cms.core.blocks.stream_blocks import CoreStoryBlock
 from cms.core.fields import StreamField
 from cms.core.models import BasePage
+from cms.private_media.models import MediaParentMixin
 
 
-class InformationPage(BasePage):  # type: ignore[django-manager-missing]
+class InformationPage(MediaParentMixin, BasePage):  # type: ignore[django-manager-missing]
     """A generic information page model."""
 
     template = "templates/pages/information_page.html"
