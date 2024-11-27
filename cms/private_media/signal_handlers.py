@@ -11,12 +11,11 @@ from wagtail.images.models import AbstractImage
 from wagtail.models import ReferenceIndex
 from wagtail.signals import page_published, page_unpublished
 
-from .utils import get_media_parent_models, get_parent_derived_privacy_models
+from cms.private_media.models import MediaParentMixin
+from cms.private_media.utils import get_media_parent_models, get_parent_derived_privacy_models
 
 if TYPE_CHECKING:
     from wagtail.models import Page
-
-    from cms.private_media.models import MediaParentMixin
 
 
 def assign_unparented_child_media_on_first_save(instance: MediaParentMixin, **kwargs: Any) -> None:
@@ -44,7 +43,7 @@ def assign_unparented_child_media_on_first_save(instance: MediaParentMixin, **kw
     return None
 
 
-def remove_child_media_on_delete(instance: "MediaParentMixin", **kwargs: Any) -> None:
+def remove_child_media_on_delete(instance: MediaParentMixin, **kwargs: Any) -> None:
     """Signal handler to be connected to the 'pre_delete' signal for models that inherit from
     MediaParentMixin. It is responsible for removing child media that are associated with the
     object being deleted.
@@ -79,6 +78,9 @@ def publish_media_on_page_publish(instance: "Page", **kwargs: Any) -> None:
     all page types. It is responsible for identifying any privacy-controlled
     media used by the page, and ensuring that it is also made public.
     """
+    if not isinstance(instance, MediaParentMixin):
+        return None
+
     for model_class in get_parent_derived_privacy_models():
         queryset = model_class.objects.filter(
             is_private=True, parent_object_content_type=instance.cached_content_type, parent_object_id=instance.id
@@ -92,6 +94,8 @@ def publish_media_on_page_publish(instance: "Page", **kwargs: Any) -> None:
                 f"The default manager for {model_class.__name__} does not have a 'bulk_make_private' method."
             )
 
+    return None
+
 
 def unpublish_media_on_page_unpublish(instance: "Page", **kwargs: Any) -> None:
     """Signal handler to be connected to the 'page_unpublished' signal for
@@ -99,6 +103,9 @@ def unpublish_media_on_page_unpublish(instance: "Page", **kwargs: Any) -> None:
     media used exclusively by the page, and ensuring that it is also made
     private.
     """
+    if not isinstance(instance, MediaParentMixin):
+        return None
+
     for model_class in get_parent_derived_privacy_models():
         queryset = model_class.objects.filter(
             is_private=False, parent_object_content_type=instance.cached_content_type, parent_object_id=instance.id
@@ -119,6 +126,7 @@ def unpublish_media_on_page_unpublish(instance: "Page", **kwargs: Any) -> None:
             raise ImproperlyConfigured(
                 f"The default manager for {model_class.__name__} does not have a 'bulk_make_private' method."
             )
+    return None
 
 
 def register_signal_handlers() -> None:
