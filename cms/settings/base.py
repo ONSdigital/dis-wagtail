@@ -8,6 +8,7 @@ from typing import Any, cast
 
 import dj_database_url
 from django.core.exceptions import ImproperlyConfigured
+from django.utils.module_loading import import_string
 from django.utils.translation import gettext_lazy as _
 from django_jinja.builtins import DEFAULT_EXTENSIONS
 
@@ -230,38 +231,51 @@ DATABASE_ROUTERS = ["cms.core.db_router.ReadReplicaRouter"]
 #
 # Do not use the same Redis instance for other things like Celery!
 
-# Prefer the TLS connection URL over non
-REDIS_URL = env.get("REDIS_TLS_URL", env.get("REDIS_URL"))
+CACHES: dict = {"memory": {"BACKEND": "django.core.cache.backends.locmem.LocMemCache", "LOCATION": "memory"}}
 
-if REDIS_URL:
-    connection_pool_kwargs: dict[str, str | None] = {}
+redis_options = {
+    "IGNORE_EXCEPTIONS": True,
+    "SOCKET_CONNECT_TIMEOUT": 2,  # seconds
+    "SOCKET_TIMEOUT": 2,  # seconds
+}
+DJANGO_REDIS_LOG_IGNORED_EXCEPTIONS = True
 
-    if REDIS_URL.startswith("rediss"):
-        # Heroku Redis uses self-signed certificates for secure redis conections. https://stackoverflow.com/a/66286068
+# Prefer the TLS connection URL over non for Heroku
+if redis_url := env.get("REDIS_TLS_URL", env.get("REDIS_URL")):
+    connection_pool_kwargs: dict = {}
+
+    if redis_url.startswith("rediss"):
+        # Heroku Redis uses self-signed certificates for secure redis connections. https://stackoverflow.com/a/66286068
         # When using TLS, we need to disable certificate validation checks.
         connection_pool_kwargs["ssl_cert_reqs"] = None
 
-    redis_options = {
-        "IGNORE_EXCEPTIONS": True,
-        "SOCKET_CONNECT_TIMEOUT": 2,  # seconds
-        "SOCKET_TIMEOUT": 2,  # seconds
-        "CONNECTION_POOL_KWARGS": connection_pool_kwargs,
+    CACHES["default"] = {
+        "BACKEND": "django_redis.cache.RedisCache",
+        "LOCATION": redis_url,
+        "OPTIONS": {**redis_options, "CONNECTION_POOL_KWARGS": connection_pool_kwargs},
     }
 
-    CACHES = {
-        "default": {
-            "BACKEND": "django_redis.cache.RedisCache",
-            "LOCATION": REDIS_URL,
-            "OPTIONS": redis_options,
-        }
+elif elasticache_addr := env.get("ELASTICACHE_ADDR"):
+    port = env["ELASTICACHE_PORT"]
+
+    CACHES["default"] = {
+        "BACKEND": "django_redis.cache.RedisCache",
+        "LOCATION": f"rediss://{elasticache_addr}:{port}",
+        "OPTIONS": {
+            **redis_options,
+            "CONNECTION_POOL_KWARGS": {
+                "credential_provider": import_string("cms.core.cache.ElastiCacheIAMCredentialProvider")(
+                    user=env["ELASTICACHE_USER_NAME"],
+                    cluster_name=env["ELASTICACHE_CLUSTER_NAME"],
+                    region=env["ELASTICACHE_CLUSTER_REGION"],
+                )
+            },
+        },
     }
-    DJANGO_REDIS_LOG_IGNORED_EXCEPTIONS = True
 else:
-    CACHES = {
-        "default": {
-            "BACKEND": "django.core.cache.backends.db.DatabaseCache",
-            "LOCATION": "database_cache",
-        }
+    CACHES["default"] = {
+        "BACKEND": "django.core.cache.backends.db.DatabaseCache",
+        "LOCATION": "database_cache",
     }
 
 # Search
@@ -712,7 +726,10 @@ AUTH_USER_MODEL = "users.User"
 # django-defender
 # Records failed login attempts and blocks access by username and IP
 # https://django-defender.readthedocs.io/en/latest/
-ENABLE_DJANGO_DEFENDER = REDIS_URL and env.get("ENABLE_DJANGO_DEFENDER", "True").lower().strip() == "true"
+ENABLE_DJANGO_DEFENDER = (
+    "redis" in CACHES["default"]["BACKEND"].lower()
+    and env.get("ENABLE_DJANGO_DEFENDER", "True").lower().strip() == "true"
+)
 
 if ENABLE_DJANGO_DEFENDER:
     INSTALLED_APPS += ["defender"]
