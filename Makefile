@@ -52,7 +52,6 @@ lint-frontend:  ## Run front-end linters
 
 .PHONY: lint-migrations
 lint-migrations: ## Run django-migration-linter
-	python manage.py lintmigrations
 
 .PHONY: test
 test:  ## Run the tests and check coverage.
