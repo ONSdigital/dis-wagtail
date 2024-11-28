@@ -4,6 +4,7 @@ from contextlib import ExitStack, contextmanager
 from django.db import connections
 from django.test import TransactionTestCase as _TransactionTestCase
 from django.test.utils import CaptureQueriesContext
+from django.utils.functional import partition
 
 
 class ConnectionHelperMixin:
@@ -78,23 +79,24 @@ class TransactionTestCase(_TransactionTestCase, ConnectionHelperMixin):
     """A modified TransactionTestCase which ensures models created during migrations are accessible."""
 
     databases = "__all__"
+
+    # The site depends on instances created during migrations, so rollback must be serialized.
     serialized_rollback = True
 
     def _fixture_setup(self):
         """Set up fixtures for test cases."""
-        if self.serialized_rollback and (
+        if self.serialized_rollback and not getattr(self, "_fixtures_rewritten", False) and (
             fixtures := getattr(connections["default"], "_test_serialized_contents", None)
         ):
             # Parse the fixture directly rather than serializing it into models for performance reasons.
             fixtures = json.loads(fixtures)
 
-            eager_fixtures = []
-            for item in list(fixtures):
-                # HACK: Wagtail's locales are read from a pre-save hook, which means they need to exist
-                # very early during model setup.
-                if item["model"] == "wagtailcore.locale":
-                    fixtures.remove(item)
-                    eager_fixtures.append(item)
+            # HACK: Wagtail's locales are read from a pre-save hook, which means they need to exist
+            # very early during model setup.
+            fixtures, eager_fixtures = partition(lambda item: item["model"] == "wagtailcore.locale", fixtures)
+
             connections["default"]._test_serialized_contents = json.dumps(eager_fixtures + fixtures)
+
+            self._fixtures_rewritten = True
 
         super()._fixture_setup()
