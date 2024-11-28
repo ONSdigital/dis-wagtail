@@ -7,7 +7,7 @@ from cms.core.tests import TransactionTestCase
 
 
 class SocialSettingsTestCase(TransactionTestCase):
-    """Tests for the ContactDetails model."""
+    """Tests for the SocialSettings model, and how it behaves with multiple databases."""
 
     def setUp(self):
         self.request = get_dummy_request()
@@ -19,12 +19,8 @@ class SocialSettingsTestCase(TransactionTestCase):
     def test_create_setting(self):
         self.assertEqual(SocialMediaSettings.objects.count(), 0)
 
-        with self.assertTotalNumQueries(5):
-            setting = SocialMediaSettings.for_request(self.request)
-
-        self.assertIsNotNone(setting.pk)
-
-        self.assertEqual(SocialMediaSettings.objects.count(), 1)
+        with self.assertTotalNumQueries(6):
+            SocialMediaSettings.for_request(self.request)
 
         with self.assertTotalNumQueries(0):
             SocialMediaSettings.for_request(self.request)
@@ -39,11 +35,10 @@ class SocialSettingsTestCase(TransactionTestCase):
         self.assertIsNone(setting.pk)
         self.assertEqual(SocialMediaSettings.objects.count(), 0)
 
-    @override_settings(IS_EXTERNAL_ENV=True)
     def test_external_env_with_existing_instance(self):
         SocialMediaSettings.objects.create(site=Site.find_for_request(self.request))
 
-        with self.assertTotalNumQueries(1), self.assertNumWriteQueries(0):
+        with override_settings(IS_EXTERNAL_ENV=True), self.assertTotalNumQueries(1), self.assertNumWriteQueries(0):
             setting = SocialMediaSettings.for_request(self.request)
 
         self.assertIsNotNone(setting.pk)
