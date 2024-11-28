@@ -46,8 +46,6 @@ DEFENDER_DISABLE_IP_LOCKOUT = True
 # https://docs.djangoproject.com/en/stable/topics/testing/advanced/#tests-and-multiple-databases
 DATABASES["read_replica"].setdefault("TEST", {"MIRROR": "default"})  # noqa: F405
 
-CACHES = {
-    "default": {
-        "BACKEND": "django.core.cache.backends.dummy.DummyCache",
-    }
+CACHES["default"] = {  # noqa: F405
+    "BACKEND": "django.core.cache.backends.dummy.DummyCache",
 }
