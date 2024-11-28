@@ -2,11 +2,13 @@
 
 import os
 import sys
+from copy import deepcopy
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 import dj_database_url
 from django.core.exceptions import ImproperlyConfigured
+from django.utils.module_loading import import_string
 from django.utils.translation import gettext_lazy as _
 from django_jinja.builtins import DEFAULT_EXTENSIONS
 
@@ -179,12 +181,45 @@ WSGI_APPLICATION = "cms.wsgi.application"
 
 
 # Database
-# This setting will use DATABASE_URL environment variable.
-# https://docs.djangoproject.com/en/stable/ref/settings/#databases
-# https://github.com/kennethreitz/dj-database-url
 
-DATABASES = {"default": dj_database_url.config(conn_max_age=600, default="postgres:///ons")}
+db_conn_max_age = int(env.get("PG_CONN_MAX_AGE", 870))  # Just under 15 minutes, to match password expiry
 
+if "PG_DB_ADDR" in env:
+    # Use IAM authentication to connect to the Database
+    DATABASES = {
+        "default": cast(
+            dj_database_url.DBConfig,
+            {
+                "ENGINE": "django_iam_dbauth.aws.postgresql",
+                "NAME": env["PG_DB_DATABASE"],
+                "USER": env["PG_DB_USER"],
+                "HOST": env["PG_DB_ADDR"],
+                "PORT": env["PG_DB_PORT"],
+                "CONN_MAX_AGE": db_conn_max_age,
+                "OPTIONS": {"use_iam_auth": True, "sslmode": "require"},
+            },
+        )
+    }
+
+    # Additionally configure a read-replica
+    if "PG_DB_READ_ADDR" in env:
+        DATABASES["read_replica"] = {**deepcopy(DATABASES["default"]), "HOST": env["PG_DB_READ_ADDR"]}
+
+else:
+    DATABASES = {
+        "default": dj_database_url.config(conn_max_age=db_conn_max_age, default="postgres:///ons"),
+    }
+
+    if "READ_REPLICA_DATABASE_URL" in env:
+        DATABASES["read_replica"] = dj_database_url.config(
+            env="READ_REPLICA_DATABASE_URL", conn_max_age=db_conn_max_age
+        )
+
+if "read_replica" not in DATABASES:
+    DATABASES["read_replica"] = deepcopy(DATABASES["default"])
+
+# Ensure the correct connection is used depending on the query
+DATABASE_ROUTERS = ["cms.core.db_router.ReadReplicaRouter"]
 
 # Server-side cache settings. Do not confuse with front-end cache.
 # https://docs.djangoproject.com/en/stable/topics/cache/
@@ -196,44 +231,59 @@ DATABASES = {"default": dj_database_url.config(conn_max_age=600, default="postgr
 #
 # Do not use the same Redis instance for other things like Celery!
 
-# Prefer the TLS connection URL over non
-REDIS_URL = env.get("REDIS_TLS_URL", env.get("REDIS_URL"))
+CACHES: dict = {"memory": {"BACKEND": "django.core.cache.backends.locmem.LocMemCache", "LOCATION": "memory"}}
 
-if REDIS_URL:
-    connection_pool_kwargs: dict[str, str | None] = {}
+redis_options = {
+    "IGNORE_EXCEPTIONS": True,
+    "SOCKET_CONNECT_TIMEOUT": 2,  # seconds
+    "SOCKET_TIMEOUT": 2,  # seconds
+}
+DJANGO_REDIS_LOG_IGNORED_EXCEPTIONS = True
 
-    if REDIS_URL.startswith("rediss"):
-        # Heroku Redis uses self-signed certificates for secure redis conections. https://stackoverflow.com/a/66286068
+# Prefer the TLS connection URL over non for Heroku
+if redis_url := env.get("REDIS_TLS_URL", env.get("REDIS_URL")):
+    connection_pool_kwargs: dict = {}
+
+    if redis_url.startswith("rediss"):
+        # Heroku Redis uses self-signed certificates for secure redis connections. https://stackoverflow.com/a/66286068
         # When using TLS, we need to disable certificate validation checks.
         connection_pool_kwargs["ssl_cert_reqs"] = None
 
-    redis_options = {
-        "IGNORE_EXCEPTIONS": True,
-        "SOCKET_CONNECT_TIMEOUT": 2,  # seconds
-        "SOCKET_TIMEOUT": 2,  # seconds
-        "CONNECTION_POOL_KWARGS": connection_pool_kwargs,
+    CACHES["default"] = {
+        "BACKEND": "django_redis.cache.RedisCache",
+        "LOCATION": redis_url,
+        "OPTIONS": {**redis_options, "CONNECTION_POOL_KWARGS": connection_pool_kwargs},
     }
 
-    CACHES = {
-        "default": {
-            "BACKEND": "django_redis.cache.RedisCache",
-            "LOCATION": REDIS_URL,
-            "OPTIONS": redis_options,
-        }
+elif elasticache_addr := env.get("ELASTICACHE_ADDR"):
+    port = env["ELASTICACHE_PORT"]
+
+    CACHES["default"] = {
+        "BACKEND": "django_redis.cache.RedisCache",
+        "LOCATION": f"rediss://{elasticache_addr}:{port}",
+        "OPTIONS": {
+            **redis_options,
+            "CONNECTION_POOL_KWARGS": {
+                "credential_provider": import_string("cms.core.cache.ElastiCacheIAMCredentialProvider")(
+                    user=env["ELASTICACHE_USER_NAME"],
+                    cluster_name=env["ELASTICACHE_CLUSTER_NAME"],
+                    region=env["ELASTICACHE_CLUSTER_REGION"],
+                )
+            },
+        },
     }
-    DJANGO_REDIS_LOG_IGNORED_EXCEPTIONS = True
 else:
-    CACHES = {
-        "default": {
-            "BACKEND": "django.core.cache.backends.db.DatabaseCache",
-            "LOCATION": "database_cache",
-        }
+    CACHES["default"] = {
+        "BACKEND": "django.core.cache.backends.db.DatabaseCache",
+        "LOCATION": "database_cache",
     }
 
 # Search
 # https://docs.wagtail.io/en/latest/topics/search/backends.html
 
-WAGTAILSEARCH_BACKENDS = {"default": {"BACKEND": "wagtail.search.backends.database"}}
+# TODO: revert to using "wagtail.search.backends.database" when
+# https://github.com/wagtail/wagtail/pull/12508 is fixed and released.
+WAGTAILSEARCH_BACKENDS = {"default": {"BACKEND": "cms.core.wagtail_search.ONSPostgresSearchBackend"}}
 
 
 # Password validation
@@ -676,7 +726,10 @@ AUTH_USER_MODEL = "users.User"
 # django-defender
 # Records failed login attempts and blocks access by username and IP
 # https://django-defender.readthedocs.io/en/latest/
-ENABLE_DJANGO_DEFENDER = REDIS_URL and env.get("ENABLE_DJANGO_DEFENDER", "True").lower().strip() == "true"
+ENABLE_DJANGO_DEFENDER = (
+    "redis" in CACHES["default"]["BACKEND"].lower()
+    and env.get("ENABLE_DJANGO_DEFENDER", "True").lower().strip() == "true"
+)
 
 if ENABLE_DJANGO_DEFENDER:
     INSTALLED_APPS += ["defender"]

@@ -21,8 +21,8 @@ format: format-py format-html format-frontend ## Format the code.
 
 .PHONY: format-py
 format-py:  ## Format the Python code
-	poetry run ruff check . --fix
 	poetry run ruff format .
+	poetry run ruff check . --fix
 
 .PHONY: format-html
 format-html:  ## Format the HTML code
