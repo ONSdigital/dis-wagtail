@@ -147,5 +147,9 @@ createsuperuser: ## Create a super user
 	poetry run python ./manage.py createsuperuser
 
 .PHONY: runserver
-runserver: # Run the Django application locally	
+runserver: ## Run the Django application locally	
 	poetry run python ./manage.py runserver
+
+.PHONY: dev-init 
+dev-init: makemigrations collectstatic migrate ## Run the pre-run setup scripts
+    poetry run python ./manage.py shell -c "from cms.users.models import User;(not User.objects.filter(username='admin').exists()) and User.objects.create_superuser('admin', 'super@example.com', 'changeme')"

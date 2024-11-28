@@ -147,13 +147,10 @@ make compose-dev-pull
 make compose-dev-up
 ```
 
-3. Run the following pre-run steps:
+3. Run the below command to run the necessary pre-run steps:
 
 ```
-make makemigrations
-make collectstatic
-make migrate
-make createsuperuser
+make dev-init
 ```
 
 4. Run the Django server locally via your IDE or with the following command:
