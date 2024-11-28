@@ -1,0 +1,115 @@
+@use 'config' as *;
+
+.topic-header {
+    // this colour is in figma but not in the design system
+    background-color: $color--grey-blue;
+    position: relative;
+    padding-bottom: rem-sizing(96);
+    margin-bottom: rem-sizing(40);
+    overflow: hidden;
+
+    &::before {
+        position: absolute;
+        inset: 0;
+        width: 150%;
+        height: 100%;
+        left: -40%;
+        border-radius: 0 0 50% 50%;
+        // this colour is in figma but not in the design system
+        background-color: $color--pale-blue;
+        content: '';
+
+        @include media-query('l') {
+            border-radius: 0 0 80% 50%;
+            left: -25%;
+            width: 130%;
+        }
+    }
+
+    @include media-query('l') {
+        padding-bottom: rem-sizing(64);
+    }
+
+    &__circle-one {
+        @include media-query('l') {
+            position: absolute;
+            width: 440px;
+            height: 440px;
+            // this colour is in figma but not in the design system
+            background-color: $color--grey-blue;
+            border-radius: 50%;
+            top: -339px;
+            right: 59px;
+        }
+    }
+
+    &__circle-two {
+        position: absolute;
+        width: 40px;
+        height: 40px;
+        // this colour is in figma but not in the design system
+        background-color: $color--buff;
+        border-radius: 50%;
+        // these are relative to the 'before' styled curve
+        bottom: 4%;
+        right: 15%;
+
+        @include media-query('m') {
+            bottom: 8%;
+            right: 10%;
+        }
+
+        @include media-query('l') {
+            width: 72px;
+            height: 72px;
+            bottom: 30%;
+            right: 25%;
+        }
+
+        @include media-query('xl') {
+            right: 346px;
+        }
+    }
+
+    &__circle-three {
+        position: absolute;
+        width: 80px;
+        height: 80px;
+        background-color: var(--ons-color-ocean-blue);
+        border-radius: 50%;
+        bottom: 7%;
+        right: -26px;
+
+        @include media-query('m') {
+            bottom: 9%;
+        }
+
+        @include media-query('l') {
+            width: 156px;
+            height: 156px;
+            right: 2%;
+        }
+
+        @include media-query('xl') {
+            right: 43px;
+        }
+    }
+
+    &__doc-type {
+        font-weight: 700;
+        color: var(--ons-color-ocean-blue);
+        margin-bottom: 0;
+    }
+
+    &__heading {
+        margin-bottom: rem-sizing(16);
+    }
+
+    &__summary {
+        margin-bottom: rem-sizing(24);
+
+        @include media-query('m') {
+            margin-bottom: 0;
+        }
+    }
+}

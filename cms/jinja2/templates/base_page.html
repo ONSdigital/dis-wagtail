@@ -1,4 +1,5 @@
 {% extends "templates/base.html" %}
+{% from "components/back-to-top/_macro.njk" import onsBackToTop %}
 
 {% block meta %}
     {% with current_site=wagtail_site() %}
@@ -29,23 +30,21 @@
     {% endwith %}
 {% endblock meta %}
 
-{% block preMain %}
-    {{ super() }}
-    {% include "templates/components/navigation/breadcrumbs.html" %}
-{% endblock %}
-
 {% block pageContent %}
     {# Adds a full-width section for the header area before the main page content #}
     {# Changes the location of the <main> tag from the base template - ensures it surrounds the header area #}
+    {# This change should be adopted by the design system soon #}
     <main id="main-content">
-        {# This will contain the hero on individual templates #}
-        {% block header_area %}{% endblock %}
+        {# This will contain the breadcrumbs on individual templates #}
+        {% block header_area %}
+        {% endblock %}
         <div class="ons-page__container ons-container{{ containerClasses }}">
             <div class="ons-grid">
                 <div class="ons-grid__col ons-col-{{ pageColNumber }}@m {{ pageColClasses }}">
                     {# This is the main tag in the base template in the design system #}
                     <div class="ons-page__main {{ mainColClasses }}">
                         {% block main %}{% endblock %}
+                        {{ onsBackToTop() }}
                     </div>
                 </div>
             </div>
