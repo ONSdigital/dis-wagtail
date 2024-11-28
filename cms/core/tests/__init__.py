@@ -85,8 +85,10 @@ class TransactionTestCase(_TransactionTestCase, ConnectionHelperMixin):
 
     def _fixture_setup(self):
         """Set up fixtures for test cases."""
-        if self.serialized_rollback and not getattr(self, "_fixtures_rewritten", False) and (
-            fixtures := getattr(connections["default"], "_test_serialized_contents", None)
+        if (
+            self.serialized_rollback
+            and not getattr(self, "_fixtures_rewritten", False)
+            and (fixtures := getattr(connections["default"], "_test_serialized_contents", None))
         ):
             # Parse the fixture directly rather than serializing it into models for performance reasons.
             fixtures = json.loads(fixtures)
