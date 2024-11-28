@@ -1,13 +1,15 @@
 from django.contrib.contenttypes.models import ContentType
 from django.db import router, transaction
+from django.test import TransactionTestCase
 from wagtail.models import Page
 
-from cms.core.tests import TransactionTestCase
 from cms.home.models import HomePage
 
 
 class DBRouterTestCase(TransactionTestCase):
-    databases = frozenset({"default", "read_replica"})
+    databases = "__all__"
+
+    available_apps = frozenset()
 
     def test_uses_replica_for_read(self):
         """Check the read replica is used for reads, and the default for writes."""
