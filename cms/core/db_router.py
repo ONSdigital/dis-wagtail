@@ -1,9 +1,10 @@
-from typing import Any, Optional
+from typing import Any, ClassVar, Optional
 
 from django.conf import settings
 from django.core.exceptions import ImproperlyConfigured
-from django.db import DEFAULT_DB_ALIAS, router, transaction
+from django.db import DEFAULT_DB_ALIAS, transaction
 from django.db.models import Model
+from wagtail.images import get_image_model
 
 
 class ReadReplicaRouter:  # pylint: disable=unused-argument,protected-access
@@ -29,19 +30,11 @@ class ReadReplicaRouter:  # pylint: disable=unused-argument,protected-access
         # a subsequent SELECT (or other read query) may return inconsistent data.
         # In this case, use the write connection for reads, with the aim of
         # improved consistency.
-        write_db = router.db_for_write(model, **hints)
-
-        if not transaction.get_autocommit(using=write_db):
+        if not transaction.get_autocommit(using=DEFAULT_DB_ALIAS):
             # In a transaction, use the write database
-            return write_db
+            return DEFAULT_DB_ALIAS
 
         return self.REPLICA_DB_ALIAS
-
-    def db_for_write(self, model: type[Model], **hints: Any) -> Optional[str]:
-        """Determine which database should be used for write queries."""
-        # This should always be the "default" database, since the replica
-        # doesn't allow writes.
-        return DEFAULT_DB_ALIAS
 
     def allow_relation(self, obj1: Model, obj2: Model, **hints: Any) -> Optional[bool]:
         """Determine whether a relation is allowed between two models."""
@@ -56,3 +49,30 @@ class ReadReplicaRouter:  # pylint: disable=unused-argument,protected-access
         """Determine whether migrations be run for the app on the database."""
         # Don't allow migrations to run against the replica (they would fail anyway)
         return db != self.REPLICA_DB_ALIAS
+
+
+class ExternalEnvRouter:
+    """A database router which prevents writes to certain models in the external environment."""
+
+    WRITE_ALLOWED_MODELS: ClassVar[list[Model]] = [get_image_model().get_rendition_model()]
+
+    FAKE_BACKEND = "not_allowed_in_external_env"
+
+    def db_for_write(self, model: type[Model], **hints: Any) -> Optional[str]:
+        """Determine which database should be used for write queries."""
+        if settings.IS_EXTERNAL_ENV and model not in self.WRITE_ALLOWED_MODELS:
+            # Return a fake (non-existent) backend so Django can still resolve the backend, it just can't
+            # connect to it.
+            return self.FAKE_BACKEND
+
+        # No preference
+        return None
+
+    def allow_relation(self, obj1: Model, obj2: Model, **hints: Any) -> Optional[bool]:
+        """Determine whether a relation is allowed between two models."""
+        # If any models have a fake backend, assume they can be related to placate Django.
+        if self.FAKE_BACKEND in [obj1._state.db, obj2._state.db]:
+            return True
+
+        # No preference
+        return None
