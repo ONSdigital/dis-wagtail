@@ -123,7 +123,6 @@ Follow these steps to set up and run the project using Docker.
     # Start both Django and the scheduler using Honcho
     honcho start
 
-    # To run just the web server. alias: djrun
     # This is not needed if you used `honcho start`
     make runserver
     ```
