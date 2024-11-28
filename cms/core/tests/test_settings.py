@@ -22,7 +22,11 @@ class SocialSettingsTestCase(TransactionTestCase):
         with self.assertTotalNumQueries(6):
             SocialMediaSettings.for_request(self.request)
 
+        # Explicitly use default connection to work around strange issue with Django
+        self.assertTrue(SocialMediaSettings.objects.using("default").exists())
+
         with self.assertTotalNumQueries(0):
+            # This load is cached on the Site
             SocialMediaSettings.for_request(self.request)
 
     @override_settings(IS_EXTERNAL_ENV=True)
@@ -42,3 +46,6 @@ class SocialSettingsTestCase(TransactionTestCase):
             setting = SocialMediaSettings.for_request(self.request)
 
         self.assertIsNotNone(setting.pk)
+
+        # Explicitly use default connection to work around strange issue with Django
+        self.assertTrue(SocialMediaSettings.objects.using("default").exists())
