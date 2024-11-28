@@ -33,7 +33,7 @@ format-frontend:  ## Format front-end files (CSS, JS, YAML, MD)
 	npm run format
 
 .PHONY: lint
-lint: lint-py lint-html lint-frontend lint-migrations## Run all linters (python, html, front-end, migrations)
+lint: lint-py lint-html lint-frontend lint-migrations ## Run all linters (python, html, front-end, migrations)
 
 .PHONY: lint-py
 lint-py:  ## Run all Python linters (ruff/pylint/mypy).
@@ -52,6 +52,7 @@ lint-frontend:  ## Run front-end linters
 
 .PHONY: lint-migrations
 lint-migrations: ## Run django-migration-linter
+	poetry run python manage.py lintmigrations
 
 .PHONY: test
 test:  ## Run the tests and check coverage.
