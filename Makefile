@@ -83,7 +83,7 @@ load-design-system-templates:  ## Load the design system templates
 # Docker and docker compose make commands
 
 .PHONY: compose-build
-docker-build: load-design-system-templates  ## Build the main application's Docker container
+compose-build: load-design-system-templates  ## Build the main application's Docker container
 	docker compose build
 
 .PHONY: compose-pull
