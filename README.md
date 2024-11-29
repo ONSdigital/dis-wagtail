@@ -186,6 +186,8 @@ Various tools are used to lint and format the code in this project.
 The project uses [Ruff](https://github.com/astral-sh/ruff) and [pylint](https://pylint.pycqa.org/en/latest/index.html)
 for linting and formatting of the Python code.
 
+[Django-migration-linter](https://github.com/3YOURMIND/django-migration-linter) for linting migrations in the project.
+
 The tools are configured using the `pyproject.toml` file.
 
 To lint the Python code, run:
