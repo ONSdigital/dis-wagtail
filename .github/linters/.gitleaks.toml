@@ -8,14 +8,4 @@ useDefault = true
 
 [allowlist]
     description = "Allowlisted files"
-    paths = [
-    '''.automation/test''',
-    '''megalinter-reports''',
-    '''.github/linters''',
-    '''node_modules''',
-    '''.mypy_cache''',
-    '''(.*?)gitleaks\.toml$''',
-    '''(?i)(.*?)(png|jpeg|jpg|gif|doc|docx|pdf|bin|xls|xlsx|pyc|zip)$''',
-    '''(go.mod|go.sum)$''']
-
-
+    paths = ["."]

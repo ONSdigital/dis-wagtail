@@ -42,12 +42,15 @@ FILEIO_REPORTER: false
 
 # Use yml file to allow the use of comments. Megalinter's default is .markdown-lint.json
 CSS_STYLELINT_CONFIG_FILE: .github/linters/.stylelintrc.js
+DOCKERFILE_HADOLINT_CONFIG_FILE: .github/linters/.hadolint.yaml
 MARKDOWN_MARKDOWNLINT_CONFIG_FILE: .github/linters/.markdown-lint.yml
 MARKDOWN_MARKDOWN_LINK_CHECK_CONFIG_FILE: .github/linters/.markdown-link-check.json
 REPOSITORY_CHECKOV_CONFIG_FILE: .github/linters/.checkov.yml
 REPOSITORY_GITLEAKS_CONFIG_FILE: .github/linters/.gitleaks.toml
+REPOSITORY_GITLEAKS_ARGUMENTS: ['protect .']
+REPOSITORY_GRYPE_CONFIG_FILE: .github/linters/.grype.yaml
 REPOSITORY_KICS_CONFIG_FILE: .github/linters/kics.config
-YAML_YAMLLINT_CONFIG_FILE: .github/linters/.yamllint.yml
+YAML_YAMLLINT_CONFIG_FILE: .github/linters/.yaml-lint.yml
 
 YAML_V8R_FILTER_REGEX_EXCLUDE: 'dependabot.yml' # Dependabot yaml in SchemaStore is currently not up to date. Dependabot is validated on push by GitHub by default.
 
