@@ -105,22 +105,6 @@ poetry run dslr --url postgresql://ons:ons@localhost:15432/ons restore <SNAPSHOT
 See the [main README functional tests section](/README.md#run-the-functional-tests) for the basic commands for running
 the tests.
 
-### Other Methods of Running Tests
-
-If you wish to run the tests directly (e.g. running individual scenarios on the command line or from an IDE), then you
-first need to start the test dependencies in the background (see [Dependencies](#dependencies)).
-
-Then you need to ensure the Django settings environment variable is set correctly to `cms.settings.functional_test`
-where you are running the tests:
-
-```shell
-DJANGO_SETTINGS_MODULE=cms.settings.functional_test
-```
-
-For running in the command line you can export this variable, or prefix the command to run the tests with it.
-
-For running from an IDE, you may need to configure the run configuration to include this variable.
-
 ### Playwright Options
 
 Some Playwright configuration options can be passed in through environment variables

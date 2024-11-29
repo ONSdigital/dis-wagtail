@@ -111,7 +111,7 @@ functional-tests-down:  ## Stop the functional tests docker compose dependencies
 
 .PHONY: functional-tests-run
 functional-tests-run:  ## Run the functional tests
-	DJANGO_SETTINGS_MODULE=cms.settings.functional_test poetry run behave functional_tests
+	poetry run behave functional_tests
 
 .PHONY: functional-tests
 functional-tests: functional-tests-up functional-tests-run functional-tests-down  ## Run the functional tests with backing services (all in one)

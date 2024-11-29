@@ -11,6 +11,9 @@ from playwright.sync_api import BrowserContext, Page, Playwright, sync_playwrigh
 from functional_tests.behave_fixtures import django_test_case, django_test_runner
 from functional_tests.step_helpers.utilities import str_to_bool
 
+# Ensure the correct Django settings module is used
+os.environ["DJANGO_SETTINGS_MODULE"] = "cms.settings.functional_test"
+
 # The factory classes require Django to have been set up at their import time.
 # To ensure Django set up happens before that point, we call setup at the module level here.
 # This will get called again during the test runner setup in the before_all hook,
