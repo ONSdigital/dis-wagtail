@@ -1,12 +1,13 @@
-from concurrent.futures import ThreadPoolExecutor, as_completed
 import os
 import subprocess
+import sys  # To get the absolute path to the currently running Python interpreter
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 
 # Extract the app label from the directory structure
 def get_app_labels():
     app_labels = []
-    for root, dirs, files in os.walk("../cms"):
+    for root, dirs, _files in os.walk("../cms"):
         if "migrations" in dirs:
             app_label = root.split(os.sep)[-1]
             app_labels.append(app_label)
@@ -17,7 +18,7 @@ def get_app_labels():
 def run_lintmigration(app_label):
     try:
         result = subprocess.run(
-            ["python", "../manage.py", "lintmigrations", app_label],
+            [sys.executable, "python", "../manage.py", "lintmigrations", app_label],
             text=True,
             capture_output=True,
             check=True,
