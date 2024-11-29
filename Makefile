@@ -152,4 +152,4 @@ runserver: ## Run the Django application locally
 
 .PHONY: dev-init 
 dev-init: makemigrations collectstatic migrate ## Run the pre-run setup scripts
-    poetry run python ./manage.py shell -c "from cms.users.models import User;(not User.objects.filter(username='admin').exists()) and User.objects.create_superuser('admin', 'super@example.com', 'changeme')"
+	poetry run python ./manage.py shell -c "from cms.users.models import User;(not User.objects.filter(username='admin').exists()) and User.objects.create_superuser('admin', 'super@example.com', 'changeme')"
