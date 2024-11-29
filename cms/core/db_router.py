@@ -51,10 +51,10 @@ class ReadReplicaRouter:  # pylint: disable=unused-argument,protected-access
         return db != self.REPLICA_DB_ALIAS
 
 
-class ExternalEnvRouter:
+class ExternalEnvRouter:  # pylint: disable=unused-argument,protected-access
     """A database router which prevents writes to certain models in the external environment."""
 
-    WRITE_ALLOWED_MODELS: ClassVar[list[Model]] = [get_image_model().get_rendition_model()]
+    WRITE_ALLOWED_MODELS: ClassVar[list[type[Model]]] = [get_image_model().get_rendition_model()]
 
     FAKE_BACKEND = "not_allowed_in_external_env"
 

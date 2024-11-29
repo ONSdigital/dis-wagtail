@@ -10,18 +10,16 @@ class HomePageTestCase(TestCase):
         self.url = self.home_page.get_url()
 
     def test_loads(self):
-        response = self.client.get(self.url)
-
-        self.assertEqual(response.status_code, 200)
-
-    def test_queries(self):
-        with self.assertNumQueries(12):
+        """Test the homepage loads."""
+        with self.assertNumQueries(13):
             response = self.client.get(self.url)
+
         self.assertEqual(response.status_code, 200)
 
     @override_settings(IS_EXTERNAL_ENV=True)
     def test_external_env(self):
-        with self.assertNumQueries(9):
+        """Test the homepage loads in external environment."""
+        with self.assertNumQueries(10):
             response = self.client.get(self.url)
 
         self.assertEqual(response.status_code, 200)

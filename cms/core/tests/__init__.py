@@ -19,10 +19,8 @@ class TransactionTestCase(_TransactionTestCase):
 
     def _fixture_setup(self):
         """Set up fixtures for test cases."""
-        if (
-            self.serialized_rollback
-            and not getattr(self, "_fixtures_rewritten", False)
-            and (fixtures := getattr(connections["default"], "_test_serialized_contents", None))
+        if self.serialized_rollback and (
+            fixtures := getattr(connections["default"], "_test_serialized_contents", None)
         ):
             # Parse the fixture directly rather than serializing it into models for performance reasons.
             fixtures = json.loads(fixtures)
@@ -31,9 +29,7 @@ class TransactionTestCase(_TransactionTestCase):
             # very early during model setup.
             fixtures, eager_fixtures = partition(lambda item: item["model"] == "wagtailcore.locale", fixtures)
 
-            connections["default"]._test_serialized_contents = json.dumps(eager_fixtures + fixtures)
-
-            self._fixtures_rewritten = True
+            connections["default"]._test_serialized_contents = json.dumps(eager_fixtures + fixtures)  # pylint: disable=protected-access
 
         super()._fixture_setup()
 
@@ -59,7 +55,8 @@ class TransactionTestCase(_TransactionTestCase):
         )
 
     @contextmanager
-    def assertNumQueriesConnection(self, *, default=0, replica=0):
+    def assertNumQueriesConnection(self, *, default=0, replica=0):  # pylint: disable=invalid-name
+        """Assert the number of queries per connection."""
         with (
             self.assertNumQueries(default, using="default"),
             self.assertNumQueries(replica, using="read_replica"),

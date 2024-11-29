@@ -13,10 +13,12 @@ class SocialSettingsTestCase(TransactionTestCase):
         self.request = get_dummy_request()
 
     def test_none_site(self):
+        """Test getting settings for a site which is None."""
         with self.assertRaises(SocialMediaSettings.DoesNotExist):
             SocialMediaSettings.for_site(None)
 
     def test_create_setting(self):
+        """Test creating a setting."""
         self.assertEqual(SocialMediaSettings.objects.count(), 0)
 
         with self.assertNumQueriesConnection(default=4, replica=2):
@@ -31,6 +33,7 @@ class SocialSettingsTestCase(TransactionTestCase):
 
     @override_settings(IS_EXTERNAL_ENV=True)
     def test_external_env_doesnt_create_instance(self):
+        """Test that a setting isn't created in an external env."""
         self.assertEqual(SocialMediaSettings.objects.count(), 0)
 
         with self.assertTotalNumQueries(2):
@@ -40,6 +43,7 @@ class SocialSettingsTestCase(TransactionTestCase):
         self.assertEqual(SocialMediaSettings.objects.count(), 0)
 
     def test_external_env_with_existing_instance(self):
+        """Test loading an existing setting in an external env."""
         SocialMediaSettings.objects.create(site=Site.find_for_request(self.request))
 
         with override_settings(IS_EXTERNAL_ENV=True), self.assertTotalNumQueries(1):
