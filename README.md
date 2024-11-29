@@ -180,7 +180,9 @@ During tests, the `cms.settings.test` settings module is used. When running test
 
 ### Functional Tests
 
-Our suite of functional browser driven tests uses [Behave](), [Playwright]() and [Django Live Server Test Cases]() to
+Our suite of functional browser driven tests uses [Behave](https://behave.readthedocs.io/en/latest/),
+[Playwright](https://playwright.dev/python/docs/intro) and
+[Django Live Server Test Cases](https://docs.djangoproject.com/en/stable/topics/testing/tools/#liveservertestcase) to
 run BDD Cucumber feature tests against the app from a browser.
 
 #### Installation
