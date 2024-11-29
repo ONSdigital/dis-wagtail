@@ -201,7 +201,7 @@ as understandable and as non-technical as possible.
 
 Assertions should use the [Playwright assertions](https://playwright.dev/docs/test-assertions) wherever possible. This
 has built in retry and timeout logic where applicable, to allow grace periods for content to load on the page, so will
-be more robust than trying to retrieve data and make python assertions about it.
+be more robust than attempting to retrieve data from the page and make plain python assertions.
 
 ### Step parameter types
 
