@@ -14,6 +14,9 @@ from functional_tests.step_helpers.utilities import str_to_bool
 # Ensure the correct Django settings module is used
 os.environ["DJANGO_SETTINGS_MODULE"] = "cms.settings.functional_test"
 
+# This setting is required for Django to run within a Poetry shell
+os.environ["DJANGO_ALLOW_ASYNC_UNSAFE"] = "True"
+
 # The factory classes require Django to have been set up at their import time.
 # To ensure Django set up happens before that point, we call setup at the module level here.
 # This will get called again during the test runner setup in the before_all hook,
@@ -25,9 +28,6 @@ def before_all(context: Context):
     """Runs once before all tests.
     Sets up playwright browser and context to be used in all scenarios.
     """
-    # This is required for Django to run within a Poetry shell
-    os.environ["DJANGO_ALLOW_ASYNC_UNSAFE"] = "True"
-
     # Register our django test runner so the entire test run is wrapped in a django test runner
     use_fixture(django_test_runner, context=context)
 
