@@ -1,6 +1,7 @@
 import os
 from pathlib import Path
 
+import django
 from behave import use_fixture
 from behave.model import Scenario
 from behave.model_core import Status
@@ -8,15 +9,19 @@ from behave.runner import Context
 from playwright.sync_api import BrowserContext, Page, Playwright, sync_playwright
 
 from functional_tests.behave_fixtures import django_test_case, django_test_runner
+from functional_tests.step_helpers.utilities import str_to_bool
+
+# The factory classes require Django to have been set up at their import time.
+# To ensure Django set up happens before that point, we call setup at the module level here.
+# This will get called again during the test runner setup in the before_all hook,
+# but that happens too late to solve import time issues.
+django.setup()
 
 
 def before_all(context: Context):
     """Runs once before all tests.
     Sets up playwright browser and context to be used in all scenarios.
     """
-    # Ensure Django uses the functional test settings
-    os.environ["DJANGO_SETTINGS_MODULE"] = "cms.settings.functional_test"
-
     # This is required for Django to run within a Poetry shell
     os.environ["DJANGO_ALLOW_ASYNC_UNSAFE"] = "True"
 
@@ -94,7 +99,7 @@ def after_scenario(context: Context, scenario: Scenario):
     if context.playwright_trace and scenario.status == Status.failed:
         # If the scenario failed, write the trace chunk out to a file, which will be prefixed with the scenario name
         context.browser_context.tracing.stop_chunk(
-            path=context.playwright_traces_dir.joinpath(f"{scenario.name}_failure_trace.zip")
+            path=context.playwright_traces_dir.joinpath(f"{scenario.name.replace(' ', '_')}_failure_trace.zip")
         )
 
     elif context.playwright_trace:
@@ -102,14 +107,3 @@ def after_scenario(context: Context, scenario: Scenario):
         context.browser_context.tracing.stop_chunk()
 
     context.page.close()
-
-
-def str_to_bool(bool_string: str) -> bool:
-    """Takes a string argument which indicates a boolean, and returns the corresponding boolean value.
-    raises ValueError if input string is not one of the recognized boolean like values.
-    """
-    if bool_string.lower() in ("yes", "true", "t", "y", "1"):
-        return True
-    if bool_string.lower() in ("no", "false", "f", "n", "0"):
-        return False
-    raise ValueError(f"Invalid input: {bool_string}")

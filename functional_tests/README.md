@@ -2,28 +2,28 @@
 
 <!-- TOC -->
 
--   [Structure](#structure)
--   [Dependencies](#dependencies)
-    -   [App Instance For Test Development](#app-instance-for-test-development)
-    -   [Clearing and Initialising the Functional Test Development Database](#clearing-and-initialising-the-functional-test-development-database)
--   [Running the Tests](#running-the-tests)
-    -   [Playwright Options](#playwright-options)
--   [Viewing Failure Traces](#viewing-failure-traces)
-    -   [Viewing the Failure Trace from GitHub Actions](#viewing-the-failure-trace-from-github-actions)
--   [Test Code Standards and Style Guide](#test-code-standards-and-style-guide)
-    -   [Context Use](#context-use)
-    -   [Sharing Code Between Steps](#sharing-code-between-steps)
-    -   [Step wording](#step-wording)
-    -   [Assertions](#assertions)
-    -   [Step parameter types](#step-parameter-types)
--   [How the Tests Work](#how-the-tests-work)
-    -   [Django Test Runner and Test Case](#django-test-runner-and-test-case)
-    -   [Database Snapshot and Restore](#database-snapshot-and-restore)
-    -   [Playwright](#playwright)
--   [Why Aren't We Using Existing Django Testing Modules?](#why-arent-we-using-existing-django-testing-modules)
-    -   [Pytest-BDD](#pytest-bdd)
-    -   [Behave-Django](#behave-django)
-    <!-- TOC -->
+- [Structure](#structure)
+- [Dependencies](#dependencies)
+    - [App Instance For Test Development](#app-instance-for-test-development)
+    - [Clearing and Initialising the Functional Test Development Database](#clearing-and-initialising-the-functional-test-development-database)
+- [Running the Tests](#running-the-tests)
+    - [Playwright Options](#playwright-options)
+- [Viewing Failure Traces](#viewing-failure-traces)
+    - [Viewing the Failure Trace from GitHub Actions](#viewing-the-failure-trace-from-github-actions)
+- [Test Code Standards and Style Guide](#test-code-standards-and-style-guide)
+    - [Context Use](#context-use)
+    - [Sharing Code Between Steps](#sharing-code-between-steps)
+    - [Step wording](#step-wording)
+    - [Assertions](#assertions)
+    - [Step parameter types](#step-parameter-types)
+- [How the Tests Work](#how-the-tests-work)
+    - [Django Test Runner and Test Case](#django-test-runner-and-test-case)
+    - [Database Snapshot and Restore](#database-snapshot-and-restore)
+    - [Playwright](#playwright)
+- [Why Aren't We Using Existing Django Testing Modules?](#why-arent-we-using-existing-django-testing-modules)
+    - [Pytest-BDD](#pytest-bdd)
+    - [Behave-Django](#behave-django)
+  <!-- TOC -->
 
 ## Structure
 
@@ -105,12 +105,28 @@ poetry run dslr --url postgresql://ons:ons@localhost:15432/ons restore <SNAPSHOT
 See the [main README functional tests section](/README.md#run-the-functional-tests) for the basic commands for running
 the tests.
 
+### Other Methods of Running Tests
+
+If you wish to run the tests directly (e.g. running individual scenarios on the command line or from an IDE), then you
+first need to start the test dependencies in the background (see [Dependencies](#dependencies)).
+
+Then you need to ensure the Django settings environment variable is set correctly to `cms.settings.functional_test`
+where you are running the tests:
+
+```shell
+DJANGO_SETTINGS_MODULE=cms.settings.functional_test
+```
+
+For running in the command line you can export this variable, or prefix the command to run the tests with it.
+
+For running from an IDE, you may need to configure the run configuration to include this variable.
+
 ### Playwright Options
 
 Some Playwright configuration options can be passed in through environment variables
 
 | Variable   | Description                                                                                                                                                                    | Default                        |
-| ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------ |
+|------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|--------------------------------|
 | HEADLESS   | Toggle headless browser mode, set to "False" to show the browser window                                                                                                        | True                           |
 | SLOW_MO    | Sets the Playwright slow mo mode in milliseconds                                                                                                                               | 0                              |
 | BROWSER    | Set the browser for playwright to use, must be one of `chromium`, `firefox`, or `webkit`.<br/> NOTE: Currently only chromium is supported and tests may fail in other browsers | chromium                       |
@@ -132,12 +148,29 @@ Our GitHub Action is configured to save traces of any failed scenario and upload
     ```shell
     unzip <path_to_file>
     ```
-    (note that un-archiving using MacOS finder may not work as it recursively unzips the files inside, where we need the
-    files inside to remain zipped)
+   (note that un-archiving using MacOS finder may not work as it recursively unzips the files inside, where we need the
+   files inside to remain zipped)
 1. This should leave you with a zip file for each failed scenario
 1. Open the traces zip files one at a time using the [Playwright Trace Viewer](https://playwright.dev/docs/trace-viewer)
 
 You should then be able to step through the failed tests and get a better idea of the state and cause of the failure.
+
+## Test Data Setup
+
+Some tests may require objects to be set up in the database, such as a user or set of pages that the feature relies
+upon. For this, we can use [Factory Boy](https://factoryboy.readthedocs.io/en/stable/orms.html#django) to see data
+directly into the database.
+
+### Importing Factories
+
+Factories that use Django models rely on Django being initialised. This causes issues if they are imported at a module
+level in the tests, as those imports then get run before Django has initialised, so can fail with a error like:
+
+```
+Models aren't loaded yet.
+```
+
+To work around this, the Factory classes must be imported within the step functions, so that
 
 ## Test Code Standards and Style Guide
 
@@ -170,7 +203,10 @@ def step_to_do_a_thing(context):
 ### Sharing Code Between Steps
 
 Step files should not import code from other step files, where code can be shared between steps they should either be in
-the same file, or the shared code should be factored out into the utilities module.
+the same file, or the shared code should be factored out into the [step_helpers](step_helpers) module.
+
+This is to avoid potential circular imports and make it clear which code is specific to certain steps, and which is
+reusable across any steps.
 
 ### Step wording
 

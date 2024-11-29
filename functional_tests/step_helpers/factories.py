@@ -1,7 +1,7 @@
 from django.contrib.auth.hashers import make_password
 from factory.django import DjangoModelFactory
 
-DEFAULT_TEST_PASSWORD = "default_test_password"  # pragma: allowlist secret # noqa: S105
+TEST_USER_PASSWORD = "test_user_password"  # pragma: allowlist secret # noqa: S105
 
 
 class UserFactory(DjangoModelFactory):
@@ -11,7 +11,9 @@ class UserFactory(DjangoModelFactory):
         model = "users.User"
 
     username = "test_user"
-    password = make_password(DEFAULT_TEST_PASSWORD)
+    # Use make_password to hash the password since this being stored directly in the database
+    password = make_password(TEST_USER_PASSWORD)
+
     is_active = True
     is_staff = True
     is_superuser = True  # This is currently required to log into admin site
