@@ -1,3 +1,4 @@
+from typing import ClassVar
 
 from django.core.exceptions import ValidationError
 from django.db import models
@@ -15,7 +16,7 @@ class LinkBlock(StructBlock):
     title = CharBlock(required=False, help_text="Optional. Displayed as the link text.")
     url = URLBlock(required=False)
 
-    def clean(self, value):
+    def clean(self, value: dict) -> dict:
         value = super().clean(value)
         if not value.get("page") and not value.get("url"):
             raise ValidationError("Either a page or a URL must be provided.")
@@ -35,7 +36,7 @@ class HighlightsBlock(StructBlock):
     )
     description = CharBlock(required=True, max_length=50, help_text="E.g., It's never been more important")
 
-    def clean(self, value):
+    def clean(self, value: dict) -> dict:
         value = super().clean(value)
         if not value.get("page") and not value.get("url"):
             raise ValidationError("Either a page or a URL must be provided.")
@@ -81,17 +82,13 @@ class MainMenu(models.Model):
         help_text="Up to 3 columns. Each column contains sections with links.",
     )
 
-    panels = [
+    panels: ClassVar[list] = [
         FieldPanel("highlights"),
         FieldPanel("columns"),
     ]
 
-    def __str__(self):
+    def __str__(self) -> str:
         return "Main Menu"
-
-    class Meta:
-        verbose_name = "Main Menu"
-        verbose_name_plural = "Main Menus"
 
 
 # NavigationSettings model
@@ -106,10 +103,6 @@ class NavigationSettings(BaseSiteSetting):
         help_text="Select the main menu to display on the site.",
     )
 
-    panels = [
+    panels: ClassVar[list] = [
         FieldPanel("main_menu"),
     ]
-
-    class Meta:
-        verbose_name = "Navigation Settings"
-        verbose_name_plural = "Navigation Settings"
