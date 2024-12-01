@@ -1,5 +1,5 @@
 import logging
-from collections.abc import Iterator
+from collections.abc import Iterable, Iterator
 from typing import TYPE_CHECKING, Any, ClassVar
 
 from django.db import models
@@ -11,6 +11,7 @@ from cms.private_media.managers import PrivateMediaModelManager
 
 if TYPE_CHECKING:
     from django.db.models.fields.files import FieldFile
+    from wagtail.models import Site
 
 logger = logging.getLogger(__name__)
 
@@ -106,3 +107,19 @@ class PrivateMediaMixin(models.Model):
             Iterator[FieldFile]: An Iterator of files managed by the instance
         """
         raise NotImplementedError
+
+    def get_privacy_controlled_serve_urls(self, sites: Iterable["Site"]) -> Iterator[str]:
+        """Return an iterator of fully-fledged serve URLs for this object, covering the domains for all provided
+        sites. It is the responsibility of the subclass to implement this method.
+        """
+        raise NotImplementedError
+
+    def get_privacy_controlled_file_urls(self) -> Iterator[str]:
+        """Return an iterator of fully-fledged file URLs for this object.
+
+        NOTE: Will only return URLs that include a domain prefix (where the files are externally hosted).
+        """
+        for file in self.get_privacy_controlled_files():
+            url = file.url
+            if not url.startswith("/"):
+                yield url

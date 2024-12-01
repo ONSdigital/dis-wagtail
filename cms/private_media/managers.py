@@ -4,11 +4,14 @@ from typing import TYPE_CHECKING
 
 from django.db import models
 from django.utils import timezone
+from wagtail.contrib.frontend_cache.utils import PurgeBatch
 from wagtail.documents.models import DocumentQuerySet
 from wagtail.images.models import ImageQuerySet
+from wagtail.models import Site
 
 from .bulk_operations import bulk_set_file_permissions
 from .constants import Privacy
+from .utils import get_frontend_cache_configuration
 
 if TYPE_CHECKING:
     from django.db.models.fields.files import FieldFile
@@ -38,6 +41,16 @@ class PrivateMediaModelManager(models.Manager):
 
         count = self.bulk_update(to_update, fields=["_privacy", "privacy_last_changed"])  # type: ignore[arg-type]
         self.bulk_update_file_permissions(to_update, intended_privacy)
+
+        if get_frontend_cache_configuration():
+            sites = Site.objects.all()
+            serve_url_batch = PurgeBatch()
+            file_url_batch = PurgeBatch()
+            for obj in to_update:
+                serve_url_batch.add_urls(obj.get_privacy_controlled_serve_urls(sites))
+                file_url_batch.add_urls(obj.get_privacy_controlled_file_urls())
+            serve_url_batch.purge()
+            file_url_batch.purge()
         return count
 
     def bulk_make_public(self, objects: Iterable["PrivateMediaMixin"]) -> int:
@@ -54,7 +67,9 @@ class PrivateMediaModelManager(models.Manager):
         """
         return self.bulk_set_privacy(objects, Privacy.PRIVATE)
 
-    def bulk_update_file_permissions(self, objects: Iterable["PrivateMediaMixin"], intended_privacy: Privacy) -> int:
+    def bulk_set_file_permissions(
+        self, objects: Iterable["PrivateMediaMixin"], intended_privacy: Privacy
+    ) -> list["PrivateMediaMixin"]:
         """For an itrerable of objects of this type, set the file permissions for all
         related files to reflect `intended_privacy`. Returns the number of objects
         for which all related files were successfully updated (which will also have

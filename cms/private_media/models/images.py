@@ -1,6 +1,7 @@
-from collections.abc import Iterator
+from collections.abc import Iterable, Iterator
 from typing import TYPE_CHECKING, ClassVar
 
+from django.utils.functional import cached_property
 from wagtail.images.models import AbstractImage, AbstractRendition
 
 from cms.private_media.bulk_operations import bulk_set_file_permissions
@@ -11,6 +12,7 @@ from .mixins import PrivateMediaMixin
 if TYPE_CHECKING:
     from django.db.models.fields.files import FieldFile
     from wagtail.images.models import Filter
+    from wagtail.models import Site
 
 
 class PrivateImageMixin(PrivateMediaMixin):
@@ -44,6 +46,16 @@ class PrivateImageMixin(PrivateMediaMixin):
         files = [r.file for r in created_renditions.values()]
         bulk_set_file_permissions(files, self.privacy)
         return created_renditions
+
+    def get_privacy_controlled_serve_urls(self, sites: Iterable["Site"]) -> Iterator[str]:
+        """Return an iterator of fully-fledged serve URLs for this image, covering the domains for all
+        provided sites.
+        """
+        if not sites:
+            return
+        for rendition in self.renditions.all():
+            for site in sites:
+                yield site.root_url + rendition.serve_url
 
 
 class AbstractPrivateRendition(AbstractRendition):
@@ -83,16 +95,22 @@ class AbstractPrivateRendition(AbstractRendition):
         """Get the URL for accessing the rendition.
 
         Returns a direct file URL for public images with up-to-date permissions,
-        or a permission-checking view URL for private or unprocessed images.
+        or a permission-checking 'ServeView' URL for private or unprocessed images.
 
         Returns:
             str: URL for accessing the rendition
         """
-        from wagtail.images.views.serve import generate_image_url  # pylint: disable=import-outside-toplevel
-
         image: PrivateImageMixin = self.image  # pylint: disable=no-member
         if image.is_public and not image.file_permissions_are_outdated():
             file_url: str = self.file.url
             return file_url
+        return self.serve_url
+
+    @cached_property
+    def serve_url(self) -> str:
+        """Return a permission-checking 'ServeView' URL for this rendition."""
+        from wagtail.images.views.serve import generate_image_url  # pylint: disable=import-outside-toplevel
+
+        image: PrivateImageMixin = self.image  # pylint: disable=no-member
         generated_url: str = generate_image_url(image, self.filter_spec)
         return generated_url

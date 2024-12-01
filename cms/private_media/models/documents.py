@@ -1,4 +1,4 @@
-from collections.abc import Iterator
+from collections.abc import Iterable, Iterator
 from typing import TYPE_CHECKING, ClassVar
 
 from cms.private_media.managers import PrivateDocumentManager
@@ -7,6 +7,7 @@ from .mixins import PrivateMediaMixin
 
 if TYPE_CHECKING:
     from django.db.models.fields.files import FieldFile
+    from wagtail.models import Site
 
 
 class PrivateDocumentMixin(PrivateMediaMixin):
@@ -24,3 +25,12 @@ class PrivateDocumentMixin(PrivateMediaMixin):
         file: FieldFile | None = getattr(self, "file", None)
         if file:
             yield file
+
+    def get_privacy_controlled_serve_urls(self, sites: Iterable["Site"]) -> Iterator[str]:
+        """Return an iterator of fully-fledged serve URLs for this document, covering the domains for all
+        provided sites.
+        """
+        if not sites:
+            return
+        for site in sites:
+            yield site.root_url + self.url
