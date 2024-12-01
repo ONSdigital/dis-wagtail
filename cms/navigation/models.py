@@ -11,10 +11,10 @@ from cms.core.fields import StreamField
 
 
 # Custom LinkBlock to support both pages and URLs
-class LinkBlock(StructBlock):
+class BaseLinkBlock(StructBlock):
     page = PageChooserBlock(required=False)
+    url = URLBlock(required=False, label="URL")
     title = CharBlock(required=False, help_text="Optional. Displayed as the link text.")
-    url = URLBlock(required=False)
 
     def clean(self, value: dict) -> dict:
         value = super().clean(value)
@@ -23,23 +23,40 @@ class LinkBlock(StructBlock):
         return value
 
     class Meta:
+        abstract = True
+
+
+class LinkBlock(BaseLinkBlock):
+    class Meta:
         icon = "link"
         label = "Link"
 
 
-# Highlights StructBlock
-class HighlightsBlock(StructBlock):
-    page = PageChooserBlock(required=False)
-    url = URLBlock(required=False)
-    title = CharBlock(
-        required=False, help_text="Optional. Displayed as the link text. Required if adding an external URL."
-    )
+class ThemeLinkBlock(BaseLinkBlock):
+    page = PageChooserBlock(required=False, page_type="themes.ThemePage")
+
+    class Meta:
+        icon = "link"
+        label = "Theme Link"
+
+
+class TopicLinkBlock(BaseLinkBlock):
+    page = PageChooserBlock(required=False, page_type="topics.TopicPage")
+
+    class Meta:
+        icon = "link"
+        label = "Topic Link"
+
+
+class HighlightsBlock(BaseLinkBlock):
     description = CharBlock(required=True, max_length=50, help_text="E.g., It's never been more important")
 
     def clean(self, value: dict) -> dict:
         value = super().clean(value)
         if not value.get("page") and not value.get("url"):
             raise ValidationError("Either a page or a URL must be provided.")
+        if value.get("url") and not value.get("title"):
+            raise ValidationError("Title is required if adding an external URL.")
         return value
 
     class Meta:
@@ -49,8 +66,10 @@ class HighlightsBlock(StructBlock):
 
 # Section StructBlock for columns
 class SectionBlock(StructBlock):
-    section_link = LinkBlock(help_text="Main link for this section (Theme pages or external URLs).")
-    links = ListBlock(LinkBlock(), help_text="Sub-links for this section (Topic pages or external URLs).", max_num=15)
+    section_link = ThemeLinkBlock(help_text="Main link for this section (Theme pages or external URLs).")
+    links = ListBlock(
+        TopicLinkBlock(), help_text="Sub-links for this section (Topic pages or external URLs).", max_num=15
+    )
 
     class Meta:
         icon = "folder"
@@ -59,7 +78,7 @@ class SectionBlock(StructBlock):
 
 # Column StructBlock for the main menu
 class ColumnBlock(StructBlock):
-    sections = ListBlock(SectionBlock(), label="Sections")
+    sections = ListBlock(SectionBlock(), label="Sections", max_num=3)
 
     class Meta:
         icon = "list-ul"
@@ -74,7 +93,7 @@ class MainMenu(models.Model):
         blank=True,
         max_num=3,
         help_text="Up to 3 highlights. Each highlight must have either a page or a URL.",
-    )
+    )  # TO DO: Do we want to restrict highlights to theme pages only?
     columns = StreamField(
         [("column", ColumnBlock())],
         blank=True,
@@ -90,11 +109,16 @@ class MainMenu(models.Model):
     def __str__(self) -> str:
         return "Main Menu"
 
+    def save(self, *args, **kwargs):
+        if not self.pk and MainMenu.objects.exists():
+            raise ValidationError("There can only be one Main Menu instance.")
+        super().save(*args, **kwargs)
+
 
 # NavigationSettings model
-@register_setting
+@register_setting(icon="list-ul")
 class NavigationSettings(BaseSiteSetting):
-    main_menu = models.ForeignKey(
+    main_menu: models.ForeignKey = models.ForeignKey(
         MainMenu,
         on_delete=models.SET_NULL,
         null=True,
