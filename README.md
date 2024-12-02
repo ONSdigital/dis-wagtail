@@ -119,8 +119,8 @@ Follow these steps to set up and run the project using Docker.
 
     Once the containers are running, you need to manually start Django from within the web container. This allows for running both the Django server and any additional background services (e.g., schedulers).
 
-    > [!WARNING]  
-    > The `honcho` command will pick up your local mounted `.env` file when running via `docker-compose`. Ensure that you comment out any local variables which might cause clashes in the container context as they will take precedence when running `honcho start`.
+> [!WARNING]  
+> The `honcho` command will pick up your local mounted `.env` file when running via `docker-compose`. Ensure that you comment out any local variables which might cause clashes in the container context as they will take precedence when running `honcho start`.
 
     ```bash
     # Start both Django and the scheduler using Honcho
