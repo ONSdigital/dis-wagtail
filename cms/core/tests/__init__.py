@@ -26,7 +26,8 @@ class TransactionTestCase(_TransactionTestCase):
             fixtures = json.loads(fixtures)
 
             # HACK: Wagtail's locales are read from a pre-save hook, which means they need to exist
-            # very early during model setup.
+            # very early when loading data.
+            # TODO: Remove after https://github.com/wagtail/wagtail/pull/12649 merges.
             fixtures, eager_fixtures = partition(lambda item: item["model"] == "wagtailcore.locale", fixtures)
 
             connections["default"]._test_serialized_contents = json.dumps(eager_fixtures + fixtures)  # pylint: disable=protected-access
