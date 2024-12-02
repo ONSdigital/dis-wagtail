@@ -44,7 +44,7 @@
                     {# This is the main tag in the base template in the design system #}
                     <div class="ons-page__main {{ mainColClasses }}">
                         {% block main %}{% endblock %}
-                        {{ onsBackToTop() }}
+                        {{ onsBackToTop() }}{# used in small viewports #}
                     </div>
                 </div>
             </div>
