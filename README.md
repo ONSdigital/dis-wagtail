@@ -158,7 +158,13 @@ make compose-dev-pull
 make compose-dev-up
 ```
 
-3. Run the below command to run the necessary pre-run steps:
+3. Run the below command to apply the necessary pre-run steps, which include:
+ - loading design system templates, 
+ - collecting the static files,
+ - generating and applying database migrations,
+ - creating a superuser with:
+    - username: `admin`
+    - password: `changeme`
 
 ```
 make dev-init
