@@ -52,6 +52,8 @@ REPOSITORY_GRYPE_CONFIG_FILE: .github/linters/.grype.yaml
 REPOSITORY_KICS_CONFIG_FILE: .github/linters/kics.config
 YAML_YAMLLINT_CONFIG_FILE: .github/linters/.yaml-lint.yml
 
-YAML_V8R_FILTER_REGEX_EXCLUDE: 'dependabot.yml' # Dependabot yaml in SchemaStore is currently not up to date. Dependabot is validated on push by GitHub by default.
+YAML_V8R_FILTER_REGEX_EXCLUDE:
+  'dependabot.yml' # Dependabot yaml in SchemaStore is currently not up to date.
+  # Dependabot is validated on push by GitHub by default.
 
 EXCLUDED_DIRECTORIES: ['node_modules', 'static', 'static_compile']

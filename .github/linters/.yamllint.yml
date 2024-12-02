@@ -1,5 +1,6 @@
 ---
 rules:
   indentation:
-    level: warning
-    indent-sequences: whatever
+    spaces: consistent
+    indent-sequences: true
+    check-multi-line-strings: false

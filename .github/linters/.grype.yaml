@@ -1,3 +1,4 @@
+---
 # enable/disable checking for application updates on startup
 # same as GRYPE_CHECK_FOR_APP_UPDATE env var
 # check-for-app-update: true
@@ -147,4 +148,5 @@ fail-on-severity: 'high'
 ignore:
   # Ignored by default; disputed and unwarranted CVE that causes Megalinter to fail
   # @link https://nvd.nist.gov/vuln/detail/CVE-2018-20225
-  - vulnerability: [CVE-2018-20225, GHSA-3xgq-45jj-v275]
+  - vulnerability: CVE-2018-20225
+  - vulnerability: GHSA-3xgq-45jj-v275
