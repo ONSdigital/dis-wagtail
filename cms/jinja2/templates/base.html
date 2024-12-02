@@ -1,5 +1,6 @@
 {% extends "layout/_template.njk" %}
 {% from "components/cookies-banner/_macro.njk" import onsCookiesBanner %}
+{% from "component_overrides/header/_macro.njk" import onsHeaderNew %}
 
 {% set page_title %}
     {% if current_site and page.pk == current_site.root_page.pk and current_site.site_name %}{{ current_site.site_name }} | {% endif %}{% block title %}{% if page.seo_title %}{{ page.seo_title }}{% else %}{{ page.title}}{% endif %}{% endblock %}{% block title_suffix %}{% if current_site and page.pk != current_site.root_page.pk and current_site.site_name %} | {{ current_site.site_name }}{% endif %}{% endblock %}
@@ -22,15 +23,227 @@
 ])
 %}
 
+{% if page %}
+    {% set body_class = ["template-", page.get_verbose_name()| lower | replace(" ", "-")] | join %}
+{% else %}
+    {% set body_class = '' %}
+{% endif %}
+
+{%- set page_title -%}
+    {%- with current_site=wagtail_site() -%}
+        {% if current_site and page.pk == current_site.root_page.pk and current_site.site_name %}{{ current_site.site_name }} - {% endif %}{% if page.seo_title %}{{ page.seo_title }}{% else %}{{ page.display_title | default(page.title) }}{% endif %}{% if current_site and page.pk != current_site.root_page.pk and current_site.site_name %} - {{ current_site.site_name }}{% endif %}
+    {%- endwith -%}
+{%- endset -%}
+
+{# navlinks are temporarily hard-coded until the back-end menu code is merged #}
 {% set pageConfig = {
+    "bodyClasses": body_class,
+    "title": page_title,
     "header": {
-        "title": page_title,
         "phase": {
             "badge": 'Beta',
             "html": 'This is a new service.'
         },
         "language": {
             "languages": languages
+        },
+        "mastheadLogoUrl": "/",
+        "navLinks": {
+            "id": "nav-links-external",
+            "ariaLabel": 'Main menu',
+            "ariaListLabel": 'Menu',
+            "toggleNavButton": {
+                "text": 'Menu',
+                "ariaLabel": 'Toggle main menu'
+            },
+            "keyLinksList": [
+                {
+                    'text': 'Taking part in a survey?',
+                    'description': 'It’s never been more important.',
+                    "url": False,
+                },
+                {
+                    'text': 'Release calendar',
+                    'description': 'View our latest and upcoming releases.',
+                    "url": False,
+                },
+                {
+                    'text': 'Explore local statistics',
+                    'description': 'Explore statistics across the UK.',
+                    "url": False,
+                }
+            ],
+            "itemsList": [
+                {
+                    "column": "1",
+                    "linksList": [
+                        {
+                            "text": "People, population and community",
+                            "url": False,
+                            "children": [
+                                {
+                                    "text": "Armed forces community",
+                                    "url": False,
+                                },
+                                {
+                                    "text": "Births, deaths and marriages",
+                                    "url": False,
+                                },
+                                {
+                                    "text": "Crime and justice",
+                                    "url": False,
+                                },
+                                {
+                                    "text": "Cultural identity",
+                                    "url": False,
+                                },
+                                {
+                                    "text": "Education and childcare",
+                                    "url": False,
+                                },
+                                {
+                                    "text": "Elections",
+                                    "url": False,
+                                },
+                                {
+                                    "text": "Health and social care",
+                                    "url": False,
+                                },
+                                {
+                                    "text": "Household characteristics",
+                                    "url": False,
+                                },
+                                {
+                                    "text": "Housing",
+                                    "url": False,
+                                },
+                                {
+                                    "text": "Leisure and tourism",
+                                    "url": False,
+                                },
+                                {
+                                    "text": "Personal and household finances",
+                                    "url": False,
+                                },
+                                {
+                                    "text": "Population and migration",
+                                    "url": False,
+                                },
+                                {
+                                    "text": "Well-being",
+                                    "url": False,
+                                }
+                            ]
+                        },
+                    ],
+                },
+                {
+                    "column": "2",
+                    "linksList": [
+                        {
+                            "text": "Business, industry and trade",
+                            "url": False,
+                            "children": [
+                                {
+                                    "text": "Business",
+                                    "url": False,
+                                },
+                                {
+                                    "text": "Changes to business",
+                                    "url": False,
+                                },
+                                {
+                                    "text": "Construction industry",
+                                    "url": False,
+                                },
+                                {
+                                    "text": "International trade",
+                                    "url": False,
+                                },
+                                {
+                                    "text": "IT and internet industry",
+                                    "url": False,
+                                },
+                                {
+                                    "text": "Manufacturing and production industry",
+                                    "url": False,
+                                },
+                                {
+                                    "text": "Retail industry",
+                                    "url": TOPIC_PAGE_URL,
+                                },
+                                {
+                                    "text": "Tourism industry",
+                                    "url": False,
+                                }
+                            ]
+                        },
+                        {
+                            "text": "Employment and labour market",
+                            "url": False,
+                            "children":
+                            [
+                                {
+                                    "text": "People in work",
+                                    "url": False,
+                                },
+                                {
+                                    "text": "People not in work",
+                                    "url": False,
+                                }
+                            ]
+
+                        },
+                    ]
+                },
+                {
+                    "column": "3",
+                    "linksList": [
+                        {
+                            "text": "Economy",
+                            "url": False,
+                            "children": [
+                                {
+                                    "text": "Economic output and productivity",
+                                    "url": False,
+                                },
+                                {
+                                    "text": "Government, public sector and taxes",
+                                    "url": False,
+                                },
+                                {
+                                    "text": "Gross Value Added (GVA)",
+                                    "url": False,
+                                },
+                                {
+                                    "text": "Investments, pensions and trusts",
+                                    "url": False,
+                                },
+                                {
+                                    "text": "Regional accounts",
+                                    "url": False,
+                                },
+                                {
+                                    "text": "Environmental accounts",
+                                    "url": False,
+                                },
+                                {
+                                    "text": "Gross Domestic Product (GDP)",
+                                    "url": False,
+                                },
+                                {
+                                    "text": "Inflation and price indices",
+                                    "url": False,
+                                },
+                                {
+                                    "text": "National accounts",
+                                    "url": False,
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
         }
     },
     "footer": {
@@ -97,6 +310,32 @@
     {% if not IS_EXTERNAL_ENV %}
         {{ wagtailuserbar() }}
     {% endif %}
+{% endblock %}
+
+{% block header %}
+    {{
+    onsHeaderNew({
+    "wide": pageConfig.wide,
+    "fullWidth": pageConfig.fullWidth,
+    "language": pageConfig.header.language,
+    "button": pageConfig.header.signoutButton,
+    "toggleNavigationButton": pageConfig.header.toggleNavigationButton,
+    "navigation": pageConfig.header.navigation,
+    "siteSearchAutosuggest": pageConfig.header.siteSearchAutosuggest,
+    "browserBanner": pageConfig.header.browserBanner,
+    "phase": pageConfig.header.phase,
+    "navLinks": pageConfig.header.navLinks,
+    "variants": pageConfig.header.variants,
+    "classes": pageConfig.header.classes,
+    "mastheadLogo": pageConfig.header.mastheadLogo,
+    "mastheadLogoUrl": pageConfig.header.mastheadLogoUrl,
+    "titleUrl": pageConfig.header.titleUrl,
+    "title": pageConfig.header.title | default(pageConfig.title),
+    "description": pageConfig.header.description,
+    "titleAsH1": pageConfig.header.titleAsH1,
+    "titleLogo": pageConfig.header.titleLogo
+    })
+    }}
 {% endblock %}
 
 {% block scripts %}

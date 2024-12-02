@@ -1,0 +1,20 @@
+// Based on https://github.com/ONSdigital/design-system/blob/d3c30b9400c9f0bdfca21f838d82b8890bd1ec05/migration_guides/70.x.x-to-72.0.0-migration-guide.md?plain=1#L196
+$breakpoints: (
+    '2xs' '(min-width: 300px)',
+    'xs' '(min-width: 400px)',
+    's' '(min-width: 500px)',
+    'm' '(min-width: 740px)',
+    'l' '(min-width: 980px)',
+    'xl' '(min-width: 1300px)',
+    '2xl' '(min-width: 1600px)'
+);
+
+// These colour variables are set in the figma file but not in the design-system
+
+$color--buff: #e8bb9b;
+$color--pale-grey: #efeff0;
+$color--pale-blue: #e7eff4;
+$color--grey-blue: #dee7ee;
+$color--midnight-blue: #153b55;
+$color--deep-grey-blue: #194766;
+$color--full-black: #000;
