@@ -70,35 +70,39 @@ class BundleEditView(EditView):
         instance: Bundle = self.form.save()
         self.has_content_changes = self.form.has_changed()
 
-        if self.has_content_changes:
-            log(action="wagtail.edit", instance=instance, content_changed=True, data={"fields": self.form.changed_data})
+        if not self.has_content_changes:
+            return instance
 
-            if "status" in self.form.changed_data:
-                kwargs: dict = {"content_changed": self.has_content_changes}
-                original_status = BundleStatus[self.form.original_status].label
-                url = self.request.build_absolute_uri(reverse("bundle:inspect", args=(instance.pk,)))
+        log(action="wagtail.edit", instance=instance, content_changed=True, data={"fields": self.form.changed_data})
 
-                if instance.status == BundleStatus.APPROVED:
-                    action = "bundles.approve"
-                    kwargs["data"] = {"old": original_status}
-                    notify_slack_of_status_change(instance, original_status, user=self.request.user, url=url)
-                elif instance.status == BundleStatus.RELEASED.value:
-                    action = "wagtail.publish"
-                    self.start_time = time.time()
-                else:
-                    action = "bundles.update_status"
-                    kwargs["data"] = {
-                        "old": original_status,
-                        "new": instance.get_status_display(),
-                    }
-                    notify_slack_of_status_change(instance, original_status, user=self.request.user, url=url)
+        if "status" not in self.form.changed_data:
+            return instance
 
-                # now log the status change
-                log(
-                    action=action,
-                    instance=instance,
-                    **kwargs,
-                )
+        kwargs: dict = {"content_changed": self.has_content_changes}
+        original_status = BundleStatus[self.form.original_status].label
+        url = self.request.build_absolute_uri(reverse("bundle:inspect", args=(instance.pk,)))
+
+        if instance.status == BundleStatus.APPROVED:
+            action = "bundles.approve"
+            kwargs["data"] = {"old": original_status}
+            notify_slack_of_status_change(instance, original_status, user=self.request.user, url=url)
+        elif instance.status == BundleStatus.RELEASED.value:
+            action = "wagtail.publish"
+            self.start_time = time.time()
+        else:
+            action = "bundles.update_status"
+            kwargs["data"] = {
+                "old": original_status,
+                "new": instance.get_status_display(),
+            }
+            notify_slack_of_status_change(instance, original_status, user=self.request.user, url=url)
+
+        # now log the status change
+        log(
+            action=action,
+            instance=instance,
+            **kwargs,
+        )
 
         return instance
 
@@ -144,7 +148,7 @@ class BundleInspectView(InspectView):
         """Returns the list of fields to include in the inspect view."""
         return ["name", "status", "created_at", "created_by", "approved", "scheduled_publication", "pages"]
 
-    def get_field_label(self, field_name: str, field: "Field") -> Any:
+    def get_field_label(self, field_name: str, field: "Field") -> str:
         match field_name:
             case "approved":
                 return _("Approval status")
@@ -153,7 +157,7 @@ class BundleInspectView(InspectView):
             case "pages":
                 return _("Pages")
             case _:
-                return super().get_field_label(field_name, field)
+                return super().get_field_label(field_name, field)  # type: ignore[no-any-return]
 
     def get_field_display_value(self, field_name: str, field: "Field") -> Any:
         """Allows customising field display in the inspect class.

@@ -12,7 +12,10 @@ if TYPE_CHECKING:
 
 
 class Command(BaseCommand):
-    """A copy of Wagtail's publish_scheduled management command that excludes bundled objects."""
+    """A copy of Wagtail's publish_scheduled management command that excludes bundled objects.
+
+    @see https://github.com/wagtail/wagtail/blob/main/wagtail/management/commands/publish_scheduled.py
+    """
 
     def add_arguments(self, parser: "CommandParser") -> None:
         parser.add_argument(
