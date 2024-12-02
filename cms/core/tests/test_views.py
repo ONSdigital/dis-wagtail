@@ -1,7 +1,9 @@
 import logging
+from http import HTTPMethod
 
 from django.conf import settings
-from django.test import Client, TestCase
+from django.test import Client, SimpleTestCase, TestCase
+from django.urls import reverse
 
 
 class CSRFTestCase(TestCase):
@@ -32,3 +34,23 @@ class TestGoogleTagManagerTestCase(TestCase):
 
         self.assertIn("https://www.googletagmanager.com/gtm.js?id=", response.rendered_content)
         self.assertIn(settings.GOOGLE_TAG_MANAGER_CONTAINER_ID, response.rendered_content)
+
+
+class ReadinessProbeTestCase(SimpleTestCase):
+    """Tests for the readiness probe endpoint."""
+
+    url = reverse("internal:readiness")
+
+    def test_all_methods(self):
+        """Check the ready endpoint works with all methods."""
+        for method in iter(HTTPMethod):
+            if method == HTTPMethod.CONNECT:
+                # CONNECT isn't a valid method in this context
+                continue
+
+            with self.subTest(method):
+                response = getattr(self.client, method.value.lower())(self.url)
+
+                self.assertEqual(response.status_code, 204)
+                self.assertEqual(response.content, b"")
+                self.assertEqual(response.templates, [])
