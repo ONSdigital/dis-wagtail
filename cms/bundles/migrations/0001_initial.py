@@ -21,7 +21,7 @@ class Migration(migrations.Migration):
             name="Bundle",
             fields=[
                 ("id", models.AutoField(auto_created=True, primary_key=True, serialize=False)),
-                ("name", models.CharField(max_length=255)),
+                ("name", models.CharField(max_length=255, unique=True)),
                 ("created_at", models.DateTimeField(auto_now_add=True)),
                 ("approved_at", models.DateTimeField(blank=True, null=True)),
                 ("publication_date", models.DateTimeField(blank=True, null=True)),

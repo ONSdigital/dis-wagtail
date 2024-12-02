@@ -89,4 +89,9 @@ class BundleAdminForm(WagtailAdminModelForm):
                 cleaned_data["approved_at"] = None
                 cleaned_data["approved_by"] = None
 
+        if self.cleaned_data["release_calendar_page"] and self.cleaned_data["publication_date"]:
+            error = _("You must choose either a Release Calendar page or a Publication date, not both.")
+            self.add_error("release_calendar_page", error)
+            self.add_error("publication_date", error)
+
         return cleaned_data

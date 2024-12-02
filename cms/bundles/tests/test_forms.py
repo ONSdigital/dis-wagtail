@@ -2,6 +2,7 @@ from typing import Any
 
 from django import forms
 from django.test import TestCase
+from django.utils import timezone
 from wagtail.admin.panels import get_edit_handler
 from wagtail.test.utils.form_data import inline_formset, nested_form_data
 
@@ -136,3 +137,16 @@ class BundleAdminFormTestCase(TestCase):
 
         self.assertTrue(form.is_valid())
         self.assertEqual(form.cleaned_data["approved_by"], approver)
+
+    def test_clean__validates_release_calendar_page_or_publication_date(self):
+        release_calendar_page = ReleaseCalendarPageFactory()
+        data = self.form_data
+        data["release_calendar_page"] = release_calendar_page.id
+        data["publication_date"] = timezone.now()
+
+        form = self.form_class(data=data)
+
+        self.assertFalse(form.is_valid())
+        error = "You must choose either a Release Calendar page or a Publication date, not both."
+        self.assertFormError(form, "release_calendar_page", [error])
+        self.assertFormError(form, "publication_date", [error])

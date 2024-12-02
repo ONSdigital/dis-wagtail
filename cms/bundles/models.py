@@ -62,7 +62,7 @@ class BundleManager(models.Manager.from_queryset(BundlesQuerySet)):  # type: ign
 class Bundle(index.Indexed, ClusterableModel, models.Model):  # type: ignore[django-manager-missing]
     base_form_class = BundleAdminForm
 
-    name = models.CharField(max_length=255)
+    name = models.CharField(max_length=255, unique=True)
     created_at = models.DateTimeField(auto_now_add=True)
     created_by = models.ForeignKey(
         "users.User",
@@ -138,7 +138,6 @@ class Bundle(index.Indexed, ClusterableModel, models.Model):  # type: ignore[dja
         return self.status in [BundleStatus.PENDING, BundleStatus.IN_REVIEW]
 
     def get_bundled_pages(self) -> QuerySet[Page]:
-        """Convenience method to return all bundled pages."""
         pages: QuerySet[Page] = Page.objects.filter(pk__in=self.bundled_pages.values_list("page__pk", flat=True))
         return pages
 
@@ -190,10 +189,8 @@ class BundledPageMixin:
 
     @cached_property
     def active_bundle(self) -> Bundle | None:
-        """Helper to return the active bundle this instance is in."""
         return self.active_bundles.first()
 
     @cached_property
     def in_active_bundle(self) -> bool:
-        """Determines whether this instance is in an active bundle (that is not yet released)."""
         return self.active_bundle is not None
