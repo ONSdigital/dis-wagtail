@@ -8,6 +8,7 @@ quiet: true
 soft-fail: false
 skip-check:
   - CKV2_GHA_1 # Not needed
+  - CKV2_DOCKER_1 # Ensure that sudo isn't used failing in git ci
   - CKV_DOCKER_9 # Docker app -. app-get ignored
   - CKV_DOCKER_2 # Docker app -. app-get ignored
 summary-position: bottom
