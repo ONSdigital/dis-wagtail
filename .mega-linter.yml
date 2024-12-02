@@ -41,7 +41,6 @@ FILEIO_REPORTER: false
 # DISABLE_ERRORS: true
 
 # Use yml file to allow the use of comments. Megalinter's default is .markdown-lint.json
-CSS_STYLELINT_CONFIG_FILE: .github/linters/.stylelintrc.js
 DOCKERFILE_HADOLINT_CONFIG_FILE: .github/linters/.hadolint.yaml
 MARKDOWN_MARKDOWNLINT_CONFIG_FILE: .github/linters/.markdown-lint.yml
 MARKDOWN_MARKDOWN_LINK_CHECK_CONFIG_FILE: .github/linters/.markdown-link-check.json
