@@ -163,7 +163,7 @@ make runserver
 ```
 
 You can specify the runtime configuration either in your IDE (for PyCharm see [here](https://www.jetbrains.com/help/pycharm/run-debug-configuration.html#createExplicitly)), or copy the `.env-dev-example` and rename it to `.env` which will allow Django to pick up the config.
-Note that once you create the `.env` file, and you'd like to switch back to running the application in a container with `make compose-up`, the `.env` file will be accessible inside the containers and it will be picked up by the `honcho` command. In order to avoid conflicts you should comment out the `DATABASE_URL` and `REDIS_URL` variables in the `.env` file.
+Note that once you create the `.env` file, and you'd like to switch back to running the application in a container with `make compose-up`, the `.env` file will be accessible inside the containers and it will be picked up by the `honcho` command. In order to avoid conflicts you may need to comment out some variables (such as `DATABASE_URL` and `REDIS_URL`).
 
 > [!NOTE]
 > When running the application in a virtual environment via Poetry the `.env` file will not be picked up automatically. For this to work you'll need to install the [poetry-plugin-dotenv](https://github.com/pivoshenko/poetry-plugin-dotenv). However if you installed Poetry with `brew` rather than `pip` that currently isn't going to work (see the [issue](https://github.com/pivoshenko/poetry-plugin-dotenv/issues/327)) and you'll need to install an older and seemingly no longer maintained [poetry-dotenv-plugin](https://github.com/mpeteuil/poetry-dotenv-plugin).
