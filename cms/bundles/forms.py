@@ -82,9 +82,10 @@ class BundleAdminForm(WagtailAdminModelForm):
                 if self.instance.created_by_id == self.for_user.pk:
                     cleaned_data["status"] = self.instance.status
                     self.add_error("status", ValidationError("You cannot self-approve your own bundle!"))
-
-                cleaned_data["approved_at"] = timezone.now()
-                cleaned_data["approved_by"] = self.for_user
+                else:
+                    # the approver is different from the creator, so let's populate the relevant fields.
+                    cleaned_data["approved_at"] = timezone.now()
+                    cleaned_data["approved_by"] = self.for_user
             elif self.instance.status == BundleStatus.APPROVED:
                 cleaned_data["approved_at"] = None
                 cleaned_data["approved_by"] = None

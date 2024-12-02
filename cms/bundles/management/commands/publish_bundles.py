@@ -56,6 +56,7 @@ class Command(BaseCommand):
         revision = page.save_revision(log_action=True)
         revision.publish()
 
+    # TODO: revisit after discussion.
     @transaction.atomic
     def handle_bundle(self, bundle: Bundle) -> None:
         """Manages the bundle publication.
@@ -90,7 +91,6 @@ class Command(BaseCommand):
         log(action="wagtail.publish.scheduled", instance=bundle)
 
     def handle(self, *args: Any, **options: dict[str, Any]) -> None:
-        """The management command handler."""
         dry_run = False
         if options["dry_run"]:
             self.stdout.write("Will do a dry run.")
