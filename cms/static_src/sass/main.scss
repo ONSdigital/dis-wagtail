@@ -1,20 +1,28 @@
-// temporary css rule so the file is not empty
-body {
-    display: block;
-}
+/* The main scss file for the site, which imports all other scss files
+Don't add css code directly to this file, add it to the relevant component file instead */
 
-// Custom CSS from Wagtail doc to enable responsive video embeds
-.responsive-object {
-    position: relative;
-}
+// New components not yet in the design system
+@use 'components/analysis-header';
+@use 'components/button-nav';
+@use 'components/corrections';
+@use 'components/document-list-block';
+@use 'components/chart-embed';
+@use 'components/contact-details';
+@use 'components/featured-chart';
+@use 'components/headline-figures';
+@use 'components/landing-header';
+@use 'components/navigation';
+@use 'components/panel';
+@use 'components/responsive-object';
+@use 'components/rich-text';
+@use 'components/streamfield';
+@use 'components/topic-header';
 
-.responsive-object iframe,
-.responsive-object object,
-.responsive-object embed {
-    position: absolute;
-    top: 0;
-    /* stylelint-disable-next-line property-disallowed-list */
-    left: 0;
-    width: 100%;
-    height: 100%;
-}
+// ONS design system overrides (until these are no longer needed)
+@use 'components/design_system_overrides/back-to-top';
+@use 'components/design_system_overrides/button';
+@use 'components/design_system_overrides/container';
+@use 'components/design_system_overrides/grid';
+@use 'components/design_system_overrides/header';
+@use 'components/design_system_overrides/page';
+@use 'components/design_system_overrides/toc';
