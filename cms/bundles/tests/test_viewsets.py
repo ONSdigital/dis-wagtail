@@ -210,6 +210,12 @@ class BundleViewSetTestCase(WagtailTestUtils, TestCase):
         self.assertEqual(response.context["request"].path, self.edit_url)
         self.assertContains(response, "You cannot self-approve your own bundle!")
 
+        form = response.context["form"]
+        self.assertIsNone(form.cleaned_data["approved_by"])
+        self.assertIsNone(form.cleaned_data["approved_at"])
+        self.assertIsNone(form.fields["approved_by"].initial)
+        self.assertIsNone(form.fields["approved_at"].initial)
+
         self.bundle.refresh_from_db()
         self.assertEqual(self.bundle.status, original_status)
         self.assertIsNone(self.bundle.approved_at)

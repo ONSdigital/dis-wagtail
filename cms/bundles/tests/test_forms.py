@@ -128,7 +128,6 @@ class BundleAdminFormTestCase(TestCase):
         self.assertFormError(form, None, ["'The Analysis' is already in an active bundle (Another Bundle)"])
 
     def test_clean__sets_approved_by_and_approved_at(self):
-        """Checks that Bundle gets the approver and approval time set."""
         approver = UserFactory()
 
         data = self.form_data
@@ -137,6 +136,16 @@ class BundleAdminFormTestCase(TestCase):
 
         self.assertTrue(form.is_valid())
         self.assertEqual(form.cleaned_data["approved_by"], approver)
+
+    def test_clean__doesnt_set_approved_by_and_approved_at_if_self_approving(self):
+        data = self.form_data
+        data["status"] = BundleStatus.APPROVED
+        form = self.form_class(instance=self.bundle, data=data, for_user=self.bundle.created_by)
+
+        self.assertFalse(form.is_valid())
+        self.assertFormError(form, "status", ["You cannot self-approve your own bundle!"])
+        self.assertIsNone(form.cleaned_data["approved_by"])
+        self.assertIsNone(form.cleaned_data["approved_at"])
 
     def test_clean__validates_release_calendar_page_or_publication_date(self):
         release_calendar_page = ReleaseCalendarPageFactory()
