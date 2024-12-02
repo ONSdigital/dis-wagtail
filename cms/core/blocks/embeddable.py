@@ -31,8 +31,10 @@ class DocumentBlockStructValue(blocks.StructValue):
         """Return the value as a macro data dict."""
         return {
             "thumbnail": True,
-            "url": self["document"].url,
-            "title": self["title"] or self["document"].title,
+            "title": {
+                "text": self["title"] or self["document"].title,
+                "url": self["document"].url,
+            },
             "description": self["description"],
             "metadata": {
                 "file": {

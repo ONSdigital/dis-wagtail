@@ -42,5 +42,10 @@ DEFENDER_DISABLE_USERNAME_LOCKOUT = True
 DEFENDER_DISABLE_IP_LOCKOUT = True
 
 
+# Read replica should mirror the default database during tests.
+# https://docs.djangoproject.com/en/stable/topics/testing/advanced/#tests-and-multiple-databases
+DATABASES["read_replica"].setdefault("TEST", {"MIRROR": "default"})  # noqa: F405
+
+
 # Silence Slack notifications by default
 SLACK_NOTIFICATIONS_WEBHOOK_URL = None
