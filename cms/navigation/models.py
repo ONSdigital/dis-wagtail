@@ -6,12 +6,11 @@ from wagtail.admin.panels import FieldPanel
 from wagtail.blocks import CharBlock, ListBlock, PageChooserBlock, StructBlock, URLBlock
 from wagtail.contrib.settings.models import BaseSiteSetting, register_setting
 from wagtail.snippets.models import register_snippet
-
 from cms.core.fields import StreamField
 
 
 # Custom LinkBlock to support both pages and URLs
-class BaseLinkBlock(StructBlock):
+class BaseLinkBlock(StructBlock):  # TODO - Reuse blocks from core.blocks.related.py
     page = PageChooserBlock(required=False)
     url = URLBlock(required=False, label="URL")
     title = CharBlock(required=False, help_text="Optional. Displayed as the link text.")
@@ -24,19 +23,13 @@ class BaseLinkBlock(StructBlock):
 
     class Meta:
         abstract = True
-
-
-class LinkBlock(BaseLinkBlock):
-    class Meta:
         icon = "link"
-        label = "Link"
 
 
 class ThemeLinkBlock(BaseLinkBlock):
     page = PageChooserBlock(required=False, page_type="themes.ThemePage")
 
     class Meta:
-        icon = "link"
         label = "Theme Link"
 
 
@@ -44,7 +37,6 @@ class TopicLinkBlock(BaseLinkBlock):
     page = PageChooserBlock(required=False, page_type="topics.TopicPage")
 
     class Meta:
-        icon = "link"
         label = "Topic Link"
 
 
@@ -86,14 +78,14 @@ class ColumnBlock(StructBlock):
 
 
 # MainMenu model
-@register_snippet
+# @register_snippet
 class MainMenu(models.Model):
     highlights = StreamField(
         [("highlight", HighlightsBlock())],
         blank=True,
         max_num=3,
         help_text="Up to 3 highlights. Each highlight must have either a page or a URL.",
-    )  # TO DO: Do we want to restrict highlights to theme pages only?
+    )
     columns = StreamField(
         [("column", ColumnBlock())],
         blank=True,
@@ -116,7 +108,7 @@ class MainMenu(models.Model):
 
 
 # NavigationSettings model
-@register_setting(icon="list-ul")
+@register_setting(icon="list-ul")  # TODO: Do we need to make sure there is always a navigation menu set?
 class NavigationSettings(BaseSiteSetting):
     main_menu: models.ForeignKey = models.ForeignKey(
         MainMenu,
