@@ -23,9 +23,7 @@ else:
     from wagtail.contrib.settings.models import BaseSiteSetting as WagtailBaseSiteSetting
 
 
-__all__ = [
-    "BasePage",
-]
+__all__ = ["BasePage", "BaseSiteSetting"]
 
 
 # Apply default cache headers on this page model's serve method.
@@ -105,11 +103,13 @@ class BaseSiteSetting(WagtailBaseSiteSetting):
         queryset = cls.base_queryset()
 
         try:
+            # Explicitly call `.get` first to ensure the
+            # read connection is used.
             return cast(Self, queryset.get(site=site))
         except cls.DoesNotExist:
             if settings.IS_EXTERNAL_ENV:
                 # In the external env, the database connection is read only,
-                # so just use the default values.
+                # so just use the default values if the instance doesn't exist.
                 return cls(site=site)
 
             instance, _created = queryset.get_or_create(site=site)

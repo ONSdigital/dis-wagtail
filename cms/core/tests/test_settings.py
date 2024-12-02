@@ -12,6 +12,9 @@ class SocialSettingsTestCase(TransactionTestCase):
     def setUp(self):
         self.request = get_dummy_request()
 
+        # Pre-warm site cache to avoid queries
+        self.site = Site.find_for_request(self.request)
+
     def test_none_site(self):
         """Test getting settings for a site which is None."""
         with self.assertRaises(SocialMediaSettings.DoesNotExist):
@@ -21,7 +24,7 @@ class SocialSettingsTestCase(TransactionTestCase):
         """Test creating a setting."""
         self.assertEqual(SocialMediaSettings.objects.count(), 0)
 
-        with self.assertNumQueriesConnection(default=4, replica=2):
+        with self.assertNumQueriesConnection(default=4, replica=1):
             SocialMediaSettings.for_request(self.request)
 
         # Explicitly use default connection to work around strange issue with Django
@@ -31,12 +34,22 @@ class SocialSettingsTestCase(TransactionTestCase):
             # This load is cached on the Site
             SocialMediaSettings.for_request(self.request)
 
+    def test_use_existing_instance(self):
+        """Test fetching a setting uses the existing instance."""
+        setting = SocialMediaSettings.objects.create(site=self.site)
+
+        with self.assertNumQueriesConnection(replica=1):
+            setting_for_request = SocialMediaSettings.for_request(self.request)
+
+        self.assertEqual(setting_for_request, setting)
+        self.assertEqual(SocialMediaSettings.objects.count(), 1)
+
     @override_settings(IS_EXTERNAL_ENV=True)
     def test_external_env_doesnt_create_instance(self):
         """Test that a setting isn't created in an external env."""
         self.assertEqual(SocialMediaSettings.objects.count(), 0)
 
-        with self.assertTotalNumQueries(2):
+        with self.assertTotalNumQueries(1):
             setting = SocialMediaSettings.for_request(self.request)
 
         self.assertIsNone(setting.pk)
@@ -44,12 +57,11 @@ class SocialSettingsTestCase(TransactionTestCase):
 
     def test_external_env_with_existing_instance(self):
         """Test loading an existing setting in an external env."""
-        SocialMediaSettings.objects.create(site=Site.find_for_request(self.request))
+        SocialMediaSettings.objects.create(site=self.site)
 
         with override_settings(IS_EXTERNAL_ENV=True), self.assertTotalNumQueries(1):
             setting = SocialMediaSettings.for_request(self.request)
 
         self.assertIsNotNone(setting.pk)
 
-        # Explicitly use default connection to work around strange issue with Django
-        self.assertTrue(SocialMediaSettings.objects.using("default").exists())
+        self.assertTrue(SocialMediaSettings.objects.exists())
