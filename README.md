@@ -120,8 +120,7 @@ Follow these steps to set up and run the project using Docker.
     Once the containers are running, you need to manually start Django from within the web container. This allows for running both the Django server and any additional background services (e.g., schedulers).
 
     > [!WARNING]  
-    > The `honcho` command will pick up your local mounted `.env` file when running via `docker-compose`. Ensure that you comment out any local variables which might cause clashes in the container context as they will take precedence when running `honcho start`. 
-
+    > The `honcho` command will pick up your local mounted `.env` file when running via `docker-compose`. Ensure that you comment out any local variables which might cause clashes in the container context as they will take precedence when running `honcho start`.
 
     ```bash
     # Start both Django and the scheduler using Honcho
@@ -163,7 +162,7 @@ make dev-init
 make runserver
 ```
 
-You can specify the runtime configuration either in your IDE (for PyCharm see [here](https://www.jetbrains.com/help/pycharm/run-debug-configuration.html#createExplicitly)), or copy the `.env-dev-example` and rename it to `.env` which will allow Django to pick up the config. 
+You can specify the runtime configuration either in your IDE (for PyCharm see [here](https://www.jetbrains.com/help/pycharm/run-debug-configuration.html#createExplicitly)), or copy the `.env-dev-example` and rename it to `.env` which will allow Django to pick up the config.
 Note that once you create the `.env` file, and you'd like to switch back to running the application in a container with `make compose-up`, the `.env` file will be accessible inside the containers and it will be picked up by the `honcho` command. In order to avoid conflicts you should comment out the `DATABASE_URL` and `REDIS_URL` variables in the `.env` file.
 
 > [!NOTE]
