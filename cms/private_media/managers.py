@@ -39,10 +39,14 @@ class PrivateMediaModelManager(models.Manager):
         if not to_update:
             return 0
 
-        count = self.bulk_update(to_update, fields=["_privacy", "privacy_last_changed"])  # type: ignore[arg-type]
-        self.bulk_update_file_permissions(to_update, intended_privacy)
+        to_update = self.bulk_set_file_permissions(to_update, intended_privacy, save_changes=False)
 
-        if get_frontend_cache_configuration():
+        count = self.bulk_update(
+            to_update,
+            fields=["_privacy", "privacy_last_changed", "file_permissions_last_set"],
+        )
+
+        if count and get_frontend_cache_configuration():
             sites = Site.objects.all()
             serve_url_batch = PurgeBatch()
             file_url_batch = PurgeBatch()
@@ -68,16 +72,16 @@ class PrivateMediaModelManager(models.Manager):
         return self.bulk_set_privacy(objects, Privacy.PRIVATE)
 
     def bulk_set_file_permissions(
-        self, objects: Iterable["PrivateMediaMixin"], intended_privacy: Privacy
+        self, objects: Iterable["PrivateMediaMixin"], intended_privacy: Privacy, *, save_changes: bool = False
     ) -> list["PrivateMediaMixin"]:
         """For an itrerable of objects of this type, set the file permissions for all
-        related files to reflect `intended_privacy`. Returns the number of objects
-        for which all related files were successfully updated (which will also have
-        their 'file_permissions_last_set' datetime updated).
+        related files to reflect `intended_privacy`. Returns a list of the provided objects,
+        with their `file_permissions_last_set` datetime updated if all related files
+        were successfully updated.
         """
-        successfully_updated_objects = []
         files_by_object: dict[PrivateMediaMixin, list[FieldFile]] = defaultdict(list)
         all_files = []
+        objects = list(objects)
 
         for obj in objects:
             for file in obj.get_privacy_controlled_files():
@@ -86,18 +90,16 @@ class PrivateMediaModelManager(models.Manager):
 
         results = bulk_set_file_permissions(all_files, intended_privacy)
 
-        for obj, files in files_by_object.items():
+        now = timezone.now()
+        for obj in objects:
+            files = files_by_object[obj]
             if all(results.get(file) for file in files):
-                obj.file_permissions_last_set = timezone.now()
-                successfully_updated_objects.append(obj)
+                obj.file_permissions_last_set = now
 
-        if successfully_updated_objects:
-            return self.bulk_update(
-                successfully_updated_objects,  # type: ignore[arg-type]
-                fields=["file_permissions_last_set"],
-            )
+        if save_changes:
+            self.bulk_update(objects, ["file_permissions_last_set"])
 
-        return 0
+        return objects
 
 
 class PrivateImageManager(PrivateMediaModelManager):
