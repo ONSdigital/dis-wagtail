@@ -33,8 +33,16 @@ module.exports = {
     // Override some wagtail specific rules relating to design tokens
     'scale-unlimited/declaration-strict-value': [
       ['color', 'fill', 'stroke', '/-color/'],
-      {
+          ],
+              "no-invalid-double-slash-comments": null,
+               "scale-unlimited/declaration-strict-value": [
+                ["/color$/"], {
+                autoFixFunc: autoFixFunc,
+                disableFix: true,
+              }],
+
         // The following are as per the wagtail config but need to be reset here
+        "scale-unlimited/declaration-strict-value": ["/color$/", {
         ignoreValues: [
           'currentColor',
           'inherit',
@@ -61,15 +69,7 @@ module.exports = {
           'GrayText',
           'AccentColor',
           'AccentColorText',
-        ],
-      },
-    ],
-        "no-invalid-double-slash-comments": null,
-         "scale-unlimited/declaration-strict-value": [
-          ["/color$/"], {
-          autoFixFunc: autoFixFunc,
-          disableFix: true,
-        }],
+        ]}],
     // Ensure that @include statements are at the top of the declaration block but not nested ones such as the media-query include
     'order/order': [{ name: 'include', type: 'at-rule', hasBlock: false }, 'declarations'],
     // Allow positioning with physical properties as right to left languages are not supported
