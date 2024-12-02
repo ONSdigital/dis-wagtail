@@ -1,0 +1,59 @@
+{% load i18n wagtailcore_tags wagtailadmin_tags %}
+{% if is_shown %}
+    {% panel id="latest-bundles" heading=_("Latest active bundles") %}
+        {% help_block status="info" %}
+            <p>Bundles are collections of pages and datasets to publish together.</p>
+        {% endhelp_block %}
+        <p>
+            <a href="{% url 'bundle:add' %}" class="button bicolor button--icon">{% icon name="plus" wrapped=1 %}{% trans "Add bundle" %}</a>
+            <a href="{% url 'bundle:index' %}" class="button button-secondary">View all bundles</a>
+        </p>
+        {% if bundles %}
+            <table class="listing">
+                <col />
+                <col width="15%"/>
+                <col width="15%"/>
+                <col width="15%"/>
+                <col width="15%"/>
+                <thead>{# add class="w-sr-only" to make this visible for screen readers only #}
+                    <tr>
+                        <th class="title">{% trans "Title" %}</th>
+                        <th>{% trans "Status" %}</th>
+                        <th>{% trans "Scheduled publication date" %}</th>
+                        <th>{% trans "Added" %}</th>
+                        <th>{% trans "Added by" %}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for bundle in bundles %}
+                        <tr>
+                            <td class="title">
+                                <div class="title-wrapper">
+                                    <a href="{% url 'bundle:edit' bundle.pk %}" title="{% trans 'Edit this bundle' %}">{{ bundle.name }}</a>
+                                </div>
+                                <ul class="actions">
+                                    <li>
+                                        {% dropdown toggle_icon="dots-horizontal" toggle_aria_label=_("Actions") %}
+                                            <a href="{% url 'bundle:edit' bundle.pk %}">{% trans "Edit" %}</a>
+                                            <a href="{% url 'bundle:inspect' bundle.pk %}">{% trans "View" %}</a>
+                                        {% enddropdown %}
+                                    </li>
+                                </ul>
+                            </td>
+                            <td>
+                                {{ bundle.get_status_display }}
+                            </td>
+                            <td>
+                                {{ bundle.scheduled_publication_date|default_if_none:"" }}
+                            </td>
+                            <td>{% human_readable_date bundle.created_at %}</td>
+                            <td>{% include "wagtailadmin/shared/user_avatar.html" with user=bundle.created_by username=bundle.created_by.get_full_name|default:bundle.created_by.get_username %}</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        {% else %}
+            <p>There are currently no active bundles.</p>
+        {% endif %}
+    {% endpanel %}
+{% endif %}
