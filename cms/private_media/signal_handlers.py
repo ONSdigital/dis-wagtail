@@ -2,9 +2,9 @@ from typing import TYPE_CHECKING, Any
 
 from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import ImproperlyConfigured
-from django.db.models import Exists, IntegerField, OuterRef
+from django.db.models import IntegerField
 from django.db.models.functions import Cast
-from wagtail.models import ReferenceIndex
+from wagtail.models import Page, ReferenceIndex
 from wagtail.signals import page_published, page_unpublished, published, unpublished
 
 from cms.private_media.models import PrivateImageMixin
@@ -48,25 +48,25 @@ def unpublish_media_on_unpublish(instance: "Model", **kwargs: Any) -> None:
     privacy-controlled media used solely by the object, and ensuring that it is
     made private again.
     """
+    page_ct = ContentType.objects.get_for_model(Page)
+    draft_page_ids = {str(pk) for pk in Page.objects.filter(live=False).values_list("id", flat=True)}
     for model_class in get_private_media_models():
         model_ct = ContentType.objects.get_for_model(model_class)
-        referenced_pks = (
-            ReferenceIndex.get_references_for_object(instance)
-            .filter(to_content_type=model_ct)
+        references = ReferenceIndex.get_references_for_object(instance).filter(to_content_type=model_ct)
+        referenced_pks = set(references.values_list("to_object_id", flat=True).distinct())
+        if not referenced_pks:
+            continue
+        referenced_by_other_live_object_pks = set(
+            ReferenceIndex.objects.filter(to_content_type=model_ct, to_object_id__in=referenced_pks)
+            .exclude(pk__in=references.values_list("pk", flat=True))
+            .exclude(base_content_type=page_ct, object_id__in=draft_page_ids)
             .annotate(int_object_id=Cast("to_object_id", output_field=IntegerField()))
             .values_list("int_object_id", flat=True)
-            .distinct()
         )
         queryset = (
-            model_class.objects.filter(pk__in=referenced_pks)
-            .alias(
-                referenced_by_other_pages=Exists(
-                    ReferenceIndex.objects.filter(to_content_type=model_ct, to_object_id=OuterRef("pk")).exclude(
-                        content_type=ContentType.objects.get_for_model(instance), object_id=instance.pk
-                    )
-                )
-            )
-            .filter(referenced_by_other_pages=False)
+            model_class.objects.all()
+            .filter(pk__in=[int(pk) for pk in referenced_pks])
+            .exclude(pk__in=referenced_by_other_live_object_pks)
         )
         if issubclass(model_class, PrivateImageMixin):
             queryset = queryset.prefetch_related("renditions")
