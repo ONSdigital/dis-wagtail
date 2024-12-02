@@ -143,13 +143,12 @@ migrate: ## Apply the database migrations
 	poetry run python ./manage.py migrate 
 
 .PHONY: createsuperuser
-createsuperuser: ## Create a super user 
-	poetry run python ./manage.py createsuperuser
+createsuperuser: ## Create a super user with a default username and password
+	poetry run python ./manage.py shell -c "from cms.users.models import User;(not User.objects.filter(username='admin').exists()) and User.objects.create_superuser('admin', 'super@example.com', 'changeme')"
 
 .PHONY: runserver
 runserver: ## Run the Django application locally	
 	poetry run python ./manage.py runserver
 
 .PHONY: dev-init 
-dev-init: load-design-system-templates collectstatic makemigrations migrate ## Run the pre-run setup scripts
-	poetry run python ./manage.py shell -c "from cms.users.models import User;(not User.objects.filter(username='admin').exists()) and User.objects.create_superuser('admin', 'super@example.com', 'changeme')"
+dev-init: load-design-system-templates collectstatic makemigrations migrate createsuperuser ## Run the pre-run setup scripts
