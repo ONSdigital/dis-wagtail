@@ -1,9 +1,8 @@
 import logging
 from typing import TYPE_CHECKING
 
-from django.core.files.storage import FileSystemStorage
-
 from botocore.exceptions import ClientError
+from django.core.files.storage import FileSystemStorage
 from storages.backends.s3 import S3Storage
 
 if TYPE_CHECKING:
@@ -45,7 +44,9 @@ class PrivacySettingS3Storage(S3Storage):
 
 class DummyPrivacySettingFileSystemStorage(FileSystemStorage):
     def make_private(self, file: "FieldFile") -> bool:  # pylint: disable=unused-argument
+        """Pretend to make the provided file private."""
         return True
 
     def make_public(self, file: "FieldFile") -> bool:  # pylint: disable=unused-argument
+        """Pretend to make the provided file public."""
         return True

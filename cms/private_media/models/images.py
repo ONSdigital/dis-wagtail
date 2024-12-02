@@ -53,7 +53,7 @@ class PrivateImageMixin(PrivateMediaMixin):
         """
         if not sites:
             return
-        for rendition in self.renditions.all():
+        for rendition in self.renditions.all():  # type: ignore[attr-defined]
             for site in sites:
                 yield site.root_url + rendition.serve_url
 

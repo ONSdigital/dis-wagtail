@@ -42,7 +42,7 @@ class PrivateMediaModelManager(models.Manager):
         to_update = self.bulk_set_file_permissions(to_update, intended_privacy, save_changes=False)
 
         count = self.bulk_update(
-            to_update,
+            to_update,  # type: ignore[arg-type]
             fields=["_privacy", "privacy_last_changed", "file_permissions_last_set"],
         )
 
@@ -97,7 +97,7 @@ class PrivateMediaModelManager(models.Manager):
                 obj.file_permissions_last_set = now
 
         if save_changes:
-            self.bulk_update(objects, ["file_permissions_last_set"])
+            self.bulk_update(objects, ["file_permissions_last_set"])  # type: ignore[arg-type]
 
         return objects
 

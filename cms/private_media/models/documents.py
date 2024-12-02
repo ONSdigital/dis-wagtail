@@ -33,4 +33,4 @@ class PrivateDocumentMixin(PrivateMediaMixin):
         if not sites:
             return
         for site in sites:
-            yield site.root_url + self.url
+            yield site.root_url + self.url  # type: ignore[attr-defined]
