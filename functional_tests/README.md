@@ -57,11 +57,24 @@ make functional-tests-down
 
 ### App Instance For Test Development
 
-The docker compose file also runs an instance of the wagtail app, this _not_ the instance that is tested against (the
-tests start their own test service on a random port), but is included for developer convenience. Since the tests use a
-clean database state for every scenario, it will be easier to create tests on a similarly fresh, empty database.
-However, it could quickly become inconvenient to have to tear down your main local environment every time you want to
-replicate this state. To get around this, we can use this separate test instance, found at `http://localhost:18000/`.
+Since the tests use a clean database state for every scenario, it will be easier to create tests on a similarly fresh,
+empty database. However, it could quickly become inconvenient to have to tear down your main local environment every
+time you want to replicate this state. To get around this, we can use this separate test instance, found at
+`http://localhost:18000/`.
+
+To start this test development app instance in docker along with the dependencies, run:
+
+```shell
+make functional-tests-up-dev
+```
+
+Then to stop it when you are finished, run:
+
+```shell
+make functional-tests-down
+```
+
+Which will also stop and remove the functional tests development app along with the dependencies, if it is running.
 
 ### Clearing and Initialising the Functional Test Development Database
 
@@ -142,19 +155,8 @@ You should then be able to step through the failed tests and get a better idea o
 ## Test Data Setup
 
 Some tests may require objects to be set up in the database, such as a user or set of pages that the feature relies
-upon. For this, we can use [Factory Boy](https://factoryboy.readthedocs.io/en/stable/orms.html#django) to see data
+upon. For this, we can use [Factory Boy](https://factoryboy.readthedocs.io/en/stable/orms.html#django) to seed data
 directly into the database.
-
-### Importing Factories
-
-Factories that use Django models rely on Django being initialised. This causes issues if they are imported at a module
-level in the tests, as those imports then get run before Django has initialised, so can fail with a error like:
-
-```
-Models aren't loaded yet.
-```
-
-To work around this, the Factory classes must be imported within the step functions, so that
 
 ## Test Code Standards and Style Guide
 

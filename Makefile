@@ -105,9 +105,13 @@ docker-destroy:  ## Tear down the Docker containers
 functional-tests-up:  ## Start the functional tests docker compose dependencies
 	docker compose -f functional_tests/docker-compose.yml up -d
 
+.PHONY: functional-tests-up-dev
+functional-tests-up-dev:  ## Start the functional tests docker compose dependencies and dev app
+	docker compose -f functional_tests/docker-compose.yml -f functional_tests/docker-compose-dev-app.yml up -d
+
 .PHONY: functional-tests-down
 functional-tests-down:  ## Stop the functional tests docker compose dependencies
-	docker compose -f functional_tests/docker-compose.yml down
+	docker compose -f functional_tests/docker-compose.yml -f functional_tests/docker-compose-dev-app.yml down
 
 .PHONY: functional-tests-run
 functional-tests-run:  ## Run the functional tests
