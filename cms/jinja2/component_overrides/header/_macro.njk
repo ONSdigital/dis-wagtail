@@ -151,7 +151,7 @@
                         <div class="ons-container">
                             <ul class="ons-grid ons-grid-flex-gap ons-grid-flex-gap--40  navigation__key-links ons-list ons-list--bare">
                                 {% for item in params.navLinks.keyLinksList %}
-                                    {# for november prototype, nav items can have text and no link - later we would want to test that both are present before outputting an li #}
+                                    {# In the new header, nav items can have text and no link - later we would want to test that both are present before outputting an li #}
                                     {% if item.text %}
                                         <li class="ons-grid__col ons-col-4@m ons-u-mb-no">
                                             {% if item.url %}
@@ -176,7 +176,7 @@
                                 {% for item in params.navLinks.itemsList %}
                                     <li class="ons-grid__col ons-col-4@m ons-u-mb-no">
                                         {% for link in item.linksList %}
-                                            {# for november prototype, nav items can have text and no link - later we would want to test that both are present before outputting a heading link #}
+                                            {# In the new header, nav items can have text and no link - later we would want to test that both are present before outputting a heading link #}
                                             {% if link.text %}
                                                 {% if link.url %}
                                                     <a
@@ -194,7 +194,7 @@
                                             {% if link.children %}
                                                 <ul class="ons-list ons-list--bare navigation__child-list">
                                                     {% for child in link.children %}
-                                                        {# for november prototype, nav items can have text and no link - later we would want to test that both are present before outputting an li #}
+                                                        {# In the new header, nav items can have text and no link - later we would want to test that both are present before outputting an li #}
                                                         {% if child.text %}
                                                             <li class="ons-u-mb-no">
                                                                 {% if child.url %}
