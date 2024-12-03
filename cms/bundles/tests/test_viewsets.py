@@ -3,6 +3,7 @@ from unittest import mock
 
 from django.test import TestCase
 from django.urls import reverse
+from wagtail.admin.panels import get_edit_handler
 from wagtail.test.utils import WagtailTestUtils
 from wagtail.test.utils.form_data import inline_formset, nested_form_data
 
@@ -11,6 +12,7 @@ from cms.bundles.enums import BundleStatus
 from cms.bundles.models import Bundle
 from cms.bundles.tests.factories import BundleFactory
 from cms.bundles.tests.utils import grant_all_bundle_permissions, make_bundle_viewer
+from cms.release_calendar.viewsets import FutureReleaseCalendarChooserWidget
 from cms.users.tests.factories import GroupFactory, UserFactory
 
 
@@ -233,3 +235,22 @@ class BundleViewSetTestCase(WagtailTestUtils, TestCase):
         self.assertContains(response, "Pending", 2)  # status + status filter
         self.assertContains(response, "Released", 2)  # status + status filter
         self.assertContains(response, "Approved", 5)  # status + status filter, approved at/by
+
+    def test_bundle_form_uses_release_calendar_chooser_widget(self):
+        form_class = get_edit_handler(Bundle).get_form_class()
+        form = form_class(instance=self.bundle)
+
+        self.assertIn("release_calendar_page", form.fields)
+        chooser_widget = form.fields["release_calendar_page"].widget
+        self.assertIsInstance(chooser_widget, FutureReleaseCalendarChooserWidget)
+
+        self.assertEqual(
+            chooser_widget.get_chooser_modal_url(),
+            # the admin path + the chooser namespace
+            reverse("wagtailadmin_home") + "release_calendar_chooser/",
+        )
+
+        response = self.client.get(
+            self.bundle_add_url,
+        )
+        self.assertContains(response, "Choose Release Calendar page")
