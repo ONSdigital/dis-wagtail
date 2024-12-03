@@ -180,7 +180,9 @@ signatures, making the use and setting of context variables much harder to follo
 
 For example:
 
-> [!TIP] > _Do this:_
+> [!TIP]
+>
+> _Do this:_
 >
 > ```python
 > @step('a thing happens')
@@ -193,7 +195,9 @@ For example:
 >     return new_data
 > ```
 
-> [!CAUTION] > _Not this:_
+> [!CAUTION]
+>
+> _Not this:_
 >
 > ```python
 > @step('a thing happens')
