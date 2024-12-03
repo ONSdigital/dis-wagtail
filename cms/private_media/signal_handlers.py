@@ -7,6 +7,7 @@ from django.db.models.functions import Cast
 from wagtail.models import Page, ReferenceIndex
 from wagtail.signals import page_published, page_unpublished, published, unpublished
 
+from cms.private_media.constants import Privacy
 from cms.private_media.models import PrivateImageMixin
 from cms.private_media.utils import get_private_media_models
 
@@ -29,7 +30,7 @@ def publish_media_on_publish(instance: "Model", **kwargs: Any) -> None:
             .values_list("int_object_id", flat=True)
             .distinct()
         )
-        queryset = model_class.objects.filter(pk__in=referenced_pks)
+        queryset = model_class.objects.filter(pk__in=referenced_pks, _privacy=Privacy.PRIVATE)
         if issubclass(model_class, PrivateImageMixin):
             queryset = queryset.prefetch_related("renditions")
 
@@ -65,7 +66,7 @@ def unpublish_media_on_unpublish(instance: "Model", **kwargs: Any) -> None:
         )
         queryset = (
             model_class.objects.all()
-            .filter(pk__in=[int(pk) for pk in referenced_pks])
+            .filter(pk__in=[int(pk) for pk in referenced_pks], _privacy=Privacy.PUBLIC)
             .exclude(pk__in=referenced_by_other_live_object_pks)
         )
         if issubclass(model_class, PrivateImageMixin):
