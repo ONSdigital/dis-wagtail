@@ -76,7 +76,7 @@ class AnalysisSeries(RoutablePageMixin, Page):
         return response
 
 
-class AnalysisPage(BundledPageMixin, BasePage):  # type: ignore[django-manager-missing]
+class AnalysisPage(BundledPageMixin, BasePage):
     """The analysis page model."""
 
     parent_page_types: ClassVar[list[str]] = ["AnalysisSeries"]

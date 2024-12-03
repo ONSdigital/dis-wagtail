@@ -59,7 +59,7 @@ class BundleManager(models.Manager.from_queryset(BundlesQuerySet)):  # type: ign
         return queryset  # note: not returning directly to placate no-any-return
 
 
-class Bundle(index.Indexed, ClusterableModel, models.Model):  # type: ignore[django-manager-missing]
+class Bundle(index.Indexed, ClusterableModel, models.Model):
     base_form_class = BundleAdminForm
 
     name = models.CharField(max_length=255, unique=True)

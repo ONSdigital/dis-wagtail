@@ -438,6 +438,7 @@ disable=raw-checker-failed,
         too-few-public-methods,
         missing-class-docstring,
         missing-function-docstring,
+        django-manager-missing,
         fixme
 
 # note:
@@ -447,6 +448,7 @@ disable=raw-checker-failed,
 # - too-few-public-methods: because of Django Meta classes
 # - missing-class-docstring: mostly because of Django classes.
 # - missing-function-docstring: because we can't disable it for trivial functions.
+# - django-manager-missing: because pylint doesn't know what to do with Wagtail models.
 # - fixme: because we want to leave TODO notes for future features.
 
 # Enable the message, report, category or checker with the given id(s). You can

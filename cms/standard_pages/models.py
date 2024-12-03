@@ -9,7 +9,7 @@ from cms.core.fields import StreamField
 from cms.core.models import BasePage
 
 
-class InformationPage(BasePage):  # type: ignore[django-manager-missing]
+class InformationPage(BasePage):
     """A generic information page model."""
 
     template = "templates/pages/information_page.html"

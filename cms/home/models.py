@@ -3,7 +3,7 @@ from typing import ClassVar
 from cms.core.models import BasePage
 
 
-class HomePage(BasePage):  # type: ignore[django-manager-missing]
+class HomePage(BasePage):
     """The homepage model. Currently, only a placeholder."""
 
     template = "templates/pages/home_page.html"

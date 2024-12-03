@@ -11,7 +11,7 @@ if TYPE_CHECKING:
     from wagtail.admin.panels import Panel
 
 
-class TopicPage(BasePage):  # type: ignore[django-manager-missing]
+class TopicPage(BasePage):
     """The Topic page model."""
 
     template = "templates/pages/topic_page.html"

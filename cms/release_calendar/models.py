@@ -25,7 +25,7 @@ if TYPE_CHECKING:
     from django.http import HttpRequest
 
 
-class ReleaseCalendarIndex(BasePage):  # type: ignore[django-manager-missing]
+class ReleaseCalendarIndex(BasePage):
     """The release calendar index page placeholder."""
 
     template = "templates/pages/release_index.html"
@@ -35,7 +35,7 @@ class ReleaseCalendarIndex(BasePage):  # type: ignore[django-manager-missing]
     max_count_per_parent = 1
 
 
-class ReleaseCalendarPage(BasePage):  # type: ignore[django-manager-missing]
+class ReleaseCalendarPage(BasePage):
     """The calendar release page model."""
 
     base_form_class = ReleaseCalendarPageAdminForm
