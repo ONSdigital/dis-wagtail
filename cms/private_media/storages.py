@@ -43,6 +43,8 @@ class PrivacySettingS3Storage(S3Storage):
 
 
 class DummyPrivacySettingFileSystemStorage(FileSystemStorage):
+    """Dummy storage class for use in tests."""
+
     def make_private(self, file: "FieldFile") -> bool:  # pylint: disable=unused-argument
         """Pretend to make the provided file private."""
         return True
