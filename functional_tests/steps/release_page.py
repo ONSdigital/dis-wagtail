@@ -5,7 +5,6 @@ from playwright.sync_api import expect
 
 @when("the user navigates to the release calendar page")
 def navigate_to_release_page(context: Context):
-    """Navigate to the release calendar page."""
     context.page.get_by_role("button", name="Pages").click()
     context.page.get_by_role("link", name="View child pages of 'Home'").click()
     context.page.get_by_role("link", name="Release calendar", exact=True).click()
@@ -13,19 +12,16 @@ def navigate_to_release_page(context: Context):
 
 @when('clicks "add child page" to create a new draft release page')
 def click_add_child_page(context: Context):
-    """Click add child page."""
     context.page.get_by_label("Add child page").click()
 
 
 @when('the user sets the page status to "{page_status}"')
 def set_page_status(context: Context, page_status: str):
-    """Set the page status to the given parameter value."""
     context.page.get_by_label("Status*").select_option(page_status.upper())
 
 
 @when("enters some example content on the page")
 def enter_example_release_content(context: Context):
-    """Enter example content on the release page."""
     context.page.get_by_placeholder("Page title*").fill("My Release")
 
     context.page.get_by_label("Release date", exact=True).fill("2024-12-25")
@@ -48,7 +44,6 @@ def enter_example_release_content(context: Context):
 
 @then("the new published release page with the example content is displayed")
 def check_provisional_release_page_content(context: Context):
-    """Check the content matches expectations on example release page."""
     expect(context.page.get_by_role("banner").get_by_text("My Release")).to_be_visible()
     expect(context.page.get_by_role("heading", name="My Release UK Statistics").locator("span")).to_be_visible()
     expect(context.page.get_by_role("heading", name="My Example Content")).to_be_visible()

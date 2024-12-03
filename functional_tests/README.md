@@ -122,13 +122,13 @@ the tests.
 
 Some Playwright configuration options can be passed in through environment variables
 
-| Variable              | Description                                                                                                                                                                    | Default                        |
-| --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------ |
-| PLAYWRIGHT_HEADLESS   | Toggle headless browser mode, set to "False" to show the browser window                                                                                                        | True                           |
-| PLAYWRIGHT_SLOW_MO    | Sets the Playwright slow mo mode in milliseconds                                                                                                                               | 0                              |
-| PLAYWRIGHT_BROWSER    | Set the browser for playwright to use, must be one of `chromium`, `firefox`, or `webkit`.<br/> NOTE: Currently only chromium is supported and tests may fail in other browsers | chromium                       |
-| PLAYWRIGHT_TRACE      | Toggle Playwright trace recording                                                                                                                                              | True                           |
-| PLAYWRIGHT_TRACES_DIR | Sets the location to write Playwright trace files if TRACE is enabled                                                                                                          | <working_directory>/tmp_traces |
+| Variable              | Description                                                                                                                                                                    | Default                          |
+| --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | -------------------------------- |
+| PLAYWRIGHT_HEADLESS   | Toggle headless browser mode, set to "False" to show the browser window                                                                                                        | `True`                           |
+| PLAYWRIGHT_SLOW_MO    | Sets the Playwright slow mo mode in milliseconds                                                                                                                               | `0`                              |
+| PLAYWRIGHT_BROWSER    | Set the browser for playwright to use, must be one of `chromium`, `firefox`, or `webkit`.<br/> NOTE: Currently only chromium is supported and tests may fail in other browsers | `chromium`                       |
+| PLAYWRIGHT_TRACE      | Toggle Playwright trace recording                                                                                                                                              | `True`                           |
+| PLAYWRIGHT_TRACES_DIR | Sets the location to write Playwright trace files if `PLAYWRIGHT_TRACE` is enabled.<br/>The Default location `<project_root>/tmp_traces` is git ignored for convenience.       | `<working_directory>/tmp_traces` |
 
 ## Viewing Failure Traces
 
@@ -178,32 +178,32 @@ step functions then it is easy to follow where the variables for any particular 
 through the steps. Passing the entire context object down to lower level functions effectively obscures their true
 signatures, making the use and setting of context variables much harder to follow.
 
-e.g.
+For example:
 
-> [!TIP]
-> Do this:
+> [!TIP] > _Do this:_
 >
 > ```python
 > @step('a thing happens')
 > def step_to_do_a_thing(context: Context):
->    context.a_new_context_var = helper_function(context.my_scenario_data)
+>     context.a_new_context_var = helper_function(context.my_scenario_data)
+>     ...
 >
-> def helper_function(data: str) -> str:
->    ...
->    return new_data
+> def helper_function(data: T) -> T:
+>     ...
+>     return new_data
 > ```
 
-> [!CAUTION]
-> Not this:
+> [!CAUTION] > _Not this:_
 >
 > ```python
 > @step('a thing happens')
 > def step_to_do_a_thing(context: Context):
 >     helper_function_which_overwrites_context(context)
+>     ...
 >
 > def helper_function_which_overwrites_context(context: Context) -> None:
->    ...
->    context.a_new_context_var = new_data
+>     ...
+>     context.a_new_context_var = new_data
 > ```
 
 ### Sharing Code Between Steps
@@ -238,8 +238,8 @@ registered in the [environment.py](environment.py) so they are available to all 
 
 Due to issues with the Django TransactionTestCase which prevent us using the built-in database teardown/setup
 in between scenarios, we have implemented our own database snapshot and restore pattern between tests. We still make use
-of the Django test case, specifically
-the [LiveServerTestCase](https://docs.djangoproject.com/en/stable/topics/testing/tools/#django.test.LiveServerTestCase)
+of the Django test case, specifically the
+[`LiveServerTestCase`](https://docs.djangoproject.com/en/stable/topics/testing/tools/#django.test.LiveServerTestCase)
 to perform the initial database setup and run a live server on a random port for the tests.
 
 ### Database Snapshot and Restore
@@ -276,7 +276,8 @@ compatibility issues with our multi-DB configuration, so this would have suffere
 
 Live server testing is accomplished with a fixture, which under the hood uses a Django `LiveServerTestCase`. This
 inherits from
-the [TransactionTestCase](https://docs.djangoproject.com/en/stable/topics/testing/tools/#django.test.TransactionTestCase),
+the [
+`TransactionTestCase`](https://docs.djangoproject.com/en/stable/topics/testing/tools/#django.test.TransactionTestCase),
 which causes us serious compatibility issues, as it uses an isolated test database and flushes all data in between
 tests. We have migrations which seed critical data rows, so a flush operation breaks the app.
 

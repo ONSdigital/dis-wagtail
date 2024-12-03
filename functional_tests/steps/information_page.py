@@ -5,13 +5,11 @@ from playwright.sync_api import expect
 
 @when("the user navigates to the pages menu")
 def user_navigates_to_pages_menu(context: Context) -> None:
-    """User navigates to the pages menu."""
     context.page.get_by_role("link", name="2 Pages created in Office for").click()
 
 
 @when("the user clicks add child page and chooses information page type")
 def user_adds_information_page(context: Context) -> None:
-    """User adds new information page."""
     context.page.get_by_label("Add child page").click()
     context.page.locator("li").filter(has_text="Information page Pages using").click()
     context.page.get_by_role("link", name="Information page", exact=True).click()
@@ -19,7 +17,6 @@ def user_adds_information_page(context: Context) -> None:
 
 @when("the user adds content to the new information page")
 def user_adds_info_page_contents(context: Context) -> None:
-    """User adds content to the new information page."""
     context.page.get_by_placeholder("Page title*").fill(" Test Info Page")
 
     context.page.get_by_role("textbox", name="Summary*").fill("My test information page")
@@ -44,7 +41,6 @@ def user_adds_info_page_contents(context: Context) -> None:
 
 @then("the new information page with the added content is displayed")
 def check_new_information_is_displayed_with_content(context: Context) -> None:
-    """Checks the new information page with the added content is displayed."""
     expect(context.page.get_by_text("Test Info Page")).to_be_visible()
     expect(context.page.get_by_text("My test information page")).to_be_visible()
     expect(context.page.get_by_role("heading", name="Last Updated: 2024-01-01")).to_be_visible()

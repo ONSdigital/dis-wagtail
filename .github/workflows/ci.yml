@@ -150,7 +150,7 @@ jobs:
     env:
       DJANGO_SETTINGS_MODULE: cms.settings.functional_test
       SECRET_KEY: fake_secret_key_to_run_tests # pragma: allowlist secret
-      BROWSER: ${{ matrix.browser }}
+      PLAYWRIGHT_BROWSER: ${{ matrix.browser }}
       PLAYWRIGHT_TRACES_DIR: playwright_traces
       PLAYWRIGHT_TRACE: 'true'
 
