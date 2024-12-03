@@ -1,0 +1,21 @@
+@use 'config' as *;
+
+/*
+Overrides to ons header styles
+Padding is moved to the logo element in order to allow the menu button to fill the full
+height of .ons-header__grid-top
+*/
+
+.ons-header {
+    &__grid-top {
+        padding: 0;
+    }
+
+    &__org-logo {
+        padding: rem-sizing(20) 0;
+
+        @include media-query('l') {
+            padding: rem-sizing(24) 0;
+        }
+    }
+}
