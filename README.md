@@ -119,8 +119,8 @@ Follow these steps to set up and run the project using Docker.
 
     Once the containers are running, you need to manually start Django from within the web container. This allows for running both the Django server and any additional background services (e.g., schedulers).
 
-    ⚠️ WARNING  
-    The `honcho` command will pick up your local mounted `.env` file when running via `docker-compose`. Ensure that you comment out any variables in the `.env` file which might cause clashes in the container context as they will take precedence when running `honcho start`.
+    > ⚠️ WARNING  
+    >  The `honcho` command will pick up your local mounted `.env` file when running via `docker-compose`. Ensure that you comment out any variables in the `.env` file which might cause clashes in the container context as they will take precedence when running `honcho start`.
 
     ```bash
     # Start both Django and the scheduler using Honcho
@@ -136,7 +136,7 @@ You can then access the admin at `http://0.0.0.0:8000/admin/` or `http://localho
 
 You can also run the main application locally with the supporting backend services such as the Postgres and Redis running in Docker. This can be useful when you want to make changes that require the app to be restarted in order to be picked up.
 
-For this method you can specify the runtime configuration either in your IDE (for PyCharm see [here](https://www.jetbrains.com/help/pycharm/run-debug-configuration.html#createExplicitly)), or copy the `.env-dev-example` and rename it to `.env` which will allow Django to pick up the config.
+For this method you can specify the runtime configuration either in your IDE (for PyCharm see [here](https://www.jetbrains.com/help/pycharm/run-debug-configuration.html#createExplicitly)), or copy the `.development.env` and rename it to `.env` which will allow Django to pick up the config.
 
 Once you create the `.env` file, and you'd like to switch back to running the application in a container, the `.env` file will be accessible inside the containers and it will be picked up by the `honcho` command. In order to avoid conflicts you may need to comment out some variables (such as `DATABASE_URL` and `REDIS_URL`) in the `.env` file.
 
