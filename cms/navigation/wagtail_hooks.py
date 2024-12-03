@@ -1,4 +1,3 @@
-from wagtail import hooks
 from wagtail.snippets.models import register_snippet
 from wagtail.snippets.views.snippets import SnippetViewSet
 from wagtail.permissions import ModelPermissionPolicy
@@ -6,7 +5,7 @@ from .models import MainMenu
 
 
 class NoAddModelPermissionPolicy(ModelPermissionPolicy):
-    """Model permission that doesn't allow creating more than 1 main menu instance."""
+    """Model permission that doesn't allow creating more than one main menu instance."""
 
     def user_has_permission(self, user, action):
         if action == "add" and MainMenu.objects.exists():

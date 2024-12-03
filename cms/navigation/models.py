@@ -7,49 +7,50 @@ from wagtail.blocks import CharBlock, ListBlock, PageChooserBlock, StructBlock, 
 from wagtail.contrib.settings.models import BaseSiteSetting, register_setting
 from wagtail.snippets.models import register_snippet
 from cms.core.fields import StreamField
+from cms.core.blocks.base import LinkBlock
 
 
-# Custom LinkBlock to support both pages and URLs
-class BaseLinkBlock(StructBlock):  # TODO - Reuse blocks from core.blocks.related.py
-    page = PageChooserBlock(required=False)
-    url = URLBlock(required=False, label="URL")
-    title = CharBlock(required=False, help_text="Optional. Displayed as the link text.")
+# # Custom LinkBlock to support both pages and URLs
+# class BaseLinkBlock(StructBlock):  # TODO - Reuse blocks from core.blocks.related.py
+#     page = PageChooserBlock(required=False)
+#     url = URLBlock(required=False, label="URL")
+#     title = CharBlock(required=False, help_text="Optional. Displayed as the link text.")
 
-    def clean(self, value: dict) -> dict:
-        value = super().clean(value)
-        if not value.get("page") and not value.get("url"):
-            raise ValidationError("Either a page or a URL must be provided.")
-        return value
+#     def clean(self, value: dict) -> dict:
+#         value = super().clean(value)
+#         if not value.get("page") and not value.get("url"):
+#             raise ValidationError("Either a page or a URL must be provided.")
+#         return value
 
-    class Meta:
-        abstract = True
-        icon = "link"
+#     class Meta:
+#         abstract = True
+#         icon = "link"
 
 
-class ThemeLinkBlock(BaseLinkBlock):
+class ThemeLinkBlock(LinkBlock):
     page = PageChooserBlock(required=False, page_type="themes.ThemePage")
 
     class Meta:
         label = "Theme Link"
 
 
-class TopicLinkBlock(BaseLinkBlock):
+class TopicLinkBlock(LinkBlock):
     page = PageChooserBlock(required=False, page_type="topics.TopicPage")
 
     class Meta:
         label = "Topic Link"
 
 
-class HighlightsBlock(BaseLinkBlock):
+class HighlightsBlock(LinkBlock):
     description = CharBlock(required=True, max_length=50, help_text="E.g., It's never been more important")
 
-    def clean(self, value: dict) -> dict:
-        value = super().clean(value)
-        if not value.get("page") and not value.get("url"):
-            raise ValidationError("Either a page or a URL must be provided.")
-        if value.get("url") and not value.get("title"):
-            raise ValidationError("Title is required if adding an external URL.")
-        return value
+    # def clean(self, value: dict) -> dict:
+    #     value = super().clean(value)
+    #     if not value.get("page") and not value.get("url"):
+    #         raise ValidationError("Either a page or a URL must be provided.")
+    #     if value.get("url") and not value.get("title"):
+    #         raise ValidationError("Title is required if adding an external URL.")
+    #     return value
 
     class Meta:
         icon = "star"
@@ -101,11 +102,6 @@ class MainMenu(models.Model):
     def __str__(self) -> str:
         return "Main Menu"
 
-    def save(self, *args, **kwargs):
-        if not self.pk and MainMenu.objects.exists():
-            raise ValidationError("There can only be one Main Menu instance.")
-        super().save(*args, **kwargs)
-
 
 # NavigationSettings model
 @register_setting(icon="list-ul")  # TODO: Do we need to make sure there is always a navigation menu set?
@@ -122,3 +118,7 @@ class NavigationSettings(BaseSiteSetting):
     panels: ClassVar[list] = [
         FieldPanel("main_menu"),
     ]
+
+
+# TODO - Write tests for these blocks
+# TODO - Translate strings
