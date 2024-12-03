@@ -185,17 +185,25 @@ e.g.
 >
 > ```python
 > @step('a thing happens')
-> def step_to_do_a_thing(context):
->    context.a_new_context_var = some_helper_function(context.my_scenario_data)
+> def step_to_do_a_thing(context: Context):
+>    context.a_new_context_var = helper_function(context.my_scenario_data)
+>
+> def helper_function(data: str) -> str:
+>    ...
+>    return new_data
 > ```
 
-> [!WARNING]
+> [!CAUTION]
 > Not this:
 >
 > ```python
 > @step('a thing happens')
-> def step_to_do_a_thing(context):
->     some_helper_function_which_overwrites_context(context)
+> def step_to_do_a_thing(context: Context):
+>     helper_function_which_overwrites_context(context)
+>
+> def helper_function_which_overwrites_context(context: Context) -> None:
+>    ...
+>    context.a_new_context_var = new_data
 > ```
 
 ### Sharing Code Between Steps
