@@ -9,9 +9,9 @@ from wagtail.contrib.sitemaps.views import sitemap
 from wagtail.documents import urls as wagtaildocs_urls
 from wagtail.utils.urlpatterns import decorate_urlpatterns
 
+from cms.auth.views import ONSLogoutView
 from cms.core import views as core_views
 from cms.core.cache import get_default_cache_control_decorator
-from cms.core.views import ONSLogoutView
 
 # Internal URLs are not intended for public use.
 internal_urlpatterns = [path("readiness/", core_views.ready, name="readiness")]

@@ -57,6 +57,7 @@ if "CSRF_TRUSTED_ORIGINS" in env:
 
 INSTALLED_APPS = [
     "cms.analysis",
+    "cms.auth",
     "cms.core",
     "cms.documents",
     "cms.home",
@@ -125,7 +126,7 @@ MIDDLEWARE = [
 if not IS_EXTERNAL_ENV:
     common_middleware_index = MIDDLEWARE.index("django.middleware.common.CommonMiddleware")
     MIDDLEWARE.insert(common_middleware_index, "django.contrib.messages.middleware.MessageMiddleware")
-    MIDDLEWARE.insert(common_middleware_index, "cms.core.auth.ONSAuthMiddleware")
+    MIDDLEWARE.insert(common_middleware_index, "cms.auth.middleware.ONSAuthMiddleware")
     MIDDLEWARE.insert(common_middleware_index, "django.contrib.sessions.middleware.SessionMiddleware")
 
 
