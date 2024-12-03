@@ -12,8 +12,7 @@ if TYPE_CHECKING:
 
 class PrivateDocumentMixin(PrivateMediaMixin):
     """A mixin class to be applied to a project's custom Document model,
-    allowing the privacy to be controlled effectively, depending on the
-    collection the image belongs to.
+    allowing the privacy of related files to be controlled effectively.
     """
 
     objects: ClassVar[PrivateDocumentManager] = PrivateDocumentManager()

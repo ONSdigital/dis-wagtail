@@ -17,7 +17,7 @@ if TYPE_CHECKING:
 
 class PrivateImageMixin(PrivateMediaMixin):
     """A mixin class to be applied to a project's custom Image model,
-    allowing the file privacy to be controlled effectively.
+    allowing the privacy of related files to be controlled effectively.
     """
 
     objects: ClassVar[PrivateImageManager] = PrivateImageManager()

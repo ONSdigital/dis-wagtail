@@ -17,12 +17,8 @@ logger = logging.getLogger(__name__)
 
 
 class PrivateMediaMixin(models.Model):
-    """A mixin class for models that has files that need to remain private
+    """A mixin class for models that have files that need to remain private
     until the object itself is no longer private.
-
-    Subclasses must implement the `determine_privacy()` method, which should
-    return a `Privacy` value to determine the correct value for the `is_private`
-    field (and by extension, whether files should be made private or public).
 
     Subclasses must implement the `get_privacy_controlled_files()` method,
     which should return an iterable of `FieldFile` objects that are managed
