@@ -69,7 +69,7 @@ class SignalHandlersTestCase(TestCase):
         self.assertEqual(self.public_document.privacy, expected_privacy)
 
     def test_publishing_a_page_makes_referenced_media_public(self):
-        """Tests the impact of publishing and unpublishing a page has on the privacy of referenced media."""
+        """Tests the impact of publishing a media-referencing page has on the privacy of referenced media."""
         self.test_page.content = self.generate_media_referencing_content()
 
         # Publishing the revision should result in all referenced media becoming public
@@ -77,7 +77,7 @@ class SignalHandlersTestCase(TestCase):
         self.assertMediaPrivacy(Privacy.PUBLIC)
 
     def test_unpublishing_a_page_makes_referenced_media_private(self):
-        """Tests the impact of unpublishing a page has on the privacy of referenced media."""
+        """Tests the impact of unpublishing a media-referencing page has on the privacy of referenced media."""
         self.test_page.content = self.generate_media_referencing_content()
         self.test_page.live = True
         self.test_page.save(update_fields=["content", "live"])
@@ -87,8 +87,8 @@ class SignalHandlersTestCase(TestCase):
         self.test_page.unpublish()
         self.assertMediaPrivacy(Privacy.PRIVATE)
 
-    def test_unpublishing_a_page_without_references_to_media(self):
-        """Tests the impact of unpublishing a page that doesn't reference any media."""
+    def test_page_without_references_to_media(self):
+        """Tests that pages without any referenced to media can still be published and unpublished without issue."""
         self.test_page.content = self.generate_non_media_referencing_content()
         self.test_page.live = True
         self.test_page.save(update_fields=["content", "live"])
