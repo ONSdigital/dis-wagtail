@@ -182,7 +182,7 @@ For example:
 
 > [!TIP]
 >
-> _Do this:_
+> __Do this:__
 >
 > ```python
 > @step('a thing happens')
@@ -190,14 +190,14 @@ For example:
 >     context.a_new_context_var = helper_function(context.my_scenario_data)
 >     ...
 >
-> def helper_function(data: T) -> T:
+> def helper_function(my_scenario_data):
 >     ...
 >     return new_data
 > ```
 
 > [!CAUTION]
 >
-> _Not this:_
+> __Not this:__
 >
 > ```python
 > @step('a thing happens')
