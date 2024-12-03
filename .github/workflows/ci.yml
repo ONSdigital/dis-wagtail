@@ -177,13 +177,16 @@ jobs:
           path: cms/static_compiled/
 
       - name: Docker Compose Up
-        run: make functional-tests-up-dev
+        run: make functional-tests-up
 
       - name: Fetch Design System templates
         run: make load-design-system-templates
 
       - name: Collect Static Files
         run: poetry run ./manage.py collectstatic --verbosity 0 --noinput --clear
+
+      - name: Prepare Database
+        run: poetry run ./manage.py migrate --noinput
 
       - name: Run Functional Tests
         run: poetry run behave functional_tests --verbose
