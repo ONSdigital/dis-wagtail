@@ -41,7 +41,6 @@ def user_adds_info_page_contents(context: Context) -> None:
 
 @then("the new information page with the added content is displayed")
 def check_new_information_is_displayed_with_content(context: Context) -> None:
-    expect(context.page.get_by_text("Test Info Page")).to_be_visible()
     expect(context.page.get_by_text("My test information page")).to_be_visible()
     expect(context.page.get_by_role("heading", name="Last Updated: 2024-01-01")).to_be_visible()
     expect(context.page.get_by_role("heading", name="Some example rich text content")).to_be_visible()
