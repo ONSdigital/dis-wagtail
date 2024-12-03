@@ -13,7 +13,7 @@ logger = logging.getLogger(__name__)
 
 
 class PrivacySettingS3Storage(S3Storage):
-    # pylint: disable=W0223
+    # pylint: disable=abstract-method
     private_acl_name = "private"
     public_acl_name = "public-read"
 
