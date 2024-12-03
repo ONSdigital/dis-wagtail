@@ -52,7 +52,10 @@ class ReadReplicaRouter:  # pylint: disable=unused-argument,protected-access
 
 
 class ExternalEnvRouter:  # pylint: disable=unused-argument,protected-access
-    """A database router which prevents writes to certain models in the external environment."""
+    """A database router which prevents writes to certain models in the external environment.
+
+    In production, this will also be enforced at the database level.
+    """
 
     WRITE_ALLOWED_MODELS: ClassVar[list[type[Model]]] = [get_image_model().get_rendition_model()]
 

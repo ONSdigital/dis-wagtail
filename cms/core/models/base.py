@@ -89,7 +89,11 @@ class BasePage(ListingFieldsMixin, SocialFieldsMixin, Page):  # type: ignore[dja
 
 
 class BaseSiteSetting(WagtailBaseSiteSetting):
-    """A customized site setting which gracefully handles a read-only database connection."""
+    """A customized site setting.
+
+    - Use default values in external environment if an instance doesn't exist.
+    - Use `.get` to ensure the read connection is used.
+    """
 
     class Meta:
         abstract = True
