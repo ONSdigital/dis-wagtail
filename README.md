@@ -36,6 +36,7 @@ The Wagtail CMS for managing and publishing content for the Office for National 
     -   [Django Migrations](#django-migrations)
 -   [Contributing](#contributing)
 -   [License](#license)
+
 <!-- markdown-link-check-enable -->
 
 For further developer documentation see [docs](docs/index.md)
@@ -52,9 +53,12 @@ Ensure you have the following installed:
    managing Python versions.
 2. **[Poetry](https://python-poetry.org/)**: This is used to manage package dependencies and virtual
    environments.
-3. **[Colima](https://github.com/ONSdigital/dp-compose/blob/main/setting-up-colima-locally.md)** for running the project in Docker containers.
-4. **[PostgreSQL](https://www.postgresql.org/)** for the database. Provided as container via `docker-compose.yml` when using the Docker setup.
-5. **[Node](https://nodejs.org/en)** and **[`nvm` (Node Version Manager)](https://github.com/nvm-sh/nvm)** for front-end tooling.
+3. **[Colima](https://github.com/ONSdigital/dp-compose/blob/main/setting-up-colima-locally.md)** for running the project
+   in Docker containers.
+4. **[PostgreSQL](https://www.postgresql.org/)** for the database. Provided as container via `docker-compose.yml` when
+   using the Docker setup.
+5. **[Node](https://nodejs.org/en)** and **[`nvm` (Node Version Manager)](https://github.com/nvm-sh/nvm)** for front-end
+   tooling.
 6. **[JQ](https://jqlang.github.io/jq/)** for the step in the build that installs the design system templates
 7. **Operation System**: Ubuntu/MacOS
 
@@ -98,7 +102,8 @@ Follow these steps to set up and run the project using Docker.
 
 2. **Migrations and Superuser Creation**
 
-    If this is your first time setting up the project, you’ll need to run migrations to set up the database schema and create an administrative user.
+    If this is your first time setting up the project, you’ll need to run migrations to set up the database schema and
+    create an administrative user.
     Note: `dj` is an alias for `django-admin`
 
     ```bash
@@ -114,7 +119,8 @@ Follow these steps to set up and run the project using Docker.
 
 3. **Start Django Inside the Container**
 
-    Once the containers are running, you need to manually start Django from within the web container. This allows for running both the Django server and any additional background services (e.g., schedulers).
+    Once the containers are running, you need to manually start Django from within the web container. This allows for
+    running both the Django server and any additional background services (e.g., schedulers).
 
     ```bash
     # Start both Django and the scheduler using Honcho
@@ -140,7 +146,8 @@ make
 
 ### Front-end tooling
 
-While the end goal is to have all front-end elements in the [Design System](https://service-manual.ons.gov.uk/design-system),
+While the end goal is to have all front-end elements in
+the [Design System](https://service-manual.ons.gov.uk/design-system),
 the new design introduces a number of components that we need to build and contributed to the DS. In order to aid
 development and avoid being blocked by the DS, we will use modern front-end tooling for that.
 
@@ -176,7 +183,8 @@ To run the tests and check coverage, run:
 make test
 ```
 
-During tests, the `cms.settings.test` settings module is used. When running test without using `make test`, ensure this settings module is used.
+During tests, the `cms.settings.test` settings module is used. When running test without using `make test`, ensure this
+settings module is used.
 
 ### Functional Tests
 
@@ -187,7 +195,7 @@ run BDD Cucumber feature tests against the app from a browser.
 
 #### Installation
 
-Install Playwrights dependencies (including its browser drivers) with:
+Install the Playwright dependencies (including its browser drivers) with:
 
 ```shell
 make playwright-install
@@ -201,7 +209,7 @@ You can run the tests as an all-in-one command with:
 make functional-tests
 ```
 
-Which will start and stop the docker compose services with the tests
+This will start and stop the docker compose services with the relevant tests.
 
 To run the docker compose dependencies (database and redis) separately, e.g. if you want to run individual functional
 tests yourself for development, start the docker compose dependencies with:
@@ -210,7 +218,7 @@ tests yourself for development, start the docker compose dependencies with:
 make functional-tests-up
 ```
 
-This will start the dependencies in the background, allowing you to then run the tests separately.
+This will start the dependent services in the background, allowing you to then run the tests separately.
 
 Then once you are finished testing, stop the dependencies with:
 
@@ -222,17 +230,17 @@ make functional-tests-down
 
 By default, the tests will run in headless mode with no visible browser window.
 
-To disable headless mode and show the browser, set `HEADLESS=False` in the environment from which you are running the
-tests.
-In this circumstance, you will probably also find it helpful to enable "slow mo" mode, which slows down the automated
-browser interactions to make it possible to follow what the tests are doing. This is set using the `SLOW_MO`
-environment variable, passing it a value of milliseconds by which to slow each interaction, e.g. `SLOW_MO=1000` will
-cause each individual browser interaction from the tests to be delayed by 1 second.
+To disable headless mode and show the browser, set `PLAYWRIGHT_HEADLESS=False` in the environment from which you are
+running the tests. In this circumstance, you will probably also find it helpful to enable "slow mo" mode, which slows
+down the automated browser interactions to make it possible to follow what the tests are doing. You can configure it
+using the `PLAYWRIGHT_SLOW_MO` environment variable, passing it a value of milliseconds by which to slow each
+interaction, e.g. `PLAYWRIGHT_SLOW_MO=1000` will cause each individual browser interaction from the tests to be delayed
+by 1 second.
 
 For example, you can run the tests with visible browser and each interaction slowed by a second by running:
 
 ```shell
-HEADLESS=False SLOW_MO=1000 make functional-tests
+PLAYWRIGHT_HEADLESS=False PLAYWRIGHT_SLOW_MO=1000 make functional-tests
 ```
 
 #### Developing Functional Tests
@@ -322,7 +330,8 @@ make megalint
 ### Django Migrations
 
 Wagtail is built on [Django](https://djangoproject.com/) and changes to its models may require generating and
-running schema migrations. For full details see the [Django documentation on migrations](https://docs.djangoproject.com/en/5.1/topics/migrations/)
+running schema migrations. For full details see
+the [Django documentation on migrations](https://docs.djangoproject.com/en/5.1/topics/migrations/)
 
 Below are the commands you will most commonly use, note that these have to be run inside the container.
 

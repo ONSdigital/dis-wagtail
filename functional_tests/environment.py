@@ -32,8 +32,8 @@ def before_all(context: Context):
     use_fixture(django_test_runner, context=context)
 
     context.playwright: Playwright = sync_playwright().start()
-    context.playwright_trace = str_to_bool(os.getenv("TRACE", "True"))
-    context.playwright_traces_dir = Path(os.getenv("TRACES_DIR", str(Path.cwd().joinpath("tmp_traces"))))
+    context.playwright_trace = str_to_bool(os.getenv("PLAYWRIGHT_TRACE", "True"))
+    context.playwright_traces_dir = Path(os.getenv("PLAYWRIGHT_TRACES_DIR", str(Path.cwd().joinpath("tmp_traces"))))
 
     configure_and_launch_playwright_browser(context)
 
@@ -45,10 +45,10 @@ def before_all(context: Context):
 
 def configure_and_launch_playwright_browser(context: Context) -> None:
     """Configures and launches a playwright browser and browser context for use in the tests."""
-    browser_type = os.getenv("BROWSER", "chromium")
-    headless = str_to_bool(os.getenv("HEADLESS", "True"))
-    slow_mo = int(os.getenv("SLOW_MO", "0"))
-    default_browser_timeout = int(os.getenv("DEFAULT_BROWSER_TIMEOUT", "5_000"))
+    browser_type = os.getenv("PLAYWRIGHT_BROWSER", "chromium")
+    headless = str_to_bool(os.getenv("PLAYWRIGHT_HEADLESS", "True"))
+    slow_mo = int(os.getenv("PLAYWRIGHT_SLOW_MO", "0"))
+    default_browser_timeout = int(os.getenv("PLAYWRIGHT_DEFAULT_BROWSER_TIMEOUT", "5_000"))
 
     browser_kwargs = {
         "headless": headless,

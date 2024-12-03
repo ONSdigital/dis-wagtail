@@ -122,13 +122,13 @@ the tests.
 
 Some Playwright configuration options can be passed in through environment variables
 
-| Variable   | Description                                                                                                                                                                    | Default                        |
-| ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------ |
-| HEADLESS   | Toggle headless browser mode, set to "False" to show the browser window                                                                                                        | True                           |
-| SLOW_MO    | Sets the Playwright slow mo mode in milliseconds                                                                                                                               | 0                              |
-| BROWSER    | Set the browser for playwright to use, must be one of `chromium`, `firefox`, or `webkit`.<br/> NOTE: Currently only chromium is supported and tests may fail in other browsers | chromium                       |
-| TRACE      | Toggle Playwright trace recording                                                                                                                                              | True                           |
-| TRACES_DIR | Sets the location to write Playwright trace files if TRACE is enabled                                                                                                          | <working_directory>/tmp_traces |
+| Variable              | Description                                                                                                                                                                    | Default                        |
+| --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------ |
+| PLAYWRIGHT_HEADLESS   | Toggle headless browser mode, set to "False" to show the browser window                                                                                                        | True                           |
+| PLAYWRIGHT_SLOW_MO    | Sets the Playwright slow mo mode in milliseconds                                                                                                                               | 0                              |
+| PLAYWRIGHT_BROWSER    | Set the browser for playwright to use, must be one of `chromium`, `firefox`, or `webkit`.<br/> NOTE: Currently only chromium is supported and tests may fail in other browsers | chromium                       |
+| PLAYWRIGHT_TRACE      | Toggle Playwright trace recording                                                                                                                                              | True                           |
+| PLAYWRIGHT_TRACES_DIR | Sets the location to write Playwright trace files if TRACE is enabled                                                                                                          | <working_directory>/tmp_traces |
 
 ## Viewing Failure Traces
 
@@ -180,11 +180,23 @@ signatures, making the use and setting of context variables much harder to follo
 
 e.g.
 
-```python
-@step('a thing happens')
-def step_to_do_a_thing(context):
-    context.a_new_context_var = some_helper_function(context.my_scenario_data)
-```
+> [!TIP]
+> Do this:
+>
+> ```python
+> @step('a thing happens')
+> def step_to_do_a_thing(context):
+>    context.a_new_context_var = some_helper_function(context.my_scenario_data)
+> ```
+
+> [!WARNING]
+> Not this:
+>
+> ```python
+> @step('a thing happens')
+> def step_to_do_a_thing(context):
+>     some_helper_function_which_overwrites_context(context)
+> ```
 
 ### Sharing Code Between Steps
 
