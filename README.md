@@ -236,8 +236,6 @@ Various tools are used to lint and format the code in this project.
 The project uses [Ruff](https://github.com/astral-sh/ruff) and [pylint](https://pylint.pycqa.org/en/latest/index.html)
 for linting and formatting of the Python code.
 
-[Django-migration-linter](https://github.com/3YOURMIND/django-migration-linter) for linting migrations in the project.
-
 The tools are configured using the `pyproject.toml` file.
 
 To lint the Python code, run:
@@ -245,6 +243,26 @@ To lint the Python code, run:
 ```bash
 make lint
 ```
+
+#### Django Migration Linter
+
+[Django Migration Linter](https://github.com/3YOURMIND/django-migration-linter) for linting migrations files in the project.
+
+Before you run the commands below to lint the migration files, make sure you have shelled into the docker web container. As the migration linter will need access to the postresql database.
+
+To lint the django migration files:
+
+```bash
+make lint-migrations
+```
+
+To lint the django migration files and view the output in a more readable format:
+
+```bash
+make lint-migrations-custom
+```
+
+#### Format
 
 To auto-format the Python code, and correct fixable linting issues, run:
 

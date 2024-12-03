@@ -54,6 +54,10 @@ lint-frontend:  ## Run front-end linters
 lint-migrations: ## Run django-migration-linter
 	poetry run python manage.py lintmigrations
 
+.PHONY: lint-migrations-custom
+lint-migrations-custom: ## Run django-migration-linter
+	cd scripts && poetry run python lintmigrations_custom.py
+
 .PHONY: test
 test:  ## Run the tests and check coverage.
 	poetry run coverage erase
