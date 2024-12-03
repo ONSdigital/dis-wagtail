@@ -182,7 +182,7 @@ For example:
 
 > [!TIP]
 >
-> __Do this:__
+> **Do this:**
 >
 > ```python
 > @step('a thing happens')
@@ -197,7 +197,7 @@ For example:
 
 > [!CAUTION]
 >
-> __Not this:__
+> **Not this:**
 >
 > ```python
 > @step('a thing happens')
