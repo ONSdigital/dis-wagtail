@@ -38,6 +38,7 @@ class PrivacySettingS3StorageTests(TestCase):
 
     def test_make_public(self):
         self.storage.make_public(self.document.file)
+        self.bucket_mock.Object.assert_called_once_with(self.document.file.name)
         self.object_mock.Acl.assert_called_once()
         self.acl_mock.put.assert_called_once_with(ACL=self.storage.public_acl_name)
 
