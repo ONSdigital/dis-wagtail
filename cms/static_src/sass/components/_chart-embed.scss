@@ -1,0 +1,11 @@
+@use 'config' as *;
+
+.chart-embed {
+    padding: rem-sizing(24) 0;
+    border-top: 1px solid var(--ons-color-grey-75);
+    border-bottom: 1px solid var(--ons-color-grey-75);
+
+    &__heading {
+        margin-bottom: rem-sizing(32);
+    }
+}

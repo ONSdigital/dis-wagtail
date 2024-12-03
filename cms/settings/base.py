@@ -57,6 +57,7 @@ if "CSRF_TRUSTED_ORIGINS" in env:
 
 INSTALLED_APPS = [
     "cms.analysis",
+    "cms.bundles",
     "cms.core",
     "cms.documents",
     "cms.home",
@@ -842,6 +843,9 @@ ONS_EMBED_PREFIX = env.get("ONS_EMBED_PREFIX", "https://www.ons.gov.uk/visualisa
 # ONS Cookie banner settings
 ONS_COOKIE_BANNER_SERVICE_NAME = env.get("ONS_COOKIE_BANNER_SERVICE_NAME", "www.ons.gov.uk")
 MANAGE_COOKIE_SETTINGS_URL = env.get("MANAGE_COOKIE_SETTINGS_URL", "https://www.ons.gov.uk/cookies")
+
+
+SLACK_NOTIFICATIONS_WEBHOOK_URL = env.get("SLACK_NOTIFICATIONS_WEBHOOK_URL")
 
 MIGRATION_LINTER_OPTIONS = {
     "exclude_apps": [
