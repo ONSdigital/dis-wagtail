@@ -50,12 +50,11 @@ class PrivateImageMixin(PrivateMediaMixin):
     def get_privacy_controlled_serve_urls(self, sites: Iterable["Site"]) -> Iterator[str]:
         """Return an iterator of fully-fledged serve URLs for this image, covering the domains for all
         provided sites.
+
+        NOTE: Since image serve URLS in this project are exempt from caching, and this result is only
+        used for cache purging, it doesn't need to return anything.
         """
-        if not sites:
-            return
-        for rendition in self.renditions.all():  # type: ignore[attr-defined]
-            for site in sites:
-                yield site.root_url + rendition.serve_url
+        return iter([])
 
 
 class AbstractPrivateRendition(AbstractRendition):

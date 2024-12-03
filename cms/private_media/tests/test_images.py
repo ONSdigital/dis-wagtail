@@ -170,23 +170,12 @@ class TestImageModel(TestCase):
         image = ImageFactory(collection=self.root_collection)
         self.assertFalse(list(image.get_privacy_controlled_serve_urls(sites)))
 
-        # If an image has renditions, the result should be a list of serve URLs, prefixed
-        # with the root url for each supplied site
-        renditions = image.create_renditions(Filter("fill-10x10"), Filter("fill-20x20"))
+        # Even when an image has renditions, the result should be empty, because
+        # image serve URLs are exempt from caching, so don't need to be purged
+        image.create_renditions(Filter("fill-10x10"), Filter("fill-20x20"))
         expected_result = []
-        for rendition in renditions.values():
-            expected_result.extend(
-                [
-                    f"http://localhost{rendition.url}",
-                    f"https://foo.com{rendition.url}",
-                ]
-            )
-        with self.assertNumQueries(1):
-            self.assertEqual(list(image.get_privacy_controlled_serve_urls(sites)), expected_result)
-
-        # If no sites are provided, the result should be empty
         with self.assertNumQueries(0):
-            self.assertFalse(list(image.get_privacy_controlled_serve_urls([])))
+            self.assertEqual(list(image.get_privacy_controlled_serve_urls(sites)), expected_result)
 
     def test_get_privacy_controlled_file_urls(self):
         """Test the behaviour of PrivateImageMixin.get_privacy_controlled_file_urls."""
@@ -279,18 +268,15 @@ class TestPrivateImageManager(TestCase):
         """Test the behaviour of PrivateImageManager.bulk_make_public()."""
         # Three image are already public, so only three should be updated
         qs = self.model.objects.all().prefetch_related("renditions")
-        with self.assertNumQueries(4):
+        with self.assertNumQueries(3):
             # Query summary:
             # 1. to fetch the images
             # 2. to prefetch renditions
             # 3. to save updates
-            # 4. to fetch sites to facilitate cache purging
             self.assertEqual(self.model.objects.bulk_make_public(qs), 3)
 
-        # Serve URLs for private image renditions should have been purged as part of the update
-        for obj in self.private_images:
-            for rendition in obj.renditions.all():
-                self.assertIn("http://localhost" + rendition.url, PURGED_URLS)
+        # No urls should have been purged as part of the update
+        self.assertEqual(PURGED_URLS, [])
 
         # Verify all images are now public
         for obj in self.model.objects.only("_privacy", "file_permissions_last_set", "privacy_last_changed"):
@@ -307,18 +293,15 @@ class TestPrivateImageManager(TestCase):
         """Test the behaviour of PrivateImageManager.bulk_make_private()."""
         # Three images are already private, so only three should be updated
         qs = self.model.objects.all().prefetch_related("renditions")
-        with self.assertNumQueries(4):
+        with self.assertNumQueries(3):
             # Query summary:
             # 1. to fetch the images
             # 2. to prefetch renditions
             # 3. to save updates
-            # 4. to fetch sites to facilitate cache purging
             self.assertEqual(self.model.objects.bulk_make_private(qs), 3)
 
-        # Serve URLs for public image renditions should have been purged as part of the update
-        for obj in self.public_images:
-            for rendition in obj.renditions.all():
-                self.assertIn("http://localhost" + rendition.serve_url, PURGED_URLS)
+        # No urls should have been purged as part of the update
+        self.assertEqual(PURGED_URLS, [])
 
         # Verify all images are now private
         for image in self.model.objects.only("_privacy", "file_permissions_last_set", "privacy_last_changed"):

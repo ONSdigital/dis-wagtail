@@ -25,6 +25,7 @@ internal_urlpatterns = [path("readiness/", core_views.ready, name="readiness")]
 private_urlpatterns = [
     path("documents/", include(wagtaildocs_urls)),
     path("-/", include((internal_urlpatterns, "internal"))),
+    re_path(r"^images/([^/]*)/(\d*)/([^/]*)/[^/]*$", PrivateImageServeView.as_view(), name="wagtailimages_serve"),
 ]
 
 # `wagtail.admin` must always be installed,
@@ -81,7 +82,6 @@ if settings.DEBUG:
 # Public URLs that are meant to be cached.
 urlpatterns = [
     path("sitemap.xml", sitemap),
-    re_path(r"^images/([^/]*)/(\d*)/([^/]*)/[^/]*$", PrivateImageServeView.as_view(), name="wagtailimages_serve"),
 ]
 # Set public URLs to use the "default" cache settings.
 urlpatterns = decorate_urlpatterns(urlpatterns, get_default_cache_control_decorator())
