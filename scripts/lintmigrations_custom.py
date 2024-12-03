@@ -17,8 +17,8 @@ def get_app_labels():
 # Run the lintmigrations command for a given app_label
 def run_lintmigration(app_label):
     try:
-        result = subprocess.run(
-            [sys.executable, "python", "../manage.py", "lintmigrations", app_label],
+        result = subprocess.run(  # noqa: S603
+            [sys.executable, "../manage.py", "lintmigrations", app_label],
             text=True,
             capture_output=True,
             check=True,
