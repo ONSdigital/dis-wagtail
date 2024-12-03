@@ -1,0 +1,8 @@
+@use 'config' as *;
+
+// overrides to ons container styles
+.ons-container {
+    max-width: rem-sizing(
+        1056
+    ); // with 1rem padding either side, content is then 1024px wide to match the designs
+}

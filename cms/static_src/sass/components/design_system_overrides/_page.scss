@@ -1,0 +1,8 @@
+@use 'config' as *;
+
+// overrides to ons page styles - to be discussed if these should be merged back to the design system
+.ons-page {
+    &__main {
+        margin-bottom: rem-sizing(80);
+    }
+}

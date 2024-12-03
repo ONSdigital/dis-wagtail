@@ -1,0 +1,11 @@
+@use 'config' as *;
+
+.streamfield {
+    margin-bottom: rem-sizing(64);
+
+    &--last-flush {
+        &:last-child {
+            margin-bottom: 0;
+        }
+    }
+}

@@ -14,6 +14,7 @@ from wagtail.models import Page
 from wagtail.search import index
 
 from cms.analysis.blocks import AnalysisStoryBlock
+from cms.bundles.models import BundledPageMixin
 from cms.core.blocks import HeadlineFiguresBlock
 from cms.core.fields import StreamField
 from cms.core.models import BasePage
@@ -75,7 +76,7 @@ class AnalysisSeries(RoutablePageMixin, Page):
         return response
 
 
-class AnalysisPage(BasePage):  # type: ignore[django-manager-missing]
+class AnalysisPage(BundledPageMixin, BasePage):  # type: ignore[django-manager-missing]
     """The analysis page model."""
 
     parent_page_types: ClassVar[list[str]] = ["AnalysisSeries"]
@@ -124,6 +125,7 @@ class AnalysisPage(BasePage):  # type: ignore[django-manager-missing]
     show_cite_this_page = models.BooleanField(default=True)
 
     content_panels: ClassVar[list["Panel"]] = [
+        *BundledPageMixin.panels,
         MultiFieldPanel(
             [
                 TitleFieldPanel("title", help_text=_("Also known as the release edition. e.g. 'November 2024'.")),

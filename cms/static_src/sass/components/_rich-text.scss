@@ -1,0 +1,40 @@
+@use 'config' as *;
+
+.rich-text {
+    // In the document block list styling from ONS, we don't want list items inside rich-text to have circle styling
+    .ons-document-list & {
+        ul {
+            list-style-type: disc;
+        }
+    }
+
+    hr {
+        margin-bottom: rem-sizing(32);
+    }
+
+    p {
+        margin-bottom: rem-sizing(32);
+
+        &:last-child {
+            margin-bottom: 0;
+        }
+    }
+
+    // Reduce bottom margin on elements in the corrections block
+    .corrections__item & {
+        p,
+        ul,
+        ol {
+            margin-bottom: rem-sizing(10);
+        }
+    }
+
+    // for the 'notice' corrections, remove the last element's bottom margin as there is no link below
+    .corrections__item--notice & {
+        p:last-child,
+        ul:last-child,
+        ol:last-child {
+            margin-bottom: 0;
+        }
+    }
+}

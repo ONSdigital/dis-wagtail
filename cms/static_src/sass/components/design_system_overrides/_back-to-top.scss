@@ -1,0 +1,11 @@
+@use 'config' as *;
+
+// overrides to ons back-to-top styles
+.ons-back-to-top {
+    margin-top: rem-sizing(64);
+
+    // hide at desktop
+    @include media-query('m') {
+        display: none;
+    }
+}

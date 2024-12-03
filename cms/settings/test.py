@@ -46,6 +46,12 @@ DEFENDER_DISABLE_IP_LOCKOUT = True
 # https://docs.djangoproject.com/en/stable/topics/testing/advanced/#tests-and-multiple-databases
 DATABASES["read_replica"].setdefault("TEST", {"MIRROR": "default"})  # noqa: F405
 
+
+# Disable caches in tests
 CACHES["default"] = {  # noqa: F405
     "BACKEND": "django.core.cache.backends.dummy.DummyCache",
 }
+
+
+# Silence Slack notifications by default
+SLACK_NOTIFICATIONS_WEBHOOK_URL = None

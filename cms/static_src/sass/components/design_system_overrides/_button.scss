@@ -1,0 +1,21 @@
+@use 'config' as *;
+
+// overrides the ons button styles - used for the menu button in the header
+.ons-btn {
+    &--text-link {
+        // needs to be visible at desktop
+        @include media-query('l') {
+            display: inline-block;
+        }
+
+        .ons-btn__inner {
+            font-weight: 700;
+        }
+
+        .ons-icon {
+            width: rem-sizing(16);
+            height: rem-sizing(16);
+            margin-top: 0;
+        }
+    }
+}
