@@ -11,9 +11,9 @@ privacy of uploaded media files.
 
 ## Use of Wagtail's reference index
 
-Wagtail's reference index is used to track when images and documents (and other objects) are referenced by pages and other objects.
+Wagtail's [reference index](https://docs.wagtail.org/en/stable/advanced_topics/reference_index.html) is used to track when images and documents (and other objects) are referenced by pages and other objects.
 
-Population of the reference index is automatically triggered by the `post_save` signal for all registered models.
+The reference index is automatically populated via handlers connected to the `post_save` signal for all registered models.
 
 When publishing or unpublishing a page (or other type of 'publishable' object), object-level changes are saved before any `published`, `page_published`, `unpublished` or `page_unpublished` signals are emitted. So, as long as we use these signals to review the privacy
 of referenced media, we can be sure that the reference index will be up-to-date.
