@@ -140,7 +140,6 @@ For this method you can specify the runtime configuration either in your IDE (fo
 
 Once you create the `.env` file, and you'd like to switch back to running the application in a container, the `.env` file will be accessible inside the containers and it will be picked up by the `honcho` command. In order to avoid conflicts you may need to comment out some variables (such as `DATABASE_URL` and `REDIS_URL`) in the `.env` file.
 
-
 > [!NOTE]
 > When running the application locally in a virtual environment via Poetry the `.env` file will not be picked up automatically. For this to work you'll need to install the [poetry-plugin-dotenv](https://github.com/pivoshenko/poetry-plugin-dotenv). However if you installed Poetry with `brew` rather than `pip` that currently isn't going to work (see the [issue](https://github.com/pivoshenko/poetry-plugin-dotenv/issues/327)) and you'll need to install an older and seemingly no longer maintained [poetry-dotenv-plugin](https://github.com/mpeteuil/poetry-dotenv-plugin).
 
@@ -159,12 +158,13 @@ make compose-dev-up
 ```
 
 3. Run the below command to apply the necessary pre-run steps, which include:
- - loading design system templates, 
- - collecting the static files,
- - generating and applying database migrations,
- - creating a superuser with:
-    - username: `admin`
-    - password: `changeme`
+
+-   loading design system templates,
+-   collecting the static files,
+-   generating and applying database migrations,
+-   creating a superuser with:
+    -   username: `admin`
+    -   password: `changeme`
 
 ```
 make dev-init
@@ -175,7 +175,6 @@ make dev-init
 ```
 make runserver
 ```
-
 
 ## Development
 
