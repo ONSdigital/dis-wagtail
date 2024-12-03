@@ -6,12 +6,12 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 
 # Extract the app label from the directory structure
 def get_app_labels():
-    app_labels = []
+    labels = []
     for root, dirs, _files in os.walk("../cms"):
         if "migrations" in dirs:
             app_label = root.split(os.sep)[-1]
-            app_labels.append(app_label)
-    return app_labels
+            labels.append(app_label)
+    return labels
 
 
 # Run the lintmigrations command for a given app_label
@@ -29,10 +29,10 @@ def run_lintmigration(app_label):
     return output
 
 
-def run_lintmigrations_in_parallel(app_labels):
+def run_lintmigrations_in_parallel(labels):
     # Use ThreadPoolExecutor for parallel execution
     with ThreadPoolExecutor() as executor:
-        futures = {executor.submit(run_lintmigration, app_label): app_label for app_label in app_labels}
+        futures = {executor.submit(run_lintmigration, label): label for label in labels}
 
         for future in as_completed(futures):
             # Print the output of each completed future in order
