@@ -124,6 +124,8 @@ jobs:
         run: poetry run ./manage.py check
       - name: Check for missing migrations
         run: poetry run ./manage.py makemigrations --check --noinput
+      - name: Lint Migrations
+        run: cd scripts && poetry run make lint-migrations-custom
       - name: Create cache table
         run: poetry run ./manage.py createcachetable
       - name: Test
