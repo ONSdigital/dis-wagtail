@@ -186,7 +186,7 @@ jobs:
         run: poetry run ./manage.py collectstatic --verbosity 0 --noinput --clear
 
       - name: Run Functional Tests
-        run: poetry run behave functional_tests
+        run: poetry run behave functional_tests --verbose
 
       - name: Docker Compose Down
         run: make functional-tests-down
