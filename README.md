@@ -23,6 +23,7 @@ The Wagtail CMS for managing and publishing content for the Office for National 
     -   [Pre-requisites](#pre-requisites)
     -   [Setup](#setup)
         -   [Using Docker](#using-docker)
+        -   [Running locally with supporting services in Docker](#running-locally-with-supporting-services-in-docker)
 -   [Development](#development)
     -   [Front-end tooling](#front-end-tooling)
     -   [Adding Python packages](#adding-python-packages)
@@ -91,47 +92,96 @@ Ensure you have the following installed:
 
 Follow these steps to set up and run the project using Docker.
 
-1. **Build and Start the Container**
+1. **Build and Start the Containers**
 
     ```bash
-    # build the container
-    make docker-build
-    # start the container
-    make docker-start
+    # pull the supporting containers
+    make compose-pull
+
+    # build the main application image
+    make compose-build
+
+    # start the containers
+    make compose-up
     ```
 
 2. **Migrations and Superuser Creation**
 
-    If this is your first time setting up the project, you’ll need to run migrations to set up the database schema and
-    create an administrative user.
-    Note: `dj` is an alias for `django-admin`
+    If this is your first time setting up the project, you’ll need to run migrations to set up the database schema and create an administrative user.
 
     ```bash
     # ssh into the web container
     make docker-shell
 
     # Run database migrations
-    dj migrate
+    make migrate
 
     # Create a superuser for accessing the admin interface
-    dj createsuperuser
+    make createsuperuser
     ```
 
 3. **Start Django Inside the Container**
 
-    Once the containers are running, you need to manually start Django from within the web container. This allows for
-    running both the Django server and any additional background services (e.g., schedulers).
+    Once the containers are running, you need to manually start Django from within the web container. This allows for running both the Django server and any additional background services (e.g., schedulers).
+
+    > ⚠️ WARNING
+    > The `honcho` command will pick up your local mounted `.env` file when running via `docker-compose`. Ensure that you comment out any variables in the `.env` file which might cause clashes in the container context as they will take precedence when running `honcho start`.
 
     ```bash
     # Start both Django and the scheduler using Honcho
     honcho start
 
-    # To run just the web server. alias: djrun
     # This is not needed if you used `honcho start`
-    dj runserver 0.0.0.0:8000
+    make runserver
     ```
 
 You can then access the admin at `http://0.0.0.0:8000/admin/` or `http://localhost:8000/admin/`.
+
+#### Running locally with supporting services in Docker
+
+You can also run the main application locally with the supporting backend services such as the Postgres and Redis running in Docker. This can be useful when you want to make changes that require the app to be restarted in order to be picked up.
+
+For this method you can specify the runtime configuration either in your IDE (for PyCharm see [here](https://www.jetbrains.com/help/pycharm/run-debug-configuration.html#createExplicitly)), or copy the `.development.env` and rename it to `.env` which will allow Django to pick up the config.
+
+Once you create the `.env` file, and you'd like to switch back to running the application in a container, the `.env` file will be accessible inside the containers and it will be picked up by the `honcho` command. In order to avoid conflicts you may need to comment out some variables (such as `DATABASE_URL` and `REDIS_URL`) in the `.env` file.
+
+> [!NOTE]
+> When running the application locally in a virtual environment via Poetry the `.env` file will not be picked up automatically. For this to work you'll need to install the [poetry-plugin-dotenv](https://github.com/pivoshenko/poetry-plugin-dotenv). However if you installed Poetry with `brew` rather than `pip` that currently isn't going to work (see the [issue](https://github.com/pivoshenko/poetry-plugin-dotenv/issues/327)) and you'll need to install an older and seemingly no longer maintained [poetry-dotenv-plugin](https://github.com/mpeteuil/poetry-dotenv-plugin).
+
+In order to run it:
+
+1. Pull the images of the supporting services.
+
+```
+make compose-dev-pull
+```
+
+2. Start the supporting services in Docker.
+
+```
+make compose-dev-up
+```
+
+3. Run the below command to apply the necessary pre-run steps, which include:
+
+-   loading design system templates,
+-   collecting the static files,
+-   generating and applying database migrations,
+-   creating a superuser with:
+    -   username: `admin`
+    <!-- pragma: allowlist nextline secret) -->
+    -   password: `changeme`
+
+
+```
+make dev-init
+```
+
+4. Run the Django server locally via your IDE or with the following command:
+
+```
+make runserver
+```
 
 ## Development
 
@@ -146,8 +196,7 @@ make
 
 ### Front-end tooling
 
-While the end goal is to have all front-end elements in
-the [Design System](https://service-manual.ons.gov.uk/design-system),
+While the end goal is to have all front-end elements in the [Design System](https://service-manual.ons.gov.uk/design-system),
 the new design introduces a number of components that we need to build and contributed to the DS. In order to aid
 development and avoid being blocked by the DS, we will use modern front-end tooling for that.
 
@@ -330,20 +379,19 @@ make megalint
 ### Django Migrations
 
 Wagtail is built on [Django](https://djangoproject.com/) and changes to its models may require generating and
-running schema migrations. For full details see
-the [Django documentation on migrations](https://docs.djangoproject.com/en/5.1/topics/migrations/)
+running schema migrations. For full details see the [Django documentation on migrations](https://docs.djangoproject.com/en/5.1/topics/migrations/)
 
 Below are the commands you will most commonly use, note that these have to be run inside the container.
 
 ```bash
 # Check if you need to generate any new migrations after changes to the model
-poetry run django-admin makemigrations --check
+make makemigrations-check
 
 # Generate migrations
-poetry run django-admin makemigrations
+make makemigrations
 
 # Apply migrations. Needed if new migrations have been generated (either by you, or via upstream code)
-poetry run django-admin migrate
+make migrate
 ```
 
 ## Contributing

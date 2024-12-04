@@ -80,26 +80,78 @@ megalint:  ## Run the mega-linter.
 load-design-system-templates:  ## Load the design system templates
 	./scripts/load-design-system-templates.sh $(DESIGN_SYSTEM_VERSION)
 
-.PHONY: docker-build
-docker-build: load-design-system-templates  ## Build Docker container
-	docker compose pull
+# Docker and docker compose make commands
+
+.PHONY: compose-build
+compose-build: load-design-system-templates  ## Build the main application's Docker container
 	docker compose build
 
-.PHONY: docker-start
-docker-start:  ## Start Docker containers
+.PHONY: compose-pull
+compose-pull: ## Pull Docker containers
+	docker compose pull
+
+.PHONY: compose-up
+compose-up:  ## Start Docker containers
 	docker compose up --detach
 
-.PHONY: docker-stop
-docker-stop:  ## Stop Docker containers
+.PHONY: compose-down
+compose-down:   ## Stop and remove Docker containers and networks
+	docker compose down --volumes
+
+.PHONY: compose-stop
+compose-stop:  ## Stop Docker containers
 	docker compose stop
 
 .PHONY: docker-shell
-docker-shell:  ## SSH into Docker container
+docker-shell:  ## SSH into the main application's Docker container
 	docker compose exec web bash
 
-.PHONY: docker-destroy
-docker-destroy:  ## Tear down the Docker containers
-	docker compose down --volumes
+# Docker and docker compose make commands for the dev containers
+
+.PHONY:	compose-dev-pull
+compose-dev-pull: ## Pull dev Docker containers
+	docker compose -f docker-compose-dev.yml pull
+
+.PHONY: compose-dev-up
+compose-dev-up:  ## Start dev Docker containers
+	docker compose -f docker-compose-dev.yml up --detach
+
+.PHONY: compose-dev-stop
+compose-dev-stop: ## Stop dev Docker containers
+	docker compose -f docker-compose-dev.yml stop
+
+.PHONY: compose-dev-down
+compose-dev-down: ## Stop and remove dev Docker containers and networks
+	docker compose -f docker-compose-dev.yml down
+
+# Django make command
+
+.PHONY: makemigrations-check
+makemigrations-check: ## Check whether there are new migrations to be generated
+	poetry run python ./manage.py makemigrations --check
+
+.PHONY: makemigrations
+makemigrations: ## Generate new migrations
+	poetry run python ./manage.py makemigrations
+
+.PHONY: collectstatic
+collectstatic:  ## Collect static files from all Django apps
+	poetry run python ./manage.py collectstatic --verbosity 0 --noinput --clear
+
+.PHONY: migrate
+migrate: ## Apply the database migrations
+	poetry run python ./manage.py migrate
+
+.PHONY: createsuperuser
+createsuperuser: ## Create a super user with a default username and password
+	poetry run python ./manage.py shell -c "from cms.users.models import User;(not User.objects.filter(username='admin').exists()) and User.objects.create_superuser('admin', 'super@example.com', 'changeme')"
+
+.PHONY: runserver
+runserver: ## Run the Django application locally
+	poetry run python ./manage.py runserver
+
+.PHONY: dev-init
+dev-init: load-design-system-templates collectstatic makemigrations migrate createsuperuser ## Run the pre-run setup scripts
 
 .PHONY: functional-tests-up
 functional-tests-up:  ## Start the functional tests docker compose dependencies
