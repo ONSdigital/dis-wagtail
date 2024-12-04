@@ -46,10 +46,14 @@ class ReadReplicaRouter:  # pylint: disable=unused-argument,protected-access
         # No preference
         return None
 
-    def allow_migrate(self, db: str, app_label: str, model_name: Optional[str] = None, **hints: Any) -> bool:
+    def allow_migrate(self, db: str, app_label: str, model_name: Optional[str] = None, **hints: Any) -> Optional[bool]:
         """Determine whether migrations be run for the app on the database."""
         # Don't allow migrations to run against the replica (they would fail anyway)
-        return db != self.REPLICA_DB_ALIAS
+        if db == self.REPLICA_DB_ALIAS:
+            return False
+
+        # No preference
+        return None
 
 
 class ExternalEnvRouter:  # pylint: disable=unused-argument,protected-access
@@ -77,6 +81,15 @@ class ExternalEnvRouter:  # pylint: disable=unused-argument,protected-access
         # If any models have a fake backend, assume they can be related to placate Django.
         if self.FAKE_BACKEND in [obj1._state.db, obj2._state.db]:
             return True
+
+        # No preference
+        return None
+
+    def allow_migrate(self, db: str, app_label: str, model_name: Optional[str] = None, **hints: Any) -> Optional[bool]:
+        """Determine whether migrations be run for the app on the database."""
+        # Don't allow migrations to run against the fake database (they would fail anyway)
+        if db == self.FAKE_BACKEND:
+            return False
 
         # No preference
         return None
