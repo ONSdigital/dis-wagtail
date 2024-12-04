@@ -1,9 +1,9 @@
-from behave import then, when  # pylint: disable=E0611
+from behave import then, when  # pylint: disable=no-name-in-module
 from behave.runner import Context
 from playwright.sync_api import expect
 
 
-@when("An external user navigates to the ONS beta site homepage")  # pylint: disable=E1102
+@when("An external user navigates to the ONS beta site homepage")  # pylint: disable=not-callable
 def external_user_navigates_to_beta_homepage(context: Context) -> None:
     context.page.goto(context.base_url)
 

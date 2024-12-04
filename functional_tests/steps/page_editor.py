@@ -1,4 +1,4 @@
-from behave import when  # pylint: disable=E0611
+from behave import when  # pylint: disable=no-name-in-module
 from behave.runner import Context
 
 
