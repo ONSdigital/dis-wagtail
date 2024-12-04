@@ -1,10 +1,11 @@
-from typing import Any, ClassVar, Optional
+from typing import Any, Optional
 
 from django.conf import settings
 from django.core.exceptions import ImproperlyConfigured
 from django.db import DEFAULT_DB_ALIAS, transaction
 from django.db.models import Model
-from wagtail.images import get_image_model
+
+from cms.images.models import Rendition
 
 
 class ReadReplicaRouter:  # pylint: disable=unused-argument,protected-access
@@ -57,7 +58,7 @@ class ExternalEnvRouter:  # pylint: disable=unused-argument,protected-access
     In production, this will also be enforced at the database level.
     """
 
-    WRITE_ALLOWED_MODELS: ClassVar[list[type[Model]]] = [get_image_model().get_rendition_model()]
+    WRITE_ALLOWED_MODELS = frozenset({Rendition})
 
     FAKE_BACKEND = "not_allowed_in_external_env"
 
