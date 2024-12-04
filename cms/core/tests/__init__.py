@@ -6,6 +6,8 @@ from django.test import TransactionTestCase as _TransactionTestCase
 from django.test.utils import CaptureQueriesContext
 from django.utils.functional import partition
 
+from cms.core.db_router import READ_REPLICA_DB_ALIAS
+
 
 class TransactionTestCase(_TransactionTestCase):
     """A modified TransactionTestCase which ensures models created during migrations are accessible,
@@ -60,6 +62,6 @@ class TransactionTestCase(_TransactionTestCase):
         """Assert the number of queries per connection."""
         with (
             self.assertNumQueries(default, using="default"),
-            self.assertNumQueries(replica, using="read_replica"),
+            self.assertNumQueries(replica, using=READ_REPLICA_DB_ALIAS),
         ):
             yield

@@ -7,6 +7,8 @@ from django.db.models import Model
 
 from cms.images.models import Rendition
 
+READ_REPLICA_DB_ALIAS = "read_replica"
+
 
 class ReadReplicaRouter:  # pylint: disable=unused-argument,protected-access
     """A database router for directing queries between the default database and a read replica.
@@ -17,12 +19,10 @@ class ReadReplicaRouter:  # pylint: disable=unused-argument,protected-access
     https://docs.djangoproject.com/en/5.1/topics/db/multi-db/#automatic-database-routing
     """
 
-    REPLICA_DB_ALIAS = "read_replica"
-
-    REPLICA_DBS = frozenset({REPLICA_DB_ALIAS, DEFAULT_DB_ALIAS})
+    REPLICA_DBS = frozenset({READ_REPLICA_DB_ALIAS, DEFAULT_DB_ALIAS})
 
     def __init__(self) -> None:
-        if self.REPLICA_DB_ALIAS not in settings.DATABASES:  # pragma: no cover
+        if READ_REPLICA_DB_ALIAS not in settings.DATABASES:  # pragma: no cover
             raise ImproperlyConfigured("Read replica is not configured.")
 
     def db_for_read(self, model: type[Model], **hints: Any) -> Optional[str]:
@@ -35,7 +35,7 @@ class ReadReplicaRouter:  # pylint: disable=unused-argument,protected-access
             # In a transaction, use the write database
             return DEFAULT_DB_ALIAS
 
-        return self.REPLICA_DB_ALIAS
+        return READ_REPLICA_DB_ALIAS
 
     def allow_relation(self, obj1: Model, obj2: Model, **hints: Any) -> Optional[bool]:
         """Determine whether a relation is allowed between two models."""
@@ -49,7 +49,7 @@ class ReadReplicaRouter:  # pylint: disable=unused-argument,protected-access
     def allow_migrate(self, db: str, app_label: str, model_name: Optional[str] = None, **hints: Any) -> Optional[bool]:
         """Determine whether migrations be run for the app on the database."""
         # Don't allow migrations to run against the replica (they would fail anyway)
-        if db == self.REPLICA_DB_ALIAS:
+        if db == READ_REPLICA_DB_ALIAS:
             return False
 
         # No preference
