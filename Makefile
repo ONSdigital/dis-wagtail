@@ -159,14 +159,15 @@ functional-tests-up:  ## Start the functional tests docker compose dependencies
 
 .PHONY: functional-tests-up-dev
 functional-tests-up-dev:  ## Start the functional tests docker compose dependencies and dev app
-	docker compose -f functional_tests/docker-compose.yml -f functional_tests/docker-compose-dev-app.yml up -d
+	docker compose -f functional_tests/docker-compose-dev-app.yml up -d
 
 .PHONY: functional-tests-down
 functional-tests-down:  ## Stop the functional tests docker compose dependencies
-	docker compose -f functional_tests/docker-compose.yml -f functional_tests/docker-compose-dev-app.yml down
+	docker compose -f functional_tests/docker-compose-dev-app.yml down
 
 .PHONY: functional-tests-run
-functional-tests-run:  ## Run the functional tests
+functional-tests-run: collectstatic  ## Run the functional tests
+	DJANGO_SETTINGS_MODULE=cms.settings.functional_test poetry run ./manage.py migrate --noinput
 	poetry run behave functional_tests
 
 .PHONY: functional-tests

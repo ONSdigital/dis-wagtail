@@ -44,6 +44,7 @@ def enter_example_release_content(context: Context):
 
 @then("the new published release page with the example content is displayed")
 def check_provisional_release_page_content(context: Context):
+    expect(context.page.get_by_role("heading", name="My Release")).to_be_visible()
     expect(context.page.get_by_role("heading", name="My Release UK Statistics").locator("span")).to_be_visible()
     expect(context.page.get_by_role("heading", name="My Example Content")).to_be_visible()
     expect(context.page.get_by_role("link", name="Release calendar")).to_be_visible()

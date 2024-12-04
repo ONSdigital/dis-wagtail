@@ -1,25 +1,17 @@
 services:
   db:
-    image: postgres:16
-    ports:
+    extends:
+      file: ../docker-compose-dev.yml
+      service: db
+    ports: !override
       - '15432:5432'
-    environment:
-      PGDATA: /var/lib/postgresql/data/pgdata
-      # Defaults for createdb/dropdb/pg_restore etc.
-      PGDATABASE: ons
-      PGUSER: ons
-      # Values for initdb
-      POSTGRES_HOST_AUTH_METHOD: trust
-      POSTGRES_USER: ons
-    volumes:
-      - pgdata:/var/lib/postgresql/data
-    attach: false
 
   redis:
-    image: redis:7.2
-    ports:
+    extends:
+      file: ../docker-compose-dev.yml
+      service: redis
+    ports: !override
       - '16379:6379'
-    attach: false
 
 volumes:
   pgdata:

@@ -172,7 +172,6 @@ make compose-dev-up
     <!-- pragma: allowlist nextline secret) -->
     -   password: `changeme`
 
-
 ```
 make dev-init
 ```
