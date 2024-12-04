@@ -37,7 +37,7 @@ def enter_example_release_content(context: Context):
     context.page.get_by_role("link", name="Release calendar").click()
 
     context.page.get_by_role("button", name="Choose contact details").click()
-    context.page.get_by_role("link", name="Test Contact").click()
+    context.page.get_by_role("link", name=context.contact_details_snippet.name).click()
 
     context.page.get_by_label("Accredited Official Statistics").check()
 
@@ -49,6 +49,6 @@ def check_provisional_release_page_content(context: Context):
     expect(context.page.get_by_role("heading", name="My Example Content")).to_be_visible()
     expect(context.page.get_by_role("link", name="Release calendar")).to_be_visible()
     expect(context.page.get_by_role("heading", name="Contact details")).to_be_visible()
-    expect(context.page.get_by_text("Test Contact")).to_be_visible()
-    expect(context.page.get_by_role("link", name="test.contact@example.com")).to_be_visible()
+    expect(context.page.get_by_text(context.contact_details_snippet.name)).to_be_visible()
+    expect(context.page.get_by_role("link", name=context.contact_details_snippet.email)).to_be_visible()
     expect(context.page.get_by_text("Accredited Official Statistics", exact=True)).to_be_visible()

@@ -1,7 +1,7 @@
 from behave import given  # pylint: disable=E0611
 from behave.runner import Context
 
-from functional_tests.step_helpers.factories import ContactDetailsFactory
+from cms.core.tests.factories import ContactDetailsFactory
 
 
 @given("a contact details snippet exists")
