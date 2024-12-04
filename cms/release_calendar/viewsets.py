@@ -1,7 +1,6 @@
 from django.db.models import QuerySet
 from django.utils.translation import gettext_lazy as _
 from wagtail.admin.ui.tables import Column, DateColumn
-from wagtail.admin.views.chooser import PageStatusColumn
 from wagtail.admin.views.generic.chooser import ChooseResultsView, ChooseView
 from wagtail.admin.viewsets.chooser import ChooserViewSet
 
@@ -25,7 +24,6 @@ class FutureReleaseCalendarMixin:
                 width="12%",
                 accessor="latest_revision_created_at",
             ),
-            PageStatusColumn("status", label=_("Page status"), width="12%"),
         ]
 
 
