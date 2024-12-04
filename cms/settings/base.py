@@ -849,17 +849,26 @@ ONS_EMBED_PREFIX = env.get("ONS_EMBED_PREFIX", "https://www.ons.gov.uk/visualisa
 ONS_COOKIE_BANNER_SERVICE_NAME = env.get("ONS_COOKIE_BANNER_SERVICE_NAME", "www.ons.gov.uk")
 MANAGE_COOKIE_SETTINGS_URL = env.get("MANAGE_COOKIE_SETTINGS_URL", "https://www.ons.gov.uk/cookies")
 
+# Auth
 WAGTAIL_CORE_ADMIN_LOGIN_ENABLED = env.get("WAGTAIL_CORE_ADMIN_LOGIN_ENABLED", "false").lower() == "true"
+LOGOUT_REDIRECT_URL = env.get("LOGOUT_REDIRECT_URL", env.get("WAGTAILADMIN_LOGIN_URL"))
+AUTH_TOKEN_REFRESH_URL = env.get("AUTH_TOKEN_REFRESH_URL")
+SESSION_COOKIE_AGE = env.get("SESSION_COOKIE_AGE", 60 * 15)  # 15 minutes
+SESSION_EXPIRE_AT_BROWSER_CLOSE = True
 
+if not WAGTAIL_CORE_ADMIN_LOGIN_ENABLED and not AUTH_TOKEN_REFRESH_URL:
+    raise ValueError("AUTH_TOKEN_REFRESH_URL must be set when WAGTAIL_CORE_ADMIN_LOGIN_ENABLED is False")
+
+# Groups
 PUBLISHING_OFFICERS_GROUP_NAME = "Publishing Officers"
 VIEWERS_GROUP_NAME = "Viewers"
+ROLE_GROUP_IDS = {"role-admin", "role-publisher"}
 
-LOGOUT_REDIRECT_URL = env.get("LOGOUT_REDIRECT_URL", env.get("WAGTAILADMIN_LOGIN_URL"))
 
 # Cookie Names
 ACCESS_TOKEN_COOKIE_NAME = "access_token"  # noqa: S105
 REFRESH_TOKEN_COOKIE_NAME = "refresh_token"  # noqa: S105
 ID_TOKEN_COOKIE_NAME = "id_token"  # noqa: S105
 
-# Role Groups
-ROLE_GROUP_IDS = {"role-admin", "role-publisher"}
+WAGTAILADMIN_HOME_PATH = env.get("WAGTAILADMIN_HOME_PATH", "admin/")
+DJANGO_ADMIN_HOME_PATH = env.get("DJANGO_ADMIN_HOME_PATH", "django-admin/")

@@ -73,7 +73,7 @@ class ONSAuthMiddleware(AuthenticationMiddleware):
         update_user_details(user, email, first_name, last_name, created)
 
         # Assign groups
-        cognito_groups = access_payload.get("cognito:groups", [])
+        cognito_groups = access_payload.get("cognito:groups") or []
         assign_groups(user, cognito_groups)
 
         # Assign teams

@@ -9,7 +9,7 @@ from wagtail.contrib.sitemaps.views import sitemap
 from wagtail.documents import urls as wagtaildocs_urls
 from wagtail.utils.urlpatterns import decorate_urlpatterns
 
-from cms.auth.views import ONSLogoutView
+from cms.auth.views import ONSLogoutView, extend_session
 from cms.core import views as core_views
 from cms.core.cache import get_default_cache_control_decorator
 
@@ -34,6 +34,7 @@ if not settings.IS_EXTERNAL_ENV:
             ONSLogoutView.as_view(),
             name="wagtailadmin_logout",
         ),
+        path("extend-session/", extend_session, name="extend_session"),
     ]
     if not settings.WAGTAIL_CORE_ADMIN_LOGIN_ENABLED:
         # Filter wagtail admin patterns to exclude /login and /password_reset
@@ -51,12 +52,12 @@ if not settings.IS_EXTERNAL_ENV:
         ]
 
     wagtail_admin_patterns += wagtailadmin_urls.urlpatterns
-    private_urlpatterns.append(path("admin/", include(wagtail_admin_patterns)))
+    private_urlpatterns.append(path(settings.WAGTAILADMIN_HOME_PATH, include(wagtail_admin_patterns)))
 
 if apps.is_installed("django.contrib.admin") and settings.WAGTAIL_CORE_ADMIN_LOGIN_ENABLED:
     from django.contrib import admin  # pylint: disable=ungrouped-imports
 
-    private_urlpatterns.append(path("django-admin/", admin.site.urls))
+    private_urlpatterns.append(path(settings.DJANGO_ADMIN_HOME_PATH, admin.site.urls))
 
 # django-defender
 if getattr(settings, "ENABLE_DJANGO_DEFENDER", False):
