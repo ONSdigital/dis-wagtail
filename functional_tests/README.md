@@ -156,7 +156,9 @@ You should then be able to step through the failed tests and get a better idea o
 
 Some tests may require objects to be set up in the database, such as a user or set of pages that the feature relies
 upon. For this, we can use [Factory Boy](https://factoryboy.readthedocs.io/en/stable/orms.html#django) to seed data
-directly into the database.
+directly into the database. These factories should be shared with the rest of the tests and kept in the `tests` modules
+alongside the code for consistency. If the functional tests need different defaults or behaviour from the factories,
+then they can make use of [factory traits](https://factoryboy.readthedocs.io/en/stable/reference.html#traits).
 
 ## Test Code Standards and Style Guide
 
@@ -240,7 +242,7 @@ registered in the [environment.py](environment.py) so they are available to all 
 
 ### Django Test Runner and Test Case
 
-Due to issues with the Django TransactionTestCase which prevent us using the built-in database teardown/setup
+Due to issues with the Django `TransactionTestCase` which prevent us using the built-in database teardown/setup
 in between scenarios, we have implemented our own database snapshot and restore pattern between tests. We still make use
 of the Django test case, specifically the
 [`LiveServerTestCase`](https://docs.djangoproject.com/en/stable/topics/testing/tools/#django.test.LiveServerTestCase)
