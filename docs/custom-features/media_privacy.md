@@ -32,3 +32,5 @@ The custom `PrivacySettingS3Storage` class logs failed file-setting attempts usi
 
 Because serve view responses and direct file urls can be cached, it's important that when the privacy of a media item changes, the cache
 is invalidated for any affected URLs. In environments where Wagtail's front-end-cache app is configured, all relevant URLs should be collected into a batch and sent to the relevant backend to initiate purging.
+
+NOTE: Image serve view responses are not cached, so don't need to be invalidated.
