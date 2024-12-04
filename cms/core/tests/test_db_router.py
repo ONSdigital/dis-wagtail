@@ -1,5 +1,5 @@
 from django.contrib.contenttypes.models import ContentType
-from django.db import router, transaction
+from django.db import DEFAULT_DB_ALIAS, router, transaction
 from wagtail.models import Page
 
 from cms.core.db_router import READ_REPLICA_DB_ALIAS
@@ -12,7 +12,7 @@ class DBRouterTestCase(TransactionTestCase):
 
     def test_uses_replica_for_read(self):
         """Check the read replica is used for reads, and the default for writes."""
-        self.assertEqual(router.db_for_write(Page), "default")
+        self.assertEqual(router.db_for_write(Page), DEFAULT_DB_ALIAS)
         self.assertEqual(router.db_for_read(Page), READ_REPLICA_DB_ALIAS)
 
     def test_uses_write_db_during_transaction(self):
@@ -20,7 +20,7 @@ class DBRouterTestCase(TransactionTestCase):
         self.assertEqual(router.db_for_read(Page), READ_REPLICA_DB_ALIAS)
 
         with transaction.atomic():
-            self.assertEqual(router.db_for_read(Page), "default")
+            self.assertEqual(router.db_for_read(Page), DEFAULT_DB_ALIAS)
 
         self.assertEqual(router.db_for_read(Page), READ_REPLICA_DB_ALIAS)
 
@@ -30,7 +30,7 @@ class DBRouterTestCase(TransactionTestCase):
 
         try:
             transaction.set_autocommit(False)
-            self.assertEqual(router.db_for_read(Page), "default")
+            self.assertEqual(router.db_for_read(Page), DEFAULT_DB_ALIAS)
         finally:
             transaction.set_autocommit(True)
 
@@ -51,9 +51,9 @@ class DBRouterTestCase(TransactionTestCase):
             content_type = ContentType.objects.first()
 
         self.assertIsNotNone(content_type)
-        self.assertEqual(content_type._state.db, "default")  # pylint: disable=protected-access
+        self.assertEqual(content_type._state.db, DEFAULT_DB_ALIAS)  # pylint: disable=protected-access
 
     def test_search_uses_correct_db(self):
         """Check the read replica is used for search queries."""
-        with self.assertNumQueries(2, using=READ_REPLICA_DB_ALIAS), self.assertNumQueries(0, using="default"):
+        with self.assertNumQueries(2, using=READ_REPLICA_DB_ALIAS), self.assertNumQueries(0, using=DEFAULT_DB_ALIAS):
             list(HomePage.objects.search("Home"))

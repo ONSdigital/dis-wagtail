@@ -1,7 +1,7 @@
 import json
 from contextlib import ExitStack, contextmanager
 
-from django.db import connections
+from django.db import DEFAULT_DB_ALIAS, connections
 from django.test import TransactionTestCase as _TransactionTestCase
 from django.test.utils import CaptureQueriesContext
 from django.utils.functional import partition
@@ -22,7 +22,7 @@ class TransactionTestCase(_TransactionTestCase):
     def _fixture_setup(self):
         """Set up fixtures for test cases."""
         if self.serialized_rollback and (
-            fixtures := getattr(connections["default"], "_test_serialized_contents", None)
+            fixtures := getattr(connections[DEFAULT_DB_ALIAS], "_test_serialized_contents", None)
         ):
             # Parse the fixture directly rather than serializing it into models for performance reasons.
             fixtures = json.loads(fixtures)
@@ -32,7 +32,7 @@ class TransactionTestCase(_TransactionTestCase):
             # TODO: Remove after https://github.com/wagtail/wagtail/pull/12649 merges.
             fixtures, eager_fixtures = partition(lambda item: item["model"] == "wagtailcore.locale", fixtures)
 
-            connections["default"]._test_serialized_contents = json.dumps(eager_fixtures + fixtures)  # pylint: disable=protected-access
+            connections[DEFAULT_DB_ALIAS]._test_serialized_contents = json.dumps(eager_fixtures + fixtures)  # pylint: disable=protected-access
 
         super()._fixture_setup()
 
@@ -61,7 +61,7 @@ class TransactionTestCase(_TransactionTestCase):
     def assertNumQueriesConnection(self, *, default=0, replica=0):  # pylint: disable=invalid-name
         """Assert the number of queries per connection."""
         with (
-            self.assertNumQueries(default, using="default"),
+            self.assertNumQueries(default, using=DEFAULT_DB_ALIAS),
             self.assertNumQueries(replica, using=READ_REPLICA_DB_ALIAS),
         ):
             yield

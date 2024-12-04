@@ -1,3 +1,4 @@
+from django.db import DEFAULT_DB_ALIAS
 from django.test import override_settings
 from wagtail.coreutils import get_dummy_request
 from wagtail.models import Site
@@ -28,7 +29,7 @@ class SocialSettingsTestCase(TransactionTestCase):
             SocialMediaSettings.for_request(self.request)
 
         # Explicitly use default connection to work around strange issue with Django
-        self.assertTrue(SocialMediaSettings.objects.using("default").exists())
+        self.assertTrue(SocialMediaSettings.objects.using(DEFAULT_DB_ALIAS).exists())
 
         with self.assertNumQueriesConnection(default=0, replica=0):
             # This load is cached on the Site
