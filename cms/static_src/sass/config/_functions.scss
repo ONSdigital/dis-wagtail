@@ -1,0 +1,9 @@
+@use 'sass:math';
+
+@function rem-sizing($pxValue) {
+    $remValue: math.div($pxValue, 16);
+    @if $remValue == 0 {
+        @return 0;
+    }
+    @return $remValue * 1rem;
+}

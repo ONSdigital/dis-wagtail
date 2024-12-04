@@ -14,6 +14,7 @@ def register_icons(icons: list[str]) -> list[str]:
     """
     return [
         *icons,
+        "boxes-stacked.svg",
         "data-analysis.svg",
         "identity.svg",
         "news.svg",

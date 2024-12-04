@@ -38,26 +38,13 @@ services:
       - redis
 
   db:
-    image: postgres:16
-    expose:
-      - 5432
-    environment:
-      PGDATA: /var/lib/postgresql/data/pgdata
-      # Defaults for createdb/dropdb/pg_restore etc.
-      PGDATABASE: ons
-      PGUSER: ons
-      # Values for initdb
-      POSTGRES_HOST_AUTH_METHOD: trust
-      POSTGRES_USER: ons
-    volumes:
-      - pgdata:/var/lib/postgresql/data
-    attach: false
-
+    extends:
+      file: docker-compose-dev.yml
+      service: db
   redis:
-    image: redis:7.2
-    expose:
-      - 6379
-    attach: false
+    extends:
+      file: docker-compose-dev.yml
+      service: redis
 
 volumes:
   node_modules:

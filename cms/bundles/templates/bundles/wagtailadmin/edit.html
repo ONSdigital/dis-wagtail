@@ -1,0 +1,14 @@
+{% extends "wagtailadmin/generic/form.html" %}
+{% load i18n %}
+
+{% block actions %}
+    {{ block.super }}
+    {% if show_save_and_approve %}
+        <button type="submit" name="action-save-and-approve" value="save-and-approve" class="button">{% translate "Save and Approve"  %}</button>
+    {% elif show_publish %}
+        <button type="submit" name="action-publish" value="publish" class="button">{% translate "Publish"  %}</button>
+    {% endif %}
+    {% if delete_url %}
+        <a href="{{ delete_url }}" class="button no">{{ delete_item_label }}</a>
+    {% endif %}
+{% endblock %}
