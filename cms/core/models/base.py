@@ -1,5 +1,6 @@
-from typing import TYPE_CHECKING, ClassVar
+from typing import TYPE_CHECKING, ClassVar, Optional, Self, cast
 
+from django.conf import settings
 from django.utils.decorators import method_decorator
 from django.utils.functional import cached_property
 from wagtail.models import Page
@@ -11,12 +12,18 @@ from cms.core.query import order_by_pk_position
 from .mixins import ListingFieldsMixin, SocialFieldsMixin
 
 if TYPE_CHECKING:
+    from django.db import models
     from wagtail.admin.panels import FieldPanel
+    from wagtail.contrib.settings.models import BaseSiteSetting as _WagtailBaseSiteSetting
+    from wagtail.models import Site
+
+    class WagtailBaseSiteSetting(_WagtailBaseSiteSetting, models.Model):
+        """Explicit class definition for type checking. Indicates we're inheriting from Django's model."""
+else:
+    from wagtail.contrib.settings.models import BaseSiteSetting as WagtailBaseSiteSetting
 
 
-__all__ = [
-    "BasePage",
-]
+__all__ = ["BasePage", "BaseSiteSetting"]
 
 
 # Apply default cache headers on this page model's serve method.
@@ -79,3 +86,35 @@ class BasePage(ListingFieldsMixin, SocialFieldsMixin, Page):  # type: ignore[dja
                 return False
 
         return False
+
+
+class BaseSiteSetting(WagtailBaseSiteSetting):
+    """A customized site setting.
+
+    - Use default values in external environment if an instance doesn't exist.
+    - Use `.get` to ensure the read connection is used.
+    """
+
+    class Meta:
+        abstract = True
+
+    @classmethod
+    def for_site(cls, site: Optional["Site"]) -> Self:
+        """Get or create an instance of this setting for the site."""
+        if site is None:
+            raise cls.DoesNotExist(f"{cls} does not exist for site None.")
+
+        queryset = cls.base_queryset()
+
+        try:
+            # Explicitly call `.get` first to ensure the
+            # read connection is used.
+            return cast(Self, queryset.get(site=site))
+        except cls.DoesNotExist:
+            if settings.IS_EXTERNAL_ENV:
+                # In the external env, the database connection is read only,
+                # so just use the default values if the instance doesn't exist.
+                return cls(site=site)
+
+            instance, _created = queryset.get_or_create(site=site)
+            return cast(Self, instance)

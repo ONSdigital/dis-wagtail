@@ -12,7 +12,7 @@ class ReleaseCalendarPageAdminFormTestCase(TestCase):
 
     def setUp(self):
         self.page = ReleaseCalendarPageFactory()
-        self.form_class = ReleaseCalendarPage.get_edit_handler().get_form_class()  # pylint: disable=no-member
+        self.form_class = ReleaseCalendarPage.get_edit_handler().get_form_class()  # pylint: disable-all
         self.form_data = nested_form_data(self.raw_form_data())
 
     def raw_form_data(self, page=None):
