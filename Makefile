@@ -114,7 +114,7 @@ compose-dev-pull: ## Pull dev Docker containers
 
 .PHONY: compose-dev-up
 compose-dev-up:  ## Start dev Docker containers
-	docker compose -f docker-compose-dev.yml up --detach 
+	docker compose -f docker-compose-dev.yml up --detach
 
 .PHONY: compose-dev-stop
 compose-dev-stop: ## Stop dev Docker containers
@@ -137,18 +137,18 @@ makemigrations: ## Generate new migrations
 .PHONY: collectstatic
 collectstatic:  ## Collect static files from all Django apps
 	poetry run python ./manage.py collectstatic --verbosity 0 --noinput --clear
-	
+
 .PHONY: migrate
 migrate: ## Apply the database migrations
-	poetry run python ./manage.py migrate 
+	poetry run python ./manage.py migrate
 
 .PHONY: createsuperuser
 createsuperuser: ## Create a super user with a default username and password
 	poetry run python ./manage.py shell -c "from cms.users.models import User;(not User.objects.filter(username='admin').exists()) and User.objects.create_superuser('admin', 'super@example.com', 'changeme')"
 
 .PHONY: runserver
-runserver: ## Run the Django application locally	
-	poetry run python ./manage.py runserver
+runserver: ## Run the Django application locally
+	poetry run python ./manage.py runserver 0:8000
 
-.PHONY: dev-init 
+.PHONY: dev-init
 dev-init: load-design-system-templates collectstatic makemigrations migrate createsuperuser ## Run the pre-run setup scripts
