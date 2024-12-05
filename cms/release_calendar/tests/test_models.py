@@ -1,4 +1,4 @@
-from django.test import RequestFactory, TestCase
+from django.test import RequestFactory, TestCase, override_settings
 from django.urls import reverse
 from django.utils import timezone
 from wagtail.test.utils.wagtail_tests import WagtailTestUtils
@@ -334,6 +334,18 @@ class ReleaseCalendarPageRenderTestCase(TestCase):
 
                 self.assertEqual("pre-release access notes" in str(response.content), is_shown)
 
+    def test_render_in_external_env(self):
+        """Check calendar page renders in external env."""
+        for status in ReleaseStatus:
+            with self.subTest(status):
+                self.page.status = status
+                self.page.save_revision().publish()
+
+                with override_settings(IS_EXTERNAL_ENV=True):
+                    response = self.client.get(self.page.url)
+
+                self.assertEqual(response.status_code, 200)
+
 
 class ReleaseCalendarIndexTestCase(WagtailTestUtils, TestCase):
     """Tests for release calendar index."""
@@ -363,3 +375,16 @@ class ReleaseCalendarIndexTestCase(WagtailTestUtils, TestCase):
             follow=True,
         )
         self.assertRedirects(response, edit_url)
+
+    def test_render(self):
+        """Test that the index page renders."""
+        response = self.client.get(self.page.url)
+
+        self.assertEqual(response.status_code, 200)
+
+    @override_settings(IS_EXTERNAL_ENV=True)
+    def test_render_in_external_env(self):
+        """Test that the index page renders in external environment."""
+        response = self.client.get(self.page.url)
+
+        self.assertEqual(response.status_code, 200)
