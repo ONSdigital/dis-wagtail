@@ -23,20 +23,27 @@ def run_lintmigration(app_label):
             capture_output=True,
             check=True,
         )
-        output = f"\nRunning lintmigrations for {app_label}\n{result.stdout}"
+        output = f"\nRunning lintmigrations for {app_label} succeeded \n{result.stdout}"
+        exit_code = result.returncode
     except subprocess.CalledProcessError as e:
-        output = f"\nRunning lintmigrations for {app_label}\n{e.stdout or ''}{e.stderr or ''}"
-    return output
+        output = f"\nRunning lintmigrations for {app_label} failed \n{e.stdout or ''}{e.stderr or ''}"
+        exit_code = e.returncode
+    return exit_code, output
 
 
-def run_lintmigrations_in_parallel(labels):
+def run_lintmigrations_in_threads(labels):
+    exit_codes = []
     # Use ThreadPoolExecutor for parallel execution
     with ThreadPoolExecutor() as executor:
         futures = {executor.submit(run_lintmigration, label): label for label in labels}
 
         for future in as_completed(futures):
+            exit_code, output = future.result()
             # Print the output of each completed future in order
-            print(future.result())
+            print(output)
+            exit_codes.append(exit_code)
+
+    return exit_codes
 
 
 if __name__ == "__main__":
@@ -44,4 +51,11 @@ if __name__ == "__main__":
 
     print("Apps we are linting: \n", app_labels)
 
-    run_lintmigrations_in_parallel(app_labels)
+    check_exit_codes = run_lintmigrations_in_threads(app_labels)
+    # Check if any exit code is non-zero
+    if any(code != 0 for code in check_exit_codes):
+        print("One or more migrations linting failed.")
+        sys.exit(1)
+
+    print("All migrations linted successfully.")
+    sys.exit(0)
