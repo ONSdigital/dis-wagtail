@@ -35,7 +35,7 @@ class TestDocumentModel(TestCase):
         - Ensure file permission updates are handled correctly.
         - Check file permission outdated status.
         """
-        with self.assertLogs("cms.private_media.bulk_operations", level="DEBUG") as logs:
+        with self.assertLogs("cms.private_media.bulk_operations", level="INFO") as logs:
             document = DocumentFactory(collection=self.root_collection)
 
         # Documents should be 'private' by default
@@ -49,7 +49,7 @@ class TestDocumentModel(TestCase):
             logs.output,
             [
                 (
-                    "DEBUG:cms.private_media.bulk_operations:FileSystemStorage does not support setting of individual "
+                    "INFO:cms.private_media.bulk_operations:FileSystemStorage does not support setting of individual "
                     f"file permissions to private, so skipping for: {document.file.name}."
                 )
             ],
@@ -82,7 +82,7 @@ class TestDocumentModel(TestCase):
         - Ensure file permission updates are handled correctly.
         - Check file permission outdated status.
         """
-        with self.assertLogs("cms.private_media.bulk_operations", level="DEBUG") as logs:
+        with self.assertLogs("cms.private_media.bulk_operations", level="INFO") as logs:
             document = DocumentFactory(_privacy=Privacy.PUBLIC, collection=self.root_collection)
 
         # This document should be 'public'
@@ -96,7 +96,7 @@ class TestDocumentModel(TestCase):
             logs.output,
             [
                 (
-                    "DEBUG:cms.private_media.bulk_operations:FileSystemStorage does not support setting of individual "
+                    "INFO:cms.private_media.bulk_operations:FileSystemStorage does not support setting of individual "
                     f"file permissions to public, so skipping for: {document.file.name}."
                 )
             ],
@@ -159,7 +159,10 @@ class TestDocumentModel(TestCase):
             """Replacement for FileSystemStorage.url() that returns fully-fledged URLs."""
             return f"https://media.example.com/{name}"
 
-        with mock.patch("django.core.files.storage.FileSystemStorage.url", side_effect=domain_prefixed_url):
+        with mock.patch(
+            "django.core.files.storage.FileSystemStorage.url",
+            side_effect=domain_prefixed_url,
+        ):
             self.assertEqual(
                 list(document.get_privacy_controlled_file_urls()),
                 [
@@ -175,7 +178,7 @@ class TestDocumentModel(TestCase):
         - Verify permissions are set correctly for both public and private documents.
         - Ensure no debug logs are generated during successful operation.
         """
-        with self.assertNoLogs("cms.private_media.bulk_operations", level="DEBUG"):
+        with self.assertNoLogs("cms.private_media.bulk_operations"):
             private_document = DocumentFactory(collection=self.root_collection)
             public_document = DocumentFactory(_privacy=Privacy.PUBLIC, collection=self.root_collection)
 
@@ -185,15 +188,21 @@ class TestDocumentModel(TestCase):
     @override_settings(
         STORAGES={"default": {"BACKEND": "cms.private_media.storages.DummyPrivacySettingFileSystemStorage"}}
     )
-    @mock.patch("cms.private_media.storages.DummyPrivacySettingFileSystemStorage.make_private", return_value=False)
-    @mock.patch("cms.private_media.storages.DummyPrivacySettingFileSystemStorage.make_public", return_value=False)
+    @mock.patch(
+        "cms.private_media.storages.DummyPrivacySettingFileSystemStorage.make_private",
+        return_value=False,
+    )
+    @mock.patch(
+        "cms.private_media.storages.DummyPrivacySettingFileSystemStorage.make_public",
+        return_value=False,
+    )
     def test_file_permission_setting_failure(self, mock_make_public, mock_make_private):
         """Test handling of file permission setting failures:
         - Mock failed permission settings for both public and private documents.
         - Verify documents are marked as having outdated permissions.
         - Ensure correct storage methods are called.
         """
-        with self.assertNoLogs("cms.private_media.bulk_operations", level="DEBUG"):
+        with self.assertNoLogs("cms.private_media.bulk_operations"):
             private_document = DocumentFactory(collection=self.root_collection)
             public_document = DocumentFactory(_privacy=Privacy.PUBLIC, collection=self.root_collection)
 

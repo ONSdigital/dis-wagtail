@@ -41,7 +41,7 @@ class TestImageModel(TestCase):
         """
         # Attempts to set file permissions on save should have failed gracefully,
         # since the default file backend doesn't support it
-        with self.assertLogs("cms.private_media.bulk_operations", level="DEBUG") as logs:
+        with self.assertLogs("cms.private_media.bulk_operations", level="INFO") as logs:
             image = ImageFactory(collection=self.root_collection)
 
         # Images should be 'private' by default
@@ -54,7 +54,7 @@ class TestImageModel(TestCase):
             logs.output,
             [
                 (
-                    "DEBUG:cms.private_media.bulk_operations:FileSystemStorage does not support setting of individual "
+                    "INFO:cms.private_media.bulk_operations:FileSystemStorage does not support setting of individual "
                     f"file permissions to private, so skipping for: {image.file.name}."
                 )
             ],
@@ -101,7 +101,7 @@ class TestImageModel(TestCase):
         """
         # Attempts to set file permissions on save should have failed gracefully,
         # since the default file backend doesn't support it
-        with self.assertLogs("cms.private_media.bulk_operations", level="DEBUG") as logs:
+        with self.assertLogs("cms.private_media.bulk_operations", level="INFO") as logs:
             image = ImageFactory(_privacy=Privacy.PUBLIC)
 
         # This image should be 'public'
@@ -114,7 +114,7 @@ class TestImageModel(TestCase):
             logs.output,
             [
                 (
-                    "DEBUG:cms.private_media.bulk_operations:FileSystemStorage does not support setting of individual "
+                    "INFO:cms.private_media.bulk_operations:FileSystemStorage does not support setting of individual "
                     f"file permissions to public, so skipping for: {image.file.name}."
                 )
             ],
@@ -156,7 +156,10 @@ class TestImageModel(TestCase):
             self.assertIn("-public-", rendition.get_cache_key())
 
         # However, if the file permissions are outdated, rendition.url should return a serve URL
-        with mock.patch("cms.private_media.models.PrivateMediaMixin.file_permissions_are_outdated", return_value=True):
+        with mock.patch(
+            "cms.private_media.models.PrivateMediaMixin.file_permissions_are_outdated",
+            return_value=True,
+        ):
             for rendition in renditions.values():
                 self.assertEqual(rendition.url, rendition.serve_url)
 
@@ -193,7 +196,10 @@ class TestImageModel(TestCase):
             """Replacement for FileSystemStorage.url() that returns fully-fledged URLs."""
             return f"https://media.example.com/{name}"
 
-        with mock.patch("django.core.files.storage.FileSystemStorage.url", side_effect=domain_prefixed_url):
+        with mock.patch(
+            "django.core.files.storage.FileSystemStorage.url",
+            side_effect=domain_prefixed_url,
+        ):
             expected_result = [f"https://media.example.com/{image.file.name}"]
             for rendition in renditions.values():
                 expected_result.append(f"https://media.example.com/{rendition.file.name}")
@@ -209,7 +215,7 @@ class TestImageModel(TestCase):
     )
     def test_file_permission_setting_success(self):
         """Test successful file permission setting using a storage backend that supports it."""
-        with self.assertNoLogs("cms.private_media.bulk_operations", level="DEBUG"):
+        with self.assertNoLogs("cms.private_media.bulk_operations"):
             private_image = ImageFactory(collection=self.root_collection)
             public_image = ImageFactory(_privacy=Privacy.PUBLIC, collection=self.root_collection)
 
@@ -219,15 +225,21 @@ class TestImageModel(TestCase):
     @override_settings(
         STORAGES={"default": {"BACKEND": "cms.private_media.storages.DummyPrivacySettingFileSystemStorage"}}
     )
-    @mock.patch("cms.private_media.storages.DummyPrivacySettingFileSystemStorage.make_private", return_value=False)
-    @mock.patch("cms.private_media.storages.DummyPrivacySettingFileSystemStorage.make_public", return_value=False)
+    @mock.patch(
+        "cms.private_media.storages.DummyPrivacySettingFileSystemStorage.make_private",
+        return_value=False,
+    )
+    @mock.patch(
+        "cms.private_media.storages.DummyPrivacySettingFileSystemStorage.make_public",
+        return_value=False,
+    )
     def test_file_permission_setting_failure(self, mock_make_public, mock_make_private):
         """Test graceful handling of file permission setting failures.
 
         Verifies that the system correctly tracks failed permission updates and
         maintains the outdated state when storage operations fail.
         """
-        with self.assertNoLogs("cms.private_media.bulk_operations", level="DEBUG"):
+        with self.assertNoLogs("cms.private_media.bulk_operations"):
             private_image = ImageFactory(collection=self.root_collection)
             public_image = ImageFactory(_privacy=Privacy.PUBLIC, collection=self.root_collection)
 

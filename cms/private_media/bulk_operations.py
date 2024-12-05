@@ -39,7 +39,7 @@ def bulk_set_file_permissions(files: Iterable["FieldFile"], intended_privacy: Pr
             handler = getattr(storage, "make_public", None)
 
         if handler is None:
-            logger.debug(
+            logger.info(
                 "%s does not support setting of individual file permissions to %s, so skipping for: %s.",
                 storage.__class__.__name__,
                 intended_privacy,
