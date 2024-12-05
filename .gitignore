@@ -190,3 +190,6 @@ static/
 
 # Media files
 /media
+
+# Playwright Traces
+/tmp_traces
