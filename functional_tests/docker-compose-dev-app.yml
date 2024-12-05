@@ -23,11 +23,15 @@ services:
     extends:
       file: docker-compose.yml
       service: db
+    ports: !override
+      - '15432:5432'
 
   redis:
     extends:
       file: docker-compose.yml
       service: redis
+    ports: !override
+      - '16379:6379'
 
 volumes:
   node_modules:
