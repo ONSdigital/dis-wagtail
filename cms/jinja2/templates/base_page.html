@@ -35,8 +35,14 @@
     {# Changes the location of the <main> tag from the base template - ensures it surrounds the header area #}
     {# This change should be adopted by the design system soon #}
     <main id="main-content">
-        {# This will contain the breadcrumbs on individual templates #}
+        {# This block should be overriden on individual page templates and include the breadcrumbs and page heading. This is default content while the build is in progress. #}
         {% block header_area %}
+            <div class="ons-container">
+                {% include "templates/components/navigation/breadcrumbs.html" %}
+                <h1 class="ons-u-fs-3xl analysis-header__heading">
+                    {{ page.title }}
+                </h1>
+            </div>
         {% endblock %}
         <div class="ons-page__container ons-container{{ containerClasses }}">
             <div class="ons-grid">
