@@ -148,7 +148,7 @@ createsuperuser: ## Create a super user with a default username and password
 
 .PHONY: runserver
 runserver: ## Run the Django application locally
-	poetry run python ./manage.py runserver
+	poetry run python ./manage.py runserver 0:8000
 
 .PHONY: dev-init
 dev-init: load-design-system-templates collectstatic makemigrations migrate createsuperuser ## Run the pre-run setup scripts
