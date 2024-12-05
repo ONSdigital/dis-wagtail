@@ -2,7 +2,7 @@ from datetime import datetime
 
 from django.conf import settings
 from django.core.exceptions import ValidationError
-from django.test import TestCase
+from django.test import TestCase, override_settings
 from django.utils import timezone
 from django.utils.formats import date_format
 from wagtail.test.utils import WagtailTestUtils
@@ -29,6 +29,15 @@ class AnalysisSeriesTestCase(WagtailTestUtils, TestCase):
         """Checks that the series will redirect to /latest."""
         AnalysisPageFactory(parent=self.series)
         response = self.client.get(self.series.url)
+        self.assertRedirects(response, self.series.url + self.series.reverse_subpage("latest_release"))
+
+    def test_index_redirects_to_latest_in_external_env(self):
+        """Checks that the series will redirect to /latest in external env."""
+        AnalysisPageFactory(parent=self.series)
+
+        with override_settings(IS_EXTERNAL_ENV=True):
+            response = self.client.get(self.series.url)
+
         self.assertRedirects(response, self.series.url + self.series.reverse_subpage("latest_release"))
 
     def test_get_latest_no_subpages(self):
@@ -60,6 +69,15 @@ class AnalysisSeriesTestCase(WagtailTestUtils, TestCase):
         self.assertEqual(analysis_page_response.status_code, 200)
 
         self.assertEqual(series_response.context, analysis_page_response.context)
+
+    def test_latest_release_external_env(self):
+        """Test latest_release in external env."""
+        AnalysisPageFactory(parent=self.series)
+
+        with override_settings(IS_EXTERNAL_ENV=True):
+            series_response = self.client.get(self.series.url + "latest/")
+
+        self.assertEqual(series_response.status_code, 200)
 
 
 class AnalysisPageTestCase(WagtailTestUtils, TestCase):
@@ -217,3 +235,9 @@ class AnalysisPageRenderTestCase(WagtailTestUtils, TestCase):
 
         response = self.client.get(self.basic_page_url)
         self.assertNotContains(response, expected)
+
+    @override_settings(IS_EXTERNAL_ENV=True)
+    def test_load_in_external_env(self):
+        """Test the page loads in external env."""
+        response = self.client.get(self.basic_page_url)
+        self.assertEqual(response.status_code, 200)
