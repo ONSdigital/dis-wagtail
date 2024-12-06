@@ -87,8 +87,8 @@ def test(self, var: None | int | str) -> None:
 
 ## Abstract vs concrete
 
-- Make argument types as abstract as possible (to be flexible to callers)
-- Make return types as specific as possible (to be predictable to callers)
+-   Make argument types as abstract as possible (to be flexible to callers)
+-   Make return types as specific as possible (to be predictable to callers)
 
 ```python
 def increment_values(self, values: Sequence[int]) -> list[int]:
@@ -157,7 +157,7 @@ The `warn_return_any` flag is turned on to force type hinting the return types f
 the safety of the code base.
 
 Where type hints aren’t specific enough to identify the return type (e.g. objects like blocks where some keys correspond
- to strings, others to lists, others to dicts) mypy will complain if you assume the type of any attribute:
+to strings, others to lists, others to dicts) mypy will complain if you assume the type of any attribute:
 
 ```python
 def get_id_from_block(block: dict) -> str:
@@ -246,6 +246,6 @@ def increment_value(self, value: T) -> T:
 
 ## Useful links
 
-- <https://www.python.org/dev/peps/pep-0484/>
-- <https://www.pythonsheets.com/notes/python-typing.html>
-- <https://google.github.io/styleguide/pyguide.html#319-type-annotations>
+-   <https://www.python.org/dev/peps/pep-0484/>
+-   <https://www.pythonsheets.com/notes/python-typing.html>
+-   <https://google.github.io/styleguide/pyguide.html#319-type-annotations>

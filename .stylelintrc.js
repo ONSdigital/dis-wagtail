@@ -1,22 +1,22 @@
 // .stylelintrc.js
 function autoFixFunc(node, validation, root, config) {
-  const { value, prop } = node
+  const { value, prop } = node;
 
   if (prop === 'color') {
     switch (value) {
       case '#fff':
         // auto-fix by returned value
-        return '$color-white'
+        return '$color-white';
 
       case 'red':
         // auto-fix by PostCSS AST tranformation
-        node.value = '$color-red'
+        node.value = '$color-red';
 
       default:
         // optional, you can throw your own error message if the value is not stated or handled, ex: color: blue
-        throw `Property ${prop} with value ${value} can't be autofixed!`
+        throw `Property ${prop} with value ${value} can't be autofixed!`;
         // or an Error object
-        throw new Error(`Property ${prop} with value ${value} can't be autofixed!`)
+        throw new Error(`Property ${prop} with value ${value} can't be autofixed!`);
         // or a falsy value to use the default error message
         throw null;
     }
@@ -31,18 +31,20 @@ module.exports = {
     // Allow union class names in selectors e.g. &__header
     'scss/selector-no-union-class-name': null,
     // Override some wagtail specific rules relating to design tokens
+    'scale-unlimited/declaration-strict-value': [['color', 'fill', 'stroke', '/-color/']],
+    'no-invalid-double-slash-comments': null,
     'scale-unlimited/declaration-strict-value': [
-      ['color', 'fill', 'stroke', '/-color/'],
-          ],
-              "no-invalid-double-slash-comments": null,
-               "scale-unlimited/declaration-strict-value": [
-                ["/color$/"], {
-                autoFixFunc: autoFixFunc,
-                disableFix: true,
-              }],
+      ['/color$/'],
+      {
+        autoFixFunc: autoFixFunc,
+        disableFix: true,
+      },
+    ],
 
-        // The following are as per the wagtail config but need to be reset here
-        "scale-unlimited/declaration-strict-value": ["/color$/", {
+    // The following are as per the wagtail config but need to be reset here
+    'scale-unlimited/declaration-strict-value': [
+      '/color$/',
+      {
         ignoreValues: [
           'currentColor',
           'inherit',
@@ -69,7 +71,9 @@ module.exports = {
           'GrayText',
           'AccentColor',
           'AccentColorText',
-        ]}],
+        ],
+      },
+    ],
     // Ensure that @include statements are at the top of the declaration block but not nested ones such as the media-query include
     'order/order': [{ name: 'include', type: 'at-rule', hasBlock: false }, 'declarations'],
     // Allow positioning with physical properties as right to left languages are not supported

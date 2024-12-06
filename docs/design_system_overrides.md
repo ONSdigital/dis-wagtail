@@ -16,7 +16,7 @@ be found in the `cms/jinja2/component_overrides` folder. Each component includes
 
 The base page template (`cms/jinja2/templates/base_page.html`) has some important changes to the `pageContent` block in
 order to add the full width section for the new header areas - including relocating the `<main>` tag so that the new
-    header area is nested inside it.
+header area is nested inside it.
 
 ### Styling overrides
 
