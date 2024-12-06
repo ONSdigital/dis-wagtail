@@ -74,7 +74,7 @@ megalint:  ## Run the mega-linter.
 	docker run --platform linux/amd64 --rm \
 		-v /var/run/docker.sock:/var/run/docker.sock:rw \
 		-v $(shell pwd):/tmp/lint:rw \
-		oxsecurity/megalinter:v8
+		oxsecurity/megalinter-cupcake:v8
 
 .PHONY: load-design-system-templates
 load-design-system-templates:  ## Load the design system templates
