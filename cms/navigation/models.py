@@ -1,30 +1,12 @@
 from typing import ClassVar
 
-from django.core.exceptions import ValidationError
 from django.db import models
 from wagtail.admin.panels import FieldPanel
-from wagtail.blocks import CharBlock, ListBlock, PageChooserBlock, StructBlock, URLBlock
+from wagtail.blocks import CharBlock, ListBlock, PageChooserBlock, StructBlock
 from wagtail.contrib.settings.models import BaseSiteSetting, register_setting
-from wagtail.snippets.models import register_snippet
-from cms.core.fields import StreamField
+
 from cms.core.blocks.base import LinkBlock
-
-
-# # Custom LinkBlock to support both pages and URLs
-# class BaseLinkBlock(StructBlock):  # TODO - Reuse blocks from core.blocks.related.py
-#     page = PageChooserBlock(required=False)
-#     url = URLBlock(required=False, label="URL")
-#     title = CharBlock(required=False, help_text="Optional. Displayed as the link text.")
-
-#     def clean(self, value: dict) -> dict:
-#         value = super().clean(value)
-#         if not value.get("page") and not value.get("url"):
-#             raise ValidationError("Either a page or a URL must be provided.")
-#         return value
-
-#     class Meta:
-#         abstract = True
-#         icon = "link"
+from cms.core.fields import StreamField
 
 
 class ThemeLinkBlock(LinkBlock):
@@ -42,15 +24,7 @@ class TopicLinkBlock(LinkBlock):
 
 
 class HighlightsBlock(LinkBlock):
-    description = CharBlock(required=True, max_length=50, help_text="E.g., It's never been more important")
-
-    # def clean(self, value: dict) -> dict:
-    #     value = super().clean(value)
-    #     if not value.get("page") and not value.get("url"):
-    #         raise ValidationError("Either a page or a URL must be provided.")
-    #     if value.get("url") and not value.get("title"):
-    #         raise ValidationError("Title is required if adding an external URL.")
-    #     return value
+    description = CharBlock(required=True, max_length=50, help_text="View our latest and upcoming releases.")
 
     class Meta:
         icon = "star"
@@ -79,7 +53,6 @@ class ColumnBlock(StructBlock):
 
 
 # MainMenu model
-# @register_snippet
 class MainMenu(models.Model):
     highlights = StreamField(
         [("highlight", HighlightsBlock())],

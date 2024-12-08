@@ -3,8 +3,8 @@ from typing import TYPE_CHECKING, Any
 from django.utils.text import slugify
 from django.utils.translation import gettext as _
 from wagtail.blocks import CharBlock, ListBlock
-from .base import LinkBlock
 
+from .base import LinkBlock
 
 if TYPE_CHECKING:
     from wagtail.blocks.list_block import ListValue
