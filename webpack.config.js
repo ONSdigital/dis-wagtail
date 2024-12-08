@@ -98,24 +98,24 @@ const options = {
               implementation: sass,
               sassOptions: {
                 outputStyle: 'compressed',
+                includePaths: [path.resolve(`${projectRoot}/static_src/sass`)],
               },
             },
           },
         ],
       },
       {
-        // sync font files referenced by the css to the fonts directory
-        // the publicPath matches the path from the compiled css to the font file
-        // only looks in the fonts folder so pngs in the images folder won't get put in the fonts folder
+        // Copies font files referenced by CSS/JS to the fonts
+        // directory.
+        // Only files located in the static_src/fonts directory can be
+        // referenced in CSS/JS. Trying to reference a font outside of
+        // this directory will result in a build error. Make sure to
+        // store all fonts in this directory.
         test: /\.(woff|woff2)$/,
-        include: /fonts/,
-        use: {
-          loader: 'file-loader',
-          options: {
-            name: '[name].[ext]',
-            outputPath: 'fonts/',
-            publicPath: '../fonts',
-          },
+        include: path.resolve(`./${projectRoot}/static_src/fonts/`),
+        type: 'asset/resource',
+        generator: {
+          filename: 'fonts/[name][ext]',
         },
       },
       {
@@ -199,7 +199,10 @@ const webpackConfig = (environment, argv) => {
       },
       client: {
         // Shows a full-screen overlay in the browser when there are compiler errors.
-        overlay: true,
+        overlay: {
+          warnings: false,
+          errors: true,
+        },
         logging: 'error',
       },
       devMiddleware: {

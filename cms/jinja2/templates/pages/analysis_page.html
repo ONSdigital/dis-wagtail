@@ -4,11 +4,12 @@
 {% from "components/table-of-contents/_macro.njk" import onsTableOfContents %}
 {% from "components/text-indent/_macro.njk" import onsTextIndent %}
 
+
 {% block header_area %}
-    <div class="analysis-header">
+    <div class="analysis-header {% if page.updates %}analysis-header--flush{% endif %}">
         <div class="ons-container">
             {% include "templates/components/navigation/breadcrumbs.html" %}
-            <p class="analysis-header__doc-type">{{ _("Analysis") }}</p>
+            <p class="analysis-header__doc-type ons-u-fs-l">{{ _("Analysis") }}</p>
 
             <div class="ons-grid ons-grid-flex-gap">
                 <div class="ons-grid__col ons-col-10@m ">
@@ -16,7 +17,7 @@
                         {{ page.display_title }}
                     </h1>
 
-                    <p class="analysis-header__summary">{{ page.summary|richtext() }}</p>
+                    <div class="analysis-header__summary">{{ page.summary|richtext() }}</div>
                 </div>
                 <div class="ons-grid__col ons-col-2@m analysis-header__kitemark">
                     {% if page.is_accredited %}
@@ -27,49 +28,49 @@
         </div>
 
         {% block release_meta %}
-            <div class="ons-container">
-                {% if page.is_census %}
+            {% if page.is_census %}
+                <div class="ons-container">
                     {% include "templates/components/census/census-logo.html" %}
+                </div>
+            {% endif %}
+            <div class="ons-container analysis-header__releases">
+                <div>
+                    <span class="ons-u-fs-r--b analysis-header__releases-label">{{ _("Release date") }}:</span>
+                    <span class="ons-u-nowrap">{{ page.release_date|date("DATE_FORMAT") }}</span>
+                </div>
+                <div>
+                    <span class="ons-u-fs-r--b analysis-header__releases-label">{{ _("Next release") }}:</span>
+                    <span class="ons-u-nowrap">{{ page.next_release_date|date("DATE_FORMAT") or _("To be announced") }}</span>
+                </div>
+                <div>
+                    <span class="ons-u-fs-r--b analysis-header__releases-label">{{ _("Edition") }}:</span>
+                    <span class="ons-u-nowrap">{{ _("Latest") }}</span>
+                </div>
+                <div>
+                    <span class="ons-u-fs-r--b analysis-header__releases-label">{{ _("Releases") }}:</span>
+                    {% if page.is_latest %}
+                        <a href="{{ routablepageurl(page.get_parent().specific, "previous_releases") }}">{{ _("View previous releases") }}</a>
+                    {% else %}
+                        <a href="{{ routablepageurl(page.get_parent().specific, "latest_release") }}">{{ _("View latest release") }}</a>
+                    {% endif %}
+                </div>
+                {% if page.contact_details %}
+                    <div>
+                        <span class="ons-u-fs-r--b analysis-header__releases-label">{{ _("Contact") }}:</span>
+                        <a href="mailto:{{ page.contact_details.email }}">{{ page.contact_details.name }}</a>
+                    </div>
                 {% endif %}
-                <div class="ons-grid ons-grid-flex-gap ons-grid-flex-gap--40 analysis-header__releases">
-                    <div class="ons-grid__col ons-col-4@m">
-                        <span class="ons-u-fs-r--b analysis-header__releases-label">{{ _("Release date") }}:</span>
-                        <span class="ons-u-nowrap">{{ page.release_date|date("DATE_FORMAT") }}</span>
-                    </div>
-                    <div class="ons-grid__col ons-col-4@m">
-                        <span class="ons-u-fs-r--b analysis-header__releases-label">{{ _("Edition") }}:</span>
-                        <span class="ons-u-nowrap">{{ _("Latest") }}</span>
-                    </div>
-                    <div class="ons-grid__col ons-col-4@m">
-                        {% if page.contact_details %}
-                            <span class="ons-u-fs-r--b analysis-header__releases-label">{{ _("Contact") }}:</span>
-                            <a href="mailto:{{ page.contact_details.email }}">{{ page.contact_details.name }}</a>
-                        {% endif %}
-                    </div>
-                </div>
-                <div class="ons-grid ons-grid-flex-gap ons-grid-flex-gap--40 analysis-header__releases">
-                    <div class="ons-grid__col ons-col-4@m">
-                        <span class="ons-u-fs-r--b analysis-header__releases-label">{{ _("Next release") }}:</span>
-                        <span class="ons-u-nowrap">{{ page.next_release_date|date("DATE_FORMAT") or _("To be announced") }}</span>
-                    </div>
-                    <div class="ons-grid__col ons-col-4@m">
-                        <span class="ons-u-fs-r--b bulletin-header__releases-label">{{ _("Releases") }}:</span>
-                        {% if page.is_latest %}
-                            <a href="{{ routablepageurl(page.get_parent().specific, "previous_releases") }}">{{ _("View previous releases") }}</a>
-                        {% else %}
-                            <a href="{{ routablepageurl(page.get_parent().specific, "latest_release") }}">{{ _("View latest release") }}</a>
-                        {% endif %}
-                    </div>
-                </div>
             </div>
         {% endblock %}
     </div>
 
+    {% if page.updates %}
+        {% include_block page.updates %}
+    {% endif %}
+
     {% if page.headline_figures %}
         {% include_block page.headline_figures %}
     {% endif %}
-
-    {{ super() }}
 
 {% endblock %}
 
@@ -103,7 +104,7 @@
 
                 {% if page.show_cite_this_page %}
                     <section id="cite-this-page">
-                        <h2 class="heading-2">{{ _("Cite this analysis") }}</h2>
+                        <h2 class="ons-u-fs-l">{{ _("Cite this analysis") }}</h2>
                         <p>
                             {%- set cite_link -%}
                                 <a href="{{ fullpageurl(page) }}">{{ page.display_title }}</a>
@@ -117,7 +118,7 @@
 
                 {% if page.contact_details %}
                     <section id="contact-details">
-                        <h2 class="heading-2">{{ _("Contact details") }}</h2>
+                        <h2 class="ons-u-fs-l">{{ _("Contact details") }}</h2>
 
                         {% call onsTextIndent() %}
                             <p class="contact-details__line">

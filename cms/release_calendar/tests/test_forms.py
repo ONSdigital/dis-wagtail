@@ -12,7 +12,7 @@ class ReleaseCalendarPageAdminFormTestCase(TestCase):
 
     def setUp(self):
         self.page = ReleaseCalendarPageFactory()
-        self.form_class = ReleaseCalendarPage.get_edit_handler().get_form_class()  # pylint: disable=no-member
+        self.form_class = ReleaseCalendarPage.get_edit_handler().get_form_class()  # pylint: disable-all
         self.form_data = nested_form_data(self.raw_form_data())
 
     def raw_form_data(self, page=None):
@@ -75,7 +75,7 @@ class ReleaseCalendarPageAdminFormTestCase(TestCase):
         form = self.form_class(instance=self.page, data=data)
 
         self.assertFalse(form.is_valid())
-        self.assertListEqual(form.errors["notice"], ["The notice field is required when the release is cancelled"])
+        self.assertFormError(form, "notice", ["The notice field is required when the release is cancelled"])
 
     def test_form_clean__validates_release_date_when_confirmed(self):
         """Validates that the release date must be set if the release is confirmed."""
@@ -95,8 +95,9 @@ class ReleaseCalendarPageAdminFormTestCase(TestCase):
 
                 self.assertEqual(form.is_valid(), is_valid)
                 if not is_valid:
-                    self.assertListEqual(
-                        form.errors["release_date"],
+                    self.assertFormError(
+                        form,
+                        "release_date",
                         ["The release date field is required when the release is confirmed"],
                     )
 
@@ -118,8 +119,9 @@ class ReleaseCalendarPageAdminFormTestCase(TestCase):
 
                 self.assertEqual(form.is_valid(), is_valid)
                 if not is_valid:
-                    self.assertListEqual(
-                        form.errors["release_date_text"],
+                    self.assertFormError(
+                        form,
+                        "release_date_text",
                         ["The release date text must be in the 'Month YYYY' or 'Month YYYY to Month YYYY' format."],
                     )
 
@@ -130,7 +132,7 @@ class ReleaseCalendarPageAdminFormTestCase(TestCase):
         form = self.form_class(instance=self.page, data=data)
 
         self.assertFalse(form.is_valid())
-        self.assertListEqual(form.errors["release_date_text"], ["The end month must be after the start month."])
+        self.assertFormError(form, "release_date_text", ["The end month must be after the start month."])
 
     def test_form_clean__can_add_release_date_when_confirming(self):
         """Checks that we can set a new release date when the release is confirmed, if previously it was empty."""
@@ -157,8 +159,9 @@ class ReleaseCalendarPageAdminFormTestCase(TestCase):
                 form = self.form_class(instance=self.page, data=data)
 
                 self.assertFalse(form.is_valid())
-                self.assertListEqual(
-                    form.errors["changes_to_release_date"],
+                self.assertFormError(
+                    form,
+                    "changes_to_release_date",
                     [
                         "If a confirmed calendar entry needs to be rescheduled, "
                         "the 'Changes to release date' field must be filled out."
@@ -192,8 +195,8 @@ class ReleaseCalendarPageAdminFormTestCase(TestCase):
 
         self.assertFalse(form.is_valid())
         message = ["Please enter the release date or the release date text, not both."]
-        self.assertListEqual(form.errors["release_date"], message)
-        self.assertListEqual(form.errors["release_date_text"], message)
+        self.assertFormError(form, "release_date", message)
+        self.assertFormError(form, "release_date_text", message)
 
     def test_form_clean__validates_either_next_release_date_or_text(self):
         """Checks that editors can enter either the next release date or the text, not both."""
@@ -206,8 +209,8 @@ class ReleaseCalendarPageAdminFormTestCase(TestCase):
 
         self.assertFalse(form.is_valid())
         message = ["Please enter the next release date or the next release text, not both."]
-        self.assertListEqual(form.errors["next_release_date"], message)
-        self.assertListEqual(form.errors["next_release_text"], message)
+        self.assertFormError(form, "next_release_date", message)
+        self.assertFormError(form, "next_release_text", message)
 
     def test_form_clean__validates_next_release_date_is_after_release_date(self):
         """Checks that editors enter a release that that is after the release date."""
@@ -219,4 +222,4 @@ class ReleaseCalendarPageAdminFormTestCase(TestCase):
 
         self.assertFalse(form.is_valid())
         message = ["The next release date must be after the release date."]
-        self.assertListEqual(form.errors["next_release_date"], message)
+        self.assertFormError(form, "next_release_date", message)

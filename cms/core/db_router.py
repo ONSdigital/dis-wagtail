@@ -1,0 +1,95 @@
+from typing import Any, Optional
+
+from django.conf import settings
+from django.core.exceptions import ImproperlyConfigured
+from django.db import DEFAULT_DB_ALIAS, transaction
+from django.db.models import Model
+
+from cms.images.models import Rendition
+
+READ_REPLICA_DB_ALIAS = "read_replica"
+
+
+class ReadReplicaRouter:  # pylint: disable=unused-argument,protected-access
+    """A database router for directing queries between the default database and a read replica.
+
+    This router routes read queries to a read replica while ensuring write queries
+    (and migrations) are directed to the default database.
+
+    https://docs.djangoproject.com/en/5.1/topics/db/multi-db/#automatic-database-routing
+    """
+
+    REPLICA_DBS = frozenset({READ_REPLICA_DB_ALIAS, DEFAULT_DB_ALIAS})
+
+    def __init__(self) -> None:
+        if READ_REPLICA_DB_ALIAS not in settings.DATABASES:  # pragma: no cover
+            raise ImproperlyConfigured("Read replica is not configured.")
+
+    def db_for_read(self, model: type[Model], **hints: Any) -> Optional[str]:
+        """Determine which database should be used for read queries."""
+        # If the write database is in a (uncommitted) transaction,
+        # a subsequent SELECT (or other read query) may return inconsistent data.
+        # In this case, use the write connection for reads, with the aim of
+        # improved consistency.
+        if not transaction.get_autocommit(using=DEFAULT_DB_ALIAS):
+            # In a transaction, use the write database
+            return DEFAULT_DB_ALIAS
+
+        return READ_REPLICA_DB_ALIAS
+
+    def allow_relation(self, obj1: Model, obj2: Model, **hints: Any) -> Optional[bool]:
+        """Determine whether a relation is allowed between two models."""
+        # If both instances are in the same database (or its replica), allow relations
+        if obj1._state.db in self.REPLICA_DBS and obj2._state.db in self.REPLICA_DBS:
+            return True
+
+        # No preference
+        return None
+
+    def allow_migrate(self, db: str, app_label: str, model_name: Optional[str] = None, **hints: Any) -> Optional[bool]:
+        """Determine whether migrations be run for the app on the database."""
+        # Don't allow migrations to run against the replica (they would fail anyway)
+        if db == READ_REPLICA_DB_ALIAS:
+            return False
+
+        # No preference
+        return None
+
+
+class ExternalEnvRouter:  # pylint: disable=unused-argument,protected-access
+    """A database router which prevents writes to certain models in the external environment.
+
+    In production, this will also be enforced at the database level.
+    """
+
+    WRITE_ALLOWED_MODELS = frozenset({Rendition})
+
+    FAKE_BACKEND = "not_allowed_in_external_env"
+
+    def db_for_write(self, model: type[Model], **hints: Any) -> Optional[str]:
+        """Determine which database should be used for write queries."""
+        if settings.IS_EXTERNAL_ENV and model not in self.WRITE_ALLOWED_MODELS:
+            # Return a fake (non-existent) backend so Django can still resolve the backend, it just can't
+            # connect to it.
+            return self.FAKE_BACKEND
+
+        # No preference
+        return None
+
+    def allow_relation(self, obj1: Model, obj2: Model, **hints: Any) -> Optional[bool]:
+        """Determine whether a relation is allowed between two models."""
+        # If any models have a fake backend, assume they can be related to placate Django.
+        if self.FAKE_BACKEND in [obj1._state.db, obj2._state.db]:
+            return True
+
+        # No preference
+        return None
+
+    def allow_migrate(self, db: str, app_label: str, model_name: Optional[str] = None, **hints: Any) -> Optional[bool]:
+        """Determine whether migrations be run for the app on the database."""
+        # Don't allow migrations to run against the fake database (they would fail anyway)
+        if db == self.FAKE_BACKEND:
+            return False
+
+        # No preference
+        return None

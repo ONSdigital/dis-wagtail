@@ -40,3 +40,18 @@ PASSWORD_HASHERS = ["django.contrib.auth.hashers.MD5PasswordHasher"]
 
 DEFENDER_DISABLE_USERNAME_LOCKOUT = True
 DEFENDER_DISABLE_IP_LOCKOUT = True
+
+
+# Read replica should mirror the default database during tests.
+# https://docs.djangoproject.com/en/stable/topics/testing/advanced/#tests-and-multiple-databases
+DATABASES["read_replica"].setdefault("TEST", {"MIRROR": "default"})  # noqa: F405
+
+
+# Disable caches in tests
+CACHES["default"] = {  # noqa: F405
+    "BACKEND": "django.core.cache.backends.dummy.DummyCache",
+}
+
+
+# Silence Slack notifications by default
+SLACK_NOTIFICATIONS_WEBHOOK_URL = None
