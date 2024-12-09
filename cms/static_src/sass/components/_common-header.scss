@@ -1,0 +1,59 @@
+@use 'config' as *;
+
+/*
+Styles common to more than one header component
+*/
+
+.common-header {
+    &__heading {
+        margin-bottom: rem-sizing(16);
+    }
+
+    &__summary {
+        margin-bottom: rem-sizing(16);
+    }
+
+    &__kitemark {
+        margin-bottom: rem-sizing(16);
+
+        @include media-query('l') {
+            text-align: right;
+        }
+    }
+
+    &__accreditation-link {
+        display: inline-block;
+    }
+
+    &__accreditation-logo {
+        // compensates for whitespace in logo
+        position: relative;
+        right: rem-sizing(10);
+
+        @include media-query('l') {
+            right: rem-sizing(-10);
+        }
+    }
+
+    &__releases {
+        display: grid;
+        gap: rem-sizing(8) rem-sizing(40);
+
+        @include media-query('l') {
+            grid-template-rows: 1fr 1fr;
+            grid-template-columns: 1fr 1fr 1fr;
+            grid-auto-flow: column;
+            margin-top: rem-sizing(24);
+        }
+
+        &--single-row {
+            @include media-query('l') {
+                grid-template-rows: 1fr;
+            }
+        }
+    }
+
+    &__releases-label {
+        margin-right: 16px;
+    }
+}
