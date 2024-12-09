@@ -43,7 +43,7 @@
     {% for highlight in navigation_settings.main_menu.highlights %}
         {% if highlight.value.page %}
             {% set _ = keyLinksList.append({
-                'text': highlight.value.page.title,
+                'text': highlight.value.title if highlight.value.title else highlight.value.page.title,
                 'description': highlight.value.description,
                 'url': highlight.value.page.url,
             }) %}
