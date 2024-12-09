@@ -1,7 +1,9 @@
 @use 'config' as *;
 
-/* Addition to ons grid to use 'gap' to set widths between columns
- Adds custom gap values to match the designs */
+/*
+Addition to ons grid to use 'gap' to set widths between columns
+Adds custom gap values to match the designs
+*/
 
 .ons-grid-flex-gap {
     display: flex;

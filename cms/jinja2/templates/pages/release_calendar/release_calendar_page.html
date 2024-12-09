@@ -2,41 +2,53 @@
 
 {% from "components/table-of-contents/_macro.njk" import onsTableOfContents %}
 
-{% block header_area %}{% endblock %}
+{% block header_area %}
+    <div class="common-header release-header">
+        <div class="ons-container">
+            {% include "templates/components/navigation/breadcrumbs.html" %}
+            <p class="analysis-header__doc-type ons-u-fs-l">{{ _("Release") }}</p>
 
-{% block main %}
-    <div class="ons-u-fs-m ons-u-mt-s ons-u-pb-3xs release__document-type">Release</div>
-    <h1 class="ons-u-fs-3xl ons-u-mb-l">
-        <span>{{ page.title }}</span>
-        {% if page.is_accredited %}
-            {% include "templates/components/accredited/accredited-logo.html" %}
-        {% endif %}
-    </h1>
+            <div class="ons-grid ons-grid-flex-gap ons-grid-flex-gap--40">
+                <div class="ons-grid__col ons-col-10@m ">
+                    <h1 class="ons-u-fs-3xl common-header__heading">
+                        {{ page.title }}
+                    </h1>
+                </div>
+                <div class="ons-grid__col ons-col-2@m common-header__kitemark">
+                    {% if page.is_accredited %}
+                        {% include "templates/components/accredited/accredited-logo.html" %}
+                    {% endif %}
+                </div>
+            </div>
+        </div>
 
-    <div class="ons-grid ons-u-ml-no">
         {% if page.is_census %}
-            <div class="ons-u-pb-s">
+            <div class="ons-container">
                 {% include "templates/components/census/census-logo.html" %}
             </div>
         {% endif %}
+
         {% block release_meta %}
-            <div class="ons-grid__col ons-grid__col--sticky@m ons-col-4@m ons-col-12@s ons-u-p-no">
-                <span class="ons-u-fs-r--b">{{ _("Release date") }}:</span>
-                <span class="ons-u-nowrap">{{ page.release_date|date("DATETIME_FORMAT") or page.release_date_text }}</span>
+            <div class="ons-container common-header__releases common-header__releases--single-row">
+                {% if page.release_date or page.release_text %}
+                    <div>
+                        <span class="ons-u-fs-r--b common-header__releases-label">{{ _("Release date") }}:</span>
+                        <span class="ons-u-nowrap">{{ page.release_date|date("DATETIME_FORMAT") or page.release_date_text }}</span>
+                    </div>
+                {% endif %}
+                {% if page.next_release_date or page.next_release_text %}
+                    <div>
+                        <span class="ons-u-fs-r--b common-header__releases-label">{{ _("Next release") }}:</span>
+                        <span class="ons-u-nowrap">{{ page.next_release_date|date("DATETIME_FORMAT") or page.next_release_text }}</span>
+                    </div>
+                {% endif %}
             </div>
-            {% if page.next_release_date or page.next_release_text %}
-                <div class="ons-grid__col ons-col-8@m ons-col-12@s ons-u-p-no@2xs@m">
-                    <span class="ons-u-fs-r--b">{{ _("Next release") }}:</span>
-                    <span class="ons-u-nowrap">{{ page.next_release_date|date("DATETIME_FORMAT") or page.next_release_text }}</span>
-                </div>
-            {% endif %}
-
-            <p></p>{# added empty p for some margin #}
-        {% endblock release_meta %}
+        {% endblock %}
     </div>
-
     {% block release_note %}{% endblock %}
+{% endblock %}
 
+{% block main %}
     <div class="ons-grid ons-js-toc-container ons-u-ml-no">
         <div class="ons-grid__col ons-grid__col--sticky@m ons-col-4@m ons-u-p-no">
             {# fmt:off #}
@@ -50,13 +62,16 @@
             {# fmt:on #}
         </div>
         <div class="ons-grid__col ons-col-8@m ons-col-12@s ons-u-p-no@2xs@m">
-            {{ page.summary|richtext() }}
+            <section id="summary" class="spacing">
+                <h2>Summary</h2>
+                {{ page.summary|richtext() }}
+            </section>
 
             {% block release_content %}
                 {% include_block page.content %}
 
                 {% if page.contact_details %}
-                    <section id="contact-details">
+                    <section id="contact-details" class="spacing">
                         <h2>{{ _("Contact details") }}</h2>
 
                         <div>

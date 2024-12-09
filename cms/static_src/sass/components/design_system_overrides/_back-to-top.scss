@@ -1,6 +1,9 @@
 @use 'config' as *;
 
-// overrides to ons back-to-top styles
+/*
+Overrides to ons back-to-top styles
+*/
+
 .ons-back-to-top {
     margin-top: rem-sizing(64);
 

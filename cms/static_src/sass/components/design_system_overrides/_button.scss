@@ -1,6 +1,9 @@
 @use 'config' as *;
 
-// overrides the ons button styles - used for the menu button in the header
+/*
+Overrides the ons button styles - used for the menu button in the header
+*/
+
 .ons-btn {
     &--text-link {
         // needs to be visible at desktop

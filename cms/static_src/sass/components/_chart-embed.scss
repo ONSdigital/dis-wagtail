@@ -1,5 +1,9 @@
 @use 'config' as *;
 
+/*
+Styles for the chart embed component
+*/
+
 .chart-embed {
     padding: rem-sizing(24) 0;
     border-top: 1px solid var(--ons-color-grey-75);
