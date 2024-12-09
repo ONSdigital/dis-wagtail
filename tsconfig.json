@@ -1,20 +1,10 @@
 {
   "compilerOptions": {
-    "_comment": [
-      "We don't set outDir here because webpack handles actually emitting the",
-      "files. This means we need to set noEmit to true here so tooling doesn't",
-      "whine about .js files overwriting themselves and override that back to",
-      "false in the ts-loader config for webpack."
-    ],
     "noEmit": true,
-    "_comment": "Webpack will convert ES modules to the required format.",
     "module": "esnext",
     "esModuleInterop": true,
-    "_comment": "Setting, a very low target for IE11 compatibility.",
     "target": "es5",
-    "_comment": "Make, it possible to gradually adopt TypeScript, or not use it at all.",
     "allowJs": true,
-    "_comment": "Turn, on stricter type checking.",
     "strict": true,
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
