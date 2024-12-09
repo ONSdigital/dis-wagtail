@@ -1,14 +1,17 @@
-from typing import ClassVar
+from typing import TYPE_CHECKING, ClassVar
 
 from django.db import models
+from django.utils.translation import gettext_lazy as _
 from wagtail.admin.panels import FieldPanel
 from wagtail.blocks import CharBlock, ListBlock, PageChooserBlock, StructBlock
 from wagtail.contrib.settings.models import BaseSiteSetting, register_setting
+from wagtail.models import PreviewableMixin
 
 from cms.core.blocks.base import LinkBlock
 from cms.core.fields import StreamField
-from django.utils.translation import gettext_lazy as _
-from wagtail.models import PreviewableMixin
+
+if TYPE_CHECKING:
+    from django.http import HttpRequest
 
 
 class ThemeLinkBlock(LinkBlock):
@@ -37,7 +40,7 @@ class HighlightsBlock(LinkBlock):
 class SectionBlock(StructBlock):
     section_link = ThemeLinkBlock(help_text=_("Main link for this section (Theme pages or external URLs)."))
     links = ListBlock(
-        TopicLinkBlock(), _(help_text="Sub-links for this section (Topic pages or external URLs)."), max_num=15
+        TopicLinkBlock(), help_text=_("Sub-links for this section (Topic pages or external URLs)."), max_num=15
     )
 
     class Meta:
@@ -74,7 +77,8 @@ class MainMenu(PreviewableMixin, models.Model):
         FieldPanel("columns"),
     ]
 
-    def get_preview_template(self, request, mode_name):
+    def get_preview_template(self, request: "HttpRequest", mode_name: str) -> str:
+        print("mode_name", mode_name)
         return "templates/base_page.html"
 
     def __str__(self) -> str:
@@ -96,6 +100,3 @@ class NavigationSettings(BaseSiteSetting):
     panels: ClassVar[list] = [
         FieldPanel("main_menu"),
     ]
-
-
-# TODO - Write tests for these blocks
