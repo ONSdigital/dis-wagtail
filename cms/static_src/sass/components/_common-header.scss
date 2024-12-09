@@ -39,11 +39,14 @@ Styles common to more than one header component
         display: grid;
         gap: rem-sizing(8) rem-sizing(40);
 
+        @include media-query('m') {
+            margin-top: rem-sizing(24);
+        }
+
         @include media-query('l') {
             grid-template-rows: 1fr 1fr;
             grid-template-columns: 1fr 1fr 1fr;
             grid-auto-flow: column;
-            margin-top: rem-sizing(24);
         }
 
         &--single-row {
