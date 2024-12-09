@@ -5,12 +5,10 @@ from pathlib import Path
 
 BASE_DIR = Path(__file__).parent.parent
 
+
 # Extract the app label from the directory structure
 def get_app_labels():
-    return [
-        path.parent.name
-        for path in Path(BASE_DIR / "cms").glob("*/migrations")
-    ]
+    return [path.parent.name for path in Path(BASE_DIR / "cms").glob("*/migrations")]
 
 
 # Run the lintmigrations command for a given app_label
