@@ -80,7 +80,7 @@ jobs:
       - compile_static
 
     env:
-      DJANGO_SETTINGS_MODULE: cms.settings.test
+      DJANGO_SETTINGS_MODULE: cms.settings.dev
       DATABASE_URL: postgres://postgres:postgres@localhost/postgres # pragma: allowlist secret
       ENABLE_DJANGO_DEFENDER: 'false'
       POSTGRES_HOST_AUTH_METHOD: trust
