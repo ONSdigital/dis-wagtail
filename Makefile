@@ -52,10 +52,6 @@ lint-frontend:  ## Run front-end linters
 
 .PHONY: lint-migrations
 lint-migrations: ## Run django-migration-linter
-	poetry run python manage.py lintmigrations
-
-.PHONY: lint-migrations-custom
-lint-migrations-custom: ## Run django-migration-linter
 	poetry run python scripts/lintmigrations_custom.py
 
 .PHONY: test

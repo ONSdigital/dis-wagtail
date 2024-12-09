@@ -27,7 +27,8 @@ AUTH_PASSWORD_VALIDATORS = []
 
 # Enable Wagtail's style guide in Wagtail's settings menu.
 # http://docs.wagtail.io/en/stable/contributing/styleguide.html
-INSTALLED_APPS += ["wagtail.contrib.styleguide"]  # noqa: F405
+INSTALLED_APPS = [*INSTALLED_APPS, "django_migration_linter"]  # noqa: F405
+INSTALLED_APPS += ["wagtail.contrib.styleguide"]
 
 
 # Disable forcing HTTPS locally since development server supports HTTP only.
@@ -38,7 +39,6 @@ SECURE_HSTS_SECONDS = 0
 
 # Adds Django Debug Toolbar
 INSTALLED_APPS.append("debug_toolbar")
-INSTALLED_APPS = [*INSTALLED_APPS, "django_migration_linter"]  # noqa: F405
 MIDDLEWARE.insert(0, "debug_toolbar.middleware.DebugToolbarMiddleware")  # noqa: F405
 SHOW_TOOLBAR = True  # Override in `local.py`
 DEBUG_TOOLBAR_CONFIG = {
