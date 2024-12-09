@@ -37,7 +37,7 @@ SECURE_HSTS_SECONDS = 0
 
 
 # Adds Django Debug Toolbar
-INSTALLED_APPS.append("debug_toolbar")
+INSTALLED_APPS.append("debug_toolbar", "django-migration-linter")
 MIDDLEWARE.insert(0, "debug_toolbar.middleware.DebugToolbarMiddleware")  # noqa: F405
 SHOW_TOOLBAR = True  # Override in `local.py`
 DEBUG_TOOLBAR_CONFIG = {
