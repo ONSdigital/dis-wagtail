@@ -124,14 +124,57 @@ jobs:
         run: poetry run ./manage.py check
       - name: Check for missing migrations
         run: poetry run ./manage.py makemigrations --check --noinput
-      - name: Lint Migrations
-        run: make lint-migrations
       - name: Create cache table
         run: poetry run ./manage.py createcachetable
       - name: Run migrations to work around Django bug (#35967)
         run: poetry run ./manage.py migrate --noinput
       - name: Test
         run: make test
+
+  test-lint-migrations:
+    runs-on: ubuntu-latest
+    needs:
+      - lint
+
+    env:
+      DJANGO_SETTINGS_MODULE: cms.settings.dev
+      DATABASE_URL: postgres://postgres:postgres@localhost/postgres # pragma: allowlist secret
+      ENABLE_DJANGO_DEFENDER: 'false'
+      POSTGRES_HOST_AUTH_METHOD: trust
+      SECRET_KEY: fake_secret_key_to_run_tests # pragma: allowlist secret
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres # pragma: allowlist secret
+          POSTGRES_DB: postgres
+        ports:
+          - 5432:5432
+        options: --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
+
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Poetry
+        run: pipx install poetry==${{ env.POETRY_VERSION }}
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version-file: .python-version
+          cache: poetry
+
+      - name: Install dependencies
+        run: make install-dev
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: static
+          path: cms/static_compiled/
+
+      - name: Lint Migrations
+        run: make lint-migrations
 
   docker:
     runs-on: ubuntu-latest
