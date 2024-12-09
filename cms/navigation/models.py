@@ -8,6 +8,7 @@ from wagtail.contrib.settings.models import BaseSiteSetting, register_setting
 from cms.core.blocks.base import LinkBlock
 from cms.core.fields import StreamField
 from django.utils.translation import gettext_lazy as _
+from wagtail.models import PreviewableMixin
 
 
 class ThemeLinkBlock(LinkBlock):
@@ -54,7 +55,7 @@ class ColumnBlock(StructBlock):
 
 
 # MainMenu model
-class MainMenu(models.Model):
+class MainMenu(PreviewableMixin, models.Model):
     highlights = StreamField(
         [("highlight", HighlightsBlock())],
         blank=True,
@@ -72,6 +73,9 @@ class MainMenu(models.Model):
         FieldPanel("highlights"),
         FieldPanel("columns"),
     ]
+
+    def get_preview_template(self, request, mode_name):
+        return "templates/base_page.html"
 
     def __str__(self) -> str:
         return "Main Menu"
