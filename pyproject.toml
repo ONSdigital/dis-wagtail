@@ -30,7 +30,6 @@ whitenoise = "~6.8"
 slack-sdk = "^3.33.3"
 django-cache-memoize = "^0.2.0"
 django-iam-dbauth = "^0.2.1"
-django-migration-linter = "^5.1.0"
 
 [tool.poetry.group.dev.dependencies]
 # :TODO: Remove pylint when ruff supports all pylint rules
@@ -54,6 +53,7 @@ setuptools = "^75.2.0"
 honcho = "^2.0.0"
 detect-secrets = "^1.5.0"
 moto = {extras = ["iam"], version = "^5.0.21"}
+django-migration-linter = "^5.1.0"
 
 [tool.ruff]
 target-version = "py312"
