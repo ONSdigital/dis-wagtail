@@ -45,7 +45,7 @@
             {% set _ = keyLinksList.append({
                 'text': highlight.value.page.title,
                 'description': highlight.value.description,
-                'url': highlight.value.page.external_url,
+                'url': highlight.value.page.url,
             }) %}
         {% elif highlight.value.external_url %}
             {% set _ = keyLinksList.append({
@@ -76,7 +76,7 @@
             {% for link in section.links %}
                 {% set _ = sectionData.children.append({
                     'text': link.title or (link.page and link.page.title) or '',
-                    'url': link.external_url or (link.page and link.page.external_url) or False,
+                    'url': link.external_url or (link.page and link.page.url) or False,
                 }) %}
             {% endfor %}
             
