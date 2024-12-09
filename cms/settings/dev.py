@@ -37,7 +37,8 @@ SECURE_HSTS_SECONDS = 0
 
 
 # Adds Django Debug Toolbar
-INSTALLED_APPS.append("debug_toolbar", "django-migration-linter")
+INSTALLED_APPS.append("debug_toolbar")
+INSTALLED_APPS = [*INSTALLED_APPS, "django_migration_linter"]  # noqa: F405
 MIDDLEWARE.insert(0, "debug_toolbar.middleware.DebugToolbarMiddleware")  # noqa: F405
 SHOW_TOOLBAR = True  # Override in `local.py`
 DEBUG_TOOLBAR_CONFIG = {
@@ -57,3 +58,17 @@ try:
 except ImportError:
     pass
 # pylint: enable=unused-wildcard-import,useless-suppression
+
+MIGRATION_LINTER_OPTIONS = {
+    "exclude_apps": [
+        "taggit",
+        "wagtailcore",
+        "wagtailembeds",
+        "wagtailimages",
+        "wagtailadmin",
+        "wagtailsearch",
+        "wagtaildocs",
+        "wagtailredirects",
+        "wagtailusers",
+    ]
+}

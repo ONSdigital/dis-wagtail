@@ -91,7 +91,6 @@ INSTALLED_APPS = [
     "django_jinja",
     "wagtailmath",
     "wagtailfontawesomesvg",
-    "django_migration_linter",
 ]
 
 if not IS_EXTERNAL_ENV:
@@ -845,17 +844,3 @@ MANAGE_COOKIE_SETTINGS_URL = env.get("MANAGE_COOKIE_SETTINGS_URL", "https://www.
 
 
 SLACK_NOTIFICATIONS_WEBHOOK_URL = env.get("SLACK_NOTIFICATIONS_WEBHOOK_URL")
-
-MIGRATION_LINTER_OPTIONS = {
-    "exclude_apps": [
-        "taggit",
-        "wagtailcore",
-        "wagtailembeds",
-        "wagtailimages",
-        "wagtailadmin",
-        "wagtailsearch",
-        "wagtaildocs",
-        "wagtailredirects",
-        "wagtailusers",
-    ]
-}
