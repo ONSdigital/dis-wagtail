@@ -6,13 +6,13 @@ This disclosure policy applies only to vulnerabilities in the ONS products and s
 
 - ‘In scope’ vulnerabilities must be original, previously unreported, and not already discovered by internal procedures.
 - Volumetric vulnerabilities are not in scope - meaning that simply overwhelming a service with a high volume of
-    requests is not in scope.
+  requests is not in scope.
 - Reports of non-exploitable vulnerabilities, or reports indicating that our services do not fully align with 'best
-    practice', for example missing security headers, are not in scope.
+  practice', for example missing security headers, are not in scope.
 - TLS configuration weaknesses, for example 'weak'cipher suite support or the presence of TLS1.0 support, are not in
-    scope.
+  scope.
 - The policy applies to everyone, including for example the ONSstaff, third party suppliers and general users of the ONS
-    publicservices.
+  publicservices.
 
 ## Reporting
 
@@ -61,16 +61,16 @@ ONS service or system, where the researcher has acted in good faith and in accor
 You must NOT:
 
 - Access unnecessary amounts of data. For example, 2 or 3 records is enough to demonstrate most vulnerabilities, such
-    asan enumeration or direct object reference vulnerability.
+  asan enumeration or direct object reference vulnerability.
 - Use high-intensity invasive or destructive technical security scanning tools to find vulnerabilities.
 - Violate the privacy of the ONS users, staff, contractors, services or systems. For example, by sharing, redistributing
-    and/or not properly securing data retrieved from our systems or services.
+  and/or not properly securing data retrieved from our systems or services.
 - Communicate any vulnerabilities or associated details using methods not described in this policy.
 - Modify data in the ONS systems or services.
 - Disrupt the ONS services or systems.
 - Social engineer, 'phish' or physically attack ONS staff or infrastructure.
 - Disclose any vulnerabilities in the ONS systems or services to 3rd parties or the public, prior to the ONS confirming
-    that those vulnerabilities have been mitigated or rectified. However, this is not intended to stop you notifying a
-    vulnerability to 3rd parties for whom the vulnerability is directly relevant. An example would be where the
-    vulnerability being reported is in a 3rd party software library or framework. Details of the specific vulnerability as
-    it applies to the ONS must not be referenced in such reports.
+  that those vulnerabilities have been mitigated or rectified. However, this is not intended to stop you notifying a
+  vulnerability to 3rd parties for whom the vulnerability is directly relevant. An example would be where the
+  vulnerability being reported is in a 3rd party software library or framework. Details of the specific vulnerability as
+  it applies to the ONS must not be referenced in such reports.

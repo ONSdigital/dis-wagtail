@@ -1,4 +1,3 @@
-
 title = "gitleaks config"
 
 [extend]
@@ -7,5 +6,10 @@ title = "gitleaks config"
 useDefault = true
 
 [allowlist]
-    description = "Allowlisted files"
-    paths = ["."]
+description = "Global allowlists (skip conditions)"
+paths = [
+    '''(?i)^.*\.env$''',  # Matches any file ending in .env (case-insensitive)
+    '''(?i)^.*\.env\..*$''',  # Matches files like .env.test, .env.local, .env.production, etc.
+    "cms/settings/local.py",  # Ignore local.py in the cms/settings directory
+    "megalinter-reports"  # Ignore megalinter-reports directory
+]

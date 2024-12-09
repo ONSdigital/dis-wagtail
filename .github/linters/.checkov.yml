@@ -7,8 +7,12 @@ output: cli
 quiet: true
 soft-fail: false
 skip-check:
-  - CKV2_GHA_1 # Not needed
-  - CKV2_DOCKER_1 # Ensure that sudo isn't used failing in git ci
-  - CKV_DOCKER_9 # Docker app -. app-get ignored
-  - CKV_DOCKER_2 # Docker app -. app-get ignored
+  # Ensure top-level permissions are not set to write-all
+  - CKV2_GHA_1
+  # Ensure that sudo isn't used
+  - CKV2_DOCKER_1
+  # Ensure that APT isn’t used
+  - CKV_DOCKER_9
+  # Ensure that HEALTHCHECK instructions have been added to container images
+  - CKV_DOCKER_2
 summary-position: bottom

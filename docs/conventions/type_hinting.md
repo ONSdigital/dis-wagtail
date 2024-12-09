@@ -1,7 +1,6 @@
 # Python Type Hinting
 
-As a team we have committed to adding type hints throughout the Python code. This document defines our approach to type
-hinting, to ensure consistency in the
+As a team we have committed to adding type hints throughout the Python code. This document defines our approach to type hinting, to ensure consistency in the
 codebase and avoid repeating discussions about how we apply typing.
 
 ## Variables
@@ -9,7 +8,7 @@ codebase and avoid repeating discussions about how we apply typing.
 Specify types for variables initialised with `None`:
 
 ```python
-description: var: str | None = None
+description: Optional[str] = None
 ```
 
 Specify types for empty collections:
@@ -78,8 +77,7 @@ For arguments that can be a single type or None, use the shorthand `|` instead o
 def test(self, var: None | int) -> None:
 ```
 
-For arguments that can be one of multiple types or None, use the shorthand `|` instead of using the older `Union`
-keyword:
+For arguments that can be one of multiple types or None, use the shorthand `|` instead of using the older `Union` keyword:
 
 ```python
 def test(self, var: None | int | str) -> None:
@@ -97,8 +95,7 @@ def increment_values(self, values: Sequence[int]) -> list[int]:
 
 ## Self Type
 
-To annotate methods that return an instance of their class, use the `Self` type is as it is bound to it's encapsulating
-class. In the example below, the type
+To annotate methods that return an instance of their class, use the `Self` type is as it is bound to it's encapsulating class. In the example below, the type
 checker will correctly infer the type of `Circle().set_scale(0.5)` to be `Circle`:
 
 ```python
@@ -122,8 +119,7 @@ This is recommended as forward declarations are now redundant in 3.10
 
 ## Type Alias
 
-Use the special annotation `TypeAlias` to declare type aliases more explicitly so type checkers are able to distinguish
-between type aliases and ordinary
+Use the special annotation `TypeAlias` to declare type aliases more explicitly so type checkers are able to distinguish between type aliases and ordinary
 assignments:
 
 ```python
@@ -135,16 +131,15 @@ def foo() -> MyType: ...
 
 ## Type Ignore
 
-To mark portions of the program that should not be covered by type hinting, use `# type: ignore` on the specific line.
-When used in a line by itself at the top
+To mark portions of the program that should not be covered by type hinting, use `# type: ignore` on the specific line. When used in a line by itself at the top
 of a file, it silences all errors in the file:
 
 ```python
 # type: ignore
 ```
 
-`# type: ignore` should only be used when unavoidable (or in the return `Any` case detailed below). Ensure that a
-comment is added to explain why it has been used and have a prefix of `Type ignore:`
+`# type: ignore` should only be used when unavoidable (or in the return `Any` case detailed below).
+Ensure that a comment is added to explain why it has been used and have a prefix of `Type ignore:`
 
 ```python
 def format_number(number: int) -> str:
@@ -153,11 +148,10 @@ def format_number(number: int) -> str:
     return formatted_number
 ```
 
-The `warn_return_any` flag is turned on to force type hinting the return types for third party libraries and increase
-the safety of the code base.
+The `warn_return_any` flag is turned on to force type hinting the return types for third party libraries and increase the safety of the code base.
 
-Where type hints aren’t specific enough to identify the return type (e.g. objects like blocks where some keys correspond
- to strings, others to lists, others to dicts) mypy will complain if you assume the type of any attribute:
+Where type hints aren’t specific enough to identify the return type (e.g. objects like blocks where some keys correspond to strings,
+others to lists, others to dicts) mypy will complain if you assume the type of any attribute:
 
 ```python
 def get_id_from_block(block: dict) -> str:
@@ -172,8 +166,8 @@ def get_id_from_block(block: dict) -> str:
     return block_id
 ```
 
-...but as this is a common pattern in a number of places, it results in a lot of duplicating the return type, and extra
-lines of code for the sake of type hinting. In this scenario, it is ok to type ignore it.
+...but as this is a common pattern in a number of places, it results in a lot of duplicating the return type, and
+extra lines of code for the sake of type hinting. In this scenario, it is ok to type ignore it.
 
 If the value was needed for any other checks e.g.
 
@@ -233,8 +227,7 @@ def increment_value(self, value: T) -> T:
     return value + 1
 ```
 
-`TypeVar` also accepts extra positional arguments to restrict the type parameter for improving code documentation and
-error prevention.
+`TypeVar` also accepts extra positional arguments to restrict the type parameter for improving code documentation and error prevention.
 
 ```python
 T = TypeVar("T", int, float)

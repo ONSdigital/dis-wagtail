@@ -7,11 +7,11 @@ module.exports = {
     '/venv/',
     '/docs/',
     '/.mypy_cache',
-    '/.venv/'
+    '/.venv/',
   ],
   collectCoverageFrom: ['**/cms/static_src/javascript/**/*.{js,ts}'],
   moduleFileExtensions: ['js', 'ts', 'json', 'node'],
   transform: {
-    '^.+\\.(js|ts)$': 'ts-jest'
-  }
-}
+    '^.+\\.(js|ts)$': 'ts-jest',
+  },
+};

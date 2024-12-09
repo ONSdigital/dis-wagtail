@@ -1,8 +1,12 @@
 ---
-##########################
-## Hadolint config file ##
-##########################
+#######################################################
+##               Hadolint config file                ##
+## Rules: https://github.com/hadolint/hadolint#rules ##
+#######################################################
 ignored:
+  # DL3018: Pin versions in apk add. Instead of apk add <package>
+  # use apk add <package>=<version>.
   - DL3018
+  # DL3027: Do not use apt as it is meant to be an end-user tool,
+  # use apt-get or apt-cache instead
   - DL3027
-  - DL4006

@@ -33,7 +33,7 @@ rules:
     require-starting-space: true
     ignore-shebangs: true
     min-spaces-from-content: 1 # Used to follow prettier standard: https://github.com/prettier/prettier/pull/10926
-  comments-indentation: disable
+  comments-indentation: enable
   document-end: disable
   document-start:
     level: error
@@ -47,7 +47,7 @@ rules:
     level: error
     max-spaces-after: 1
   indentation:
-    level: warning
+    level: error
     spaces: consistent
     indent-sequences: true
     check-multi-line-strings: false
