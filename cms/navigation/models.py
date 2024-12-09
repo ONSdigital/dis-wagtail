@@ -26,7 +26,7 @@ class TopicLinkBlock(LinkBlock):
 
 
 class HighlightsBlock(LinkBlock):
-    description = CharBlock(required=True, max_length=50, help_text=_("View our latest and upcoming releases."))
+    description = CharBlock(required=True, max_length=50, help_text=_("E.g., View our latest and upcoming releases."))
 
     class Meta:
         icon = "star"
