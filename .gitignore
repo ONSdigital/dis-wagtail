@@ -190,3 +190,6 @@ static/
 
 # Media files
 /media
+
+# bak files
+*.bak

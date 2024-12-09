@@ -3,8 +3,9 @@
     <head>
         <meta charset="utf-8">
         <meta http-equiv="X-UA-Compatible" content="IE=edge">
-        <title>Server error</title>
+        <title>{{ _("Internal Server Error") }}</title>
         <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="description" content="{{ _('Internal Server Error (500)') }}">
         <style>
             html {
                 background-color: #eee;
@@ -25,7 +26,7 @@
     </head>
     <body>
         <h1>Something went wrong</h1>
-        <p>We&rsquo;re sorry! Our server is acting up right now. Please try again soon.</p>
-        <p class="errorcode">Internal Server Error (500)</p>
+        <p>{{ _("We’re sorry! Our server is acting up right now. Please try again soon.") }}</p>
+        <p class="errorcode">{{ _("Internal Server Error (500)") }}</p>
     </body>
 </html>

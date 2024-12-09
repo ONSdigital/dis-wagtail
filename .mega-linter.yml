@@ -20,13 +20,20 @@ FORMATTERS_DISABLE_ERRORS: false
 DISABLE:
   - COPYPASTE
   - PYTHON
+  - JAVASCRIPT
+  - CSS
   - EDITORCONFIG
   - SPELL
 
+# REPOSITORY_TRIVY, REPOSITORY_DUSTILOCK, HTML_HTMLHINT Have been disabled as part of the initial set up
+# CMS_
 DISABLE_LINTERS:
   - REPOSITORY_DEVSKIM
   - REPOSITORY_TRUFFLEHOG
   - REPOSITORY_GIT_DIFF
+  - HTML_HTMLHINT
+  - REPOSITORY_TRIVY
+  - REPOSITORY_DUSTILOCK
 
 SHOW_ELAPSED_TIME: true
 
@@ -34,7 +41,15 @@ FILEIO_REPORTER: false
 # Uncomment if you want MegaLinter to detect errors but not block CI to pass
 # DISABLE_ERRORS: true
 
-# Use yml file to allow the use of comments. Megalinter's default is .markdown-lint.json
+# Use yml file to allow the use of comments.
+# Megalinter's default is .markdown-lint.json
 MARKDOWN_MARKDOWNLINT_CONFIG_FILE: .markdown-lint.yml
+# Dependabot yaml in SchemaStore is currently not up to date.
+# Dependabot is validated on push by GitHub by default.
+YAML_V8R_FILTER_REGEX_EXCLUDE: 'dependabot.yml'
 
-YAML_V8R_FILTER_REGEX_EXCLUDE: 'dependabot.yml' # Dependabot yaml in SchemaStore is currently not up to date. Dependabot is validated on push by GitHub by default.
+# GitLeaks: only scan the files in this commit, not the entire history
+REPOSITORY_GITLEAKS_ARGUMENTS: '--no-git'
+
+# .gitignore files are excluded by default
+ADDITIONAL_EXCLUDED_DIRECTORIES: ['.git']
