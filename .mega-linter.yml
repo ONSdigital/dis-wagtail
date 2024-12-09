@@ -52,4 +52,4 @@ YAML_V8R_FILTER_REGEX_EXCLUDE: 'dependabot.yml'
 REPOSITORY_GITLEAKS_ARGUMENTS: '--no-git'
 
 # .gitignore files are excluded by default
-EXCLUDED_DIRECTORIES: ['.git']
+ADDITIONAL_EXCLUDED_DIRECTORIES: ['.git']
