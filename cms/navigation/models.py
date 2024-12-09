@@ -7,6 +7,7 @@ from wagtail.contrib.settings.models import BaseSiteSetting, register_setting
 
 from cms.core.blocks.base import LinkBlock
 from cms.core.fields import StreamField
+from django.utils.translation import gettext_lazy as _
 
 
 class ThemeLinkBlock(LinkBlock):
@@ -24,7 +25,7 @@ class TopicLinkBlock(LinkBlock):
 
 
 class HighlightsBlock(LinkBlock):
-    description = CharBlock(required=True, max_length=50, help_text="View our latest and upcoming releases.")
+    description = CharBlock(required=True, max_length=50, help_text=_("View our latest and upcoming releases."))
 
     class Meta:
         icon = "star"
@@ -33,9 +34,9 @@ class HighlightsBlock(LinkBlock):
 
 # Section StructBlock for columns
 class SectionBlock(StructBlock):
-    section_link = ThemeLinkBlock(help_text="Main link for this section (Theme pages or external URLs).")
+    section_link = ThemeLinkBlock(help_text=_("Main link for this section (Theme pages or external URLs)."))
     links = ListBlock(
-        TopicLinkBlock(), help_text="Sub-links for this section (Topic pages or external URLs).", max_num=15
+        TopicLinkBlock(), _(help_text="Sub-links for this section (Topic pages or external URLs)."), max_num=15
     )
 
     class Meta:
@@ -58,13 +59,13 @@ class MainMenu(models.Model):
         [("highlight", HighlightsBlock())],
         blank=True,
         max_num=3,
-        help_text="Up to 3 highlights. Each highlight must have either a page or a URL.",
+        help_text=_("Up to 3 highlights. Each highlight must have either a page or a URL."),
     )
     columns = StreamField(
         [("column", ColumnBlock())],
         blank=True,
         max_num=3,
-        help_text="Up to 3 columns. Each column contains sections with links.",
+        help_text=_("Up to 3 columns. Each column contains sections with links."),
     )
 
     panels: ClassVar[list] = [
@@ -85,7 +86,7 @@ class NavigationSettings(BaseSiteSetting):
         null=True,
         blank=True,
         related_name="+",
-        help_text="Select the main menu to display on the site.",
+        help_text=_("Select the main menu to display on the site."),
     )
 
     panels: ClassVar[list] = [
@@ -94,4 +95,3 @@ class NavigationSettings(BaseSiteSetting):
 
 
 # TODO - Write tests for these blocks
-# TODO - Translate strings
