@@ -12,6 +12,7 @@
     "esModuleInterop": true,
     "target": "es5",
     "allowJs": true,
+    "strict": true,
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
     "isolatedModules": true,
