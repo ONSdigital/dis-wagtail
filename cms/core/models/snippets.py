@@ -12,7 +12,7 @@ class ContactDetails(index.Indexed, models.Model):
     Note that this is registered as a snippet in core.wagtail_hooks to allow customising the icon.
     """
 
-    name = models.CharField(max_length=255, unique=True)
+    name = models.CharField(max_length=255)
     email = models.EmailField()
     phone = models.CharField(max_length=255, blank=True)
 
@@ -27,12 +27,19 @@ class ContactDetails(index.Indexed, models.Model):
         index.SearchField("name"),
         index.AutocompleteField("name"),
         index.SearchField("email"),
+        index.AutocompleteField("email"),
         index.SearchField("phone"),
     ]
 
     class Meta:
         verbose_name = _("contact details")
         verbose_name_plural = _("contact details")
+        constraints: ClassVar[list[models.BaseConstraint]] = [
+            models.UniqueConstraint(
+                name="%(app_label)s_%(class)s_name_unique",
+                fields=["name", "email"],
+            ),
+        ]
 
     def save(self, *args: Any, **kwargs: Any) -> None:
         if self.name:
