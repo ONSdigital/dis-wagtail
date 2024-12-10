@@ -1,4 +1,6 @@
 <div class="ons-u-mb-xl census-2021">
-    <img src="https://cdn.ons.gov.uk/assets/images/census-logo/logo-census-2021-purple-landscape.svg" alt="Census 2021 logo" width="171" class="ons-u-mb-s">
+    {% with census_logo_classes="ons-u-mb-s" %}
+        {% include "templates/components/census/census-logo.html" %}
+    {% endwith %}
     <p>{{ _("This release includes data from Census 2021.") }}</p>
 </div>

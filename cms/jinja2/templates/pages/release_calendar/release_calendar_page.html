@@ -16,7 +16,9 @@
                 </div>
                 <div class="ons-grid__col ons-col-2@m common-header__kitemark">
                     {% if page.is_accredited %}
-                        {% include "templates/components/accredited/accredited-logo.html" %}
+                        {% with accredited_logo_classes="common-header__accreditation-logo" %}
+                            {% include "templates/components/accredited/accredited-logo.html" %}
+                        {% endwith %}
                     {% endif %}
                 </div>
             </div>
@@ -24,7 +26,9 @@
 
         {% if page.is_census %}
             <div class="ons-container">
-                {% include "templates/components/census/census-logo.html" %}
+                {% with census_logo_classes="census-logo" %}
+                    {% include "templates/components/census/census-logo.html" %}
+                {% endwith %}
             </div>
         {% endif %}
 
