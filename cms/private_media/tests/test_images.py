@@ -210,9 +210,7 @@ class TestImageModel(TestCase):
         with self.assertRaises(ValueError):
             ImageFactory(_privacy="invalid", collection=self.root_collection)
 
-    @override_settings(
-        STORAGES={"default": {"BACKEND": "cms.private_media.storages.DummyPrivacySettingFileSystemStorage"}}
-    )
+    @override_settings(STORAGES={"default": {"BACKEND": "cms.private_media.storages.DummyPrivacySettingStorage"}})
     def test_file_permission_setting_success(self):
         """Test successful file permission setting using a storage backend that supports it."""
         with self.assertNoLogs("cms.private_media.bulk_operations"):
@@ -222,15 +220,13 @@ class TestImageModel(TestCase):
         self.assertFalse(private_image.file_permissions_are_outdated())
         self.assertFalse(public_image.file_permissions_are_outdated())
 
-    @override_settings(
-        STORAGES={"default": {"BACKEND": "cms.private_media.storages.DummyPrivacySettingFileSystemStorage"}}
-    )
+    @override_settings(STORAGES={"default": {"BACKEND": "cms.private_media.storages.DummyPrivacySettingStorage"}})
     @mock.patch(
-        "cms.private_media.storages.DummyPrivacySettingFileSystemStorage.make_private",
+        "cms.private_media.storages.DummyPrivacySettingStorage.make_private",
         return_value=False,
     )
     @mock.patch(
-        "cms.private_media.storages.DummyPrivacySettingFileSystemStorage.make_public",
+        "cms.private_media.storages.DummyPrivacySettingStorage.make_public",
         return_value=False,
     )
     def test_file_permission_setting_failure(self, mock_make_public, mock_make_private):

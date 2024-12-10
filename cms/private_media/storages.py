@@ -2,7 +2,7 @@ import logging
 from typing import TYPE_CHECKING
 
 from botocore.exceptions import ClientError
-from django.core.files.storage import FileSystemStorage
+from django.core.files.storage import InMemoryStorage
 from storages.backends.s3 import S3Storage
 
 if TYPE_CHECKING:
@@ -42,7 +42,7 @@ class PrivacySettingS3Storage(S3Storage):
         return True
 
 
-class DummyPrivacySettingFileSystemStorage(FileSystemStorage):
+class DummyPrivacySettingStorage(InMemoryStorage):
     """Dummy storage class for use in tests."""
 
     def make_private(self, file: "FieldFile") -> bool:  # pylint: disable=unused-argument
