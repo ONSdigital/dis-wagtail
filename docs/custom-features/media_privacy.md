@@ -24,15 +24,15 @@ INFO:cms.private_media.bulk_operations:Skipping file permission setting for: /me
 ```
 
 Whenever the privacy of a media item is altered, it's `privacy_last_changed` timestamp field is updated and saved to the database alongside other changes.
-If no errors occurred during the file-updating process, the media items' `file_permissions_last_set` timestamp will also be updated and saved. Because the file-permission setting happens later in the update process, the `file_permissions_last_set` timestamp should always be greater than the `privacy_last_changed` value when no errors occurred.
+If no errors occurred during the file-updating process, the media item's `file_permissions_last_set` timestamp will also be updated and saved. Because the file-permission setting happens later in the update process, the `file_permissions_last_set` timestamp should always be greater than the `privacy_last_changed` value when no errors occurred.
 
 ### Performance considerations
 
-Because media item privacy is often updated in-bulk (e.g. making all images referenced by a page public when it's published), and each media item can have multiple files associated with it (e.g. multiple renditions of an image, each with it's own file), file-level permission setting has to be as performant as possible, and not choke if an errors occurs.
+Because media item privacy is often updated in-bulk (e.g. making all images referenced by a page public when it's published), and each media item can have multiple files associated with it (e.g. multiple renditions of an image, each with it's own file), file-level permission setting has to be as performant as possible, and not choke if errors occur.
 
-Since media-hosting services don't provide a way to set file-level permissions in bulk, the best we can do is to make sure the individual requests don't block each other, so we use a `ThreadPoolExecutor` to run them in parallel.
+Since media-hosting services don't provide a way to set file-level permissions in bulk, the best we can do is to make sure the individual requests block the process as little as possible, so we use a `ThreadPoolExecutor` to run them in parallel.
 
-If an error occurred whilst attempting to get or set file-level permissions, the error is logged, but processing continues with the next item in the sequence.
+If an error occurred whilst attempting to get or set the permissions for a particular file, the error is logged, but processing continues with the next item in the sequence.
 
 ### Tracking of unsuccesful permission-setting attempts
 
@@ -40,13 +40,13 @@ Whilst file-permission setting requests are quite reliable in S3, they can fail 
 
 Because a media item's `file_permissions_last_set` timestamp is only updated when all file-permission setting attempts were successful, for media items with outdated file permissions, the `file_permissions_last_set` timestamp will trail behind the `privacy_last_changed` value.
 
-For an individual object, the `file_permissions_are_outdated()` method will return `True` if the `file_permissions_last_set` timestamp is less than the `privacy_last_changed` value. This is used in a few places to vary the behaviour. Specifically, the `href` value for images will continue to point to the media serve view, so that it can still be served to users, and the serve view checks it before redirecting users to the direct file URL.
+For an individual object, the `file_permissions_are_outdated()` method will return `True` if the `file_permissions_last_set` timestamp is eariler than `privacy_last_changed`. This is used in a few places to vary the behaviour. Specifically, the `href` value for images will continue to point to the media serve view, so that it can still be served to users. The image serve view also checks it before redirecting users to the direct file URL.
 
-The timestamp values can also be used to identify affected media items in bulk using the Django ORM, and reattempt the permission-setting process. This is the approach taken by the `retry_file_permission_set_attempts` management command, which runs regularly (every 5 minutes) in hosted environments to help keep file permissions up-to-date.
+The timestamp values can also be used to identify affected media items in bulk. This is the approach taken by the `retry_file_permission_set_attempts` management command, which runs regularly (every 5 minutes) in hosted environments to help keep file permissions up-to-date. It uses the same bulk-processing logic as the signal handlers, so will retry failed requests, mark any items that are successfully updated, and log any errors that occured.
 
 ## Use of Wagtail's reference index
 
-Wagtail's [reference index](https://docs.wagtail.org/en/stable/advanced_topics/reference_index.html) is used to track when images and documents (and other objects) are referenced by pages and other objects.
+Wagtail's [reference index](https://docs.wagtail.org/en/stable/advanced_topics/reference_index.html) is used to track when images and documents (and other objects) are referenced by pages (and other objects).
 
 The reference index is automatically populated via handlers connected to the `post_save` signal for all registered models.
 
