@@ -159,6 +159,8 @@ jobs:
           pattern: coverage-data
           merge-multiple: true
 
+      - run: make load-design-system-templates
+
       - name: Update coverage summary
         run: |
           python -Im coverage html --skip-covered --skip-empty
