@@ -367,3 +367,8 @@ class TestImageServeView(TestCase):
         for rendition in self.public_image_renditions.values():
             response = self.client.get(rendition.serve_url)
             self.assertEqual(response.status_code, 200)
+
+
+@override_settings(IS_EXTERNAL_ENV=True)
+class TestExternalEnvImageServeView(TestImageServeView):
+    pass

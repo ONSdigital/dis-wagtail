@@ -318,3 +318,8 @@ class TestDocumentServeView(TestCase):
         self.assertTrue(self.public_document.file_permissions_are_outdated())
         response = self.client.get(self.public_document.url)
         self.assertEqual(response.status_code, 200)
+
+
+@override_settings(IS_EXTERNAL_ENV=True)
+class TestExternalEnvDocumentServeView(TestDocumentServeView):
+    pass
