@@ -6,9 +6,6 @@ from wagtail.embeds.blocks import EmbedBlock
 from wagtail.images.blocks import ImageChooserBlock
 from wagtailmath.blocks import MathBlock
 
-if TYPE_CHECKING:
-    from wagtail.blocks import StructValue
-
 from cms.core.blocks import (
     DocumentsBlock,
     HeadingBlock,
@@ -17,6 +14,9 @@ from cms.core.blocks import (
     RelatedContentBlock,
     RelatedLinksBlock,
 )
+
+if TYPE_CHECKING:
+    from wagtail.blocks import StructValue
 
 
 class SectionContentBlock(StreamBlock):
@@ -48,12 +48,3 @@ class SectionBlock(StructBlock):
     def to_table_of_contents_items(self, value: "StructValue") -> list[dict[str, str]]:
         """Convert the value to the table of contents component macro format."""
         return [{"url": "#" + slugify(value["title"]), "text": value["title"]}]
-
-
-class SectionStreamBlock(StreamBlock):
-    """The analysis StreamField block definition."""
-
-    section = SectionBlock()
-
-    class Meta:
-        template = "templates/components/streamfield/stream_block.html"

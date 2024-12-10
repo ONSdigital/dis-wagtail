@@ -1,24 +1,20 @@
 from typing import TYPE_CHECKING, Any, ClassVar
 
+from django.conf import settings
 from django.db import models
 from django.utils.functional import cached_property
+from django.utils.translation import gettext_lazy as _
 from wagtail.admin.panels import FieldPanel, InlinePanel, MultiFieldPanel
 from wagtail.fields import RichTextField
 from wagtail.search import index
 
-from cms.core.blocks.section_block import SectionStreamBlock
+from cms.core.blocks.stream_blocks import SectionStoryBlock
 from cms.core.fields import StreamField
 from cms.core.models import BasePage
 
 if TYPE_CHECKING:
     from django.http import HttpRequest
     from wagtail.admin.panels import Panel
-
-
-from typing import TYPE_CHECKING
-
-from django.conf import settings
-from django.utils.translation import gettext_lazy as _
 
 
 class InformationPage(BasePage):  # type: ignore[django-manager-missing]
@@ -35,7 +31,7 @@ class InformationPage(BasePage):  # type: ignore[django-manager-missing]
 
     summary = models.TextField(max_length=255)
     last_updated = models.DateField(blank=True, null=True)
-    content = StreamField(SectionStreamBlock())
+    content = StreamField(SectionStoryBlock())
 
     content_panels: ClassVar[list[FieldPanel]] = [
         *BasePage.content_panels,
@@ -52,7 +48,7 @@ class InformationPage(BasePage):  # type: ignore[django-manager-missing]
     ]
 
 
-class MethodologyPage(BasePage):
+class MethodologyPage(BasePage):  # type: ignore[django-manager-missing]
     template = "templates/pages/methodology_page.html"
 
     summary = RichTextField(features=settings.RICH_TEXT_BASIC)
@@ -76,7 +72,7 @@ class MethodologyPage(BasePage):
         related_name="+",
     )
 
-    content = StreamField(SectionStreamBlock())
+    content = StreamField(SectionStoryBlock())
 
     show_cite_this_page = models.BooleanField(default=True)
 

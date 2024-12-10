@@ -15,7 +15,7 @@ from wagtail.search import index
 
 from cms.bundles.models import BundledPageMixin
 from cms.core.blocks import HeadlineFiguresBlock
-from cms.core.blocks.section_block import SectionStreamBlock
+from cms.core.blocks.stream_blocks import SectionStoryBlock
 from cms.core.fields import StreamField
 from cms.core.models import BasePage
 
@@ -120,7 +120,7 @@ class AnalysisPage(BundledPageMixin, BasePage):  # type: ignore[django-manager-m
 
     # Fields: content
     headline_figures = StreamField([("figures", HeadlineFiguresBlock())], blank=True, max_num=1)
-    content = StreamField(SectionStreamBlock())
+    content = StreamField(SectionStoryBlock())
 
     show_cite_this_page = models.BooleanField(default=True)
 
