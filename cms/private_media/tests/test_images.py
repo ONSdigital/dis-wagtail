@@ -18,13 +18,13 @@ class TestModelConfiguration(SimpleTestCase):
     def test_image_model_using_private_image_mixin(self):
         """Verify that the configured image model inherits from PrivateImageMixin."""
         image_model = get_image_model()
-        self.assertTrue(issubclass(image_model, PrivateImageMixin))
+        self.assertIsSubclass(image_model, PrivateImageMixin)
         self.assertIsInstance(image_model.objects, PrivateImageManager)
 
     def test_rendition_model_using_abstract_private_rendition(self):
         """Verify that the configured rendition model inherits from AbstractPrivateRendition."""
         rendition_model = get_image_model().get_rendition_model()
-        self.assertTrue(issubclass(rendition_model, AbstractPrivateRendition))
+        self.assertIsSubclass(rendition_model, AbstractPrivateRendition)
 
 
 class TestImageModel(TestCase):
