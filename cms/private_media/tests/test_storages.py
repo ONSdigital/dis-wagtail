@@ -24,10 +24,10 @@ class PrivacySettingS3StorageTests(TestCase):
         bucket.create()
 
     def test_make_private_client_error_on_acl_set(self):
-        with self.assertLogs("cms.private_media.storages", level="WARNING") as logs:
+        with self.assertLogs("cms.private_media.storages", level="EXCEPTION") as logs:
             self.assertFalse(self.storage.make_private(self.document.file))
         self.assertIn(
-            f"WARNING:cms.private_media.storages:Failed to set ACL for {self.document.file.name}: ",
+            f"EXCEPTION:cms.private_media.storages:Failed to set ACL for {self.document.file.name}",
             logs.output[0],
         )
 
@@ -37,10 +37,10 @@ class PrivacySettingS3StorageTests(TestCase):
         # initialize the bucket to allow it to be patched
         self.storage.bucket  # noqa: B018 # pylint: disable=pointless-statement
         with mock.patch.object(self.storage._bucket, "Object", return_value=object_mock):  # pylint: disable=protected-access  # noqa: SIM117
-            with self.assertLogs("cms.private_media.storages", level="WARNING") as logs:
+            with self.assertLogs("cms.private_media.storages", level="EXCEPTION") as logs:
                 self.assertFalse(self.storage.make_private(self.document.file))
         self.assertIn(
-            f"WARNING:cms.private_media.storages:Failed to retrieve ACL for {self.document.file.name}: ",
+            f"EXCEPTION:cms.private_media.storages:Failed to retrieve ACL for {self.document.file.name}",
             logs.output[0],
         )
 

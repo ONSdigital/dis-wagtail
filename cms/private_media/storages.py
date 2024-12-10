@@ -30,12 +30,12 @@ class PrivacySettingS3Storage(S3Storage):
         try:
             obj_acl = obj.Acl()
         except ClientError as e:
-            logger.warning("Failed to retrieve ACL for %s: %s", file.name, repr(e))
+            logger.exception("Failed to retrieve ACL for %s", file.name, e)
             return False
         try:
             obj_acl.put(ACL=acl_name)
         except ClientError as e:
-            logger.warning("Failed to set ACL for %s: %s", file.name, repr(e))
+            logger.exception("Failed to set ACL for %s", file.name, e)
             return False
 
         logger.info("ACL set successfully for %s", file.name)
