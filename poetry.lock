@@ -1234,7 +1234,9 @@ boto3 = ">=1.9.201"
 botocore = ">=1.14.0,<1.35.45 || >1.35.45,<1.35.46 || >1.35.46"
 cryptography = ">=3.3.1"
 Jinja2 = ">=2.10.1"
+py-partiql-parser = {version = "0.5.6", optional = true, markers = "extra == \"s3\""}
 python-dateutil = ">=2.1,<3.0.0"
+PyYAML = {version = ">=5.1", optional = true, markers = "extra == \"s3\""}
 requests = ">=2.5"
 responses = ">=0.15.0"
 werkzeug = ">=0.5,<2.2.0 || >2.2.0,<2.2.1 || >2.2.1"
@@ -1582,6 +1584,20 @@ urwid-readline = "*"
 
 [package.extras]
 completion = ["shtab"]
+
+[[package]]
+name = "py-partiql-parser"
+version = "0.5.6"
+description = "Pure Python PartiQL Parser"
+optional = false
+python-versions = "*"
+files = [
+    {file = "py_partiql_parser-0.5.6-py2.py3-none-any.whl", hash = "sha256:622d7b0444becd08c1f4e9e73b31690f4b1c309ab6e5ed45bf607fe71319309f"},
+    {file = "py_partiql_parser-0.5.6.tar.gz", hash = "sha256:6339f6bf85573a35686529fc3f491302e71dd091711dfe8df3be89a93767f97b"},
+]
+
+[package.extras]
+dev = ["black (==22.6.0)", "flake8", "mypy", "pytest"]
 
 [[package]]
 name = "pycparser"
@@ -2368,4 +2384,4 @@ files = [
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.12"
-content-hash = "cf787ab3dc2de3ad1365016a4e4537bdd8cdc18d3c2d60f677ca586d995f02eb"
+content-hash = "4eacd351052bb5b75075c16fd4ebb1c05e0545ca8061e5ded46598ae58309106"
