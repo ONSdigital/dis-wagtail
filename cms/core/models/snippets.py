@@ -39,7 +39,7 @@ class ContactDetails(index.Indexed, models.Model):
             models.UniqueConstraint(
                 Lower("name"),
                 Lower("email"),
-                name="%(app_label)s_%(class)s_name_unique",
+                name="core_contactdetails_name_unique",
                 violation_error_message=_("Contact details with this name and email combination already exists."),
             ),
         ]
