@@ -17,7 +17,19 @@ class ContactDetailsTestCase(TestCase):
 
         self.assertEqual(details.name, "PSF")
 
-    def test_contactdetails_uniqueness_validation(self):
+    def test_contactdetails_uniqueness_validation__with_name_case_variation(self):
         with self.assertRaisesMessage(IntegrityError, "core_contactdetails_name_unique"):
+            ContactDetails.objects.create(name="PSF", email="PSF@ons.gov.uk")
+            ContactDetails.objects.create(name="Psf", email="PSF@ons.gov.uk")
+
+    def test_contactdetails_uniqueness_validation__with_email_case_variation(self):
+        with self.assertRaisesMessage(IntegrityError, "core_contactdetails_name_unique"):
+            ContactDetails.objects.create(name="PSF", email="PSF@ons.gov.uk")
             ContactDetails.objects.create(name="PSF", email="psf@ons.gov.uk")
-            ContactDetails.objects.create(name="PSF", email="psf@ons.gov.uk")
+
+    def test_contactdetails_creation(self):
+        self.assertFalse(ContactDetails.objects.all().exists())
+        ContactDetails.objects.create(name="PSF", email="psf@ons.gov.uk")
+        ContactDetails.objects.create(name="PSF", email="psf.extra@ons.gov.uk")
+
+        self.assertEqual(ContactDetails.objects.count(), 2)

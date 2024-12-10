@@ -1,6 +1,7 @@
 from typing import Any, ClassVar
 
 from django.db import models
+from django.db.models.functions import Lower
 from django.utils.translation import gettext_lazy as _
 from wagtail.admin.panels import FieldPanel
 from wagtail.search import index
@@ -35,10 +36,7 @@ class ContactDetails(index.Indexed, models.Model):
         verbose_name = _("contact details")
         verbose_name_plural = _("contact details")
         constraints: ClassVar[list[models.BaseConstraint]] = [
-            models.UniqueConstraint(
-                name="%(app_label)s_%(class)s_name_unique",
-                fields=["name", "email"],
-            ),
+            models.UniqueConstraint(Lower("name"), Lower("email"), name="%(app_label)s_%(class)s_name_unique"),
         ]
 
     def save(self, *args: Any, **kwargs: Any) -> None:
