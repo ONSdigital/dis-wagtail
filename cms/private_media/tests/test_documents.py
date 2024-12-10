@@ -19,7 +19,7 @@ class TestModelConfiguration(SimpleTestCase):
         And that the manager is a subclass of PrivateDocumentManager.
         """
         document_model = get_document_model()
-        self.assertIsSubclass(document_model, PrivateDocumentMixin)
+        self.assertTrue(issubclass(document_model, PrivateDocumentMixin))
         self.assertIsInstance(document_model.objects, PrivateDocumentManager)
 
 
