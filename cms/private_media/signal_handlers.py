@@ -2,7 +2,7 @@ from typing import TYPE_CHECKING, Any
 
 from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import ImproperlyConfigured
-from django.db.models import IntegerField
+from django.db.models import CharField, IntegerField
 from django.db.models.functions import Cast
 from wagtail.models import Page, ReferenceIndex
 from wagtail.signals import published, unpublished
@@ -50,24 +50,47 @@ def unpublish_media_on_unpublish(instance: "Model", **kwargs: Any) -> None:
     made private again.
     """
     page_ct = ContentType.objects.get_for_model(Page)
-    draft_page_ids = {str(pk) for pk in Page.objects.filter(live=False).values_list("id", flat=True)}
     for model_class in get_private_media_models():
         model_ct = ContentType.objects.get_for_model(model_class)
         references = ReferenceIndex.get_references_for_object(instance).filter(to_content_type=model_ct)
         referenced_pks = set(references.values_list("to_object_id", flat=True).distinct())
         if not referenced_pks:
             continue
-        referenced_by_other_live_object_pks = set(
+
+        # Identify references from other pages and extract their IDs, so that we can
+        # figure out which of those pages is live
+        referencing_page_ids = (
             ReferenceIndex.objects.filter(to_content_type=model_ct, to_object_id__in=referenced_pks)
             .exclude(pk__in=references.values_list("pk", flat=True))
-            .exclude(base_content_type=page_ct, object_id__in=draft_page_ids)
-            .annotate(int_object_id=Cast("to_object_id", output_field=IntegerField()))
-            .values_list("int_object_id", flat=True)
+            .filter(base_content_type=page_ct)
+            .annotate(page_id=Cast("object_id", output_field=IntegerField()))
+            .values_list("page_id", flat=True)
+            .distinct()
         )
+
+        # Out of the pages that are referencing the media, identify the ids of those
+        # that are currently live
+        live_page_ids = (
+            Page.objects.filter(pk__in=referencing_page_ids)
+            .live()
+            .annotate(str_id=Cast("id", output_field=CharField()))
+            .values_list("str_id", flat=True)
+        )
+
+        # Now we can identify references from live pages only, and
+        # generate a list of media item ids that should not be made private
+        live_page_referenced_media_pks = (
+            ReferenceIndex.objects.filter(to_content_type=model_ct, to_object_id__in=referenced_pks)
+            .filter(base_content_type=page_ct, object_id__in=live_page_ids)
+            .annotate(int_id=Cast("to_object_id", output_field=IntegerField()))
+            .values_list("int_id", flat=True)
+            .distinct()
+        )
+
         queryset = (
             model_class.objects.all()
             .filter(pk__in=[int(pk) for pk in referenced_pks], _privacy=Privacy.PUBLIC)
-            .exclude(pk__in=referenced_by_other_live_object_pks)
+            .exclude(pk__in=live_page_referenced_media_pks)
         )
         if issubclass(model_class, PrivateImageMixin):
             queryset = queryset.prefetch_related("renditions")
