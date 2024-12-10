@@ -9,6 +9,8 @@ privacy of uploaded media files, so that potentially sensitive media isn't leake
 2. They only become 'public' when a page referencing them is published.
 3. When a live page unpublished, any images or documents referenced soley by that page (i.e. not used on any other live pages) are made private again.
 
+These cases (and more) are covered by integration tests in [cms/private_media/tests/test_signal_handlers.py](https://github.com/ONSdigital/dis-wagtail/tree/main/cms/private_media/tests/test_signal_handlers.py).
+
 ## Setting of file-level permissions
 
 In environments where storage service supports it (e.g. hosted environments using a S3 for media storage), attempts are made to set file-level permissions to reflect the privacy of the media item. This happens automatically when an image, rendition, or document is saved for the first time, and also when its privacy is altered as the result of another action (e.g. a referencing page being published or unpublished).
