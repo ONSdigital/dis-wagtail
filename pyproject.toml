@@ -52,7 +52,7 @@ Werkzeug = "~3.0.6"
 setuptools = "^75.2.0"
 honcho = "^2.0.0"
 detect-secrets = "^1.5.0"
-moto = {version = "^5.0.22", extras = ["s3,iam"]}
+moto = {version = "^5.0.22", extras = ["s3","iam"]}
 
 [tool.ruff]
 target-version = "py312"
