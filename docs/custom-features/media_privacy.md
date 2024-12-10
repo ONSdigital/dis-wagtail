@@ -9,6 +9,10 @@ privacy of uploaded media files, so that potentially sensitive media isn't leake
 2. They only become 'public' when a page referencing them is published.
 3. When a live page unpublished, any images or documents referenced soley by that page (i.e. not used on any other live pages) are made private again.
 
+When a media item is 'private', file requests are handled by views that check the permissions of the requesting user, and only serve the file if the user has some level of permission on the media item (to support previews and reviews from other editors).
+
+When a media item is 'public', permission-checking in serve views is skipped, and the user is either redirected to the media storage URL (in the case of images), or served the file directly (in the case of documents).
+
 These cases (and more) are covered by integration tests in [cms/private_media/tests/test_signal_handlers.py](https://github.com/ONSdigital/dis-wagtail/tree/main/cms/private_media/tests/test_signal_handlers.py).
 
 ## Setting of file-level permissions
