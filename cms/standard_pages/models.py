@@ -1,12 +1,24 @@
-from typing import ClassVar
+from typing import TYPE_CHECKING, Any, ClassVar
 
 from django.db import models
-from wagtail.admin.panels import FieldPanel, InlinePanel
+from django.utils.functional import cached_property
+from wagtail.admin.panels import FieldPanel, InlinePanel, MultiFieldPanel
+from wagtail.fields import RichTextField
 from wagtail.search import index
 
-from cms.core.blocks.stream_blocks import CoreStoryBlock
+from cms.core.blocks.section_block import SectionStreamBlock
 from cms.core.fields import StreamField
 from cms.core.models import BasePage
+
+if TYPE_CHECKING:
+    from django.http import HttpRequest
+    from wagtail.admin.panels import Panel
+
+
+from typing import TYPE_CHECKING
+
+from django.conf import settings
+from django.utils.translation import gettext_lazy as _
 
 
 class InformationPage(BasePage):  # type: ignore[django-manager-missing]
@@ -23,7 +35,7 @@ class InformationPage(BasePage):  # type: ignore[django-manager-missing]
 
     summary = models.TextField(max_length=255)
     last_updated = models.DateField(blank=True, null=True)
-    content = StreamField(CoreStoryBlock())
+    content = StreamField(SectionStreamBlock())
 
     content_panels: ClassVar[list[FieldPanel]] = [
         *BasePage.content_panels,
@@ -38,3 +50,73 @@ class InformationPage(BasePage):  # type: ignore[django-manager-missing]
         index.SearchField("summary"),
         index.SearchField("content"),
     ]
+
+
+class MethodologyPage(BasePage):
+    template = "templates/pages/methodology_page.html"
+
+    summary = RichTextField(features=settings.RICH_TEXT_BASIC)
+
+    # TODO: uncomment below to restrict
+    # parent_page_types: ClassVar[list[str]] = ["topics.TopicPage"]
+
+    # TODO: review if this should be implemented at all
+    # the Excel doc says it's for later stage
+    # currently implemented analogously to AnalysisPage.main_points_summary
+    methodology_summary = RichTextField(features=settings.RICH_TEXT_BASIC)
+
+    published_date = models.DateField()
+    last_revised_date = models.DateField(blank=True, null=True)
+
+    contact_details = models.ForeignKey(
+        "core.ContactDetails",
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="+",
+    )
+
+    content = StreamField(SectionStreamBlock())
+
+    show_cite_this_page = models.BooleanField(default=True)
+
+    content_panels: ClassVar[list["Panel"]] = [
+        *BasePage.content_panels,
+        FieldPanel("summary"),
+        MultiFieldPanel(
+            [
+                FieldPanel("published_date", icon="calendar-date"),
+                FieldPanel(
+                    "last_revised_date",
+                ),
+                FieldPanel("contact_details"),
+                FieldPanel("show_cite_this_page"),
+                FieldPanel("methodology_summary"),
+            ],
+            heading=_("Metadata"),
+            icon="cog",
+        ),
+        FieldPanel("content", icon="list-ul"),
+        InlinePanel("page_related_pages", label="Related publications"),
+    ]
+
+    # TODO: indexing/ search
+
+    def get_context(self, request: "HttpRequest", *args: Any, **kwargs: Any) -> dict:
+        """Additional context for the template."""
+        context: dict = super().get_context(request, *args, **kwargs)
+        context["table_of_contents"] = self.table_of_contents
+        return context
+
+    @cached_property
+    def table_of_contents(self) -> list[dict[str, str | object]]:
+        """Table of contents formatted to Design System specs."""
+        items = []
+        for block in self.content:  # pylint: disable=not-an-iterable,useless-suppression
+            if hasattr(block.block, "to_table_of_contents_items"):
+                items += block.block.to_table_of_contents_items(block.value)
+        if self.show_cite_this_page:
+            items += [{"url": "#cite-this-page", "text": _("Cite this analysis")}]
+        if self.contact_details_id:
+            items += [{"url": "#contact-details", "text": _("Contact details")}]
+        return items
