@@ -1,6 +1,7 @@
-from typing import ClassVar
+from typing import Any, ClassVar
 
 from django.db import models
+from django.utils.translation import gettext_lazy as _
 from wagtail.admin.panels import FieldPanel
 from wagtail.search import index
 
@@ -11,7 +12,7 @@ class ContactDetails(index.Indexed, models.Model):
     Note that this is registered as a snippet in core.wagtail_hooks to allow customising the icon.
     """
 
-    name = models.CharField(max_length=255)
+    name = models.CharField(max_length=255, unique=True)
     email = models.EmailField()
     phone = models.CharField(max_length=255, blank=True)
 
@@ -30,7 +31,13 @@ class ContactDetails(index.Indexed, models.Model):
     ]
 
     class Meta:
-        verbose_name_plural = "contact details"
+        verbose_name = _("contact details")
+        verbose_name_plural = _("contact details")
+
+    def save(self, *args: Any, **kwargs: Any) -> None:
+        if self.name:
+            self.name = self.name.strip()
+        super().save(*args, **kwargs)
 
     def __str__(self) -> str:
         return str(self.name)
