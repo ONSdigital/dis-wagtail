@@ -29,7 +29,9 @@ class TopicLinkBlock(LinkBlock):
 
 
 class HighlightsBlock(LinkBlock):
-    description = CharBlock(required=True, max_length=50, help_text=_("E.g., View our latest and upcoming releases."))
+    description = CharBlock(
+        required=True, max_length=50, help_text=_("For example: 'View our latest and upcoming releases.'")
+    )
 
     class Meta:
         icon = "star"
@@ -78,11 +80,10 @@ class MainMenu(PreviewableMixin, models.Model):
     ]
 
     def get_preview_template(self, request: "HttpRequest", mode_name: str) -> str:
-        print("mode_name", mode_name)
         return "templates/base_page.html"
 
     def __str__(self) -> str:
-        return _("Main Menu")
+        return "Main Menu"
 
 
 # NavigationSettings model
