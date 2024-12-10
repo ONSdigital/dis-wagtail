@@ -1,5 +1,7 @@
 {% for content_block in value %}
     {% with block_id = content_block.id %}
-        {% include_block content_block %}
+        <div class="{% if content_block.block_type !='heading' %}spacing{% endif %}">
+            {% include_block content_block %}
+        </div>
     {% endwith %}
 {% endfor %}

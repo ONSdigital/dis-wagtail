@@ -1,0 +1,9 @@
+@use 'config' as *;
+
+.spacing {
+    margin-bottom: rem-sizing(64);
+
+    &:last-child {
+        margin-bottom: 0;
+    }
+}

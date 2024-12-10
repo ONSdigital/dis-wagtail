@@ -1,5 +1,9 @@
 @use 'config' as *;
 
+/*
+Styles for the topic page header
+*/
+
 .topic-header {
     // this colour is in figma but not in the design system
     background-color: $color--grey-blue;
@@ -99,17 +103,5 @@
         font-weight: 700;
         color: var(--ons-color-ocean-blue);
         margin-bottom: 0;
-    }
-
-    &__heading {
-        margin-bottom: rem-sizing(16);
-    }
-
-    &__summary {
-        margin-bottom: rem-sizing(24);
-
-        @include media-query('m') {
-            margin-bottom: 0;
-        }
     }
 }

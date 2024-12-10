@@ -1,0 +1,9 @@
+@use 'config' as *;
+
+/*
+Styles for the release page header
+*/
+
+.release-header {
+    margin-bottom: rem-sizing(40);
+}
