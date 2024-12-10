@@ -18,14 +18,14 @@ class ThemeLinkBlock(LinkBlock):
     page = PageChooserBlock(required=False, page_type="themes.ThemePage")
 
     class Meta:
-        label = "Theme Link"
+        label = _("Theme Link")
 
 
 class TopicLinkBlock(LinkBlock):
     page = PageChooserBlock(required=False, page_type="topics.TopicPage")
 
     class Meta:
-        label = "Topic Link"
+        label = _("Topic Link")
 
 
 class HighlightsBlock(LinkBlock):
@@ -33,7 +33,7 @@ class HighlightsBlock(LinkBlock):
 
     class Meta:
         icon = "star"
-        label = "Highlight"
+        label = _("Highlight")
 
 
 # Section StructBlock for columns
@@ -45,7 +45,7 @@ class SectionBlock(StructBlock):
 
     class Meta:
         icon = "folder"
-        label = "Section"
+        label = _("Section")
 
 
 # Column StructBlock for the main menu
@@ -54,7 +54,7 @@ class ColumnBlock(StructBlock):
 
     class Meta:
         icon = "list-ul"
-        label = "Column"
+        label = _("Column")
 
 
 # MainMenu model
@@ -82,11 +82,11 @@ class MainMenu(PreviewableMixin, models.Model):
         return "templates/base_page.html"
 
     def __str__(self) -> str:
-        return "Main Menu"
+        return _("Main Menu")
 
 
 # NavigationSettings model
-@register_setting(icon="list-ul")  # TODO: Do we need to make sure there is always a navigation menu set?
+@register_setting(icon="list-ul")
 class NavigationSettings(BaseSiteSetting):
     main_menu: models.ForeignKey = models.ForeignKey(
         MainMenu,
