@@ -1,5 +1,6 @@
 from typing import ClassVar
 
+from django.utils.translation import gettext_lazy as _
 from wagtail.admin.ui.tables import Column, UpdatedAtColumn
 from wagtail.snippets.views.chooser import ChooseResultsView as SnippetChooseResultsView
 from wagtail.snippets.views.chooser import ChooseView as SnippetChooseView
@@ -17,7 +18,9 @@ class ContactDetailsIndex(SnippetIndexView):
 class ContactDetailsChooseColumnsMixin:
     @property
     def columns(self) -> list[Column]:
-        return [self.title_column, Column("email"), Column("phone")]  # type: ignore[attr-defined]
+        title_column = self.title_column
+        title_column.label = _("Name")
+        return [title_column, Column("email"), Column("phone")]  # type: ignore[attr-defined]
 
 
 class ContactDetailsChooseView(ContactDetailsChooseColumnsMixin, SnippetChooseView): ...
