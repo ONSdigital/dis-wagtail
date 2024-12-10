@@ -4,7 +4,7 @@
     "module: esnext": "Webpack will convert ES modules to the required format.",
     "target: es5": "Setting a very low target for IE11 compatibility.",
     "allowJs: true": "Make it possible to gradually adopt TypeScript, or not use it at all.",
-    "skipLibCheck: true": "Turn on stricter type checking."
+    "strict: true": "Turn on stricter type checking."
   },
   "compilerOptions": {
     "noEmit": true,
