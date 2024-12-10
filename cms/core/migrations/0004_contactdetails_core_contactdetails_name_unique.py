@@ -15,6 +15,7 @@ class Migration(migrations.Migration):
                 django.db.models.functions.text.Lower("name"),
                 django.db.models.functions.text.Lower("email"),
                 name="core_contactdetails_name_unique",
+                violation_error_message="Contact details with this name and email combination already exists.",
             ),
         ),
     ]

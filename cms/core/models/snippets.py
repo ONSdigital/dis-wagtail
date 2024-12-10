@@ -36,7 +36,12 @@ class ContactDetails(index.Indexed, models.Model):
         verbose_name = _("contact details")
         verbose_name_plural = _("contact details")
         constraints: ClassVar[list[models.BaseConstraint]] = [
-            models.UniqueConstraint(Lower("name"), Lower("email"), name="%(app_label)s_%(class)s_name_unique"),
+            models.UniqueConstraint(
+                Lower("name"),
+                Lower("email"),
+                name="%(app_label)s_%(class)s_name_unique",
+                violation_error_message=_("Contact details with this name and email combination already exists."),
+            ),
         ]
 
     def save(self, *args: Any, **kwargs: Any) -> None:
