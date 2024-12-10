@@ -52,7 +52,7 @@ lint-frontend:  ## Run front-end linters
 
 .PHONY: lint-migrations
 lint-migrations: ## Run django-migration-linter
-	poetry run python scripts/lintmigrations_custom.py
+	poetry run python scripts/lint_migrations.py
 
 .PHONY: test
 test:  ## Run the tests and check coverage.
