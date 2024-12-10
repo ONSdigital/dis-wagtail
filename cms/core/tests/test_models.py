@@ -1,3 +1,4 @@
+from django.db import IntegrityError
 from django.test import TestCase
 
 from cms.core.models import ContactDetails
@@ -15,3 +16,8 @@ class ContactDetailsTestCase(TestCase):
         details.save()
 
         self.assertEqual(details.name, "PSF")
+
+    def test_contactdetails_uniqueness_validation(self):
+        with self.assertRaisesMessage(IntegrityError, "core_contactdetails_name_unique"):
+            ContactDetails.objects.create(name="PSF", email="psf@ons.gov.uk")
+            ContactDetails.objects.create(name="PSF", email="psf@ons.gov.uk")
