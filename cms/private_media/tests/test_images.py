@@ -335,36 +335,44 @@ class TestImageServeView(TestCase):
         cls.public_image_renditions = cls.public_image.create_renditions(Filter("fill-10x10"), Filter("fill-20x20"))
         cls.superuser = get_user_model().objects.create(username="superuser", is_superuser=True)
 
-    def test_private_image(self):
+    def test_serve_private_image(self):
         """Test the serve view behaviour for private image renditions."""
         # If not authenticated, permission checks should fail and a Forbidden response returned
         for rendition in self.private_image_renditions.values():
-            response = self.client.get(rendition.serve_url)
-            self.assertEqual(response.status_code, 403)
+            for is_external_env in [True, False]:
+                with self.subTest(is_external_env=is_external_env) and override_settings(
+                    IS_EXTERNAL_ENV=is_external_env
+                ):
+                    response = self.client.get(rendition.serve_url)
+                    self.assertEqual(response.status_code, 403)
 
         # If authenticated as a superuser, the view should serve the files
         self.client.force_login(self.superuser)
         for rendition in self.private_image_renditions.values():
-            response = self.client.get(rendition.serve_url)
-            self.assertEqual(response.status_code, 200)
+            for is_external_env in [True, False]:
+                with self.subTest(is_external_env=is_external_env) and override_settings(
+                    IS_EXTERNAL_ENV=is_external_env
+                ):
+                    response = self.client.get(rendition.serve_url)
+                    self.assertEqual(response.status_code, 200)
 
-    def test_public_image(self):
+    def test_serve_public_image(self):
         """Test the serve view behaviour for public image renditions."""
         # For public image renditions, the serve view should redirect to the file URL.
         for rendition in self.public_image_renditions.values():
             response = self.client.get(rendition.serve_url)
             self.assertEqual(response.status_code, 302)
 
-        # That is, unless the image.file_permissions_are_outdated() returns True,
-        # In which case, the view will continue to serve the file directly
+    @override_settings(IS_EXTERNAL_ENV=True)
+    def test_serve_public_image_external_env(self):
+        """Test the serve view behaviour for public image renditions in an external environment."""
+        self.test_serve_public_image()
+
+    def test_serve_public_image_with_outdated_file_permissions(self):
+        """Test the serve view behaviour for public image renditions with outdated file permissions."""
         self.model.objects.filter(id=self.public_image.id).update(file_permissions_last_set=None)
         self.public_image.refresh_from_db()
         self.assertTrue(self.public_image.file_permissions_are_outdated())
         for rendition in self.public_image_renditions.values():
             response = self.client.get(rendition.serve_url)
             self.assertEqual(response.status_code, 200)
-
-
-@override_settings(IS_EXTERNAL_ENV=True)
-class TestExternalEnvImageServeView(TestImageServeView):
-    pass
