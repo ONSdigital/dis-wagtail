@@ -13,7 +13,7 @@ These cases (and more) are covered by integration tests in [cms/private_media/te
 
 ## Setting of file-level permissions
 
-In environments where storage service supports it (e.g. hosted environments using a S3 for media storage), attempts are made to set file-level permissions to reflect the privacy of the media item. This happens automatically when an image, rendition, or document is saved for the first time, and also when its privacy is altered as the result of another action (e.g. a referencing page being published or unpublished).
+In environments where the storage service supports it (e.g. hosted environments using S3 for media storage), attempts are made to set file-level permissions to reflect the privacy of the media item. This happens automatically when an image, rendition, or document is saved for the first time, and also when its privacy is altered as the result of another action (e.g. a referencing page being published or unpublished).
 
 The responsibility of setting file-level permissions in hosted environments falls to the `cms.private_media.storages.PrivacySettingS3Storage` class, which implements the `make_public()` and `make_private()` methods.
 
