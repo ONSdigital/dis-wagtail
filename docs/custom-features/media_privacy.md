@@ -21,7 +21,7 @@ In environments where the storage service supports it (e.g. hosted environments 
 
 The responsibility of setting file-level permissions in hosted environments falls to the `cms.private_media.storages.PrivacySettingS3Storage` class, which implements the `make_public()` and `make_private()` methods.
 
-In local dev environments, the permission-setting attempts themselves are skipped, but log entries are generated with the level 'INFO' in place of each attempt, so  you can get a sense of what would happen in a hosted environment, for example:
+In local dev environments, the permission-setting attempts themselves are skipped, but log entries are generated with the level 'INFO' in place of each attempt, so you can get a sense of what would happen in a hosted environment, for example:
 
 ```
 INFO:cms.private_media.bulk_operations:Skipping file permission setting for: /media/images/2024/12/09/image.jpg
