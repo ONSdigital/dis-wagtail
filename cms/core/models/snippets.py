@@ -1,6 +1,8 @@
-from typing import ClassVar
+from typing import Any, ClassVar
 
 from django.db import models
+from django.db.models.functions import Lower
+from django.utils.translation import gettext_lazy as _
 from wagtail.admin.panels import FieldPanel
 from wagtail.search import index
 
@@ -26,11 +28,26 @@ class ContactDetails(index.Indexed, models.Model):
         index.SearchField("name"),
         index.AutocompleteField("name"),
         index.SearchField("email"),
+        index.AutocompleteField("email"),
         index.SearchField("phone"),
     ]
 
     class Meta:
-        verbose_name_plural = "contact details"
+        verbose_name = _("contact details")
+        verbose_name_plural = _("contact details")
+        constraints: ClassVar[list[models.BaseConstraint]] = [
+            models.UniqueConstraint(
+                Lower("name"),
+                Lower("email"),
+                name="core_contactdetails_name_unique",
+                violation_error_message=_("Contact details with this name and email combination already exists."),
+            ),
+        ]
+
+    def save(self, *args: Any, **kwargs: Any) -> None:
+        if self.name:
+            self.name = self.name.strip()
+        super().save(*args, **kwargs)
 
     def __str__(self) -> str:
         return str(self.name)
