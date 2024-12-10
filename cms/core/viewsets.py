@@ -18,9 +18,9 @@ class ContactDetailsIndex(SnippetIndexView):
 class ContactDetailsChooseColumnsMixin:
     @property
     def columns(self) -> list[Column]:
-        title_column = self.title_column
+        title_column = self.title_column  # type: ignore[attr-defined]
         title_column.label = _("Name")
-        return [title_column, Column("email"), Column("phone")]  # type: ignore[attr-defined]
+        return [title_column, Column("email"), Column("phone")]
 
 
 class ContactDetailsChooseView(ContactDetailsChooseColumnsMixin, SnippetChooseView): ...
