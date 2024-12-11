@@ -96,7 +96,11 @@ class MethodologyPage(BasePage):  # type: ignore[django-manager-missing]
         InlinePanel("page_related_pages", label="Related publications"),
     ]
 
-    # TODO: indexing/ search
+    search_fields: ClassVar[list[index.SearchField | index.AutocompleteField]] = [
+        *BasePage.search_fields,
+        index.SearchField("summary"),
+        index.SearchField("content"),
+    ]
 
     def get_context(self, request: "HttpRequest", *args: Any, **kwargs: Any) -> dict:
         """Additional context for the template."""
