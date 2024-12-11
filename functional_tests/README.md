@@ -242,11 +242,11 @@ registered in the [environment.py](environment.py) so they are available to all 
 
 ### Django Test Runner and Test Case
 
-Due to issues with the Django `TransactionTestCase` which prevent us using the built-in database teardown/setup
-in between scenarios, we have implemented our own database snapshot and restore pattern between tests. We still make use
-of the Django test case, specifically the
-[`LiveServerTestCase`](https://docs.djangoproject.com/en/stable/topics/testing/tools/#django.test.LiveServerTestCase)
-to perform the initial database setup and run a live server on a random port for the tests.
+Due to [issues with the Django `TransactionTestCase`](#why-arent-we-using-existing-django-testing-modules) which prevent
+us using the built-in database teardown/setup in between scenarios, we have implemented our own database snapshot and
+restore pattern between tests. We still make use of the Django test case, specifically the [
+`LiveServerTestCase`](https://docs.djangoproject.com/en/stable/topics/testing/tools/#django.test.LiveServerTestCase) to
+perform the initial database setup and run a live server on a random port for the tests.
 
 ### Database Snapshot and Restore
 
@@ -285,7 +285,9 @@ inherits from
 the [
 `TransactionTestCase`](https://docs.djangoproject.com/en/stable/topics/testing/tools/#django.test.TransactionTestCase),
 which causes us serious compatibility issues, as it uses an isolated test database and flushes all data in between
-tests. We have migrations which seed critical data rows, so a flush operation breaks the app.
+tests. We have migrations which seed critical data rows, so a flush operation breaks the app. The `serialised_rollback`
+option for the test case may present a solution in the future, but this depends on restoring any migration seeded data
+with fixtures, which currently runs into an issue with Wagtails Locale models.
 
 We tried various workarounds such as using a fixture file to restore the data, but this runs into Wagtail issues, and
 even if it worked it would be non-ideal as that fixture file would have to be kept up to date and recreated when any new

@@ -166,8 +166,9 @@ functional-tests-down:  ## Stop the functional tests docker compose dependencies
 	docker compose -f functional_tests/docker-compose-dev-app.yml down
 
 .PHONY: functional-tests-run
-functional-tests-run: collectstatic  ## Run the functional tests
-	DJANGO_SETTINGS_MODULE=cms.settings.functional_test poetry run ./manage.py migrate --noinput
+functional-tests-run: load-design-system-templates collectstatic functional-tests-up ## Run the functional tests
+	# Run migrations to work around Django bug (#35967)
+	poetry run ./manage.py migrate --noinput --settings cms.settings.functional_test
 	poetry run behave functional_tests
 
 .PHONY: functional-tests
