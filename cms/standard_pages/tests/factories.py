@@ -45,5 +45,3 @@ class MethodologyPageFactory(wagtail_factories.PageFactory):
     contact_details = factory.SubFactory(ContactDetailsFactory)
 
     content = wagtail_factories.StreamFieldFactory({"section": factory.SubFactory(SectionBlockFactory)})
-
-    show_cite_this_page = True
