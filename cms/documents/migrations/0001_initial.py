@@ -28,7 +28,7 @@ class Migration(migrations.Migration):
                 ("title", models.CharField(max_length=255)),
                 ("file", models.FileField()),
                 ("created_at", models.DateTimeField(auto_now_add=True)),
-                ("file_size", models.PositiveIntegerField(editable=False, null=True)),
+                ("file_size", models.PositiveBigIntegerField(editable=False, null=True)),
                 (
                     "file_hash",
                     models.CharField(blank=True, editable=False, max_length=40),
