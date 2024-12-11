@@ -2,7 +2,7 @@ from typing import TYPE_CHECKING, Union
 
 from django.apps import apps
 from django.conf import settings
-from django.urls import include, path
+from django.urls import include, path, re_path
 from django.views.decorators.cache import never_cache
 from django.views.decorators.vary import vary_on_headers
 from django.views.generic import TemplateView
@@ -13,6 +13,7 @@ from wagtail.utils.urlpatterns import decorate_urlpatterns
 
 from cms.core import views as core_views
 from cms.core.cache import get_default_cache_control_decorator
+from cms.private_media.views import PrivateImageServeView
 
 if TYPE_CHECKING:
     from django.urls import URLPattern, URLResolver
@@ -24,6 +25,7 @@ internal_urlpatterns = [path("readiness/", core_views.ready, name="readiness")]
 private_urlpatterns = [
     path("documents/", include(wagtaildocs_urls)),
     path("-/", include((internal_urlpatterns, "internal"))),
+    re_path(r"^images/([^/]*)/(\d*)/([^/]*)/[^/]*$", PrivateImageServeView.as_view(), name="wagtailimages_serve"),
 ]
 
 # `wagtail.admin` must always be installed,
