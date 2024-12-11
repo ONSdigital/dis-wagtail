@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, ClassVar
+from typing import ClassVar
 
 from django.db import models
 from wagtail.admin.panels import FieldPanel, InlinePanel
@@ -7,9 +7,6 @@ from wagtail.search import index
 from cms.core.blocks.stream_blocks import SectionStoryBlock
 from cms.core.fields import StreamField
 from cms.core.models import BasePage
-
-if TYPE_CHECKING:
-    pass
 
 
 class InformationPage(BasePage):  # type: ignore[django-manager-missing]

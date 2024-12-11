@@ -44,7 +44,7 @@ class MethodologyPage(BasePage):  # type: ignore[django-manager-missing]
         FieldPanel("summary"),
         MultiFieldPanel(
             [
-                FieldPanel("publication", icon="calendar-date"),
+                FieldPanel("publication_date", icon="calendar-date"),
                 FieldPanel(
                     "last_revised_date",
                 ),
