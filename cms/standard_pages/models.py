@@ -53,8 +53,7 @@ class MethodologyPage(BasePage):  # type: ignore[django-manager-missing]
 
     summary = RichTextField(features=settings.RICH_TEXT_BASIC)
 
-    # TODO: uncomment below to restrict
-    # parent_page_types: ClassVar[list[str]] = ["topics.TopicPage"]
+    parent_page_types: ClassVar[list[str]] = ["topics.TopicPage"]
 
     published_date = models.DateField()
     last_revised_date = models.DateField(blank=True, null=True)
