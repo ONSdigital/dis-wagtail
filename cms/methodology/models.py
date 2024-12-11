@@ -5,7 +5,7 @@ from django.core.exceptions import ValidationError
 from django.db import models
 from django.utils.functional import cached_property
 from django.utils.translation import gettext_lazy as _
-from wagtail.admin.panels import FieldPanel, InlinePanel, MultiFieldPanel
+from wagtail.admin.panels import FieldPanel, FieldRowPanel, InlinePanel, MultiFieldPanel
 from wagtail.fields import RichTextField
 from wagtail.search import index
 
@@ -44,9 +44,13 @@ class MethodologyPage(BasePage):  # type: ignore[django-manager-missing]
         FieldPanel("summary"),
         MultiFieldPanel(
             [
-                FieldPanel("publication_date", icon="calendar-date"),
-                FieldPanel(
-                    "last_revised_date",
+                FieldRowPanel(
+                    [
+                        FieldPanel("publication_date", icon="calendar-date"),
+                        FieldPanel(
+                            "last_revised_date",
+                        ),
+                    ]
                 ),
                 FieldPanel("contact_details"),
                 FieldPanel("show_cite_this_page"),
