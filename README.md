@@ -119,7 +119,7 @@ Follow these steps to set up and run the project using Docker.
 
     Once the containers are running, you need to manually start Django from within the web container. This allows for running both the Django server and any additional background services (e.g., schedulers).
 
-    > ⚠️ WARNING  
+    > ⚠️ WARNING
     >  The `honcho` command will pick up your local mounted `.env` file when running via `docker-compose`. Ensure that you comment out any variables in the `.env` file which might cause clashes in the container context as they will take precedence when running `honcho start`.
 
     ```bash
@@ -248,18 +248,10 @@ make lint
 
 [Django Migration Linter](https://github.com/3YOURMIND/django-migration-linter) for linting migrations files in the project.
 
-Before you run the commands below to lint the migration files, make sure you have shelled into the docker web container. As the migration linter will need access to the postresql database.
-
 To lint the django migration files:
 
 ```bash
 make lint-migrations
-```
-
-To lint the django migration files and view the output in a more readable format:
-
-```bash
-make lint-migrations-custom
 ```
 
 #### Format
