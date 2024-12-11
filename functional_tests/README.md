@@ -86,7 +86,7 @@ wiping your normal local development environment.
 
 ```shell
 DJANGO_SETTINGS_MODULE=cms.settings.functional_test poetry run python manage.py reset_db
-DJANGO_SETTINGS_MODULE=cms.settings.functional_test poetry run python manage.py migrate
+DJANGO_SETTINGS_MODULE=cms.settings.functional_test make migrate
 ```
 
 Then for logging into the CMS, create a superuser with
