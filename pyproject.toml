@@ -30,6 +30,7 @@ whitenoise = "~6.8"
 slack-sdk = "^3.33.3"
 django-cache-memoize = "^0.2.0"
 django-iam-dbauth = "^0.2.1"
+requests = "^2.32.3"
 
 [tool.poetry.group.dev.dependencies]
 # :TODO: Remove pylint when ruff supports all pylint rules
@@ -183,3 +184,6 @@ exclude_also = [
     "class .*\\bProtocol\\):",
     "@(abc\\.)?abstractmethod",
 ]
+
+[tool.djlint]
+ignore = "H006,H031"
