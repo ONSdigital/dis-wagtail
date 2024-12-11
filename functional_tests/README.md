@@ -92,7 +92,7 @@ DJANGO_SETTINGS_MODULE=cms.settings.functional_test make migrate
 Then for logging into the CMS, create a superuser with
 
 ```shell
-DJANGO_SETTINGS_MODULE=cms.settings.functional_test poetry run python manage.py createsuperuser
+DJANGO_SETTINGS_MODULE=cms.settings.functional_test make createsuperuser
 ```
 
 #### Using DSLR Snapshots for Development
