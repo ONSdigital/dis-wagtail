@@ -1,20 +1,12 @@
-from typing import TYPE_CHECKING, ClassVar
+from typing import ClassVar
 
 from django.db import models
 from wagtail.admin.panels import FieldPanel, MultiFieldPanel
 from wagtail.contrib.settings.models import register_setting
 from wagtail.fields import RichTextField
 
+from cms.core.models.base import BaseSiteSetting
 from cms.images.models import CustomImage
-
-if TYPE_CHECKING:
-    from wagtail.contrib.settings.models import BaseSiteSetting as _BaseSiteSetting
-
-    class BaseSiteSetting(_BaseSiteSetting, models.Model):
-        """Explicit class definition for type checking. Indicates we're inheriting from Django's model."""
-else:
-    from wagtail.contrib.settings.models import BaseSiteSetting
-
 
 __all__ = [
     "SocialMediaSettings",
