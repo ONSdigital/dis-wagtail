@@ -56,11 +56,6 @@ class MethodologyPage(BasePage):  # type: ignore[django-manager-missing]
     # TODO: uncomment below to restrict
     # parent_page_types: ClassVar[list[str]] = ["topics.TopicPage"]
 
-    # TODO: review if this should be implemented at all
-    # the Excel doc says it's for later stage
-    # currently implemented analogously to AnalysisPage.main_points_summary
-    methodology_summary = RichTextField(features=settings.RICH_TEXT_BASIC)
-
     published_date = models.DateField()
     last_revised_date = models.DateField(blank=True, null=True)
 
@@ -87,7 +82,6 @@ class MethodologyPage(BasePage):  # type: ignore[django-manager-missing]
                 ),
                 FieldPanel("contact_details"),
                 FieldPanel("show_cite_this_page"),
-                FieldPanel("methodology_summary"),
             ],
             heading=_("Metadata"),
             icon="cog",
