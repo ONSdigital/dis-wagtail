@@ -97,8 +97,9 @@
                             {%- set cite_link -%}
                                 <a href="{{ fullpageurl(page) }}">{{ page.title }}</a>
                             {% endset %}
-                            {% trans trimmed last_revised_date=page.last_revised_date|date("DATE_FORMAT"), cite_link=cite_link %}
-                                Office for National Statistics (ONS), last revised {{ last_revised_date }}, ONS website, methodology, {{ cite_link }}
+                            {% set latest_date = page.last_revised_date if page.last_revised_date else page.published_date %}
+                            {% trans trimmed latest_date_formatted = latest_date|date("DATE_FORMAT"), cite_link=cite_link %}
+                                Office for National Statistics (ONS), last revised {{ latest_date_formatted }}, ONS website, methodology, {{ cite_link }}
                             {% endtrans %}
                         </p>
                     </section>
