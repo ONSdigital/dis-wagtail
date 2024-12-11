@@ -24,15 +24,16 @@ class SectionContentBlock(StreamBlock):
 
     rich_text = RichTextBlock()
     panel = PanelBlock()
-    embed = EmbedBlock(group="Media")
     image = ImageChooserBlock(group="Media")
     documents = DocumentsBlock(group="Media")
-    related_links = RelatedLinksBlock(RelatedContentBlock(), icon="link")
+    embed = EmbedBlock(group="Media")
     equation = MathBlock(group="DataVis", icon="decimal")
     ons_embed = ONSEmbedBlock(group="DataVis", label="ONS General Embed")
+    related_links = RelatedLinksBlock(RelatedContentBlock(), icon="link")
 
     class Meta:
         template = "templates/components/streamfield/stream_block.html"
+        block_counts: ClassVar[dict[str, dict]] = {"related_links": {"max_num": 1}}
 
 
 class SectionBlock(StructBlock):
@@ -42,7 +43,6 @@ class SectionBlock(StructBlock):
     content = SectionContentBlock()
 
     class Meta:
-        block_counts: ClassVar[dict[str, dict]] = {"related_links": {"max_num": 1}}
         template = "templates/components/streamfield/section_with_header_block.html"
 
     def to_table_of_contents_items(self, value: "StructValue") -> list[dict[str, str]]:

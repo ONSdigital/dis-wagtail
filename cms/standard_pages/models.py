@@ -1,12 +1,7 @@
-from typing import TYPE_CHECKING, Any, ClassVar
+from typing import TYPE_CHECKING, ClassVar
 
-from django.conf import settings
-from django.core.exceptions import ValidationError
 from django.db import models
-from django.utils.functional import cached_property
-from django.utils.translation import gettext_lazy as _
-from wagtail.admin.panels import FieldPanel, InlinePanel, MultiFieldPanel
-from wagtail.fields import RichTextField
+from wagtail.admin.panels import FieldPanel, InlinePanel
 from wagtail.search import index
 
 from cms.core.blocks.stream_blocks import SectionStoryBlock
@@ -14,8 +9,7 @@ from cms.core.fields import StreamField
 from cms.core.models import BasePage
 
 if TYPE_CHECKING:
-    from django.http import HttpRequest
-    from wagtail.admin.panels import Panel
+    pass
 
 
 class InformationPage(BasePage):  # type: ignore[django-manager-missing]
