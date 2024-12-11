@@ -18,7 +18,7 @@ class MethodologyPageTestCase(WagtailTestUtils, TestCase):
         self.basic_page = MethodologyPageFactory(
             parent__title="Topic Page",
             title="Methodology Page",
-            published_date=datetime(2024, 8, 15),
+            publication_date=datetime(2024, 8, 15),
             show_cite_this_page=False,
             contact_details=None,
         )
@@ -27,7 +27,7 @@ class MethodologyPageTestCase(WagtailTestUtils, TestCase):
         self.page = MethodologyPageFactory(
             parent__title="Topic Page",
             title="Methodology Page",
-            published_date=datetime(2024, 8, 15),
+            publication_date=datetime(2024, 8, 15),
             show_cite_this_page=True,
         )
         self.page_url = self.page.url
@@ -61,7 +61,7 @@ class MethodologyPageTestCase(WagtailTestUtils, TestCase):
 
     def test_cite_this_page_is_not_shown_when_unticked(self):
         """Test for the cite this page block not present in the template."""
-        self.basic_page.last_revised_date = self.basic_page.published_date + timezone.timedelta(days=1)
+        self.basic_page.last_revised_date = self.basic_page.publication_date + timezone.timedelta(days=1)
         latest_date_formatted = date_format(self.basic_page.last_revised_date, settings.DATE_FORMAT)
 
         expected = (
@@ -72,9 +72,9 @@ class MethodologyPageTestCase(WagtailTestUtils, TestCase):
         self.assertNotContains(response, expected)
 
     # Dates
-    def test_last_revised_date_must_be_after_published_date(self):
+    def test_last_revised_date_must_be_after_publication_date(self):
         """Tests the model validates last revised date is after the publication date."""
-        self.page.last_revised_date = self.page.published_date
+        self.page.last_revised_date = self.page.publication_date
 
         with self.assertRaises(ValidationError) as info:
             self.page.clean()

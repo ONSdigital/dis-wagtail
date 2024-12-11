@@ -27,10 +27,10 @@
             <div class="ons-container analysis-header__releases">
                 <div>
                     <span class="ons-u-fs-r--b analysis-header__releases-label">{{ _("Published") }}:</span>
-                    <span class="ons-u-nowrap">{{ page.published_date|date("DATE_FORMAT") }}</span>
+                    <span class="ons-u-nowrap">{{ page.publication_date|date("DATE_FORMAT") }}</span>
                 </div>
                 <div>
-                    <span class="ons-u-fs-r--b analysis-header__releases-label">{{ _("Last revised:") }}:</span>
+                    <span class="ons-u-fs-r--b analysis-header__releases-label">{{ _("Last revised") }}:</span>
                     <span class="ons-u-nowrap">{{ page.last_revised_date|date("DATE_FORMAT")}}</span>
                 </div>
 
@@ -97,7 +97,7 @@
                             {%- set cite_link -%}
                                 <a href="{{ fullpageurl(page) }}">{{ page.title }}</a>
                             {% endset %}
-                            {% set latest_date = page.last_revised_date if page.last_revised_date else page.published_date %}
+                            {% set latest_date = page.last_revised_date if page.last_revised_date else page.publication_date %}
                             {% trans trimmed latest_date_formatted = latest_date|date("DATE_FORMAT"), cite_link=cite_link %}
                                 Office for National Statistics (ONS), last revised {{ latest_date_formatted }}, ONS website, methodology, {{ cite_link }}
                             {% endtrans %}

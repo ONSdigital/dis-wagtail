@@ -25,7 +25,7 @@ class Migration(migrations.Migration):
                 ('listing_summary', models.CharField(blank=True, max_length=255)),
                 ('social_text', models.CharField(blank=True, max_length=255)),
                 ('summary', wagtail.fields.RichTextField()),
-                ('published_date', models.DateField()),
+                ('publication_date', models.DateField()),
                 ('last_revised_date', models.DateField(blank=True, null=True)),
                 ('content', cms.core.fields.StreamField(block_lookup={})),
                 ('show_cite_this_page', models.BooleanField(default=True)),

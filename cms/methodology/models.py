@@ -24,7 +24,7 @@ class MethodologyPage(BasePage):  # type: ignore[django-manager-missing]
     template = "templates/pages/methodology_page.html"
 
     summary = RichTextField(features=settings.RICH_TEXT_BASIC)
-    published_date = models.DateField()
+    publication_date = models.DateField()
     last_revised_date = models.DateField(blank=True, null=True)
 
     contact_details = models.ForeignKey(
@@ -44,7 +44,7 @@ class MethodologyPage(BasePage):  # type: ignore[django-manager-missing]
         FieldPanel("summary"),
         MultiFieldPanel(
             [
-                FieldPanel("published_date", icon="calendar-date"),
+                FieldPanel("publication", icon="calendar-date"),
                 FieldPanel(
                     "last_revised_date",
                 ),
@@ -68,7 +68,7 @@ class MethodologyPage(BasePage):  # type: ignore[django-manager-missing]
         """Additional validation on save."""
         super().clean()
 
-        if self.last_revised_date and self.last_revised_date <= self.published_date:
+        if self.last_revised_date and self.last_revised_date <= self.publication_date:
             raise ValidationError({"last_revised_date": _("The last revised date must be after the published date.")})
 
     def get_context(self, request: "HttpRequest", *args: Any, **kwargs: Any) -> dict:

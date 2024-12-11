@@ -40,8 +40,8 @@ class MethodologyPageFactory(wagtail_factories.PageFactory):
     title = factory.Faker("sentence", nb_words=4)
 
     summary = factory.Faker("text", max_nb_chars=100)
-    published_date = factory.LazyFunction(lambda: timezone.now().date())
-    last_revised_date = factory.LazyAttribute(lambda o: o.published_date + timedelta(days=1))
+    publication_date = factory.LazyFunction(lambda: timezone.now().date())
+    last_revised_date = factory.LazyAttribute(lambda o: o.publication_date + timedelta(days=1))
     contact_details = factory.SubFactory(ContactDetailsFactory)
 
     content = wagtail_factories.StreamFieldFactory({"section": factory.SubFactory(SectionBlockFactory)})
