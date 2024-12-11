@@ -8,7 +8,7 @@ from django.utils.formats import date_format
 from wagtail.test.utils import WagtailTestUtils
 
 from cms.core.tests.factories import ContactDetailsFactory
-from cms.standard_pages.tests.factories import MethodologyPageFactory
+from cms.methodology.tests.factories import MethodologyPageFactory
 
 
 class MethodologyPageTestCase(WagtailTestUtils, TestCase):

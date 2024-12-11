@@ -6,7 +6,7 @@ import wagtail_factories
 from django.utils import timezone
 
 from cms.core.tests.factories import ContactDetailsFactory, RichTextBlockFactory
-from cms.standard_pages.models import MethodologyPage
+from cms.methodology.models import MethodologyPage
 from cms.topics.tests.factories import TopicPageFactory
 
 
