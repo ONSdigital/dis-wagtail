@@ -65,7 +65,7 @@ time you want to replicate this state. To get around this, we can use this separ
 To start this test development app instance in docker along with the dependencies, run:
 
 ```shell
-make functional-tests-up-dev
+make functional-tests-dev-up
 ```
 
 Then to stop it when you are finished, run:
