@@ -1,12 +1,11 @@
 from django.test import TestCase
-from cms.navigation.tests.factories import (
-    MainMenuFactory,
-    NavigationSettingsFactory,
-    HighlightsBlockFactory,
-    ColumnBlockFactory,
-    SectionBlockFactory,
-)
 from wagtail.test.utils import WagtailTestUtils
+
+from cms.navigation.tests.factories import (
+    ColumnBlockFactory,
+    HighlightsBlockFactory,
+    MainMenuFactory,
+)
 
 
 class MainMenuBlockTestCase(WagtailTestUtils, TestCase):
@@ -30,7 +29,14 @@ class MainMenuBlockTestCase(WagtailTestUtils, TestCase):
 
     def test_highlights_streamfield_limit(self):
         """Ensure highlights StreamField does not exceed the maximum limit of 3."""
-        highlights = HighlightsBlockFactory.create_batch(4)
+        # highlights = HighlightsBlockFactory.create_batch(4)
+        value = {"url": "https://ons.gov.uk", "title": "Highlight", "description": "desc"}
+        highlights = [
+            {"type": "highlight", "value": HighlightsBlockFactory()},  # or the dict form
+            {"type": "highlight", "value": value},
+            {"type": "highlight", "value": value},
+            {"type": "highlight", "value": value},
+        ]
         self.main_menu.highlights = highlights
         with self.assertRaises(ValueError):
             self.main_menu.full_clean()
