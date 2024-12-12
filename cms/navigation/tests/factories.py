@@ -1,41 +1,54 @@
-import wagtail_factories
 import factory
-from navigation.models import MainMenu, NavigationSettings
+from wagtail_factories import StreamFieldFactory, StructBlockFactory, ListBlockFactory
+from cms.navigation.models import MainMenu, NavigationSettings
 
 
-class HighlightsBlockFactory(wagtail_factories.StructBlockFactory):
-    """Factory for HighlightsBlock."""
-
-    description = factory.Faker("text", max_nb_chars=50)
-    link = wagtail_factories.PageChooserBlockFactory()
-
-
-class SectionBlockFactory(wagtail_factories.StructBlockFactory):
-    """Factory for SectionBlock."""
-
-    section_link = wagtail_factories.StructBlockFactory()
-    links = wagtail_factories.ListBlockFactory(wagtail_factories.StructBlockFactory())
+class ThemeLinkBlockFactory(StructBlockFactory):
+    url = factory.Faker("url")
+    title = factory.Faker("sentence", nb_words=3)
+    page = factory.SubFactory(
+        "wagtail_factories.PageFactory",
+        page_type="themes.ThemePage",
+    )
 
 
-class ColumnBlockFactory(wagtail_factories.StructBlockFactory):
-    """Factory for ColumnBlock."""
+class TopicLinkBlockFactory(StructBlockFactory):
+    url = factory.Faker("url")
+    title = factory.Faker("sentence", nb_words=3)
+    page = factory.SubFactory(
+        "wagtail_factories.PageFactory",
+        page_type="topic.TopicPage",
+    )
 
-    sections = wagtail_factories.ListBlockFactory(SectionBlockFactory)
+
+class HighlightsBlockFactory(StructBlockFactory):
+    url = factory.Faker("url")
+    title = factory.Faker("sentence", nb_words=3)
+    description = factory.Faker("sentence", nb_words=10)
+
+
+class SectionBlockFactory(StructBlockFactory):
+    section_link = factory.SubFactory(ThemeLinkBlockFactory)
+    links = ListBlockFactory(TopicLinkBlockFactory, size=3)
+
+
+class ColumnBlockFactory(StructBlockFactory):
+    sections = ListBlockFactory(SectionBlockFactory, size=3)
 
 
 class MainMenuFactory(factory.django.DjangoModelFactory):
-    """Factory for MainMenu."""
-
     class Meta:
         model = MainMenu
 
-    highlights = wagtail_factories.StreamFieldFactory({"highlight": factory.SubFactory(HighlightsBlockFactory)})
-    columns = wagtail_factories.StreamFieldFactory({"column": factory.SubFactory(ColumnBlockFactory)})
+    highlights = StreamFieldFactory({"highlight": HighlightsBlockFactory})
+    columns = StreamFieldFactory(
+        {
+            "column": ColumnBlockFactory,
+        }
+    )
 
 
 class NavigationSettingsFactory(factory.django.DjangoModelFactory):
-    """Factory for NavigationSettings."""
-
     class Meta:
         model = NavigationSettings
 

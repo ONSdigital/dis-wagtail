@@ -1,7 +1,6 @@
 from django.test import TestCase
+from cms.navigation.tests.factories import MainMenuFactory
 from wagtail.test.utils import WagtailTestUtils
-from navigation.models import MainMenu
-from navigation.tests.factories import MainMenuFactory
 
 
 class MainMenuViewTestCase(WagtailTestUtils, TestCase):
