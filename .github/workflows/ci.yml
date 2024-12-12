@@ -178,23 +178,8 @@ jobs:
           name: static
           path: cms/static_compiled/
 
-      - name: Docker Compose Up
-        run: make functional-tests-up
-
-      - name: Fetch Design System templates
-        run: make load-design-system-templates
-
-      - name: Collect Static Files
-        run: poetry run ./manage.py collectstatic --verbosity 0 --noinput --clear
-
-      - name: Run migrations to work around Django bug (#35967)
-        run: poetry run ./manage.py migrate --noinput
-
       - name: Run Functional Tests
-        run: poetry run behave functional_tests
-
-      - name: Docker Compose Down
-        run: make functional-tests-down
+        run: make functional-tests
 
       - name: Upload Failure Traces
         uses: actions/upload-artifact@v4
