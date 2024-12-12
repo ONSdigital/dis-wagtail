@@ -2,7 +2,7 @@ from datetime import datetime
 
 from django.conf import settings
 from django.core.exceptions import ValidationError
-from django.test import TestCase
+from django.test import TestCase, override_settings
 from django.utils import timezone
 from django.utils.formats import date_format
 from wagtail.test.utils import WagtailTestUtils
@@ -80,3 +80,11 @@ class MethodologyPageTestCase(WagtailTestUtils, TestCase):
             self.page.clean()
 
         self.assertEqual(info.exception.messages, ["The last revised date must be after the published date."])
+
+    # External environment
+    @override_settings(IS_EXTERNAL_ENV=True)
+    def test_render_in_external_env(self):
+        """Test that the page renders in external environment."""
+        response = self.client.get(self.page.url)
+
+        self.assertEqual(response.status_code, 200)

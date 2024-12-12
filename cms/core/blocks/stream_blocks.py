@@ -26,6 +26,7 @@ class SectionStoryBlock(StreamBlock):
 
 class CoreStoryBlock(StreamBlock):
     """The core StreamField block definition."""
+
     heading = HeadingBlock()
     rich_text = RichTextBlock()
     panel = PanelBlock()

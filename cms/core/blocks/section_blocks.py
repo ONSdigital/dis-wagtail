@@ -48,4 +48,3 @@ class SectionBlock(StructBlock):
 
     class Meta:
         template = "templates/components/streamfield/section_block.html"
-
