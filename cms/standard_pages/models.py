@@ -4,7 +4,7 @@ from django.db import models
 from wagtail.admin.panels import FieldPanel, InlinePanel
 from wagtail.search import index
 
-from cms.core.blocks.stream_blocks import SectionStoryBlock
+from cms.core.blocks.stream_blocks import CoreStoryBlock
 from cms.core.fields import StreamField
 from cms.core.models import BasePage
 
@@ -23,7 +23,7 @@ class InformationPage(BasePage):  # type: ignore[django-manager-missing]
 
     summary = models.TextField(max_length=255)
     last_updated = models.DateField(blank=True, null=True)
-    content = StreamField(SectionStoryBlock())
+    content = StreamField(CoreStoryBlock())
 
     content_panels: ClassVar[list[FieldPanel]] = [
         *BasePage.content_panels,
