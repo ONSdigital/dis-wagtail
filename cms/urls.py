@@ -25,7 +25,6 @@ internal_urlpatterns = [path("readiness/", core_views.ready, name="readiness")]
 private_urlpatterns = [
     path("documents/", include(wagtaildocs_urls)),
     path("-/", include((internal_urlpatterns, "internal"))),
-    re_path(r"^images/([^/]*)/(\d*)/([^/]*)/[^/]*$", PrivateImageServeView.as_view(), name="wagtailimages_serve"),
 ]
 
 # `wagtail.admin` must always be installed,
@@ -103,6 +102,7 @@ urlpatterns = (
     + debug_urlpatterns
     + urlpatterns
     + [
+        re_path(r"^images/([^/]*)/(\d*)/([^/]*)/[^/]*$", PrivateImageServeView.as_view(), name="wagtailimages_serve"),
         # Add Wagtail URLs at the end.
         # Wagtail cache-control is set on the page models' serve methods
         path("", include(wagtail_urls)),
