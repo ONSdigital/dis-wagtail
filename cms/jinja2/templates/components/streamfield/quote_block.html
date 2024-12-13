@@ -1,11 +1,6 @@
 {% from "components/quote/_macro.njk" import onsQuote %}
 {% if value.attribution %}
-    {{-
-    onsQuote({
-    "text": value.quote,
-    "ref": value.attribution
-    })
-    -}}
+    {{- onsQuote({ "text": value.quote, "ref": value.attribution }) -}}
 {% else %}
     {{- onsQuote({ "text": value.quote }) -}}
 {% endif %}
