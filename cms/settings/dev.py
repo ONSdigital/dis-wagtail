@@ -69,5 +69,7 @@ MIGRATION_LINTER_OPTIONS = {
         "wagtaildocs",
         "wagtailredirects",
         "wagtailusers",
+        "core",
+        "images",
     ]
 }
