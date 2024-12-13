@@ -49,14 +49,14 @@ class TestDocumentModel(TestCase):
             logs.output,
             [
                 (
-                    "INFO:cms.private_media.storages:AccessControlLoggingFileSystemStorage does not support setting of individual "
-                    f"file permissions to private, so skipping for: {document.file.name}."
+                    "INFO:cms.private_media.storages:AccessControlLoggingFileSystemStorage does not support setting "
+                    f"of individual file permissions to private, so skipping for: {document.file.name}."
                 )
             ],
         )
 
         # File permissions should be considered up-to-date
-        self.assertFalse(document.file_permissions_are_outdated())
+        self.assertFalse(document.has_outdated_file_permissions())
 
         # Setting privacy to the same value should not trigger an update to 'privacy_last_changed
         value_before = document.privacy_last_changed
@@ -68,12 +68,12 @@ class TestDocumentModel(TestCase):
         self.assertGreater(document.privacy_last_changed, value_before)
 
         # File permissions should now be considered outdated
-        self.assertTrue(document.file_permissions_are_outdated())
+        self.assertTrue(document.has_outdated_file_permissions())
 
         # Resaving should trigger an update to file permissions and the 'file_permissions_last_set'
         # timestamp, resolving the issue
         document.save()
-        self.assertFalse(document.file_permissions_are_outdated())
+        self.assertFalse(document.has_outdated_file_permissions())
 
     def test_public_document(self):
         """Test the behaviour of public documents:
@@ -96,14 +96,14 @@ class TestDocumentModel(TestCase):
             logs.output,
             [
                 (
-                    "INFO:cms.private_media.storages:AccessControlLoggingFileSystemStorage does not support setting of individual "
-                    f"file permissions to public, so skipping for: {document.file.name}."
+                    "INFO:cms.private_media.storages:AccessControlLoggingFileSystemStorage does not support setting "
+                    f"of individual file permissions to public, so skipping for: {document.file.name}."
                 )
             ],
         )
 
         # File permissions should be considered up-to-date
-        self.assertFalse(document.file_permissions_are_outdated())
+        self.assertFalse(document.has_outdated_file_permissions())
 
         # Setting privacy to the same value should not trigger an update to 'privacy_last_changed
         value_before = document.privacy_last_changed
@@ -115,12 +115,12 @@ class TestDocumentModel(TestCase):
         self.assertGreater(document.privacy_last_changed, value_before)
 
         # File permissions should now be considered outdated
-        self.assertTrue(document.file_permissions_are_outdated())
+        self.assertTrue(document.has_outdated_file_permissions())
 
         # Resaving should trigger an update to file permissions and the 'file_permissions_last_set'
         # timestamp, resolving the issue
         document.save()
-        self.assertFalse(document.file_permissions_are_outdated())
+        self.assertFalse(document.has_outdated_file_permissions())
 
     def test_invalid_privacy_value_raises_value_error(self):
         """Verify that attempting to create a document with an invalid privacy value raises ValueError."""
@@ -170,7 +170,9 @@ class TestDocumentModel(TestCase):
                 ],
             )
 
-    @override_settings(STORAGES={"default": {"BACKEND": "cms.private_media.storages.AccessControlLoggingFileSystemStorage"}})
+    @override_settings(
+        STORAGES={"default": {"BACKEND": "cms.private_media.storages.AccessControlLoggingFileSystemStorage"}}
+    )
     def test_file_permission_setting_success(self):
         """Test successful file permission setting using AccessControlLoggingFileSystemStorage:
         - Verify permissions are set correctly for both public and private documents.
@@ -180,10 +182,12 @@ class TestDocumentModel(TestCase):
             private_document = DocumentFactory(collection=self.root_collection)
             public_document = DocumentFactory(_privacy=Privacy.PUBLIC, collection=self.root_collection)
 
-        self.assertFalse(private_document.file_permissions_are_outdated())
-        self.assertFalse(public_document.file_permissions_are_outdated())
+        self.assertFalse(private_document.has_outdated_file_permissions())
+        self.assertFalse(public_document.has_outdated_file_permissions())
 
-    @override_settings(STORAGES={"default": {"BACKEND": "cms.private_media.storages.AccessControlLoggingFileSystemStorage"}})
+    @override_settings(
+        STORAGES={"default": {"BACKEND": "cms.private_media.storages.AccessControlLoggingFileSystemStorage"}}
+    )
     @mock.patch(
         "cms.private_media.storages.AccessControlLoggingFileSystemStorage.make_private",
         return_value=False,
@@ -203,9 +207,9 @@ class TestDocumentModel(TestCase):
             public_document = DocumentFactory(_privacy=Privacy.PUBLIC, collection=self.root_collection)
 
         mock_make_private.assert_called_once_with(private_document.file)
-        self.assertTrue(private_document.file_permissions_are_outdated())
+        self.assertTrue(private_document.has_outdated_file_permissions())
         mock_make_public.assert_called_once_with(public_document.file)
-        self.assertTrue(public_document.file_permissions_are_outdated())
+        self.assertTrue(public_document.has_outdated_file_permissions())
 
 
 @override_settings(
@@ -248,7 +252,7 @@ class TestPrivateDocumentManager(TestCase):
         # Verify all images are now public
         for obj in self.model.objects.only("_privacy", "file_permissions_last_set", "privacy_last_changed"):
             self.assertIs(obj.privacy, Privacy.PUBLIC)
-            self.assertFalse(obj.file_permissions_are_outdated())
+            self.assertFalse(obj.has_outdated_file_permissions())
 
         # Another attempt should result in no updates
         with self.assertNumQueries(1):
@@ -271,7 +275,7 @@ class TestPrivateDocumentManager(TestCase):
         # Verify all images are now private
         for image in self.model.objects.only("_privacy", "file_permissions_last_set", "privacy_last_changed"):
             self.assertIs(image.privacy, Privacy.PRIVATE)
-            self.assertFalse(image.file_permissions_are_outdated())
+            self.assertFalse(image.has_outdated_file_permissions())
 
         # Another attempt should result in no updates
         with self.assertNumQueries(1):
@@ -319,6 +323,6 @@ class TestDocumentServeView(TestCase):
         """Test the serve view behaviour for public documents with outdated file permissions."""
         self.model.objects.filter(id=self.public_document.id).update(file_permissions_last_set=None)
         self.public_document.refresh_from_db()
-        self.assertTrue(self.public_document.file_permissions_are_outdated())
+        self.assertTrue(self.public_document.has_outdated_file_permissions())
         response = self.client.get(self.public_document.url)
         self.assertEqual(response.status_code, 200)

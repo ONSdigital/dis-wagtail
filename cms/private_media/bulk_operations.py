@@ -45,12 +45,10 @@ def bulk_set_file_permissions(files: Iterable["FieldFile"], privacy: Privacy) ->
 
     def set_file_permission_and_report(file: "FieldFile") -> None:
         storage = file.storage
-        handler: Callable[[FieldFile], bool] | None
         if privacy is Privacy.PRIVATE:
-            handler = getattr(storage, "make_private", None)
+            results[file] = storage.make_private(file)
         elif privacy is Privacy.PUBLIC:
-            handler = getattr(storage, "make_public", None)
-        results[file] = handler(file)
+            results[file] = storage.make_public(file)
 
     with concurrent.futures.ThreadPoolExecutor(
         max_workers=int(settings.PRIVATE_MEDIA_BULK_UPDATE_MAX_WORKERS)

@@ -44,7 +44,7 @@ Whilst file-permission setting requests are quite reliable in S3, they can fail 
 
 Because a media item's `file_permissions_last_set` timestamp is only updated when all file-permission setting attempts were successful, for media items with outdated file permissions, the `file_permissions_last_set` timestamp will trail behind the `privacy_last_changed` value.
 
-For an individual object, the `file_permissions_are_outdated()` method will return `True` if the `file_permissions_last_set` timestamp is eariler than `privacy_last_changed`. This is used in a few places to vary the behaviour. Specifically, the `href` value for images will continue to point to the media serve view, so that it can still be served to users. The image serve view also checks it before redirecting users to the direct file URL.
+For an individual object, the `has_outdated_file_permissions()` method will return `True` if the `file_permissions_last_set` timestamp is eariler than `privacy_last_changed`. This is used in a few places to vary the behaviour. Specifically, the `href` value for images will continue to point to the media serve view, so that it can still be served to users. The image serve view also checks it before redirecting users to the direct file URL.
 
 The timestamp values can also be used to identify affected media items in bulk. This is the approach taken by the `retry_file_permission_set_attempts` management command, which runs regularly (every 5 minutes) in hosted environments to help keep file permissions up-to-date. It uses the same bulk-processing logic as the signal handlers, so will retry failed requests, mark any items that are successfully updated, and log any errors that occured.
 

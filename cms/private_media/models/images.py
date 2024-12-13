@@ -100,7 +100,7 @@ class AbstractPrivateRendition(AbstractRendition):
             str: URL for accessing the rendition
         """
         image: PrivateImageMixin = self.image  # pylint: disable=no-member
-        if image.is_public and not image.file_permissions_are_outdated():
+        if image.is_public and not image.has_outdated_file_permissions():
             file_url: str = self.file.url
             return file_url
         return self.serve_url

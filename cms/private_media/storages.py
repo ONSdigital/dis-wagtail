@@ -2,7 +2,7 @@ import logging
 from typing import TYPE_CHECKING
 
 from botocore.exceptions import ClientError
-from django.core.files.storage import FileSystemStorage, InMemoryStorage
+from django.core.files.storage import FileSystemStorage
 from storages.backends.s3 import S3Storage
 
 if TYPE_CHECKING:
@@ -43,10 +43,9 @@ class AccessControlledS3Storage(S3Storage):
 
 
 class AccessControlLoggingMixin:
-    """
-    A mixin for storage backends that do not support setting of individual file permissions.
-    """
-    def make_private(self, file: "FieldFile") -> bool:  # pylint: disable=unused-argument
+    """A mixin for storage backends that do not support setting of individual file permissions."""
+
+    def make_private(self, file: "FieldFile") -> bool:
         """Pretend to make the provided file private."""
         logger.info(
             "%s does not support setting of individual file permissions to private, so skipping for: %s.",
@@ -55,7 +54,7 @@ class AccessControlLoggingMixin:
         )
         return True
 
-    def make_public(self, file: "FieldFile") -> bool:  # pylint: disable=unused-argument
+    def make_public(self, file: "FieldFile") -> bool:
         """Pretend to make the provided file public."""
         logger.info(
             "%s does not support setting of individual file permissions to public, so skipping for: %s.",
@@ -67,4 +66,5 @@ class AccessControlLoggingMixin:
 
 class AccessControlLoggingFileSystemStorage(AccessControlLoggingMixin, FileSystemStorage):
     """A version of Django's `FileSystemStorage` backend for local development and tests, which logs
-    file-permission-setting requests, and always reports success."""
+    file-permission-setting requests, and always reports success.
+    """

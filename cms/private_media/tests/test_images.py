@@ -54,14 +54,14 @@ class TestImageModel(TestCase):
             logs.output,
             [
                 (
-                    "INFO:cms.private_media.storages:AccessControlLoggingFileSystemStorage does not support setting of individual "
-                    f"file permissions to private, so skipping for: {image.file.name}."
+                    "INFO:cms.private_media.storages:AccessControlLoggingFileSystemStorage does not support setting "
+                    f"of individual file permissions to private, so skipping for: {image.file.name}."
                 )
             ],
         )
 
         # File permissions should be considered up-to-date
-        self.assertFalse(image.file_permissions_are_outdated())
+        self.assertFalse(image.has_outdated_file_permissions())
 
         # Setting privacy to the same value should not trigger an update to 'privacy_last_changed
         value_before = image.privacy_last_changed
@@ -73,12 +73,12 @@ class TestImageModel(TestCase):
         self.assertGreater(image.privacy_last_changed, value_before)
 
         # File permissions should now be considered outdated
-        self.assertTrue(image.file_permissions_are_outdated())
+        self.assertTrue(image.has_outdated_file_permissions())
 
         # Resaving should trigger an update to file permissions and the 'file_permissions_last_set'
         # timestamp, resolving the issue
         image.save()
-        self.assertFalse(image.file_permissions_are_outdated())
+        self.assertFalse(image.has_outdated_file_permissions())
 
     def test_private_image_renditions(self):
         """Test that private image renditions use serve URLs instead of direct file URLs."""
@@ -114,14 +114,14 @@ class TestImageModel(TestCase):
             logs.output,
             [
                 (
-                    "INFO:cms.private_media.storages:AccessControlLoggingFileSystemStorage does not support setting of individual "
-                    f"file permissions to public, so skipping for: {image.file.name}."
+                    "INFO:cms.private_media.storages:AccessControlLoggingFileSystemStorage does not support setting "
+                    f"of individual file permissions to public, so skipping for: {image.file.name}."
                 )
             ],
         )
 
         # File permissions should be considered up-to-date
-        self.assertFalse(image.file_permissions_are_outdated())
+        self.assertFalse(image.has_outdated_file_permissions())
 
         # Setting privacy to the same value should not trigger an update to 'privacy_last_changed
         value_before = image.privacy_last_changed
@@ -133,12 +133,12 @@ class TestImageModel(TestCase):
         self.assertGreater(image.privacy_last_changed, value_before)
 
         # File permissions should now be considered outdated
-        self.assertTrue(image.file_permissions_are_outdated())
+        self.assertTrue(image.has_outdated_file_permissions())
 
         # Resaving should trigger an update to file permissions and the 'file_permissions_last_set'
         # timestamp, resolving the issue
         image.save()
-        self.assertFalse(image.file_permissions_are_outdated())
+        self.assertFalse(image.has_outdated_file_permissions())
 
     def test_public_image_renditions(self):
         """Test rendition.url behaviour for public image renditions:
@@ -157,7 +157,7 @@ class TestImageModel(TestCase):
 
         # However, if the file permissions are outdated, rendition.url should return a serve URL
         with mock.patch(
-            "cms.private_media.models.PrivateMediaMixin.file_permissions_are_outdated",
+            "cms.private_media.models.PrivateMediaMixin.has_outdated_file_permissions",
             return_value=True,
         ):
             for rendition in renditions.values():
@@ -210,17 +210,21 @@ class TestImageModel(TestCase):
         with self.assertRaises(ValueError):
             ImageFactory(_privacy="invalid", collection=self.root_collection)
 
-    @override_settings(STORAGES={"default": {"BACKEND": "cms.private_media.storages.AccessControlLoggingFileSystemStorage"}})
+    @override_settings(
+        STORAGES={"default": {"BACKEND": "cms.private_media.storages.AccessControlLoggingFileSystemStorage"}}
+    )
     def test_file_permission_setting_success(self):
         """Test successful file permission setting using a storage backend that supports it."""
         with self.assertNoLogs("cms.private_media.bulk_operations"):
             private_image = ImageFactory(collection=self.root_collection)
             public_image = ImageFactory(_privacy=Privacy.PUBLIC, collection=self.root_collection)
 
-        self.assertFalse(private_image.file_permissions_are_outdated())
-        self.assertFalse(public_image.file_permissions_are_outdated())
+        self.assertFalse(private_image.has_outdated_file_permissions())
+        self.assertFalse(public_image.has_outdated_file_permissions())
 
-    @override_settings(STORAGES={"default": {"BACKEND": "cms.private_media.storages.AccessControlLoggingFileSystemStorage"}})
+    @override_settings(
+        STORAGES={"default": {"BACKEND": "cms.private_media.storages.AccessControlLoggingFileSystemStorage"}}
+    )
     @mock.patch(
         "cms.private_media.storages.AccessControlLoggingFileSystemStorage.make_private",
         return_value=False,
@@ -240,9 +244,9 @@ class TestImageModel(TestCase):
             public_image = ImageFactory(_privacy=Privacy.PUBLIC, collection=self.root_collection)
 
         mock_make_private.assert_called_once_with(private_image.file)
-        self.assertTrue(private_image.file_permissions_are_outdated())
+        self.assertTrue(private_image.has_outdated_file_permissions())
         mock_make_public.assert_called_once_with(public_image.file)
-        self.assertTrue(public_image.file_permissions_are_outdated())
+        self.assertTrue(public_image.has_outdated_file_permissions())
 
 
 @override_settings(
@@ -289,7 +293,7 @@ class TestPrivateImageManager(TestCase):
         # Verify all images are now public
         for obj in self.model.objects.only("_privacy", "file_permissions_last_set", "privacy_last_changed"):
             self.assertIs(obj.privacy, Privacy.PUBLIC)
-            self.assertFalse(obj.file_permissions_are_outdated())
+            self.assertFalse(obj.has_outdated_file_permissions())
 
         # Another attempt should result in no updates
         with self.assertNumQueries(1):
@@ -314,7 +318,7 @@ class TestPrivateImageManager(TestCase):
         # Verify all images are now private
         for image in self.model.objects.only("_privacy", "file_permissions_last_set", "privacy_last_changed"):
             self.assertIs(image.privacy, Privacy.PRIVATE)
-            self.assertFalse(image.file_permissions_are_outdated())
+            self.assertFalse(image.has_outdated_file_permissions())
 
         # Another attempt should result in no updates
         with self.assertNumQueries(1):
@@ -372,7 +376,7 @@ class TestImageServeView(TestCase):
         """Test the serve view behaviour for public image renditions with outdated file permissions."""
         self.model.objects.filter(id=self.public_image.id).update(file_permissions_last_set=None)
         self.public_image.refresh_from_db()
-        self.assertTrue(self.public_image.file_permissions_are_outdated())
+        self.assertTrue(self.public_image.has_outdated_file_permissions())
         for rendition in self.public_image_renditions.values():
             response = self.client.get(rendition.serve_url)
             self.assertEqual(response.status_code, 200)

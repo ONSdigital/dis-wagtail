@@ -17,7 +17,7 @@ class PrivateImageServeView(ServeView):
 
         # If there's no reason (within our control) for the file not to be served by
         # media infrastructure, redirect
-        if image.is_public and not image.file_permissions_are_outdated():
+        if image.is_public and not image.has_outdated_file_permissions():
             return redirect(rendition.file.url)
 
         # Block access to private images if the user has insufficient permissions

@@ -12,6 +12,8 @@ if TYPE_CHECKING:
 
 
 class Command(BaseCommand):
+    dry_run: bool
+
     def add_arguments(self, parser: Any) -> None:
         parser.add_argument(
             "--dry-run",
@@ -22,7 +24,7 @@ class Command(BaseCommand):
         )
 
     def handle(self, *args: Any, **options: Any) -> None:
-        self.dry_run = options["dry_run"]  # pylint: disable=attribute-defined-outside-init
+        self.dry_run = options["dry_run"]
         if self.dry_run:
             self.stdout.write("This is a dry run.")
 
@@ -56,7 +58,7 @@ class Command(BaseCommand):
             for item in model_class.objects.bulk_set_file_permissions(  # type: ignore[attr-defined]
                 items, privacy, save_changes=True
             ):
-                if not item.file_permissions_are_outdated():
+                if not item.has_outdated_file_permissions():
                     updated_count += 1
 
             self.stdout.write(f"File permissions successfully updated for {updated_count} {privacy} {plural}.")

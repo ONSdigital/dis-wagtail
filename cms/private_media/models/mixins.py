@@ -84,16 +84,16 @@ class PrivateMediaMixin(models.Model):
         super().save(*args, **kwargs)
 
         # Trigger file permission updates after-the-fact
-        if set_file_permissions and self.file_permissions_are_outdated():
+        if set_file_permissions and self.has_outdated_file_permissions():
             results = bulk_set_file_permissions(self.get_privacy_controlled_files(), self.privacy)
             # Only update 'file_permissions_last_set' if all updates were successfull
-            all_updates_successful =  all(results.values())
+            all_updates_successful = all(results.values())
             if all_updates_successful:
                 self.file_permissions_last_set = timezone.now()
                 kwargs.update(force_insert=False, update_fields=["file_permissions_last_set"])
                 super().save(*args, **kwargs)
 
-    def file_permissions_are_outdated(self) -> bool:
+    def has_outdated_file_permissions(self) -> bool:
         """Check if the file permissions are outdated relative to privacy changes."""
         return self.file_permissions_last_set is None or self.file_permissions_last_set < self.privacy_last_changed
 
