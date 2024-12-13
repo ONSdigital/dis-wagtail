@@ -26,20 +26,20 @@ class PrivateMediaModelManager(models.Manager):
     time.
     """
 
-    def bulk_set_privacy(self, objects: Iterable["PrivateMediaMixin"], intended_privacy: Privacy) -> int:
-        """Update an iterable of objects of this type to reflect the 'intended_privacy'
+    def bulk_set_privacy(self, objects: Iterable["PrivateMediaMixin"], privacy: Privacy) -> int:
+        """Update an iterable of objects of this type to reflect the 'privacy'
         as efficiently as possible. Returns the number of objects that were actually
         updated in the process.
         """
         to_update = []
         for obj in objects:
-            if obj.privacy != intended_privacy:
-                obj.privacy = intended_privacy
+            if obj.privacy != privacy:
+                obj.privacy = privacy
                 to_update.append(obj)
         if not to_update:
             return 0
 
-        to_update = self.bulk_set_file_permissions(to_update, intended_privacy, save_changes=False)
+        to_update = self.bulk_set_file_permissions(to_update, privacy, save_changes=False)
 
         count = self.bulk_update(
             to_update,  # type: ignore[arg-type]
@@ -72,10 +72,10 @@ class PrivateMediaModelManager(models.Manager):
         return self.bulk_set_privacy(objects, Privacy.PRIVATE)
 
     def bulk_set_file_permissions(
-        self, objects: Iterable["PrivateMediaMixin"], intended_privacy: Privacy, *, save_changes: bool = False
+        self, objects: Iterable["PrivateMediaMixin"], privacy: Privacy, *, save_changes: bool = False
     ) -> list["PrivateMediaMixin"]:
-        """For an itrerable of objects of this type, set the file permissions for all
-        related files to reflect `intended_privacy`. Returns a list of the provided objects,
+        """For an iterable of objects of this type, set the file permissions for all
+        related files to reflect `privacy`. Returns a list of the provided objects,
         with their `file_permissions_last_set` datetime updated if all related files
         were successfully updated.
         """
@@ -88,7 +88,7 @@ class PrivateMediaModelManager(models.Manager):
                 all_files.append(file)
                 files_by_object[obj].append(file)
 
-        results = bulk_set_file_permissions(all_files, intended_privacy)
+        results = bulk_set_file_permissions(all_files, privacy)
 
         now = timezone.now()
         for obj in objects:
