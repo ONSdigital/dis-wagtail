@@ -85,8 +85,8 @@ tables and seeded data. Ensure you include the `DJANGO_SETTINGS_MODULE` environm
 wiping your normal local development environment.
 
 ```shell
-DJANGO_SETTINGS_MODULE=cms.settings.functional_test poetry run python manage.py reset_db
-DJANGO_SETTINGS_MODULE=cms.settings.functional_test make migrate
+poetry run python manage.py reset_db --settings=cms.settings.functional_test
+poetry run python manage.py migrate --settings=cms.settings.functional_test
 ```
 
 Then for logging into the CMS, create a superuser with
