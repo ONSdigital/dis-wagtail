@@ -31,6 +31,9 @@ def bulk_set_file_permissions(files: Iterable["FieldFile"], privacy: Privacy) ->
     """
     results: dict[FieldFile, bool] = {}
 
+    # Convert generator values to a tuple to allow for repeat access
+    files = tuple(files)
+
     for file in files:
         if privacy is Privacy.PUBLIC and not hasattr(file.storage, "make_public"):
             raise ImproperlyConfigured(
@@ -44,11 +47,10 @@ def bulk_set_file_permissions(files: Iterable["FieldFile"], privacy: Privacy) ->
             )
 
     def set_file_permission_and_report(file: "FieldFile") -> None:
-        storage = file.storage
-        if privacy is Privacy.PRIVATE:
-            results[file] = storage.make_private(file)  # type: ignore[attr-defined]
-        elif privacy is Privacy.PUBLIC:
-            results[file] = storage.make_public(file)  # type: ignore[attr-defined]
+        if privacy == Privacy.PRIVATE:
+            results[file] = file.storage.make_private(file)  # type: ignore[attr-defined]
+        elif privacy == Privacy.PUBLIC:
+            results[file] = file.storage.make_public(file)  # type: ignore[attr-defined]
 
     with concurrent.futures.ThreadPoolExecutor(
         max_workers=int(settings.PRIVATE_MEDIA_BULK_UPDATE_MAX_WORKERS)
