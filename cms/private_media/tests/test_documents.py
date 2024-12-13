@@ -35,7 +35,7 @@ class TestDocumentModel(TestCase):
         - Ensure file permission updates are handled correctly.
         - Check file permission outdated status.
         """
-        with self.assertLogs("cms.private_media.bulk_operations", level="INFO") as logs:
+        with self.assertLogs("cms.private_media.storages", level="INFO") as logs:
             document = DocumentFactory(collection=self.root_collection)
 
         # Documents should be 'private' by default
@@ -49,7 +49,7 @@ class TestDocumentModel(TestCase):
             logs.output,
             [
                 (
-                    "INFO:cms.private_media.bulk_operations:FileSystemStorage does not support setting of individual "
+                    "INFO:cms.private_media.storages:AccessControlLoggingFileSystemStorage does not support setting of individual "
                     f"file permissions to private, so skipping for: {document.file.name}."
                 )
             ],
@@ -82,7 +82,7 @@ class TestDocumentModel(TestCase):
         - Ensure file permission updates are handled correctly.
         - Check file permission outdated status.
         """
-        with self.assertLogs("cms.private_media.bulk_operations", level="INFO") as logs:
+        with self.assertLogs("cms.private_media.storages", level="INFO") as logs:
             document = DocumentFactory(_privacy=Privacy.PUBLIC, collection=self.root_collection)
 
         # This document should be 'public'
@@ -96,7 +96,7 @@ class TestDocumentModel(TestCase):
             logs.output,
             [
                 (
-                    "INFO:cms.private_media.bulk_operations:FileSystemStorage does not support setting of individual "
+                    "INFO:cms.private_media.storages:AccessControlLoggingFileSystemStorage does not support setting of individual "
                     f"file permissions to public, so skipping for: {document.file.name}."
                 )
             ],
@@ -170,9 +170,9 @@ class TestDocumentModel(TestCase):
                 ],
             )
 
-    @override_settings(STORAGES={"default": {"BACKEND": "cms.private_media.storages.DummyPrivacySettingStorage"}})
+    @override_settings(STORAGES={"default": {"BACKEND": "cms.private_media.storages.AccessControlLoggingFileSystemStorage"}})
     def test_file_permission_setting_success(self):
-        """Test successful file permission setting using DummyPrivacySettingStorage:
+        """Test successful file permission setting using AccessControlLoggingFileSystemStorage:
         - Verify permissions are set correctly for both public and private documents.
         - Ensure no debug logs are generated during successful operation.
         """
@@ -183,13 +183,13 @@ class TestDocumentModel(TestCase):
         self.assertFalse(private_document.file_permissions_are_outdated())
         self.assertFalse(public_document.file_permissions_are_outdated())
 
-    @override_settings(STORAGES={"default": {"BACKEND": "cms.private_media.storages.DummyPrivacySettingStorage"}})
+    @override_settings(STORAGES={"default": {"BACKEND": "cms.private_media.storages.AccessControlLoggingFileSystemStorage"}})
     @mock.patch(
-        "cms.private_media.storages.DummyPrivacySettingStorage.make_private",
+        "cms.private_media.storages.AccessControlLoggingFileSystemStorage.make_private",
         return_value=False,
     )
     @mock.patch(
-        "cms.private_media.storages.DummyPrivacySettingStorage.make_public",
+        "cms.private_media.storages.AccessControlLoggingFileSystemStorage.make_public",
         return_value=False,
     )
     def test_file_permission_setting_failure(self, mock_make_public, mock_make_private):

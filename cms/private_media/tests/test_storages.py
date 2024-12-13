@@ -6,19 +6,19 @@ from django.test import TestCase, override_settings
 from moto import mock_aws
 from wagtail_factories import DocumentFactory
 
-from cms.private_media.storages import PrivacySettingS3Storage
+from cms.private_media.storages import AccessControlledS3Storage
 
 
 @mock_aws
 @override_settings(AWS_STORAGE_BUCKET_NAME="test-bucket")
-class PrivacySettingS3StorageTests(TestCase):
+class AccessControlledS3StorageTests(TestCase):
     @classmethod
     def setUpTestData(cls):
         cls.document = DocumentFactory()
 
     def setUp(self):
         super().setUp()
-        self.storage = PrivacySettingS3Storage()
+        self.storage = AccessControlledS3Storage()
         # Create a bucket to allow '_set_file_acl' to at least reach the 'put' stage
         bucket = self.storage.connection.Bucket(settings.AWS_STORAGE_BUCKET_NAME)
         bucket.create()
