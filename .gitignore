@@ -191,5 +191,8 @@ static/
 # Media files
 /media
 
+# bak files
+*.bak
+
 # Playwright Traces
 /tmp_traces

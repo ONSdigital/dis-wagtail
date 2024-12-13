@@ -8,7 +8,7 @@ codebase and avoid repeating discussions about how we apply typing.
 Specify types for variables initialised with `None`:
 
 ```python
-description: var: str | None = None
+description: Optional[str] = None
 ```
 
 Specify types for empty collections:
@@ -27,7 +27,7 @@ items: list[int] = [1]
 mappings: set[int] = {1, 2}
 ```
 
-https://www.python.org/dev/peps/pep-0585/
+<https://www.python.org/dev/peps/pep-0585/>
 
 ## Generic types
 
@@ -115,7 +115,7 @@ class Circle(Shape):
 ```
 
 This is recommended as forward declarations are now redundant in 3.10
-https://peps.python.org/pep-0673/
+<https://peps.python.org/pep-0673/>
 
 ## Type Alias
 
@@ -138,7 +138,8 @@ of a file, it silences all errors in the file:
 # type: ignore
 ```
 
-`# type: ignore` should only be used when unavoidable (or in the return `Any` case detailed below). Ensure that a comment is added to explain why it has been used and have a prefix of `Type ignore:`
+`# type: ignore` should only be used when unavoidable (or in the return `Any` case detailed below).
+Ensure that a comment is added to explain why it has been used and have a prefix of `Type ignore:`
 
 ```python
 def format_number(number: int) -> str:
@@ -149,7 +150,8 @@ def format_number(number: int) -> str:
 
 The `warn_return_any` flag is turned on to force type hinting the return types for third party libraries and increase the safety of the code base.
 
-Where type hints aren’t specific enough to identify the return type (e.g. objects like blocks where some keys correspond to strings, others to lists, others to dicts) mypy will complain if you assume the type of any attribute:
+Where type hints aren’t specific enough to identify the return type (e.g. objects like blocks where some keys correspond to strings,
+others to lists, others to dicts) mypy will complain if you assume the type of any attribute:
 
 ```python
 def get_id_from_block(block: dict) -> str:
@@ -164,7 +166,8 @@ def get_id_from_block(block: dict) -> str:
     return block_id
 ```
 
-...but as this is a common pattern in a number of places, it results in a lot of duplicating the return type, and extra lines of code for the sake of type hinting. In this scenario, it is ok to type ignore it.
+...but as this is a common pattern in a number of places, it results in a lot of duplicating the return type, and
+extra lines of code for the sake of type hinting. In this scenario, it is ok to type ignore it.
 
 If the value was needed for any other checks e.g.
 
@@ -236,6 +239,6 @@ def increment_value(self, value: T) -> T:
 
 ## Useful links
 
--   https://www.python.org/dev/peps/pep-0484/
--   https://www.pythonsheets.com/notes/python-typing.html
--   https://google.github.io/styleguide/pyguide.html#319-type-annotations
+-   <https://www.python.org/dev/peps/pep-0484/>
+-   <https://www.pythonsheets.com/notes/python-typing.html>
+-   <https://google.github.io/styleguide/pyguide.html#319-type-annotations>
