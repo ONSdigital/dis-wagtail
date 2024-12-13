@@ -126,8 +126,20 @@ jobs:
         run: poetry run ./manage.py makemigrations --check --noinput
       - name: Create cache table
         run: poetry run ./manage.py createcachetable
+      - name: Run migrations to work around Django bug (#35967)
+        run: poetry run ./manage.py migrate --noinput
       - name: Test
         run: make test
+      - name: Add coverage data to GitHub Action summary
+        run: |
+          poetry run coverage html --skip-covered --skip-empty
+          echo "## Coverage summary" >> $GITHUB_STEP_SUMMARY
+          poetry run coverage report --format=markdown >> $GITHUB_STEP_SUMMARY
+      - name: Upload coverage HTML report
+        uses: actions/upload-artifact@v4
+        with:
+          name: html-report
+          path: htmlcov
 
   docker:
     runs-on: ubuntu-latest
