@@ -51,10 +51,9 @@ class PrivateImageMixin(PrivateMediaMixin):
         """Return an iterator of fully-fledged serve URLs for this image, covering the domains for all
         provided sites.
         """
-        if not sites:
-            return
-        for rendition in self.renditions.all():  # type: ignore[attr-defined]
-            for site in sites:
+        renditions = self.renditions.all()  # type: ignore[attr-defined]
+        for site in sites:
+            for rendition in renditions:
                 yield site.root_url + rendition.serve_url
 
 
