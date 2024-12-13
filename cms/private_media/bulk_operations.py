@@ -4,6 +4,7 @@ from collections.abc import Callable, Iterable
 from typing import TYPE_CHECKING
 
 from django.conf import settings
+from django.core.exceptions import ImproperlyConfigured
 
 from cms.private_media.constants import Privacy
 
@@ -39,13 +40,11 @@ def bulk_set_file_permissions(files: Iterable["FieldFile"], intended_privacy: Pr
             handler = getattr(storage, "make_public", None)
 
         if handler is None:
-            logger.info(
-                "%s does not support setting of individual file permissions to %s, so skipping for: %s.",
+            raise ImproperlyConfigured(
+                "%s does not implement the make_private() or make_public() methods, which is a requirement "
+                "for bulk-setting file permissions.",
                 storage.__class__.__name__,
-                intended_privacy,
-                file.name,
             )
-            results[file] = True
         else:
             results[file] = handler(file)
 
