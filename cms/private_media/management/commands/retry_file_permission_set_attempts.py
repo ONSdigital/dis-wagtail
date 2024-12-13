@@ -34,17 +34,19 @@ class Command(BaseCommand):
                 queryset = queryset.prefetch_related("renditions")
             permissions_outdated = list(queryset)
             self.stdout.write(f"{len(permissions_outdated)} {model.__name__} instances have outdated file permissions.")
-            if permissions_outdated:
-                make_private = []
-                make_public = []
-                for obj in permissions_outdated:
-                    if obj.privacy is Privacy.PRIVATE:
-                        make_private.append(obj)
-                    elif obj.privacy is Privacy.PUBLIC:
-                        make_public.append(obj)
+            if not permissions_outdated:
+                continue
 
-                self.update_file_permissions(model, make_private, Privacy.PRIVATE)
-                self.update_file_permissions(model, make_public, Privacy.PUBLIC)
+            make_private = []
+            make_public = []
+            for obj in permissions_outdated:
+                if obj.privacy is Privacy.PRIVATE:
+                    make_private.append(obj)
+                elif obj.privacy is Privacy.PUBLIC:
+                    make_public.append(obj)
+
+            self.update_file_permissions(model, make_private, Privacy.PRIVATE)
+            self.update_file_permissions(model, make_public, Privacy.PUBLIC)
 
     def update_file_permissions(
         self, model_class: type["PrivateMediaMixin"], items: list["PrivateMediaMixin"], privacy: Privacy

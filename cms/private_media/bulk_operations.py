@@ -1,6 +1,6 @@
 import concurrent.futures
 import logging
-from collections.abc import Callable, Iterable
+from collections.abc import Iterable
 from typing import TYPE_CHECKING
 
 from django.conf import settings
