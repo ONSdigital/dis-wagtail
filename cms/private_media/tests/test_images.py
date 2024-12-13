@@ -166,13 +166,9 @@ class TestImageModel(TestCase):
         # with the root url for each supplied site
         renditions = image.create_renditions(Filter("fill-10x10"), Filter("fill-20x20"))
         expected_result = []
-        for rendition in renditions.values():
-            expected_result.extend(
-                [
-                    f"http://localhost{rendition.url}",
-                    f"https://foo.com{rendition.url}",
-                ]
-            )
+        for base_url in [site.root_url for site in sites]:
+            for rendition in renditions.values():
+                expected_result.append(f"{base_url}{rendition.url}")
         with self.assertNumQueries(1):
             self.assertEqual(list(image.get_privacy_controlled_serve_urls(sites)), expected_result)
 
