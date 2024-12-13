@@ -24,7 +24,7 @@ The responsibility of setting file-level permissions in hosted environments fall
 In local dev environments, the permission-setting attempts themselves are skipped, but log entries are generated with the level 'INFO' in place of each attempt, so you can get a sense of what would happen in a hosted environment, for example:
 
 ```
-INFO:cms.private_media.storages:Skipping file permission setting for: /media/images/2024/12/09/image.jpg
+INFO:cms.private_media.storages:Skipping file permission setting for '/media/images/2024/12/09/image.jpg'.
 ```
 
 Whenever the privacy of a media item is altered, it's `privacy_last_changed` timestamp field is updated and saved to the database alongside other changes.
