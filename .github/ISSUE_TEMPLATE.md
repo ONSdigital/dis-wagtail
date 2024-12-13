@@ -22,9 +22,9 @@ Describe what actually happened. Include details like error messages or unexpect
 
 Any relevant technical information. Include as much information as possible, including:
 
--   **Operating System**:
--   **Browser/Application Version**:
--   **Additional relevant software versions**:
+- **Operating System**:
+- **Browser/Application Version**:
+- **Additional relevant software versions**:
 
 ### Proposed Solutions (Optional)
 
