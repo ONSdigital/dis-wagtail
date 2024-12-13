@@ -31,6 +31,18 @@ def bulk_set_file_permissions(files: Iterable["FieldFile"], privacy: Privacy) ->
     """
     results: dict[FieldFile, bool] = {}
 
+    for file in files:
+        if privacy is Privacy.PUBLIC and not hasattr(file.storage, "make_public"):
+            raise ImproperlyConfigured(
+                f"{file.storage.__class__.__name__} does not implement make_public(), "
+                "which is a requirement for bulk-setting of file permissions."
+            )
+        if privacy is Privacy.PRIVATE and not hasattr(file.storage, "make_private"):
+            raise ImproperlyConfigured(
+                f"{file.storage.__class__.__name__} does not implement make_private(), "
+                "which is a requirement for bulk-setting of file permissions."
+            )
+
     def set_file_permission_and_report(file: "FieldFile") -> None:
         storage = file.storage
         handler: Callable[[FieldFile], bool] | None
@@ -38,15 +50,7 @@ def bulk_set_file_permissions(files: Iterable["FieldFile"], privacy: Privacy) ->
             handler = getattr(storage, "make_private", None)
         elif privacy is Privacy.PUBLIC:
             handler = getattr(storage, "make_public", None)
-
-        if handler is None:
-            raise ImproperlyConfigured(
-                "%s does not implement the make_private() or make_public() methods, which is a requirement "
-                "for bulk-setting file permissions.",
-                storage.__class__.__name__,
-            )
-        else:
-            results[file] = handler(file)
+        results[file] = handler(file)
 
     with concurrent.futures.ThreadPoolExecutor(
         max_workers=int(settings.PRIVATE_MEDIA_BULK_UPDATE_MAX_WORKERS)
