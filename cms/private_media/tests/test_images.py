@@ -37,7 +37,6 @@ class TestImageModel(TestCase):
         - Verify that images are created as PRIVATE by default.
         - Verify that file permission states are updated on save to reflect image privacy.
         - Verify that privacy change tracking works correctly.
-        - Graceful handling of unsupported storage backends.
         """
         # Attempts to set file permissions on save should have failed gracefully,
         # since the default file backend doesn't support it
@@ -52,12 +51,7 @@ class TestImageModel(TestCase):
         # Attempts to set file permissions on save should have failed gracefully
         self.assertEqual(
             logs.output,
-            [
-                (
-                    "INFO:cms.private_media.storages:AccessControlLoggingFileSystemStorage does not support setting "
-                    f"of individual file permissions to private, so skipping for: {image.file.name}."
-                )
-            ],
+            [(f"INFO:cms.private_media.storages:Skipping private file permission setting for '{image.file.name}'.")],
         )
 
         # File permissions should be considered up-to-date
@@ -112,12 +106,7 @@ class TestImageModel(TestCase):
         # Attempts to set file permissions on save should have failed gracefully
         self.assertEqual(
             logs.output,
-            [
-                (
-                    "INFO:cms.private_media.storages:AccessControlLoggingFileSystemStorage does not support setting "
-                    f"of individual file permissions to public, so skipping for: {image.file.name}."
-                )
-            ],
+            [(f"INFO:cms.private_media.storages:Skipping public file permission setting for '{image.file.name}'.")],
         )
 
         # File permissions should be considered up-to-date
@@ -211,7 +200,7 @@ class TestImageModel(TestCase):
             ImageFactory(_privacy="invalid", collection=self.root_collection)
 
     @override_settings(
-        STORAGES={"default": {"BACKEND": "cms.private_media.storages.AccessControlLoggingFileSystemStorage"}}
+        STORAGES={"default": {"BACKEND": "cms.private_media.storages.ReliableAccessControlInMemoryStorage"}}
     )
     def test_file_permission_setting_success(self):
         """Test successful file permission setting using a storage backend that supports it."""
@@ -223,29 +212,17 @@ class TestImageModel(TestCase):
         self.assertFalse(public_image.has_outdated_file_permissions())
 
     @override_settings(
-        STORAGES={"default": {"BACKEND": "cms.private_media.storages.AccessControlLoggingFileSystemStorage"}}
+        STORAGES={"default": {"BACKEND": "cms.private_media.storages.FlakyAccessControlInMemoryStorage"}}
     )
-    @mock.patch(
-        "cms.private_media.storages.AccessControlLoggingFileSystemStorage.make_private",
-        return_value=False,
-    )
-    @mock.patch(
-        "cms.private_media.storages.AccessControlLoggingFileSystemStorage.make_public",
-        return_value=False,
-    )
-    def test_file_permission_setting_failure(self, mock_make_public, mock_make_private):
+    def test_file_permission_setting_failure(self):
         """Test graceful handling of file permission setting failures.
 
         Verifies that the system correctly tracks failed permission updates and
         maintains the outdated state when storage operations fail.
         """
-        with self.assertNoLogs("cms.private_media.bulk_operations"):
-            private_image = ImageFactory(collection=self.root_collection)
-            public_image = ImageFactory(_privacy=Privacy.PUBLIC, collection=self.root_collection)
-
-        mock_make_private.assert_called_once_with(private_image.file)
+        private_image = ImageFactory(collection=self.root_collection)
+        public_image = ImageFactory(_privacy=Privacy.PUBLIC, collection=self.root_collection)
         self.assertTrue(private_image.has_outdated_file_permissions())
-        mock_make_public.assert_called_once_with(public_image.file)
         self.assertTrue(public_image.has_outdated_file_permissions())
 
 

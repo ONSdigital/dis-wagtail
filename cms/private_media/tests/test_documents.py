@@ -47,12 +47,7 @@ class TestDocumentModel(TestCase):
         # since the default file backend doesn't support it
         self.assertEqual(
             logs.output,
-            [
-                (
-                    "INFO:cms.private_media.storages:AccessControlLoggingFileSystemStorage does not support setting "
-                    f"of individual file permissions to private, so skipping for: {document.file.name}."
-                )
-            ],
+            [(f"INFO:cms.private_media.storages:Skipping private file permission setting for '{document.file.name}'.")],
         )
 
         # File permissions should be considered up-to-date
@@ -94,12 +89,7 @@ class TestDocumentModel(TestCase):
         # since the default file backend doesn't support it
         self.assertEqual(
             logs.output,
-            [
-                (
-                    "INFO:cms.private_media.storages:AccessControlLoggingFileSystemStorage does not support setting "
-                    f"of individual file permissions to public, so skipping for: {document.file.name}."
-                )
-            ],
+            [(f"INFO:cms.private_media.storages:Skipping public file permission setting for '{document.file.name}'.")],
         )
 
         # File permissions should be considered up-to-date

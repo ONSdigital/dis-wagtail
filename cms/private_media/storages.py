@@ -2,7 +2,7 @@ import logging
 from typing import TYPE_CHECKING
 
 from botocore.exceptions import ClientError
-from django.core.files.storage import FileSystemStorage
+from django.core.files.storage import FileSystemStorage, InMemoryStorage
 from storages.backends.s3 import S3Storage
 
 if TYPE_CHECKING:
@@ -42,29 +42,45 @@ class AccessControlledS3Storage(S3Storage):
         return True
 
 
-class AccessControlLoggingMixin:
-    """A mixin for storage backends that do not support setting of individual file permissions."""
+class AccessControlLoggingFileSystemStorage(FileSystemStorage):
+    """A version of Django's `FileSystemStorage` backend for local development and tests, which logs
+    file-permission-setting requests, and always reports success.
+    """
 
     def make_private(self, file: "FieldFile") -> bool:
         """Pretend to make the provided file private."""
-        logger.info(
-            "%s does not support setting of individual file permissions to private, so skipping for: %s.",
-            self.__class__.__name__,
-            file.name,
-        )
+        logger.info("Skipping private file permission setting for '%s'.", file.name)
         return True
 
     def make_public(self, file: "FieldFile") -> bool:
         """Pretend to make the provided file public."""
-        logger.info(
-            "%s does not support setting of individual file permissions to public, so skipping for: %s.",
-            self.__class__.__name__,
-            file.name,
-        )
+        logger.info("Skipping public file permission setting for '%s'.", file.name)
         return True
 
 
-class AccessControlLoggingFileSystemStorage(AccessControlLoggingMixin, FileSystemStorage):
-    """A version of Django's `FileSystemStorage` backend for local development and tests, which logs
-    file-permission-setting requests, and always reports success.
+class ReliableAccessControlInMemoryStorage(InMemoryStorage):
+    """A version of Django's `InMemoryStorage` backend for unit tests, that always reports success
+    for file-permission-setting requests.
     """
+
+    def make_private(self, file: "FieldFile") -> bool:  # pylint: disable=unused-argument
+        """Report success in making the provided file private."""
+        return True
+
+    def make_public(self, file: "FieldFile") -> bool:  # pylint: disable=unused-argument
+        """Report success in making the provided file public."""
+        return True
+
+
+class FlakyAccessControlInMemoryStorage(InMemoryStorage):
+    """A version of Django's `InMemoryStorage` backend for unit tests, that always reports failure
+    for file-permission-setting requests.
+    """
+
+    def make_private(self, file: "FieldFile") -> bool:  # pylint: disable=unused-argument
+        """Report failure in making the provided file private."""
+        return False
+
+    def make_public(self, file: "FieldFile") -> bool:  # pylint: disable=unused-argument
+        """Report failure in making the provided file public."""
+        return False
