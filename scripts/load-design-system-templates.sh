@@ -4,7 +4,7 @@
 #
 set -e
 
-DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 cd "${DIR}"/.. || exit
 
@@ -47,6 +47,6 @@ PRINT_STYLE_SHEET_CDN_URL="${CDN_URL}/sdc/design-system/${TAG_NAME}/css/print.cs
 mkdir -p "${PRINT_STYLE_SHEET_FILE_PATH_PATH}"
 TARGET_STYLE_SHEET_FILE_LOCATION="${PRINT_STYLE_SHEET_FILE_PATH_PATH}/print.css"
 
-curl --silent --compressed "${PRINT_STYLE_SHEET_CDN_URL}" > "${TARGET_STYLE_SHEET_FILE_LOCATION}"
+curl --silent --compressed "${PRINT_STYLE_SHEET_CDN_URL}" >"${TARGET_STYLE_SHEET_FILE_LOCATION}"
 
 echo "Saved print CSS into '${TARGET_STYLE_SHEET_FILE_LOCATION}'"

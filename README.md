@@ -19,23 +19,24 @@ The Wagtail CMS for managing and publishing content for the Office for National 
 
 <!-- markdown-link-check-disable -->
 
--   [Getting Started](#getting-started)
-    -   [Pre-requisites](#pre-requisites)
-    -   [Setup](#setup)
-        -   [Using Docker](#using-docker)
-        -   [Running locally with supporting services in Docker](#running-locally-with-supporting-services-in-docker)
--   [Development](#development)
-    -   [Front-end tooling](#front-end-tooling)
-    -   [Adding Python packages](#adding-python-packages)
-    -   [Run Tests with Coverage](#run-tests-with-coverage)
-    -   [Linting and Formatting](#linting-and-formatting)
-        -   [Python](#python)
-        -   [Front-end](#front-end)
-        -   [pre-commit](#pre-commit)
-        -   [Megalinter](#megalinter-lintformat-non-python-files)
-    -   [Django Migrations](#django-migrations)
--   [Contributing](#contributing)
--   [License](#license)
+- [Getting Started](#getting-started)
+    - [Pre-requisites](#pre-requisites)
+    - [Setup](#setup)
+        - [Using Docker](#using-docker)
+        - [Running locally with supporting services in Docker](#running-locally-with-supporting-services-in-docker)
+- [Development](#development)
+    - [Front-end tooling](#front-end-tooling)
+    - [Adding Python packages](#adding-python-packages)
+    - [Run Tests with Coverage](#run-tests-with-coverage)
+    - [Linting and Formatting](#linting-and-formatting)
+        - [Python](#python)
+        - [Front-end](#front-end)
+        - [pre-commit](#pre-commit)
+        - [Megalinter](#megalinter-lintformat-non-python-files)
+    - [Django Migrations](#django-migrations)
+- [Contributing](#contributing)
+- [License](#license)
+
 <!-- markdown-link-check-enable -->
 
 For further developer documentation see [docs](docs/index.md)
@@ -52,9 +53,12 @@ Ensure you have the following installed:
    managing Python versions.
 2. **[Poetry](https://python-poetry.org/)**: This is used to manage package dependencies and virtual
    environments.
-3. **[Colima](https://github.com/ONSdigital/dp-compose/blob/main/setting-up-colima-locally.md)** for running the project in Docker containers.
-4. **[PostgreSQL](https://www.postgresql.org/)** for the database. Provided as container via `docker-compose.yml` when using the Docker setup.
-5. **[Node](https://nodejs.org/en)** and **[`nvm` (Node Version Manager)](https://github.com/nvm-sh/nvm)** for front-end tooling.
+3. **[Colima](https://github.com/ONSdigital/dp-compose/blob/main/setting-up-colima-locally.md)** for running the project
+   in Docker containers.
+4. **[PostgreSQL](https://www.postgresql.org/)** for the database. Provided as container via `docker-compose.yml` when
+   using the Docker setup.
+5. **[Node](https://nodejs.org/en)** and **[`nvm` (Node Version Manager)](https://github.com/nvm-sh/nvm)** for front-end
+   tooling.
 6. **[JQ](https://jqlang.github.io/jq/)** for the step in the build that installs the design system templates
 7. **Operation System**: Ubuntu/MacOS
 
@@ -117,10 +121,13 @@ Follow these steps to set up and run the project using Docker.
 
 3. **Start Django Inside the Container**
 
-    Once the containers are running, you need to manually start Django from within the web container. This allows for running both the Django server and any additional background services (e.g., schedulers).
+    Once the containers are running, you need to manually start Django from within the web container.
+    This allows for running both the Django server and any additional background services (e.g., schedulers).
 
     > ⚠️ WARNING
-    >  The `honcho` command will pick up your local mounted `.env` file when running via `docker-compose`. Ensure that you comment out any variables in the `.env` file which might cause clashes in the container context as they will take precedence when running `honcho start`.
+    > The `honcho` command will pick up your local mounted `.env` file when running via `docker-compose`.
+    > Ensure that you comment out any variables in the `.env` file which might cause clashes in the container
+    > context as they will take precedence when running `honcho start`.
 
     ```bash
     # Start both Django and the scheduler using Honcho
@@ -134,47 +141,56 @@ You can then access the admin at `http://0.0.0.0:8000/admin/` or `http://localho
 
 #### Running locally with supporting services in Docker
 
-You can also run the main application locally with the supporting backend services such as the Postgres and Redis running in Docker. This can be useful when you want to make changes that require the app to be restarted in order to be picked up.
+You can also run the main application locally with the supporting backend services such as the Postgres and Redis running in Docker.
+This can be useful when you want to make changes that require the app to be restarted in order to be picked up.
 
-For this method you can specify the runtime configuration either in your IDE (for PyCharm see [here](https://www.jetbrains.com/help/pycharm/run-debug-configuration.html#createExplicitly)), or copy the `.development.env` and rename it to `.env` which will allow Django to pick up the config.
+For this method you can specify the runtime configuration either in your
+IDE (for PyCharm see [here](https://www.jetbrains.com/help/pycharm/run-debug-configuration.html#createExplicitly)), or
+copy the `.development.env` and rename it to `.env` which will allow Django to pick up the config.
 
-Once you create the `.env` file, and you'd like to switch back to running the application in a container, the `.env` file will be accessible inside the containers and it will be picked up by the `honcho` command. In order to avoid conflicts you may need to comment out some variables (such as `DATABASE_URL` and `REDIS_URL`) in the `.env` file.
+Once you create the `.env` file, and you'd like to switch back to running the application in a container, the `.env` file will be accessible inside the
+containers and it will be picked up by the `honcho` command. In order to avoid conflicts you may need to comment out
+some variables (such as `DATABASE_URL` and `REDIS_URL`) in the `.env` file.
 
 > [!NOTE]
-> When running the application locally in a virtual environment via Poetry the `.env` file will not be picked up automatically. For this to work you'll need to install the [poetry-plugin-dotenv](https://github.com/pivoshenko/poetry-plugin-dotenv). However if you installed Poetry with `brew` rather than `pip` that currently isn't going to work (see the [issue](https://github.com/pivoshenko/poetry-plugin-dotenv/issues/327)) and you'll need to install an older and seemingly no longer maintained [poetry-dotenv-plugin](https://github.com/mpeteuil/poetry-dotenv-plugin).
+> When running the application locally in a virtual environment via Poetry the `.env` file will not be picked up automatically.
+> For this to work you'll need to install the [poetry-plugin-dotenv](https://github.com/pivoshenko/poetry-plugin-dotenv).
+> However, if you installed Poetry with `brew` rather than `pip` that currently isn't going to
+> work (see the [issue](https://github.com/pivoshenko/poetry-plugin-dotenv/issues/327)) and you'll need to install an older and
+> seemingly no longer maintained [poetry-dotenv-plugin](https://github.com/mpeteuil/poetry-dotenv-plugin).
 
 In order to run it:
 
 1. Pull the images of the supporting services.
 
-```
-make compose-dev-pull
-```
+    ```bash
+    make compose-dev-pull
+    ```
 
 2. Start the supporting services in Docker.
 
-```
-make compose-dev-up
-```
+    ```bash
+    make compose-dev-up
+    ```
 
 3. Run the below command to apply the necessary pre-run steps, which include:
 
--   loading design system templates,
--   collecting the static files,
--   generating and applying database migrations,
--   creating a superuser with:
-    -   username: `admin`
-    -   password: `changeme`
+    - loading design system templates,
+    - collecting the static files,
+    - generating and applying database migrations,
+    - creating a superuser with:
+        - username: `admin`
+        - password: `changeme` # pragma: allowlist secret
 
-```
-make dev-init
-```
+    ```bash
+    make dev-init
+    ```
 
 4. Run the Django server locally via your IDE or with the following command:
 
-```
-make runserver
-```
+    ```bash
+    make runserver
+    ```
 
 ## Development
 
@@ -189,7 +205,8 @@ make
 
 ### Front-end tooling
 
-While the end goal is to have all front-end elements in the [Design System](https://service-manual.ons.gov.uk/design-system),
+While the end goal is to have all front-end elements in the
+[Design System](https://service-manual.ons.gov.uk/design-system),
 the new design introduces a number of components that we need to build and contributed to the DS. In order to aid
 development and avoid being blocked by the DS, we will use modern front-end tooling for that.
 
@@ -225,7 +242,8 @@ To run the tests and check coverage, run:
 make test
 ```
 
-During tests, the `cms.settings.test` settings module is used. When running test without using `make test`, ensure this settings module is used.
+During tests, the `cms.settings.test` settings module is used. When running test without using `make test`, ensure this
+settings module is used.
 
 ### Linting and Formatting
 
