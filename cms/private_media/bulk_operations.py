@@ -50,7 +50,7 @@ def bulk_set_file_permissions(files: Iterable["FieldFile"], intended_privacy: Pr
             results[file] = handler(file)
 
     with concurrent.futures.ThreadPoolExecutor(
-        max_workers=int(settings.PRIVATE_MEDIA_PERMISSION_SETTING_MAX_WORKERS)
+        max_workers=int(settings.PRIVATE_MEDIA_BULK_UPDATE_MAX_WORKERS)
     ) as executor:
         executor.map(set_file_permission_and_report, files)
 
