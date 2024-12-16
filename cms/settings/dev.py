@@ -69,7 +69,11 @@ MIGRATION_LINTER_OPTIONS = {
         "wagtaildocs",
         "wagtailredirects",
         "wagtailusers",
-        "core",
-        "images",
-    ]
+    ],
+    "ignore_name": [
+        "0002_alter_customdocument_file_size",
+        "0004_contactdetails_core_contactdetails_name_unique",
+        "0003_delete_tracking",
+        "0002_customimage_description",
+    ],
 }
