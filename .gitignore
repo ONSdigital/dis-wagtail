@@ -193,3 +193,6 @@ static/
 
 # bak files
 *.bak
+
+# Playwright Traces
+/tmp_traces

@@ -13,7 +13,7 @@ class GroupFactory(DjangoModelFactory):
 
     @factory.post_generation
     def access_admin(self, create, extracted, **kwargs):
-        """Creates BundlePage instances for the bundle.
+        """Allows the group access to the Wagtail Admin interface.
 
         Usage:
             # Create a Django generic_user group
@@ -42,13 +42,13 @@ class UserFactory(DjangoModelFactory):
 
     @factory.post_generation
     def access_admin(self, create, extracted, **kwargs):
-        """Creates BundlePage instances for the bundle.
+        """Allows the user access to the Wagtail Admin interface.
 
         Usage:
-            # Create a Django generic_user group
+            # Create a Django generic_user user
             generic_user = UserFactory()
 
-            # Create a Django generic_user group with Wagtail admin access
+            # Create a Django generic_user user with Wagtail admin access
             generic_user = UserFactory(access_admin=True)
         """
         if not create:
