@@ -7,10 +7,13 @@ from wagtail.admin import messages
 from wagtail.admin.utils import get_valid_next_url_from_request
 
 from cms.release_calendar.models import ReleaseCalendarIndex, ReleaseCalendarPage
+from cms.release_calendar.viewsets import release_calendar_chooser_viewset
 
 if TYPE_CHECKING:
     from django.http import HttpRequest, HttpResponseRedirect
     from wagtail.models import Page
+
+    from .viewsets import FutureReleaseCalendarPageChooserViewSet
 
 
 @hooks.register("before_delete_page")
@@ -33,3 +36,8 @@ def before_delete_page(request: "HttpRequest", page: "Page") -> Optional["HttpRe
         return redirect("wagtailadmin_home")
 
     return None
+
+
+@hooks.register("register_admin_viewset")
+def register_chooser_viewset() -> "FutureReleaseCalendarPageChooserViewSet":
+    return release_calendar_chooser_viewset

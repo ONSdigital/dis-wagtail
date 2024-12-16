@@ -10,6 +10,7 @@ from cms.core.blocks import (
     HeadingBlock,
     ONSEmbedBlock,
     PanelBlock,
+    QuoteBlock,
     RelatedLinksBlock,
 )
 
@@ -19,6 +20,7 @@ class CoreStoryBlock(StreamBlock):
 
     heading = HeadingBlock()
     rich_text = RichTextBlock()
+    quote = QuoteBlock()
     panel = PanelBlock()
     embed = EmbedBlock()
     image = ImageChooserBlock()
