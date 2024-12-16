@@ -176,16 +176,16 @@ In order to run it:
 
 3. Run the below command to apply the necessary pre-run steps, which include:
 
-    - loading design system templates,
-    - collecting the static files,
-    - generating and applying database migrations,
-    - creating a superuser with:
-        - username: `admin`
-        - password: `changeme` # pragma: allowlist secret
+   - loading design system templates,
+   - collecting the static files,
+   - generating and applying database migrations,
+   - creating a superuser with:
+     - username: `admin`
+     - password: `changeme` # pragma: allowlist secret
 
-    ```bash
-    make dev-init
-    ```
+   ```bash
+   make dev-init
+   ```
 
 4. Run the Django server locally via your IDE or with the following command:
 
