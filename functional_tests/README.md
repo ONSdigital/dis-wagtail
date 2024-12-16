@@ -2,28 +2,28 @@
 
 <!-- TOC -->
 
--   [Structure](#structure)
--   [Dependencies](#dependencies)
-    -   [App Instance For Test Development](#app-instance-for-test-development)
-    -   [Clearing and Initialising the Functional Test Development Database](#clearing-and-initialising-the-functional-test-development-database)
--   [Running the Tests](#running-the-tests)
-    -   [Playwright Options](#playwright-options)
--   [Viewing Failure Traces](#viewing-failure-traces)
-    -   [Viewing the Failure Trace from GitHub Actions](#viewing-the-failure-trace-from-github-actions)
--   [Test Code Standards and Style Guide](#test-code-standards-and-style-guide)
-    -   [Context Use](#context-use)
-    -   [Sharing Code Between Steps](#sharing-code-between-steps)
-    -   [Step wording](#step-wording)
-    -   [Assertions](#assertions)
-    -   [Step parameter types](#step-parameter-types)
--   [How the Tests Work](#how-the-tests-work)
-    -   [Django Test Runner and Test Case](#django-test-runner-and-test-case)
-    -   [Database Snapshot and Restore](#database-snapshot-and-restore)
-    -   [Playwright](#playwright)
--   [Why Aren't We Using Existing Django Testing Modules?](#why-arent-we-using-existing-django-testing-modules)
-    -   [Pytest-BDD](#pytest-bdd)
-    -   [Behave-Django](#behave-django)
-    <!-- TOC -->
+- [Structure](#structure)
+- [Dependencies](#dependencies)
+  - [App Instance For Test Development](#app-instance-for-test-development)
+  - [Clearing and Initialising the Functional Test Development Database](#clearing-and-initialising-the-functional-test-development-database)
+- [Running the Tests](#running-the-tests)
+  - [Playwright Options](#playwright-options)
+- [Viewing Failure Traces](#viewing-failure-traces)
+  - [Viewing the Failure Trace from GitHub Actions](#viewing-the-failure-trace-from-github-actions)
+- [Test Code Standards and Style Guide](#test-code-standards-and-style-guide)
+  - [Context Use](#context-use)
+  - [Sharing Code Between Steps](#sharing-code-between-steps)
+  - [Step wording](#step-wording)
+  - [Assertions](#assertions)
+  - [Step parameter types](#step-parameter-types)
+- [How the Tests Work](#how-the-tests-work)
+  - [Django Test Runner and Test Case](#django-test-runner-and-test-case)
+  - [Database Snapshot and Restore](#database-snapshot-and-restore)
+  - [Playwright](#playwright)
+- [Why Aren't We Using Existing Django Testing Modules?](#why-arent-we-using-existing-django-testing-modules)
+  - [Pytest-BDD](#pytest-bdd)
+  - [Behave-Django](#behave-django)
+  <!-- TOC -->
 
 ## Structure
 
@@ -123,7 +123,7 @@ the tests.
 Some Playwright configuration options can be passed in through environment variables
 
 | Variable              | Description                                                                                                                                                                    | Default                          |
-| --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | -------------------------------- |
+|-----------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|----------------------------------|
 | PLAYWRIGHT_HEADLESS   | Toggle headless browser mode, set to "False" to show the browser window                                                                                                        | `True`                           |
 | PLAYWRIGHT_SLOW_MO    | Sets the Playwright slow mo mode in milliseconds                                                                                                                               | `0`                              |
 | PLAYWRIGHT_BROWSER    | Set the browser for playwright to use, must be one of `chromium`, `firefox`, or `webkit`.<br/> NOTE: Currently only chromium is supported and tests may fail in other browsers | `chromium`                       |
