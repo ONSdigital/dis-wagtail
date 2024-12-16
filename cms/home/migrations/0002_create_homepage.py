@@ -37,4 +37,4 @@ class Migration(migrations.Migration):
 
     dependencies = [("home", "0001_initial")]
 
-    operations = [migrations.RunPython(create_homepage)]
+    operations = [migrations.RunPython(create_homepage, migrations.RunPython.noop)]
