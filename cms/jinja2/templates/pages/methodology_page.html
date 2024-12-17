@@ -29,10 +29,12 @@
                     <span class="ons-u-fs-r--b analysis-header__releases-label">{{ _("Published") }}:</span>
                     <span class="ons-u-nowrap">{{ page.publication_date|date("DATE_FORMAT") }}</span>
                 </div>
-                <div>
-                    <span class="ons-u-fs-r--b analysis-header__releases-label">{{ _("Last revised") }}:</span>
-                    <span class="ons-u-nowrap">{{ page.last_revised_date|date("DATE_FORMAT")}}</span>
-                </div>
+                {% if page.last_revised_date %}
+                    <div>
+                        <span class="ons-u-fs-r--b analysis-header__releases-label">{{ _("Last revised") }}:</span>
+                        <span class="ons-u-nowrap">{{ page.last_revised_date|date("DATE_FORMAT")}}</span>
+                    </div>
+                {% endif %}
 
 
                 {% if page.contact_details %}
