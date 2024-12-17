@@ -5,27 +5,9 @@ import factory
 import wagtail_factories
 from django.utils import timezone
 
-from cms.core.tests.factories import ContactDetailsFactory, RichTextBlockFactory
+from cms.core.tests.factories import ContactDetailsFactory, SectionBlockFactory
 from cms.methodology.models import MethodologyPage
 from cms.topics.tests.factories import TopicPageFactory
-
-
-class SectionContentBlockFactory(wagtail_factories.StructBlockFactory):
-    """Factory for Section content block."""
-
-    title = factory.Faker("text", max_nb_chars=50)
-    content = wagtail_factories.StreamFieldFactory(
-        {
-            "rich_text": factory.SubFactory(RichTextBlockFactory),
-        }
-    )
-
-
-class SectionBlockFactory(wagtail_factories.StructBlockFactory):
-    """Factory for Section block."""
-
-    title = factory.Faker("text", max_nb_chars=50)
-    content = factory.SubFactory(SectionContentBlockFactory)
 
 
 class MethodologyPageFactory(wagtail_factories.PageFactory):
