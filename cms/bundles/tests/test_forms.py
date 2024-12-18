@@ -159,3 +159,16 @@ class BundleAdminFormTestCase(TestCase):
         error = "You must choose either a Release Calendar page or a Publication date, not both."
         self.assertFormError(form, "release_calendar_page", [error])
         self.assertFormError(form, "publication_date", [error])
+
+    def test_clean__removes_duplicate_pages(self):
+        self.assertEqual(self.bundle.bundled_pages.count(), 0)
+
+        raw_data = self.raw_form_data()
+        raw_data["bundled_pages"] = inline_formset([{"page": self.page.id}, {"page": self.page.id}])
+
+        form = self.form_class(instance=self.bundle, data=nested_form_data(raw_data))
+        self.assertTrue(form.is_valid())
+
+        form.save()
+
+        self.assertEqual(self.bundle.bundled_pages.count(), 1)

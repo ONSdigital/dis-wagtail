@@ -11,6 +11,7 @@ from cms.core.blocks import (
     HeadingBlock,
     ONSEmbedBlock,
     PanelBlock,
+    QuoteBlock,
     RelatedContentBlock,
     RelatedLinksBlock,
 )
@@ -23,6 +24,7 @@ class SectionContentBlock(StreamBlock):
     """The core section content block definition."""
 
     rich_text = RichTextBlock()
+    quote = QuoteBlock()
     panel = PanelBlock()
     image = ImageChooserBlock(group="Media")
     documents = DocumentsBlock(group="Media")

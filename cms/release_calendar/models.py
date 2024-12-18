@@ -8,6 +8,7 @@ from django.utils.translation import gettext_lazy as _
 from wagtail.admin.panels import FieldPanel, FieldRowPanel, MultiFieldPanel
 from wagtail.fields import RichTextField
 from wagtail.models import Page
+from wagtail.search import index
 
 from cms.core.fields import StreamField
 from cms.core.models import BasePage
@@ -137,6 +138,11 @@ class ReleaseCalendarPage(BasePage):  # type: ignore[django-manager-missing]
         FieldPanel("changes_to_release_date", icon="comment"),
         FieldPanel("pre_release_access", icon="key"),
         FieldPanel("related_links", icon="link"),
+    ]
+
+    search_fields: ClassVar[list[index.SearchField | index.AutocompleteField | index.FilterField]] = [
+        *BasePage.search_fields,
+        index.FilterField("status"),
     ]
 
     def get_template(self, request: "HttpRequest", *args: Any, **kwargs: Any) -> str:
