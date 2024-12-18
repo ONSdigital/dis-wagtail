@@ -1,4 +1,5 @@
 import factory
+import wagtail_factories
 from wagtail import blocks
 from wagtail.rich_text import RichText
 from wagtail_factories.blocks import BlockFactory
@@ -50,3 +51,24 @@ class ContactDetailsFactory(factory.django.DjangoModelFactory):
 
     name = factory.Faker("name")
     email = factory.Faker("email")
+
+
+# Section Block Factories
+
+
+class SectionContentBlockFactory(wagtail_factories.StructBlockFactory):
+    """Factory for Section content block."""
+
+    title = factory.Faker("text", max_nb_chars=50)
+    content = wagtail_factories.StreamFieldFactory(
+        {
+            "rich_text": factory.SubFactory(RichTextBlockFactory),
+        }
+    )
+
+
+class SectionBlockFactory(wagtail_factories.StructBlockFactory):
+    """Factory for Section StructBlock."""
+
+    title = factory.Faker("text", max_nb_chars=50)
+    content = factory.SubFactory(SectionContentBlockFactory)

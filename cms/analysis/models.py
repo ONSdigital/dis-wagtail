@@ -13,9 +13,9 @@ from wagtail.fields import RichTextField
 from wagtail.models import Page
 from wagtail.search import index
 
-from cms.analysis.blocks import AnalysisStoryBlock
 from cms.bundles.models import BundledPageMixin
 from cms.core.blocks import HeadlineFiguresBlock
+from cms.core.blocks.stream_blocks import SectionStoryBlock
 from cms.core.fields import StreamField
 from cms.core.models import BasePage
 
@@ -120,7 +120,7 @@ class AnalysisPage(BundledPageMixin, BasePage):  # type: ignore[django-manager-m
 
     # Fields: content
     headline_figures = StreamField([("figures", HeadlineFiguresBlock())], blank=True, max_num=1)
-    content = StreamField(AnalysisStoryBlock())
+    content = StreamField(SectionStoryBlock())
 
     show_cite_this_page = models.BooleanField(default=True)
 
@@ -144,7 +144,7 @@ class AnalysisPage(BundledPageMixin, BasePage):  # type: ignore[django-manager-m
         FieldPanel("summary"),
         MultiFieldPanel(
             [
-                FieldPanel("release_date", icon="calendar-alt"),
+                FieldPanel("release_date"),
                 FieldPanel(
                     "next_release_date",
                     help_text=_("If no next date is chosen, 'To be announced' will be displayed."),
