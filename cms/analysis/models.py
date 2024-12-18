@@ -144,7 +144,7 @@ class AnalysisPage(BundledPageMixin, BasePage):  # type: ignore[django-manager-m
         FieldPanel("summary"),
         MultiFieldPanel(
             [
-                FieldPanel("release_date", icon="calendar-date"),
+                FieldPanel("release_date"),
                 FieldPanel(
                     "next_release_date",
                     help_text=_("If no next date is chosen, 'To be announced' will be displayed."),
