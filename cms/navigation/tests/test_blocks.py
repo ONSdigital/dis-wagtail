@@ -9,6 +9,8 @@ from cms.navigation.tests.factories import (
 
 import sys
 
+from django.core.exceptions import ValidationError
+
 
 class MainMenuBlockTestCase(WagtailTestUtils, TestCase):
     """Test custom blocks in MainMenu."""
@@ -21,11 +23,27 @@ class MainMenuBlockTestCase(WagtailTestUtils, TestCase):
         """Test HighlightsBlock properties."""
         highlights = [
             {"type": "highlight", "value": HighlightsBlockFactory()},  # or the dict form
+            {"type": "highlight", "value": HighlightsBlockFactory()},
+            {"type": "highlight", "value": HighlightsBlockFactory()},
+            {"type": "highlight", "value": HighlightsBlockFactory()},
+            {"type": "highlight", "value": HighlightsBlockFactory()},
         ]
         self.main_menu.highlights = highlights
 
-        for block in self.main_menu.highlights:
-            print(block)
+        # print(self.main_menu.highlights)
+        print(len(self.main_menu.highlights))
+
+        # for block in self.main_menu.highlights:
+        #     print(block.block_type, block.value)
+
+        # with self.assertRaises(ValueError):
+        #     self.main_menu.full_clean()
+
+        # Validate the model
+        with self.assertRaises(ValidationError) as context:
+            self.main_menu.full_clean()  # Calls the model's validation logic
+
+        self.assertIn("Ensure this field has no more than 3 items.", str(context.exception))
 
     def test_highlights_block_description_length(self):
         """Test that HighlightsBlock enforces max_length on description."""

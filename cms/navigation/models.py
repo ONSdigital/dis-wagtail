@@ -10,6 +10,9 @@ from wagtail.models import PreviewableMixin
 from cms.core.blocks.base import LinkBlock
 from cms.core.fields import StreamField
 
+from django.core.exceptions import ValidationError
+
+
 if TYPE_CHECKING:
     from django.http import HttpRequest
 
@@ -78,6 +81,19 @@ class MainMenu(PreviewableMixin, models.Model):
         FieldPanel("highlights"),
         FieldPanel("columns"),
     ]
+    max_num = 3
+
+    def clean(self):
+        super().clean()
+        # Validate the number of highlights
+        if len(self.highlights) > 3:
+            raise ValidationError(
+                {"highlights": _("You cannot have more than 3 highlights. Please remove some items.")}
+            )
+
+        # Validate the number of columns
+        if len(self.columns) > 3:
+            raise ValidationError({"columns": _("You cannot have more than 3 columns. Please remove some items.")})
 
     def get_preview_template(self, request: "HttpRequest", mode_name: str) -> str:
         return "templates/base_page.html"

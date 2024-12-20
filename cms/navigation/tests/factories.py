@@ -1,28 +1,24 @@
 import factory
 from wagtail_factories import StreamFieldFactory, StructBlockFactory, ListBlockFactory
 from cms.navigation.models import MainMenu, NavigationSettings
+from cms.topics.tests.factories import TopicPageFactory
+from cms.themes.tests.factories import ThemePageFactory
 
 
 class ThemeLinkBlockFactory(StructBlockFactory):
-    url = factory.Faker("url")
+    external_url = factory.Faker("url")
     title = factory.Faker("sentence", nb_words=3)
-    page = factory.SubFactory(
-        "wagtail_factories.PageFactory",
-        page_type="themes.ThemePage",
-    )
+    page = factory.SubFactory(ThemePageFactory)
 
 
 class TopicLinkBlockFactory(StructBlockFactory):
     url = factory.Faker("url")
     title = factory.Faker("sentence", nb_words=3)
-    page = factory.SubFactory(
-        "wagtail_factories.PageFactory",
-        page_type="topic.TopicPage",
-    )
+    page = factory.SubFactory(TopicPageFactory)
 
 
 class HighlightsBlockFactory(StructBlockFactory):
-    url = factory.Faker("url")
+    external_url = factory.Faker("url")
     title = factory.Faker("sentence", nb_words=3)
     description = factory.Faker("sentence", nb_words=10)
 
