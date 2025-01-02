@@ -5,7 +5,7 @@
     {% include "wagtailadmin/shared/header.html" with title=_("Add") subtitle=page_to_move.specific_deferred.get_admin_display_title icon="boxes-stacked" %}
 
     <div class="nice-padding">
-        <form action="{% url 'bundles:add_to_bundle' page_to_add.id %}" method="POST" novalidate>
+        <form action="{% url 'bundles:add_to_bundle' page_to_add.id %}" method="post" novalidate>
             {% csrf_token %}
             {% if next %}<input type="hidden" value="{{ next }}" name="next">{% endif %}
 
