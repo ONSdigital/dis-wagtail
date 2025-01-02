@@ -1,6 +1,7 @@
-<div class="ons-u-mb-xl census-2021">
-    {% with census_logo_classes="ons-u-mb-s" %}
+{# appears in the body of the release page #}
+<div class="accreditations__block {% if not page.is_accredited %}accreditations__block--full-width{% endif %}">
+    {% with census_logo_classes="accreditations__census-logo" %}
         {% include "templates/components/census/census-logo.html" %}
     {% endwith %}
-    <p>{{ _("This release includes data from Census 2021.") }}</p>
+    <p class="accreditations__text">{{ _("This release includes data from Census 2021") }}</p>
 </div>

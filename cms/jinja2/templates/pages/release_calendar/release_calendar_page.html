@@ -26,7 +26,7 @@
 
         {% if page.is_census %}
             <div class="ons-container">
-                {% with census_logo_classes="census-logo" %}
+                {% with census_logo_classes="ons-u-mt-2xs ons-u-mb-s ons-u-mt-s@m census-logo" %}
                     {% include "templates/components/census/census-logo.html" %}
                 {% endwith %}
             </div>
@@ -105,11 +105,26 @@
             {% if page.is_accredited or page.is_census %}
                 <section id="about-the-data">
                     <h2>{{ _("About the data") }}</h2>
-                    {% if page.is_census %}
-                        {% include "templates/components/census/census-information.html" %}
-                    {% endif %}
+                    <div class="accreditations">
+                        {% if page.is_census %}
+                            {% include "templates/components/census/census-information.html" %}
+                        {% endif %}
+                        {% if page.is_accredited %}
+                            {% include "templates/components/accredited/accredited-information.html" %}
+                        {% endif %}
+                    </div>
                     {% if page.is_accredited %}
-                        {% include "templates/components/accredited/accredited-information.html" %}
+                        <p>
+                            {% trans trimmed %}
+                                These are accredited official statistics. They have been independently reviewed by the Office for Statistics Regulation (OSR) and found to comply with the standards of trustworthiness, quality and value in the <a href="https://code.statisticsauthority.gov.uk/the-code/">Code of Practice for Statistics</a>. This broadly means that the statistics:
+                            {% endtrans %}
+                        </p>
+                        <ul class="ons-list">
+                            <li class="ons-list__item">{{ _("meet user needs") }}</li>
+                            <li class="ons-list__item">{{ _("are presented clearly and accessibly") }}</li>
+                            <li class="ons-list__item">{{ _("are produced using appropriate data and sound methods") }}</li>
+                            <li class="ons-list__item">{{ _("are managed impartially and objectively in the public interest") }}</li>
+                        </ul>
                     {% endif %}
                 </section>
             {% endif %}

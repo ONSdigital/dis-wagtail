@@ -1,11 +1,7 @@
 @use 'config' as *;
 
 .census-logo {
-    margin-top: rem-sizing(8);
-    margin-bottom: rem-sizing(16);
-
-    @include media-query('m') {
-        margin-top: rem-sizing(24);
-        margin-bottom: 0;
+    @media (forced-colors: active) and (prefers-color-scheme: dark) {
+        filter: grayscale(100%) brightness(4);
     }
 }
