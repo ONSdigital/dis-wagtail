@@ -2,6 +2,7 @@ from django.conf import settings
 from django.test import TestCase
 from wagtail.blocks import StreamBlockValidationError, StructBlockValidationError
 from wagtail.rich_text import RichText
+from wagtail_factories import ImageFactory
 
 from cms.core.blocks import (
     BasicTableBlock,
@@ -11,6 +12,7 @@ from cms.core.blocks import (
     ONSEmbedBlock,
     RelatedContentBlock,
     RelatedLinksBlock,
+    VideoEmbedBlock,
 )
 from cms.core.tests.utils import get_test_document
 from cms.home.models import HomePage
@@ -120,6 +122,50 @@ class CoreBlocksTestCase(TestCase):
         block = ONSEmbedBlock()
         value = block.to_python({"url": settings.ONS_EMBED_PREFIX})
         self.assertEqual(block.clean(value), value)
+
+    def test_videoembedblock_clean__embed_url(self):
+        """Check the VideoEmbedBlock validates the supplied URL."""
+        block = VideoEmbedBlock()
+        image = ImageFactory.create()
+
+        with self.assertRaises(StructBlockValidationError) as info:
+            value = block.to_python(
+                {
+                    "embed_url": "https://ons.gov.uk/",
+                    "link_url": "https://vimeo.com/184480466",
+                    "image": image.id,
+                    "title": "The video",
+                    "link_text": "Watch the video",
+                }
+            )
+            block.clean(value)
+
+        self.assertEqual(
+            info.exception.block_errors["embed_url"].message,
+            "The embed URL must use the vimeo.com or youtube.com domain",
+        )
+
+    def test_videoembedblock_clean__link_url(self):
+        """Check the VideoEmbedBlock validates the supplied URL."""
+        block = VideoEmbedBlock()
+        image = ImageFactory.create()
+
+        with self.assertRaises(StructBlockValidationError) as info:
+            value = block.to_python(
+                {
+                    "embed_url": "https://player.vimeo.com/video/184480466",
+                    "link_url": "https://ons.gov.uk/",
+                    "image": image.id,
+                    "title": "The video",
+                    "link_text": "Watch the video",
+                }
+            )
+            block.clean(value)
+
+        self.assertEqual(
+            info.exception.block_errors["link_url"].message,
+            "The link URL must use the vimeo.com or youtube.com domain",
+        )
 
     def test_relatedcontentblock_clean__no_page_nor_url(self):
         """Checks that the RelatedContentBlock validates that one of page or URL is supplied."""

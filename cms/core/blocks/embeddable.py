@@ -1,4 +1,5 @@
 from typing import TYPE_CHECKING, ClassVar
+from urllib.parse import urlparse
 
 from django.conf import settings
 from django.core.exceptions import ValidationError
@@ -98,3 +99,64 @@ class ONSEmbedBlock(blocks.StructBlock):
     class Meta:
         icon = "code"
         template = "templates/components/streamfield/ons_embed_block.html"
+
+
+class VideoEmbedBlock(blocks.StructBlock):
+    """A video embed block."""
+
+    embed_url = blocks.URLBlock(
+        help_text="""
+        The embed URL to the video hosted on YouTube or Vimeo, for example,
+        https://www.youtube.com/embed/{ video ID } or https://player.vimeo.com/video/{ video ID }
+        """
+    )
+    link_url = blocks.URLBlock(
+        help_text="""
+        The URL to the video hosted on YouTube or Vimeo, for example,
+        https://www.youtube.com/watch?v={ video ID } or https://vimeo.com/video/{ video ID }.
+        Used to link to the video when cookies are not enabled.
+        """
+    )
+    image = ImageChooserBlock(help_text="The video cover image, used when cookies are not enabled.")
+    title = blocks.CharBlock(
+        help_text="""
+        The descriptive title for the video used by screen readers.
+        """
+    )
+    link_text = blocks.CharBlock(
+        help_text="""
+        The text to be shown when cookies are not enabled
+        e.g. 'Watch the {title} on Youtube'.
+        """
+    )
+
+    def clean(self, value: "StructValue") -> "StructValue":
+        """Checks that the given embed and link urls match youtube or vimeo."""
+        errors = {}
+
+        if urlparse(value["embed_url"]).hostname not in [
+            "www.vimeo.com",
+            "vimeo.com",
+            "player.vimeo.com",
+            "www.youtube.com",
+            "youtube.com",
+        ]:
+            errors["embed_url"] = ValidationError(_("The embed URL must use the vimeo.com or youtube.com domain"))
+
+        if urlparse(value["link_url"]).hostname not in [
+            "www.vimeo.com",
+            "vimeo.com",
+            "player.vimeo.com",
+            "www.youtube.com",
+            "youtube.com",
+        ]:
+            errors["link_url"] = ValidationError(_("The link URL must use the vimeo.com or youtube.com domain"))
+
+        if errors:
+            raise StructBlockValidationError(block_errors=errors)
+
+        return super().clean(value)
+
+    class Meta:
+        icon = "code"
+        template = "templates/components/streamfield/video_embed_block.html"

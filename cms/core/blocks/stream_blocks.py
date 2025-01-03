@@ -1,7 +1,6 @@
 from typing import ClassVar
 
 from wagtail.blocks import RichTextBlock, StreamBlock
-from wagtail.embeds.blocks import EmbedBlock
 from wagtail.images.blocks import ImageChooserBlock
 from wagtailmath.blocks import MathBlock
 
@@ -12,6 +11,7 @@ from cms.core.blocks import (
     PanelBlock,
     QuoteBlock,
     RelatedLinksBlock,
+    VideoEmbedBlock,
 )
 
 
@@ -22,7 +22,7 @@ class CoreStoryBlock(StreamBlock):
     rich_text = RichTextBlock()
     quote = QuoteBlock()
     panel = PanelBlock()
-    embed = EmbedBlock()
+    video_embed = VideoEmbedBlock()
     image = ImageChooserBlock()
     documents = DocumentsBlock()
     related_links = RelatedLinksBlock()
