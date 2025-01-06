@@ -75,24 +75,11 @@
                 {% include_block page.content %}
 
                 {% if page.contact_details %}
-                    <section id="contact-details" class="spacing">
-                        <h2>{{ _("Contact details") }}</h2>
-
-                        <div>
-                            <h3 class="ons-u-mb-no ons-u-fs-r--b">Name</h3>
-                            <p>{{ page.contact_details.name }}</p>
-                            <h3 class="ons-u-mb-no ons-u-fs-r--b">Email</h3>
-                            <p><a href="mailto:{{ page.contact_details.email }}">{{ page.contact_details.email }}</a></p>
-                            {% if page.contact_details.phone %}
-                                <h3 class="ons-u-mb-no ons-u-fs-r--b">Phone</h3>
-                                <p><a href="tel:{{ page.contact_details.phone|urlencode() }}">{{ page.contact_details.phone }}</a></p>
-                            {% endif %}
-                        </div>
-                    </section>
+                    {% include "templates/components/contact_details/contact_details.html" %}
                 {% endif %}
 
                 {% if page.changes_to_release_date %}
-                    <section id="changes-to-release-date">
+                    <section id="changes-to-release-date" class="spacing">
                         <h2>{{ _("Changes to this release date") }}</h2>
 
                         <ol class="ons-list ons-list--bare">
@@ -103,7 +90,7 @@
             {% endblock release_content %}
 
             {% if page.is_accredited or page.is_census %}
-                <section id="about-the-data">
+                <section id="about-the-data" class="spacing">
                     <h2>{{ _("About the data") }}</h2>
                     <div class="accreditations">
                         {% if page.is_census %}
@@ -131,14 +118,14 @@
 
             {% block release_content_footer %}
                 {% if page.pre_release_access %}
-                    <section id="pre-release-access-list">
+                    <section id="pre-release-access-list" class="spacing">
                         <h2>{{ _("Pre-release access list") }}</h2>
                         {% include_block page.pre_release_access %}
                     </section>
                 {% endif %}
 
                 {% if page.related_links %}
-                    <section id="links">
+                    <section id="links" class="spacing">
                         <h2>{{ _("You might also be interested in") }}</h2>
 
                         {% include_block page.related_links %}

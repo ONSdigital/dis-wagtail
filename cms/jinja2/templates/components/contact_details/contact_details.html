@@ -1,0 +1,21 @@
+{% from "components/text-indent/_macro.njk" import onsTextIndent %}
+
+{% if page.contact_details %}
+    <section id="contact-details" class="spacing">
+        <h2 class="ons-u-fs-l">{{ _("Contact details") }}</h2>
+
+        {% call onsTextIndent() %}
+            <p class="contact-details__line">
+                <strong>Name</strong>: {{ page.contact_details.name }}
+            </p>
+            <p class="contact-details__line">
+                <strong>Email</strong>: <a href="mailto:{{ page.contact_details.email }}">{{ page.contact_details.email }}</a>
+            </p>
+            {% if page.contact_details.phone %}
+                <p class="contact-details__line">
+                    <strong>Telephone</strong>: <a href="tel:{{ page.contact_details.phone|urlencode() }}">{{ page.contact_details.phone }}</a>
+                </p>
+            {% endif %}
+        {% endcall %}
+    </section>
+{% endif %}
