@@ -151,8 +151,7 @@
                         <div class="ons-container">
                             <ul class="ons-grid ons-grid-flex-gap ons-grid-flex-gap--40  navigation__key-links ons-list ons-list--bare">
                                 {% for item in params.navLinks.keyLinksList %}
-                                    {# In the new header, nav items can have text and no link - later we would want to test that both are present before outputting an li #}
-                                    {% if item.text %}
+                                    {% if item.text and item.url %}
                                         <li class="ons-grid__col ons-col-4@m ons-u-mb-no">
                                             {% if item.url %}
                                                 <a href="{{ item.url }}" class="navigation__link">
@@ -176,8 +175,7 @@
                                 {% for item in params.navLinks.itemsList %}
                                     <li class="ons-grid__col ons-col-4@m ons-u-mb-no">
                                         {% for link in item.linksList %}
-                                            {# In the new header, nav items can have text and no link - later we would want to test that both are present before outputting a heading link #}
-                                            {% if link.text %}
+                                            {% if link.text and link.url %}
                                                 {% if link.url %}
                                                     <a
                                                         href="{{ link.url }}"
@@ -194,8 +192,7 @@
                                             {% if link.children %}
                                                 <ul class="ons-list ons-list--bare navigation__child-list">
                                                     {% for child in link.children %}
-                                                        {# In the new header, nav items can have text and no link - later we would want to test that both are present before outputting an li #}
-                                                        {% if child.text %}
+                                                        {% if child.text and child.url %}
                                                             <li class="ons-u-mb-no">
                                                                 {% if child.url %}
                                                                     <a
