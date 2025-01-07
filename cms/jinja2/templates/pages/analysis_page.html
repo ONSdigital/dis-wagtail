@@ -106,7 +106,9 @@
             {% endif %}
 
             {% if page.contact_details %}
-                {% include "templates/components/contact_details/contact_details.html" %}
+                {% with contact_details = page.contact_details%}
+                    {% include "templates/components/contact_details/contact_details.html" %}
+                {% endwith %}
             {% endif %}
         </div>
     </div>

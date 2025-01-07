@@ -74,9 +74,9 @@
             {% block release_content %}
                 {% include_block page.content %}
 
-                {% if page.contact_details %}
+                {% with contact_details = page.contact_details%}
                     {% include "templates/components/contact_details/contact_details.html" %}
-                {% endif %}
+                {% endwith %}
 
                 {% if page.changes_to_release_date %}
                     <section id="changes-to-release-date" class="spacing">
