@@ -153,13 +153,9 @@
                                 {% for item in params.navLinks.keyLinksList %}
                                     {% if item.text and item.url %}
                                         <li class="ons-grid__col ons-col-4@m ons-u-mb-no">
-                                            {% if item.url %}
-                                                <a href="{{ item.url }}" class="navigation__link">
-                                            {% endif %}
-                                                    <h2 class="ons-u-fs-s--b ons-u-mb-no navigation__heading avigation__heading--key-link">{{ item.text }}</h2>
-                                            {% if item.url %}
-                                                </a>
-                                            {% endif %}
+                                            <a href="{{ item.url }}" class="navigation__link">
+                                                <h2 class="ons-u-fs-s--b ons-u-mb-no navigation__heading avigation__heading--key-link">{{ item.text }}</h2>
+                                            </a>
                                             {% if item.description %}
                                                 <p class="ons-u-fs-s ons-u-mb-no navigation__paragraph navigation__paragraph--key-link">{{ item.description }}</p>
                                             {% endif %}
@@ -176,36 +172,28 @@
                                     <li class="ons-grid__col ons-col-4@m ons-u-mb-no">
                                         {% for link in item.linksList %}
                                             {% if link.text and link.url %}
-                                                {% if link.url %}
-                                                    <a
-                                                        href="{{ link.url }}"
-                                                        class="ons-header-service-nav__link navigation__link"
-                                                    >
-                                                {% endif %}
+                                                <a
+                                                    href="{{ link.url }}"
+                                                    class="ons-header-service-nav__link navigation__link"
+                                                >
                                                     <h2 class="ons-u-fs-s--b navigation__heading">
                                                         {{ link.text }}
                                                     </h2>
-                                                {% if link.url %}
-                                                    </a>
-                                                {% endif %}
+                                                </a>
                                             {% endif %}
                                             {% if link.children %}
                                                 <ul class="ons-list ons-list--bare navigation__child-list">
                                                     {% for child in link.children %}
                                                         {% if child.text and child.url %}
                                                             <li class="ons-u-mb-no">
-                                                                {% if child.url %}
-                                                                    <a
-                                                                        href="{{ child.url }}"
-                                                                        class="ons-header-service-nav__link navigation__link"
-                                                                    >
-                                                                {% endif %}
+                                                                <a
+                                                                    href="{{ child.url }}"
+                                                                    class="ons-header-service-nav__link navigation__link"
+                                                                >
                                                                     <p class="ons-u-fs-s navigation__paragraph">
                                                                         {{ child.text }}
                                                                     </p>
-                                                                {% if child.url %}
-                                                                    </a>
-                                                                {% endif %}
+                                                                </a>
                                                             </li>
                                                         {% endif %}
                                                     {% endfor %}
