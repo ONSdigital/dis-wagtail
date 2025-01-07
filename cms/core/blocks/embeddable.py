@@ -104,44 +104,35 @@ class ONSEmbedBlock(blocks.StructBlock):
 class VideoEmbedBlock(blocks.StructBlock):
     """A video embed block."""
 
-    embed_url = blocks.URLBlock(
-        help_text="""
-        The embed URL to the video hosted on YouTube or Vimeo, for example,
-        https://www.youtube.com/embed/{ video ID } or https://player.vimeo.com/video/{ video ID }
-        """
-    )
     link_url = blocks.URLBlock(
-        help_text="""
-        The URL to the video hosted on YouTube or Vimeo, for example,
-        https://www.youtube.com/watch?v={ video ID } or https://vimeo.com/video/{ video ID }.
-        Used to link to the video when cookies are not enabled.
-        """
+        help_text=_(
+            "The URL to the video hosted on YouTube or Vimeo, for example, "
+            "https://www.youtube.com/watch?v={ video ID } or https://vimeo.com/video/{ video ID }. "
+            "Used to link to the video when cookies are not enabled."
+        )
     )
-    image = ImageChooserBlock(help_text="The video cover image, used when cookies are not enabled.")
-    title = blocks.CharBlock(
-        help_text="""
-        The descriptive title for the video used by screen readers.
-        """
-    )
+    image = ImageChooserBlock(help_text=_("The video cover image, used when cookies are not enabled."))
+    title = blocks.CharBlock(help_text=_("The descriptive title for the video used by screen readers."))
     link_text = blocks.CharBlock(
-        help_text="""
-        The text to be shown when cookies are not enabled
-        e.g. 'Watch the {title} on Youtube'.
-        """
+        help_text=_("The text to be shown when cookies are not enabled e.g. 'Watch the {title} on Youtube'.")
     )
+
+    def get_context(self, value: "StreamValue", parent_context: dict | None = None) -> dict:
+        context: dict = super().get_context(value, parent_context=parent_context)
+        embed_url = ""
+        if urlparse(value["link_url"]).hostname in ["www.vimeo.com", "vimeo.com"]:
+            video_id = urlparse(value["link_url"]).path.split("/")[-1]
+            embed_url = "https://player.vimeo.com/video/" + video_id
+        elif urlparse(value["link_url"]).hostname in ["www.youtube.com", "youtube.com"]:
+            query = dict(param.split("=") for param in urlparse(value["link_url"]).query.split("&"))
+            video_id = query.get("v", "")
+            embed_url = "https://www.youtube.com/embed/" + video_id
+        context["value"]["embed_url"] = embed_url
+        return context
 
     def clean(self, value: "StructValue") -> "StructValue":
         """Checks that the given embed and link urls match youtube or vimeo."""
         errors = {}
-
-        if urlparse(value["embed_url"]).hostname not in [
-            "www.vimeo.com",
-            "vimeo.com",
-            "player.vimeo.com",
-            "www.youtube.com",
-            "youtube.com",
-        ]:
-            errors["embed_url"] = ValidationError(_("The embed URL must use the vimeo.com or youtube.com domain"))
 
         if urlparse(value["link_url"]).hostname not in [
             "www.vimeo.com",
