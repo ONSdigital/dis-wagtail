@@ -287,26 +287,25 @@ npm run format
 
 Note that this project has configuration for [pre-commit](https://github.com/pre-commit/pre-commit). To set up locally:
 
-````bash
+```bash
 # if you don't have it yet, globally
 pip install pre-commit
+```
 
 `pylint`, which is run as part of `pre-commit`, relies on the poetry packages all being installed. If you are running this on your local machine you need to install them if you have not done so previously. Poetry automatically creates a virtual environment when you do this, which the `pylint` command will make use of
 
 ```bash
 # if you haven't run this locally previously
 poetry install
-````
+```
 
 `pylint` also relies on the [libpq](https://www.postgresql.org/docs/9.5/libpq.html) library being installed as a global package on your local machine. The installation commands below are for a mac.
 
 ```bash
 brew install libpq
-
-# update your path
-echo 'export PATH="/opt/homebrew/opt/libpq/bin:$PATH"' >> ~/.zshrc
-source ~/.zshrc
 ```
+
+Then follow the homebrew post-install instructions for PATH exports
 
 # in the project directory, initialize pre-commit
 
@@ -316,7 +315,7 @@ pre-commit install
 
 pre-commit run --all-files
 
-````
+```
 
 # in the project directory, initialize pre-commit
 pre-commit install
@@ -377,4 +376,3 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for details.
 ## License
 
 See [LICENSE](LICENSE) for details.
-````
