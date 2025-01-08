@@ -1,4 +1,5 @@
 from django.db.models import QuerySet
+from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 from wagtail.admin.ui.tables import Column, DateColumn
 from wagtail.admin.views.generic.chooser import ChooseResultsView, ChooseView
@@ -10,7 +11,9 @@ from cms.release_calendar.models import ReleaseCalendarPage
 
 class FutureReleaseCalendarMixin:
     def get_object_list(self) -> QuerySet[ReleaseCalendarPage]:
-        return ReleaseCalendarPage.objects.exclude(status__in=[ReleaseStatus.CANCELLED, ReleaseStatus.PUBLISHED])
+        return ReleaseCalendarPage.objects.exclude(
+            status__in=[ReleaseStatus.CANCELLED, ReleaseStatus.PUBLISHED]
+        ).exclude(release_date__lt=timezone.now())
 
     @property
     def columns(self) -> list[Column]:
