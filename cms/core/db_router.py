@@ -37,6 +37,11 @@ class ReadReplicaRouter:  # pylint: disable=unused-argument,protected-access
 
         return READ_REPLICA_DB_ALIAS
 
+    def db_for_write(self, model: type[Model], **hints: Any) -> Optional[str]:
+        """Determine which database should be used for write queries."""
+        # The default MUST be used
+        return DEFAULT_DB_ALIAS
+
     def allow_relation(self, obj1: Model, obj2: Model, **hints: Any) -> Optional[bool]:
         """Determine whether a relation is allowed between two models."""
         # If both instances are in the same database (or its replica), allow relations
