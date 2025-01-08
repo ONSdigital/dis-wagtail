@@ -29,6 +29,8 @@ if TYPE_CHECKING:
 class AnalysisSeries(RoutablePageMixin, Page):
     """The analysis series model."""
 
+    is_creatable = False
+
     parent_page_types: ClassVar[list[str]] = ["topics.TopicPage"]
     subpage_types: ClassVar[list[str]] = ["AnalysisPage"]
     preview_modes: ClassVar[list[str]] = []  # Disabling the preview mode due to it being a container page.
@@ -78,6 +80,8 @@ class AnalysisSeries(RoutablePageMixin, Page):
 
 class AnalysisPage(BundledPageMixin, BasePage):  # type: ignore[django-manager-missing]
     """The analysis page model."""
+
+    is_creatable = False
 
     parent_page_types: ClassVar[list[str]] = ["AnalysisSeries"]
     subpage_types: ClassVar[list[str]] = []
