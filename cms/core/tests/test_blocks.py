@@ -123,28 +123,6 @@ class CoreBlocksTestCase(TestCase):
         value = block.to_python({"url": settings.ONS_EMBED_PREFIX})
         self.assertEqual(block.clean(value), value)
 
-    def test_videoembedblock_clean__embed_url(self):
-        """Check the VideoEmbedBlock validates the supplied URL."""
-        block = VideoEmbedBlock()
-        image = ImageFactory.create()
-
-        with self.assertRaises(StructBlockValidationError) as info:
-            value = block.to_python(
-                {
-                    "embed_url": "https://ons.gov.uk/",
-                    "link_url": "https://vimeo.com/184480466",
-                    "image": image.id,
-                    "title": "The video",
-                    "link_text": "Watch the video",
-                }
-            )
-            block.clean(value)
-
-        self.assertEqual(
-            info.exception.block_errors["embed_url"].message,
-            "The embed URL must use the vimeo.com or youtube.com domain",
-        )
-
     def test_videoembedblock_clean__link_url(self):
         """Check the VideoEmbedBlock validates the supplied URL."""
         block = VideoEmbedBlock()
@@ -153,7 +131,6 @@ class CoreBlocksTestCase(TestCase):
         with self.assertRaises(StructBlockValidationError) as info:
             value = block.to_python(
                 {
-                    "embed_url": "https://player.vimeo.com/video/184480466",
                     "link_url": "https://ons.gov.uk/",
                     "image": image.id,
                     "title": "The video",
