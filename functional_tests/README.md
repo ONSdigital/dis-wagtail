@@ -4,26 +4,26 @@
 
 - [Structure](#structure)
 - [Dependencies](#dependencies)
-  - [App Instance For Test Development](#app-instance-for-test-development)
-  - [Clearing and Initialising the Functional Test Development Database](#clearing-and-initialising-the-functional-test-development-database)
+    - [App Instance For Test Development](#app-instance-for-test-development)
+    - [Clearing and Initialising the Functional Test Development Database](#clearing-and-initialising-the-functional-test-development-database)
 - [Running the Tests](#running-the-tests)
-  - [Playwright Options](#playwright-options)
+    - [Playwright Options](#playwright-options)
 - [Viewing Failure Traces](#viewing-failure-traces)
-  - [Viewing the Failure Trace from GitHub Actions](#viewing-the-failure-trace-from-github-actions)
+    - [Viewing the Failure Trace from GitHub Actions](#viewing-the-failure-trace-from-github-actions)
 - [Test Code Standards and Style Guide](#test-code-standards-and-style-guide)
-  - [Context Use](#context-use)
-  - [Sharing Code Between Steps](#sharing-code-between-steps)
-  - [Step wording](#step-wording)
-  - [Assertions](#assertions)
-  - [Step parameter types](#step-parameter-types)
+    - [Context Use](#context-use)
+    - [Sharing Code Between Steps](#sharing-code-between-steps)
+    - [Step wording](#step-wording)
+    - [Assertions](#assertions)
+    - [Step parameter types](#step-parameter-types)
 - [How the Tests Work](#how-the-tests-work)
-  - [Django Test Runner and Test Case](#django-test-runner-and-test-case)
-  - [Database Snapshot and Restore](#database-snapshot-and-restore)
-  - [Playwright](#playwright)
+    - [Django Test Runner and Test Case](#django-test-runner-and-test-case)
+    - [Database Snapshot and Restore](#database-snapshot-and-restore)
+    - [Playwright](#playwright)
 - [Why Aren't We Using Existing Django Testing Modules?](#why-arent-we-using-existing-django-testing-modules)
-  - [Pytest-BDD](#pytest-bdd)
-  - [Behave-Django](#behave-django)
-  <!-- TOC -->
+    - [Pytest-BDD](#pytest-bdd)
+    - [Behave-Django](#behave-django)
+      <!-- TOC -->
 
 ## Structure
 
@@ -123,7 +123,7 @@ the tests.
 Some Playwright configuration options can be passed in through environment variables
 
 | Variable              | Description                                                                                                                                                                    | Default                          |
-|-----------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|----------------------------------|
+| --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | -------------------------------- |
 | PLAYWRIGHT_HEADLESS   | Toggle headless browser mode, set to "False" to show the browser window                                                                                                        | `True`                           |
 | PLAYWRIGHT_SLOW_MO    | Sets the Playwright slow mo mode in milliseconds                                                                                                                               | `0`                              |
 | PLAYWRIGHT_BROWSER    | Set the browser for playwright to use, must be one of `chromium`, `firefox`, or `webkit`.<br/> NOTE: Currently only chromium is supported and tests may fail in other browsers | `chromium`                       |
@@ -142,11 +142,14 @@ Our GitHub Action is configured to save traces of any failed scenario and upload
 1. Navigate to the failed Action functional test run, expand the "Upload Failure Traces" job step and click the download
    link to download the zip file of all failed scenario traces.
 1. Unzip the downloaded file on the command line with
+
     ```shell
     unzip <path_to_file>
     ```
+
     (note that un-archiving using MacOS finder may not work as it recursively unzips the files inside, where we need the
     files inside to remain zipped)
+
 1. This should leave you with a zip file for each failed scenario
 1. Open the traces zip files one at a time using the [Playwright Trace Viewer](https://playwright.dev/docs/trace-viewer)
 
@@ -220,6 +223,9 @@ the same file, or the shared code should be factored out into the [step_helpers]
 This is to avoid potential circular imports and make it clear which code is specific to certain steps, and which is
 reusable across any steps.
 
+Note that it is also perfectly valid to annotate the same step function with multiple different step wordings, for example to have multiple different wordings
+of the step to make better grammatical sense in different scenarios.
+
 ### Step wording
 
 Steps should be written in full and concise sentences, avoiding unnecessary abbreviations and shorthand. They should be
@@ -244,9 +250,9 @@ registered in the [environment.py](environment.py) so they are available to all 
 
 Due to [issues with the Django `TransactionTestCase`](#why-arent-we-using-existing-django-testing-modules) which prevent
 us using the built-in database teardown/setup in between scenarios, we have implemented our own database snapshot and
-restore pattern between tests. We still make use of the Django test case, specifically the [
-`LiveServerTestCase`](https://docs.djangoproject.com/en/stable/topics/testing/tools/#django.test.LiveServerTestCase) to
-perform the initial database setup and run a live server on a random port for the tests.
+restore pattern between tests. We still make use of the Django test case, specifically the
+[`LiveServerTestCase`](https://docs.djangoproject.com/en/stable/topics/testing/tools/#django.test.LiveServerTestCase) to perform the initial database setup
+and run a live server on a random port for the tests.
 
 ### Database Snapshot and Restore
 
@@ -281,12 +287,10 @@ This is built on Pytest, and we decided to move our unit and integration testing
 compatibility issues with our multi-DB configuration, so this would have suffered the same issue.
 
 Live server testing is accomplished with a fixture, which under the hood uses a Django `LiveServerTestCase`. This
-inherits from
-the [
-`TransactionTestCase`](https://docs.djangoproject.com/en/stable/topics/testing/tools/#django.test.TransactionTestCase),
-which causes us serious compatibility issues, as it uses an isolated test database and flushes all data in between
-tests. We have migrations which seed critical data rows, so a flush operation breaks the app. The `serialised_rollback`
-option for the test case may present a solution in the future, but this depends on restoring any migration seeded data
+inherits from the
+[`TransactionTestCase`](https://docs.djangoproject.com/en/stable/topics/testing/tools/#django.test.TransactionTestCase), which causes us serious compatibility
+issues, as it uses an isolated test database and flushes all data in between tests. We have migrations which seed critical data rows, so a flush operation
+breaks the app. The `serialised_rollback`option for the test case may present a solution in the future, but this depends on restoring any migration seeded data
 with fixtures, which currently runs into an issue with Wagtails Locale models.
 
 We tried various workarounds such as using a fixture file to restore the data, but this runs into Wagtail issues, and
@@ -301,5 +305,4 @@ exact same data flushing issue as we did with Pytest-BDD.
 
 Also, the `StaticLiveServerTestCase` is incompatible with Whitenoise, which we use to serve static content, so we would
 have to override the test case. This was possible, but the setting was only exposed through command line arguments, so
-it would make running the scenarios through an IDE with debugging features either impossible or require much more manual
-setup.
+it would make running the scenarios through an IDE with debugging features either imp
