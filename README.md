@@ -305,8 +305,9 @@ poetry install
 brew install libpq
 ```
 
-Then follow the homebrew post-install instructions for PATH exports
+After the above command, follow the homebrew post-install instructions for PATH exports
 
+```bash
 # in the project directory, initialize pre-commit
 
 pre-commit install
@@ -315,12 +316,12 @@ pre-commit install
 
 pre-commit run --all-files
 
-```
-
 # in the project directory, initialize pre-commit
+
 pre-commit install
 
 # Optional, run all checks once for this, then the checks will run only on the changed files
+
 pre-commit run --all-files
 ```
 
