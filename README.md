@@ -299,7 +299,7 @@ pip install pre-commit
 poetry install
 ```
 
-`pylint` also relies on the [libpq](https://www.postgresql.org/docs/9.5/libpq.html) library being installed as a global package on your local machine. The installation commands below are for a mac.
+`pylint` also relies on the [libpq](https://www.postgresql.org/docs/9.5/libpq.html) library being installed as a global package on your local machine. The installation steps below are for Macs.
 
 ```bash
 brew install libpq
