@@ -57,7 +57,6 @@ if "CSRF_TRUSTED_ORIGINS" in env:
 
 INSTALLED_APPS = [
     "cms.articles",
-    "cms.analysis",
     "cms.bundles",
     "cms.core",
     "cms.documents",
