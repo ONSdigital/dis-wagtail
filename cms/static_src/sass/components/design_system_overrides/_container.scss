@@ -1,6 +1,9 @@
 @use 'config' as *;
 
-// overrides to ons container styles
+/*
+Overrides to ons container styles
+*/
+
 .ons-container {
     max-width: rem-sizing(
         1056
