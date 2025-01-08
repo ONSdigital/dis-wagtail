@@ -12,7 +12,6 @@ from cms.core.blocks import (
     ONSEmbedBlock,
     PanelBlock,
     QuoteBlock,
-    RelatedContentBlock,
     RelatedLinksBlock,
 )
 
@@ -31,7 +30,7 @@ class SectionContentBlock(StreamBlock):
     embed = EmbedBlock(group="Media")
     equation = MathBlock(group="DataVis", icon="decimal")
     ons_embed = ONSEmbedBlock(group="DataVis", label="ONS General Embed")
-    related_links = RelatedLinksBlock(RelatedContentBlock(), icon="link")
+    related_links = RelatedLinksBlock(icon="link")
 
     class Meta:
         template = "templates/components/streamfield/stream_block.html"
