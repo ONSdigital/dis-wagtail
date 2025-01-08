@@ -5,7 +5,6 @@
 {% from "components/related-content/_macro.njk" import onsRelatedContent %}
 {% from "components/table-of-contents/_macro.njk" import onsTableOfContents %}
 
-
 {% block header_area %}
     <div class="analysis-header {% if page.updates %}analysis-header--flush{% endif %}">
         <div class="ons-container">
@@ -35,7 +34,6 @@
                         <span class="ons-u-nowrap">{{ page.last_revised_date|date("DATE_FORMAT")}}</span>
                     </div>
                 {% endif %}
-
 
                 {% if page.contact_details %}
                     <div>
@@ -77,7 +75,7 @@
 
                 {% include_block page.content %}
 
-                {% if page.related_pages %}
+                {% if related_publications %}
                 {# fmt:off #}
                 {{-
                     onsRelatedContent({
@@ -85,10 +83,10 @@
                         "rows": [{
                             "id": 'related-content',
                             "title": _('Related publications'),
-                            "itemsList": page.related_pages
+                            "itemsList": related_publications
                         }]
                     })
-                -}} 
+                -}}
                 {# fmt:on #}
                 {% endif %}
 
@@ -130,4 +128,3 @@
         </div>
     </div>
 {% endblock %}
-

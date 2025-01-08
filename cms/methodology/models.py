@@ -5,17 +5,34 @@ from django.core.exceptions import ValidationError
 from django.db import models
 from django.utils.functional import cached_property
 from django.utils.translation import gettext_lazy as _
-from wagtail.admin.panels import FieldPanel, FieldRowPanel, InlinePanel, MultiFieldPanel
+from modelcluster.fields import ParentalKey
+from wagtail.admin.panels import FieldPanel, FieldRowPanel, InlinePanel, MultiFieldPanel, PageChooserPanel
 from wagtail.fields import RichTextField
+from wagtail.models import Orderable, Page
 from wagtail.search import index
 
 from cms.core.blocks.stream_blocks import SectionStoryBlock
 from cms.core.fields import StreamField
 from cms.core.models import BasePage
+from cms.core.query import order_by_pk_position
 
 if TYPE_CHECKING:
     from django.http import HttpRequest
     from wagtail.admin.panels import Panel
+    from wagtail.query import PageQuerySet
+
+
+class MethodologyRelatedPage(Orderable):
+    """Related pages for Methodology pages."""
+
+    parent = ParentalKey("MethodologyPage", on_delete=models.CASCADE, related_name="related_pages")
+    page = models.ForeignKey[Page](
+        "wagtailcore.Page",
+        on_delete=models.CASCADE,
+        related_name="+",
+    )
+
+    panels: ClassVar[list[FieldPanel]] = [PageChooserPanel("page", page_type=["analysis.AnalysisPage"])]
 
 
 class MethodologyPage(BasePage):  # type: ignore[django-manager-missing]
@@ -46,7 +63,9 @@ class MethodologyPage(BasePage):  # type: ignore[django-manager-missing]
             [
                 FieldRowPanel(
                     [
-                        FieldPanel("publication_date",),
+                        FieldPanel(
+                            "publication_date",
+                        ),
                         FieldPanel("last_revised_date"),
                     ]
                 ),
@@ -57,7 +76,7 @@ class MethodologyPage(BasePage):  # type: ignore[django-manager-missing]
             icon="cog",
         ),
         FieldPanel("content", icon="list-ul"),
-        InlinePanel("page_related_pages", label="Related publications"),
+        InlinePanel("related_pages", label="Related publications"),
     ]
 
     search_fields: ClassVar[list[index.SearchField | index.AutocompleteField]] = [
@@ -77,7 +96,24 @@ class MethodologyPage(BasePage):  # type: ignore[django-manager-missing]
         """Additional context for the template."""
         context: dict = super().get_context(request, *args, **kwargs)
         context["table_of_contents"] = self.table_of_contents
+        context["related_publications"] = self.related_publications
         return context
+
+    @cached_property
+    def related_publications(self) -> "PageQuerySet":
+        """Return a `PageQuerySet` of items related to this page via the
+        `PageRelatedPage` through model, and are suitable for display.
+        The result is ordered to match that specified by editors using
+        the 'page_related_pages' `InlinePanel`.
+        """
+        # NOTE: avoiding values_list() here for compatibility with preview
+        # See: https://github.com/wagtail/django-modelcluster/issues/30
+        ordered_page_pks = tuple(item.page_id for item in self.related_pages.all().only("page"))
+        return order_by_pk_position(
+            Page.objects.live().public().specific(),
+            pks=ordered_page_pks,
+            exclude_non_matches=True,
+        )
 
     @cached_property
     def table_of_contents(self) -> list[dict[str, str | object]]:
@@ -86,6 +122,8 @@ class MethodologyPage(BasePage):  # type: ignore[django-manager-missing]
         for block in self.content:  # pylint: disable=not-an-iterable,useless-suppression
             if hasattr(block.block, "to_table_of_contents_items"):
                 items += block.block.to_table_of_contents_items(block.value)
+        if self.related_publications:
+            items += [{"url": "#related-publications", "text": _("Related publications")}]
         if self.show_cite_this_page:
             items += [{"url": "#cite-this-page", "text": _("Cite this methodology")}]
         if self.contact_details_id:
