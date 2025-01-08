@@ -19,23 +19,23 @@ The Wagtail CMS for managing and publishing content for the Office for National 
 
 <!-- markdown-link-check-disable -->
 
-- [Getting Started](#getting-started)
-    - [Pre-requisites](#pre-requisites)
-    - [Setup](#setup)
-        - [Using Docker](#using-docker)
-        - [Running locally with supporting services in Docker](#running-locally-with-supporting-services-in-docker)
-- [Development](#development)
-    - [Front-end tooling](#front-end-tooling)
-    - [Adding Python packages](#adding-python-packages)
-    - [Run Tests with Coverage](#run-tests-with-coverage)
-    - [Linting and Formatting](#linting-and-formatting)
-        - [Python](#python)
-        - [Front-end](#front-end)
-        - [pre-commit](#pre-commit)
-        - [Megalinter](#megalinter-lintformat-non-python-files)
-    - [Django Migrations](#django-migrations)
-- [Contributing](#contributing)
-- [License](#license)
+-   [Getting Started](#getting-started)
+    -   [Pre-requisites](#pre-requisites)
+    -   [Setup](#setup)
+        -   [Using Docker](#using-docker)
+        -   [Running locally with supporting services in Docker](#running-locally-with-supporting-services-in-docker)
+-   [Development](#development)
+    -   [Front-end tooling](#front-end-tooling)
+    -   [Adding Python packages](#adding-python-packages)
+    -   [Run Tests with Coverage](#run-tests-with-coverage)
+    -   [Linting and Formatting](#linting-and-formatting)
+        -   [Python](#python)
+        -   [Front-end](#front-end)
+        -   [pre-commit](#pre-commit)
+        -   [Megalinter](#megalinter-lintformat-non-python-files)
+    -   [Django Migrations](#django-migrations)
+-   [Contributing](#contributing)
+-   [License](#license)
 
 <!-- markdown-link-check-enable -->
 
@@ -287,7 +287,7 @@ npm run format
 
 Note that this project has configuration for [pre-commit](https://github.com/pre-commit/pre-commit). To set up locally:
 
-```bash
+````bash
 # if you don't have it yet, globally
 pip install pre-commit
 
@@ -296,7 +296,7 @@ pip install pre-commit
 ```bash
 # if you haven't run this locally previously
 poetry install
-```
+````
 
 `pylint` also relies on the [libpq](https://www.postgresql.org/docs/9.5/libpq.html) library being installed as a global package on your local machine. The installation commands below are for a mac.
 
@@ -377,3 +377,4 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for details.
 ## License
 
 See [LICENSE](LICENSE) for details.
+````
