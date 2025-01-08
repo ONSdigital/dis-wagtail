@@ -4,10 +4,10 @@
 {% from "components/list/_macro.njk" import onsList %}
 
 {% block header_area %}
-    <div class="common-header analysis-header {% if page.updates %}analysis-header--flush{% endif %}">
+    <div class="common-header article-header {% if page.updates %}article-header--flush{% endif %}">
         <div class="ons-container">
             {% include "templates/components/navigation/breadcrumbs.html" %}
-            <p class="analysis-header__doc-type ons-u-fs-l">{{ _("Methodology") }}</p>
+            <p class="article-header__doc-type ons-u-fs-l">{{ _("Methodology") }}</p>
 
             <div class="ons-grid ons-grid-flex-gap ons-grid-flex-gap--40">
                 <div class="ons-grid__col ons-col-10@m ">
