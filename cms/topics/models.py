@@ -16,7 +16,7 @@ class TopicPage(BasePage):  # type: ignore[django-manager-missing]
 
     template = "templates/pages/topic_page.html"
     parent_page_types: ClassVar[list[str]] = ["themes.ThemePage"]
-    subpage_types: ClassVar[list[str]] = ["articles.ArticleSeries", "methodology.MethodologyPage"]
+    subpage_types: ClassVar[list[str]] = ["articles.ArticleSeriesPage", "methodology.MethodologyPage"]
     page_description = _("A specific topic page. e.g. 'Public sector finance' or 'Inflation and price indices'.")
 
     summary = RichTextField(features=settings.RICH_TEXT_BASIC)

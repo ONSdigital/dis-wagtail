@@ -5,7 +5,7 @@ import factory
 import wagtail_factories
 from django.utils import timezone
 
-from cms.articles.models import ArticleSeries, StatisticalArticlePage
+from cms.articles.models import ArticleSeriesPage, StatisticalArticlePage
 from cms.core.tests.factories import ContactDetailsFactory, SectionBlockFactory
 from cms.topics.tests.factories import TopicPageFactory
 
@@ -19,10 +19,10 @@ class HeadlineFigureBlockFactory(wagtail_factories.StructBlockFactory):
 
 
 class ArticleSeriesFactory(wagtail_factories.PageFactory):
-    """Factory for ArticleSeries."""
+    """Factory for ArticleSeriesPage."""
 
     class Meta:
-        model = ArticleSeries
+        model = ArticleSeriesPage
 
     title = factory.Faker("sentence", nb_words=4)
     parent = factory.SubFactory(TopicPageFactory)

@@ -20,7 +20,7 @@ class Migration(migrations.Migration):
 
     operations = [
         migrations.CreateModel(
-            name="ArticleSeries",
+            name="ArticleSeriesPage",
             fields=[
                 (
                     "page_ptr",

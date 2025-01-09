@@ -26,13 +26,13 @@ if TYPE_CHECKING:
     from wagtail.admin.panels import Panel
 
 
-class ArticleSeries(RoutablePageMixin, Page):
+class ArticleSeriesPage(RoutablePageMixin, Page):
     """The article series model."""
 
     parent_page_types: ClassVar[list[str]] = ["topics.TopicPage"]
     subpage_types: ClassVar[list[str]] = ["StatisticalArticlePage"]
     preview_modes: ClassVar[list[str]] = []  # Disabling the preview mode due to it being a container page.
-    page_description = _("A container for article series")
+    page_description = _("A container for statistical article series.")
 
     content_panels: ClassVar[list["Panel"]] = [
         *Page.content_panels,
@@ -82,7 +82,7 @@ class StatisticalArticlePage(BundledPageMixin, BasePage):  # type: ignore[django
     Previously known as statistical bulletin, statistical analysis article, analysis page.
     """
 
-    parent_page_types: ClassVar[list[str]] = ["ArticleSeries"]
+    parent_page_types: ClassVar[list[str]] = ["ArticleSeriesPage"]
     subpage_types: ClassVar[list[str]] = []
     template = "templates/pages/statistical_article_page.html"
 

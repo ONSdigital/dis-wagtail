@@ -12,7 +12,7 @@ from cms.core.tests.factories import ContactDetailsFactory
 
 
 class ArticleSeriesTestCase(WagtailTestUtils, TestCase):
-    """Test ArticleSeries model methods."""
+    """Test ArticleSeriesPage model methods."""
 
     @classmethod
     def setUpTestData(cls):
