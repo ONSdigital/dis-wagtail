@@ -1,20 +1,41 @@
 import factory
-from wagtail_factories import StreamFieldFactory, StructBlockFactory, ListBlockFactory
-from cms.navigation.models import MainMenu, NavigationSettings
+from wagtail_factories import StreamFieldFactory, StructBlockFactory, ListBlockFactory, PageChooserBlockFactory
+from cms.navigation.models import (
+    MainMenu,
+    NavigationSettings,
+    ColumnBlock,
+    ThemeLinkBlock,
+    SectionBlock,
+    TopicLinkBlock,
+)
 from cms.topics.tests.factories import TopicPageFactory
 from cms.themes.tests.factories import ThemePageFactory
 
 
-class ThemeLinkBlockFactory(StructBlockFactory):
-    external_url = factory.Faker("url")
-    title = factory.Faker("sentence", nb_words=3)
+class ThemePageChooserFactory(PageChooserBlockFactory):
     page = factory.SubFactory(ThemePageFactory)
 
 
-class TopicLinkBlockFactory(StructBlockFactory):
-    url = factory.Faker("url")
-    title = factory.Faker("sentence", nb_words=3)
+class TopicPageChooserFactory(PageChooserBlockFactory):
     page = factory.SubFactory(TopicPageFactory)
+
+
+class ThemeLinkBlockFactory(StructBlockFactory):
+    class Meta:
+        model = ThemeLinkBlock
+
+    external_url = factory.Faker("url")
+    title = factory.Faker("sentence", nb_words=3)
+    page = factory.SubFactory(ThemePageChooserFactory)
+
+
+class TopicLinkBlockFactory(StructBlockFactory):
+    class Meta:
+        model = TopicLinkBlock
+
+    external_url = factory.Faker("url")
+    title = factory.Faker("sentence", nb_words=3)
+    page = factory.SubFactory(TopicPageChooserFactory)
 
 
 class HighlightsBlockFactory(StructBlockFactory):
@@ -24,12 +45,18 @@ class HighlightsBlockFactory(StructBlockFactory):
 
 
 class SectionBlockFactory(StructBlockFactory):
+    class Meta:
+        model = SectionBlock
+
     section_link = factory.SubFactory(ThemeLinkBlockFactory)
-    links = ListBlockFactory(TopicLinkBlockFactory, size=3)
+    links = ListBlockFactory(TopicLinkBlockFactory)
 
 
 class ColumnBlockFactory(StructBlockFactory):
-    sections = ListBlockFactory(SectionBlockFactory, size=3)
+    class Meta:
+        model = ColumnBlock
+
+    sections = ListBlockFactory(SectionBlockFactory)
 
 
 class MainMenuFactory(factory.django.DjangoModelFactory):
