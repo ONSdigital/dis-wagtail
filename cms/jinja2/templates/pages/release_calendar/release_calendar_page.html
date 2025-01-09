@@ -2,41 +2,57 @@
 
 {% from "components/table-of-contents/_macro.njk" import onsTableOfContents %}
 
-{% block header_area %}{% endblock %}
+{% block header_area %}
+    <div class="common-header release-header">
+        <div class="ons-container">
+            {% include "templates/components/navigation/breadcrumbs.html" %}
+            <p class="analysis-header__doc-type ons-u-fs-l">{{ _("Release") }}</p>
+
+            <div class="ons-grid ons-grid-flex-gap ons-grid-flex-gap--40">
+                <div class="ons-grid__col ons-col-10@m ">
+                    <h1 class="ons-u-fs-3xl common-header__heading">
+                        {{ page.title }}
+                    </h1>
+                </div>
+                <div class="ons-grid__col ons-col-2@m common-header__kitemark">
+                    {% if page.is_accredited %}
+                        {% with accredited_logo_classes="common-header__accreditation-logo" %}
+                            {% include "templates/components/accredited/accredited-logo.html" %}
+                        {% endwith %}
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        {% if page.is_census %}
+            <div class="ons-container">
+                {% with census_logo_classes="ons-u-mt-2xs ons-u-mb-s ons-u-mt-s@m census-logo" %}
+                    {% include "templates/components/census/census-logo.html" %}
+                {% endwith %}
+            </div>
+        {% endif %}
+
+        {% block release_meta %}
+            <div class="ons-container common-header__releases common-header__releases--single-row">
+                {% if page.release_date or page.release_text %}
+                    <div>
+                        <span class="ons-u-fs-r--b common-header__releases-label">{{ _("Release date") }}:</span>
+                        <span class="ons-u-nowrap">{{ page.release_date|date("DATETIME_FORMAT") or page.release_date_text }}</span>
+                    </div>
+                {% endif %}
+                {% if page.next_release_date or page.next_release_text %}
+                    <div>
+                        <span class="ons-u-fs-r--b common-header__releases-label">{{ _("Next release") }}:</span>
+                        <span class="ons-u-nowrap">{{ page.next_release_date|date("DATETIME_FORMAT") or page.next_release_text }}</span>
+                    </div>
+                {% endif %}
+            </div>
+        {% endblock %}
+    </div>
+    {% block release_note %}{% endblock %}
+{% endblock %}
 
 {% block main %}
-    <div class="ons-u-fs-m ons-u-mt-s ons-u-pb-3xs release__document-type">Release</div>
-    <h1 class="ons-u-fs-3xl ons-u-mb-l">
-        <span>{{ page.title }}</span>
-        {% if page.is_accredited %}
-            {% include "templates/components/accredited/accredited-logo.html" %}
-        {% endif %}
-    </h1>
-
-    <div class="ons-grid ons-u-ml-no">
-        {% if page.is_census %}
-            <div class="ons-u-pb-s">
-                {% include "templates/components/census/census-logo.html" %}
-            </div>
-        {% endif %}
-        {% block release_meta %}
-            <div class="ons-grid__col ons-grid__col--sticky@m ons-col-4@m ons-col-12@s ons-u-p-no">
-                <span class="ons-u-fs-r--b">{{ _("Release date") }}:</span>
-                <span class="ons-u-nowrap">{{ page.release_date|date("DATETIME_FORMAT") or page.release_date_text }}</span>
-            </div>
-            {% if page.next_release_date or page.next_release_text %}
-                <div class="ons-grid__col ons-col-8@m ons-col-12@s ons-u-p-no@2xs@m">
-                    <span class="ons-u-fs-r--b">{{ _("Next release") }}:</span>
-                    <span class="ons-u-nowrap">{{ page.next_release_date|date("DATETIME_FORMAT") or page.next_release_text }}</span>
-                </div>
-            {% endif %}
-
-            <p></p>{# added empty p for some margin #}
-        {% endblock release_meta %}
-    </div>
-
-    {% block release_note %}{% endblock %}
-
     <div class="ons-grid ons-js-toc-container ons-u-ml-no">
         <div class="ons-grid__col ons-grid__col--sticky@m ons-col-4@m ons-u-p-no">
             {# fmt:off #}
@@ -50,30 +66,20 @@
             {# fmt:on #}
         </div>
         <div class="ons-grid__col ons-col-8@m ons-col-12@s ons-u-p-no@2xs@m">
-            {{ page.summary|richtext() }}
+            <section id="summary" class="spacing">
+                <h2>Summary</h2>
+                {{ page.summary|richtext() }}
+            </section>
 
             {% block release_content %}
                 {% include_block page.content %}
 
-                {% if page.contact_details %}
-                    <section id="contact-details">
-                        <h2>{{ _("Contact details") }}</h2>
-
-                        <div>
-                            <h3 class="ons-u-mb-no ons-u-fs-r--b">Name</h3>
-                            <p>{{ page.contact_details.name }}</p>
-                            <h3 class="ons-u-mb-no ons-u-fs-r--b">Email</h3>
-                            <p><a href="mailto:{{ page.contact_details.email }}">{{ page.contact_details.email }}</a></p>
-                            {% if page.contact_details.phone %}
-                                <h3 class="ons-u-mb-no ons-u-fs-r--b">Phone</h3>
-                                <p><a href="tel:{{ page.contact_details.phone|urlencode() }}">{{ page.contact_details.phone }}</a></p>
-                            {% endif %}
-                        </div>
-                    </section>
-                {% endif %}
+                {% with contact_details = page.contact_details%}
+                    {% include "templates/components/contact_details/contact_details.html" %}
+                {% endwith %}
 
                 {% if page.changes_to_release_date %}
-                    <section id="changes-to-release-date">
+                    <section id="changes-to-release-date" class="spacing">
                         <h2>{{ _("Changes to this release date") }}</h2>
 
                         <ol class="ons-list ons-list--bare">
@@ -84,27 +90,42 @@
             {% endblock release_content %}
 
             {% if page.is_accredited or page.is_census %}
-                <section id="about-the-data">
+                <section id="about-the-data" class="spacing">
                     <h2>{{ _("About the data") }}</h2>
-                    {% if page.is_census %}
-                        {% include "templates/components/census/census-information.html" %}
-                    {% endif %}
+                    <div class="accreditations">
+                        {% if page.is_census %}
+                            {% include "templates/components/census/census-information.html" %}
+                        {% endif %}
+                        {% if page.is_accredited %}
+                            {% include "templates/components/accredited/accredited-information.html" %}
+                        {% endif %}
+                    </div>
                     {% if page.is_accredited %}
-                        {% include "templates/components/accredited/accredited-information.html" %}
+                        <p>
+                            {% trans trimmed %}
+                                These are accredited official statistics. They have been independently reviewed by the Office for Statistics Regulation (OSR) and found to comply with the standards of trustworthiness, quality and value in the <a href="https://code.statisticsauthority.gov.uk/the-code/">Code of Practice for Statistics</a>. This broadly means that the statistics:
+                            {% endtrans %}
+                        </p>
+                        <ul class="ons-list">
+                            <li class="ons-list__item">{{ _("meet user needs") }}</li>
+                            <li class="ons-list__item">{{ _("are presented clearly and accessibly") }}</li>
+                            <li class="ons-list__item">{{ _("are produced using appropriate data and sound methods") }}</li>
+                            <li class="ons-list__item">{{ _("are managed impartially and objectively in the public interest") }}</li>
+                        </ul>
                     {% endif %}
                 </section>
             {% endif %}
 
             {% block release_content_footer %}
                 {% if page.pre_release_access %}
-                    <section id="pre-release-access-list">
+                    <section id="pre-release-access-list" class="spacing">
                         <h2>{{ _("Pre-release access list") }}</h2>
                         {% include_block page.pre_release_access %}
                     </section>
                 {% endif %}
 
                 {% if page.related_links %}
-                    <section id="links">
+                    <section id="links" class="spacing">
                         <h2>{{ _("You might also be interested in") }}</h2>
 
                         {% include_block page.related_links %}
