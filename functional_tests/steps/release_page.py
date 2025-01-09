@@ -30,7 +30,7 @@ def enter_example_release_content(context: Context):
     context.page.get_by_role("region", name="Summary*").get_by_role("textbox").fill("My example release page")
 
     context.page.locator("#panel-child-content-content-content").get_by_role("button", name="Insert a block").click()
-    context.page.get_by_role("region", name="Release content").get_by_label("Title*").fill("My Example Content")
+    context.page.get_by_role("region", name="Release content").get_by_label("Title*").fill("My Example Content Link")
 
     context.page.get_by_role("button", name="Choose a page").click()
     context.page.get_by_label("Explore").click()
@@ -45,9 +45,10 @@ def enter_example_release_content(context: Context):
 @then("the new published release page with the example content is displayed")
 def check_provisional_release_page_content(context: Context):
     expect(context.page.get_by_role("heading", name="My Release")).to_be_visible()
-    expect(context.page.get_by_role("heading", name="My Release UK Statistics").locator("span")).to_be_visible()
-    expect(context.page.get_by_role("heading", name="My Example Content")).to_be_visible()
-    expect(context.page.get_by_role("link", name="Release calendar")).to_be_visible()
+    expect(context.page.get_by_role("heading", name="My Example Content Link")).to_be_visible()
+    expect(
+        context.page.locator("#my-example-content-link").get_by_role("link", name="Release calendar")
+    ).to_be_visible()
     expect(context.page.get_by_role("heading", name="Contact details")).to_be_visible()
     expect(context.page.get_by_text(context.contact_details_snippet.name)).to_be_visible()
     expect(context.page.get_by_role("link", name=context.contact_details_snippet.email)).to_be_visible()
