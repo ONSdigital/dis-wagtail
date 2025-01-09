@@ -22,7 +22,7 @@ class CoreStoryBlock(StreamBlock):
     rich_text = RichTextBlock()
     quote = QuoteBlock()
     panel = PanelBlock()
-    video_embed = VideoEmbedBlock()
+    video_embed = VideoEmbedBlock(group="Media")
     image = ImageChooserBlock()
     documents = DocumentsBlock()
     related_links = RelatedLinksBlock()

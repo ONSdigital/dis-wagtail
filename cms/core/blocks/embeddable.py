@@ -1,3 +1,4 @@
+import re
 from typing import TYPE_CHECKING, ClassVar
 from urllib.parse import urlparse
 
@@ -118,14 +119,37 @@ class VideoEmbedBlock(blocks.StructBlock):
     )
 
     def get_context(self, value: "StreamValue", parent_context: dict | None = None) -> dict:
+        """Get the embed URL for the video based on the link URL."""
         context: dict = super().get_context(value, parent_context=parent_context)
         embed_url = ""
-        if urlparse(value["link_url"]).hostname in ["www.vimeo.com", "vimeo.com"]:
-            video_id = urlparse(value["link_url"]).path.split("/")[-1]
+        # Vimeo
+        if urlparse(value["link_url"]).hostname in ["www.vimeo.com", "vimeo.com", "player.vimeo.com"]:
+            url_path = urlparse(value["link_url"]).path.strip("/")
+            # Handle different Vimeo URL patterns
+            if "video/" in url_path:
+                # Handle https://vimeo.com/showcase/7934865/video/ID format
+                video_id = url_path.split("video/")[-1]
+            else:
+                # Handle https://player.vimeo.com/video/ID or https://vimeo.com/ID format
+                video_id = url_path.split("/")[0]
+            # Remove any query parameters from video ID
+            video_id = video_id.split("?")[0]
             embed_url = "https://player.vimeo.com/video/" + video_id
-        elif urlparse(value["link_url"]).hostname in ["www.youtube.com", "youtube.com"]:
-            query = dict(param.split("=") for param in urlparse(value["link_url"]).query.split("&"))
-            video_id = query.get("v", "")
+        # YouTube
+        elif urlparse(value["link_url"]).hostname in ["www.youtube.com", "youtube.com", "youtu.be"]:
+            url_parts = urlparse(value["link_url"])
+            if url_parts.hostname == "youtu.be":
+                # Handle https://youtu.be/ID format
+                video_id = url_parts.path.lstrip("/")
+            elif "/v/" in url_parts.path:
+                # Handle https://www.youtube.com/v/ID format
+                video_id = url_parts.path.split("/v/")[-1]
+            else:
+                # Handle https://www.youtube.com/watch?v=ID format
+                query = dict(param.split("=") for param in url_parts.query.split("&"))
+                video_id = query.get("v", "")
+            # Remove any query parameters from video ID
+            video_id = video_id.split("?")[0]
             embed_url = "https://www.youtube.com/embed/" + video_id
         context["value"]["embed_url"] = embed_url
         return context
@@ -134,14 +158,22 @@ class VideoEmbedBlock(blocks.StructBlock):
         """Checks that the given embed and link urls match youtube or vimeo."""
         errors = {}
 
-        if urlparse(value["link_url"]).hostname not in [
-            "www.vimeo.com",
-            "vimeo.com",
-            "player.vimeo.com",
-            "www.youtube.com",
-            "youtube.com",
-        ]:
-            errors["link_url"] = ValidationError(_("The link URL must use the vimeo.com or youtube.com domain"))
+        vimeo_showcase_pattern = r"^https?://vimeo\.com/showcase/[^/]+/video/[^/]+$"
+        other_patterns = [
+            r"^https?://(?:[-\w]+\.)?youtube\.com/watch[^/]+$",
+            r"^https?://(?:[-\w]+\.)?youtube\.com/v/[^/]+$",
+            r"^https?://youtu\.be/[^/]+$",
+            r"^https?://vimeo\.com/[^/]+$",
+            r"^https?://player\.vimeo\.com/video/[^/]+$",
+        ]
+
+        # Check if the URL is a Vimeo showcase URL - do this first to avoid it clashing
+        # with the r"^https?://vimeo\.com/[^/]+$", pattern
+        if re.match(vimeo_showcase_pattern, value["link_url"]):
+            return super().clean(value)
+
+        if not any(re.match(pattern, value["link_url"]) for pattern in other_patterns):
+            errors["link_url"] = ValidationError(_("The link URL must use a valid vimeo or youtube video URL"))
 
         if errors:
             raise StructBlockValidationError(block_errors=errors)

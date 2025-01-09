@@ -123,7 +123,7 @@ class CoreBlocksTestCase(TestCase):
         value = block.to_python({"url": settings.ONS_EMBED_PREFIX})
         self.assertEqual(block.clean(value), value)
 
-    def test_videoembedblock_clean__link_url(self):
+    def test_videoembedblock_clean__invalid_domain(self):
         """Check the VideoEmbedBlock validates the supplied URL."""
         block = VideoEmbedBlock()
         image = ImageFactory.create()
@@ -131,7 +131,7 @@ class CoreBlocksTestCase(TestCase):
         with self.assertRaises(StructBlockValidationError) as info:
             value = block.to_python(
                 {
-                    "link_url": "https://ons.gov.uk/",
+                    "link_url": "https://ons.gov.uk/908205163",
                     "image": image.id,
                     "title": "The video",
                     "link_text": "Watch the video",
@@ -141,8 +141,230 @@ class CoreBlocksTestCase(TestCase):
 
         self.assertEqual(
             info.exception.block_errors["link_url"].message,
-            "The link URL must use the vimeo.com or youtube.com domain",
+            "The link URL must use a valid vimeo or youtube video URL",
         )
+
+    def test_videoembedblock_clean__invalid_youtube_link_1(self):
+        """Check the VideoEmbedBlock validates the supplied URL."""
+        block = VideoEmbedBlock()
+        image = ImageFactory.create()
+
+        with self.assertRaises(StructBlockValidationError) as info:
+            value = block.to_python(
+                {
+                    "link_url": "https://www.youtube.com/watch/foo?v=ywzZXO-A7Pg",
+                    "image": image.id,
+                    "title": "The video",
+                    "link_text": "Watch the video",
+                }
+            )
+            block.clean(value)
+
+        self.assertEqual(
+            info.exception.block_errors["link_url"].message,
+            "The link URL must use a valid vimeo or youtube video URL",
+        )
+
+    def test_videoembedblock_clean__invalid_youtube_link_2(self):
+        """Check the VideoEmbedBlock validates the supplied URL."""
+        block = VideoEmbedBlock()
+        image = ImageFactory.create()
+
+        with self.assertRaises(StructBlockValidationError) as info:
+            value = block.to_python(
+                {
+                    "link_url": "https://youtu.be/something/ywzZXO-A7Pg",
+                    "image": image.id,
+                    "title": "The video",
+                    "link_text": "Watch the video",
+                }
+            )
+            block.clean(value)
+
+        self.assertEqual(
+            info.exception.block_errors["link_url"].message,
+            "The link URL must use a valid vimeo or youtube video URL",
+        )
+
+    def test_videoembedblock_clean__invalid_youtube_link_3(self):
+        """Check the VideoEmbedBlock validates the supplied URL."""
+        block = VideoEmbedBlock()
+        image = ImageFactory.create()
+
+        with self.assertRaises(StructBlockValidationError) as info:
+            value = block.to_python(
+                {
+                    "link_url": "https://www.youtube.com/v/foo/bar/ywzZXO-A7Pg",
+                    "image": image.id,
+                    "title": "The video",
+                    "link_text": "Watch the video",
+                }
+            )
+            block.clean(value)
+
+        self.assertEqual(
+            info.exception.block_errors["link_url"].message,
+            "The link URL must use a valid vimeo or youtube video URL",
+        )
+
+    def test_videoembedblock_clean__valid_youtube_link_1(self):
+        """Check the VideoEmbedBlock validates the supplied URL."""
+        block = VideoEmbedBlock()
+        image = ImageFactory.create()
+        value = block.to_python(
+            {
+                "link_url": "https://www.youtube.com/watch?v=ywzZXO-A7Pg&foo=bar",
+                "image": image.id,
+                "title": "The video",
+                "link_text": "Watch the video",
+            }
+        )
+        block.clean(value)
+
+        self.assertEqual(block.clean(value), value)
+
+    def test_videoembedblock_clean__valid_youtube_link_2(self):
+        """Check the VideoEmbedBlock validates the supplied URL."""
+        block = VideoEmbedBlock()
+        image = ImageFactory.create()
+        value = block.to_python(
+            {
+                "link_url": "https://youtu.be/ywzZXO-A7Pg",
+                "image": image.id,
+                "title": "The video",
+                "link_text": "Watch the video",
+            }
+        )
+        block.clean(value)
+
+        self.assertEqual(block.clean(value), value)
+
+    def test_videoembedblock_clean__valid_youtube_link_3(self):
+        """Check the VideoEmbedBlock validates the supplied URL."""
+        block = VideoEmbedBlock()
+        image = ImageFactory.create()
+        value = block.to_python(
+            {
+                "link_url": "https://www.youtube.com/v/ywzZXO-A7Pg",
+                "image": image.id,
+                "title": "The video",
+                "link_text": "Watch the video",
+            }
+        )
+        block.clean(value)
+
+        self.assertEqual(block.clean(value), value)
+
+    def test_videoembedblock_clean__invalid_vimeo_link_1(self):
+        """Check the VideoEmbedBlock validates the supplied URL."""
+        block = VideoEmbedBlock()
+        image = ImageFactory.create()
+
+        with self.assertRaises(StructBlockValidationError) as info:
+            value = block.to_python(
+                {
+                    "link_url": "https://vimeo.com/foo/bar/908205163",
+                    "image": image.id,
+                    "title": "The video",
+                    "link_text": "Watch the video",
+                }
+            )
+            block.clean(value)
+
+        self.assertEqual(
+            info.exception.block_errors["link_url"].message,
+            "The link URL must use a valid vimeo or youtube video URL",
+        )
+
+    def test_videoembedblock_clean__invalid_vimeo_link_2(self):
+        """Check the VideoEmbedBlock validates the supplied URL."""
+        block = VideoEmbedBlock()
+        image = ImageFactory.create()
+
+        with self.assertRaises(StructBlockValidationError) as info:
+            value = block.to_python(
+                {
+                    "link_url": "https://player.vimeo.com/video/test/908205163",
+                    "image": image.id,
+                    "title": "The video",
+                    "link_text": "Watch the video",
+                }
+            )
+            block.clean(value)
+
+        self.assertEqual(
+            info.exception.block_errors["link_url"].message,
+            "The link URL must use a valid vimeo or youtube video URL",
+        )
+
+    def test_videoembedblock_clean__invalid_vimeo_link_3(self):
+        """Check the VideoEmbedBlock validates the supplied URL."""
+        block = VideoEmbedBlock()
+        image = ImageFactory.create()
+
+        with self.assertRaises(StructBlockValidationError) as info:
+            value = block.to_python(
+                {
+                    "link_url": "https://vimeo.com/showcase/7934865/foo/493407585",
+                    "image": image.id,
+                    "title": "The video",
+                    "link_text": "Watch the video",
+                }
+            )
+            block.clean(value)
+
+        self.assertEqual(
+            info.exception.block_errors["link_url"].message,
+            "The link URL must use a valid vimeo or youtube video URL",
+        )
+
+    def test_videoembedblock_clean__valid_vimeo_link_1(self):
+        """Check the VideoEmbedBlock validates the supplied URL."""
+        block = VideoEmbedBlock()
+        image = ImageFactory.create()
+        value = block.to_python(
+            {
+                "link_url": "https://vimeo.com/908205163?share=copy",
+                "image": image.id,
+                "title": "The video",
+                "link_text": "Watch the video",
+            }
+        )
+        block.clean(value)
+
+        self.assertEqual(block.clean(value), value)
+
+    def test_videoembedblock_clean__valid_vimeo_link_2(self):
+        """Check the VideoEmbedBlock validates the supplied URL."""
+        block = VideoEmbedBlock()
+        image = ImageFactory.create()
+        value = block.to_python(
+            {
+                "link_url": "https://player.vimeo.com/video/908205163",
+                "image": image.id,
+                "title": "The video",
+                "link_text": "Watch the video",
+            }
+        )
+        block.clean(value)
+
+        self.assertEqual(block.clean(value), value)
+
+    def test_videoembedblock_clean__valid_vimeo_link_3(self):
+        """Check the VideoEmbedBlock validates the supplied URL."""
+        block = VideoEmbedBlock()
+        image = ImageFactory.create()
+        value = block.to_python(
+            {
+                "link_url": "https://vimeo.com/showcase/7934865/video/493407585",
+                "image": image.id,
+                "title": "The video",
+                "link_text": "Watch the video",
+            }
+        )
+        block.clean(value)
+
+        self.assertEqual(block.clean(value), value)
 
     def test_relatedcontentblock_clean__no_page_nor_url(self):
         """Checks that the RelatedContentBlock validates that one of page or URL is supplied."""
