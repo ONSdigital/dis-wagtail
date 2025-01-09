@@ -1,9 +1,7 @@
 {% extends "templates/base_page.html" %}
 
-{% from "components/panel/_macro.njk" import onsPanel %}
-{% from "components/text-indent/_macro.njk" import onsTextIndent %}
-{% from "components/related-content/_macro.njk" import onsRelatedContent %}
 {% from "components/table-of-contents/_macro.njk" import onsTableOfContents %}
+{% from "components/list/_macro.njk" import onsList %}
 
 {% block header_area %}
     <div class="common-header analysis-header {% if page.updates %}analysis-header--flush{% endif %}">
@@ -63,7 +61,6 @@
         </div>
 
         <div class="ons-grid__col ons-col-8@m">
-            {# TODO: is the below comment and code still relevant? Can't find the variable in that file #}
             {# if there are no contact details on the page, we don't want the last
             streamfield block to have a bottom margin. last_flush is used in stream_block.html #}
             {% if page.contact_details %}
@@ -75,19 +72,10 @@
             {% include_block page.content %}
 
             {% if related_publications %}
-            {# fmt:off #}
-            {{-
-                onsRelatedContent({
-                    "ariaLabel": _('Related publications'),
-                    "rows": [{
-                        "id": 'related-content',
-                        "title": _('Related publications'),
-                        "itemsList": related_publications
-                    }],
-                    "classes": "spacing"
-                })
-            -}}
-            {# fmt:on #}
+                <section id="related-publications" class="spacing">
+                    <h2 class="ons-u-fs-l">{{ _("Related publications") }}</h2>
+                    {{- onsList({"itemsList": related_publications}) -}}
+                </section>
             {% endif %}
 
             {% if page.show_cite_this_page %}

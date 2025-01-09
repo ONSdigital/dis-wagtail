@@ -7,7 +7,7 @@ from django.utils.formats import date_format
 from wagtail.test.utils import WagtailTestUtils
 
 from cms.core.tests.factories import ContactDetailsFactory
-from cms.methodology.tests.factories import MethodologyPageFactory
+from cms.methodology.tests.factories import MethodologyPageFactory, MethodologyRelatedPageFactory
 
 
 class MethodologyPageTestCase(WagtailTestUtils, TestCase):
@@ -36,6 +36,10 @@ class MethodologyPageTestCase(WagtailTestUtils, TestCase):
         self.page.contact_details = ContactDetailsFactory()
         toc = self.page.table_of_contents
         self.assertIn({"url": "#contact-details", "text": "Contact details"}, toc)
+
+    def test_table_of_contents_without_related_publications(self):
+        MethodologyRelatedPageFactory(parent=self.page)
+        self.assertIn({"url": "#related-publications", "text": "Related publications"}, self.page.table_of_contents)
 
     def test_cite_this_page_is_not_shown_when_unticked(self):
         """Test for the cite this page block not present in the template."""
@@ -70,9 +74,28 @@ class MethodologyPageTestCase(WagtailTestUtils, TestCase):
 
         self.assertEqual(info.exception.messages, ["The last revised date must be after the published date."])
 
+    def test_related_publications(self):
+        related = [
+            MethodologyRelatedPageFactory(parent=self.page, page__title="Article Series 1"),
+            MethodologyRelatedPageFactory(parent=self.page, page__title="Another Article Series 2"),
+            MethodologyRelatedPageFactory(parent=self.page, page__title="Unpublished Article Series", page__live=False),
+        ]
+
+        self.assertListEqual(
+            list(self.page.related_publications.values_list("pk", flat=True)), [related[0].page_id, related[1].page_id]
+        )
+
+    def test_get_formatted_related_publications_list(self):
+        related = MethodologyRelatedPageFactory(parent=self.page, page__title="The Article Series 1")
+
+        self.assertListEqual(
+            self.page.get_formatted_related_publications_list(),
+            [{"title": related.page.display_title, "url": related.page.url}],
+        )
+
     @override_settings(IS_EXTERNAL_ENV=True)
     def test_render_in_external_env(self):
         """Test that the page renders in external environment."""
-        response = self.client.get(self.page.url)
+        response = self.client.get(self.page_url)
 
         self.assertEqual(response.status_code, 200)

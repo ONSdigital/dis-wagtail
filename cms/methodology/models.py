@@ -3,6 +3,7 @@ from typing import TYPE_CHECKING, Any, ClassVar
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.db import models
+from django.http import HttpRequest
 from django.utils.functional import cached_property
 from django.utils.translation import gettext_lazy as _
 from modelcluster.fields import ParentalKey
@@ -17,7 +18,6 @@ from cms.core.models import BasePage
 from cms.core.query import order_by_pk_position
 
 if TYPE_CHECKING:
-    from django.http import HttpRequest
     from wagtail.admin.panels import Panel
     from wagtail.query import PageQuerySet
 
@@ -92,11 +92,11 @@ class MethodologyPage(BasePage):  # type: ignore[django-manager-missing]
         if self.last_revised_date and self.last_revised_date <= self.publication_date:
             raise ValidationError({"last_revised_date": _("The last revised date must be after the published date.")})
 
-    def get_context(self, request: "HttpRequest", *args: Any, **kwargs: Any) -> dict:
+    def get_context(self, request: HttpRequest, *args: Any, **kwargs: Any) -> dict:
         """Additional context for the template."""
         context: dict = super().get_context(request, *args, **kwargs)
         context["table_of_contents"] = self.table_of_contents
-        context["related_publications"] = self.related_publications
+        context["related_publications"] = self.get_formatted_related_publications_list(request=request)
         return context
 
     @cached_property
@@ -114,6 +114,18 @@ class MethodologyPage(BasePage):  # type: ignore[django-manager-missing]
             pks=ordered_page_pks,
             exclude_non_matches=True,
         )
+
+    def get_formatted_related_publications_list(self, request: HttpRequest | None = None) -> list[dict[str, str]]:
+        """Returns a formatted list of related publications for use with the Design System list component."""
+        items = []
+        for page in self.related_publications:
+            items.append(
+                {
+                    "title": getattr(page, "display_title", page.title),
+                    "url": page.get_url(request=request),
+                }
+            )
+        return items
 
     @cached_property
     def table_of_contents(self) -> list[dict[str, str | object]]:

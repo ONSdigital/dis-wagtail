@@ -6,7 +6,7 @@ import wagtail_factories
 from django.utils import timezone
 
 from cms.core.tests.factories import ContactDetailsFactory, SectionBlockFactory
-from cms.methodology.models import MethodologyPage
+from cms.methodology.models import MethodologyPage, MethodologyRelatedPage
 from cms.topics.tests.factories import TopicPageFactory
 
 
@@ -27,3 +27,14 @@ class MethodologyPageFactory(wagtail_factories.PageFactory):
     contact_details = factory.SubFactory(ContactDetailsFactory)
 
     content = wagtail_factories.StreamFieldFactory({"section": factory.SubFactory(SectionBlockFactory)})
+
+
+class MethodologyRelatedPageFactory(factory.django.DjangoModelFactory):
+    """Factory for MethodologyRelatedPage orderable model."""
+
+    class Meta:
+        model = MethodologyRelatedPage
+
+    parent = factory.SubFactory(MethodologyPageFactory)
+    page = factory.SubFactory("cms.analysis.tests.factories.AnalysisPageFactory")
+    sort_order = factory.Sequence(lambda n: n)
