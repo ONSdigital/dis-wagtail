@@ -315,14 +315,6 @@ pre-commit install
 # Optional, run all checks once for this, then the checks will run only on the changed files
 
 pre-commit run --all-files
-
-# in the project directory, initialize pre-commit
-
-pre-commit install
-
-# Optional, run all checks once for this, then the checks will run only on the changed files
-
-pre-commit run --all-files
 ```
 
 The `detect-secrets` pre-commit hook requires a baseline secrets file to be included. If you need to, \
