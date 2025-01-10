@@ -57,6 +57,20 @@ class SectionBlock(StructBlock):
 class ColumnBlock(StructBlock):
     sections = ListBlock(SectionBlock(), label="Sections", max_num=3)
 
+    def clean(self, value):
+        """
+        Validates that the number of sections does not exceed 3.
+        Raises a ValidationError if the limit is exceeded.
+        """
+        cleaned_data = super().clean(value)
+        sections = cleaned_data.get("sections", [])
+
+        # Ensure that the length of sections doesn't exceed 3
+        if len(sections) > 3:
+            raise ValidationError(_("You cannot have more than 3 sections in a column."))
+
+        return cleaned_data
+
     class Meta:
         icon = "list-ul"
         label = _("Column")
