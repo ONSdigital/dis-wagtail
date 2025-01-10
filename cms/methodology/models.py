@@ -141,19 +141,3 @@ class MethodologyPage(BasePage):  # type: ignore[django-manager-missing]
         if self.contact_details_id:
             items += [{"url": "#contact-details", "text": _("Contact details")}]
         return items
-
-    @cached_property
-    def has_equations(self) -> bool:
-        """Checks if there are any equation blocks."""
-        return any(
-            block.value["content"].first_block_by_name(block_name="equation") is not None
-            for block in self.content  # pylint: disable=not-an-iterable
-        )
-
-    @cached_property
-    def has_ons_embed(self) -> bool:
-        """Checks if there are any ONS embed blocks."""
-        return any(
-            block.value["content"].first_block_by_name(block_name="ons_embed") is not None
-            for block in self.content  # pylint: disable=not-an-iterable
-        )
