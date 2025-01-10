@@ -31,7 +31,7 @@ class BundlePage(Orderable):
     )
 
     panels: ClassVar[list["Panel"]] = [
-        PageChooserWithStatusPanel("page", ["analysis.AnalysisPage"]),
+        PageChooserWithStatusPanel("page", ["articles.StatisticalArticlePage"]),
     ]
 
     def __str__(self) -> str:

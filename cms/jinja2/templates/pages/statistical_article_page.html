@@ -4,10 +4,10 @@
 {% from "components/table-of-contents/_macro.njk" import onsTableOfContents %}
 
 {% block header_area %}
-    <div class="common-header analysis-header {% if page.updates %}analysis-header--flush{% endif %}">
+    <div class="common-header article-header {% if page.updates %}article-header--flush{% endif %}">
         <div class="ons-container">
             {% include "templates/components/navigation/breadcrumbs.html" %}
-            <p class="analysis-header__doc-type ons-u-fs-l">{{ _("Analysis") }}</p>
+            <p class="article-header__doc-type ons-u-fs-l">{{ _("Statistical article") }}</p>
 
             <div class="ons-grid ons-grid-flex-gap ons-grid-flex-gap--40">
                 <div class="ons-grid__col ons-col-10@m ">
@@ -99,7 +99,7 @@
                             <a href="{{ fullpageurl(page) }}">{{ page.display_title }}</a>
                         {% endset %}
                         {% trans trimmed release_date=page.release_date|date("DATE_FORMAT"), cite_link=cite_link %}
-                            Office for National Statistics (ONS), released {{ release_date }}, ONS website, analysis, {{ cite_link }}
+                            Office for National Statistics (ONS), released {{ release_date }}, ONS website, statistical article, {{ cite_link }}
                         {% endtrans %}
                     </p>
                 </section>

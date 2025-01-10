@@ -32,7 +32,7 @@ class MethodologyRelatedPage(Orderable):
         related_name="+",
     )
 
-    panels: ClassVar[list[FieldPanel]] = [PageChooserPanel("page", page_type=["analysis.AnalysisPage"])]
+    panels: ClassVar[list[FieldPanel]] = [PageChooserPanel("page", page_type=["articles.StatisticalArticlePage"])]
 
 
 class MethodologyPage(BasePage):  # type: ignore[django-manager-missing]
