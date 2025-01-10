@@ -3,7 +3,7 @@ from datetime import timedelta
 from django.test import TestCase
 from django.utils import timezone
 
-from cms.analysis.tests.factories import AnalysisPageFactory
+from cms.articles.tests.factories import StatisticalArticlePageFactory
 from cms.bundles.enums import BundleStatus
 from cms.bundles.tests.factories import BundleFactory, BundlePageFactory
 from cms.release_calendar.tests.factories import ReleaseCalendarPageFactory
@@ -14,7 +14,7 @@ class BundleModelTestCase(TestCase):
 
     def setUp(self):
         self.bundle = BundleFactory(name="The bundle")
-        self.analysis_page = AnalysisPageFactory(title="PSF")
+        self.statistical_article = StatisticalArticlePageFactory(title="PSF")
 
     def test_str(self):
         self.assertEqual(str(self.bundle), self.bundle.name)
@@ -45,43 +45,43 @@ class BundleModelTestCase(TestCase):
 
     def test_get_bundled_pages(self):
         """Test get_bundled_pages returns correct queryset."""
-        BundlePageFactory(parent=self.bundle, page=self.analysis_page)
+        BundlePageFactory(parent=self.bundle, page=self.statistical_article)
         page_ids = self.bundle.get_bundled_pages().values_list("pk", flat=True)
         self.assertEqual(len(page_ids), 1)
-        self.assertEqual(page_ids[0], self.analysis_page.pk)
+        self.assertEqual(page_ids[0], self.statistical_article.pk)
 
     def test_save_updates_page_publication_dates(self):
-        BundlePageFactory(parent=self.bundle, page=self.analysis_page)
+        BundlePageFactory(parent=self.bundle, page=self.statistical_article)
         del self.bundle.scheduled_publication_date  # clear the cached property
         future_date = timezone.now() + timedelta(days=1)
         self.bundle.publication_date = future_date
         self.bundle.save()
 
-        self.analysis_page.refresh_from_db()
-        self.assertEqual(self.analysis_page.go_live_at, future_date)
+        self.statistical_article.refresh_from_db()
+        self.assertEqual(self.statistical_article.go_live_at, future_date)
 
     def test_save_doesnt_update_dates_when_released(self):
         future_date = timezone.now() + timedelta(days=1)
         self.bundle.status = BundleStatus.RELEASED
         self.bundle.publication_date = future_date
-        BundlePageFactory(parent=self.bundle, page=self.analysis_page)
+        BundlePageFactory(parent=self.bundle, page=self.statistical_article)
 
         self.bundle.save()
-        self.analysis_page.refresh_from_db()
+        self.statistical_article.refresh_from_db()
 
-        self.assertNotEqual(self.analysis_page.go_live_at, future_date)
+        self.assertNotEqual(self.statistical_article.go_live_at, future_date)
 
     def test_bundlepage_orderable_str(self):
-        bundle_page = BundlePageFactory(parent=self.bundle, page=self.analysis_page)
+        bundle_page = BundlePageFactory(parent=self.bundle, page=self.statistical_article)
 
-        self.assertEqual(str(bundle_page), f"BundlePage: page {self.analysis_page.pk} in bundle {self.bundle.id}")
+        self.assertEqual(str(bundle_page), f"BundlePage: page {self.statistical_article.pk} in bundle {self.bundle.id}")
 
 
 class BundledPageMixinTestCase(TestCase):
     """Test BundledPageMixin properties and methods."""
 
     def setUp(self):
-        self.page = AnalysisPageFactory()
+        self.page = StatisticalArticlePageFactory()
         self.bundle = BundleFactory()
         self.bundle_page = BundlePageFactory(parent=self.bundle, page=self.page)
 

@@ -56,6 +56,7 @@ if "CSRF_TRUSTED_ORIGINS" in env:
 # Application definition
 
 INSTALLED_APPS = [
+    "cms.articles",
     "cms.analysis",
     "cms.bundles",
     "cms.core",
@@ -67,6 +68,7 @@ INSTALLED_APPS = [
     "cms.topics",
     "cms.users",
     "cms.standard_pages",
+    "cms.methodology",
     "wagtail.embeds",
     "wagtail.sites",
     "wagtail.users",
@@ -224,7 +226,7 @@ DATABASE_ROUTERS = ["cms.core.db_router.ExternalEnvRouter", "cms.core.db_router.
 # Server-side cache settings. Do not confuse with front-end cache.
 # https://docs.djangoproject.com/en/stable/topics/cache/
 # If the server has a Redis instance exposed via a URL string in the REDIS_URL
-# environment variable, prefer that. Otherwise use the database backend. We
+# environment variable, prefer that. Otherwise, use the database backend. We
 # usually use Redis in production and database backend on staging and dev. In
 # order to use database cache backend you need to run
 # "django-admin createcachetable" to create a table for the cache.

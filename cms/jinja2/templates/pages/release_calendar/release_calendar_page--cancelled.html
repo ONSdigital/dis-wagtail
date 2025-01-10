@@ -1,16 +1,20 @@
 {% extends "templates/pages/release_calendar/release_calendar_page.html" %}
+{% from "components/panel/_macro.njk" import onsPanel %}
 {% from "components/table-of-contents/_macro.njk" import onsTableOfContents %}
 
 {% block release_meta %}
-    <div class="ons-grid__col ons-grid__col--sticky@m ons-col-4@m ons-col-12@s ons-u-p-no">
-        <span class="ons-u-fs-r--b">{{ _("Release date") }}:</span>
-        <span class="ons-u-nowrap">{{ _("Cancelled") }}</span>
-    </div>
+    {% if page.release_date or page.release_text %}
+        <div class="ons-container common-header__releases common-header__releases--single-row">
+            <div>
+                <span class="ons-u-fs-r--b">{{ _("Release date") }}:</span>
+                <span class="ons-u-nowrap">{{ _("Cancelled") }}</span>
+            </div>
+        </div>
+    {% endif %}
 {% endblock %}
 
 {% block release_note %}
-    <div class="ons-u-pt-s ons-u-pb-l@m ons-u-pb-s@2xs@m">
-        {% from "components/panel/_macro.njk" import onsPanel %}
+    <div class="ons-container">
         {{ onsPanel({"body": page.notice }) }}
     </div>
 {% endblock %}

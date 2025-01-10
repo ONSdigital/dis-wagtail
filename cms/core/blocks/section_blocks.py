@@ -12,7 +12,6 @@ from cms.core.blocks import (
     ONSEmbedBlock,
     PanelBlock,
     QuoteBlock,
-    RelatedContentBlock,
     RelatedLinksBlock,
 )
 
@@ -21,7 +20,7 @@ if TYPE_CHECKING:
 
 
 class SectionContentBlock(StreamBlock):
-    """The analysis section content StreamField block definition."""
+    """The core section content block definition."""
 
     rich_text = RichTextBlock()
     quote = QuoteBlock()
@@ -31,7 +30,7 @@ class SectionContentBlock(StreamBlock):
     embed = EmbedBlock(group="Media")
     equation = MathBlock(group="DataVis", icon="decimal")
     ons_embed = ONSEmbedBlock(group="DataVis", label="ONS General Embed")
-    related_links = RelatedLinksBlock(RelatedContentBlock(), icon="link")
+    related_links = RelatedLinksBlock(icon="link")
 
     class Meta:
         template = "templates/components/streamfield/stream_block.html"
@@ -39,7 +38,7 @@ class SectionContentBlock(StreamBlock):
 
 
 class SectionBlock(StructBlock):
-    """The analysis section block definition."""
+    """The core section block definition with headers."""
 
     title = HeadingBlock()
     content = SectionContentBlock()
@@ -49,13 +48,4 @@ class SectionBlock(StructBlock):
         return [{"url": "#" + slugify(value["title"]), "text": value["title"]}]
 
     class Meta:
-        template = "templates/components/streamfield/analysis_section_block.html"
-
-
-class AnalysisStoryBlock(StreamBlock):
-    """The analysis StreamField block definition."""
-
-    section = SectionBlock()
-
-    class Meta:
-        template = "templates/components/streamfield/stream_block.html"
+        template = "templates/components/streamfield/section_block.html"
