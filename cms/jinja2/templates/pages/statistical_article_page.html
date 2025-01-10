@@ -1,38 +1,57 @@
 {% extends "templates/base_page.html" %}
 
+{% from "components/panel/_macro.njk" import onsPanel %}
 {% from "components/table-of-contents/_macro.njk" import onsTableOfContents %}
-{% from "components/list/_macro.njk" import onsList %}
 
 {% block header_area %}
     <div class="common-header article-header {% if page.updates %}article-header--flush{% endif %}">
         <div class="ons-container">
             {% include "templates/components/navigation/breadcrumbs.html" %}
-            <p class="article-header__doc-type ons-u-fs-l">{{ _("Methodology") }}</p>
+            <p class="article-header__doc-type ons-u-fs-l">{{ _("Statistical article") }}</p>
 
             <div class="ons-grid ons-grid-flex-gap ons-grid-flex-gap--40">
                 <div class="ons-grid__col ons-col-10@m ">
                     <h1 class="ons-u-fs-3xl common-header__heading">
-                        {{ page.title }}
+                        {{ page.display_title }}
                     </h1>
 
                     <div class="common-header__summary">{{ page.summary|richtext() }}</div>
+                </div>
+                <div class="ons-grid__col ons-col-2@m common-header__kitemark">
+                    {% if page.is_accredited %}
+                        {% include "templates/components/accredited/accredited-logo.html" %}
+                    {% endif %}
                 </div>
             </div>
         </div>
 
         {% block release_meta %}
+            {% if page.is_census %}
+                <div class="ons-container">
+                    {% include "templates/components/census/census-logo.html" %}
+                </div>
+            {% endif %}
             <div class="ons-container common-header__releases">
                 <div>
-                    <span class="ons-u-fs-r--b common-header__releases-label">{{ _("Published") }}:</span>
-                    <span class="ons-u-nowrap">{{ page.publication_date|date("DATE_FORMAT") }}</span>
+                    <span class="ons-u-fs-r--b common-header__releases-label">{{ _("Release date") }}:</span>
+                    <span class="ons-u-nowrap">{{ page.release_date|date("DATE_FORMAT") }}</span>
                 </div>
-                {% if page.last_revised_date %}
-                    <div>
-                        <span class="ons-u-fs-r--b common-header__releases-label">{{ _("Last revised") }}:</span>
-                        <span class="ons-u-nowrap">{{ page.last_revised_date|date("DATE_FORMAT")}}</span>
-                    </div>
-                {% endif %}
-
+                <div>
+                    <span class="ons-u-fs-r--b common-header__releases-label">{{ _("Next release") }}:</span>
+                    <span class="ons-u-nowrap">{{ page.next_release_date|date("DATE_FORMAT") or _("To be announced") }}</span>
+                </div>
+                <div>
+                    <span class="ons-u-fs-r--b common-header__releases-label">{{ _("Edition") }}:</span>
+                    <span class="ons-u-nowrap">{{ _("Latest") }}</span>
+                </div>
+                <div>
+                    <span class="ons-u-fs-r--b common-header__releases-label">{{ _("Releases") }}:</span>
+                    {% if page.is_latest %}
+                        <a href="{{ routablepageurl(page.get_parent().specific, "previous_releases") }}">{{ _("View previous releases") }}</a>
+                    {% else %}
+                        <a href="{{ routablepageurl(page.get_parent().specific, "latest_release") }}">{{ _("View latest release") }}</a>
+                    {% endif %}
+                </div>
                 {% if page.contact_details %}
                     <div>
                         <span class="ons-u-fs-r--b common-header__releases-label">{{ _("Contact") }}:</span>
@@ -42,6 +61,15 @@
             </div>
         {% endblock %}
     </div>
+
+    {% if page.updates %}
+        {% include_block page.updates %}
+    {% endif %}
+
+    {% if page.headline_figures %}
+        {% include_block page.headline_figures %}
+    {% endif %}
+
 {% endblock %}
 
 {% block main %}
@@ -61,33 +89,17 @@
         </div>
 
         <div class="ons-grid__col ons-col-8@m">
-            {# if there are no contact details on the page, we don't want the last
-            streamfield block to have a bottom margin. last_flush is used in stream_block.html #}
-            {% if page.contact_details %}
-                {% set last_flush = False %}
-            {% else %}
-                {% set last_flush = True %}
-            {% endif %}
-
             {% include_block page.content %}
-
-            {% if related_publications %}
-                <section id="related-publications" class="spacing">
-                    <h2 class="ons-u-fs-l">{{ _("Related publications") }}</h2>
-                    {{- onsList({"itemsList": related_publications}) -}}
-                </section>
-            {% endif %}
 
             {% if page.show_cite_this_page %}
                 <section id="cite-this-page" class="spacing">
-                    <h2 class="ons-u-fs-l">{{ _("Cite this methodology") }}</h2>
+                    <h2 class="ons-u-fs-l">{{ _("Cite this analysis") }}</h2>
                     <p>
                         {%- set cite_link -%}
-                            <a href="{{ fullpageurl(page) }}">{{ page.title }}</a>
+                            <a href="{{ fullpageurl(page) }}">{{ page.display_title }}</a>
                         {% endset %}
-                        {% set latest_date = page.last_revised_date if page.last_revised_date else page.publication_date %}
-                        {% trans trimmed latest_date_formatted = latest_date|date("DATE_FORMAT"), cite_link=cite_link %}
-                            Office for National Statistics (ONS), last revised {{ latest_date_formatted }}, ONS website, methodology, {{ cite_link }}
+                        {% trans trimmed release_date=page.release_date|date("DATE_FORMAT"), cite_link=cite_link %}
+                            Office for National Statistics (ONS), released {{ release_date }}, ONS website, statistical article, {{ cite_link }}
                         {% endtrans %}
                     </p>
                 </section>

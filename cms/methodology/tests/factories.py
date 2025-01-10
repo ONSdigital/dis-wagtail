@@ -36,5 +36,5 @@ class MethodologyRelatedPageFactory(factory.django.DjangoModelFactory):
         model = MethodologyRelatedPage
 
     parent = factory.SubFactory(MethodologyPageFactory)
-    page = factory.SubFactory("cms.analysis.tests.factories.AnalysisPageFactory")
+    page = factory.SubFactory("cms.articles.tests.factories.StatisticalArticlePageFactory")
     sort_order = factory.Sequence(lambda n: n)
