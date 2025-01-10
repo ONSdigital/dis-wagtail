@@ -69,7 +69,7 @@ class BasePage(ListingFieldsMixin, SocialFieldsMixin, Page):  # type: ignore[dja
         if streamvalue := getattr(self, self.content_field_name):
             # run the check on the StreamBlock itself, if it supports it
             if hasattr(streamvalue.stream_block, "has_equations"):
-                return streamvalue.stream_block.has_equations(streamvalue)
+                return bool(streamvalue.stream_block.has_equations(streamvalue))
 
             try:
                 return streamvalue.first_block_by_name(block_name="equation") is not None
@@ -86,7 +86,7 @@ class BasePage(ListingFieldsMixin, SocialFieldsMixin, Page):  # type: ignore[dja
         if streamvalue := getattr(self, self.content_field_name):
             # run the check on the StreamBlock itself, if it supports it
             if hasattr(streamvalue.stream_block, "has_ons_embed"):
-                return streamvalue.stream_block.has_ons_embed(streamvalue)
+                return bool(streamvalue.stream_block.has_ons_embed(streamvalue))
 
             try:
                 return streamvalue.first_block_by_name(block_name="ons_embed") is not None
