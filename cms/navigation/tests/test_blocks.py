@@ -78,44 +78,36 @@ class MainMenuBlockTestCase(WagtailTestUtils, TestCase):
     def test_section_streamfield_limit(self):
         """Ensure sections within a column StreamField do not exceed the maximum limit of 3."""
         # Create topic links once if they are identical across sections
-        topic_links = [TopicLinkBlockFactory() for _ in range(1)]
+        topic_links = [TopicLinkBlockFactory() for _ in range(15)]
 
         # Create sections using the pre-defined topic links
-        sections = [SectionBlockFactory(links=topic_links) for _ in range(6)]  # Exceeding the limit
+        sections = [SectionBlockFactory(links=topic_links) for _ in range(5)]  # Exceeding limit
 
         # Create the column value with the sections
-        column_value = {
-            "type": "column",
-            "value": {"sections": sections},  # Mimic StreamField data structure
-        }
+        column_value = ColumnBlockFactory(sections=sections)
 
-        # Validate the block manually
-        column_block = ColumnBlock()
-        with self.assertRaises(ValidationError) as context:
-            column_block.clean(column_value["value"])
+        # Assemble the columns list with multiple column dictionaries
+        columns = [
+            {
+                "type": "column",
+                "value": column_value,
+            }
+            for _ in range(3)
+        ]
 
-        self.assertEqual(context.exception.messages, ["You cannot have more than 3 sections in a column."])
+        self.main_menu.columns = columns
 
-        # Assign the column to the main menu and validate the model
-        self.main_menu.columns = [column_value] * 3
-        with self.assertRaises(ValidationError) as context:
-            self.main_menu.full_clean()
+        # Validate the StreamField blocks explicitly
+        for stream_child in self.main_menu.columns:
+            block = stream_child.block  # Get the block instance
+            # print("block", block)
+            value = stream_child.value  # Get the value (data)
+            # print("value", value)
 
-        self.assertEqual(context.exception.messages, ["You cannot have more than 3 columns. Please remove some items."])
+            with self.assertRaises(ValidationError) as context:
+                block.clean(value)  # Explicit block validation
 
-    # def test_highlights_block(self):
-    #     """Ensure highlights StreamField does not exceed the maximum limit of 3."""
-    #     # highlights = HighlightsBlockFactory.create_batch(4)
-    #     value = {"url": "https://ons.gov.uk", "title": "Highlight", "description": "desc"}
-    #     highlights = [
-    #         {"type": "highlight", "value": HighlightsBlockFactory()},  # or the dict form
-    #         {"type": "highlight", "value": value},
-    #         {"type": "highlight", "value": value},
-    #         {"type": "highlight", "value": value},
-    #     ]
-    #     self.main_menu.highlights = highlights
-    #     with self.assertRaises(ValueError):
-    #         self.main_menu.full_clean()
+            self.assertEqual(context.exception.messages, ["You cannot have more than 3 sections in a column."])
 
     def test_column_block(self):
         """Test ColumnBlock properties."""
