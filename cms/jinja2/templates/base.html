@@ -173,7 +173,6 @@
 
 {% endblock  %}
 
-
 {% block preMain %}
     {% if not IS_EXTERNAL_ENV %}
         {{ wagtailuserbar() }}
@@ -217,7 +216,7 @@
     onsCookiesBanner({
       'lang': "cy" if LANGUAGE_CODE == "cy" else "en",
       'serviceName': COOKIE_BANNER_SERVICE_NAME,
-      'settingsLinkURL': MANAGE_COOKIE_SETTINGS_URL,
+      'settingsLinkUrl': MANAGE_COOKIE_SETTINGS_URL,
     })
   }}
   {# fmt:on #}

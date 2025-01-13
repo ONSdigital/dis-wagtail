@@ -19,23 +19,25 @@ The Wagtail CMS for managing and publishing content for the Office for National 
 
 <!-- markdown-link-check-disable -->
 
--   [Getting Started](#getting-started)
-    -   [Pre-requisites](#pre-requisites)
-    -   [Setup](#setup)
-        -   [Using Docker](#using-docker)
-        -   [Running locally with supporting services in Docker](#running-locally-with-supporting-services-in-docker)
--   [Development](#development)
-    -   [Front-end tooling](#front-end-tooling)
-    -   [Adding Python packages](#adding-python-packages)
-    -   [Run Tests with Coverage](#run-tests-with-coverage)
-    -   [Linting and Formatting](#linting-and-formatting)
-        -   [Python](#python)
-        -   [Front-end](#front-end)
-        -   [pre-commit](#pre-commit)
-        -   [Megalinter](#megalinter-lintformat-non-python-files)
-    -   [Django Migrations](#django-migrations)
--   [Contributing](#contributing)
--   [License](#license)
+- [Getting Started](#getting-started)
+    - [Pre-requisites](#pre-requisites)
+    - [Setup](#setup)
+        - [Using Docker](#using-docker)
+        - [Running locally with supporting services in Docker](#running-locally-with-supporting-services-in-docker)
+- [Development](#development)
+    - [Front-end tooling](#front-end-tooling)
+    - [Adding Python packages](#adding-python-packages)
+    - [Run Tests with Coverage](#run-tests-with-coverage)
+    - [Functional Tests](#functional-tests)
+    - [Linting and Formatting](#linting-and-formatting)
+        - [Python](#python)
+        - [Front-end](#front-end)
+        - [pre-commit](#pre-commit)
+        - [Megalinter](#megalinter-lintformat-non-python-files)
+    - [Django Migrations](#django-migrations)
+- [Contributing](#contributing)
+- [License](#license)
+
 <!-- markdown-link-check-enable -->
 
 For further developer documentation see [docs](docs/index.md)
@@ -52,9 +54,12 @@ Ensure you have the following installed:
    managing Python versions.
 2. **[Poetry](https://python-poetry.org/)**: This is used to manage package dependencies and virtual
    environments.
-3. **[Colima](https://github.com/ONSdigital/dp-compose/blob/main/setting-up-colima-locally.md)** for running the project in Docker containers.
-4. **[PostgreSQL](https://www.postgresql.org/)** for the database. Provided as container via `docker-compose.yml` when using the Docker setup.
-5. **[Node](https://nodejs.org/en)** and **[`nvm` (Node Version Manager)](https://github.com/nvm-sh/nvm)** for front-end tooling.
+3. **[Colima](https://github.com/ONSdigital/dp-compose/blob/main/setting-up-colima-locally.md)** for running the project
+   in Docker containers.
+4. **[PostgreSQL](https://www.postgresql.org/)** for the database. Provided as container via `docker-compose.yml` when
+   using the Docker setup.
+5. **[Node](https://nodejs.org/en)** and **[`nvm` (Node Version Manager)](https://github.com/nvm-sh/nvm)** for front-end
+   tooling.
 6. **[JQ](https://jqlang.github.io/jq/)** for the step in the build that installs the design system templates
 7. **Operation System**: Ubuntu/MacOS
 
@@ -117,10 +122,13 @@ Follow these steps to set up and run the project using Docker.
 
 3. **Start Django Inside the Container**
 
-    Once the containers are running, you need to manually start Django from within the web container. This allows for running both the Django server and any additional background services (e.g., schedulers).
+    Once the containers are running, you need to manually start Django from within the web container.
+    This allows for running both the Django server and any additional background services (e.g., schedulers).
 
-    > ⚠️ WARNING  
-    >  The `honcho` command will pick up your local mounted `.env` file when running via `docker-compose`. Ensure that you comment out any variables in the `.env` file which might cause clashes in the container context as they will take precedence when running `honcho start`.
+    > ⚠️ WARNING
+    > The `honcho` command will pick up your local mounted `.env` file when running via `docker-compose`.
+    > Ensure that you comment out any variables in the `.env` file which might cause clashes in the container
+    > context as they will take precedence when running `honcho start`.
 
     ```bash
     # Start both Django and the scheduler using Honcho
@@ -134,47 +142,56 @@ You can then access the admin at `http://0.0.0.0:8000/admin/` or `http://localho
 
 #### Running locally with supporting services in Docker
 
-You can also run the main application locally with the supporting backend services such as the Postgres and Redis running in Docker. This can be useful when you want to make changes that require the app to be restarted in order to be picked up.
+You can also run the main application locally with the supporting backend services such as the Postgres and Redis running in Docker.
+This can be useful when you want to make changes that require the app to be restarted in order to be picked up.
 
-For this method you can specify the runtime configuration either in your IDE (for PyCharm see [here](https://www.jetbrains.com/help/pycharm/run-debug-configuration.html#createExplicitly)), or copy the `.development.env` and rename it to `.env` which will allow Django to pick up the config.
+For this method you can specify the runtime configuration either in your
+IDE (for PyCharm see [here](https://www.jetbrains.com/help/pycharm/run-debug-configuration.html#createExplicitly)), or
+copy the `.development.env` and rename it to `.env` which will allow Django to pick up the config.
 
-Once you create the `.env` file, and you'd like to switch back to running the application in a container, the `.env` file will be accessible inside the containers and it will be picked up by the `honcho` command. In order to avoid conflicts you may need to comment out some variables (such as `DATABASE_URL` and `REDIS_URL`) in the `.env` file.
+Once you create the `.env` file, and you'd like to switch back to running the application in a container, the `.env` file will be accessible inside the
+containers and it will be picked up by the `honcho` command. In order to avoid conflicts you may need to comment out
+some variables (such as `DATABASE_URL` and `REDIS_URL`) in the `.env` file.
 
 > [!NOTE]
-> When running the application locally in a virtual environment via Poetry the `.env` file will not be picked up automatically. For this to work you'll need to install the [poetry-plugin-dotenv](https://github.com/pivoshenko/poetry-plugin-dotenv). However if you installed Poetry with `brew` rather than `pip` that currently isn't going to work (see the [issue](https://github.com/pivoshenko/poetry-plugin-dotenv/issues/327)) and you'll need to install an older and seemingly no longer maintained [poetry-dotenv-plugin](https://github.com/mpeteuil/poetry-dotenv-plugin).
+> When running the application locally in a virtual environment via Poetry the `.env` file will not be picked up automatically.
+> For this to work you'll need to install the [poetry-plugin-dotenv](https://github.com/pivoshenko/poetry-plugin-dotenv).
+> However, if you installed Poetry with `brew` rather than `pip` that currently isn't going to
+> work (see the [issue](https://github.com/pivoshenko/poetry-plugin-dotenv/issues/327)) and you'll need to install an older and
+> seemingly no longer maintained [poetry-dotenv-plugin](https://github.com/mpeteuil/poetry-dotenv-plugin).
 
 In order to run it:
 
 1. Pull the images of the supporting services.
 
-```
-make compose-dev-pull
-```
+    ```bash
+    make compose-dev-pull
+    ```
 
 2. Start the supporting services in Docker.
 
-```
-make compose-dev-up
-```
+    ```bash
+    make compose-dev-up
+    ```
 
 3. Run the below command to apply the necessary pre-run steps, which include:
 
--   loading design system templates,
--   collecting the static files,
--   generating and applying database migrations,
--   creating a superuser with:
-    -   username: `admin`
-    -   password: `changeme`
+    - loading design system templates,
+    - collecting the static files,
+    - generating and applying database migrations,
+    - creating a superuser with:
+        - username: `admin`
+        - password: `changeme` # pragma: allowlist secret
 
-```
-make dev-init
-```
+    ```bash
+    make dev-init
+    ```
 
 4. Run the Django server locally via your IDE or with the following command:
 
-```
-make runserver
-```
+    ```bash
+    make runserver
+    ```
 
 ## Development
 
@@ -189,7 +206,8 @@ make
 
 ### Front-end tooling
 
-While the end goal is to have all front-end elements in the [Design System](https://service-manual.ons.gov.uk/design-system),
+While the end goal is to have all front-end elements in the
+[Design System](https://service-manual.ons.gov.uk/design-system),
 the new design introduces a number of components that we need to build and contributed to the DS. In order to aid
 development and avoid being blocked by the DS, we will use modern front-end tooling for that.
 
@@ -225,7 +243,69 @@ To run the tests and check coverage, run:
 make test
 ```
 
-During tests, the `cms.settings.test` settings module is used. When running test without using `make test`, ensure this settings module is used.
+During tests, the `cms.settings.test` settings module is used. When running test without using `make test`, ensure this
+settings module is used.
+
+### Functional Tests
+
+Our suite of functional browser driven tests uses [Behave](https://behave.readthedocs.io/en/latest/),
+[Playwright](https://playwright.dev/python/docs/intro) and
+[Django Live Server Test Cases](https://docs.djangoproject.com/en/stable/topics/testing/tools/#liveservertestcase) to
+run BDD Cucumber feature tests against the app from a browser.
+
+#### Installation
+
+Install the Playwright dependencies (including its browser drivers) with:
+
+```shell
+make playwright-install
+```
+
+#### Run the Functional Tests
+
+You can run the tests as an all-in-one command with:
+
+```shell
+make functional-tests
+```
+
+This will start and stop the docker compose services with the relevant tests.
+
+To run the docker compose dependencies (database and redis) separately, e.g. if you want to run individual functional
+tests yourself for development, start the docker compose dependencies with:
+
+```shell
+make functional-tests-up
+```
+
+This will start the dependent services in the background, allowing you to then run the tests separately.
+
+Then once you are finished testing, stop the dependencies with:
+
+```shell
+make functional-tests-down
+```
+
+#### Showing the Tests Browser
+
+By default, the tests will run in headless mode with no visible browser window.
+
+To disable headless mode and show the browser, set `PLAYWRIGHT_HEADLESS=False` in the environment from which you are
+running the tests. In this circumstance, you will probably also find it helpful to enable "slow mo" mode, which slows
+down the automated browser interactions to make it possible to follow what the tests are doing. You can configure it
+using the `PLAYWRIGHT_SLOW_MO` environment variable, passing it a value of milliseconds by which to slow each
+interaction, e.g. `PLAYWRIGHT_SLOW_MO=1000` will cause each individual browser interaction from the tests to be delayed
+by 1 second.
+
+For example, you can run the tests with visible browser and each interaction slowed by a second by running:
+
+```shell
+PLAYWRIGHT_HEADLESS=False PLAYWRIGHT_SLOW_MO=1000 make functional-tests
+```
+
+#### Developing Functional Tests
+
+Refer to the detailed [functional tests development docs](./functional_tests/README.md)
 
 ### Linting and Formatting
 
@@ -272,11 +352,30 @@ Note that this project has configuration for [pre-commit](https://github.com/pre
 ```bash
 # if you don't have it yet, globally
 pip install pre-commit
+```
 
+`pylint`, which is run as part of `pre-commit`, relies on the poetry packages all being installed. If you are running this on your local machine you need to install them if you have not done so previously. Poetry automatically creates a virtual environment when you do this, which the `pylint` command will make use of
+
+```bash
+# if you haven't run this locally previously
+poetry install
+```
+
+`pylint` also relies on the [libpq](https://www.postgresql.org/docs/16/libpq.html) library being installed as a global package on your local machine. The installation steps below are for Macs.
+
+```bash
+brew install libpq
+```
+
+After the above command, follow the homebrew post-install instructions for PATH exports
+
+```bash
 # in the project directory, initialize pre-commit
+
 pre-commit install
 
 # Optional, run all checks once for this, then the checks will run only on the changed files
+
 pre-commit run --all-files
 ```
 

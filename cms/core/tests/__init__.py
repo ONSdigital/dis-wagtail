@@ -65,3 +65,12 @@ class TransactionTestCase(_TransactionTestCase):
             self.assertNumQueries(replica, using=READ_REPLICA_DB_ALIAS),
         ):
             yield
+
+    @contextmanager
+    def captureQueries(self):  # pylint: disable=invalid-name
+        """Capture the executed queries for the default and replica connections."""
+        with (
+            CaptureQueriesContext(connections[DEFAULT_DB_ALIAS]) as default_queries,
+            CaptureQueriesContext(connections[READ_REPLICA_DB_ALIAS]) as replica_queries,
+        ):
+            yield default_queries, replica_queries

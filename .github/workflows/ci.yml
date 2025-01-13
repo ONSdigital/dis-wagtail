@@ -130,6 +130,16 @@ jobs:
         run: poetry run ./manage.py migrate --noinput
       - name: Test
         run: make test
+      - name: Add coverage data to GitHub Action summary
+        run: |
+          poetry run coverage html --skip-covered --skip-empty
+          echo "## Coverage summary" >> "$GITHUB_STEP_SUMMARY"
+          poetry run coverage report --format=markdown >> "$GITHUB_STEP_SUMMARY"
+      - name: Upload coverage HTML report
+        uses: actions/upload-artifact@v4
+        with:
+          name: html-report
+          path: htmlcov
 
   docker:
     runs-on: ubuntu-latest
@@ -137,3 +147,53 @@ jobs:
       - uses: actions/checkout@v4
       - name: Build Docker Image
         run: docker build --target web -t ons .
+
+  functional-tests:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        browser:
+          - chromium
+    needs:
+      - lint
+      - lint-front-end
+      - compile_static
+
+    env:
+      DJANGO_SETTINGS_MODULE: cms.settings.functional_test
+      SECRET_KEY: fake_secret_key_to_run_tests # pragma: allowlist secret
+      PLAYWRIGHT_BROWSER: ${{ matrix.browser }}
+      PLAYWRIGHT_TRACES_DIR: playwright_traces
+      PLAYWRIGHT_TRACE: 'true'
+
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Poetry
+        run: pipx install poetry==${{ env.POETRY_VERSION }}
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version-file: .python-version
+          cache: poetry
+
+      - name: Install dependencies
+        run: make install-dev
+
+      - name: Playwright Install
+        run: poetry run python -m playwright install --with-deps ${{ matrix.browser }}
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: static
+          path: cms/static_compiled/
+
+      - name: Run Functional Tests
+        run: make functional-tests
+
+      - name: Upload Failure Traces
+        uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: playwright-traces-${{ matrix.browser }}
+          path: playwright_traces/

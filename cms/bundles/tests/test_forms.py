@@ -6,7 +6,7 @@ from django.utils import timezone
 from wagtail.admin.panels import get_edit_handler
 from wagtail.test.utils.form_data import inline_formset, nested_form_data
 
-from cms.analysis.tests.factories import AnalysisPageFactory
+from cms.articles.tests.factories import StatisticalArticlePageFactory
 from cms.bundles.admin_forms import AddToBundleForm
 from cms.bundles.enums import ACTIVE_BUNDLE_STATUS_CHOICES, BundleStatus
 from cms.bundles.models import Bundle
@@ -21,7 +21,7 @@ class AddToBundleFormTestCase(TestCase):
     def setUpTestData(cls):
         cls.bundle = BundleFactory(name="First Bundle")
         cls.non_editable_bundle = BundleFactory(approved=True)
-        cls.page = AnalysisPageFactory(title="The Analysis")
+        cls.page = StatisticalArticlePageFactory(title="The Statistical Article")
 
     def test_form_init(self):
         """Checks the form gets a bundle form field on init."""
@@ -54,7 +54,7 @@ class BundleAdminFormTestCase(TestCase):
     @classmethod
     def setUpTestData(cls):
         cls.bundle = BundleFactory(name="First Bundle")
-        cls.page = AnalysisPageFactory(title="The Analysis")
+        cls.page = StatisticalArticlePageFactory(title="The Statistical Article")
         cls.form_class = get_edit_handler(Bundle).get_form_class()
 
     def setUp(self):
@@ -125,7 +125,7 @@ class BundleAdminFormTestCase(TestCase):
 
         form = self.form_class(instance=self.bundle, data=data)
         self.assertFalse(form.is_valid())
-        self.assertFormError(form, None, ["'The Analysis' is already in an active bundle (Another Bundle)"])
+        self.assertFormError(form, None, ["'The Statistical Article' is already in an active bundle (Another Bundle)"])
 
     def test_clean__sets_approved_by_and_approved_at(self):
         approver = UserFactory()
@@ -159,3 +159,16 @@ class BundleAdminFormTestCase(TestCase):
         error = "You must choose either a Release Calendar page or a Publication date, not both."
         self.assertFormError(form, "release_calendar_page", [error])
         self.assertFormError(form, "publication_date", [error])
+
+    def test_clean__removes_duplicate_pages(self):
+        self.assertEqual(self.bundle.bundled_pages.count(), 0)
+
+        raw_data = self.raw_form_data()
+        raw_data["bundled_pages"] = inline_formset([{"page": self.page.id}, {"page": self.page.id}])
+
+        form = self.form_class(instance=self.bundle, data=nested_form_data(raw_data))
+        self.assertTrue(form.is_valid())
+
+        form.save()
+
+        self.assertEqual(self.bundle.bundled_pages.count(), 1)

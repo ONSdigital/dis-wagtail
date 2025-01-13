@@ -159,6 +159,9 @@ cython_debug/
 #  option (not recommended) you can uncomment the following to ignore the entire idea folder.
 .idea/
 
+# VSCode workspace settings
+.vscode/
+
 # Ruff
 .ruff_cache/
 
@@ -190,3 +193,9 @@ static/
 
 # Media files
 /media
+
+# bak files
+*.bak
+
+# Playwright Traces
+/tmp_traces

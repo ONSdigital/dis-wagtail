@@ -12,6 +12,8 @@ from wagtail.admin.panels import FieldPanel, FieldRowPanel, InlinePanel
 from wagtail.models import Orderable, Page
 from wagtail.search import index
 
+from cms.release_calendar.viewsets import FutureReleaseCalendarChooserWidget
+
 from .enums import ACTIVE_BUNDLE_STATUSES, EDITABLE_BUNDLE_STATUSES, BundleStatus
 from .forms import BundleAdminForm
 from .panels import BundleNotePanel, PageChooserWithStatusPanel
@@ -29,7 +31,7 @@ class BundlePage(Orderable):
     )
 
     panels: ClassVar[list["Panel"]] = [
-        PageChooserWithStatusPanel("page", ["analysis.AnalysisPage"]),
+        PageChooserWithStatusPanel("page", ["articles.StatisticalArticlePage"]),
     ]
 
     def __str__(self) -> str:
@@ -100,7 +102,11 @@ class Bundle(index.Indexed, ClusterableModel, models.Model):  # type: ignore[dja
         FieldPanel("name"),
         FieldRowPanel(
             [
-                FieldPanel("release_calendar_page", heading="Release Calendar page"),
+                FieldPanel(
+                    "release_calendar_page",
+                    heading="Release Calendar page",
+                    widget=FutureReleaseCalendarChooserWidget,
+                ),
                 FieldPanel("publication_date", heading="or Publication date"),
             ],
             heading=_("Scheduling"),

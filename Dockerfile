@@ -220,6 +220,10 @@ ARG POSTGRES_VERSION=16
 # RUN --mount=type=cache,target=/var/lib/apt/lists,sharing=locked \
 #     --mount=type=cache,target=/var/cache/apt,sharing=locked \
 #     <<EOF
+
+# Set default shell with pipefail option
+SHELL ["/bin/bash", "-o", "pipefail", "-c"]
+
 RUN <<EOF
     apt --quiet --yes update
     apt --quiet --yes install \
