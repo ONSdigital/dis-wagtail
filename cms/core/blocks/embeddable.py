@@ -177,7 +177,7 @@ class VideoEmbedBlock(blocks.StructBlock):
             return super().clean(value)
 
         if not any(re.match(pattern, value["link_url"]) for pattern in other_patterns):
-            errors["link_url"] = ValidationError(_("The link URL must use a valid vimeo or youtube video URL"))
+            errors["link_url"] = ValidationError(_("The link URL must use a valid Vimeo or YouTube video URL"))
 
         if errors:
             raise StructBlockValidationError(block_errors=errors)

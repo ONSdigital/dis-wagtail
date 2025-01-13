@@ -27,7 +27,7 @@ class VideoEmbedBlockTestCase(TestCase):
 
         self.assertEqual(
             info.exception.block_errors["link_url"].message,
-            "The link URL must use a valid vimeo or youtube video URL",
+            "The link URL must use a valid Vimeo or YouTube video URL",
         )
 
     def test_clean__invalid_youtube_link_1(self):
@@ -45,7 +45,7 @@ class VideoEmbedBlockTestCase(TestCase):
 
         self.assertEqual(
             info.exception.block_errors["link_url"].message,
-            "The link URL must use a valid vimeo or youtube video URL",
+            "The link URL must use a valid Vimeo or YouTube video URL",
         )
 
     def test_clean__invalid_youtube_link_2(self):
@@ -63,7 +63,7 @@ class VideoEmbedBlockTestCase(TestCase):
 
         self.assertEqual(
             info.exception.block_errors["link_url"].message,
-            "The link URL must use a valid vimeo or youtube video URL",
+            "The link URL must use a valid Vimeo or YouTube video URL",
         )
 
     def test_clean__invalid_youtube_link_3(self):
@@ -81,7 +81,7 @@ class VideoEmbedBlockTestCase(TestCase):
 
         self.assertEqual(
             info.exception.block_errors["link_url"].message,
-            "The link URL must use a valid vimeo or youtube video URL",
+            "The link URL must use a valid Vimeo or YouTube video URL",
         )
 
     def test_clean__valid_youtube_link_1(self):
@@ -138,7 +138,7 @@ class VideoEmbedBlockTestCase(TestCase):
 
         self.assertEqual(
             info.exception.block_errors["link_url"].message,
-            "The link URL must use a valid vimeo or youtube video URL",
+            "The link URL must use a valid Vimeo or YouTube video URL",
         )
 
     def test_clean__invalid_vimeo_link_2(self):
@@ -156,7 +156,7 @@ class VideoEmbedBlockTestCase(TestCase):
 
         self.assertEqual(
             info.exception.block_errors["link_url"].message,
-            "The link URL must use a valid vimeo or youtube video URL",
+            "The link URL must use a valid Vimeo or YouTube video URL",
         )
 
     def test_clean__invalid_vimeo_link_3(self):
@@ -174,7 +174,7 @@ class VideoEmbedBlockTestCase(TestCase):
 
         self.assertEqual(
             info.exception.block_errors["link_url"].message,
-            "The link URL must use a valid vimeo or youtube video URL",
+            "The link URL must use a valid Vimeo or YouTube video URL",
         )
 
     def test_clean__valid_vimeo_link_1(self):
