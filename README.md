@@ -352,11 +352,30 @@ Note that this project has configuration for [pre-commit](https://github.com/pre
 ```bash
 # if you don't have it yet, globally
 pip install pre-commit
+```
 
+`pylint`, which is run as part of `pre-commit`, relies on the poetry packages all being installed. If you are running this on your local machine you need to install them if you have not done so previously. Poetry automatically creates a virtual environment when you do this, which the `pylint` command will make use of
+
+```bash
+# if you haven't run this locally previously
+poetry install
+```
+
+`pylint` also relies on the [libpq](https://www.postgresql.org/docs/16/libpq.html) library being installed as a global package on your local machine. The installation steps below are for Macs.
+
+```bash
+brew install libpq
+```
+
+After the above command, follow the homebrew post-install instructions for PATH exports
+
+```bash
 # in the project directory, initialize pre-commit
+
 pre-commit install
 
 # Optional, run all checks once for this, then the checks will run only on the changed files
+
 pre-commit run --all-files
 ```
 
