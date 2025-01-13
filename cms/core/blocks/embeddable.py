@@ -126,8 +126,7 @@ class VideoEmbedBlock(blocks.StructBlock):
         if urlparse(value["link_url"]).hostname in ["www.vimeo.com", "vimeo.com", "player.vimeo.com"]:
             url_path = urlparse(value["link_url"]).path.strip("/")
             # Handle different Vimeo URL patterns
-            # ruff: noqa: SIM108
-            if "video/" in url_path:
+            if "video/" in url_path:  # noqa: SIM108
                 # Handle https://vimeo.com/showcase/7934865/video/ID format
                 video_id = url_path.split("video/")[-1]
             else:
