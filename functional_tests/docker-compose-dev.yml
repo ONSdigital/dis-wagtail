@@ -1,0 +1,39 @@
+services:
+  web:
+    extends:
+      file: ../docker-compose.yml
+      service: web
+    build:
+      context: ..
+      target: dev
+    environment:
+      DJANGO_SETTINGS_MODULE: cms.settings.functional_test
+    ports: !override
+      - 18000:8000 # runserver
+    volumes:
+      # Mount the repo at /app/
+      - ../:/app/
+    command:
+      > # Ensure dependencies and static files are ready from inside the container, as there can be issues relying on these being run outside in the local environment
+      sh -c "poetry install &&
+             django-admin collectstatic --verbosity 0 --noinput --clear &&
+             django-admin migrate --noinput &&
+             django-admin runserver 0.0.0.0:8000"
+
+  db:
+    extends:
+      file: docker-compose.yml
+      service: db
+    ports: !override
+      - '15432:5432'
+
+  redis:
+    extends:
+      file: docker-compose.yml
+      service: redis
+    ports: !override
+      - '16379:6379'
+
+volumes:
+  node_modules:
+  pgdata:
