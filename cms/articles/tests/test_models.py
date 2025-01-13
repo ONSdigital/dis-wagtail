@@ -7,16 +7,16 @@ from django.utils import timezone
 from django.utils.formats import date_format
 from wagtail.test.utils import WagtailTestUtils
 
-from cms.analysis.tests.factories import AnalysisPageFactory, AnalysisSeriesFactory
+from cms.articles.tests.factories import ArticleSeriesFactory, StatisticalArticlePageFactory
 from cms.core.tests.factories import ContactDetailsFactory
 
 
-class AnalysisSeriesTestCase(WagtailTestUtils, TestCase):
-    """Test AnalysisSeries model methods."""
+class ArticleSeriesTestCase(WagtailTestUtils, TestCase):
+    """Test ArticleSeriesPage model methods."""
 
     @classmethod
     def setUpTestData(cls):
-        cls.series = AnalysisSeriesFactory()
+        cls.series = ArticleSeriesFactory()
 
     def test_index_redirect_404_with_no_subpages(self):
         """Test index path redirects to latest."""
@@ -27,13 +27,13 @@ class AnalysisSeriesTestCase(WagtailTestUtils, TestCase):
 
     def test_index_redirects_to_latest(self):
         """Checks that the series will redirect to /latest."""
-        AnalysisPageFactory(parent=self.series)
+        StatisticalArticlePageFactory(parent=self.series)
         response = self.client.get(self.series.url)
         self.assertRedirects(response, self.series.url + self.series.reverse_subpage("latest_release"))
 
     def test_index_redirects_to_latest_in_external_env(self):
         """Checks that the series will redirect to /latest in external env."""
-        AnalysisPageFactory(parent=self.series)
+        StatisticalArticlePageFactory(parent=self.series)
 
         with override_settings(IS_EXTERNAL_ENV=True):
             response = self.client.get(self.series.url)
@@ -45,9 +45,8 @@ class AnalysisSeriesTestCase(WagtailTestUtils, TestCase):
         self.assertIsNone(self.series.get_latest())
 
     def test_get_latest_with_subpages(self):
-        """Test get_latest returns the most recent analysis page."""
-        AnalysisPageFactory(parent=self.series, release_date=timezone.now().date())
-        latest_page = AnalysisPageFactory(
+        StatisticalArticlePageFactory(parent=self.series, release_date=timezone.now().date())
+        latest_page = StatisticalArticlePageFactory(
             parent=self.series,
             release_date=timezone.now().date() + timezone.timedelta(days=1),
         )
@@ -61,18 +60,18 @@ class AnalysisSeriesTestCase(WagtailTestUtils, TestCase):
 
     def test_latest_release_success(self):
         """Test latest_release returns the latest page."""
-        analysis_page = AnalysisPageFactory(parent=self.series)
+        article_page = StatisticalArticlePageFactory(parent=self.series)
         series_response = self.client.get(self.series.url + "latest/")
         self.assertEqual(series_response.status_code, 200)
 
-        analysis_page_response = self.client.get(analysis_page.url)
-        self.assertEqual(analysis_page_response.status_code, 200)
+        article_page_response = self.client.get(article_page.url)
+        self.assertEqual(article_page_response.status_code, 200)
 
-        self.assertEqual(series_response.context, analysis_page_response.context)
+        self.assertEqual(series_response.context, article_page_response.context)
 
     def test_latest_release_external_env(self):
         """Test latest_release in external env."""
-        AnalysisPageFactory(parent=self.series)
+        StatisticalArticlePageFactory(parent=self.series)
 
         with override_settings(IS_EXTERNAL_ENV=True):
             series_response = self.client.get(self.series.url + "latest/")
@@ -80,11 +79,9 @@ class AnalysisSeriesTestCase(WagtailTestUtils, TestCase):
         self.assertEqual(series_response.status_code, 200)
 
 
-class AnalysisPageTestCase(WagtailTestUtils, TestCase):
-    """Test AnalysisPage model properties and methods."""
-
+class StatisticalArticlePageTestCase(WagtailTestUtils, TestCase):
     def setUp(self):
-        self.page = AnalysisPageFactory(
+        self.page = StatisticalArticlePageFactory(
             parent__title="PSF",
             title="November 2024",
             news_headline="",
@@ -116,7 +113,7 @@ class AnalysisPageTestCase(WagtailTestUtils, TestCase):
         self.page.show_cite_this_page = True
 
         toc = self.page.table_of_contents
-        self.assertIn({"url": "#cite-this-page", "text": "Cite this analysis"}, toc)
+        self.assertIn({"url": "#cite-this-page", "text": "Cite this article"}, toc)
 
     def test_table_of_contents_with_contact_details(self):
         """Test table_of_contents includes contact details when present."""
@@ -128,7 +125,7 @@ class AnalysisPageTestCase(WagtailTestUtils, TestCase):
         """Test is_latest returns True for most recent page."""
         self.assertTrue(self.page.is_latest)
         # now add a release, but make it older
-        AnalysisPageFactory(
+        StatisticalArticlePageFactory(
             parent=self.page.get_parent(),
             release_date=self.page.release_date - timezone.timedelta(days=1),
         )
@@ -136,7 +133,7 @@ class AnalysisPageTestCase(WagtailTestUtils, TestCase):
 
     def test_is_latest__unhappy_path(self):
         """Test is_latest returns False when newer pages exist."""
-        AnalysisPageFactory(
+        StatisticalArticlePageFactory(
             parent=self.page.get_parent(),
             release_date=self.page.release_date + timezone.timedelta(days=1),
         )
@@ -178,11 +175,9 @@ class AnalysisPageTestCase(WagtailTestUtils, TestCase):
         self.assertListEqual(info.exception.messages, ["The next release date must be after the release date."])
 
 
-class AnalysisPageRenderTestCase(WagtailTestUtils, TestCase):
-    """Test AnalysisPage model properties and methods."""
-
+class StatisticalArticlePageRenderTestCase(WagtailTestUtils, TestCase):
     def setUp(self):
-        self.basic_page = AnalysisPageFactory(
+        self.basic_page = StatisticalArticlePageFactory(
             parent__title="PSF",
             title="November 2024",
             news_headline="",
@@ -193,7 +188,7 @@ class AnalysisPageRenderTestCase(WagtailTestUtils, TestCase):
         self.basic_page_url = self.basic_page.url
 
         # a page with more of the fields filled in
-        self.page = AnalysisPageFactory(
+        self.page = StatisticalArticlePageFactory(
             parent=self.basic_page.get_parent(),
             title="August 2024",
             news_headline="Breaking News!",
@@ -224,14 +219,16 @@ class AnalysisPageRenderTestCase(WagtailTestUtils, TestCase):
         """Test for the cite this page block."""
         expected = (
             f"Office for National Statistics (ONS), released { self.formatted_date }, "
-            f'ONS website, analysis, <a href="{ self.page.full_url }">Breaking News!</a>'
+            f'ONS website, statistical article, <a href="{ self.page.full_url }">Breaking News!</a>'
         )
         response = self.client.get(self.page_url)
         self.assertContains(response, expected)
 
     def test_cite_this_page_is_not_shown_when_unticked(self):
         """Test for the cite this page block not present in the template."""
-        expected = f"Office for National Statistics (ONS), released { self.formatted_date }, ONS website, analysis"
+        expected = (
+            f"Office for National Statistics (ONS), released { self.formatted_date }, ONS website, statistical article"
+        )
 
         response = self.client.get(self.basic_page_url)
         self.assertNotContains(response, expected)

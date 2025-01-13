@@ -1,7 +1,9 @@
+from django.db import DEFAULT_DB_ALIAS, router
 from django.test import TestCase, override_settings
 from django.utils.connection import ConnectionDoesNotExist
 from wagtail_factories import ImageFactory
 
+from cms.core.db_router import ExternalEnvRouter
 from cms.images.models import CustomImage, Rendition
 
 
@@ -29,3 +31,8 @@ class ReadOnlyConnectionTestCase(TestCase):
         rendition.refresh_from_db()
 
         self.assertEqual(Rendition.objects.count(), 1)
+
+    def test_uses_correct_connection(self):
+        """Test that the correct connection is used."""
+        self.assertEqual(router.db_for_read(CustomImage), DEFAULT_DB_ALIAS)  # TestCase runs in a transaction
+        self.assertEqual(router.db_for_write(CustomImage), ExternalEnvRouter.FAKE_BACKEND)

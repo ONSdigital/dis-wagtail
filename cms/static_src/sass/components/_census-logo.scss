@@ -1,0 +1,7 @@
+@use 'config' as *;
+
+.census-logo {
+    @media (forced-colors: active) and (prefers-color-scheme: dark) {
+        filter: grayscale(100%) brightness(4);
+    }
+}
