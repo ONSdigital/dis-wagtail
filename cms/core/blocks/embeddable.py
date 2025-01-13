@@ -118,13 +118,12 @@ class VideoEmbedBlock(blocks.StructBlock):
         help_text=_("The text to be shown when cookies are not enabled e.g. 'Watch the {title} on Youtube'.")
     )
 
-    def get_context(self, value: "StreamValue", parent_context: dict | None = None) -> dict:
+    def get_embed_url(self, link_url: str) -> str:
         """Get the embed URL for the video based on the link URL."""
-        context: dict = super().get_context(value, parent_context=parent_context)
         embed_url = ""
         # Vimeo
-        if urlparse(value["link_url"]).hostname in ["www.vimeo.com", "vimeo.com", "player.vimeo.com"]:
-            url_path = urlparse(value["link_url"]).path.strip("/")
+        if urlparse(link_url).hostname in ["www.vimeo.com", "vimeo.com", "player.vimeo.com"]:
+            url_path = urlparse(link_url).path.strip("/")
             # Handle different Vimeo URL patterns
             if "video/" in url_path:  # noqa: SIM108
                 # Handle https://vimeo.com/showcase/7934865/video/ID format
@@ -136,8 +135,8 @@ class VideoEmbedBlock(blocks.StructBlock):
             video_id = video_id.split("?")[0]
             embed_url = "https://player.vimeo.com/video/" + video_id
         # YouTube
-        elif urlparse(value["link_url"]).hostname in ["www.youtube.com", "youtube.com", "youtu.be"]:
-            url_parts = urlparse(value["link_url"])
+        elif urlparse(link_url).hostname in ["www.youtube.com", "youtube.com", "youtu.be"]:
+            url_parts = urlparse(link_url)
             if url_parts.hostname == "youtu.be":
                 # Handle https://youtu.be/ID format
                 video_id = url_parts.path.lstrip("/")
@@ -151,7 +150,12 @@ class VideoEmbedBlock(blocks.StructBlock):
             # Remove any query parameters from video ID
             video_id = video_id.split("?")[0]
             embed_url = "https://www.youtube.com/embed/" + video_id
-        context["value"]["embed_url"] = embed_url
+        return embed_url
+
+    def get_context(self, value: "StreamValue", parent_context: dict | None = None) -> dict:
+        """Get the embed URL for the video based on the link URL."""
+        context: dict = super().get_context(value, parent_context=parent_context)
+        context["embed_url"] = self.get_embed_url(value["link_url"])
         return context
 
     def clean(self, value: "StructValue") -> "StructValue":
