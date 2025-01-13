@@ -12,7 +12,7 @@ class VideoEmbedBlockTestCase(TestCase):
         self.video_block = VideoEmbedBlock()
         self.image = ImageFactory.create()
 
-    def test_videoembedblock_clean__invalid_domain(self):
+    def test_clean__invalid_domain(self):
         """Check the VideoEmbedBlock validates the supplied URL."""
         with self.assertRaises(StructBlockValidationError) as info:
             value = self.video_block.to_python(
@@ -30,7 +30,7 @@ class VideoEmbedBlockTestCase(TestCase):
             "The link URL must use a valid vimeo or youtube video URL",
         )
 
-    def test_videoembedblock_clean__invalid_youtube_link_1(self):
+    def test_clean__invalid_youtube_link_1(self):
         """Check the VideoEmbedBlock validates the supplied URL."""
         with self.assertRaises(StructBlockValidationError) as info:
             value = self.video_block.to_python(
@@ -48,7 +48,7 @@ class VideoEmbedBlockTestCase(TestCase):
             "The link URL must use a valid vimeo or youtube video URL",
         )
 
-    def test_videoembedblock_clean__invalid_youtube_link_2(self):
+    def test_clean__invalid_youtube_link_2(self):
         """Check the VideoEmbedBlock validates the supplied URL."""
         with self.assertRaises(StructBlockValidationError) as info:
             value = self.video_block.to_python(
@@ -66,7 +66,7 @@ class VideoEmbedBlockTestCase(TestCase):
             "The link URL must use a valid vimeo or youtube video URL",
         )
 
-    def test_videoembedblock_clean__invalid_youtube_link_3(self):
+    def test_clean__invalid_youtube_link_3(self):
         """Check the VideoEmbedBlock validates the supplied URL."""
         with self.assertRaises(StructBlockValidationError) as info:
             value = self.video_block.to_python(
@@ -84,7 +84,7 @@ class VideoEmbedBlockTestCase(TestCase):
             "The link URL must use a valid vimeo or youtube video URL",
         )
 
-    def test_videoembedblock_clean__valid_youtube_link_1(self):
+    def test_clean__valid_youtube_link_1(self):
         """Check the VideoEmbedBlock validates the supplied URL."""
         value = self.video_block.to_python(
             {
@@ -97,7 +97,7 @@ class VideoEmbedBlockTestCase(TestCase):
 
         self.assertEqual(self.video_block.clean(value), value)
 
-    def test_videoembedblock_clean__valid_youtube_link_2(self):
+    def test_clean__valid_youtube_link_2(self):
         """Check the VideoEmbedBlock validates the supplied URL."""
         value = self.video_block.to_python(
             {
@@ -110,7 +110,7 @@ class VideoEmbedBlockTestCase(TestCase):
 
         self.assertEqual(self.video_block.clean(value), value)
 
-    def test_videoembedblock_clean__valid_youtube_link_3(self):
+    def test_clean__valid_youtube_link_3(self):
         """Check the VideoEmbedBlock validates the supplied URL."""
         value = self.video_block.to_python(
             {
@@ -123,7 +123,7 @@ class VideoEmbedBlockTestCase(TestCase):
 
         self.assertEqual(self.video_block.clean(value), value)
 
-    def test_videoembedblock_clean__invalid_vimeo_link_1(self):
+    def test_clean__invalid_vimeo_link_1(self):
         """Check the VideoEmbedBlock validates the supplied URL."""
         with self.assertRaises(StructBlockValidationError) as info:
             value = self.video_block.to_python(
@@ -141,7 +141,7 @@ class VideoEmbedBlockTestCase(TestCase):
             "The link URL must use a valid vimeo or youtube video URL",
         )
 
-    def test_videoembedblock_clean__invalid_vimeo_link_2(self):
+    def test_clean__invalid_vimeo_link_2(self):
         """Check the VideoEmbedBlock validates the supplied URL."""
         with self.assertRaises(StructBlockValidationError) as info:
             value = self.video_block.to_python(
@@ -159,7 +159,7 @@ class VideoEmbedBlockTestCase(TestCase):
             "The link URL must use a valid vimeo or youtube video URL",
         )
 
-    def test_videoembedblock_clean__invalid_vimeo_link_3(self):
+    def test_clean__invalid_vimeo_link_3(self):
         """Check the VideoEmbedBlock validates the supplied URL."""
         with self.assertRaises(StructBlockValidationError) as info:
             value = self.video_block.to_python(
@@ -177,7 +177,7 @@ class VideoEmbedBlockTestCase(TestCase):
             "The link URL must use a valid vimeo or youtube video URL",
         )
 
-    def test_videoembedblock_clean__valid_vimeo_link_1(self):
+    def test_clean__valid_vimeo_link_1(self):
         """Check the VideoEmbedBlock validates the supplied URL."""
         value = self.video_block.to_python(
             {
@@ -190,7 +190,7 @@ class VideoEmbedBlockTestCase(TestCase):
 
         self.assertEqual(self.video_block.clean(value), value)
 
-    def test_videoembedblock_clean__valid_vimeo_link_2(self):
+    def test_clean__valid_vimeo_link_2(self):
         """Check the VideoEmbedBlock validates the supplied URL."""
         value = self.video_block.to_python(
             {
@@ -203,7 +203,7 @@ class VideoEmbedBlockTestCase(TestCase):
 
         self.assertEqual(self.video_block.clean(value), value)
 
-    def test_videoembedblock_clean__valid_vimeo_link_3(self):
+    def test_clean__valid_vimeo_link_3(self):
         """Check the VideoEmbedBlock validates the supplied URL."""
         value = self.video_block.to_python(
             {
