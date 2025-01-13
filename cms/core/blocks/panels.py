@@ -1,4 +1,5 @@
 from django.conf import settings
+from django.utils.translation import gettext_lazy as _
 from wagtail import blocks
 
 
@@ -12,20 +13,17 @@ class PanelBlock(blocks.StructBlock):
 
     variant = blocks.ChoiceBlock(
         choices=[
+            ("warn", _("Warning")),
+            ("info", _("Information")),
             ("announcement", "Announcement"),
-            ("bare", "Bare"),
-            ("branded", "Branded"),
             ("error", "Error"),
-            ("ghost", "Ghost"),
             ("success", "Success"),
-            ("warn-branded", "Warn (branded)"),
-            ("warn", "Warn"),
         ],
         default="warn",
     )
     body = blocks.RichTextBlock(features=settings.RICH_TEXT_BASIC)
-    title = blocks.CharBlock(required=False, label="Title (optional)")
+    title = blocks.CharBlock(required=False, label=_("Title (optional)"))
 
     class Meta:
-        label = "Warning or information panel"
+        label = _("Warning or information panel")
         template = "templates/components/streamfield/panel_block.html"
