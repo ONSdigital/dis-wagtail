@@ -1,0 +1,103 @@
+{% extends "templates/base_page.html" %}
+
+{% from "components/table-of-contents/_macro.njk" import onsTableOfContents %}
+{% from "components/list/_macro.njk" import onsList %}
+
+{% block header_area %}
+    <div class="common-header article-header {% if page.updates %}article-header--flush{% endif %}">
+        <div class="ons-container">
+            {% include "templates/components/navigation/breadcrumbs.html" %}
+            <p class="article-header__doc-type ons-u-fs-l">{{ _("Methodology") }}</p>
+
+            <div class="ons-grid ons-grid-flex-gap ons-grid-flex-gap--40">
+                <div class="ons-grid__col ons-col-10@m ">
+                    <h1 class="ons-u-fs-3xl common-header__heading">
+                        {{ page.title }}
+                    </h1>
+
+                    <div class="common-header__summary">{{ page.summary|richtext() }}</div>
+                </div>
+            </div>
+        </div>
+
+        {% block release_meta %}
+            <div class="ons-container common-header__releases">
+                <div>
+                    <span class="ons-u-fs-r--b common-header__releases-label">{{ _("Published") }}:</span>
+                    <span class="ons-u-nowrap">{{ page.publication_date|date("DATE_FORMAT") }}</span>
+                </div>
+                {% if page.last_revised_date %}
+                    <div>
+                        <span class="ons-u-fs-r--b common-header__releases-label">{{ _("Last revised") }}:</span>
+                        <span class="ons-u-nowrap">{{ page.last_revised_date|date("DATE_FORMAT")}}</span>
+                    </div>
+                {% endif %}
+
+                {% if page.contact_details %}
+                    <div>
+                        <span class="ons-u-fs-r--b common-header__releases-label">{{ _("Contact") }}:</span>
+                        <a href="mailto:{{ page.contact_details.email }}">{{ page.contact_details.name }}</a>
+                    </div>
+                {% endif %}
+            </div>
+        {% endblock %}
+    </div>
+{% endblock %}
+
+{% block main %}
+    <div class="ons-grid ons-grid-flex-gap ons-grid-flex-gap--32">
+        <div class="ons-grid__col ons-grid__col--sticky@m ons-col-4@m">
+            {% with toc_title=_("Contents"), toc_aria_label=_("Sections in this page") %}
+                {# fmt:off #}
+                {{-
+                    onsTableOfContents({
+                        "title": toc_title,
+                        "ariaLabel": toc_aria_label,
+                        "itemsList": table_of_contents
+                    })
+                }}
+                {# fmt:on #}
+            {% endwith %}
+        </div>
+
+        <div class="ons-grid__col ons-col-8@m">
+            {# if there are no contact details on the page, we don't want the last
+            streamfield block to have a bottom margin. last_flush is used in stream_block.html #}
+            {% if page.contact_details %}
+                {% set last_flush = False %}
+            {% else %}
+                {% set last_flush = True %}
+            {% endif %}
+
+            {% include_block page.content %}
+
+            {% if related_publications %}
+                <section id="related-publications" class="spacing">
+                    <h2 class="ons-u-fs-l">{{ _("Related publications") }}</h2>
+                    {{- onsList({"itemsList": related_publications}) -}}
+                </section>
+            {% endif %}
+
+            {% if page.show_cite_this_page %}
+                <section id="cite-this-page" class="spacing">
+                    <h2 class="ons-u-fs-l">{{ _("Cite this methodology") }}</h2>
+                    <p>
+                        {%- set cite_link -%}
+                            <a href="{{ fullpageurl(page) }}">{{ page.title }}</a>
+                        {% endset %}
+                        {% set latest_date = page.last_revised_date if page.last_revised_date else page.publication_date %}
+                        {% trans trimmed latest_date_formatted = latest_date|date("DATE_FORMAT"), cite_link=cite_link %}
+                            Office for National Statistics (ONS), last revised {{ latest_date_formatted }}, ONS website, methodology, {{ cite_link }}
+                        {% endtrans %}
+                    </p>
+                </section>
+            {% endif %}
+
+            {% if page.contact_details %}
+                {% with contact_details = page.contact_details%}
+                    {% include "templates/components/contact_details/contact_details.html" %}
+                {% endwith %}
+            {% endif %}
+        </div>
+    </div>
+{% endblock %}

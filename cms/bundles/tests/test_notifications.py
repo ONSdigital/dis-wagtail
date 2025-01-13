@@ -4,7 +4,7 @@ from unittest.mock import Mock, patch
 from django.test import RequestFactory, TestCase, override_settings
 from django.urls import reverse
 
-from cms.analysis.tests.factories import AnalysisPageFactory
+from cms.articles.tests.factories import StatisticalArticlePageFactory
 from cms.bundles.enums import BundleStatus
 from cms.bundles.notifications import (
     notify_slack_of_publication_start,
@@ -18,7 +18,7 @@ from cms.users.tests.factories import UserFactory
 class SlackNotificationsTestCase(TestCase):
     @classmethod
     def setUpTestData(cls):
-        cls.bundle = BundleFactory(name="First Bundle", bundled_pages=[AnalysisPageFactory()])
+        cls.bundle = BundleFactory(name="First Bundle", bundled_pages=[StatisticalArticlePageFactory()])
         cls.user = UserFactory(first_name="Publishing", last_name="Officer")
         request = RequestFactory().get("/")
         cls.inspect_url = request.build_absolute_uri(reverse("bundle:inspect", args=(cls.bundle.pk,)))

@@ -7,7 +7,7 @@ from wagtail.admin.panels import get_edit_handler
 from wagtail.test.utils import WagtailTestUtils
 from wagtail.test.utils.form_data import inline_formset, nested_form_data
 
-from cms.analysis.tests.factories import AnalysisPageFactory
+from cms.articles.tests.factories import StatisticalArticlePageFactory
 from cms.bundles.enums import BundleStatus
 from cms.bundles.models import Bundle
 from cms.bundles.tests.factories import BundleFactory
@@ -45,7 +45,7 @@ class BundleViewSetTestCase(WagtailTestUtils, TestCase):
 
     def setUp(self):
         self.bundle = BundleFactory(name="Original bundle", created_by=self.publishing_officer)
-        self.analysis_page = AnalysisPageFactory(title="PSF")
+        self.statistical_article_page = StatisticalArticlePageFactory(title="PSF")
 
         self.edit_url = reverse("bundle:edit", args=[self.bundle.id])
 
@@ -82,7 +82,7 @@ class BundleViewSetTestCase(WagtailTestUtils, TestCase):
                 "bundled_pages-INITIAL_FORMS": "0",
                 "bundled_pages-MIN_NUM_FORMS": "0",
                 "bundled_pages-MAX_NUM_FORMS": "1000",
-                "bundled_pages-0-page": str(self.analysis_page.id),
+                "bundled_pages-0-page": str(self.statistical_article_page.id),
                 "bundled_pages-0-ORDER": "0",
             },
         )
@@ -101,7 +101,7 @@ class BundleViewSetTestCase(WagtailTestUtils, TestCase):
                 "bundled_pages-INITIAL_FORMS": "0",
                 "bundled_pages-MIN_NUM_FORMS": "0",
                 "bundled_pages-MAX_NUM_FORMS": "1000",
-                "bundled_pages-0-page": str(self.analysis_page.id),
+                "bundled_pages-0-page": str(self.statistical_article_page.id),
                 "bundled_pages-0-ORDER": "0",
             },
         )
@@ -126,7 +126,7 @@ class BundleViewSetTestCase(WagtailTestUtils, TestCase):
                 {
                     "name": "Updated Bundle",
                     "status": self.bundle.status,
-                    "bundled_pages": inline_formset([{"page": self.analysis_page.id}]),
+                    "bundled_pages": inline_formset([{"page": self.statistical_article_page.id}]),
                 }
             ),
         )
@@ -173,7 +173,7 @@ class BundleViewSetTestCase(WagtailTestUtils, TestCase):
                 "bundled_pages-MIN_NUM_FORMS": "0",
                 "bundled_pages-MAX_NUM_FORMS": "1000",
                 "bundled_pages-0-id": "",
-                "bundled_pages-0-page": str(self.analysis_page.id),
+                "bundled_pages-0-page": str(self.statistical_article_page.id),
                 "bundled_pages-0-ORDER": "0",
             },
         )
@@ -202,7 +202,7 @@ class BundleViewSetTestCase(WagtailTestUtils, TestCase):
                 "bundled_pages-MIN_NUM_FORMS": "0",
                 "bundled_pages-MAX_NUM_FORMS": "1000",
                 "bundled_pages-0-id": "",
-                "bundled_pages-0-page": str(self.analysis_page.id),
+                "bundled_pages-0-page": str(self.statistical_article_page.id),
                 "bundled_pages-0-ORDER": "0",
             },
             follow=True,
