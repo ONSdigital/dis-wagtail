@@ -8,9 +8,10 @@ from cms.core.blocks import VideoEmbedBlock
 class VideoEmbedBlockTestCase(TestCase):
     """Test for video embed block."""
 
-    def setUp(self):
-        self.video_block = VideoEmbedBlock()
-        self.image = ImageFactory.create()
+    @classmethod
+    def setUpTestData(cls):
+        cls.video_block = VideoEmbedBlock()
+        cls.image = ImageFactory.create()
 
     def test_clean__invalid_domain(self):
         """Check the VideoEmbedBlock validates the supplied URL."""
