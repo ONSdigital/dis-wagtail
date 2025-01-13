@@ -13,6 +13,16 @@ from cms.core.blocks import (
     RelatedLinksBlock,
     VideoEmbedBlock,
 )
+from cms.core.blocks.section_blocks import SectionBlock
+
+
+class SectionStoryBlock(StreamBlock):
+    """The core section StreamField block definition."""
+
+    section = SectionBlock()
+
+    class Meta:
+        template = "templates/components/streamfield/stream_block.html"
 
 
 class CoreStoryBlock(StreamBlock):
@@ -23,8 +33,8 @@ class CoreStoryBlock(StreamBlock):
     quote = QuoteBlock()
     panel = PanelBlock()
     video_embed = VideoEmbedBlock(group="Media")
-    image = ImageChooserBlock()
-    documents = DocumentsBlock()
+    image = ImageChooserBlock(group="Media")
+    documents = DocumentsBlock(group="Media")
     related_links = RelatedLinksBlock()
     equation = MathBlock(group="DataVis", icon="decimal")
     ons_embed = ONSEmbedBlock(group="DataVis", label="ONS General Embed")

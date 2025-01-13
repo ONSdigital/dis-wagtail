@@ -13,9 +13,9 @@ from wagtail.fields import RichTextField
 from wagtail.models import Page
 from wagtail.search import index
 
-from cms.analysis.blocks import AnalysisStoryBlock
 from cms.bundles.models import BundledPageMixin
 from cms.core.blocks import HeadlineFiguresBlock
+from cms.core.blocks.stream_blocks import SectionStoryBlock
 from cms.core.fields import StreamField
 from cms.core.models import BasePage
 
@@ -26,28 +26,29 @@ if TYPE_CHECKING:
     from wagtail.admin.panels import Panel
 
 
-class AnalysisSeries(RoutablePageMixin, Page):
-    """The analysis series model."""
+class ArticleSeriesPage(RoutablePageMixin, Page):
+    """The article series model."""
 
     parent_page_types: ClassVar[list[str]] = ["topics.TopicPage"]
-    subpage_types: ClassVar[list[str]] = ["AnalysisPage"]
+    subpage_types: ClassVar[list[str]] = ["StatisticalArticlePage"]
     preview_modes: ClassVar[list[str]] = []  # Disabling the preview mode due to it being a container page.
-    page_description = _("A container for Analysis series")
+    page_description = _("A container for statistical article series.")
 
     content_panels: ClassVar[list["Panel"]] = [
         *Page.content_panels,
         HelpPanel(
             content=_(
-                "This is a container for Analysis series. It provides the <code>/latest</code>,"
-                "<code>/previous-releases</code> evergreen paths, as well as the actual analysis pages. "
-                "Add a new Analysis page under this container."
+                "This is a container for article series. It provides the <code>/latest</code>,"
+                "<code>/previous-releases</code> evergreen paths, as well as the actual statistical article pages. "
+                "Add a new Statistical article page under this container."
             )
         ),
     ]
 
-    def get_latest(self) -> Optional["AnalysisPage"]:
-        """Returns the latest published analysis page."""
-        latest: AnalysisPage | None = AnalysisPage.objects.live().child_of(self).order_by("-release_date").first()
+    def get_latest(self) -> Optional["StatisticalArticlePage"]:
+        latest: StatisticalArticlePage | None = (
+            StatisticalArticlePage.objects.live().child_of(self).order_by("-release_date").first()
+        )
         return latest
 
     @path("")
@@ -57,7 +58,7 @@ class AnalysisSeries(RoutablePageMixin, Page):
 
     @path("latest/")
     def latest_release(self, request: "HttpRequest") -> "TemplateResponse":
-        """Serves the latest analysis page in the series."""
+        """Serves the latest statistical article page in the series."""
         latest = self.get_latest()
         if not latest:
             raise Http404
@@ -66,22 +67,24 @@ class AnalysisSeries(RoutablePageMixin, Page):
 
     @path("previous-releases/")
     def previous_releases(self, request: "HttpRequest") -> "TemplateResponse":
-        """Render the previous releases template."""
         response: TemplateResponse = self.render(
             request,
             # TODO: update to include drafts when looking at previews holistically.
-            context_overrides={"pages": AnalysisPage.objects.live().child_of(self).order_by("-release_date")},
-            template="templates/pages/analysis_page--previous-releases.html",
+            context_overrides={"pages": StatisticalArticlePage.objects.live().child_of(self).order_by("-release_date")},
+            template="templates/pages/statistical_article_page--previous-releases.html",
         )
         return response
 
 
-class AnalysisPage(BundledPageMixin, BasePage):  # type: ignore[django-manager-missing]
-    """The analysis page model."""
+class StatisticalArticlePage(BundledPageMixin, BasePage):  # type: ignore[django-manager-missing]
+    """The statistical article page model.
 
-    parent_page_types: ClassVar[list[str]] = ["AnalysisSeries"]
+    Previously known as statistical bulletin, statistical analysis article, analysis page.
+    """
+
+    parent_page_types: ClassVar[list[str]] = ["ArticleSeriesPage"]
     subpage_types: ClassVar[list[str]] = []
-    template = "templates/pages/analysis_page.html"
+    template = "templates/pages/statistical_article_page.html"
 
     # Fields
     news_headline = models.CharField(max_length=255, blank=True)
@@ -120,7 +123,7 @@ class AnalysisPage(BundledPageMixin, BasePage):  # type: ignore[django-manager-m
 
     # Fields: content
     headline_figures = StreamField([("figures", HeadlineFiguresBlock())], blank=True, max_num=1)
-    content = StreamField(AnalysisStoryBlock())
+    content = StreamField(SectionStoryBlock())
 
     show_cite_this_page = models.BooleanField(default=True)
 
@@ -144,7 +147,7 @@ class AnalysisPage(BundledPageMixin, BasePage):  # type: ignore[django-manager-m
         FieldPanel("summary"),
         MultiFieldPanel(
             [
-                FieldPanel("release_date", icon="calendar-alt"),
+                FieldPanel("release_date"),
                 FieldPanel(
                     "next_release_date",
                     help_text=_("If no next date is chosen, 'To be announced' will be displayed."),
@@ -205,16 +208,20 @@ class AnalysisPage(BundledPageMixin, BasePage):  # type: ignore[django-manager-m
             if hasattr(block.block, "to_table_of_contents_items"):
                 items += block.block.to_table_of_contents_items(block.value)
         if self.show_cite_this_page:
-            items += [{"url": "#cite-this-page", "text": _("Cite this analysis")}]
+            items += [{"url": "#cite-this-page", "text": _("Cite this article")}]
         if self.contact_details_id:
             items += [{"url": "#contact-details", "text": _("Contact details")}]
         return items
 
     @property
     def is_latest(self) -> bool:
-        """Returns True if the analysis page is latest in its series based on the release date."""
+        """Returns True if the statistical article page is latest in its series based on the release date."""
         latest_id = (
-            AnalysisPage.objects.sibling_of(self).live().order_by("-release_date").values_list("id", flat=True).first()
+            StatisticalArticlePage.objects.sibling_of(self)
+            .live()
+            .order_by("-release_date")
+            .values_list("id", flat=True)
+            .first()
         )
         return bool(self.pk == latest_id)  # to placate mypy
 
