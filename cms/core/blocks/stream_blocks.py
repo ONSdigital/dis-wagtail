@@ -17,6 +17,7 @@ from cms.core.blocks import (
 )
 from cms.core.blocks.equation import EquationBlock
 from cms.core.blocks.section_blocks import SectionBlock
+from cms.datavis.blocks import DataVisBlock
 
 if TYPE_CHECKING:
     from wagtail.blocks import StreamValue
@@ -54,6 +55,7 @@ class CoreStoryBlock(StreamBlock):
     related_links = RelatedLinksBlock()
     table = ONSTableBlock(group="DataVis", allow_links=True)
     equation = EquationBlock(group="DataVis", icon="decimal")
+    datavis = DataVisBlock(group="DataVis", label="Visualisation")
     ons_embed = ONSEmbedBlock(group="DataVis", label="ONS General Embed")
 
     class Meta:

@@ -80,6 +80,9 @@
 {# fmt:on #}
 {% block head %}
     <link rel="stylesheet" href="{{ static ('css/main.css') }}">
+    {% if extra_media %}
+        {{ extra_media.render() }}
+    {% endif %}
 
     {% if GOOGLE_TAG_MANAGER_CONTAINER_ID and not request.is_preview %}
         <script>
