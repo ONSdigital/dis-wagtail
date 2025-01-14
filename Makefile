@@ -3,7 +3,8 @@ DESIGN_SYSTEM_VERSION=`cat .design-system-version`
 .DEFAULT_GOAL := all
 
 .EXPORT_ALL_VARIABLES:
-DJANGO_SETTINGS_MODULE ?= cms.settings.dev # Default to development config if DJANGO_SETTINGS_MODULE is not set
+# Default to development config if DJANGO_SETTINGS_MODULE is not set
+DJANGO_SETTINGS_MODULE ?= cms.settings.dev
 
 .PHONY: all
 all: ## Show the available make targets.
