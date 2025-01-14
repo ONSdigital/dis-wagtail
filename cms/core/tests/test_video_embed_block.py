@@ -228,7 +228,7 @@ class VideoEmbedBlockTestCase(TestCase):
             }
         )
         context = self.video_block.get_context(value)
-        self.assertEqual(context["embed_url"], "https://player.vimeo.com/video/908205163")
+        self.assertEqual(context["value"]["embed_url"], "https://player.vimeo.com/video/908205163")
 
     def test_get_context__vimeo_embed_url_is_in_context_2(self):
         """Check the VideoEmbedBlock correctly extracts the embed_url
@@ -243,7 +243,7 @@ class VideoEmbedBlockTestCase(TestCase):
             }
         )
         context = self.video_block.get_context(value)
-        self.assertEqual(context["embed_url"], "https://player.vimeo.com/video/908205163")
+        self.assertEqual(context["value"]["embed_url"], "https://player.vimeo.com/video/908205163")
 
     def test_get_context__vimeo_embed_url_is_in_context_3(self):
         """Check the VideoEmbedBlock correctly extracts the embed_url
@@ -258,7 +258,7 @@ class VideoEmbedBlockTestCase(TestCase):
             }
         )
         context = self.video_block.get_context(value)
-        self.assertEqual(context["embed_url"], "https://player.vimeo.com/video/908205163")
+        self.assertEqual(context["value"]["embed_url"], "https://player.vimeo.com/video/908205163")
 
     def test_get_context__youtube_embed_url_is_in_context(self):
         """Check the VideoEmbedBlock correctly extracts the embed_url
@@ -273,7 +273,7 @@ class VideoEmbedBlockTestCase(TestCase):
             }
         )
         context = self.video_block.get_context(value)
-        self.assertEqual(context["embed_url"], "https://www.youtube.com/embed/ywzZXO-A7Pg")
+        self.assertEqual(context["value"]["embed_url"], "https://www.youtube.com/embed/ywzZXO-A7Pg")
 
     def test_get_context__youtube_embed_url_is_in_context_2(self):
         """Check the VideoEmbedBlock correctly extracts the embed_url from a https://youtu.be/ID link_url."""
@@ -286,7 +286,7 @@ class VideoEmbedBlockTestCase(TestCase):
             }
         )
         context = self.video_block.get_context(value)
-        self.assertEqual(context["embed_url"], "https://www.youtube.com/embed/ywzZXO-A7Pg")
+        self.assertEqual(context["value"]["embed_url"], "https://www.youtube.com/embed/ywzZXO-A7Pg")
 
     def test_get_context__youtube_embed_url_is_in_context_3(self):
         """Check the VideoEmbedBlock correctly extracts the embed_url from a https://www.youtube.com/v/ID link_url."""
@@ -299,4 +299,4 @@ class VideoEmbedBlockTestCase(TestCase):
             }
         )
         context = self.video_block.get_context(value)
-        self.assertEqual(context["embed_url"], "https://www.youtube.com/embed/ywzZXO-A7Pg")
+        self.assertEqual(context["value"]["embed_url"], "https://www.youtube.com/embed/ywzZXO-A7Pg")

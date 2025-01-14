@@ -155,7 +155,7 @@ class VideoEmbedBlock(blocks.StructBlock):
     def get_context(self, value: "StreamValue", parent_context: dict | None = None) -> dict:
         """Get the embed URL for the video based on the link URL."""
         context: dict = super().get_context(value, parent_context=parent_context)
-        context["embed_url"] = self.get_embed_url(value["link_url"])
+        context["value"]["embed_url"] = self.get_embed_url(value["link_url"])
         return context
 
     def clean(self, value: "StructValue") -> "StructValue":
