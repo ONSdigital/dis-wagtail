@@ -1,0 +1,17 @@
+{% if not media_already_loaded and object.media %}
+    {{ object.media }}
+{% endif %}
+<figure class="highcharts-figure" id="chart-figure--{{ object.uuid }}">
+    <h2>{{ object.title }}</h2>
+    <h3>{{ object.subtitle }}</h3>
+    <div id="container--{{ object.uuid }}"></div>
+    {% if object.caption %}
+        <figcaption>{{ object.caption|richtext }}</figcaption>
+    {% endif %}
+</figure>
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        let config = {{ config|tojson }};
+        Highcharts.chart('container--{{ object.uuid }}', config);
+    });
+</script>

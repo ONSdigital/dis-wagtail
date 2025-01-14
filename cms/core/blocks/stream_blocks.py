@@ -14,6 +14,7 @@ from cms.core.blocks import (
     VideoEmbedBlock,
 )
 from cms.core.blocks.section_blocks import SectionBlock
+from cms.datavis.blocks import DataVisBlock
 
 
 class SectionStoryBlock(StreamBlock):
@@ -37,6 +38,7 @@ class CoreStoryBlock(StreamBlock):
     documents = DocumentsBlock(group="Media")
     related_links = RelatedLinksBlock()
     equation = MathBlock(group="DataVis", icon="decimal")
+    datavis = DataVisBlock(group="DataVis", label="Visualisation")
     ons_embed = ONSEmbedBlock(group="DataVis", label="ONS General Embed")
 
     class Meta:
