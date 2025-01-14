@@ -181,7 +181,6 @@ In order to run it:
     make runserver
     ```
 
-
 #### Environment Configuration
 
 By default, `make` targets will use the `cms.settings.dev` configuration unless their commands explicitly use a different setting, or `DJANGO_SETTINGS_MODULE`
