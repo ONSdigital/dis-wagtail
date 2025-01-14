@@ -59,6 +59,7 @@ INSTALLED_APPS = [
     "cms.articles",
     "cms.bundles",
     "cms.core",
+    "cms.datavis",
     "cms.documents",
     "cms.home",
     "cms.images",
@@ -93,6 +94,7 @@ INSTALLED_APPS = [
     "django.contrib.sitemaps",
     "django_jinja",
     "wagtailmath",
+    "wagtailtables",
     "wagtailfontawesomesvg",
 ]
 
