@@ -41,7 +41,7 @@
 
 {% if navigation_settings.main_menu and navigation_settings.main_menu.highlights %}
     {% for highlight in navigation_settings.main_menu.highlights %}
-        {% if highlight.value.page %}
+        {% if highlight.value.page and highlight.value.page.live %}
             {% set _ = keyLinksList.append({
                 'text': highlight.value.title if highlight.value.title else highlight.value.page.title,
                 'description': highlight.value.description,
@@ -67,23 +67,40 @@
         } %}
         
         {% for section in column.value.sections %}
-            {% set sectionData = {
-                'text': section.section_link.title or (section.section_link.page and section.section_link.page.title),
-                'url': section.section_link.external_url or (section.section_link.page and pageurl(section.section_link.page)),
-                'children': []
-            } %}
+            {% if section.section_link.page and section.section_link.page.live %}
+                {% set sectionData = {
+                    'text': section.section_link.title or section.section_link.page.title,
+                    'url': pageurl(section.section_link.page),
+                    'children': []
+                } %}
+            {% elif section.section_link.external_url %}
+                {% set sectionData = {
+                    'text': section.section_link.title,
+                    'url': section.section_link.external_url,
+                    'children': []
+                } %}
+            {% endif %}
             
-            {% for link in section.links %}
-                {% set _ = sectionData.children.append({
-                    'text': link.title or (link.page and link.page.title),
-                    'url': link.external_url or (link.page and pageurl(link.page)),
-                }) %}
-            {% endfor %}
+            {% if sectionData %}
+                {% for link in section.links %}
+                    {% if link.page and link.page.live%}
+                        {% do sectionData.children.append({
+                            'text': link.title or link.page.title,
+                            'url': pageurl(link.page),
+                        }) %}
+                    {% elif link.external_url %}
+                        {% do sectionData.children.append({
+                            'text': link.title,
+                            'url': link.external_url,
+                        }) %}
+                    {% endif %}
+                {% endfor %}
+            {% endif %}
             
-            {% set _ = columnData.linksList.append(sectionData) %}
+            {% do columnData.linksList.append(sectionData) %}
         {% endfor %}
         
-        {% set _ = itemsList.append(columnData) %}
+        {% do itemsList.append(columnData) %}
     {% endfor %}
 {% endif %}
 
