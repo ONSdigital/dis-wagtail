@@ -83,7 +83,6 @@ class MainMenu(PreviewableMixin, models.Model):
         FieldPanel("highlights"),
         FieldPanel("columns"),
     ]
-    max_num = 3
 
     def get_preview_template(self, request: "HttpRequest", mode_name: str) -> str:
         return "templates/base_page.html"
