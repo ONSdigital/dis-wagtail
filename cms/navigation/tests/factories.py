@@ -25,7 +25,7 @@ class ThemeLinkBlockFactory(StructBlockFactory):
         model = ThemeLinkBlock
 
     external_url = factory.Faker("url")
-    title = factory.Faker("sentence", nb_words=3)
+    title = factory.Faker("text", max_nb_chars=20)
     page = factory.SubFactory(ThemePageChooserFactory)
 
 
@@ -34,14 +34,14 @@ class TopicLinkBlockFactory(StructBlockFactory):
         model = TopicLinkBlock
 
     external_url = factory.Faker("url")
-    title = factory.Faker("sentence", nb_words=3)
+    title = factory.Faker("text", max_nb_chars=20)
     page = factory.SubFactory(TopicPageChooserFactory)
 
 
 class HighlightsBlockFactory(StructBlockFactory):
     external_url = factory.Faker("url")
-    title = factory.Faker("sentence", nb_words=3)
-    description = factory.Faker("sentence", nb_words=10)
+    title = factory.Faker("text", max_nb_chars=20)
+    description = factory.Faker("text", max_nb_chars=50)
 
 
 class SectionBlockFactory(StructBlockFactory):

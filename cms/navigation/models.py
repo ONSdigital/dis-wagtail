@@ -41,7 +41,6 @@ class HighlightsBlock(LinkBlock):
         label = _("Highlight")
 
 
-# Section StructBlock for columns
 class SectionBlock(StructBlock):
     section_link = ThemeLinkBlock(help_text=_("Main link for this section (Theme pages or external URLs)."))
     links = ListBlock(
@@ -53,30 +52,17 @@ class SectionBlock(StructBlock):
         label = _("Section")
 
 
-# Column StructBlock for the main menu
 class ColumnBlock(StructBlock):
     sections = ListBlock(SectionBlock(), label="Sections", max_num=3)
-
-    def clean(self, value):
-        """
-        Validates that the number of sections does not exceed 3.
-        Raises a ValidationError if the limit is exceeded.
-        """
-        cleaned_data = super().clean(value)
-        sections = cleaned_data.get("sections", [])
-
-        # Ensure that the length of sections doesn't exceed 3
-        if len(sections) > 3:
-            raise ValidationError(_("You cannot have more than 3 sections in a column."))
-
-        return cleaned_data
 
     class Meta:
         icon = "list-ul"
         label = _("Column")
 
 
-# MainMenu model
+# Make the max_num for highlights, columns, sections and topic links
+# configurable as a constants at the top of the file
+# Then it can be utilised everywhere in this file and in the tests
 class MainMenu(PreviewableMixin, models.Model):
     highlights = StreamField(
         [("highlight", HighlightsBlock())],
@@ -91,23 +77,13 @@ class MainMenu(PreviewableMixin, models.Model):
         help_text=_("Up to 3 columns. Each column contains sections with links."),
     )
 
+    # TODO: Use getcontext here for highlights and columns so we can render it in the template easier than how we do it currently
+    # TODO: A draft mixin (will need to revision mixin) will ne nice here as we can see the preview of the main menu in the admin as it changes
     panels: ClassVar[list] = [
         FieldPanel("highlights"),
         FieldPanel("columns"),
     ]
     max_num = 3
-
-    def clean(self):
-        super().clean()
-        # Validate the number of highlights
-        if len(self.highlights) > 3:
-            raise ValidationError(
-                {"highlights": _("You cannot have more than 3 highlights. Please remove some items.")}
-            )
-
-        # Validate the number of columns
-        if len(self.columns) > 3:
-            raise ValidationError({"columns": _("You cannot have more than 3 columns. Please remove some items.")})
 
     def get_preview_template(self, request: "HttpRequest", mode_name: str) -> str:
         return "templates/base_page.html"
@@ -116,7 +92,6 @@ class MainMenu(PreviewableMixin, models.Model):
         return "Main Menu"
 
 
-# NavigationSettings model
 @register_setting(icon="list-ul")
 class NavigationSettings(BaseSiteSetting):
     main_menu: models.ForeignKey = models.ForeignKey(
