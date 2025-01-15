@@ -16,7 +16,7 @@ class NoAddModelPermissionPolicy(ModelPermissionPolicy):
     def user_has_permission(self, user: Optional["User"] = None, action: str | None = None) -> bool:
         if action == "add" and MainMenu.objects.exists():
             return False
-        return user is not None and user.has_perm(self._get_permission_name(action))
+        return super().user_has_permission(user, action)
 
 
 class MainMenuViewSet(SnippetViewSet):
