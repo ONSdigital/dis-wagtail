@@ -183,7 +183,7 @@ In order to run it:
 
 #### Environment Configuration
 
-By default, `make` targets will use the `cms.settings.dev` configuration unless their commands explicitly use a different setting, or `DJANGO_SETTINGS_MODULE`
+By default, `make` targets will use the `cms.settings.dev` settings unless their commands explicitly use a different setting (via the `--settings` parameter or `DJANGO_SETTINGS_MODULE` environment variable).
 is set in the environment. This default should work out of the box for local development.
 
 To override settings in the environment, you can use a `.env` file. Note, however, that settings this file may also be picked up in the docker container, so
