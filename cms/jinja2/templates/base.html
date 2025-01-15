@@ -41,7 +41,6 @@
     {% set main_menu = settings.navigation.NavigationSettings.main_menu %}
 {% endif %}
 
-
 {% set keyLinksList = [] %}
 
 {% if main_menu and main_menu.highlights %}
@@ -108,7 +107,6 @@
         {% do itemsList.append(columnData) %}
     {% endfor %}
 {% endif %}
-
 
 {% set pageConfig = {
     "bodyClasses": body_class,
