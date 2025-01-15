@@ -233,6 +233,10 @@ class StatisticalArticlePageRenderTestCase(WagtailTestUtils, TestCase):
         response = self.client.get(self.basic_page_url)
         self.assertNotContains(response, expected)
 
+    def test_breadcrumb_doesnt_containt_series_url(self):
+        response = self.client.get(self.basic_page_url)
+        self.assertNotContains(response, self.basic_page.get_parent().url)
+
     @override_settings(IS_EXTERNAL_ENV=True)
     def test_load_in_external_env(self):
         """Test the page loads in external env."""
