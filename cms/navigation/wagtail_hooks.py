@@ -6,9 +6,6 @@ from wagtail.snippets.views.snippets import SnippetViewSet
 
 from .models import MainMenu
 
-if TYPE_CHECKING:
-    from cms.users.models import User
-
 
 class NoAddModelPermissionPolicy(ModelPermissionPolicy):
     """Model permission that doesn't allow creating more than one main menu instance."""
