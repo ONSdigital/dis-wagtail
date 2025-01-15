@@ -1,15 +1,16 @@
 import factory
-from wagtail_factories import StreamFieldFactory, StructBlockFactory, ListBlockFactory, PageChooserBlockFactory
+from wagtail_factories import ListBlockFactory, PageChooserBlockFactory, StreamFieldFactory, StructBlockFactory
+
 from cms.navigation.models import (
+    ColumnBlock,
     MainMenu,
     NavigationSettings,
-    ColumnBlock,
-    ThemeLinkBlock,
     SectionBlock,
+    ThemeLinkBlock,
     TopicLinkBlock,
 )
-from cms.topics.tests.factories import TopicPageFactory
 from cms.themes.tests.factories import ThemePageFactory
+from cms.topics.tests.factories import TopicPageFactory
 
 
 class ThemePageChooserFactory(PageChooserBlockFactory):

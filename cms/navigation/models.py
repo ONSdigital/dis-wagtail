@@ -5,13 +5,15 @@ from django.utils.translation import gettext_lazy as _
 from wagtail.admin.panels import FieldPanel
 from wagtail.blocks import CharBlock, ListBlock, PageChooserBlock, StructBlock
 from wagtail.contrib.settings.models import BaseSiteSetting, register_setting
-from wagtail.models import PreviewableMixin
+from wagtail.models import DraftStateMixin, PreviewableMixin, RevisionMixin
 
 from cms.core.blocks.base import LinkBlock
 from cms.core.fields import StreamField
 
-from django.core.exceptions import ValidationError
-
+MAIN_MENU_MAX_NUM_HIGHLIGHTS = 3
+MAIN_MENU_MAX_NUM_COLUMNS = 3
+MAIN_MENU_MAX_NUM_SECTIONS = 3
+MAIN_MENU_MAX_NUM_TOPIC_LINKS = 15
 
 if TYPE_CHECKING:
     from django.http import HttpRequest
@@ -44,7 +46,9 @@ class HighlightsBlock(LinkBlock):
 class SectionBlock(StructBlock):
     section_link = ThemeLinkBlock(help_text=_("Main link for this section (Theme pages or external URLs)."))
     links = ListBlock(
-        TopicLinkBlock(), help_text=_("Sub-links for this section (Topic pages or external URLs)."), max_num=15
+        TopicLinkBlock(),
+        help_text=_("Sub-links for this section (Topic pages or external URLs)."),
+        max_num=MAIN_MENU_MAX_NUM_TOPIC_LINKS,
     )
 
     class Meta:
@@ -53,32 +57,27 @@ class SectionBlock(StructBlock):
 
 
 class ColumnBlock(StructBlock):
-    sections = ListBlock(SectionBlock(), label="Sections", max_num=3)
+    sections = ListBlock(SectionBlock(), label="Sections", max_num=MAIN_MENU_MAX_NUM_SECTIONS)
 
     class Meta:
         icon = "list-ul"
         label = _("Column")
 
 
-# Make the max_num for highlights, columns, sections and topic links
-# configurable as a constants at the top of the file
-# Then it can be utilised everywhere in this file and in the tests
-class MainMenu(PreviewableMixin, models.Model):
+class MainMenu(DraftStateMixin, RevisionMixin, PreviewableMixin, models.Model):
     highlights = StreamField(
         [("highlight", HighlightsBlock())],
         blank=True,
-        max_num=3,
+        max_num=MAIN_MENU_MAX_NUM_HIGHLIGHTS,
         help_text=_("Up to 3 highlights. Each highlight must have either a page or a URL."),
     )
     columns = StreamField(
         [("column", ColumnBlock())],
         blank=True,
-        max_num=3,
+        max_num=MAIN_MENU_MAX_NUM_COLUMNS,
         help_text=_("Up to 3 columns. Each column contains sections with links."),
     )
 
-    # TODO: Use getcontext here for highlights and columns so we can render it in the template easier than how we do it currently
-    # TODO: A draft mixin (will need to revision mixin) will ne nice here as we can see the preview of the main menu in the admin as it changes
     panels: ClassVar[list] = [
         FieldPanel("highlights"),
         FieldPanel("columns"),
