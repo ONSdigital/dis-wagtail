@@ -1,10 +1,13 @@
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 from wagtail.permissions import ModelPermissionPolicy
 from wagtail.snippets.models import register_snippet
 from wagtail.snippets.views.snippets import SnippetViewSet
 
 from .models import MainMenu
+
+if TYPE_CHECKING:
+    from cms.users.models import User
 
 
 class NoAddModelPermissionPolicy(ModelPermissionPolicy):
