@@ -145,8 +145,8 @@ You can then access the admin at `http://0.0.0.0:8000/admin/` or `http://localho
 You can also run the main application locally with the supporting backend services such as the Postgres and Redis running in Docker.
 This can be useful when you want to make changes that require the app to be restarted in order to be picked up.
 
-The correct development configuration should be used by default when running from the shell, for IDE's you may need to add
-`DJANGO_SETTINGS_MODULE=cms.settings.dev` to the runtime configuration (for PyCharm see [here](https://www.jetbrains.com/help/pycharm/run-debug-configuration.html#createExplicitly)).
+The correct development configuration should be used by default when running from the shell. For IDEs you may need to add
+`DJANGO_SETTINGS_MODULE=cms.settings.dev` to their runtime configuration (e.g [PyCharm configuration documentation](https://www.jetbrains.com/help/pycharm/run-debug-configuration.html#createExplicitly)).
 
 In order to run it:
 
