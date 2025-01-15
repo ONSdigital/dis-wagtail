@@ -68,15 +68,15 @@
         
         {% for section in column.value.sections %}
             {% set sectionData = {
-                'text': section.section_link.title or (section.section_link.page and section.section_link.page.title) or '',
-                'url': section.section_link.external_url or (section.section_link.page and pageurl(section.section_link.page)) or False,
+                'text': section.section_link.title or (section.section_link.page and section.section_link.page.title),
+                'url': section.section_link.external_url or (section.section_link.page and pageurl(section.section_link.page)),
                 'children': []
             } %}
             
             {% for link in section.links %}
                 {% set _ = sectionData.children.append({
-                    'text': link.title or (link.page and link.page.title) or '',
-                    'url': link.external_url or (link.page and pageurl(link.page)) or False,
+                    'text': link.title or (link.page and link.page.title),
+                    'url': link.external_url or (link.page and pageurl(link.page)),
                 }) %}
             {% endfor %}
             
