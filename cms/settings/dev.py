@@ -30,7 +30,7 @@ AUTH_PASSWORD_VALIDATORS = []
 # Enable Wagtail's style guide in Wagtail's settings menu.
 # http://docs.wagtail.io/en/stable/contributing/styleguide.html
 INSTALLED_APPS += ["wagtail.contrib.styleguide"]  # noqa: F405
-
+INSTALLED_APPS += ["django_migration_linter"]
 
 # Disable forcing HTTPS locally since development server supports HTTP only.
 SECURE_SSL_REDIRECT = False
@@ -70,3 +70,23 @@ try:
 except ImportError:
     pass
 # pylint: enable=unused-wildcard-import,useless-suppression
+
+MIGRATION_LINTER_OPTIONS = {
+    "exclude_apps": [
+        "taggit",
+        "wagtailcore",
+        "wagtailembeds",
+        "wagtailimages",
+        "wagtailadmin",
+        "wagtailsearch",
+        "wagtaildocs",
+        "wagtailredirects",
+        "wagtailusers",
+    ],
+    "ignore_name": [
+        "0002_alter_customdocument_file_size",
+        "0004_contactdetails_core_contactdetails_name_unique",
+        "0003_delete_tracking",
+        "0002_customimage_description",
+    ],
+}

@@ -327,6 +327,18 @@ To lint the Python code, run:
 make lint
 ```
 
+#### Django Migration Linter
+
+[Django Migration Linter](https://github.com/3YOURMIND/django-migration-linter) for linting migrations files in the project.
+
+To lint the django migration files:
+
+```bash
+make lint-migrations
+```
+
+#### Format
+
 To auto-format the Python code, and correct fixable linting issues, run:
 
 ```bash
