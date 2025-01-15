@@ -5,7 +5,7 @@ from django.utils import timezone
 def create_index_page(apps, schema_editor):
     # Get models
     ContentType = apps.get_model("contenttypes.ContentType")
-    IndexPage = apps.get_model("release_calendar", "ReleaseCalendarIndex")
+    ReleaseCalendarIndex = apps.get_model("release_calendar", "ReleaseCalendarIndex")
     Page = apps.get_model("wagtailcore.Page")
     Locale = apps.get_model("wagtailcore.Locale")
 
@@ -18,7 +18,7 @@ def create_index_page(apps, schema_editor):
     now = timezone.now()
 
     # Create a new page
-    IndexPage.objects.create(
+    ReleaseCalendarIndex.objects.create(
         title="Release calendar",
         draft_title="Release calendar",
         live=True,
@@ -43,5 +43,5 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        migrations.RunPython(create_index_page),
+        migrations.RunPython(create_index_page, migrations.RunPython.noop),
     ]
