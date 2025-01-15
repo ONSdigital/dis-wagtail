@@ -45,7 +45,7 @@
             {% set _ = keyLinksList.append({
                 'text': highlight.value.title if highlight.value.title else highlight.value.page.title,
                 'description': highlight.value.description,
-                'url': highlight.value.page.url,
+                'url': pageurl(highlight.value.page),
             }) %}
         {% elif highlight.value.external_url %}
             {% set _ = keyLinksList.append({
@@ -69,14 +69,14 @@
         {% for section in column.value.sections %}
             {% set sectionData = {
                 'text': section.section_link.title or (section.section_link.page and section.section_link.page.title) or '',
-                'url': section.section_link.external_url or (section.section_link.page and section.section_link.page.url) or False,
+                'url': section.section_link.external_url or (section.section_link.page and pageurl(section.section_link.page)) or False,
                 'children': []
             } %}
             
             {% for link in section.links %}
                 {% set _ = sectionData.children.append({
                     'text': link.title or (link.page and link.page.title) or '',
-                    'url': link.external_url or (link.page and link.page.url) or False,
+                    'url': link.external_url or (link.page and pageurl(link.page)) or False,
                 }) %}
             {% endfor %}
             
