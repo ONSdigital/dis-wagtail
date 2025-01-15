@@ -13,10 +13,11 @@ if TYPE_CHECKING:
 class NoAddModelPermissionPolicy(ModelPermissionPolicy):
     """Model permission that doesn't allow creating more than one main menu instance."""
 
-    def user_has_permission(self, user: Optional["User"] = None, action: str | None = None) -> bool:
+    def user_has_permission(self, user: "User", action: str) -> bool:
         if action == "add" and MainMenu.objects.exists():
             return False
-        return super().user_has_permission(user, action)
+        has_permission: bool = super().user_has_permission(user, action)
+        return has_permission
 
 
 class MainMenuViewSet(SnippetViewSet):
