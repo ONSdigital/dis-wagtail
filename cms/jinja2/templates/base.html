@@ -66,7 +66,7 @@
             'column': loop.index,
             'linksList': []
         } %}
-        
+
         {% for section in column.value.sections %}
             {% if section.section_link.page and section.section_link.page.live %}
                 {% set sectionData = {
@@ -81,7 +81,7 @@
                     'children': []
                 } %}
             {% endif %}
-            
+
             {% if sectionData %}
                 {% for link in section.links %}
                     {% if link.page and link.page.live%}
@@ -97,10 +97,10 @@
                     {% endif %}
                 {% endfor %}
             {% endif %}
-            
+
             {% do columnData.linksList.append(sectionData) %}
         {% endfor %}
-        
+
         {% do itemsList.append(columnData) %}
     {% endfor %}
 {% endif %}
