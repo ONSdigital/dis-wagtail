@@ -54,12 +54,18 @@ class AccessControlLoggingFileSystemStorage(FileSystemStorage):
 
     def make_private(self, file: "FieldFile") -> bool:
         """Pretend to make the provided file private."""
-        logger.info("Skipping private file permission setting for '%s'.", file.name)
+        logger.info(
+            "Simulating private permission setting for file '%s'. No actual changes applied.",
+            file.name,
+        )
         return True
 
     def make_public(self, file: "FieldFile") -> bool:
         """Pretend to make the provided file public."""
-        logger.info("Skipping public file permission setting for '%s'.", file.name)
+        logger.info(
+            "Simulating public permission setting for file '%s'. No actual changes applied.",
+            file.name,
+        )
         return True
 
 

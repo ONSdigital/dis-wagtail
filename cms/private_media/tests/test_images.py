@@ -51,7 +51,12 @@ class TestImageModel(TestCase):
         # Attempts to set file permissions on save should have failed gracefully
         self.assertEqual(
             logs.output,
-            [(f"INFO:cms.private_media.storages:Skipping private file permission setting for '{image.file.name}'.")],
+            [
+                (
+                    "INFO:cms.private_media.storages:Simulating private permission setting for file "
+                    f"'{image.file.name}'. No actual changes applied."
+                )
+            ],
         )
 
         # File permissions should be considered up-to-date
@@ -106,7 +111,12 @@ class TestImageModel(TestCase):
         # Attempts to set file permissions on save should have failed gracefully
         self.assertEqual(
             logs.output,
-            [(f"INFO:cms.private_media.storages:Skipping public file permission setting for '{image.file.name}'.")],
+            [
+                (
+                    "INFO:cms.private_media.storages:Simulating public permission setting for file "
+                    f"'{image.file.name}'. No actual changes applied."
+                )
+            ],
         )
 
         # File permissions should be considered up-to-date
