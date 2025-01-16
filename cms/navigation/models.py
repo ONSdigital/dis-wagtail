@@ -4,11 +4,12 @@ from django.db import models
 from django.utils.translation import gettext_lazy as _
 from wagtail.admin.panels import FieldPanel
 from wagtail.blocks import CharBlock, ListBlock, PageChooserBlock, StructBlock
-from wagtail.contrib.settings.models import BaseSiteSetting, register_setting
+from wagtail.contrib.settings.models import register_setting
 from wagtail.models import DraftStateMixin, PreviewableMixin, RevisionMixin
 
 from cms.core.blocks.base import LinkBlock
 from cms.core.fields import StreamField
+from cms.core.models import BaseSiteSetting
 
 MAIN_MENU_MAX_NUM_HIGHLIGHTS = 3
 MAIN_MENU_MAX_NUM_COLUMNS = 3

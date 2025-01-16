@@ -6,7 +6,6 @@ from django.db import DEFAULT_DB_ALIAS, transaction
 from django.db.models import Model
 
 from cms.images.models import Rendition
-from cms.navigation.models import NavigationSettings
 
 READ_REPLICA_DB_ALIAS = "read_replica"
 
@@ -68,9 +67,7 @@ class ExternalEnvRouter:  # pylint: disable=unused-argument,protected-access
     In production, this will also be enforced at the database level.
     """
 
-    # NavigationSettings is here because it uses `get_or_create()` which in turn sets
-    # `._for_write = True` targetting the write database.
-    WRITE_ALLOWED_MODELS = frozenset({Rendition, NavigationSettings})
+    WRITE_ALLOWED_MODELS = frozenset({Rendition})
 
     FAKE_BACKEND = "not_allowed_in_external_env"
 
