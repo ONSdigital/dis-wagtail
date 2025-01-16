@@ -1,4 +1,10 @@
-from .embeddable import DocumentBlock, DocumentsBlock, ImageBlock, ONSEmbedBlock
+from .embeddable import (
+    DocumentBlock,
+    DocumentsBlock,
+    ImageBlock,
+    ONSEmbedBlock,
+    VideoEmbedBlock,
+)
 from .headline_figures import HeadlineFiguresBlock
 from .markup import BasicTableBlock, HeadingBlock, QuoteBlock
 from .panels import PanelBlock
@@ -17,4 +23,5 @@ __all__ = [
     "QuoteBlock",
     "RelatedContentBlock",
     "RelatedLinksBlock",
+    "VideoEmbedBlock",
 ]
