@@ -1,6 +1,7 @@
 import logging
 from typing import TYPE_CHECKING
 
+from boto3.exceptions import Boto3Error
 from botocore.exceptions import ClientError
 from django.core.files.storage import FileSystemStorage, InMemoryStorage
 from storages.backends.s3 import S3Storage
@@ -26,15 +27,19 @@ class AccessControlledS3Storage(S3Storage):
         return self._set_file_acl(file, self.public_acl_name)
 
     def _set_file_acl(self, file: "FieldFile", acl_name: str) -> bool:
-        obj = self.bucket.Object(file.name)
+        try:
+            obj = self.bucket.Object(file.name)
+        except (ClientError, Boto3Error):
+            logger.exception("Failed to retrieve object for %s", file.name)
+            return False
         try:
             obj_acl = obj.Acl()
-        except ClientError:
+        except (ClientError, Boto3Error):
             logger.exception("Failed to retrieve ACL for %s", file.name)
             return False
         try:
             obj_acl.put(ACL=acl_name)
-        except ClientError:
+        except (ClientError, Boto3Error):
             logger.exception("Failed to set ACL for %s", file.name)
             return False
 
