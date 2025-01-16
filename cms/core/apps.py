@@ -7,3 +7,6 @@ class CoreConfig(AppConfig):
     default_auto_field = "django.db.models.AutoField"
     name = "cms.core"
     label = "core"
+
+    def ready(self) -> None:
+        from . import checks  # noqa
