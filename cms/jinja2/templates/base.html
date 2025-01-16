@@ -35,11 +35,8 @@
     {%- endwith -%}
 {%- endset -%}
 
-{% if request.is_preview and object %}
-   {% set main_menu = object %}
-{% else %}
-    {% set main_menu = settings.navigation.NavigationSettings.main_menu %}
-{% endif %}
+{% set navigation_settings = settings.navigation.NavigationSettings %}
+{% set main_menu = main_menu | default(navigation_settings.main_menu) %}
 
 {% set keyLinksList = [] %}
 

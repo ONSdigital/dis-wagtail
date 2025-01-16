@@ -84,7 +84,7 @@ class MainMenu(DraftStateMixin, RevisionMixin, PreviewableMixin, models.Model):
     ]
 
     def get_preview_template(self, request: "HttpRequest", mode_name: str) -> str:
-        return "templates/base_page.html"
+        return "templates/components/navigation/main_menu_preview.html"
 
     def __str__(self) -> str:
         return "Main Menu"
