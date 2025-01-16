@@ -235,7 +235,20 @@ class StatisticalArticlePageRenderTestCase(WagtailTestUtils, TestCase):
 
     def test_breadcrumb_doesnt_containt_series_url(self):
         response = self.client.get(self.basic_page_url)
-        self.assertContains(response, self.basic_page.get_parent().url)
+        parent = self.basic_page.get_parent()
+        self.assertNotContains(
+            response,
+            f'<a class="ons-breadcrumbs__link" href="{parent.url}">{parent.title}</a>',
+            html=True,
+        )
+
+        # confirm that the topic page is there
+        ancestor = parent.get_parent()
+        self.assertContains(
+            response,
+            f'<a class="ons-breadcrumbs__link" href="{ancestor.url}">{ancestor.title}</a>',
+            html=True,
+        )
 
     @override_settings(IS_EXTERNAL_ENV=True)
     def test_load_in_external_env(self):
