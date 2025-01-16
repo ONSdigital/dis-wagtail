@@ -1,9 +1,7 @@
 {% from "components/panel/_macro.njk" import onsPanel %}
 
-{# fmt:off #}
-{{ onsPanel({
-    "variant": value.variant,
-    "body": value.body,
-    "title": value.title
-}) }}
-{# fmt:on #}
+{% if value.title %}
+    {{- onsPanel({"variant": value.variant, "body": value.body, "title": value.title}) -}}
+{% else %}
+    {{- onsPanel({"variant": value.variant, "body": value.body}) -}}
+{% endif %}

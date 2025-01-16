@@ -1,0 +1,20 @@
+
+{% set large_image=image(value.image, "width-2048") %}
+{% set small_image=image(value.image, "width-1024") %}
+
+{% from "components/video/_macro.njk" import onsVideo %}
+{# fmt:off #}
+{{
+    onsVideo({
+        "videoEmbedUrl": value.embed_url,
+        "videoLinkUrl": value.link_url,
+        "image": {
+            "largeSrc": large_image.url,
+            "smallSrc": small_image.url,
+            "alt": large_image.alt
+        },
+        "title": value.title,
+        "videoLinkText": value.link_text
+    })
+}}
+{# fmt:on #}
