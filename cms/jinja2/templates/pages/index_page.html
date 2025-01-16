@@ -1,0 +1,86 @@
+{% extends "templates/base_page.html" %}
+{% from "components/document-list/_macro.njk" import onsDocumentList %}
+{% from "components/related-content/_macro.njk" import onsRelatedContent %}
+
+
+{% block main %}
+
+    {% if page.description %}
+        <p>{{ page.description }}</p>
+    {% endif %}
+
+    {% if page.featured_items%}
+
+        {% for item in page.featured_items %}
+            <ul style="display:inline; flex-wrap: wrap; list-style-type:none; justify-content:space-evenly; align-items:center;">
+                <li>
+                {# fmt:off #}
+                {{
+                    onsDocumentList({
+                            "documents": [
+                                {
+                                    "featured": true,
+                                    "title": {
+                                        "text": item.value.link.text,
+                                        "url": item.value.link.url
+                                    },
+                                    "description": item.value.description,
+                                }
+                            ]
+                        })
+                }}
+                </li>
+                {# fmt:on #}
+                </ul>
+        {% endfor %}
+
+    {% elif subpages %}
+
+        {% for subpage in subpages %}
+            <ul style="display:inline; flex-wrap: wrap; list-style-type:none; justify-content:space-evenly; align-items:center;">
+                <li>
+                {# fmt:off #}
+                {{
+                    onsDocumentList({
+                            "documents": [
+                                {
+                                    "featured": true,
+                                    "title": {
+                                        "text": subpage.title,
+                                        "url": subpage.url
+                                    },
+                                    "description": item.value.description,
+                                }
+                            ]
+                        })
+                }}
+                </li>
+                {# fmt:on #}
+                </ul>
+        {% endfor %}
+
+    {% endif %}
+
+
+    {% if page.content %}
+        {% include_block page.content|richtext %}
+    {% endif %}
+
+    {% if related_links_list %}
+        {# fmt:off #}
+        {{
+            onsRelatedContent({
+                "ariaLabel": _('Related links'),
+                "rows": [{
+                    "id": 'related-content',
+                    "title": _('Related links'),
+                    "itemsList": related_links_list
+                }]
+            })
+        }}
+        {# fmt:on #}
+    {% endif %}
+
+
+
+{% endblock %}
