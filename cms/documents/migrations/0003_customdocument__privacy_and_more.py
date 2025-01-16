@@ -23,6 +23,6 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name="customdocument",
             name="privacy_last_changed",
-            field=models.DateTimeField(default=django.utils.timezone.now, editable=False),
+            field=models.DateTimeField(default=django.utils.timezone.now, editable=False, null=False),
         ),
     ]

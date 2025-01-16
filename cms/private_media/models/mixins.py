@@ -36,7 +36,7 @@ class PrivateMediaMixin(models.Model):
 
     _privacy = models.CharField(max_length=10, choices=Privacy.choices, default=Privacy.PRIVATE)
     file_permissions_last_set = models.DateTimeField(editable=False, null=True)
-    privacy_last_changed = models.DateTimeField(editable=False, default=timezone.now)
+    privacy_last_changed = models.DateTimeField(editable=False, default=timezone.now, null=False)
 
     class Meta:
         abstract = True
