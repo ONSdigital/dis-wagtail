@@ -18,6 +18,7 @@ from wagtail.snippets.action_menu import (
     UnpublishMenuItem,
 )
 from wagtail.snippets.views.snippets import (
+    CopyView,
     CreateView,
     DeleteView,
     EditView,
@@ -49,6 +50,9 @@ if TYPE_CHECKING:
 
 class VisualisationIndexView(IndexView):
     def get_base_queryset(self) -> "QuerySet[Visualisation]":
+        """Overrides the default implementation to fetch creating users in the
+        same query (avoiding n+1 queries).
+        """
         return Visualisation.objects.select_related("created_by")  # type: ignore[no-any-return]
 
 
@@ -82,6 +86,20 @@ class VisualisationTypeKwargMixin:
     def get_panel(self) -> "EditHandler":
         edit_handler = self.model.edit_handler
         return edit_handler.bind_to_model(self.model)
+
+
+class RemoveChecksSidePanelMixin:
+    """A mixin for custom create/edit/copy views that removes the `ChecksSidePanel` that Wagtail
+    adds automatically for previewable snippets.
+    """
+
+    def get_side_panels(self) -> "MediaContainer":
+        return MediaContainer(
+            [
+                panel for panel in super().get_side_panels()  # type: ignore[misc]
+                if not isinstance(panel, ChecksSidePanel)
+            ]
+        )
 
 
 class SpecificObjectViewMixin:
@@ -131,7 +149,7 @@ class SpecificObjectViewMixin:
         return edit_handler.bind_to_model(self.model)
 
 
-class SpecificAddView(VisualisationTypeKwargMixin, CreateView):
+class SpecificAddView(RemoveChecksSidePanelMixin, VisualisationTypeKwargMixin, CreateView):
     def get_add_url(self) -> str:
         # This override is required so that the form posts back to this view
         return reverse(
@@ -146,11 +164,8 @@ class SpecificAddView(VisualisationTypeKwargMixin, CreateView):
         args = [self.model._meta.label_lower]
         return reverse(self.preview_url_name, args=args)
 
-    def get_side_panels(self) -> "MediaContainer":
-        return MediaContainer([panel for panel in super().get_side_panels() if not isinstance(panel, ChecksSidePanel)])
 
-
-class SpecificEditView(SpecificObjectViewMixin, EditView):
+class SpecificEditView(RemoveChecksSidePanelMixin, SpecificObjectViewMixin, EditView):
     action = "edit"
 
     def get_preview_url(self) -> str:
@@ -160,23 +175,24 @@ class SpecificEditView(SpecificObjectViewMixin, EditView):
         args = [self.model._meta.label_lower, self.object.pk]
         return reverse(self.preview_url_name, args=args)
 
-    def get_side_panels(self) -> "MediaContainer":
-        return MediaContainer([panel for panel in super().get_side_panels() if not isinstance(panel, ChecksSidePanel)])
-
 
 class VisualisationCopyView(SpecificObjectViewMixin, EditView):
     action = "copy"
     permission_required = "add"
     success_message = _("%(model_name)s '%(object)s' created successfully.")
 
-    def get_bound_panel(self, *args: Any, **kwargs: Any) -> Optional["EditHandler"]:
-        return None
-
     def get_header_title(self) -> str:
         return f"Copy chart: {self.object}"
 
     def get_page_subtitle(self) -> str:
         return f"Copy: {self.object}"
+
+    def get_bound_panel(self, *args: Any, **kwargs: Any) -> Optional["EditHandler"]:
+        """Overrides EditView.get_bound_panel() to prevent the edit_handler from
+        the viewset being used to generate the form class, because we have a
+        specific form with specific fields we want to display.
+        """
+        return None
 
     def get_form(self, *args: Any, **kwargs: Any) -> "Form":
         form: Form = VisualisationCopyForm(
@@ -188,12 +204,21 @@ class VisualisationCopyView(SpecificObjectViewMixin, EditView):
         return form
 
     def run_before_hook(self) -> None:
-        self.run_hook("before_create_snippet", self.request, self.object)
+        """Overrides EditView.run_before_hook() to prevent irrelevant
+        'before_edit_snippet' hook logic from running (this isn't an edit).
+        """
+        return None
 
     def run_after_hook(self) -> None:
-        self.run_hook("after_create_snippet", self.request, self.object)
+        """Overrides EditView.run_after_hook() to prevent irrelevant
+        'after_edit_snippet' hook logic from running (this isn't an edit).
+        """
+        return None
 
     def get_side_panels(self) -> "MediaContainer":
+        """Overrides EditView.get_side_panels() to prevent any side panels
+        from being displayed.
+        """
         return MediaContainer()
 
     def _get_action_menu(self) -> "ActionMenu":
@@ -323,8 +348,32 @@ class VisualisationViewSet(SnippetViewSet):
         return self.construct_view(self.preview_on_edit_view_class)
 
 
+class DataSourceIndexView(IndexView):
+    def get_base_queryset(self) -> "QuerySet[DataSource]":
+        """Overrides the default implementation to fetch creating users in the
+        same query (avoiding n+1 queries).
+        """
+        return DataSource.objects.select_related("created_by")  # type: ignore[no-any-return]
+
+
+class DataSourceCreateView(RemoveChecksSidePanelMixin, CreateView):
+    pass
+
+
+class DataSourceEditView(RemoveChecksSidePanelMixin, EditView):
+    pass
+
+
+class DataSourceCopyView(RemoveChecksSidePanelMixin, CopyView):
+    pass
+
+
 class DataSourceViewSet(SnippetViewSet):
     model = DataSource
+    index_view_class = DataSourceIndexView
+    add_view_class = DataSourceCreateView
+    copy_view_class = DataSourceCopyView
+    edit_view_class = DataSourceEditView
     base_form_class = DataSourceEditForm
     list_display: ClassVar[Sequence[str]] = ["title", "column_count", "created_by", "created_at", "last_updated_at"]
     list_select_related: ClassVar[Sequence[str]] = ["created_by"]
