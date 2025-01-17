@@ -12,7 +12,7 @@ from wagtail.admin.forms.collections import BaseCollectionMemberForm
 from wagtail.admin.forms.models import WagtailAdminModelForm
 
 from cms.datavis.models import Visualisation
-from cms.datavis.utils import get_visualisation_type_choices
+from cms.datavis.utils import get_visualisation_type_choices, get_visualisation_type_model_from_name
 
 if TYPE_CHECKING:
     from wagtail.blocks import StreamValue
@@ -89,9 +89,13 @@ class VisualisationEditForm(WagtailAdminModelForm, BaseCollectionMemberForm):
 
 
 class VisualisationCopyForm(WagtailAdminModelForm, BaseCollectionMemberForm):
+    new_type = forms.ChoiceField(
+        choices=get_visualisation_type_choices, label=_("Create as"), required=True
+    )
+
     class Meta:
         model = Visualisation
-        fields: ClassVar[list[str]] = ["collection", "name"]
+        fields: ClassVar[list[str]] = ["collection", "name", "new_type"]
         labels: ClassVar[dict[str, Any]] = {
             "name": _("New visualisation name"),
         }
@@ -99,17 +103,24 @@ class VisualisationCopyForm(WagtailAdminModelForm, BaseCollectionMemberForm):
     def __init__(self, *args, **kwargs):
         self.for_user = kwargs.get("for_user")
         super().__init__(*args, **kwargs)
+        self.initial["new_type"] = self.instance.specific_class._meta.label_lower
 
     def save(self, commit=True):
-        # Override values to create a new draft object
-        self.instance.id = None
-        self.instance.pk = None
-        self.instance.uuid = uuid.uuid4()
-        self.instance.live = False
-        self.instance.created_at = None
+        new_model = get_visualisation_type_model_from_name(self.cleaned_data["new_type"])
+        original_field_values = {}
+        for field in self.instance._meta.get_fields():
+            if field.name not in ["visualisation_ptr", "id", "pk", "uuid", "created_at", "created_by", "updated_at", "content_type", "index_entries"]:
+                field_val = getattr(self.instance, field.name)
+                # Special handling for 'inline' model values
+                if hasattr(field_val, "get_object_list"):
+                    field_val = field_val.get_object_list()
+                original_field_values[field.name] = field_val
+
+        # Replace self.instance with a new object of the correct type
+        self.instance = new_model(**original_field_values)
         self.instance.created_by = self.for_user
-        self.instance.updated_at = None
-        self.instance._state.adding = True  # pylint: disable=protected-access
+
+        # Let the superclass handle saving of self.instance
         return super().save(commit)
 
 
