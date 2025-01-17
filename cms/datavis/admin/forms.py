@@ -2,7 +2,6 @@ import contextlib
 import csv
 import io
 import json
-import uuid
 from collections.abc import Sequence
 from typing import TYPE_CHECKING, Any, ClassVar
 
@@ -79,7 +78,6 @@ class DataSourceEditForm(WagtailAdminModelForm, BaseCollectionMemberForm):
 
 
 class VisualisationEditForm(WagtailAdminModelForm, BaseCollectionMemberForm):
-
     def __init__(self, *args, **kwargs):
         user = kwargs.get("for_user")
         super().__init__(*args, **kwargs)
@@ -89,9 +87,7 @@ class VisualisationEditForm(WagtailAdminModelForm, BaseCollectionMemberForm):
 
 
 class VisualisationCopyForm(WagtailAdminModelForm, BaseCollectionMemberForm):
-    new_type = forms.ChoiceField(
-        choices=get_visualisation_type_choices, label=_("Create as"), required=True
-    )
+    new_type = forms.ChoiceField(choices=get_visualisation_type_choices, label=_("Create as"), required=True)
 
     class Meta:
         model = Visualisation
@@ -109,7 +105,17 @@ class VisualisationCopyForm(WagtailAdminModelForm, BaseCollectionMemberForm):
         new_model = get_visualisation_type_model_from_name(self.cleaned_data["new_type"])
         original_field_values = {}
         for field in self.instance._meta.get_fields():
-            if field.name not in ["visualisation_ptr", "id", "pk", "uuid", "created_at", "created_by", "updated_at", "content_type", "index_entries"]:
+            if field.name not in [
+                "visualisation_ptr",
+                "id",
+                "pk",
+                "uuid",
+                "created_at",
+                "created_by",
+                "updated_at",
+                "content_type",
+                "index_entries",
+            ]:
                 field_val = getattr(self.instance, field.name)
                 # Special handling for 'inline' model values
                 if hasattr(field_val, "get_object_list"):
