@@ -3,6 +3,7 @@ from typing import TYPE_CHECKING, Any, ClassVar, Optional
 
 from django.contrib.admin.utils import unquote
 from django.urls import path, reverse
+from django.utils.text import capfirst
 from django.utils.translation import gettext_lazy as _
 from django.views.generic.edit import BaseFormView
 from wagtail.admin.panels import FieldPanel, ObjectList
@@ -44,6 +45,7 @@ if TYPE_CHECKING:
     from django.db.models import QuerySet
     from django.forms import Form
     from django.http import HttpRequest, HttpResponse
+    from django.utils.functional import Promise
     from wagtail.admin.panels import EditHandler
     from wagtail.admin.ui.action_menu import ActionMenu
 
@@ -101,6 +103,19 @@ class RemoveChecksSidePanelMixin:
             ]
         )
 
+class CorrectIndexBreadcrumbMixin:
+    """A mixin for Visualisation views that include a breadcrumb
+    item for the index view using the specific model name, but we
+    want it to always read "Visualisation".
+    """
+
+    def get_breadcrumbs_items(self) -> Sequence[dict[str, "str | Promise"]]:
+        items: list[dict[str, "str | Promise"]] = super().get_breadcrumbs_items()  # type: ignore[misc]
+        for item in items:
+            if item["url"] == reverse(self.index_url_name):  # type: ignore[attr-defined]
+                item["label"] = capfirst(Visualisation._meta.verbose_name_plural)
+        return items
+
 
 class SpecificObjectViewMixin:
     draftstate_enabled = False
@@ -149,7 +164,7 @@ class SpecificObjectViewMixin:
         return edit_handler.bind_to_model(self.model)
 
 
-class SpecificAddView(RemoveChecksSidePanelMixin, VisualisationTypeKwargMixin, CreateView):
+class SpecificAddView(CorrectIndexBreadcrumbMixin, RemoveChecksSidePanelMixin, VisualisationTypeKwargMixin, CreateView):
     def get_add_url(self) -> str:
         # This override is required so that the form posts back to this view
         return reverse(
@@ -165,7 +180,7 @@ class SpecificAddView(RemoveChecksSidePanelMixin, VisualisationTypeKwargMixin, C
         return reverse(self.preview_url_name, args=args)
 
 
-class SpecificEditView(RemoveChecksSidePanelMixin, SpecificObjectViewMixin, EditView):
+class SpecificEditView(CorrectIndexBreadcrumbMixin, RemoveChecksSidePanelMixin, SpecificObjectViewMixin, EditView):
     action = "edit"
 
     def get_preview_url(self) -> str:
@@ -176,7 +191,7 @@ class SpecificEditView(RemoveChecksSidePanelMixin, SpecificObjectViewMixin, Edit
         return reverse(self.preview_url_name, args=args)
 
 
-class VisualisationCopyView(SpecificObjectViewMixin, EditView):
+class VisualisationCopyView(CorrectIndexBreadcrumbMixin, SpecificObjectViewMixin, EditView):
     action = "copy"
     permission_required = "add"
     success_message = _("%(model_name)s '%(object)s' created successfully.")
@@ -255,7 +270,7 @@ class VisualisationCopyView(SpecificObjectViewMixin, EditView):
         return reverse(self.index_url_name)
 
 
-class SpecificDeleteView(SpecificObjectViewMixin, DeleteView):
+class SpecificDeleteView(CorrectIndexBreadcrumbMixin, SpecificObjectViewMixin, DeleteView):
     def get_form(self, *args: Any, **kwargs: Any) -> "Form":
         """Overrides the default implementation to ensure 'instance' is set on
         the form. It's unclear why Wagtail doesn't do this by default, but
@@ -354,7 +369,7 @@ class DataSourceIndexView(IndexView):
         """Overrides the default implementation to fetch creating users in the
         same query (avoiding n+1 queries).
         """
-        return DataSource.objects.select_related("created_by")  # type: ignore[no-any-return]
+        return DataSource.objects.select_related("created_by")
 
 
 class DataSourceCreateView(RemoveChecksSidePanelMixin, CreateView):
