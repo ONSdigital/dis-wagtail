@@ -192,8 +192,6 @@ class Chart(Visualisation):
                 "enabled": True,
                 "text": self.x_label or headers[0],
             },
-            "lineColor": "#929292",
-            "lineWidth": 1,
             "reversed": self.x_reversed,
             "categories": [r[0] for r in rows],
         }
@@ -212,9 +210,6 @@ class Chart(Visualisation):
     ) -> dict[str, Any]:
         config = {
             "reversed": self.y_reversed,
-            "lineColor": "#929292",
-            "lineWidth": 1,
-            "endOnTick": False,
         }
         label = self.y_label or headers[1]
         if label:
