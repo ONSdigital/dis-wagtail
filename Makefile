@@ -33,7 +33,7 @@ format-frontend:  ## Format front-end files (CSS, JS, YAML, MD)
 	npm run format
 
 .PHONY: lint
-lint: lint-py lint-html lint-frontend ## Run all linters (python, html, front-end)
+lint: lint-py lint-html lint-frontend lint-migrations ## Run all linters (python, html, front-end, migrations)
 
 .PHONY: lint-py
 lint-py:  ## Run all Python linters (ruff/pylint/mypy).
@@ -49,6 +49,10 @@ lint-html:  ## Run HTML Linters
 .PHONY: lint-frontend
 lint-frontend:  ## Run front-end linters
 	npm run lint
+
+.PHONY: lint-migrations
+lint-migrations: ## Run django-migration-linter
+	poetry run python manage.py lintmigrations --quiet ignore ok
 
 .PHONY: test
 test:  ## Run the tests and check coverage.
@@ -152,3 +156,28 @@ runserver: ## Run the Django application locally
 
 .PHONY: dev-init
 dev-init: load-design-system-templates collectstatic makemigrations migrate createsuperuser ## Run the pre-run setup scripts
+
+.PHONY: functional-tests-up
+functional-tests-up:  ## Start the functional tests docker compose dependencies
+	docker compose -f functional_tests/docker-compose.yml up -d
+
+.PHONY: functional-tests-dev-up
+functional-tests-dev-up:  ## Start the functional tests docker compose dependencies and dev app
+	docker compose -f functional_tests/docker-compose-dev.yml up -d
+
+.PHONY: functional-tests-down
+functional-tests-down:  ## Stop the functional tests docker compose dependencies (and dev app if running)
+	docker compose -f functional_tests/docker-compose-dev.yml down
+
+.PHONY: functional-tests-run
+functional-tests-run: load-design-system-templates collectstatic ## Only run the functional tests (dependencies must be run separately)
+	# Run migrations to work around Django bug (#35967)
+	poetry run ./manage.py migrate --noinput --settings cms.settings.functional_test
+	poetry run behave functional_tests
+
+.PHONY: functional-tests
+functional-tests: functional-tests-up functional-tests-run functional-tests-down  ## Run the functional tests with dependencies (all in one)
+
+.PHONY: playwright-install
+playwright-install:  ## Install Playwright dependencies
+	poetry run playwright install --with-deps

@@ -1,7 +1,6 @@
 from typing import TYPE_CHECKING, ClassVar
 
 from wagtail.blocks import RichTextBlock, StreamBlock
-from wagtail.embeds.blocks import EmbedBlock
 from wagtail.images.blocks import ImageChooserBlock
 from wagtailmath.blocks import MathBlock
 
@@ -12,6 +11,7 @@ from cms.core.blocks import (
     PanelBlock,
     QuoteBlock,
     RelatedLinksBlock,
+    VideoEmbedBlock,
 )
 from cms.core.blocks.section_blocks import SectionBlock
 
@@ -43,7 +43,7 @@ class CoreStoryBlock(StreamBlock):
     rich_text = RichTextBlock()
     quote = QuoteBlock()
     panel = PanelBlock()
-    embed = EmbedBlock(group="Media")
+    video_embed = VideoEmbedBlock(group="Media")
     image = ImageChooserBlock(group="Media")
     documents = DocumentsBlock(group="Media")
     related_links = RelatedLinksBlock()
