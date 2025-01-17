@@ -1,3 +1,4 @@
+import contextlib
 from operator import itemgetter
 from typing import TYPE_CHECKING
 
@@ -9,6 +10,15 @@ if TYPE_CHECKING:
     from django.db.models import QuerySet
 
     from cms.datavis.models import Visualisation
+
+
+def numberfy(value: str) -> int | float | str:
+    stripped = value.strip()
+    if stripped.isdigit():
+        return int(stripped)
+    with contextlib.suppress(ValueError):
+        return float(stripped)
+    return value
 
 
 def get_creatable_visualisation_models() -> list[type["Visualisation"]]:
