@@ -1,6 +1,7 @@
 from collections.abc import Sequence
 from typing import TYPE_CHECKING, Any, ClassVar, Optional
 
+from django.contrib.admin.utils import unquote
 from django.urls import path, reverse
 from django.utils.translation import gettext_lazy as _
 from django.views.generic.edit import BaseFormView
@@ -96,7 +97,11 @@ class SpecificObjectViewMixin:
         self.request = request
         self.args = args
         self.kwargs = kwargs
-        self.pk = kwargs.get("pk")
+        try:
+            quoted_pk = self.kwargs[self.pk_url_kwarg]  # type: ignore[attr-defined]
+        except KeyError:
+            quoted_pk = self.args[0]
+        self.pk = unquote(str(quoted_pk))
 
         # Fetch the specific object and use the specific type to set
         # self.model - allowing forms to be generated correctly. Our overrides
