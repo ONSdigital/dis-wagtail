@@ -4,15 +4,14 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('datavis', '0002_datasource_column_count'),
+        ("datavis", "0002_datasource_column_count"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='chart',
-            name='marker_style',
-            field=models.CharField(blank=True, default='', max_length=15),
+            model_name="chart",
+            name="marker_style",
+            field=models.CharField(blank=True, default="", max_length=15),
         ),
     ]
