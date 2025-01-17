@@ -18,6 +18,7 @@ from cms.datavis.constants import (
     HIGHCHARTS_THEMES,
     HighchartsTheme,
     LegendPosition,
+    MarkerStyle,
 )
 from cms.datavis.fields import NonStrippingCharField
 
@@ -53,14 +54,8 @@ class Chart(Visualisation):
     )
     marker_style = models.CharField(  # type: ignore[var-annotated]
         verbose_name=_("marker style"),
-        default="circle",
-        choices=[
-            ("", _("No marker")),
-            ("circle", _("Circle")),
-            ("square", _("Square")),
-            ("triangle", _("Triangle")),
-            ("diamond", _("Diamond")),
-        ],
+        default=MarkerStyle.CIRCLE,
+        choices=MarkerStyle.choices,
         blank=True,
         max_length=15,
     )

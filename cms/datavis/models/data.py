@@ -14,6 +14,7 @@ from wagtail.permission_policies.collections import CollectionOwnershipPermissio
 from wagtail.search import index
 
 from cms.datavis.blocks import SimpleTableBlock
+from cms.datavis.constants import MarkerStyle
 
 if TYPE_CHECKING:
     from django.http import HttpRequest, HttpResponse
@@ -184,13 +185,7 @@ class AdditionalDataSource(Orderable):
     marker_style = models.CharField(  # type: ignore[var-annotated]
         verbose_name=_("marker style"),
         default="",
-        choices=[
-            ("", _("No marker")),
-            ("circle", _("Circle")),
-            ("square", _("Square")),
-            ("triangle", _("Triangle")),
-            ("diamond", _("Diamond")),
-        ],
+        choices=MarkerStyle.choices,
         blank=True,
         max_length=15,
     )

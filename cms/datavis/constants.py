@@ -7,11 +7,12 @@ class AnnotationStyle(TextChoices):
     BELOW_LINE = "below_line", _("Below line")
 
 
-class BarChartType(TextChoices):
-    BAR = "bar", _("Bar")
-    STACKED_BAR = "stacked_bar", _("Stacked bar")
-    COLUMN = "column", _("Column")
-    STACKED_COLUMN = "stacked_column", _("Stacked column")
+class MarkerStyle(TextChoices):
+    __empty__ = _("No markers")
+    CIRCLE = "circle", _("Circle")
+    SQUARE = "square", _("Square")
+    TRIANGLE = "triangle", _("Triangle")
+    DIAMOND = "diamond", _("Diamond")
 
 
 class HighchartsTheme(TextChoices):
