@@ -46,6 +46,19 @@ class Chart(Visualisation):
         choices=HighchartsTheme.choices,
         default=HighchartsTheme.PRIMARY,
     )
+    marker_style = models.CharField(
+        verbose_name=_("marker style"),
+        default="",
+        choices=[
+            ("", _("No marker")),
+            ("circle", _("Circle")),
+            ("square", _("Square")),
+            ("triangle", _("Triangle")),
+            ("diamond", _("Diamond")),
+        ],
+        blank=True,
+        max_length=15,
+    )
     use_stacked_layout = models.BooleanField(verbose_name=_("use stacked layout?"), default=False)
 
     x_label = models.CharField(verbose_name=_("label"), max_length=255, blank=True)
@@ -122,6 +135,7 @@ class Chart(Visualisation):
     style_panels: ClassVar[Sequence["Panel"]] = [
         FieldPanel("theme"),
         FieldPanel("show_value_labels"),
+        FieldPanel("marker_style"),
         MultiFieldPanel(
             heading=_("Legend"),
             children=[
@@ -160,7 +174,7 @@ class Chart(Visualisation):
         )
 
     def get_component_config(self, headers: Sequence[str], rows: Sequence[list[str | int | float]]) -> dict[str, Any]:
-        config = {
+        return {
             "chart": {
                 "type": self.highcharts_chart_type,
             },
@@ -173,7 +187,6 @@ class Chart(Visualisation):
             },
             "xAxis": self.get_x_axis_config(headers, rows),
             "yAxis": self.get_y_axis_config(headers, rows),
-            "plotOptions": self.get_plot_options(),
             "navigation": {
                 "enabled": False,
             },
@@ -181,9 +194,8 @@ class Chart(Visualisation):
             "credits": {
                 "enabled": False,
             },
+            "series": self.get_series_data(headers, rows),
         }
-        config["series"] = self.get_series_data(headers, rows)
-        return config
 
     def get_x_axis_config(self, headers: Sequence[str], rows: Sequence[list[str | int | float]]) -> dict[str, Any]:
         config = {
@@ -229,19 +241,6 @@ class Chart(Visualisation):
             config["max"] = self.y_max
         return config
 
-    def get_plot_options(self) -> dict[str, Any]:
-        return {
-            self.highcharts_chart_type: {
-                "borderWidth": 0,
-                "animation": False,
-                "pointPadding": 0.1,
-                "groupPadding": 0.1,
-                "dataLabels": {
-                    "enabled": self.show_value_labels,
-                },
-            }
-        }
-
     def get_annotations_config(self) -> list[dict[str, Any]]:
         annotations = []
         annotation_group = {
@@ -268,28 +267,39 @@ class Chart(Visualisation):
                     },
                 }
             )
-        annotations.append(annotation_group)
+        if annotation_group["labels"]:
+            annotations.append(annotation_group)
         return annotations
 
     def get_series_data(self, headers: Sequence[str], rows: Sequence[list[str | int | float]]) -> list[dict[str, Any]]:
         series = []
         for i, column in enumerate(headers[1:], start=1):
-            item = {"name": column}
-            if rows:
-                item["data"] = [r[i] for r in rows]
+            item = {
+                "name": column,
+                "data": [r[i] for r in rows],
+                "animation": False,
+                "dataLabels": {
+                    "enabled": self.show_value_labels,
+                },
+                "marker": {
+                    "enabled": bool(self.marker_style),
+                    "symbol": self.marker_style or "undefined",
+                },
+            }
             if self.y_tooltip_suffix:
                 item["tooltip"] = {
                     "valueSuffix": self.y_tooltip_suffix,
                 }
             if self.supports_stacked_layout and self.use_stacked_layout:
                 item["stacking"] = "normal"
+
             series.append(item)
         for additional in self.additional_data_sources.all():
             item = {
                 "type": additional.display_as,
                 "name": additional.data_source.title,
                 "data": additional.data_source.rows,
-                "markers": {
+                 "marker": {
                     "enabled": bool(additional.marker_style),
                     "symbol": additional.marker_style or "undefined",
                 },
