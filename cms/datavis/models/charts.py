@@ -213,12 +213,10 @@ class Chart(Visualisation):
         }
         label = self.y_label or headers[1]
         if label:
-            config["title"] = (
-                {
-                    "enabled": True,
-                    "text": label,
-                },
-            )
+            config["title"] = {
+                "enabled": True,
+                "text": label,
+            }
         if self.y_tick_interval is not None:
             config["tickInterval"] = self.y_tick_interval
         if self.y_value_suffix:
