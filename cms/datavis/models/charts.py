@@ -53,7 +53,7 @@ class Chart(Visualisation):
     )
     marker_style = models.CharField(  # type: ignore[var-annotated]
         verbose_name=_("marker style"),
-        default="",
+        default="circle",
         choices=[
             ("", _("No marker")),
             ("circle", _("Circle")),

@@ -12,6 +12,6 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name="chart",
             name="marker_style",
-            field=models.CharField(blank=True, default="", max_length=15),
+            field=models.CharField(blank=True, default="circle", max_length=15),
         ),
     ]
