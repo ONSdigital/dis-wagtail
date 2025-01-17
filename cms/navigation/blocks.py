@@ -1,6 +1,7 @@
-from wagtail.blocks import CharBlock, ListBlock, PageChooserBlock, StructBlock
-from cms.core.blocks.base import LinkBlock
 from django.utils.translation import gettext_lazy as _
+from wagtail.blocks import CharBlock, ListBlock, PageChooserBlock, StructBlock
+
+from cms.core.blocks.base import LinkBlock
 
 
 class ThemeLinkBlock(LinkBlock):
