@@ -18,7 +18,9 @@ if TYPE_CHECKING:
 
 
 class DataSourceEditForm(WagtailAdminModelForm, BaseCollectionMemberForm):
-    csv_file = forms.FileField(label=_("Populate from CSV"), required=False)
+    csv_file = forms.FileField(
+        label=_("Populate from CSV"), required=False, widget=forms.FileInput(attrs={"accept": "text/csv"})
+    )
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         user = kwargs.get("for_user")
