@@ -9,4 +9,4 @@ class CoreConfig(AppConfig):
     label = "core"
 
     def ready(self) -> None:
-        from . import checks  # noqa
+        from . import checks  # noqa pylint: disable=import-outside-toplevel,unused-import
