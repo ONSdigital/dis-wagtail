@@ -44,6 +44,15 @@ class SimpleTableBlockAdapter(TableAdapter):
 register(SimpleTableBlockAdapter(), SimpleTableBlock)
 
 
+class AnnotationBlock(blocks.StructBlock):
+    label = blocks.CharBlock(label=_("Label"), max_length=100, required=True)
+    x_position = blocks.CharBlock(label=_("X position"), max_length=100, required=True)
+    y_position = blocks.CharBlock(label=_("Y position"), max_length=100, required=True)
+
+    class Meta:
+        label = _("Annotation")
+
+
 class VisualisationChooserBlock(SnippetChooserBlock):
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         super().__init__("datavis.Visualisation", *args, **kwargs)
@@ -53,7 +62,6 @@ class VisualisationChooserBlock(SnippetChooserBlock):
 
         return (  # type: ignore[no-any-return]
             Visualisation.objects.select_related("primary_data_source").prefetch_related(
-                "annotations",
                 Prefetch(
                     "additional_data_sources",
                     queryset=AdditionalDataSource.objects.all().select_related("data_source"),

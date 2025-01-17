@@ -24,7 +24,7 @@ if TYPE_CHECKING:
     from .base import Visualisation
 
 
-__all__ = ["DataSource", "Annotation", "AdditionalDataSource"]
+__all__ = ["DataSource", "AdditionalDataSource"]
 
 
 class DataSource(  # type: ignore[django-manager-missing]
@@ -136,31 +136,6 @@ class DataSource(  # type: ignore[django-manager-missing]
             primary_data_source=self,
             use_stacked_layout=preview_mode.endswith("-stacked"),
         )
-
-
-class Annotation(Orderable):
-    visualisation = ParentalKey("datavis.Visualisation", on_delete=models.CASCADE, related_name="annotations")
-    label = models.CharField(verbose_name=_("label"), max_length=100)  # type: ignore[var-annotated]
-    x = models.CharField(verbose_name=_("x position"), max_length=50)  # type: ignore[var-annotated]
-    y = models.CharField(verbose_name=_("y position"), max_length=50)  # type: ignore[var-annotated]
-
-    def __str__(self) -> str:
-        label: str = self.label
-        return label
-
-    class Meta:
-        verbose_name = _("annotation")
-        verbose_name_plural = _("annotations")
-
-    panels: ClassVar[Sequence["Panel"]] = [
-        FieldPanel("label"),
-        FieldRowPanel(
-            [
-                FieldPanel("x"),
-                FieldPanel("y"),
-            ]
-        ),
-    ]
 
 
 class AdditionalDataSource(Orderable):
