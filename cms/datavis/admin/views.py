@@ -44,7 +44,6 @@ if TYPE_CHECKING:
     from django.http import HttpRequest, HttpResponse
     from wagtail.admin.panels import EditHandler
     from wagtail.admin.ui.action_menu import ActionMenu
-    from wagtail.snippets.views.snippets import SnippetViewSet
 
 
 class VisualisationIndexView(IndexView):
