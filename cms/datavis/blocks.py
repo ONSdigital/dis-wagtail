@@ -13,7 +13,7 @@ from wagtailtables.blocks import TableAdapter, TableBlock
 if TYPE_CHECKING:
     from django.db.models import QuerySet
 
-    from cms.datavis.models.base import Visualisation
+    from cms.datavis.models import Visualisation
 
 
 class SimpleTableBlock(TableBlock):
@@ -46,7 +46,7 @@ class VisualisationChooserBlock(SnippetChooserBlock):
         super().__init__("datavis.Visualisation", *args, **kwargs)
 
     def get_to_python_queryset(self) -> "QuerySet[Visualisation]":
-        from cms.datavis.models.data import AdditionalDataSource
+        from cms.datavis.models import AdditionalDataSource  # pylint: disable=import-outside-toplevel
 
         return self.model_class.objects.select_related("primary_data_source").prefetch_related(
             "annotations",
@@ -60,11 +60,10 @@ class VisualisationChooserBlock(SnippetChooserBlock):
         # the incoming serialised value should be None or an ID
         if value is None:
             return value
-        else:
-            try:
-                return self.get_to_python_queryset().get(pk=value).specific
-            except self.model_class.DoesNotExist:
-                return None
+        try:
+            return self.get_to_python_queryset().get(pk=value).specific
+        except self.model_class.DoesNotExist:
+            return None
 
     def bulk_to_python(self, values: list[int]) -> list["Visualisation | None"]:
         objects = self.get_to_python_queryset().in_bulk(values)
@@ -75,7 +74,7 @@ class VisualisationChooserBlock(SnippetChooserBlock):
             obj = objects.get(pk).specific
             if obj is not None and pk in seen_ids:
                 # this object is already in the result list, so we need to make a copy
-                obj = copy.copy(obj)
+                obj = copy(obj)
 
             result.append(obj)
             seen_ids.add(pk)
