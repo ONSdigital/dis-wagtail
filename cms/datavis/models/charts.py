@@ -14,6 +14,8 @@ from wagtail.admin.panels import (
     TabbedInterface,
 )
 
+from cms.core.fields import StreamField
+from cms.datavis.blocks import AnnotationBlock
 from cms.datavis.constants import (
     HIGHCHARTS_THEMES,
     HighchartsTheme,
@@ -21,6 +23,7 @@ from cms.datavis.constants import (
     MarkerStyle,
 )
 from cms.datavis.fields import NonStrippingCharField
+from cms.datavis.utils import numberfy
 
 from .base import Visualisation
 
@@ -81,6 +84,9 @@ class Chart(Visualisation):
     y_reversed = models.BooleanField(verbose_name=_("reverse axis?"), default=False)  # type: ignore[var-annotated]
     y_tick_interval = models.FloatField(  # type: ignore[var-annotated]
         verbose_name=_("tick interval"), blank=True, null=True
+    )
+    annotations = StreamField(
+        [("annotation", AnnotationBlock())], verbose_name=_("annotations"), blank=True, default=[]
     )
 
     @cached_property
@@ -151,7 +157,7 @@ class Chart(Visualisation):
     ]
 
     advanced_panels: ClassVar[Sequence["Panel"]] = [
-        InlinePanel("annotations", heading=_("Annotations")),
+        FieldPanel("annotations"),
         InlinePanel("additional_data_sources", heading=_("Additional data")),
     ]
 
@@ -266,7 +272,7 @@ class Chart(Visualisation):
         return config
 
     def get_annotations_config(self) -> list[dict[str, Any]]:
-        annotations: list[dict[str, Any]] = []
+        config: list[dict[str, Any]] = []
         annotation_group: dict[str, Any] = {
             "draggable": "",
             "labelOptions": {
@@ -279,13 +285,14 @@ class Chart(Visualisation):
         # into multiple groups, each with a separate 'labelOptions' value
         # to control the styling.
         group_labels: list[dict[str, Any]] = []
-        for annotation in self.annotations.all():
+        for item in self.annotations.raw_data:  # pylint: disable=no-member
+            value = item["value"]
             group_labels.append(
                 {
-                    "text": annotation.label,
+                    "text": value["label"],
                     "point": {
-                        "x": float(annotation.x) if annotation.x.replace(".", "").isdigit() else annotation.x,
-                        "y": float(annotation.y) if annotation.y.replace(".", "").isdigit() else annotation.y,
+                        "x": numberfy(value["x_position"]),
+                        "y": numberfy(value["y_position"]),
                         "xAxis": 0,
                         "yAxis": 0,
                     },
@@ -294,8 +301,8 @@ class Chart(Visualisation):
 
         if group_labels:
             annotation_group["labels"] = group_labels
-            annotations.append(annotation_group)
-        return annotations
+            config.append(annotation_group)
+        return config
 
     def get_series_data(self, headers: Sequence[str], rows: Sequence[list[str | int | float]]) -> list[dict[str, Any]]:
         series = []
