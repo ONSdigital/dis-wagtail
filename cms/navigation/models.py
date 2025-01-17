@@ -1,8 +1,9 @@
 from typing import TYPE_CHECKING, ClassVar
 
+from django.contrib.contenttypes.fields import GenericRelation
 from django.db import models
 from django.utils.translation import gettext_lazy as _
-from wagtail.admin.panels import FieldPanel
+from wagtail.admin.panels import FieldPanel, PublishingPanel
 from wagtail.blocks import CharBlock, ListBlock, PageChooserBlock, StructBlock
 from wagtail.contrib.settings.models import register_setting
 from wagtail.models import DraftStateMixin, PreviewableMixin, RevisionMixin
@@ -79,9 +80,16 @@ class MainMenu(DraftStateMixin, RevisionMixin, PreviewableMixin, models.Model):
         help_text=_("Up to 3 columns. Each column contains sections with links."),
     )
 
+    _revisions = GenericRelation("wagtailcore.Revision", related_query_name="main_menu")
+
+    @property
+    def revisions(self):
+        return self._revisions
+
     panels: ClassVar[list] = [
         FieldPanel("highlights"),
         FieldPanel("columns"),
+        PublishingPanel(),
     ]
 
     def get_preview_template(self, request: "HttpRequest", mode_name: str) -> str:
@@ -93,7 +101,7 @@ class MainMenu(DraftStateMixin, RevisionMixin, PreviewableMixin, models.Model):
 
 @register_setting(icon="list-ul")
 class NavigationSettings(BaseSiteSetting):
-    main_menu: models.ForeignKey = models.ForeignKey(
+    main_menu = models.ForeignKey(
         MainMenu,
         on_delete=models.SET_NULL,
         null=True,
