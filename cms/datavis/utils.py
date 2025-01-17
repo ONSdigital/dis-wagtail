@@ -6,6 +6,8 @@ from django.contrib.contenttypes.models import ContentType
 from django.utils.text import capfirst
 
 if TYPE_CHECKING:
+    from django.db.models import QuerySet
+
     from cms.datavis.models import Visualisation
 
 
@@ -15,7 +17,7 @@ def get_creatable_visualisation_models() -> list[type["Visualisation"]]:
     return [model for model in apps.get_models() if issubclass(model, Visualisation) and model.is_creatable]
 
 
-def get_visualisation_type_model_from_name(name) -> type["Visualisation"]:
+def get_visualisation_type_model_from_name(name: str) -> type["Visualisation"]:
     from cms.datavis.models import Visualisation  # pylint: disable=import-outside-toplevel
 
     model = apps.get_model(name)
@@ -31,7 +33,7 @@ def get_visualisation_type_choices() -> list[tuple[str, str]]:
     return sorted(choices, key=itemgetter(1))
 
 
-def get_visualisation_content_types():
+def get_visualisation_content_types() -> "QuerySet[ContentType]":
     """Returns a queryset of all ContentType objects corresponding to Visualisation model classes."""
     models = get_creatable_visualisation_models()
 
