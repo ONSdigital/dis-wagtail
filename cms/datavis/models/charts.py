@@ -31,6 +31,7 @@ __all__ = ["LineChart", "BarChart", "ColumnChart"]
 
 class Chart(Visualisation):
     supports_stacked_layout: ClassVar[bool] = False
+    supports_marker_style: ClassVar[bool] = False
 
     show_legend = models.BooleanField(verbose_name=_("show legend?"), default=False)
     legend_position = models.CharField(
@@ -135,7 +136,6 @@ class Chart(Visualisation):
     style_panels: ClassVar[Sequence["Panel"]] = [
         FieldPanel("theme"),
         FieldPanel("show_value_labels"),
-        FieldPanel("marker_style"),
         MultiFieldPanel(
             heading=_("Legend"),
             children=[
@@ -161,15 +161,34 @@ class Chart(Visualisation):
             general_panels.append(FieldPanel("use_stacked_layout"))
         return general_panels
 
+    @classmethod
+    def get_style_panels(cls):
+        style_panels = list(cls.style_panels)
+        if cls.supports_marker_style:
+            style_panels.insert(1, FieldPanel("marker_style"))
+        return style_panels
+
+    @classmethod
+    def get_advanced_panels(cls):
+        return list(cls.advanced_panels)
+
+    @classmethod
+    def get_x_axis_panels(cls):
+        return list(cls.x_axis_panels)
+
+    @classmethod
+    def get_y_axis_panels(cls):
+        return list(cls.y_axis_panels)
+
     @classproperty
     def edit_handler(cls):  # pylint: disable=no-self-argument
         return TabbedInterface(
             [
                 ObjectList(cls.get_general_panels(), heading=_("General")),
-                ObjectList(cls.x_axis_panels, heading=_("X Axis")),
-                ObjectList(cls.y_axis_panels, heading=_("Y Axis")),
-                ObjectList(cls.style_panels, heading=_("Style")),
-                ObjectList(cls.advanced_panels, heading=_("Advanced")),
+                ObjectList(cls.get_x_axis_panels(), heading=_("X Axis")),
+                ObjectList(cls.get_y_axis_panels(), heading=_("Y Axis")),
+                ObjectList(cls.get_style_panels(), heading=_("Style")),
+                ObjectList(cls.get_advanced_panels(), heading=_("Advanced")),
             ]
         )
 
@@ -281,11 +300,12 @@ class Chart(Visualisation):
                 "dataLabels": {
                     "enabled": self.show_value_labels,
                 },
-                "marker": {
+            }
+            if self.supports_marker_style:
+                item["marker"] = {
                     "enabled": bool(self.marker_style),
                     "symbol": self.marker_style or "undefined",
-                },
-            }
+                }
             if self.y_tooltip_suffix:
                 item["tooltip"] = {
                     "valueSuffix": self.y_tooltip_suffix,
@@ -299,7 +319,7 @@ class Chart(Visualisation):
                 "type": additional.display_as,
                 "name": additional.data_source.title,
                 "data": additional.data_source.rows,
-                 "marker": {
+                "marker": {
                     "enabled": bool(additional.marker_style),
                     "symbol": additional.marker_style or "undefined",
                 },
@@ -312,6 +332,7 @@ class LineChart(Chart):
     highcharts_chart_type = "line"
     template = "templates/datavis/line_chart.html"
     is_creatable = True
+    supports_marker_style = True
 
     class Meta:
         verbose_name = _("line chart")
@@ -319,10 +340,24 @@ class LineChart(Chart):
         proxy = True
 
 
+class AreaChart(Chart):
+    highcharts_chart_type = "area"
+    template = "templates/datavis/area_chart.html"
+    supports_stacked_layout = True
+    supports_marker_style = True
+    is_creatable = True
+
+    class Meta:
+        verbose_name = _("area chart")
+        verbose_name_plural = _("area charts")
+        proxy = True
+
+
 class BarChart(Chart):
     highcharts_chart_type = "bar"
     template = "templates/datavis/bar_chart.html"
     supports_stacked_layout = True
+    supports_marker_style = False
     is_creatable = True
 
     class Meta:
@@ -330,40 +365,23 @@ class BarChart(Chart):
         verbose_name_plural = _("bar charts")
         proxy = True
 
-    @classproperty
-    def edit_handler(cls):  # pylint: disable=no-self-argument
-        return TabbedInterface(
-            [
-                ObjectList(cls.get_general_panels(), heading=_("General")),
-                # Deliberately swapping X and Y axis panels to match how Highcharts
-                # switches the axis around for bar charts.
-                ObjectList(cls.y_axis_panels, heading=_("X Axis")),
-                ObjectList(cls.x_axis_panels, heading=_("Y Axis")),
-                ObjectList(cls.style_panels, heading=_("Style")),
-                ObjectList(cls.advanced_panels, heading=_("Advanced")),
-            ]
-        )
+    @classmethod
+    def get_x_axis_panels(cls):
+        return list(cls.y_axis_panels)
+
+    @classmethod
+    def get_y_axis_panels(cls):
+        return list(cls.x_axis_panels)
 
 
 class ColumnChart(Chart):
     highcharts_chart_type = "column"
     template = "templates/datavis/column_chart.html"
     supports_stacked_layout = True
+    supports_marker_style = False
     is_creatable = True
 
     class Meta:
         verbose_name = _("column chart")
         verbose_name_plural = _("column charts")
-        proxy = True
-
-
-class AreaChart(Chart):
-    highcharts_chart_type = "area"
-    template = "templates/datavis/area_chart.html"
-    supports_stacked_layout = True
-    is_creatable = True
-
-    class Meta:
-        verbose_name = _("area chart")
-        verbose_name_plural = _("area charts")
         proxy = True
