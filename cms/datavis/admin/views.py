@@ -279,6 +279,7 @@ class SpecificHistoryView(SpecificObjectViewMixin, HistoryView):
 
 
 class VisualisationViewSet(SnippetViewSet):
+    icon = "chart-area"
     base_form_class = VisualisationEditForm
     index_view_class = VisualisationIndexView
     add_view_class = VisualisationTypeSelectView
@@ -370,6 +371,7 @@ class DataSourceCopyView(RemoveChecksSidePanelMixin, CopyView):
 
 class DataSourceViewSet(SnippetViewSet):
     model = DataSource
+    icon = "table-cells"
     index_view_class = DataSourceIndexView
     add_view_class = DataSourceCreateView
     copy_view_class = DataSourceCopyView
@@ -392,5 +394,4 @@ class DataSourceViewSet(SnippetViewSet):
 
 class DataVisViewSetGroup(SnippetViewSetGroup):
     menu_label = "Datavis"
-    icon = "fa-chart-line"
     items: ClassVar[Sequence[type["SnippetViewSet"]]] = [DataSourceViewSet, VisualisationViewSet]
