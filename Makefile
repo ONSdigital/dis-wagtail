@@ -184,3 +184,13 @@ functional-tests: functional-tests-up functional-tests-run functional-tests-down
 .PHONY: playwright-install
 playwright-install:  ## Install Playwright dependencies
 	poetry run playwright install --with-deps
+
+# Aliases
+.PHONY: start
+start: compose-up
+.PHONY: stop
+stop: compose-stop
+.PHONY: shell
+shell: docker-shell
+.PHONY: run
+run: runserver
