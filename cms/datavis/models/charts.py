@@ -1,5 +1,5 @@
 from collections.abc import Sequence
-from typing import TYPE_CHECKING, Any, ClassVar
+from typing import TYPE_CHECKING, Any, ClassVar, Optional
 
 from django.db import models
 from django.forms import Media
@@ -24,7 +24,9 @@ from cms.datavis.fields import NonStrippingCharField
 from .base import Visualisation
 
 if TYPE_CHECKING:
+    from django.http import HttpRequest
     from wagtail.admin.panels import Panel
+
 
 __all__ = ["LineChart", "BarChart", "ColumnChart"]
 
@@ -33,21 +35,23 @@ class Chart(Visualisation):
     supports_stacked_layout: ClassVar[bool] = False
     supports_marker_style: ClassVar[bool] = False
 
-    show_legend = models.BooleanField(verbose_name=_("show legend?"), default=False)
-    legend_position = models.CharField(
+    show_legend = models.BooleanField(verbose_name=_("show legend?"), default=False)  # type: ignore[var-annotated]
+    legend_position = models.CharField(  # type: ignore[var-annotated]
         verbose_name=_("label position"),
         max_length=6,
         choices=LegendPosition.choices,
         default=LegendPosition.TOP,
     )
-    show_value_labels = models.BooleanField(verbose_name=_("show value labels?"), default=False)
-    theme = models.CharField(
+    show_value_labels = models.BooleanField(  # type: ignore[var-annotated]
+        verbose_name=_("show value labels?"), default=False
+    )
+    theme = models.CharField(  # type: ignore[var-annotated]
         verbose_name=_("theme"),
         max_length=10,
         choices=HighchartsTheme.choices,
         default=HighchartsTheme.PRIMARY,
     )
-    marker_style = models.CharField(
+    marker_style = models.CharField(  # type: ignore[var-annotated]
         verbose_name=_("marker style"),
         default="",
         choices=[
@@ -60,23 +64,29 @@ class Chart(Visualisation):
         blank=True,
         max_length=15,
     )
-    use_stacked_layout = models.BooleanField(verbose_name=_("use stacked layout?"), default=False)
+    use_stacked_layout = models.BooleanField(  # type: ignore[var-annotated]
+        verbose_name=_("use stacked layout?"), default=False
+    )
 
-    x_label = models.CharField(verbose_name=_("label"), max_length=255, blank=True)
-    x_max = models.FloatField(verbose_name=_("scale cap (max)"), blank=True, null=True)
-    x_min = models.FloatField(verbose_name=_("scale cap (min)"), blank=True, null=True)
-    x_reversed = models.BooleanField(verbose_name=_("reverse axis?"), default=False)
-    x_tick_interval = models.FloatField(verbose_name=_("tick interval"), blank=True, null=True)
+    x_label = models.CharField(verbose_name=_("label"), max_length=255, blank=True)  # type: ignore[var-annotated]
+    x_max = models.FloatField(verbose_name=_("scale cap (max)"), blank=True, null=True)  # type: ignore[var-annotated]
+    x_min = models.FloatField(verbose_name=_("scale cap (min)"), blank=True, null=True)  # type: ignore[var-annotated]
+    x_reversed = models.BooleanField(verbose_name=_("reverse axis?"), default=False)  # type: ignore[var-annotated]
+    x_tick_interval = models.FloatField(  # type: ignore[var-annotated]
+        verbose_name=_("tick interval"), blank=True, null=True
+    )
 
-    y_label = models.CharField(verbose_name=_("label"), max_length=255, blank=True)
-    y_max = models.FloatField(verbose_name=_("scale cap (max)"), blank=True, null=True)
-    y_min = models.FloatField(verbose_name=_("scale cap (min)"), blank=True, null=True)
+    y_label = models.CharField(verbose_name=_("label"), max_length=255, blank=True)  # type: ignore[var-annotated]
+    y_max = models.FloatField(verbose_name=_("scale cap (max)"), blank=True, null=True)  # type: ignore[var-annotated]
+    y_min = models.FloatField(verbose_name=_("scale cap (min)"), blank=True, null=True)  # type: ignore[var-annotated]
     y_value_suffix = NonStrippingCharField(verbose_name=_("value suffix (optional)"), max_length=30, blank=True)
     y_tooltip_suffix = NonStrippingCharField(
         verbose_name=_("tooltip value suffix (optional)"), max_length=30, blank=True
     )
-    y_reversed = models.BooleanField(verbose_name=_("reverse axis?"), default=False)
-    y_tick_interval = models.FloatField(verbose_name=_("tick interval"), blank=True, null=True)
+    y_reversed = models.BooleanField(verbose_name=_("reverse axis?"), default=False)  # type: ignore[var-annotated]
+    y_tick_interval = models.FloatField(  # type: ignore[var-annotated]
+        verbose_name=_("tick interval"), blank=True, null=True
+    )
 
     @cached_property
     def media(self) -> Media:
@@ -90,7 +100,7 @@ class Chart(Visualisation):
             ]
         )
 
-    def get_context(self, request, **kwargs) -> dict[str, Any]:
+    def get_context(self, request: Optional["HttpRequest"] = None, **kwargs: Any) -> dict[str, Any]:
         config = self.get_component_config(self.primary_data_source.headers, self.primary_data_source.rows)
         return super().get_context(request, config=config, **kwargs)
 
@@ -151,37 +161,37 @@ class Chart(Visualisation):
     ]
 
     @property
-    def highcharts_chart_type(self):
+    def highcharts_chart_type(self) -> str:
         raise NotImplementedError
 
     @classmethod
-    def get_general_panels(cls):
+    def get_general_panels(cls) -> list["Panel"]:
         general_panels = list(cls.general_panels)
         if cls.supports_stacked_layout:
             general_panels.append(FieldPanel("use_stacked_layout"))
         return general_panels
 
     @classmethod
-    def get_style_panels(cls):
+    def get_style_panels(cls) -> list["Panel"]:
         style_panels = list(cls.style_panels)
         if cls.supports_marker_style:
             style_panels.insert(1, FieldPanel("marker_style"))
         return style_panels
 
     @classmethod
-    def get_advanced_panels(cls):
+    def get_advanced_panels(cls) -> list["Panel"]:
         return list(cls.advanced_panels)
 
     @classmethod
-    def get_x_axis_panels(cls):
+    def get_x_axis_panels(cls) -> list["Panel"]:
         return list(cls.x_axis_panels)
 
     @classmethod
-    def get_y_axis_panels(cls):
+    def get_y_axis_panels(cls) -> list["Panel"]:
         return list(cls.y_axis_panels)
 
     @classproperty
-    def edit_handler(cls):  # pylint: disable=no-self-argument
+    def edit_handler(cls) -> "Panel":  # pylint: disable=no-self-argument
         return TabbedInterface(
             [
                 ObjectList(cls.get_general_panels(), heading=_("General")),
@@ -261,21 +271,21 @@ class Chart(Visualisation):
         return config
 
     def get_annotations_config(self) -> list[dict[str, Any]]:
-        annotations = []
-        annotation_group = {
+        annotations: list[dict[str, Any]] = []
+        annotation_group: dict[str, Any] = {
             "draggable": "",
             "labelOptions": {
                 "backgroundColor": "rgba(255,255,255,0.5)",
                 "verticalAlign": "top",
             },
-            "labels": [],
         }
         # TODO: It's likely we'll want to support a few different style
         # options for annotations, in which case, we'd split annotations
         # into multiple groups, each with a separate 'labelOptions' value
         # to control the styling.
+        group_labels: list[dict[str, Any]] = []
         for annotation in self.annotations.all():
-            annotation_group["labels"].append(
+            group_labels.append(
                 {
                     "text": annotation.label,
                     "point": {
@@ -286,7 +296,9 @@ class Chart(Visualisation):
                     },
                 }
             )
-        if annotation_group["labels"]:
+
+        if group_labels:
+            annotation_group["labels"] = group_labels
             annotations.append(annotation_group)
         return annotations
 
@@ -366,11 +378,11 @@ class BarChart(Chart):
         proxy = True
 
     @classmethod
-    def get_x_axis_panels(cls):
+    def get_x_axis_panels(cls) -> list["Panel"]:
         return list(cls.y_axis_panels)
 
     @classmethod
-    def get_y_axis_panels(cls):
+    def get_y_axis_panels(cls) -> list["Panel"]:
         return list(cls.x_axis_panels)
 
 

@@ -1,6 +1,6 @@
 import uuid
 from collections.abc import Sequence
-from typing import TYPE_CHECKING, ClassVar
+from typing import TYPE_CHECKING, Any, ClassVar
 
 from django.conf import settings
 from django.db import models
@@ -16,7 +16,7 @@ from wagtail.search import index
 from cms.datavis.blocks import SimpleTableBlock
 
 if TYPE_CHECKING:
-    from django.http import HttpResponse
+    from django.http import HttpRequest, HttpResponse
     from django.utils.functional import Promise
     from wagtail.admin.panels import Panel
 
@@ -26,7 +26,9 @@ if TYPE_CHECKING:
 __all__ = ["DataSource", "Annotation", "AdditionalDataSource"]
 
 
-class DataSource(CollectionMember, PreviewableMixin, index.Indexed, models.Model):
+class DataSource(  # type: ignore[django-manager-missing]
+    CollectionMember, PreviewableMixin, index.Indexed, models.Model
+):
     title = models.CharField(verbose_name=_("title"), max_length=255)
     uuid = models.UUIDField(
         verbose_name=_("UUID"),
@@ -59,7 +61,7 @@ class DataSource(CollectionMember, PreviewableMixin, index.Indexed, models.Model
         editable=False,
         on_delete=models.SET_NULL,
     )
-    created_by.wagtail_reference_index_ignore = True
+    created_by.wagtail_reference_index_ignore = True  # type: ignore[attr-defined]
 
     preview_modes: ClassVar[list[tuple[str, "str | Promise"]]] = [
         ("line-chart", _("Line chart")),
@@ -88,28 +90,32 @@ class DataSource(CollectionMember, PreviewableMixin, index.Indexed, models.Model
         index.FilterField("created_by"),
     ]
 
-    def __str__(self):
-        return self.title
+    def __str__(self) -> str:
+        title: str = self.title
+        return title
 
     @classproperty
-    def permission_policy(cls):  # pylint: disable=no-self-argument
+    def permission_policy(cls) -> "CollectionOwnershipPermissionPolicy":  # pylint: disable=no-self-argument
         return CollectionOwnershipPermissionPolicy(cls, owner_field_name="created_by")
 
     @cached_property
     def headers(self) -> Sequence[str]:
         if not self.data:
             return []
-        return self.data[0]
+        headers: list[str] = self.data[0]
+        return headers
 
     @cached_property
-    def rows(self) -> list[list[str | float]]:
+    def rows(self) -> Sequence[Sequence[str | int | float]]:
         if not self.data:
             return []
-        return self.data[1:]
+        data: list[list[str | int | float]] = self.data
+        return data[1:]
 
-    def serve_preview(self, request, mode_name: str, **kwargs) -> "HttpResponse":
+    def serve_preview(self, request: "HttpRequest", mode_name: str, **kwargs: Any) -> "HttpResponse":
         visualisation = self.get_preview_visualisation(mode_name)
-        return visualisation.serve_preview(request, "default", **kwargs)
+        response: HttpResponse = visualisation.serve_preview(request, "default", **kwargs)
+        return response
 
     def get_preview_visualisation(self, preview_mode: str) -> "Visualisation":
         from .charts import AreaChart, BarChart, ColumnChart, LineChart  # pylint: disable=import-outside-toplevel
@@ -133,12 +139,13 @@ class DataSource(CollectionMember, PreviewableMixin, index.Indexed, models.Model
 
 class Annotation(Orderable):
     visualisation = ParentalKey("datavis.Visualisation", on_delete=models.CASCADE, related_name="annotations")
-    label = models.CharField(verbose_name=_("label"), max_length=100)
-    x = models.CharField(verbose_name=_("x position"), max_length=50)
-    y = models.CharField(verbose_name=_("y position"), max_length=50)
+    label = models.CharField(verbose_name=_("label"), max_length=100)  # type: ignore[var-annotated]
+    x = models.CharField(verbose_name=_("x position"), max_length=50)  # type: ignore[var-annotated]
+    y = models.CharField(verbose_name=_("y position"), max_length=50)  # type: ignore[var-annotated]
 
-    def __str__(self):
-        return self.label
+    def __str__(self) -> str:
+        label: str = self.label
+        return label
 
     class Meta:
         verbose_name = _("annotation")
@@ -161,8 +168,10 @@ class AdditionalDataSource(Orderable):
         on_delete=models.CASCADE,
         related_name="additional_data_sources",
     )
-    data_source = models.ForeignKey(DataSource, on_delete=models.CASCADE, related_name="+")
-    display_as = models.CharField(
+    data_source = models.ForeignKey(  # type: ignore[var-annotated]
+        DataSource, on_delete=models.CASCADE, related_name="+"
+    )
+    display_as = models.CharField(  # type: ignore[var-annotated]
         verbose_name=_("display as"),
         default="line",
         choices=[
@@ -172,7 +181,7 @@ class AdditionalDataSource(Orderable):
         ],
         max_length=15,
     )
-    marker_style = models.CharField(
+    marker_style = models.CharField(  # type: ignore[var-annotated]
         verbose_name=_("marker style"),
         default="",
         choices=[
@@ -185,7 +194,10 @@ class AdditionalDataSource(Orderable):
         blank=True,
         max_length=15,
     )
-    is_downloadable = models.BooleanField(verbose_name=_("include data source in downloadables?"), default=False)
+    is_downloadable = models.BooleanField(  # type: ignore[var-annotated]
+        verbose_name=_("include data source in downloadables?"),
+        default=False,
+    )
 
     panels: ClassVar[Sequence["Panel"]] = [
         FieldPanel("data_source"),
@@ -198,5 +210,5 @@ class AdditionalDataSource(Orderable):
         ),
     ]
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"{self.data_source} (as {self.get_display_as_display()})"
