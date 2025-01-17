@@ -54,6 +54,6 @@ class VisualisationsPageMixin(models.Model):
         in the context, which can be used to render a deduplicated
         set of extra <style> and <script> tags in the page template.
         """
-        context = super().get_context(request, *args, **kwargs)  # type: ignore[misc]
+        context: dict[str, Any] = super().get_context(request, *args, **kwargs)  # type: ignore[misc]
         context["extra_media"] = self.get_extra_media(request)
         return context

@@ -48,7 +48,7 @@ if TYPE_CHECKING:
 
 class VisualisationIndexView(IndexView):
     def get_base_queryset(self) -> "QuerySet[Visualisation]":
-        return self.model.objects.select_related("created_by")
+        return Visualisation.objects.select_related("created_by")  # type: ignore[no-any-return]
 
 
 class VisualisationTypeSelectView(LocaleMixin, PermissionCheckedMixin, WagtailAdminTemplateMixin, BaseFormView):
@@ -76,7 +76,7 @@ class VisualisationTypeSelectView(LocaleMixin, PermissionCheckedMixin, WagtailAd
 class VisualisationTypeKwargMixin:
     def setup(self, request: "HttpRequest", *args: Any, **kwargs: Any) -> None:
         self.model = get_visualisation_type_model_from_name(kwargs["vis_type"])
-        super().setup(request, *args, **kwargs)
+        super().setup(request, *args, **kwargs)  # type: ignore[misc]
 
     def get_panel(self) -> "EditHandler":
         edit_handler = self.model.edit_handler
@@ -105,7 +105,7 @@ class SpecificObjectViewMixin:
         self.object = self.get_object()
         self.model = type(self.object)
 
-        super().setup(request, *args, **kwargs)
+        super().setup(request, *args, **kwargs)  # type: ignore[misc]
 
     def get_object(self, queryset: "QuerySet[Visualisation] | None" = None) -> "Visualisation":
         """Overrides the default implementation to return the specific object.
@@ -113,11 +113,13 @@ class SpecificObjectViewMixin:
         `setup()`, there is some caching in place to avoid repeat queries.
         """
         if getattr(self, "object", None):
-            return self.object.specific
+            return self.object.specific  # type: ignore[no-any-return]
         try:
-            return super().get_object(queryset).specific
+            # For views that support passing a queryset to get_object()
+            return super().get_object(queryset).specific  # type: ignore[misc,no-any-return]
         except TypeError:
-            return super().get_object().specific
+            # For all other views
+            return super().get_object().specific  # type: ignore[misc,no-any-return]
 
     def get_panel(self) -> "EditHandler":
         edit_handler = self.model.edit_handler
@@ -172,18 +174,19 @@ class VisualisationCopyView(SpecificObjectViewMixin, EditView):
         return f"Copy: {self.object}"
 
     def get_form(self, *args: Any, **kwargs: Any) -> "Form":
-        return VisualisationCopyForm(
+        form: Form = VisualisationCopyForm(
             data=self.request.POST or None,
             instance=self.object,
             for_user=self.request.user,
             initial={"name": self.object.name + " copy"},
         )
+        return form
 
     def run_before_hook(self) -> None:
-        return self.run_hook("before_create_snippet", self.request, self.object)
+        self.run_hook("before_create_snippet", self.request, self.object)
 
     def run_after_hook(self) -> None:
-        return self.run_hook("after_create_snippet", self.request, self.object)
+        self.run_hook("after_create_snippet", self.request, self.object)
 
     def get_side_panels(self) -> "MediaContainer":
         return MediaContainer()
@@ -198,7 +201,7 @@ class VisualisationCopyView(SpecificObjectViewMixin, EditView):
         return menu
 
     def get_context_data(self, **kwargs: Any) -> dict[str, Any]:
-        context = super().get_context_data(**kwargs)
+        context: dict[str, Any] = super().get_context_data(**kwargs)
         context["action_url"] = self.request.path
         return context
 
@@ -206,7 +209,7 @@ class VisualisationCopyView(SpecificObjectViewMixin, EditView):
         """Called after the form is successfully validated - saves the object to the db
         and returns the new object. Override this to implement custom save logic.
         """
-        instance = self.form.save()
+        instance: Visualisation = self.form.save()
 
         log(
             instance=instance,
@@ -228,8 +231,8 @@ class SpecificDeleteView(SpecificObjectViewMixin, DeleteView):
         the form. It's unclear why Wagtail doesn't do this by default, but
         `self.get_bound_panel()` raises an AttributeError without this.
         """
-        form = super().get_form(*args, **kwargs)
-        form.instance = self.object
+        form: Form = super().get_form(*args, **kwargs)
+        form.instance = self.object  # type: ignore[attr-defined]
         return form
 
 
@@ -268,9 +271,10 @@ class VisualisationViewSet(SnippetViewSet):
 
     @property
     def specific_add_view(self) -> "SpecificAddView":
-        return self.construct_view(self.specific_add_view_class, **self.get_add_view_kwargs())
+        view: SpecificAddView = self.construct_view(self.specific_add_view_class, **self.get_add_view_kwargs())
+        return view
 
-    def get_urlpatterns(self) -> list[path]:
+    def get_urlpatterns(self) -> list[Any]:
         urlpatterns = [
             pattern
             for pattern in super().get_urlpatterns()

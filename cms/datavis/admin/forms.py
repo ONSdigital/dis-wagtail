@@ -20,15 +20,15 @@ if TYPE_CHECKING:
 class DataSourceEditForm(WagtailAdminModelForm, BaseCollectionMemberForm):
     csv_file = forms.FileField(label=_("Populate from CSV"), required=False)
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
         user = kwargs.get("for_user")
         super().__init__(*args, **kwargs)
         if not self.instance.pk and user:
             self.instance.created_by = user
             self.initial["created_by"] = user
 
-    def clean(self):
-        data = super().clean()
+    def clean(self) -> dict[str, Any]:
+        data: dict[str, Any] = super().clean()
         if file := data.get("csv_file"):
             csvfile = file.open("rb")
             try:
@@ -51,24 +51,28 @@ class DataSourceEditForm(WagtailAdminModelForm, BaseCollectionMemberForm):
                 ]
             finally:
                 csvfile.close()
+        return data
 
     @staticmethod
-    def _extract_data_from_table_value(value: "StreamValue") -> Sequence[Sequence[str | float]]:
+    def _extract_data_from_table_value(value: "StreamValue") -> Sequence[Sequence[str | int | float]]:
         if not value:
             return []
         # Decoding the json string value from the first block
-        data = json.loads(value.raw_data[0]["value"]["table_data"])["data"]
-        # Convert valid number strings to floats
+        data: list[list[str | float | int]] = json.loads(value.raw_data[0]["value"]["table_data"])["data"]
+        # Convert valid number strings to ints  floats
         if len(data) > 1:
             for row in data[1:]:
                 for i, val in enumerate(row):
                     if isinstance(val, str):
-                        with contextlib.suppress(ValueError):
-                            row[i] = float(val.strip())
+                        if val.strip().isdigit():
+                            row[i] = int(val.strip())
+                        else:
+                            with contextlib.suppress(ValueError):
+                                row[i] = float(val.strip())
         return data
 
-    def save(self, commit=True):
-        instance = super().save(commit=False)
+    def save(self, commit: bool = True) -> "Visualisation":
+        instance: Visualisation = super().save(commit=False)
         if "csv_file" in self.changed_data or "table" in self.changed_data:
             instance.data = self._extract_data_from_table_value(instance.table)
             instance.column_count = len(instance.data[0])
@@ -78,7 +82,7 @@ class DataSourceEditForm(WagtailAdminModelForm, BaseCollectionMemberForm):
 
 
 class VisualisationEditForm(WagtailAdminModelForm, BaseCollectionMemberForm):
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
         user = kwargs.get("for_user")
         super().__init__(*args, **kwargs)
         if not self.instance.pk and user:
@@ -96,15 +100,15 @@ class VisualisationCopyForm(WagtailAdminModelForm, BaseCollectionMemberForm):
             "name": _("New visualisation name"),
         }
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
         self.for_user = kwargs.get("for_user")
         super().__init__(*args, **kwargs)
-        self.initial["new_type"] = self.instance.specific_class._meta.label_lower
+        self.initial["new_type"] = self.instance.specific_class._meta.label_lower  # type: ignore[has-type]
 
-    def save(self, commit=True):
+    def save(self, commit: bool = True) -> "Visualisation":
         new_model = get_visualisation_type_model_from_name(self.cleaned_data["new_type"])
         original_field_values = {}
-        for field in self.instance._meta.get_fields():
+        for field in self.instance._meta.get_fields():  # type: ignore[has-type]
             if field.name not in [
                 "visualisation_ptr",
                 "id",
@@ -116,7 +120,7 @@ class VisualisationCopyForm(WagtailAdminModelForm, BaseCollectionMemberForm):
                 "content_type",
                 "index_entries",
             ]:
-                field_val = getattr(self.instance, field.name)
+                field_val: Any = getattr(self.instance, field.name)  # type: ignore[has-type]
                 # Special handling for 'inline' model values
                 if hasattr(field_val, "get_object_list"):
                     field_val = field_val.get_object_list()
@@ -127,7 +131,8 @@ class VisualisationCopyForm(WagtailAdminModelForm, BaseCollectionMemberForm):
         self.instance.created_by = self.for_user
 
         # Let the superclass handle saving of self.instance
-        return super().save(commit)
+        return_val: Visualisation = super().save(commit)
+        return return_val
 
 
 class VisualisationTypeSelectForm(forms.Form):
