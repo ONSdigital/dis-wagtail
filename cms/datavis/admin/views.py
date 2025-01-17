@@ -98,10 +98,12 @@ class RemoveChecksSidePanelMixin:
     def get_side_panels(self) -> "MediaContainer":
         return MediaContainer(
             [
-                panel for panel in super().get_side_panels()  # type: ignore[misc]
+                panel
+                for panel in super().get_side_panels()  # type: ignore[misc]
                 if not isinstance(panel, ChecksSidePanel)
             ]
         )
+
 
 class CorrectIndexBreadcrumbMixin:
     """A mixin for Visualisation views that include a breadcrumb
@@ -110,7 +112,7 @@ class CorrectIndexBreadcrumbMixin:
     """
 
     def get_breadcrumbs_items(self) -> Sequence[dict[str, "str | Promise"]]:
-        items: list[dict[str, "str | Promise"]] = super().get_breadcrumbs_items()  # type: ignore[misc]
+        items: list[dict[str, str | Promise]] = super().get_breadcrumbs_items()  # type: ignore[misc]
         for item in items:
             if item["url"] == reverse(self.index_url_name):  # type: ignore[attr-defined]
                 item["label"] = capfirst(Visualisation._meta.verbose_name_plural)
