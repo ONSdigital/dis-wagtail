@@ -29,7 +29,12 @@ from wagtail.snippets.views.snippets import (
 )
 
 from cms.datavis.admin.filters import DataSourceFilterSet, VisualisationFilterSet
-from cms.datavis.admin.forms import DataSourceEditForm, VisualisationCopyForm, VisualisationEditForm, VisualisationTypeSelectForm
+from cms.datavis.admin.forms import (
+    DataSourceEditForm,
+    VisualisationCopyForm,
+    VisualisationEditForm,
+    VisualisationTypeSelectForm,
+)
 from cms.datavis.models import DataSource, Visualisation
 from cms.datavis.utils import get_visualisation_type_model_from_name
 
