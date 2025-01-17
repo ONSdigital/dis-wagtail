@@ -78,6 +78,16 @@ class DataSourceEditForm(WagtailAdminModelForm, BaseCollectionMemberForm):
         return instance
 
 
+class VisualisationEditForm(WagtailAdminModelForm, BaseCollectionMemberForm):
+
+    def __init__(self, *args, **kwargs):
+        user = kwargs.get("for_user")
+        super().__init__(*args, **kwargs)
+        if not self.instance.pk and user:
+            self.instance.created_by = user
+            self.initial["created_by"] = user
+
+
 class VisualisationCopyForm(WagtailAdminModelForm, BaseCollectionMemberForm):
     class Meta:
         model = Visualisation

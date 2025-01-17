@@ -29,7 +29,7 @@ from wagtail.snippets.views.snippets import (
 )
 
 from cms.datavis.admin.filters import DataSourceFilterSet, VisualisationFilterSet
-from cms.datavis.admin.forms import DataSourceEditForm, VisualisationCopyForm, VisualisationTypeSelectForm
+from cms.datavis.admin.forms import DataSourceEditForm, VisualisationCopyForm, VisualisationEditForm, VisualisationTypeSelectForm
 from cms.datavis.models import DataSource, Visualisation
 from cms.datavis.utils import get_visualisation_type_model_from_name
 
@@ -242,6 +242,7 @@ class SpecificHistoryView(SpecificObjectViewMixin, HistoryView):
 
 
 class VisualisationViewSet(SnippetViewSet):
+    base_form_class = VisualisationEditForm
     index_view_class = VisualisationIndexView
     add_view_class = VisualisationTypeSelectView
     copy_view_class = VisualisationCopyView
