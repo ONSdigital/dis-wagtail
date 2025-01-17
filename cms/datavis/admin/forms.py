@@ -1,4 +1,3 @@
-import contextlib
 import csv
 import io
 import json
@@ -11,7 +10,7 @@ from wagtail.admin.forms.collections import BaseCollectionMemberForm
 from wagtail.admin.forms.models import WagtailAdminModelForm
 
 from cms.datavis.models import Visualisation
-from cms.datavis.utils import get_visualisation_type_choices, get_visualisation_type_model_from_name
+from cms.datavis.utils import get_visualisation_type_choices, get_visualisation_type_model_from_name, numberfy
 
 if TYPE_CHECKING:
     from wagtail.blocks import StreamValue
@@ -66,11 +65,7 @@ class DataSourceEditForm(WagtailAdminModelForm, BaseCollectionMemberForm):
             for row in data[1:]:
                 for i, val in enumerate(row):
                     if isinstance(val, str):
-                        if val.strip().isdigit():
-                            row[i] = int(val.strip())
-                        else:
-                            with contextlib.suppress(ValueError):
-                                row[i] = float(val.strip())
+                        row[i] = numberfy(val)
         return data
 
     def save(self, commit: bool = True) -> "Visualisation":
