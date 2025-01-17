@@ -32,7 +32,7 @@ class MainMenu(DraftStateMixin, RevisionMixin, PreviewableMixin, models.Model):
     _revisions = GenericRelation("wagtailcore.Revision", related_query_name="main_menu")
 
     @property
-    def revisions(self):
+    def revisions(self):  # type: ignore[no-untyped-def]
         return self._revisions
 
     panels: ClassVar[list] = [
