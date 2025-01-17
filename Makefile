@@ -7,7 +7,10 @@ all: ## Show the available make targets.
 	@echo "Usage: make <target>"
 	@echo ""
 	@echo "Targets:"
-	@fgrep "##" Makefile | fgrep -v fgrep
+	@grep -E '^[0-9a-zA-Z_-]+:.*? .*$$'  \
+		$(MAKEFILE_LIST)  \
+		| awk 'BEGIN { FS=":.*?## " }; {printf "\033[36m%-20s\033[0m %s\n", $$1, $$2}'  \
+		| sort
 
 .PHONY: clean
 clean: ## Clean the temporary files.
