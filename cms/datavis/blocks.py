@@ -1,3 +1,4 @@
+from collections.abc import Sequence
 from copy import copy
 from typing import TYPE_CHECKING, Any, Optional
 
@@ -53,18 +54,34 @@ class AnnotationBlock(blocks.StructBlock):
         label = _("Annotation")
 
 
+DATASOURCE_DEFER_FIELDS = [
+    "table",
+    "uuid",
+    "created_at",
+    "last_updated_at",
+]
+
+
 class VisualisationChooserBlock(SnippetChooserBlock):
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         super().__init__("datavis.Visualisation", *args, **kwargs)
+
+    @staticmethod
+    def get_datasource_defer_fields(prefix: str) -> Sequence[str]:
+        return [f"{prefix}__{field}" for field in DATASOURCE_DEFER_FIELDS]
 
     def get_to_python_queryset(self) -> "QuerySet[Visualisation]":
         from cms.datavis.models import AdditionalDataSource, Visualisation  # pylint: disable=import-outside-toplevel
 
         return (  # type: ignore[no-any-return]
-            Visualisation.objects.select_related("primary_data_source").prefetch_related(
+            Visualisation.objects.select_related("primary_data_source")
+            .defer(*self.get_datasource_defer_fields("primary_data_source"))
+            .prefetch_related(
                 Prefetch(
                     "additional_data_sources",
-                    queryset=AdditionalDataSource.objects.all().select_related("data_source"),
+                    queryset=AdditionalDataSource.objects.all()
+                    .select_related("data_source")
+                    .defer(*self.get_datasource_defer_fields("data_source")),
                 ),
             )
         )
