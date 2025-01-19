@@ -5,12 +5,12 @@ from django.utils.html import format_html
 from wagtail import hooks
 from wagtail.snippets.models import register_snippet
 
-from cms.datavis.admin.views import DataVisViewSetGroup
+from .viewsets import DatavisViewSetGroup
 
 if TYPE_CHECKING:
     from django.utils.safestring import SafeText
 
-register_snippet(DataVisViewSetGroup)
+register_snippet(DatavisViewSetGroup)
 
 
 @hooks.register("insert_editor_js")
