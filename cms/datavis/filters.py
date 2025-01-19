@@ -11,7 +11,7 @@ from wagtail.admin.filters import (
 )
 
 from cms.datavis.models import DataSource, Visualisation
-from cms.datavis.utils import get_visualisation_content_types
+from cms.datavis.utils import get_creatable_visualisation_content_types
 
 
 class TrackedModelFilterSet(WagtailFilterSet):
@@ -28,7 +28,7 @@ class TrackedModelFilterSet(WagtailFilterSet):
 class VisualisationFilterSet(TrackedModelFilterSet):
     content_type = MultipleContentTypeFilter(
         label=_("Chart type"),
-        queryset=lambda request: get_visualisation_content_types(),
+        queryset=lambda request: get_creatable_visualisation_content_types(),
         widget=CheckboxSelectMultiple,
     )
 

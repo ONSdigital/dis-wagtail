@@ -2,7 +2,7 @@ import csv
 import io
 import json
 from collections.abc import Sequence
-from typing import TYPE_CHECKING, Any, ClassVar
+from typing import TYPE_CHECKING, Any
 
 from django import forms
 from django.utils.translation import gettext_lazy as _
@@ -10,7 +10,7 @@ from wagtail.admin.forms.collections import BaseCollectionMemberForm
 from wagtail.admin.forms.models import WagtailAdminModelForm
 
 from cms.datavis.models import Visualisation
-from cms.datavis.utils import get_visualisation_type_choices, get_visualisation_type_model_from_name, numberfy
+from cms.datavis.utils import numberfy
 
 if TYPE_CHECKING:
     from wagtail.blocks import StreamValue
@@ -76,63 +76,3 @@ class DataSourceEditForm(WagtailAdminModelForm, BaseCollectionMemberForm):
             if commit:
                 instance.save()
         return instance
-
-
-class VisualisationEditForm(WagtailAdminModelForm, BaseCollectionMemberForm):
-    def __init__(self, *args: Any, **kwargs: Any) -> None:
-        user = kwargs.get("for_user")
-        super().__init__(*args, **kwargs)
-        if not self.instance.pk and user:
-            self.instance.created_by = user
-            self.initial["created_by"] = user
-
-
-class VisualisationCopyForm(WagtailAdminModelForm, BaseCollectionMemberForm):
-    new_type = forms.ChoiceField(choices=get_visualisation_type_choices, label=_("Create as"), required=True)
-
-    class Meta:
-        model = Visualisation
-        fields: ClassVar[list[str]] = ["collection", "name", "new_type"]
-        labels: ClassVar[dict[str, Any]] = {
-            "name": _("New visualisation name"),
-        }
-
-    def __init__(self, *args: Any, **kwargs: Any) -> None:
-        self.for_user = kwargs.get("for_user")
-        super().__init__(*args, **kwargs)
-        self.initial["new_type"] = self.instance.specific_class._meta.label_lower  # type: ignore[has-type]
-
-    def save(self, commit: bool = True) -> "Visualisation":
-        new_model = get_visualisation_type_model_from_name(self.cleaned_data["new_type"])
-        original_field_values = {}
-        for field in self.instance._meta.get_fields():  # type: ignore[has-type]
-            if field.name not in [
-                "visualisation_ptr",
-                "id",
-                "pk",
-                "uuid",
-                "created_at",
-                "created_by",
-                "updated_at",
-                "content_type",
-                "index_entries",
-            ]:
-                field_val: Any = getattr(self.instance, field.name)  # type: ignore[has-type]
-                # Special handling for 'inline' model values
-                if hasattr(field_val, "get_object_list"):
-                    field_val = field_val.get_object_list()
-                original_field_values[field.name] = field_val
-
-        # Replace self.instance with a new object of the correct type
-        self.instance = new_model(**original_field_values)
-        self.instance.created_by = self.for_user
-
-        # Let the superclass handle saving of self.instance
-        return_val: Visualisation = super().save(commit)
-        return return_val
-
-
-class VisualisationTypeSelectForm(forms.Form):
-    vis_type = forms.ChoiceField(
-        choices=get_visualisation_type_choices, label=_("What type of chart do you want to create?"), required=True
-    )
