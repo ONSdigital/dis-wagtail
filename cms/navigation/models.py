@@ -10,12 +10,15 @@ from wagtail.models import DraftStateMixin, PreviewableMixin, RevisionMixin
 from cms.core.fields import StreamField
 from cms.core.models import BaseSiteSetting
 from cms.navigation.blocks import ColumnBlock, HighlightsBlock
+from cms.navigation.forms import MainMenuAdminForm
 
 if TYPE_CHECKING:
     from django.http import HttpRequest
 
 
 class MainMenu(DraftStateMixin, RevisionMixin, PreviewableMixin, models.Model):
+    base_form_class = MainMenuAdminForm
+
     highlights = StreamField(
         [("highlight", HighlightsBlock())],
         blank=True,
