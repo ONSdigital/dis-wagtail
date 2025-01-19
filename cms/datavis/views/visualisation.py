@@ -23,7 +23,7 @@ from cms.datavis.forms.visualisation import (
 )
 from cms.datavis.models import Visualisation
 
-from .mixins import RemoveSnippetIndexBreadcrumbItemMixin
+from .mixins import RemoveChecksSidePanelMixin, RemoveSnippetIndexBreadcrumbItemMixin
 from .specific import SpecificCreateView, SpecificDeleteView, SpecificEditView, SpecificHistoryView
 
 if TYPE_CHECKING:
@@ -66,7 +66,7 @@ class VisualisationTypeSelectView(
         )
 
 
-class VisualisationCreateView(RemoveSnippetIndexBreadcrumbItemMixin, SpecificCreateView):
+class VisualisationCreateView(RemoveChecksSidePanelMixin, RemoveSnippetIndexBreadcrumbItemMixin, SpecificCreateView):
     pass
 
 
@@ -74,7 +74,7 @@ class VisualisationDeleteView(RemoveSnippetIndexBreadcrumbItemMixin, SpecificDel
     pass
 
 
-class VisualisationEditView(RemoveSnippetIndexBreadcrumbItemMixin, SpecificEditView):
+class VisualisationEditView(RemoveChecksSidePanelMixin, RemoveSnippetIndexBreadcrumbItemMixin, SpecificEditView):
     pass
 
 
@@ -82,7 +82,7 @@ class VisualisationHistoryView(RemoveSnippetIndexBreadcrumbItemMixin, SpecificHi
     pass
 
 
-class VisualisationCopyView(RemoveSnippetIndexBreadcrumbItemMixin, SpecificEditView):
+class VisualisationCopyView(RemoveChecksSidePanelMixin, RemoveSnippetIndexBreadcrumbItemMixin, SpecificEditView):
     action = "copy"
     permission_required = "add"
     success_message = _("%(model_name)s '%(object)s' created successfully.")
