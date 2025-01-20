@@ -143,6 +143,7 @@ class ReleaseCalendarPage(BasePage):  # type: ignore[django-manager-missing]
     search_fields: ClassVar[list[index.SearchField | index.AutocompleteField | index.FilterField]] = [
         *BasePage.search_fields,
         index.FilterField("status"),
+        index.FilterField("release_date"),
     ]
 
     def get_template(self, request: "HttpRequest", *args: Any, **kwargs: Any) -> str:
