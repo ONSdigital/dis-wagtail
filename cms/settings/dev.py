@@ -75,5 +75,7 @@ MIGRATION_LINTER_OPTIONS = {
         "0004_contactdetails_core_contactdetails_name_unique",
         "0003_delete_tracking",
         "0002_customimage_description",
+        "0003_customimage__privacy_and_more",
+        "0003_customdocument__privacy_and_more",
     ],
 }
