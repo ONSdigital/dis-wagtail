@@ -67,7 +67,9 @@ class IndexPage(BasePage):
     ]
 
     def get_formatted_related_links_list(self) -> list[dict[str, str]]:
-        """Returns a formatted list of related links for use with the Design System list component."""
+        """Returns a formatted list of related links for both external and internal pages
+        for use with the Design System list component.
+        """
         formatted_links = []
 
         for related_link in self.related_links:
