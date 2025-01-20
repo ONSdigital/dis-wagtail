@@ -6,14 +6,13 @@ from wagtail.admin.panels import FieldPanel, InlinePanel
 from wagtail.fields import RichTextField
 from wagtail.search import index
 
-if TYPE_CHECKING:
-    from wagtail.admin.panels import Panel
-
-
 from cms.core.blocks.related import FeaturedItemBlock, RelatedContentBlock
 from cms.core.blocks.stream_blocks import CoreStoryBlock
 from cms.core.fields import StreamField
 from cms.core.models import BasePage
+
+if TYPE_CHECKING:
+    from wagtail.admin.panels import Panel
 
 
 class InformationPage(BasePage):  # type: ignore[django-manager-missing]
