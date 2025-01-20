@@ -44,7 +44,7 @@ class MainMenuAdminFormTestCase(TestCase):
                 (
                     "highlight",
                     {
-                        "page": page1.pk,
+                        "page": page2.pk,
                         "external_url": "",
                         "description": "Highlight 2",
                     },
@@ -54,7 +54,6 @@ class MainMenuAdminFormTestCase(TestCase):
 
         form = self.form_class(instance=self.menu, data=nested_form_data(raw_data))
         self.assertTrue(form.is_valid(), msg=form.errors.as_json())
-        print("Form errors", form.errors)
 
     def test_clean_highlights_duplicate_page(self):
         """Checks that the same page used twice in highlights raises an error."""
@@ -85,6 +84,7 @@ class MainMenuAdminFormTestCase(TestCase):
         self.assertFalse(form.is_valid())
 
         self.assertIn("highlights", form.errors)
+        print("Form errors", form.errors["highlights"][0])
         self.assertIn("Duplicate page. Please choose a different one.", form.errors["highlights"][0])
 
     def test_clean_highlights_duplicate_external_url(self):
