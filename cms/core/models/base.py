@@ -63,35 +63,23 @@ class BasePage(ListingFieldsMixin, SocialFieldsMixin, Page):  # type: ignore[dja
 
     @cached_property
     def has_equations(self) -> bool:
-        """Checks if there are any equation blocks.
-        Override in your specific Page class if the StreamField structure is different.
-        """
-        if streamvalue := getattr(self, self.content_field_name):
+        """Checks if there are any equation blocks."""
+        if (streamvalue := getattr(self, self.content_field_name)) and hasattr(
+            streamvalue.stream_block, "has_equations"
+        ):
             # run the check on the StreamBlock itself, if it supports it
-            if hasattr(streamvalue.stream_block, "has_equations"):
-                return bool(streamvalue.stream_block.has_equations(streamvalue))
-
-            try:
-                return streamvalue.first_block_by_name(block_name="equation") is not None
-            except AttributeError:
-                return False
+            return bool(streamvalue.stream_block.has_equations(streamvalue))
 
         return False
 
     @cached_property
     def has_ons_embed(self) -> bool:
-        """Checks if there are any ONS embed blocks.
-        Override in your specific Page class if the StreamField structure is different.
-        """
-        if streamvalue := getattr(self, self.content_field_name):
+        """Checks if there are any ONS embed blocks."""
+        if (streamvalue := getattr(self, self.content_field_name)) and hasattr(
+            streamvalue.stream_block, "has_ons_embed"
+        ):
             # run the check on the StreamBlock itself, if it supports it
-            if hasattr(streamvalue.stream_block, "has_ons_embed"):
-                return bool(streamvalue.stream_block.has_ons_embed(streamvalue))
-
-            try:
-                return streamvalue.first_block_by_name(block_name="ons_embed") is not None
-            except AttributeError:
-                return False
+            return bool(streamvalue.stream_block.has_ons_embed(streamvalue))
 
         return False
 
