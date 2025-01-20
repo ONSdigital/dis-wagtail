@@ -59,6 +59,7 @@ INSTALLED_APPS = [
     "cms.articles",
     "cms.bundles",
     "cms.core",
+    "cms.custom_permission_policies",
     "cms.documents",
     "cms.home",
     "cms.images",
