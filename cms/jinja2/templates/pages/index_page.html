@@ -2,7 +2,6 @@
 {% from "components/document-list/_macro.njk" import onsDocumentList %}
 {% from "components/related-content/_macro.njk" import onsRelatedContent %}
 
-
 {% block main %}
 
     {% if page.description %}
@@ -12,7 +11,7 @@
     {% if page.featured_items%}
 
         {% for item in page.featured_items %}
-            <ul style="display:inline; flex-wrap: wrap; list-style-type:none; justify-content:space-evenly; align-items:center;">
+            <ul>
                 <li>
                 {# fmt:off #}
                 {{
@@ -37,7 +36,7 @@
     {% elif subpages %}
 
         {% for subpage in subpages %}
-            <ul style="display:inline; flex-wrap: wrap; list-style-type:none; justify-content:space-evenly; align-items:center;">
+            <ul>
                 <li>
                 {# fmt:off #}
                 {{
@@ -61,7 +60,6 @@
 
     {% endif %}
 
-
     {% if page.content %}
         {% include_block page.content|richtext %}
     {% endif %}
@@ -80,7 +78,5 @@
         }}
         {# fmt:on #}
     {% endif %}
-
-
 
 {% endblock %}

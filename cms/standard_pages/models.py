@@ -72,7 +72,7 @@ class IndexPage(BasePage):
         """
         formatted_links = []
 
-        for related_link in self.related_links:
+        for related_link in self.related_links:  # pylint: disable=not-an-iterable
             formatted_links.append(
                 {
                     "title": related_link.value.link.get("text"),
