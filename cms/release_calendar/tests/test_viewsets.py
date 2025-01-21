@@ -41,7 +41,7 @@ class TestFutureReleaseCalendarChooserViewSet(WagtailTestUtils, TestCase):
         self.assertNotContains(response, self.past.title)
 
     def test_chooser_search(self):
-        """Tests that the chooser search results."""
+        """Tests that the chooser search results work as expected."""
         chooser_results_url = reverse(release_calendar_chooser_viewset.get_url_name("choose_results"))
         response = self.client.get(f"{chooser_results_url}?q=preliminary")
 
