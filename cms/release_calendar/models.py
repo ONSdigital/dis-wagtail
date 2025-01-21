@@ -140,7 +140,7 @@ class ReleaseCalendarPage(BasePage):  # type: ignore[django-manager-missing]
         FieldPanel("related_links", icon="link"),
     ]
 
-    search_fields: ClassVar[list[index.SearchField | index.AutocompleteField | index.FilterField]] = [
+    search_fields: ClassVar[list[index.BaseField]] = [
         *BasePage.search_fields,
         index.FilterField("status"),
         index.FilterField("release_date"),

@@ -79,7 +79,7 @@ class MethodologyPage(BasePage):  # type: ignore[django-manager-missing]
         InlinePanel("related_pages", label="Related publications"),
     ]
 
-    search_fields: ClassVar[list[index.SearchField | index.AutocompleteField]] = [
+    search_fields: ClassVar[list[index.BaseField]] = [
         *BasePage.search_fields,
         index.SearchField("summary"),
         index.SearchField("content"),
