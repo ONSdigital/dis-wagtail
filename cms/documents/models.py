@@ -1,12 +1,16 @@
-from wagtail.documents.models import AbstractDocument
-from wagtail.documents.models import Document as WagtailDocument
+from collections.abc import Sequence
+from typing import ClassVar
+
+from wagtail.documents.models import AbstractDocument, Document
+
+from cms.private_media.models import PrivateDocumentMixin
 
 
-class CustomDocument(AbstractDocument):
+class CustomDocument(PrivateDocumentMixin, AbstractDocument):
     """Custom Wagtail document class.
 
     Using a custom class from the beginning allows us to add
     any customisations we may need.
     """
 
-    admin_form_fields = WagtailDocument.admin_form_fields
+    admin_form_fields: ClassVar[Sequence[str]] = Document.admin_form_fields
