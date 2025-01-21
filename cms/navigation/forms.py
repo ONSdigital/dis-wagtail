@@ -92,7 +92,7 @@ class MainMenuAdminForm(WagtailAdminModelForm):
                             StructBlockValidationError(
                                 {
                                     "section_link": ErrorList(
-                                        [ValidationError("Duplicate page. Please add a different one.")]
+                                        [ValidationError("Duplicate URL. Please add a different one.")]
                                     )
                                 }
                             )
@@ -127,7 +127,7 @@ class MainMenuAdminForm(WagtailAdminModelForm):
                                 StructBlockValidationError(
                                     {
                                         "external_url": ErrorList(
-                                            [ValidationError("Duplicate page. Please add a different one.")]
+                                            [ValidationError("Duplicate URL. Please add a different one.")]
                                         )
                                     }
                                 )

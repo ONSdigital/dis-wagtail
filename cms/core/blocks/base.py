@@ -39,7 +39,7 @@ class LinkBlockStructValue(StructValue):
 
 
 class LinkBlock(StructBlock):
-    """Related link block with page or link validation."""
+    """Link block with page or link validation."""
 
     page = PageChooserBlock(required=False)
     external_url = URLBlock(required=False, label="or External Link")
