@@ -1,15 +1,15 @@
 import uuid
 
 from django.test import TestCase
+from wagtail.admin.panels import get_edit_handler
 from wagtail.test.utils.form_data import nested_form_data, streamfield
 
-from wagtail.admin.panels import get_edit_handler
 from cms.navigation.models import MainMenu
 from cms.navigation.tests.factories import (
+    HighlightsBlockFactory,
     MainMenuFactory,
     ThemePageFactory,
     TopicPageFactory,
-    HighlightsBlockFactory,
 )
 
 
@@ -112,7 +112,9 @@ class MainMenuAdminFormTestCase(TestCase):
         self.assertTrue(form.is_valid(), msg=form.errors.as_json())
 
     def test_highlights_no_duplicate_external_url(self):
-        """Checks that the different external URLs used do not trigger any validation errors"""
+        """Checks that the different external URLs used do not trigger any
+        validation errors.
+        """
         raw_data = self.raw_form_data(
             highlights_data=[
                 ("highlight", self.highlights_1),
@@ -231,7 +233,9 @@ class MainMenuAdminFormTestCase(TestCase):
         self.assertTrue(form.is_valid(), msg=form.errors.as_json())
 
     def test_columns_duplicate_section_page_across_columns(self):
-        """Checks that using the same section page in two different sections (across columns) raises a duplicate error."""
+        """Checks that using the same section page in two different sections
+        (across columns) raises a duplicate error.
+        """
         section_data = [
             {
                 "theme_page_pk": self.theme_page_1.pk,
@@ -264,7 +268,9 @@ class MainMenuAdminFormTestCase(TestCase):
         )
 
     def test_columns_duplicate_section_external_url_across_columns(self):
-        """Checks that using the same external URL in two different sections (across columns) raises a duplicate error."""
+        """Checks that using the same external URL in two different sections
+        (across columns) raises a duplicate error.
+        """
         section_data = [
             {
                 "theme_page_pk": None,
@@ -546,7 +552,6 @@ class MainMenuAdminFormTestCase(TestCase):
 
     def test_columns_duplicate_section_page(self):
         """Checks that using the same section page in the same column raises a duplicate error."""
-
         section_data = [
             {
                 "theme_page_pk": self.theme_page_1.pk,

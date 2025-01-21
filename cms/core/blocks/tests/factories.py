@@ -1,7 +1,7 @@
 import factory
+from wagtail_factories import PageChooserBlockFactory, StructBlockFactory
 
 from cms.core.blocks.base import LinkBlock
-from wagtail_factories import PageChooserBlockFactory, StructBlockFactory
 
 
 class LinkBlockFactory(StructBlockFactory):
