@@ -145,20 +145,8 @@ You can then access the admin at `http://0.0.0.0:8000/admin/` or `http://localho
 You can also run the main application locally with the supporting backend services such as the Postgres and Redis running in Docker.
 This can be useful when you want to make changes that require the app to be restarted in order to be picked up.
 
-For this method you can specify the runtime configuration either in your
-IDE (for PyCharm see [here](https://www.jetbrains.com/help/pycharm/run-debug-configuration.html#createExplicitly)), or
-copy the `.development.env` and rename it to `.env` which will allow Django to pick up the config.
-
-Once you create the `.env` file, and you'd like to switch back to running the application in a container, the `.env` file will be accessible inside the
-containers and it will be picked up by the `honcho` command. In order to avoid conflicts you may need to comment out
-some variables (such as `DATABASE_URL` and `REDIS_URL`) in the `.env` file.
-
-> [!NOTE]
-> When running the application locally in a virtual environment via Poetry the `.env` file will not be picked up automatically.
-> For this to work you'll need to install the [poetry-plugin-dotenv](https://github.com/pivoshenko/poetry-plugin-dotenv).
-> However, if you installed Poetry with `brew` rather than `pip` that currently isn't going to
-> work (see the [issue](https://github.com/pivoshenko/poetry-plugin-dotenv/issues/327)) and you'll need to install an older and
-> seemingly no longer maintained [poetry-dotenv-plugin](https://github.com/mpeteuil/poetry-dotenv-plugin).
+The correct development configuration should be used by default when running from the shell. For IDEs you may need to add
+`DJANGO_SETTINGS_MODULE=cms.settings.dev` to their runtime configuration (e.g [PyCharm configuration documentation](https://www.jetbrains.com/help/pycharm/run-debug-configuration.html#createExplicitly)).
 
 In order to run it:
 
@@ -192,6 +180,21 @@ In order to run it:
     ```bash
     make runserver
     ```
+
+#### Environment Configuration
+
+By default, `make` targets will use the `cms.settings.dev` settings unless their commands explicitly use a different setting (via the `--settings` parameter or `DJANGO_SETTINGS_MODULE` environment variable).
+is set in the environment. This default should work out of the box for local development.
+
+To override settings in the environment, you can use a `.env` file. Note, however, that settings this file may also be picked up in the docker container, so
+you may need to remove or rename the file, or comment out specific variables if you switch to running the app in the container.
+
+> [!NOTE]
+> When running the application locally in a virtual environment via Poetry the `.env` file will not be picked up automatically.
+> For this to work you'll need to install the [poetry-plugin-dotenv](https://github.com/pivoshenko/poetry-plugin-dotenv).
+> However, if you installed Poetry with `brew` rather than `pip` that currently isn't going to
+> work (see the [issue](https://github.com/pivoshenko/poetry-plugin-dotenv/issues/327)) and you'll need to install an older and
+> seemingly no longer maintained [poetry-dotenv-plugin](https://github.com/mpeteuil/poetry-dotenv-plugin).
 
 ## Development
 

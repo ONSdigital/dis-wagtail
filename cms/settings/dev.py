@@ -1,3 +1,5 @@
+import copy
+
 from .base import *  # noqa: F403  # pylint: disable=wildcard-import,unused-wildcard-import
 
 # Debugging to be enabled locally only
@@ -48,6 +50,17 @@ DEBUG_TOOLBAR_CONFIG = {
     "SHOW_COLLAPSED": True,
 }
 
+# Database
+DATABASES = {
+    "default": dj_database_url.config(default="postgres://ons:ons@localhost:5432/ons"),  # noqa: F405
+}
+DATABASES["read_replica"] = copy.deepcopy(DATABASES["default"])
+
+# Redis
+REDIS_URL = "redis://localhost:6379"
+
+# Django Defender
+ENABLE_DJANGO_DEFENDER = False
 
 # Import settings from local.py file if it exists. Please use it to keep
 # settings that are not meant to be checked into Git and never check it in.
