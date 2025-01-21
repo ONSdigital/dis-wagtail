@@ -63,27 +63,23 @@ class BasePage(ListingFieldsMixin, SocialFieldsMixin, Page):  # type: ignore[dja
 
     @cached_property
     def has_equations(self) -> bool:
-        """Checks if there are any equation blocks.
-        Override in your specific Page class if the StreamField structure is different.
-        """
-        if streamfield := getattr(self, self.content_field_name):
-            try:
-                return streamfield.first_block_by_name(block_name="equation") is not None
-            except AttributeError:
-                return False
+        """Checks if there are any equation blocks."""
+        if (streamvalue := getattr(self, self.content_field_name)) and hasattr(
+            streamvalue.stream_block, "has_equations"
+        ):
+            # run the check on the StreamBlock itself, if it supports it
+            return bool(streamvalue.stream_block.has_equations(streamvalue))
 
         return False
 
     @cached_property
     def has_ons_embed(self) -> bool:
-        """Checks if there are any ONS embed blocks.
-        Override in your specific Page class if the StreamField structure is different.
-        """
-        if streamfield := getattr(self, self.content_field_name):
-            try:
-                return streamfield.first_block_by_name(block_name="ons_embed") is not None
-            except AttributeError:
-                return False
+        """Checks if there are any ONS embed blocks."""
+        if (streamvalue := getattr(self, self.content_field_name)) and hasattr(
+            streamvalue.stream_block, "has_ons_embed"
+        ):
+            # run the check on the StreamBlock itself, if it supports it
+            return bool(streamvalue.stream_block.has_ons_embed(streamvalue))
 
         return False
 
