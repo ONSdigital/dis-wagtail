@@ -93,34 +93,6 @@ class MainMenuAdminFormTestCase(TestCase):
             ]
         )
 
-    # # Example usage:
-    # section_data = [
-    #     {
-    #         "theme_page_pk": self.theme_page_1.pk,
-    #         "theme_title": "Theme Link 1",
-    #         "links": [
-    #             {"topic_page_pk": self.topic_page_1.pk, "topic_title": "Sub link #1"},
-    #             {"topic_page_pk": self.topic_page_2.pk, "topic_title": "Sub link #2"},
-    #         ],
-    #     },
-    #     {
-    #         "theme_page_pk": self.theme_page_2.pk,
-    #         "theme_title": "Theme Link 2",
-    #         "links": [
-    #             {"topic_page_pk": self.topic_page_3.pk, "topic_title": "Sub link #3"},
-    #         ],
-    #     },
-    # ]
-
-    # sections = create_sections(section_data)
-
-    # raw_data = self.raw_form_data(
-    #     columns_data=[
-    #         ("column", {"sections": sections}),
-    #         ("column", {"sections": sections}),
-    #     ]
-    # )
-
     def test_highlights_no_duplicate_page(self):
         """Checks that different pages in the highlights do not trigger any validation errors."""
         raw_data = self.raw_form_data(
