@@ -127,20 +127,10 @@ class MainMenuAdminFormTestCase(TestCase):
             highlights_data=[
                 (
                     "highlight",
-                    # {
-                    #     "page": self.theme_page_1.pk,
-                    #     "external_url": "",
-                    #     "description": "Highlight 1",
-                    # },
                     HighlightsBlockFactory(page=self.theme_page_1.pk, external_url=""),
                 ),
                 (
                     "highlight",
-                    # {
-                    #     "page": self.theme_page_2.pk,
-                    #     "external_url": "",
-                    #     "description": "Highlight 2",
-                    # },
                     HighlightsBlockFactory(page=self.theme_page_2.pk, external_url=""),
                 ),
             ]
@@ -198,77 +188,6 @@ class MainMenuAdminFormTestCase(TestCase):
 
     def test_columns_no_duplicate_section_page_across_columns(self):
         """Checks that different pages across columns, sections, and topics do not raise errors."""
-        # raw_data = self.raw_form_data(
-        #     columns_data=[
-        #         (
-        #             "column",
-        #             {
-        #                 "sections": streamfield(
-        #                     [
-        #                         (
-        #                             "section",
-        #                             {
-        #                                 "section_link": {
-        #                                     "page": self.theme_page_1.pk,
-        #                                     "external_url": "",
-        #                                     "title": "Theme Link",
-        #                                 },
-        #                                 "links": [
-        #                                     {
-        #                                         "id": uuid.uuid4(),
-        #                                         "type": "item",
-        #                                         "value": {
-        #                                             "page": self.topic_page_1.pk,
-        #                                             "external_url": "",
-        #                                             "title": "Sub link #1",
-        #                                         },
-        #                                         "deleted": "",
-        #                                         "order": "0",
-        #                                     },
-        #                                 ],
-        #                                 "links-count": 1,
-        #                             },
-        #                         )
-        #                     ]
-        #                 ),
-        #             },
-        #         ),
-        #         (
-        #             "column",
-        #             {
-        #                 "sections": streamfield(
-        #                     [
-        #                         (
-        #                             "section",
-        #                             {
-        #                                 "section_link": {
-        #                                     "page": self.theme_page_2.pk,
-        #                                     "external_url": "",
-        #                                     "title": "Theme Link2",
-        #                                 },
-        #                                 "links": [
-        #                                     {
-        #                                         "id": uuid.uuid4(),
-        #                                         "type": "item",
-        #                                         "value": {
-        #                                             "page": self.topic_page_2.pk,
-        #                                             "external_url": "",
-        #                                             "title": "Sub link #1",
-        #                                         },
-        #                                         "deleted": "",
-        #                                         "order": "0",
-        #                                     },
-        #                                 ],
-        #                                 "links-count": 1,
-        #                             },
-        #                         )
-        #                     ]
-        #                 ),
-        #             },
-        #         ),
-        #     ]
-        # )
-
         section_data = [
             {
                 "theme_page_pk": self.theme_page_1.pk,
@@ -341,24 +260,6 @@ class MainMenuAdminFormTestCase(TestCase):
 
     def test_columns_duplicate_section_page_across_columns(self):
         """Checks that using the same section page in two different sections (across columns) raises a duplicate error."""
-
-        # sections = streamfield(
-        #     [
-        #         (
-        #             "section",
-        #             {
-        #                 "section_link": {
-        #                     "page": self.theme_page_1.pk,
-        #                     "external_url": "",
-        #                     "title": "Theme Link2",
-        #                 },
-        #                 "links": [],
-        #                 "links-count": 0,
-        #             },
-        #         )
-        #     ]
-        # )
-
         section_data = [
             {
                 "theme_page_pk": self.theme_page_1.pk,
@@ -816,56 +717,6 @@ class MainMenuAdminFormTestCase(TestCase):
 
     def test_columns_duplicate_topics(self):
         """Checks that using the same topic page multiple times within the same section triggers a duplicate error."""
-
-        # raw_data = self.raw_form_data(
-        #     columns_data=[
-        #         (
-        #             "column",
-        #             {
-        #                 "sections": streamfield(
-        #                     [
-        #                         (
-        #                             "section",
-        #                             {
-        #                                 "section_link": {
-        #                                     "page": self.theme_page_1.pk,
-        #                                     "external_url": "",
-        #                                     "title": "Section Link",
-        #                                 },
-        #                                 "links": [
-        #                                     {
-        #                                         "id": uuid.uuid4(),
-        #                                         "type": "item",
-        #                                         "value": {
-        #                                             "page": self.topic_page_1.pk,
-        #                                             "external_url": "",
-        #                                             "title": "Sub link #1",
-        #                                         },
-        #                                         "deleted": "",
-        #                                         "order": "0",
-        #                                     },
-        #                                     {
-        #                                         "id": uuid.uuid4(),
-        #                                         "type": "item",
-        #                                         "value": {
-        #                                             "page": self.topic_page_1.pk,
-        #                                             "external_url": "",
-        #                                             "title": "Sub link #2",
-        #                                         },
-        #                                         "deleted": "",
-        #                                         "order": "1",
-        #                                     },
-        #                                 ],
-        #                                 "links-count": 2,
-        #                             },
-        #                         )
-        #                     ]
-        #                 ),
-        #             },
-        #         )
-        #     ]
-        # )
-
         section_data = [
             {
                 "theme_page_pk": self.theme_page_1.pk,
