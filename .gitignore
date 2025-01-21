@@ -185,7 +185,7 @@ copier_scripts/
 /cms/jinja2/layout
 /cms/static_compiled
 
-/node_modules/
+node_modules/
 /static/
 
 # mkdocs
