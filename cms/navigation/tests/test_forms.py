@@ -13,7 +13,7 @@ from cms.navigation.tests.factories import (
 )
 
 
-class MainMenuAdminFormTestCase(TestCase):
+class BaseMainMenuTestCase(TestCase):
     @classmethod
     def setUpTestData(cls):
         cls.menu = MainMenuFactory()
@@ -44,7 +44,6 @@ class MainMenuAdminFormTestCase(TestCase):
         }
 
     def create_topic(self, topic_page_pk, topic_title, external_url="", order=0):
-        """Creates a topics with dynamic data."""
         return {
             "id": uuid.uuid4(),
             "type": "item",
@@ -58,7 +57,6 @@ class MainMenuAdminFormTestCase(TestCase):
         }
 
     def create_section(self, theme_page_pk, theme_title, external_url="", links=None):
-        """Creates a section with a dynamic number of topics."""
         return {
             "section_link": {
                 "page": theme_page_pk,
@@ -70,7 +68,6 @@ class MainMenuAdminFormTestCase(TestCase):
         }
 
     def create_sections(self, data):
-        """Generates multiple sections based on input data."""
         return streamfield(
             [
                 (
@@ -93,6 +90,8 @@ class MainMenuAdminFormTestCase(TestCase):
             ]
         )
 
+
+class HighlightTests(BaseMainMenuTestCase):
     def test_highlights_no_duplicate_page(self):
         """Checks that different pages in the highlights do not trigger any validation errors."""
         raw_data = self.raw_form_data(
@@ -160,6 +159,8 @@ class MainMenuAdminFormTestCase(TestCase):
             "Duplicate URL. Please add a different one.",
         )
 
+
+class ColumnTests(BaseMainMenuTestCase):
     def test_columns_no_duplicate_section_page_across_columns(self):
         """Checks that different pages across columns, sections, and topics do not raise errors."""
         section_data = [
@@ -302,6 +303,8 @@ class MainMenuAdminFormTestCase(TestCase):
             "Duplicate URL. Please add a different one.",
         )
 
+
+class TopicTests(BaseMainMenuTestCase):
     def test_columns_no_duplicate_topic_page_across_columns(self):
         """Checks that different topic pages across columns do not raise errors."""
         section_data = [
