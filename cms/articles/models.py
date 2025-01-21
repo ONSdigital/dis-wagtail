@@ -167,7 +167,7 @@ class StatisticalArticlePage(BundledPageMixin, BasePage):  # type: ignore[django
         FieldPanel("content", icon="list-ul"),
     ]
 
-    search_fields: ClassVar[list[index.SearchField | index.AutocompleteField]] = [
+    search_fields: ClassVar[list[index.BaseField]] = [
         *BasePage.search_fields,
         index.SearchField("summary"),
         index.SearchField("headline_figures"),

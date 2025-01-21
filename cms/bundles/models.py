@@ -119,7 +119,7 @@ class Bundle(index.Indexed, ClusterableModel, models.Model):  # type: ignore[dja
         FieldPanel("approved_at", classname="hidden w-hidden"),
     ]
 
-    search_fields: ClassVar[list[index.SearchField | index.AutocompleteField]] = [
+    search_fields: ClassVar[list[index.BaseField]] = [
         index.SearchField("name"),
         index.AutocompleteField("name"),
     ]
