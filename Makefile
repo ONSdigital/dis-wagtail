@@ -2,12 +2,19 @@ DESIGN_SYSTEM_VERSION=`cat .design-system-version`
 
 .DEFAULT_GOAL := all
 
+.EXPORT_ALL_VARIABLES:
+# Default to development config if DJANGO_SETTINGS_MODULE is not set
+DJANGO_SETTINGS_MODULE ?= cms.settings.dev
+
 .PHONY: all
 all: ## Show the available make targets.
 	@echo "Usage: make <target>"
 	@echo ""
 	@echo "Targets:"
-	@fgrep "##" Makefile | fgrep -v fgrep
+	@grep -E '^[0-9a-zA-Z_-]+:.*? .*$$'  \
+		$(MAKEFILE_LIST)  \
+		| awk 'BEGIN { FS=":.*?## " }; {printf "\033[36m%-20s\033[0m %s\n", $$1, $$2}'  \
+		| sort
 
 .PHONY: clean
 clean: ## Clean the temporary files.
@@ -181,3 +188,13 @@ functional-tests: functional-tests-up functional-tests-run functional-tests-down
 .PHONY: playwright-install
 playwright-install:  ## Install Playwright dependencies
 	poetry run playwright install --with-deps
+
+# Aliases
+.PHONY: start
+start: compose-up
+.PHONY: stop
+stop: compose-stop
+.PHONY: shell
+shell: docker-shell
+.PHONY: run
+run: runserver

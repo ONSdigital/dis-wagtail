@@ -14,13 +14,26 @@ from .mixins import ListingFieldsMixin, SocialFieldsMixin
 if TYPE_CHECKING:
     from django.db import models
     from wagtail.admin.panels import FieldPanel
-    from wagtail.contrib.settings.models import BaseSiteSetting as _WagtailBaseSiteSetting
+    from wagtail.contrib.settings.models import (
+        BaseGenericSetting as _WagtailBaseGenericSetting,
+    )
+    from wagtail.contrib.settings.models import (
+        BaseSiteSetting as _WagtailBaseSiteSetting,
+    )
     from wagtail.models import Site
 
     class WagtailBaseSiteSetting(_WagtailBaseSiteSetting, models.Model):
         """Explicit class definition for type checking. Indicates we're inheriting from Django's model."""
+
+    class WagtailBaseGenericSetting(_WagtailBaseGenericSetting, models.Model):
+        """Explicit class definition for type checking. Indicates we're inheriting from Django's model."""
 else:
-    from wagtail.contrib.settings.models import BaseSiteSetting as WagtailBaseSiteSetting
+    from wagtail.contrib.settings.models import (
+        BaseGenericSetting as WagtailBaseGenericSetting,
+    )
+    from wagtail.contrib.settings.models import (
+        BaseSiteSetting as WagtailBaseSiteSetting,
+    )
 
 
 __all__ = ["BasePage", "BaseSiteSetting"]
@@ -63,27 +76,23 @@ class BasePage(ListingFieldsMixin, SocialFieldsMixin, Page):  # type: ignore[dja
 
     @cached_property
     def has_equations(self) -> bool:
-        """Checks if there are any equation blocks.
-        Override in your specific Page class if the StreamField structure is different.
-        """
-        if streamfield := getattr(self, self.content_field_name):
-            try:
-                return streamfield.first_block_by_name(block_name="equation") is not None
-            except AttributeError:
-                return False
+        """Checks if there are any equation blocks."""
+        if (streamvalue := getattr(self, self.content_field_name)) and hasattr(
+            streamvalue.stream_block, "has_equations"
+        ):
+            # run the check on the StreamBlock itself, if it supports it
+            return bool(streamvalue.stream_block.has_equations(streamvalue))
 
         return False
 
     @cached_property
     def has_ons_embed(self) -> bool:
-        """Checks if there are any ONS embed blocks.
-        Override in your specific Page class if the StreamField structure is different.
-        """
-        if streamfield := getattr(self, self.content_field_name):
-            try:
-                return streamfield.first_block_by_name(block_name="ons_embed") is not None
-            except AttributeError:
-                return False
+        """Checks if there are any ONS embed blocks."""
+        if (streamvalue := getattr(self, self.content_field_name)) and hasattr(
+            streamvalue.stream_block, "has_ons_embed"
+        ):
+            # run the check on the StreamBlock itself, if it supports it
+            return bool(streamvalue.stream_block.has_ons_embed(streamvalue))
 
         return False
 
@@ -118,3 +127,30 @@ class BaseSiteSetting(WagtailBaseSiteSetting):
 
             instance, _created = queryset.get_or_create(site=site)
             return cast(Self, instance)
+
+
+class BaseGenericSetting(WagtailBaseGenericSetting):
+    """A customized site setting.
+
+    - Use default values in external environment if an instance doesn't exist.
+    - Use `.first` to ensure the read connection is used.
+    """
+
+    class Meta:
+        abstract = True
+
+    @classmethod
+    def _get_or_create(cls) -> Self:
+        """Get or create an instance of this setting."""
+        # First, try and find an instance using the read connection.
+        instance = cls.base_queryset().first()
+
+        if instance is not None:
+            return cast(Self, instance)
+
+        if settings.IS_EXTERNAL_ENV:
+            # In the external env, the database connection is read-only,
+            # so just use the default values if the instance doesn't exist.
+            return cls()
+
+        return cast(Self, cls.objects.create())

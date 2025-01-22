@@ -186,7 +186,7 @@ copier_scripts/
 /cms/static_compiled
 
 node_modules/
-static/
+/static/
 
 # mkdocs
 /site
