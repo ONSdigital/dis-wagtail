@@ -38,26 +38,6 @@
 {% set navigation_settings = settings.navigation.NavigationSettings %}
 {% set main_menu = main_menu | default(navigation_settings.main_menu) %}
 
-{% set keyLinksList = [] %}
-
-{% if main_menu and main_menu.highlights %}
-    {% for highlight in main_menu.highlights %}
-        {% if highlight.value.page and highlight.value.page.live %}
-            {% set _ = keyLinksList.append({
-                'text': highlight.value.title if highlight.value.title else highlight.value.page.title,
-                'description': highlight.value.description,
-                'url': pageurl(highlight.value.page),
-            }) %}
-        {% elif highlight.value.external_url %}
-            {% set _ = keyLinksList.append({
-                'text': highlight.value.title,
-                'description': highlight.value.description,
-                'url': highlight.value.external_url,
-            }) %}
-        {% endif %}
-    {% endfor %}
-{% endif %}
-
 {% set itemsList = [] %}
 
 {% if main_menu and main_menu.columns %}
@@ -125,7 +105,7 @@
                 "text": 'Menu',
                 "ariaLabel": 'Toggle main menu'
             },
-            "keyLinksList": keyLinksList,
+            "keyLinksList": main_menu_highlights(main_menu),
             "itemsList": itemsList
         }
     },
