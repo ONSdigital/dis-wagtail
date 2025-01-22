@@ -5,6 +5,7 @@ from wagtail.rich_text import RichText
 from wagtail_factories.blocks import BlockFactory, PageChooserBlockFactory, StructBlockFactory
 
 from cms.core.blocks.related import FeaturedItemBlock, LinkBlock, RelatedContentBlock
+from cms.core.blocks.section_blocks import SectionBlock, SectionContentBlock
 from cms.core.models import ContactDetails
 
 
@@ -60,6 +61,9 @@ class ContactDetailsFactory(factory.django.DjangoModelFactory):
 class SectionContentBlockFactory(StructBlockFactory):
     """Factory for Section content block."""
 
+    class Meta:
+        model = SectionContentBlock
+
     title = factory.Faker("text", max_nb_chars=50)
     content = wagtail_factories.StreamFieldFactory(
         {
@@ -70,6 +74,9 @@ class SectionContentBlockFactory(StructBlockFactory):
 
 class SectionBlockFactory(StructBlockFactory):
     """Factory for Section StructBlock."""
+
+    class Meta:
+        model = SectionBlock
 
     title = factory.Faker("text", max_nb_chars=50)
     content = factory.SubFactory(SectionContentBlockFactory)
@@ -85,19 +92,16 @@ class LinkBlockFactory(StructBlockFactory):
     page = factory.Maybe(factory.SubFactory(PageChooserBlockFactory), None)
     external_url = factory.Faker("url")
 
-class FeaturedItemBlockFactory(LinkBlockFactory):
 
+class FeaturedItemBlockFactory(LinkBlockFactory):
     class Meta:
         model = FeaturedItemBlock
 
-    description = wagtail_factories.CharBlockFactory() # required = False
+    description = wagtail_factories.CharBlockFactory()  # required = False
 
 
 class RelatedContentBlockFactory(LinkBlockFactory):
-
-
     class Meta:
         model = RelatedContentBlock
 
-    description = wagtail_factories.CharBlockFactory() # required = True
-
+    description = wagtail_factories.CharBlockFactory()  # required = True
