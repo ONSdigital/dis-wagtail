@@ -2,8 +2,9 @@ import factory
 import wagtail_factories
 from wagtail import blocks
 from wagtail.rich_text import RichText
-from wagtail_factories.blocks import BlockFactory
+from wagtail_factories.blocks import BlockFactory, PageChooserBlockFactory, StructBlockFactory
 
+from cms.core.blocks.related import FeaturedItemBlock, LinkBlock, RelatedContentBlock
 from cms.core.models import ContactDetails
 
 
@@ -56,7 +57,7 @@ class ContactDetailsFactory(factory.django.DjangoModelFactory):
 # Section Block Factories
 
 
-class SectionContentBlockFactory(wagtail_factories.StructBlockFactory):
+class SectionContentBlockFactory(StructBlockFactory):
     """Factory for Section content block."""
 
     title = factory.Faker("text", max_nb_chars=50)
@@ -67,8 +68,36 @@ class SectionContentBlockFactory(wagtail_factories.StructBlockFactory):
     )
 
 
-class SectionBlockFactory(wagtail_factories.StructBlockFactory):
+class SectionBlockFactory(StructBlockFactory):
     """Factory for Section StructBlock."""
 
     title = factory.Faker("text", max_nb_chars=50)
     content = factory.SubFactory(SectionContentBlockFactory)
+
+
+class LinkBlockFactory(StructBlockFactory):
+    """Factory for LinkBlock."""
+
+    class Meta:
+        model = LinkBlock
+
+    title = factory.Faker("text", max_nb_chars=20)
+    page = factory.Maybe(factory.SubFactory(PageChooserBlockFactory), None)
+    external_url = factory.Faker("url")
+
+class FeaturedItemBlockFactory(LinkBlockFactory):
+
+    class Meta:
+        model = FeaturedItemBlock
+
+    description = wagtail_factories.CharBlockFactory() # required = False
+
+
+class RelatedContentBlockFactory(LinkBlockFactory):
+
+
+    class Meta:
+        model = RelatedContentBlock
+
+    description = wagtail_factories.CharBlockFactory() # required = True
+
