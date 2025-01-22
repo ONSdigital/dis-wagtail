@@ -13,6 +13,23 @@ if TYPE_CHECKING:
 register = template.Library()
 
 
+def _extract_highlight_item(value: "StructValue", request: Optional["HttpRequest"] = None) -> dict[str, str]:
+    if value["external_url"]:
+        return {
+            "text": value["title"],
+            "description": value["description"],
+            "url": value["external_url"],
+        }
+
+    if value["page"] and value["page"].live:
+        return {
+            "text": value["title"] or value["page"].title,
+            "description": value["description"],
+            "url": value["page"].get_url(request=request),
+        }
+    return {}
+
+
 @jinja2.pass_context
 def main_menu_highlights(
     context: jinja2.runtime.Context, main_menu: Optional["MainMenu"] = None
@@ -22,22 +39,9 @@ def main_menu_highlights(
 
     highlights = []
     for highlight in main_menu.highlights:
-        if highlight.value["external_url"]:
-            highlights.append(
-                {
-                    "text": highlight.value["title"],
-                    "description": highlight.value["description"],
-                    "url": highlight.value["external_url"],
-                }
-            )
-        elif highlight.value["page"] and highlight.value["page"].live:
-            highlights.append(
-                {
-                    "text": highlight.value["title"] or highlight.value["page"].title,
-                    "description": highlight.value["description"],
-                    "url": highlight.value["page"].get_url(request=context.get("request")),
-                }
-            )
+        highlight_data = _extract_highlight_item(highlight.value, request=context.get("request"))
+        if highlight_data:
+            highlights.append(highlight_data)
 
     return highlights
 
@@ -62,22 +66,23 @@ def main_menu_columns(context: jinja2.runtime.Context, main_menu: Optional["Main
     if not main_menu:
         return []
 
+    def extract_section_data(section, request):
+        section_data = _extract_url_item(section["section_link"], request=request)
+        if not section_data:
+            return None
+
+        section_data["children"] = [
+            link_data for link in section["links"] if (link_data := _extract_url_item(link, request=request))
+        ]
+        return section_data
+
     items = []
     for idx, column in enumerate(main_menu.columns):
         column_data = {"column": idx, "linksList": []}
 
         for section in column.value["sections"]:
-            section_data = _extract_url_item(section["section_link"], request=context.get("request"))
-            if not section_data:
-                continue
-
-            section_data["children"] = []
-
-            for link in section["links"]:
-                if link_data := _extract_url_item(link, request=context.get("request")):
-                    section_data["children"].append(link_data)
-
-            column_data["linksList"].append(section_data)
+            if section_data := extract_section_data(section, context.get("request")):
+                column_data["linksList"].append(section_data)
 
         if column_data["linksList"]:
             items.append(column_data)
