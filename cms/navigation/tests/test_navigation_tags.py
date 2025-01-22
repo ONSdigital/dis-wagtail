@@ -1,12 +1,14 @@
-from django.test import TestCase
 from unittest.mock import Mock
-from cms.navigation.templatetags.navigation_tags import main_menu_highlights, main_menu_columns
+
+from django.test import TestCase
+
+from cms.navigation.templatetags.navigation_tags import main_menu_columns, main_menu_highlights
 from cms.navigation.tests.factories import (
-    MainMenuFactory,
-    TopicLinkBlockFactory,
-    SectionBlockFactory,
     ColumnBlockFactory,
     HighlightsBlockFactory,
+    MainMenuFactory,
+    SectionBlockFactory,
+    TopicLinkBlockFactory,
 )
 
 
