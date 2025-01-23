@@ -7,8 +7,8 @@ from cms.core.models.settings import SocialMediaSettings
 from cms.core.tests import TransactionTestCase
 
 
-class SocialSettingsTestCase(TransactionTestCase):
-    """Tests for the SocialSettings model, and how it behaves with multiple databases."""
+class SiteSettingsTestCase(TransactionTestCase):
+    """Tests for site settings, and how they behaves with multiple databases."""
 
     def setUp(self):
         self.request = get_dummy_request()

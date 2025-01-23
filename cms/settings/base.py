@@ -62,6 +62,7 @@ INSTALLED_APPS = [
     "cms.documents",
     "cms.home",
     "cms.images",
+    "cms.private_media",
     "cms.release_calendar",
     "cms.themes",
     "cms.topics",
@@ -331,7 +332,7 @@ LOCALE_PATHS = [PROJECT_DIR / "locale"]
 # http://whitenoise.evans.io/en/stable/#quickstart-for-django-apps
 # https://docs.djangoproject.com/en/stable/ref/settings/#std-setting-STORAGES
 STORAGES = {
-    "default": {"BACKEND": "django.core.files.storage.FileSystemStorage"},
+    "default": {"BACKEND": "cms.private_media.storages.AccessControlLoggingFileSystemStorage"},
     "staticfiles": {"BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage"},
 }
 
@@ -393,7 +394,7 @@ if "AWS_STORAGE_BUCKET_NAME" in env:
     INSTALLED_APPS += ["storages", "wagtail_storages"]
 
     # https://docs.djangoproject.com/en/stable/ref/settings/#std-setting-STORAGES
-    STORAGES["default"]["BACKEND"] = "storages.backends.s3.S3Storage"
+    STORAGES["default"]["BACKEND"] = "cms.private_media.storages.AccessControlledS3Storage"
 
     AWS_STORAGE_BUCKET_NAME = env["AWS_STORAGE_BUCKET_NAME"]
 
@@ -431,6 +432,7 @@ if "AWS_STORAGE_BUCKET_NAME" in env:
     # https://github.com/jschneier/django-storages/blob/10d1929de5e0318dbd63d715db4bebc9a42257b5/storages/backends/s3boto3.py#L217
     AWS_S3_URL_PROTOCOL = env.get("AWS_S3_URL_PROTOCOL", "https:")
 
+PRIVATE_MEDIA_BULK_UPDATE_MAX_WORKERS = env.get("PRIVATE_MEDIA_BULK_UPDATE_MAX_WORKERS", 5)
 
 # Logging
 # This logging is configured to be used with Sentry and console logs. Console
