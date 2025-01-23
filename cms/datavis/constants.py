@@ -20,11 +20,6 @@ class HighchartsTheme(TextChoices):
     ALTERNATE = "alternate", _("Alternate")
 
 
-class LegendPosition(TextChoices):
-    TOP = "top", _("Top")
-    BOTTOM = "bottom", _("Bottom")
-
-
 HIGHCHARTS_THEMES = {
     "primary": (
         "#206095",  # ocean blue
