@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, ClassVar
+from typing import TYPE_CHECKING, Any, ClassVar
 
 from django.conf import settings
 from django.db import models
@@ -12,6 +12,7 @@ from cms.core.fields import StreamField
 from cms.core.models import BasePage
 
 if TYPE_CHECKING:
+    from django.http import HttpRequest
     from wagtail.admin.panels import Panel
 
 
@@ -41,7 +42,7 @@ class InformationPage(BasePage):  # type: ignore[django-manager-missing]
     ]
 
 
-class IndexPage(BasePage):
+class IndexPage(BasePage):  # type: ignore[django-manager-missing]
     template = "templates/pages/index_page.html"
 
     parent_page_types: ClassVar[list[str]] = ["home.HomePage", "IndexPage", "InformationPage"]
@@ -65,7 +66,7 @@ class IndexPage(BasePage):
         index.SearchField("description"),
     ]
 
-    def get_formatted_featured_pages(self):
+    def get_formatted_featured_pages(self) -> list[dict[str, str]]:
         formatted_featured_pages = []
 
         if featured_pages := self.featured_pages:
@@ -105,8 +106,8 @@ class IndexPage(BasePage):
 
         return formatted_links
 
-    def get_context(self, request, *args, **kwargs):
-        context = super().get_context(request, *args, **kwargs)
+    def get_context(self, request: "HttpRequest", *args: Any, **kwargs: Any) -> dict:
+        context: dict = super().get_context(request, *args, **kwargs)
 
         context["formatted_featured_pages"] = self.get_formatted_featured_pages()
         context["related_links_list"] = self.get_formatted_related_links_list()
