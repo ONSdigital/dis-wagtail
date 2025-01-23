@@ -1,3 +1,5 @@
+import copy
+
 from .base import *  # noqa: F403  # pylint: disable=wildcard-import,unused-wildcard-import
 
 # Debugging to be enabled locally only
@@ -28,7 +30,7 @@ AUTH_PASSWORD_VALIDATORS = []
 # Enable Wagtail's style guide in Wagtail's settings menu.
 # http://docs.wagtail.io/en/stable/contributing/styleguide.html
 INSTALLED_APPS += ["wagtail.contrib.styleguide"]  # noqa: F405
-
+INSTALLED_APPS += ["django_migration_linter"]
 
 # Disable forcing HTTPS locally since development server supports HTTP only.
 SECURE_SSL_REDIRECT = False
@@ -48,6 +50,17 @@ DEBUG_TOOLBAR_CONFIG = {
     "SHOW_COLLAPSED": True,
 }
 
+# Database
+DATABASES = {
+    "default": dj_database_url.config(default="postgres://ons:ons@localhost:5432/ons"),  # noqa: F405
+}
+DATABASES["read_replica"] = copy.deepcopy(DATABASES["default"])
+
+# Redis
+REDIS_URL = "redis://localhost:6379"
+
+# Django Defender
+ENABLE_DJANGO_DEFENDER = False
 
 # Import settings from local.py file if it exists. Please use it to keep
 # settings that are not meant to be checked into Git and never check it in.
@@ -57,3 +70,25 @@ try:
 except ImportError:
     pass
 # pylint: enable=unused-wildcard-import,useless-suppression
+
+MIGRATION_LINTER_OPTIONS = {
+    "exclude_apps": [
+        "taggit",
+        "wagtailcore",
+        "wagtailembeds",
+        "wagtailimages",
+        "wagtailadmin",
+        "wagtailsearch",
+        "wagtaildocs",
+        "wagtailredirects",
+        "wagtailusers",
+    ],
+    "ignore_name": [
+        "0002_alter_customdocument_file_size",
+        "0004_contactdetails_core_contactdetails_name_unique",
+        "0003_delete_tracking",
+        "0002_customimage_description",
+        "0003_customimage__privacy_and_more",
+        "0003_customdocument__privacy_and_more",
+    ],
+}
