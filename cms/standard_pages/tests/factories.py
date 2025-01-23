@@ -3,7 +3,6 @@ import wagtail_factories
 from django.utils import timezone
 
 from cms.core.tests.factories import (
-    FeaturedItemBlockFactory,
     RelatedContentBlockFactory,
     SectionBlockFactory,
 )
@@ -21,8 +20,8 @@ class IndexPageFactory(wagtail_factories.PageFactory):
 
     description = factory.Faker("text", max_nb_chars=100)
 
-    featured_items = wagtail_factories.StreamFieldFactory(
-        {"featured_item": factory.SubFactory(FeaturedItemBlockFactory)}
+    featured_pages = wagtail_factories.StreamFieldFactory(
+        {"featured_page": factory.SubFactory(RelatedContentBlockFactory)}
     )
 
     content = factory.Faker("text", max_nb_chars=100)
