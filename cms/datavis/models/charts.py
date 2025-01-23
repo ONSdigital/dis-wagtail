@@ -19,7 +19,6 @@ from cms.datavis.blocks import AnnotationBlock
 from cms.datavis.constants import (
     HIGHCHARTS_THEMES,
     HighchartsTheme,
-    LegendPosition,
     MarkerStyle,
 )
 from cms.datavis.fields import NonStrippingCharField
@@ -39,13 +38,7 @@ class Chart(Visualisation):
     supports_stacked_layout: ClassVar[bool] = False
     supports_marker_style: ClassVar[bool] = False
 
-    show_legend = models.BooleanField(verbose_name=_("show legend?"), default=False)  # type: ignore[var-annotated]
-    legend_position = models.CharField(  # type: ignore[var-annotated]
-        verbose_name=_("label position"),
-        max_length=6,
-        choices=LegendPosition.choices,
-        default=LegendPosition.TOP,
-    )
+    show_legend = models.BooleanField(verbose_name=_("show legend?"), default=True)  # type: ignore[var-annotated]
     show_value_labels = models.BooleanField(  # type: ignore[var-annotated]
         verbose_name=_("show value labels?"), default=False
     )
@@ -147,13 +140,7 @@ class Chart(Visualisation):
     style_panels: ClassVar[Sequence["Panel"]] = [
         FieldPanel("theme"),
         FieldPanel("show_value_labels"),
-        MultiFieldPanel(
-            heading=_("Legend"),
-            children=[
-                FieldPanel("show_legend"),
-                FieldPanel("legend_position"),
-            ],
-        ),
+        FieldPanel("show_legend"),
     ]
 
     advanced_panels: ClassVar[Sequence["Panel"]] = [
@@ -213,7 +200,7 @@ class Chart(Visualisation):
             "legend": {
                 "align": "left",
                 "enabled": self.show_legend,
-                "verticalAlign": self.legend_position,
+                "verticalAlign": "top",
             },
             "xAxis": self.get_x_axis_config(headers, rows),
             "yAxis": self.get_y_axis_config(headers, rows),
