@@ -1,11 +1,15 @@
 function togglePanelVisibility(dataSourceValue, csvField, manualField) {
     if(dataSourceValue === 'csv') {
+        /* eslint-disable no-param-reassign */
         csvField.hidden = false;
         manualField.hidden = true;
+        /* eslint-enable no-param-reassign */
     }
     else if(dataSourceValue === 'manual') {
+        /* eslint-disable no-param-reassign */
         csvField.hidden = true;
         manualField.hidden = false;
+        /* eslint-enable no-param-reassign */
     }
 };
 
