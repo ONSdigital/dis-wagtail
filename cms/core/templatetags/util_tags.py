@@ -4,6 +4,7 @@ from typing import TYPE_CHECKING, Optional, TypedDict
 import jinja2
 from django import template
 from django.template.loader import render_to_string
+from django.utils.html import json_script as _json_script
 from django_jinja import library
 from wagtail.models import Locale
 
@@ -145,3 +146,12 @@ def get_hreflangs(context: jinja2.runtime.Context) -> list[HreflangDict]:
 def ons_date_format_filter(value: datetime | None, format_string: str) -> str:
     """Format a date using the ons_date_format function."""
     return "" if value is None else ons_date_format(value, format_string)
+
+
+# Copy django's json_script filter
+@register.filter(is_safe=True)
+def json_script(value, element_id=None):
+    """Output value JSON-encoded, wrapped in a <script type="application/json">
+    tag (with an optional id).
+    """
+    return _json_script(value, element_id)
