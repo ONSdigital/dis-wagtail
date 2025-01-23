@@ -13,7 +13,7 @@ from cms.standard_pages.models import IndexPage, InformationPage
 class IndexPageFactory(wagtail_factories.PageFactory):
     """Factory for IndexPage."""
 
-    parent = factory.LazyFunction(lambda: HomePage.objects.first())
+    parent = factory.LazyFunction(lambda: HomePage.objects.first())  # pylint: disable=unnecessary-lambda
 
     class Meta:
         model = IndexPage
@@ -32,9 +32,9 @@ class IndexPageFactory(wagtail_factories.PageFactory):
 
 
 class InformationPageFactory(wagtail_factories.PageFactory):
-    # parent = factory.SubFactory(IndexPageFactory)
+    """Factory for InformationPage."""
 
-    parent = factory.LazyFunction(lambda: IndexPage.objects.first())
+    parent = factory.SubFactory(IndexPageFactory)
 
     class Meta:
         model = InformationPage

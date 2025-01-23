@@ -138,8 +138,6 @@ class IndexPageTestCase(WagtailTestUtils, TestCase):
 
         self.assertEqual(formatted_related_links, [{"title": internal_page.title, "url": internal_page.url}])
 
-        pass
-
     def test_get_formatted_related_links_list_works_for_external_pages(self):
         """Test that the links to external pages are returned
         in a format that can be consumed by the Design System list component.
