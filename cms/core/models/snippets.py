@@ -23,7 +23,7 @@ class ContactDetails(index.Indexed, models.Model):
         FieldPanel("phone"),
     ]
 
-    search_fields: ClassVar[list[index.SearchField | index.AutocompleteField]] = [
+    search_fields: ClassVar[list[index.BaseField]] = [
         *index.Indexed.search_fields,
         index.SearchField("name"),
         index.AutocompleteField("name"),

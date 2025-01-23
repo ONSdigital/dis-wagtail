@@ -167,7 +167,7 @@ class StatisticalArticlePage(BundledPageMixin, BasePage):  # type: ignore[django
         FieldPanel("content", icon="list-ul"),
     ]
 
-    search_fields: ClassVar[list[index.SearchField | index.AutocompleteField]] = [
+    search_fields: ClassVar[list[index.BaseField]] = [
         *BasePage.search_fields,
         index.SearchField("summary"),
         index.SearchField("headline_figures"),
@@ -224,19 +224,3 @@ class StatisticalArticlePage(BundledPageMixin, BasePage):  # type: ignore[django
             .first()
         )
         return bool(self.pk == latest_id)  # to placate mypy
-
-    @cached_property
-    def has_equations(self) -> bool:
-        """Checks if there are any equation blocks."""
-        return any(
-            block.value["content"].first_block_by_name(block_name="equation") is not None
-            for block in self.content  # pylint: disable=not-an-iterable
-        )
-
-    @cached_property
-    def has_ons_embed(self) -> bool:
-        """Checks if there are any ONS embed blocks."""
-        return any(
-            block.value["content"].first_block_by_name(block_name="ons_embed") is not None
-            for block in self.content  # pylint: disable=not-an-iterable
-        )
