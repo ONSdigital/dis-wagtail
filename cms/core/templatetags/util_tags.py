@@ -3,6 +3,7 @@ from typing import TYPE_CHECKING, Optional
 import jinja2
 from django import template
 from django.template.loader import render_to_string
+from django.utils.html import json_script as _json_script
 from django_jinja import library
 
 from cms.core.models import SocialMediaSettings
@@ -37,3 +38,12 @@ def social_image(page: "Page", site: "Site") -> Optional["CustomImage"]:
 def include_django(context: jinja2.runtime.Context, template_name: str) -> "SafeString":
     """Allow importing a pre-rendered Django template into jinja2."""
     return render_to_string(template_name, context=dict(context), request=context.get("request", None))
+
+
+# Copy django's json_script filter
+@register.filter(is_safe=True)
+def json_script(value, element_id=None):
+    """Output value JSON-encoded, wrapped in a <script type="application/json">
+    tag (with an optional id).
+    """
+    return _json_script(value, element_id)
