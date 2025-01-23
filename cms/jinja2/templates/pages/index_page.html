@@ -8,56 +8,14 @@
         <p>{{ page.description }}</p>
     {% endif %}
 
-    {% if page.featured_items%}
-
-        {% for item in page.featured_items %}
-            <ul>
-                <li>
-                {# fmt:off #}
-                {{
-                    onsDocumentList({
-                            "documents": [
-                                {
-                                    "featured": true,
-                                    "title": {
-                                        "text": item.value.link.text,
-                                        "url": item.value.link.url
-                                    },
-                                    "description": item.value.description,
-                                }
-                            ]
-                        })
-                }}
-                </li>
-                {# fmt:on #}
-                </ul>
-        {% endfor %}
-
-    {% elif subpages %}
-
-        {% for subpage in subpages %}
-            <ul>
-                <li>
-                {# fmt:off #}
-                {{
-                    onsDocumentList({
-                            "documents": [
-                                {
-                                    "featured": true,
-                                    "title": {
-                                        "text": subpage.title,
-                                        "url": subpage.url
-                                    },
-                                    "description": item.value.description,
-                                }
-                            ]
-                        })
-                }}
-                </li>
-                {# fmt:on #}
-                </ul>
-        {% endfor %}
-
+    {% if formatted_featured_pages %}
+        {# fmt:off #}
+        {{
+            onsDocumentList({
+                    "documents": documents
+                })
+        }}
+        {# fmt:on #}
     {% endif %}
 
     {% if page.content %}

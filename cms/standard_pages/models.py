@@ -6,7 +6,7 @@ from wagtail.admin.panels import FieldPanel, InlinePanel
 from wagtail.fields import RichTextField
 from wagtail.search import index
 
-from cms.core.blocks.related import FeaturedItemBlock, RelatedContentBlock
+from cms.core.blocks.related import FeaturedPageBlock, RelatedContentBlock
 from cms.core.blocks.stream_blocks import CoreStoryBlock
 from cms.core.fields import StreamField
 from cms.core.models import BasePage
@@ -48,14 +48,14 @@ class IndexPage(BasePage):
     subpage_types: ClassVar[list[str]] = ["IndexPage", "InformationPage"]
 
     description = models.TextField(blank=True)
-    featured_items = StreamField([("featured_item", FeaturedItemBlock())], blank=True)
+    featured_pages = StreamField([("featured_page", FeaturedPageBlock())], blank=True)
     content = RichTextField(features=settings.RICH_TEXT_BASIC, blank=True)
     related_links = StreamField([("related_link", RelatedContentBlock())], blank=True)
 
     content_panels: ClassVar[list["Panel"]] = [
         *BasePage.content_panels,
         FieldPanel("description"),
-        FieldPanel("featured_items"),
+        FieldPanel("featured_pages"),
         FieldPanel("content"),
         FieldPanel("related_links"),
     ]
@@ -64,6 +64,20 @@ class IndexPage(BasePage):
         *BasePage.search_fields,
         index.SearchField("description"),
     ]
+
+    def get_formatted_featured_pages(self):
+        featured_pages = self.featured_pages if self.featured_pages else self.get_children().live().public()
+
+        formatted_featured_pages = []
+        for item in featured_pages:
+            formatted_featured_pages.append({
+                "featured": "true",
+                "title": {
+                    "text": item.value.link.text,
+                    "url": item.value.link.url
+                },
+                "description": item.value.description,
+        })
 
     def get_formatted_related_links_list(self) -> list[dict[str, str]]:
         """Returns a formatted list of related links for both external and internal pages
@@ -81,13 +95,10 @@ class IndexPage(BasePage):
 
         return formatted_links
 
-    def get_formatted_featured_items(self):
-        pass
-
     def get_context(self, request, *args, **kwargs):
         context = super().get_context(request, *args, **kwargs)
 
-        context["subpages"] = self.get_children().live().public()  # type: ignore[attr-defined]
+        context["featured_pages"] = self.get_formatted_featured_pages()
         context["related_links_list"] = self.get_formatted_related_links_list()
 
         return context
