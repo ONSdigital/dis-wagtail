@@ -95,12 +95,6 @@ class RelatedContentBlock(LinkBlock):
     description = CharBlock(required=False)
 
 
-class FeaturedItemBlock(LinkBlock):
-    """A LinkBlock with required description field."""
-
-    description = CharBlock(required=True)
-
-
 class RelatedLinksBlock(ListBlock):
     """Defines a list of links block."""
 
