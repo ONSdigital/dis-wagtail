@@ -35,7 +35,6 @@ class IndexPageTestCase(WagtailTestUtils, TestCase):
         when no custom Featured Items are specified.
         """
         child_page = InformationPageFactory(parent=self.page)
-        child_page.save_revision().publish()
 
         response = self.client.get(self.page_url)
 
@@ -70,7 +69,6 @@ class IndexPageTestCase(WagtailTestUtils, TestCase):
     def test_custom_featured_item_internal_page_is_displayed_correctly(self):
         """Test that the custom featured items are displayed on the page."""
         internal_page = InformationPageFactory(parent=self.page)
-        internal_page.save_revision().publish()
 
         featured_item_internal_page = {
             "type": "featured_item",
