@@ -45,7 +45,7 @@ class InformationPage(BasePage):  # type: ignore[django-manager-missing]
 class IndexPage(BasePage):  # type: ignore[django-manager-missing]
     template = "templates/pages/index_page.html"
 
-    parent_page_types: ClassVar[list[str]] = ["home.HomePage", "IndexPage", "InformationPage"]
+    parent_page_types: ClassVar[list[str]] = ["home.HomePage", "IndexPage"]
     subpage_types: ClassVar[list[str]] = ["IndexPage", "InformationPage"]
 
     description = models.TextField(blank=True)
@@ -69,6 +69,7 @@ class IndexPage(BasePage):  # type: ignore[django-manager-missing]
     search_fields: ClassVar[list[index.SearchField | index.AutocompleteField]] = [
         *BasePage.search_fields,
         index.SearchField("description"),
+        index.SearchField("content"),
     ]
 
     def get_formatted_items(self, request: "HttpRequest") -> list[dict[str, str]]:
