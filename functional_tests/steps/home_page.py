@@ -15,8 +15,3 @@ def user_sees_the_beta_homepage(context: Context) -> None:
     expect(context.page.get_by_label("Office for National Statistics homepage")).to_be_visible()
     expect(context.page.get_by_text("This is a new service.")).to_be_visible()
     expect(context.page.get_by_text("Beta")).to_be_visible()
-
-
-@then("they cannot see the breadcrumbs")
-def user_does_not_sees_on_the_page(context: Context) -> None:
-    expect(context.page.get_by_label("Breadcrumbs")).not_to_be_visible()

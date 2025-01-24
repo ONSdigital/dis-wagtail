@@ -53,8 +53,3 @@ def check_provisional_release_page_content(context: Context):
     expect(context.page.get_by_text(context.contact_details_snippet.name)).to_be_visible()
     expect(context.page.get_by_role("link", name=context.contact_details_snippet.email)).to_be_visible()
     expect(context.page.get_by_text("Accredited Official Statistics", exact=True)).to_be_visible()
-
-
-@then("the user can see the breadcrumbs")
-def user_does_sees_on_the_page(context: Context) -> None:
-    expect(context.page.get_by_label("Breadcrumbs")).to_be_visible()
