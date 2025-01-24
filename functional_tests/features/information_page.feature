@@ -8,3 +8,5 @@ Feature: A general use information page
         And the user clicks publish page
         And the user clicks "View Live" on the publish confirmation banner
         Then the new information page with the added content is displayed
+        And the user can see the breadcrumbs
+
