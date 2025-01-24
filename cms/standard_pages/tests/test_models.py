@@ -25,7 +25,6 @@ class IndexPageTestCase(WagtailTestUtils, TestCase):
         self.page.featured_items = None
 
         response = self.client.get(self.page_url)
-        self.page.save_revision().publish()
 
         self.assertEqual(response.status_code, 200)
 
@@ -36,8 +35,7 @@ class IndexPageTestCase(WagtailTestUtils, TestCase):
         when no custom Featured Items are specified.
         """
         child_page = InformationPageFactory(parent=self.page)
-
-        self.page.save_revision().publish()
+        child_page.save_revision().publish()
 
         response = self.client.get(self.page_url)
 
@@ -51,6 +49,9 @@ class IndexPageTestCase(WagtailTestUtils, TestCase):
                         <h2 class="ons-document-list__item-title ons-u-fs-m ons-u-mt-no ons-u-mb-2xs">
                         <a href="{child_page.url}">{child_page.title}</a>
                         </h2>
+                    </div>
+                    <div class="ons-document-list__item-description">
+                        {child_page.summary}
                     </div>
                 </div>
             </li>
@@ -98,14 +99,13 @@ class IndexPageTestCase(WagtailTestUtils, TestCase):
     def test_custom_featured_item_internal_page_is_displayed_correctly(self):
         """Test that the custom featured items are displayed on the page."""
         internal_page = InformationPageFactory(parent=self.page)
+        internal_page.save_revision().publish()
 
         featured_item_internal_page = {
             "type": "featured_item",
             "value": {"page": internal_page.id},
         }
-
         self.page.featured_items = [featured_item_internal_page]
-        self.page.save_revision().publish()
 
         response = self.client.get(self.page_url)
 
@@ -121,6 +121,9 @@ class IndexPageTestCase(WagtailTestUtils, TestCase):
                             {internal_page.title}
                         </a>
                         </h2>
+                    </div>
+                    <div class="ons-document-list__item-description">
+                        {internal_page.summary}
                     </div>
                 </div>
             </li>

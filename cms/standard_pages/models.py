@@ -71,7 +71,7 @@ class IndexPage(BasePage):  # type: ignore[django-manager-missing]
         index.SearchField("description"),
     ]
 
-    def get_formatted_items(self) -> list[dict[str, str]]:
+    def get_formatted_items(self, request: "HttpRequest") -> list[dict[str, str]]:
         formatted_items = []
 
         if featured_items := self.featured_items:
@@ -84,12 +84,13 @@ class IndexPage(BasePage):  # type: ignore[django-manager-missing]
                     }
                 )
 
-        elif child_pages := self.get_children().live().public():
-            for child_page in child_pages:
+        else:
+            for child_page in self.get_children().live().public().specific().defer_streamfields():
                 formatted_items.append(
                     {
                         "featured": "true",
-                        "title": {"text": child_page.title, "url": child_page.url},
+                        "title": {"text": child_page.title, "url": child_page.get_url(request=request)},
+                        "description": child_page.listing_summary or child_page.summary,
                     }
                 )
 
@@ -114,7 +115,7 @@ class IndexPage(BasePage):  # type: ignore[django-manager-missing]
     def get_context(self, request: "HttpRequest", *args: Any, **kwargs: Any) -> dict:
         context: dict = super().get_context(request, *args, **kwargs)
 
-        context["formatted_items"] = self.get_formatted_items()
+        context["formatted_items"] = self.get_formatted_items(request)
         context["related_links_list"] = self.get_formatted_related_links_list()
 
         return context
