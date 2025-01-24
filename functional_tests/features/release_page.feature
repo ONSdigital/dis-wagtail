@@ -10,3 +10,4 @@ Feature: CMS users can draft, edit, and publish release pages
         And the user clicks publish page
         And the user clicks "View Live" on the publish confirmation banner
         Then the new published release page with the example content is displayed
+        And the user can see the breadcrumbs
