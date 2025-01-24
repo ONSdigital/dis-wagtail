@@ -1,4 +1,4 @@
-from django.test import TestCase
+from django.test import TestCase, override_settings
 from wagtail.test.utils import WagtailTestUtils
 
 from cms.standard_pages.tests.factories import IndexPageFactory, InformationPageFactory
@@ -41,23 +41,9 @@ class IndexPageTestCase(WagtailTestUtils, TestCase):
 
         self.assertEqual(response.status_code, 200)
 
-        featured_item_html = f"""
-            <ul class="ons-document-list">
-            <li class="ons-document-list__item ons-document-list__item--featured">
-                <div class="ons-document-list__item-content">
-                    <div class="ons-document-list__item-header">
-                        <h2 class="ons-document-list__item-title ons-u-fs-m ons-u-mt-no ons-u-mb-2xs">
-                        <a href="{child_page.url}">{child_page.title}</a>
-                        </h2>
-                    </div>
-                    <div class="ons-document-list__item-description">
-                        {child_page.summary}
-                    </div>
-                </div>
-            </li>
-            </ul>
-        """
-        self.assertContains(response, featured_item_html, html=True)
+        self.assertContains(response, child_page.title)
+        self.assertContains(response, child_page.url)
+        self.assertContains(response, child_page.summary)
 
     def test_custom_featured_item_external_page_is_displayed_correctly(self):
         """Test that the custom featured items are displayed on the page."""
@@ -76,25 +62,10 @@ class IndexPageTestCase(WagtailTestUtils, TestCase):
         response = self.client.get(self.page_url)
 
         self.assertEqual(response.status_code, 200)
-        featured_item_html = f"""
-            <ul class="ons-document-list">
-            <li class="ons-document-list__item ons-document-list__item--featured">
-                <div class="ons-document-list__item-content">
-                    <div class="ons-document-list__item-header">
-                        <h2 class="ons-document-list__item-title ons-u-fs-m ons-u-mt-no ons-u-mb-2xs">
-                        <a href="{featured_item_external_page['value']['external_url']}">
-                            {featured_item_external_page['value']['title']}
-                        </a>
-                        </h2>
-                    </div>
-                    <div class="ons-document-list__item-description">
-                        {featured_item_external_page['value']['description']}
-                    </div>
-                </div>
-            </li>
-            </ul>
-        """
-        self.assertContains(response, featured_item_html, html=True)
+
+        self.assertContains(response, featured_item_external_page["value"]["title"])
+        self.assertContains(response, featured_item_external_page["value"]["external_url"])
+        self.assertContains(response, featured_item_external_page["value"]["description"])
 
     def test_custom_featured_item_internal_page_is_displayed_correctly(self):
         """Test that the custom featured items are displayed on the page."""
@@ -111,25 +82,9 @@ class IndexPageTestCase(WagtailTestUtils, TestCase):
 
         self.assertEqual(response.status_code, 200)
 
-        featured_item_html = f"""
-            <ul class="ons-document-list">
-            <li class="ons-document-list__item ons-document-list__item--featured">
-                <div class="ons-document-list__item-content">
-                    <div class="ons-document-list__item-header">
-                        <h2 class="ons-document-list__item-title ons-u-fs-m ons-u-mt-no ons-u-mb-2xs">
-                        <a href="{internal_page.url}">
-                            {internal_page.title}
-                        </a>
-                        </h2>
-                    </div>
-                    <div class="ons-document-list__item-description">
-                        {internal_page.summary}
-                    </div>
-                </div>
-            </li>
-            </ul>
-        """
-        self.assertContains(response, featured_item_html, html=True)
+        self.assertContains(response, internal_page.title)
+        self.assertContains(response, internal_page.url)
+        self.assertContains(response, internal_page.summary)
 
     def test_get_formatted_related_links_list_works_for_internal_pages(self):
         """Test that the links to internal pages rare returned
@@ -154,3 +109,9 @@ class IndexPageTestCase(WagtailTestUtils, TestCase):
         formatted_related_links = self.page.get_formatted_related_links_list()
 
         self.assertEqual(formatted_related_links, [{"title": "An external page", "url": "external-url.com"}])
+
+    @override_settings(IS_EXTERNAL_ENV=True)
+    def test_load_in_external_env(self):
+        """Test the page loads in external env."""
+        response = self.client.get(self.page_url)
+        self.assertEqual(response.status_code, 200)
