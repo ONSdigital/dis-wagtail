@@ -93,10 +93,8 @@ class LinkBlockFactory(StructBlockFactory):
     external_url = factory.Faker("url")
 
     class Params:
-        with_page = factory.Trait(
-            page = factory.SubFactory(PageChooserBlockFactory),
-            external_url = None
-        )
+        with_page = factory.Trait(page=factory.SubFactory(PageChooserBlockFactory), external_url=None)
+
 
 class RelatedContentBlockFactory(LinkBlockFactory):
     class Meta:
