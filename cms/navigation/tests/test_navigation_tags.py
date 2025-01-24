@@ -20,16 +20,12 @@ class MainMenuTemplateTagTests(TestCase):
 
         highlights = [{"type": "highlight", "value": HighlightsBlockFactory()}] * 3
 
-        # Create topic links once if they are identical across sections
         topic_links = [TopicLinkBlockFactory()] * 5
 
-        # Create sections using the pre-defined topic links
-        sections = [SectionBlockFactory(links=topic_links)] * 3  # Exceeding limit
+        sections = [SectionBlockFactory(links=topic_links)] * 3
 
-        # Create the column value with the sections
         column_value = ColumnBlockFactory(sections=sections)
 
-        # Assemble the columns list with multiple column dictionaries
         columns = [
             {
                 "type": "column",
@@ -56,23 +52,25 @@ class MainMenuTemplateTagTests(TestCase):
         """Test that main_menu_columns outputs the correct format."""
         columns = main_menu_columns({"request": self.mock_request}, self.main_menu)
 
+        expected_columns = [
+            {
+                "column": column_index,
+                "linksList": [
+                    {
+                        "text": section["section_link"]["title"],
+                        "url": section["section_link"]["external_url"],
+                        "children": [{"text": link["title"], "url": link["external_url"]} for link in section["links"]],
+                    }
+                    for section in column.value["sections"]
+                ],
+            }
+            for column_index, column in enumerate(self.main_menu.columns)
+        ]
+
         self.assertIsInstance(columns, list)
         self.assertEqual(len(columns), 3)
 
-        for column in columns:
-            self.assertIn("column", column)
-            self.assertIn("linksList", column)
-            self.assertIsInstance(column["linksList"], list)
-
-            for section in column["linksList"]:
-                self.assertIn("text", section)
-                self.assertIn("url", section)
-                self.assertIn("children", section)
-                self.assertIsInstance(section["children"], list)
-
-                for child in section["children"]:
-                    self.assertIn("text", child)
-                    self.assertIn("url", child)
+        self.assertListEqual(columns, expected_columns)
 
     def test_main_menu_highlights_empty_menu(self):
         """Test that main_menu_highlights returns an empty list for a None menu."""
