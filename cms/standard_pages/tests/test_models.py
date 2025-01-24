@@ -12,17 +12,17 @@ class IndexPageTestCase(WagtailTestUtils, TestCase):
             title="Test Index Page",
             description="This is an example",
             content="This is the main content",
-            featured_pages=None,
+            featured_items=None,
             related_links=None,
         )
 
         self.page_url = self.page.url
 
-    def test_no_featured_pages_displayed_when_no_children_and_no_custom_featured_pages_selected(self):
+    def test_no_featured_items_displayed_when_no_children_and_no_custom_featured_items_selected(self):
         """Test that the Featured Items block isn't displayed when the Index Page has no child pages
         and no custom Featured Items are specified.
         """
-        self.page.featured_pages = None
+        self.page.featured_items = None
 
         response = self.client.get(self.page_url)
         self.page.save_revision().publish()
@@ -31,7 +31,7 @@ class IndexPageTestCase(WagtailTestUtils, TestCase):
 
         self.assertNotContains(response, "ons-document-list")
 
-    def test_children_displayed_as_featured_pages_when_no_custom_featured_pages(self):
+    def test_children_displayed_as_featured_items_when_no_custom_featured_items_selected(self):
         """Test that the children pages of the Index Page are displayed
         when no custom Featured Items are specified.
         """
@@ -43,7 +43,7 @@ class IndexPageTestCase(WagtailTestUtils, TestCase):
 
         self.assertEqual(response.status_code, 200)
 
-        featured_page_html = f"""
+        featured_item_html = f"""
             <ul class="ons-document-list">
             <li class="ons-document-list__item ons-document-list__item--featured">
                 <div class="ons-document-list__item-content">
@@ -56,12 +56,12 @@ class IndexPageTestCase(WagtailTestUtils, TestCase):
             </li>
             </ul>
         """
-        self.assertContains(response, featured_page_html, html=True)
+        self.assertContains(response, featured_item_html, html=True)
 
-    def test_custom_featured_page_external_page_is_displayed_correctly(self):
+    def test_custom_featured_item_external_page_is_displayed_correctly(self):
         """Test that the custom featured items are displayed on the page."""
-        featured_page_dict = {
-            "type": "featured_page",
+        featured_item_external_page = {
+            "type": "featured_item",
             "value": {
                 "title": "Title of the custom featured item",
                 "description": "Description of the custom featured item",
@@ -69,47 +69,49 @@ class IndexPageTestCase(WagtailTestUtils, TestCase):
             },
         }
 
-        self.page.featured_pages = [featured_page_dict]
+        self.page.featured_items = [featured_item_external_page]
         self.page.save_revision().publish()
 
         response = self.client.get(self.page_url)
 
         self.assertEqual(response.status_code, 200)
-        featured_page_html = f"""
+        featured_item_html = f"""
             <ul class="ons-document-list">
             <li class="ons-document-list__item ons-document-list__item--featured">
                 <div class="ons-document-list__item-content">
                     <div class="ons-document-list__item-header">
                         <h2 class="ons-document-list__item-title ons-u-fs-m ons-u-mt-no ons-u-mb-2xs">
-                        <a href="{featured_page_dict['value']['external_url']}">
-                            {featured_page_dict['value']['title']}
+                        <a href="{featured_item_external_page['value']['external_url']}">
+                            {featured_item_external_page['value']['title']}
                         </a>
                         </h2>
                     </div>
-                    <div class="ons-document-list__item-description">{featured_page_dict['value']['description']}</div>
+                    <div class="ons-document-list__item-description">
+                        {featured_item_external_page['value']['description']}
+                    </div>
                 </div>
             </li>
             </ul>
         """
-        self.assertContains(response, featured_page_html, html=True)
+        self.assertContains(response, featured_item_html, html=True)
 
-    def test_custom_featured_page_internal_page_is_displayed_correctly(self):
+    def test_custom_featured_item_internal_page_is_displayed_correctly(self):
         """Test that the custom featured items are displayed on the page."""
         internal_page = InformationPageFactory(parent=self.page)
 
-        featured_page_dict = {
-            "type": "featured_page",
+        featured_item_internal_page = {
+            "type": "featured_item",
             "value": {"page": internal_page.id},
         }
 
-        self.page.featured_pages = [featured_page_dict]
+        self.page.featured_items = [featured_item_internal_page]
         self.page.save_revision().publish()
 
         response = self.client.get(self.page_url)
 
         self.assertEqual(response.status_code, 200)
 
-        featured_page_html = f"""
+        featured_item_html = f"""
             <ul class="ons-document-list">
             <li class="ons-document-list__item ons-document-list__item--featured">
                 <div class="ons-document-list__item-content">
@@ -124,7 +126,7 @@ class IndexPageTestCase(WagtailTestUtils, TestCase):
             </li>
             </ul>
         """
-        self.assertContains(response, featured_page_html, html=True)
+        self.assertContains(response, featured_item_html, html=True)
 
     def test_get_formatted_related_links_list_works_for_internal_pages(self):
         """Test that the links to internal pages rare returned

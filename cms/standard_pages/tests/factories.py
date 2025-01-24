@@ -20,8 +20,8 @@ class IndexPageFactory(wagtail_factories.PageFactory):
 
     description = factory.Faker("text", max_nb_chars=100)
 
-    featured_pages = wagtail_factories.StreamFieldFactory(
-        {"featured_page": factory.SubFactory(RelatedContentBlockFactory)}
+    featured_items = wagtail_factories.StreamFieldFactory(
+        {"featured_item": factory.SubFactory(RelatedContentBlockFactory)}
     )
 
     content = factory.Faker("text", max_nb_chars=100)

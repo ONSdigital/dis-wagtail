@@ -8,14 +8,8 @@
         <p>{{ page.description }}</p>
     {% endif %}
 
-    {% if formatted_featured_pages %}
-        {# fmt:off #}
-        {{
-            onsDocumentList({
-                    "documents": formatted_featured_pages
-                })
-        }}
-        {# fmt:on #}
+    {% if formatted_items %}
+        {{ onsDocumentList({"documents": formatted_items}) }}
     {% endif %}
 
     {% if page.content %}

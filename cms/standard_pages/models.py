@@ -49,14 +49,19 @@ class IndexPage(BasePage):  # type: ignore[django-manager-missing]
     subpage_types: ClassVar[list[str]] = ["IndexPage", "InformationPage"]
 
     description = models.TextField(blank=True)
-    featured_pages = StreamField([("featured_page", RelatedContentBlock())], blank=True)
+    featured_items = StreamField(
+        [("featured_item", RelatedContentBlock())],
+        help_text="Leave blank to automatically populate with child pages.",
+        blank=True,
+    )
+
     content = RichTextField(features=settings.RICH_TEXT_BASIC, blank=True)
     related_links = StreamField([("related_link", RelatedContentBlock())], blank=True)
 
     content_panels: ClassVar[list["Panel"]] = [
         *BasePage.content_panels,
         FieldPanel("description"),
-        FieldPanel("featured_pages"),
+        FieldPanel("featured_items"),
         FieldPanel("content"),
         FieldPanel("related_links"),
     ]
@@ -66,29 +71,29 @@ class IndexPage(BasePage):  # type: ignore[django-manager-missing]
         index.SearchField("description"),
     ]
 
-    def get_formatted_featured_pages(self) -> list[dict[str, str]]:
-        formatted_featured_pages = []
+    def get_formatted_items(self) -> list[dict[str, str]]:
+        formatted_items = []
 
-        if featured_pages := self.featured_pages:
-            for featured_page in featured_pages:
-                formatted_featured_pages.append(
+        if featured_items := self.featured_items:
+            for featured_item in featured_items:
+                formatted_items.append(
                     {
                         "featured": "true",
-                        "title": {"text": featured_page.value.link["text"], "url": featured_page.value.link["url"]},
-                        "description": featured_page.value["description"],
+                        "title": {"text": featured_item.value.link["text"], "url": featured_item.value.link["url"]},
+                        "description": featured_item.value["description"],
                     }
                 )
 
         elif child_pages := self.get_children().live().public():
             for child_page in child_pages:
-                formatted_featured_pages.append(
+                formatted_items.append(
                     {
                         "featured": "true",
                         "title": {"text": child_page.title, "url": child_page.url},
                     }
                 )
 
-        return formatted_featured_pages
+        return formatted_items
 
     def get_formatted_related_links_list(self) -> list[dict[str, str]]:
         """Returns a formatted list of related links for both external and internal pages
@@ -109,7 +114,7 @@ class IndexPage(BasePage):  # type: ignore[django-manager-missing]
     def get_context(self, request: "HttpRequest", *args: Any, **kwargs: Any) -> dict:
         context: dict = super().get_context(request, *args, **kwargs)
 
-        context["formatted_featured_pages"] = self.get_formatted_featured_pages()
+        context["formatted_items"] = self.get_formatted_items()
         context["related_links_list"] = self.get_formatted_related_links_list()
 
         return context
