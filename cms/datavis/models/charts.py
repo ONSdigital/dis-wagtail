@@ -1,5 +1,5 @@
 from collections.abc import Sequence
-from typing import TYPE_CHECKING, Any, ClassVar, Optional
+from typing import TYPE_CHECKING, Any, ClassVar, Literal, Optional
 
 from django.db import models
 from django.forms import Media
@@ -31,12 +31,13 @@ if TYPE_CHECKING:
     from wagtail.admin.panels import Panel
 
 
-__all__ = ["LineChart", "BarChart", "ColumnChart"]
+__all__ = ["AreaChart", "LineChart", "BarChart", "ColumnChart", "ScatterChart"]
 
 
 class Chart(Visualisation):
     supports_stacked_layout: ClassVar[bool] = False
     supports_marker_style: ClassVar[bool] = False
+    default_marker_style: ClassVar[MarkerStyle | Literal[""]] = ""
 
     show_legend = models.BooleanField(verbose_name=_("show legend?"), default=True)  # type: ignore[var-annotated]
     show_value_labels = models.BooleanField(  # type: ignore[var-annotated]
@@ -79,8 +80,16 @@ class Chart(Visualisation):
         verbose_name=_("tick interval"), blank=True, null=True
     )
     annotations = StreamField(
-        [("annotation", AnnotationBlock())], verbose_name=_("annotations"), blank=True, default=[]
+        [("annotation", AnnotationBlock())],
+        verbose_name=_("annotations"),
+        blank=True,
+        default=[],
     )
+
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        super().__init__(*args, **kwargs)
+        if not self.pk and not self.marker_style:
+            self.marker_style = self.default_marker_style
 
     @cached_property
     def media(self) -> Media:
@@ -385,4 +394,17 @@ class ColumnChart(Chart):
     class Meta:
         verbose_name = _("column chart")
         verbose_name_plural = _("column charts")
+        proxy = True
+
+
+class ScatterChart(Chart):
+    highcharts_chart_type = "scatter"
+    template = "templates/datavis/scatter_chart.html"
+    supports_marker_style = True
+    default_marker_style = MarkerStyle.CIRCLE
+    is_creatable = True
+
+    class Meta:
+        verbose_name = _("statter chart")
+        verbose_name_plural = _("statter charts")
         proxy = True
