@@ -3,6 +3,7 @@ from typing import TYPE_CHECKING, ClassVar, Optional, Self, cast
 from django.conf import settings
 from django.utils.decorators import method_decorator
 from django.utils.functional import cached_property
+from wagtail.admin.panels import ObjectList, TabbedInterface
 from wagtail.models import Page
 from wagtail.query import PageQuerySet
 
@@ -57,6 +58,13 @@ class BasePage(ListingFieldsMixin, SocialFieldsMixin, Page):  # type: ignore[dja
         *ListingFieldsMixin.promote_panels,
         *SocialFieldsMixin.promote_panels,
     ]
+
+    edit_handler = TabbedInterface(
+        [
+            ObjectList([*Page.content_panels], heading="Content"),
+            ObjectList(promote_panels, heading="Promote"),
+        ]
+    )
 
     @cached_property
     def related_pages(self) -> PageQuerySet:

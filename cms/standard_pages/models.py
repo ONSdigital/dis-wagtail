@@ -1,7 +1,7 @@
 from typing import ClassVar
 
 from django.db import models
-from wagtail.admin.panels import FieldPanel, InlinePanel
+from wagtail.admin.panels import FieldPanel, InlinePanel, ObjectList, TabbedInterface
 from wagtail.search import index
 
 from cms.core.blocks.stream_blocks import CoreStoryBlock
@@ -38,3 +38,14 @@ class InformationPage(BasePage):  # type: ignore[django-manager-missing]
         index.SearchField("summary"),
         index.SearchField("content"),
     ]
+
+    edit_handler = TabbedInterface(
+        [
+            *BasePage.edit_handler.children,
+            ObjectList(
+                [FieldPanel("summary")],
+                help_text="Select the topics that this page relates to.",
+                heading="Taxonomy",
+            ),
+        ]
+    )
