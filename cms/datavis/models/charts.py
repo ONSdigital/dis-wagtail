@@ -5,22 +5,11 @@ from django.db import models
 from django.forms import Media
 from django.utils.functional import cached_property, classproperty
 from django.utils.translation import gettext_lazy as _
-from wagtail.admin.panels import (
-    FieldPanel,
-    FieldRowPanel,
-    InlinePanel,
-    MultiFieldPanel,
-    ObjectList,
-    TabbedInterface,
-)
+from wagtail.admin.panels import FieldPanel, FieldRowPanel, InlinePanel, MultiFieldPanel, ObjectList, TabbedInterface
 
 from cms.core.fields import StreamField
 from cms.datavis.blocks import AnnotationBlock
-from cms.datavis.constants import (
-    HIGHCHARTS_THEMES,
-    HighchartsTheme,
-    MarkerStyle,
-)
+from cms.datavis.constants import HighchartsTheme, MarkerStyle
 from cms.datavis.fields import NonStrippingCharField
 from cms.datavis.utils import numberfy
 
@@ -105,7 +94,8 @@ class Chart(Visualisation):
 
     def get_context(self, request: Optional["HttpRequest"] = None, **kwargs: Any) -> dict[str, Any]:
         config = self.get_component_config(self.primary_data_source.headers, self.primary_data_source.rows)
-        return super().get_context(request, config=config, **kwargs)
+        theme = self.theme
+        return super().get_context(request, config=config, theme=theme, **kwargs)
 
     general_panels: ClassVar[Sequence["Panel"]] = [
         FieldPanel("name"),
@@ -204,12 +194,12 @@ class Chart(Visualisation):
             "chart": {
                 "type": self.highcharts_chart_type,
             },
-            "title": {"text": None},
-            "colors": HIGHCHARTS_THEMES[self.theme],
+            # "title": {"text": None},
+            # "colors": HIGHCHARTS_THEMES[self.theme],
             "legend": {
-                "align": "left",
+                # "align": "left",
                 "enabled": self.show_legend,
-                "verticalAlign": "top",
+                # "verticalAlign": "top",
             },
             "xAxis": self.get_x_axis_config(headers, rows),
             "yAxis": self.get_y_axis_config(headers, rows),
