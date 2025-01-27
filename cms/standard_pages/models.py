@@ -48,7 +48,7 @@ class IndexPage(BasePage):  # type: ignore[django-manager-missing]
     parent_page_types: ClassVar[list[str]] = ["home.HomePage", "IndexPage"]
     subpage_types: ClassVar[list[str]] = ["IndexPage", "InformationPage"]
 
-    description = models.TextField(blank=True)
+    description = models.TextField()
     featured_items = StreamField(
         [("featured_item", RelatedContentBlock())],
         help_text="Leave blank to automatically populate with child pages.",
@@ -87,11 +87,21 @@ class IndexPage(BasePage):  # type: ignore[django-manager-missing]
 
         else:
             for child_page in self.get_children().live().public().specific().defer_streamfields():
+                if isinstance(child_page, IndexPage):
+                    description =  child_page.listing_summary or child_page.description
+                elif isinstance(child_page, InformationPage):
+                    description = child_page.listing_summary or child_page.summary
+                else:
+                    description = None
+
                 formatted_items.append(
                     {
                         "featured": "true",
-                        "title": {"text": child_page.title, "url": child_page.get_url(request=request)},
-                        "description": child_page.listing_summary or child_page.summary,
+                        "title": {
+                            "text": child_page.listing_title or child_page.title,
+                            "url": child_page.get_url(request=request),
+                        },
+                        "description": description,
                     }
                 )
 
