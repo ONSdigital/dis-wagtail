@@ -66,6 +66,7 @@ class DataSource(  # type: ignore[django-manager-missing]
 
     preview_modes: ClassVar[list[tuple[str, "str | Promise"]]] = [
         ("line-chart", _("Line chart")),
+        ("scatter-chart", _("Scatter chart")),
         ("bar-chart", _("Bar chart")),
         ("bar-chart-stacked", _("Bar chart (stacked)")),
         ("column-chart", _("Column chart")),
@@ -96,7 +97,9 @@ class DataSource(  # type: ignore[django-manager-missing]
         return title
 
     @classproperty
-    def permission_policy(cls) -> "CollectionOwnershipPermissionPolicy":  # pylint: disable=no-self-argument
+    def permission_policy(
+        cls,
+    ) -> "CollectionOwnershipPermissionPolicy":  # pylint: disable=no-self-argument
         return CollectionOwnershipPermissionPolicy(cls, owner_field_name="created_by")
 
     @cached_property
@@ -119,9 +122,16 @@ class DataSource(  # type: ignore[django-manager-missing]
         return response
 
     def get_preview_visualisation(self, preview_mode: str) -> "Visualisation":
-        from .charts import AreaChart, BarChart, ColumnChart, LineChart  # pylint: disable=import-outside-toplevel
-
-        if preview_mode.startswith("bar-chart"):
+        from .charts import (  # pylint: disable=import-outside-toplevel
+            AreaChart,
+            BarChart,
+            ColumnChart,
+            LineChart,
+            ScatterChart,
+        )
+        if preview_mode.startswith("scatter-chart"):
+            datavis_class = ScatterChart
+        elif preview_mode.startswith("bar-chart"):
             datavis_class = BarChart
         elif preview_mode.startswith("column-chart"):
             datavis_class = ColumnChart
@@ -153,6 +163,7 @@ class AdditionalDataSource(Orderable):
         choices=[
             ("area", _("Area")),
             ("column", _("Columns")),
+            ("scatter", _("Dots / scatter")),
             ("line", _("Line")),
         ],
         max_length=15,
