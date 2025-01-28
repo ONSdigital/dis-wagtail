@@ -48,7 +48,7 @@ class IndexPage(BasePage):  # type: ignore[django-manager-missing]
     parent_page_types: ClassVar[list[str]] = ["home.HomePage", "IndexPage"]
     subpage_types: ClassVar[list[str]] = ["IndexPage", "InformationPage"]
 
-    summary = models.TextField(blank=True)
+    summary = models.TextField()
     featured_items = StreamField(
         [("featured_item", RelatedContentBlock())],
         help_text="Leave blank to automatically populate with child pages.",
