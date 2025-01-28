@@ -53,7 +53,9 @@ class ImageServeView(View):
                 user, ["choose", "add", "change"], image
             )
         ):
-            return HttpResponse("Insufficient permissions", content_type="text/plain", status=403)
+            response = HttpResponse("Insufficient permissions", content_type="text/plain", status=403)
+            add_never_cache_headers(response)
+            return response
 
         # Get/generate the rendition
         try:
@@ -83,19 +85,45 @@ class ImageServeView(View):
         return self.serve_private_rendition(rendition)
 
     def get_image(self, image_id: int) -> "AbstractImage":
+        """Return an image object matching the provided `image_id`, or raise
+        a `Http404` exception if no such image exists.
+
+        NOTE: We're not applying any specific cache headers to the response,
+        because cache behaviour for 404 responses is configured elsewhere (
+        either in project settings or at the edge-cache provider level).
+        """
         return get_object_or_404(get_image_model(), id=image_id)
 
     def redirect_to_file(self, url: str) -> "HttpResponseRedirect":
+        """Return a cachable temporary redirect to the requested file URL.
+
+        The response is cached for 1 hour to reduce load on the web server.
+        If the image privacy changes in the meantime, purge requests for this
+        URL (and other rendition URLs) will be submitted to the active
+        edge-cache provider.
+        """
         response = redirect(url)
         patch_cache_control(response, max_age=3600, public=True)
         return response
 
     def serve_public_rendition(self, rendition: "AbstractRendition") -> "FileResponse":
+        """Return a cachable FileResponse for the requested rendition.
+
+        The response is cached for 1 hour to reduce load on the web server.
+        If the image privacy changes in the meantime, purge requests for this
+        URL (and other rendition URLs) will be submitted to the active
+        edge-cache provider.
+        """
         response = self._serve_rendition(rendition)
         patch_cache_control(response, max_age=3600, public=True)
         return response
 
     def serve_private_rendition(self, rendition: "AbstractRendition") -> "FileResponse":
+        """Return a non-cachable FileResponse for the requested rendition.
+
+        While an image is still private, access is dependant on the current
+        user's permissions, so responses are not suitable for reuse.
+        """
         response = self._serve_rendition(rendition)
         add_never_cache_headers(response)
         return response
@@ -131,7 +159,9 @@ class DocumentServeView(View):
                 user, ["choose", "add", "change"], document
             )
         ):
-            return HttpResponse("Insufficient permissions", content_type="text/plain", status=403)
+            response = HttpResponse("Insufficient permissions", content_type="text/plain", status=403)
+            add_never_cache_headers(response)
+            return response
 
         # Send document_served signal
         document_served.send(sender=type(document), instance=document, request=request)
@@ -152,26 +182,49 @@ class DocumentServeView(View):
         return self.serve_private_document(document)
 
     def get_document(self, document_id: int, document_filename: str) -> "AbstractDocument":
+        """Return a document object matching the provided `document_id` and
+        `document_filename`, or raise a `Http404` exception if no such
+        document exists.
+
+        NOTE: We're not applying any specific cache headers to the response,
+        because cache behaviour for 404 responses is configured elsewhere (
+        either in project settings or at the edge-cache provider level).
+        """
         obj = get_object_or_404(get_document_model(), id=document_id)
-        # Ensure that the document filename provided in the URL matches the one associated with the
-        # considered document_id. If not we can't be sure that the document the user wants to
-        # access is the one corresponding to the <document_id, document_filename> pair.
         if obj.filename != document_filename:
             raise Http404
         return obj
 
     def redirect_to_file(self, url: str) -> "HttpResponseRedirect":
-        response = redirect(url)
+        """Return a cachable temporary redirect to the file URL.
+
+        The redirect response is cached for 1 hour to alleviate load on the
+        the web server. If the document privacy changes in the meantime, a
+        purge request for this URL will be submitted to the active edge-cache
+        provider.
+        """
+        response = redirect(url, permanent=False)
         patch_cache_control(response, max_age=3600, public=True)
         return response
 
     @method_decorator(etag(document_etag))
     def serve_public_document(self, document: "AbstractDocument") -> "FileResponse":
+        """Return a cachable FileResponse for the requested document file.
+
+        The response is cached for 1 hour to reduce load on the web server.
+        If the document privacy changes in the meantime, a purge requests for
+        this URL will be submitted to the active edge-cache provider.
+        """
         response = self._serve_document(document)
         patch_cache_control(response, max_age=3600, public=True)
         return response
 
     def serve_private_document(self, document: "AbstractDocument") -> "FileResponse":
+        """Return a non-cachable FileResponse for the requested document file.
+
+        While a document is still private, access is dependant on the current
+        user's permissions, so responses are not suitable for reuse.
+        """
         response = self._serve_document(document)
         add_never_cache_headers(response)
         return response
