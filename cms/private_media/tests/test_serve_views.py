@@ -28,7 +28,7 @@ class TestImageServeView(TestCase):
         # If not authenticated, permission checks should fail and a Forbidden response returned
         for rendition in self.private_image_renditions.values():
             for is_external_env in [True, False]:
-                with self.subTest(rendition=rendition,is_external_env=is_external_env) and override_settings(
+                with self.subTest(rendition=rendition, is_external_env=is_external_env) and override_settings(
                     IS_EXTERNAL_ENV=is_external_env
                 ):
                     response = self.client.get(rendition.serve_url)
@@ -38,7 +38,7 @@ class TestImageServeView(TestCase):
         self.client.force_login(self.superuser)
         for rendition in self.private_image_renditions.values():
             for is_external_env in [True, False]:
-                with self.subTest(rendition=rendition,is_external_env=is_external_env) and override_settings(
+                with self.subTest(rendition=rendition, is_external_env=is_external_env) and override_settings(
                     IS_EXTERNAL_ENV=is_external_env
                 ):
                     response = self.client.get(rendition.serve_url)
