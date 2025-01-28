@@ -2,6 +2,7 @@ from typing import TYPE_CHECKING, Any, ClassVar
 
 from django.conf import settings
 from django.db import models
+from django.utils.translation import gettext_lazy as _
 from wagtail.admin.panels import FieldPanel, InlinePanel
 from wagtail.fields import RichTextField
 from wagtail.search import index
@@ -51,7 +52,7 @@ class IndexPage(BasePage):  # type: ignore[django-manager-missing]
     summary = models.TextField()
     featured_items = StreamField(
         [("featured_item", RelatedContentBlock())],
-        help_text="Leave blank to automatically populate with child pages. Only published pages will be displayed.",
+        help_text=_("Leave blank to automatically populate with child pages. Only published pages will be displayed."),
         blank=True,
     )
 
@@ -73,6 +74,10 @@ class IndexPage(BasePage):  # type: ignore[django-manager-missing]
     ]
 
     def get_formatted_items(self, request: "HttpRequest") -> list[dict[str, str]]:
+        """Returns a formatted list of Featured items
+        that can be either children internal Pages or specified in a RelatedContentBlock
+        for use with the Design system Document ist component.
+        """
         formatted_items = []
         if featured_items := self.featured_items:
             for featured_item in featured_items:
