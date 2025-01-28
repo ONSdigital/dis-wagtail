@@ -46,7 +46,7 @@ class TestImageServeView(TestCase):
 
     def test_serve_public_image(self):
         """Test the serve view behaviour for public image renditions."""
-        # For public image renditions, the serve view should redirect to the file path orURL.
+        # For public image renditions, the serve view should redirect to the file path or URL.
         for rendition in self.public_image_renditions.values():
             for is_external_env in [True, False]:
                 with self.subTest(rendition=rendition, is_external_env=is_external_env) and override_settings(
