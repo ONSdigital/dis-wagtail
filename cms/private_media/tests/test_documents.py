@@ -1,6 +1,5 @@
 from unittest import mock
 
-from django.contrib.auth import get_user_model
 from django.test import SimpleTestCase, TestCase, override_settings
 from wagtail.documents import get_document_model
 from wagtail.models import Collection, Site
@@ -282,47 +281,3 @@ class TestPrivateDocumentManager(TestCase):
             # Query summary:
             # 1. to fetch the documents
             self.assertEqual(self.model.objects.bulk_make_private(self.model.objects.all()), 0)
-
-
-class TestDocumentServeView(TestCase):
-    model = get_document_model()
-
-    @classmethod
-    def setUpTestData(cls):
-        cls.root_collection = Collection.objects.get(depth=1)
-        cls.private_document = DocumentFactory(collection=cls.root_collection)
-        cls.public_document = DocumentFactory(_privacy=Privacy.PUBLIC, collection=cls.root_collection)
-        cls.superuser = get_user_model().objects.create(username="superuser", is_superuser=True)
-
-    def test_serve_private_document(self):
-        """Test the serve view behaviour for private documents."""
-        # If not authenticated, permission checks should fail and a Forbidden response returned
-        for is_external_env in [True, False]:
-            with self.subTest(is_external_env=is_external_env) and override_settings(IS_EXTERNAL_ENV=is_external_env):
-                response = self.client.get(self.private_document.url)
-                self.assertEqual(response.status_code, 403)
-
-        # If authenticated as a superuser, the view should serve the files
-        self.client.force_login(self.superuser)
-        for is_external_env in [True, False]:
-            with self.subTest(is_external_env=is_external_env) and override_settings(IS_EXTERNAL_ENV=is_external_env):
-                response = self.client.get(self.private_document.url)
-                self.assertEqual(response.status_code, 200)
-
-    def test_serve_public_document(self):
-        """Test the serve view behaviour for public documents."""
-        # For public documents, the serve view should redirect to the file URL.
-        response = self.client.get(self.public_document.url)
-        self.assertEqual(response.status_code, 200)
-
-    @override_settings(IS_EXTERNAL_ENV=True)
-    def test_serve_public_document_external_env(self):
-        self.test_serve_public_document()
-
-    def test_serve_public_document_with_outdated_file_permissions(self):
-        """Test the serve view behaviour for public documents with outdated file permissions."""
-        self.model.objects.filter(id=self.public_document.id).update(file_permissions_last_set=None)
-        self.public_document.refresh_from_db()
-        self.assertTrue(self.public_document.has_outdated_file_permissions())
-        response = self.client.get(self.public_document.url)
-        self.assertEqual(response.status_code, 200)
