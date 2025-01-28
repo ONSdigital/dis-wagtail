@@ -40,6 +40,14 @@ class ImageServeView(View):
         filter_spec: str,
         filename: str | None = None,  # pylint: disable=unused-argument
     ) -> "HttpResponseBase":
+        """This method immitates `wagtail.images.views.serve.ServeView.get()`, but introduces an
+        additional permission check for private images, and returns responses with varied
+        cache headers applied, depending on the scenario.
+
+        NOTE: For simplicity, cache headers for 404 or 403 responses are not customised
+        here. They should be controlled elsewhere (either in project settings or at the
+        edge-cache provider level).
+        """
         if not verify_signature(signature.encode(), image_id, filter_spec, key=self.key):
             raise PermissionDenied
 
@@ -53,9 +61,7 @@ class ImageServeView(View):
                 user, ["choose", "add", "change"], image
             )
         ):
-            response = HttpResponse("Insufficient permissions", content_type="text/plain", status=403)
-            add_never_cache_headers(response)
-            return response
+            raise PermissionDenied
 
         # Get/generate the rendition
         try:
@@ -149,6 +155,14 @@ class DocumentServeView(View):
     http_method_names: Sequence[str] = ["get"]
 
     def get(self, request: "HttpRequest", document_id: int, document_filename: str) -> "HttpResponseBase":
+        """This method immitates `wagtail.documents.views.serve.serve()`, but introduces an
+        additional permission check for private documents, and returns responses with varied
+        cache headers applied, depending on the scenario.
+
+        NOTE: For simplicity, cache headers for 404 or 403 responses are not customised
+        here. They should be controlled elsewhere (either in project settings or at the
+        edge-cache provider level).
+        """
         document = self.get_document(document_id, document_filename)
 
         # Block access to private documents if the user has insufficient permissions
@@ -159,9 +173,7 @@ class DocumentServeView(View):
                 user, ["choose", "add", "change"], document
             )
         ):
-            response = HttpResponse("Insufficient permissions", content_type="text/plain", status=403)
-            add_never_cache_headers(response)
-            return response
+            raise PermissionDenied
 
         # Send document_served signal
         document_served.send(sender=type(document), instance=document, request=request)
