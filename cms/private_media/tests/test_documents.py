@@ -247,7 +247,7 @@ class TestPrivateDocumentManager(TestCase):
 
         # Serve URLs for private documents should have been purged as part of the update
         for obj in self.private_documents:
-            self.assertIn("http://localhost" + obj.url, PURGED_URLS)
+            self.assertIn("http://localhost" + obj.serve_url, PURGED_URLS)
 
         # Verify all images are now public
         for obj in self.model.objects.only("_privacy", "file_permissions_last_set", "privacy_last_changed"):
@@ -270,7 +270,7 @@ class TestPrivateDocumentManager(TestCase):
 
         # Serve URLs for public documents should have been purged as part of the update
         for obj in self.public_documents:
-            self.assertIn("http://localhost" + obj.url, PURGED_URLS)
+            self.assertIn("http://localhost" + obj.serve_url, PURGED_URLS)
 
         # Verify all images are now private
         for image in self.model.objects.only("_privacy", "file_permissions_last_set", "privacy_last_changed"):
