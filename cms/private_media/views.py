@@ -6,8 +6,6 @@ from django.core.exceptions import PermissionDenied
 from django.http import FileResponse, Http404, HttpResponse
 from django.shortcuts import get_object_or_404, redirect
 from django.utils.cache import add_never_cache_headers, patch_cache_control
-from django.utils.decorators import method_decorator
-from django.views.decorators.http import etag
 from django.views.generic import View
 from wagtail.documents import get_document_model
 from wagtail.documents.models import document_served
@@ -22,10 +20,6 @@ if TYPE_CHECKING:
     from django.http import HttpRequest, HttpResponseBase, HttpResponseRedirect
     from wagtail.documents.models import AbstractDocument
     from wagtail.images.models import AbstractImage, AbstractRendition
-
-
-def document_etag(document: "AbstractDocument") -> str:
-    return document.file_hash or ""
 
 
 class ImageServeView(View):
@@ -219,7 +213,6 @@ class DocumentServeView(View):
         patch_cache_control(response, max_age=3600, public=True)
         return response
 
-    @method_decorator(etag(document_etag))
     def serve_public_document(self, document: "AbstractDocument") -> "FileResponse":
         """Return a cachable FileResponse for the requested document file.
 
