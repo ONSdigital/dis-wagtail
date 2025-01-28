@@ -1,6 +1,8 @@
 from collections.abc import Iterable, Iterator
 from typing import TYPE_CHECKING, ClassVar
 
+from django.urls import reverse
+
 from cms.private_media.managers import PrivateDocumentManager
 
 from .mixins import PrivateMediaMixin
@@ -20,6 +22,20 @@ class PrivateDocumentMixin(PrivateMediaMixin):
     class Meta:
         abstract = True
 
+    @property
+    def url(self) -> str:
+        if self.is_public and not self.has_outdated_file_permissions():
+            try:
+                return self.file.url
+            except NotImplementedError:
+                # file backend does not provide urls, so fall back on the serve view
+                pass
+        return self.serve_url
+
+    @property
+    def serve_url(self) -> str:
+        return reverse("wagtaildocs_serve", args=[self.id, self.filename])
+
     def get_privacy_controlled_files(self) -> Iterator["FieldFile"]:
         file: FieldFile | None = getattr(self, "file", None)
         if file:
@@ -32,4 +48,4 @@ class PrivateDocumentMixin(PrivateMediaMixin):
         if not sites:
             return
         for site in sites:
-            yield site.root_url + self.url  # type: ignore[attr-defined]
+            yield site.root_url + self.serve_url

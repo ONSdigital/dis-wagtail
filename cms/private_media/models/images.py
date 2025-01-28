@@ -101,8 +101,11 @@ class AbstractPrivateRendition(AbstractRendition):
         """
         image: PrivateImageMixin = self.image  # pylint: disable=no-member
         if image.is_public and not image.has_outdated_file_permissions():
-            file_url: str = self.file.url
-            return file_url
+            try:
+                return self.file.url
+            except NotImplementedError:
+                # file backend does not provide urls, so fall back on the serve view
+                pass
         return self.serve_url
 
     @cached_property
