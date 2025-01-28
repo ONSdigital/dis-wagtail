@@ -2,7 +2,7 @@ from collections.abc import Sequence
 from typing import TYPE_CHECKING
 
 from django.conf import settings
-from django.core.exceptions import PermissionDenied
+from django.core.exceptions import PermissionDenied, SuspiciousOperation
 from django.http import FileResponse, Http404, HttpResponse
 from django.shortcuts import get_object_or_404, redirect
 from django.utils.cache import add_never_cache_headers, patch_cache_control
@@ -43,7 +43,7 @@ class ImageServeView(View):
         edge-cache provider level).
         """
         if not verify_signature(signature.encode(), image_id, filter_spec, key=self.key):
-            raise PermissionDenied
+            raise SuspiciousOperation
 
         image = self.get_image(image_id)
 
