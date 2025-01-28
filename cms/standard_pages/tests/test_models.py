@@ -42,7 +42,7 @@ class IndexPageTestCase(WagtailTestUtils, TestCase):
         self.assertContains(response, child_page.url)
         self.assertContains(response, child_page.summary)
 
-    def test_children_displayed_as_featured_items_with(self):
+    def test_children_displayed_as_featured_items_with_listing_info_when_no_custom_featured_items_selected(self):
         """Test that the children pages of the Index page are displayed
         when no custom Featured Items are specified
         and that the child pages is displayed with its listing title and listing summary.
