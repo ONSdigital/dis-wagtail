@@ -8,7 +8,8 @@ from cms.core.blocks import (
     DocumentsBlock,
     HeadingBlock,
     ONSEmbedBlock,
-    PanelBlock,
+    WarnAnnouncementPanelBlock,
+    InfoErrorSuccessPanelBlock,
     QuoteBlock,
     RelatedLinksBlock,
     VideoEmbedBlock,
@@ -42,7 +43,8 @@ class CoreStoryBlock(StreamBlock):
     heading = HeadingBlock()
     rich_text = RichTextBlock()
     quote = QuoteBlock()
-    panel = PanelBlock()
+    warn_announcement_panel = WarnAnnouncementPanelBlock()
+    info_error_success_panel = InfoErrorSuccessPanelBlock()
     video_embed = VideoEmbedBlock(group="Media")
     image = ImageChooserBlock(group="Media")
     documents = DocumentsBlock(group="Media")

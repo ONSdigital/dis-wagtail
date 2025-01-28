@@ -10,7 +10,8 @@ from cms.core.blocks import (
     DocumentsBlock,
     HeadingBlock,
     ONSEmbedBlock,
-    PanelBlock,
+    WarnAnnouncementPanelBlock,
+    InfoErrorSuccessPanelBlock,
     QuoteBlock,
     RelatedLinksBlock,
 )
@@ -24,7 +25,8 @@ class SectionContentBlock(StreamBlock):
 
     rich_text = RichTextBlock()
     quote = QuoteBlock()
-    panel = PanelBlock()
+    warn_announcement_panel = WarnAnnouncementPanelBlock()
+    info_error_success_panel = InfoErrorSuccessPanelBlock()
     image = ImageChooserBlock(group="Media")
     documents = DocumentsBlock(group="Media")
     embed = EmbedBlock(group="Media")
