@@ -69,15 +69,14 @@ class ImageServeView(View):
                 status=400,
             )
 
-        try:
-            direct_url = rendition.file.url
-        except NotImplementedError:
-            direct_url = None
-
         # If there's no reason (within our control) for the file not to be served by
         # media infrastructure, redirect
-        if direct_url and image.is_public and not image.has_outdated_file_permissions():
-            return self.redirect_to_file(direct_url)
+        if image.is_public and not image.has_outdated_file_permissions():
+            try:
+                file_url = rendition.file.url
+            except NotImplementedError:
+                file_url = rendition.file.path
+            return self.redirect_to_file(file_url)
 
         # Serve file contents
         if image.is_public:
@@ -172,15 +171,14 @@ class DocumentServeView(View):
         # Send document_served signal
         document_served.send(sender=type(document), instance=document, request=request)
 
-        try:
-            direct_url = document.file.url
-        except NotImplementedError:
-            direct_url = None
-
         # If there's no reason (within our control) for the file not to be served by
         # media infrastructure, redirect
-        if direct_url and document.is_public and not document.has_outdated_file_permissions():
-            return self.redirect_to_file(direct_url)
+        if document.is_public and not document.has_outdated_file_permissions():
+            try:
+                file_url = document.file.url
+            except NotImplementedError:
+                file_url = document.file.path
+            return self.redirect_to_file(file_url)
 
         # Serve file contents
         if document.is_public:
