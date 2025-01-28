@@ -74,9 +74,11 @@ class IndexPage(BasePage):  # type: ignore[django-manager-missing]
 
     def get_formatted_items(self, request: "HttpRequest") -> list[dict[str, str]]:
         formatted_items = []
-
         if featured_items := self.featured_items:
             for featured_item in featured_items:
+                if featured_item.value.link is None:
+                    continue
+
                 formatted_items.append(
                     {
                         "featured": "true",
