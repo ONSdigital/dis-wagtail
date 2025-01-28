@@ -1,5 +1,5 @@
 from collections.abc import Iterable, Iterator
-from typing import TYPE_CHECKING, ClassVar
+from typing import TYPE_CHECKING, Any, ClassVar
 
 from django.urls import reverse
 
@@ -17,6 +17,10 @@ class PrivateDocumentMixin(PrivateMediaMixin):
     allowing the privacy of related files to be controlled effectively.
     """
 
+    id: int
+    filename: str
+    file: Any
+
     objects: ClassVar[PrivateDocumentManager] = PrivateDocumentManager()
 
     class Meta:
@@ -26,7 +30,7 @@ class PrivateDocumentMixin(PrivateMediaMixin):
     def url(self) -> str:
         if self.is_public and not self.has_outdated_file_permissions():
             try:
-                return self.file.url
+                return self.file.url  # type: ignore[no-any-return]
             except NotImplementedError:
                 # file backend does not provide urls, so fall back on the serve view
                 pass
