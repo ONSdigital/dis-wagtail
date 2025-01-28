@@ -2,7 +2,6 @@ from typing import TYPE_CHECKING, ClassVar
 
 from django.utils.text import slugify
 from wagtail.blocks import RichTextBlock, StreamBlock, StructBlock
-from wagtail.embeds.blocks import EmbedBlock
 from wagtail.images.blocks import ImageChooserBlock
 from wagtailmath.blocks import MathBlock
 
@@ -13,6 +12,7 @@ from cms.core.blocks import (
     PanelBlock,
     QuoteBlock,
     RelatedLinksBlock,
+    VideoEmbedBlock,
 )
 
 if TYPE_CHECKING:
@@ -27,7 +27,7 @@ class SectionContentBlock(StreamBlock):
     panel = PanelBlock()
     image = ImageChooserBlock(group="Media")
     documents = DocumentsBlock(group="Media")
-    embed = EmbedBlock(group="Media")
+    video_embed = VideoEmbedBlock(group="Media")
     equation = MathBlock(group="DataVis", icon="decimal")
     ons_embed = ONSEmbedBlock(group="DataVis", label="ONS General Embed")
     related_links = RelatedLinksBlock(icon="link")
