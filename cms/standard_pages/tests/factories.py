@@ -18,7 +18,7 @@ class IndexPageFactory(wagtail_factories.PageFactory):
     class Meta:
         model = IndexPage
 
-    description = factory.Faker("text", max_nb_chars=100)
+    summary = factory.Faker("text", max_nb_chars=100)
 
     featured_items = wagtail_factories.StreamFieldFactory(
         {"featured_item": factory.SubFactory(RelatedContentBlockFactory)}

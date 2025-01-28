@@ -48,7 +48,7 @@ class IndexPage(BasePage):  # type: ignore[django-manager-missing]
     parent_page_types: ClassVar[list[str]] = ["home.HomePage", "IndexPage"]
     subpage_types: ClassVar[list[str]] = ["IndexPage", "InformationPage"]
 
-    description = models.TextField()
+    summary = models.TextField(blank=True)
     featured_items = StreamField(
         [("featured_item", RelatedContentBlock())],
         help_text="Leave blank to automatically populate with child pages.",
@@ -60,7 +60,7 @@ class IndexPage(BasePage):  # type: ignore[django-manager-missing]
 
     content_panels: ClassVar[list["Panel"]] = [
         *BasePage.content_panels,
-        FieldPanel("description"),
+        FieldPanel("summary"),
         FieldPanel("featured_items"),
         FieldPanel("content"),
         FieldPanel("related_links"),
@@ -68,7 +68,7 @@ class IndexPage(BasePage):  # type: ignore[django-manager-missing]
 
     search_fields: ClassVar[list[index.SearchField | index.AutocompleteField]] = [
         *BasePage.search_fields,
-        index.SearchField("description"),
+        index.SearchField("summary"),
         index.SearchField("content"),
     ]
 
@@ -87,13 +87,6 @@ class IndexPage(BasePage):  # type: ignore[django-manager-missing]
 
         else:
             for child_page in self.get_children().live().public().specific().defer_streamfields():
-                if isinstance(child_page, IndexPage):
-                    description =  child_page.listing_summary or child_page.description
-                elif isinstance(child_page, InformationPage):
-                    description = child_page.listing_summary or child_page.summary
-                else:
-                    description = None
-
                 formatted_items.append(
                     {
                         "featured": "true",
@@ -101,7 +94,7 @@ class IndexPage(BasePage):  # type: ignore[django-manager-missing]
                             "text": child_page.listing_title or child_page.title,
                             "url": child_page.get_url(request=request),
                         },
-                        "description": description,
+                        "description": child_page.listing_summary or getattr(child_page, "summary", ""),
                     }
                 )
 

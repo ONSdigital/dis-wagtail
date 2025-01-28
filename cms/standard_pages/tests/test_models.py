@@ -10,7 +10,7 @@ class IndexPageTestCase(WagtailTestUtils, TestCase):
     def setUp(self):
         self.page = IndexPageFactory(
             title="Test Index Page",
-            description="This is an example",
+            summary="This is an example",
             content="This is the main content",
             featured_items=None,
             related_links=None,
