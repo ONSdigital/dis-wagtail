@@ -51,7 +51,7 @@ class IndexPage(BasePage):  # type: ignore[django-manager-missing]
     summary = models.TextField()
     featured_items = StreamField(
         [("featured_item", RelatedContentBlock())],
-        help_text="Leave blank to automatically populate with child pages.",
+        help_text="Leave blank to automatically populate with child pages. Only published pages will be displayed.",
         blank=True,
     )
 
