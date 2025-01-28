@@ -94,7 +94,7 @@ class IndexPage(BasePage):  # type: ignore[django-manager-missing]
                             "text": child_page.listing_title or child_page.title,
                             "url": child_page.get_url(request=request),
                         },
-                        "description": child_page.listing_summary or getattr(child_page, "summary", ""),
+                        "description": getattr(child_page, "listing_summary", "") or getattr(child_page, "summary", ""),
                     }
                 )
 
