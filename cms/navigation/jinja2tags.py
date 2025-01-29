@@ -9,9 +9,7 @@ if TYPE_CHECKING:
 
 
 class NavigationExtension(Extension):  # pylint: disable=abstract-method
-    """Extends the Jinja functionality with additional Django, Wagtail,
-    and other package template tags.
-    """
+    """Extends Jinja templates with what's needed to render the navigation."""
 
     def __init__(self, environment: "Environment"):
         super().__init__(environment)
