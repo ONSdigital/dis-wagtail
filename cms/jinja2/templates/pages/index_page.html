@@ -5,7 +5,7 @@
 {% block main %}
 
     {% if page.summary %}
-        <p>{{ page.summary }}</p>
+        <p>{{ page.summary|richtext }}</p>
     {% endif %}
 
     {% if formatted_items %}
