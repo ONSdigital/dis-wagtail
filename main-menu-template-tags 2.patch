@@ -1,0 +1,233 @@
+diff --git a/cms/jinja2/templates/base.html b/cms/jinja2/templates/base.html
+index 03d7f82..d16f8fa 100644
+--- a/cms/jinja2/templates/base.html
++++ b/cms/jinja2/templates/base.html
+@@ -38,73 +38,6 @@
+ {% set navigation_settings = settings.navigation.NavigationSettings %}
+ {% set main_menu = main_menu | default(navigation_settings.main_menu) %}
+ 
+-{% set keyLinksList = [] %}
+-
+-{% if main_menu and main_menu.highlights %}
+-    {% for highlight in main_menu.highlights %}
+-        {% if highlight.value.page and highlight.value.page.live %}
+-            {% set _ = keyLinksList.append({
+-                'text': highlight.value.title if highlight.value.title else highlight.value.page.title,
+-                'description': highlight.value.description,
+-                'url': pageurl(highlight.value.page),
+-            }) %}
+-        {% elif highlight.value.external_url %}
+-            {% set _ = keyLinksList.append({
+-                'text': highlight.value.title,
+-                'description': highlight.value.description,
+-                'url': highlight.value.external_url,
+-            }) %}
+-        {% endif %}
+-    {% endfor %}
+-{% endif %}
+-
+-{% set itemsList = [] %}
+-
+-{% if main_menu and main_menu.columns %}
+-    {% for column in main_menu.columns %}
+-        {% set columnData = {
+-            'column': loop.index,
+-            'linksList': []
+-        } %}
+-        
+-        {% for section in column.value.sections %}
+-            {% if section.section_link.page and section.section_link.page.live %}
+-                {% set sectionData = {
+-                    'text': section.section_link.title or section.section_link.page.title,
+-                    'url': pageurl(section.section_link.page),
+-                    'children': []
+-                } %}
+-            {% elif section.section_link.external_url %}
+-                {% set sectionData = {
+-                    'text': section.section_link.title,
+-                    'url': section.section_link.external_url,
+-                    'children': []
+-                } %}
+-            {% endif %}
+-            
+-            {% if sectionData %}
+-                {% for link in section.links %}
+-                    {% if link.page and link.page.live%}
+-                        {% do sectionData.children.append({
+-                            'text': link.title or link.page.title,
+-                            'url': pageurl(link.page),
+-                        }) %}
+-                    {% elif link.external_url %}
+-                        {% do sectionData.children.append({
+-                            'text': link.title,
+-                            'url': link.external_url,
+-                        }) %}
+-                    {% endif %}
+-                {% endfor %}
+-            {% endif %}
+-            
+-            {% do columnData.linksList.append(sectionData) %}
+-        {% endfor %}
+-        
+-        {% do itemsList.append(columnData) %}
+-    {% endfor %}
+-{% endif %}
+-
+ {% set pageConfig = {
+     "bodyClasses": body_class,
+     "title": page_title,
+@@ -125,8 +58,8 @@
+                 "text": 'Menu',
+                 "ariaLabel": 'Toggle main menu'
+             },
+-            "keyLinksList": keyLinksList,
+-            "itemsList": itemsList
++            "keyLinksList": main_menu_highlights(main_menu),
++            "itemsList": main_menu_columns(main_menu)
+         }
+     },
+     "footer": {
+diff --git a/cms/jinja2/templates/components/navigation/main_menu_preview.html b/cms/jinja2/templates/components/navigation/main_menu_preview.html
+index 1b1b0b2..31ef3ec 100644
+--- a/cms/jinja2/templates/components/navigation/main_menu_preview.html
++++ b/cms/jinja2/templates/components/navigation/main_menu_preview.html
+@@ -3,4 +3,4 @@
+ {% set main_menu = object %}
+ 
+ {% block main %}{% endblock %}
+-{% block footer %}{% endblock %}
+\ No newline at end of file
++{% block footer %}{% endblock %}
+diff --git a/cms/navigation/jinja2tags.py b/cms/navigation/jinja2tags.py
+new file mode 100644
+index 0000000..f1a3b45
+--- /dev/null
++++ b/cms/navigation/jinja2tags.py
+@@ -0,0 +1,21 @@
++from typing import TYPE_CHECKING
++
++from jinja2.ext import Extension
++
++from cms.navigation.templatetags.navigation_tags import main_menu_columns, main_menu_highlights
++
++if TYPE_CHECKING:
++    from jinja2 import Environment
++
++
++class NavigationExtension(Extension):  # pylint: disable=abstract-method
++    """Extends the Jinja functionality with additional Django, Wagtail,
++    and other package template tags.
++    """
++
++    def __init__(self, environment: "Environment"):
++        super().__init__(environment)
++
++        self.environment.globals.update(
++            {"main_menu_highlights": main_menu_highlights, "main_menu_columns": main_menu_columns}
++        )
+diff --git a/cms/navigation/templatetags/__init__.py b/cms/navigation/templatetags/__init__.py
+new file mode 100644
+index 0000000..e69de29
+diff --git a/cms/navigation/templatetags/navigation_tags.py b/cms/navigation/templatetags/navigation_tags.py
+new file mode 100644
+index 0000000..ad0ffd3
+--- /dev/null
++++ b/cms/navigation/templatetags/navigation_tags.py
+@@ -0,0 +1,85 @@
++from typing import TYPE_CHECKING, Optional
++
++import jinja2
++from django import template
++from django.http import HttpRequest
++
++if TYPE_CHECKING:
++    from wagtail.blocks import StructValue
++
++    from cms.navigation.models import MainMenu
++
++
++register = template.Library()
++
++
++@jinja2.pass_context
++def main_menu_highlights(
++    context: jinja2.runtime.Context, main_menu: Optional["MainMenu"] = None
++) -> list[dict[str, str]]:
++    if not main_menu:
++        return []
++
++    highlights = []
++    for highlight in main_menu.highlights:
++        if highlight.value["external_url"]:
++            highlights.append(
++                {
++                    "text": highlight.value["title"],
++                    "description": highlight.value["description"],
++                    "url": highlight.value["external_url"],
++                }
++            )
++        elif highlight.value["page"] and highlight.value["page"].live:
++            highlights.append(
++                {
++                    "text": highlight.value["title"] or highlight.value["page"].title,
++                    "description": highlight.value["description"],
++                    "url": highlight.value["page"].get_url(request=context.get("request")),
++                }
++            )
++
++    return highlights
++
++
++def _extract_url_item(value: "StructValue", request: Optional["HttpRequest"] = None) -> dict[str, str]:
++    if value["external_url"]:
++        return {
++            "text": value["title"],
++            "url": value["external_url"],
++        }
++
++    if value["page"] and value["page"].live:
++        return {
++            "text": value["title"] or value["page"].title,
++            "url": value["page"].get_url(request=request),
++        }
++    return {}
++
++
++@jinja2.pass_context
++def main_menu_columns(context: jinja2.runtime.Context, main_menu: Optional["MainMenu"] = None) -> list:
++    if not main_menu:
++        return []
++
++    items = []
++    for idx, column in enumerate(main_menu.columns):
++        column_data = {"column": idx, "linksList": []}
++
++        for section in column.value["sections"]:
++            section_data = _extract_url_item(section["section_link"], request=context.get("request"))
++            if not section_data:
++                continue
++
++            section_data["children"] = []
++
++            for link in section["links"]:
++                if link_data := _extract_url_item(link, request=context.get("request")):
++                    section_data["children"].append(link_data)
++
++            column_data["linksList"].append(section_data)
++
++        if column_data["linksList"]:
++            items.append(column_data)
++
++    return items
+diff --git a/cms/settings/base.py b/cms/settings/base.py
+index f1284d7..8d2503c 100644
+--- a/cms/settings/base.py
++++ b/cms/settings/base.py
+@@ -165,6 +165,7 @@ TEMPLATES = [
+                 "wagtail.images.jinja2tags.images",
+                 "wagtail.contrib.settings.jinja2tags.settings",
+                 "cms.core.jinja2tags.CoreExtension",
++                "cms.navigation.jinja2tags.NavigationExtension",
+             ],
+         },
+     },
