@@ -8,6 +8,8 @@
     - [Clearing and Initialising the Functional Test Development Database](#clearing-and-initialising-the-functional-test-development-database)
 - [Running the Tests](#running-the-tests)
     - [Playwright Options](#playwright-options)
+- [Developing Tests](#developing-tests)
+    - [Useful Documentation](#useful-documentation)
 - [Viewing Failure Traces](#viewing-failure-traces)
     - [Viewing the Failure Trace from GitHub Actions](#viewing-the-failure-trace-from-github-actions)
 - [Test Code Standards and Style Guide](#test-code-standards-and-style-guide)
@@ -142,6 +144,7 @@ Some links to particularly useful parts of documentation
 
 - [Playwright Locators](https://playwright.dev/python/docs/locators): Locating and selecting page elements in Playwright
 - [Playwright Assertions](https://playwright.dev/python/docs/test-assertions): Making assertions using Playwright
+- [Playwright Codegen](https://playwright.dev/python/docs/codegen-intro): The Playwright code generator tool
 - [Behave Command Line Arguments](https://behave.readthedocs.io/en/stable/behave.html#command-line-arguments): Options running the tests from the command line
 - [Behave API Reference](https://behave.readthedocs.io/en/stable/api.html): Reference documentation for the Behave framework API
 
