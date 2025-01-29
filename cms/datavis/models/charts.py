@@ -94,8 +94,8 @@ class Chart(Visualisation):
 
     def get_context(self, request: Optional["HttpRequest"] = None, **kwargs: Any) -> dict[str, Any]:
         config = self.get_component_config(self.primary_data_source.headers, self.primary_data_source.rows)
-        theme = self.theme
-        return super().get_context(request, config=config, theme=theme, **kwargs)
+        # theme = self.theme
+        return super().get_context(request, config=config, **kwargs)
 
     general_panels: ClassVar[Sequence["Panel"]] = [
         FieldPanel("name"),
@@ -194,12 +194,8 @@ class Chart(Visualisation):
             "chart": {
                 "type": self.highcharts_chart_type,
             },
-            # "title": {"text": None},
-            # "colors": HIGHCHARTS_THEMES[self.theme],
             "legend": {
-                # "align": "left",
                 "enabled": self.show_legend,
-                # "verticalAlign": "top",
             },
             "xAxis": self.get_x_axis_config(headers, rows),
             "yAxis": self.get_y_axis_config(headers, rows),
