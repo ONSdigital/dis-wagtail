@@ -7,12 +7,12 @@ from wagtailmath.blocks import MathBlock
 from cms.core.blocks import (
     DocumentsBlock,
     HeadingBlock,
-    ONSEmbedBlock,
-    WarnAnnouncementPanelBlock,
     InfoErrorSuccessPanelBlock,
+    ONSEmbedBlock,
     QuoteBlock,
     RelatedLinksBlock,
     VideoEmbedBlock,
+    WarnAnnouncementPanelBlock,
 )
 from cms.core.blocks.section_blocks import SectionBlock
 

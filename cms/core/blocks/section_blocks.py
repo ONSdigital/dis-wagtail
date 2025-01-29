@@ -9,11 +9,11 @@ from wagtailmath.blocks import MathBlock
 from cms.core.blocks import (
     DocumentsBlock,
     HeadingBlock,
-    ONSEmbedBlock,
-    WarnAnnouncementPanelBlock,
     InfoErrorSuccessPanelBlock,
+    ONSEmbedBlock,
     QuoteBlock,
     RelatedLinksBlock,
+    WarnAnnouncementPanelBlock,
 )
 
 if TYPE_CHECKING:
