@@ -1,4 +1,4 @@
-<div data-highcharts-base-chart>
+<div data-highcharts-base-chart data-highcharts-type="{{ object.highcharts_chart_type }}" data-highcharts-theme="{{ object.theme }}" data-highcharts-title="{{ object.title }}">
     {% if not media_already_loaded and object.media %}
         {{ object.media }}
     {% endif %}
