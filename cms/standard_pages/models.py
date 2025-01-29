@@ -76,7 +76,7 @@ class IndexPage(BasePage):  # type: ignore[django-manager-missing]
     def get_formatted_items(self, request: "HttpRequest") -> list[dict[str, str]]:
         """Returns a formatted list of Featured items
         that can be either children internal Pages or specified in a RelatedContentBlock
-        for use with the Design system Document ist component.
+        for use with the Design system Document list component.
         """
         formatted_items = []
         if featured_items := self.featured_items:

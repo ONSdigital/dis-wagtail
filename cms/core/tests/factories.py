@@ -6,7 +6,6 @@ from wagtail_factories.blocks import BlockFactory, PageChooserBlockFactory, Stru
 
 from cms.core.blocks.related import LinkBlock, RelatedContentBlock
 from cms.core.blocks.section_blocks import SectionBlock, SectionContentBlock
-
 from cms.core.models import ContactDetails
 
 
@@ -95,6 +94,7 @@ class LinkBlockFactory(StructBlockFactory):
 
     class Params:
         with_page = factory.Trait(page=factory.SubFactory(PageChooserBlockFactory), external_url=None)
+
 
 class RelatedContentBlockFactory(LinkBlockFactory):
     class Meta:
