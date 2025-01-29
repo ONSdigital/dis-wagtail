@@ -1,16 +1,12 @@
 from typing import TYPE_CHECKING, Optional, TypedDict
 
 import jinja2
-from django import template
 from django.http import HttpRequest
 
 if TYPE_CHECKING:
     from wagtail.blocks import StructValue
 
     from cms.navigation.models import MainMenu
-
-
-register = template.Library()
 
 
 class LinkItem(TypedDict, total=False):
