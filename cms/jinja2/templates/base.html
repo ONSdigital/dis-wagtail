@@ -35,7 +35,76 @@
     {%- endwith -%}
 {%- endset -%}
 
-{# navlinks are temporarily hard-coded until the back-end menu code is merged #}
+{% set navigation_settings = settings.navigation.NavigationSettings %}
+{% set main_menu = main_menu | default(navigation_settings.main_menu) %}
+
+{% set keyLinksList = [] %}
+
+{% if main_menu and main_menu.highlights %}
+    {% for highlight in main_menu.highlights %}
+        {% if highlight.value.page and highlight.value.page.live %}
+            {% set _ = keyLinksList.append({
+                'text': highlight.value.title if highlight.value.title else highlight.value.page.title,
+                'description': highlight.value.description,
+                'url': pageurl(highlight.value.page),
+            }) %}
+        {% elif highlight.value.external_url %}
+            {% set _ = keyLinksList.append({
+                'text': highlight.value.title,
+                'description': highlight.value.description,
+                'url': highlight.value.external_url,
+            }) %}
+        {% endif %}
+    {% endfor %}
+{% endif %}
+
+{% set itemsList = [] %}
+
+{% if main_menu and main_menu.columns %}
+    {% for column in main_menu.columns %}
+        {% set columnData = {
+            'column': loop.index,
+            'linksList': []
+        } %}
+
+        {% for section in column.value.sections %}
+            {% if section.section_link.page and section.section_link.page.live %}
+                {% set sectionData = {
+                    'text': section.section_link.title or section.section_link.page.title,
+                    'url': pageurl(section.section_link.page),
+                    'children': []
+                } %}
+            {% elif section.section_link.external_url %}
+                {% set sectionData = {
+                    'text': section.section_link.title,
+                    'url': section.section_link.external_url,
+                    'children': []
+                } %}
+            {% endif %}
+
+            {% if sectionData %}
+                {% for link in section.links %}
+                    {% if link.page and link.page.live%}
+                        {% do sectionData.children.append({
+                            'text': link.title or link.page.title,
+                            'url': pageurl(link.page),
+                        }) %}
+                    {% elif link.external_url %}
+                        {% do sectionData.children.append({
+                            'text': link.title,
+                            'url': link.external_url,
+                        }) %}
+                    {% endif %}
+                {% endfor %}
+            {% endif %}
+
+            {% do columnData.linksList.append(sectionData) %}
+        {% endfor %}
+
+        {% do itemsList.append(columnData) %}
+    {% endfor %}
+{% endif %}
+
 {% set pageConfig = {
     "bodyClasses": body_class,
     "title": page_title,
@@ -56,194 +125,8 @@
                 "text": 'Menu',
                 "ariaLabel": 'Toggle main menu'
             },
-            "keyLinksList": [
-                {
-                    'text': 'Taking part in a survey?',
-                    'description': 'It’s never been more important.',
-                    "url": False,
-                },
-                {
-                    'text': 'Release calendar',
-                    'description': 'View our latest and upcoming releases.',
-                    "url": False,
-                },
-                {
-                    'text': 'Explore local statistics',
-                    'description': 'Explore statistics across the UK.',
-                    "url": False,
-                }
-            ],
-            "itemsList": [
-                {
-                    "column": "1",
-                    "linksList": [
-                        {
-                            "text": "People, population and community",
-                            "url": False,
-                            "children": [
-                                {
-                                    "text": "Armed forces community",
-                                    "url": False,
-                                },
-                                {
-                                    "text": "Births, deaths and marriages",
-                                    "url": False,
-                                },
-                                {
-                                    "text": "Crime and justice",
-                                    "url": False,
-                                },
-                                {
-                                    "text": "Cultural identity",
-                                    "url": False,
-                                },
-                                {
-                                    "text": "Education and childcare",
-                                    "url": False,
-                                },
-                                {
-                                    "text": "Elections",
-                                    "url": False,
-                                },
-                                {
-                                    "text": "Health and social care",
-                                    "url": False,
-                                },
-                                {
-                                    "text": "Household characteristics",
-                                    "url": False,
-                                },
-                                {
-                                    "text": "Housing",
-                                    "url": False,
-                                },
-                                {
-                                    "text": "Leisure and tourism",
-                                    "url": False,
-                                },
-                                {
-                                    "text": "Personal and household finances",
-                                    "url": False,
-                                },
-                                {
-                                    "text": "Population and migration",
-                                    "url": False,
-                                },
-                                {
-                                    "text": "Well-being",
-                                    "url": False,
-                                }
-                            ]
-                        },
-                    ],
-                },
-                {
-                    "column": "2",
-                    "linksList": [
-                        {
-                            "text": "Business, industry and trade",
-                            "url": False,
-                            "children": [
-                                {
-                                    "text": "Business",
-                                    "url": False,
-                                },
-                                {
-                                    "text": "Changes to business",
-                                    "url": False,
-                                },
-                                {
-                                    "text": "Construction industry",
-                                    "url": False,
-                                },
-                                {
-                                    "text": "International trade",
-                                    "url": False,
-                                },
-                                {
-                                    "text": "IT and internet industry",
-                                    "url": False,
-                                },
-                                {
-                                    "text": "Manufacturing and production industry",
-                                    "url": False,
-                                },
-                                {
-                                    "text": "Retail industry",
-                                    "url": TOPIC_PAGE_URL,
-                                },
-                                {
-                                    "text": "Tourism industry",
-                                    "url": False,
-                                }
-                            ]
-                        },
-                        {
-                            "text": "Employment and labour market",
-                            "url": False,
-                            "children":
-                            [
-                                {
-                                    "text": "People in work",
-                                    "url": False,
-                                },
-                                {
-                                    "text": "People not in work",
-                                    "url": False,
-                                }
-                            ]
-
-                        },
-                    ]
-                },
-                {
-                    "column": "3",
-                    "linksList": [
-                        {
-                            "text": "Economy",
-                            "url": False,
-                            "children": [
-                                {
-                                    "text": "Economic output and productivity",
-                                    "url": False,
-                                },
-                                {
-                                    "text": "Government, public sector and taxes",
-                                    "url": False,
-                                },
-                                {
-                                    "text": "Gross Value Added (GVA)",
-                                    "url": False,
-                                },
-                                {
-                                    "text": "Investments, pensions and trusts",
-                                    "url": False,
-                                },
-                                {
-                                    "text": "Regional accounts",
-                                    "url": False,
-                                },
-                                {
-                                    "text": "Environmental accounts",
-                                    "url": False,
-                                },
-                                {
-                                    "text": "Gross Domestic Product (GDP)",
-                                    "url": False,
-                                },
-                                {
-                                    "text": "Inflation and price indices",
-                                    "url": False,
-                                },
-                                {
-                                    "text": "National accounts",
-                                    "url": False,
-                                }
-                            ]
-                        }
-                    ]
-                }
-            ]
+            "keyLinksList": keyLinksList,
+            "itemsList": itemsList
         }
     },
     "footer": {
