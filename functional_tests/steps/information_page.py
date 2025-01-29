@@ -19,7 +19,7 @@ def user_adds_information_page(context: Context) -> None:
 def user_adds_info_page_contents(context: Context) -> None:
     context.page.get_by_placeholder("Page title*").fill(" Test Info Page")
 
-    context.page.get_by_role("textbox", name="Summary*").fill("My test information page")
+    context.page.get_by_role("region", name="Summary*").get_by_role("textbox").fill("My test information page")
 
     context.page.get_by_role("textbox", name="Last updated").fill("2024-01-01")
     context.page.get_by_role("textbox", name="Last updated").press("Enter")
@@ -27,7 +27,7 @@ def user_adds_info_page_contents(context: Context) -> None:
     context.page.get_by_role("button", name="Insert a block").click()
     context.page.get_by_role("option", name="Rich text").locator("div").first.click()
     context.page.get_by_role("region", name="Rich text *").get_by_role("textbox").fill("Some example rich text content")
-    context.page.get_by_label("Insert a block").click()
+    context.page.get_by_role("region", name="Rich text *").get_by_label("Insert a block").click()
     context.page.get_by_text("Heading 3").click()
 
     context.page.get_by_role("button", name="Insert a block").nth(2).click()
