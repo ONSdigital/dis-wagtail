@@ -24,7 +24,7 @@ class InformationPage(BasePage):  # type: ignore[django-manager-missing]
 
     parent_page_types: ClassVar[list[str]] = ["home.HomePage", "InformationPage", "IndexPage"]
 
-    summary = models.TextField(max_length=255)
+    summary = RichTextField(features=settings.RICH_TEXT_BASIC)
     last_updated = models.DateField(blank=True, null=True)
     content = StreamField(CoreStoryBlock())
 
@@ -49,7 +49,7 @@ class IndexPage(BasePage):  # type: ignore[django-manager-missing]
     parent_page_types: ClassVar[list[str]] = ["home.HomePage", "IndexPage"]
     subpage_types: ClassVar[list[str]] = ["IndexPage", "InformationPage"]
 
-    summary = models.TextField()
+    summary = RichTextField(features=settings.RICH_TEXT_BASIC)
     featured_items = StreamField(
         [("featured_item", RelatedContentBlock())],
         help_text=_("Leave blank to automatically populate with child pages. Only published pages will be displayed."),
