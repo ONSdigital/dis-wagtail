@@ -131,6 +131,20 @@ Some Playwright configuration options can be passed in through environment varia
 | PLAYWRIGHT_TRACE      | Toggle Playwright trace recording                                                                                                                                              | `True`                           |
 | PLAYWRIGHT_TRACES_DIR | Sets the location to write Playwright trace files if `PLAYWRIGHT_TRACE` is enabled.<br/>The Default location `<project_root>/tmp_traces` is git ignored for convenience.       | `<working_directory>/tmp_traces` |
 
+## Developing Tests
+
+Watch [this video guide](https://www.loom.com/share/95e2b897ab2f4882adfe06cd2c90dada?sid=5042c0be-d726-4842-be84-153993e3db36) on creating functional tests. It
+covers the basics of adding features, scenarios and steps and some Playwright tooling.
+
+### Useful Documentation
+
+Some links to particularly useful parts of documentation
+
+- [Playwright Locators](https://playwright.dev/python/docs/locators): Locating and selecting page elements in Playwright
+- [Playwright Assertions](https://playwright.dev/python/docs/test-assertions): Making assertions using Playwright
+- [Behave Command Line Arguments](https://behave.readthedocs.io/en/stable/behave.html#command-line-arguments): Options running the tests from the command line
+- [Behave API Reference](https://behave.readthedocs.io/en/stable/api.html): Reference documentation for the Behave framework API
+
 ## Viewing Failure Traces
 
 The tests record traces of all their actions, allowing you to follow through tests that previously ran and debug issues
