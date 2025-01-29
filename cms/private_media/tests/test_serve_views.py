@@ -19,14 +19,23 @@ class TestImageServeView(TestCase):
         cls.root_collection = Collection.objects.get(depth=1)
         cls.private_image = ImageFactory(collection=cls.root_collection)
         cls.public_image = ImageFactory(_privacy=Privacy.PUBLIC, collection=cls.root_collection)
-        cls.private_image_renditions = cls.private_image.create_renditions(Filter("fill-10x10"), Filter("fill-20x20"))
-        cls.public_image_renditions = cls.public_image.create_renditions(Filter("fill-10x10"), Filter("fill-20x20"))
+        cls.private_image_renditions = tuple(
+            cls.private_image.create_renditions(Filter("fill-10x10"), Filter("fill-20x20")).values()
+        )
+        cls.public_image_renditions = tuple(
+            cls.public_image.create_renditions(Filter("fill-10x10"), Filter("fill-20x20")).values()
+        )
         cls.superuser = get_user_model().objects.create(username="superuser", is_superuser=True)
+
+    def setUp(self):
+        # Clear potentially invalid 'serve_url' @cached_property values
+        for rendition in self.private_image_renditions + self.public_image_renditions:
+            rendition.__dict__.pop("serve_url", None)
 
     def test_serve_private_image(self):
         """Test the serve view behaviour for private image renditions."""
         # If not authenticated, permission checks should fail and a Forbidden response returned
-        for rendition in self.private_image_renditions.values():
+        for rendition in self.private_image_renditions:
             for is_external_env in [True, False]:
                 with self.subTest(rendition=rendition, is_external_env=is_external_env) and override_settings(
                     IS_EXTERNAL_ENV=is_external_env
@@ -36,7 +45,7 @@ class TestImageServeView(TestCase):
 
         # If authenticated as a superuser, the view should serve the files
         self.client.force_login(self.superuser)
-        for rendition in self.private_image_renditions.values():
+        for rendition in self.private_image_renditions:
             for is_external_env in [True, False]:
                 with self.subTest(rendition=rendition, is_external_env=is_external_env) and override_settings(
                     IS_EXTERNAL_ENV=is_external_env
@@ -47,7 +56,7 @@ class TestImageServeView(TestCase):
     def test_serve_public_image(self):
         """Test the serve view behaviour for public image renditions."""
         # For public image renditions, the serve view should redirect to the file path or URL.
-        for rendition in self.public_image_renditions.values():
+        for rendition in self.public_image_renditions:
             for is_external_env in [True, False]:
                 with self.subTest(rendition=rendition, is_external_env=is_external_env) and override_settings(
                     IS_EXTERNAL_ENV=is_external_env
@@ -60,34 +69,59 @@ class TestImageServeView(TestCase):
         self.model.objects.filter(id=self.public_image.id).update(file_permissions_last_set=None)
         self.public_image.refresh_from_db()
         self.assertTrue(self.public_image.has_outdated_file_permissions())
-        for rendition in self.public_image_renditions.values():
+        for rendition in self.public_image_renditions:
             response = self.client.get(rendition.serve_url)
             self.assertEqual(response.status_code, 200)
 
     def test_serve_with_invalid_signature(self):
         """Test the serve view rejects requests when the signature is invalid."""
-        for rendition in self.private_image_renditions.values():
-            with mock.patch("wagtail.images.views.serve.generate_signature", return_value="invalid-signature"):
-                response = self.client.get(rendition.serve_url)
-                self.assertEqual(response.status_code, 400)
-            # Clear cached invalid 'serve_url' from rendition object to avoid impacting other tests
-            rendition.__dict__.pop("serve_url")
+        rendition = self.private_image_renditions[0]
+
+        # Generate an otherwise valid `serve_url` with an invalid signature
+        with mock.patch("wagtail.images.views.serve.generate_signature", return_value="invalid-signature"):
+            serve_url = rendition.serve_url
+
+        # Test the view using the generated `serve_url`
+        response = self.client.get(serve_url)
+        self.assertEqual(response.status_code, 400)
 
     def test_serve_with_invalid_image_id(self):
         """Test the serve view behaviour when the signature is valid but the image ID
         is not recognised.
         """
-        for rendition in self.public_image_renditions.values():
-            original_image_id = self.public_image.id
-            self.public_image.id = 9999999
-            serve_url = rendition.serve_url
-            # Clear cached invalid 'serve_url' from rendition object to avoid impacting other tests
-            rendition.__dict__.pop("serve_url")
-            # Undo change to image ID to avoid impacting other tests
-            self.public_image.id = original_image_id
-            # Now test the view
-            response = self.client.get(serve_url)
-            self.assertEqual(response.status_code, 404)
+        rendition = self.public_image_renditions[0]
+        original_image_id = self.public_image.id
+
+        # Replace `image_id` value with an invalid one
+        self.public_image.id = 9999999
+
+        # Generate an otherwise valid `serve_url` with a reference to a non-existent image ID
+        serve_url = rendition.serve_url
+
+        # Undo change to `image_id` to avoid impacting other tests
+        self.public_image.id = original_image_id
+
+        # Test the view using the generated `serve_url`
+        response = self.client.get(serve_url)
+        self.assertEqual(response.status_code, 404)
+
+    def test_serve_with_invalid_filter_spec(self):
+        """Test the serve view behaviour when the filter spec is invalid."""
+        rendition = self.public_image_renditions[0]
+        original_filter_spec = rendition.filter_spec
+
+        # Replace `filter_spec`` value with an invalid one
+        rendition.filter_spec = "invalid-filter-spec"
+
+        # Generate an otherwise valid `serve_url` with an invalid filter spec
+        serve_url = rendition.serve_url
+
+        # Undo change to `filter_spec` to avoid impacting other tests
+        rendition.filter_spec = original_filter_spec
+
+        # Test the view using the generated `serve_url`
+        response = self.client.get(serve_url)
+        self.assertEqual(response.status_code, 400)
 
 
 class TestDocumentServeView(TestCase):
