@@ -1,7 +1,6 @@
 from collections.abc import Sequence
 from typing import TYPE_CHECKING
 
-from django.conf import settings
 from django.core.exceptions import PermissionDenied, SuspiciousOperation
 from django.http import FileResponse, Http404, HttpResponse
 from django.shortcuts import get_object_or_404, redirect
@@ -243,8 +242,7 @@ class DocumentServeView(View):
         response["Content-Length"] = document.file.size
 
         # Add a CSP header to prevent inline execution
-        if getattr(settings, "WAGTAILDOCS_BLOCK_EMBEDDED_CONTENT", True):
-            response["Content-Security-Policy"] = "default-src 'none'"
+        response["Content-Security-Policy"] = "default-src 'none'"
 
         # Prevent browsers from auto-detecting the content-type of a document
         response["X-Content-Type-Options"] = "nosniff"
