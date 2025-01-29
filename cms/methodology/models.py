@@ -14,7 +14,7 @@ from wagtail.search import index
 
 from cms.core.blocks.stream_blocks import SectionStoryBlock
 from cms.core.fields import StreamField
-from cms.core.models import BasePage
+from cms.core.models import BasePage, GenericTaxonomyMixin
 from cms.core.query import order_by_pk_position
 
 if TYPE_CHECKING:
@@ -35,7 +35,7 @@ class MethodologyRelatedPage(Orderable):
     panels: ClassVar[list[FieldPanel]] = [PageChooserPanel("page", page_type=["articles.StatisticalArticlePage"])]
 
 
-class MethodologyPage(BasePage):  # type: ignore[django-manager-missing]
+class MethodologyPage(BasePage, GenericTaxonomyMixin):  # type: ignore[django-manager-missing]
     parent_page_types: ClassVar[list[str]] = ["topics.TopicPage"]
 
     template = "templates/pages/methodology_page.html"
@@ -53,6 +53,7 @@ class MethodologyPage(BasePage):  # type: ignore[django-manager-missing]
     )
 
     content = StreamField(SectionStoryBlock())
+    taxonomy_panels = GenericTaxonomyMixin.taxonomy_panels
 
     show_cite_this_page = models.BooleanField(default=True)
 

@@ -1,3 +1,4 @@
+import logging
 from typing import Any
 
 import requests
@@ -6,19 +7,21 @@ from django.core.management import BaseCommand
 
 from cms.taxonomy.models import Topic
 
+logger = logging.getLogger(__name__)
+
 
 class Command(BaseCommand):
     """Topic Sync management command."""
 
     def handle(self, *args: Any, **options: Any) -> None:
-        print("Fetching topics from API...")
+        logger.info("Fetching topics from API...")
         topics = fetch_all_topics()
-        print(f"Fetched {len(topics)} topics")
-        print("Syncing topics...")
+        logger.info(f"Fetched {len(topics)} topics")
+        logger.info("Syncing topics...")
         sync_with_fetched_topics(topics)
-        print("Checking for removed topics...")
+        logger.info("Checking for removed topics...")
         check_removed_topics({topic["id"] for topic in topics})
-        print("Done.")
+        logger.info("Finished syncing topics.")
 
 
 def fetch_all_topics() -> list[dict[str, str]]:
@@ -71,6 +74,7 @@ def extract_subtopic_links(raw_topics: list[dict[str, Any]]) -> list[tuple[str, 
     return [
         (subtopic_link, raw_topic["id"])
         for raw_topic in raw_topics
+        # NOTE: This assumes we can simply call the links in the response as they are provided
         if ((subtopic_link := raw_topic["links"].get("subtopics", {}).get("href")) and raw_topic["subtopics_ids"])
     ]
 
@@ -87,8 +91,8 @@ def sync_with_fetched_topics(fetched_topics: list[dict[str, str]]):
             create_topic(fetched_topic)
             created_count += 1
 
-    print(f"Saved {created_count} new topic(s)")
-    print(f"Updated {updated_count} existing topic(s)")
+    logger.info(f"Saved {created_count} new topic(s)")
+    logger.info(f"Updated {updated_count} existing topic(s)")
 
 
 def get_topic(topic_id: str) -> Topic | None:
@@ -96,23 +100,36 @@ def get_topic(topic_id: str) -> Topic | None:
 
 
 def topic_matches(existing_topic: Topic, fetched_topic: dict[str, str]) -> bool:
+    existing_parent = existing_topic.get_parent()
+    existing_parent_id = existing_parent.id if existing_parent else None
+
     return (
         fetched_topic["title"] == existing_topic.title
         and fetched_topic.get("description") == existing_topic.description
         and not existing_topic.removed
+        and existing_parent_id == fetched_topic["parent_id"]
     )
 
 
 def update_topic(existing_topic: Topic, fetched_topic: dict[str, str]):
-    print(f"Updating existing topic: {existing_topic.id} with fetched topic: {fetched_topic}")
+    logger.info(f"Updating existing topic: {existing_topic.id} with fetched topic: {fetched_topic}")
     existing_topic.title = fetched_topic.get("title")
     existing_topic.description = fetched_topic.get("description")
     existing_topic.removed = False
     existing_topic.save()
 
+    # If the topic parent has changed then move the node to match
+    if (existing_parent := existing_topic.get_parent()) and existing_parent.id != fetched_topic["parent_id"]:
+        logger.warning(
+            f"Moving topic {existing_topic.id} "
+            f"from parent {existing_parent.id} new parent {fetched_topic['parent_id']}. "
+            f"This will also effect the path of {existing_topic.get_children_count()} subtopics."
+        )
+        existing_topic.move(get_topic(fetched_topic["parent_id"]), pos="sorted-child")
+
 
 def create_topic(fetched_topic: dict[str, str]):
-    print(f"Saving new topic {fetched_topic}")
+    logger.info(f"Saving new topic {fetched_topic}")
     new_topic = Topic(
         id=fetched_topic["id"], title=fetched_topic["title"], description=fetched_topic.get("description")
     )
@@ -127,9 +144,9 @@ def check_removed_topics(existing_topic_ids: set[str]):
     existing_topics = get_all_existing_topic_ids()
     removed_topics = existing_topics.difference(existing_topic_ids)
     if removed_topics:
-        print(f"WARNING: Found {len(removed_topics)} removed topic(s)")
+        logger.warning(f"WARNING: Found {len(removed_topics)} removed topic(s)")
     for removed_topic_id in removed_topics:
-        print(f"Marking topic {removed_topic_id} as removed")
+        logger.warning(f"Marking topic {removed_topic_id} as removed")
         set_topic_as_removed(removed_topic_id)
 
 

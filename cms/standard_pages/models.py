@@ -1,15 +1,16 @@
 from typing import ClassVar
 
 from django.db import models
-from wagtail.admin.panels import FieldPanel, InlinePanel, ObjectList, TabbedInterface
+from wagtail.admin.panels import FieldPanel, InlinePanel
 from wagtail.search import index
 
 from cms.core.blocks.stream_blocks import CoreStoryBlock
 from cms.core.fields import StreamField
 from cms.core.models import BasePage
+from cms.core.models.mixins import GenericTaxonomyMixin
 
 
-class InformationPage(BasePage):  # type: ignore[django-manager-missing]
+class InformationPage(BasePage, GenericTaxonomyMixin):  # type: ignore[django-manager-missing]
     """A generic information page model."""
 
     template = "templates/pages/information_page.html"
@@ -39,13 +40,4 @@ class InformationPage(BasePage):  # type: ignore[django-manager-missing]
         index.SearchField("content"),
     ]
 
-    edit_handler = TabbedInterface(
-        [
-            *BasePage.edit_handler.children,
-            ObjectList(
-                [FieldPanel("summary")],
-                help_text="Select the topics that this page relates to.",
-                heading="Taxonomy",
-            ),
-        ]
-    )
+    taxonomy_panels: ClassVar[list[FieldPanel]] = GenericTaxonomyMixin.taxonomy_panels

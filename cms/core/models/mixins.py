@@ -3,14 +3,14 @@ from typing import TYPE_CHECKING, Any, ClassVar
 from django.core.paginator import EmptyPage, Paginator
 from django.db import models
 from django.http import Http404
-from wagtail.admin.panels import FieldPanel, MultiFieldPanel
+from wagtail.admin.panels import FieldPanel, InlinePanel, MultiFieldPanel
 
 if TYPE_CHECKING:
     from django.core.paginator import Page
     from django.http import HttpRequest
     from wagtail.admin.panels import Panel
 
-__all__ = ["ListingFieldsMixin", "SocialFieldsMixin", "SubpageMixin"]
+__all__ = ["ListingFieldsMixin", "SocialFieldsMixin", "SubpageMixin", "GenericTaxonomyMixin", "ExclusiveTaxonomyMixin"]
 
 
 class ListingFieldsMixin(models.Model):
@@ -98,3 +98,25 @@ class SubpageMixin:
         context: dict = super().get_context(request, *args, **kwargs)  # type: ignore[misc]
         context["subpages"] = self.get_paginator_page(request)
         return context
+
+
+class GenericTaxonomyMixin(models.Model):
+    """Generic Taxonomy mixin allows pages to be tagged with one or more topics in a many-to-many relationship."""
+
+    taxonomy_panels: ClassVar[list["Panel"]] = [
+        InlinePanel("topics", label="Topics"),
+    ]
+
+    class Meta:
+        abstract = True
+
+
+class ExclusiveTaxonomyMixin(models.Model):
+    """A mixin that allows pages to be linked to a topic in an exclusive one-to-one relationship."""
+
+    taxonomy_panels: ClassVar[list["Panel"]] = [
+        InlinePanel("exclusive_topic", label="Topic"),
+    ]
+
+    class Meta:
+        abstract = True
