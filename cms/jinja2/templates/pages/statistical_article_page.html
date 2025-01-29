@@ -1,9 +1,103 @@
 {% extends "templates/base_page.html" %}
 
+{% from "components/hero/_macro.njk" import onsHero %}
 {% from "components/panel/_macro.njk" import onsPanel %}
 {% from "components/table-of-contents/_macro.njk" import onsTableOfContents %}
 
 {% block header_area %}
+    {# Currently missing email link as the onsDescriptionList does not allow markup #}
+    {% if page.contact_details %}
+        {# fmt:off #}
+        {% set contact_details =
+            {
+                "term": "Contact:",
+                "descriptions": [
+                    {
+                        "description": page.contact_details.name
+                    }
+                ]
+            }
+        %}
+        {# fmt:on #}
+    {% else %}
+        {% set contact_details = "" %}
+    {% endif %}
+    {% if page.is_census %}
+        {% import "templates/components/census/census-logo.html" as census_logo %}
+        {% set census_html = ["<div class='ons-container'>"|safe, census_logo] | join %}
+        {% set census_html = [census_html, "</div>"|safe] | join %}
+    {% else %}
+        {% set census_html = "" %}
+    {% endif %}
+    {# Currently missing links as the onsDescriptionList does not allow markup #}
+    {% if page.is_latest %}
+        {% set releases_text = _("View previous releases") %}
+    {% else %}
+        {% set releases_text = _("View latest release") %}
+    {% endif %}
+    {% set next_release_date_text = page.next_release_date|date("DATE_FORMAT") or _("To be announced") %}
+    {% with breadcrumbs=page|breadcrumbs %}
+        {# fmt:off #}
+        {{
+            onsHero({
+                "topic": _("Statistical article"),
+                "title": page.display_title,
+                "variants": 'grey',
+                "text": page.summary,
+                "officialStatisticsBadge": page.is_accredited,
+                "wide": true,
+                "detailsColumns": 12,
+                "html": census_html,
+                "descriptionList": {
+
+                    "descriptionListLabel": "",
+                    "termCol": "12",
+                    "descriptionCol": "12",
+                    "itemsList": [
+                        {
+                            "term": _("Release date"),
+                            "descriptions": [
+                                {
+                                    "description": page.release_date|date("DATE_FORMAT")
+                                }
+                            ]
+                        },
+                        {
+                            "term": _("Edition"),
+                            "descriptions": [
+                                {
+                                    "description": _("Latest")
+                                }
+                            ]
+                        },
+                        contact_details,
+                        {
+                            "term": _("Next release"),
+                            "descriptions": [
+                                {
+                                    "description": next_release_date_text
+                                }
+                            ]
+                        },
+                        {
+                            "term": _("Releases"),
+                            "descriptions": [
+                                {
+                                    "description": releases_text
+                                }
+                            ]
+                        },
+                    ]
+                },
+                "breadcrumbs":
+                    {
+                        "ariaLabel": 'Breadcrumbs',
+                        "itemsList": breadcrumbs,
+                    }
+            })
+        }}
+        {# fmt:on #}
+    {% endwith %}
     <div class="common-header article-header {% if page.updates %}article-header--flush{% endif %}">
         <div class="ons-container">
             {% include "templates/components/navigation/breadcrumbs.html" %}
