@@ -1,6 +1,7 @@
 {% extends "layout/_template.njk" %}
 {% from "components/cookies-banner/_macro.njk" import onsCookiesBanner %}
 {% from "component_overrides/header/_macro.njk" import onsHeaderNew %}
+{% from "components/footer/_macro.njk" import onsFooter %}
 
 {% set page_title %}
     {% if current_site and page.pk == current_site.root_page.pk and current_site.site_name %}{{ current_site.site_name }} | {% endif %}{% block title %}{% if page.seo_title %}{{ page.seo_title }}{% else %}{{ page.title}}{% endif %}{% endblock %}{% block title_suffix %}{% if current_site and page.pk != current_site.root_page.pk and current_site.site_name %} | {{ current_site.site_name }}{% endif %}{% endblock %}
@@ -105,6 +106,38 @@
     {% endfor %}
 {% endif %}
 
+{% set footer_menu = footer_menu | default(navigation_settings.footer_menu) %}
+
+{% set linksColumnList = [] %}
+
+{% if footer_menu and footer_menu.columns %}
+    {% for column in footer_menu.columns %}
+        {% set columnData = {
+            'linksList': []
+        } %}
+
+        {% for link in column.links %}
+            {% if link.page and link.page.live %}
+                {% set columnLinks = {
+                    'text': link.title or link.page.title,
+                    'url': pageurl(link.page)
+                } %}
+            {% elif link.external_url %}
+                {% set columnLinks = {
+                    'text': link.title,
+                    'url': link.external_url
+                } %}
+            {% endif %}
+
+            {% if columnLinks %}
+                {% do columnData.linksList.append(columnLinks) %}
+            {% endif %}
+        {% endfor %}
+
+        {% do linksColumnList.append(columnData) %}
+    {% endfor %}
+{% endif %}
+
 {% set pageConfig = {
     "bodyClasses": body_class,
     "title": page_title,
@@ -130,26 +163,18 @@
         }
     },
     "footer": {
-        "rows": [
+        "cols": [
             {
-                "itemsList": [
-                    {
-                        "text": 'Contact us',
-                        "url": '#0'
-                    },
-                    {
-                        "text": 'Cookies and privacy',
-                        "url": '#0'
-                    }
-                ]
+                "linksColumnList": linksColumnList,
             }
         ],
-        "oglLink": {
-            "pre": 'All content is available under the',
-            "text": 'Open Government Licence v3.0',
-            "url": 'https://www.nationalarchives.gov.uk/doc/open-government-licence/version/3/',
-            "post": ', except where otherwise stated'
-        }
+
+    "oglLink": {
+        "pre": 'All content is available under the',
+        "text": 'Open Government Licence v3.0',
+        "url": 'https://www.nationalarchives.gov.uk/doc/open-government-licence/version/3/',
+        "post": ', except where otherwise stated'
+    }
     }
 }
 %}
