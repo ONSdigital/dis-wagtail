@@ -1,5 +1,4 @@
-from unittest.mock import Mock
-
+import wagtail.coreutils
 from django.test import TestCase
 
 from cms.navigation.templatetags.navigation_tags import main_menu_columns, main_menu_highlights
@@ -15,7 +14,7 @@ from cms.navigation.tests.factories import (
 class MainMenuTemplateTagTests(TestCase):
     @classmethod
     def setUpTestData(cls):
-        cls.mock_request = Mock()
+        cls.mock_request = wagtail.coreutils.get_dummy_request()
         cls.main_menu = MainMenuFactory()
 
         highlights = [{"type": "highlight", "value": HighlightsBlockFactory()}] * 3
