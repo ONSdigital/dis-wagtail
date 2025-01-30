@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING, Any, Optional
 
 import jinja2
 from django import template
@@ -42,7 +42,7 @@ def include_django(context: jinja2.runtime.Context, template_name: str) -> "Safe
 
 # Copy django's json_script filter
 @register.filter(is_safe=True)
-def json_script(value, element_id=None):
+def json_script(value: dict[str, Any], element_id: Optional[str] = None) -> "SafeString":
     """Output value JSON-encoded, wrapped in a <script type="application/json">
     tag (with an optional id).
     """
