@@ -47,3 +47,13 @@ class ColumnBlock(StructBlock):
     class Meta:
         icon = "list-ul"
         label = _("Column")
+
+class LinksColumn(StructBlock):
+    title = CharBlock(required=True, help_text="Title of the column")
+    links = ListBlock(
+        LinkBlock(), #in base .py
+        help_text=_("Links for this column (pages or external URLs)."),
+        max_num=10,
+    )
+    class Meta:
+        label = "Links Column"
