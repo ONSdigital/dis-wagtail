@@ -40,3 +40,14 @@ Adds custom gap values to match the designs
     }
     /* stylelint-enable selector-class-pattern */
 }
+
+/* stylelint-disable selector-class-pattern */
+// Note that in the design system, this needs to be defined for all column and gap variations
+.ons-col-4\@m {
+    @include media-query('m') {
+        max-width: calc(33.333333333% - rem-sizing(40));
+        width: calc(33.333333333% - rem-sizing(40));
+        flex-basis: calc(33.333333333% - rem-sizing(40));
+    }
+}
+/* stylelint-enable selector-class-pattern */
