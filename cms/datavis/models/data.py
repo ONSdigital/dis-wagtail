@@ -97,9 +97,9 @@ class DataSource(  # type: ignore[django-manager-missing]
         return title
 
     @classproperty
-    def permission_policy(
+    def permission_policy(  # pylint: disable=no-self-argument
         cls,
-    ) -> "CollectionOwnershipPermissionPolicy":  # pylint: disable=no-self-argument
+    ) -> "CollectionOwnershipPermissionPolicy":
         return CollectionOwnershipPermissionPolicy(cls, owner_field_name="created_by")
 
     @cached_property
@@ -129,6 +129,7 @@ class DataSource(  # type: ignore[django-manager-missing]
             LineChart,
             ScatterChart,
         )
+
         if preview_mode.startswith("scatter-chart"):
             datavis_class = ScatterChart
         elif preview_mode.startswith("bar-chart"):
