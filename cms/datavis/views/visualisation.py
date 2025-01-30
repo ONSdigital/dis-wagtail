@@ -1,3 +1,4 @@
+from collections.abc import Sequence
 from typing import TYPE_CHECKING, Any, Optional
 
 from django.urls import reverse
@@ -30,6 +31,7 @@ if TYPE_CHECKING:
     from django.db.models import QuerySet
     from django.forms import Form
     from django.http import HttpResponse
+    from django.utils.functional import Promise
     from wagtail.admin.panels import Panel
     from wagtail.admin.ui.action_menu import ActionMenu
 
@@ -45,6 +47,15 @@ class VisualisationIndexView(RemoveSnippetIndexBreadcrumbItemMixin, IndexView):
 class VisualisationTypeSelectView(
     RemoveSnippetIndexBreadcrumbItemMixin, LocaleMixin, PermissionCheckedMixin, WagtailAdminTemplateMixin, BaseFormView
 ):
+    def get_breadcrumbs_items(self) -> Sequence[dict[str, "str | Promise"]]:
+        return [
+            *super().get_breadcrumbs_items(),
+            {
+                "label": _("Visualisations"),
+                "url": reverse("wagtailsnippets_datavis_visualisation:list"),
+            },
+        ]
+
     def get_form_class(self) -> type["Form"]:
         """Return the form class to use."""
         return VisualisationTypeSelectForm
