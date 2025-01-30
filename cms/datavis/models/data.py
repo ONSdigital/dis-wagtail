@@ -178,7 +178,7 @@ class AdditionalDataSource(Orderable):
         max_length=15,
     )
     is_downloadable = models.BooleanField(  # type: ignore[var-annotated]
-        verbose_name=_("include data source in downloadables?"),
+        verbose_name=_("include in downloadables?"),
         default=False,
     )
 
