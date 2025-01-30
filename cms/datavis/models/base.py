@@ -89,6 +89,7 @@ class Visualisation(
         blank=True,
         editable=False,
         on_delete=models.SET_NULL,
+        related_name="created_visualisations",
     )
     created_by.wagtail_reference_index_ignore = True  # type: ignore[attr-defined]
 
