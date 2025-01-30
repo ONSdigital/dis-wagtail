@@ -9,22 +9,16 @@ if TYPE_CHECKING:
     from cms.navigation.models import MainMenu
 
 
-class LinkItem(TypedDict, total=False):
-    text: str
-    url: str
-    children: list["LinkItem"]
-
-
-class ColumnData(TypedDict):
-    column: int
-    linksList: list["LinkItem"]
-
-
 class CommonItem(TypedDict, total=False):
     text: str
     url: str
     description: str
     children: list["CommonItem"]
+
+
+class ColumnData(TypedDict):
+    column: int
+    linksList: list[CommonItem]
 
 
 def _extract_item(
