@@ -20,73 +20,71 @@ class ColumnData(TypedDict):
     linksList: list["LinkItem"]
 
 
-def _extract_highlight_item(value: "StructValue", request: Optional["HttpRequest"] = None) -> dict[str, str]:
-    if value["external_url"]:
-        return {
-            "text": value["title"],
-            "description": value["description"],
-            "url": value["external_url"],
-        }
+class CommonItem(TypedDict, total=False):
+    text: str
+    url: str
+    description: str
+    children: list["CommonItem"]
 
-    if value["page"] and value["page"].live:
-        return {
-            "text": value["title"] or value["page"].title,
-            "description": value["description"],
-            "url": value["page"].get_url(request=request),
-        }
-    return {}
+
+def _extract_item(
+    value: "StructValue",
+    request: Optional["HttpRequest"] = None,
+    include_description: bool = False,
+) -> CommonItem:
+    """Extracts text/url from the StructValue.
+    If include_description=True, also extracts the description field.
+    """
+    item: CommonItem = {}
+
+    if value["external_url"]:
+        item["text"] = value["title"]
+        item["url"] = value["external_url"]
+
+    elif value["page"] and value["page"].live:
+        item["text"] = value["title"] or value["page"].title
+        item["url"] = value["page"].get_url(request=request)
+
+    if include_description and "description" in value:
+        item["description"] = value["description"]
+
+    return item
 
 
 @jinja2.pass_context
-def main_menu_highlights(
-    context: jinja2.runtime.Context, main_menu: Optional["MainMenu"] = None
-) -> list[dict[str, str]]:
+def main_menu_highlights(context: jinja2.runtime.Context, main_menu: Optional["MainMenu"] = None) -> list[CommonItem]:
     if not main_menu:
         return []
 
     highlights = []
     for highlight in main_menu.highlights:
-        highlight_data = _extract_highlight_item(highlight.value, request=context.get("request"))
+        highlight_data = _extract_item(highlight.value, request=context.get("request"), include_description=True)
         if highlight_data:
             highlights.append(highlight_data)
 
     return highlights
 
 
-def _extract_url_item(value: "StructValue", request: Optional["HttpRequest"] = None) -> LinkItem:
-    if value["external_url"]:
-        return {
-            "text": value["title"],
-            "url": value["external_url"],
-        }
-
-    if value["page"] and value["page"].live:
-        return {
-            "text": value["title"] or value["page"].title,
-            "url": value["page"].get_url(request=request),
-        }
-    return {}
-
-
 @jinja2.pass_context
-def main_menu_columns(context: jinja2.runtime.Context, main_menu: Optional["MainMenu"] = None) -> list:
-    items: list[ColumnData] = []
-
+def main_menu_columns(context: jinja2.runtime.Context, main_menu: Optional["MainMenu"] = None) -> list[ColumnData]:
     if not main_menu:
         return []
 
-    def extract_section_data(section: "StructValue", request: Optional["HttpRequest"] = None) -> Optional[LinkItem]:
-        section_data = _extract_url_item(section["section_link"], request=request)
+    def extract_section_data(section: "StructValue", request: Optional["HttpRequest"] = None) -> Optional[CommonItem]:
+        section_data = _extract_item(section["section_link"], request=request, include_description=False)
         if not section_data:
             return None
 
-        section_data["children"] = [
-            link_data for link in section["links"] if (link_data := _extract_url_item(link, request=request))
-        ]
+        children = []
+        for link in section["links"]:
+            link_data = _extract_item(link, request=request, include_description=False)
+            if link_data:
+                children.append(link_data)
 
+        section_data["children"] = children
         return section_data
 
-    items = []
+    items: list[ColumnData] = []
     for idx, column in enumerate(main_menu.columns):
         column_data: ColumnData = {"column": idx, "linksList": []}
 
