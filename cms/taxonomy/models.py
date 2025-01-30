@@ -59,17 +59,3 @@ class GenericPageToTaxonomyTopic(models.Model):
         constraints: ClassVar[list[UniqueConstraint]] = [
             UniqueConstraint(fields=["page", "topic"], name="unique_generic_taxonomy")
         ]
-
-
-class ExclusivePageToTaxonomyTopic(models.Model):
-    """This model enables many-to-many relationships between pages and topics."""
-
-    page = ParentalKey("wagtailcore.Page", related_name="exclusive_topic", unique=True)
-
-    # Warnings suggest this, but it fails to make migrations?
-    # page = models.OneToOneField("wagtailcore.Page", on_delete=models.CASCADE, related_name="exclusive_topic",
-    #                             parent_link=True, null=False)
-
-    topic = models.OneToOneField("taxonomy.Topic", on_delete=models.CASCADE, related_name="exclusive_page", null=False)
-
-    panels: ClassVar[list[FieldPanel]] = [FieldPanel("topic")]
