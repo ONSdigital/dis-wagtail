@@ -2,6 +2,7 @@ from collections.abc import Sequence
 from typing import TYPE_CHECKING, Any, Optional
 
 from django.urls import reverse
+from django.utils.text import capfirst
 from django.utils.translation import gettext_lazy as _
 from django.views.generic.edit import BaseFormView
 from wagtail.admin.ui.components import MediaContainer
@@ -47,11 +48,17 @@ class VisualisationIndexView(RemoveSnippetIndexBreadcrumbItemMixin, IndexView):
 class VisualisationTypeSelectView(
     RemoveSnippetIndexBreadcrumbItemMixin, LocaleMixin, PermissionCheckedMixin, WagtailAdminTemplateMixin, BaseFormView
 ):
+    def get_page_title(self) -> "str | Promise":
+        return _("New")
+
+    def get_page_subtitle(self) -> "str | Promise":
+        return capfirst(Visualisation._meta.verbose_name)  # type: ignore[no-any-return]
+
     def get_breadcrumbs_items(self) -> Sequence[dict[str, "str | Promise"]]:
         return [
             *super().get_breadcrumbs_items(),
             {
-                "label": _("Visualisations"),
+                "label": capfirst(Visualisation._meta.verbose_name),
                 "url": reverse("wagtailsnippets_datavis_visualisation:list"),
             },
         ]
@@ -98,11 +105,11 @@ class VisualisationCopyView(RemoveChecksSidePanelMixin, RemoveSnippetIndexBreadc
     permission_required = "add"
     success_message = _("%(model_name)s '%(object)s' created successfully.")
 
-    def get_header_title(self) -> str:
-        return f"Copy chart: {self.object}"
+    def get_header_title(self) -> "str | Promise":
+        return _("Copy")
 
-    def get_page_subtitle(self) -> str:
-        return f"Copy: {self.object}"
+    def get_page_subtitle(self) -> "str | Promise":
+        return capfirst(str(self.object))  # type: ignore[no-any-return]
 
     def get_bound_panel(self, *args: Any, **kwargs: Any) -> Optional["Panel"]:
         """Overrides EditView.get_bound_panel() to prevent the edit_handler from
