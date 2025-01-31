@@ -78,39 +78,42 @@ class IndexPage(BasePage):  # type: ignore[django-manager-missing]
         that can be either children internal Pages or specified in a RelatedContentBlock
         for use with the Design system Document list component.
         """
+        if self.featured_items:
+            return self._get_formatted_featured_items()
+        return self._get_formatted_child_pages(request)
 
-        def get_featured_item_dict(title: str, url: str, description: str) -> dict[str, str | dict[str, str]]:
-            """Helper to create the featured item dictionary."""
-            return {
-                "featured": "true",
-                "title": {"text": title, "url": url},
-                "description": description,
-            }
-
+    def _get_formatted_featured_items(self) -> list[dict[str, str | dict[str, str]]]:
+        """Format items from self.featured_items."""
         formatted_items = []
-
         for featured_item in self.featured_items:  # pylint: disable=not-an-iterable
-            if featured_item.value.link is None:
+            link = featured_item.value.link
+            if link is None:
                 continue
 
             formatted_items.append(
-                get_featured_item_dict(
-                    title=featured_item.value.link["text"],
-                    url=featured_item.value.link["url"],
-                    description=featured_item.value["description"],
-                )
+                {
+                    "featured": "true",
+                    "title": {"text": link["text"], "url": link["url"]},
+                    "description": featured_item.value["description"],
+                }
             )
+        return formatted_items
 
-        if not formatted_items:
-            for child_page in self.get_children().live().public().specific().defer_streamfields():
-                formatted_items.append(
-                    get_featured_item_dict(
-                        title=getattr(child_page, "listing_title", "") or child_page.title,
-                        url=child_page.get_url(request=request),
-                        description=getattr(child_page, "listing_summary", "") or getattr(child_page, "summary", ""),
-                    )
-                )
+    def _get_formatted_child_pages(self, request: "HttpRequest") -> list[dict[str, str | dict[str, str]]]:
+        """Format child pages if there are no featured items."""
+        formatted_items = []
 
+        for child_page in self.get_children().live().public().specific().defer_streamfields():
+            formatted_items.append(
+                {
+                    "featured": "true",
+                    "title": {
+                        "text": getattr(child_page, "listing_title", "") or child_page.title,
+                        "url": child_page.get_url(request=request),
+                    },
+                    "description": getattr(child_page, "listing_summary", "") or getattr(child_page, "summary", ""),
+                }
+            )
         return formatted_items
 
     def get_formatted_related_links_list(self) -> list[dict[str, str]]:
