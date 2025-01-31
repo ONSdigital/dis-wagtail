@@ -5,15 +5,15 @@ from wagtail.images.blocks import ImageChooserBlock
 from wagtailmath.blocks import MathBlock
 
 from cms.core.blocks import (
+    AnnouncementPanelBlock,
     DocumentsBlock,
     HeadingBlock,
+    InformationPanelBlock,
     ONSEmbedBlock,
     QuoteBlock,
     RelatedLinksBlock,
     VideoEmbedBlock,
     WarningPanelBlock,
-    InformationPanelBlock,
-    AnnouncementPanelBlock,
 )
 from cms.core.blocks.section_blocks import SectionBlock
 

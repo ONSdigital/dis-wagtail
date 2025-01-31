@@ -6,15 +6,15 @@ from wagtail.images.blocks import ImageChooserBlock
 from wagtailmath.blocks import MathBlock
 
 from cms.core.blocks import (
+    AnnouncementPanelBlock,
     DocumentsBlock,
     HeadingBlock,
+    InformationPanelBlock,
     ONSEmbedBlock,
     QuoteBlock,
     RelatedLinksBlock,
     VideoEmbedBlock,
     WarningPanelBlock,
-    InformationPanelBlock,
-    AnnouncementPanelBlock,
 )
 
 if TYPE_CHECKING:
