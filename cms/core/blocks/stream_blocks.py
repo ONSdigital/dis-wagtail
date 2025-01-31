@@ -7,12 +7,13 @@ from wagtailmath.blocks import MathBlock
 from cms.core.blocks import (
     DocumentsBlock,
     HeadingBlock,
-    InfoErrorSuccessPanelBlock,
     ONSEmbedBlock,
     QuoteBlock,
     RelatedLinksBlock,
     VideoEmbedBlock,
-    WarnAnnouncementPanelBlock,
+    WarningPanelBlock,
+    InformationPanelBlock,
+    AnnouncementPanelBlock,
 )
 from cms.core.blocks.section_blocks import SectionBlock
 
@@ -43,8 +44,9 @@ class CoreStoryBlock(StreamBlock):
     heading = HeadingBlock()
     rich_text = RichTextBlock()
     quote = QuoteBlock()
-    warn_announcement_panel = WarnAnnouncementPanelBlock()
-    info_error_success_panel = InfoErrorSuccessPanelBlock()
+    warning_panel = WarningPanelBlock()
+    information_panel = InformationPanelBlock()
+    announcement_panel = AnnouncementPanelBlock()
     video_embed = VideoEmbedBlock(group="Media")
     image = ImageChooserBlock(group="Media")
     documents = DocumentsBlock(group="Media")

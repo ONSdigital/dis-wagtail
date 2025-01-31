@@ -3,39 +3,44 @@ from django.utils.translation import gettext_lazy as _
 from wagtail import blocks
 
 
-class WarnAnnouncementPanelBlock(blocks.StructBlock):
-    """Covers 'warn' and 'announcement' variants. No title is needed."""
-
-    variant = blocks.ChoiceBlock(
-        choices=[
-            ("warn", _("Warning")),
-            ("announcement", _("Announcement")),
-        ],
-        default="warn",
-        label=_("Panel type"),
-    )
+class WarningPanelBlock(blocks.StructBlock):
     body = blocks.RichTextBlock(features=settings.RICH_TEXT_BASIC)
+
+    def get_context(self, value, parent_context=None):
+        context = super().get_context(value, parent_context)
+        context["variant"] = "warn"
+        return context
 
     class Meta:
         template = "templates/components/streamfield/warn_announcement_panel.html"
-        label = _("Warning/Announcement Panel")
+        label = _("Warning Panel")
+        group = _("Panels")
 
 
-class InfoErrorSuccessPanelBlock(blocks.StructBlock):
-    """Covers 'info', 'error', and 'success' variants, each requiring a title."""
-
-    variant = blocks.ChoiceBlock(
-        choices=[
-            ("info", _("Information")),
-            ("error", _("Error")),
-            ("success", _("Success")),
-        ],
-        default="info",
-        label=_("Panel type"),
-    )
-    body = blocks.RichTextBlock(features=settings.RICH_TEXT_BASIC)
+class InformationPanelBlock(blocks.StructBlock):
     title = blocks.CharBlock(required=True, label=_("Title"))
+    body = blocks.RichTextBlock(features=settings.RICH_TEXT_BASIC)
+
+    def get_context(self, value, parent_context=None):
+        context = super().get_context(value, parent_context)
+        context["variant"] = "info"
+        return context
 
     class Meta:
-        template = "templates/components/streamfield/info_error_success_panel.html"
-        label = _("Info/Error/Success Panel")
+        template = "templates/components/streamfield/information_panel.html"
+        label = _("Information Panel")
+        group = _("Panels")
+
+
+class AnnouncementPanelBlock(blocks.StructBlock):
+    body = blocks.RichTextBlock(features=settings.RICH_TEXT_BASIC)
+
+    def get_context(self, value, parent_context=None):
+        context = super().get_context(value, parent_context)
+        context["variant"] = "announcement"
+        return context
+
+    class Meta:
+        template = "templates/components/streamfield/warn_announcement_panel.html"
+        label = _("Announcement Panel")
+        group = _("Panels")
