@@ -6,8 +6,8 @@ from wagtail import blocks
 class WarningPanelBlock(blocks.StructBlock):
     body = blocks.RichTextBlock(features=settings.RICH_TEXT_BASIC)
 
-    def get_context(self, value, parent_context=None):
-        context = super().get_context(value, parent_context)
+    def get_context(self, value: dict, parent_context: dict | None = None) -> dict:
+        context: dict = super().get_context(value, parent_context)
         context["variant"] = "warn"
         return context
 
@@ -21,8 +21,8 @@ class InformationPanelBlock(blocks.StructBlock):
     title = blocks.CharBlock(required=True, label=_("Title"))
     body = blocks.RichTextBlock(features=settings.RICH_TEXT_BASIC)
 
-    def get_context(self, value, parent_context=None):
-        context = super().get_context(value, parent_context)
+    def get_context(self, value: dict, parent_context: dict | None = None) -> dict:
+        context: dict = super().get_context(value, parent_context)
         context["variant"] = "info"
         return context
 
@@ -35,8 +35,8 @@ class InformationPanelBlock(blocks.StructBlock):
 class AnnouncementPanelBlock(blocks.StructBlock):
     body = blocks.RichTextBlock(features=settings.RICH_TEXT_BASIC)
 
-    def get_context(self, value, parent_context=None):
-        context = super().get_context(value, parent_context)
+    def get_context(self, value: dict, parent_context: dict | None = None) -> dict:
+        context: dict = super().get_context(value, parent_context)
         context["variant"] = "announcement"
         return context
 
