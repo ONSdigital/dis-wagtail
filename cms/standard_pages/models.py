@@ -17,6 +17,7 @@ if TYPE_CHECKING:
     from wagtail.admin.panels import Panel
 
 
+
 class InformationPage(BasePage):  # type: ignore[django-manager-missing]
     """A generic information page model."""
 
@@ -99,7 +100,7 @@ class IndexPage(BasePage):  # type: ignore[django-manager-missing]
             )
         return formatted_items
 
-    def _get_formatted_child_pages(self, request: "HttpRequest") -> list[dict[str, str | dict[str, str]]]:
+    def _get_formatted_child_pages(self, request: "HttpRequest") -> list[dict[str, dict[str, str] | Any]]:
         """Format child pages if there are no featured items."""
         formatted_items = []
 
