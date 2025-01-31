@@ -7,8 +7,9 @@ from cms.standard_pages.tests.factories import IndexPageFactory, InformationPage
 class IndexPageTestCase(WagtailTestUtils, TestCase):
     """Test IndexPage model properties and methods."""
 
-    def setUp(self):
-        self.index_page = IndexPageFactory(
+    @classmethod
+    def setUpTestData(cls):
+        cls.index_page = IndexPageFactory(
             title="Test Index Page",
             summary="This is an example",
             content="This is the main content",
@@ -16,7 +17,7 @@ class IndexPageTestCase(WagtailTestUtils, TestCase):
             related_links=None,
         )
 
-        self.page_url = self.index_page.url
+        cls.page_url = cls.index_page.url
 
     def test_no_featured_items_displayed_when_no_children_and_no_custom_featured_items_selected(self):
         """Test that the Featured Items block isn't displayed when the Index Page has no child pages

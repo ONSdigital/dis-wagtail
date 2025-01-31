@@ -55,9 +55,6 @@ class ContactDetailsFactory(factory.django.DjangoModelFactory):
     email = factory.Faker("email")
 
 
-# Section Block Factories
-
-
 class SectionContentBlockFactory(StructBlockFactory):
     """Factory for Section content block."""
 

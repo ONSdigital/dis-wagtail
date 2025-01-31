@@ -73,36 +73,42 @@ class IndexPage(BasePage):  # type: ignore[django-manager-missing]
         index.SearchField("content"),
     ]
 
-    def get_formatted_items(self, request: "HttpRequest") -> list[dict[str, str]]:
+    def get_formatted_items(self, request: "HttpRequest") -> list[dict[str, str | dict[str, str]]]:
         """Returns a formatted list of Featured items
         that can be either children internal Pages or specified in a RelatedContentBlock
         for use with the Design system Document list component.
         """
+
+        def get_featured_item_dict(title: str, url: str, description: str) -> dict[str, str | dict[str, str]]:
+            """Helper to create the featured item dictionary."""
+            return {
+                "featured": "true",
+                "title": {"text": title, "url": url},
+                "description": description,
+            }
+
         formatted_items = []
-        if featured_items := self.featured_items:
-            for featured_item in featured_items:
-                if featured_item.value.link is None:
-                    continue
 
-                formatted_items.append(
-                    {
-                        "featured": "true",
-                        "title": {"text": featured_item.value.link["text"], "url": featured_item.value.link["url"]},
-                        "description": featured_item.value["description"],
-                    }
+        for featured_item in self.featured_items:  # pylint: disable=not-an-iterable
+            if featured_item.value.link is None:
+                continue
+
+            formatted_items.append(
+                get_featured_item_dict(
+                    title=featured_item.value.link["text"],
+                    url=featured_item.value.link["url"],
+                    description=featured_item.value["description"],
                 )
+            )
 
-        else:
+        if not formatted_items:
             for child_page in self.get_children().live().public().specific().defer_streamfields():
                 formatted_items.append(
-                    {
-                        "featured": "true",
-                        "title": {
-                            "text": getattr(child_page, "listing_title", "") or child_page.title,
-                            "url": child_page.get_url(request=request),
-                        },
-                        "description": getattr(child_page, "listing_summary", "") or getattr(child_page, "summary", ""),
-                    }
+                    get_featured_item_dict(
+                        title=getattr(child_page, "listing_title", "") or child_page.title,
+                        url=child_page.get_url(request=request),
+                        description=getattr(child_page, "listing_summary", "") or getattr(child_page, "summary", ""),
+                    )
                 )
 
         return formatted_items
@@ -111,15 +117,13 @@ class IndexPage(BasePage):  # type: ignore[django-manager-missing]
         """Returns a formatted list of related links for both external and internal pages
         for use with the Design System list component.
         """
-        formatted_links = []
-
-        for related_link in self.related_links:  # pylint: disable=not-an-iterable
-            formatted_links.append(
-                {
-                    "title": related_link.value.link.get("text"),
-                    "url": related_link.value.link.get("url"),
-                }
-            )
+        formatted_links = [
+            {
+                "title": related_link.value.link.get("text"),
+                "url": related_link.value.link.get("url"),
+            }
+            for related_link in self.related_links  # pylint: disable=not-an-iterable
+        ]
 
         return formatted_links
 
