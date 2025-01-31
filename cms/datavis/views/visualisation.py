@@ -109,7 +109,7 @@ class VisualisationCopyView(RemoveChecksSidePanelMixin, RemoveSnippetIndexBreadc
         return _("Copy")
 
     def get_page_subtitle(self) -> "str | Promise":
-        return capfirst(str(self.object))  # type: ignore[no-any-return]
+        return capfirst(str(self.object))
 
     def get_bound_panel(self, *args: Any, **kwargs: Any) -> Optional["Panel"]:
         """Overrides EditView.get_bound_panel() to prevent the edit_handler from
