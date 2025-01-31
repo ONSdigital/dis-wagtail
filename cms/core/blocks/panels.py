@@ -21,11 +21,6 @@ class InformationPanelBlock(blocks.StructBlock):
     title = blocks.CharBlock(required=True, label=_("Title"))
     body = blocks.RichTextBlock(features=settings.RICH_TEXT_BASIC)
 
-    def get_context(self, value: dict, parent_context: dict | None = None) -> dict:
-        context: dict = super().get_context(value, parent_context)
-        context["variant"] = "info"
-        return context
-
     class Meta:
         template = "templates/components/streamfield/information_panel.html"
         label = _("Information Panel")
