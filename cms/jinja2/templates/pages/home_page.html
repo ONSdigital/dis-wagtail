@@ -1,6 +1,18 @@
 {% extends "templates/base_page.html" %}
+{% from "components/hero/_macro.njk" import onsHero %}
 
 {% from "components/panel/_macro.njk" import onsPanel %}
+
+{% block header_area %}
+    {# fmt:off #}
+    {{
+        onsHero({
+            "title": 'Home',
+            "variants": 'navy-blue'
+        })
+    }}
+    {# fmt:on #}
+{% endblock %}
 
 {% block main %}
     {% call onsPanel({"variant": 'announcement'}) %}

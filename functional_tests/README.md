@@ -8,6 +8,8 @@
     - [Clearing and Initialising the Functional Test Development Database](#clearing-and-initialising-the-functional-test-development-database)
 - [Running the Tests](#running-the-tests)
     - [Playwright Options](#playwright-options)
+- [Developing Tests](#developing-tests)
+    - [Useful Documentation](#useful-documentation)
 - [Viewing Failure Traces](#viewing-failure-traces)
     - [Viewing the Failure Trace from GitHub Actions](#viewing-the-failure-trace-from-github-actions)
 - [Test Code Standards and Style Guide](#test-code-standards-and-style-guide)
@@ -130,6 +132,21 @@ Some Playwright configuration options can be passed in through environment varia
 | PLAYWRIGHT_BROWSER    | Set the browser for playwright to use, must be one of `chromium`, `firefox`, or `webkit`.<br/> NOTE: Currently only chromium is supported and tests may fail in other browsers | `chromium`                       |
 | PLAYWRIGHT_TRACE      | Toggle Playwright trace recording                                                                                                                                              | `True`                           |
 | PLAYWRIGHT_TRACES_DIR | Sets the location to write Playwright trace files if `PLAYWRIGHT_TRACE` is enabled.<br/>The Default location `<project_root>/tmp_traces` is git ignored for convenience.       | `<working_directory>/tmp_traces` |
+
+## Developing Tests
+
+Watch [this video guide](https://www.loom.com/share/95e2b897ab2f4882adfe06cd2c90dada?sid=5042c0be-d726-4842-be84-153993e3db36) on creating functional tests. It
+covers the basics of adding features, scenarios and steps and some Playwright tooling.
+
+### Useful Documentation
+
+Some links to particularly useful parts of documentation
+
+- [Playwright Locators](https://playwright.dev/python/docs/locators): Locating and selecting page elements in Playwright
+- [Playwright Assertions](https://playwright.dev/python/docs/test-assertions): Making assertions using Playwright
+- [Playwright Codegen](https://playwright.dev/python/docs/codegen-intro): The Playwright code generator tool
+- [Behave Command Line Arguments](https://behave.readthedocs.io/en/stable/behave.html#command-line-arguments): Options running the tests from the command line
+- [Behave API Reference](https://behave.readthedocs.io/en/stable/api.html): Reference documentation for the Behave framework API
 
 ## Viewing Failure Traces
 
