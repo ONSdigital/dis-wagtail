@@ -3,7 +3,6 @@ from typing import TYPE_CHECKING, Optional
 import jinja2
 from django import template
 from django.template.loader import render_to_string
-from django.utils.translation import gettext_lazy as _
 from django_jinja import library
 
 from cms.core.models import SocialMediaSettings
@@ -38,17 +37,3 @@ def social_image(page: "Page", site: "Site") -> Optional["CustomImage"]:
 def include_django(context: jinja2.runtime.Context, template_name: str) -> "SafeString":
     """Allow importing a pre-rendered Django template into jinja2."""
     return render_to_string(template_name, context=dict(context), request=context.get("request", None))
-
-
-# Breadcrumbs
-@register.filter(name="breadcrumbs")
-def breadcrumbs(page: "Page") -> list[dict[str, str]]:
-    """Returns the breadcrumbs as a list of dictionaries for the given page."""
-    breadcrumbs = []
-    for ancestor_page in page.get_ancestors().specific().defer_streamfields():
-        if not ancestor_page.is_root():
-            if ancestor_page.depth <= 2:
-                breadcrumbs.append({"url": "/", "text": _("Home")})
-            elif not getattr(ancestor_page, "exclude_from_breadcrumbs", False):
-                breadcrumbs.append({"url": ancestor_page.get_url(), "text": ancestor_page.title})
-    return breadcrumbs

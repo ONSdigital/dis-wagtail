@@ -36,68 +36,66 @@
         {% set releases_text = _("View latest release") %}
     {% endif %}
     {% set next_release_date_text = page.next_release_date|date("DATE_FORMAT") or _("To be announced") %}
-    {% with breadcrumbs=page|breadcrumbs %}
-        {# fmt:off #}
-        {{
-            onsHero({
-                "topic": _("Statistical article"),
-                "title": page.display_title,
-                "variants": 'grey',
-                "text": page.summary,
-                "officialStatisticsBadge": page.is_accredited,
-                "wide": true,
-                "detailsColumns": 12,
-                "html": census_html,
-                "descriptionList": {
+    {# fmt:off #}
+    {{
+        onsHero({
+            "topic": _("Statistical article"),
+            "title": page.display_title,
+            "variants": 'grey',
+            "text": page.summary,
+            "officialStatisticsBadge": page.is_accredited,
+            "wide": true,
+            "detailsColumns": 12,
+            "html": census_html,
+            "descriptionList": {
 
-                    "descriptionListLabel": "",
-                    "termCol": "12",
-                    "descriptionCol": "12",
-                    "itemsList": [
-                        {
-                            "term": _("Release date"),
-                            "descriptions": [
-                                {
-                                    "description": page.release_date|date("DATE_FORMAT")
-                                }
-                            ]
-                        },
-                        {
-                            "term": _("Edition"),
-                            "descriptions": [
-                                {
-                                    "description": _("Latest")
-                                }
-                            ]
-                        },
-                        contact_details,
-                        {
-                            "term": _("Next release"),
-                            "descriptions": [
-                                {
-                                    "description": next_release_date_text
-                                }
-                            ]
-                        },
-                        {
-                            "term": _("Releases"),
-                            "descriptions": [
-                                {
-                                    "description": releases_text
-                                }
-                            ]
-                        },
-                    ]
-                },
-                "breadcrumbs":
+                "descriptionListLabel": "",
+                "termCol": "6",
+                "descriptionCol": "6",
+                "itemsList": [
                     {
-                        "ariaLabel": 'Breadcrumbs',
-                        "itemsList": breadcrumbs,
-                    }
-            })
-        }}
-        {# fmt:on #}
-    {% endwith %}
+                        "term": _("Release date"),
+                        "descriptions": [
+                            {
+                                "description": page.release_date|date("DATE_FORMAT")
+                            }
+                        ]
+                    },
+                    {
+                        "term": _("Edition"),
+                        "descriptions": [
+                            {
+                                "description": _("Latest")
+                            }
+                        ]
+                    },
+                    contact_details,
+                    {
+                        "term": _("Next release"),
+                        "descriptions": [
+                            {
+                                "description": next_release_date_text
+                            }
+                        ]
+                    },
+                    {
+                        "term": _("Releases"),
+                        "descriptions": [
+                            {
+                                "description": releases_text
+                            }
+                        ]
+                    },
+                ]
+            },
+            "breadcrumbs":
+                {
+                    "ariaLabel": 'Breadcrumbs',
+                    "itemsList": breadcrumbs(page),
+                }
+        })
+    }}
+    {# fmt:on #}
     <div class="common-header article-header {% if page.updates %}article-header--flush{% endif %}">
         <div class="ons-container">
             {% include "templates/components/navigation/breadcrumbs.html" %}
