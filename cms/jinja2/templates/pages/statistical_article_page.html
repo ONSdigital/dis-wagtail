@@ -24,7 +24,7 @@
     {% endif %}
     {% if page.is_census %}
         {% import "templates/components/census/census-logo.html" as census_logo %}
-        {% set census_html = ["<div class='ons-container'>"|safe, census_logo] | join %}
+        {% set census_html = ['<div class="ons-container">'|safe, census_logo] | join %}
         {% set census_html = [census_html, "</div>"|safe] | join %}
     {% else %}
         {% set census_html = "" %}

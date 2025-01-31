@@ -9,7 +9,7 @@ if TYPE_CHECKING:
 
 # Breadcrumbs
 @jinja2.pass_context
-def breadcrumbs(context: jinja2.runtime.Context, page: "Page") -> list[dict[str, str]]:
+def breadcrumbs(context: jinja2.runtime.Context, page: "Page") -> list[dict[str, object]]:
     """Returns the breadcrumbs as a list of dictionaries for the given page."""
     breadcrumbs_list = []
     page_depth = 2
