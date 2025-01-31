@@ -50,18 +50,20 @@ class MainMenu(DraftStateMixin, RevisionMixin, PreviewableMixin, models.Model):
     def __str__(self) -> str:
         return "Main Menu"
 
+
 class FooterMenu(DraftStateMixin, RevisionMixin, PreviewableMixin, models.Model):
-    base_form_class = MainMenuAdminForm
     columns = StreamField(
         [("column", LinksColumn())],
-        blank = True,
-        max_num = 3,
-        help_text = _("Up to 3 columns. Each column contains a title with links.")
+        blank=True,
+        max_num=3,
+        help_text=_("Up to 3 columns. Each column contains a title with links."),
     )
     _revisions = GenericRelation("wagtailcore.Revision", related_query_name="footer_menu")
+
     @property
     def revisions(self):  # type: ignore[no-untyped-def]
         return self._revisions
+
     panels: ClassVar[list] = [
         FieldPanel("columns"),
         PublishingPanel(),
@@ -72,6 +74,7 @@ class FooterMenu(DraftStateMixin, RevisionMixin, PreviewableMixin, models.Model)
 
     def __str__(self) -> str:
         return "Footer Menu"
+
 
 @register_setting(icon="list-ul")
 class NavigationSettings(BaseSiteSetting):

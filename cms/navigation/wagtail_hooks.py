@@ -4,7 +4,7 @@ from wagtail.permissions import ModelPermissionPolicy
 from wagtail.snippets.models import register_snippet
 from wagtail.snippets.views.snippets import SnippetViewSet
 
-from .models import MainMenu, FooterMenu
+from .models import FooterMenu, MainMenu
 
 if TYPE_CHECKING:
     from cms.users.models import User
@@ -32,7 +32,9 @@ class MainMenuViewSet(SnippetViewSet):
 
 register_snippet(MainMenuViewSet)
 
+
 class FooterMenuViewSet(SnippetViewSet):
     model = FooterMenu
+
 
 register_snippet(FooterMenuViewSet)
