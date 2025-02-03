@@ -11,7 +11,7 @@ from wagtail.models import Page
 from wagtail.search import index
 
 from cms.core.fields import StreamField
-from cms.core.models import BasePage
+from cms.core.models import BasePage, GenericTaxonomyMixin
 
 from .blocks import (
     ReleaseCalendarChangesStoryBlock,
@@ -36,7 +36,7 @@ class ReleaseCalendarIndex(BasePage):  # type: ignore[django-manager-missing]
     max_count_per_parent = 1
 
 
-class ReleaseCalendarPage(BasePage):  # type: ignore[django-manager-missing]
+class ReleaseCalendarPage(GenericTaxonomyMixin, BasePage):  # type: ignore[django-manager-missing]
     """The calendar release page model."""
 
     base_form_class = ReleaseCalendarPageAdminForm

@@ -1,6 +1,6 @@
 from wagtail import hooks
 
-from cms.taxonomy.views import exclusive_topic_chooser_viewset, topic_chooser_viewset
+from cms.taxonomy.viewsets import exclusive_topic_chooser_viewset, topic_chooser_viewset
 
 
 @hooks.register("register_admin_viewset")

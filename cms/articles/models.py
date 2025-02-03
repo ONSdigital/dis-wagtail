@@ -17,7 +17,7 @@ from cms.bundles.models import BundledPageMixin
 from cms.core.blocks import HeadlineFiguresBlock
 from cms.core.blocks.stream_blocks import SectionStoryBlock
 from cms.core.fields import StreamField
-from cms.core.models import BasePage
+from cms.core.models import BasePage, GenericTaxonomyMixin
 
 if TYPE_CHECKING:
     from django.http import HttpRequest
@@ -26,7 +26,7 @@ if TYPE_CHECKING:
     from wagtail.admin.panels import Panel
 
 
-class ArticleSeriesPage(RoutablePageMixin, Page):
+class ArticleSeriesPage(RoutablePageMixin, GenericTaxonomyMixin, BasePage):
     """The article series model."""
 
     parent_page_types: ClassVar[list[str]] = ["topics.TopicPage"]

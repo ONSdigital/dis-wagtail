@@ -10,7 +10,7 @@ from cms.core.models import BasePage
 from cms.core.models.mixins import GenericTaxonomyMixin
 
 
-class InformationPage(BasePage, GenericTaxonomyMixin):  # type: ignore[django-manager-missing]
+class InformationPage(GenericTaxonomyMixin, BasePage):  # type: ignore[django-manager-missing]
     """A generic information page model."""
 
     template = "templates/pages/information_page.html"

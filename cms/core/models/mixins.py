@@ -8,7 +8,7 @@ from django.utils.translation import gettext_lazy as _
 from wagtail.admin.panels import FieldPanel, InlinePanel, MultiFieldPanel
 
 from cms.taxonomy.models import Topic
-from cms.taxonomy.views import ExclusiveTopicChooserWidget
+from cms.taxonomy.viewsets import ExclusiveTopicChooserWidget
 
 if TYPE_CHECKING:
     from django.core.paginator import Page
@@ -106,7 +106,7 @@ class SubpageMixin:
 
 
 class GenericTaxonomyMixin(models.Model):
-    """Generic Taxonomy mixin allows pages to be tagged with one or more topics in a many-to-many relationship."""
+    """Generic Taxonomy mixin allows pages to be tagged with one or more topics non-exclusively."""
 
     taxonomy_panels: ClassVar[list["Panel"]] = [
         InlinePanel("topics", label=_("Topics")),
