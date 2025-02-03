@@ -8,12 +8,12 @@ from django.views.decorators.vary import vary_on_headers
 from django.views.generic import TemplateView
 from wagtail import urls as wagtail_urls
 from wagtail.contrib.sitemaps.views import sitemap
-from wagtail.documents import urls as wagtaildocs_urls
+from wagtail.documents.views.serve import authenticate_with_password
 from wagtail.utils.urlpatterns import decorate_urlpatterns
 
 from cms.core import views as core_views
 from cms.core.cache import get_default_cache_control_decorator
-from cms.private_media.views import PrivateImageServeView
+from cms.private_media import views as private_media_views
 
 if TYPE_CHECKING:
     from django.urls import URLPattern, URLResolver
@@ -23,8 +23,12 @@ internal_urlpatterns = [path("readiness/", core_views.ready, name="readiness")]
 
 # Private URLs are not meant to be cached.
 private_urlpatterns = [
-    path("documents/", include(wagtaildocs_urls)),
     path("-/", include((internal_urlpatterns, "internal"))),
+    path(
+        "documents/authenticate_with_password/<int:restriction_id>/",
+        authenticate_with_password,
+        name="wagtaildocs_authenticate_with_password",
+    ),
 ]
 
 # `wagtail.admin` must always be installed,
@@ -102,7 +106,16 @@ urlpatterns = (
     + debug_urlpatterns
     + urlpatterns
     + [
-        re_path(r"^images/([^/]*)/(\d*)/([^/]*)/[^/]*$", PrivateImageServeView.as_view(), name="wagtailimages_serve"),
+        re_path(
+            r"^documents/(\d+)/(.*)$",
+            private_media_views.DocumentServeView.as_view(),
+            name="wagtaildocs_serve",
+        ),
+        re_path(
+            r"^images/([^/]*)/(\d*)/([^/]*)/[^/]*$",
+            private_media_views.ImageServeView.as_view(),
+            name="wagtailimages_serve",
+        ),
         # Add Wagtail URLs at the end.
         # Wagtail cache-control is set on the page models' serve methods
         path("", include(wagtail_urls)),

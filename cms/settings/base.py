@@ -166,6 +166,7 @@ TEMPLATES = [
                 "wagtail.images.jinja2tags.images",
                 "wagtail.contrib.settings.jinja2tags.settings",
                 "cms.core.jinja2tags.CoreExtension",
+                "cms.navigation.jinja2tags.NavigationExtension",
             ],
         },
     },
@@ -392,7 +393,7 @@ MEDIA_URL = env.get("MEDIA_URL", "/media/")
 # https://boto3.amazonaws.com/v1/documentation/api/latest/guide/configuration.html#environment-variables
 if "AWS_STORAGE_BUCKET_NAME" in env:
     # Add django-storages to the installed apps
-    INSTALLED_APPS += ["storages", "wagtail_storages"]
+    INSTALLED_APPS += ["storages"]
 
     # https://docs.djangoproject.com/en/stable/ref/settings/#std-setting-STORAGES
     STORAGES["default"]["BACKEND"] = "cms.private_media.storages.AccessControlledS3Storage"
@@ -409,8 +410,7 @@ if "AWS_STORAGE_BUCKET_NAME" in env:
     AWS_S3_FILE_OVERWRITE = False
 
     # Default ACL for new files should be "private" - not accessible to the
-    # public. Images should be made available to public via the bucket policy,
-    # where the documents should use wagtail-storages.
+    # public.
     AWS_DEFAULT_ACL = "private"
 
     # Limit how large a file can be spooled into memory before it's written to disk.
