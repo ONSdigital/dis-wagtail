@@ -6,7 +6,12 @@ from django.conf import settings
 from django.contrib.auth import get_user_model, login, logout
 from django.contrib.auth.middleware import AuthenticationMiddleware
 
-from cms.auth.utils import assign_groups, assign_teams, extract_and_validate_token, update_user_details
+from cms.auth.utils import (
+    assign_groups,
+    assign_teams,
+    extract_and_validate_token,
+    update_user_details,
+)
 
 if TYPE_CHECKING:
     from django.http import HttpRequest
@@ -43,10 +48,29 @@ class ONSAuthMiddleware(AuthenticationMiddleware):
 
             return
 
-        if request.user.is_authenticated:
-            return  # User already authenticated
+        access_payload_username = access_payload.get("username")
+        id_payload_username = id_payload.get("cognito:username")
+        email = id_payload.get("email")
 
-        self._authenticate_user(request, access_payload, id_payload)
+        # if required fields are missing or the tokens do not match, stop processing
+        if (
+            not all([access_payload_username, id_payload_username, email])
+            or access_payload_username != id_payload_username
+        ):
+            return
+
+        if request.user.is_authenticated:
+            # Check cookie user against token user
+            user = User.objects.filter(username=id_payload_username).first()
+            if user == request.user:
+                # User already authenticated and validated
+                return
+
+            # If user is not matching currently logged-in user, then
+            # log out previous session and authenticate new user
+            logout(request)
+
+        self._authenticate_user(request, id_payload)
 
     @staticmethod
     def _handle_unauthenticated_user(request: "HttpRequest") -> None:
@@ -58,22 +82,19 @@ class ONSAuthMiddleware(AuthenticationMiddleware):
             logout(request)
 
     @staticmethod
-    def _authenticate_user(request: "HttpRequest", access_payload: Mapping, id_payload: Mapping) -> None:
+    def _authenticate_user(request: "HttpRequest", id_payload: Mapping) -> None:
         """Authenticate user based on token payloads."""
-        username = access_payload.get("username") or id_payload.get("cognito:username")
-        email = id_payload.get("email")
+        username = id_payload["cognito:username"]
+        email = id_payload["email"]
         first_name = id_payload.get("given_name", "")
         last_name = id_payload.get("family_name", "")
 
-        if not username or not email:
-            return
-
         # Get or create user and update details
-        user, created = User.objects.get_or_create(username=email, defaults={"email": email})
-        update_user_details(user, email, first_name, last_name, created)
+        user, created = User.objects.get_or_create(username=username, defaults={"email": email})
+        update_user_details(user, email=email, first_name=first_name, last_name=last_name, created=created)
 
         # Assign groups
-        cognito_groups = access_payload.get("cognito:groups") or []
+        cognito_groups = id_payload.get("cognito:groups") or []
         assign_groups(user, cognito_groups)
 
         # Assign teams

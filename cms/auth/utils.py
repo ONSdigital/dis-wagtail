@@ -49,7 +49,7 @@ def extract_and_validate_token(token: str, token_type: str) -> dict | None:
     return None
 
 
-def update_user_details(user: "UserModel", email: str, first_name: str, last_name: str, created: bool) -> None:
+def update_user_details(user: "UserModel", *, email: str, first_name: str, last_name: str, created: bool) -> None:
     """Update user details regardless of whether the user was newly created."""
     user.email = email
     user.first_name = first_name
