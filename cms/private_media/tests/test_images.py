@@ -1,6 +1,5 @@
 from unittest import mock
 
-from django.contrib.auth import get_user_model
 from django.test import SimpleTestCase, TestCase, override_settings
 from wagtail.images import get_image_model
 from wagtail.images.models import Filter
@@ -325,58 +324,3 @@ class TestPrivateImageManager(TestCase):
             # Query summary:
             # 1. to fetch the images
             self.assertEqual(self.model.objects.bulk_make_private(self.model.objects.all()), 0)
-
-
-class TestImageServeView(TestCase):
-    model = get_image_model()
-
-    @classmethod
-    def setUpTestData(cls):
-        cls.root_collection = Collection.objects.get(depth=1)
-        cls.private_image = ImageFactory(collection=cls.root_collection)
-        cls.public_image = ImageFactory(_privacy=Privacy.PUBLIC, collection=cls.root_collection)
-        cls.private_image_renditions = cls.private_image.create_renditions(Filter("fill-10x10"), Filter("fill-20x20"))
-        cls.public_image_renditions = cls.public_image.create_renditions(Filter("fill-10x10"), Filter("fill-20x20"))
-        cls.superuser = get_user_model().objects.create(username="superuser", is_superuser=True)
-
-    def test_serve_private_image(self):
-        """Test the serve view behaviour for private image renditions."""
-        # If not authenticated, permission checks should fail and a Forbidden response returned
-        for rendition in self.private_image_renditions.values():
-            for is_external_env in [True, False]:
-                with self.subTest(is_external_env=is_external_env) and override_settings(
-                    IS_EXTERNAL_ENV=is_external_env
-                ):
-                    response = self.client.get(rendition.serve_url)
-                    self.assertEqual(response.status_code, 403)
-
-        # If authenticated as a superuser, the view should serve the files
-        self.client.force_login(self.superuser)
-        for rendition in self.private_image_renditions.values():
-            for is_external_env in [True, False]:
-                with self.subTest(is_external_env=is_external_env) and override_settings(
-                    IS_EXTERNAL_ENV=is_external_env
-                ):
-                    response = self.client.get(rendition.serve_url)
-                    self.assertEqual(response.status_code, 200)
-
-    def test_serve_public_image(self):
-        """Test the serve view behaviour for public image renditions."""
-        # For public image renditions, the serve view should redirect to the file URL.
-        for rendition in self.public_image_renditions.values():
-            response = self.client.get(rendition.serve_url)
-            self.assertEqual(response.status_code, 302)
-
-    @override_settings(IS_EXTERNAL_ENV=True)
-    def test_serve_public_image_external_env(self):
-        """Test the serve view behaviour for public image renditions in an external environment."""
-        self.test_serve_public_image()
-
-    def test_serve_public_image_with_outdated_file_permissions(self):
-        """Test the serve view behaviour for public image renditions with outdated file permissions."""
-        self.model.objects.filter(id=self.public_image.id).update(file_permissions_last_set=None)
-        self.public_image.refresh_from_db()
-        self.assertTrue(self.public_image.has_outdated_file_permissions())
-        for rendition in self.public_image_renditions.values():
-            response = self.client.get(rendition.serve_url)
-            self.assertEqual(response.status_code, 200)

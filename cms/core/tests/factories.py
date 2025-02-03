@@ -2,8 +2,9 @@ import factory
 import wagtail_factories
 from wagtail import blocks
 from wagtail.rich_text import RichText
-from wagtail_factories.blocks import BlockFactory
+from wagtail_factories.blocks import BlockFactory, PageChooserBlockFactory, StructBlockFactory
 
+from cms.core.blocks.base import LinkBlock
 from cms.core.models import ContactDetails
 
 
@@ -72,3 +73,17 @@ class SectionBlockFactory(wagtail_factories.StructBlockFactory):
 
     title = factory.Faker("text", max_nb_chars=50)
     content = factory.SubFactory(SectionContentBlockFactory)
+
+
+class LinkBlockFactory(StructBlockFactory):
+    """Factory for LinkBlock."""
+
+    class Meta:
+        model = LinkBlock
+
+    title = factory.Faker("text", max_nb_chars=20)
+    page = None
+    external_url = factory.Faker("url")
+
+    class Params:
+        with_page = factory.Trait(page=factory.SubFactory(PageChooserBlockFactory), external_url=None)
