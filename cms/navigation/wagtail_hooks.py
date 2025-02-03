@@ -14,7 +14,7 @@ class NoAddModelPermissionPolicy(ModelPermissionPolicy):
     """Model permission that doesn't allow creating more than one main menu instance."""
 
     def user_has_permission(self, user: "User", action: str) -> bool:
-        if action == "add" and MainMenu.objects.exists():
+        if action == "add" and self.model.objects.exists():
             return False
         has_permission: bool = super().user_has_permission(user, action)
         return has_permission
@@ -36,5 +36,8 @@ register_snippet(MainMenuViewSet)
 class FooterMenuViewSet(SnippetViewSet):
     model = FooterMenu
 
+    @property
+    def permission_policy(self) -> NoAddModelPermissionPolicy:
+        return NoAddModelPermissionPolicy(self.model)
 
 register_snippet(FooterMenuViewSet)
