@@ -2,7 +2,7 @@
 {% from "components/related-content/_macro.njk" import onsRelatedContent %}
 
 {% block main %}
-    <p>{{ page.summary }}</p>
+    <p>{{ page.summary|richtext }}</p>
 
     {% if page.last_updated %}
         <h5>{{ _("Last Updated") }}: {{ page.last_updated }}</h5>
