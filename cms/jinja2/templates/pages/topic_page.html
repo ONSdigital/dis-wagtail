@@ -1,4 +1,5 @@
 {% extends "templates/base_page.html" %}
+{% from "components/table-of-contents/_macro.njk" import onsTableOfContents %}
 
 {% block header_area %}
     <div class="topic-header">
@@ -21,9 +22,53 @@
             </div>
         </div>
     </div>
+{% endblock %}
 
-    {% if page.headline_figures %}
-        {% include_block page.headline_figures %}
-    {% endif %}
+{% block main %}
+    <div class="ons-grid ons-grid-flex-gap ons-grid-flex-gap--32">
+        <div class="ons-grid__col ons-grid__col--sticky@m ons-col-4@m">
+            {% with toc_title=_("Contents"), toc_aria_label=_("Sections in this page") %}
+            {# fmt:off #}
+            {{-
+                onsTableOfContents({
+                    "title": toc_title,
+                    "ariaLabel": toc_aria_label,
+                    "itemsList": table_of_contents
+                })
+            }}
+            {# fmt:on #}
+            {% endwith %}
+        </div>
 
+        <div class="ons-grid__col ons-col-8@m">
+            {% if featured_item %}
+                <section id="featured" class="spacing">
+                    <h2>{{ _("Featured") }}</h2>
+                    {{ featured_item }}
+                </section>
+            {% endif %}
+
+            {% if page.processed_articles %}
+                <section id="related-articles" class="spacing">
+                    <h2>{{ _("Related articles") }}</h2>
+                    {{ page.processed_articles }}
+                </section>
+            {% endif %}
+
+            {% if page.processed_methodologies %}
+                <section id="related-methods" class="spacing">
+                    <h2>{{ _("Methods and quality information") }}</h2>
+                    {{ page.processed_methodologies }}
+                </section>
+            {% endif %}
+
+            {% if page.explore_more %}
+                <section id="explore-more">
+                    <h2>{{ _("Explore more") }}</h2>
+
+                    {{ page.explore_more }}
+                </section>
+            {% endif %}
+        </div>
+    </div>
 {% endblock %}
