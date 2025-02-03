@@ -106,38 +106,6 @@
     {% endfor %}
 {% endif %}
 
-{% set footer_menu = footer_menu | default(navigation_settings.footer_menu) %}
-
-{% set linksColumnList = [] %}
-
-{% if footer_menu and footer_menu.columns %}
-    {% for column in footer_menu.columns %}
-        {% set columnData = {
-            'linksList': []
-        } %}
-
-        {% for link in column.links %}
-            {% if link.page and link.page.live %}
-                {% set columnLinks = {
-                    'text': link.title or link.page.title,
-                    'url': pageurl(link.page)
-                } %}
-            {% elif link.external_url %}
-                {% set columnLinks = {
-                    'text': link.title,
-                    'url': link.external_url
-                } %}
-            {% endif %}
-
-            {% if columnLinks %}
-                {% do columnData.linksList.append(columnLinks) %}
-            {% endif %}
-        {% endfor %}
-
-        {% do linksColumnList.append(columnData) %}
-    {% endfor %}
-{% endif %}
-
 {% set pageConfig = {
     "bodyClasses": body_class,
     "title": page_title,
