@@ -102,21 +102,25 @@ class FooterColumnData(TypedDict):
 def footer_menu_columns(
     context: jinja2.runtime.Context, footer_menu: Optional["FooterMenu"] = None
 ) -> list[FooterColumnData]:
+
     if not footer_menu:
         print("footer_menu is None")
         return []
 
-    items: list[FooterColumnData] = []
-    for idx, column in enumerate(footer_menu.columns):
-        column_data: FooterColumnData = {"column": idx, "title": column.value["title"], "linksList": []}
-        print("")
+    columns_data = []
+    for column in footer_menu.columns:
 
-        for link in column.value["links"]:
-            link_data = _extract_item(link, request=context.get("request"), include_description=False)
+        column_value = column.value
+        column_title = column_value.get("title")
+        links_list= []
+
+        for link_struct in column_value.get("links", []):
+
+            link_data = _extract_item(link_struct,context.get("request"))
             if link_data:
-                column_data["linksList"].append(link_data)
+                links_list.append(link_data)
 
-        if column_data["linksList"]:
-            items.append(column_data)
+        columns_data.append({"title" : column_title, "itemsList": links_list})
 
-    return items
+    print(columns_data)
+    return columns_data
