@@ -6,7 +6,7 @@ from django.http import HttpRequest
 if TYPE_CHECKING:
     from wagtail.blocks import StructValue
 
-    from cms.navigation.models import MainMenu
+    from cms.navigation.models import FooterMenu, MainMenu
 
 
 class CommonItem(TypedDict, total=False):
@@ -85,6 +85,36 @@ def main_menu_columns(context: jinja2.runtime.Context, main_menu: Optional["Main
         for section in column.value["sections"]:
             if section_data := extract_section_data(section, context.get("request")):
                 column_data["linksList"].append(section_data)
+
+        if column_data["linksList"]:
+            items.append(column_data)
+
+    return items
+
+
+class FooterColumnData(TypedDict):
+    column: int
+    title: str
+    linksList: list[CommonItem]
+
+
+@jinja2.pass_context
+def footer_menu_columns(
+    context: jinja2.runtime.Context, footer_menu: Optional["FooterMenu"] = None
+) -> list[FooterColumnData]:
+    if not footer_menu:
+        print("footer_menu is None")
+        return []
+
+    items: list[FooterColumnData] = []
+    for idx, column in enumerate(footer_menu.columns):
+        column_data: FooterColumnData = {"column": idx, "title": column.value["title"], "linksList": []}
+        print("")
+
+        for link in column.value["links"]:
+            link_data = _extract_item(link, request=context.get("request"), include_description=False)
+            if link_data:
+                column_data["linksList"].append(link_data)
 
         if column_data["linksList"]:
             items.append(column_data)

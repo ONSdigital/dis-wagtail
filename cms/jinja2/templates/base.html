@@ -39,6 +39,8 @@
 {% set navigation_settings = settings.navigation.NavigationSettings %}
 {% set main_menu = main_menu | default(navigation_settings.main_menu) %}
 
+{% set footer_menu = footer_menu | default(navigation_settings.footer_menu) %}
+
 {% set pageConfig = {
     "bodyClasses": body_class,
     "title": page_title,
@@ -66,7 +68,7 @@
     "footer": {
         "cols": [
             {
-                "linksColumnList": linksColumnList,
+                "linksList": footer_menu_columns(footer_menu)
             }
         ],
 
