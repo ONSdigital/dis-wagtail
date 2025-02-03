@@ -1,6 +1,9 @@
 import copy
+import os
 
 from .base import *  # noqa: F403  # pylint: disable=wildcard-import,unused-wildcard-import
+
+env = os.environ.copy()
 
 # Debugging to be enabled locally only
 DEBUG = True
@@ -25,6 +28,8 @@ EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
 
 # Disable password validators when developing locally.
 AUTH_PASSWORD_VALIDATORS = []
+
+DP_TOPIC_API_URL = env.get("DP_TOPIC_API_URL", "https://api.beta.ons.gov.uk/v1")
 
 
 # Enable Wagtail's style guide in Wagtail's settings menu.
@@ -57,7 +62,12 @@ DATABASES = {
 DATABASES["read_replica"] = copy.deepcopy(DATABASES["default"])
 
 # Redis
-REDIS_URL = "redis://localhost:6379"
+CACHES = {
+    "default": {
+        "BACKEND": "django.core.cache.backends.redis.RedisCache",
+        "LOCATION": "redis://redis:6379",
+    }
+}
 
 # Django Defender
 ENABLE_DJANGO_DEFENDER = False

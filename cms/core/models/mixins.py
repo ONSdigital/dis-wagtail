@@ -8,6 +8,7 @@ from django.utils.translation import gettext_lazy as _
 from wagtail.admin.panels import FieldPanel, InlinePanel, MultiFieldPanel
 
 from cms.taxonomy.models import Topic
+from cms.taxonomy.views import ExclusiveTopicChooserWidget
 
 if TYPE_CHECKING:
     from django.core.paginator import Page
@@ -116,29 +117,29 @@ class GenericTaxonomyMixin(models.Model):
 
 
 class ExclusiveTaxonomyMixin(models.Model):
-    """A mixin that allows pages to be linked to a topic in an exclusive one-to-one relationship."""
+    """A mixin that allows pages to be linked exclusively to a topic."""
 
     # Note that this is intended to behave as a one-to-one relationship, but multilingual pages will need to be linked
     # to the same topic, so we need to use a ForeignKey and enforce exclusivity separately
     topic = models.ForeignKey(Topic, on_delete=models.SET_NULL, related_name="related_%(class)s", null=True)
 
     taxonomy_panels: ClassVar[list["Panel"]] = [
-        FieldPanel("topic"),
+        FieldPanel("topic", widget=ExclusiveTopicChooserWidget),
     ]
+
+    class Meta:
+        abstract = True
 
     def clean(self):
         super().clean()
 
         if not self.topic:
-            raise ValidationError(_("A topic is required."))
+            raise ValidationError({"topic": _("A topic is required.")})
 
-        # TODO for multilingual support, this will need to exclude different language versions of the same page by
-        # excluding matching translation_keys
         for sub_page_type in ExclusiveTaxonomyMixin.__subclasses__():
-            # Find other pages linked to this topic.
+            # Check if other pages are exclusively linked to this topic.
             # Translations of the same page are allowed, but other pages aren't.
-            if sub_page_type.objects.filter(topic=self.topic).exists():
+            # TODO for multilingual support, this will need to exclude different language versions of the same page by
+            # excluding matching translation_keys
+            if sub_page_type.objects.filter(topic=self.topic).exclude(pk=self.pk).exists():
                 raise ValidationError({"topic": _("This topic is already linked to another theme or topic page.")})
-
-    class Meta:
-        abstract = True
