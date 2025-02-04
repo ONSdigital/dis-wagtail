@@ -119,8 +119,8 @@ class GenericTaxonomyMixin(models.Model):
 class ExclusiveTaxonomyMixin(models.Model):
     """A mixin that allows pages to be linked exclusively to a topic."""
 
-    # Note that this is intended to behave as a one-to-one relationship, but multilingual pages will need to be linked
-    # to the same topic, so we need to use a ForeignKey and enforce exclusivity separately
+    # Note that this is intended to behave as a one-to-one relationship, but multilingual versions of the same page
+    # will need to be linked to the same topic, so we need to use a ForeignKey and enforce exclusivity separately
     topic = models.ForeignKey(Topic, on_delete=models.SET_NULL, related_name="related_%(class)s", null=True)
 
     taxonomy_panels: ClassVar[list["Panel"]] = [

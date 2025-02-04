@@ -12,10 +12,10 @@ class TopicChooserViewSet(ChooserViewSet):
     choose_one_text = _("Choose a topic")
     choose_another_text = _("Choose a different topic")
 
-    register_widget = False
-
 
 class ExclusiveTopicChooserViewSet(TopicChooserViewSet):
+    register_widget = False
+
     def get_object_list(self) -> QuerySet[Topic]:
         """Filter out topics which are already linked to a theme or topic page."""
         # TODO This will need to be updated to support multilingual pages... how?

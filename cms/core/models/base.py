@@ -12,6 +12,7 @@ from wagtail.utils.decorators import cached_classmethod
 from cms.core.cache import get_default_cache_control_decorator
 from cms.core.query import order_by_pk_position
 
+from ...taxonomy.forms import DeDuplicateTopicsAdminForm
 from .mixins import ListingFieldsMixin, SocialFieldsMixin
 
 if TYPE_CHECKING:
@@ -44,6 +45,8 @@ __all__ = ["BasePage", "BaseSiteSetting"]
 @method_decorator(get_default_cache_control_decorator(), name="serve")
 class BasePage(ListingFieldsMixin, SocialFieldsMixin, Page):  # type: ignore[django-manager-missing]
     """Base page class with listing and social fields additions as well as cache decorators."""
+
+    base_form_class = DeDuplicateTopicsAdminForm
 
     show_in_menus_default = True
     # Used to check for the existence of equation and ONS embed blocks.
