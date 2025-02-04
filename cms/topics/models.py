@@ -14,6 +14,7 @@ from wagtail.search import index
 from cms.articles.models import ArticleSeriesPage, StatisticalArticlePage
 from cms.core.fields import StreamField
 from cms.core.models import BasePage
+from cms.core.utils import get_formatted_pages_list
 from cms.methodology.models import MethodologyPage
 from cms.topics.blocks import ExploreMoreStoryBlock
 
@@ -79,6 +80,8 @@ class TopicPage(BasePage):  # type: ignore[django-manager-missing]
         context: dict = super().get_context(request, *args, **kwargs)
         context["table_of_contents"] = self.table_of_contents
         context["featured_item"] = self.latest_article_in_featured_series
+        context["formatted_articles"] = get_formatted_pages_list(self.processed_articles, request=request)
+        context["formatted_methodologies"] = get_formatted_pages_list(self.processed_methodologies, request=request)
         return context
 
     @property
@@ -101,7 +104,10 @@ class TopicPage(BasePage):  # type: ignore[django-manager-missing]
 
     @cached_property
     def processed_articles(self) -> QuerySet[ArticleSeriesPage]:
-        """Returns the latest articles in the series relevant for this topic."""
+        """Returns the latest articles in the series relevant for this topic.
+        TODO: handle manually added articles
+        TODO: extend when Taxonomy is in.
+        """
         newest_qs = (
             StatisticalArticlePage.objects.live()
             .public()
@@ -118,6 +124,10 @@ class TopicPage(BasePage):  # type: ignore[django-manager-missing]
 
     @cached_property
     def processed_methodologies(self) -> QuerySet[MethodologyPage]:
+        """Returns the latest methodologies relevant for this topic.
+        TODO: handle manually added methodologies
+        TODO: extend when Taxonomy is in.
+        """
         pages: QuerySet[MethodologyPage] = MethodologyPage.objects.child_of(self).live().public()[:3]
         return pages
 
