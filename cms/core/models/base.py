@@ -3,6 +3,7 @@ from typing import TYPE_CHECKING, ClassVar, Optional, Self, cast
 from django.conf import settings
 from django.utils.decorators import method_decorator
 from django.utils.functional import cached_property
+from django.utils.translation import gettext_lazy as _
 from wagtail.models import Page
 from wagtail.query import PageQuerySet
 
@@ -13,6 +14,7 @@ from .mixins import ListingFieldsMixin, SocialFieldsMixin
 
 if TYPE_CHECKING:
     from django.db import models
+    from django.utils.functional import Promise
     from wagtail.admin.panels import FieldPanel
     from wagtail.contrib.settings.models import (
         BaseGenericSetting as _WagtailBaseGenericSetting,
@@ -57,6 +59,10 @@ class BasePage(ListingFieldsMixin, SocialFieldsMixin, Page):  # type: ignore[dja
         *ListingFieldsMixin.promote_panels,
         *SocialFieldsMixin.promote_panels,
     ]
+
+    @property
+    def label(self) -> "Promise":
+        return _("Page")
 
     @cached_property
     def related_pages(self) -> PageQuerySet:

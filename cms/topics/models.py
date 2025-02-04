@@ -19,6 +19,7 @@ from cms.topics.blocks import ExploreMoreStoryBlock
 
 if TYPE_CHECKING:
     from django.http import HttpRequest
+    from django.utils.functional import Promise
     from wagtail.admin.panels import Panel
 
 
@@ -79,6 +80,10 @@ class TopicPage(BasePage):  # type: ignore[django-manager-missing]
         context["table_of_contents"] = self.table_of_contents
         context["featured_item"] = self.latest_article_in_featured_series
         return context
+
+    @property
+    def label(self) -> "Promise":
+        return _("Topic")
 
     @cached_property
     def latest_article_in_featured_series(self) -> StatisticalArticlePage | None:

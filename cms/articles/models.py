@@ -23,6 +23,7 @@ if TYPE_CHECKING:
     from django.http import HttpRequest
     from django.http.response import HttpResponseRedirect
     from django.template.response import TemplateResponse
+    from django.utils.functional import Promise
     from wagtail.admin.panels import Panel
 
 
@@ -195,6 +196,10 @@ class StatisticalArticlePage(BundledPageMixin, BasePage):  # type: ignore[django
     def get_admin_display_title(self) -> str:
         """Changes the admin display title to include the parent title."""
         return f"{self.get_parent().title}: {self.draft_title or self.title}"
+
+    @property
+    def label(self) -> "Promise":
+        return _("Article")
 
     @property
     def display_title(self) -> str:

@@ -8,6 +8,7 @@ from wagtail.fields import RichTextField
 from cms.core.models import BasePage
 
 if TYPE_CHECKING:
+    from django.utils.functional import Promise
     from wagtail.admin.panels import Panel
 
 
@@ -22,3 +23,7 @@ class ThemePage(BasePage):  # type: ignore[django-manager-missing]
     summary = RichTextField(features=settings.RICH_TEXT_BASIC)
 
     content_panels: ClassVar[list["Panel"]] = [*BasePage.content_panels, FieldPanel("summary")]
+
+    @property
+    def label(self) -> "Promise":
+        return _("Theme")

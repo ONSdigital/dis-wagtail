@@ -18,6 +18,9 @@ from cms.core.models import BasePage
 from cms.core.query import order_by_pk_position
 
 if TYPE_CHECKING:
+    import datetime
+
+    from django.utils.functional import Promise
     from wagtail.admin.panels import Panel
     from wagtail.query import PageQuerySet
 
@@ -98,6 +101,14 @@ class MethodologyPage(BasePage):  # type: ignore[django-manager-missing]
         context["table_of_contents"] = self.table_of_contents
         context["related_publications"] = self.get_formatted_related_publications_list(request=request)
         return context
+
+    @property
+    def label(self) -> "Promise":
+        return _("Methodology")
+
+    @property
+    def release_date(self) -> "datetime.date":
+        return self.publication_date
 
     @cached_property
     def related_publications(self) -> "PageQuerySet":
