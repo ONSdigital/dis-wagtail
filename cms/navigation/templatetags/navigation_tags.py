@@ -9,27 +9,27 @@ if TYPE_CHECKING:
     from cms.navigation.models import MainMenu
 
 
-class CommonItem(TypedDict, total=False):
+class NavigationItem(TypedDict, total=False):
     text: str
     url: str
     description: str
-    children: list["CommonItem"]
+    children: list["NavigationItem"]
 
 
 class ColumnData(TypedDict):
     column: int
-    linksList: list[CommonItem]
+    linksList: list[NavigationItem]
 
 
 def _extract_item(
     value: "StructValue",
     request: Optional["HttpRequest"] = None,
     include_description: bool = False,
-) -> CommonItem:
+) -> NavigationItem:
     """Extracts text/url from the StructValue.
     If include_description=True, also extracts the description field.
     """
-    item: CommonItem = {}
+    item: NavigationItem = {}
 
     if value["external_url"]:
         item["text"] = value["title"]
@@ -46,7 +46,9 @@ def _extract_item(
 
 
 @jinja2.pass_context
-def main_menu_highlights(context: jinja2.runtime.Context, main_menu: Optional["MainMenu"] = None) -> list[CommonItem]:
+def main_menu_highlights(
+    context: jinja2.runtime.Context, main_menu: Optional["MainMenu"] = None
+) -> list[NavigationItem]:
     if not main_menu:
         return []
 
@@ -64,7 +66,9 @@ def main_menu_columns(context: jinja2.runtime.Context, main_menu: Optional["Main
     if not main_menu:
         return []
 
-    def extract_section_data(section: "StructValue", request: Optional["HttpRequest"] = None) -> Optional[CommonItem]:
+    def extract_section_data(
+        section: "StructValue", request: Optional["HttpRequest"] = None
+    ) -> Optional[NavigationItem]:
         section_data = _extract_item(section["section_link"], request=request, include_description=False)
         if not section_data:
             return None
