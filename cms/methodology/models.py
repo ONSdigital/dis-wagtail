@@ -102,8 +102,8 @@ class MethodologyPage(BasePage, GenericTaxonomyMixin):  # type: ignore[django-ma
 
     @cached_property
     def related_publications(self) -> "PageQuerySet":
-        """Return a `PageQuerySet` of items related to this page via the
-        `PageRelatedPage` through model, and are suitable for display.
+        """Return a `PageQuerySet` of the StatisticalArticlePage page model via the
+        `MethodologyRelatedPage` through model, which is suitable for display.
         The result is ordered to match that specified by editors using
         the 'page_related_pages' `InlinePanel`.
         """
@@ -117,7 +117,7 @@ class MethodologyPage(BasePage, GenericTaxonomyMixin):  # type: ignore[django-ma
         )
 
     def get_formatted_related_publications_list(self, request: HttpRequest | None = None) -> list[dict[str, str]]:
-        """Returns a formatted list of related publications for use with the Design System list component."""
+        """Returns a formatted list of related internal pages for use with the Design System list component."""
         items = []
         for page in self.related_publications:
             items.append(
