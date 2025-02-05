@@ -19,12 +19,14 @@ class BasePanelBlock(blocks.StructBlock):
 class WarningPanelBlock(BasePanelBlock):
     class Meta:
         template = "templates/components/streamfield/warning_panel.html"
+        icon = "warning"
         label = _("Warning Panel")
 
 
 class AnnouncementPanelBlock(BasePanelBlock):
     class Meta:
         template = "templates/components/streamfield/announcement_panel.html"
+        icon = "pick"
         label = _("Announcement Panel")
 
 
@@ -33,4 +35,5 @@ class InformationPanelBlock(BasePanelBlock):
 
     class Meta:
         template = "templates/components/streamfield/information_panel.html"
+        icon = "info-circle"
         label = _("Information Panel")

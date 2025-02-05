@@ -1,7 +1,10 @@
 {% from "components/panel/_macro.njk" import onsPanel %}
 
 {# fmt:off #}
-{{ onsPanel({
-  "variant": "warn",
-  "body": value.body
-}) }}
+{{-
+    onsPanel({
+        "variant": "warn",
+        "body": value.body
+    })
+-}}
+{# fmt:off #}
