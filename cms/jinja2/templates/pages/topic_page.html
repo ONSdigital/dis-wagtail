@@ -70,7 +70,7 @@
                 <section id="explore-more">
                     <h2>{{ _("Explore more") }}</h2>
 
-                    {{ page.explore_more }}
+                    {% include_block page.explore_more %}
                 </section>
             {% endif %}
         </div>
