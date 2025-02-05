@@ -2,7 +2,7 @@ from typing import TYPE_CHECKING, Any, ClassVar
 
 from django.conf import settings
 from django.db import models
-from django.db.models import OuterRef, QuerySet, Subquery
+from django.db.models import OuterRef, Subquery
 from django.utils.functional import cached_property
 from django.utils.translation import gettext_lazy as _
 from modelcluster.fields import ParentalKey
@@ -14,6 +14,7 @@ from wagtail.search import index
 from cms.articles.models import ArticleSeriesPage, StatisticalArticlePage
 from cms.core.fields import StreamField
 from cms.core.models import BasePage
+from cms.core.query import order_by_pk_position
 from cms.core.utils import get_formatted_pages_list
 from cms.methodology.models import MethodologyPage
 from cms.topics.blocks import ExploreMoreStoryBlock
@@ -22,6 +23,9 @@ if TYPE_CHECKING:
     from django.http import HttpRequest
     from django.utils.functional import Promise
     from wagtail.admin.panels import Panel
+
+
+MAX_ITEMS_PER_SECTION = 3
 
 
 class TopicPageRelatedArticle(Orderable):
@@ -68,8 +72,24 @@ class TopicPage(BasePage):  # type: ignore[django-manager-missing]
         *BasePage.content_panels,
         FieldPanel("summary"),
         FieldPanel("featured_series", heading=_("Featured")),
-        InlinePanel("related_articles", heading=_("Highlighted articles")),
-        InlinePanel("related_methodologies", heading=_("Highlighted methods and quality information")),
+        InlinePanel(
+            "related_articles",
+            heading=_("Highlighted articles"),
+            help_text=_(
+                f"Choose up to {MAX_ITEMS_PER_SECTION} articles to highlight. "
+                "The 'Related articles' section will be topped up automatically."
+            ),
+            max_num=MAX_ITEMS_PER_SECTION,
+        ),
+        InlinePanel(
+            "related_methodologies",
+            heading=_("Highlighted methods and quality information"),
+            help_text=_(
+                f"Choose up to {MAX_ITEMS_PER_SECTION} methodologies to highlight. "
+                "The 'Methods and quality information' section will be topped up automatically."
+            ),
+            max_num=MAX_ITEMS_PER_SECTION,
+        ),
         FieldPanel("explore_more", heading=_("Explore more")),
     ]
 
@@ -103,11 +123,25 @@ class TopicPage(BasePage):  # type: ignore[django-manager-missing]
         return article
 
     @cached_property
-    def processed_articles(self) -> QuerySet[ArticleSeriesPage]:
+    def processed_articles(self) -> list[ArticleSeriesPage]:
         """Returns the latest articles in the series relevant for this topic.
-        TODO: handle manually added articles
         TODO: extend when Taxonomy is in.
         """
+        # check if any statistical articles were highlighted. if so, fetch in the order they were added.
+        highlighted_page_pks = tuple(page_id for page_id in self.related_articles.values_list("page_id", flat=True))
+        highlighted_pages = list(
+            order_by_pk_position(
+                StatisticalArticlePage.objects.live().public().defer_streamfields(),
+                pks=highlighted_page_pks,
+                exclude_non_matches=True,
+            )
+        )
+
+        num_highlighted_pages = len(highlighted_pages)
+        if num_highlighted_pages > MAX_ITEMS_PER_SECTION - 1:
+            return highlighted_pages
+
+        # supplement with the latest per series.
         newest_qs = (
             StatisticalArticlePage.objects.live()
             .public()
@@ -119,17 +153,47 @@ class TopicPage(BasePage):  # type: ignore[django-manager-missing]
             .annotate(latest_child_page=Subquery(newest_qs.values("pk")[:1]))
             .values_list("latest_child_page", flat=True)
         )
+        latest_articles = list(
+            StatisticalArticlePage.objects.filter(pk__in=latest_by_series)
+            .exclude(pk__in=highlighted_pages)
+            .live()
+            .public()
+            .defer_streamfields()
+            .order_by("-release_date")[: MAX_ITEMS_PER_SECTION - num_highlighted_pages]
+        )
 
-        return StatisticalArticlePage.objects.filter(pk__in=latest_by_series).order_by("-release_date")[:3]
+        return highlighted_pages + latest_articles
 
     @cached_property
-    def processed_methodologies(self) -> QuerySet[MethodologyPage]:
+    def processed_methodologies(self) -> list[MethodologyPage]:
         """Returns the latest methodologies relevant for this topic.
-        TODO: handle manually added methodologies
         TODO: extend when Taxonomy is in.
         """
-        pages: QuerySet[MethodologyPage] = MethodologyPage.objects.child_of(self).live().public()[:3]
-        return pages
+        # check if any methodologies were highlighted. if so, fetch in the order they were added.
+        highlighted_page_pks = tuple(
+            page_id for page_id in self.related_methodologies.values_list("page_id", flat=True)
+        )
+        highlighted_pages = list(
+            order_by_pk_position(
+                MethodologyPage.objects.live().public().defer_streamfields(),
+                pks=highlighted_page_pks,
+                exclude_non_matches=True,
+            )
+        )
+
+        num_highlighted_pages = len(highlighted_pages)
+        if num_highlighted_pages > MAX_ITEMS_PER_SECTION - 1:
+            return highlighted_pages
+
+        # supplement the remaining slots.
+        pages = list(
+            MethodologyPage.objects.child_of(self)
+            .exclude(pk__in=highlighted_pages)
+            .live()
+            .public()
+            .order_by("-last_revised_date")[: MAX_ITEMS_PER_SECTION - num_highlighted_pages]
+        )
+        return highlighted_pages + pages
 
     @cached_property
     def table_of_contents(self) -> list[dict[str, str | object]]:
