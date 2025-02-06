@@ -42,6 +42,7 @@ class HighchartsBaseChart {
     }
 
     // Create the chart
+    console.log(this.apiConfig);
     Highcharts.chart(chartNode, this.apiConfig);
   }
 
@@ -101,21 +102,27 @@ class HighchartsBaseChart {
   }
 
   // Updates the config object to include any annotations that have been specified
+  // Needs amending for bar charts
   configureAnnotations() {
-    const allAnnotations = [];
+    const annotationConfig = {
+      draggable: '',
+      labelOptions: this.commonChartOptions.getAnnotationLabelOptions(),
+      labels: [],
+      shapes: [],
+    };
+
     this.annotationsValues.forEach((annotation) => {
-      const annotationConfig = { labels: [], shapes: [] };
-      annotationConfig.draggable = '';
-      annotationConfig.labelOptions = this.commonChartOptions.getAnnotationLabelOptions();
       annotationConfig.labels.push({
         text: annotation.text,
         point: {
           x: annotation.xValue,
-          y: 20, // hard coded to be 20px from the top of the chart
+          // hard coded to be 20px from the top of the chart
+          y: 20,
           xAxis: 0,
           yAxis: undefined, // allows the 20px offset to be relative to the overall chart, not to the y axis
         },
       });
+
       annotationConfig.shapes.push({
         type: 'path',
         points: [
@@ -137,9 +144,9 @@ class HighchartsBaseChart {
         stroke: '#414042',
         strokeWidth: 1,
       });
-      allAnnotations.push(annotationConfig);
     });
-    this.apiConfig.annotations = allAnnotations;
+
+    this.apiConfig.annotations = [annotationConfig];
   }
 }
 
