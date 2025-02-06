@@ -31,7 +31,7 @@ class HighchartsBaseChart {
 
   // For this to work, we need an option to include data lables and a format for them
   postLoadDataLabels() {
-    this.chartOptions.options.chart.events = {
+    this.apiConfig.chart.events = {
       // Move data labels inside bars if the bar is wide enough
       load() {
         const points = this.series[0].data;
