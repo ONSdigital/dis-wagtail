@@ -6,13 +6,15 @@ from wagtail.images.blocks import ImageChooserBlock
 from wagtailmath.blocks import MathBlock
 
 from cms.core.blocks import (
+    AnnouncementPanelBlock,
     DocumentsBlock,
     HeadingBlock,
+    InformationPanelBlock,
     ONSEmbedBlock,
-    PanelBlock,
     QuoteBlock,
     RelatedLinksBlock,
     VideoEmbedBlock,
+    WarningPanelBlock,
 )
 
 if TYPE_CHECKING:
@@ -24,7 +26,9 @@ class SectionContentBlock(StreamBlock):
 
     rich_text = RichTextBlock()
     quote = QuoteBlock()
-    panel = PanelBlock()
+    warning_panel = WarningPanelBlock()
+    information_panel = InformationPanelBlock()
+    announcement_panel = AnnouncementPanelBlock()
     image = ImageChooserBlock(group="Media")
     documents = DocumentsBlock(group="Media")
     video_embed = VideoEmbedBlock(group="Media")

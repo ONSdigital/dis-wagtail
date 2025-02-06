@@ -9,11 +9,11 @@ from cms.topics.tests.factories import TopicPageFactory
 
 
 class ThemePageChooserFactory(PageChooserBlockFactory):
-    page = factory.SubFactory(ThemePageFactory)
+    page = factory.LazyFunction(lambda: ThemePageFactory().id)
 
 
 class TopicPageChooserFactory(PageChooserBlockFactory):
-    page = factory.SubFactory(TopicPageFactory)
+    page = factory.LazyFunction(lambda: TopicPageFactory().id)
 
 
 class ThemeLinkBlockFactory(LinkBlockFactory):
