@@ -89,6 +89,7 @@ class Chart(Visualisation):
                 "https://code.highcharts.com/modules/exporting.js",
                 "https://code.highcharts.com/modules/export-data.js",
                 "https://code.highcharts.com/modules/accessibility.js",
+                "https://code.highcharts.com/modules/annotations.js",
             ]
         )
 
