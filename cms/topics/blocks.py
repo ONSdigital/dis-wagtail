@@ -62,8 +62,7 @@ class ExploreMoreInternalLinkBlock(StructBlock):
             },
             "description": value["description"] or getattr(page, "listing_summary", "") or getattr(page, "summary", ""),
         }
-        image = value["thumbnail"] or page.listing_image
-        if image:
+        if image := (value["thumbnail"] or getattr(page, "listing_image", None)):
             renditions = image.get_renditions("fill-144x100", "fill-288x200")
             formatted_value["thumbnail"] = {
                 "smallSrc": renditions["fill-144x100"].url,

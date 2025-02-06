@@ -34,12 +34,12 @@ def get_formatted_pages_list(
             },
             "description": getattr(page, "listing_summary", "") or getattr(page, "summary", ""),
         }
-        if hasattr(page, "release_date"):
+        if release_date := page.release_date:
             datum["metadata"]["date"] = {
                 "prefix": _("Released"),
                 "showPrefix": True,
-                "iso": date_format(page.release_date, "c"),
-                "short": date_format(page.release_date, "DATE_FORMAT"),
+                "iso": date_format(release_date, "c"),
+                "short": date_format(release_date, "DATE_FORMAT"),
             }
         data.append(datum)
     return data

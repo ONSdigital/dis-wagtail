@@ -18,7 +18,7 @@ class HeadlineFigureBlockFactory(wagtail_factories.StructBlockFactory):
     trend = wagtail_factories.CharBlockFactory()
 
 
-class ArticleSeriesFactory(wagtail_factories.PageFactory):
+class ArticleSeriesPageFactory(wagtail_factories.PageFactory):
     """Factory for ArticleSeriesPage."""
 
     class Meta:
@@ -36,7 +36,7 @@ class StatisticalArticlePageFactory(wagtail_factories.PageFactory):
         django_get_or_create: ClassVar[list[str]] = ["slug", "parent"]
 
     title = factory.Faker("sentence", nb_words=4)
-    parent = factory.SubFactory(ArticleSeriesFactory)
+    parent = factory.SubFactory(ArticleSeriesPageFactory)
 
     summary = factory.Faker("text", max_nb_chars=100)
     news_headline = factory.Faker("text", max_nb_chars=50)
