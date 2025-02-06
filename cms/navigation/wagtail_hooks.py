@@ -40,4 +40,5 @@ class FooterMenuViewSet(SnippetViewSet):
     def permission_policy(self) -> NoAddModelPermissionPolicy:
         return NoAddModelPermissionPolicy(self.model)
 
+
 register_snippet(FooterMenuViewSet)

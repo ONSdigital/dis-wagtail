@@ -80,6 +80,7 @@ class MainMenuAdminForm(WagtailAdminModelForm):
         columns_value = self.cleaned_data["columns"]
         seen_pages: set[Page] = set()
         seen_urls: set[str] = set()
+        print("columns_value", columns_value)
 
         def validate_sub_link(link_value: dict) -> list[StructBlockValidationError]:
             """Validate a single 'link' within a section (sub_link)."""
@@ -104,6 +105,8 @@ class MainMenuAdminForm(WagtailAdminModelForm):
             section_link = section_value.get("section_link", {})
             section_page = section_link.get("page")
             section_url = section_link.get("external_url")
+            print("Section value:", section_value)
+            print("Section_links in {}: ", section_link)
 
             sec_errors += check_duplicates(
                 section_page, seen_pages, "section_link", _("Duplicate page. Please choose a different one.")
@@ -113,6 +116,7 @@ class MainMenuAdminForm(WagtailAdminModelForm):
             )
 
             sub_links = section_value.get("links", [])
+            print("Sub_links: ", sub_links)
 
             def validate_sub_link_wrapper(
                 link_data: Any,
@@ -138,6 +142,8 @@ class MainMenuAdminForm(WagtailAdminModelForm):
             errors: list[StructBlockValidationError] = []
             column_value = column_block.value
             sections = column_value.get("sections", [])
+            print("In val. col; column_block.value: ", columns_value)
+            print("sections, list: ", sections)
 
             def validate_section_wrapper(sec_data: Any, sec_idx: int) -> list[StructBlockValidationError]:
                 return validate_section(sec_data, sec_idx)
@@ -155,4 +161,53 @@ class MainMenuAdminForm(WagtailAdminModelForm):
         if columns_block_errors:
             raise StreamBlockValidationError(block_errors=columns_block_errors)
 
+        return columns_value
+
+
+class FooterMenuAdminForm(WagtailAdminModelForm):
+    def clean_columns(self) -> "StreamValue":
+        columns_value = self.cleaned_data["columns"]
+        print("Columns are:", columns_value)
+
+        seen_pages: set[Page] = set()
+        seen_urls: set[str] = set()
+
+        def validate_links(link_value: dict) -> list[StructBlockValidationError]:
+            errors = []
+            link_page = link_value.get("page")
+            link_url = link_value.get("external_url")
+
+            errors += check_duplicates(
+                link_page, seen_pages, "page", _("Duplicate page. Please choose a different one.")
+            )
+            errors += check_duplicates(
+                link_url, seen_urls, "external_url", _("Duplicate URL. Please add a different one.")
+            )
+            return errors
+
+        def validate_block_column(
+            block_value: Any,
+            idx: int,  # pylint: disable=unused-argument
+        ) -> list[StructBlockValidationError]:
+            column = block_value.value
+            block_links = column.get("links")
+            # Separate columns
+            print("column :", column)
+            print("Block links are :", block_links)
+            col_errors: list[StructBlockValidationError] = []
+
+            def validate_sub_link_wrapper(
+                link_data: Any,
+                link_idx: int,  # pylint: disable=unused-argument
+            ) -> list[StructBlockValidationError]:
+                return validate_links(link_data)
+
+            links_errors = collect_block_errors(block_links, validate_sub_link_wrapper)
+            if links_errors:
+                raise StreamBlockValidationError(block_errors=links_errors)
+            return col_errors
+
+        block_errors = collect_block_errors(columns_value, validate_block_column)
+        if block_errors:
+            raise StreamBlockValidationError(block_errors=block_errors)
         return columns_value
