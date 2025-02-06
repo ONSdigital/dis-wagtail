@@ -89,13 +89,14 @@ class Chart(Visualisation):
                 "https://code.highcharts.com/modules/exporting.js",
                 "https://code.highcharts.com/modules/export-data.js",
                 "https://code.highcharts.com/modules/accessibility.js",
+                "https://code.highcharts.com/modules/annotations.js",
             ]
         )
 
     def get_context(self, request: Optional["HttpRequest"] = None, **kwargs: Any) -> dict[str, Any]:
         config = self.get_component_config(self.primary_data_source.headers, self.primary_data_source.rows)
-        # theme = self.theme
-        return super().get_context(request, config=config, **kwargs)
+        annotations_values = self.get_annotations_values()
+        return super().get_context(request, config=config, annotations_values=annotations_values, **kwargs)
 
     general_panels: ClassVar[Sequence["Panel"]] = [
         FieldPanel("name"),
@@ -199,13 +200,6 @@ class Chart(Visualisation):
             },
             "xAxis": self.get_x_axis_config(headers, rows),
             "yAxis": self.get_y_axis_config(headers, rows),
-            "navigation": {
-                "enabled": False,
-            },
-            "annotations": self.get_annotations_config(),
-            "credits": {
-                "enabled": False,
-            },
             "series": self.get_series_data(headers, rows),
         }
 
@@ -253,38 +247,18 @@ class Chart(Visualisation):
             config["max"] = self.y_max
         return config
 
-    def get_annotations_config(self) -> list[dict[str, Any]]:
-        config: list[dict[str, Any]] = []
-        annotation_group: dict[str, Any] = {
-            "draggable": "",
-            "labelOptions": {
-                "backgroundColor": "rgba(255,255,255,0.5)",
-                "verticalAlign": "top",
-            },
-        }
-        # TODO: It's likely we'll want to support a few different style
-        # options for annotations, in which case, we'd split annotations
-        # into multiple groups, each with a separate 'labelOptions' value
-        # to control the styling.
-        group_labels: list[dict[str, Any]] = []
+    def get_annotations_values(self) -> list[dict[str, Any]]:
+        annotation_values: list[dict[str, Any]] = []
         for item in self.annotations.raw_data:  # pylint: disable=no-member
             value = item["value"]
-            group_labels.append(
+            annotation_values.append(
                 {
                     "text": value["label"],
-                    "point": {
-                        "x": numberfy(value["x_position"]),
-                        "y": numberfy(value["y_position"]),
-                        "xAxis": 0,
-                        "yAxis": 0,
-                    },
+                    "xValue": numberfy(value["x_position"]),
+                    "yValue": numberfy(value["y_position"]),
                 }
             )
-
-        if group_labels:
-            annotation_group["labels"] = group_labels
-            config.append(annotation_group)
-        return config
+        return annotation_values
 
     def get_series_data(self, headers: Sequence[str], rows: Sequence[list[str | int | float]]) -> list[dict[str, Any]]:
         series = []
