@@ -140,3 +140,4 @@ class TopicPageTestCase(TestCase):
         response = self.client.get(self.topic_page.url)
 
         self.assertEqual(response.status_code, 200)
+        self.assertContains(response, self.article.display_title)

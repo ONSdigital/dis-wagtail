@@ -26,7 +26,7 @@ def get_formatted_pages_list(
     for page in pages:
         datum: DocumentListItem = {
             "title": {
-                "text": page.title,
+                "text": getattr(page, "display_title", page.title),
                 "url": page.get_url(request=request),
             },
             "metadata": {
