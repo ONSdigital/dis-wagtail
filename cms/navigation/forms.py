@@ -46,6 +46,20 @@ def collect_block_errors(
     return errors_dict
 
 
+def validate_links(
+    link_value: dict,
+    seen_pages: set[Page],
+    seen_urls: set[str],
+) -> list[StructBlockValidationError]:
+    errors = []
+    link_page = link_value.get("page")
+    link_url = link_value.get("external_url")
+
+    errors += check_duplicates(link_page, seen_pages, "page", _("Duplicate page. Please choose a different one."))
+    errors += check_duplicates(link_url, seen_urls, "external_url", _("Duplicate URL. Please add a different one."))
+    return errors
+
+
 class MainMenuAdminForm(WagtailAdminModelForm):
     """Custom form for the MainMenu model."""
 
@@ -81,20 +95,6 @@ class MainMenuAdminForm(WagtailAdminModelForm):
         seen_pages: set[Page] = set()
         seen_urls: set[str] = set()
 
-        def validate_sub_link(link_value: dict) -> list[StructBlockValidationError]:
-            """Validate a single 'link' within a section (sub_link)."""
-            errors = []
-            link_page = link_value.get("page")
-            link_url = link_value.get("external_url")
-
-            errors += check_duplicates(
-                link_page, seen_pages, "page", _("Duplicate page. Please choose a different one.")
-            )
-            errors += check_duplicates(
-                link_url, seen_urls, "external_url", _("Duplicate URL. Please add a different one.")
-            )
-            return errors
-
         def validate_section(
             section_value: dict,
             idx: int,  # pylint: disable=unused-argument
@@ -118,7 +118,7 @@ class MainMenuAdminForm(WagtailAdminModelForm):
                 link_data: Any,
                 link_idx: int,  # pylint: disable=unused-argument
             ) -> list[StructBlockValidationError]:
-                return validate_sub_link(link_data)
+                return validate_links(link_data, seen_pages, seen_urls)
 
             sub_links_block_errors = collect_block_errors(sub_links, validate_sub_link_wrapper)
             if sub_links_block_errors:
@@ -165,19 +165,6 @@ class FooterMenuAdminForm(WagtailAdminModelForm):
         seen_pages: set[Page] = set()
         seen_urls: set[str] = set()
 
-        def validate_links(link_value: dict) -> list[StructBlockValidationError]:
-            errors = []
-            link_page = link_value.get("page")
-            link_url = link_value.get("external_url")
-
-            errors += check_duplicates(
-                link_page, seen_pages, "page", _("Duplicate page. Please choose a different one.")
-            )
-            errors += check_duplicates(
-                link_url, seen_urls, "external_url", _("Duplicate URL. Please add a different one.")
-            )
-            return errors
-
         def validate_block_column(
             block_value: Any,
             idx: int,  # pylint: disable=unused-argument
@@ -190,7 +177,7 @@ class FooterMenuAdminForm(WagtailAdminModelForm):
                 link_data: Any,
                 link_idx: int,  # pylint: disable=unused-argument
             ) -> list[StructBlockValidationError]:
-                return validate_links(link_data)
+                return validate_links(link_data, seen_pages, seen_urls)
 
             links_errors = collect_block_errors(block_links, validate_link_wrapper)
             if links_errors:
