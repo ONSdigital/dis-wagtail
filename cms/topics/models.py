@@ -6,7 +6,7 @@ from django.db.models import OuterRef, Subquery
 from django.utils.functional import cached_property
 from django.utils.translation import gettext_lazy as _
 from modelcluster.fields import ParentalKey
-from wagtail.admin.panels import FieldPanel, InlinePanel, PageChooserPanel
+from wagtail.admin.panels import FieldPanel, InlinePanel
 from wagtail.fields import RichTextField
 from wagtail.models import Orderable, Page
 from wagtail.search import index
@@ -18,6 +18,12 @@ from cms.core.query import order_by_pk_position
 from cms.core.utils import get_formatted_pages_list
 from cms.methodology.models import MethodologyPage
 from cms.topics.blocks import ExploreMoreStoryBlock
+from cms.topics.forms import TopicPageAdminForm
+from cms.topics.viewsets import (
+    FeaturedSeriesPageChooserWidget,
+    HighlightedArticlePageChooserWidget,
+    HighlightedMethodologyPageChooserWidget,
+)
 
 if TYPE_CHECKING:
     from django.http import HttpRequest
@@ -36,7 +42,11 @@ class TopicPageRelatedArticle(Orderable):
         related_name="+",
     )
 
-    panels: ClassVar[list[FieldPanel]] = [PageChooserPanel("page", page_type=["articles.StatisticalArticlePage"])]
+    panels: ClassVar[list[FieldPanel]] = [
+        FieldPanel(
+            "page", widget=HighlightedArticlePageChooserWidget(linked_fields={"topic_page_id": "#id_topic_page_id"})
+        )
+    ]
 
 
 class TopicPageRelatedMethodology(Orderable):
@@ -47,12 +57,17 @@ class TopicPageRelatedMethodology(Orderable):
         related_name="+",
     )
 
-    panels: ClassVar[list[FieldPanel]] = [PageChooserPanel("page", page_type=["methodology.MethodologyPage"])]
+    panels: ClassVar[list[FieldPanel]] = [
+        FieldPanel(
+            "page", widget=HighlightedMethodologyPageChooserWidget(linked_fields={"topic_page_id": "#id_topic_page_id"})
+        )
+    ]
 
 
 class TopicPage(BasePage):  # type: ignore[django-manager-missing]
     """The Topic page model."""
 
+    base_form_class = TopicPageAdminForm
     template = "templates/pages/topic_page.html"
     parent_page_types: ClassVar[list[str]] = ["themes.ThemePage"]
     subpage_types: ClassVar[list[str]] = ["articles.ArticleSeriesPage", "methodology.MethodologyPage"]
@@ -71,7 +86,11 @@ class TopicPage(BasePage):  # type: ignore[django-manager-missing]
     content_panels: ClassVar[list["Panel"]] = [
         *BasePage.content_panels,
         FieldPanel("summary"),
-        FieldPanel("featured_series", heading=_("Featured")),
+        FieldPanel(
+            "featured_series",
+            heading=_("Featured"),
+            widget=FeaturedSeriesPageChooserWidget(linked_fields={"topic_page_id": "#id_topic_page_id"}),
+        ),
         InlinePanel(
             "related_articles",
             heading=_("Highlighted articles"),
