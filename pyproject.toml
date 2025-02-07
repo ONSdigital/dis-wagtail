@@ -33,12 +33,12 @@ requests = "^2.32.3"
 
 [tool.poetry.group.dev.dependencies]
 # :TODO: Remove pylint when ruff supports all pylint rules
-djhtml = "3.0.7"
-mypy = "^1.13.0"  # keep version in sync with .pre-commit-config.yaml
+djhtml = "3.0.7"  # keep version in sync with .pre-commit-config.yaml
+mypy = "^1.15.0"
 django-stubs = { version="^5.1.1", extras=["compatible-mypy"]}
 pylint = "^3.3.1"
-pylint-django = "^2.0.0"
-ruff = "0.7.4"  # keep version in sync with .pre-commit-config.yaml
+pylint-django = "^2.6.1"
+ruff = "0.9.5"  # keep version in sync with .pre-commit-config.yaml
 
 wagtail-factories = "^4.1.0"
 coverage = "^7.6.4"
