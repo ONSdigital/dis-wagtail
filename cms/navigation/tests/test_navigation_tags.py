@@ -34,6 +34,7 @@ class MainMenuTemplateTagTests(TestCase):
 
         cls.main_menu.highlights = highlights
         cls.main_menu.columns = columns
+        cls.main_menu.save()
 
     def test_main_menu_highlights_output_format(self):
         """Test that main_menu_highlights outputs the correct format."""
