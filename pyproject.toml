@@ -9,8 +9,8 @@ package-mode = false
 
 [tool.poetry.dependencies]
 python = "^3.12"
-django = "~5.1.2"
-wagtail = "~6.3"
+django = "~5.1.6"
+wagtail = "~6.4"
 dj-database-url = "~2.3.0"
 django-basic-auth-ip-whitelist = "~0.6"
 django-csp = "~3.8"
