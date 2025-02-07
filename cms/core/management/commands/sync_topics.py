@@ -73,7 +73,7 @@ def request_topics(url: str) -> list[dict[str, str]]:
     topics_response = requests.get(url, timeout=30)
     topics_response.raise_for_status()
 
-    return topics_response.json()["items"]
+    return topics_response.json().get("items", [])
 
 
 def extract_subtopic_links(raw_topics: list[dict[str, Any]]) -> list[tuple[str, str]]:
@@ -82,12 +82,17 @@ def extract_subtopic_links(raw_topics: list[dict[str, Any]]) -> list[tuple[str, 
         (subtopic_link, raw_topic["id"])
         for raw_topic in raw_topics
         # NOTE: This assumes we can simply call the links in the response as they are provided
-        if ((subtopic_link := raw_topic["links"].get("subtopics", {}).get("href")) and raw_topic["subtopics_ids"])
+        if (
+            (subtopic_link := raw_topic.get("links", {}).get("subtopics", {}).get("href"))
+            and raw_topic.get("subtopics_ids")
+        )
     ]
 
 
 def sync_with_fetched_topics(fetched_topics: list[dict[str, str]]):
     """For each fetched topic, decide if it needs to be created, updated, or left as is."""
+    check_for_duplicate_topics(fetched_topics)
+
     updated_count = 0
     created_count = 0
     for fetched_topic in fetched_topics:
@@ -101,6 +106,14 @@ def sync_with_fetched_topics(fetched_topics: list[dict[str, str]]):
 
     logger.info("Saved %d new topic(s)", created_count)
     logger.info("Updated %d existing topic(s)", updated_count)
+
+
+def check_for_duplicate_topics(fetched_topics: list[dict[str, str]]) -> None:
+    topic_ids = set()
+    for topic in fetched_topics:
+        if topic["id"] in topic_ids:
+            raise RuntimeError(f"Received duplicate topic ID in API responses, topic IDs must be unique: {topic['id']}")
+        topic_ids.add(topic["id"])
 
 
 def get_topic(topic_id: str) -> Topic | None:
@@ -134,10 +147,16 @@ def update_topic(existing_topic: Topic, fetched_topic: dict[str, str]):
     existing_topic.removed = False
     existing_topic.save()
 
+    # Raise an error if there is an invalid topic move
+    if fetched_topic.get("parent_id") and existing_topic.is_root():
+        raise RuntimeError("Received an invalid response attempting to move a root topic to a non-root position.")
+    if not existing_topic.is_root() and not fetched_topic.get("parent_id"):
+        raise RuntimeError("Received an invalid response attempting to move a non-root topic to a root position.")
+
     # If the topic parent has changed then move the node to match
     if (existing_parent := existing_topic.get_parent()) and existing_parent.id != fetched_topic["parent_id"]:
         logger.warning(
-            "Moving topic %s from parent %s to new parent %s. " "This will also affect the path of %d subtopics.",
+            "Moving topic %s from parent %s to new parent %s. This will also affect the path of %d subtopics.",
             existing_topic.id,
             existing_parent.id,
             fetched_topic["parent_id"],

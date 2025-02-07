@@ -35,8 +35,10 @@ class Topic(index.Indexed, MP_Node):
     # this is just a convenience function to make the titles appear with lines
     # eg root | - first child
     def title_with_depth(self):
-        depth = "— " * (self.get_depth() - 1)
-        return depth + self.title
+        if depth := self.get_depth():
+            depth_marker = "— " * (depth - 1)
+            return depth_marker + self.title
+        return self.title
 
     title_with_depth.short_description = "Title"
 

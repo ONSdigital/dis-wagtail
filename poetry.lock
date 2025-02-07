@@ -124,18 +124,18 @@ docs = ["sphinx (>=1.6)", "sphinx-bootstrap-theme (>=0.6)"]
 
 [[package]]
 name = "boto3"
-version = "1.36.12"
+version = "1.36.15"
 description = "The AWS SDK for Python"
 optional = false
 python-versions = ">=3.8"
 groups = ["main", "dev"]
 files = [
-    {file = "boto3-1.36.12-py3-none-any.whl", hash = "sha256:32cdf0967287f3ec25a9dc09df0d29cb86b8900c3e0546a63d672775d8127abf"},
-    {file = "boto3-1.36.12.tar.gz", hash = "sha256:287d84f49bba3255a17b374578127d42b6251e72f55914a62e0ad9ca78c0954b"},
+    {file = "boto3-1.36.15-py3-none-any.whl", hash = "sha256:b218092b08ce15fe29b2358345f4ccb812a2377a5e9bccd49e391a5976a24202"},
+    {file = "boto3-1.36.15.tar.gz", hash = "sha256:721d689ebd07a9a95f904356bd97f92032d8006a54eea25316ba55a7585ca7e9"},
 ]
 
 [package.dependencies]
-botocore = ">=1.36.12,<1.37.0"
+botocore = ">=1.36.15,<1.37.0"
 jmespath = ">=0.7.1,<2.0.0"
 s3transfer = ">=0.11.0,<0.12.0"
 
@@ -144,14 +144,14 @@ crt = ["botocore[crt] (>=1.21.0,<2.0a0)"]
 
 [[package]]
 name = "botocore"
-version = "1.36.12"
+version = "1.36.15"
 description = "Low-level, data-driven core of boto 3."
 optional = false
 python-versions = ">=3.8"
 groups = ["main", "dev"]
 files = [
-    {file = "botocore-1.36.12-py3-none-any.whl", hash = "sha256:5ae1ed362c8ed908a6ced8cdd12b21e2196c100bc79f9e95c9c1fc7f9ea74f5a"},
-    {file = "botocore-1.36.12.tar.gz", hash = "sha256:86ed88beb4f244c96529435c868d3940073c2774116f0023fb7691f6e7053bd9"},
+    {file = "botocore-1.36.15-py3-none-any.whl", hash = "sha256:fe0f8d786029125f4c66a30b1d81a551f667b0915dac843604ffa0652c5ff475"},
+    {file = "botocore-1.36.15.tar.gz", hash = "sha256:ab8e69930ef6c42784eb2dee6c0256627ca6bba57730ebe3056179d28aa63d44"},
 ]
 
 [package.dependencies]
@@ -593,14 +593,14 @@ typing_extensions = ">=3.10.0.0"
 
 [[package]]
 name = "django"
-version = "5.1.5"
+version = "5.1.6"
 description = "A high-level Python web framework that encourages rapid development and clean, pragmatic design."
 optional = false
 python-versions = ">=3.10"
 groups = ["main", "dev"]
 files = [
-    {file = "Django-5.1.5-py3-none-any.whl", hash = "sha256:c46eb936111fffe6ec4bc9930035524a8be98ec2f74d8a0ff351226a3e52f459"},
-    {file = "Django-5.1.5.tar.gz", hash = "sha256:19bbca786df50b9eca23cee79d495facf55c8f5c54c529d9bf1fe7b5ea086af3"},
+    {file = "Django-5.1.6-py3-none-any.whl", hash = "sha256:8d203400bc2952fbfb287c2bbda630297d654920c72a73cc82a9ad7926feaad5"},
+    {file = "Django-5.1.6.tar.gz", hash = "sha256:1e39eafdd1b185e761d9fab7a9f0b9fa00af1b37b25ad980a8aa0dac13535690"},
 ]
 
 [package.dependencies]
