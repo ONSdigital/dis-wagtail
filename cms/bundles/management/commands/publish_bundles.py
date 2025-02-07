@@ -109,7 +109,7 @@ class Command(BaseCommand):
                         f"{page.get_admin_display_title()} ({page.__class__.__name__})"
                         for page in bundle.get_bundled_pages().specific()
                     ]
-                    self.stdout.write(f'  Pages: {"\n\t ".join(bundled_pages)}')
+                    self.stdout.write(f"  Pages: {'\n\t '.join(bundled_pages)}")
 
             else:
                 self.stdout.write("No bundles to go live.")
