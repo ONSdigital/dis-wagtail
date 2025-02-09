@@ -30,7 +30,9 @@ class Chart(Visualisation):
 
     show_legend = models.BooleanField(verbose_name=_("show legend?"), default=True)  # type: ignore[var-annotated]
     show_value_labels = models.BooleanField(  # type: ignore[var-annotated]
-        verbose_name=_("show value labels?"), default=False
+        verbose_name=_("show value labels?"),
+        default=False,
+        help_text=_("For cluster charts with more than 2 series, the data labels will be hidden."),
     )
     theme = models.CharField(  # type: ignore[var-annotated]
         verbose_name=_("theme"),

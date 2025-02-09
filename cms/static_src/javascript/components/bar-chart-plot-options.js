@@ -9,13 +9,13 @@ class BarChartPlotOptions {
     const constants = ChartConstants.constants();
     this.plotOptions = {
       bar: {
-        // Set the width of the bars to be 30px and the spacing between them to be 10px
+        // Set the width of the bars to be 30px
+        // The spacing is worked out in the highcharts-base-chart.js file
         pointWidth: 30, // Fixed bar height
-        groupPadding: 0, // No padding between groups
-        pointPadding: 0, // No padding within groups
+        pointPadding: 0,
+        groupPadding: 0,
         borderWidth: 0,
         borderRadius: 0,
-        spacing: [10, 0, 0, 0], // [top, right, bottom, left] spacing between bars
         // Set the data labels to be enabled and positioned outside the bars
         // We can add custom formatting on each chart to move the labels inside the bars if the bar is wide enough
         dataLabels: {
