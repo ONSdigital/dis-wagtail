@@ -5,13 +5,15 @@ from wagtail.images.blocks import ImageChooserBlock
 from wagtailmath.blocks import MathBlock
 
 from cms.core.blocks import (
+    AnnouncementPanelBlock,
     DocumentsBlock,
     HeadingBlock,
+    InformationPanelBlock,
     ONSEmbedBlock,
-    PanelBlock,
     QuoteBlock,
     RelatedLinksBlock,
     VideoEmbedBlock,
+    WarningPanelBlock,
 )
 from cms.core.blocks.section_blocks import SectionBlock
 
@@ -42,7 +44,9 @@ class CoreStoryBlock(StreamBlock):
     heading = HeadingBlock()
     rich_text = RichTextBlock()
     quote = QuoteBlock()
-    panel = PanelBlock()
+    warning_panel = WarningPanelBlock()
+    information_panel = InformationPanelBlock()
+    announcement_panel = AnnouncementPanelBlock()
     video_embed = VideoEmbedBlock(group="Media")
     image = ImageChooserBlock(group="Media")
     documents = DocumentsBlock(group="Media")
