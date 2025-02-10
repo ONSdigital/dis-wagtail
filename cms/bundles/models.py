@@ -112,7 +112,7 @@ class Bundle(index.Indexed, ClusterableModel, models.Model):  # type: ignore[dja
             heading=_("Scheduling"),
             icon="calendar",
         ),
-        FieldPanel("status"),
+        "status",
         InlinePanel("bundled_pages", heading=_("Bundled pages"), icon="doc-empty", label=_("Page")),
         # these are handled by the form
         FieldPanel("approved_by", classname="hidden w-hidden"),

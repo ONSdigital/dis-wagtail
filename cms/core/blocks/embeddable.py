@@ -80,7 +80,7 @@ class DocumentsBlock(blocks.StreamBlock):
 class ONSEmbedBlock(blocks.StructBlock):
     """An embed block for only pages starting with ONS_EMBED_PREFIX."""
 
-    url = blocks.URLBlock(help_text=f"Must start with <code>{ settings.ONS_EMBED_PREFIX }</code> to your URL.")
+    url = blocks.URLBlock(help_text=f"Must start with <code>{settings.ONS_EMBED_PREFIX}</code> to your URL.")
     title = blocks.CharBlock(default="Interactive chart")
 
     def clean(self, value: "StructValue") -> "StructValue":

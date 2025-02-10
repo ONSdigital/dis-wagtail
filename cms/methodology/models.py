@@ -61,19 +61,17 @@ class MethodologyPage(BasePage):  # type: ignore[django-manager-missing]
 
     content_panels: ClassVar[list["Panel"]] = [
         *BasePage.content_panels,
-        FieldPanel("summary"),
+        "summary",
         MultiFieldPanel(
             [
                 FieldRowPanel(
                     [
-                        FieldPanel(
-                            "publication_date",
-                        ),
-                        FieldPanel("last_revised_date"),
+                        "publication_date",
+                        "last_revised_date",
                     ]
                 ),
-                FieldPanel("contact_details"),
-                FieldPanel("show_cite_this_page"),
+                "contact_details",
+                "show_cite_this_page",
             ],
             heading=_("Metadata"),
             icon="cog",

@@ -218,8 +218,8 @@ class StatisticalArticlePageRenderTestCase(WagtailTestUtils, TestCase):
     def test_cite_this_page_is_shown_when_ticked(self):
         """Test for the cite this page block."""
         expected = (
-            f"Office for National Statistics (ONS), released { self.formatted_date }, "
-            f'ONS website, statistical article, <a href="{ self.page.full_url }">Breaking News!</a>'
+            f"Office for National Statistics (ONS), released {self.formatted_date}, "
+            f'ONS website, statistical article, <a href="{self.page.full_url}">Breaking News!</a>'
         )
         response = self.client.get(self.page_url)
         self.assertContains(response, expected)
@@ -227,7 +227,7 @@ class StatisticalArticlePageRenderTestCase(WagtailTestUtils, TestCase):
     def test_cite_this_page_is_not_shown_when_unticked(self):
         """Test for the cite this page block not present in the template."""
         expected = (
-            f"Office for National Statistics (ONS), released { self.formatted_date }, ONS website, statistical article"
+            f"Office for National Statistics (ONS), released {self.formatted_date}, ONS website, statistical article"
         )
 
         response = self.client.get(self.basic_page_url)

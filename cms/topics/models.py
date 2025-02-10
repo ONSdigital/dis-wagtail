@@ -85,7 +85,7 @@ class TopicPage(BasePage):  # type: ignore[django-manager-missing]
 
     content_panels: ClassVar[list["Panel"]] = [
         *BasePage.content_panels,
-        FieldPanel("summary"),
+        "summary",
         FieldPanel(
             "featured_series",
             heading=_("Featured"),
