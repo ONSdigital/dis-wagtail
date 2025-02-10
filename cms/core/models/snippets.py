@@ -1,10 +1,12 @@
-from typing import Any, ClassVar
+from typing import TYPE_CHECKING, Any, ClassVar
 
 from django.db import models
 from django.db.models.functions import Lower
 from django.utils.translation import gettext_lazy as _
-from wagtail.admin.panels import FieldPanel
 from wagtail.search import index
+
+if TYPE_CHECKING:
+    from wagtail.admin.panels import Panel
 
 
 class ContactDetails(index.Indexed, models.Model):
@@ -17,10 +19,10 @@ class ContactDetails(index.Indexed, models.Model):
     email = models.EmailField()
     phone = models.CharField(max_length=255, blank=True)
 
-    panels: ClassVar[list[FieldPanel]] = [
-        FieldPanel("name"),
-        FieldPanel("email"),
-        FieldPanel("phone"),
+    panels: ClassVar[list["Panel"]] = [
+        "name",
+        "email",
+        "phone",
     ]
 
     search_fields: ClassVar[list[index.BaseField]] = [

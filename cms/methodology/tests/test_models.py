@@ -46,8 +46,8 @@ class MethodologyPageTestCase(WagtailTestUtils, TestCase):
         latest_date_formatted = date_format(self.page.last_revised_date, settings.DATE_FORMAT)
 
         cite_fragment = (
-            f"Office for National Statistics (ONS), last revised { latest_date_formatted }, "
-            f'ONS website, methodology, <a href="{ self.page.full_url }">{ self.page.title }</a>'
+            f"Office for National Statistics (ONS), last revised {latest_date_formatted}, "
+            f'ONS website, methodology, <a href="{self.page.full_url}">{self.page.title}</a>'
         )
         response = self.client.get(self.page_url)
         self.assertNotContains(response, cite_fragment)
@@ -59,8 +59,8 @@ class MethodologyPageTestCase(WagtailTestUtils, TestCase):
         latest_date_formatted = date_format(self.page.last_revised_date, settings.DATE_FORMAT)
 
         cite_fragment = (
-            f"Office for National Statistics (ONS), last revised { latest_date_formatted }, "
-            f'ONS website, methodology, <a href="{ self.page.full_url }">{ self.page.title }</a>'
+            f"Office for National Statistics (ONS), last revised {latest_date_formatted}, "
+            f'ONS website, methodology, <a href="{self.page.full_url}">{self.page.title}</a>'
         )
         response = self.client.get(self.page_url)
         self.assertContains(response, cite_fragment)

@@ -1,9 +1,9 @@
-from typing import TYPE_CHECKING, ClassVar
+from typing import TYPE_CHECKING, ClassVar, Union
 
 from django.contrib.contenttypes.fields import GenericRelation
 from django.db import models
 from django.utils.translation import gettext_lazy as _
-from wagtail.admin.panels import FieldPanel, PublishingPanel
+from wagtail.admin.panels import PublishingPanel
 from wagtail.contrib.settings.models import register_setting
 from wagtail.models import DraftStateMixin, PreviewableMixin, RevisionMixin
 
@@ -14,6 +14,7 @@ from cms.navigation.forms import MainMenuAdminForm
 
 if TYPE_CHECKING:
     from django.http import HttpRequest
+    from wagtail.admin.panels import Panel
 
 
 class MainMenu(DraftStateMixin, RevisionMixin, PreviewableMixin, models.Model):
@@ -38,9 +39,9 @@ class MainMenu(DraftStateMixin, RevisionMixin, PreviewableMixin, models.Model):
     def revisions(self):  # type: ignore[no-untyped-def]
         return self._revisions
 
-    panels: ClassVar[list] = [
-        FieldPanel("highlights"),
-        FieldPanel("columns"),
+    panels: ClassVar[list[Union[str, "Panel"]]] = [
+        "highlights",
+        "columns",
         PublishingPanel(),
     ]
 
@@ -62,6 +63,4 @@ class NavigationSettings(BaseSiteSetting):
         help_text=_("Select the main menu to display on the site."),
     )
 
-    panels: ClassVar[list] = [
-        FieldPanel("main_menu"),
-    ]
+    panels: ClassVar[list[str]] = ["main_menu"]
