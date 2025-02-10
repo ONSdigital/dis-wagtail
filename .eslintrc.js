@@ -8,4 +8,8 @@ module.exports = {
     es6: true,
     jest: true,
   },
+  settings: {
+    // Manually set the version to disable automated detection of the "react" dependency.
+    react: { version: '999.999.999' },
+  },
 };

@@ -1,0 +1,8 @@
+.jexcel_content {
+  box-shadow: none !important;
+}
+
+.jexcel_container {
+  width: 100%;
+  overflow: scroll;
+}

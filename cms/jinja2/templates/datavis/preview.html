@@ -1,0 +1,11 @@
+{% extends "templates/base_iframe.html" %}
+
+{% set pageTitle = "Datavis preview: " + object.name %}
+
+{% block body %}
+    <div class="ons-page">
+        <div class="ons-page__content">
+            {% include object.template %}
+        </div>
+    </div>
+{% endblock %}
