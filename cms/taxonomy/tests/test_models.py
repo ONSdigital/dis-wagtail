@@ -1,10 +1,8 @@
-import unittest
-
 from django.db import IntegrityError
 from django.test import TestCase
 from wagtail.models import Page
 
-from cms.taxonomy.models import Topic, GenericPageToTaxonomyTopic
+from cms.taxonomy.models import GenericPageToTaxonomyTopic, Topic
 
 
 class TopicModelTest(TestCase):
@@ -29,9 +27,10 @@ class TopicModelTest(TestCase):
 
     def test_removed_flag_default(self):
         root_topic = Topic.add_root(id="root", title="Root Topic")
+        # TODO
         # self.assertFalse(root_topic.removed)
         print(root_topic)
-        breakpoint()
+        # breakpoint()
 
 
 class GenericPageToTaxonomyTopicModelTest(TestCase):
