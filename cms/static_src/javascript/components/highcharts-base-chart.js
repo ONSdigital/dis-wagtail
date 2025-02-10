@@ -70,14 +70,10 @@ class HighchartsBaseChart {
   setCommonChartOptions = () => {
     // currently set each time a chart is rendered as some options depend on the chart type
     const chartOptions = this.commonChartOptions.getOptions();
-    chartOptions.plotOptions = new LineChartPlotOptions().plotOptions;
     chartOptions.plotOptions = {
-      ...chartOptions.plotOptions,
-      ...new BarChartPlotOptions().plotOptions,
-    };
-    chartOptions.plotOptions = {
-      ...chartOptions.plotOptions,
-      ...new ColumnChartPlotOptions().plotOptions,
+      bar: new BarChartPlotOptions().plotOptions.bar,
+      column: new ColumnChartPlotOptions().plotOptions.column,
+      line: new LineChartPlotOptions().plotOptions.line,
     };
 
     // Apply the options globally
