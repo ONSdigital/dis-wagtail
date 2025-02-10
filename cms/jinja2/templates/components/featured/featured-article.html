@@ -1,0 +1,26 @@
+<div class="featured-article">
+    <h3 class="ons-u-fs-m ons-u-mt-no ons-u-mb-2xs">
+        <a href="{{ pageurl(article) }}">{{ article.display_title }}</a>
+    </h3>
+    <ul class="featured-article__metadata">
+        <li class="featured-article__attribute ons-u-fs-s">
+            <span class="ons-u-fw-b">{{ _("Released") }}:</span>
+            <time datetime="{{ article.release_date|date("c") }}">{{ article.release_date|date("DATE_FORMAT") }}</time>
+        </li>
+        <li class="featured-article__attribute ons-u-fs-s">
+            <span class="ons-u-fw-b">{{ _("Article") }}</span>
+        </li>
+    </ul>
+
+    {% if article.listing_image %}
+        <div class="featured-article__embed-container">
+            {{ image(article.listing_image, "width-1000") }}
+        </div>
+    {% endif %}
+
+    {% if article.main_points_summary %}
+        <div class="featured-article__description">
+            {{ article.main_points_summary|richtext }}
+        </div>
+    {% endif %}
+</div>

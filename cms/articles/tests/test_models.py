@@ -7,7 +7,7 @@ from django.utils import timezone
 from django.utils.formats import date_format
 from wagtail.test.utils import WagtailTestUtils
 
-from cms.articles.tests.factories import ArticleSeriesFactory, StatisticalArticlePageFactory
+from cms.articles.tests.factories import ArticleSeriesPageFactory, StatisticalArticlePageFactory
 from cms.core.tests.factories import ContactDetailsFactory
 
 
@@ -16,7 +16,7 @@ class ArticleSeriesTestCase(WagtailTestUtils, TestCase):
 
     @classmethod
     def setUpTestData(cls):
-        cls.series = ArticleSeriesFactory()
+        cls.series = ArticleSeriesPageFactory()
 
     def test_index_redirect_404_with_no_subpages(self):
         """Test index path redirects to latest."""
