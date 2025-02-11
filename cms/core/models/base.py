@@ -14,7 +14,6 @@ from .mixins import ListingFieldsMixin, SocialFieldsMixin
 
 if TYPE_CHECKING:
     from django.db import models
-    from django.utils.functional import Promise
     from wagtail.admin.panels import FieldPanel
     from wagtail.contrib.settings.models import (
         BaseGenericSetting as _WagtailBaseGenericSetting,
@@ -51,6 +50,9 @@ class BasePage(ListingFieldsMixin, SocialFieldsMixin, Page):  # type: ignore[dja
     # Update in your specific Page class if the StreamField using them is different.
     content_field_name: str = "content"
 
+    # used a page type label in the front-end
+    label = _("Page")
+
     class Meta:
         abstract = True
 
@@ -59,10 +61,6 @@ class BasePage(ListingFieldsMixin, SocialFieldsMixin, Page):  # type: ignore[dja
         *ListingFieldsMixin.promote_panels,
         *SocialFieldsMixin.promote_panels,
     ]
-
-    @property
-    def label(self) -> "Promise":
-        return _("Page")
 
     @cached_property
     def related_pages(self) -> PageQuerySet:

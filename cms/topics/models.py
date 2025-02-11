@@ -27,7 +27,6 @@ from cms.topics.viewsets import (
 
 if TYPE_CHECKING:
     from django.http import HttpRequest
-    from django.utils.functional import Promise
     from wagtail.admin.panels import Panel
 
 
@@ -72,6 +71,7 @@ class TopicPage(BasePage):  # type: ignore[django-manager-missing]
     parent_page_types: ClassVar[list[str]] = ["themes.ThemePage"]
     subpage_types: ClassVar[list[str]] = ["articles.ArticleSeriesPage", "methodology.MethodologyPage"]
     page_description = _("A specific topic page. e.g. 'Public sector finance' or 'Inflation and price indices'.")
+    label = _("Topic")
 
     summary = RichTextField(features=settings.RICH_TEXT_BASIC)
     featured_series = models.ForeignKey(
@@ -122,10 +122,6 @@ class TopicPage(BasePage):  # type: ignore[django-manager-missing]
         context["formatted_articles"] = get_formatted_pages_list(self.processed_articles, request=request)
         context["formatted_methodologies"] = get_formatted_pages_list(self.processed_methodologies, request=request)
         return context
-
-    @property
-    def label(self) -> "Promise":
-        return _("Topic")
 
     @cached_property
     def latest_article_in_featured_series(self) -> StatisticalArticlePage | None:

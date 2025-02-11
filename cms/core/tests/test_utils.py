@@ -29,9 +29,7 @@ class DummyPage(BasePage):
 
 
 class DummyPageWithNoReleaseDate(DummyPage):
-    @property
-    def label(self):
-        return "Dummy Page"
+    label = "Dummy Page"
 
     class Meta:
         abstract = True
