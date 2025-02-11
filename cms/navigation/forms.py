@@ -1,12 +1,14 @@
 from collections.abc import Callable
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
 
 from django.core.exceptions import ValidationError
 from django.forms.utils import ErrorList
 from django.utils.translation import gettext as _
 from wagtail.admin.forms import WagtailAdminModelForm
-from wagtail.blocks import StreamBlockValidationError, StructBlockValidationError
+from wagtail.blocks import StreamBlockValidationError, StructBlock, StructBlockValidationError
 from wagtail.models import Page
+
+from cms.navigation.blocks import ColumnBlock, HighlightsBlock, LinksColumn, SectionBlock
 
 if TYPE_CHECKING:
     from wagtail.blocks import StreamValue
@@ -18,7 +20,7 @@ def create_struct_error(field_name: str, message: str) -> StructBlockValidationE
 
 
 def check_duplicates(
-    value: Any, seen_values: set, field_name: str, error_message: str
+    value: dict, seen_values: set, field_name: str, error_message: str
 ) -> list[StructBlockValidationError]:
     """Check if the given value has already been seen. If so, return a validation error.
     Otherwise, add it to the set of seen values.
@@ -33,7 +35,7 @@ def check_duplicates(
 
 
 def collect_block_errors(
-    items: list[Any], validator_function: Callable[[Any, int], list[StructBlockValidationError]]
+    items: list[StructBlock], validator_function: Callable[[StructBlock, int], list[StructBlockValidationError]]
 ) -> dict[int, ErrorList]:
     """Apply a validator_function to each item in the list. If the validator returns errors,
     store them in a dictionary keyed by the item index.
@@ -46,11 +48,8 @@ def collect_block_errors(
     return errors_dict
 
 
-def validate_links(
-    link_value: dict,
-    seen_pages: set[Page],
-    seen_urls: set[str],
-) -> list[StructBlockValidationError]:
+def validate_links(link_value: dict, seen_pages: set[Page], seen_urls: set[str]) -> list[StructBlockValidationError]:
+    """Checks if link has been seen. Returns error if so."""
     errors = []
     link_page = link_value.get("page")
     link_url = link_value.get("external_url")
@@ -69,7 +68,7 @@ class MainMenuAdminForm(WagtailAdminModelForm):
         seen_urls: set[str] = set()
 
         def validate_highlight_block(
-            block: Any,
+            block: HighlightsBlock,
             idx: int,  # pylint: disable=unused-argument
         ) -> list[StructBlockValidationError]:
             """Validate an individual highlight block for duplicate page or external URL."""
@@ -96,7 +95,7 @@ class MainMenuAdminForm(WagtailAdminModelForm):
         seen_urls: set[str] = set()
 
         def validate_section(
-            section_value: dict,
+            section_value: SectionBlock,
             idx: int,  # pylint: disable=unused-argument
         ) -> list[StructBlockValidationError]:
             """Validate a single 'section' within a column."""
@@ -115,7 +114,7 @@ class MainMenuAdminForm(WagtailAdminModelForm):
             sub_links = section_value.get("links", [])
 
             def validate_sub_link_wrapper(
-                link_data: Any,
+                link_data: dict,
                 link_idx: int,  # pylint: disable=unused-argument
             ) -> list[StructBlockValidationError]:
                 return validate_links(link_data, seen_pages, seen_urls)
@@ -131,7 +130,7 @@ class MainMenuAdminForm(WagtailAdminModelForm):
             return sec_errors
 
         def validate_column_block(
-            column_block: Any,
+            column_block: ColumnBlock,
             col_idx: int,  # pylint: disable=unused-argument
         ) -> list[StructBlockValidationError]:
             """Validate a single column block, including its sections."""
@@ -139,7 +138,7 @@ class MainMenuAdminForm(WagtailAdminModelForm):
             column_value = column_block.value
             sections = column_value.get("sections", [])
 
-            def validate_section_wrapper(sec_data: Any, sec_idx: int) -> list[StructBlockValidationError]:
+            def validate_section_wrapper(sec_data: SectionBlock, sec_idx: int) -> list[StructBlockValidationError]:
                 return validate_section(sec_data, sec_idx)
 
             sections_block_errors = collect_block_errors(sections, validate_section_wrapper)
@@ -159,22 +158,25 @@ class MainMenuAdminForm(WagtailAdminModelForm):
 
 
 class FooterMenuAdminForm(WagtailAdminModelForm):
-    def clean_columns(self) -> "StreamValue":
-        columns_value = self.cleaned_data["columns"]
+    """Custom form for validating Footer Menu columns and links."""
 
+    def clean_columns(self) -> "StreamValue":
+        """Validates the column fields to ensure no duplicate pages or urls."""
+        columns_value = self.cleaned_data["columns"]
         seen_pages: set[Page] = set()
         seen_urls: set[str] = set()
 
         def validate_block_column(
-            block_value: Any,
+            block_value: LinksColumn,
             idx: int,  # pylint: disable=unused-argument
         ) -> list[StructBlockValidationError]:
-            column = block_value.value
-            block_links = column.get("links")
+            """Validates each column block for duplicate links."""
             col_errors: list[StructBlockValidationError] = []
+            column = block_value.value
+            block_links = column.get("links", [])
 
             def validate_link_wrapper(
-                link_data: Any,
+                link_data: dict,
                 link_idx: int,  # pylint: disable=unused-argument
             ) -> list[StructBlockValidationError]:
                 return validate_links(link_data, seen_pages, seen_urls)

@@ -107,7 +107,6 @@ def footer_menu_columns(
     context: jinja2.runtime.Context, footer_menu: Optional["FooterMenu"] = None
 ) -> list[FooterColumnData]:
     if not footer_menu:
-        print("footer_menu is None")
         return []
 
     columns_data = []
