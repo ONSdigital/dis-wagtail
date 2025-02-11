@@ -11,19 +11,19 @@ from .panels import AnnouncementPanelBlock, InformationPanelBlock, WarningPanelB
 from .related import LinkBlock, RelatedContentBlock, RelatedLinksBlock
 
 __all__ = [
+    "AnnouncementPanelBlock",
     "BasicTableBlock",
     "DocumentBlock",
     "DocumentsBlock",
     "HeadingBlock",
     "HeadlineFiguresBlock",
     "ImageBlock",
+    "InformationPanelBlock",
     "LinkBlock",
     "ONSEmbedBlock",
-    "WarningPanelBlock",
-    "InformationPanelBlock",
-    "AnnouncementPanelBlock",
     "QuoteBlock",
     "RelatedContentBlock",
     "RelatedLinksBlock",
     "VideoEmbedBlock",
+    "WarningPanelBlock",
 ]

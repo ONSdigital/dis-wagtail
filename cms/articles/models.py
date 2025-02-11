@@ -145,21 +145,26 @@ class StatisticalArticlePage(BundledPageMixin, BasePage):  # type: ignore[django
             ],
             heading="Title",
         ),
-        FieldPanel("summary"),
+        "summary",
         MultiFieldPanel(
             [
-                FieldPanel("release_date"),
-                FieldPanel(
-                    "next_release_date",
-                    help_text=_("If no next date is chosen, 'To be announced' will be displayed."),
+                FieldRowPanel(
+                    [
+                        FieldPanel("release_date", help_text=_("The actual release date")),
+                        FieldPanel(
+                            "next_release_date",
+                            help_text=_("If no next date is chosen, 'To be announced' will be displayed."),
+                        ),
+                    ],
+                    heading=_("Dates"),
                 ),
                 FieldRowPanel(
-                    [FieldPanel("is_accredited"), FieldPanel("is_census")],
+                    ["is_accredited", "is_census"],
                     heading=_("About the data"),
                 ),
-                FieldPanel("contact_details"),
-                FieldPanel("show_cite_this_page"),
-                FieldPanel("main_points_summary"),
+                "contact_details",
+                "show_cite_this_page",
+                "main_points_summary",
             ],
             heading=_("Metadata"),
             icon="cog",

@@ -15,7 +15,7 @@ if TYPE_CHECKING:
     from django.http import HttpRequest
     from wagtail.admin.panels import Panel
 
-__all__ = ["ListingFieldsMixin", "SocialFieldsMixin", "SubpageMixin", "GenericTaxonomyMixin", "ExclusiveTaxonomyMixin"]
+__all__ = ["ExclusiveTaxonomyMixin", "GenericTaxonomyMixin", "ListingFieldsMixin", "SocialFieldsMixin", "SubpageMixin"]
 
 
 class ListingFieldsMixin(models.Model):
@@ -50,9 +50,9 @@ class ListingFieldsMixin(models.Model):
         MultiFieldPanel(
             heading="Listing information",
             children=[
-                FieldPanel("listing_image"),
-                FieldPanel("listing_title"),
-                FieldPanel("listing_summary"),
+                "listing_image",
+                "listing_title",
+                "listing_summary",
             ],
         )
     ]
@@ -77,8 +77,8 @@ class SocialFieldsMixin(models.Model):
         MultiFieldPanel(
             heading="Social networks",
             children=[
-                FieldPanel("social_image"),
-                FieldPanel("social_text"),
+                "social_image",
+                "social_text",
             ],
         )
     ]

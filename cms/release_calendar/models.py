@@ -104,33 +104,33 @@ class ReleaseCalendarPage(GenericTaxonomyMixin, BasePage):  # type: ignore[djang
         MultiFieldPanel(
             [
                 *Page.content_panels,
-                FieldPanel("status"),
+                "status",
                 FieldRowPanel(
                     [
-                        FieldPanel("release_date"),
+                        "release_date",
                         FieldPanel("release_date_text", heading=_("Or, release date text")),
                     ],
                     heading="",
                 ),
                 FieldRowPanel(
                     [
-                        FieldPanel("next_release_date"),
+                        "next_release_date",
                         FieldPanel("next_release_text", heading=_("Or, next release text")),
                     ],
                     heading="",
                 ),
-                FieldPanel("notice"),
+                "notice",
             ],
             heading=_("Metadata"),
             icon="cog",
         ),
-        FieldPanel("summary"),
+        "summary",
         FieldPanel("content", icon="list-ul"),
         FieldPanel("contact_details", icon="group"),
         MultiFieldPanel(
             [
-                FieldPanel("is_accredited"),
-                FieldPanel("is_census"),
+                "is_accredited",
+                "is_census",
             ],
             heading=_("About the data"),
             icon="info-circle",

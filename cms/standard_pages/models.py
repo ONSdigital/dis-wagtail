@@ -3,7 +3,7 @@ from typing import TYPE_CHECKING, Any, ClassVar
 from django.conf import settings
 from django.db import models
 from django.utils.translation import gettext_lazy as _
-from wagtail.admin.panels import FieldPanel, InlinePanel
+from wagtail.admin.panels import InlinePanel
 from wagtail.fields import RichTextField
 from wagtail.search import index
 
@@ -29,11 +29,11 @@ class InformationPage(GenericTaxonomyMixin, BasePage):  # type: ignore[django-ma
     last_updated = models.DateField(blank=True, null=True)
     content = StreamField(CoreStoryBlock())
 
-    content_panels: ClassVar[list[FieldPanel]] = [
+    content_panels: ClassVar[list["Panel"]] = [
         *BasePage.content_panels,
-        FieldPanel("summary"),
-        FieldPanel("last_updated"),
-        FieldPanel("content"),
+        "summary",
+        "last_updated",
+        "content",
         InlinePanel("page_related_pages", label="Related pages"),
     ]
 
@@ -62,10 +62,10 @@ class IndexPage(BasePage):  # type: ignore[django-manager-missing]
 
     content_panels: ClassVar[list["Panel"]] = [
         *BasePage.content_panels,
-        FieldPanel("summary"),
-        FieldPanel("featured_items"),
-        FieldPanel("content"),
-        FieldPanel("related_links"),
+        "summary",
+        "featured_items",
+        "content",
+        "related_links",
     ]
 
     search_fields: ClassVar[list[index.SearchField | index.AutocompleteField]] = [
@@ -74,7 +74,7 @@ class IndexPage(BasePage):  # type: ignore[django-manager-missing]
         index.SearchField("content"),
     ]
 
-    taxonomy_panels: ClassVar[list[FieldPanel]]
+    taxonomy_panels: ClassVar[list["Panel"]]
 
     def get_formatted_items(self, request: "HttpRequest") -> list[dict[str, str | dict[str, str]]]:
         """Returns a formatted list of Featured items
