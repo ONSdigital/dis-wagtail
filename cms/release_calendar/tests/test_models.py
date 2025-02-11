@@ -31,7 +31,7 @@ class ReleaseCalendarPageTestCase(WagtailTestUtils, TestCase):
                 self.page.status = status
                 self.assertEqual(
                     self.page.get_template(self.request),
-                    f"templates/pages/release_calendar/release_calendar_page{ suffix }",
+                    f"templates/pages/release_calendar/release_calendar_page{suffix}",
                 )
 
     def test_table_of_contents_pre_published__content(self):
