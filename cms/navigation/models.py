@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, ClassVar
+from typing import TYPE_CHECKING, ClassVar, Union
 
 from django.contrib.contenttypes.fields import GenericRelation
 from django.db import models
@@ -14,6 +14,7 @@ from cms.navigation.forms import FooterMenuAdminForm, MainMenuAdminForm
 
 if TYPE_CHECKING:
     from django.http import HttpRequest
+    from wagtail.admin.panels import Panel
 
 
 class MainMenu(DraftStateMixin, RevisionMixin, PreviewableMixin, models.Model):
@@ -38,9 +39,9 @@ class MainMenu(DraftStateMixin, RevisionMixin, PreviewableMixin, models.Model):
     def revisions(self):  # type: ignore[no-untyped-def]
         return self._revisions
 
-    panels: ClassVar[list] = [
-        FieldPanel("highlights"),
-        FieldPanel("columns"),
+    panels: ClassVar[list[Union[str, "Panel"]]] = [
+        "highlights",
+        "columns",
         PublishingPanel(),
     ]
 

@@ -59,6 +59,14 @@ CACHES["default"] = {  # noqa: F405
     "BACKEND": "django.core.cache.backends.dummy.DummyCache",
 }
 
+# Enqueue background tasks on commit for tests
+# https://docs.wagtail.org/en/latest/releases/6.4.html#background-tasks-run-at-end-of-current-transaction
+TASKS = {
+    "default": {
+        "BACKEND": "django_tasks.backends.immediate.ImmediateBackend",
+        "ENQUEUE_ON_COMMIT": False,
+    }
+}
 
 # Silence Slack notifications by default
 SLACK_NOTIFICATIONS_WEBHOOK_URL = None
