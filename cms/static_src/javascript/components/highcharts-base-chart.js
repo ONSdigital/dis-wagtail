@@ -26,12 +26,13 @@ class HighchartsBaseChart {
       );
     }
 
-    // Hide data labels for clustered bar charts with more than 2 series
-    if (
-      this.chartType === 'bar' &&
-      this.useStackedLayout === false &&
-      this.apiConfig.series.length > 2
-    ) {
+    // Hide data labels for clustered bar charts with more than 2 series, and also for stacked bar charts
+    const hideDataLabels =
+      (this.chartType === 'bar' &&
+        this.useStackedLayout === false &&
+        this.apiConfig.series.length > 2) ||
+      this.useStackedLayout === true;
+    if (hideDataLabels) {
       this.apiConfig.series.forEach((series) => {
         /* eslint-disable no-param-reassign */
         series.dataLabels = {
@@ -58,7 +59,9 @@ class HighchartsBaseChart {
         if (this.useStackedLayout === false) {
           this.updateBarChartHeight(event);
         }
-        this.postLoadDataLabels(event);
+        if (!hideDataLabels) {
+          this.postLoadDataLabels(event);
+        }
       }
     };
 
@@ -72,12 +75,9 @@ class HighchartsBaseChart {
     const chartOptions = this.commonChartOptions.getOptions();
     chartOptions.plotOptions = new LineChartPlotOptions().plotOptions;
     chartOptions.plotOptions = {
-      ...chartOptions.plotOptions,
-      ...new BarChartPlotOptions().plotOptions,
-    };
-    chartOptions.plotOptions = {
-      ...chartOptions.plotOptions,
-      ...new ColumnChartPlotOptions().plotOptions,
+      bar: new BarChartPlotOptions().plotOptions.bar,
+      column: new ColumnChartPlotOptions().plotOptions.column,
+      line: new LineChartPlotOptions().plotOptions.line,
     };
 
     // Apply the options globally
@@ -135,34 +135,26 @@ class HighchartsBaseChart {
 
   // Updates the config to move the data labels inside the bars, but only if the bar is wide enough
   // This may also need to run when the chart is resized
-  // Todo: adapt for stacked charts
-  /* eslint-disable class-methods-use-this */
   postLoadDataLabels = (event) => {
     const currentChart = event.target;
-    const points = currentChart.series[0].data;
     const options = {
-      // to do: move this to common-chart-options and fetch from there
-      dataLabels: {
-        inside: true,
-        align: 'right',
-        verticalAlign: 'middle',
-        style: {
-          color: 'white',
-          fontWeight: 'bold',
-        },
-      },
+      dataLabels: this.commonChartOptions.getBarChartLabelsInsideOptions(),
     };
 
-    points.forEach((point) => {
-      // Move the data labels inside the bar if the label is longer than 50px
-      if (point.shapeArgs.height > 50) {
-        point.update(options, false);
-      }
+    currentChart.series.forEach((series) => {
+      const points = series.data;
+      points.forEach((point) => {
+        // Get the actual width of the data label
+        const labelWidth = point.dataLabel && point.dataLabel.absoluteBox.width;
+        // Move the data labels inside the bar if the bar is wider than the label
+        if (point.shapeArgs.height > labelWidth) {
+          point.update(options, false);
+        }
+      });
     });
 
     currentChart.redraw();
   };
-  /* eslint-enable class-methods-use-this */
 
   // Updates the config object to include any annotations that have been specified
   // Needs amending for bar charts

@@ -108,20 +108,28 @@ class CommonChartOptions {
     };
   }
 
-  getOptions() {
-    return this.options;
-  }
+  getOptions = () => this.options;
 
-  getAnnotationLabelOptions() {
-    return {
-      style: {
-        color: this.constants.axisLabelColor,
-        fontSize: this.constants.desktopFontSize,
-      },
-      borderWidth: 0,
-      backgroundColor: undefined,
-    };
-  }
+  getAnnotationLabelOptions = () => ({
+    style: {
+      color: this.constants.axisLabelColor,
+      fontSize: this.constants.desktopFontSize,
+    },
+    borderWidth: 0,
+    backgroundColor: undefined,
+  });
+
+  /* eslint-disable class-methods-use-this */
+  getBarChartLabelsInsideOptions = () => ({
+    inside: true,
+    align: 'right',
+    verticalAlign: 'middle',
+    style: {
+      color: 'white',
+      fontWeight: 'bold',
+    },
+  });
+  /* eslint-enable class-methods-use-this */
 }
 
 export default CommonChartOptions;
