@@ -7,13 +7,13 @@ import requests
 from django.test import TestCase
 from requests import HTTPError
 
-from cms.core.management.commands import sync_topics
+from cms.taxonomy.management.commands import sync_topics
 from cms.taxonomy.models import Topic
 
 
 class SyncTopicsTests(TestCase):
     def setUp(self):
-        self.requests_patcher = patch("cms.core.management.commands.sync_topics.requests")
+        self.requests_patcher = patch("cms.taxonomy.management.commands.sync_topics.requests")
         self.mock_requests = self.requests_patcher.start()
 
     def tearDown(self):
