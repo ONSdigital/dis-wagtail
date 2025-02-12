@@ -81,7 +81,8 @@ def extract_subtopic_links(raw_topics: list[dict[str, Any]]) -> list[tuple[str, 
     return [
         (subtopic_link, raw_topic["id"])
         for raw_topic in raw_topics
-        # NOTE: This assumes we can simply call the links in the response as they are provided
+        # NOTE: This assumes we can simply call the links in the response as they are provided,
+        # perhaps switch to building the URL ourselves
         if (
             (subtopic_link := raw_topic.get("links", {}).get("subtopics", {}).get("href"))
             and raw_topic.get("subtopics_ids")
@@ -170,6 +171,7 @@ def create_topic(fetched_topic: dict[str, str]):
     If a parent ID is specified, we call parent.add_child,
     Otherwise, we call Topic.add_root.
     """
+    # TODO create a dummy root level topic so all actual topics are not root and can be moved freely
     logger.info("Saving new topic %s", fetched_topic)
     new_topic = Topic(
         id=fetched_topic["id"], title=fetched_topic["title"], description=fetched_topic.get("description")
