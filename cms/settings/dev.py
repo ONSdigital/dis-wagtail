@@ -57,7 +57,12 @@ DATABASES = {
 DATABASES["read_replica"] = copy.deepcopy(DATABASES["default"])
 
 # Redis
-REDIS_URL = "redis://localhost:6379"
+REDIS_URL = env.get("REDIS_URL", "redis://localhost:6379")  # noqa: F405
+CACHES["default"] = {  # noqa: F405
+    "BACKEND": "django_redis.cache.RedisCache",
+    "LOCATION": REDIS_URL,
+    "OPTIONS": {**redis_options},  # noqa: F405
+}
 
 # Django Defender
 ENABLE_DJANGO_DEFENDER = False
