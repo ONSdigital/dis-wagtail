@@ -34,6 +34,7 @@ class ArticleSeriesPage(RoutablePageMixin, Page):
     preview_modes: ClassVar[list[str]] = []  # Disabling the preview mode due to it being a container page.
     page_description = _("A container for statistical article series.")
     exclude_from_breadcrumbs = True
+    exclude_from_pagination = True
 
     content_panels: ClassVar[list["Panel"]] = [
         *Page.content_panels,
