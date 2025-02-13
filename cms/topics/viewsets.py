@@ -15,7 +15,7 @@ if TYPE_CHECKING:
     from wagtail.query import PageQuerySet
 
 
-class FeaturedSeriesPageMixin:
+class FeaturedSeriesPageChooseViewMixin:
     model_class: ArticleSeriesPage
 
     def get_object_list(self) -> "PageQuerySet[ArticleSeriesPage]":
@@ -36,10 +36,10 @@ class FeaturedSeriesPageMixin:
         ]
 
 
-class FeaturedSeriesPageChooseView(FeaturedSeriesPageMixin, ChooseView): ...
+class FeaturedSeriesPageChooseView(FeaturedSeriesPageChooseViewMixin, ChooseView): ...
 
 
-class FeaturedSeriesPageChooseResultsView(FeaturedSeriesPageMixin, ChooseResultsView): ...
+class FeaturedSeriesPageChooseResultsView(FeaturedSeriesPageChooseViewMixin, ChooseResultsView): ...
 
 
 class FeaturedSeriesPageChooserViewSet(ChooserViewSet):
@@ -52,8 +52,8 @@ class FeaturedSeriesPageChooserViewSet(ChooserViewSet):
     edit_item_text = _("Edit Article Series page")
 
 
-class HighlightedChildPageMixin:
-    def get_object_list(self) -> "PageQuerySet[StatisticalArticlePage | MethodologyPage]":
+class HighlightedChildPageChooseViewMixin:
+    def get_object_list(self) -> "PageQuerySet[Page]":
         model_class: StatisticalArticlePage | MethodologyPage = self.model_class  # type: ignore[attr-defined]
         pages: PageQuerySet[Page] = model_class.objects.all().defer_streamfields()
         if topic_page_id := self.request.GET.get("topic_page_id"):  # type: ignore[attr-defined]
@@ -90,10 +90,10 @@ class HighlightedChildPageMixin:
         ]
 
 
-class HighlightedPagePageChooseView(HighlightedChildPageMixin, ChooseView): ...
+class HighlightedPagePageChooseView(HighlightedChildPageChooseViewMixin, ChooseView): ...
 
 
-class HighlightedPagePageChooseResultsView(HighlightedChildPageMixin, ChooseResultsView): ...
+class HighlightedPagePageChooseResultsView(HighlightedChildPageChooseViewMixin, ChooseResultsView): ...
 
 
 class BaseHighlightedChildrenViewSet(ChooserViewSet):
