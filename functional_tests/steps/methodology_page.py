@@ -87,12 +87,27 @@ def validation_error_displayed_when_incorrect_date_selected(context: Context):
 def mandatory_fields_raise_validation_error_when_not_set(context: Context):
     expect(context.page.get_by_text("The page could not be created due to validation errors")).to_be_visible()
 
-    expect(context.page.locator("#panel-child-content-child-title-errors")).to_be_visible()
-    expect(context.page.locator("#panel-child-content-child-summary-errors")).to_be_visible()
     expect(
-        context.page.locator("#panel-child-content-child-metadata-child-panel-child-publication_date-errors")
+        context.page.locator("#panel-child-content-child-title-errors .error-message").get_by_text(
+            "This field is required"
+        )
     ).to_be_visible()
-    expect(context.page.locator(".help-block.help-critical").get_by_text("This field is required"))
+
+    expect(
+        context.page.locator("#panel-child-content-child-summary-errors .error-message").get_by_text(
+            "This field is required"
+        )
+    )
+
+    expect(
+        context.page.locator(
+            "#panel-child-content-child-metadata-child-panel-child-publication_date-errors .error-message"
+        ).get_by_text("This field is required")
+    ).to_be_visible()
+
+    expect(
+        context.page.locator(".help-block.help-critical").get_by_text("This field is required")
+    ).to_be_visible()
 
 
 @when("the user clicks Save draft")
