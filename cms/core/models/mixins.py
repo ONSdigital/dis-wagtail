@@ -1,21 +1,16 @@
 from typing import TYPE_CHECKING, Any, ClassVar
 
-from django.core.exceptions import ValidationError
 from django.core.paginator import EmptyPage, Paginator
 from django.db import models
 from django.http import Http404
-from django.utils.translation import gettext_lazy as _
-from wagtail.admin.panels import FieldPanel, InlinePanel, MultiFieldPanel
-
-from cms.taxonomy.models import Topic
-from cms.taxonomy.viewsets import ExclusiveTopicChooserWidget
+from wagtail.admin.panels import MultiFieldPanel
 
 if TYPE_CHECKING:
     from django.core.paginator import Page
     from django.http import HttpRequest
     from wagtail.admin.panels import Panel
 
-__all__ = ["ExclusiveTaxonomyMixin", "GenericTaxonomyMixin", "ListingFieldsMixin", "SocialFieldsMixin", "SubpageMixin"]
+__all__ = ["ListingFieldsMixin", "SocialFieldsMixin", "SubpageMixin"]
 
 
 class ListingFieldsMixin(models.Model):
@@ -103,43 +98,3 @@ class SubpageMixin:
         context: dict = super().get_context(request, *args, **kwargs)  # type: ignore[misc]
         context["subpages"] = self.get_paginator_page(request)
         return context
-
-
-class GenericTaxonomyMixin(models.Model):
-    """Generic Taxonomy mixin allows pages to be tagged with one or more topics non-exclusively."""
-
-    taxonomy_panels: ClassVar[list["Panel"]] = [
-        InlinePanel("topics", label=_("Topics")),
-    ]
-
-    class Meta:
-        abstract = True
-
-
-class ExclusiveTaxonomyMixin(models.Model):
-    """A mixin that allows pages to be linked exclusively to a topic."""
-
-    # Note that this is intended to behave as a one-to-one relationship, but multilingual versions of the same page
-    # will need to be linked to the same topic, so we need to use a ForeignKey and enforce exclusivity separately
-    topic = models.ForeignKey(Topic, on_delete=models.SET_NULL, related_name="related_%(class)s", null=True)
-
-    taxonomy_panels: ClassVar[list["Panel"]] = [
-        FieldPanel("topic", widget=ExclusiveTopicChooserWidget),
-    ]
-
-    class Meta:
-        abstract = True
-
-    def clean(self):
-        super().clean()
-
-        if not self.topic:
-            raise ValidationError({"topic": _("A topic is required.")})
-
-        for sub_page_type in ExclusiveTaxonomyMixin.__subclasses__():
-            # Check if other pages are exclusively linked to this topic.
-            # Translations of the same page are allowed, but other pages aren't.
-            # TODO for multilingual support, this will need to exclude different language versions of the same page by
-            # excluding matching translation_keys
-            if sub_page_type.objects.filter(topic=self.topic).exclude(pk=self.pk).exists():
-                raise ValidationError({"topic": _("This topic is already linked to another theme or topic page.")})

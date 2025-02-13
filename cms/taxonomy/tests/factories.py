@@ -14,8 +14,8 @@ class TopicFactory(Factory):
     description: str = faker.Faker("sentence", nb_words=10)
 
     @post_generation
-    def add_topic_as_root(obj: Topic, *_args, **_kwargs) -> None:
-        """New root tree nodes need to be saved with add_root, so we use the BUILD_STRATEGY to skip the automatic save,
+    def save_topic_in_tree(obj: Topic, *_args, **_kwargs) -> None:
+        """New topics need to be saved with save_topic, so we use the BUILD_STRATEGY to skip the automatic save,
         and instead save the obj ourselves in this post generation hook.
         """
-        Topic.add_root(instance=obj)
+        obj.save_topic()  # pylint: disable=no-member

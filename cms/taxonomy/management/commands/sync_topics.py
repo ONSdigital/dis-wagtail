@@ -148,18 +148,13 @@ def update_topic(existing_topic: Topic, fetched_topic: dict[str, str]):
     existing_topic.removed = False
     existing_topic.save()
 
-    # Raise an error if there is an invalid topic move
-    if fetched_topic.get("parent_id") and existing_topic.is_root():
-        raise RuntimeError("Received an invalid response attempting to move a root topic to a non-root position.")
-    if not existing_topic.is_root() and not fetched_topic.get("parent_id"):
-        raise RuntimeError("Received an invalid response attempting to move a non-root topic to a root position.")
-
     # If the topic parent has changed then move the node to match
-    if (existing_parent := existing_topic.get_parent()) and existing_parent.id != fetched_topic["parent_id"]:
+    existing_parent_id: str | None = getattr(existing_topic.get_parent(), "id", None)
+    if existing_parent_id != fetched_topic["parent_id"]:
         logger.warning(
             "Moving topic %s from parent %s to new parent %s. This will also affect the path of %d subtopics.",
             existing_topic.id,
-            existing_parent.id,
+            existing_parent_id,
             fetched_topic["parent_id"],
             existing_topic.get_children_count(),
         )
@@ -178,9 +173,9 @@ def create_topic(fetched_topic: dict[str, str]):
     )
     if fetched_topic["parent_id"]:
         parent = get_topic(fetched_topic["parent_id"])
-        parent.add_child(instance=new_topic)
+        new_topic.save_topic(parent_topic=parent)
     else:
-        Topic.add_root(instance=new_topic)
+        new_topic.save_topic()
 
 
 def check_removed_topics(existing_topic_ids: set[str]):

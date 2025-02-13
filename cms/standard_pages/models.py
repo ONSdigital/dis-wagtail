@@ -11,7 +11,7 @@ from cms.core.blocks.related import RelatedContentBlock
 from cms.core.blocks.stream_blocks import CoreStoryBlock
 from cms.core.fields import StreamField
 from cms.core.models import BasePage
-from cms.core.models.mixins import GenericTaxonomyMixin
+from cms.taxonomy.mixins import GenericTaxonomyMixin
 
 if TYPE_CHECKING:
     from django.http import HttpRequest

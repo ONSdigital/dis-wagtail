@@ -142,6 +142,30 @@ class SyncTopicsTests(TestCase):
             saved_subtopic.get_parent().id, root_topic.id, "Expect the subtopic to have the correct parent"
         )
 
+    def test_sync_two_root_topics(self):
+        # Given
+        root_topic = create_topic("0001")
+        root_topic_2 = create_topic("0002")
+        mock_response = mock_successful_json_response(
+            [
+                build_topic_api_json(root_topic),
+                build_topic_api_json(root_topic_2),
+            ]
+        )
+
+        # Mock the successive API call responses
+        self.mock_requests.get.side_effect = [mock_response]
+
+        # When
+        sync_topics.Command().handle()
+
+        # Then
+        self.assertEqual(Topic.objects.all().count(), 2, "Expect 2 topics to be saved")
+        saved_root_topic = Topic.objects.get(id=root_topic.id)
+        saved_root_topic_2 = Topic.objects.get(id=root_topic_2.id)
+        self.assertEqual(saved_root_topic, root_topic, "Expect root topic to match")
+        self.assertEqual(saved_root_topic_2, root_topic_2, "Expect root topic to match")
+
     def test_topics_with_duplicate_titles(self):
         # Duplicate topic titles are valid and do exist
         # Given
@@ -175,7 +199,7 @@ class SyncTopicsTests(TestCase):
     def test_update_topic_title(self):
         # Given
         initial_topic = Topic(id="1234", title="Initial Title", description="Test")
-        save_topic(initial_topic)
+        Topic.save_topic(initial_topic)
         updated_topic = Topic(id=initial_topic.id, title="Updated Title", description=initial_topic.description)
 
         mock_topic_response = mock_successful_json_response([build_topic_api_json(updated_topic)])
@@ -193,7 +217,7 @@ class SyncTopicsTests(TestCase):
     def test_update_topic_description(self):
         # Given
         initial_topic = Topic(id="1234", title="Initial Title", description="Test")
-        save_topic(initial_topic)
+        Topic.save_topic(initial_topic)
         updated_topic = Topic(id=initial_topic.id, title=initial_topic.title, description="Updated Description")
 
         mock_topic_response = mock_successful_json_response([build_topic_api_json(updated_topic)])
@@ -229,7 +253,7 @@ class SyncTopicsTests(TestCase):
     def test_removed_topic(self):
         # Given
         topic = Topic(id="1234", title="Initial Title", description="Test")
-        save_topic(topic)
+        Topic.save_topic(topic)
 
         # Mock a response with the topic deleted
         mock_empty_response = mock_successful_json_response([])
@@ -247,7 +271,7 @@ class SyncTopicsTests(TestCase):
     def test_reinstated_topic(self):
         # Given
         removed_topic = Topic(id="1234", title="Topic Title", removed=True)
-        save_topic(removed_topic)
+        Topic.save_topic(removed_topic)
 
         # Mock a response with the removed topic re-appearing
         reinstated_topic = Topic(id=removed_topic.id, title=removed_topic.title, removed=False)
@@ -268,8 +292,8 @@ class SyncTopicsTests(TestCase):
         # Create existing topics in the database, with the subtopic as a child of root_topic_1
         root_topic_1 = create_and_save_topic("0001")
         root_topic_2 = create_and_save_topic("0002")
-        subtopic = create_and_save_topic("0003", parent=root_topic_1)
-        sub_subtopic = create_and_save_topic("0004", parent=subtopic)
+        subtopic = create_and_save_topic("0003", parent_topic=root_topic_1)
+        sub_subtopic = create_and_save_topic("0004", parent_topic=subtopic)
 
         # API response with the subtopic moved from root_topic_1 to root_topic_2
         mock_root_topic_response = mock_successful_json_response(
@@ -309,11 +333,11 @@ class SyncTopicsTests(TestCase):
             "Expect sub subtopic to have moved with it's parent in the tree",
         )
 
-    def test_invalid_move_subtopic_to_root(self):
+    def test_move_subtopic_to_root(self):
         # Given
         root_topic = create_and_save_topic("0001")
         # Create a topic initially under the root
-        initial_subtopic = create_and_save_topic("0002", parent=root_topic)
+        initial_subtopic = create_and_save_topic("0002", parent_topic=root_topic)
 
         # Mock the response with the subtopic moved to the root level
         mock_root_response = mock_successful_json_response(
@@ -326,10 +350,17 @@ class SyncTopicsTests(TestCase):
         # Mock the successive API call responses
         self.mock_requests.get.side_effect = [mock_root_response]
 
-        # When, then raises
-        self.assertRaises(RuntimeError, sync_topics.Command().handle)
+        # When
+        sync_topics.Command().handle()
 
-    def test_invalid_move_root_to_subtopic(self):
+        # Then
+        self.assertEqual(Topic.objects.all().count(), 2, "Expect 2 topics to be saved")
+        saved_root_topic = Topic.objects.get(id=root_topic.id)
+        saved_moved_topic = Topic.objects.get(id=initial_subtopic.id)
+        self.assertEqual(saved_root_topic, root_topic, "Expect root topic to match")
+        self.assertEqual(saved_moved_topic, initial_subtopic, "Expect root topic to match")
+
+    def test_move_root_to_subtopic(self):
         # Given
         root_topic = create_and_save_topic("0001")
         root_topic_2 = create_and_save_topic("0002")
@@ -346,8 +377,16 @@ class SyncTopicsTests(TestCase):
         # Mock the successive API call responses
         self.mock_requests.get.side_effect = [mock_root_response, mock_subtopic_response]
 
-        # When, then raises
-        self.assertRaises(RuntimeError, sync_topics.Command().handle)
+        # When
+        sync_topics.Command().handle()
+
+        # Then
+        self.assertEqual(self.mock_requests.get.call_count, 2, "Expect 2 calls to retrieve topics")
+        self.assertEqual(Topic.objects.all().count(), 2, "Expect 2 topics to be saved")
+        saved_moved_topic = Topic.objects.get(id=root_topic_2.id)
+        self.assertEqual(
+            saved_moved_topic.get_parent().id, root_topic.id, "Expect topic to have moved underneath other root topic"
+        )
 
     def test_initial_response_error(self):
         # Given
@@ -370,7 +409,7 @@ class SyncTopicsTests(TestCase):
     def test_error_response_in_subtopic_call(self):
         # Given
         existing_topic = create_and_save_topic("0001")
-        existing_subtopic = create_and_save_topic("0002", parent=existing_topic)
+        existing_subtopic = create_and_save_topic("0002", parent_topic=existing_topic)
 
         altered_root_topic = Topic(id=existing_topic.id, title="Altered Title", description=existing_topic.description)
 
@@ -452,17 +491,10 @@ def create_topic(topic_id: str, include_description: bool = True) -> Topic:
     return topic
 
 
-def save_topic(topic: Topic, parent: Topic | None = None) -> None:
-    if parent:
-        parent.add_child(instance=topic)
-    else:
-        Topic.add_root(instance=topic)
-
-
-def create_and_save_topic(topic_id: str, include_description: bool = True, parent: Topic | None = None) -> Topic:
+def create_and_save_topic(topic_id: str, include_description: bool = True, parent_topic: Topic | None = None) -> Topic:
     """Create a topic and save it to the database."""
     topic = create_topic(topic_id, include_description=include_description)
-    save_topic(topic, parent)
+    Topic.save_topic(topic, parent_topic=parent_topic)
     return topic
 
 

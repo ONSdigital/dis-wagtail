@@ -14,8 +14,9 @@ from wagtail.search import index
 
 from cms.core.blocks.stream_blocks import SectionStoryBlock
 from cms.core.fields import StreamField
-from cms.core.models import BasePage, GenericTaxonomyMixin
+from cms.core.models import BasePage
 from cms.core.query import order_by_pk_position
+from cms.taxonomy.mixins import GenericTaxonomyMixin
 
 if TYPE_CHECKING:
     from wagtail.admin.panels import Panel

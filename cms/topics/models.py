@@ -4,7 +4,8 @@ from django.conf import settings
 from django.utils.translation import gettext_lazy as _
 from wagtail.fields import RichTextField
 
-from cms.core.models import BasePage, ExclusiveTaxonomyMixin
+from cms.core.models import BasePage
+from cms.taxonomy.mixins import ExclusiveTaxonomyMixin
 
 if TYPE_CHECKING:
     from wagtail.admin.panels import Panel
