@@ -36,7 +36,7 @@ Feature: A general use of Methodology Page
 
     Scenario: The mandatory fields raise validation errors when left empty on the Methodology page.
         Given a theme page exists
-    And a topic page exists as a child of the existing theme page
+        And a topic page exists as a child of the existing theme page
         And a CMS user logs into the admin site
         When the user creates a methodology page as a child of the existing topic page
         And the user clicks Save draft
