@@ -1,4 +1,4 @@
-from behave import given
+from behave import given  # pylint: disable=no-name-in-module
 from behave.runner import Context
 
 from cms.articles.tests.factories import ArticleSeriesFactory, StatisticalArticlePageFactory
