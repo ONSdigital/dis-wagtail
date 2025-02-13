@@ -126,16 +126,16 @@ class TopicPage(BasePage):  # type: ignore[django-manager-missing]
     @cached_property
     def latest_article_in_featured_series(self) -> StatisticalArticlePage | None:
         """Returns the latest article in the featured series."""
-        article: StatisticalArticlePage | None = StatisticalArticlePage.objects.none()
         if self.featured_series:
-            article = (
+            article: StatisticalArticlePage = (
                 StatisticalArticlePage.objects.child_of(self.featured_series)
                 .live()
                 .public()
                 .order_by("-release_date")
                 .first()
             )
-        return article
+            return article
+        return None
 
     @cached_property
     def processed_articles(self) -> list[ArticleSeriesPage]:
@@ -143,7 +143,7 @@ class TopicPage(BasePage):  # type: ignore[django-manager-missing]
         TODO: extend when Taxonomy is in.
         """
         # check if any statistical articles were highlighted. if so, fetch in the order they were added.
-        highlighted_page_pks = tuple(page_id for page_id in self.related_articles.values_list("page_id", flat=True))
+        highlighted_page_pks = list(self.related_articles.values_list("page_id", flat=True))
         highlighted_pages = list(
             order_by_pk_position(
                 StatisticalArticlePage.objects.live().public().defer_streamfields(),

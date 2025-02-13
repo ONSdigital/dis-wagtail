@@ -68,6 +68,15 @@ class FeaturedSeriesPageChooserViewSetTest(WagtailTestUtils, TestCase):
         self.assertNotContains(response, self.another_series.title)
         self.assertNotContains(response, self.another_topic.title)
 
+    def test_featured_series_viewset_configuration(self):
+        self.assertFalse(featured_series_page_chooser_viewset.register_widget)
+        self.assertEqual(featured_series_page_chooser_viewset.model, ArticleSeriesPageFactory._meta.model)
+        self.assertEqual(featured_series_page_chooser_viewset.choose_one_text, _("Choose Article Series page"))
+        self.assertEqual(
+            featured_series_page_chooser_viewset.choose_another_text, _("Choose another Article Series page")
+        )
+        self.assertEqual(featured_series_page_chooser_viewset.edit_item_text, _("Edit Article Series page"))
+
 
 class HighlightedPageChooserViewSetTest(WagtailTestUtils, TestCase):
     @classmethod
@@ -184,19 +193,6 @@ class HighlightedPageChooserViewSetTest(WagtailTestUtils, TestCase):
             response.context["items"].object_list,
             [self.second_methodology],
         )
-
-
-class ViewSetConfigurationTest(TestCase):
-    """Test the configuration of the viewsets."""
-
-    def test_featured_series_viewset_configuration(self):
-        self.assertFalse(featured_series_page_chooser_viewset.register_widget)
-        self.assertEqual(featured_series_page_chooser_viewset.model, ArticleSeriesPageFactory._meta.model)
-        self.assertEqual(featured_series_page_chooser_viewset.choose_one_text, _("Choose Article Series page"))
-        self.assertEqual(
-            featured_series_page_chooser_viewset.choose_another_text, _("Choose another Article Series page")
-        )
-        self.assertEqual(featured_series_page_chooser_viewset.edit_item_text, _("Edit Article Series page"))
 
     def test_highlighted_article_viewset_configuration(self):
         self.assertFalse(highlighted_article_page_chooser_viewset.register_widget)
