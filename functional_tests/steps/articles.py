@@ -7,7 +7,7 @@ from cms.articles.tests.factories import ArticleSeriesPageFactory, StatisticalAr
 @given("the user creates a new article series")
 @given("the user has created a statistical article in a series")
 def create_article_series(context: Context):
-    context.article_series = ArticleSeriesPageFactory(parent=context.topic_page)
+    context.article_series = ArticleSeriesPageFactory()
 
 
 @when("the user creates a new statistical article in the series")
