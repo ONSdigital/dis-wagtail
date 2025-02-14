@@ -2,7 +2,7 @@ Feature: A general use of Methodology Page
 
     Scenario: A CMS user can create and publish a Methodology Page
         Given a theme page exists
-        And a topic page exists
+        And a topic page exists under the theme page
         And a CMS user logs into the admin site
         When the user creates a methodology page as a child of the existing topic page
         And the user populates the methodology page
@@ -12,8 +12,8 @@ Feature: A general use of Methodology Page
     
     Scenario: A CMS user can add a published statistical articles in the Related publication section of the Methodology page
         Given a theme page exists
-        And a topic page exists
-        And the user has created a statistical article in a series
+        And a topic page exists under the theme page
+        And a statistical article page has been published under the existing theme page
         And a CMS user logs into the admin site
         When the user creates a methodology page as a child of the existing topic page
         And the user populates the methodology page
@@ -24,7 +24,7 @@ Feature: A general use of Methodology Page
 
     Scenario: A CMS user can add a Contact Details snippet on the Methodology page
         Given a theme page exists
-        And a topic page exists
+        And a topic page exists under the theme page
         And a contact details snippet exists
         And a CMS user logs into the admin site
         When the user creates a methodology page as a child of the existing topic page
@@ -36,7 +36,7 @@ Feature: A general use of Methodology Page
 
     Scenario: The mandatory fields raise validation errors when left empty on the Methodology page.
         Given a theme page exists
-        And a topic page exists
+        And a topic page exists under the theme page
         And a CMS user logs into the admin site
         When the user creates a methodology page as a child of the existing topic page
         And clicks the "Save Draft" button
@@ -44,7 +44,7 @@ Feature: A general use of Methodology Page
 
     Scenario: The Last revised date field has appropriate validation on Methodology page.
         Given a theme page exists
-        And a topic page exists
+        And a topic page exists under the theme page
         And a CMS user logs into the admin site
         When the user creates a methodology page as a child of the existing topic page
         And the user populates the methodology page

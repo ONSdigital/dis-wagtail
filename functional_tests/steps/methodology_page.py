@@ -105,7 +105,4 @@ def mandatory_fields_raise_validation_error_when_not_set(context: Context):
         ).get_by_text("This field is required")
     ).to_be_visible()
 
-    expect(
-        context.page.locator(".help-block.help-critical").get_by_text("This field is required")
-    ).to_be_visible()
-
+    expect(context.page.locator(".help-block.help-critical").get_by_text("This field is required")).to_be_visible()

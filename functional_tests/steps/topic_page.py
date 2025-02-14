@@ -11,6 +11,11 @@ def a_topic_page_exists(context: Context):
     context.topic_page = TopicPageFactory(title="Public Sector Finance")
 
 
+@given("a topic page exists under the theme page")
+def a_topic_page_exists_under_theme_page(context: Context):
+    context.topic_page = TopicPageFactory(parent=context.theme_page)
+
+
 @given("the topic page has a statistical article in a series")
 def the_topic_page_has_a_statistical_article_in_a_series(context: Context):
     context.article_series = ArticleSeriesPageFactory(title="PSF")
