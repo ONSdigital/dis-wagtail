@@ -46,7 +46,7 @@ def the_user_selects_statistical_articles_as_related_publications(context: Conte
     context.page.get_by_role("button", name="Add related publications").click()
     context.page.get_by_role("button", name="Choose a page (Statistical").click()
     context.page.get_by_role(
-        "cell", name=f"{context.article_series.title}: {context.statistical_article.title}"
+        "cell", name=f"{context.article_series.title}: {context.article.title}"
     ).click()
 
 

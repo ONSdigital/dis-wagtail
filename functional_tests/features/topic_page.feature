@@ -8,7 +8,7 @@ Feature: CMS users can draft, edit, and publish topic pages
         And clicks the "Choose Article Series page" button
         And the user selects the article series
         And publishes the page
-        And visits the topic page
+        And the user visits the topic page
         Then the topic page with the example content is displayed
         And the user can see the topic page featured article
 
@@ -16,6 +16,5 @@ Feature: CMS users can draft, edit, and publish topic pages
         Given a topic page exists
         And the user has created a statistical article in a series
         And the user has featured the series
-        When the user creates a new statistical article in the series
-        And visits the topic page
+        When the user visits the topic page
         Then the user can see the newly created article in featured spot

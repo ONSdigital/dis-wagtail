@@ -3,6 +3,7 @@ from behave.runner import Context
 from playwright.sync_api import expect
 
 from cms.articles.tests.factories import ArticleSeriesPageFactory, StatisticalArticlePageFactory
+from cms.themes.tests.factories import ThemePageFactory
 from cms.topics.tests.factories import TopicPageFactory
 
 
@@ -10,9 +11,9 @@ from cms.topics.tests.factories import TopicPageFactory
 def a_topic_page_exists(context: Context):
     context.topic_page = TopicPageFactory(title="Public Sector Finance")
 
-
-@given("a topic page exists under the theme page")
-def a_topic_page_exists_under_theme_page(context: Context):
+@given("a topic page exists under a theme page")
+def the_user_creates_theme_and_topic_pages(context: Context):
+    context.theme_page = ThemePageFactory()
     context.topic_page = TopicPageFactory(parent=context.theme_page)
 
 
@@ -28,14 +29,14 @@ def the_user_has_featured_the_series(context: Context):
     context.topic_page.save_revision().publish()
 
 
-@when("visits the topic page")
+@when("the user visits the topic page")
 def visit_topic_page(context: Context):
     context.page.goto(f"{context.base_url}{context.topic_page.url}")
 
 
 @when("the user selects the article series")
 def the_user_select_article_series(context: Context):
-    context.page.get_by_role("link", name="PSF", exact=True).click()
+    context.page.get_by_role("link", name=context.article_series.title, exact=True).click()
 
 
 @then("the topic page with the example content is displayed")
@@ -53,5 +54,5 @@ def user_sees_featured_article(context: Context):
 @then("the user can see the newly created article in featured spot")
 def user_sees_newly_featured_article(context: Context):
     expect(context.page.get_by_role("heading", name="Featured")).to_be_visible()
-    expect(context.page.get_by_text(context.article.display_title)).to_be_visible()
-    expect(context.page.get_by_text(context.article.main_points_summary)).to_be_visible()
+    expect(context.page.locator("#featured").get_by_text(context.article.display_title)).to_be_visible()
+    expect(context.page.locator("#featured").get_by_text(context.article.main_points_summary)).to_be_visible()
