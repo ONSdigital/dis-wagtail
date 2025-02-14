@@ -3,7 +3,7 @@ from typing import ClassVar
 from django.core.exceptions import ValidationError
 from django.db import models
 from django.utils.translation import gettext_lazy as _
-from wagtail.admin.panels import FieldPanel, InlinePanel, Panel
+from wagtail.admin.panels import FieldPanel, MultipleChooserPanel, Panel
 
 from cms.taxonomy.models import Topic
 from cms.taxonomy.viewsets import ExclusiveTopicChooserWidget
@@ -42,7 +42,7 @@ class GenericTaxonomyMixin(models.Model):
     """Generic Taxonomy mixin allows pages to be tagged with one or more topics non-exclusively."""
 
     taxonomy_panels: ClassVar[list["Panel"]] = [
-        InlinePanel("topics", label=_("Topics")),
+        MultipleChooserPanel("topics", label=_("Topics"), chooser_field_name=_("topic")),
     ]
 
     class Meta:
