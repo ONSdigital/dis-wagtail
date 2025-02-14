@@ -3,7 +3,7 @@ from behave.runner import Context
 from django.urls import reverse
 
 
-@when("the user clicks publish page")
+@when('the user clicks "Publish page"')
 @when("publishes the page")
 def user_clicks_publish_page(context: Context) -> None:
     context.page.get_by_role("button", name="More actions").click()

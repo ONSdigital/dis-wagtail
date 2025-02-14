@@ -109,7 +109,3 @@ def mandatory_fields_raise_validation_error_when_not_set(context: Context):
         context.page.locator(".help-block.help-critical").get_by_text("This field is required")
     ).to_be_visible()
 
-
-@when("the user clicks Save draft")
-def user_saves_draft(context: Context):
-    context.page.get_by_role("button", name="Save draft").click()
