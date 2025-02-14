@@ -19,6 +19,8 @@ from cms.core.query import order_by_pk_position
 from cms.taxonomy.mixins import GenericTaxonomyMixin
 
 if TYPE_CHECKING:
+    import datetime
+
     from wagtail.admin.panels import Panel
     from wagtail.query import PageQuerySet
 
@@ -38,8 +40,8 @@ class MethodologyRelatedPage(Orderable):
 
 class MethodologyPage(BasePage, GenericTaxonomyMixin):  # type: ignore[django-manager-missing]
     parent_page_types: ClassVar[list[str]] = ["topics.TopicPage"]
-
     template = "templates/pages/methodology_page.html"
+    label = _("Methodology")
 
     summary = RichTextField(features=settings.RICH_TEXT_BASIC)
     publication_date = models.DateField()
@@ -98,6 +100,10 @@ class MethodologyPage(BasePage, GenericTaxonomyMixin):  # type: ignore[django-ma
         context["table_of_contents"] = self.table_of_contents
         context["related_publications"] = self.get_formatted_related_publications_list(request=request)
         return context
+
+    @property
+    def release_date(self) -> "datetime.date":
+        return self.publication_date
 
     @cached_property
     def related_publications(self) -> "PageQuerySet":

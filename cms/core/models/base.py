@@ -1,9 +1,9 @@
 from typing import TYPE_CHECKING, ClassVar, Optional, Self, cast
 
 from django.conf import settings
-from django.db import models
 from django.utils.decorators import method_decorator
 from django.utils.functional import cached_property
+from django.utils.translation import gettext_lazy as _
 from wagtail.admin.panels import ObjectList, TabbedInterface
 from wagtail.models import Page
 from wagtail.query import PageQuerySet
@@ -16,6 +16,7 @@ from ...taxonomy.forms import DeDuplicateTopicsAdminForm
 from .mixins import ListingFieldsMixin, SocialFieldsMixin
 
 if TYPE_CHECKING:
+    from django.db import models
     from wagtail.admin.panels import FieldPanel
     from wagtail.contrib.settings.models import (
         BaseGenericSetting as _WagtailBaseGenericSetting,
@@ -53,6 +54,9 @@ class BasePage(ListingFieldsMixin, SocialFieldsMixin, Page):  # type: ignore[dja
     # Update in your specific Page class if the StreamField using them is different.
     content_field_name: str = "content"
 
+    # used a page type label in the front-end
+    label = _("Page")
+
     class Meta:
         abstract = True
 
@@ -63,7 +67,7 @@ class BasePage(ListingFieldsMixin, SocialFieldsMixin, Page):  # type: ignore[dja
     ]
 
     @cached_classmethod
-    def get_edit_handler(cls) -> TabbedInterface:
+    def get_edit_handler(cls) -> TabbedInterface:  # pylint: disable=no-self-argument
         """Override the default edit handler property, enabling us to add editor tabs."""
         if hasattr(cls, "edit_handler"):
             edit_handler = cls.edit_handler

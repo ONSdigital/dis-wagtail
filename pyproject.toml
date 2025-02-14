@@ -141,6 +141,10 @@ ignore_errors = true
 module = "*.tests.*"
 ignore_errors = true
 
+[[tool.mypy.overrides]]
+module = "cms.settings.local"
+ignore_errors = true
+
 [tool.django-stubs]
 django_settings_module = "cms.settings.test"
 
