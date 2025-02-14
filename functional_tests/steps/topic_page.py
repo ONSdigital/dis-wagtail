@@ -7,15 +7,10 @@ from cms.themes.tests.factories import ThemePageFactory
 from cms.topics.tests.factories import TopicPageFactory
 
 
-@given("a topic page exists")
-def a_topic_page_exists(context: Context):
-    context.topic_page = TopicPageFactory(title="Public Sector Finance")
-
-
 @given("a topic page exists under a theme page")
 def the_user_creates_theme_and_topic_pages(context: Context):
     context.theme_page = ThemePageFactory()
-    context.topic_page = TopicPageFactory(parent=context.theme_page)
+    context.topic_page = TopicPageFactory(parent=context.theme_page, title="Public Sector Finance")
 
 
 @given("the topic page has a statistical article in a series")

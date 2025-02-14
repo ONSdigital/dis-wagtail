@@ -2,7 +2,7 @@ Feature: CMS users can draft, edit, and publish topic pages
 
     Scenario: A CMS user can feature an article series
         Given a CMS user logs into the admin site
-        And a topic page exists
+        And a topic page exists under a theme page
         And the topic page has a statistical article in a series
         When the user edits the topic page
         And clicks the "Choose Article Series page" button
@@ -13,7 +13,7 @@ Feature: CMS users can draft, edit, and publish topic pages
         And the user can see the topic page featured article
 
     Scenario: The feature series on a topic page displays the latest article
-        Given a topic page exists
+        Given a topic page exists under a theme page
         And the user has created a statistical article in a series
         And the user has featured the series
         When the user visits the topic page
