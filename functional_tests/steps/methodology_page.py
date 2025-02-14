@@ -45,9 +45,7 @@ def the_methodology_page_is_displayed_correctly(context: Context):
 def the_user_selects_statistical_articles_as_related_publications(context: Context):
     context.page.get_by_role("button", name="Add related publications").click()
     context.page.get_by_role("button", name="Choose a page (Statistical").click()
-    context.page.get_by_role(
-        "cell", name=f"{context.article_series.title}: {context.article.title}"
-    ).click()
+    context.page.get_by_role("cell", name=f"{context.article_series.title}: {context.article.title}").click()
 
 
 @then("the article is displayed correctly under the Related publication section")
@@ -106,3 +104,17 @@ def mandatory_fields_raise_validation_error_when_not_set(context: Context):
     ).to_be_visible()
 
     expect(context.page.locator(".help-block.help-critical").get_by_text("This field is required")).to_be_visible()
+
+
+@then("the preview is visible with the populated data")
+def preview_is_visible(context: Context):
+    context.page.locator(".w-preview__size-button > .icon > use").first.click()
+    expect(
+        context.page.locator('iframe[title="Preview"]').content_frame.get_by_role(
+            "heading", name="Cite this methodology"
+        )
+    ).to_be_visible()
+
+    # expect(
+    #     context.page.locator('iframe[title="Preview"]').content_frame.get_by_role("heading", name=)
+    # ).to_be_visible()
