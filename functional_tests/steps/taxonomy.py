@@ -28,14 +28,14 @@ def link_existing_topic_to_existing_topic_page(context: Context) -> None:
     context.existing_page = TopicPageFactory(topic=context.existing_topic)
 
 
-@then("they cannot select the topic which is already linked to the other exclusive page")
+@then("the topic which is linked already exclusively linked does not show in the page taxonomy topic chooser")
 def user_cannot_select_existing_topic(context: Context) -> None:
     context.page.get_by_role("tab", name="Taxonomy").click()
     context.page.get_by_role("button", name="Choose a topic").click()
     expect(context.page.get_by_role("link", name=context.existing_topic.title)).not_to_be_visible()
 
 
-@then("the CMS user can link the page to the existing topic in the taxonomy editor tab")
+@then("the user can link the page to the existing topic in the taxonomy editor tab")
 def user_can_link_existing_topic(context: Context) -> None:
     context.page.get_by_role("tab", name="Taxonomy").click()
     context.page.get_by_role("button", name="Choose a topic").click()
@@ -46,8 +46,6 @@ def user_can_link_existing_topic(context: Context) -> None:
 def user_can_link_both_existing_topics(context: Context) -> None:
     context.page.get_by_role("tab", name="Taxonomy").click()
     context.page.get_by_role("button", name="Add topics").click()
-    context.page.get_by_role("button", name="Choose a topic").click()
-    context.page.get_by_role("link", name=context.existing_topic.title).click()
-    context.page.get_by_role("button", name="Add topics").click()
-    context.page.get_by_role("button", name="Choose a topic").click()
-    context.page.get_by_role("link", name=context.existing_topic_2.title).click()
+    context.page.get_by_text(context.existing_topic.title).click()
+    context.page.get_by_text(context.existing_topic_2.title).click()
+    context.page.get_by_role("button", name="Confirm selection").click()
