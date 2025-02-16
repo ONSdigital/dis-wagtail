@@ -12,6 +12,12 @@ class TopicChooserViewSet(ChooserViewSet):
     choose_one_text = _("Choose a topic")
     choose_another_text = _("Choose a different topic")
 
+    def get_queryset(self, request=None):
+        """Return the queryset used to list items in the chooser interface.
+        By default, we return Topic.objects (which excludes the dummy root).
+        """
+        return Topic.objects.all()
+
 
 class ExclusiveTopicChooserViewSet(TopicChooserViewSet):
     register_widget = False
