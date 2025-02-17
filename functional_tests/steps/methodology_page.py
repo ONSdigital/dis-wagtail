@@ -95,7 +95,7 @@ def mandatory_fields_raise_validation_error_when_not_set(context: Context):
         context.page.locator("#panel-child-content-child-summary-errors .error-message").get_by_text(
             "This field is required"
         )
-    )
+    ).to_be_visible()
 
     expect(
         context.page.locator(
