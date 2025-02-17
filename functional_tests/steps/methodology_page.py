@@ -118,4 +118,3 @@ def preview_is_visible(context: Context):
     # expect(iframe_locator.get_by_role("heading", name="Cite this methodology")).to_be_visible()
     # expect(iframe_locator.get_by_role("heading", name="Heading")).to_be_visible()
     # expect(iframe_locator.page.get_by_role("heading", name="Content")).to_be_visible()
-
