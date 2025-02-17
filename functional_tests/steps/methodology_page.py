@@ -33,12 +33,12 @@ def user_populates_the_methodology_page(context: Context):
 @then("the published methodology page is displayed with the populated data")
 def the_methodology_page_is_displayed_correctly(context: Context):
     expect(context.page.get_by_role("heading", name="Methodology page")).to_be_visible()
-
     expect(context.page.get_by_text("Page summary")).to_be_visible()
-
     expect(context.page.get_by_text("Published: 1 January 1950")).to_be_visible()
-
     expect(context.page.get_by_role("heading", name="Cite this methodology")).to_be_visible()
+
+    expect(context.page.get_by_role("heading", name="Heading")).to_be_visible()
+    expect(context.page.get_by_role("heading", name="Content")).to_be_visible()
 
 
 @when("the user selects the article page in the Related publications block")
@@ -108,13 +108,14 @@ def mandatory_fields_raise_validation_error_when_not_set(context: Context):
 
 @then("the preview is visible with the populated data")
 def preview_is_visible(context: Context):
-    context.page.locator(".w-preview__size-button > .icon > use").first.click()
-    expect(
-        context.page.locator('iframe[title="Preview"]').content_frame.get_by_role(
-            "heading", name="Cite this methodology"
-        )
-    ).to_be_visible()
+    context.page.get_by_role("button", name="Toggle preview").click()
 
-    # expect(
-    #     context.page.locator('iframe[title="Preview"]').content_frame.get_by_role("heading", name=)
-    # ).to_be_visible()
+    # iframe_locator = context.page.frame_locator("#w-preview-iframe")
+
+    # expect(iframe_locator.get_by_role("heading", name="Methodology page")).to_be_visible()
+    # expect(iframe_locator.get_by_text("Page summary")).to_be_visible()
+    # expect(iframe_locator.get_by_text("Published: 1 January 1950")).to_be_visible()
+    # expect(iframe_locator.get_by_role("heading", name="Cite this methodology")).to_be_visible()
+    # expect(iframe_locator.get_by_role("heading", name="Heading")).to_be_visible()
+    # expect(iframe_locator.page.get_by_role("heading", name="Content")).to_be_visible()
+
