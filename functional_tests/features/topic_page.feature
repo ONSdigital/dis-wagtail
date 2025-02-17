@@ -12,9 +12,10 @@ Feature: CMS users can draft, edit, and publish topic pages
         Then the topic page with the example content is displayed
         And the user can see the topic page featured article
 
-    Scenario: The feature series on a topic page displays the latest article
+    Scenario: The featured series on a topic page displays the latest article
         Given a topic page exists under a theme page
         And the user has created a statistical article in a series
         And the user has featured the series
-        When the user visits the topic page
+        When the user creates a new statistical article in the series
+        And the user visits the topic page
         Then the user can see the newly created article in featured spot
