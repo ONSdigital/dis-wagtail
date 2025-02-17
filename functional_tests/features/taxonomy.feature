@@ -31,4 +31,4 @@ Feature: Users can tag pages with topics
         Given a CMS user logs into the admin site
         And two topics exist
         When the user tries to create a new information page
-        Then the user can link the page to both topics in the taxonomy editor tab
+        Then the user can tag the page with both topics in the taxonomy editor tab

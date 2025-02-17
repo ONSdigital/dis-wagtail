@@ -1,18 +1,18 @@
 from typing import ClassVar, Optional
 
 from django.db import models
-from django.db.models import UniqueConstraint
+from django.db.models import QuerySet, UniqueConstraint
 from modelcluster.fields import ParentalKey
 from treebeard.mp_tree import MP_Node
 from wagtail.admin.panels import FieldPanel
 from wagtail.search import index
 
-_ROOT_TOPIC_DATA = {"id": "_root", "title": "Root Topic", "description": "Dummy root topic"}
-_BASE_TOPIC_DEPTH = 2
+ROOT_TOPIC_DATA = {"id": "_root", "title": "Root Topic", "description": "Dummy root topic"}
+BASE_TOPIC_DEPTH = 2
 
 
 class TopicManager(models.Manager):
-    def get_queryset(self):
+    def get_queryset(self) -> QuerySet:
         """Filter out the root topic from all querysets."""
         return super().get_queryset().filter(depth__gt=1)
 
@@ -41,7 +41,7 @@ class Topic(index.Indexed, MP_Node):
         index.AutocompleteField("title"),
     ]
 
-    def save_topic(self, *args, parent_topic: Optional["Topic"] = None, **kwargs):
+    def save_topic(self, *args, parent_topic: Optional["Topic"] = None, **kwargs) -> None:
         """Save a topic either underneath the specific parent if passed, otherwise underneath our default root level
         dummy topic.
         """
@@ -68,16 +68,16 @@ class Topic(index.Indexed, MP_Node):
 
     @classmethod
     def get_or_create_root_topic(cls) -> "Topic":
-        if root_topic := cls.all_objects.filter(id=_ROOT_TOPIC_DATA["id"]).first():
+        if root_topic := cls.all_objects.filter(id=ROOT_TOPIC_DATA["id"]).first():
             return root_topic
-        root_topic = Topic.add_root(instance=Topic(**_ROOT_TOPIC_DATA))
+        root_topic = Topic.add_root(instance=Topic(**ROOT_TOPIC_DATA))
         return root_topic
 
     # this is just a convenience function to make the titles appear with lines
     # eg root | - first child
-    def title_with_depth(self):
+    def title_with_depth(self) -> str:
         if depth := self.get_depth():
-            depth_marker = "— " * (depth - 2)
+            depth_marker = "— " * (depth - BASE_TOPIC_DEPTH)
             return depth_marker + self.title
         return self.title
 
@@ -85,7 +85,7 @@ class Topic(index.Indexed, MP_Node):
 
     @property
     def parent_title(self) -> str | None:
-        if self.get_depth() > _BASE_TOPIC_DEPTH:
+        if self.get_depth() > BASE_TOPIC_DEPTH:
             return self.get_parent().title
         return None
 

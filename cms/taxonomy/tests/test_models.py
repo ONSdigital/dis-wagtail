@@ -2,7 +2,7 @@ from django.db import IntegrityError
 from django.test import TestCase
 from wagtail.models import Page
 
-from cms.taxonomy.models import _ROOT_TOPIC_DATA, GenericPageToTaxonomyTopic, Topic
+from cms.taxonomy.models import ROOT_TOPIC_DATA, GenericPageToTaxonomyTopic, Topic
 
 
 class TopicModelTest(TestCase):
@@ -15,7 +15,7 @@ class TopicModelTest(TestCase):
     def test_get_or_create_root_topic(self):
         """Ensure that multiple calls still return the same root topic."""
         root_again = Topic.get_or_create_root_topic()
-        self.assertEqual(self.root_topic.id, _ROOT_TOPIC_DATA["id"])
+        self.assertEqual(self.root_topic.id, ROOT_TOPIC_DATA["id"])
         self.assertEqual(root_again.id, self.root_topic.id)
         self.assertEqual(root_again.pk, self.root_topic.pk)
         self.assertEqual(root_again.depth, 1)  # Root node typically has depth=1

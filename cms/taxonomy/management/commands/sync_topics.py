@@ -15,19 +15,19 @@ class Command(BaseCommand):
 
     def handle(self, *args: Any, **options: Any) -> None:
         logger.info("Fetching topics from API...")
-        topics = fetch_all_topics()
+        topics = _fetch_all_topics()
         logger.info("Fetched %d topics", len(topics))
 
         logger.info("Syncing topics...")
-        sync_with_fetched_topics(topics)
+        _sync_with_fetched_topics(topics)
 
         logger.info("Checking for removed topics...")
-        check_removed_topics({topic["id"] for topic in topics})
+        _check_for_removed_topics({topic["id"] for topic in topics})
 
         logger.info("Finished syncing topics.")
 
 
-def fetch_all_topics() -> list[dict[str, str]]:
+def _fetch_all_topics() -> list[dict[str, str]]:
     """Collect a complete list of topics and their subtopics by doing a
     depth/breadth-first search using a stack of URLs.
     """
@@ -39,7 +39,7 @@ def fetch_all_topics() -> list[dict[str, str]]:
     # Use the stack of subtopic URls to iterate through, fetching all the subtopics
     while request_stack:
         url, parent_id = request_stack.pop()
-        raw_topics = request_topics(url)
+        raw_topics = _request_topics(url)
 
         # Extract just the fields we need
         subtopics = [
@@ -63,12 +63,12 @@ def fetch_all_topics() -> list[dict[str, str]]:
         topics.extend(subtopics)
 
         # Add any subtopics URLs from the topics we just fetched to the stack
-        request_stack.extend(extract_subtopic_links(raw_topics))
+        request_stack.extend(_extract_subtopic_links(raw_topics))
 
     return topics
 
 
-def request_topics(url: str) -> list[dict[str, str]]:
+def _request_topics(url: str) -> list[dict[str, str]]:
     """Fetch topics from the API and return the items from the response."""
     topics_response = requests.get(url, timeout=30)
     topics_response.raise_for_status()
@@ -76,7 +76,7 @@ def request_topics(url: str) -> list[dict[str, str]]:
     return topics_response.json().get("items", [])
 
 
-def extract_subtopic_links(raw_topics: list[dict[str, Any]]) -> list[tuple[str, str]]:
+def _extract_subtopic_links(raw_topics: list[dict[str, Any]]) -> list[tuple[str, str]]:
     """Return a list of tuples of any subtopic links and their parent topic IDs found in raw_topics."""
     return [
         (subtopic_link, raw_topic["id"])
@@ -90,26 +90,26 @@ def extract_subtopic_links(raw_topics: list[dict[str, Any]]) -> list[tuple[str, 
     ]
 
 
-def sync_with_fetched_topics(fetched_topics: list[dict[str, str]]):
+def _sync_with_fetched_topics(fetched_topics: list[dict[str, str]]):
     """For each fetched topic, decide if it needs to be created, updated, or left as is."""
-    check_for_duplicate_topics(fetched_topics)
+    _check_for_duplicate_topics(fetched_topics)
 
     updated_count = 0
     created_count = 0
     for fetched_topic in fetched_topics:
-        if existing_topic := get_topic(fetched_topic["id"]):
-            if not topic_matches(existing_topic, fetched_topic):
-                update_topic(existing_topic, fetched_topic)
+        if existing_topic := _get_topic(fetched_topic["id"]):
+            if not _topic_matches(existing_topic, fetched_topic):
+                _update_topic(existing_topic, fetched_topic)
                 updated_count += 1
         else:
-            create_topic(fetched_topic)
+            _create_topic(fetched_topic)
             created_count += 1
 
     logger.info("Saved %d new topic(s)", created_count)
     logger.info("Updated %d existing topic(s)", updated_count)
 
 
-def check_for_duplicate_topics(fetched_topics: list[dict[str, str]]) -> None:
+def _check_for_duplicate_topics(fetched_topics: list[dict[str, str]]) -> None:
     topic_ids = set()
     for topic in fetched_topics:
         if topic["id"] in topic_ids:
@@ -117,12 +117,12 @@ def check_for_duplicate_topics(fetched_topics: list[dict[str, str]]) -> None:
         topic_ids.add(topic["id"])
 
 
-def get_topic(topic_id: str) -> Topic | None:
+def _get_topic(topic_id: str) -> Topic | None:
     """Fetches a Topic record by its primary key (id), or returns None if none is found."""
     return Topic.objects.filter(id=topic_id).first()
 
 
-def topic_matches(existing_topic: Topic, fetched_topic: dict[str, str]) -> bool:
+def _topic_matches(existing_topic: Topic, fetched_topic: dict[str, str]) -> bool:
     """Compares: title, description, removed status, Parent ID.
     If all these match, the function returns True; otherwise False.
     """
@@ -137,7 +137,7 @@ def topic_matches(existing_topic: Topic, fetched_topic: dict[str, str]) -> bool:
     )
 
 
-def update_topic(existing_topic: Topic, fetched_topic: dict[str, str]):
+def _update_topic(existing_topic: Topic, fetched_topic: dict[str, str]) -> None:
     """Sets: title, description, removed = False (since the topic is present in the external data,
     it cannot be considered removed). Parent/child changes: If the new parent_id is different from the old one,
     we do a tree move of the topic to the new parent.
@@ -158,55 +158,42 @@ def update_topic(existing_topic: Topic, fetched_topic: dict[str, str]):
             fetched_topic["parent_id"],
             existing_topic.get_children_count(),
         )
-        existing_topic.move(get_topic(fetched_topic["parent_id"]), pos="sorted-child")
+        existing_topic.move(_get_topic(fetched_topic["parent_id"]), pos="sorted-child")
 
 
-def create_topic(fetched_topic: dict[str, str]):
-    """Creates a Topic object with the given id, title, and description,
-    If a parent ID is specified, we call parent.add_child,
-    Otherwise, we call Topic.add_root.
-    """
-    # TODO create a dummy root level topic so all actual topics are not root and can be moved freely
+def _create_topic(fetched_topic: dict[str, str]) -> None:
+    """Creates a Topic object with the given id, title, and description, and parent."""
     logger.info("Saving new topic %s", fetched_topic)
     new_topic = Topic(
         id=fetched_topic["id"], title=fetched_topic["title"], description=fetched_topic.get("description")
     )
     if fetched_topic["parent_id"]:
-        parent = get_topic(fetched_topic["parent_id"])
+        parent = _get_topic(fetched_topic["parent_id"])
         new_topic.save_topic(parent_topic=parent)
     else:
         new_topic.save_topic()
 
 
-def check_removed_topics(existing_topic_ids: set[str]):
+def _check_for_removed_topics(existing_topic_ids: set[str]) -> None:
     """Figures out which topics exist in the database but were not returned
     by the external API in this sync cycle.
     """
-    existing_topics = get_all_existing_topic_ids()
+    existing_topics = _get_all_existing_topic_ids()
     removed_topics = existing_topics.difference(existing_topic_ids)
     if removed_topics:
         logger.warning("WARNING: Found %d removed topic(s)", len(removed_topics))
     for removed_topic_id in removed_topics:
         logger.warning("Marking topic %s as removed", removed_topic_id)
-        set_topic_as_removed(removed_topic_id)
+        _set_topic_as_removed(removed_topic_id)
 
 
-def get_all_existing_topic_ids() -> set[str]:
+def _get_all_existing_topic_ids() -> set[str]:
     all_topics = Topic.objects.all()
     topic_ids = {topic.id for topic in all_topics}
     return topic_ids
 
 
-def set_topic_as_removed(removed_topic_id: str):
-    removed_topic = get_topic(removed_topic_id)
+def _set_topic_as_removed(removed_topic_id: str) -> None:
+    removed_topic = _get_topic(removed_topic_id)
     removed_topic.removed = True
     removed_topic.save()
-
-
-def main():
-    command = Command()
-    command.handle()
-
-
-if __name__ == "__main__":
-    main()

@@ -9,7 +9,7 @@ from cms.topics.tests.factories import TopicPageFactory
 
 @given("a topic exists")
 def a_topic_exists(context: Context) -> None:
-    context.existing_topic = TopicFactory(id="123", title="Example Topic", description="Example topic description")
+    context.existing_topic = TopicFactory(id="0001", title="Example Topic", description="Example topic description")
 
 
 @given("two topics exist")
@@ -42,7 +42,7 @@ def user_can_link_existing_topic(context: Context) -> None:
     context.page.get_by_role("link", name=context.existing_topic.title).click()
 
 
-@then("the user can link the page to both topics in the taxonomy editor tab")
+@then("the user can tag the page with both topics in the taxonomy editor tab")
 def user_can_link_both_existing_topics(context: Context) -> None:
     context.page.get_by_role("tab", name="Taxonomy").click()
     context.page.get_by_role("button", name="Add topics").click()
