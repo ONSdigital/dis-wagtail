@@ -22,6 +22,11 @@ class TopicManager(models.Manager):
 class Topic(index.Indexed, MP_Node):
     """A topic model, representing taxonomic topics.
     We use tree nodes to represent the topic/subtopic parent/child relationships.
+
+    Note:
+    We must be able to cope with topics potentially moving to and from root level. However, Nodes cannot be moved from
+    root level in treebeard. To cope with this, we put all topics underneath a dummy root level node. To hide this
+    dummy node, we override the default object manager with one which only returns non-root level, actual topic nodes.
     """
 
     objects = TopicManager()  # Override the default manager
