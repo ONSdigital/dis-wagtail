@@ -14,18 +14,14 @@ ALLOWED_HOSTS = ["*"]
 # Allow requests from the local IPs to see more debug information.
 INTERNAL_IPS = ("127.0.0.1", "10.0.2.2")
 
-
 # This is only to test Wagtail emails.
 WAGTAILADMIN_BASE_URL = "http://localhost:8000"
-
 
 # Display sent emails in the console while developing locally.
 EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
 
-
 # Disable password validators when developing locally.
 AUTH_PASSWORD_VALIDATORS = []
-
 
 # Enable Wagtail's style guide in Wagtail's settings menu.
 # http://docs.wagtail.io/en/stable/contributing/styleguide.html
@@ -36,7 +32,6 @@ INSTALLED_APPS += ["django_migration_linter"]
 SECURE_SSL_REDIRECT = False
 # For the same reason the HSTS header should not be sent.
 SECURE_HSTS_SECONDS = 0
-
 
 # Adds Django Debug Toolbar
 INSTALLED_APPS.append("debug_toolbar")
@@ -57,7 +52,12 @@ DATABASES = {
 DATABASES["read_replica"] = copy.deepcopy(DATABASES["default"])
 
 # Redis
-REDIS_URL = "redis://localhost:6379"
+REDIS_URL = env.get("REDIS_URL", "redis://localhost:6379")  # noqa: F405
+CACHES["default"] = {  # noqa: F405
+    "BACKEND": "django_redis.cache.RedisCache",
+    "LOCATION": REDIS_URL,
+    "OPTIONS": {**redis_options},  # noqa: F405
+}
 
 # Django Defender
 ENABLE_DJANGO_DEFENDER = False
