@@ -55,7 +55,7 @@ class MainMenu(DraftStateMixin, RevisionMixin, PreviewableMixin, models.Model):
 class FooterMenu(DraftStateMixin, RevisionMixin, PreviewableMixin, models.Model):
     base_form_class = FooterMenuAdminForm
     columns = StreamField(
-        [("column", LinksColumn())],
+        [("linksColumn", LinksColumn())],
         blank=True,
         max_num=3,
         help_text=_("Up to 3 columns. Each column contains a title with links."),

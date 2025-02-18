@@ -2,8 +2,8 @@ import factory
 from wagtail_factories import ListBlockFactory, PageChooserBlockFactory, StreamFieldFactory, StructBlockFactory
 
 from cms.core.tests.factories import LinkBlockFactory
-from cms.navigation.blocks import SectionBlock, ThemeLinkBlock, TopicLinkBlock
-from cms.navigation.models import ColumnBlock, MainMenu, NavigationSettings
+from cms.navigation.blocks import LinksColumn, SectionBlock, ThemeLinkBlock, TopicLinkBlock
+from cms.navigation.models import ColumnBlock, FooterMenu, MainMenu, NavigationSettings
 from cms.themes.tests.factories import ThemePageFactory
 from cms.topics.tests.factories import TopicPageFactory
 
@@ -61,8 +61,28 @@ class MainMenuFactory(factory.django.DjangoModelFactory):
     )
 
 
+class LinksColumnFactory(StructBlockFactory):
+    class Meta:
+        model = LinksColumn
+
+    title = factory.Faker("text", max_nb_chars=20)
+    links = ListBlockFactory(LinkBlockFactory)
+
+
+class FooterMenuFactory(factory.django.DjangoModelFactory):
+    class Meta:
+        model = FooterMenu
+
+    columns = StreamFieldFactory(
+        {
+            "linksColumns": LinksColumnFactory,
+        }
+    )
+
+
 class NavigationSettingsFactory(factory.django.DjangoModelFactory):
     class Meta:
         model = NavigationSettings
 
     main_menu = factory.SubFactory(MainMenuFactory)
+    footer_menu = factory.SubFactory(FooterMenuFactory)
