@@ -92,7 +92,9 @@ def mandatory_fields_raise_validation_error_when_not_set(context: Context):
     ).to_be_visible()
 
     expect(
-        context.page.locator("#panel-child-content-child-summary-errors").get_by_text("This field is required")
+        context.page.locator("#panel-child-content-child-summary-errors .error-message").get_by_text(
+            "This field is required"
+        )
     ).to_be_visible()
 
     expect(
@@ -108,11 +110,14 @@ def mandatory_fields_raise_validation_error_when_not_set(context: Context):
 def preview_is_visible(context: Context):
     context.page.get_by_role("button", name="Toggle preview").click()
 
-    # iframe_locator = context.page.frame_locator("#w-preview-iframe")
+    # add a small delay to allow the preview to render
+    context.page.wait_for_timeout(500)
 
-    # expect(iframe_locator.get_by_role("heading", name="Methodology page")).to_be_visible()
-    # expect(iframe_locator.get_by_text("Page summary")).to_be_visible()
-    # expect(iframe_locator.get_by_text("Published: 1 January 1950")).to_be_visible()
-    # expect(iframe_locator.get_by_role("heading", name="Cite this methodology")).to_be_visible()
-    # expect(iframe_locator.get_by_role("heading", name="Heading")).to_be_visible()
-    # expect(iframe_locator.page.get_by_role("heading", name="Content")).to_be_visible()
+    iframe_locator = context.page.frame_locator("#w-preview-iframe")
+
+    expect(iframe_locator.get_by_role("heading", name="Methodology page")).to_be_visible()
+    expect(iframe_locator.get_by_text("Page summary")).to_be_visible()
+    expect(iframe_locator.get_by_text("Published: 1 January 1950")).to_be_visible()
+    expect(iframe_locator.get_by_role("heading", name="Cite this methodology")).to_be_visible()
+    expect(iframe_locator.get_by_role("heading", name="Heading")).to_be_visible()
+    expect(iframe_locator.get_by_role("heading", name="Content")).to_be_visible()

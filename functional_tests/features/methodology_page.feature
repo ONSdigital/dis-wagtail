@@ -52,5 +52,4 @@ Feature: A general use of Methodology Page
         And a CMS user logs into the admin site
         When the user creates a methodology page as a child of the existing topic page
         And the user populates the methodology page
-        And clicks the "Save Draft" button
         Then the preview is visible with the populated data
