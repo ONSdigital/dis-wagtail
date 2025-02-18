@@ -1,10 +1,26 @@
-{% from "components/pagination/_macro.njk" import onsPagination %}
-{% set pagination=[] %}
+{% if pages.paginator.num_pages > 1 %}
+{% from "components/pagingation/_macro.njk" import onsPagination %}
 
-{% for page in Page.objects.specific().defer_streamfields() %}
-	{% if not page.exclude_from_pagination %}
-		{% do pagination.append({"currentPageIndex": 3,
-				"totalPages": 10,
-			}) %}
-	{% endif %}
-{% endfor %}
+{# fmt:off #}
+{{
+onsPagination({
+"hideRangeIndicator": true,
+"currentPageNumber": 1,
+"pages": [
+{
+"url": "#0"
+},
+{
+"url": "#0"
+},
+{
+"url": "#0"
+},
+{
+"url": "#0"
+}
+]
+})
+}}
+{# fmt:on #}
+{% endif %}

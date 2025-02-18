@@ -1,12 +1,80 @@
 {% extends "templates/base_page.html" %}
 
 {% block main %}
-    <h1>{{ _("Previous Releases") }}</h1>
-    <ul>
-        {% for page in pages %}
-            <li><a href="{{ pageurl(page) }}">{{ page.title }}</a> - {{ page.release_date }}</li>
-        {% else %}
-            <p>{{ _("There are currently no releases") }}</p>
-        {% endfor %}
-    </ul>
+<h1>{{ _("Previous Releases") }}</h1>
+<ul>
+	{% for page in pages %}
+	<li><a href="{{ pageurl(page) }}">{{ page.title }}</a> - {{ page.release_date }}</li>
+	{% else %}
+	<p>{{ _("There are currently no releases") }}</p>
+	{% endfor %}
+</ul>
+{% block django_pagination %}
+{# Plug this in the DS pagination component #}
+{% if pages.paginator.num_pages > 1 %}
+<nav aria-label="Pagination">
+	<ul class="pagination">
+		{% if pages.has_previous() %}
+		<li><a href="?page={{ pages.previous_page_number() }}" class="previous">Previous <span
+				class="sr-only">page</span></a></li>
+		{% endif %}
+
+		<li class="current" aria-current="page">
+			{{ pages.number }}/{{pages.paginator.num_pages }}
+		</li>
+
+		{% if pages.has_next() %}
+		<li><a href="?page={{ pages.next_page_number() }}" class="next">Next <span class="sr-only">page</span></a></li>
+		{% endif %}
+	</ul>
+</nav>
+{% endif %}
+{% endblock %}
+{% block ONS_pagination %}
+{# Plug this in the DS pagination component #}
+{% if pages.paginator.num_pages > 1 %}
+<nav class="ons-pagination" aria-label="Pagination (Page 5 of 35)">
+	<div class="ons-pagination__position">Page 5 of 35</div>
+	<ul class="ons-pagination__items">
+		<li class="ons-pagination__item ons-pagination__item--previous">
+			<a href="#0" class="ons-pagination__link ons-pagination__link--no-underline" rel="prev"
+			   aria-label="Go to the previous page (Page 4)"><svg class="ons-icon ons-icon--m ons-u-mr-2xs" viewBox="0 0 17 13"
+			                                                      xmlns="http://www.w3.org/2000/svg" focusable="false" fill="currentColor" role="img"
+			                                                      title="ons-icon-arrow-previous">
+				<path
+						d="M6.4.2.3 6.4c-.2.2-.2.4 0 .6l6.2 5.8c.2.2.4.1.6 0l.8-.9c.2-.2.1-.4 0-.6l-4-3.7h12.5c.2 0 .4-.2.4-.4V6c0-.2-.2-.4-.4-.4H3.8l4-4c.2-.1.2-.4.1-.5L7 .2c-.1-.1-.4-.1-.6 0z" />
+			</svg><span class="ons-pagination__link-text">Previous</span>
+			</a>
+		</li>
+		<li class="ons-pagination__item">
+			<a href="#0" class="ons-pagination__link" aria-label="Go to the first page (Page 1)">1</a>
+		</li>
+		<li class="ons-pagination__item ons-pagination__item--gap">&hellip;</li>
+		<li class="ons-pagination__item">
+			<a href="#0" class="ons-pagination__link" aria-label="Go to page 4" rel="prev">4</a>
+		</li>
+		<li class="ons-pagination__item ons-pagination__item--current">
+			<a href="#0" class="ons-pagination__link" aria-current="true" aria-label="Current page (Page 5 of 35)">5</a>
+		</li>
+		<li class="ons-pagination__item">
+			<a href="#0" class="ons-pagination__link" aria-label="Go to page 6" rel="next">6</a>
+		</li>
+		<li class="ons-pagination__item ons-pagination__item--gap">&hellip;</li>
+		<li class="ons-pagination__item">
+			<a href="#0" class="ons-pagination__link" aria-label="Go to the last page (Page 35)">35</a>
+		</li>
+		<li class="ons-pagination__item ons-pagination__item--next">
+			<a href="#0" class="ons-pagination__link ons-pagination__link--no-underline" rel="next"
+			   aria-label="Go to the next page (Page 6)">
+				<span class="ons-pagination__link-text">Next</span><svg class="ons-icon ons-icon--m ons-u-ml-2xs"
+				                                                        viewBox="0 0 17 13" xmlns="http://www.w3.org/2000/svg" focusable="false" fill="currentColor" role="img"
+				                                                        title="ons-icon-arrow-next">
+				<path
+						d="m10 .2-.9.9c-.1.1-.1.4 0 .5l4 4H.6c-.2 0-.4.2-.4.4v1.2c0 .2.2.4.4.4h12.5l-3.9 3.7c-.2.2-.2.4 0 .6l.8.9c.2.2.4.2.6 0L16.8 7c.2-.2.2-.4 0-.6L10.7.3c-.3-.2-.5-.2-.7-.1z" />
+			</svg></a>
+		</li>
+	</ul>
+</nav>
+{% endif %}
+{% endblock %}
 {% endblock %}

@@ -2,6 +2,7 @@ from typing import TYPE_CHECKING, Any, ClassVar, Optional
 
 from django.conf import settings
 from django.core.exceptions import ValidationError
+from django.core.paginator import Paginator, EmptyPage
 from django.db import models
 from django.http import Http404
 from django.shortcuts import redirect
@@ -69,12 +70,21 @@ class ArticleSeriesPage(RoutablePageMixin, Page):
 
     @path("previous-releases/")
     def previous_releases(self, request: "HttpRequest") -> "TemplateResponse":
-        response: TemplateResponse = self.render(
-            request,
-            # TODO: update to include drafts when looking at previews holistically.
-            context_overrides={"pages": StatisticalArticlePage.objects.live().child_of(self).order_by("-release_date")},
-            template="templates/pages/statistical_article_page--previous-releases.html",
-        )
+        children = StatisticalArticlePage.objects.live().child_of(self).order_by("-release_date")
+        paginator = Paginator(children, per_page=5)
+        print(paginator.get_page(1))
+
+        try:
+            pages = paginator.page(int(request.GET.get("page", 1)))
+        except (EmptyPage, ValueError) as e:
+            raise Http404 from e
+        else:
+            response: TemplateResponse = self.render(
+                request,
+                # TODO: update to include drafts when looking at previews holistically.
+                context_overrides={"pages": pages},
+                template="templates/pages/statistical_article_page--previous-releases.html",
+            )
         return response
 
 
