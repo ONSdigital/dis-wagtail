@@ -6,32 +6,24 @@ from wagtail.models import Page
 from cms.standard_pages.models import InformationPage
 from cms.home.models import HomePage  # or wherever you define your custom HomePage
 from cms.taxonomy.models import Topic
+from django.contrib.auth import get_user_model
 
 
 class TestInformationPageIntegration(TestCase):
     def setUp(self):
         super().setUp()
 
-        # 1) Log in with an admin user so we have permission to add pages
-        # self.user = self.login()  # if using WagtailPageTests, or do the manual approach:
-        from django.contrib.auth import get_user_model
-
         user = get_user_model().objects.create_superuser(
             username="testuser", password="testpassword", email="test@example.com"
         )
         self.client.force_login(user)
 
-        # 2) Create or get the actual HomePage (or IndexPage, etc.) so that it’s valid as a parent
         self.root_page = Page.get_root_nodes().first()
 
-        # If your site’s actual homepage is already created in migrations, you might do:
-        # self.home_page = HomePage.objects.first()
-        # Or if not, create one:
         self.home_page = HomePage(title="Home", slug="homeee")
         self.root_page.add_child(instance=self.home_page)
         self.home_page.save_revision().publish()
 
-        # 3) Set up some Topics with Treebeard
         # self.topic1 = Topic.add_root(instance=Topic(id="t1", title="Topic1"))
         # self.topic2 = Topic.add_root(instance=Topic(id="t2", title="Topic2"))
         self.topic1 = Topic(id="t1", title="Health and life expectancies")
@@ -39,7 +31,6 @@ class TestInformationPageIntegration(TestCase):
         self.topic2 = Topic(id="t2", title="Topic2")
         self.topic2.save_topic()
 
-        # 4) Get the real content_type for InformationPage
         content_type = ContentType.objects.get_for_model(InformationPage)
         self.app_label = content_type.app_label  # e.g. "standard_pages"
         self.model_name = content_type.model  # e.g. "informationpage"
@@ -53,7 +44,6 @@ class TestInformationPageIntegration(TestCase):
             "slug": "info-page-500",
             # Provide the JSON string that Draftail expects:
             "summary": '{"blocks":[{"key":"v3k0g","text":"Info page 1 summary","type":"unstyled","depth":0,"inlineStyleRanges":[],"entityRanges":[],"data":{}}],"entityMap":{}}',
-            # If you have other required fields, add them:
             "last_updated": "",
             "content-count": "1",
             "content-0-deleted": "",
@@ -61,7 +51,6 @@ class TestInformationPageIntegration(TestCase):
             "content-0-type": "heading",
             "content-0-id": "e44ea7b7-9df7-4c1c-870c-76598e5c9706",
             "content-0-value": "Hello world",
-            # If your page has optional listing fields, social fields, etc., they can be empty:
             "show_in_menus": "on",
             "page_related_pages-TOTAL_FORMS": "0",
             "page_related_pages-INITIAL_FORMS": "0",

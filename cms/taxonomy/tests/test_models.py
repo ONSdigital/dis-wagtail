@@ -93,25 +93,25 @@ class TopicModelTest(TestCase):
         t2.save_topic(parent_topic=t1)
         self.assertEqual(t2.parent_title, "Top Level")
 
-    # def test_move_to_root(self):
-    #     """
-    #     If we call topic.move(None), it should move under the dummy root.
-    #     """
-    #     # Create a child under the dummy root
-    #     t1 = Topic(id="t1", title="First Topic")
-    #     t1.save_topic()
+    def test_move_to_root(self):
+        """If we call topic.move(None), it should move under the dummy root."""
+        # Create a child under the dummy root
+        t1 = Topic(id="t1", title="First Topic")
+        t1.save_topic()
 
-    #     # Create a child under t1
-    #     t2 = Topic(id="t2", title="Child Topic")
-    #     t2.save_topic(parent_topic=t1)
-    #     self.assertEqual(t2.get_depth(), 3)
-    #     breakpoint()
+        # Create a child under t1
+        t2 = Topic(id="t2", title="Child Topic")
+        t2.save_topic(parent_topic=t1)
+        self.assertEqual(t2.get_depth(), 3)
+        breakpoint()
 
-    #     # Now move t2 to 'None', which means move to dummy root
-    #     t2.move(None, pos="sorted-child")  # uses our override
-    #     t2.refresh_from_db()
-    #     self.assertEqual(t2.get_parent(), self.root_topic)
-    #     self.assertEqual(t2.depth, 2)
+        # Now move t2 to 'None', which means move to dummy root
+        t2.move(None, pos="sorted-child")  # uses our override
+        t2.refresh_from_db()
+        self.assertEqual(t2.get_parent(), self.root_topic)
+        self.assertEqual(t2.depth, 2)
+        t2_from_db = Topic.objects.get(id="t2")
+        # self.assertEqual(t2_from_db.id, "t2")
 
     # def test_move_to_another_topic(self):
     #     """
