@@ -78,9 +78,7 @@ class TestExclusiveTopicChooserViewSet(TestCase, WagtailTestUtils):
     def setUpTestData(cls):
         cls.superuser = cls.create_superuser(username="admin")
 
-        cls.list_url = reverse(
-            "exclusive_topic_chooser:choose"
-        )  # <slug>:list route automatically registered by Wagtail
+        cls.list_url = reverse("exclusive_topic_chooser:choose")
 
     def setUp(self):
         self.factory = RequestFactory()
