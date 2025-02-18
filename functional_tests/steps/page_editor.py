@@ -17,6 +17,8 @@ def user_clicks_view_live_on_publish_confirmation_banner(context: Context) -> No
 
 @when('clicks the "{button_text}" button')
 def clicks_the_given_button(context: Context, button_text: str):
+    # add a small delay to allow any client-side JS to initialize.
+    context.page.wait_for_timeout(100)
     context.page.get_by_role("button", name=button_text).click()
 
 
