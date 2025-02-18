@@ -2,29 +2,24 @@ from django.db import IntegrityError
 from django.test import TestCase
 from wagtail.models import Page
 
-from cms.taxonomy.models import ROOT_TOPIC_DATA, GenericPageToTaxonomyTopic, Topic
+from cms.taxonomy.models import GenericPageToTaxonomyTopic, Topic
 
 
 class TopicModelTest(TestCase):
     def setUp(self):
-        """By calling get_or_create_root_topic here, we ensure the dummy root topic
-        (with id="_root") is in the database before each test. The root has depth=1.
-        """
-        self.root_topic = Topic.get_or_create_root_topic()
+        self.root_topic = Topic.objects.root_topic()
+        self.root_topic_id = "_root"
 
-    def test_get_or_create_root_topic(self):
+    def test_get_root_topic(self):
         """Ensure that multiple calls still return the same root topic."""
-        root_again = Topic.get_or_create_root_topic()
-        self.assertEqual(self.root_topic.id, ROOT_TOPIC_DATA["id"])
+        root_again = Topic.objects.root_topic()
+        self.assertEqual(self.root_topic.id, self.root_topic_id)
         self.assertEqual(root_again.id, self.root_topic.id)
         self.assertEqual(root_again.pk, self.root_topic.pk)
         self.assertEqual(root_again.depth, 1)  # Root node typically has depth=1
 
     def test_filtered_manager_excludes_root_topic(self):
-        """Topic.objects should exclude the dummy root.
-        Topic.all_objects should include it.
-        """
-        self.assertIn(self.root_topic, Topic.all_objects.all())
+        """Topic.objects should exclude the dummy root."""
         self.assertNotIn(self.root_topic, Topic.objects.all())
 
     def test_save_topic_with_no_parent_uses_root_topic(self):
@@ -34,7 +29,7 @@ class TopicModelTest(TestCase):
         t1 = Topic(id="t1", title="First Topic")
         t1.save_topic()  # no parent passed
         self.assertEqual(t1.depth, 2)  # Root is depth=1, so child is depth=2
-        self.assertEqual(t1.get_parent(), self.root_topic)
+        self.assertIsNone(t1.get_parent())
 
         # Because of the custom manager, we expect to see it in Topic.objects
         self.assertIn(t1, Topic.objects.all())
@@ -103,15 +98,13 @@ class TopicModelTest(TestCase):
         t2 = Topic(id="t2", title="Child Topic")
         t2.save_topic(parent_topic=t1)
         self.assertEqual(t2.get_depth(), 3)
-        breakpoint()
+        self.assertEqual(t2.get_parent(), t1)
 
         # Now move t2 to 'None', which means move to dummy root
         t2.move(None, pos="sorted-child")  # uses our override
         t2.refresh_from_db()
-        self.assertEqual(t2.get_parent(), self.root_topic)
+        self.assertIsNone(t2.get_parent())
         self.assertEqual(t2.depth, 2)
-        t2_from_db = Topic.objects.get(id="t2")
-        # self.assertEqual(t2_from_db.id, "t2")
 
     # def test_move_to_another_topic(self):
     #     """
@@ -122,13 +115,13 @@ class TopicModelTest(TestCase):
     #     t2 = Topic(id="t2", title="Topic 2")
     #     t1.save_topic()
     #     t2.save_topic()
-
+    #
     #     # Create a child under t1
     #     child = Topic(id="child", title="Child of T1")
     #     child.save_topic(parent_topic=t1)
     #     self.assertEqual(child.get_parent(), t1)
     #     self.assertEqual(child.depth, 3)
-
+    #
     #     # Move `child` under t2
     #     child.move(t2)
     #     child.refresh_from_db()
@@ -177,7 +170,7 @@ class GenericPageToTaxonomyTopicModelTest(TestCase):
         """
         self.root_page = Page.objects.get(id=1)
         self.child_page = self.root_page.add_child(instance=Page(title="My Test Page"))
-        self.dummy_root = Topic.get_or_create_root_topic()
+        self.dummy_root = Topic.objects.root_topic()
 
         # Create some normal topics (depth=2) using save_topic()
         self.topic_a = Topic(id="topic-a", title="Topic A")

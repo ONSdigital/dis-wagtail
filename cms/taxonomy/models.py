@@ -7,7 +7,6 @@ from treebeard.mp_tree import MP_Node
 from wagtail.admin.panels import FieldPanel
 from wagtail.search import index
 
-ROOT_TOPIC_DATA = {"id": "_root", "title": "Root Topic", "description": "Dummy root topic"}
 BASE_TOPIC_DEPTH = 2
 
 
@@ -15,6 +14,9 @@ class TopicManager(models.Manager):
     def get_queryset(self) -> QuerySet:
         """Filter out the root topic from all querysets."""
         return super().get_queryset().filter(depth__gt=1)
+
+    def root_topic(self) -> "Topic":
+        return super().get_queryset().filter(depth=1).first()
 
 
 # This is the main 'node' model, it inherits mp_node
@@ -30,7 +32,6 @@ class Topic(index.Indexed, MP_Node):
     """
 
     objects = TopicManager()  # Override the default manager
-    all_objects = models.Manager()  # Keep the default manager so we can still access the root topic
 
     id = models.CharField(max_length=100, primary_key=True)
     title = models.CharField(max_length=100)
@@ -51,32 +52,27 @@ class Topic(index.Indexed, MP_Node):
         dummy topic.
         """
         if not parent_topic:
-            parent_topic = self.get_or_create_root_topic()
+            parent_topic = Topic.objects.root_topic()
         parent_topic.add_child(instance=self)
         super().save(*args, **kwargs)
         parent_topic.save()
 
     def get_parent(self, *args, **kwargs) -> Optional["Topic"]:
-        """Return the parent topic if one exists, or None otherwise."""
-        try:
-            return super().get_parent(*args, **kwargs)
-        except Topic.DoesNotExist:
+        """Return the parent topic if one exists, or None otherwise.
+        Return none if at or below our base topic depth to avoid returning a cached root topic.
+        """
+        if self.depth <= BASE_TOPIC_DEPTH:
             return None
+        return super().get_parent(*args, **kwargs)
 
-    def move(self, target: Optional["Topic"], **kwargs):  # pylint: disable=arguments-differ
+    def move(self, target: Optional["Topic"] = None, **kwargs) -> None:  # pylint: disable=arguments-differ
+        """Move the topic to underneath the target parent. If no target is passed, move it underneath our root."""
         if not target:
-            return super().move(self.get_or_create_root_topic(), **kwargs)
+            return super().move(Topic.objects.root_topic(), **kwargs)
         return super().move(target, **kwargs)
 
     def __str__(self):
         return self.title_with_depth()
-
-    @classmethod
-    def get_or_create_root_topic(cls) -> "Topic":
-        if root_topic := cls.all_objects.filter(id=ROOT_TOPIC_DATA["id"]).first():
-            return root_topic
-        root_topic = Topic.add_root(instance=Topic(**ROOT_TOPIC_DATA))
-        return root_topic
 
     # this is just a convenience function to make the titles appear with lines
     # eg root | - first child
@@ -93,6 +89,12 @@ class Topic(index.Indexed, MP_Node):
         if self.get_depth() > BASE_TOPIC_DEPTH:
             return self.get_parent().title
         return None
+
+    @property
+    def display_path(self) -> str:
+        if ancestors := [topic.title for topic in self.get_ancestors()]:
+            return " → ".join(ancestors)
+        return ""
 
 
 class GenericPageToTaxonomyTopic(models.Model):

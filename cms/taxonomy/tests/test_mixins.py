@@ -3,10 +3,10 @@ from django.test import TestCase
 from wagtail.models import Page
 from wagtail.test.utils import WagtailTestUtils
 
-from cms.taxonomy.models import Topic, GenericPageToTaxonomyTopic
+from cms.standard_pages.models import InformationPage  # Uses GenericTaxonomyMixin
+from cms.taxonomy.models import GenericPageToTaxonomyTopic, Topic
 from cms.themes.models import ThemePage  # Uses ExclusiveTaxonomyMixin
 from cms.topics.models import TopicPage  # Uses ExclusiveTaxonomyMixin
-from cms.standard_pages.models import InformationPage  # Uses GenericTaxonomyMixin
 
 
 class TestExclusiveTaxonomyMixin(TestCase, WagtailTestUtils):
@@ -18,7 +18,7 @@ class TestExclusiveTaxonomyMixin(TestCase, WagtailTestUtils):
 
     def setUp(self):
         self.root_page = Page.objects.get(id=1)
-        self.root_topic = Topic.get_or_create_root_topic()
+        self.root_topic = Topic.objects.root_topic()
 
         # Create normal topics (depth=2) using save_topic()
         self.topic_a = Topic(id="topic-a", title="Topic A")
@@ -27,7 +27,7 @@ class TestExclusiveTaxonomyMixin(TestCase, WagtailTestUtils):
         self.topic_b.save_topic()
 
         # Create a superuser if you need admin-based tests
-        self.user = self.create_superuser(username="admin", password="password")
+        self.user = self.create_superuser(username="admin", password="password")  # noqa: S106
         self.client.force_login(self.user)
 
     def test_topic_required(self):
@@ -119,14 +119,14 @@ class TestGenericTaxonomyMixin(TestCase, WagtailTestUtils):
 
     def setUp(self):
         self.root_page = Page.objects.get(id=1)
-        self.root_topic = Topic.get_or_create_root_topic()
+        self.root_topic = Topic.objects.root_topic()
 
         self.topic_c = Topic(id="topic-c", title="Topic C")
         self.topic_c.save_topic()
         self.topic_d = Topic(id="topic-d", title="Topic D")
         self.topic_d.save_topic()
 
-        self.user = self.create_superuser(username="admin", password="password")
+        self.user = self.create_superuser(username="admin", password="password")  # noqa: S106
         self.client.force_login(self.user)
 
     def test_can_assign_multiple_topics_to_information_page(self):
