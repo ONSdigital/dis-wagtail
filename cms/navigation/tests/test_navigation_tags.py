@@ -94,11 +94,11 @@ class FooterMenuTemplateTagTests(TestCase):
         cls.mock_request = wagtail.coreutils.get_dummy_request()
 
         links_data = [LinkBlockFactory()] * 5
-        # links_column = LinksColumnFactory(links=links_data)
+        links_column = LinksColumnFactory(links=links_data)
         columns = [
             {
                 "type": "linksColumns",
-                "value": LinksColumnFactory(links=links_data),
+                "value": links_column,
             }
         ] * 3
         cls.footer_menu = FooterMenuFactory()
@@ -112,8 +112,6 @@ class FooterMenuTemplateTagTests(TestCase):
         """Test that footer_menu outputs the correct format."""
         columns = footer_menu_columns({"request": self.mock_request}, self.footer_menu)
         print(
-            "Attributes of self.footer_menu:",
-            dir(self.footer_menu),
             "Type self.FM:",
             type(self.footer_menu),
             "self.FM:",
