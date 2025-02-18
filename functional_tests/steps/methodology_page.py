@@ -1,8 +1,9 @@
-from behave import then, when  # pylint: disable=no-name-in-module
+from behave import given, then, when  # pylint: disable=no-name-in-module
 from behave.runner import Context
 from playwright.sync_api import expect
 
 
+@given("the user creates a methodology page as a child of the existing topic page")
 @when("the user creates a methodology page as a child of the existing topic page")
 def user_creates_methodology_page(context: Context):
     context.page.get_by_role("button", name="Pages").click()
@@ -14,6 +15,7 @@ def user_creates_methodology_page(context: Context):
     context.page.get_by_role("link", name="Methodology page", exact=True).click()
 
 
+@given("the user populates the methodology page")
 @when("the user populates the methodology page")
 def user_populates_the_methodology_page(context: Context):
     context.page.get_by_placeholder("Page title*").fill("Methodology page")
@@ -31,7 +33,7 @@ def user_populates_the_methodology_page(context: Context):
 
 
 @then("the published methodology page is displayed with the populated data")
-def the_methodology_page_is_displayed_correctly(context: Context):
+def the_methodology_page_is_with_the_populated_data(context: Context):
     expect(context.page.get_by_role("heading", name="Methodology page")).to_be_visible()
     expect(context.page.get_by_text("Page summary")).to_be_visible()
     expect(context.page.get_by_text("Published: 1 January 1950")).to_be_visible()
@@ -121,3 +123,16 @@ def preview_is_visible(context: Context):
     expect(iframe_locator.get_by_role("heading", name="Cite this methodology")).to_be_visible()
     expect(iframe_locator.get_by_role("heading", name="Heading")).to_be_visible()
     expect(iframe_locator.get_by_role("heading", name="Content")).to_be_visible()
+
+
+@then("the saved draft version is visible")
+def draft_version_visible(context: Context):
+    expect(context.page.get_by_role("button", name="Just now").first).to_be_visible()
+    expect(context.page.get_by_text("Draft saved")).to_be_visible()
+
+
+@then("the preview data matches the populated data")
+def draft_data_matches_populated_data(context: Context):
+    context.page.get_by_role("button", name="Actions").click()
+    context.page.get_by_role("link", name="Preview").click()
+    the_methodology_page_is_with_the_populated_data(context)

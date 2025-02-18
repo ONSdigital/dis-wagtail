@@ -53,3 +53,13 @@ Feature: A general use of Methodology Page
         When the user creates a methodology page as a child of the existing topic page
         And the user populates the methodology page
         Then the preview is visible with the populated data
+
+    Scenario: A CMS user can save and access a draft of the Methodology page
+        Given a topic page exists under a theme page
+        And a CMS user logs into the admin site
+        And the user creates a methodology page as a child of the existing topic page
+        And the user populates the methodology page
+        When clicks the "Save Draft" button
+        And the user navigates to the page history menu
+        Then the saved draft version is visible
+        And the preview data matches the populated data

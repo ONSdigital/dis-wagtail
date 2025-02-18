@@ -34,3 +34,8 @@ def the_user_edits_the_topic_page(context: Context, page: str) -> None:
         the_page += "_page"
     edit_url = reverse("wagtailadmin_pages:edit", args=[getattr(context, the_page).pk])
     context.page.goto(f"{context.base_url}{edit_url}")
+
+
+@when("the user navigates to the page history menu")
+def test(context: Context):
+    context.page.get_by_role("link", name="History").click()
