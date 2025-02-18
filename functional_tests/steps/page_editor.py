@@ -14,13 +14,15 @@ def user_clicks_publish_page(context: Context) -> None:
 def user_clicks_view_live_on_publish_confirmation_banner(context: Context) -> None:
     context.page.get_by_role("link", name="View live").click()
 
+@when('the user clicks the "Save Draft" button and waits for the page to reload')
+def press_save_draft_with_delay(context: Context):
+    # add a small delay to allow any client-side JS to initialize.
+    context.page.wait_for_timeout(500)
+    context.page.get_by_role("button", name="Save Draft").click()
 
 @when('clicks the "{button_text}" button')
 def clicks_the_given_button(context: Context, button_text: str):
-    # add a small delay to allow any client-side JS to initialize.
-    context.page.wait_for_timeout(500)
     context.page.get_by_role("button", name=button_text).click()
-
 
 @when("the user edits the {page} page")
 def the_user_edits_the_topic_page(context: Context, page: str) -> None:

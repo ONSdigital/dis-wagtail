@@ -35,7 +35,7 @@ Feature: A general use of Methodology Page
         Given a topic page exists under a theme page
         And a CMS user logs into the admin site
         When the user creates a methodology page as a child of the existing topic page
-        And clicks the "Save Draft" button
+        And the user clicks the "Save Draft" button and waits for the page to reload
         Then the mandatory fields raise a validation error
 
     Scenario: The Last revised date field has appropriate validation on Methodology page.
