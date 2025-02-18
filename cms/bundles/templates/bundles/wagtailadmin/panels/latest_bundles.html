@@ -47,7 +47,7 @@
                                 {{ bundle.scheduled_publication_date|default_if_none:"" }}
                             </td>
                             <td>{% human_readable_date bundle.created_at %}</td>
-                            <td>{% include "wagtailadmin/shared/user_avatar.html" with user=bundle.created_by username=bundle.created_by.get_full_name|default:bundle.created_by.get_username %}</td>
+                            <td>{% if bundle.created_by %}{% include "wagtailadmin/shared/user_avatar.html" with user=bundle.created_by username=bundle.created_by.get_full_name|default:bundle.created_by.get_username %}{% endif %}</td>
                         </tr>
                     {% endfor %}
                 </tbody>

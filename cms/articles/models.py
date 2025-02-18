@@ -97,6 +97,7 @@ class StatisticalArticlePage(BundledPageMixin, BasePage):  # type: ignore[django
     parent_page_types: ClassVar[list[str]] = ["ArticleSeriesPage"]
     subpage_types: ClassVar[list[str]] = []
     template = "templates/pages/statistical_article_page.html"
+    label = _("Article")
 
     # Fields
     news_headline = models.CharField(max_length=255, blank=True)

@@ -1,0 +1,37 @@
+@use 'config' as *;
+
+// Uses similar styles to the featured document block
+// Does not use flex display as it messes up the iframe resize for pym
+.featured-article {
+    background-color: var(--ons-color-banner-bg);
+    outline: 2px solid transparent; // for high contrast mode
+    outline-offset: -2px;
+    padding: rem-sizing(32);
+    margin-bottom: rem-sizing(64);
+
+    &__metadata {
+        padding: 0;
+        margin-bottom: 2rem;
+    }
+
+    &__attribute {
+        color: var(--ons-color-text-metadata);
+        display: inline-block;
+        margin: 0 1rem 0 0;
+    }
+
+    &__description {
+        margin-bottom: 0;
+        max-width: 660px;
+
+        p:last-of-type {
+            margin-bottom: 0;
+        }
+    }
+
+    &__embed-container {
+        padding: 0 rem-sizing(32);
+        border-bottom: 1px solid var(--ons-color-grey-35);
+        margin: 0 (-(rem-sizing(32))) rem-sizing(32);
+    }
+}
