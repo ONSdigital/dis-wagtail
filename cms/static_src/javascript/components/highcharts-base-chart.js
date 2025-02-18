@@ -16,15 +16,10 @@ class HighchartsBaseChart {
     this.title = this.node.dataset.highchartsTitle;
     this.useStackedLayout = this.node.hasAttribute('data-highcharts-use-stacked-layout');
     const chartNode = this.node.querySelector('[data-highcharts-chart]');
-    const chartId = chartNode.dataset.highchartsId;
     // We start with some config in the correct Highcharts format supplied by Wagtail
     // This gets some further modifications
-    this.apiConfig = JSON.parse(this.node.querySelector(`#config--${chartId}`).textContent);
-    if (this.node.querySelector(`#annotations-values--${chartId}`)) {
-      this.annotationsValues = JSON.parse(
-        this.node.querySelector(`#annotations-values--${chartId}`).textContent,
-      );
-    }
+    this.apiConfig = JSON.parse(this.node.dataset.highchartsConfig);
+    this.annotationsValues = JSON.parse(this.node.dataset.highchartsAnnotationsValues);
 
     // Hide data labels for clustered bar charts with more than 2 series, and also for stacked bar charts
     const hideDataLabels =
@@ -48,8 +43,8 @@ class HighchartsBaseChart {
     // Will only run once per page load
     this.setCommonChartOptions();
 
-    // Configure any annotations that have been specified
-    if (this.annotationsValues) {
+    // Configure any annotations that have been specified (will be an empty array if no annotations are specified)
+    if (this.annotationsValues.length) {
       this.configureAnnotations();
     }
 

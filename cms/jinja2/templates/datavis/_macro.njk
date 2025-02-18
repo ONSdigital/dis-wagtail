@@ -1,23 +1,22 @@
 {% macro onsChart(params) %}
-    <div data-highcharts-base-chart data-highcharts-type="{{ params.chartType }}" data-highcharts-theme="{{ params.theme }}" data-highcharts-title="{{ params.title }}" {% if params.use_stacked_layout %}data-highcharts-use-stacked-layout{% endif %}>
-        <figure id="{{ params.domId }}">
+    <div
+        data-highcharts-base-chart
+        data-highcharts-type="{{ params.chartType }}"
+        data-highcharts-theme="{{ params.theme }}"
+        data-highcharts-config="{{ params.config }}"
+        data-highcharts-title="{{ params.title }}"
+        {% if params.annotations_values %}data-highcharts-annotations-values="{{ params.annotations_values }}"{% endif %}
+        {% if params.use_stacked_layout %}data-highcharts-use-stacked-layout{% endif %}
+    >
+        <figure>
             {# Heading levels will need to be configurable depending on page surroundings #}
             <h3>{{ params.title }}</h3>
             <h4>{{ params.subtitle }}</h4>
-            <div data-highcharts-chart data-highcharts-id="{{ params.uuid }}"></div>
+            <div data-highcharts-chart></div>
             {% if params.caption %}
                 <figcaption>{{ params.caption }}</figcaption>
             {% endif %}
         </figure>
-
-        <!-- Set scripts to pass the config and annotations values as json to the javascript -->
-        {% set config_scriptid = ["config--", params.uuid] | join %}
-        {{ params.config|json_script(config_scriptid) }}
-
-        {% if params.annotations_values %}
-            {% set annotations_values_scriptid = ["annotations-values--", params.uuid] | join %}
-            {{ params.annotations_values|json_script(annotations_values_scriptid) }}
-        {% endif %}
 
         {% if params.download_title and (params.download_image or params.download_csv or params.download_excel) %}
             {% if params.download_title %}<h4>{{ params.download_title }}</h4>{% endif %}
