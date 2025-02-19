@@ -31,9 +31,9 @@ class TestInformationPageIntegration(TestCase):
         # self.topic1 = Topic.add_root(instance=Topic(id="t1", title="Topic1"))
         # self.topic2 = Topic.add_root(instance=Topic(id="t2", title="Topic2"))
         self.topic1 = Topic(id="t1", title="Health and life expectancies")
-        self.topic1.save_topic()
+        self.topic1.save_new_topic()
         self.topic2 = Topic(id="t2", title="Topic2")
-        self.topic2.save_topic()
+        self.topic2.save_new_topic()
 
         content_type = ContentType.objects.get_for_model(InformationPage)
         self.app_label = content_type.app_label  # e.g. "standard_pages"

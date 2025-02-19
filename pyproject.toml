@@ -36,6 +36,7 @@ django-treebeard = "^4.7.1"
 # :TODO: Remove pylint when ruff supports all pylint rules
 djhtml = "3.0.7"  # keep version in sync with .pre-commit-config.yaml
 mypy = "^1.15.0"
+types-requests = "^2.32.0.20241016"
 django-stubs = { version="^5.1.1", extras=["compatible-mypy"]}
 pylint = "^3.3.1"
 pylint-django = "^2.6.1"

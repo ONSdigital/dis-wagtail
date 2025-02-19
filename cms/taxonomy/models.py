@@ -1,7 +1,7 @@
 import typing
 from typing import Any, ClassVar, Optional
 
-from django.db import models
+from django.db import IntegrityError, models
 from django.db.models import QuerySet, UniqueConstraint
 from modelcluster.fields import ParentalKey
 from treebeard.mp_tree import MP_Node
@@ -33,14 +33,14 @@ class Topic(index.Indexed, MP_Node):
     """
 
     class Meta:
-        ordering = ("path", "title")
+        ordering = ("path",)
 
     objects: TopicManager = TopicManager()  # Override the default manager
 
-    id: ClassVar = models.CharField(max_length=100, primary_key=True)
-    title: ClassVar = models.CharField(max_length=100)
-    description: ClassVar = models.TextField(blank=True, null=True)
-    removed: ClassVar = models.BooleanField(default=False)
+    id = models.CharField(max_length=100, primary_key=True)  # type: ignore[var-annotated]
+    title = models.CharField(max_length=100)  # type: ignore[var-annotated]
+    description = models.TextField(blank=True, null=True)  # type: ignore[var-annotated]
+    removed = models.BooleanField(default=False)  # type: ignore[var-annotated]
 
     node_order_by: ClassVar[list[str]] = ["title"]
 
@@ -51,10 +51,14 @@ class Topic(index.Indexed, MP_Node):
         index.AutocompleteField("title"),
     ]
 
-    def save_topic(self, parent_topic: Optional["Topic"] = None) -> None:
-        """Save a topic either underneath the specific parent if passed, otherwise underneath our default root level
+    def save_new_topic(self, parent_topic: Optional["Topic"] = None) -> None:
+        """Save a new topic either underneath the specific parent if passed, otherwise underneath our default root level
         dummy topic.
+
+        Raises an IntegrityError if a topic with the given ID already exists.
         """
+        if Topic.objects.filter(id=self.id).exists():
+            raise IntegrityError(f"Topic with id {self.id} already exists")
         if not parent_topic:
             parent_topic = Topic.objects.root_topic()
         parent_topic.add_child(instance=self)
@@ -67,13 +71,14 @@ class Topic(index.Indexed, MP_Node):
         """
         if self.depth <= BASE_TOPIC_DEPTH:
             return None
-        return super().get_parent(*args, **kwargs)
+        return typing.cast(Optional[Topic], super().get_parent(*args, **kwargs))
 
     def move(self, target: Optional["Topic"] = None, **kwargs: Any) -> None:  # pylint: disable=arguments-differ
         """Move the topic to underneath the target parent. If no target is passed, move it underneath our root."""
         if not target:
-            return super().move(Topic.objects.root_topic(), **kwargs)
-        return super().move(target, **kwargs)
+            super().move(Topic.objects.root_topic(), **kwargs)
+            return
+        super().move(target, **kwargs)
 
     def __str__(self) -> str:
         return self.title_with_depth
@@ -83,15 +88,9 @@ class Topic(index.Indexed, MP_Node):
     @property
     def title_with_depth(self) -> str:
         if depth := self.get_depth():
-            depth_marker = "— " * (depth - BASE_TOPIC_DEPTH)
-            return depth_marker + self.title
-        return self.title
-
-    @property
-    def parent_title(self) -> str | None:
-        if self.get_depth() > BASE_TOPIC_DEPTH:
-            return self.get_parent().title
-        return None
+            depth_marker: str = "— " * (depth - BASE_TOPIC_DEPTH)
+            return f"{depth_marker}{self.title}"
+        return str(self.title)
 
     @property
     def display_path(self) -> str:

@@ -27,7 +27,7 @@ if TYPE_CHECKING:
     from wagtail.admin.panels import Panel
 
 
-class ArticleSeriesPage(RoutablePageMixin, GenericTaxonomyMixin, BasePage):
+class ArticleSeriesPage(RoutablePageMixin, GenericTaxonomyMixin, BasePage):  # type: ignore[django-manager-missing]
     """The article series model."""
 
     parent_page_types: ClassVar[list[str]] = ["topics.TopicPage"]

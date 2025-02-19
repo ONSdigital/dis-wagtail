@@ -23,7 +23,7 @@ class ExclusiveTaxonomyMixin(models.Model):
     class Meta:
         abstract = True
 
-    def clean(self):
+    def clean(self) -> None:
         super().clean()
 
         if not self.topic:
@@ -35,6 +35,7 @@ class ExclusiveTaxonomyMixin(models.Model):
             # TODO for multilingual support, this will need to exclude different language versions of the same page by
             # excluding matching translation_keys
             if sub_page_type.objects.filter(topic=self.topic).exclude(pk=self.pk).exists():
+                # type: ignore[attr-defined]
                 raise ValidationError({"topic": _("This topic is already linked to another theme or topic page.")})
 
 

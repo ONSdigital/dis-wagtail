@@ -30,10 +30,10 @@ class TestTopicChooserViewSet(TestCase, WagtailTestUtils):
 
         # Create some normal topics under the dummy root
         self.topic_a = Topic(id="topic-a", title="Topic A")
-        self.topic_a.save_topic()
+        self.topic_a.save_new_topic()
 
         self.topic_b = Topic(id="topic-b", title="Topic B")
-        self.topic_b.save_topic()
+        self.topic_b.save_new_topic()
 
     def test_viewset_attributes(self):
         """Basic checks for the text attributes that define how the chooser UI gets labeled."""
@@ -80,9 +80,9 @@ class TestExclusiveTopicChooserViewSet(TestCase, WagtailTestUtils):
 
         # Create two normal topics
         self.topic_x = Topic(id="topic-x", title="Topic X")
-        self.topic_x.save_topic()
+        self.topic_x.save_new_topic()
         self.topic_y = Topic(id="topic-y", title="Topic Y")
-        self.topic_y.save_topic()
+        self.topic_y.save_new_topic()
 
     def test_viewset_attributes(self):
         """Basic checks for the text attributes that define how the chooser UI gets labeled."""

@@ -16,14 +16,14 @@ class Command(BaseCommand):
 
     def handle(self, *args: Any, **options: Any) -> None:
         logger.info("Fetching topics from API...")
-        topics = _fetch_all_topics()
-        logger.info("Fetched %d topics", len(topics))
+        fetched_topics = _fetch_all_topics()
+        logger.info("Fetched %d topics", len(fetched_topics))
 
         logger.info("Syncing topics...")
-        _sync_with_fetched_topics(topics)
+        _sync_with_fetched_topics(fetched_topics)
 
         logger.info("Checking for removed topics...")
-        _check_for_removed_topics({topic["id"] for topic in topics})
+        _check_for_removed_topics({topic["id"] for topic in fetched_topics})
 
         logger.info("Finished syncing topics.")
 
@@ -38,7 +38,7 @@ def _fetch_all_topics() -> list[dict[str, str]]:
         raise ImproperlyConfigured('"DP_TOPIC_API_URL" must be set')
 
     # Build a stack of topics URLs and parent IDs
-    request_stack = [(f"{settings.DP_TOPIC_API_URL}/topics", None)]
+    request_stack: list[tuple[str, str | None]] = [(f"{settings.DP_TOPIC_API_URL}/topics", None)]
 
     # Use the stack of subtopic URls to iterate through, fetching all the subtopics
     while request_stack:
@@ -61,7 +61,8 @@ def _fetch_all_topics() -> list[dict[str, str]]:
         ]
 
         for topic in subtopics:
-            topic["parent_id"] = parent_id
+            if parent_id:
+                topic["parent_id"] = parent_id
 
         # Extend the topics list, to build a flat list of topics and subtopics which contain their own parent IDs
         topics.extend(subtopics)
@@ -72,15 +73,15 @@ def _fetch_all_topics() -> list[dict[str, str]]:
     return topics
 
 
-def _request_topics(url: str) -> list[dict[str, str]]:
+def _request_topics(url: str) -> list[dict[str, Any]]:
     """Fetch topics from the API and return the items from the response."""
     topics_response = requests.get(url, timeout=30)
     topics_response.raise_for_status()
+    raw_topics: list[dict[str, Any]] = topics_response.json().get("items", [])
+    return raw_topics
 
-    return topics_response.json().get("items", [])
 
-
-def _extract_subtopic_links(raw_topics: list[dict[str, Any]]) -> list[tuple[str, str]]:
+def _extract_subtopic_links(raw_topics: list[dict[str, Any]]) -> list[tuple[str, str | None]]:
     """Return a list of tuples of any subtopic links and their parent topic IDs found in raw_topics."""
     return [
         (subtopic_link, raw_topic["id"])
@@ -94,7 +95,7 @@ def _extract_subtopic_links(raw_topics: list[dict[str, Any]]) -> list[tuple[str,
     ]
 
 
-def _sync_with_fetched_topics(fetched_topics: list[dict[str, str]]):
+def _sync_with_fetched_topics(fetched_topics: list[dict[str, str]]) -> None:
     """For each fetched topic, decide if it needs to be created, updated, or left as is."""
     _check_for_duplicate_topics(fetched_topics)
 
@@ -126,6 +127,12 @@ def _get_topic(topic_id: str) -> Topic | None:
     return Topic.objects.filter(id=topic_id).first()
 
 
+def _get_existing_topic(topic_id: str) -> Topic:
+    """Fetches a Topic which must exist by its primary key (id), or raise exception if not found."""
+    topic: Topic = Topic.objects.get(id=topic_id)
+    return topic
+
+
 def _topic_matches(existing_topic: Topic, fetched_topic: dict[str, str]) -> bool:
     """Compares: title, description, removed status, Parent ID.
     If all these match, the function returns True; otherwise False.
@@ -137,7 +144,7 @@ def _topic_matches(existing_topic: Topic, fetched_topic: dict[str, str]) -> bool
         fetched_topic["title"] == existing_topic.title
         and fetched_topic.get("description") == existing_topic.description
         and not existing_topic.removed
-        and existing_parent_id == fetched_topic["parent_id"]
+        and existing_parent_id == fetched_topic.get("parent_id")
     )
 
 
@@ -154,15 +161,16 @@ def _update_topic(existing_topic: Topic, fetched_topic: dict[str, str]) -> None:
 
     # If the topic parent has changed then move the node to match
     existing_parent_id: str | None = getattr(existing_topic.get_parent(), "id", None)
-    if existing_parent_id != fetched_topic["parent_id"]:
+    if existing_parent_id != fetched_topic.get("parent_id"):
+        parent_id = fetched_topic.get("parent_id")
+        new_parent = _get_existing_topic(parent_id) if parent_id else None
         logger.warning(
-            "Moving topic %s from parent %s to new parent %s. This will also affect the path of %d subtopics.",
+            "Moving topic %s from parent %s to new parent %s",
             existing_topic.id,
             existing_parent_id,
-            fetched_topic["parent_id"],
-            existing_topic.get_children_count(),
+            new_parent.id if new_parent else None,
         )
-        existing_topic.move(_get_topic(fetched_topic["parent_id"]), pos="sorted-child")
+        existing_topic.move(new_parent, pos="sorted-child")
 
 
 def _create_topic(fetched_topic: dict[str, str]) -> None:
@@ -171,11 +179,11 @@ def _create_topic(fetched_topic: dict[str, str]) -> None:
     new_topic = Topic(
         id=fetched_topic["id"], title=fetched_topic["title"], description=fetched_topic.get("description")
     )
-    if fetched_topic["parent_id"]:
-        parent = _get_topic(fetched_topic["parent_id"])
-        new_topic.save_topic(parent_topic=parent)
+    if parent_id := fetched_topic.get("parent_id"):
+        parent = _get_existing_topic(parent_id)
+        new_topic.save_new_topic(parent_topic=parent)
     else:
-        new_topic.save_topic()
+        new_topic.save_new_topic()
 
 
 def _check_for_removed_topics(existing_topic_ids: set[str]) -> None:
@@ -198,6 +206,6 @@ def _get_all_existing_topic_ids() -> set[str]:
 
 
 def _set_topic_as_removed(removed_topic_id: str) -> None:
-    removed_topic = _get_topic(removed_topic_id)
+    removed_topic = _get_existing_topic(removed_topic_id)
     removed_topic.removed = True
     removed_topic.save()

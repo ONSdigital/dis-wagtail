@@ -22,9 +22,9 @@ class TestExclusiveTaxonomyMixin(TestCase, WagtailTestUtils):
 
         # Create normal topics (depth=2) using save_topic()
         self.topic_a = Topic(id="topic-a", title="Topic A")
-        self.topic_a.save_topic()
+        self.topic_a.save_new_topic()
         self.topic_b = Topic(id="topic-b", title="Topic B")
-        self.topic_b.save_topic()
+        self.topic_b.save_new_topic()
 
         # Create a superuser if you need admin-based tests
         self.user = self.create_superuser(username="admin", password="password")  # noqa: S106
@@ -122,9 +122,9 @@ class TestGenericTaxonomyMixin(TestCase, WagtailTestUtils):
         self.root_topic = Topic.objects.root_topic()
 
         self.topic_c = Topic(id="topic-c", title="Topic C")
-        self.topic_c.save_topic()
+        self.topic_c.save_new_topic()
         self.topic_d = Topic(id="topic-d", title="Topic D")
-        self.topic_d.save_topic()
+        self.topic_d.save_new_topic()
 
         self.user = self.create_superuser(username="admin", password="password")  # noqa: S106
         self.client.force_login(self.user)
