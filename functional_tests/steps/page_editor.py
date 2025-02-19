@@ -1,6 +1,7 @@
-from behave import when  # pylint: disable=no-name-in-module
+from behave import then, when  # pylint: disable=no-name-in-module
 from behave.runner import Context
 from django.urls import reverse
+from playwright.sync_api import expect
 
 
 @when('the user clicks "Publish page"')
@@ -37,5 +38,11 @@ def the_user_edits_the_topic_page(context: Context, page: str) -> None:
 
 
 @when("the user navigates to the page history menu")
-def test(context: Context):
+def user_navigates_to_the_history_menu(context: Context):
     context.page.get_by_role("link", name="History").click()
+
+
+@then("the saved draft version is visible")
+def saved_draft_version_is_visible(context: Context):
+    expect(context.page.get_by_role("button", name="Just now").first).to_be_visible()
+    expect(context.page.get_by_text("Draft saved")).to_be_visible()

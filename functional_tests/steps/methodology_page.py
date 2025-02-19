@@ -125,14 +125,8 @@ def preview_is_visible(context: Context):
     expect(iframe_locator.get_by_role("heading", name="Content")).to_be_visible()
 
 
-@then("the saved draft version is visible")
-def draft_version_visible(context: Context):
-    expect(context.page.get_by_role("button", name="Just now").first).to_be_visible()
-    expect(context.page.get_by_text("Draft saved")).to_be_visible()
-
-
 @then("the preview data matches the populated data")
-def draft_data_matches_populated_data(context: Context):
+def saved_draft_data_matches_populated_data(context: Context):
     context.page.get_by_role("button", name="Actions").click()
     context.page.get_by_role("link", name="Preview").click()
     the_methodology_page_is_with_the_populated_data(context)
