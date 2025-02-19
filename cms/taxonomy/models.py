@@ -1,4 +1,5 @@
-from typing import ClassVar, Optional
+import typing
+from typing import Any, ClassVar, Optional
 
 from django.db import models
 from django.db.models import QuerySet, UniqueConstraint
@@ -16,7 +17,7 @@ class TopicManager(models.Manager):
         return super().get_queryset().filter(depth__gt=1)
 
     def root_topic(self) -> "Topic":
-        return super().get_queryset().filter(depth=1).first()
+        return typing.cast(Topic, super().get_queryset().filter(depth=1).first())
 
 
 # This is the main 'node' model, it inherits mp_node
@@ -34,12 +35,12 @@ class Topic(index.Indexed, MP_Node):
     class Meta:
         ordering = ("path", "title")
 
-    objects = TopicManager()  # Override the default manager
+    objects: TopicManager = TopicManager()  # Override the default manager
 
-    id = models.CharField(max_length=100, primary_key=True)
-    title = models.CharField(max_length=100)
-    description = models.TextField(blank=True, null=True)
-    removed = models.BooleanField(default=False)
+    id: ClassVar = models.CharField(max_length=100, primary_key=True)
+    title: ClassVar = models.CharField(max_length=100)
+    description: ClassVar = models.TextField(blank=True, null=True)
+    removed: ClassVar = models.BooleanField(default=False)
 
     node_order_by: ClassVar[list[str]] = ["title"]
 
@@ -50,17 +51,17 @@ class Topic(index.Indexed, MP_Node):
         index.AutocompleteField("title"),
     ]
 
-    def save_topic(self, *args, parent_topic: Optional["Topic"] = None, **kwargs) -> None:
+    def save_topic(self, parent_topic: Optional["Topic"] = None) -> None:
         """Save a topic either underneath the specific parent if passed, otherwise underneath our default root level
         dummy topic.
         """
         if not parent_topic:
             parent_topic = Topic.objects.root_topic()
         parent_topic.add_child(instance=self)
-        super().save(*args, **kwargs)
+        super().save()
         parent_topic.save()
 
-    def get_parent(self, *args, **kwargs) -> Optional["Topic"]:
+    def get_parent(self, *args: Any, **kwargs: Any) -> Optional["Topic"]:
         """Return the parent topic if one exists, or None otherwise.
         Return none if at or below our base topic depth to avoid returning a cached root topic.
         """
@@ -68,20 +69,20 @@ class Topic(index.Indexed, MP_Node):
             return None
         return super().get_parent(*args, **kwargs)
 
-    def move(self, target: Optional["Topic"] = None, **kwargs) -> None:  # pylint: disable=arguments-differ
+    def move(self, target: Optional["Topic"] = None, **kwargs: Any) -> None:  # pylint: disable=arguments-differ
         """Move the topic to underneath the target parent. If no target is passed, move it underneath our root."""
         if not target:
             return super().move(Topic.objects.root_topic(), **kwargs)
         return super().move(target, **kwargs)
 
-    def __str__(self):
+    def __str__(self) -> str:
         return self.title_with_depth
 
     # this is just a convenience function to make the titles appear with lines
     # eg root | - first child
     @property
     def title_with_depth(self) -> str:
-        if depth := self.get_depth():
+        if depth := self.get_depth() and self.get_depth() > BASE_TOPIC_DEPTH:
             depth_marker = "—" * (depth - BASE_TOPIC_DEPTH)
             return depth_marker + " " + self.title
         return self.title
