@@ -53,9 +53,10 @@ def validate_links(link_value: dict, seen_pages: set[Page], seen_urls: set[str])
     errors = []
     link_page = link_value.get("page")
     link_url = link_value.get("external_url")
-
-    errors += check_duplicates(link_page, seen_pages, "page", _("Duplicate page. Please choose a different one."))
-    errors += check_duplicates(link_url, seen_urls, "external_url", _("Duplicate URL. Please add a different one."))
+    if link_page is not None:
+        errors += check_duplicates(link_page, seen_pages, "page", _("Duplicate page. Please choose a different one."))
+    if link_url is not None:
+        errors += check_duplicates(link_url, seen_urls, "external_url", _("Duplicate URL. Please add a different one."))
     return errors
 
 
