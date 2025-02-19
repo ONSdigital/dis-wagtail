@@ -17,7 +17,7 @@ from cms.core.models import BasePage
 from cms.core.query import order_by_pk_position
 from cms.core.utils import get_formatted_pages_list
 from cms.methodology.models import MethodologyPage
-from cms.topics.blocks import ExploreMoreStoryBlock
+from cms.topics.blocks import ExploreMoreStoryBlock, TopicHeadlineFigureBlock
 from cms.topics.forms import TopicPageAdminForm
 from cms.topics.viewsets import (
     FeaturedSeriesPageChooserWidget,
@@ -83,9 +83,12 @@ class TopicPage(BasePage):  # type: ignore[django-manager-missing]
     )
     explore_more = StreamField(ExploreMoreStoryBlock(), blank=True)
 
+    headline_figures = StreamField([("figures", TopicHeadlineFigureBlock())], blank=True, max_num=6)
+
     content_panels: ClassVar[list["Panel"]] = [
         *BasePage.content_panels,
         "summary",
+        FieldPanel("headline_figures"),
         FieldPanel(
             "featured_series",
             heading=_("Featured"),

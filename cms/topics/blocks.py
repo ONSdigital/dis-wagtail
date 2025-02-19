@@ -1,11 +1,13 @@
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from django.utils.translation import gettext_lazy as _
-from wagtail.blocks import CharBlock, PageChooserBlock, StreamBlock, StructBlock, URLBlock
+from wagtail.blocks import CharBlock, ListBlock, PageChooserBlock, StreamBlock, StructBlock, URLBlock
 from wagtail.images.blocks import ImageChooserBlock
 
+from .viewsets import series_with_headline_figures_chooser_viewset
+
 if TYPE_CHECKING:
-    from wagtail.blocks import StreamValue, StructValue
+    from wagtail.blocks import ChooserBlock, StreamValue, StructValue
     from wagtail.models import Page
 
 
@@ -88,3 +90,27 @@ class ExploreMoreStoryBlock(StreamBlock):
 
         context["formatted_items"] = formatted_items
         return context
+
+
+SeriesChooserBlock: "ChooserBlock" = series_with_headline_figures_chooser_viewset.get_block_class(
+    name="SeriesChooserBlock", module_path="cms.topics.blocks"
+)
+
+
+class LinkedSeriesChooserBlock(SeriesChooserBlock):
+    def __init__(self, required=True, help_text=None, validators=(), **kwargs):
+        super().__init__(required=required, help_text=help_text, validators=validators, **kwargs)
+        self.widget = series_with_headline_figures_chooser_viewset.widget_class(
+            linked_fields={"topic_page_id": "#id_topic_page_id"}
+        )
+
+
+class TopicHeadlineFigureBlock(StructBlock):
+    series = LinkedSeriesChooserBlock()
+    figure = CharBlock()
+
+
+class TopicHeadlineFiguresBlock(ListBlock):
+    def __init__(self, search_index: bool = True, **kwargs: Any) -> None:
+        kwargs.setdefault("max_num", 6)
+        super().__init__(TopicHeadlineFigureBlock, search_index=search_index, **kwargs)
