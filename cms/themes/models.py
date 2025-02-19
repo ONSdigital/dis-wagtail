@@ -23,5 +23,3 @@ class ThemePage(ExclusiveTaxonomyMixin, BasePage):  # type: ignore[django-manage
     summary = RichTextField(features=settings.RICH_TEXT_BASIC)
 
     content_panels: ClassVar[list["Panel"]] = [*BasePage.content_panels, "summary"]
-
-    taxonomy_panels: ClassVar[list["Panel"]] = ExclusiveTaxonomyMixin.taxonomy_panels

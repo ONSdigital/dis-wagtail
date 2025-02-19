@@ -29,18 +29,17 @@ class ExclusiveTaxonomyMixin(models.Model):
         if not self.topic:
             raise ValidationError({"topic": _("A topic is required.")})
 
-        for sub_page_type in ExclusiveTaxonomyMixin.__subclasses__():
+        for exclusive_sub_page_type in ExclusiveTaxonomyMixin.__subclasses__():
             # Check if other pages are exclusively linked to this topic.
             # Translations of the same page are allowed, but other pages aren't.
             # TODO for multilingual support, this will need to exclude different language versions of the same page by
             # excluding matching translation_keys
-            if sub_page_type.topic_is_already_linked_to_sub_page(self.topic):
+            if (
+                exclusive_sub_page_type.objects.filter(topic=self.topic)  # type: ignore[attr-defined]
+                .exclude(pk=self.pk)
+                .exists()
+            ):
                 raise ValidationError({"topic": _("This topic is already linked to another theme or topic page.")})
-
-    @classmethod
-    def topic_is_already_linked_to_sub_page(cls, topic: Topic) -> bool:
-        is_linked: bool = cls.objects.filter(topic=topic).exclude(pk=topic.pk).exists()  # type: ignore[attr-defined]
-        return is_linked
 
 
 class GenericTaxonomyMixin(models.Model):

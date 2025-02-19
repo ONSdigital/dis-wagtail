@@ -56,7 +56,6 @@ class MethodologyPage(GenericTaxonomyMixin, BasePage):  # type: ignore[django-ma
     )
 
     content = StreamField(SectionStoryBlock())
-    taxonomy_panels = GenericTaxonomyMixin.taxonomy_panels
 
     show_cite_this_page = models.BooleanField(default=True)
 

@@ -74,8 +74,6 @@ class IndexPage(BasePage):  # type: ignore[django-manager-missing]
         index.SearchField("content"),
     ]
 
-    taxonomy_panels: ClassVar[list["Panel"]]
-
     def get_formatted_items(self, request: "HttpRequest") -> list[dict[str, str | dict[str, str]]]:
         """Returns a formatted list of Featured items
         that can be either children internal Pages or specified in a RelatedContentBlock

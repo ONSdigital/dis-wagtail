@@ -113,8 +113,6 @@ class TopicPage(ExclusiveTaxonomyMixin, BasePage):  # type: ignore[django-manage
         FieldPanel("explore_more", heading=_("Explore more")),
     ]
 
-    taxonomy_panels: ClassVar[list["Panel"]] = ExclusiveTaxonomyMixin.taxonomy_panels
-
     search_fields: ClassVar[list[index.BaseField]] = [*BasePage.search_fields, index.SearchField("summary")]
 
     def get_context(self, request: "HttpRequest", *args: Any, **kwargs: Any) -> dict:
