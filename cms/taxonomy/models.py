@@ -82,9 +82,9 @@ class Topic(index.Indexed, MP_Node):
     # eg root | - first child
     @property
     def title_with_depth(self) -> str:
-        if depth := self.get_depth() and self.get_depth() > BASE_TOPIC_DEPTH:
-            depth_marker = "—" * (depth - BASE_TOPIC_DEPTH)
-            return depth_marker + " " + self.title
+        if depth := self.get_depth():
+            depth_marker = "— " * (depth - BASE_TOPIC_DEPTH)
+            return depth_marker + self.title
         return self.title
 
     @property
