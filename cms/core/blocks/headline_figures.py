@@ -6,6 +6,8 @@ from wagtail.blocks import CharBlock, ListBlock, StructBlock
 class HeadlineFiguresItemBlock(StructBlock):
     """Represents a headline figure."""
 
+    # TODO: make this a hidden value
+    figure_id = CharBlock()
     title = CharBlock(label="Title", max_length=60, required=True)
     figure = CharBlock(label="Figure", max_length=10, required=True)
     supporting_text = CharBlock(label="Supporting text", max_length=100, required=True)
