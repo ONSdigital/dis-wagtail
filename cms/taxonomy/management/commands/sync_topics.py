@@ -127,12 +127,6 @@ def _get_topic(topic_id: str) -> Topic | None:
     return Topic.objects.filter(id=topic_id).first()
 
 
-def _get_existing_topic(topic_id: str) -> Topic:
-    """Fetches a Topic which must exist by its primary key (id), or raise exception if not found."""
-    topic: Topic = Topic.objects.get(id=topic_id)
-    return topic
-
-
 def _topic_matches(existing_topic: Topic, fetched_topic: dict[str, str]) -> bool:
     """Compares: title, description, removed status, Parent ID.
     If all these match, the function returns True; otherwise False.
@@ -165,7 +159,11 @@ def _update_topic(existing_topic: Topic, fetched_topic: dict[str, str]) -> None:
     existing_parent_id: str | None = getattr(existing_topic.get_parent(), "id", None)
     if existing_parent_id != fetched_topic.get("parent_id"):
         parent_id = fetched_topic.get("parent_id")
-        new_parent = _get_existing_topic(parent_id) if parent_id else None
+        new_parent = _get_topic(parent_id) if parent_id else None
+        if parent_id and not new_parent:
+            raise RuntimeError(
+                f"Parent topic destination with id {parent_id} doesn't exist for moving topic {existing_topic.id}"
+            )
         logger.warning(
             "Moving topic %s from parent %s to new parent %s",
             existing_topic.id,
@@ -182,7 +180,7 @@ def _create_topic(fetched_topic: dict[str, str]) -> None:
         id=fetched_topic["id"], title=fetched_topic["title"], description=fetched_topic.get("description")
     )
     if parent_id := fetched_topic.get("parent_id"):
-        parent = _get_existing_topic(parent_id)
+        parent = _get_topic(parent_id)
         new_topic.save_new_topic(parent_topic=parent)
     else:
         new_topic.save_new_topic()
@@ -206,6 +204,6 @@ def _get_all_existing_topic_ids() -> set[str]:
 
 
 def _set_topic_as_removed(removed_topic_id: str) -> None:
-    removed_topic = _get_existing_topic(removed_topic_id)
+    removed_topic = Topic.objects.get(id=removed_topic_id)
     removed_topic.removed = True
     removed_topic.save()
