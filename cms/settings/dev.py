@@ -26,7 +26,7 @@ EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
 # Disable password validators when developing locally.
 AUTH_PASSWORD_VALIDATORS = []
 
-DP_TOPIC_API_URL = env.get("DP_TOPIC_API_URL", "https://api.beta.ons.gov.uk/v1")
+ONS_API_BASE_URL = env.get("ONS_API_BASE_URL", "https://api.beta.ons.gov.uk/v1")
 
 
 # Enable Wagtail's style guide in Wagtail's settings menu.

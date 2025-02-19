@@ -14,7 +14,7 @@ class DeduplicateTopicsAdminForm(WagtailAdminPageForm):
         if not self.formsets.get("topics"):
             return cleaned_data
 
-        chosen = []
+        chosen = set()
 
         for idx, form in enumerate(self.formsets["topics"].forms):
             if not form.is_valid():
@@ -24,6 +24,6 @@ class DeduplicateTopicsAdminForm(WagtailAdminPageForm):
                 # Delete duplicate topics
                 self.formsets["topics"].forms[idx].cleaned_data["DELETE"] = True
             else:
-                chosen.append(topic)
+                chosen.add(topic)
 
         return cleaned_data

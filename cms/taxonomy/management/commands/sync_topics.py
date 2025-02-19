@@ -34,11 +34,11 @@ def _fetch_all_topics() -> list[dict[str, str]]:
     """
     topics = []
 
-    if not settings.DP_TOPIC_API_URL:
-        raise ImproperlyConfigured('"DP_TOPIC_API_URL" must be set')
+    if not settings.ONS_API_BASE_URL:
+        raise ImproperlyConfigured('"ONS_API_BASE_URL" must be set')
 
     # Build a stack of topics URLs and parent IDs
-    request_stack: list[tuple[str, str | None]] = [(f"{settings.DP_TOPIC_API_URL}/topics", None)]
+    request_stack: list[tuple[str, str | None]] = [(f"{settings.ONS_API_BASE_URL}/topics", None)]
 
     # Use the stack of subtopic URls to iterate through, fetching all the subtopics
     while request_stack:
@@ -123,7 +123,7 @@ def _check_for_duplicate_topics(fetched_topics: list[dict[str, str]]) -> None:
 
 
 def _get_topic(topic_id: str) -> Topic | None:
-    """Fetches a Topic record by its primary key (id), or returns None if none is found."""
+    """Fetches a Topic record by its primary key (id), or returns None if not found."""
     return Topic.objects.filter(id=topic_id).first()
 
 
@@ -149,9 +149,11 @@ def _topic_matches(existing_topic: Topic, fetched_topic: dict[str, str]) -> bool
 
 
 def _update_topic(existing_topic: Topic, fetched_topic: dict[str, str]) -> None:
-    """Sets: title, description, removed = False (since the topic is present in the external data,
-    it cannot be considered removed). Parent/child changes: If the new parent_id is different from the old one,
-    we do a tree move of the topic to the new parent.
+    """Updates an existing topic with data from an external source.
+
+    - Updates `title`, `description`, and sets `removed = False` (as it is present in external data).
+    - If the `parent_id` differs from the current parent, moves the topic to the new parent.
+    - Logs changes and warnings when moving topics.
     """
     logger.info("Updating existing topic: %s with fetched topic: %s", existing_topic.id, fetched_topic)
     existing_topic.title = fetched_topic.get("title")
@@ -200,9 +202,7 @@ def _check_for_removed_topics(existing_topic_ids: set[str]) -> None:
 
 
 def _get_all_existing_topic_ids() -> set[str]:
-    all_topics = Topic.objects.all()
-    topic_ids = {topic.id for topic in all_topics}
-    return topic_ids
+    return set(Topic.objects.values_list("id", flat=True))
 
 
 def _set_topic_as_removed(removed_topic_id: str) -> None:

@@ -13,10 +13,12 @@ BASE_TOPIC_DEPTH = 2
 
 class TopicManager(models.Manager):
     def get_queryset(self) -> QuerySet:
-        """Filter out the root topic from all querysets."""
+        """Filter out the dummy root topic from all querysets."""
         return super().get_queryset().filter(depth__gt=1)
 
     def root_topic(self) -> "Topic":
+        """Return the dummy root topic."""
+        # We create the dummy root in a migration so we know it will exist, so cast to "Topic" for mypy
         return typing.cast(Topic, super().get_queryset().filter(depth=1).first())
 
 
@@ -75,10 +77,8 @@ class Topic(index.Indexed, MP_Node):
 
     def move(self, target: Optional["Topic"] = None, **kwargs: Any) -> None:  # pylint: disable=arguments-differ
         """Move the topic to underneath the target parent. If no target is passed, move it underneath our root."""
-        if not target:
-            super().move(Topic.objects.root_topic(), **kwargs)
-            return
-        super().move(target, **kwargs)
+        target_parent = target or Topic.objects.root_topic()
+        super().move(target_parent, **kwargs)
 
     def __str__(self) -> str:
         return self.title_with_depth
