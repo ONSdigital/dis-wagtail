@@ -18,8 +18,13 @@ class HighchartsBaseChart {
     const chartNode = this.node.querySelector('[data-highcharts-chart]');
     // We start with some config in the correct Highcharts format supplied by Wagtail
     // This gets some further modifications
-    this.apiConfig = JSON.parse(this.node.dataset.highchartsConfig);
-    this.annotationsValues = JSON.parse(this.node.dataset.highchartsAnnotationsValues);
+    this.uuid = this.node.dataset.highchartsUuid;
+    this.apiConfig = JSON.parse(
+      this.node.querySelector(`[data-highcharts-config--${this.uuid}]`).textContent,
+    );
+    this.annotationsValues = JSON.parse(
+      this.node.querySelector(`[data-highcharts-annotations-values--${this.uuid}]`).textContent,
+    );
 
     // Hide data labels for clustered bar charts with more than 2 series, and also for stacked bar charts
     const hideDataLabels =
