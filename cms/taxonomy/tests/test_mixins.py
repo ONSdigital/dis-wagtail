@@ -16,19 +16,22 @@ class TestExclusiveTaxonomyMixin(TestCase, WagtailTestUtils):
     can share the same topic unless they are translations of the same page (not shown here).
     """
 
+    @classmethod
+    def setUpTestData(cls):
+        cls.superuser = cls.create_superuser(username="admin")
+
     def setUp(self):
+        self.client.force_login(self.superuser)
+
         self.root_page = Page.objects.get(id=1)
         self.root_topic = Topic.objects.root_topic()
 
         # Create normal topics (depth=2) using save_topic()
         self.topic_a = Topic(id="topic-a", title="Topic A")
         self.topic_a.save_new_topic()
+
         self.topic_b = Topic(id="topic-b", title="Topic B")
         self.topic_b.save_new_topic()
-
-        # Create a superuser if you need admin-based tests
-        self.user = self.create_superuser(username="admin", password="password")  # noqa: S106
-        self.client.force_login(self.user)
 
     def test_topic_required(self):
         """If .topic is None, ExclusiveTaxonomyMixin.clean() should raise ValidationError
@@ -109,6 +112,28 @@ class TestExclusiveTaxonomyMixin(TestCase, WagtailTestUtils):
         self.assertIn("topic", error_dict, "Expected 'topic' key in validation error dict.")
         self.assertIn("This topic is already linked to another theme or topic page.", error_dict["topic"])
 
+    def test_changing_topic_to_already_used_raises_error_across_subclasses(self):
+        """If a page initially references topic_a, then we try to change
+        it to topic_b which is used by another page across subclasses => error on validation.
+        """
+        theme_page = ThemePage(title="My Theme", topic=self.topic_a, summary="My theme page summary")
+        self.root_page.add_child(instance=theme_page)
+        theme_page.save()
+
+        topic_page = TopicPage(title="My Topic Page", topic=self.topic_b, summary="My topic page summary")
+        self.root_page.add_child(instance=topic_page)
+        topic_page.save()
+
+        topic_page.topic = self.topic_a
+
+        with self.assertRaises(ValidationError) as ctx:
+            topic_page.save()
+
+        error_dict = ctx.exception.message_dict
+
+        self.assertIn("topic", error_dict, "Expected 'topic' key in validation error dict.")
+        self.assertIn("This topic is already linked to another theme or topic page.", error_dict["topic"])
+
 
 class TestGenericTaxonomyMixin(TestCase, WagtailTestUtils):
     """Tests for GenericTaxonomyMixin using the InformationPage model.
@@ -117,17 +142,21 @@ class TestGenericTaxonomyMixin(TestCase, WagtailTestUtils):
     - there's no exclusivity requirement
     """
 
+    @classmethod
+    def setUpTestData(cls):
+        cls.superuser = cls.create_superuser(username="admin")
+
     def setUp(self):
+        self.client.force_login(self.superuser)
+
         self.root_page = Page.objects.get(id=1)
         self.root_topic = Topic.objects.root_topic()
 
         self.topic_c = Topic(id="topic-c", title="Topic C")
         self.topic_c.save_new_topic()
+
         self.topic_d = Topic(id="topic-d", title="Topic D")
         self.topic_d.save_new_topic()
-
-        self.user = self.create_superuser(username="admin", password="password")  # noqa: S106
-        self.client.force_login(self.user)
 
     def test_can_assign_multiple_topics_to_information_page(self):
         """For GenericTaxonomyMixin, we do not enforce exclusive usage of a topic.

@@ -90,6 +90,7 @@ class TopicModelTest(TestCase):
         self.assertIsNone(t2.get_parent())
         self.assertEqual(t2.depth, 2)
 
+    # FIXME: This test is failing
     def test_move_to_another_topic(self):
         """Move a topic from one parent to another."""
         # Create two top-level topics
@@ -126,7 +127,7 @@ class TopicModelTest(TestCase):
         self.assertTrue(t1.removed)
 
     def test_str_method_returns_title_with_depth(self):
-        """__str__() calls title_with_depth(), so let's verify it does so."""
+        """Verify __str__() calls title_with_depth()."""
         t1 = Topic(id="t1", title="Some Topic")
         t1.save_new_topic()
         self.assertEqual(str(t1), t1.title_with_depth)
@@ -137,7 +138,6 @@ class TopicModelTest(TestCase):
         """
         t1 = Topic(id="unique-id", title="Unique Topic")
         t1.save_new_topic()
-        # breakpoint()
         with self.assertRaises(IntegrityError):
             t2 = Topic(id="unique-id", title="Duplicate Topic")
             t2.save_new_topic()
@@ -175,7 +175,7 @@ class GenericPageToTaxonomyTopicModelTest(TestCase):
             GenericPageToTaxonomyTopic.objects.create(page=self.child_page, topic=self.topic_a)
 
     def test_multiple_different_topics_on_same_page(self):
-        """You can attach multiple *distinct* topics to the same page.
+        """You can attach multiple distinct topics to the same page.
         This should not violate the uniqueness constraint.
         """
         link_a = GenericPageToTaxonomyTopic.objects.create(page=self.child_page, topic=self.topic_a)

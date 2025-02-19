@@ -1,4 +1,4 @@
-from django.test import RequestFactory, TestCase
+from django.test import TestCase
 from django.urls import reverse
 from wagtail.models import Page
 from wagtail.test.utils import WagtailTestUtils
@@ -22,7 +22,6 @@ class TestTopicChooserViewSet(TestCase, WagtailTestUtils):
         cls.list_url = reverse("topic_chooser:choose")
 
     def setUp(self):
-        self.factory = RequestFactory()
         self.client.force_login(self.superuser)
 
         # Ensure dummy root exists
@@ -68,8 +67,6 @@ class TestExclusiveTopicChooserViewSet(TestCase, WagtailTestUtils):
         cls.list_url = reverse("exclusive_topic_chooser:choose")
 
     def setUp(self):
-        self.factory = RequestFactory()
-
         self.client.force_login(self.superuser)
 
         # Wagtail root page
@@ -109,7 +106,6 @@ class TestExclusiveTopicChooserViewSet(TestCase, WagtailTestUtils):
         """Create a real ThemePage referencing topic_x, ensuring it is excluded
         by get_object_list().
         """
-        # Create a ThemePage referencing topic_x
         theme_page = ThemePage(title="My Theme", topic=self.topic_x, summary="My theme page summary")
         self.root_page.add_child(instance=theme_page)
         theme_page.save()
@@ -117,7 +113,6 @@ class TestExclusiveTopicChooserViewSet(TestCase, WagtailTestUtils):
         viewset = ExclusiveTopicChooserViewSet("exclusive_topic_chooser")
         queryset = viewset.get_object_list()
 
-        # topic_x is used by a ThemePage => must be excluded
         self.assertNotIn(self.topic_x, queryset)
         self.assertIn(self.topic_y, queryset)
         self.assertEqual(queryset.count(), 1)
@@ -133,39 +128,34 @@ class TestExclusiveTopicChooserViewSet(TestCase, WagtailTestUtils):
         viewset = ExclusiveTopicChooserViewSet("exclusive_topic_chooser")
         queryset = viewset.get_object_list()
 
-        # topic_x is used by a TopicPage => must be excluded
         self.assertNotIn(self.topic_x, queryset)
         self.assertIn(self.topic_y, queryset)
         self.assertEqual(queryset.count(), 1)
 
     def test_admin_chooser_list_excludes_linked_topic_integration_theme_page(self):
-        """Integration test that calls the real Wagtail route, verifying the output
-        does NOT contain the linked topic in the HTML.
+        """Theme Page: Integration test that calls the real Wagtail route, verifying the output
+        does not contain the linked topic in the HTML.
         """
         theme_page = ThemePage(title="My Theme", topic=self.topic_x, summary="My theme page summary")
         self.root_page.add_child(instance=theme_page)
         theme_page.save()
 
-        # Request the exclusive chooser list
         response = self.client.get(self.list_url)
         self.assertEqual(response.status_code, 200)
 
-        # 'Topic X' should NOT appear because it's already in use by a ThemePage
-        self.assertContains(response, "Topic Y")
         self.assertNotContains(response, "Topic X")
+        self.assertContains(response, "Topic Y")
 
     def test_admin_chooser_list_excludes_linked_topic_integration_topic_page(self):
-        """Integration test that calls the real Wagtail route, verifying the output
-        does NOT contain the linked topic in the HTML.
+        """Topic Page: Integration test that calls the real Wagtail route, verifying the output
+        does not contain the linked topic in the HTML.
         """
         topic_page = TopicPage(title="My Topic", topic=self.topic_x, summary="My topic page summary")
         self.root_page.add_child(instance=topic_page)
         topic_page.save()
 
-        # Request the exclusive chooser list
         response = self.client.get(self.list_url)
         self.assertEqual(response.status_code, 200)
 
-        # 'Topic X' should NOT appear because it's already in use by a TopicPage
-        self.assertContains(response, "Topic Y")
         self.assertNotContains(response, "Topic X")
+        self.assertContains(response, "Topic Y")
