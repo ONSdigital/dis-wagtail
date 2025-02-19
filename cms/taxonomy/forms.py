@@ -1,7 +1,7 @@
 from wagtail.admin.forms import WagtailAdminPageForm
 
 
-class DeDuplicateTopicsAdminForm(WagtailAdminPageForm):
+class DeduplicateTopicsAdminForm(WagtailAdminPageForm):
     def clean(self):
         """Wagtail choosers currently do not have the ability to remove already selected values, so the same topic can
         be selected multiple times. This form class overrides the clean method to delete any duplicate topics from the

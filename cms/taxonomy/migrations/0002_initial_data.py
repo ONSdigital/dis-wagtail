@@ -20,16 +20,11 @@ def initial_data(apps, _schema_editor):
     root_topic.save()
 
 
-def remove_initial_data(_apps, _schema_editor):
-    """We cannot remove the root topic as all other topics depend on it."""
-    pass
-
-
 class Migration(migrations.Migration):
     dependencies = [
         ("taxonomy", "0001_initial"),
     ]
 
     operations = [
-        migrations.RunPython(initial_data, remove_initial_data),
+        migrations.RunPython(initial_data, migrations.RunPython.noop),
     ]

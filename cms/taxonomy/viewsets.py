@@ -12,12 +12,6 @@ class TopicChooserViewSet(ChooserViewSet):
     choose_one_text = _("Choose a topic")
     choose_another_text = _("Choose a different topic")
 
-    def get_queryset(self, request=None):
-        """Return the queryset used to list items in the chooser interface.
-        By default, we return Topic.objects (which excludes the dummy root).
-        """
-        return Topic.objects.all()
-
 
 class ExclusiveTopicChooserViewSet(TopicChooserViewSet):
     register_widget = False
@@ -28,8 +22,7 @@ class ExclusiveTopicChooserViewSet(TopicChooserViewSet):
         # Get the HTTP_REFERER from meta request headers, extract the page type either from the URL or by looking up
         # the page ID to get the page type.
 
-        # TODO can this query be re-written without explicit knowledge of the different related names?
-        return Topic.objects.filter(related_themepage=None).filter(related_topicpage=None)
+        return Topic.objects.filter(related_themepage=None, related_topicpage=None)
 
 
 topic_chooser_viewset = TopicChooserViewSet("topic_chooser")

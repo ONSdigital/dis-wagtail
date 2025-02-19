@@ -64,7 +64,7 @@ class TopicPageRelatedMethodology(Orderable):
     ]
 
 
-class TopicPage(BasePage, ExclusiveTaxonomyMixin):  # type: ignore[django-manager-missing]
+class TopicPage(ExclusiveTaxonomyMixin, BasePage):  # type: ignore[django-manager-missing]
     """The Topic page model."""
 
     base_form_class = TopicPageAdminForm

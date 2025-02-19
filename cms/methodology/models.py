@@ -38,7 +38,7 @@ class MethodologyRelatedPage(Orderable):
     panels: ClassVar[list[FieldPanel]] = [PageChooserPanel("page", page_type=["articles.StatisticalArticlePage"])]
 
 
-class MethodologyPage(BasePage, GenericTaxonomyMixin):  # type: ignore[django-manager-missing]
+class MethodologyPage(GenericTaxonomyMixin, BasePage):  # type: ignore[django-manager-missing]
     parent_page_types: ClassVar[list[str]] = ["topics.TopicPage"]
     template = "templates/pages/methodology_page.html"
     label = _("Methodology")

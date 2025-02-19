@@ -1,12 +1,14 @@
+import http
+
+from django.contrib.auth import get_user_model
+from django.contrib.contenttypes.models import ContentType
 from django.test import TestCase
 from django.urls import reverse
-from django.contrib.contenttypes.models import ContentType
 from wagtail.models import Page
 
-from cms.standard_pages.models import InformationPage
 from cms.home.models import HomePage  # or wherever you define your custom HomePage
+from cms.standard_pages.models import InformationPage
 from cms.taxonomy.models import Topic
-from django.contrib.auth import get_user_model
 
 
 class TestInformationPageIntegration(TestCase):
@@ -14,7 +16,9 @@ class TestInformationPageIntegration(TestCase):
         super().setUp()
 
         user = get_user_model().objects.create_superuser(
-            username="testuser", password="testpassword", email="test@example.com"
+            username="testuser",
+            password="testpassword",  # noqa: S106
+            email="test@example.com",
         )
         self.client.force_login(user)
 
@@ -43,7 +47,8 @@ class TestInformationPageIntegration(TestCase):
             "title": "Info page 1",
             "slug": "info-page-500",
             # Provide the JSON string that Draftail expects:
-            "summary": '{"blocks":[{"key":"v3k0g","text":"Info page 1 summary","type":"unstyled","depth":0,"inlineStyleRanges":[],"entityRanges":[],"data":{}}],"entityMap":{}}',
+            "summary": '{"blocks":[{"key":"v3k0g","text":"Info page 1 summary","type":"unstyled","depth":0,'
+            '"inlineStyleRanges":[],"entityRanges":[],"data":{}}],"entityMap":{}}',
             "last_updated": "",
             "content-count": "1",
             "content-0-deleted": "",
@@ -71,7 +76,7 @@ class TestInformationPageIntegration(TestCase):
         # breakpoint()
         response = self.client.post(add_url, post_data)
         # breakpoint()
-        if response.status_code == 200:
+        if response.status_code == http.HTTPStatus.OK:
             # Print out the rendered HTML to see the error messages
             print(response.content.decode())
 
@@ -84,7 +89,11 @@ class TestInformationPageIntegration(TestCase):
                     print(f"Errors in formset '{formset_name}':", formset.errors)
 
         # If creation succeeds, Wagtail typically responds with a 302 redirect
-        self.assertEqual(response.status_code, 302, f"Form was not submitted successfully; got {response.status_code}")
+        self.assertEqual(
+            response.status_code,
+            http.HTTPStatus.FOUND,
+            f"Form was not submitted successfully; got {response.status_code}",
+        )
         # breakpoint()
         # Now the page should exist
         new_page = InformationPage.objects.get(slug="test-info-page")

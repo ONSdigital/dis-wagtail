@@ -11,7 +11,7 @@ if TYPE_CHECKING:
     from wagtail.admin.panels import Panel
 
 
-class ThemePage(BasePage, ExclusiveTaxonomyMixin):  # type: ignore[django-manager-missing]
+class ThemePage(ExclusiveTaxonomyMixin, BasePage):  # type: ignore[django-manager-missing]
     """The Theme page model."""
 
     template = "templates/pages/theme_page.html"

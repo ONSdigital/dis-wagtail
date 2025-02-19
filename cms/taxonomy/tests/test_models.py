@@ -58,19 +58,19 @@ class TopicModelTest(TestCase):
         t1 = Topic(id="t1", title="Top Level")
         t1.save_topic()
         self.assertEqual(t1.get_depth(), 2)
-        self.assertEqual(t1.title_with_depth(), "Top Level")  # no prefix
+        self.assertEqual(t1.title_with_depth, "Top Level")  # no prefix
 
         # child: depth=3
         t2 = Topic(id="t2", title="Child")
         t2.save_topic(parent_topic=t1)
         self.assertEqual(t2.get_depth(), 3)
-        self.assertEqual(t2.title_with_depth(), "— Child")  # 1 prefix
+        self.assertEqual(t2.title_with_depth, "— Child")  # 1 prefix
 
         # grandchild: depth=4
         t3 = Topic(id="t3", title="Grandchild")
         t3.save_topic(parent_topic=t2)
         self.assertEqual(t3.get_depth(), 4)
-        self.assertEqual(t3.title_with_depth(), "— — Grandchild")
+        self.assertEqual(t3.title_with_depth, "— — Grandchild")
 
     def test_parent_title_property(self):
         """parent_title should only return a value if depth > _BASE_TOPIC_DEPTH (i.e. 2).
@@ -106,27 +106,25 @@ class TopicModelTest(TestCase):
         self.assertIsNone(t2.get_parent())
         self.assertEqual(t2.depth, 2)
 
-    # def test_move_to_another_topic(self):
-    #     """
-    #     Move a topic from one parent to another.
-    #     """
-    #     # Create two top-level topics
-    #     t1 = Topic(id="t1", title="Topic 1")
-    #     t2 = Topic(id="t2", title="Topic 2")
-    #     t1.save_topic()
-    #     t2.save_topic()
-    #
-    #     # Create a child under t1
-    #     child = Topic(id="child", title="Child of T1")
-    #     child.save_topic(parent_topic=t1)
-    #     self.assertEqual(child.get_parent(), t1)
-    #     self.assertEqual(child.depth, 3)
-    #
-    #     # Move `child` under t2
-    #     child.move(t2)
-    #     child.refresh_from_db()
-    #     self.assertEqual(child.get_parent(), t2)
-    #     self.assertEqual(child.depth, 3)
+    def test_move_to_another_topic(self):
+        """Move a topic from one parent to another."""
+        # Create two top-level topics
+        t1 = Topic(id="t1", title="Topic 1")
+        t2 = Topic(id="t2", title="Topic 2")
+        t1.save_topic()
+        t2.save_topic()
+
+        # Create a child under t1
+        child = Topic(id="child", title="Child of T1")
+        child.save_topic(parent_topic=t1)
+        self.assertEqual(child.get_parent(), t1)
+        self.assertEqual(child.depth, 3)
+
+        # Move `child` under t2
+        child.move(t2)
+        child.refresh_from_db()
+        self.assertEqual(child.get_parent(update=True), t2)
+        self.assertEqual(child.depth, 3)
 
     def test_removed_flag_default(self):
         """Ensure 'removed' defaults to False when a Topic is created."""
@@ -147,7 +145,7 @@ class TopicModelTest(TestCase):
         """__str__() calls title_with_depth(), so let's verify it does so."""
         t1 = Topic(id="t1", title="Some Topic")
         t1.save_topic()
-        self.assertEqual(str(t1), t1.title_with_depth())
+        self.assertEqual(str(t1), t1.title_with_depth)
 
     # def test_id_uniqueness(self):
     #     """

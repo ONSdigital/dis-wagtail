@@ -50,9 +50,3 @@ def user_sees_newly_featured_article(context: Context):
     expect(context.page.get_by_role("heading", name="Featured")).to_be_visible()
     expect(context.page.get_by_text(context.article.display_title)).to_be_visible()
     expect(context.page.get_by_text(context.article.main_points_summary)).to_be_visible()
-
-
-@when("the user fills in the topic page content")
-def user_fills_minimum_topic_page_content(context: Context):
-    context.page.get_by_role("textbox", name="Title*").fill("Test")
-    context.page.get_by_role("region", name="Summary*").get_by_role("textbox").fill("Test")

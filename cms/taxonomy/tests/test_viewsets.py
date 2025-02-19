@@ -44,19 +44,6 @@ class TestTopicChooserViewSet(TestCase, WagtailTestUtils):
         self.assertEqual(viewset.choose_another_text, "Choose a different topic")
         self.assertEqual(viewset.icon, "tag")
 
-    def test_get_queryset_includes_topics(self):
-        """By default, it should include all topics (depth>1) but exclude the dummy root."""
-        viewset = TopicChooserViewSet("topic_chooser")
-
-        request = self.factory.get("/")
-        queryset = viewset.get_queryset(request)
-
-        # Root topic is excluded by custom manager, so we expect only topic_a & topic_b
-        self.assertIn(self.topic_a, queryset)
-        self.assertIn(self.topic_b, queryset)
-        self.assertNotIn(self.root_topic, queryset)
-        self.assertEqual(queryset.count(), 2)
-
     def test_admin_chooser_list_view(self):
         """Integration-style test that checks the actual chooser list URL,
         ensuring that the expected topics appear in the HTML response.

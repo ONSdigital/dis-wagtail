@@ -31,6 +31,9 @@ class Topic(index.Indexed, MP_Node):
     dummy node, we override the default object manager with one which only returns non-root level, actual topic nodes.
     """
 
+    class Meta:
+        ordering = ("path", "title")
+
     objects = TopicManager()  # Override the default manager
 
     id = models.CharField(max_length=100, primary_key=True)
@@ -72,17 +75,16 @@ class Topic(index.Indexed, MP_Node):
         return super().move(target, **kwargs)
 
     def __str__(self):
-        return self.title_with_depth()
+        return self.title_with_depth
 
     # this is just a convenience function to make the titles appear with lines
     # eg root | - first child
+    @property
     def title_with_depth(self) -> str:
         if depth := self.get_depth():
-            depth_marker = "— " * (depth - BASE_TOPIC_DEPTH)
-            return depth_marker + self.title
+            depth_marker = "—" * (depth - BASE_TOPIC_DEPTH)
+            return depth_marker + " " + self.title
         return self.title
-
-    title_with_depth.short_description = "Title"
 
     @property
     def parent_title(self) -> str | None:

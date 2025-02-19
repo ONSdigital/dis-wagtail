@@ -93,7 +93,7 @@ load-design-system-templates:  ## Load the design system templates
 
 .PHONY: load-topics
 load-topics:  ## Load our fixture of taxonomy topics
-	poetry run python ./manage.py loaddata cms/taxonomy/topics.json
+	poetry run python ./manage.py loaddata cms/taxonomy/fixtures/topics.json
 
 # Docker and docker compose make commands
 

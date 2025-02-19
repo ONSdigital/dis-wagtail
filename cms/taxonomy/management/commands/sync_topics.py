@@ -3,6 +3,7 @@ from typing import Any
 
 import requests
 from django.conf import settings
+from django.core.exceptions import ImproperlyConfigured
 from django.core.management import BaseCommand
 
 from cms.taxonomy.models import Topic
@@ -32,6 +33,9 @@ def _fetch_all_topics() -> list[dict[str, str]]:
     depth/breadth-first search using a stack of URLs.
     """
     topics = []
+
+    if not settings.DP_TOPIC_API_URL:
+        raise ImproperlyConfigured('"DP_TOPIC_API_URL" must be set')
 
     # Build a stack of topics URLs and parent IDs
     request_stack = [(f"{settings.DP_TOPIC_API_URL}/topics", None)]
