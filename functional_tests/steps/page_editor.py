@@ -29,7 +29,7 @@ def clicks_the_given_button(context: Context, button_text: str):
 
 
 @when("the user edits the {page} page")
-def the_user_edits_the_topic_page(context: Context, page: str) -> None:
+def the_user_edits_a_page(context: Context, page: str) -> None:
     the_page = page.lower().replace(" ", "_")
     if not the_page.endswith("_page"):
         the_page += "_page"
