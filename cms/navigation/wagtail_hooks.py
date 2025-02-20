@@ -10,10 +10,13 @@ if TYPE_CHECKING:
     from cms.users.models import User
 
 
-class NoAddModelPermissionPolicy(ModelPermissionPolicy):
-    """Model permission that doesn't allow creating more than one main menu instance."""
+class SingleInstanceModelPermissionPolicy(ModelPermissionPolicy):
+    """Permission policy that prevents creating a new instance of the model
+    if one already exists.
+    """
 
     def user_has_permission(self, user: "User", action: str) -> bool:
+        # Disallow "add" if an instance already exists
         if action == "add" and self.model.objects.exists():
             return False
         has_permission: bool = super().user_has_permission(user, action)
@@ -26,19 +29,19 @@ class MainMenuViewSet(SnippetViewSet):
     model = MainMenu
 
     @property
-    def permission_policy(self) -> NoAddModelPermissionPolicy:
-        return NoAddModelPermissionPolicy(self.model)
-
-
-register_snippet(MainMenuViewSet)
+    def permission_policy(self) -> SingleInstanceModelPermissionPolicy:
+        return SingleInstanceModelPermissionPolicy(self.model)
 
 
 class FooterMenuViewSet(SnippetViewSet):
+    """A snippet viewset for FooterMenu."""
+
     model = FooterMenu
 
     @property
-    def permission_policy(self) -> NoAddModelPermissionPolicy:
-        return NoAddModelPermissionPolicy(self.model)
+    def permission_policy(self) -> SingleInstanceModelPermissionPolicy:
+        return SingleInstanceModelPermissionPolicy(self.model)
 
 
+register_snippet(MainMenuViewSet)
 register_snippet(FooterMenuViewSet)
