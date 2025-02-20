@@ -32,12 +32,14 @@
             </ol>
         {% endif %}
 
-        <!-- script tags to pass json data to the javascript component -->
-        <script type="application/json" data-highcharts-config--{{ params.uuid }}>
+        {# script tags to pass json data to the javascript component #}
+        <script type="application/json" data-highcharts-config="{{ params.uuid }}">
+            {# Note that in the design system this may need to be a custom filter #}
             {{ params.config|safe }}
         </script>
         {% if params.annotations_values %}
-            <script type="application/json" data-highcharts-annotations-values--{{ params.uuid }}>
+            <script type="application/json" data-highcharts-annotations-values="{{ params.uuid }}">
+                {# Note that in the design system this may need to be a custom filter #}
                 {{ params.annotations_values|safe }}
             </script>
         {% endif %}
