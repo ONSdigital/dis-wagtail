@@ -1,5 +1,7 @@
 class HeadlineFigureBlock extends window.wagtailStreamField.blocks.StructBlockDefinition {
-  render(placeholder, prefix, initialState, initialError) {
+  constructor(name, childBlockDefs, meta) {
+    super(name, childBlockDefs, meta);
+
     // preserve the original setState
     this.childBlockDefs[0].widget.widgetClass.prototype.originalSetState = this.childBlockDefs[0].widget.widgetClass.prototype.setState;
 
@@ -15,7 +17,9 @@ class HeadlineFigureBlock extends window.wagtailStreamField.blocks.StructBlockDe
 
       this.originalSetState(newState);
     }
+  }
 
+  render(placeholder, prefix, initialState, initialError) {
     // initialize our StructBlock
     const block = super.render(placeholder, prefix, initialState, initialError);
 
