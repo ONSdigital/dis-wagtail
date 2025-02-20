@@ -92,6 +92,12 @@ class Topic(index.Indexed, MP_Node):
             return f"{depth_marker}{self.title}"
         return str(self.title)
 
+    @property
+    def display_parent_topics(self) -> str:
+        if ancestors := [topic.title for topic in self.get_ancestors()]:
+            return " → ".join(ancestors)
+        return ""
+
 
 class GenericPageToTaxonomyTopic(models.Model):
     """This model enables many-to-many relationships between pages and topics."""
