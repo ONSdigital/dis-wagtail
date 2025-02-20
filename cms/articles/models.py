@@ -19,6 +19,7 @@ from cms.core.blocks import HeadlineFiguresBlock
 from cms.core.blocks.stream_blocks import SectionStoryBlock
 from cms.core.fields import StreamField
 from cms.core.models import BasePage
+from cms.settings.base import env
 
 if TYPE_CHECKING:
     from django.http import HttpRequest
@@ -35,7 +36,7 @@ class ArticleSeriesPage(RoutablePageMixin, Page):
     preview_modes: ClassVar[list[str]] = []  # Disabling the preview mode due to it being a container page.
     page_description = _("A container for statistical article series.")
     exclude_from_breadcrumbs = True
-    exclude_from_pagination = True
+    PREVIOUS_RELEASES_PER_PAGE = env.get("PREVIOUS_RELEASES_PER_PAGE", 10)
 
     content_panels: ClassVar[list["Panel"]] = [
         *Page.content_panels,
@@ -70,8 +71,9 @@ class ArticleSeriesPage(RoutablePageMixin, Page):
 
     @path("previous-releases/")
     def previous_releases(self, request: "HttpRequest") -> "TemplateResponse":
+        PREVIOUS_RELEASES_PER_PAGE = env.get("PREVIOUS_RELEASES_PER_PAGE", 10)
         children = StatisticalArticlePage.objects.live().child_of(self).order_by("-release_date")
-        paginator = Paginator(children, per_page=5)
+        paginator = Paginator(children, per_page= PREVIOUS_RELEASES_PER_PAGE  )
         print(paginator.get_page(1))
 
         try:
