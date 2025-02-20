@@ -1,9 +1,9 @@
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
 
 from django import forms
 from django.utils.functional import cached_property
 from django.utils.translation import gettext_lazy as _
-from wagtail.blocks import CharBlock, ListBlock, PageChooserBlock, StreamBlock, StructBlock, URLBlock
+from wagtail.blocks import CharBlock, PageChooserBlock, StreamBlock, StructBlock, URLBlock
 from wagtail.blocks.struct_block import StructBlockAdapter
 from wagtail.images.blocks import ImageChooserBlock
 from wagtail.telepath import register
@@ -13,6 +13,8 @@ from .viewsets import series_with_headline_figures_chooser_viewset
 if TYPE_CHECKING:
     from wagtail.blocks import ChooserBlock, StreamValue, StructValue
     from wagtail.models import Page
+
+    from cms.articles.models import ArticleSeriesPage, StatisticalArticlePage
 
 
 class ExploreMoreExternalLinkBlock(StructBlock):
@@ -114,10 +116,28 @@ class TopicHeadlineFigureBlock(StructBlock):
     figure = CharBlock()
 
 
-class TopicHeadlineFiguresBlock(ListBlock):
-    def __init__(self, search_index: bool = True, **kwargs: Any) -> None:
-        kwargs.setdefault("max_num", 6)
-        super().__init__(TopicHeadlineFigureBlock, search_index=search_index, **kwargs)
+class TopicHeadlineFiguresStreamBlock(StreamBlock):
+    figures = TopicHeadlineFigureBlock()
+
+    def get_context(self, value: "StreamValue", parent_context: dict | None = None) -> dict:
+        context: dict = super().get_context(value, parent_context=parent_context)
+
+        figure_data = []
+        for item in value:
+            series: ArticleSeriesPage = item.value["series"]
+            latest_article: StatisticalArticlePage = series.get_latest()
+
+            if figure := latest_article.get_headline_figure(item.value["figure"]):
+                figure["url"] = latest_article.get_url(request=context.get("request"))
+                figure_data.append(figure)
+
+        context["figure_data"] = figure_data
+        return context
+
+    class Meta:
+        icon = "pick"
+        label = _("Headline figures")
+        template = "templates/components/streamfield/topic_headline_figures_block.html"
 
 
 class SeriesWithHeadlineChooserAdapter(StructBlockAdapter):

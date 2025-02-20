@@ -202,6 +202,16 @@ class StatisticalArticlePage(BundledPageMixin, BasePage):  # type: ignore[django
         """Changes the admin display title to include the parent title."""
         return f"{self.get_parent().title}: {self.draft_title or self.title}"
 
+    def get_headline_figure(self, figure_id: str) -> dict[str, str]:
+        if not self.headline_figures:
+            return {}
+
+        for figure in self.headline_figures[0].value:  # pylint: disable=unsubscriptable-object
+            if figure["figure_id"] == figure_id:
+                return dict(figure)
+
+        return {}
+
     @property
     def display_title(self) -> str:
         """Returns the page display title. If the news headline is set, it takes precedence over the series+title."""
