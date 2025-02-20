@@ -170,7 +170,7 @@ def _update_topic(existing_topic: Topic, fetched_topic: dict[str, str]) -> None:
             existing_parent_id,
             new_parent.id if new_parent else None,
         )
-        existing_topic.move(new_parent, pos="sorted-child")
+        existing_topic.move(new_parent)
 
 
 def _create_topic(fetched_topic: dict[str, str]) -> None:

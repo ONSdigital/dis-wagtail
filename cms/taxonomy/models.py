@@ -75,10 +75,10 @@ class Topic(index.Indexed, MP_Node):
             return None
         return typing.cast(Optional[Topic], super().get_parent(*args, **kwargs))
 
-    def move(self, target: Optional["Topic"] = None, **kwargs: Any) -> None:  # pylint: disable=arguments-differ
+    def move(self, target: Optional["Topic"] = None, pos: str = "sorted-child") -> None:
         """Move the topic to underneath the target parent. If no target is passed, move it underneath our root."""
         target_parent = target or Topic.objects.root_topic()
-        super().move(target_parent, **kwargs)
+        super().move(target_parent, pos=pos)
 
     def __str__(self) -> str:
         return self.title_with_depth
