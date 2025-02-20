@@ -1,8 +1,15 @@
+import hashlib
 from typing import TYPE_CHECKING, ClassVar
 
-from wagtail.admin.ui.tables import Column, DateColumn
+from django.contrib.admin.utils import quote, unquote
+from django.core.exceptions import ObjectDoesNotExist
+from django.http import Http404
+from django.urls import reverse
+from django.utils.http import urlencode
+from django.views.generic.base import View
+from wagtail.admin.ui.tables import Column, DateColumn, TitleColumn
 from wagtail.admin.ui.tables.pages import PageStatusColumn
-from wagtail.admin.views.generic.chooser import ChooseResultsView, ChooseView
+from wagtail.admin.views.generic.chooser import ChooseResultsView, ChooseView, ChosenResponseMixin, ChosenViewMixin
 from wagtail.admin.viewsets.chooser import ChooserViewSet
 from wagtail.coreutils import resolve_model_string
 
@@ -13,6 +20,20 @@ if TYPE_CHECKING:
 
 
 __all__ = ["SeriesWithHeadlineFiguresPageChooserViewSet", "series_with_headline_figures_chooser_viewset"]
+
+
+def get_signature(seed: str) -> str:
+    return hashlib.sha256(seed.encode("utf8")).hexdigest()
+
+
+class SpecialTitleColumn(TitleColumn):
+    def get_link_url(self, instance, parent_context):
+        url = super().get_link_url(instance, parent_context)
+        figure_id = instance.headline_figure["figure_id"]
+        separator = "&" if "?" in url else "?"
+        params = {"figure_id": figure_id, "sig": get_signature(f"{quote(instance.pk)} - {figure_id!s}")}
+        url += f"{separator}{urlencode(params)}"
+        return url
 
 
 class SeriesWithHeadlineFiguresChooserMixin:
@@ -35,10 +56,26 @@ class SeriesWithHeadlineFiguresChooserMixin:
         for series_page in series_pages:
             latest_article = series_page.get_latest()
             if latest_article and latest_article.headline_figures.raw_data:
-                filtered_series.append(series_page)
+                for figure in latest_article.headline_figures:
+                    series_page.headline_figure = dict(figure.value[0])
+                    filtered_series.append(series_page)
 
-        series_pages = series_pages.filter(pk__in=filtered_series)
-        return series_pages
+        return filtered_series
+
+    def apply_object_list_ordering(self, objects):
+        return objects
+
+    @property
+    def title_column(self) -> SpecialTitleColumn:
+        return SpecialTitleColumn(
+            "title",
+            label="Title",
+            accessor=str,
+            get_url=(
+                lambda obj: self.append_preserved_url_parameters(reverse(self.chosen_url_name, args=(quote(obj.pk),)))
+            ),
+            link_attrs={"data-chooser-modal-choice": True},
+        )
 
     @property
     def columns(self) -> list["Column"]:
@@ -52,6 +89,7 @@ class SeriesWithHeadlineFiguresChooserMixin:
                 accessor="latest_revision_created_at",
             ),
             PageStatusColumn("status", label="Status", width="12%"),
+            Column("headline_figure"),
         ]
 
 
@@ -61,10 +99,43 @@ class SeriesWithHeadlineFiguresChooseView(SeriesWithHeadlineFiguresChooserMixin,
 class SeriesWithHeadlineFiguresChooseResultsView(SeriesWithHeadlineFiguresChooserMixin, ChooseResultsView): ...
 
 
+class SeriesWithHeadlineFiguresChosenResponseMixin(ChosenResponseMixin):
+    def get_chosen_response_data(self, item):
+        response_data = super().get_chosen_response_data(item)
+        response_data["figure_id"] = item._figure_id  # pylint: disable=protected-access
+
+        return response_data
+
+
+class SeriesWithHeadlineFiguresChosenViewMixin(ChosenViewMixin):
+    def get(self, request, pk):
+        try:
+            item = self.get_object(unquote(pk))
+        except ObjectDoesNotExist as e:
+            raise Http404 from e
+
+        figure_id = request.GET.get("figure_id", "")
+        signature = request.GET.get("sig", "")
+
+        if signature != get_signature(f"{quote(item.pk)} - {figure_id!s}"):
+            raise Http404
+
+        item._figure_id = figure_id  # pylint: disable=protected-access
+
+        return self.get_chosen_response(item)
+
+
+class SeriesWithHeadlineChosenView(
+    SeriesWithHeadlineFiguresChosenViewMixin, SeriesWithHeadlineFiguresChosenResponseMixin, View
+):
+    pass
+
+
 class SeriesWithHeadlineFiguresPageChooserViewSet(ChooserViewSet):
     model = ArticleSeriesPage
     choose_view_class = SeriesWithHeadlineFiguresChooseView
     choose_results_view_class = SeriesWithHeadlineFiguresChooseResultsView
+    chosen_view_class = SeriesWithHeadlineChosenView
     register_widget = False
     choose_one_text = "Choose Article Series page"
     choose_another_text = "Choose another Article Series page"

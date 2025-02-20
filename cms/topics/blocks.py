@@ -1,7 +1,11 @@
 from typing import TYPE_CHECKING, Any
 
+from django import forms
+from django.utils.functional import cached_property
 from wagtail.blocks import CharBlock, ListBlock, PageChooserBlock, StreamBlock, StructBlock, URLBlock
+from wagtail.blocks.struct_block import StructBlockAdapter
 from wagtail.images.blocks import ImageChooserBlock
+from wagtail.telepath import register
 
 from .viewsets import series_with_headline_figures_chooser_viewset
 
@@ -113,3 +117,15 @@ class TopicHeadlineFiguresBlock(ListBlock):
     def __init__(self, search_index: bool = True, **kwargs: Any) -> None:
         kwargs.setdefault("max_num", 6)
         super().__init__(TopicHeadlineFigureBlock, search_index=search_index, **kwargs)
+
+
+class SeriesWithHeadlineChooserAdapter(StructBlockAdapter):
+    js_constructor = "cms.topics.widgets.TopicHeadlineFigureBlock"
+
+    @cached_property
+    def media(self):
+        parent_js = super().media._js  # pylint: disable=protected-access
+        return forms.Media(js=[*parent_js, "topics/js/headline-figure-block.js"])
+
+
+register(SeriesWithHeadlineChooserAdapter(), TopicHeadlineFigureBlock)
