@@ -10,3 +10,14 @@ Feature: A general use information page
         Then the new information page with the added content is displayed
         And the user can see the breadcrumbs
 
+    Scenario: Rich text toolbar is pinned by default
+        Given a CMS user logs into the admin site
+        When the user navigates to the pages menu
+        And the user clicks add child page and chooses information page type
+        Then the rich text toolbar is displayed
+
+    Scenario: Minimap is shown by default
+        Given a CMS user logs into the admin site
+        When the user navigates to the pages menu
+        And the user clicks add child page and chooses information page type
+        Then the minimap is displayed

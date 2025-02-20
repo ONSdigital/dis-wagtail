@@ -47,3 +47,13 @@ def check_new_information_is_displayed_with_content(context: Context) -> None:
     expect(context.page.get_by_role("heading", name="Some example rich text content")).to_be_visible()
     expect(context.page.get_by_text("n∑i=0i2=(n2+n)(2n+1)")).to_be_visible()
     expect(context.page.get_by_role("navigation", name="Related content").get_by_role("listitem")).to_be_visible()
+
+
+@then("the rich text toolbar is displayed")
+def check_rich_text_toolbar_is_displayed_by_default(context: Context):
+    expect(context.page.get_by_role("toolbar")).to_be_visible()
+
+
+@then("the minimap is displayed")
+def check_minimap_is_displayed(context: Context) -> None:
+    expect(context.page.get_by_role("complementary", name="Minimap").locator("div").nth(1)).to_be_visible()
