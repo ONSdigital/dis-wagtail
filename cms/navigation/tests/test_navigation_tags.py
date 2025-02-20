@@ -86,37 +86,47 @@ class MainMenuTemplateTagTests(TestCase):
         self.assertEqual(columns, [])
 
 
-class FooterTemplateTagTests(TestCase):
+class FooterMenuTemplateTagTests(TestCase):
     @classmethod
     def setUpTestData(cls):
         cls.mock_request = wagtail.coreutils.get_dummy_request()
+        cls.footer_menu = FooterMenuFactory()
 
-        links_data = [LinkBlockFactory()] * 5
-        links_column = LinksColumnFactory(links=links_data)
+        links = [LinkBlockFactory()] * 5
 
-        cls.columns = [
+        column_value = LinksColumnFactory(links=links)
+
+        columns = [
             {
-                "type": "linksColumn",
-                "value": links_column,
+                "type": "column",
+                "value": column_value,
             }
         ] * 3
-        cls.footer_menu = FooterMenuFactory()
-        cls.footer_menu.columns = cls.columns
+
+        cls.footer_menu.columns = columns
+        cls.footer_menu.save()
 
     def test_footer_menu_output_format(self):
         """Test that footer_menu outputs the correct format."""
         columns = footer_menu_columns({"request": self.mock_request}, self.footer_menu)
-        print("columns in test", self.footer_menu)
-        self.assertIsInstance(columns, list)
-        self.assertEqual(len(columns), 3)
 
         expected_columns = [
             {
-                "title": column["value"]["title"],
-                "links": [{"text": link["title"], "url": link["external_url"]} for link in column["value"]["links"]],
+                "title": column.value["title"],
+                "itemsList": [
+                    {
+                        "text": item["title"],
+                        "url": item["external_url"],
+                    }
+                    for item in column.value["links"]
+                ],
             }
-            for column in self.columns
+            for column_index, column in enumerate(self.footer_menu.columns)
         ]
+
+        self.assertIsInstance(columns, list)
+        self.assertEqual(len(columns), 3)
+
         self.assertListEqual(columns, expected_columns)
 
     def test_footer_menu_empty_menu(self):

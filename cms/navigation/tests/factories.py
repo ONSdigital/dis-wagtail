@@ -49,6 +49,14 @@ class ColumnBlockFactory(StructBlockFactory):
     sections = ListBlockFactory(SectionBlockFactory)
 
 
+class LinksColumnFactory(StructBlockFactory):
+    class Meta:
+        model = LinksColumn
+
+    title = factory.Faker("text", max_nb_chars=20)
+    links = ListBlockFactory(LinkBlockFactory)
+
+
 class MainMenuFactory(factory.django.DjangoModelFactory):
     class Meta:
         model = MainMenu
@@ -59,14 +67,6 @@ class MainMenuFactory(factory.django.DjangoModelFactory):
             "column": ColumnBlockFactory,
         }
     )
-
-
-class LinksColumnFactory(StructBlockFactory):
-    class Meta:
-        model = LinksColumn
-
-    title = factory.Faker("text", max_nb_chars=20)
-    links = ListBlockFactory(LinkBlockFactory)
 
 
 class FooterMenuFactory(factory.django.DjangoModelFactory):
