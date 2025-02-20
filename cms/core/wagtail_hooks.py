@@ -1,7 +1,5 @@
 from django.templatetags.static import static
 from django.utils.html import format_html
-
-# from django.utils.safestring import SafeString
 from wagtail import hooks
 from wagtail.snippets.models import register_snippet
 
