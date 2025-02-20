@@ -3,7 +3,7 @@
 from django.db import migrations
 
 
-def initial_data(apps, _schema_editor):
+def initial_data(apps, schema_editor):
     Topic = apps.get_model("taxonomy", "Topic")
 
     # We cannot call Topic.add_root(...) here because the method is lost when retrieving the model through get_model
