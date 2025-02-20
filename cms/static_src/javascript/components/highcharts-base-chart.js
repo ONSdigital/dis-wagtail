@@ -53,7 +53,6 @@ class HighchartsBaseChart {
 
     // Configure any annotations that have been specified (will be an empty array if no annotations are specified)
     if (this.annotationsValues) {
-      console.log('annotations found');
       this.configureAnnotations();
     }
 
