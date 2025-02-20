@@ -90,7 +90,6 @@ class TopicModelTest(TestCase):
         self.assertIsNone(t2.get_parent())
         self.assertEqual(t2.depth, 2)
 
-    # FIXME: This test is failing
     def test_move_to_another_topic(self):
         """Move a topic from one parent to another."""
         # Create two top-level topics
