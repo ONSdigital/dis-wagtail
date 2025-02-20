@@ -19,12 +19,15 @@ class HighchartsBaseChart {
     // We start with some config in the correct Highcharts format supplied by Wagtail
     // This gets some further modifications
     this.uuid = this.node.dataset.highchartsUuid;
+
     this.apiConfig = JSON.parse(
       this.node.querySelector(`[data-highcharts-config="${this.uuid}"]`).textContent,
     );
-    this.annotationsValues = JSON.parse(
-      this.node.querySelector(`[data-highcharts-annotations-values="${this.uuid}"]`).textContent,
-    );
+    if (this.node.querySelector(`[data-highcharts-annotations-values="${this.uuid}"]`)) {
+      this.annotationsValues = JSON.parse(
+        this.node.querySelector(`[data-highcharts-annotations-values="${this.uuid}"]`).textContent,
+      );
+    }
 
     // Hide data labels for clustered bar charts with more than 2 series, and also for stacked bar charts
     const hideDataLabels =
@@ -49,7 +52,8 @@ class HighchartsBaseChart {
     this.setCommonChartOptions();
 
     // Configure any annotations that have been specified (will be an empty array if no annotations are specified)
-    if (this.annotationsValues.length) {
+    if (this.annotationsValues) {
+      console.log('annotations found');
       this.configureAnnotations();
     }
 

@@ -1,8 +1,6 @@
-import json
 from collections.abc import Sequence
 from typing import TYPE_CHECKING, Any, ClassVar, Literal, Optional
 
-from django.core.serializers.json import DjangoJSONEncoder
 from django.db import models
 from django.forms import Media
 from django.utils.functional import cached_property, classproperty
@@ -99,12 +97,8 @@ class Chart(Visualisation):
 
     def get_context(self, request: Optional["HttpRequest"] = None, **kwargs: Any) -> dict[str, Any]:
         config = self.get_component_config(self.primary_data_source.headers, self.primary_data_source.rows)
-        encoded_config = json.dumps(config, cls=DjangoJSONEncoder)
         annotations_values = self.get_annotations_values()
-        encoded_annotations_values = json.dumps(annotations_values, cls=DjangoJSONEncoder)
-        return super().get_context(
-            request, config=encoded_config, annotations_values=encoded_annotations_values, **kwargs
-        )
+        return super().get_context(request, config=config, annotations_values=annotations_values, **kwargs)
 
     general_panels: ClassVar[Sequence["Panel"]] = [
         FieldPanel("name"),
