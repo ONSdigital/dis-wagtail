@@ -93,7 +93,7 @@ class Topic(index.Indexed, MP_Node):
         return str(self.title)
 
     @property
-    def display_path(self) -> str:
+    def display_parent_topics(self) -> str:
         if ancestors := [topic.title for topic in self.get_ancestors()]:
             return " → ".join(ancestors)
         return ""
