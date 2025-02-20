@@ -75,7 +75,7 @@ class FooterMenuFactory(factory.django.DjangoModelFactory):
 
     columns = StreamFieldFactory(
         {
-            "linksColumn": LinksColumnFactory,
+            "column": LinksColumnFactory,
         }
     )
 

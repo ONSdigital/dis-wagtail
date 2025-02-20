@@ -48,18 +48,18 @@ class FooterMenuViewSetTestCase(WagtailTestUtils, TestCase):
         cls.superuser = cls.create_superuser(username="admin")
 
         cls.add_url = reverse("wagtailsnippets_navigation_footermenu:add")
-        cls.dashboard_url = reverse("wagtailadmin_home")  # why
+        cls.dashboard_url = reverse("wagtailadmin_home")  # Neha wants explanation here?
 
     def setUp(self):
         self.client.force_login(self.superuser)
 
     def test_footer_menu_add_view_can_be_accessed_when_none_exist(self):
         """If FooterMenu does not exist, the user should be able to access the add view."""
-        self.assertEqual(FooterMenu.objects.count(), 0, "No Footer Menu should exist yet")
+        self.assertEqual(FooterMenu.objects.count(), 0, "No Footer Menu should exist yet.")
         response = self.client.get(self.add_url)
 
         self.assertEqual(
-            response.status_code, HTTPStatus.OK, "User should be able to acess add view whn no MainMenu exists"
+            response.status_code, HTTPStatus.OK, "User should be able to access add view when no FooterMenu exists."
         )
 
     def test_footer_menu_add_redirects_to_dashboard_when_it_already_exists(self):
