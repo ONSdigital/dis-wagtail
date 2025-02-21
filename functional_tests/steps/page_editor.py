@@ -16,7 +16,7 @@ def user_clicks_view_live_on_publish_confirmation_banner(context: Context) -> No
     context.page.get_by_role("link", name="View live").click()
 
 
-@when('the user clicks the "Save Draft" button and waits for the page to reload')
+@when('the user clicks the "Save Draft" button')
 def click_save_draft_with_delay(context: Context):
     # add a small delay to allow any client-side JS to initialize.
     context.page.wait_for_timeout(500)
