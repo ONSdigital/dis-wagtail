@@ -18,8 +18,8 @@ def user_clicks_view_live_on_publish_confirmation_banner(context: Context) -> No
 
 @when('the user clicks the "Save Draft" button and waits for the page to reload')
 def click_save_draft_with_delay(context: Context):
-    context.page.wait_for_load_state()
     context.page.get_by_role("button", name="Save Draft").click()
+    context.page.wait_for_load_state()
 
 
 @when('clicks the "{button_text}" button')
