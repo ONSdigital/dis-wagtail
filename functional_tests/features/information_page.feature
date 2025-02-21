@@ -12,9 +12,25 @@ Feature: A general use information page
     Scenario: Rich text toolbar is pinned by default
         Given a CMS user logs into the admin site
         When the user creates an information page as a child of the home page
-        Then the rich text toolbar is displayed
+        Then the rich text toolbar is pinned
+
+    Scenario: Rich text toolbar selection is being saved
+        Given a CMS user logs into the admin site
+        And the user creates an information page as a child of the home page
+        And the rich text toolbar is pinned
+        When the user unpins the rich text toolbar
+        And the user refreshes the page
+        Then the rich text toolbar is unpinned
 
     Scenario: Minimap is shown by default
         Given a CMS user logs into the admin site
         When the user creates an information page as a child of the home page
         Then the minimap is displayed
+
+    Scenario: Minimap selection is being saved
+        Given a CMS user logs into the admin site
+        And the user creates an information page as a child of the home page
+        And the minimap is displayed
+        When the user hides the minimap
+        And the user refreshes the page
+        Then the minimap is hidden

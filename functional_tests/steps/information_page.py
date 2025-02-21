@@ -1,9 +1,9 @@
-from behave import then, when  # pylint: disable=no-name-in-module
+from behave import step, then, when  # pylint: disable=no-name-in-module
 from behave.runner import Context
 from playwright.sync_api import expect
 
 
-@when("the user creates an information page as a child of the home page")
+@step("the user creates an information page as a child of the home page")
 def user_creates_information_page(context: Context) -> None:
     context.page.get_by_role("button", name="Pages").click()
     context.page.get_by_role("link", name="Edit 'Home'").click()
@@ -44,13 +44,3 @@ def check_new_information_is_displayed_with_content(context: Context) -> None:
     expect(context.page.get_by_role("heading", name="Some example rich text content")).to_be_visible()
     expect(context.page.get_by_text("n∑i=0i2=(n2+n)(2n+1)")).to_be_visible()
     expect(context.page.get_by_role("navigation", name="Related content").get_by_role("listitem")).to_be_visible()
-
-
-@then("the rich text toolbar is displayed")
-def check_rich_text_toolbar_is_displayed_by_default(context: Context):
-    expect(context.page.get_by_role("toolbar")).to_be_visible()
-
-
-@then("the minimap is displayed")
-def check_minimap_is_displayed(context: Context) -> None:
-    expect(context.page.get_by_role("complementary", name="Minimap").locator("div").nth(1)).to_be_visible()
