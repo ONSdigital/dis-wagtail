@@ -33,7 +33,7 @@ def user_populates_the_methodology_page(context: Context):
 
 
 @then("the published methodology page is displayed with the populated data")
-def the_methodology_page_is_with_the_populated_data(context: Context):
+def the_methodology_page_is_displayed_with_the_populated_data(context: Context):
     expect(context.page.get_by_role("heading", name="Methodology page")).to_be_visible()
     expect(context.page.get_by_text("Page summary")).to_be_visible()
     expect(context.page.get_by_text("Published: 1 January 1950")).to_be_visible()
@@ -126,4 +126,4 @@ def preview_is_visible(context: Context):
 def saved_draft_data_matches_populated_data(context: Context):
     context.page.get_by_role("button", name="Actions").click()
     context.page.get_by_role("link", name="Preview").click()
-    the_methodology_page_is_with_the_populated_data(context)
+    the_methodology_page_is_displayed_with_the_populated_data(context)
