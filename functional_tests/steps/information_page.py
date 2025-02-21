@@ -5,9 +5,10 @@ from playwright.sync_api import expect
 
 @when("the user creates an information page as a child of the home page")
 def user_creates_information_page(context: Context) -> None:
-    context.page.get_by_role("link", name="2 Pages created in Office for").click()
-    context.page.get_by_label("Add child page").click()
-    context.page.locator("li").filter(has_text="Information page Pages using").click()
+    context.page.get_by_role("button", name="Pages").click()
+    context.page.get_by_role("link", name="Edit 'Home'").click()
+    context.page.get_by_role("button", name="Actions", exact=True).click()
+    context.page.get_by_role("link", name="Add a child page to 'Home'").click()
     context.page.get_by_role("link", name="Information page", exact=True).click()
 
 
