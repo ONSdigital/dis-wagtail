@@ -83,7 +83,7 @@ def validation_error_displayed_when_incorrect_date_selected(context: Context):
     expect(context.page.get_by_text("The last revised date must be after the published date.")).to_be_visible()
 
 
-@then("the mandatory fields raise a validation error")
+@then("the methodology page mandatory fields raise validation errors")
 def mandatory_fields_raise_validation_error_when_not_set(context: Context):
     expect(context.page.get_by_text("The page could not be created due to validation errors")).to_be_visible()
 
@@ -108,7 +108,7 @@ def mandatory_fields_raise_validation_error_when_not_set(context: Context):
     expect(context.page.locator(".help-block.help-critical").get_by_text("This field is required")).to_be_visible()
 
 
-@then("the preview is visible with the populated data")
+@then("the preview of the methodology page is displayed with the populated data")
 def preview_is_visible(context: Context):
     context.page.get_by_role("button", name="Toggle preview").click()
 
