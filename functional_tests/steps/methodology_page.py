@@ -85,6 +85,9 @@ def validation_error_displayed_when_incorrect_date_selected(context: Context):
 
 @then("the methodology page mandatory fields raise validation errors")
 def mandatory_fields_raise_validation_error_when_not_set(context: Context):
+    # add a small delay to allow any client-side JS to initialize.
+    context.page.wait_for_timeout(500)
+
     expect(context.page.get_by_text("The page could not be created due to validation errors")).to_be_visible()
 
     expect(
