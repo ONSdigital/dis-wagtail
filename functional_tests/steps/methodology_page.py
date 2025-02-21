@@ -112,9 +112,6 @@ def mandatory_fields_raise_validation_error_when_not_set(context: Context):
 def preview_is_visible(context: Context):
     context.page.get_by_role("button", name="Toggle preview").click()
 
-    # add a small delay to allow the preview to render
-    context.page.wait_for_timeout(500)
-
     iframe_locator = context.page.frame_locator("#w-preview-iframe")
 
     expect(iframe_locator.get_by_role("heading", name="Methodology page")).to_be_visible()
