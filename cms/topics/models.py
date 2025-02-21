@@ -17,6 +17,7 @@ from cms.core.models import BasePage
 from cms.core.query import order_by_pk_position
 from cms.core.utils import get_formatted_pages_list
 from cms.methodology.models import MethodologyPage
+from cms.taxonomy.mixins import ExclusiveTaxonomyMixin
 from cms.topics.blocks import ExploreMoreStoryBlock
 from cms.topics.forms import TopicPageAdminForm
 from cms.topics.viewsets import (
@@ -63,7 +64,7 @@ class TopicPageRelatedMethodology(Orderable):
     ]
 
 
-class TopicPage(BasePage):  # type: ignore[django-manager-missing]
+class TopicPage(ExclusiveTaxonomyMixin, BasePage):  # type: ignore[django-manager-missing]
     """The Topic page model."""
 
     base_form_class = TopicPageAdminForm

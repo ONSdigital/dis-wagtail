@@ -30,11 +30,13 @@ slack-sdk = "^3.33.3"
 django-cache-memoize = "^0.2.0"
 django-iam-dbauth = "^0.2.1"
 requests = "^2.32.3"
+django-treebeard = "^4.7.1"
 
 [tool.poetry.group.dev.dependencies]
 # :TODO: Remove pylint when ruff supports all pylint rules
 djhtml = "3.0.7"  # keep version in sync with .pre-commit-config.yaml
 mypy = "^1.15.0"
+types-requests = "^2.32.0.20241016"
 django-stubs = { version="^5.1.1", extras=["compatible-mypy"]}
 pylint = "^3.3.1"
 pylint-django = "^2.6.1"

@@ -70,6 +70,7 @@ INSTALLED_APPS = [
     "cms.standard_pages",
     "cms.methodology",
     "cms.navigation",
+    "cms.taxonomy",
     "wagtail.embeds",
     "wagtail.sites",
     "wagtail.users",
@@ -846,3 +847,5 @@ MANAGE_COOKIE_SETTINGS_URL = env.get("MANAGE_COOKIE_SETTINGS_URL", "https://www.
 
 
 SLACK_NOTIFICATIONS_WEBHOOK_URL = env.get("SLACK_NOTIFICATIONS_WEBHOOK_URL")
+
+ONS_API_BASE_URL = env.get("ONS_API_BASE_URL")

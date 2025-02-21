@@ -16,6 +16,7 @@ from cms.core.blocks.stream_blocks import SectionStoryBlock
 from cms.core.fields import StreamField
 from cms.core.models import BasePage
 from cms.core.query import order_by_pk_position
+from cms.taxonomy.mixins import GenericTaxonomyMixin
 
 if TYPE_CHECKING:
     import datetime
@@ -37,7 +38,7 @@ class MethodologyRelatedPage(Orderable):
     panels: ClassVar[list[FieldPanel]] = [PageChooserPanel("page", page_type=["articles.StatisticalArticlePage"])]
 
 
-class MethodologyPage(BasePage):  # type: ignore[django-manager-missing]
+class MethodologyPage(GenericTaxonomyMixin, BasePage):  # type: ignore[django-manager-missing]
     parent_page_types: ClassVar[list[str]] = ["topics.TopicPage"]
     template = "templates/pages/methodology_page.html"
     label = _("Methodology")

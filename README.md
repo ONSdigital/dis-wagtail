@@ -107,7 +107,8 @@ Follow these steps to set up and run the project using Docker.
 
 2. **Migrations and Superuser Creation**
 
-    If this is your first time setting up the project, you’ll need to run migrations to set up the database schema and create an administrative user.
+    If this is your first time setting up the project, you’ll need to run migrations to set up the database schema, load the topics dev fixture, and create an
+    administrative user.
 
     ```bash
     # ssh into the web container
@@ -115,6 +116,9 @@ Follow these steps to set up and run the project using Docker.
 
     # Run database migrations
     make migrate
+
+    # Load the topics dev fixture
+    make load-topics
 
     # Create a superuser for accessing the admin interface
     make createsuperuser
@@ -167,6 +171,7 @@ In order to run it:
     - loading design system templates,
     - collecting the static files,
     - generating and applying database migrations,
+    - loading the topics dev fixture
     - creating a superuser with:
         - username: `admin`
         - password: `changeme` # pragma: allowlist secret
