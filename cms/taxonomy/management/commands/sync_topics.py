@@ -1,4 +1,5 @@
 import logging
+from collections.abc import Iterable, Mapping
 from typing import Any
 
 import requests
@@ -81,7 +82,7 @@ def _request_topics(url: str) -> list[dict[str, Any]]:
     return raw_topics
 
 
-def _extract_subtopic_links(raw_topics: list[dict[str, Any]]) -> list[tuple[str, str | None]]:
+def _extract_subtopic_links(raw_topics: Iterable[Mapping[str, Any]]) -> list[tuple[str, str | None]]:
     """Return a list of tuples of any subtopic links and their parent topic IDs found in raw_topics."""
     return [
         (subtopic_link, raw_topic["id"])
@@ -95,7 +96,7 @@ def _extract_subtopic_links(raw_topics: list[dict[str, Any]]) -> list[tuple[str,
     ]
 
 
-def _sync_with_fetched_topics(fetched_topics: list[dict[str, str]]) -> None:
+def _sync_with_fetched_topics(fetched_topics: Iterable[Mapping[str, str]]) -> None:
     """For each fetched topic, decide if it needs to be created, updated, or left as is."""
     _check_for_duplicate_topics(fetched_topics)
 
@@ -114,7 +115,7 @@ def _sync_with_fetched_topics(fetched_topics: list[dict[str, str]]) -> None:
     logger.info("Updated %d existing topic(s)", updated_count)
 
 
-def _check_for_duplicate_topics(fetched_topics: list[dict[str, str]]) -> None:
+def _check_for_duplicate_topics(fetched_topics: Iterable[Mapping[str, str]]) -> None:
     topic_ids = set()
     for topic in fetched_topics:
         if topic["id"] in topic_ids:
@@ -127,7 +128,7 @@ def _get_topic(topic_id: str) -> Topic | None:
     return Topic.objects.filter(id=topic_id).first()
 
 
-def _topic_matches(existing_topic: Topic, fetched_topic: dict[str, str]) -> bool:
+def _topic_matches(existing_topic: Topic, fetched_topic: Mapping[str, str]) -> bool:
     """Compares: title, description, removed status, Parent ID.
     If all these match, the function returns True; otherwise False.
     """
@@ -142,7 +143,7 @@ def _topic_matches(existing_topic: Topic, fetched_topic: dict[str, str]) -> bool
     )
 
 
-def _update_topic(existing_topic: Topic, fetched_topic: dict[str, str]) -> None:
+def _update_topic(existing_topic: Topic, fetched_topic: Mapping[str, str]) -> None:
     """Updates an existing topic with data from an external source.
 
     - Updates `title`, `description`, and sets `removed = False` (as it is present in external data).
@@ -173,7 +174,7 @@ def _update_topic(existing_topic: Topic, fetched_topic: dict[str, str]) -> None:
         existing_topic.move(new_parent)
 
 
-def _create_topic(fetched_topic: dict[str, str]) -> None:
+def _create_topic(fetched_topic: Mapping[str, str]) -> None:
     """Creates a Topic object with the given id, title, and description, and parent."""
     logger.info("Saving new topic %s", fetched_topic)
     new_topic = Topic(
