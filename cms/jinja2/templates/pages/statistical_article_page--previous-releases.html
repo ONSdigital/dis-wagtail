@@ -10,33 +10,28 @@
     {% endfor %}
 </ul>
 
-<!--{% block django_pagination %}-->
-<!--{# Plug this in the DS pagination component #}-->
-<!--{% if pages.paginator.num_pages > 1 %}-->
-<!--<nav aria-label="Pagination">-->
-<!--    <ul class="pagination">-->
-<!--        {% if pages.has_previous() %}-->
-<!--        <li><a class="previous" href="?page={{ pages.previous_page_number() }}">Previous <span-->
-<!--            class="sr-only">page</span></a></li>-->
-<!--        {% endif %}-->
+{% block ONS_pagination_v1 %}
+{% from "components/pagination/_macro.njk" import onsPagination %}
 
-<!--        <li aria-current="page" class="current">-->
-<!--            {{ pages.number }}/{{pages.paginator.num_pages }}-->
-<!--        </li>-->
 
-<!--        {% if pages.has_next() %}-->
-<!--        <li><a class="next" href="?page={{ pages.next_page_number() }}">Next <span class="sr-only">page</span></a></li>-->
-<!--        {% endif %}-->
-<!--    </ul>-->
-<!--</nav>-->
-<!--{% endif %}-->
-<!--{% endblock %}  %}-->
+<div class="ons-pagination__position">Page {{ pages.number }} of {{pages.paginator.num_pages }}</div>
+
+{{
+onsPagination({
+"hideRangeIndicator": true,
+"currentPageNumber": pages.number ,
+"pages": ons_pagination_url_list
+})
+}}
+
+{% endblock %}
 
 
 {% block ONS_pagination %}
 {% if pages.paginator.num_pages > 1 %}
 <nav class="ons-pagination" aria-label="Pagination (Page current of last page)">
     <div class="ons-pagination__position">Page {{ pages.number }} of {{pages.paginator.num_pages }}</div>
+
     {# Navigation to previous pages #}
     {% if pages.has_previous() %}
     <ul class="ons-pagination__items">
@@ -62,7 +57,7 @@
                aria-label="Go to the first page">1</a>
         </li>
 
-        {% if  pages.previous_page_number() > 1 %}
+        {% if pages.previous_page_number() > 1 %}
         {# previous pages section #}
         <li class="ons-pagination__item ons-pagination__item--gap">&hellip;</li>
         <li class="ons-pagination__item">
@@ -74,7 +69,7 @@
 
 
         <li class="ons-pagination__item ons-pagination__item--current">
-            <a href="?page=1" class="ons-pagination__link" aria-current="true"
+            <a href="?{{ pages.number }}" class="ons-pagination__link" aria-current="true"
                aria-label="Current page">{{ pages.number }}</a>
         </li>
 

@@ -3,7 +3,7 @@ import copy
 from .base import *  # noqa: F403  # pylint: disable=wildcard-import,unused-wildcard-import
 
 # this is the default value for the number of items on a previous release page
-PREVIOUS_RELEASES_PER_PAGE = 10
+PREVIOUS_RELEASES_PER_PAGE = 3
 
 # Debugging to be enabled locally only
 DEBUG = True

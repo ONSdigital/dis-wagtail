@@ -2,7 +2,7 @@ from typing import TYPE_CHECKING, Any, ClassVar, Optional
 
 from django.conf import settings
 from django.core.exceptions import ValidationError
-from django.core.paginator import Paginator, EmptyPage
+from django.core.paginator import EmptyPage, Paginator
 from django.db import models
 from django.http import Http404
 from django.shortcuts import redirect
@@ -28,6 +28,13 @@ if TYPE_CHECKING:
     from wagtail.admin.panels import Panel
 
 
+def get_pagination_url_list(num_pages: int) -> list:
+    output = []
+    for num in range(1, num_pages + 1):
+        output.append({ "url":  "?page="+str(num) })
+    return output
+
+
 class ArticleSeriesPage(RoutablePageMixin, Page):
     """The article series model."""
 
@@ -36,7 +43,6 @@ class ArticleSeriesPage(RoutablePageMixin, Page):
     preview_modes: ClassVar[list[str]] = []  # Disabling the preview mode due to it being a container page.
     page_description = _("A container for statistical article series.")
     exclude_from_breadcrumbs = True
-    PREVIOUS_RELEASES_PER_PAGE = env.get("PREVIOUS_RELEASES_PER_PAGE", 10)
 
     content_panels: ClassVar[list["Panel"]] = [
         *Page.content_panels,
@@ -71,20 +77,20 @@ class ArticleSeriesPage(RoutablePageMixin, Page):
 
     @path("previous-releases/")
     def previous_releases(self, request: "HttpRequest") -> "TemplateResponse":
-        PREVIOUS_RELEASES_PER_PAGE = env.get("PREVIOUS_RELEASES_PER_PAGE", 10)
+        PREVIOUS_RELEASES_PER_PAGE = env.get("PREVIOUS_RELEASES_PER_PAGE", 3)
         children = StatisticalArticlePage.objects.live().child_of(self).order_by("-release_date")
-        paginator = Paginator(children, per_page= PREVIOUS_RELEASES_PER_PAGE  )
-        print(paginator.get_page(1))
+        paginator = Paginator(children, per_page=PREVIOUS_RELEASES_PER_PAGE)
 
         try:
             pages = paginator.page(int(request.GET.get("page", 1)))
+            ons_pagination_url_list = get_pagination_url_list(paginator.num_pages)
         except (EmptyPage, ValueError) as e:
             raise Http404 from e
         else:
             response: TemplateResponse = self.render(
                 request,
                 # TODO: update to include drafts when looking at previews holistically.
-                context_overrides={"pages": pages},
+                context_overrides={"pages": pages, "ons_pagination_url_list": ons_pagination_url_list},
                 template="templates/pages/statistical_article_page--previous-releases.html",
             )
         return response
