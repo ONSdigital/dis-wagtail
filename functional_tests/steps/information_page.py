@@ -3,13 +3,9 @@ from behave.runner import Context
 from playwright.sync_api import expect
 
 
-@when("the user navigates to the pages menu")
-def user_navigates_to_pages_menu(context: Context) -> None:
+@when("the user creates an information page as a child of the home page")
+def user_creates_information_page(context: Context) -> None:
     context.page.get_by_role("link", name="2 Pages created in Office for").click()
-
-
-@when("the user clicks add child page and chooses information page type")
-def user_adds_information_page(context: Context) -> None:
     context.page.get_by_label("Add child page").click()
     context.page.locator("li").filter(has_text="Information page Pages using").click()
     context.page.get_by_role("link", name="Information page", exact=True).click()
