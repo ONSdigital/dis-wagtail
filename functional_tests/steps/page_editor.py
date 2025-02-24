@@ -45,7 +45,10 @@ def user_navigates_to_the_history_menu(context: Context):
 @then("the saved draft version is visible")
 def saved_draft_version_is_visible(context: Context):
     expect(context.page.get_by_role("button", name="Just now").first).to_be_visible()
-    expect(context.page.get_by_text("Draft saved")).to_be_visible()@when("the user refreshes the page")
+    expect(context.page.get_by_text("Draft saved")).to_be_visible()
+
+
+@when("the user refreshes the page")
 def the_user_refreshes_the_page(context: Context):
     context.page.reload()
 
@@ -77,15 +80,4 @@ def the_user_hides_the_minimap(context: Context):
 
 @then("the minimap is hidden")
 def the_minimap_is_hidden(context: Context):
-    expect(context.page.get_by_role("complementary", name="Minimap").locator("div").nth(1)).not_to_be_visible()
-
-    
-@when("the user navigates to the page history menu")
-def user_navigates_to_the_history_menu(context: Context):
-    context.page.get_by_role("link", name="History").click()
-
-
-@then("the saved draft version is visible")
-def saved_draft_version_is_visible(context: Context):
-    expect(context.page.get_by_role("button", name="Just now").first).to_be_visible()
-    expect(context.page.get_by_text("Draft saved")).to_be_visible()
+    expect(context.page.get_by_role("complementary", name="Minimap").locator("div").first).not_to_be_visible()

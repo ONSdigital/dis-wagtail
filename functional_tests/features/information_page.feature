@@ -14,7 +14,7 @@ Feature: A general use information page
         When the user creates an information page as a child of the home page
         Then the rich text toolbar is pinned
 
-    Scenario: Rich text toolbar selection is being saved
+    Scenario: The CMS user unpins the rich text toolbar and the preference is saved
         Given a CMS user logs into the admin site
         And the user creates an information page as a child of the home page
         And the rich text toolbar is pinned
@@ -27,7 +27,7 @@ Feature: A general use information page
         When the user creates an information page as a child of the home page
         Then the minimap is displayed
 
-    Scenario: Minimap selection is being saved
+    Scenario: The CMS user hides the minimap and the preference is saved
         Given a CMS user logs into the admin site
         And the user creates an information page as a child of the home page
         And the minimap is displayed
