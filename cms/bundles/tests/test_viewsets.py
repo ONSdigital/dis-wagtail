@@ -12,6 +12,7 @@ from cms.bundles.enums import BundleStatus
 from cms.bundles.models import Bundle
 from cms.bundles.tests.factories import BundleFactory
 from cms.bundles.tests.utils import grant_all_bundle_permissions, make_bundle_viewer
+from cms.bundles.viewsets import bundle_chooser_viewset
 from cms.release_calendar.viewsets import FutureReleaseCalendarChooserWidget
 from cms.users.tests.factories import GroupFactory, UserFactory
 
@@ -236,6 +237,14 @@ class BundleViewSetTestCase(WagtailTestUtils, TestCase):
         self.assertContains(response, "Released", 2)  # status + status filter
         self.assertContains(response, "Approved", 5)  # status + status filter, approved at/by
 
+        self.assertContains(response, self.released_bundle.name)
+        self.assertContains(response, self.approved_bundle.name)
+
+    def test_index_view_search(self):
+        response = self.client.get(f"{self.bundle_index_url}?q=release")
+        self.assertContains(response, self.released_bundle.name)
+        self.assertNotContains(response, self.approved_bundle.name)
+
     def test_bundle_form_uses_release_calendar_chooser_widget(self):
         form_class = get_edit_handler(Bundle).get_form_class()
         form = form_class(instance=self.bundle)
@@ -254,3 +263,27 @@ class BundleViewSetTestCase(WagtailTestUtils, TestCase):
             self.bundle_add_url,
         )
         self.assertContains(response, "Choose Release Calendar page")
+
+    def test_chooser_viewset(self):
+        pending_bundle = BundleFactory(name="Pending")
+        response = self.client.get(bundle_chooser_viewset.widget_class().get_chooser_modal_url())
+
+        self.assertContains(response, pending_bundle.name)
+        self.assertNotContains(response, self.released_bundle.name)
+        self.assertNotContains(response, self.approved_bundle.name)
+
+    def test_chooser_search(self):
+        pending_bundle = BundleFactory(name="Pending")
+        chooser_results_url = reverse(bundle_chooser_viewset.get_url_name("choose_results"))
+
+        response = self.client.get(f"{chooser_results_url}?q=approve")
+
+        self.assertNotContains(response, pending_bundle.name)
+        self.assertNotContains(response, self.released_bundle.name)
+        self.assertNotContains(response, self.approved_bundle.name)
+
+        response = self.client.get(f"{chooser_results_url}?q=pending")
+
+        self.assertContains(response, pending_bundle.name)
+        self.assertNotContains(response, self.released_bundle.name)
+        self.assertNotContains(response, self.approved_bundle.name)
