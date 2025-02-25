@@ -158,12 +158,12 @@ def _update_topic(existing_topic: Topic, fetched_topic: Mapping[str, str]) -> No
 
     # If the topic parent has changed then move the node to match
     existing_parent_id: str | None = getattr(existing_topic.get_parent(), "id", None)
-    if existing_parent_id != fetched_topic.get("parent_id"):
-        parent_id = fetched_topic.get("parent_id")
-        new_parent = _get_topic(parent_id) if parent_id else None
-        if parent_id and not new_parent:
+    new_parent_id: str | None = fetched_topic.get("parent_id")
+    if existing_parent_id != new_parent_id:
+        new_parent = _get_topic(new_parent_id) if new_parent_id else None
+        if new_parent_id and not new_parent:
             raise RuntimeError(
-                f"Parent topic destination with id {parent_id} doesn't exist for moving topic {existing_topic.id}"
+                f"Parent topic destination with id {new_parent_id} doesn't exist for moving topic {existing_topic.id}"
             )
         logger.warning(
             "Moving topic %s from parent %s to new parent %s",
