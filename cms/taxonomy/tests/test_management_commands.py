@@ -40,7 +40,7 @@ class SyncTopicsTests(TestCase):
         self.mock_requests.get.return_value = mock_response
 
         # When
-        sync_topics.Command().handle()
+        call_command("sync_topics")
 
         # Then
         self.mock_requests.get.assert_called_once()
@@ -52,7 +52,7 @@ class SyncTopicsTests(TestCase):
         self.mock_requests.get.return_value = mock_response
 
         # When
-        sync_topics.Command().handle()
+        call_command("sync_topics")
 
         # Then
         self.mock_requests.get.assert_called_once()
@@ -102,7 +102,7 @@ class SyncTopicsTests(TestCase):
         self.mock_requests.get.return_value = mock_response
 
         # When
-        sync_topics.Command().handle()
+        call_command("sync_topics")
 
         # Then
         self.mock_requests.get.assert_called_once()
@@ -130,7 +130,7 @@ class SyncTopicsTests(TestCase):
         self.mock_requests.get.side_effect = [mock_root_response, mock_subtopic_response]
 
         # When
-        sync_topics.Command().handle()
+        call_command("sync_topics")
 
         # Then
         self.assertEqual(self.mock_requests.get.call_count, 2, "Expect 2 calls to retrieve topics")
@@ -158,7 +158,7 @@ class SyncTopicsTests(TestCase):
         self.mock_requests.get.side_effect = [mock_response]
 
         # When
-        sync_topics.Command().handle()
+        call_command("sync_topics")
 
         # Then
         self.assertEqual(Topic.objects.all().count(), 2, "Expect 2 topics to be saved")
@@ -184,7 +184,7 @@ class SyncTopicsTests(TestCase):
         self.mock_requests.get.side_effect = [mock_root_topic_response, mock_subtopic_response]
 
         # When
-        sync_topics.Command().handle()
+        call_command("sync_topics")
 
         # Then
         self.assertEqual(self.mock_requests.get.call_count, 2, "Expect 2 calls to retrieve topics")
@@ -207,7 +207,7 @@ class SyncTopicsTests(TestCase):
         self.mock_requests.get.return_value = mock_topic_response
 
         # When
-        sync_topics.Command().handle()
+        call_command("sync_topics")
 
         # Then
         self.assertEqual(self.mock_requests.get.call_count, 1, "Expect 1 calls to retrieve topics")
@@ -225,7 +225,7 @@ class SyncTopicsTests(TestCase):
         self.mock_requests.get.return_value = mock_topic_response
 
         # When
-        sync_topics.Command().handle()
+        call_command("sync_topics")
 
         # Then
         self.assertEqual(self.mock_requests.get.call_count, 1, "Expect 1 calls to retrieve topics")
@@ -243,7 +243,7 @@ class SyncTopicsTests(TestCase):
         self.mock_requests.get.return_value = mock_topic_response
 
         # When
-        sync_topics.Command().handle()
+        call_command("sync_topics")
 
         # Then
         self.assertEqual(self.mock_requests.get.call_count, 1, "Expect 1 calls to retrieve topics")
@@ -261,7 +261,7 @@ class SyncTopicsTests(TestCase):
         self.mock_requests.get.return_value = mock_empty_response
 
         # When
-        sync_topics.Command().handle()
+        call_command("sync_topics")
 
         # Then
         self.assertEqual(self.mock_requests.get.call_count, 1, "Expect 1 calls to retrieve topics")
@@ -280,7 +280,7 @@ class SyncTopicsTests(TestCase):
         self.mock_requests.get.return_value = mock_reinstated_response
 
         # When
-        sync_topics.Command().handle()
+        call_command("sync_topics")
 
         # Then
         self.assertEqual(self.mock_requests.get.call_count, 1, "Expect 1 calls to retrieve topics")
@@ -316,7 +316,7 @@ class SyncTopicsTests(TestCase):
         ]
 
         # When
-        sync_topics.Command().handle()
+        call_command("sync_topics")
 
         # Then
         self.assertEqual(self.mock_requests.get.call_count, 3, "Expect 2 calls to retrieve topics")
@@ -352,7 +352,7 @@ class SyncTopicsTests(TestCase):
         self.mock_requests.get.side_effect = [mock_root_response]
 
         # When
-        sync_topics.Command().handle()
+        call_command("sync_topics")
 
         # Then
         self.assertEqual(Topic.objects.all().count(), 2, "Expect 2 topics to be saved")
@@ -379,7 +379,7 @@ class SyncTopicsTests(TestCase):
         self.mock_requests.get.side_effect = [mock_root_response, mock_subtopic_response]
 
         # When
-        sync_topics.Command().handle()
+        call_command("sync_topics")
 
         # Then
         self.assertEqual(self.mock_requests.get.call_count, 2, "Expect 2 calls to retrieve topics")
