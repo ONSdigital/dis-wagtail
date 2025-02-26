@@ -4,6 +4,7 @@ from typing import Any
 from unittest.mock import Mock, patch
 
 import requests
+from django.core.management import call_command
 from django.test import TestCase
 from requests import HTTPError
 
@@ -25,11 +26,11 @@ class SyncTopicsTests(TestCase):
         self.mock_requests.get.return_value = mock_response
 
         # When
-        sync_topics.Command().handle()
+        call_command("sync_topics")
 
         # Then
         self.mock_requests.get.assert_called_once()
-        assert Topic.objects.all().count() == 0, "Expect no topics to be saved"
+        self.assertEqual(Topic.objects.all().count(), 0, "Expect no topics to be saved")
 
     def test_sync_empty_response(self):
         # Given
@@ -43,7 +44,7 @@ class SyncTopicsTests(TestCase):
 
         # Then
         self.mock_requests.get.assert_called_once()
-        assert Topic.objects.all().count() == 0, "Expect no topics to be saved"
+        self.assertEqual(Topic.objects.all().count(), 0, "Expect no topics to be saved")
 
     def template_test_sync_one_valid_topic(self, topic: Topic) -> None:
         # Given
