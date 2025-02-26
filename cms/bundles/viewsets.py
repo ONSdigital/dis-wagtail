@@ -266,10 +266,10 @@ class BundleChooseViewMixin:
             UserColumn("created_by"),
         ]
 
-    # def get_object_list(self) -> QuerySet[Bundle]:
-    #     """Overrides the default object list to only fetch the fields we're using."""
-    #     queryset: QuerySet[Bundle] = Bundle.objects.editable().select_related("created_by").only("name", "created_by")
-    #     return queryset
+    def get_object_list(self) -> QuerySet[Bundle]:
+        """Overrides the default object list to only fetch the fields we're using."""
+        queryset: QuerySet[Bundle] = Bundle.objects.editable().select_related("created_by").only("name", "created_by")
+        return queryset
 
 
 class BundleChooseView(BundleChooseViewMixin, ChooseView): ...
@@ -285,11 +285,6 @@ class BundleChooserViewSet(ChooserViewSet):
     icon = "boxes-stacked"
     choose_view_class = BundleChooseView
     choose_results_view_class = BundleChooseResultsView
-
-    def get_object_list(self) -> QuerySet[Bundle]:
-        """Only return editable bundles."""
-        queryset: QuerySet[Bundle] = self.model.objects.editable()
-        return queryset
 
 
 class BundleViewSet(ModelViewSet):
