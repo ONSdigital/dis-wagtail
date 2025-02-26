@@ -4,11 +4,14 @@ from django.conf import settings
 from django.utils.decorators import method_decorator
 from django.utils.functional import cached_property
 from django.utils.translation import gettext_lazy as _
+from wagtail.admin.panels import ObjectList, TabbedInterface
 from wagtail.models import Page
 from wagtail.query import PageQuerySet
+from wagtail.utils.decorators import cached_classmethod
 
 from cms.core.cache import get_default_cache_control_decorator
 from cms.core.query import order_by_pk_position
+from cms.taxonomy.forms import DeduplicateTopicsAdminForm
 
 from .mixins import ListingFieldsMixin, SocialFieldsMixin
 
@@ -36,7 +39,6 @@ else:
         BaseSiteSetting as WagtailBaseSiteSetting,
     )
 
-
 __all__ = ["BasePage", "BaseSiteSetting"]
 
 
@@ -44,6 +46,8 @@ __all__ = ["BasePage", "BaseSiteSetting"]
 @method_decorator(get_default_cache_control_decorator(), name="serve")
 class BasePage(ListingFieldsMixin, SocialFieldsMixin, Page):  # type: ignore[django-manager-missing]
     """Base page class with listing and social fields additions as well as cache decorators."""
+
+    base_form_class = DeduplicateTopicsAdminForm
 
     show_in_menus_default = True
     # Used to check for the existence of equation and ONS embed blocks.
@@ -61,6 +65,29 @@ class BasePage(ListingFieldsMixin, SocialFieldsMixin, Page):  # type: ignore[dja
         *ListingFieldsMixin.promote_panels,
         *SocialFieldsMixin.promote_panels,
     ]
+
+    @cached_classmethod
+    def get_edit_handler(cls) -> TabbedInterface:  # pylint: disable=no-self-argument
+        """Override the default edit handler property, enabling us to add editor tabs."""
+        if hasattr(cls, "edit_handler"):
+            edit_handler = cls.edit_handler
+        else:
+            # construct a TabbedInterface made up of content_panels, promote_panels
+            # and settings_panels, skipping any which are empty
+            tabs = []
+
+            if cls.content_panels:
+                tabs.append(ObjectList(cls.content_panels, heading="Content"))
+            if taxonomy_panels := getattr(cls, "taxonomy_panels", None):
+                tabs.append(ObjectList(taxonomy_panels, heading="Taxonomy"))
+            if cls.promote_panels:
+                tabs.append(ObjectList(cls.promote_panels, heading="Promote"))
+            if cls.settings_panels:
+                tabs.append(ObjectList(cls.settings_panels, heading="Settings"))
+
+            edit_handler = TabbedInterface(tabs, base_form_class=cls.base_form_class)
+
+        return edit_handler.bind_to_model(cls)
 
     @cached_property
     def related_pages(self) -> PageQuerySet:

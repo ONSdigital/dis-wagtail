@@ -11,13 +11,14 @@ from cms.core.blocks.related import RelatedContentBlock
 from cms.core.blocks.stream_blocks import CoreStoryBlock
 from cms.core.fields import StreamField
 from cms.core.models import BasePage
+from cms.taxonomy.mixins import GenericTaxonomyMixin
 
 if TYPE_CHECKING:
     from django.http import HttpRequest
     from wagtail.admin.panels import Panel
 
 
-class InformationPage(BasePage):  # type: ignore[django-manager-missing]
+class InformationPage(GenericTaxonomyMixin, BasePage):  # type: ignore[django-manager-missing]
     """A generic information page model."""
 
     template = "templates/pages/information_page.html"
