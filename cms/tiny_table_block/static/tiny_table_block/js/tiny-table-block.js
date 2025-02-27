@@ -1,14 +1,14 @@
 /* global tinymce */
-class TinyTableBlockDefinition extends window.wagtailStreamField.blocks.StructBlockDefinition {
+class TinyTableBlockDefinition extends window.wagtailStreamField.blocks.FieldBlockDefinition {
   render(placeholder, prefix, initialState, initialError) {
     const block = super.render(placeholder, prefix, initialState, initialError);
 
     tinymce.init({
-        selector: "#" + prefix + "-data",
+        selector: "#" + prefix,
         plugins: "table autoresize",
         menubar: "",
         toolbar: "undo redo | tablerowheader tablecolheader tablemergecells tablesplitcells | tableinsertcolbefore tableinsertcolafter tableinsertrowbefore tableinsertrowafter",
-        valid_elements: 'br,table[border|width|height|align|summary],tr[align|valign],td[align|valign|width|colspan|rowspan],th[align|valign|width|colspan|rowspan],a[href|target|rel],caption',
+        valid_elements: 'br,table[border|width|height|align|summary],tr[align|valign],td[align|valign|width|colspan|rowspan],th[align|valign|width|colspan|rowspan|scope],thead,tbody,a[href|target|rel]',
         table_toolbar: "",  // disable the floating toolbar
         table_advtab: false,
         table_appearance_options: false,
@@ -60,8 +60,8 @@ class TinyTableBlockDefinition extends window.wagtailStreamField.blocks.StructBl
               const activeNode = editor.selection.getNode();
               const isCell = activeNode.nodeName === "TD" || activeNode.nodeName === "TH";
               const isParentCell = activeNode.parentNode.nodeName === "TD" || activeNode.parentNode.nodeName === "TH";
-              if (!isCell && !isParentCell) {
-                  e.preventDefault();
+              if (!isCell && !isParentCell && e.keyCode !== 9) {
+                e.preventDefault();
               }
           });
         }
