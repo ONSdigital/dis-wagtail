@@ -122,6 +122,7 @@ class Bundle(index.Indexed, ClusterableModel, models.Model):  # type: ignore[dja
     search_fields: ClassVar[list[index.BaseField]] = [
         index.SearchField("name"),
         index.AutocompleteField("name"),
+        index.FilterField("status"),
     ]
 
     def __str__(self) -> str:
