@@ -1,4 +1,5 @@
 import json
+from typing import Any
 
 from django import forms
 from django.forms import Media
@@ -11,7 +12,7 @@ from cms.tiny_table_block.utils import html_table_to_dict
 
 
 class TinyTableFieldBlock(FieldBlock):
-    def __init__(self, required=True, help_text=None, **kwargs):
+    def __init__(self, required: bool = True, help_text: str | None = None, **kwargs: Any) -> None:
         """CharField's 'label' and 'initial' parameters are not exposed, as Block
         handles that functionality natively (via 'label' and 'default').
 
@@ -19,24 +20,24 @@ class TinyTableFieldBlock(FieldBlock):
         data needs to have arbitrary length.
         """
         kwargs["required"] = False
-        self.field_options = {"required": required, "help_text": help_text}
+        self.field_options: dict[str, Any] = {"required": required, "help_text": help_text}
 
         super().__init__(**kwargs)
 
     @cached_property
-    def field(self):
+    def field(self) -> forms.CharField:
         return forms.CharField(widget=forms.HiddenInput(), **self.field_options)
 
-    def value_from_form(self, value):
+    def value_from_form(self, value: str) -> dict:
         try:
-            return json.loads(value)
-        except json.decoder.JSONDecodeError:
+            return dict(json.loads(value))
+        except (json.decoder.JSONDecodeError, TypeError, ValueError):
             return html_table_to_dict(value)
 
-    def value_for_form(self, value):
+    def value_for_form(self, value: dict | None) -> str:
         return json.dumps(value)
 
-    def get_form_state(self, value):
+    def get_form_state(self, value: dict | None) -> str:
         # we return the original html for TinyMCE.
         return value.get("html", "") if value else ""
 

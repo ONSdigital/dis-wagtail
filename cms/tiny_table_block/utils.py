@@ -1,4 +1,9 @@
+from typing import TYPE_CHECKING
+
 from bs4 import BeautifulSoup
+
+if TYPE_CHECKING:
+    from bs4.element import PageElement
 
 
 def html_table_to_dict(content: str) -> dict:
@@ -9,10 +14,9 @@ def html_table_to_dict(content: str) -> dict:
     - rows - a list of row lists, each containing the cell info
     - html - the original html
     """
+    # TODO: run content through nh3
 
-    def get_cell_data(cell) -> dict[str, str | int]:
-        # TODO: run through nh3
-
+    def get_cell_data(cell: "PageElement") -> dict[str, str | int]:
         cell_data = {"value": cell.text.strip(), "type": cell.name}
 
         if (rowspan := int(cell.get("rowspan", 1))) > 1:
