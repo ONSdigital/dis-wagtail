@@ -16,7 +16,6 @@ from cms.core.blocks import (
     WarningPanelBlock,
 )
 from cms.core.blocks.section_blocks import SectionBlock
-from cms.tiny_table_block.blocks import TinyTableBlock
 
 if TYPE_CHECKING:
     from wagtail.blocks import StreamValue
@@ -54,7 +53,6 @@ class CoreStoryBlock(StreamBlock):
     related_links = RelatedLinksBlock()
     equation = MathBlock(group="DataVis", icon="decimal")
     ons_embed = ONSEmbedBlock(group="DataVis", label="ONS General Embed")
-    table = TinyTableBlock(group="DataVis")
 
     class Meta:
         block_counts: ClassVar[dict[str, dict]] = {"related_links": {"max_num": 1}}

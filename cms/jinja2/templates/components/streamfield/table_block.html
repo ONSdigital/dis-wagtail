@@ -1,2 +1,13 @@
-{% from "components/table/_macro.njk" import onsTable %}
-{{ onsTable(options) }}
+{% from "component_overrides/table/_macro.njk" import onsTable %}
+<figure id="table-{{ block_id }}">
+    {% if title %}<h3 class="heading-4">{{ title }}</h3>{% endif %}
+
+    {{ onsTable(options) }}
+
+    {%- if source or footnotes %}
+        <footer>
+            {% if source %}<p>{{ _("Source") }}: {{ source }}</p>{% endif %}
+            {% if footnotes %}{{ footnotes|richtext }}{% endif %}
+        </footer>
+    {% endif %}
+</figure>
