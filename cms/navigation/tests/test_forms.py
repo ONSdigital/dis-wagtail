@@ -4,9 +4,12 @@ from django.test import TestCase
 from wagtail.admin.panels import get_edit_handler
 from wagtail.test.utils.form_data import nested_form_data, streamfield
 
-from cms.navigation.models import MainMenu
+from cms.core.tests.factories import LinkBlockFactory
+from cms.navigation.models import FooterMenu, MainMenu
 from cms.navigation.tests.factories import (
+    FooterMenuFactory,
     HighlightsBlockFactory,
+    LinksColumnFactory,
     MainMenuFactory,
     ThemePageFactory,
     TopicPageFactory,
@@ -785,3 +788,48 @@ class TopicTests(BaseMainMenuTestCase):
             .message,
             "Duplicate URL. Please add a different one.",
         )
+
+
+class BaseFooterMenuTestCase(TestCase):
+    @classmethod
+    def setUpTestData(cls):
+        cls.footer_menu = FooterMenuFactory()
+        cls.form_class = get_edit_handler(FooterMenu).get_form_class()
+
+        cls.links_1 = LinkBlockFactory()
+        cls.links_2 = LinkBlockFactory()
+
+        cls.column_1 = LinksColumnFactory(links=cls.links_1)
+        cls.column_2 = LinksColumnFactory(links=cls.links_2)
+
+    def raw_form_data(self, columns_data=None) -> dict:
+        columns_data = columns_data or []
+
+        return {"columns": streamfield(columns_data)}
+
+
+class FooterMenuTests(BaseFooterMenuTestCase):
+    def test_footer_menu_no_duplicate_page(self):
+        """Checks that different external URLs in different columns do not trigger any validation errors."""
+        print("self.raw_data: ", self.raw_form_data)
+
+        # creates 2 footer columns with different links
+        raw_data = self.raw_form_data(
+            columns_data=[
+                ("column", self.column_1),
+                ("column", self.column_2),
+            ]
+        )
+        print("Column 1 data:", self.column_1)
+        print("Column 2 data:", self.column_2)
+
+        print("raw_data", raw_data)
+        form = self.form_class(instance=self.footer_menu, data=nested_form_data(raw_data))
+        self.assertTrue(form.is_valid(), msg=form.errors.as_json())
+
+
+# Checks that the same external URLs used in the same column raises a duplicate error.
+
+# Check that different external URLs in the same column do not trigger any validation errors.
+
+# Checks that using the same external URLs in the different columns raises a duplicate error.

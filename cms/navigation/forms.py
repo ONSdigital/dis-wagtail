@@ -199,4 +199,5 @@ class FooterMenuAdminForm(WagtailAdminModelForm):
         block_errors = collect_block_errors(columns_value, validate_block_column)
         if block_errors:
             raise StreamBlockValidationError(block_errors=block_errors)
+        print(columns_value)
         return columns_value
