@@ -3,7 +3,22 @@ from typing import TYPE_CHECKING
 from bs4 import BeautifulSoup
 
 if TYPE_CHECKING:
-    from bs4.element import PageElement
+    from bs4.element import Tag
+
+
+def get_cell_data(cell: "Tag") -> dict[str, str | int]:
+    cell_data = {"value": cell.text.strip(), "type": cell.name}
+
+    if (rowspan := int(cell.get("rowspan", 1))) > 1:
+        cell_data["rowspan"] = rowspan
+    if (colspan := int(cell.get("colspan", 1))) > 1:
+        cell_data["colspan"] = colspan
+    if scope := cell.get("scope"):
+        cell_data["scope"] = scope
+    if align := cell.get("align"):
+        cell_data["align"] = align
+
+    return cell_data
 
 
 def html_table_to_dict(content: str) -> dict:
@@ -15,20 +30,6 @@ def html_table_to_dict(content: str) -> dict:
     - html - the original html
     """
     # TODO: run content through nh3
-
-    def get_cell_data(cell: "PageElement") -> dict[str, str | int]:
-        cell_data = {"value": cell.text.strip(), "type": cell.name}
-
-        if (rowspan := int(cell.get("rowspan", 1))) > 1:
-            cell_data["rowspan"] = rowspan
-        if (colspan := int(cell.get("colspan", 1))) > 1:
-            cell_data["colspan"] = colspan
-        if scope := cell.get("scope"):
-            cell_data["scope"] = scope
-        if align := cell.get("align"):
-            cell_data["align"] = align
-
-        return cell_data
 
     soup = BeautifulSoup(content, "html.parser")
 
@@ -43,7 +44,8 @@ def html_table_to_dict(content: str) -> dict:
     # Extract headers
     headers = []
     if thead := table.find("thead"):
-        headers.append([get_cell_data(header) for header in thead.find_all("th")])
+        for header_row in thead.find_all("tr"):
+            headers.append([get_cell_data(cell) for cell in header_row.find_all("th")])
 
         if tbody_rows := table.find("tbody"):
             table_rows = tbody_rows.find_all("tr")
