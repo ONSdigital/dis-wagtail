@@ -1,0 +1,27 @@
+{% from "components/accordion/_macro.njk" import onsAccordion %}
+
+<section id="{{ value.title|slugify() }}">
+
+    <h2 class="ons-u-fs-l">{{ value.title }}</h2>
+
+    {% set glossary_terms=[] %}
+
+    {% for glossary_term in value.content %}
+        {% do glossary_terms.append({
+        "title": glossary_term.title,
+        "content": glossary_term.definition|richtext
+        })
+        %}
+    {% endfor %}
+
+    {# fmt:on #}
+    {{
+    onsAccordion({
+    "id": "glossary-terms-accordion",
+    "itemsList": glossary_terms
+    })
+    }}
+    {# fmt:on#}
+
+</section>
+

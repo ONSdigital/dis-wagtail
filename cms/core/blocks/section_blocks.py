@@ -1,8 +1,9 @@
 from typing import TYPE_CHECKING, ClassVar
 
 from django.utils.text import slugify
-from wagtail.blocks import RichTextBlock, StreamBlock, StructBlock
+from wagtail.blocks import ListBlock, RichTextBlock, StreamBlock, StructBlock
 from wagtail.images.blocks import ImageChooserBlock
+from wagtail.snippets.blocks import SnippetChooserBlock
 from wagtailmath.blocks import MathBlock
 
 from cms.core.blocks import (
@@ -16,6 +17,7 @@ from cms.core.blocks import (
     VideoEmbedBlock,
     WarningPanelBlock,
 )
+from cms.core.models import GlossaryTerm
 
 if TYPE_CHECKING:
     from wagtail.blocks import StructValue
@@ -41,15 +43,25 @@ class SectionContentBlock(StreamBlock):
         block_counts: ClassVar[dict[str, dict]] = {"related_links": {"max_num": 1}}
 
 
-class SectionBlock(StructBlock):
+class BaseSectionStructBlock(StructBlock):
+    def to_table_of_contents_items(self, value: "StructValue") -> list[dict[str, str]]:
+        """Convert the value to the table of contents component macro format."""
+        return [{"url": "#" + slugify(value["title"]), "text": value["title"]}]
+
+
+class GlossarySectionBlock(BaseSectionStructBlock):
+    title = HeadingBlock(default="Definitions")
+    content = ListBlock(SnippetChooserBlock(GlossaryTerm))
+
+    class Meta:
+        template = "templates/components/streamfield/glossary_section_block.html"
+
+
+class SectionBlock(BaseSectionStructBlock):
     """The core section block definition with headers."""
 
     title = HeadingBlock()
     content = SectionContentBlock()
-
-    def to_table_of_contents_items(self, value: "StructValue") -> list[dict[str, str]]:
-        """Convert the value to the table of contents component macro format."""
-        return [{"url": "#" + slugify(value["title"]), "text": value["title"]}]
 
     class Meta:
         template = "templates/components/streamfield/section_block.html"

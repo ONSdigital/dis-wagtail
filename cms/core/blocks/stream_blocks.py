@@ -15,7 +15,7 @@ from cms.core.blocks import (
     VideoEmbedBlock,
     WarningPanelBlock,
 )
-from cms.core.blocks.section_blocks import SectionBlock
+from cms.core.blocks.section_blocks import GlossarySectionBlock, SectionBlock
 
 if TYPE_CHECKING:
     from wagtail.blocks import StreamValue
@@ -25,6 +25,7 @@ class SectionStoryBlock(StreamBlock):
     """The core section StreamField block definition."""
 
     section = SectionBlock()
+    glossary_section = GlossarySectionBlock()
 
     class Meta:
         template = "templates/components/streamfield/stream_block.html"
