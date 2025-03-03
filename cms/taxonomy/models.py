@@ -81,15 +81,6 @@ class Topic(index.Indexed, MP_Node):
         super().move(target_parent, pos=pos)
 
     def __str__(self) -> str:
-        return self.title_with_depth
-
-    # this is just a convenience function to make the titles appear with lines
-    # eg root | - first child
-    @property
-    def title_with_depth(self) -> str:
-        if depth := self.get_depth():
-            depth_marker: str = "— " * (depth - BASE_TOPIC_DEPTH)
-            return f"{depth_marker}{self.title}"
         return str(self.title)
 
     @property

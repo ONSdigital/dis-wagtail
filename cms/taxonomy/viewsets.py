@@ -15,7 +15,10 @@ class TopicChooseViewMixin:
 
     @property
     def columns(self) -> list[Column]:
-        return [*super().columns, Column("parent_topics", label=_("Parent Topics"), accessor="display_parent_topics")]
+        return [
+            *getattr(super(), "columns", []),
+            Column("parent_topics", label=_("Parent Topics"), accessor="display_parent_topics"),
+        ]
 
 
 class TopicChooseView(TopicChooseViewMixin, ChooseView): ...

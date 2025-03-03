@@ -34,6 +34,12 @@ class TestTopicChooserViewSet(TestCase, WagtailTestUtils):
         self.topic_b = Topic(id="topic-b", title="Topic B")
         self.topic_b.save_new_topic()
 
+        self.topic_c = Topic(id="topic-c", title="Topic C")
+        self.topic_c.save_new_topic(parent_topic=self.topic_b)
+
+        self.topic_d = Topic(id="topic-d", title="Topic D")
+        self.topic_d.save_new_topic(parent_topic=self.topic_c)
+
     def test_viewset_attributes(self):
         """Basic checks for the text attributes that define how the chooser UI gets labeled."""
         viewset = TopicChooserViewSet("topic_chooser")
@@ -53,6 +59,9 @@ class TestTopicChooserViewSet(TestCase, WagtailTestUtils):
 
         self.assertContains(response, "Topic A")
         self.assertContains(response, "Topic B")
+        self.assertContains(response, "Topic C")
+        self.assertContains(response, "Topic D")
+        self.assertContains(response, "Topic B \\u2192 Topic C")
 
 
 class TestExclusiveTopicChooserViewSet(TestCase, WagtailTestUtils):

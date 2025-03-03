@@ -47,31 +47,6 @@ class TopicModelTest(TestCase):
         self.assertEqual(child_topic.get_parent(), parent_topic)
         self.assertEqual(child_topic.depth, parent_topic.depth + 1)
 
-    def test_title_with_depth(self):
-        """The method `title_with_depth()` returns "— " repeated (depth - 2) times, then the title.
-        - Depth=2 → 0 repeats
-        - Depth=3 → 1 repeat
-        - Depth=4 → 2 repeats
-        etc.
-        """
-        # top_level
-        t1 = Topic(id="t1", title="Top Level")
-        t1.save_new_topic()
-        self.assertEqual(t1.get_depth(), 2)
-        self.assertEqual(t1.title_with_depth, "Top Level")  # no prefix
-
-        # child: depth=3
-        t2 = Topic(id="t2", title="Child")
-        t2.save_new_topic(parent_topic=t1)
-        self.assertEqual(t2.get_depth(), 3)
-        self.assertEqual(t2.title_with_depth, "— Child")  # 1 prefix
-
-        # grandchild: depth=4
-        t3 = Topic(id="t3", title="Grandchild")
-        t3.save_new_topic(parent_topic=t2)
-        self.assertEqual(t3.get_depth(), 4)
-        self.assertEqual(t3.title_with_depth, "— — Grandchild")
-
     def test_move_to_root(self):
         """If we call topic.move(None), it should move under the dummy root."""
         # Create a child under the dummy root
@@ -125,11 +100,11 @@ class TopicModelTest(TestCase):
         t1.refresh_from_db()
         self.assertTrue(t1.removed)
 
-    def test_str_method_returns_title_with_depth(self):
-        """Verify __str__() calls title_with_depth()."""
+    def test_str_method_returns_title(self):
+        """Verify __str__() returns the topic title."""
         t1 = Topic(id="t1", title="Some Topic")
         t1.save_new_topic()
-        self.assertEqual(str(t1), t1.title_with_depth)
+        self.assertEqual(str(t1), t1.title)
 
     def test_id_uniqueness(self):
         """'id' is primary key, so must be unique.
@@ -137,9 +112,19 @@ class TopicModelTest(TestCase):
         """
         t1 = Topic(id="unique-id", title="Unique Topic")
         t1.save_new_topic()
+        t2 = Topic(id="unique-id", title="Duplicate Topic")
         with self.assertRaises(IntegrityError):
-            t2 = Topic(id="unique-id", title="Duplicate Topic")
             t2.save_new_topic()
+
+    def test_display_parent_topics(self):
+        t1 = Topic(id="t1", title="Topic")
+        t1.save_new_topic()
+        t2 = Topic(id="t2", title="Subtopic")
+        t2.save_new_topic(parent_topic=t1)
+        t3 = Topic(id="t3", title="Second Subtopic")
+        t3.save_new_topic(parent_topic=t2)
+
+        self.assertEqual(t3.display_parent_topics, "Topic → Subtopic")
 
 
 class GenericPageToTaxonomyTopicModelTest(TestCase):
