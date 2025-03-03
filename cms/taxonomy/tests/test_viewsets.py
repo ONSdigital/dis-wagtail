@@ -57,6 +57,8 @@ class TestTopicChooserViewSet(TestCase, WagtailTestUtils):
 
         self.assertEqual(response.status_code, 200)
 
+        self.assertContains(response, "Title")
+        self.assertContains(response, "Parent Topics")
         self.assertContains(response, "Topic A")
         self.assertContains(response, "Topic B")
         self.assertContains(response, "Topic C")
