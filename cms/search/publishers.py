@@ -28,7 +28,9 @@ class KafkaPublisher(BasePublisher):
         self.topic_deleted = getattr(settings, "KAFKA_TOPIC_DELETED", "search-content-deleted")
 
         self.producer = KafkaProducer(
-            bootstrap_servers=[self.kafka_server], value_serializer=lambda v: json.dumps(v).encode("utf-8")
+            bootstrap_servers=[self.kafka_server],
+            api_version=(3, 5, 1),
+            value_serializer=lambda v: json.dumps(v).encode("utf-8"),
         )
 
     def publish_created_or_updated(self, page):
