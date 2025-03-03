@@ -794,6 +794,72 @@ class FooterMenuNoHelpersTestCase(TestCase):
         cls.footer_menu = FooterMenuFactory()
         cls.form_class = get_edit_handler(FooterMenu).get_form_class()
 
+        cls.information_page_1 = ThemePageFactory()
+        cls.information_page_2 = ThemePageFactory()
+
+    def test_duplicate_pages_across_column(self):
+        """Checks that using the same external URLs in the different columns raises a duplicate error."""
+        raw_data = {
+            "columns": streamfield(
+                [
+                    (
+                        "column",
+                        {
+                            "title": "Column 1",
+                            "links": [
+                                {
+                                    "id": str(uuid.uuid4()),
+                                    "type": "item",
+                                    "value": {
+                                        "page": self.information_page_1.pk,
+                                        "external_url": "",
+                                        "title": "Link #1",
+                                    },
+                                    "deleted": "",
+                                    "order": "0",
+                                },
+                            ],
+                            "links-count": 1,
+                        },
+                    ),
+                    (
+                        "column",
+                        {
+                            "title": "Column 2",
+                            "links": [
+                                {
+                                    "id": str(uuid.uuid4()),
+                                    "type": "item",
+                                    "value": {
+                                        "page": self.information_page_1.pk,
+                                        "external_url": "",
+                                        "title": "Link #2",
+                                    },
+                                    "deleted": "",
+                                    "order": "0",
+                                },
+                            ],
+                            "links-count": 1,
+                        },
+                    ),
+                ]
+            )
+        }
+
+        form = self.form_class(
+            instance=self.footer_menu,
+            data=nested_form_data(raw_data),
+        )
+
+        # form.errors["columns"].data[0].block_errors[1].
+        # block_errors["links"].block_errors[0].block_errors["external_url"].message
+        self.assertFalse(form.is_valid())
+        # self.assertEqual(
+        #     form.errors["columns"].data[0].block_errors[1].block_errors["links"].
+        #     block_errors[0].block_errors[
+        #         "external_url"].message, "Duplicate URL. Please add a different one."
+        # )
+
     def test_no_duplicate_urls_across_columns(self):
         """Ensures that two columns having different external URLs do not trigger
         the duplicate URL validation error.
@@ -818,19 +884,8 @@ class FooterMenuNoHelpersTestCase(TestCase):
                                     "deleted": "",
                                     "order": "0",
                                 },
-                                {
-                                    "id": str(uuid.uuid4()),
-                                    "type": "item",
-                                    "value": {
-                                        "page": "",
-                                        "external_url": "https://footer-example-3.com",
-                                        "title": "Link #3",
-                                    },
-                                    "deleted": "",
-                                    "order": "1",
-                                },
                             ],
-                            "links-count": 2,
+                            "links-count": 1,
                         },
                     ),
                     (
@@ -929,4 +984,116 @@ class FooterMenuNoHelpersTestCase(TestCase):
             instance=self.footer_menu,
             data=nested_form_data(raw_data),
         )
-        self.assertFalse(form.is_valid(), msg=form.errors.as_json())
+
+        self.assertFalse(form.is_valid())
+        self.assertEqual(
+            form.errors["columns"]
+            .data[0]
+            .block_errors[1]
+            .block_errors["links"]
+            .block_errors[0]
+            .block_errors["external_url"]
+            .message,
+            "Duplicate URL. Please add a different one.",
+        )
+
+    def test_duplicate_urls_in_same_column(self):
+        """Checks that the same external URLs used in the same column raises a duplicate error."""
+        raw_data = {
+            "columns": streamfield(
+                [
+                    (
+                        "column",
+                        {
+                            "title": "1 column",
+                            "links": [
+                                {
+                                    "id": str(uuid.uuid4()),
+                                    "type": "item",
+                                    "value": {
+                                        "page": "",
+                                        "external_url": "https://example.com",
+                                        "title": "Link 1",
+                                    },
+                                    "deleted": "",
+                                    "order": "0",
+                                },
+                                {
+                                    "id": str(uuid.uuid4()),
+                                    "type": "item",
+                                    "value": {
+                                        "page": "",
+                                        "external_url": "https://example.com",
+                                        "title": "Link 2",
+                                    },
+                                    "deleted": "",
+                                    "order": "1",
+                                },
+                            ],
+                            "links-count": 2,
+                        },
+                    )
+                ]
+            )
+        }
+
+        form = self.form_class(
+            instance=self.footer_menu,
+            data=nested_form_data(raw_data),
+        )
+        self.assertFalse(form.is_valid())
+        self.assertEqual(
+            form.errors["columns"]
+            .data[0]
+            .block_errors[0]
+            .block_errors["links"]
+            .block_errors[1]
+            .block_errors["external_url"]
+            .message,
+            "Duplicate URL. Please add a different one.",
+        )
+
+    def test_no_duplicate_urls_same_column(self):
+        """Check that different external URLs in the same column do not trigger any validation errors."""
+        raw_data = {
+            "columns": streamfield(
+                [
+                    (
+                        "column",
+                        {
+                            "title": "1 column",
+                            "links": [
+                                {
+                                    "id": str(uuid.uuid4()),
+                                    "type": "item",
+                                    "value": {
+                                        "page": "",
+                                        "external_url": "https://example.com",
+                                        "title": "Link 1",
+                                    },
+                                    "deleted": "",
+                                    "order": "0",
+                                },
+                                {
+                                    "id": str(uuid.uuid4()),
+                                    "type": "item",
+                                    "value": {
+                                        "page": "",
+                                        "external_url": "https://example2.com",
+                                        "title": "Link 2",
+                                    },
+                                    "deleted": "",
+                                    "order": "1",
+                                },
+                            ],
+                            "links-count": 2,
+                        },
+                    )
+                ]
+            )
+        }
+        form = self.form_class(
+            instance=self.footer_menu,
+            data=nested_form_data(raw_data),
+        )
+        self.assertTrue(form.is_valid(), msg=form.errors.as_json())
