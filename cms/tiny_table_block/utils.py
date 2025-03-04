@@ -13,8 +13,8 @@ def sanitise_html(content: str) -> str:
         tags={"table", "tr", "th", "td", "thead", "tbody", "a", "caption"},
         attributes={
             "*": {"class"},
-            "th": {"colspan", "rowspan", "align"},
-            "td": {"class", "colspan", "rowspan", "align"},
+            "th": {"colspan", "rowspan", "align", "scope"},
+            "td": {"colspan", "rowspan", "align", "scope"},
             "a": {"href", "rel"},
         },
         link_rel=None,
