@@ -41,6 +41,20 @@ class MethodologyPageTestCase(WagtailTestUtils, TestCase):
         MethodologyRelatedPageFactory(parent=self.page)
         self.assertIn({"url": "#related-publications", "text": "Related publications"}, self.page.table_of_contents)
 
+    def test_table_of_contents_shows_the_glossary_section(self):
+        self.page.content = [
+            {
+                "type": "glossary_section",
+                "value": {
+                    "id": 1,
+                    "title": "Definitions",
+                    "content": [{"id": 1, "title": "rich_text", "description": "text"}],
+                },
+            }
+        ]
+
+        self.assertIn("definitions", self.page.table_of_contents)
+
     def test_cite_this_page_is_not_shown_when_unticked(self):
         """Test for the cite this page block not present in the template."""
         latest_date_formatted = date_format(self.page.last_revised_date, settings.DATE_FORMAT)

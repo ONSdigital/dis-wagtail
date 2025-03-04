@@ -121,6 +121,13 @@ class StatisticalArticlePageTestCase(WagtailTestUtils, TestCase):
         toc = self.page.table_of_contents
         self.assertIn({"url": "#contact-details", "text": "Contact details"}, toc)
 
+    def test_table_of_contents_with_glossary_section(self):
+        self.page.content = {
+            "type": "glossary_section",
+            "value": {"title": "Definitions", "content": [{"title": "Term", "definition": "Definition"}]},
+        }
+        self.assertIn({"url": "#definitions", "text": "Definitions"}, self.page.table_of_contents)
+
     def test_is_latest(self):
         """Test is_latest returns True for most recent page."""
         self.assertTrue(self.page.is_latest)

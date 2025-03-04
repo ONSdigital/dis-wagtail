@@ -2,11 +2,19 @@ import factory
 import wagtail_factories
 from wagtail import blocks
 from wagtail.rich_text import RichText
-from wagtail_factories.blocks import BlockFactory, PageChooserBlockFactory, StructBlockFactory
+from wagtail_factories.blocks import (
+    BlockFactory,
+    ListBlockFactory,
+    PageChooserBlockFactory,
+    StreamBlockFactory,
+    StructBlockFactory,
+)
 
 from cms.core.blocks.related import LinkBlock, RelatedContentBlock
-from cms.core.blocks.section_blocks import SectionBlock, SectionContentBlock
+from cms.core.blocks.section_blocks import GlossarySectionBlock, SectionBlock, SectionContentBlock
+from cms.core.blocks.stream_blocks import SectionStoryBlock
 from cms.core.models import ContactDetails
+from cms.core.models.snippets import GlossaryTerm
 
 
 class DateTimeBlockFactory(BlockFactory):
@@ -55,6 +63,26 @@ class ContactDetailsFactory(factory.django.DjangoModelFactory):
     email = factory.Faker("email")
 
 
+class GlossaryTermFactory(factory.django.DjangoModelFactory):
+    """Factory for GlossaryTerm."""
+
+    class Meta:
+        model = GlossaryTerm
+
+    title = factory.Faker("text", max_nb_chars=20)
+    definition = factory.Faker("text", max_nb_chars=100)
+
+
+class GlossarySectionBlockFactory(StructBlockFactory):
+    """Factory for Glossary StructBlock."""
+
+    class Meta:
+        model = GlossarySectionBlock
+
+    title = "Glossary"
+    content = ListBlockFactory(GlossaryTermFactory)
+
+
 class SectionContentBlockFactory(StructBlockFactory):
     """Factory for Section content block."""
 
@@ -67,6 +95,17 @@ class SectionContentBlockFactory(StructBlockFactory):
             "rich_text": factory.SubFactory(RichTextBlockFactory),
         }
     )
+
+
+# TODO: remove this
+class SectionStoryBlockFactory(StreamBlockFactory):
+    """Factory for Section Story Block."""
+
+    class Meta:
+        model = SectionStoryBlock
+
+    section = factory.SubFactory(SectionContentBlockFactory)
+    glossary_section = factory.SubFactory(GlossarySectionBlockFactory)
 
 
 class SectionBlockFactory(StructBlockFactory):

@@ -5,7 +5,11 @@ import factory
 import wagtail_factories
 from django.utils import timezone
 
-from cms.core.tests.factories import ContactDetailsFactory, SectionBlockFactory
+from cms.core.tests.factories import (
+    ContactDetailsFactory,
+    GlossarySectionBlockFactory,
+    SectionBlockFactory,
+)
 from cms.methodology.models import MethodologyPage, MethodologyRelatedPage
 from cms.topics.tests.factories import TopicPageFactory
 
@@ -26,7 +30,12 @@ class MethodologyPageFactory(wagtail_factories.PageFactory):
     last_revised_date = factory.LazyAttribute(lambda o: o.publication_date + timedelta(days=1))
     contact_details = factory.SubFactory(ContactDetailsFactory)
 
-    content = wagtail_factories.StreamFieldFactory({"section": factory.SubFactory(SectionBlockFactory)})
+    content = wagtail_factories.StreamFieldFactory(
+        {
+            "section": factory.SubFactory(SectionBlockFactory),
+            "glossary_section": factory.SubFactory(GlossarySectionBlockFactory),
+        },
+    )
 
 
 class MethodologyRelatedPageFactory(factory.django.DjangoModelFactory):
