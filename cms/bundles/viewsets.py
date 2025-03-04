@@ -11,7 +11,7 @@ from django.utils.html import format_html, format_html_join
 from django.utils.translation import gettext as _
 from wagtail.admin.ui.tables import Column, DateColumn, UpdatedAtColumn, UserColumn
 from wagtail.admin.views.generic import CreateView, EditView, IndexView, InspectView
-from wagtail.admin.views.generic.chooser import ChooseView
+from wagtail.admin.views.generic.chooser import ChooseResultsView, ChooseView
 from wagtail.admin.viewsets.chooser import ChooserViewSet
 from wagtail.admin.viewsets.model import ModelViewSet
 from wagtail.log_actions import log
@@ -222,9 +222,9 @@ class BundleIndexView(IndexView):
 
     model = Bundle
 
-    def get_queryset(self) -> QuerySet[Bundle]:
+    def get_base_queryset(self) -> QuerySet[Bundle]:
         """Modifies the Bundle queryset with the related created_by ForeignKey selected to avoid N+1 queries."""
-        queryset: QuerySet[Bundle] = super().get_queryset()
+        queryset: QuerySet[Bundle] = super().get_base_queryset()
 
         return queryset.select_related("created_by")
 
@@ -254,24 +254,28 @@ class BundleIndexView(IndexView):
         ]
 
 
-class BundleChooseView(ChooseView):
-    """The Bundle choose view class. Used in choosers."""
-
+class BundleChooseViewMixin:
     icon = "boxes-stacked"
 
     @property
     def columns(self) -> list[Column]:
         """Defines the list of desired columns in the chooser."""
         return [
-            *super().columns,
+            *super().columns,  # type: ignore[misc]
             Column("scheduled_publication_date"),
             UserColumn("created_by"),
         ]
 
     def get_object_list(self) -> QuerySet[Bundle]:
         """Overrides the default object list to only fetch the fields we're using."""
-        queryset: QuerySet[Bundle] = Bundle.objects.select_related("created_by").only("name", "created_by")
+        queryset: QuerySet[Bundle] = Bundle.objects.editable().select_related("created_by").only("name", "created_by")
         return queryset
+
+
+class BundleChooseView(BundleChooseViewMixin, ChooseView): ...
+
+
+class BundleChooseResultsView(BundleChooseViewMixin, ChooseResultsView): ...
 
 
 class BundleChooserViewSet(ChooserViewSet):
@@ -280,11 +284,7 @@ class BundleChooserViewSet(ChooserViewSet):
     model = Bundle
     icon = "boxes-stacked"
     choose_view_class = BundleChooseView
-
-    def get_object_list(self) -> QuerySet[Bundle]:
-        """Only return editable bundles."""
-        queryset: QuerySet[Bundle] = self.model.objects.editable()
-        return queryset
+    choose_results_view_class = BundleChooseResultsView
 
 
 class BundleViewSet(ModelViewSet):

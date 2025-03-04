@@ -8,6 +8,7 @@ services:
       target: dev
     environment:
       DJANGO_SETTINGS_MODULE: cms.settings.functional_test
+      REDIS_URL: redis://redis
     ports: !override
       - 18000:8000 # runserver
     volumes:

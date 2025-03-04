@@ -71,5 +71,7 @@ TASKS = {
 # Silence Slack notifications by default
 SLACK_NOTIFICATIONS_WEBHOOK_URL = None
 
+ONS_API_BASE_URL = "dummy_url"
+
  #  Override size of the pagination used on the previous_release page.
 PREVIOUS_RELEASES_PER_PAGE = 3

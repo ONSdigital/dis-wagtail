@@ -1,7 +1,9 @@
 import copy
+import os
 
 from .base import *  # noqa: F403  # pylint: disable=wildcard-import,unused-wildcard-import
 
+env = os.environ.copy()
 
 # Debugging to be enabled locally only
 DEBUG = True
@@ -23,6 +25,9 @@ EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
 
 # Disable password validators when developing locally.
 AUTH_PASSWORD_VALIDATORS = []
+
+ONS_API_BASE_URL = env.get("ONS_API_BASE_URL", "https://api.beta.ons.gov.uk/v1")
+
 
 # Enable Wagtail's style guide in Wagtail's settings menu.
 # http://docs.wagtail.io/en/stable/contributing/styleguide.html
@@ -53,7 +58,7 @@ DATABASES = {
 DATABASES["read_replica"] = copy.deepcopy(DATABASES["default"])
 
 # Redis
-REDIS_URL = env.get("REDIS_URL", "redis://localhost:6379")  # noqa: F405
+REDIS_URL = env.get("REDIS_URL", "redis://localhost:6379")
 CACHES["default"] = {  # noqa: F405
     "BACKEND": "django_redis.cache.RedisCache",
     "LOCATION": REDIS_URL,
@@ -91,6 +96,7 @@ MIGRATION_LINTER_OPTIONS = {
         "0002_customimage_description",
         "0003_customimage__privacy_and_more",
         "0003_customdocument__privacy_and_more",
+        "0002_articleseriespage_listing_image_and_more",  # Ignoring NOT NULL constraint on columns
     ],
 }
 
