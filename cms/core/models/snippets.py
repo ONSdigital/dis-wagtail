@@ -1,10 +1,12 @@
 from typing import TYPE_CHECKING, Any, ClassVar
 
 from django.conf import settings
+from django.contrib.contenttypes.fields import GenericRelation
 from django.db import models
 from django.db.models.functions import Lower
 from django.utils.translation import gettext_lazy as _
 from wagtail.fields import RichTextField
+from wagtail.models import RevisionMixin, TranslatableMixin
 from wagtail.search import index
 
 if TYPE_CHECKING:
@@ -57,7 +59,7 @@ class ContactDetails(index.Indexed, models.Model):
         return str(self.name)
 
 
-class GlossaryTerm(index.Indexed, models.Model):
+class GlossaryTerm(TranslatableMixin, RevisionMixin, index.Indexed, models.Model):
     """A model for glossary terms."""
 
     title = models.CharField(max_length=255)
@@ -73,12 +75,13 @@ class GlossaryTerm(index.Indexed, models.Model):
     # See https://docs.wagtail.org/en/stable/advanced_topics/reference_index.html
     updated_by.wagtail_reference_index_ignore = True  # type: ignore[attr-defined]
 
+    revisions = GenericRelation("wagtailcore.Revision", related_query_name="glossary_term")
+
     panels: ClassVar[list["Panel"]] = [
         "title",
         "definition",
     ]
 
-    # TODO: do we index the description too?
     search_fields: ClassVar[list[index.BaseField]] = [
         *index.Indexed.search_fields,
         index.SearchField("title"),
@@ -88,15 +91,17 @@ class GlossaryTerm(index.Indexed, models.Model):
     ]
 
     class Meta:
-        verbose_name = _("Glossary terms")
-        verbose_name_plural = _("Glossary terms")
-        # ordering = ["title"]
+        verbose_name = _("glossary term")
+        verbose_name_plural = _("glossary terms")
 
         constraints: ClassVar[list[models.BaseConstraint]] = [
             models.UniqueConstraint(
                 Lower("title"),
                 name="core_glossary_term_title_unique",
                 violation_error_message=_("A glossary term with this title already exists."),
+            ),
+            models.UniqueConstraint(
+                fields=("translation_key", "locale"), name="unique_translation_key_locale_core_glossaryterm"
             ),
         ]
 
@@ -107,6 +112,3 @@ class GlossaryTerm(index.Indexed, models.Model):
         if self.title:
             self.title = self.title.strip()
         super().save(*args, **kwargs)
-
-    # def get_preview_template(self, request: "HttpRequest", mode_name: str) -> str:
-    #     return "templates/components/navigation/main_menu_preview.html"
