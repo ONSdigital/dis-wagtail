@@ -129,7 +129,7 @@ class ONSTableBlock(TinyTableBlock):
             "title": value.get("title"),
             "options": {
                 "caption": value.get("caption"),
-                "ths": data.get("headers", []),
+                "headers": data.get("headers", []),
                 "trs": [{"tds": row} for row in data.get("rows", [])],
             },
             "source": value.get("source"),

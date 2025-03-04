@@ -9,6 +9,7 @@ from cms.core.blocks import (
     DocumentsBlock,
     HeadingBlock,
     ONSEmbedBlock,
+    ONSTableBlock,
     RelatedContentBlock,
     RelatedLinksBlock,
 )
@@ -245,7 +246,7 @@ class CoreBlocksTestCase(TestCase):
             block.to_table_of_contents_items(block.to_python([])), [{"url": "#related-links", "text": "Related links"}]
         )
 
-    def test_basictableblock_get_context(self):
+    def test_basictableblock__get_context(self):
         """Tests the BasicTableBlock context has DS-compatible options."""
         block = BasicTableBlock()
         value = {
@@ -281,3 +282,102 @@ class CoreBlocksTestCase(TestCase):
                 "trs": [{"tds": [{"value": "one"}, {"value": "two"}]}],
             },
         )
+
+
+class ONSTableBlockTestCase(TestCase):
+    @classmethod
+    def setUpTestData(cls):
+        cls.simple_table_data = {
+            "headers": [[{"value": "header cell", "type": "th"}]],
+            "rows": [[{"value": "row cell", "type": "td"}]],
+        }
+        cls.full_data = {
+            "title": "The table",
+            "caption": "The caption",
+            "source": "https://ons.gov.uk",
+            "footnotes": "footnotes",
+            "data": cls.simple_table_data,
+        }
+        cls.data_with_empty_table = {
+            "title": "The table",
+            "caption": "The caption",
+            "source": "https://ons.gov.uk",
+            "footnotes": "footnotes",
+            "data": {
+                "headers": [],
+                "rows": [],
+            },
+        }
+
+        cls.block = ONSTableBlock()
+
+    def test_get_context(self):
+        context = self.block.get_context(self.full_data)
+        self.assertDictEqual(
+            context["options"],
+            {
+                "caption": "The caption",
+                "headers": [[{"value": "header cell", "type": "th"}]],
+                "trs": [{"tds": [{"value": "row cell", "type": "td"}]}],
+            },
+        )
+        self.assertEqual(context["title"], "The table")
+        self.assertEqual(context["source"], "https://ons.gov.uk")
+        self.assertEqual(context["footnotes"], "footnotes")
+
+    def test_get_context__with_empty_table(self):
+        context = self.block.get_context(self.data_with_empty_table)
+        self.assertNotIn("title", context)
+        self.assertNotIn("caption", context)
+        self.assertNotIn("options", context)
+        self.assertNotIn("source", context)
+        self.assertNotIn("footnotes", context)
+
+    def test_render_block__full(self):
+        rendered = self.block.render(self.full_data)
+        self.assertIn(self.full_data["title"], rendered)
+        self.assertIn(self.full_data["caption"], rendered)
+        self.assertIn("Footnotes", rendered)
+        self.assertIn(self.full_data["footnotes"], rendered)
+        self.assertIn("<table ", rendered)
+        self.assertIn("header cell", rendered)
+        self.assertIn("row cell", rendered)
+
+    def test_render_block__no_table(self):
+        rendered = self.block.render(self.data_with_empty_table)
+        self.assertNotIn(self.full_data["title"], rendered)
+        self.assertNotIn(self.full_data["caption"], rendered)
+        self.assertNotIn("Footnotes", rendered)
+        self.assertNotIn("<table ", rendered)
+        self.assertNotIn("header cell", rendered)
+        self.assertNotIn("row cell", rendered)
+
+    def test_render_block__optional_elements(self):
+        base_value = {"data": self.simple_table_data}
+
+        data = {
+            "title": "The table",
+            "caption": "The caption",
+            "source": "https://ons.gov.uk",
+            "footnotes": "footnotes",
+        }
+
+        cases = [
+            # field with value, fields not rendered
+            ("title", ["caption", "source", "footnotes"]),
+            ("caption", ["title", "source", "footnotes"]),
+            ("source", ["title", "caption", "footnotes"]),
+            ("footnotes", ["title", "caption", "source"]),
+        ]
+
+        for field_name, not_present in cases:
+            with self.subTest(field_name=field_name):
+                field_value = data[field_name]
+                rendered = self.block.render({**base_value, **{field_name: field_value}})
+
+                self.assertIn("header cell", rendered)
+                self.assertIn("row cell", rendered)
+                self.assertIn(field_value, rendered)
+
+                for field in not_present:
+                    self.assertNotIn(data[field], rendered)
