@@ -121,6 +121,10 @@ class ONSTableBlock(TinyTableBlock):
         context: dict = super().get_context(value, parent_context=parent_context)
 
         data = value.get("data", {})
+
+        if not data["rows"] and not data["headers"]:
+            return context
+
         return {
             "title": value.get("title"),
             "options": {

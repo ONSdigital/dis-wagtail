@@ -21,6 +21,14 @@ def get_cell_data(cell: "Tag") -> dict[str, str | int]:
     return cell_data
 
 
+def check_all_cells_are_empty(rows: list[list[dict[str, str | int]]]) -> bool:
+    for row in rows:
+        for cell in row:
+            if cell["value"]:
+                return False
+    return True
+
+
 def html_table_to_dict(content: str) -> dict:
     """Take an HTML table and convert it to a dictionary.
 
@@ -60,6 +68,14 @@ def html_table_to_dict(content: str) -> dict:
     rows = []
     for row in table_rows:
         rows.append([get_cell_data(cell) for cell in row.find_all(["td", "th"])])
+
+    if check_all_cells_are_empty(headers):
+        headers = []
+
+    if check_all_cells_are_empty(rows):
+        # given we start with an empty 2x2 table, if that is submitted, then we have something like
+        # [[{'type': 'td', 'value': ''}, {'type': 'td', 'value': ''}]], but we want []
+        rows = []
 
     data = {
         "headers": headers,
