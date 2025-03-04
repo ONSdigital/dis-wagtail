@@ -97,7 +97,6 @@ class SectionContentBlockFactory(StructBlockFactory):
     )
 
 
-# TODO: remove this
 class SectionStoryBlockFactory(StreamBlockFactory):
     """Factory for Section Story Block."""
 

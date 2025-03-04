@@ -8,8 +8,7 @@ from django.utils import timezone
 from cms.articles.models import ArticleSeriesPage, StatisticalArticlePage
 from cms.core.tests.factories import (
     ContactDetailsFactory,
-    GlossarySectionBlockFactory,
-    SectionBlockFactory,
+    SectionStoryBlockFactory,
 )
 from cms.topics.tests.factories import TopicPageFactory
 
@@ -52,12 +51,7 @@ class StatisticalArticlePageFactory(wagtail_factories.PageFactory):
     headline_figures = wagtail_factories.StreamFieldFactory(
         {"headline_figure": factory.SubFactory(HeadlineFigureBlockFactory)}
     )
-    content = (
-        {
-            "section": factory.SubFactory(SectionBlockFactory),
-            "glossary_section": factory.SubFactory(GlossarySectionBlockFactory),
-        },
-    )
+    content = wagtail_factories.StreamFieldFactory(SectionStoryBlockFactory)
 
     is_accredited = False
     is_census = False

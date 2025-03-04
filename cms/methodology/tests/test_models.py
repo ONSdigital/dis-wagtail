@@ -41,7 +41,7 @@ class MethodologyPageTestCase(WagtailTestUtils, TestCase):
         MethodologyRelatedPageFactory(parent=self.page)
         self.assertIn({"url": "#related-publications", "text": "Related publications"}, self.page.table_of_contents)
 
-    def test_table_of_contents_shows_the_glossary_section(self):
+    def test_table_of_contents_with_glossary_section(self):
         self.page.content = [
             {
                 "type": "glossary_section",
