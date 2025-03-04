@@ -2,8 +2,6 @@ import copy
 
 from .base import *  # noqa: F403  # pylint: disable=wildcard-import,unused-wildcard-import
 
-# this is the default value for the number of items on a previous release page
-PREVIOUS_RELEASES_PER_PAGE = 3
 
 # Debugging to be enabled locally only
 DEBUG = True
@@ -95,3 +93,6 @@ MIGRATION_LINTER_OPTIONS = {
         "0003_customdocument__privacy_and_more",
     ],
 }
+
+ #  Override size of the pagination used on the previous_release page.
+PREVIOUS_RELEASES_PER_PAGE = 3

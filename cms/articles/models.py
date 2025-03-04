@@ -19,20 +19,14 @@ from cms.core.blocks import HeadlineFiguresBlock
 from cms.core.blocks.stream_blocks import SectionStoryBlock
 from cms.core.fields import StreamField
 from cms.core.models import BasePage
-from cms.settings.base import env
+from django.conf import settings
+# from cms.settings.local import env, PREVIOUS_RELEASES_PER_PAGE
 
 if TYPE_CHECKING:
     from django.http import HttpRequest
     from django.http.response import HttpResponseRedirect
     from django.template.response import TemplateResponse
     from wagtail.admin.panels import Panel
-
-
-def get_pagination_url_list(num_pages: int) -> list:
-    output = []
-    for num in range(1, num_pages + 1):
-        output.append({ "url":  "?page="+str(num) })
-    return output
 
 
 class ArticleSeriesPage(RoutablePageMixin, Page):
@@ -77,13 +71,12 @@ class ArticleSeriesPage(RoutablePageMixin, Page):
 
     @path("previous-releases/")
     def previous_releases(self, request: "HttpRequest") -> "TemplateResponse":
-        PREVIOUS_RELEASES_PER_PAGE = env.get("PREVIOUS_RELEASES_PER_PAGE", 3)
         children = StatisticalArticlePage.objects.live().child_of(self).order_by("-release_date")
-        paginator = Paginator(children, per_page=PREVIOUS_RELEASES_PER_PAGE)
+        paginator = Paginator(children, per_page= settings.PREVIOUS_RELEASES_PER_PAGE)
 
         try:
             pages = paginator.page(int(request.GET.get("page", 1)))
-            ons_pagination_url_list = get_pagination_url_list(paginator.num_pages)
+            ons_pagination_url_list = [{"url": "?page=" + str(n + 1)} for n in range(paginator.num_pages)]
         except (EmptyPage, ValueError) as e:
             raise Http404 from e
         else:
@@ -220,6 +213,8 @@ class StatisticalArticlePage(BundledPageMixin, BasePage):  # type: ignore[django
     def get_admin_display_title(self) -> str:
         """Changes the admin display title to include the parent title."""
         return f"{self.get_parent().title}: {self.draft_title or self.title}"
+
+
 
     @property
     def display_title(self) -> str:

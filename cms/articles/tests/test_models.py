@@ -233,11 +233,11 @@ class StatisticalArticlePageRenderTestCase(WagtailTestUtils, TestCase):
         response = self.client.get(self.basic_page_url)
         self.assertNotContains(response, expected)
 
-    def test_breadcrumb_doesnt_containt_series_url(self):
+    def test_breadcrumb_does_contain_series_url(self):
         response = self.client.get(self.basic_page_url)
         # confirm that current breadcrumb is there
         article_series = self.basic_page.get_parent()
-        self.assertNotContains(
+        self.assertContains(
             response,
             f'<a class="ons-breadcrumbs__link" href="{article_series.url}">{article_series.title}</a>',
             html=True,
