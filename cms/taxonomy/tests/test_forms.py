@@ -23,10 +23,10 @@ class TestInformationPageIntegration(TestCase, WagtailTestUtils):
         self.root_page = Page.get_root_nodes().first()
 
         self.topic1 = Topic(id="t1", title="Health and life expectancies")
-        self.topic1.save_new_topic()
+        Topic.create(self.topic1)
 
         self.topic2 = Topic(id="t2", title="Finance and economy")
-        self.topic2.save_new_topic()
+        Topic.create(self.topic2)
 
         content_type = ContentType.objects.get_for_model(InformationPage)
         self.app_label = content_type.app_label  # e.g. "standard_pages"

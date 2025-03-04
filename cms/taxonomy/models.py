@@ -53,18 +53,21 @@ class Topic(index.Indexed, MP_Node):
         index.AutocompleteField("title"),
     ]
 
-    def save_new_topic(self, parent_topic: Optional["Topic"] = None) -> None:
+    @classmethod
+    def create(cls, topic: "Topic", parent_topic: Optional["Topic"] = None) -> None:
         """Save a new topic either underneath the specific parent if passed, otherwise underneath our default root level
         dummy topic.
 
-        Raises an IntegrityError if a topic with the given ID already exists.
+        Raises an IntegrityError if a topic with the same ID already exists.
         """
-        if Topic.objects.filter(id=self.id).exists():
-            raise IntegrityError(f"Topic with id {self.id} already exists")
+        if Topic.objects.filter(id=topic.id).exists():
+            raise IntegrityError(f"Topic with id {topic.id} already exists")
         if not parent_topic:
             parent_topic = Topic.objects.root_topic()
-        parent_topic.add_child(instance=self)
-        super().save()
+        parent_topic.add_child(instance=topic)
+
+        # NB: we have to save here to force the parent topic object to update, otherwise stale in memory values can
+        # cause errors in subsequent actions
         parent_topic.save()
 
     def get_parent(self, *args: Any, **kwargs: Any) -> Optional["Topic"]:
