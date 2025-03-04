@@ -1,0 +1,24 @@
+{% extends "templates/base_page.html" %}
+
+{% from "components/accordion/_macro.njk" import onsAccordion %}
+
+{% block main %}
+
+    {# fmt:off #}
+    {{
+        onsAccordion({
+            "id": "glossary-terms-accordion",
+            "itemsList": [
+                {
+                    "title": object.title,
+                    "content": object.definition|richtext
+                }
+            ]
+        })
+    }}
+    {# fmt:on#}
+
+{% endblock %}
+
+
+

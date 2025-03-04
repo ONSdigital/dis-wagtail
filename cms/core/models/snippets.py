@@ -6,10 +6,11 @@ from django.db import models
 from django.db.models.functions import Lower
 from django.utils.translation import gettext_lazy as _
 from wagtail.fields import RichTextField
-from wagtail.models import RevisionMixin, TranslatableMixin
+from wagtail.models import PreviewableMixin, RevisionMixin, TranslatableMixin
 from wagtail.search import index
 
 if TYPE_CHECKING:
+    from django.http import HttpRequest
     from wagtail.admin.panels import Panel
 
 
@@ -59,7 +60,7 @@ class ContactDetails(index.Indexed, models.Model):
         return str(self.name)
 
 
-class GlossaryTerm(TranslatableMixin, RevisionMixin, index.Indexed, models.Model):
+class GlossaryTerm(TranslatableMixin, PreviewableMixin, RevisionMixin, index.Indexed, models.Model):
     """A model for glossary terms."""
 
     title = models.CharField(max_length=255)
@@ -104,6 +105,9 @@ class GlossaryTerm(TranslatableMixin, RevisionMixin, index.Indexed, models.Model
                 fields=("translation_key", "locale"), name="unique_translation_key_locale_core_glossaryterm"
             ),
         ]
+
+    def get_preview_template(self, request: "HttpRequest", mode_name: str) -> str:
+        return "templates/components/glossary/glossary_term_preview.html"
 
     def __str__(self) -> str:
         return str(self.title)
