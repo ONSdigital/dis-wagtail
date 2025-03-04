@@ -1,6 +1,6 @@
 from django.test import TestCase
 
-from cms.tiny_table_block.utils import html_table_to_dict
+from cms.tiny_table_block.utils import html_table_to_dict, sanitise_html
 
 
 class HTMLTableToDictTests(TestCase):
@@ -183,3 +183,43 @@ class HTMLTableToDictTests(TestCase):
         # Second header row has three regular cells
         self.assertEqual(len(result["headers"][1]), 3)
         self.assertEqual(result["headers"][1][0]["value"], "Sub Header 1")
+
+    def test_sanitisation(self):
+        html = """
+        <h1>H1</h1>
+        <table>
+            <thead class="foo">
+                <tr>
+                    <th data-test"foo" valign="middle" colspan="1">Header 1</th>
+                    <th class="highlight" align="right">Header 2</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td rowspan="1">Cell <strong>1</strong></td>
+                    <td><a href="#" click='alert(\\'XSS\\')' rel="next">Cell 2</a></td>
+                </tr>
+            </tbody>
+        </table>
+        <script>alert("Gotcha!");</script>
+        """
+        expected = """
+        H1
+        <table>
+            <thead class="foo">
+                <tr>
+                    <th colspan="1">Header 1</th>
+                    <th class="highlight" align="right">Header 2</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td rowspan="1">Cell 1</td>
+                    <td><a href="#" rel="next">Cell 2</a></td>
+                </tr>
+            </tbody>
+        </table>
+        """
+
+        sanitised = sanitise_html(html)
+        self.assertEqual(sanitised.strip(), expected.strip())

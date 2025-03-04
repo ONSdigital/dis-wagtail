@@ -1,9 +1,24 @@
 from typing import TYPE_CHECKING
 
+import nh3
 from bs4 import BeautifulSoup
 
 if TYPE_CHECKING:
     from bs4.element import Tag
+
+
+def sanitise_html(content: str) -> str:
+    return nh3.clean(  # pylint: disable=no-member
+        content,
+        tags={"table", "tr", "th", "td", "thead", "tbody", "a", "caption"},
+        attributes={
+            "*": {"class"},
+            "th": {"colspan", "rowspan", "align"},
+            "td": {"class", "colspan", "rowspan", "align"},
+            "a": {"href", "rel"},
+        },
+        link_rel=None,
+    )
 
 
 def get_cell_data(cell: "Tag") -> dict[str, str | int]:
@@ -37,8 +52,7 @@ def html_table_to_dict(content: str) -> dict:
     - rows - a list of row lists, each containing the cell info
     - html - the original html
     """
-    # TODO: run content through nh3
-
+    content = sanitise_html(content)
     soup = BeautifulSoup(content, "html.parser")
 
     table = soup.find("table")
