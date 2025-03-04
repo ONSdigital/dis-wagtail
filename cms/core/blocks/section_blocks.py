@@ -43,21 +43,19 @@ class SectionContentBlock(StreamBlock):
         block_counts: ClassVar[dict[str, dict]] = {"related_links": {"max_num": 1}}
 
 
-class BaseSectionStructBlock(StructBlock):
-    def to_table_of_contents_items(self, value: "StructValue") -> list[dict[str, str]]:
-        """Convert the value to the table of contents component macro format."""
-        return [{"url": "#" + slugify(value["title"]), "text": value["title"]}]
-
-
-class GlossarySectionBlock(BaseSectionStructBlock):
+class GlossarySectionBlock(StructBlock):
     title = HeadingBlock(default="Definitions")
     content = ListBlock(SnippetChooserBlock(GlossaryTerm))
 
     class Meta:
         template = "templates/components/streamfield/glossary_section_block.html"
 
+    def to_table_of_contents_items(self, value: "StructValue") -> list[dict[str, str]]:
+        """Convert the value to the table of contents component macro format."""
+        return [{"url": "#" + slugify(value["title"]), "text": value["title"]}]
 
-class SectionBlock(BaseSectionStructBlock):
+
+class SectionBlock(StructBlock):
     """The core section block definition with headers."""
 
     title = HeadingBlock()
@@ -65,3 +63,7 @@ class SectionBlock(BaseSectionStructBlock):
 
     class Meta:
         template = "templates/components/streamfield/section_block.html"
+
+    def to_table_of_contents_items(self, value: "StructValue") -> list[dict[str, str]]:
+        """Convert the value to the table of contents component macro format."""
+        return [{"url": "#" + slugify(value["title"]), "text": value["title"]}]
