@@ -28,10 +28,10 @@ class TestExclusiveTaxonomyMixin(TestCase, WagtailTestUtils):
 
         # Create normal topics (depth=2) using save_topic()
         self.topic_a = Topic(id="topic-a", title="Topic A")
-        Topic.create(self.topic_a)
+        Topic.create_under_parent(self.topic_a)
 
         self.topic_b = Topic(id="topic-b", title="Topic B")
-        Topic.create(self.topic_b)
+        Topic.create_under_parent(self.topic_b)
 
     def test_topic_required(self):
         """If .topic is None, ExclusiveTaxonomyMixin.clean() should raise ValidationError
@@ -153,10 +153,10 @@ class TestGenericTaxonomyMixin(TestCase, WagtailTestUtils):
         self.root_topic = Topic.objects.root_topic()
 
         self.topic_c = Topic(id="topic-c", title="Topic C")
-        Topic.create(self.topic_c)
+        Topic.create_under_parent(self.topic_c)
 
         self.topic_d = Topic(id="topic-d", title="Topic D")
-        Topic.create(self.topic_d)
+        Topic.create_under_parent(self.topic_d)
 
     def test_can_assign_multiple_topics_to_information_page(self):
         """For GenericTaxonomyMixin, we do not enforce exclusive usage of a topic.

@@ -54,7 +54,7 @@ class Topic(index.Indexed, MP_Node):
     ]
 
     @classmethod
-    def create(cls, topic: "Topic", parent_topic: Optional["Topic"] = None) -> None:
+    def create_under_parent(cls, topic: "Topic", parent_topic: Optional["Topic"] = None) -> None:
         """Save a new topic either underneath the specific parent if passed, otherwise underneath our default root level
         dummy topic.
 

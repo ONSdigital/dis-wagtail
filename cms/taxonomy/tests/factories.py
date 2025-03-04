@@ -18,4 +18,4 @@ class TopicFactory(Factory):
         """New topics need to be saved with save_topic, so we use the BUILD_STRATEGY to skip the automatic save,
         and instead save the obj ourselves in this post generation hook.
         """
-        Topic.create(obj)
+        Topic.create_under_parent(obj)
