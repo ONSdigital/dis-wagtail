@@ -66,8 +66,8 @@ class Topic(index.Indexed, MP_Node):
             parent_topic = Topic.objects.root_topic()
         parent_topic.add_child(instance=topic)
 
-        # NB: we have to save here to force the parent topic object to update, otherwise stale in memory values can
-        # cause errors in subsequent actions
+        # we have to save here to force the parent topic object to update, otherwise stale in memory values can cause
+        # errors in subsequent actions
         parent_topic.save()
 
     def get_parent(self, *args: Any, **kwargs: Any) -> Optional["Topic"]:
