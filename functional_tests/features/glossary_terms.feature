@@ -1,0 +1,38 @@
+Feature: General use of Glossary Terms
+
+Scenario: A CMS user can create a Glossary Term
+    Given a CMS user logs into the admin site
+    When the user adds a Glossary Terms snippet
+    Then the Glossary Term is added to the list
+    And the Updated time is displayed
+    And the Updated by field is populated with the user's name
+
+# Scenario: A CMS user can access the past revisions of the Glossary Term
+#     Given a CMS user logs into the admin site
+#     And the user adds a Glossary Terms snippet 
+#     When the user navigates to the page history menu
+#     Then the user can access the past revisions of the Glossary Term
+
+# Scenario: A CMS user can see the preview of the Glossary Term
+#     Given a CMS user logs into the admin site
+#     And the user adds a Glossary Terms snippet 
+#     When the user clicks the "Preview" button
+#     Then the user can see the preview of the Glossary Term
+
+
+# Scenario: The Glossary Terms are unique and raise validation errors when duplicated
+#     Given a CMS user logs into the admin site
+#     And the user adds a Glossary Terms snippet 
+#     When the user adds a Glossary Terms snippet with the same term
+#     Then the user receives a validation error
+
+
+# Scenario: The user can add the Glossary Term to a methodology page
+#     Given a topic page exists under a theme page
+#     And a CMS user logs into the admin site
+#     And the user adds a Glossary Terms snippet 
+#     When the user creates a methodology page as a child of the existing topic page
+#     And the user adds the Glossary Term Section 
+#     Then the Glossary Term is displayed on the page
+#     And the section title is automatically added to the table of contents
+
