@@ -46,7 +46,7 @@ class MethodologyPageTestCase(WagtailTestUtils, TestCase):
         self.page.content = [
             {
                 "type": "glossary_section",
-                "value": {"title": "Definitions", "content": [glossary_term]},
+                "value": {"title": "Definitions", "content": [glossary_term.pk]},
             }
         ]
         self.assertIn({"url": "#definitions", "text": "Definitions"}, self.page.table_of_contents)
