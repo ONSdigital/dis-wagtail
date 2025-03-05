@@ -1,3 +1,4 @@
+from collections.abc import Collection
 from typing import TYPE_CHECKING, Any, ClassVar
 
 from django.conf import settings
@@ -99,6 +100,7 @@ class GlossaryTerm(TranslatableMixin, PreviewableMixin, RevisionMixin, index.Ind
         constraints: ClassVar[list[models.BaseConstraint]] = [
             models.UniqueConstraint(
                 Lower("name"),
+                "locale",
                 name="core_glossary_term_name_unique",
                 violation_error_message=_("A glossary term with this name already exists."),
             ),
@@ -107,12 +109,19 @@ class GlossaryTerm(TranslatableMixin, PreviewableMixin, RevisionMixin, index.Ind
             ),
         ]
 
+    def validate_unique(self, exclude: Collection[str] | None = None) -> None:
+        # Include the locale field for validation as it's not included by default
+        # See https://github.com/wagtail/wagtail/issues/8918#issuecomment-1208670360
+        if exclude and "locale" in exclude:
+            exclude.remove("locale")  # type: ignore[attr-defined]
+        return super().validate_unique(exclude)
+
+    def save(self, *args: Any, **kwargs: Any) -> None:
+        self.name = self.name.strip()
+        super().save(*args, **kwargs)
+
     def get_preview_template(self, request: "HttpRequest", mode_name: str) -> str:
         return "templates/components/glossary/glossary_term_preview.html"
 
     def __str__(self) -> str:
         return str(self.name)
-
-    def save(self, *args: Any, **kwargs: Any) -> None:
-        self.name = self.name.strip()
-        super().save(*args, **kwargs)

@@ -80,9 +80,9 @@ class GlossaryTermsIndex(SnippetIndexView):
 class GlossaryTermsChooseColumnsMixin:
     @property
     def columns(self) -> list[Column]:
-        title_column = self.title_column
+        title_column = self.title_column  # type: ignore[attr-defined]
         title_column.label = "Name"
-        return [self.title_column, UpdatedAtColumn(), UserColumn("updated_by")]
+        return [title_column, UpdatedAtColumn(), UserColumn("updated_by")]
 
 
 class GlossaryChooseView(GlossaryTermsChooseColumnsMixin, SnippetChooseView): ...
