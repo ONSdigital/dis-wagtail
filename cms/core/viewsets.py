@@ -71,7 +71,7 @@ class GlossaryTermEditView(SnippetEditView):
 
 class GlossaryTermsIndex(SnippetIndexView):
     list_display: ClassVar[list[str | Column]] = [
-        "title",
+        "name",
         UpdatedAtColumn(),
         UserColumn("updated_by"),
     ]

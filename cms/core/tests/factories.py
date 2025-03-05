@@ -69,7 +69,7 @@ class GlossaryTermFactory(factory.django.DjangoModelFactory):
     class Meta:
         model = GlossaryTerm
 
-    title = factory.Faker("text", max_nb_chars=20)
+    name = factory.Faker("text", max_nb_chars=20)
     definition = factory.Faker("text", max_nb_chars=100)
 
 
