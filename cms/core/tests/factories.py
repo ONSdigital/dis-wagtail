@@ -6,13 +6,11 @@ from wagtail_factories.blocks import (
     BlockFactory,
     ListBlockFactory,
     PageChooserBlockFactory,
-    StreamBlockFactory,
     StructBlockFactory,
 )
 
 from cms.core.blocks.related import LinkBlock, RelatedContentBlock
 from cms.core.blocks.section_blocks import GlossarySectionBlock, SectionBlock, SectionContentBlock
-from cms.core.blocks.stream_blocks import SectionStoryBlock
 from cms.core.models import ContactDetails
 from cms.core.models.snippets import GlossaryTerm
 
@@ -95,16 +93,6 @@ class SectionContentBlockFactory(StructBlockFactory):
             "rich_text": factory.SubFactory(RichTextBlockFactory),
         }
     )
-
-
-class SectionStoryBlockFactory(StreamBlockFactory):
-    """Factory for Section Story Block."""
-
-    class Meta:
-        model = SectionStoryBlock
-
-    section = factory.SubFactory(SectionContentBlockFactory)
-    glossary_section = factory.SubFactory(GlossarySectionBlockFactory)
 
 
 class SectionBlockFactory(StructBlockFactory):

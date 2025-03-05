@@ -6,7 +6,7 @@ from django.test import TestCase, override_settings
 from django.utils.formats import date_format
 from wagtail.test.utils import WagtailTestUtils
 
-from cms.core.tests.factories import ContactDetailsFactory
+from cms.core.tests.factories import ContactDetailsFactory, GlossaryTermFactory
 from cms.methodology.tests.factories import MethodologyPageFactory, MethodologyRelatedPageFactory
 
 
@@ -42,18 +42,14 @@ class MethodologyPageTestCase(WagtailTestUtils, TestCase):
         self.assertIn({"url": "#related-publications", "text": "Related publications"}, self.page.table_of_contents)
 
     def test_table_of_contents_with_glossary_section(self):
+        glossary_term = GlossaryTermFactory()
         self.page.content = [
             {
                 "type": "glossary_section",
-                "value": {
-                    "id": 1,
-                    "title": "Definitions",
-                    "content": [{"id": 1, "title": "rich_text", "description": "text"}],
-                },
+                "value": {"title": "Definitions", "content": [glossary_term]},
             }
         ]
-
-        self.assertIn("definitions", self.page.table_of_contents)
+        self.assertIn({"url": "#definitions", "text": "Definitions"}, self.page.table_of_contents)
 
     def test_cite_this_page_is_not_shown_when_unticked(self):
         """Test for the cite this page block not present in the template."""
