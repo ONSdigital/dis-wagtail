@@ -200,7 +200,7 @@ class SyncTopicsTests(TestCase):
     def test_update_topic_title(self):
         # Given
         initial_topic = Topic(id="1234", title="Initial Title", description="Test")
-        Topic.create_under_parent(initial_topic)
+        Topic.save_new(initial_topic)
         updated_topic = Topic(id=initial_topic.id, title="Updated Title", description=initial_topic.description)
 
         mock_topic_response = mock_successful_json_response([build_topic_api_json(updated_topic)])
@@ -218,7 +218,7 @@ class SyncTopicsTests(TestCase):
     def test_update_topic_description(self):
         # Given
         initial_topic = Topic(id="1234", title="Initial Title", description="Test")
-        Topic.create_under_parent(initial_topic)
+        Topic.save_new(initial_topic)
         updated_topic = Topic(id=initial_topic.id, title=initial_topic.title, description="Updated Description")
 
         mock_topic_response = mock_successful_json_response([build_topic_api_json(updated_topic)])
@@ -254,7 +254,7 @@ class SyncTopicsTests(TestCase):
     def test_removed_topic(self):
         # Given
         topic = Topic(id="1234", title="Initial Title", description="Test")
-        Topic.create_under_parent(topic)
+        Topic.save_new(topic)
 
         # Mock a response with the topic deleted
         mock_empty_response = mock_successful_json_response([])
@@ -272,7 +272,7 @@ class SyncTopicsTests(TestCase):
     def test_reinstated_topic(self):
         # Given
         removed_topic = Topic(id="1234", title="Topic Title", removed=True)
-        Topic.create_under_parent(removed_topic)
+        Topic.save_new(removed_topic)
 
         # Mock a response with the removed topic re-appearing
         reinstated_topic = Topic(id=removed_topic.id, title=removed_topic.title, removed=False)
@@ -495,7 +495,7 @@ def create_topic(topic_id: str, include_description: bool = True) -> Topic:
 def create_and_save_topic(topic_id: str, include_description: bool = True, parent_topic: Topic | None = None) -> Topic:
     """Create a topic and save it to the database."""
     topic = create_topic(topic_id, include_description=include_description)
-    Topic.create_under_parent(topic, parent_topic=parent_topic)
+    Topic.save_new(topic, parent_topic=parent_topic)
     return topic
 
 

@@ -182,9 +182,9 @@ def _create_topic(fetched_topic: Mapping[str, str]) -> None:
     )
     if parent_id := fetched_topic.get("parent_id"):
         parent = _get_topic(parent_id)
-        Topic.create_under_parent(new_topic, parent_topic=parent)
+        Topic.save_new(new_topic, parent_topic=parent)
     else:
-        Topic.create_under_parent(new_topic)
+        Topic.save_new(new_topic)
 
 
 def _check_for_removed_topics(existing_topic_ids: set[str]) -> None:
