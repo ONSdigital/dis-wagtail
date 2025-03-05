@@ -98,7 +98,7 @@ class FooterMenuTemplateTagTests(TestCase):
                 "value": LinksColumnFactory(links=links),
             }
         ] * 3
-        
+
         cls.footer_menu = FooterMenuFactory(columns=columns)
 
     def test_footer_menu_output_format(self):

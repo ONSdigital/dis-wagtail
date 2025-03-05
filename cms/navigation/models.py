@@ -3,7 +3,7 @@ from typing import TYPE_CHECKING, ClassVar, Union
 from django.contrib.contenttypes.fields import GenericRelation
 from django.db import models
 from django.utils.translation import gettext_lazy as _
-from wagtail.admin.panels import FieldPanel, PublishingPanel
+from wagtail.admin.panels import PublishingPanel
 from wagtail.contrib.settings.models import register_setting
 from wagtail.models import DraftStateMixin, PreviewableMixin, RevisionMixin
 
