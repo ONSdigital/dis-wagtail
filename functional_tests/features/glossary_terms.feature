@@ -7,24 +7,24 @@ Scenario: A CMS user can create a Glossary Term
     And the Updated time is displayed
     And the Updated by field is populated with the user's name
 
-# Scenario: A CMS user can access the past revisions of the Glossary Term
-#     Given a CMS user logs into the admin site
-#     And the user adds a Glossary Terms snippet 
-#     When the user navigates to the page history menu
-#     Then the user can access the past revisions of the Glossary Term
+Scenario: A CMS user can access the past revisions of the Glossary Term
+    Given a CMS user logs into the admin site
+    And the user adds a Glossary Terms snippet 
+    And the user modifies the Glossary Term description
+    When the user navigates to the snippet history menu
+    Then the past revisions of the snippet are displayed
 
-# Scenario: A CMS user can see the preview of the Glossary Term
-#     Given a CMS user logs into the admin site
-#     And the user adds a Glossary Terms snippet 
-#     When the user clicks the "Preview" button
-#     Then the user can see the preview of the Glossary Term
+Scenario: A CMS user can see the preview of the Glossary Term
+    Given a CMS user logs into the admin site
+    And the user fills in Glossary Term details
+    When the user clicks the "Preview" button
+    Then the user can see the preview of the Glossary Term
 
-
-# Scenario: The Glossary Terms are unique and raise validation errors when duplicated
-#     Given a CMS user logs into the admin site
-#     And the user adds a Glossary Terms snippet 
-#     When the user adds a Glossary Terms snippet with the same term
-#     Then the user receives a validation error
+Scenario: The Glossary Term raise validation errors when name is duplicated
+    Given a CMS user logs into the admin site
+    And the user adds a Glossary Terms snippet 
+    When the user adds another Glossary Terms snippet with the same name
+    Then a validation error is displayed
 
 
 # Scenario: The user can add the Glossary Term to a methodology page
@@ -36,3 +36,4 @@ Scenario: A CMS user can create a Glossary Term
 #     Then the Glossary Term is displayed on the page
 #     And the section title is automatically added to the table of contents
 
+# TODO: Add a scenario - the "Edited by" cell shows the appropriate when another user edits the snippet
