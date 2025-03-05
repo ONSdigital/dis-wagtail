@@ -15,7 +15,7 @@ def user_fills_in_glossary_term_details(context: Context) -> None:
     context.page.get_by_role("link", name="Snippets").click()
     context.page.get_by_role("link", name="Glossary terms").click()
     context.page.get_by_role("link", name="Add glossary term").click()
-    context.page.get_by_role("textbox", name="Title*").fill("Term")
+    context.page.get_by_role("textbox", name="Name*").fill("Term")
     context.page.get_by_role("region", name="Definition*").get_by_role("textbox").fill("Definition")
 
 

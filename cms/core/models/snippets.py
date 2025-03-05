@@ -62,6 +62,13 @@ class GlossaryTerm(TranslatableMixin, PreviewableMixin, RevisionMixin, index.Ind
 
     name = models.CharField(max_length=255)
     definition = RichTextField(features=settings.RICH_TEXT_BASIC)
+    owner = models.ForeignKey(
+        "users.User",
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="owned_glossary_terms",
+    )
     # to allow for a user to be set on creation and seen in the IndexView
     updated_by = models.ForeignKey(
         "users.User",
@@ -78,6 +85,7 @@ class GlossaryTerm(TranslatableMixin, PreviewableMixin, RevisionMixin, index.Ind
     panels: ClassVar[list["Panel"]] = [
         "name",
         "definition",
+        "owner",
     ]
 
     search_fields: ClassVar[list[index.BaseField]] = [
