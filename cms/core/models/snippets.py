@@ -39,7 +39,6 @@ class ContactDetails(index.Indexed, models.Model):
     ]
 
     class Meta:
-        verbose_name = _("contact details")
         verbose_name_plural = _("contact details")
         constraints: ClassVar[list[models.BaseConstraint]] = [
             models.UniqueConstraint(
@@ -89,9 +88,6 @@ class GlossaryTerm(TranslatableMixin, PreviewableMixin, RevisionMixin, index.Ind
     ]
 
     class Meta:
-        verbose_name = _("glossary term")
-        verbose_name_plural = _("glossary terms")
-
         constraints: ClassVar[list[models.BaseConstraint]] = [
             models.UniqueConstraint(
                 Lower("name"),
