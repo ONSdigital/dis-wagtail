@@ -233,23 +233,42 @@ class StatisticalArticlePageRenderTestCase(WagtailTestUtils, TestCase):
         response = self.client.get(self.basic_page_url)
         self.assertNotContains(response, expected)
 
-    def test_breadcrumb_does_contain_series_url(self):
+    def test_breadcrumb_is_not_shown(self):
         response = self.client.get(self.basic_page_url)
-        # confirm that current breadcrumb is there
         article_series = self.basic_page.get_parent()
-        self.assertContains(
-            response,
-            f'<a class="ons-breadcrumbs__link" href="{article_series.url}">{article_series.title}</a>',
-            html=True,
+        expected = ('class="ons-breadcrumbs__link"',
         )
+        self.assertNotContains(response, expected)
 
-        # confirm that current breadcrumb points to the parent page
-        topics_page = article_series.get_parent()
-        self.assertContains(
-            response,
-            f'<a class="ons-breadcrumbs__link" href="{topics_page.url}">{topics_page.title}</a>',
-            html=True,
-        )
+    def test_pagination_is_not_shown(self):
+        response = self.client.get(self.basic_page_url)
+        article_series = self.basic_page.get_parent()
+        expected = ('class="ons-pagination__link"',
+                    )
+        self.assertNotContains(response, expected)
+
+    class PreviousReleasesPageRenderTestCase(WagtailTestUtils, TestCase):
+        def setUp(self):
+            self.basic_page = StatisticalArticlePageFactory(
+                parent__title="PSF",
+                title="November 2024",
+                news_headline="",
+                contact_details=None,
+                show_cite_this_page=False,
+                next_release_date=None,
+            )
+            self.basic_page_url = self.basic_page.url
+
+            # a page with more of the fields filled in
+            self.page = StatisticalArticlePageFactory(
+                parent=self.basic_page.get_parent(),
+                title="August 2024",
+                news_headline="Breaking News!",
+                release_date=datetime(2024, 8, 15),
+            )
+            self.page_url = self.page.url
+            self.formatted_date = date_format(self.page.release_date, settings.DATE_FORMAT)
+
 
     @override_settings(IS_EXTERNAL_ENV=True)
     def test_load_in_external_env(self):
