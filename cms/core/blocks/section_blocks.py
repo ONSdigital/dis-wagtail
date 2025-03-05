@@ -1,6 +1,7 @@
 from typing import TYPE_CHECKING, ClassVar
 
 from django.utils.text import slugify
+from django.utils.translation import gettext_lazy as _
 from wagtail.blocks import ListBlock, RichTextBlock, StreamBlock, StructBlock
 from wagtail.images.blocks import ImageChooserBlock
 from wagtail.snippets.blocks import SnippetChooserBlock
@@ -44,7 +45,7 @@ class SectionContentBlock(StreamBlock):
 
 
 class GlossarySectionBlock(StructBlock):
-    title = HeadingBlock(default="Definitions")
+    title = HeadingBlock(default=_("Definitions"))
     content = ListBlock(SnippetChooserBlock(GlossaryTerm))
 
     class Meta:

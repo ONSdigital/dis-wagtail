@@ -31,7 +31,6 @@ class ContactDetails(index.Indexed, models.Model):
     ]
 
     search_fields: ClassVar[list[index.BaseField]] = [
-        *index.Indexed.search_fields,
         index.SearchField("name"),
         index.AutocompleteField("name"),
         index.SearchField("email"),
@@ -52,8 +51,7 @@ class ContactDetails(index.Indexed, models.Model):
         ]
 
     def save(self, *args: Any, **kwargs: Any) -> None:
-        if self.name:
-            self.name = self.name.strip()
+        self.name = self.name.strip()
         super().save(*args, **kwargs)
 
     def __str__(self) -> str:
@@ -63,7 +61,7 @@ class ContactDetails(index.Indexed, models.Model):
 class GlossaryTerm(TranslatableMixin, PreviewableMixin, RevisionMixin, index.Indexed, models.Model):
     """A model for glossary terms."""
 
-    title = models.CharField(max_length=255)
+    name = models.CharField(max_length=255)
     definition = RichTextField(features=settings.RICH_TEXT_BASIC)
     # to allow for a user to be set on creation and seen in the IndexView
     updated_by = models.ForeignKey(
@@ -79,14 +77,13 @@ class GlossaryTerm(TranslatableMixin, PreviewableMixin, RevisionMixin, index.Ind
     revisions = GenericRelation("wagtailcore.Revision", related_query_name="glossary_term")
 
     panels: ClassVar[list["Panel"]] = [
-        "title",
+        "name",
         "definition",
     ]
 
     search_fields: ClassVar[list[index.BaseField]] = [
-        *index.Indexed.search_fields,
-        index.SearchField("title"),
-        index.AutocompleteField("title"),
+        index.SearchField("name"),
+        index.AutocompleteField("name"),
         index.SearchField("definition"),
         index.AutocompleteField("definition"),
     ]
@@ -97,9 +94,9 @@ class GlossaryTerm(TranslatableMixin, PreviewableMixin, RevisionMixin, index.Ind
 
         constraints: ClassVar[list[models.BaseConstraint]] = [
             models.UniqueConstraint(
-                Lower("title"),
-                name="core_glossary_term_title_unique",
-                violation_error_message=_("A glossary term with this title already exists."),
+                Lower("name"),
+                name="core_glossary_term_name_unique",
+                violation_error_message=_("A glossary term with this name already exists."),
             ),
             models.UniqueConstraint(
                 fields=("translation_key", "locale"), name="unique_translation_key_locale_core_glossaryterm"
@@ -110,9 +107,8 @@ class GlossaryTerm(TranslatableMixin, PreviewableMixin, RevisionMixin, index.Ind
         return "templates/components/glossary/glossary_term_preview.html"
 
     def __str__(self) -> str:
-        return str(self.title)
+        return str(self.name)
 
     def save(self, *args: Any, **kwargs: Any) -> None:
-        if self.title:
-            self.title = self.title.strip()
+        self.name = self.name.strip()
         super().save(*args, **kwargs)

@@ -25,7 +25,7 @@ class SectionStoryBlock(StreamBlock):
     """The core section StreamField block definition."""
 
     section = SectionBlock()
-    glossary_section = GlossarySectionBlock()
+    glossary_section = GlossarySectionBlock(label="Definitions")
 
     class Meta:
         template = "templates/components/streamfield/stream_block.html"

@@ -8,7 +8,7 @@
 
     {% for glossary_term in value.content %}
         {% do glossary_terms.append({
-        "title": glossary_term.title,
+        "title": glossary_term.name,
         "content": glossary_term.definition|richtext
         })
         %}
@@ -18,6 +18,10 @@
     {{
         onsAccordion({
             "id": "glossary-terms-accordion",
+            "allButton": {
+                "open": _("Show all"),
+                "close": _("Hide all")
+            },
             "itemsList": glossary_terms
         })
     }}
