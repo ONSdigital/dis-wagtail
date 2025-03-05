@@ -2585,6 +2585,25 @@ files = [
 ]
 
 [[package]]
+name = "wagtail-tinytableblock"
+version = "0.1"
+description = "A Wagtail StreamField block powered by TinyMCE and its table plugin"
+optional = false
+python-versions = ">=3.12"
+files = [
+    {file = "wagtail_tinytableblock-0.1-py3-none-any.whl", hash = "sha256:ca4406fce7af069bb82073e89b212c1a146c6e4e0e6e159844ec3886c5d47cd2"},
+    {file = "wagtail_tinytableblock-0.1.tar.gz", hash = "sha256:4b3e564edb3d4df7c9cdb0a2fe6e514a1620766d4a722bc95aab10464b442ea1"},
+]
+
+[package.dependencies]
+Django = ">=4.2"
+nh3 = ">=0.2.21,<0.3"
+Wagtail = ">=6.3"
+
+[package.extras]
+testing = ["coverage (>=7.0,<8.0)", "dj-database-url (>=2.1.0,<3.0)"]
+
+[[package]]
 name = "wagtailmath"
 version = "1.3.1"
 description = "Wagtail StreamField block for rendering mathematical equations"
@@ -2683,4 +2702,4 @@ files = [
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.12"
-content-hash = "9218144d90a968a034a52866e71ea346577381a1f4d37a1c32b1cae5d885c056"
+content-hash = "89d9d05fd5d2c3b4fa32370643e0d25b768e883cc8ee2451e9d20956fd80d423"

@@ -71,7 +71,6 @@ INSTALLED_APPS = [
     "cms.methodology",
     "cms.navigation",
     "cms.taxonomy",
-    "cms.tiny_table_block",
     "wagtail.embeds",
     "wagtail.sites",
     "wagtail.users",
@@ -96,6 +95,7 @@ INSTALLED_APPS = [
     "django_jinja",
     "wagtailmath",
     "wagtailfontawesomesvg",
+    "wagtail_tinytableblock",
 ]
 
 if not IS_EXTERNAL_ENV:

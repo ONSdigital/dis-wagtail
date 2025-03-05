@@ -6,8 +6,7 @@ from django.utils.text import slugify
 from django.utils.translation import gettext as _
 from wagtail import blocks
 from wagtail.contrib.table_block.blocks import TableBlock as WagtailTableBlock
-
-from cms.tiny_table_block.blocks import TinyTableBlock
+from wagtail_tinytableblock.blocks import TinyTableBlock
 
 if TYPE_CHECKING:
     from django.utils.safestring import SafeString
