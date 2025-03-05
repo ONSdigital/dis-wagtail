@@ -50,7 +50,7 @@ class ColumnBlock(StructBlock):
 
 
 class LinksColumn(StructBlock):
-    title = CharBlock(required=True, help_text=_("Title for this column"))
+    title = CharBlock(required=True, label=_("Column title"))
     links = ListBlock(
         LinkBlock(),
         help_text=_("Links for this column (pages or external URLs)."),

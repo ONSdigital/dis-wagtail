@@ -68,7 +68,7 @@ class FooterMenu(DraftStateMixin, RevisionMixin, PreviewableMixin, models.Model)
         return self._revisions
 
     panels: ClassVar[list] = [
-        FieldPanel("columns"),
+        "columns",
         PublishingPanel(),
     ]
 
@@ -99,7 +99,4 @@ class NavigationSettings(BaseSiteSetting):
         help_text=_("Select the footer menu to display on the site."),
     )
 
-    panels: ClassVar[list] = [
-        FieldPanel("main_menu"),
-        FieldPanel("footer_menu"),
-    ]
+    panels: ClassVar[list] = ["main_menu", "footer_menu"]
