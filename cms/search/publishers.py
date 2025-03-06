@@ -41,6 +41,7 @@ class KafkaPublisher(BasePublisher):
         # Optionally block for the result, capturing metadata or error
         result = future.get(timeout=10)  # Wait up to 10s for send to complete
         logging.debug("Publish result for topic %s: %s", self.topic_created_or_updated, result)
+        print("Publish result for topic %s: %s", self.topic_created_or_updated, result)
 
     def publish_deleted(self, page):
         message = self._construct_message_for_delete(page)
@@ -49,6 +50,7 @@ class KafkaPublisher(BasePublisher):
         future = self.producer.send(self.topic_deleted, message)
         result = future.get(timeout=10)
         logging.debug("Publish result for topic %s: %s", self.topic_deleted, result)
+        print("Unpublish result for topic %s: %s", self.topic_deleted, result)
 
     def _construct_message_for_create_update(self, page):
         """Build a dict that matches the agreed metadata schema for 'created/updated'.

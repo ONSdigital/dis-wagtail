@@ -456,11 +456,6 @@ LOGGING = {
     },
     "formatters": {"verbose": {"format": "[%(asctime)s][%(process)d][%(levelname)s][%(name)s] %(message)s"}},
     "loggers": {
-        "cms.search.publishers": {
-            "level": "DEBUG",
-            "handlers": ["console"],
-            "propagate": False,
-        },
         "cms": {
             "handlers": ["console"],
             "level": "INFO",

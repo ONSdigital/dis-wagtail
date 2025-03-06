@@ -28,7 +28,7 @@ def page_unpublished(request, page):
 EXCLUDED_PAGE_TYPES = (
     "HomePage",
     "ArticleSeriesPage",
-    "ReleaseCalendarIndexPage",
+    "ReleaseCalendarIndex",
     "ThemePage",
     "TopicPage",
 )
