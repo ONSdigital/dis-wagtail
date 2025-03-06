@@ -76,9 +76,6 @@ def the_past_revisions_are_visible(context: Context) -> None:
 
 @then("the user can see the preview of the Glossary Term")
 def the_user_can_see_the_preview_of_the_glossary_term(context: Context) -> None:
-    # expect(context.page.get_by_role("heading", name="Term")).to_be_visible()
-    # expect(context.page.get_by_text("Definition")).to_be_visible()
-
     iframe_locator = context.page.frame_locator("#w-preview-iframe")
 
     iframe_locator.get_by_role("link", name="Term").click()

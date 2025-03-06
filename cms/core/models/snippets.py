@@ -100,7 +100,6 @@ class GlossaryTerm(TranslatableMixin, PreviewableMixin, RevisionMixin, index.Ind
         constraints: ClassVar[list[models.BaseConstraint]] = [
             models.UniqueConstraint(
                 Lower("name"),
-                "locale",
                 name="core_glossary_term_name_unique",
                 violation_error_message=_("A glossary term with this name already exists."),
             ),
