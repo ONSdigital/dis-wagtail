@@ -35,13 +35,20 @@ class KafkaPublisher(BasePublisher):
 
     def publish_created_or_updated(self, page):
         message = self._construct_message_for_create_update(page)
-        self.producer.send(self.topic_created_or_updated, message)
-        self.producer.flush()
+        logging.debug("Publishing CREATED/UPDATED to topic=%s, message=%s", self.topic_created_or_updated, message)
+
+        future = self.producer.send(self.topic_created_or_updated, message)
+        # Optionally block for the result, capturing metadata or error
+        result = future.get(timeout=10)  # Wait up to 10s for send to complete
+        logging.debug("Publish result for topic %s: %s", self.topic_created_or_updated, result)
 
     def publish_deleted(self, page):
         message = self._construct_message_for_delete(page)
-        self.producer.send(self.topic_deleted, message)
-        self.producer.flush()
+        logging.debug("Publishing DELETED to topic=%s, message=%s", self.topic_deleted, message)
+
+        future = self.producer.send(self.topic_deleted, message)
+        result = future.get(timeout=10)
+        logging.debug("Publish result for topic %s: %s", self.topic_deleted, result)
 
     def _construct_message_for_create_update(self, page):
         """Build a dict that matches the agreed metadata schema for 'created/updated'.
