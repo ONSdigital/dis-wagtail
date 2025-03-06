@@ -19,7 +19,7 @@
                 <caption class="ons-table__caption{{ " ons-u-vh" if params.hideCaption }}">{{ params.caption }}</caption>
                 {% endif %}
                 <thead class="ons-table__head">
-                    {% set headers = params.headers if params.headers else parms.ths|list %}
+                    {% set headers = params.headers if params.headers else params.ths|list %}
                     {% for header in headers %}
                     <tr class="ons-table__row">
                         {% for th in header %}
