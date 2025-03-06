@@ -6,7 +6,7 @@ Scenario: A CMS user can create a Glossary Term
     Then the Glossary Term is added to the list
     And the Updated time is displayed
     And the Updated by field is populated with the user's name
-
+    And the Owner field is populated with the user's name
 Scenario: A CMS user can access the past revisions of the Glossary Term
     Given a CMS user logs into the admin site
     And the user adds a Glossary Terms snippet 
@@ -32,8 +32,6 @@ Scenario: The Glossary Term raise validation errors when name is duplicated
 #     And a CMS user logs into the admin site
 #     And the user adds a Glossary Terms snippet 
 #     When the user creates a methodology page as a child of the existing topic page
-#     And the user adds the Glossary Term Section 
+#     And the user adds the Glossary Term Section OR the user adds the Glossary Term snippet within the regular section - TBC
 #     Then the Glossary Term is displayed on the page
 #     And the section title is automatically added to the table of contents
-
-# TODO: Add a scenario - the "Edited by" cell shows the appropriate when another user edits the snippet

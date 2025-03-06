@@ -17,6 +17,7 @@ def user_fills_in_glossary_term_details(context: Context) -> None:
     context.page.get_by_role("link", name="Add glossary term").click()
     context.page.get_by_role("textbox", name="Name*").fill("Term")
     context.page.get_by_role("region", name="Definition*").get_by_role("textbox").fill("Definition")
+    context.page.locator("#id_owner").select_option("1")
 
 
 @then("a validation error is displayed")
@@ -27,17 +28,26 @@ def validation_error_is_displayed_for_duplicated_glossary_terms(context: Context
 
 @then("the Glossary Term is added to the list")
 def glossary_item_is_visible_in_index_view_with_the_required_columns(context: Context) -> None:
-    expect(context.page.get_by_role("cell", name="Term")).to_be_visible()
+    expect(context.page.get_by_role("row", name="Name").get_by_role("cell").nth(1)).to_contain_text("Name")
+    expect(context.page.get_by_role("row", name="Term").get_by_role("cell").nth(1)).to_contain_text("Term")
 
 
 @then("the Updated time is displayed")
 def the_last_edited_time_column_is_displayed(context: Context) -> None:
-    expect(context.page.get_by_role("cell", name="Just now")).to_be_visible()
+    expect(context.page.get_by_role("row", name="Name").get_by_role("cell").nth(2)).to_contain_text("Updated")
+    expect(context.page.get_by_role("row", name="Term").get_by_role("cell").nth(2)).to_contain_text("Just now")
 
 
 @then("the Updated by field is populated with the user's name")
 def the_edited_by_column_is_displayed(context: Context) -> None:
-    expect(context.page.get_by_role("cell", name=context.full_name)).to_be_visible()
+    expect(context.page.get_by_role("row", name="Name").get_by_role("cell").nth(3)).to_contain_text("Updated by")
+    expect(context.page.get_by_role("row", name="Term").get_by_role("cell").nth(3)).to_contain_text(context.full_name)
+
+
+@then("the Owner field is populated with the user's name")
+def owner_field_has_the_correct_user(context: Context) -> None:
+    expect(context.page.get_by_role("row", name="Name").get_by_role("cell").nth(4)).to_contain_text("Owner")
+    expect(context.page.get_by_role("row", name="Term").get_by_role("cell").nth(4)).to_contain_text(context.full_name)
 
 
 @given("the user modifies the Glossary Term description")
