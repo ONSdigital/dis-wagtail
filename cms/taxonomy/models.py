@@ -53,18 +53,21 @@ class Topic(index.Indexed, MP_Node):
         index.AutocompleteField("title"),
     ]
 
-    def save_new_topic(self, parent_topic: Optional["Topic"] = None) -> None:
+    @classmethod
+    def save_new(cls, topic: "Topic", parent_topic: Optional["Topic"] = None) -> None:
         """Save a new topic either underneath the specific parent if passed, otherwise underneath our default root level
         dummy topic.
 
-        Raises an IntegrityError if a topic with the given ID already exists.
+        Raises an IntegrityError if a topic with the same ID already exists.
         """
-        if Topic.objects.filter(id=self.id).exists():
-            raise IntegrityError(f"Topic with id {self.id} already exists")
+        if Topic.objects.filter(id=topic.id).exists():
+            raise IntegrityError(f"Topic with id {topic.id} already exists")
         if not parent_topic:
             parent_topic = Topic.objects.root_topic()
-        parent_topic.add_child(instance=self)
-        super().save()
+        parent_topic.add_child(instance=topic)
+
+        # we have to save here to force the parent topic object to update, otherwise stale in memory values can cause
+        # errors in subsequent actions
         parent_topic.save()
 
     def get_parent(self, *args: Any, **kwargs: Any) -> Optional["Topic"]:
@@ -81,16 +84,13 @@ class Topic(index.Indexed, MP_Node):
         super().move(target_parent, pos=pos)
 
     def __str__(self) -> str:
-        return self.title_with_depth
-
-    # this is just a convenience function to make the titles appear with lines
-    # eg root | - first child
-    @property
-    def title_with_depth(self) -> str:
-        if depth := self.get_depth():
-            depth_marker: str = "— " * (depth - BASE_TOPIC_DEPTH)
-            return f"{depth_marker}{self.title}"
         return str(self.title)
+
+    @property
+    def display_parent_topics(self) -> str:
+        if ancestors := [topic.title for topic in self.get_ancestors()]:
+            return " → ".join(ancestors)
+        return ""
 
 
 class GenericPageToTaxonomyTopic(models.Model):

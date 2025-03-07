@@ -1,8 +1,30 @@
 from django.db.models import QuerySet
 from django.utils.translation import gettext_lazy as _
+from wagtail.admin.ui.tables import Column
+from wagtail.admin.views.generic.chooser import ChooseResultsView, ChooseView
 from wagtail.admin.viewsets.chooser import ChooserViewSet
 
 from cms.taxonomy.models import Topic
+
+
+class TopicChooseViewMixin:
+    model_class = Topic
+
+    def get_object_list(self) -> QuerySet[Topic]:
+        return self.model_class.objects.all().order_by("path")
+
+    @property
+    def columns(self) -> list[Column]:
+        return [
+            *getattr(super(), "columns", []),
+            Column("parent_topics", label=_("Parent Topics"), accessor="display_parent_topics"),
+        ]
+
+
+class TopicChooseView(TopicChooseViewMixin, ChooseView): ...
+
+
+class TopicChooseResultsView(TopicChooseViewMixin, ChooseResultsView): ...
 
 
 class TopicChooserViewSet(ChooserViewSet):
@@ -11,6 +33,9 @@ class TopicChooserViewSet(ChooserViewSet):
 
     choose_one_text = _("Choose a topic")
     choose_another_text = _("Choose a different topic")
+
+    choose_view_class = TopicChooseView
+    choose_results_view_class = TopicChooseResultsView
 
 
 class ExclusiveTopicChooserViewSet(TopicChooserViewSet):

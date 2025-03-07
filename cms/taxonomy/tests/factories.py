@@ -18,4 +18,4 @@ class TopicFactory(Factory):
         """New topics need to be saved with save_topic, so we use the BUILD_STRATEGY to skip the automatic save,
         and instead save the obj ourselves in this post generation hook.
         """
-        obj.save_new_topic()  # pylint: disable=no-member
+        Topic.save_new(obj)

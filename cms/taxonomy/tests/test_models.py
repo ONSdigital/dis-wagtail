@@ -23,11 +23,11 @@ class TopicModelTest(TestCase):
         self.assertNotIn(self.root_topic, Topic.objects.all())
 
     def test_save_topic_with_no_parent_uses_root_topic(self):
-        """If we call save_topic() without specifying parent_topic,
+        """If we call Topic.save_new(...) without specifying parent_topic,
         it will be placed under the dummy root at depth=2.
         """
         t1 = Topic(id="t1", title="First Topic")
-        t1.save_new_topic()  # no parent passed
+        Topic.save_new(t1)  # no parent passed
         self.assertEqual(t1.depth, 2)  # Root is depth=1, so child is depth=2
         self.assertIsNone(t1.get_parent())
 
@@ -35,52 +35,27 @@ class TopicModelTest(TestCase):
         self.assertIn(t1, Topic.objects.all())
 
     def test_save_topic_with_explicit_parent(self):
-        """If we call save_topic() with a parent_topic, it will become that node's child."""
+        """If we call Topic.save_new(...) with a parent_topic, it will become that node's child."""
         # Create a top-level topic first
         parent_topic = Topic(id="parent-topic", title="Parent Topic")
-        parent_topic.save_new_topic()
+        Topic.save_new(parent_topic)
 
         # Create a child under 'parent_topic'
         child_topic = Topic(id="child-topic", title="Child Topic")
-        child_topic.save_new_topic(parent_topic=parent_topic)
+        Topic.save_new(child_topic, parent_topic=parent_topic)
 
         self.assertEqual(child_topic.get_parent(), parent_topic)
         self.assertEqual(child_topic.depth, parent_topic.depth + 1)
-
-    def test_title_with_depth(self):
-        """The method `title_with_depth()` returns "— " repeated (depth - 2) times, then the title.
-        - Depth=2 → 0 repeats
-        - Depth=3 → 1 repeat
-        - Depth=4 → 2 repeats
-        etc.
-        """
-        # top_level
-        t1 = Topic(id="t1", title="Top Level")
-        t1.save_new_topic()
-        self.assertEqual(t1.get_depth(), 2)
-        self.assertEqual(t1.title_with_depth, "Top Level")  # no prefix
-
-        # child: depth=3
-        t2 = Topic(id="t2", title="Child")
-        t2.save_new_topic(parent_topic=t1)
-        self.assertEqual(t2.get_depth(), 3)
-        self.assertEqual(t2.title_with_depth, "— Child")  # 1 prefix
-
-        # grandchild: depth=4
-        t3 = Topic(id="t3", title="Grandchild")
-        t3.save_new_topic(parent_topic=t2)
-        self.assertEqual(t3.get_depth(), 4)
-        self.assertEqual(t3.title_with_depth, "— — Grandchild")
 
     def test_move_to_root(self):
         """If we call topic.move(None), it should move under the dummy root."""
         # Create a child under the dummy root
         t1 = Topic(id="t1", title="First Topic")
-        t1.save_new_topic()
+        Topic.save_new(t1)
 
         # Create a child under t1
         t2 = Topic(id="t2", title="Child Topic")
-        t2.save_new_topic(parent_topic=t1)
+        Topic.save_new(t2, parent_topic=t1)
         self.assertEqual(t2.get_depth(), 3)
         self.assertEqual(t2.get_parent(), t1)
 
@@ -95,12 +70,12 @@ class TopicModelTest(TestCase):
         # Create two top-level topics
         t1 = Topic(id="t1", title="Topic 1")
         t2 = Topic(id="t2", title="Topic 2")
-        t1.save_new_topic()
-        t2.save_new_topic()
+        Topic.save_new(t1)
+        Topic.save_new(t2)
 
         # Create a child under t1
         child = Topic(id="child", title="Child of T1")
-        child.save_new_topic(parent_topic=t1)
+        Topic.save_new(child, parent_topic=t1)
         self.assertEqual(child.get_parent(), t1)
         self.assertEqual(child.depth, 3)
 
@@ -113,33 +88,43 @@ class TopicModelTest(TestCase):
     def test_removed_flag_default(self):
         """Ensure 'removed' defaults to False when a Topic is created."""
         t1 = Topic(id="t1", title="Removed Flag Test")
-        t1.save_new_topic()
+        Topic.save_new(t1)
         self.assertFalse(t1.removed)
 
     def test_set_removed_flag(self):
         """Verify we can set the 'removed' flag on a Topic."""
         t1 = Topic(id="t1", title="Topic to Remove")
-        t1.save_new_topic()
+        Topic.save_new(t1)
         t1.removed = True
         t1.save()
         t1.refresh_from_db()
         self.assertTrue(t1.removed)
 
-    def test_str_method_returns_title_with_depth(self):
-        """Verify __str__() calls title_with_depth()."""
+    def test_str_method_returns_title(self):
+        """Verify __str__() returns the topic title."""
         t1 = Topic(id="t1", title="Some Topic")
-        t1.save_new_topic()
-        self.assertEqual(str(t1), t1.title_with_depth)
+        Topic.save_new(t1)
+        self.assertEqual(str(t1), t1.title)
 
     def test_id_uniqueness(self):
         """'id' is primary key, so must be unique.
         Attempting to create another Topic with the same id should fail.
         """
         t1 = Topic(id="unique-id", title="Unique Topic")
-        t1.save_new_topic()
+        Topic.save_new(t1)
+        t2 = Topic(id="unique-id", title="Duplicate Topic")
         with self.assertRaises(IntegrityError):
-            t2 = Topic(id="unique-id", title="Duplicate Topic")
-            t2.save_new_topic()
+            Topic.save_new(t2)
+
+    def test_display_parent_topics(self):
+        t1 = Topic(id="t1", title="Topic")
+        Topic.save_new(t1)
+        t2 = Topic(id="t2", title="Subtopic")
+        Topic.save_new(t2, parent_topic=t1)
+        t3 = Topic(id="t3", title="Second Subtopic")
+        Topic.save_new(t3, parent_topic=t2)
+
+        self.assertEqual(t3.display_parent_topics, "Topic → Subtopic")
 
 
 class GenericPageToTaxonomyTopicModelTest(TestCase):
@@ -154,9 +139,9 @@ class GenericPageToTaxonomyTopicModelTest(TestCase):
 
         # Create some normal topics (depth=2) using save_topic()
         self.topic_a = Topic(id="topic-a", title="Topic A")
-        self.topic_a.save_new_topic()  # under dummy root
+        Topic.save_new(self.topic_a)  # under dummy root
         self.topic_b = Topic(id="topic-b", title="Topic B")
-        self.topic_b.save_new_topic()
+        Topic.save_new(self.topic_b)
 
     def test_create_generic_page_to_taxonomy_topic(self):
         """Test creating a valid Page→Topic relationship."""
