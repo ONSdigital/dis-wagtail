@@ -59,6 +59,7 @@ INSTALLED_APPS = [
     "cms.articles",
     "cms.bundles",
     "cms.core",
+    "cms.datasets",
     "cms.documents",
     "cms.home",
     "cms.images",
@@ -848,4 +849,7 @@ MANAGE_COOKIE_SETTINGS_URL = env.get("MANAGE_COOKIE_SETTINGS_URL", "https://www.
 
 SLACK_NOTIFICATIONS_WEBHOOK_URL = env.get("SLACK_NOTIFICATIONS_WEBHOOK_URL")
 
-ONS_API_BASE_URL = env.get("ONS_API_BASE_URL")
+ONS_API_BASE_URL = env.get(
+    "ONS_API_BASE_URL",
+)
+ONS_WEBSITE_DATASET_BASE_URL = env.get("ONS_WEBSITE_DATASET_BASE_URL", "https://www.ons.gov.uk/datasets")
