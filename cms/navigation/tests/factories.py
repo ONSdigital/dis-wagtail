@@ -2,8 +2,8 @@ import factory
 from wagtail_factories import ListBlockFactory, PageChooserBlockFactory, StreamFieldFactory, StructBlockFactory
 
 from cms.core.tests.factories import LinkBlockFactory
-from cms.navigation.blocks import SectionBlock, ThemeLinkBlock, TopicLinkBlock
-from cms.navigation.models import ColumnBlock, MainMenu, NavigationSettings
+from cms.navigation.blocks import MainMenuSectionBlock, ThemeLinkBlock, TopicLinkBlock
+from cms.navigation.models import MainMenu, MainMenuColumnBlock, NavigationSettings
 from cms.themes.tests.factories import ThemePageFactory
 from cms.topics.tests.factories import TopicPageFactory
 
@@ -34,19 +34,19 @@ class HighlightsBlockFactory(LinkBlockFactory):
     description = factory.Faker("text", max_nb_chars=50)
 
 
-class SectionBlockFactory(StructBlockFactory):
+class MainMenuSectionBlockFactory(StructBlockFactory):
     class Meta:
-        model = SectionBlock
+        model = MainMenuSectionBlock
 
     section_link = factory.SubFactory(ThemeLinkBlockFactory)
     links = ListBlockFactory(TopicLinkBlockFactory)
 
 
-class ColumnBlockFactory(StructBlockFactory):
+class MainMenuColumnBlockFactory(StructBlockFactory):
     class Meta:
-        model = ColumnBlock
+        model = MainMenuColumnBlock
 
-    sections = ListBlockFactory(SectionBlockFactory)
+    sections = ListBlockFactory(MainMenuSectionBlockFactory)
 
 
 class MainMenuFactory(factory.django.DjangoModelFactory):
@@ -56,7 +56,7 @@ class MainMenuFactory(factory.django.DjangoModelFactory):
     highlights = StreamFieldFactory({"highlight": HighlightsBlockFactory})
     columns = StreamFieldFactory(
         {
-            "column": ColumnBlockFactory,
+            "column": MainMenuColumnBlockFactory,
         }
     )
 

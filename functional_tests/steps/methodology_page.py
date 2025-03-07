@@ -22,6 +22,8 @@ def user_populates_the_methodology_page(context: Context):
     context.page.get_by_label("Publication date*").fill("1950-01-01")
 
     context.page.get_by_title("Insert a block").click()
+    context.page.get_by_label("Content").get_by_text("Section", exact=True).click()
+
     context.page.get_by_label("Section heading*").fill("Heading")
     context.page.locator("#panel-child-content-content-content").get_by_role("region").get_by_role(
         "button", name="Insert a block"

@@ -18,7 +18,7 @@ class TopicLinkBlock(LinkBlock):
         label = _("Topic Link")
 
 
-class HighlightsBlock(LinkBlock):
+class MainMenuHighlightsBlock(LinkBlock):
     description = CharBlock(
         required=True, max_length=50, help_text=_("For example: 'View our latest and upcoming releases.'")
     )
@@ -28,7 +28,7 @@ class HighlightsBlock(LinkBlock):
         label = _("Highlight")
 
 
-class SectionBlock(StructBlock):
+class MainMenuSectionBlock(StructBlock):
     section_link = ThemeLinkBlock(help_text=_("Main link for this section (Theme pages or external URLs)."))
     links = ListBlock(
         TopicLinkBlock(),
@@ -41,8 +41,8 @@ class SectionBlock(StructBlock):
         label = _("Section")
 
 
-class ColumnBlock(StructBlock):
-    sections = ListBlock(SectionBlock(), label="Sections", max_num=3)
+class MainMenuColumnBlock(StructBlock):
+    sections = ListBlock(MainMenuSectionBlock(), label="Sections", max_num=3)
 
     class Meta:
         icon = "list-ul"

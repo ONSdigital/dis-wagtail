@@ -7,7 +7,7 @@ from functional_tests.step_helpers.users import create_cms_admin_user
 
 @given("the user is a CMS admin")  # pylint: disable=not-callable
 def user_is_cms_admin(context: Context) -> None:
-    context.username, context.password = create_cms_admin_user()
+    context.username, context.full_name, context.password = create_cms_admin_user()
 
 
 @when("the user navigates to the beta CMS admin page")  # pylint: disable=not-callable
@@ -31,7 +31,7 @@ def user_sees_admin_homepage(context: Context) -> None:
 
 @given("a CMS user logs into the admin site")
 def user_logs_into_the_admin_site(context: Context) -> None:
-    context.username, context.password = create_cms_admin_user()
+    context.username, context.full_name, context.password = create_cms_admin_user()
     context.page.goto(f"{context.base_url}/admin/login/")
     context.page.get_by_placeholder("Enter your username").fill(context.username)
     context.page.get_by_placeholder("Enter password").fill(context.password)

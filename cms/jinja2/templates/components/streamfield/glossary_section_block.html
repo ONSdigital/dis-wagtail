@@ -1,0 +1,18 @@
+{% from "components/accordion/_macro.njk" import onsAccordion %}
+
+<section id="{{ value.title|slugify() }}">
+
+    <h2 class="ons-u-fs-l">{{ value.title }}</h2>
+
+    {# fmt:off #}
+    {{
+        onsAccordion({
+            "id": "glossary-terms-accordion",
+  
+            "itemsList": formatted_glossary_terms
+        })
+    }}
+    {# fmt:on#}
+
+</section>
+
