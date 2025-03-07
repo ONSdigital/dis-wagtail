@@ -99,3 +99,6 @@ MIGRATION_LINTER_OPTIONS = {
         "0002_articleseriespage_listing_image_and_more",  # Ignoring NOT NULL constraint on columns
     ],
 }
+
+ #  Override size of the pagination used on the previous_release page.
+PREVIOUS_RELEASES_PER_PAGE = 3
