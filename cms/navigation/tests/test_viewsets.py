@@ -4,8 +4,8 @@ from django.test import TestCase
 from django.urls import reverse
 from wagtail.test.utils import WagtailTestUtils
 
-from cms.navigation.models import MainMenu
-from cms.navigation.tests.factories import MainMenuFactory
+from cms.navigation.models import FooterMenu, MainMenu
+from cms.navigation.tests.factories import FooterMenuFactory, MainMenuFactory
 
 
 class MainMenuViewSetTestCase(WagtailTestUtils, TestCase):
@@ -39,4 +39,38 @@ class MainMenuViewSetTestCase(WagtailTestUtils, TestCase):
             response,
             self.dashboard_url,
             msg_prefix="User should be redirected to the dashboard if a MainMenu already exists.",
+        )
+
+
+class FooterMenuViewSetTestCase(WagtailTestUtils, TestCase):
+    @classmethod
+    def setUpTestData(cls):
+        cls.superuser = cls.create_superuser(username="admin")
+
+        cls.add_url = reverse("wagtailsnippets_navigation_footermenu:add")
+        cls.dashboard_url = reverse("wagtailadmin_home")  # Neha wants explanation here?
+
+    def setUp(self):
+        self.client.force_login(self.superuser)
+
+    def test_footer_menu_add_view_can_be_accessed_when_none_exist(self):
+        """If FooterMenu does not exist, the user should be able to access the add view."""
+        self.assertEqual(FooterMenu.objects.count(), 0, "No Footer Menu should exist yet.")
+        response = self.client.get(self.add_url)
+
+        self.assertEqual(
+            response.status_code, HTTPStatus.OK, "User should be able to access add view when no FooterMenu exists."
+        )
+
+    def test_footer_menu_add_redirects_to_dashboard_when_it_already_exists(self):
+        """If a FooterMenu already exists, the user should be redirected to the Wagtail dashboard."""
+        FooterMenuFactory()
+        self.assertEqual(FooterMenu.objects.count(), 1)
+
+        response = self.client.get(self.add_url)
+
+        self.assertRedirects(
+            response,
+            self.dashboard_url,
+            msg_prefix="User should be redirected to the dashboard if a FooterMenu already exists.",
         )

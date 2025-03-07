@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, Optional, TypedDict
+from typing import TYPE_CHECKING, Optional, TypedDict, cast
 
 import jinja2
 from django.http import HttpRequest
@@ -6,7 +6,7 @@ from django.http import HttpRequest
 if TYPE_CHECKING:
     from wagtail.blocks import StructValue
 
-    from cms.navigation.models import MainMenu
+    from cms.navigation.models import FooterMenu, MainMenu
 
 
 class NavigationItem(TypedDict, total=False):
@@ -19,6 +19,11 @@ class NavigationItem(TypedDict, total=False):
 class ColumnData(TypedDict):
     column: int
     linksList: list[NavigationItem]
+
+
+class FooterColumnData(TypedDict):
+    title: str
+    itemsList: list[NavigationItem]
 
 
 def _extract_item(
@@ -94,3 +99,25 @@ def main_menu_columns(context: jinja2.runtime.Context, main_menu: Optional["Main
             items.append(column_data)
 
     return items
+
+
+@jinja2.pass_context
+def footer_menu_columns(
+    context: jinja2.runtime.Context, footer_menu: Optional["FooterMenu"] = None
+) -> list[FooterColumnData]:
+    if not footer_menu:
+        return []
+
+    columns_data = []
+    for column in footer_menu.columns:
+        column_value = column.value
+        column_title = column_value.get("title")
+
+        links_list = []
+        for link_struct in column_value.get("links", []):
+            link_data = _extract_item(link_struct, context.get("request"))
+            if link_data:
+                links_list.append(link_data)
+
+        columns_data.append(cast(FooterColumnData, {"title": column_title, "itemsList": links_list}))
+    return columns_data
