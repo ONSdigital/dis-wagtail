@@ -1,2 +1,17 @@
-{% from "components/table/_macro.njk" import onsTable %}
-{{ onsTable(options) }}
+{% from "component_overrides/table/_macro.njk" import onsTable %}
+{%- if options -%}
+    <div class="ons-table-block" id="table-{{ block_id }}">
+        {% if title %}<h3 class="heading-4">{{ title }}</h3>{% endif %}
+
+        {{ onsTable(options) }}
+
+        {%- if source %}<p><strong>{{ _("Source") }}</strong>: {{ source }}</p>{% endif -%}
+
+        {%- if footnotes -%}
+            {% from "components/details/_macro.njk" import onsDetails %}
+            {% call onsDetails({"id": block_id, "title": _("Footnotes")}) %}
+                {{ footnotes|richtext }}
+            {% endcall %}
+        {%- endif -%}
+    </div>
+{%- endif -%}
