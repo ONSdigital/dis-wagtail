@@ -5,6 +5,8 @@ from kafka import KafkaProducer
 import logging
 from django.conf import settings
 
+logger = logging.getLogger(__name__)
+
 
 class BasePublisher(ABC):
     @abstractmethod
@@ -35,22 +37,20 @@ class KafkaPublisher(BasePublisher):
 
     def publish_created_or_updated(self, page):
         message = self._construct_message_for_create_update(page)
-        logging.debug("Publishing CREATED/UPDATED to topic=%s, message=%s", self.topic_created_or_updated, message)
+        logger.info("Publishing CREATED/UPDATED to topic=%s, message=%s", self.topic_created_or_updated, message)
 
         future = self.producer.send(self.topic_created_or_updated, message)
         # Optionally block for the result, capturing metadata or error
         result = future.get(timeout=10)  # Wait up to 10s for send to complete
-        logging.debug("Publish result for topic %s: %s", self.topic_created_or_updated, result)
-        print("Publish result for topic %s: %s", self.topic_created_or_updated, result)
+        logger.info("Publish result for topic %s: %s", self.topic_created_or_updated, result)
 
     def publish_deleted(self, page):
         message = self._construct_message_for_delete(page)
-        logging.debug("Publishing DELETED to topic=%s, message=%s", self.topic_deleted, message)
+        logger.info("Publishing DELETED to topic=%s, message=%s", self.topic_deleted, message)
 
         future = self.producer.send(self.topic_deleted, message)
         result = future.get(timeout=10)
-        logging.debug("Publish result for topic %s: %s", self.topic_deleted, result)
-        print("Unpublish result for topic %s: %s", self.topic_deleted, result)
+        logger.info("Publish result for topic %s: %s", self.topic_deleted, result)
 
     def _construct_message_for_create_update(self, page):
         """Build a dict that matches the agreed metadata schema for 'created/updated'.
@@ -87,10 +87,10 @@ class KafkaPublisher(BasePublisher):
 
 class LogPublisher(BasePublisher):
     def publish_created_or_updated(self, page):
-        logging.info("Created/Updated event for page ID %s", page.id)
+        logger.info("Created/Updated event for page ID %s", page.id)
 
     def publish_deleted(self, page):
-        logging.info("Deleted event for page ID %s", page.id)
+        logger.info("Deleted event for page ID %s", page.id)
 
 
 class NullPublisher(BasePublisher):
