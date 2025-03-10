@@ -36,7 +36,7 @@ class SectionContentBlock(StreamBlock):
     equation = MathBlock(group="DataVis", icon="decimal")
     ons_embed = ONSEmbedBlock(group="DataVis", label="ONS General Embed")
     related_links = RelatedLinksBlock(icon="link")
-    glossary_terms = GlossaryTermsBlock()
+    definitions = GlossaryTermsBlock()
 
     class Meta:
         template = "templates/components/streamfield/stream_block.html"
