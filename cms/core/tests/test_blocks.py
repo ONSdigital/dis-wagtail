@@ -381,3 +381,117 @@ class ONSTableBlockTestCase(TestCase):
 
                 for field in not_present:
                     self.assertNotIn(data[field], rendered)
+
+    def test_render_block__ds_component_markup(self):
+        table = {
+            "headers": [],
+            "rows": [[{"value": "row cell", "type": "td"}]],
+        }
+        rendered = self.block.render({"data": table})
+
+        expected = """
+        <table class="ons-table">
+            <tbody class="ons-table__body">
+                <tr class="ons-table__row">
+                    <td class="ons-table__cell">row cell</td>
+                </tr>
+            </tbody>
+        </table>
+        """
+        self.assertInHTML(expected, rendered)
+
+        table = {
+            "headers": [[{"value": "header cell", "type": "th"}]],
+            "rows": [],
+        }
+        rendered = self.block.render({"data": table})
+
+        expected = """
+        <table class="ons-table">
+            <thead class="ons-table__head">
+                <tr class="ons-table__row">
+                    <th scope="col" class="ons-table__header">
+                        <span class="ons-table__header-text">header cell</span>
+                    </th>
+                </tr>
+            </thead>
+            <tbody class="ons-table__body"></tbody>
+        </table>
+        """
+        self.assertInHTML(expected, rendered)
+
+        table = {
+            "headers": [
+                [
+                    {"value": "Combined header", "type": "th", "colspan": 2},
+                    {"value": "Regular header", "type": "th"},
+                    {"value": "Two row header", "type": "th", "rowspan": 2},
+                ],
+                [
+                    {"value": "Sub-header 1", "type": "th"},
+                    {"value": "Sub-header 2", "type": "th"},
+                    {"value": "Sub-header 3", "type": "th"},
+                ],
+            ],
+            "rows": [
+                [
+                    {"value": "Col header 1", "type": "th", "scope": "row"},
+                    {"value": "Two rows and cols cell", "type": "td", "rowspan": 2, "colspan": 2},
+                    {"value": "Col cell 1", "type": "td"},
+                ],
+                [
+                    {"value": "Col header 2", "type": "th", "scope": "row"},
+                    {"value": "Col cell 2", "type": "td", "rowspan": 2},
+                ],
+                [
+                    {"value": "Col header 3", "type": "th", "scope": "row"},
+                    {"value": "Col cell 3", "type": "td", "colspan": 3},
+                ],
+            ],
+        }
+        rendered = self.block.render({"data": table})
+
+        expected = """
+        <table class="ons-table">
+            <thead class="ons-table__head">
+                <tr class="ons-table__row">
+                    <th scope="col" class="ons-table__header" colspan="2">
+                        <span class="ons-table__header-text">Combined header</span>
+                    </th>
+                    <th scope="col" class="ons-table__header">
+                        <span class="ons-table__header-text">Regular header</span>
+                    </th>
+                    <th scope="col" class="ons-table__header" rowspan="2">
+                        <span class="ons-table__header-text">Two row header</span>
+                    </th>
+                </tr>
+                <tr class="ons-table__row">
+                    <th scope="col" class="ons-table__header">
+                        <span class="ons-table__header-text">Sub-header 1</span>
+                    </th>
+                    <th scope="col" class="ons-table__header">
+                        <span class="ons-table__header-text">Sub-header 2</span>
+                    </th>
+                    <th scope="col" class="ons-table__header">
+                        <span class="ons-table__header-text">Sub-header 3</span>
+                    </th>
+                </tr>
+            </thead>
+            <tbody class="ons-table__body">
+                <tr class="ons-table__row">
+                    <th class="ons-table__cell" scope="row">Col header 1</th>
+                    <td class="ons-table__cell" colspan="2" rowspan="2">Two rows and cols cell</td>
+                    <td class="ons-table__cell">Col cell 1</td>
+                </tr>
+                <tr class="ons-table__row">
+                    <th class="ons-table__cell" scope="row">Col header 2</th>
+                    <td class="ons-table__cell" rowspan="2">Col cell 2</td>
+                </tr>
+                <tr class="ons-table__row">
+                    <th class="ons-table__cell" scope="row">Col header 3</th>
+                    <td class="ons-table__cell" colspan="3">Col cell 3</td>
+                </tr>
+            </tbody>
+        </table>
+        """
+        self.assertInHTML(expected, rendered)
