@@ -753,7 +753,7 @@ if ENABLE_DJANGO_DEFENDER:
 # This name is displayed in the Wagtail admin.
 WAGTAIL_SITE_NAME = "Office for National Statistics"
 
-# Base URL to use when formatting ahsolute URLs within the Wagtail admin in
+# Base URL to use when formatting absolute URLs within the Wagtail admin in
 # contexts without a request, e.g. in notification emails. Don't include '/admin'
 # or a trailing slash.
 if "WAGTAILADMIN_BASE_URL" in env:
