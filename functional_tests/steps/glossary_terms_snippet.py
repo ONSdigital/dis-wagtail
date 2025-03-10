@@ -76,6 +76,8 @@ def the_past_revisions_are_visible(context: Context) -> None:
 
 @then("the user can see the preview of the Glossary Term")
 def the_user_can_see_the_preview_of_the_glossary_term(context: Context) -> None:
+    # add a small delay to allow any client-side JS to initialize.
+    context.page.wait_for_timeout(500)
     iframe_locator = context.page.frame_locator("#w-preview-iframe")
 
     iframe_locator.get_by_role("link", name="Term").click()
