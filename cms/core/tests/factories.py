@@ -4,13 +4,12 @@ from wagtail import blocks
 from wagtail.rich_text import RichText
 from wagtail_factories.blocks import (
     BlockFactory,
-    ListBlockFactory,
     PageChooserBlockFactory,
     StructBlockFactory,
 )
 
 from cms.core.blocks.related import LinkBlock, RelatedContentBlock
-from cms.core.blocks.section_blocks import GlossarySectionBlock, SectionBlock, SectionContentBlock
+from cms.core.blocks.section_blocks import SectionBlock, SectionContentBlock
 from cms.core.models import ContactDetails
 from cms.core.models.snippets import GlossaryTerm
 
@@ -69,16 +68,6 @@ class GlossaryTermFactory(factory.django.DjangoModelFactory):
 
     name = factory.Faker("text", max_nb_chars=20)
     definition = factory.Faker("text", max_nb_chars=100)
-
-
-class GlossarySectionBlockFactory(StructBlockFactory):
-    """Factory for Glossary StructBlock."""
-
-    class Meta:
-        model = GlossarySectionBlock
-
-    title = "Glossary"
-    content = ListBlockFactory(GlossaryTermFactory)
 
 
 class SectionContentBlockFactory(StructBlockFactory):

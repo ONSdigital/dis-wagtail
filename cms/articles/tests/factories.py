@@ -8,7 +8,6 @@ from django.utils import timezone
 from cms.articles.models import ArticleSeriesPage, StatisticalArticlePage
 from cms.core.tests.factories import (
     ContactDetailsFactory,
-    GlossarySectionBlockFactory,
     SectionContentBlockFactory,
 )
 from cms.topics.tests.factories import TopicPageFactory
@@ -55,7 +54,6 @@ class StatisticalArticlePageFactory(wagtail_factories.PageFactory):
     content = wagtail_factories.StreamFieldFactory(
         {
             "section": factory.SubFactory(SectionContentBlockFactory),
-            "glossary_section": factory.SubFactory(GlossarySectionBlockFactory),
         }
     )
     is_accredited = False

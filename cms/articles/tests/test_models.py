@@ -8,7 +8,7 @@ from django.utils.formats import date_format
 from wagtail.test.utils import WagtailTestUtils
 
 from cms.articles.tests.factories import ArticleSeriesPageFactory, StatisticalArticlePageFactory
-from cms.core.tests.factories import ContactDetailsFactory, GlossaryTermFactory
+from cms.core.tests.factories import ContactDetailsFactory
 
 
 class ArticleSeriesTestCase(WagtailTestUtils, TestCase):
@@ -120,16 +120,6 @@ class StatisticalArticlePageTestCase(WagtailTestUtils, TestCase):
         self.page.contact_details = ContactDetailsFactory()
         toc = self.page.table_of_contents
         self.assertIn({"url": "#contact-details", "text": "Contact details"}, toc)
-
-    def test_table_of_contents_with_glossary_section(self):
-        glossary_term = GlossaryTermFactory()
-        self.page.content = [
-            {
-                "type": "glossary_section",
-                "value": {"title": "Definitions", "content": [glossary_term.pk]},
-            }
-        ]
-        self.assertIn({"url": "#definitions", "text": "Definitions"}, self.page.table_of_contents)
 
     def test_is_latest(self):
         """Test is_latest returns True for most recent page."""

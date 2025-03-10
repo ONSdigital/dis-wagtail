@@ -7,7 +7,6 @@ from django.utils import timezone
 
 from cms.core.tests.factories import (
     ContactDetailsFactory,
-    GlossarySectionBlockFactory,
     SectionContentBlockFactory,
 )
 from cms.methodology.models import MethodologyPage, MethodologyRelatedPage
@@ -33,7 +32,6 @@ class MethodologyPageFactory(wagtail_factories.PageFactory):
     content = wagtail_factories.StreamFieldFactory(
         {
             "section": factory.SubFactory(SectionContentBlockFactory),
-            "glossary_section": factory.SubFactory(GlossarySectionBlockFactory),
         }
     )
 
