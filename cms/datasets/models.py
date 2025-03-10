@@ -7,9 +7,12 @@ from django.db import models
 from django.db.models import UniqueConstraint
 from queryish.rest import APIModel, APIQuerySet
 
+from cms.core.cache import memory_cache
+
 logger = logging.getLogger(__name__)
 
 EDITIONS_PATTERN = re.compile(r"/editions/([^/]+)/")
+DATASETS_BASE_API_URL = f"{settings.ONS_API_BASE_URL}/datasets"
 
 
 # This needs a revisit. Consider caching + fewer requests
@@ -41,12 +44,20 @@ class ONSApiQuerySet(APIQuerySet):
         return super().run_count()
 
 
+class ONSDatasetManager(models.Manager):
+    # Override the filter manager method with a short term memory cache to reduce the rate of API requests
+    @memory_cache(timeout=30)
+    def filter(self, *args, **kwargs):
+        return super(*args, **kwargs).filter()
+
+
 class ONSDataset(APIModel):
     base_query_class = ONSApiQuerySet
+    objects = ONSDatasetManager()
 
     class Meta:
-        base_url: str = settings.ONS_API_BASE_URL
-        detail_url: str = f"{settings.ONS_API_BASE_URL}/%s"
+        base_url: str = DATASETS_BASE_API_URL
+        detail_url: str = f"{DATASETS_BASE_API_URL}/%s"
         fields: ClassVar = ["id", "description", "title", "version", "url", "edition"]
         pagination_style = "offset-limit"
         verbose_name_plural = "ONS Datasets"
@@ -94,4 +105,4 @@ class Dataset(models.Model):
 
     @property
     def website_url(self):
-        return self.url.replace(settings.ONS_API_BASE_URL, settings.ONS_WEBSITE_DATASET_BASE_URL)
+        return self.url.replace(DATASETS_BASE_API_URL, settings.ONS_WEBSITE_DATASET_BASE_URL)

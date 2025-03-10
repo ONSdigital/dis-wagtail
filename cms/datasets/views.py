@@ -21,7 +21,7 @@ class DatasetBaseChooseViewMixin:
         return [
             *getattr(super(), "columns", []),
             Column("edition", label="Edition", accessor="formatted_edition"),
-            Column("version", label="Version", accessor="version"),
+            Column("version", label="Latest Version", accessor="version"),
         ]
 
 
