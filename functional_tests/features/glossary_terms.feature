@@ -27,11 +27,12 @@ Scenario: The Glossary Term raise validation errors when name is duplicated
     Then a validation error is displayed
 
 
-# Scenario: The user can add the Glossary Term to a methodology page
-#     Given a topic page exists under a theme page
-#     And a CMS user logs into the admin site
-#     And the user adds a Glossary Terms snippet 
-#     When the user creates a methodology page as a child of the existing topic page
-#     And the user adds the Glossary Term Section OR the user adds the Glossary Term snippet within the regular section - TBC
-#     Then the Glossary Term is displayed on the page
-#     And the section title is automatically added to the table of contents
+Scenario: The user can add the Glossary Terms in a section of a page
+    Given a topic page exists under a theme page
+    And a CMS user logs into the admin site
+    And the user adds a Glossary Terms snippet 
+    When the user creates a methodology page as a child of the existing topic page
+    And the user populates the methodology page
+    And adds Glossary Terms to the page content
+    When the user clicks the "Preview" button
+    Then the user can see the preview of the Glossary Term
