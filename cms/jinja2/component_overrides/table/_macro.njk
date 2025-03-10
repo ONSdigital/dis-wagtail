@@ -18,12 +18,13 @@
                 {% if params.caption %}
                 <caption class="ons-table__caption{{ " ons-u-vh" if params.hideCaption }}">{{ params.caption }}</caption>
                 {% endif %}
+                {% set headers = params.headers if params.headers else params.ths|list %}
+                {%- if headers -%}
                 <thead class="ons-table__head">
-                    {% set headers = params.headers if params.headers else params.ths|list %}
                     {% for header in headers %}
                     <tr class="ons-table__row">
                         {% for th in header %}
-                        <th scope="col" class="ons-table__header{{ ' ' + th.thClasses if th.thClasses }}{{ " ons-table__header--numeric" if th.numeric }}" {% if td.colspan %} colspan="{{ td.colspan }}"{% endif %} {% if td.rowspan %} rowspan="{{ td.rowspan }}"{% endif %} {% if 'sortable' in variants %} aria-sort="{{- th.ariaSort | default('none') -}}"{% endif %}{% if th.widthPercentage %} width="{{ th.widthPercentage }}%"{% endif %}>
+                        <th scope="col" class="ons-table__header{{ ' ' + th.thClasses if th.thClasses }}{{ " ons-table__header--numeric" if th.numeric }}" {% if th.colspan %} colspan="{{ th.colspan }}"{% endif %} {% if th.rowspan %} rowspan="{{ th.rowspan }}"{% endif %} {% if 'sortable' in variants %} aria-sort="{{- th.ariaSort | default('none') -}}"{% endif %}{% if th.widthPercentage %} width="{{ th.widthPercentage }}%"{% endif %}>
                             <span class="ons-table__header-text">{{- th.value -}}</span>
                             {% if 'sortable' in variants %}
                                 {{-
@@ -39,6 +40,7 @@
                     </tr>
                     {% endfor %}
                 </thead>
+                {%- endif %}
                 <tbody class="ons-table__body">
                     {% for tr in params.trs %}
                     <tr class="ons-table__row{{ " ons-table__row--highlight" if tr.highlight }}" {% if tr.id %} id="{{ tr.id }}"{% endif %} {% if tr.span %}{{ tr.span }}{% endif %}>
