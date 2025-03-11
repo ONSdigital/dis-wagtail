@@ -71,7 +71,18 @@ def the_statistical_article_page_is_displayed_with_the_populated_data(context: C
 
 
 @then("the published statistical article page has the added table")
-def _published_statistical_article_page_has_the_added_table(context: Context):
+def the_published_statistical_article_page_has_the_added_table(context: Context):
     expect(context.page.get_by_role("table")).to_be_visible()
     expect(context.page.get_by_text("cell1")).to_be_visible()
     expect(context.page.get_by_text("cell2")).to_be_visible()
+
+
+@then("the user can expand the footnotes")
+def expand_footnotes(context: Context):
+    page = context.page
+    footnotes_content = page.get_by_text("some footnotes", exact=True)
+    expect(page.get_by_role("link", name="Footnotes")).to_be_visible()
+    expect(footnotes_content).to_be_hidden()
+
+    page.get_by_role("link", name="Footnotes").click()
+    expect(footnotes_content).to_be_visible()

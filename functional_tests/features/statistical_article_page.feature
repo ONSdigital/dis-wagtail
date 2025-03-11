@@ -18,3 +18,4 @@ Feature: Statistical Article Page components
         And the user clicks "View Live" on the publish confirmation banner
         Then the published statistical article page is displayed with the populated data
         And the published statistical article page has the added table
+        And the user can expand the footnotes
