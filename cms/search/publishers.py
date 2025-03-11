@@ -1,5 +1,4 @@
 from abc import ABC, abstractmethod
-import os
 import json
 from kafka import KafkaProducer
 import logging
@@ -24,15 +23,10 @@ class KafkaPublisher(BasePublisher):
     """
 
     def __init__(self):
-        # Read Kafka configs from environment or settings
-
-        # self.kafka_server = os.getenv("KAFKA_SERVER", "localhost:9092")
-        # self.topic_created_or_updated = os.getenv("KAFKA_TOPIC_CREATED_OR_UPDATED", "search-content-updated")
-        # self.topic_deleted = os.getenv("KAFKA_TOPIC_DELETED", "search-content-deleted")
-
-        self.kafka_server = getattr(settings, "KAFKA_SERVER", "localhost:9092")
-        self.topic_created_or_updated = getattr(settings, "KAFKA_TOPIC_CREATED_OR_UPDATED", "search-content-updated")
-        self.topic_deleted = getattr(settings, "KAFKA_TOPIC_DELETED", "search-content-deleted")
+        # Read Kafka configs settings
+        self.kafka_server = settings.KAFKA_SERVER
+        self.topic_created_or_updated = settings.KAFKA_TOPIC_CREATED_OR_UPDATED
+        self.topic_deleted = settings.KAFKA_TOPIC_DELETED
 
         self.producer = KafkaProducer(
             bootstrap_servers=[self.kafka_server],
@@ -74,70 +68,70 @@ class KafkaPublisher(BasePublisher):
         """
         # For pages that are 'release' content, we add release fields below.
         content_type = self._map_page_type_to_content_type(page)
-        # breakpoint()
 
         # Common fields for StandardPayload (also part of ReleasePayload)
         # The schema requires at minimum: uri, title, content_type
         message = {
             "uri": page.url_path,
-            "uri_old": "",  # optional, if needed
             "content_type": page.content_type_id,
-            "cdid": getattr(page, "cdid", None),
-            "dataset_id": getattr(page, "dataset_id", None),
-            "edition": getattr(page, "edition", None),
-            "meta_description": getattr(page, "meta_description", None),
-            # if page.release_date is a datetime, convert to isoformat
-            "release_date": (
-                page.release_date.isoformat() if hasattr(page, "release_date") and page.release_date else None
-            ),
-            "summary": getattr(page, "summary", None),
+            "release_date": page.release_date.isoformat().replace("+00:00", "Z") if content_type == "release" else None,
+            "summary": page.summary,
             "title": page.title,
             "topics": list(page.topics.values_list("topic_id", flat=True)),
-            "language": getattr(page, "language", None),
-            "survey": getattr(page, "survey", None),
-            "canonical_topic": getattr(page, "canonical_topic", None),
         }
 
         # If it's a Release, we add the extra fields from ReleasePayload
         if content_type == "release":
-            breakpoint()
-            message["cancelled"] = getattr(page, "cancelled", False)
-            message["finalised"] = getattr(page, "finalised", False)
-            message["published"] = getattr(page, "published", False)
-            message["date_changes"] = getattr(page, "date_changes", [])
-            message["provisional_date"] = getattr(page, "provisional_date", "")
-
+            message.update(self._construct_release_specific_fields(page))
         return message
+
+    def _construct_release_specific_fields(self, page):
+        """Constructs and returns a dictionary with release-specific fields."""
+        release_fields = {
+            "finalised": page.status in ["CONFIRMED", "PROVISIONAL"],
+            "cancelled": page.status == "CANCELLED",
+            "published": page.status == "PUBLISHED",
+            "date_changes": [
+                {
+                    "change_notice": page.changes_to_release_date[0].value["reason_for_change"],
+                    "previous_date": page.changes_to_release_date[0]
+                    .value["previous_date"]
+                    .isoformat()
+                    .replace("+00:00", "Z"),
+                }
+            ]
+            if page.changes_to_release_date
+            else [],
+        }
+        return release_fields
 
     def _construct_message_for_delete(self, page):
         """Build a dict that matches the 'content-deleted' schema:
-          - required: uri
-          - optional: trace_id
-        We'll use page.full_url or fallback for 'uri'.
+        - required: uri
+        - optional: trace_id.
         """
         message = {
             "uri": page.url_path,
         }
 
-        if hasattr(page, "trace_id") and page.trace_id:
+        if hasattr(page, "trace_id"):
             message["trace_id"] = page.trace_id
 
         return message
 
     def _map_page_type_to_content_type(self, page):
-        """Map Wagtail Page subclasses to your enumerated content_type for the schema.
-        The schema enumerates possibilities like 'release', 'bulletin', 'article', etc.
-        """
+        """Maps the class name of a given page object to a corresponding content type string."""
         page_class_name = page.__class__.__name__
 
-        if page_class_name == "ReleaseCalendarPage":
-            return "release"
-        elif page_class_name == "StatisticalArticlePage":
-            return "bulletin"
-        else:
-            # Example JSON used "standard" or "release".
-            # Official enum doesn't have "standard"
-            return "standard"
+        mapping = {
+            "ReleaseCalendarPage": "release",
+            "StatisticalArticlePage": "bulletin",
+            "InformationPage": "static_page",
+            "IndexPage": "static_landing_page",
+            "MethodologyPage": "static_methodology",
+        }
+
+        return mapping.get(page_class_name)
 
 
 class LogPublisher(BasePublisher):
