@@ -34,7 +34,7 @@ class SectionContentBlock(StreamBlock):
     image = ImageChooserBlock(group="Media")
     documents = DocumentsBlock(group="Media")
     video_embed = VideoEmbedBlock(group="Media")
-    table = ONSTableBlock(group="DataVis")
+    table = ONSTableBlock(group="DataVis", allow_links=True)
     equation = MathBlock(group="DataVis", icon="decimal")
     ons_embed = ONSEmbedBlock(group="DataVis", label=_("ONS General Embed"))
     related_links = RelatedLinksBlock(icon="link")

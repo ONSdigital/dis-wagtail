@@ -52,7 +52,7 @@ class CoreStoryBlock(StreamBlock):
     image = ImageChooserBlock(group="Media")
     documents = DocumentsBlock(group="Media")
     related_links = RelatedLinksBlock()
-    table = ONSTableBlock(group="DataVis")
+    table = ONSTableBlock(group="DataVis", allow_links=True)
     equation = MathBlock(group="DataVis", icon="decimal")
     ons_embed = ONSEmbedBlock(group="DataVis", label="ONS General Embed")
 

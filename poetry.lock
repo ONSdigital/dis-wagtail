@@ -118,17 +118,17 @@ docs = ["sphinx (>=1.6)", "sphinx-bootstrap-theme (>=0.6)"]
 
 [[package]]
 name = "boto3"
-version = "1.37.9"
+version = "1.37.10"
 description = "The AWS SDK for Python"
 optional = false
 python-versions = ">=3.8"
 files = [
-    {file = "boto3-1.37.9-py3-none-any.whl", hash = "sha256:cfff6e9cf4b987480fbbe85873f3e609aeea1906631c7148e5b7e3c778aebd40"},
-    {file = "boto3-1.37.9.tar.gz", hash = "sha256:51b76da93d7c2a3dff6155ee4aa25455940e7ade08292d22aeeed08b9e0dbf0b"},
+    {file = "boto3-1.37.10-py3-none-any.whl", hash = "sha256:fc649fb4c9521f60660fd562d6bf2034753832968b0c93ec60ad30634afb1b0f"},
+    {file = "boto3-1.37.10.tar.gz", hash = "sha256:0c6eb8191b1ea4c7a139e56425399405d46e86c7e814ef497176b9af1f7ca056"},
 ]
 
 [package.dependencies]
-botocore = ">=1.37.9,<1.38.0"
+botocore = ">=1.37.10,<1.38.0"
 jmespath = ">=0.7.1,<2.0.0"
 s3transfer = ">=0.11.0,<0.12.0"
 
@@ -137,13 +137,13 @@ crt = ["botocore[crt] (>=1.21.0,<2.0a0)"]
 
 [[package]]
 name = "botocore"
-version = "1.37.9"
+version = "1.37.10"
 description = "Low-level, data-driven core of boto 3."
 optional = false
 python-versions = ">=3.8"
 files = [
-    {file = "botocore-1.37.9-py3-none-any.whl", hash = "sha256:bf0ab085ae85a4a2fa1733321069c1039745fa65ca9f335a91b8712fd6745d5f"},
-    {file = "botocore-1.37.9.tar.gz", hash = "sha256:2fdafbb9c44196cd371f4890aedf9f54352348fbae624a3880862d35724f0956"},
+    {file = "botocore-1.37.10-py3-none-any.whl", hash = "sha256:7515c8dfaaf5ba02604db9cf73c172615afee976136f31d8aec628629f24029f"},
+    {file = "botocore-1.37.10.tar.gz", hash = "sha256:ab311982a9872eeb4e71906d3e3fcd2ba331a869d0fed16836ade7ce2e58bcea"},
 ]
 
 [package.dependencies]
@@ -2591,13 +2591,13 @@ files = [
 
 [[package]]
 name = "wagtail-tinytableblock"
-version = "0.2"
+version = "0.2.1"
 description = "A Wagtail StreamField block powered by TinyMCE and its table plugin"
 optional = false
 python-versions = ">=3.12"
 files = [
-    {file = "wagtail_tinytableblock-0.2-py3-none-any.whl", hash = "sha256:89cb5f2c89fac346efd9d5e70b97e9103b031224f00f18de7bb74748e0c0821c"},
-    {file = "wagtail_tinytableblock-0.2.tar.gz", hash = "sha256:5553a0f4af8179bd1f27967cac379e9952762684a7b29b3bb44a095610b798b2"},
+    {file = "wagtail_tinytableblock-0.2.1-py3-none-any.whl", hash = "sha256:8cae541ac0aaeb33af17b37ab14d68cbe6aee432b24081bb313608839c9ffd59"},
+    {file = "wagtail_tinytableblock-0.2.1.tar.gz", hash = "sha256:bca9225e2e15ae6259a1f14ff63fcbea81880c1fad503137bf1fc9c77dc6516e"},
 ]
 
 [package.dependencies]
@@ -2707,4 +2707,4 @@ files = [
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.12"
-content-hash = "5d45d0715e00059508a3d70c87f37a6b89a3dddffaff18cf132b2c119b393173"
+content-hash = "af193191c79a04daacde04ede9d8d8c13a1d177f44fae00fda0c530e6da8d50a"
