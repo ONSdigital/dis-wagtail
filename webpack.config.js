@@ -199,7 +199,10 @@ const webpackConfig = (environment, argv) => {
       },
       client: {
         // Shows a full-screen overlay in the browser when there are compiler errors.
-        overlay: true,
+        overlay: {
+          warnings: false,
+          errors: true,
+        },
         logging: 'error',
       },
       devMiddleware: {

@@ -1,8 +1,9 @@
+from django.templatetags.static import static
+from django.utils.html import format_html
 from wagtail import hooks
 from wagtail.snippets.models import register_snippet
-from wagtail.snippets.views.snippets import SnippetViewSet
 
-from cms.core.models import ContactDetails
+from cms.core.viewsets import ContactDetailsViewSet
 
 
 @hooks.register("register_icons")
@@ -21,16 +22,10 @@ def register_icons(icons: list[str]) -> list[str]:
     ]
 
 
-class ContactDetailsViewSet(SnippetViewSet):
-    """A snippet viewset for ContactDetails.
-
-    See:
-     - https://docs.wagtail.org/en/stable/topics/snippets/registering.html
-     - https://docs.wagtail.org/en/stable/topics/snippets/customizing.html#icon
-    """
-
-    model = ContactDetails
-    icon = "identity"
+@hooks.register("insert_editor_js")
+def editor_js() -> str:
+    """Modify the default behavior of the Wagtail admin editor."""
+    return format_html('<script src="{}"></script>', static("js/wagtail-editor-customisations.js"))
 
 
 register_snippet(ContactDetailsViewSet)

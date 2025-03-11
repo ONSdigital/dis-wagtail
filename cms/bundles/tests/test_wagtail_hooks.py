@@ -5,7 +5,7 @@ from django.urls import reverse
 from django.utils import timezone
 from wagtail.test.utils.wagtail_tests import WagtailTestUtils
 
-from cms.analysis.tests.factories import AnalysisPageFactory
+from cms.articles.tests.factories import StatisticalArticlePageFactory
 from cms.bundles.models import Bundle
 from cms.bundles.tests.factories import BundleFactory, BundlePageFactory
 from cms.bundles.tests.utils import grant_all_bundle_permissions, grant_all_page_permissions, make_bundle_viewer
@@ -40,10 +40,10 @@ class WagtailHooksTestCase(WagtailTestUtils, TestCase):
         cls.approved_bundle = BundleFactory(name="Approved Bundle", approved=True, created_by=cls.publishing_officer)
         cls.released_bundle = BundleFactory(released=True, name="Released Bundle")
 
-        cls.analysis_page = AnalysisPageFactory(title="November 2024", parent__title="PSF")
-        cls.analysis_edit_url = reverse("wagtailadmin_pages:edit", args=[cls.analysis_page.id])
-        cls.analysis_parent_url = reverse("wagtailadmin_explore", args=[cls.analysis_page.get_parent().id])
-        cls.add_to_bundle_url = reverse("bundles:add_to_bundle", args=[cls.analysis_page.id])
+        cls.statistical_article_page = StatisticalArticlePageFactory(title="November 2024", parent__title="PSF")
+        cls.article_edit_url = reverse("wagtailadmin_pages:edit", args=[cls.statistical_article_page.id])
+        cls.article_parent_url = reverse("wagtailadmin_explore", args=[cls.statistical_article_page.get_parent().id])
+        cls.add_to_bundle_url = reverse("bundles:add_to_bundle", args=[cls.statistical_article_page.id])
 
     def test_latest_bundles_panel_is_shown(self):
         """Checks that the latest bundles dashboard panel is shown to relevant users."""
@@ -82,7 +82,7 @@ class WagtailHooksTestCase(WagtailTestUtils, TestCase):
         """Checks we update the page go live at on page edit , if in the future and doesn't match the bundle date."""
         self.client.force_login(self.publishing_officer)
 
-        BundlePageFactory(parent=self.pending_bundle, page=self.analysis_page)
+        BundlePageFactory(parent=self.pending_bundle, page=self.statistical_article_page)
 
         # set to +15 minutes as the check is on now() < scheduled_publication_date & page.go_live_at != scheduled
         nowish = timezone.now() + timedelta(minutes=15)
@@ -99,10 +99,10 @@ class WagtailHooksTestCase(WagtailTestUtils, TestCase):
                 self.pending_bundle.publication_date = bundle_publication_date
                 self.pending_bundle.save(update_fields=["publication_date"])
 
-                self.analysis_page.go_live_at = go_live_at
-                self.analysis_page.save(update_fields=["go_live_at"])
+                self.statistical_article_page.go_live_at = go_live_at
+                self.statistical_article_page.save(update_fields=["go_live_at"])
 
-                response = self.client.get(self.analysis_edit_url)
+                response = self.client.get(self.article_edit_url)
                 context_page = response.context["page"]
                 self.assertEqual(context_page.go_live_at, expected)
 
@@ -114,10 +114,10 @@ class WagtailHooksTestCase(WagtailTestUtils, TestCase):
         self.pending_bundle.publication_date = nowish + timedelta(hours=1)
         self.pending_bundle.save(update_fields=["publication_date"])
 
-        self.analysis_page.go_live_at = nowish
-        self.analysis_page.save(update_fields=["go_live_at"])
+        self.statistical_article_page.go_live_at = nowish
+        self.statistical_article_page.save(update_fields=["go_live_at"])
 
-        response = self.client.get(self.analysis_edit_url)
+        response = self.client.get(self.article_edit_url)
         context_page = response.context["page"]
         self.assertEqual(context_page.go_live_at, nowish)
 
@@ -140,7 +140,7 @@ class WagtailHooksTestCase(WagtailTestUtils, TestCase):
     def test_add_to_bundle_buttons(self):
         """Tests that the 'Add to Bundle' button appears in appropriate contexts."""
         # Test both header and listing contexts
-        contexts = [(self.analysis_edit_url, "header"), (self.analysis_parent_url, "listing")]
+        contexts = [(self.article_edit_url, "header"), (self.article_parent_url, "listing")]
 
         for user in [self.generic_user, self.bundle_viewer]:
             for url, context in contexts:
@@ -172,7 +172,7 @@ class WagtailHooksTestCase(WagtailTestUtils, TestCase):
             (reverse("wagtailadmin_pages:edit", args=[release_calendar_page.id]), "header"),
             (reverse("wagtailadmin_explore", args=[release_calendar_page.get_parent().id]), "listing"),
         ]
-        BundlePageFactory(parent=self.pending_bundle, page=self.analysis_page)
+        BundlePageFactory(parent=self.pending_bundle, page=self.statistical_article_page)
 
         self.client.force_login(self.publishing_officer)
 

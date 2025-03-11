@@ -1,31 +1,39 @@
 from django.conf import settings
+from django.utils.translation import gettext_lazy as _
 from wagtail import blocks
 
 
-class PanelBlock(blocks.StructBlock):
-    """DS Panel block.
-    https://service-manual.ons.gov.uk/design-system/components/panel
-    https://service-manual.ons.gov.uk/design-system/components/announcement-panel
-    https://service-manual.ons.gov.uk/design-system/components/success-panel
-    https://service-manual.ons.gov.uk/design-system/components/warning-panels.
+class BasePanelBlock(blocks.StructBlock):
+    """A reusable base panel block with a body field.
+    Subclasses can override Meta attributes (e.g., template, label)
+    and define additional fields as needed.
     """
 
-    variant = blocks.ChoiceBlock(
-        choices=[
-            ("announcement", "Announcement"),
-            ("bare", "Bare"),
-            ("branded", "Branded"),
-            ("error", "Error"),
-            ("ghost", "Ghost"),
-            ("success", "Success"),
-            ("warn-branded", "Warn (branded)"),
-            ("warn", "Warn"),
-        ],
-        default="warn",
-    )
     body = blocks.RichTextBlock(features=settings.RICH_TEXT_BASIC)
-    title = blocks.CharBlock(required=False, label="Title (optional)")
 
     class Meta:
-        label = "Warning or information panel"
-        template = "templates/components/streamfield/panel_block.html"
+        abstract = True
+        group = _("Panels")
+
+
+class WarningPanelBlock(BasePanelBlock):
+    class Meta:
+        template = "templates/components/streamfield/warning_panel.html"
+        icon = "warning"
+        label = _("Warning Panel")
+
+
+class AnnouncementPanelBlock(BasePanelBlock):
+    class Meta:
+        template = "templates/components/streamfield/announcement_panel.html"
+        icon = "pick"
+        label = _("Announcement Panel")
+
+
+class InformationPanelBlock(BasePanelBlock):
+    title = blocks.CharBlock(required=True, label=_("Title"))
+
+    class Meta:
+        template = "templates/components/streamfield/information_panel.html"
+        icon = "info-circle"
+        label = _("Information Panel")

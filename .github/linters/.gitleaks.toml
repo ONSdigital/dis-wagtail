@@ -1,0 +1,15 @@
+title = "gitleaks config"
+
+[extend]
+# useDefault will extend the base configuration with the default gitleaks config:
+# https://github.com/zricethezav/gitleaks/blob/master/config/gitleaks.toml
+useDefault = true
+
+[allowlist]
+description = "Global allowlists (skip conditions)"
+paths = [
+    '''(?i)^.*\.env$''',  # Matches any file ending in .env (case-insensitive)
+    '''(?i)^.*\.env\..*$''',  # Matches files like .env.test, .env.local, .env.production, etc.
+    "cms/settings/local.py",  # Ignore local.py in the cms/settings directory
+    "megalinter-reports"  # Ignore megalinter-reports directory
+]

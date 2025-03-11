@@ -9,8 +9,8 @@ package-mode = false
 
 [tool.poetry.dependencies]
 python = "^3.12"
-django = "~5.1.2"
-wagtail = "~6.3"
+django = "~5.1.6"
+wagtail = "~6.4"
 dj-database-url = "~2.3.0"
 django-basic-auth-ip-whitelist = "~0.6"
 django-csp = "~3.8"
@@ -24,38 +24,40 @@ psycopg = "~3.2.3"
 sentry-sdk = "~2.17"
 wagtail-font-awesome-svg = "^1.0.1"
 apscheduler = "^3.10.4"
-wagtail-storages = "~2.0"
 wagtailmath = "~1.3.0"
 whitenoise = "~6.8"
 slack-sdk = "^3.33.3"
 django-cache-memoize = "^0.2.0"
 django-iam-dbauth = "^0.2.1"
-pyjwt = "^2.10.0"
-cryptography = "^43.0.3"
+requests = "^2.32.3"
+django-treebeard = "^4.7.1"
+pyjwt = "^2.10.1"
+cryptography = "^44.0.2"
 
 [tool.poetry.group.dev.dependencies]
 # :TODO: Remove pylint when ruff supports all pylint rules
-djhtml = "3.0.7"
-mypy = "^1.13.0"  # keep version in sync with .pre-commit-config.yaml
+djhtml = "3.0.7"  # keep version in sync with .pre-commit-config.yaml
+mypy = "^1.15.0"
+types-requests = "^2.32.0.20241016"
 django-stubs = { version="^5.1.1", extras=["compatible-mypy"]}
 pylint = "^3.3.1"
-pylint-django = "^2.0.0"
-ruff = "0.7.4"  # keep version in sync with .pre-commit-config.yaml
-
+pylint-django = "^2.6.1"
+ruff = "0.9.5"  # keep version in sync with .pre-commit-config.yaml
 wagtail-factories = "^4.1.0"
 coverage = "^7.6.4"
-
 dslr = "^0.4.0"
+psycopg2-binary = "^2.9.10"
 django-debug-toolbar = "^4.4.6"
 pudb = "^2024.1"
 tblib = "^3.0.0"
 Werkzeug = "~3.0.6"
-
+playwright = "^1.48.0"
+behave = "^1.2.6"
 setuptools = "^75.2.0"
 honcho = "^2.0.0"
 detect-secrets = "^1.5.0"
-moto = {extras = ["iam"], version = "^5.0.21"}
-types-requests = "^2.32.0.20241016"
+moto = {extras = ["iam","s3"], version = "^5.0.22"}
+django-migration-linter = "^5.1.0"
 
 [tool.ruff]
 target-version = "py312"
@@ -139,6 +141,10 @@ ignore_errors = true
 module = "*.tests.*"
 ignore_errors = true
 
+[[tool.mypy.overrides]]
+module = "cms.settings.local"
+ignore_errors = true
+
 [tool.django-stubs]
 django_settings_module = "cms.settings.test"
 
@@ -186,3 +192,6 @@ exclude_also = [
     "class .*\\bProtocol\\):",
     "@(abc\\.)?abstractmethod",
 ]
+
+[tool.djlint]
+ignore = "H006,H031"

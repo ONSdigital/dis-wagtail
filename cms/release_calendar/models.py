@@ -8,6 +8,7 @@ from django.utils.translation import gettext_lazy as _
 from wagtail.admin.panels import FieldPanel, FieldRowPanel, MultiFieldPanel
 from wagtail.fields import RichTextField
 from wagtail.models import Page
+from wagtail.search import index
 
 from cms.core.fields import StreamField
 from cms.core.models import BasePage
@@ -103,33 +104,33 @@ class ReleaseCalendarPage(BasePage):  # type: ignore[django-manager-missing]
         MultiFieldPanel(
             [
                 *Page.content_panels,
-                FieldPanel("status"),
+                "status",
                 FieldRowPanel(
                     [
-                        FieldPanel("release_date"),
+                        "release_date",
                         FieldPanel("release_date_text", heading=_("Or, release date text")),
                     ],
                     heading="",
                 ),
                 FieldRowPanel(
                     [
-                        FieldPanel("next_release_date"),
+                        "next_release_date",
                         FieldPanel("next_release_text", heading=_("Or, next release text")),
                     ],
                     heading="",
                 ),
-                FieldPanel("notice"),
+                "notice",
             ],
             heading=_("Metadata"),
             icon="cog",
         ),
-        FieldPanel("summary"),
+        "summary",
         FieldPanel("content", icon="list-ul"),
         FieldPanel("contact_details", icon="group"),
         MultiFieldPanel(
             [
-                FieldPanel("is_accredited"),
-                FieldPanel("is_census"),
+                "is_accredited",
+                "is_census",
             ],
             heading=_("About the data"),
             icon="info-circle",
@@ -137,6 +138,12 @@ class ReleaseCalendarPage(BasePage):  # type: ignore[django-manager-missing]
         FieldPanel("changes_to_release_date", icon="comment"),
         FieldPanel("pre_release_access", icon="key"),
         FieldPanel("related_links", icon="link"),
+    ]
+
+    search_fields: ClassVar[list[index.BaseField]] = [
+        *BasePage.search_fields,
+        index.FilterField("status"),
+        index.FilterField("release_date"),
     ]
 
     def get_template(self, request: "HttpRequest", *args: Any, **kwargs: Any) -> str:

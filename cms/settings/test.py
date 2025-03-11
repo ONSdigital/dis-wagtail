@@ -1,3 +1,5 @@
+import copy
+
 from .base import *  # noqa: F403  # pylint: disable=wildcard-import,unused-wildcard-import
 
 # #############
@@ -41,11 +43,32 @@ PASSWORD_HASHERS = ["django.contrib.auth.hashers.MD5PasswordHasher"]
 DEFENDER_DISABLE_USERNAME_LOCKOUT = True
 DEFENDER_DISABLE_IP_LOCKOUT = True
 
+# Database
+DATABASES = {
+    "default": dj_database_url.config(default="postgres://ons:ons@localhost:5432/ons"),  # noqa: F405
+}
+DATABASES["read_replica"] = copy.deepcopy(DATABASES["default"])
 
 # Read replica should mirror the default database during tests.
 # https://docs.djangoproject.com/en/stable/topics/testing/advanced/#tests-and-multiple-databases
-DATABASES["read_replica"].setdefault("TEST", {"MIRROR": "default"})  # noqa: F405
+DATABASES["read_replica"].setdefault("TEST", {"MIRROR": "default"})
 
+
+# Disable caches in tests
+CACHES["default"] = {  # noqa: F405
+    "BACKEND": "django.core.cache.backends.dummy.DummyCache",
+}
+
+# Enqueue background tasks on commit for tests
+# https://docs.wagtail.org/en/latest/releases/6.4.html#background-tasks-run-at-end-of-current-transaction
+TASKS = {
+    "default": {
+        "BACKEND": "django_tasks.backends.immediate.ImmediateBackend",
+        "ENQUEUE_ON_COMMIT": False,
+    }
+}
 
 # Silence Slack notifications by default
 SLACK_NOTIFICATIONS_WEBHOOK_URL = None
+
+ONS_API_BASE_URL = "dummy_url"

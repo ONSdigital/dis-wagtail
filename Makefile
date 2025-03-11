@@ -2,12 +2,19 @@ DESIGN_SYSTEM_VERSION=`cat .design-system-version`
 
 .DEFAULT_GOAL := all
 
+.EXPORT_ALL_VARIABLES:
+# Default to development config if DJANGO_SETTINGS_MODULE is not set
+DJANGO_SETTINGS_MODULE ?= cms.settings.dev
+
 .PHONY: all
 all: ## Show the available make targets.
 	@echo "Usage: make <target>"
 	@echo ""
 	@echo "Targets:"
-	@fgrep "##" Makefile | fgrep -v fgrep
+	@grep -E '^[0-9a-zA-Z_-]+:.*? .*$$'  \
+		$(MAKEFILE_LIST)  \
+		| awk 'BEGIN { FS=":.*?## " }; {printf "\033[36m%-20s\033[0m %s\n", $$1, $$2}'  \
+		| sort
 
 .PHONY: clean
 clean: ## Clean the temporary files.
@@ -33,7 +40,7 @@ format-frontend:  ## Format front-end files (CSS, JS, YAML, MD)
 	npm run format
 
 .PHONY: lint
-lint: lint-py lint-html lint-frontend ## Run all linters (python, html, front-end)
+lint: lint-py lint-html lint-frontend lint-migrations ## Run all linters (python, html, front-end, migrations)
 
 .PHONY: lint-py
 lint-py:  ## Run all Python linters (ruff/pylint/mypy).
@@ -50,10 +57,14 @@ lint-html:  ## Run HTML Linters
 lint-frontend:  ## Run front-end linters
 	npm run lint
 
+.PHONY: lint-migrations
+lint-migrations: ## Run django-migration-linter
+	poetry run python manage.py lintmigrations --quiet ignore ok
+
 .PHONY: test
 test:  ## Run the tests and check coverage.
 	poetry run coverage erase
-	poetry run coverage run ./manage.py test --parallel --settings=cms.settings.test
+	poetry run coverage run ./manage.py test --parallel --settings=cms.settings.test --shuffle
 	poetry run coverage combine
 	poetry run coverage report --fail-under=90
 
@@ -74,11 +85,15 @@ megalint:  ## Run the mega-linter.
 	docker run --platform linux/amd64 --rm \
 		-v /var/run/docker.sock:/var/run/docker.sock:rw \
 		-v $(shell pwd):/tmp/lint:rw \
-		oxsecurity/megalinter:v7
+		oxsecurity/megalinter-cupcake:v8
 
 .PHONY: load-design-system-templates
 load-design-system-templates:  ## Load the design system templates
 	./scripts/load-design-system-templates.sh $(DESIGN_SYSTEM_VERSION)
+
+.PHONY: load-topics
+load-topics:  ## Load our fixture of taxonomy topics
+	poetry run python ./manage.py loaddata cms/taxonomy/fixtures/topics.json
 
 # Docker and docker compose make commands
 
@@ -114,7 +129,7 @@ compose-dev-pull: ## Pull dev Docker containers
 
 .PHONY: compose-dev-up
 compose-dev-up:  ## Start dev Docker containers
-	docker compose -f docker-compose-dev.yml up --detach 
+	docker compose -f docker-compose-dev.yml up --detach
 
 .PHONY: compose-dev-stop
 compose-dev-stop: ## Stop dev Docker containers
@@ -137,18 +152,53 @@ makemigrations: ## Generate new migrations
 .PHONY: collectstatic
 collectstatic:  ## Collect static files from all Django apps
 	poetry run python ./manage.py collectstatic --verbosity 0 --noinput --clear
-	
+
 .PHONY: migrate
 migrate: ## Apply the database migrations
-	poetry run python ./manage.py migrate 
+	poetry run python ./manage.py migrate
 
 .PHONY: createsuperuser
 createsuperuser: ## Create a super user with a default username and password
 	poetry run python ./manage.py shell -c "from cms.users.models import User;(not User.objects.filter(username='admin').exists()) and User.objects.create_superuser('admin', 'super@example.com', 'changeme')"
 
 .PHONY: runserver
-runserver: ## Run the Django application locally	
-	poetry run python ./manage.py runserver
+runserver: ## Run the Django application locally
+	poetry run python ./manage.py runserver 0:8000
 
-.PHONY: dev-init 
-dev-init: load-design-system-templates collectstatic makemigrations migrate createsuperuser ## Run the pre-run setup scripts
+.PHONY: dev-init
+dev-init: load-design-system-templates collectstatic makemigrations migrate load-topics createsuperuser  ## Run the pre-run setup scripts
+
+.PHONY: functional-tests-up
+functional-tests-up:  ## Start the functional tests docker compose dependencies
+	docker compose -f functional_tests/docker-compose.yml up -d
+
+.PHONY: functional-tests-dev-up
+functional-tests-dev-up:  ## Start the functional tests docker compose dependencies and dev app
+	docker compose -f functional_tests/docker-compose-dev.yml up -d
+
+.PHONY: functional-tests-down
+functional-tests-down:  ## Stop the functional tests docker compose dependencies (and dev app if running)
+	docker compose -f functional_tests/docker-compose-dev.yml down
+
+.PHONY: functional-tests-run
+functional-tests-run: load-design-system-templates collectstatic ## Only run the functional tests (dependencies must be run separately)
+	# Run migrations to work around Django bug (#35967)
+	poetry run ./manage.py migrate --noinput --settings cms.settings.functional_test
+	poetry run behave functional_tests
+
+.PHONY: functional-tests
+functional-tests: functional-tests-up functional-tests-run functional-tests-down  ## Run the functional tests with dependencies (all in one)
+
+.PHONY: playwright-install
+playwright-install:  ## Install Playwright dependencies
+	poetry run playwright install --with-deps
+
+# Aliases
+.PHONY: start
+start: compose-up
+.PHONY: stop
+stop: compose-stop
+.PHONY: shell
+shell: docker-shell
+.PHONY: run
+run: runserver

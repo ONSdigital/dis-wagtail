@@ -54,14 +54,13 @@ class Command(BaseCommand):
                     if queryset.model is Page:
                         for obj in queryset:
                             self.stdout.write(
-                                f'{obj.expire_at.strftime("%Y-%m-%d %H:%M")}\t'
+                                f"{obj.expire_at.strftime('%Y-%m-%d %H:%M')}\t"
                                 f"{obj.specific_class.__name__}\t{obj.slug}\t{obj.title}"
                             )
                     else:
                         for obj in queryset:
                             self.stdout.write(
-                                f'{obj.expire_at.strftime("%Y-%m-%d %H:%M")}\t'
-                                f"{queryset.model.__name__}\t\t\t{obj!s}"
+                                f"{obj.expire_at.strftime('%Y-%m-%d %H:%M')}\t{queryset.model.__name__}\t\t\t{obj!s}"
                             )
             else:
                 self.stdout.write("No expired objects to be deactivated found.")
@@ -93,8 +92,8 @@ class Command(BaseCommand):
                     model = rp.content_type.model_class()
                     rev_data = rp.content
                     self.stdout.write(
-                        f'{rp.approved_go_live_at.strftime("%Y-%m-%d %H:%M")}\t'
-                        f'{model.__name__}\t{rev_data.get("slug", "")}\t\t{rev_data.get("title", rp.object_str)}'
+                        f"{rp.approved_go_live_at.strftime('%Y-%m-%d %H:%M')}\t"
+                        f"{model.__name__}\t{rev_data.get('slug', '')}\t\t{rev_data.get('title', rp.object_str)}"
                     )
             else:
                 self.stdout.write("No objects to go live.")

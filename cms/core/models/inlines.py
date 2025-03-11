@@ -20,4 +20,4 @@ class PageRelatedPage(Orderable):
         related_name="+",
     )
 
-    panels: ClassVar[list[FieldPanel]] = [FieldPanel("page")]
+    panels: ClassVar[list[FieldPanel]] = ["page"]

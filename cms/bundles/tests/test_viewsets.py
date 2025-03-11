@@ -3,14 +3,17 @@ from unittest import mock
 
 from django.test import TestCase
 from django.urls import reverse
+from wagtail.admin.panels import get_edit_handler
 from wagtail.test.utils import WagtailTestUtils
 from wagtail.test.utils.form_data import inline_formset, nested_form_data
 
-from cms.analysis.tests.factories import AnalysisPageFactory
+from cms.articles.tests.factories import StatisticalArticlePageFactory
 from cms.bundles.enums import BundleStatus
 from cms.bundles.models import Bundle
 from cms.bundles.tests.factories import BundleFactory
 from cms.bundles.tests.utils import grant_all_bundle_permissions, make_bundle_viewer
+from cms.bundles.viewsets import bundle_chooser_viewset
+from cms.release_calendar.viewsets import FutureReleaseCalendarChooserWidget
 from cms.users.tests.factories import GroupFactory, UserFactory
 
 
@@ -43,7 +46,7 @@ class BundleViewSetTestCase(WagtailTestUtils, TestCase):
 
     def setUp(self):
         self.bundle = BundleFactory(name="Original bundle", created_by=self.publishing_officer)
-        self.analysis_page = AnalysisPageFactory(title="PSF")
+        self.statistical_article_page = StatisticalArticlePageFactory(title="PSF")
 
         self.edit_url = reverse("bundle:edit", args=[self.bundle.id])
 
@@ -80,7 +83,7 @@ class BundleViewSetTestCase(WagtailTestUtils, TestCase):
                 "bundled_pages-INITIAL_FORMS": "0",
                 "bundled_pages-MIN_NUM_FORMS": "0",
                 "bundled_pages-MAX_NUM_FORMS": "1000",
-                "bundled_pages-0-page": str(self.analysis_page.id),
+                "bundled_pages-0-page": str(self.statistical_article_page.id),
                 "bundled_pages-0-ORDER": "0",
             },
         )
@@ -99,7 +102,7 @@ class BundleViewSetTestCase(WagtailTestUtils, TestCase):
                 "bundled_pages-INITIAL_FORMS": "0",
                 "bundled_pages-MIN_NUM_FORMS": "0",
                 "bundled_pages-MAX_NUM_FORMS": "1000",
-                "bundled_pages-0-page": str(self.analysis_page.id),
+                "bundled_pages-0-page": str(self.statistical_article_page.id),
                 "bundled_pages-0-ORDER": "0",
             },
         )
@@ -124,7 +127,7 @@ class BundleViewSetTestCase(WagtailTestUtils, TestCase):
                 {
                     "name": "Updated Bundle",
                     "status": self.bundle.status,
-                    "bundled_pages": inline_formset([{"page": self.analysis_page.id}]),
+                    "bundled_pages": inline_formset([{"page": self.statistical_article_page.id}]),
                 }
             ),
         )
@@ -171,7 +174,7 @@ class BundleViewSetTestCase(WagtailTestUtils, TestCase):
                 "bundled_pages-MIN_NUM_FORMS": "0",
                 "bundled_pages-MAX_NUM_FORMS": "1000",
                 "bundled_pages-0-id": "",
-                "bundled_pages-0-page": str(self.analysis_page.id),
+                "bundled_pages-0-page": str(self.statistical_article_page.id),
                 "bundled_pages-0-ORDER": "0",
             },
         )
@@ -200,7 +203,7 @@ class BundleViewSetTestCase(WagtailTestUtils, TestCase):
                 "bundled_pages-MIN_NUM_FORMS": "0",
                 "bundled_pages-MAX_NUM_FORMS": "1000",
                 "bundled_pages-0-id": "",
-                "bundled_pages-0-page": str(self.analysis_page.id),
+                "bundled_pages-0-page": str(self.statistical_article_page.id),
                 "bundled_pages-0-ORDER": "0",
             },
             follow=True,
@@ -233,3 +236,54 @@ class BundleViewSetTestCase(WagtailTestUtils, TestCase):
         self.assertContains(response, "Pending", 2)  # status + status filter
         self.assertContains(response, "Released", 2)  # status + status filter
         self.assertContains(response, "Approved", 5)  # status + status filter, approved at/by
+
+        self.assertContains(response, self.released_bundle.name)
+        self.assertContains(response, self.approved_bundle.name)
+
+    def test_index_view_search(self):
+        response = self.client.get(f"{self.bundle_index_url}?q=release")
+        self.assertContains(response, self.released_bundle.name)
+        self.assertNotContains(response, self.approved_bundle.name)
+
+    def test_bundle_form_uses_release_calendar_chooser_widget(self):
+        form_class = get_edit_handler(Bundle).get_form_class()
+        form = form_class(instance=self.bundle)
+
+        self.assertIn("release_calendar_page", form.fields)
+        chooser_widget = form.fields["release_calendar_page"].widget
+        self.assertIsInstance(chooser_widget, FutureReleaseCalendarChooserWidget)
+
+        self.assertEqual(
+            chooser_widget.get_chooser_modal_url(),
+            # the admin path + the chooser namespace
+            reverse("wagtailadmin_home") + "release_calendar_chooser/",
+        )
+
+        response = self.client.get(
+            self.bundle_add_url,
+        )
+        self.assertContains(response, "Choose Release Calendar page")
+
+    def test_chooser_viewset(self):
+        pending_bundle = BundleFactory(name="Pending")
+        response = self.client.get(bundle_chooser_viewset.widget_class().get_chooser_modal_url())
+
+        self.assertContains(response, pending_bundle.name)
+        self.assertNotContains(response, self.released_bundle.name)
+        self.assertNotContains(response, self.approved_bundle.name)
+
+    def test_chooser_search(self):
+        pending_bundle = BundleFactory(name="Pending")
+        chooser_results_url = reverse(bundle_chooser_viewset.get_url_name("choose_results"))
+
+        response = self.client.get(f"{chooser_results_url}?q=approve")
+
+        self.assertNotContains(response, pending_bundle.name)
+        self.assertNotContains(response, self.released_bundle.name)
+        self.assertNotContains(response, self.approved_bundle.name)
+
+        response = self.client.get(f"{chooser_results_url}?q=pending")
+
+        self.assertContains(response, pending_bundle.name)
+        self.assertNotContains(response, self.released_bundle.name)
+        self.assertNotContains(response, self.approved_bundle.name)

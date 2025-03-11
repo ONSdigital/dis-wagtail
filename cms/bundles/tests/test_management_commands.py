@@ -8,7 +8,7 @@ from django.urls import reverse
 from django.utils import timezone
 from wagtail.models import ModelLogEntry, PageLogEntry
 
-from cms.analysis.tests.factories import AnalysisPageFactory
+from cms.articles.tests.factories import StatisticalArticlePageFactory
 from cms.bundles.enums import BundleStatus
 from cms.bundles.tests.factories import BundleFactory, BundlePageFactory
 from cms.home.models import HomePage
@@ -22,8 +22,8 @@ class PublishBundlesCommandTestCase(TestCase):
         self.stderr = StringIO()
 
         self.publication_date = timezone.now() - timedelta(minutes=1)
-        self.analysis_page = AnalysisPageFactory(title="Test Analysis", live=False)
-        self.analysis_page.save_revision(approved_go_live_at=self.publication_date)
+        self.statistical_article = StatisticalArticlePageFactory(title="The Statistical Article", live=False)
+        self.statistical_article.save_revision(approved_go_live_at=self.publication_date)
 
         self.bundle = BundleFactory(approved=True, name="Test Bundle", publication_date=self.publication_date)
 
@@ -50,7 +50,7 @@ class PublishBundlesCommandTestCase(TestCase):
 
     def test_dry_run_with_bundles(self):
         """Test dry run output when there are bundles to publish."""
-        BundlePageFactory(parent=self.bundle, page=self.analysis_page)
+        BundlePageFactory(parent=self.bundle, page=self.statistical_article)
 
         self.call_command(dry_run=True)
 
@@ -58,8 +58,10 @@ class PublishBundlesCommandTestCase(TestCase):
         self.assertIn("Will do a dry run", output)
         self.assertIn("Bundles to be published:", output)
         self.assertIn(f"- {self.bundle.name}", output)
+        class_name = self.statistical_article.__class__.__name__
         self.assertIn(
-            f"{self.analysis_page.get_admin_display_title()} ({self.analysis_page.__class__.__name__})", output
+            f"{self.statistical_article.get_admin_display_title()} ({class_name})",
+            output,
         )
 
     @override_settings(SLACK_NOTIFICATIONS_WEBHOOK_URL="https://slack.example.com")
@@ -68,14 +70,14 @@ class PublishBundlesCommandTestCase(TestCase):
     def test_publish_bundle(self, mock_notify_end, mock_notify_start):
         """Test publishing a bundle."""
         # Sanity checks
-        self.assertFalse(self.analysis_page.live)
+        self.assertFalse(self.statistical_article.live)
         self.assertFalse(ModelLogEntry.objects.filter(action="wagtail.publish.scheduled").exists())
         self.assertFalse(PageLogEntry.objects.filter(action="wagtail.publish.scheduled").exists())
 
         # add another page, but publish in the meantime.
-        another_page = AnalysisPageFactory(title="Test Analysis", live=False)
+        another_page = StatisticalArticlePageFactory(title="The Statistical Article", live=False)
         another_page.save_revision().publish()
-        BundlePageFactory(parent=self.bundle, page=self.analysis_page)
+        BundlePageFactory(parent=self.bundle, page=self.statistical_article)
         BundlePageFactory(parent=self.bundle, page=another_page)
 
         self.call_command()
@@ -83,8 +85,8 @@ class PublishBundlesCommandTestCase(TestCase):
         self.bundle.refresh_from_db()
         self.assertEqual(self.bundle.status, BundleStatus.RELEASED)
 
-        self.analysis_page.refresh_from_db()
-        self.assertTrue(self.analysis_page.live)
+        self.statistical_article.refresh_from_db()
+        self.assertTrue(self.statistical_article.live)
 
         # Check notifications were sent
         self.assertTrue(mock_notify_start.called)
@@ -97,7 +99,7 @@ class PublishBundlesCommandTestCase(TestCase):
     def test_publish_bundle_with_release_calendar(self):
         """Test publishing a bundle with an associated release calendar page."""
         release_page = ReleaseCalendarPageFactory(release_date=self.publication_date)
-        BundlePageFactory(parent=self.bundle, page=self.analysis_page)
+        BundlePageFactory(parent=self.bundle, page=self.statistical_article)
         self.bundle.publication_date = None
         self.bundle.release_calendar_page = release_page
         self.bundle.save(update_fields=["publication_date", "release_calendar_page"])
@@ -111,13 +113,13 @@ class PublishBundlesCommandTestCase(TestCase):
         content = release_page.content[0].value
         self.assertEqual(content["title"], "Publications")
         self.assertEqual(len(content["links"]), 1)
-        self.assertEqual(content["links"][0]["page"].pk, self.analysis_page.pk)
+        self.assertEqual(content["links"][0]["page"].pk, self.statistical_article.pk)
 
     @override_settings(SLACK_NOTIFICATIONS_WEBHOOK_URL="https://slack.ons.gov.uk")
     @patch("cms.bundles.management.commands.publish_bundles.logger")
     def test_publish_bundle_error_handling(self, mock_logger):
         """Test error handling during bundle publication."""
-        BundlePageFactory(parent=self.bundle, page=self.analysis_page)
+        BundlePageFactory(parent=self.bundle, page=self.statistical_article)
 
         # Mock an error during publication
         with patch(
@@ -154,11 +156,11 @@ class PublishScheduledWithoutBundlesCommandTestCase(TestCase):
     @classmethod
     def setUpTestData(cls):
         cls.home = HomePage.objects.first()
-        cls.analysis_page = AnalysisPageFactory(title="Test Analysis", live=False)
-        cls.bundle = BundleFactory(name="Test Bundle", bundled_pages=[cls.analysis_page])
+        cls.statistical_article = StatisticalArticlePageFactory(title="The Statistical Article", live=False)
+        cls.bundle = BundleFactory(name="Test Bundle", bundled_pages=[cls.statistical_article])
 
         cls.publication_date = timezone.now() - timedelta(minutes=1)
-        cls.analysis_page.save_revision(approved_go_live_at=cls.publication_date)
+        cls.statistical_article.save_revision(approved_go_live_at=cls.publication_date)
 
     def setUp(self):
         self.stdout = StringIO()

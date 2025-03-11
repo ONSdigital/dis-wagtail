@@ -1,0 +1,6 @@
+<section id="{{ value.title|slugify() }}">
+    <h2 class="ons-u-fs-l">{{ value.title }}</h2>
+
+    {% include_block value.content %}
+</section>
+

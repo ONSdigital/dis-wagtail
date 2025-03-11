@@ -3,17 +3,15 @@
 
     {% set breadcrumbs=[] %}
 
-    {% for ancestor_page in page.get_ancestors() %}
+    {% for ancestor_page in page.get_ancestors().specific().defer_streamfields() %}
         {% if not ancestor_page.is_root() %}
             {% if ancestor_page.depth <= 2 %}
                 {% do breadcrumbs.append({"url": "/", "text": _("Home")}) %}
-            {% else %}
+            {% elif not ancestor_page.exclude_from_breadcrumbs %}
                 {% do breadcrumbs.append({"url": pageurl(ancestor_page), "text": ancestor_page.title}) %}
             {% endif %}
         {% endif %}
     {% endfor %}
-
-    {% do breadcrumbs.append({"text": page.title}) %}
     {# fmt:off #}
     {{
         onsBreadcrumbs({

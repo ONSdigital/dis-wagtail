@@ -1,8 +1,12 @@
-from typing import ClassVar
+from typing import TYPE_CHECKING, Any, ClassVar
 
 from django.db import models
-from wagtail.admin.panels import FieldPanel
+from django.db.models.functions import Lower
+from django.utils.translation import gettext_lazy as _
 from wagtail.search import index
+
+if TYPE_CHECKING:
+    from wagtail.admin.panels import Panel
 
 
 class ContactDetails(index.Indexed, models.Model):
@@ -15,22 +19,37 @@ class ContactDetails(index.Indexed, models.Model):
     email = models.EmailField()
     phone = models.CharField(max_length=255, blank=True)
 
-    panels: ClassVar[list[FieldPanel]] = [
-        FieldPanel("name"),
-        FieldPanel("email"),
-        FieldPanel("phone"),
+    panels: ClassVar[list["Panel"]] = [
+        "name",
+        "email",
+        "phone",
     ]
 
-    search_fields: ClassVar[list[index.SearchField | index.AutocompleteField]] = [
+    search_fields: ClassVar[list[index.BaseField]] = [
         *index.Indexed.search_fields,
         index.SearchField("name"),
         index.AutocompleteField("name"),
         index.SearchField("email"),
+        index.AutocompleteField("email"),
         index.SearchField("phone"),
     ]
 
     class Meta:
-        verbose_name_plural = "contact details"
+        verbose_name = _("contact details")
+        verbose_name_plural = _("contact details")
+        constraints: ClassVar[list[models.BaseConstraint]] = [
+            models.UniqueConstraint(
+                Lower("name"),
+                Lower("email"),
+                name="core_contactdetails_name_unique",
+                violation_error_message=_("Contact details with this name and email combination already exists."),
+            ),
+        ]
+
+    def save(self, *args: Any, **kwargs: Any) -> None:
+        if self.name:
+            self.name = self.name.strip()
+        super().save(*args, **kwargs)
 
     def __str__(self) -> str:
         return str(self.name)

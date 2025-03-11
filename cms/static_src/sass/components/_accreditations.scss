@@ -1,0 +1,47 @@
+@use 'config' as *;
+
+.accreditations {
+    width: 100%;
+    display: flex;
+    gap: rem-sizing(24);
+    margin-bottom: rem-sizing(16);
+
+    &__block {
+        flex-basis: 50%;
+        background-color: var(--ons-color-grey-5);
+        padding: rem-sizing(16);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+
+        &--full-width {
+            flex-basis: 100%;
+            flex-direction: row;
+            gap: rem-sizing(24);
+            justify-content: flex-start;
+        }
+
+        @media (forced-colors: active) {
+            border: 1px solid var(--ons-color-grey-5);
+        }
+    }
+
+    &__census-logo {
+        margin-top: rem-sizing(26);
+        margin-bottom: rem-sizing(26);
+
+        @media (forced-colors: active) and (prefers-color-scheme: dark) {
+            filter: grayscale(100%) brightness(4);
+        }
+    }
+
+    &__accredited-logo {
+        margin-bottom: rem-sizing(8);
+    }
+
+    &__text {
+        text-align: center;
+        margin-bottom: 0;
+    }
+}

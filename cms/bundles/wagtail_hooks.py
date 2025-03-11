@@ -16,6 +16,8 @@ from .models import Bundle, BundledPageMixin
 from .viewsets import bundle_chooser_viewset, bundle_viewset
 
 if TYPE_CHECKING:
+    from typing import Optional
+
     from django.http import HttpRequest
     from django.urls import URLPattern
     from django.urls.resolvers import URLResolver
@@ -146,7 +148,7 @@ class LatestBundlesPanel(Component):
 
         return queryset
 
-    def get_context_data(self, parent_context: "RenderContext") -> "RenderContext":
+    def get_context_data(self, parent_context: "Optional[RenderContext]" = None) -> "Optional[RenderContext]":
         """Adds the request, the latest bundles and whether the panel is shown to the panel context."""
         context = super().get_context_data(parent_context)
         context["request"] = self.request
@@ -181,7 +183,7 @@ def register_bundle_log_actions(actions: "LogActionRegistry") -> None:
         def format_message(self, log_entry: "ModelLogEntry") -> Any:
             """Returns the formatted log message."""
             try:
-                return _(f"Changed the bundle status from '{log_entry.data["old"]}' to '{log_entry.data["new"]}'")
+                return _(f"Changed the bundle status from '{log_entry.data['old']}' to '{log_entry.data['new']}'")
             except KeyError:
                 return _("Changed the bundle status")
 
@@ -194,6 +196,6 @@ def register_bundle_log_actions(actions: "LogActionRegistry") -> None:
         def format_message(self, log_entry: "ModelLogEntry") -> Any:
             """Returns the formatted log message."""
             try:
-                return _(f"Approved the bundle. (Old status: '{log_entry.data["old"]}')")
+                return _(f"Approved the bundle. (Old status: '{log_entry.data['old']}')")
             except KeyError:
                 return _("Approved the bundle")

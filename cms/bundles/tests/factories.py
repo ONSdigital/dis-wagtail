@@ -73,5 +73,5 @@ class BundlePageFactory(factory.django.DjangoModelFactory):
         model = BundlePage
 
     parent = factory.SubFactory(BundleFactory)
-    page = factory.SubFactory("cms.analysis.tests.factories.AnalysisPageFactory")
+    page = factory.SubFactory("cms.articles.tests.factories.StatisticalArticlePageFactory")
     sort_order = factory.Sequence(lambda n: n)

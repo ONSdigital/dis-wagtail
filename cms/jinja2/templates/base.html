@@ -1,6 +1,7 @@
 {% extends "layout/_template.njk" %}
 {% from "components/cookies-banner/_macro.njk" import onsCookiesBanner %}
 {% from "component_overrides/header/_macro.njk" import onsHeaderNew %}
+{% from "components/footer/_macro.njk" import onsFooter %}
 
 {% set page_title %}
     {% if current_site and page.pk == current_site.root_page.pk and current_site.site_name %}{{ current_site.site_name }} | {% endif %}{% block title %}{% if page.seo_title %}{{ page.seo_title }}{% else %}{{ page.title}}{% endif %}{% endblock %}{% block title_suffix %}{% if current_site and page.pk != current_site.root_page.pk and current_site.site_name %} | {{ current_site.site_name }}{% endif %}{% endblock %}
@@ -35,7 +36,11 @@
     {%- endwith -%}
 {%- endset -%}
 
-{# navlinks are temporarily hard-coded until the back-end menu code is merged #}
+{% set navigation_settings = settings.navigation.NavigationSettings %}
+{% set main_menu = main_menu | default(navigation_settings.main_menu) %}
+
+{% set footer_menu = footer_menu | default(navigation_settings.footer_menu) %}
+
 {% set pageConfig = {
     "bodyClasses": body_class,
     "title": page_title,
@@ -56,217 +61,18 @@
                 "text": 'Menu',
                 "ariaLabel": 'Toggle main menu'
             },
-            "keyLinksList": [
-                {
-                    'text': 'Taking part in a survey?',
-                    'description': 'It’s never been more important.',
-                    "url": False,
-                },
-                {
-                    'text': 'Release calendar',
-                    'description': 'View our latest and upcoming releases.',
-                    "url": False,
-                },
-                {
-                    'text': 'Explore local statistics',
-                    'description': 'Explore statistics across the UK.',
-                    "url": False,
-                }
-            ],
-            "itemsList": [
-                {
-                    "column": "1",
-                    "linksList": [
-                        {
-                            "text": "People, population and community",
-                            "url": False,
-                            "children": [
-                                {
-                                    "text": "Armed forces community",
-                                    "url": False,
-                                },
-                                {
-                                    "text": "Births, deaths and marriages",
-                                    "url": False,
-                                },
-                                {
-                                    "text": "Crime and justice",
-                                    "url": False,
-                                },
-                                {
-                                    "text": "Cultural identity",
-                                    "url": False,
-                                },
-                                {
-                                    "text": "Education and childcare",
-                                    "url": False,
-                                },
-                                {
-                                    "text": "Elections",
-                                    "url": False,
-                                },
-                                {
-                                    "text": "Health and social care",
-                                    "url": False,
-                                },
-                                {
-                                    "text": "Household characteristics",
-                                    "url": False,
-                                },
-                                {
-                                    "text": "Housing",
-                                    "url": False,
-                                },
-                                {
-                                    "text": "Leisure and tourism",
-                                    "url": False,
-                                },
-                                {
-                                    "text": "Personal and household finances",
-                                    "url": False,
-                                },
-                                {
-                                    "text": "Population and migration",
-                                    "url": False,
-                                },
-                                {
-                                    "text": "Well-being",
-                                    "url": False,
-                                }
-                            ]
-                        },
-                    ],
-                },
-                {
-                    "column": "2",
-                    "linksList": [
-                        {
-                            "text": "Business, industry and trade",
-                            "url": False,
-                            "children": [
-                                {
-                                    "text": "Business",
-                                    "url": False,
-                                },
-                                {
-                                    "text": "Changes to business",
-                                    "url": False,
-                                },
-                                {
-                                    "text": "Construction industry",
-                                    "url": False,
-                                },
-                                {
-                                    "text": "International trade",
-                                    "url": False,
-                                },
-                                {
-                                    "text": "IT and internet industry",
-                                    "url": False,
-                                },
-                                {
-                                    "text": "Manufacturing and production industry",
-                                    "url": False,
-                                },
-                                {
-                                    "text": "Retail industry",
-                                    "url": TOPIC_PAGE_URL,
-                                },
-                                {
-                                    "text": "Tourism industry",
-                                    "url": False,
-                                }
-                            ]
-                        },
-                        {
-                            "text": "Employment and labour market",
-                            "url": False,
-                            "children":
-                            [
-                                {
-                                    "text": "People in work",
-                                    "url": False,
-                                },
-                                {
-                                    "text": "People not in work",
-                                    "url": False,
-                                }
-                            ]
-
-                        },
-                    ]
-                },
-                {
-                    "column": "3",
-                    "linksList": [
-                        {
-                            "text": "Economy",
-                            "url": False,
-                            "children": [
-                                {
-                                    "text": "Economic output and productivity",
-                                    "url": False,
-                                },
-                                {
-                                    "text": "Government, public sector and taxes",
-                                    "url": False,
-                                },
-                                {
-                                    "text": "Gross Value Added (GVA)",
-                                    "url": False,
-                                },
-                                {
-                                    "text": "Investments, pensions and trusts",
-                                    "url": False,
-                                },
-                                {
-                                    "text": "Regional accounts",
-                                    "url": False,
-                                },
-                                {
-                                    "text": "Environmental accounts",
-                                    "url": False,
-                                },
-                                {
-                                    "text": "Gross Domestic Product (GDP)",
-                                    "url": False,
-                                },
-                                {
-                                    "text": "Inflation and price indices",
-                                    "url": False,
-                                },
-                                {
-                                    "text": "National accounts",
-                                    "url": False,
-                                }
-                            ]
-                        }
-                    ]
-                }
-            ]
+            "keyLinksList": main_menu_highlights(main_menu),
+            "itemsList": main_menu_columns(main_menu)
         }
     },
     "footer": {
-        "rows": [
-            {
-                "itemsList": [
-                    {
-                        "text": 'Contact us',
-                        "url": '#0'
-                    },
-                    {
-                        "text": 'Cookies and privacy',
-                        "url": '#0'
-                    }
-                ]
-            }
-        ],
-        "oglLink": {
-            "pre": 'All content is available under the',
-            "text": 'Open Government Licence v3.0',
-            "url": 'https://www.nationalarchives.gov.uk/doc/open-government-licence/version/3/',
-            "post": ', except where otherwise stated'
-        }
+        "cols": footer_menu_columns(footer_menu),
+    "oglLink": {
+        "pre": _('All content is available under the'),
+        "text": 'Open Government Licence v3.0',
+        "url": 'https://www.nationalarchives.gov.uk/doc/open-government-licence/version/3/',
+        "post": _(', except where otherwise stated')
+    }
     }
 }
 %}
@@ -305,7 +111,6 @@
     {% endif %}
 
 {% endblock  %}
-
 
 {% block preMain %}
     {% if not IS_EXTERNAL_ENV %}
@@ -350,7 +155,7 @@
     onsCookiesBanner({
       'lang': "cy" if LANGUAGE_CODE == "cy" else "en",
       'serviceName': COOKIE_BANNER_SERVICE_NAME,
-      'settingsLinkURL': MANAGE_COOKIE_SETTINGS_URL,
+      'settingsLinkUrl': MANAGE_COOKIE_SETTINGS_URL,
     })
   }}
   {# fmt:on #}

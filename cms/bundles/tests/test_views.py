@@ -4,7 +4,7 @@ from django.test import TestCase
 from django.urls import reverse
 from wagtail.test.utils.wagtail_tests import WagtailTestUtils
 
-from cms.analysis.tests.factories import AnalysisPageFactory
+from cms.articles.tests.factories import StatisticalArticlePageFactory
 from cms.bundles.admin_forms import AddToBundleForm
 from cms.bundles.models import Bundle
 from cms.bundles.tests.factories import BundleFactory, BundlePageFactory
@@ -28,8 +28,8 @@ class AddToBundleViewTestCase(WagtailTestUtils, TestCase):
 
     def setUp(self):
         self.bundle = BundleFactory(name="First Bundle", created_by=self.publishing_officer)
-        self.analysis_page = AnalysisPageFactory(title="November 2024", parent__title="PSF")
-        self.add_url = reverse("bundles:add_to_bundle", args=[self.analysis_page.id])
+        self.statistical_article_page = StatisticalArticlePageFactory(title="November 2024", parent__title="PSF")
+        self.add_url = reverse("bundles:add_to_bundle", args=[self.statistical_article_page.id])
         self.bundle_index_url = reverse("bundle:index")
 
         self.client.force_login(self.publishing_officer)
@@ -40,10 +40,10 @@ class AddToBundleViewTestCase(WagtailTestUtils, TestCase):
         self.assertEqual(response.status_code, HTTPStatus.OK)
         self.assertTemplateUsed(response, "bundles/wagtailadmin/add_to_bundle.html")
 
-        self.assertEqual(response.context["page_to_add"], self.analysis_page)
+        self.assertEqual(response.context["page_to_add"], self.statistical_article_page)
         self.assertEqual(response.context["next"], self.bundle_index_url)
         self.assertIsInstance(response.context["form"], AddToBundleForm)
-        self.assertEqual(response.context["form"].page_to_add, self.analysis_page)
+        self.assertEqual(response.context["form"].page_to_add, self.statistical_article_page)
 
     def test_dispatch__returns_404_for_wrong_page_id(self):
         """The page must exist in the first place."""
@@ -53,7 +53,7 @@ class AddToBundleViewTestCase(WagtailTestUtils, TestCase):
 
     def test_dispatch__returns_404_for_non_bundleable_page(self):
         """Only pages with BundledPageMixin can be added to a bundle."""
-        url = reverse("bundles:add_to_bundle", args=[self.analysis_page.get_parent().id])
+        url = reverse("bundles:add_to_bundle", args=[self.statistical_article_page.get_parent().id])
         response = self.client.get(url)
         self.assertEqual(response.status_code, HTTPStatus.NOT_FOUND)
 
@@ -69,7 +69,7 @@ class AddToBundleViewTestCase(WagtailTestUtils, TestCase):
         already in a different bundle.
         """
         another_bundle = BundleFactory(name="Another Bundle")
-        BundlePageFactory(parent=another_bundle, page=self.analysis_page)
+        BundlePageFactory(parent=another_bundle, page=self.statistical_article_page)
         response = self.client.get(self.add_url, follow=True)
         self.assertRedirects(response, "/admin/")
         self.assertContains(response, "PSF: November 2024 is already in a bundle")
@@ -84,4 +84,4 @@ class AddToBundleViewTestCase(WagtailTestUtils, TestCase):
 
         self.assertEqual(response.status_code, HTTPStatus.OK)
         self.assertContains(response, "Page &#x27;PSF: November 2024&#x27; added to bundle &#x27;First Bundle&#x27;")
-        self.assertQuerySetEqual(self.analysis_page.bundles, Bundle.objects.all())
+        self.assertQuerySetEqual(self.statistical_article_page.bundles, Bundle.objects.all())

@@ -56,19 +56,23 @@ if "CSRF_TRUSTED_ORIGINS" in env:
 # Application definition
 
 INSTALLED_APPS = [
-    "cms.analysis",
+    "cms.articles",
     "cms.auth",
     "cms.bundles",
     "cms.core",
     "cms.documents",
     "cms.home",
     "cms.images",
+    "cms.private_media",
     "cms.release_calendar",
     "cms.teams",
     "cms.themes",
     "cms.topics",
     "cms.users",
     "cms.standard_pages",
+    "cms.methodology",
+    "cms.navigation",
+    "cms.taxonomy",
     "wagtail.embeds",
     "wagtail.sites",
     "wagtail.users",
@@ -130,7 +134,6 @@ if not IS_EXTERNAL_ENV:
     MIDDLEWARE.insert(common_middleware_index, "cms.auth.middleware.ONSAuthMiddleware")
     MIDDLEWARE.insert(common_middleware_index, "django.contrib.sessions.middleware.SessionMiddleware")
 
-
 ROOT_URLCONF = "cms.urls"
 
 context_processors = [
@@ -166,6 +169,7 @@ TEMPLATES = [
                 "wagtail.images.jinja2tags.images",
                 "wagtail.contrib.settings.jinja2tags.settings",
                 "cms.core.jinja2tags.CoreExtension",
+                "cms.navigation.jinja2tags.NavigationExtension",
             ],
         },
     },
@@ -222,13 +226,12 @@ else:
 if "read_replica" not in DATABASES:
     DATABASES["read_replica"] = deepcopy(DATABASES["default"])
 
-# Ensure the correct connection is used depending on the query
-DATABASE_ROUTERS = ["cms.core.db_router.ReadReplicaRouter"]
+DATABASE_ROUTERS = ["cms.core.db_router.ExternalEnvRouter", "cms.core.db_router.ReadReplicaRouter"]
 
 # Server-side cache settings. Do not confuse with front-end cache.
 # https://docs.djangoproject.com/en/stable/topics/cache/
 # If the server has a Redis instance exposed via a URL string in the REDIS_URL
-# environment variable, prefer that. Otherwise use the database backend. We
+# environment variable, prefer that. Otherwise, use the database backend. We
 # usually use Redis in production and database backend on staging and dev. In
 # order to use database cache backend you need to run
 # "django-admin createcachetable" to create a table for the cache.
@@ -285,9 +288,7 @@ else:
 # Search
 # https://docs.wagtail.io/en/latest/topics/search/backends.html
 
-# TODO: revert to using "wagtail.search.backends.database" when
-# https://github.com/wagtail/wagtail/pull/12508 is fixed and released.
-WAGTAILSEARCH_BACKENDS = {"default": {"BACKEND": "cms.core.wagtail_search.ONSPostgresSearchBackend"}}
+WAGTAILSEARCH_BACKENDS = {"default": {"BACKEND": "wagtail.search.backends.database"}}
 
 
 # Password validation
@@ -334,7 +335,7 @@ LOCALE_PATHS = [PROJECT_DIR / "locale"]
 # http://whitenoise.evans.io/en/stable/#quickstart-for-django-apps
 # https://docs.djangoproject.com/en/stable/ref/settings/#std-setting-STORAGES
 STORAGES = {
-    "default": {"BACKEND": "django.core.files.storage.FileSystemStorage"},
+    "default": {"BACKEND": "cms.private_media.storages.AccessControlLoggingFileSystemStorage"},
     "staticfiles": {"BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage"},
 }
 
@@ -393,10 +394,10 @@ MEDIA_URL = env.get("MEDIA_URL", "/media/")
 # https://boto3.amazonaws.com/v1/documentation/api/latest/guide/configuration.html#environment-variables
 if "AWS_STORAGE_BUCKET_NAME" in env:
     # Add django-storages to the installed apps
-    INSTALLED_APPS += ["storages", "wagtail_storages"]
+    INSTALLED_APPS += ["storages"]
 
     # https://docs.djangoproject.com/en/stable/ref/settings/#std-setting-STORAGES
-    STORAGES["default"]["BACKEND"] = "storages.backends.s3.S3Storage"
+    STORAGES["default"]["BACKEND"] = "cms.private_media.storages.AccessControlledS3Storage"
 
     AWS_STORAGE_BUCKET_NAME = env["AWS_STORAGE_BUCKET_NAME"]
 
@@ -410,8 +411,7 @@ if "AWS_STORAGE_BUCKET_NAME" in env:
     AWS_S3_FILE_OVERWRITE = False
 
     # Default ACL for new files should be "private" - not accessible to the
-    # public. Images should be made available to public via the bucket policy,
-    # where the documents should use wagtail-storages.
+    # public.
     AWS_DEFAULT_ACL = "private"
 
     # Limit how large a file can be spooled into memory before it's written to disk.
@@ -434,6 +434,7 @@ if "AWS_STORAGE_BUCKET_NAME" in env:
     # https://github.com/jschneier/django-storages/blob/10d1929de5e0318dbd63d715db4bebc9a42257b5/storages/backends/s3boto3.py#L217
     AWS_S3_URL_PROTOCOL = env.get("AWS_S3_URL_PROTOCOL", "https:")
 
+PRIVATE_MEDIA_BULK_UPDATE_MAX_WORKERS = env.get("PRIVATE_MEDIA_BULK_UPDATE_MAX_WORKERS", 5)
 
 # Logging
 # This logging is configured to be used with Sentry and console logs. Console
@@ -628,7 +629,7 @@ USE_X_FORWARDED_PORT = env.get("USE_X_FORWARDED_PORT", "true").lower().strip() =
 # The Django default for the maximum number of GET or POST parameters is 1000. For
 # especially large Wagtail pages with many fields, we need to override this. See
 # https://docs.djangoproject.com/en/3.2/ref/settings/#data-upload-max-number-fields
-DATA_UPLOAD_MAX_NUMBER_FIELDS = int(env.get("DATA_UPLOAD_MAX_NUMBER_FIELDS", 1000))
+DATA_UPLOAD_MAX_NUMBER_FIELDS = int(env.get("DATA_UPLOAD_MAX_NUMBER_FIELDS", 10_000))
 
 # Enabling this doesn't have any benefits but will make it harder to make
 # requests from javascript because the csrf cookie won't be easily accessible.
@@ -753,7 +754,7 @@ if ENABLE_DJANGO_DEFENDER:
 # This name is displayed in the Wagtail admin.
 WAGTAIL_SITE_NAME = "Office for National Statistics"
 
-# Base URL to use when formatting ahsolute URLs within the Wagtail admin in
+# Base URL to use when formatting absolute URLs within the Wagtail admin in
 # contexts without a request, e.g. in notification emails. Don't include '/admin'
 # or a trailing slash.
 if "WAGTAILADMIN_BASE_URL" in env:
@@ -852,6 +853,8 @@ MANAGE_COOKIE_SETTINGS_URL = env.get("MANAGE_COOKIE_SETTINGS_URL", "https://www.
 
 
 SLACK_NOTIFICATIONS_WEBHOOK_URL = env.get("SLACK_NOTIFICATIONS_WEBHOOK_URL")
+
+ONS_API_BASE_URL = env.get("ONS_API_BASE_URL")
 
 # Auth
 WAGTAIL_CORE_ADMIN_LOGIN_ENABLED = env.get("WAGTAIL_CORE_ADMIN_LOGIN_ENABLED", "false").lower() == "true"

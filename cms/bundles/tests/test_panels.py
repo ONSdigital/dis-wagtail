@@ -3,7 +3,7 @@ from typing import TYPE_CHECKING
 from django.test import TestCase
 from wagtail.test.utils import WagtailTestUtils
 
-from cms.analysis.tests.factories import AnalysisPageFactory
+from cms.articles.tests.factories import StatisticalArticlePageFactory
 from cms.bundles.enums import BundleStatus
 from cms.bundles.panels import BundleNotePanel
 from cms.bundles.tests.factories import BundleFactory, BundlePageFactory
@@ -18,7 +18,7 @@ class BundleNotePanelTestCase(WagtailTestUtils, TestCase):
     @classmethod
     def setUpTestData(cls):
         cls.superuser = cls.create_superuser(username="admin")
-        cls.page = AnalysisPageFactory()
+        cls.page = StatisticalArticlePageFactory()
         cls.bundle = BundleFactory(name="Test Bundle", status=BundleStatus.PENDING)
         cls.panel = BundleNotePanel()
 
