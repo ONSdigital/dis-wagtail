@@ -60,18 +60,23 @@ def update_user_details(user: "UserModel", *, email: str, first_name: str, last_
 
 def assign_groups(user: "UserModel", cognito_groups: Iterable[str]) -> None:
     """Assign groups to the user based on their Cognito groups."""
-    publishing_officer_group = Group.objects.get(name=settings.PUBLISHING_OFFICERS_GROUP_NAME)
+    role_to_group = {
+        "role-admin": settings.PUBLISHING_ADMIN_GROUP_NAME,
+        "role-publisher": settings.PUBLISHING_OFFICER_GROUP_NAME,
+    }
+
+    groups = {name: Group.objects.get(name=group_name) for name, group_name in role_to_group.items()}
     viewer_group = Group.objects.get(name=settings.VIEWERS_GROUP_NAME)
 
-    user.is_superuser = "role-admin" in cognito_groups
-    user.is_staff = user.is_superuser
+    # Assign or remove groups based on roles
+    for role, group in groups.items():
+        if role in cognito_groups:
+            user.groups.add(group)
+        else:
+            user.groups.remove(group)
 
-    if "role-publisher" in cognito_groups:
-        user.groups.add(publishing_officer_group)
-    else:
-        user.groups.remove(publishing_officer_group)
-
-    user.groups.add(viewer_group)  # Always add viewer group
+    # Always add the viewer group
+    user.groups.add(viewer_group)
 
 
 def assign_teams(user: "UserModel", cognito_groups: Iterable[str]) -> None:

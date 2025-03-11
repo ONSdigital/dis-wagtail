@@ -867,10 +867,10 @@ if not WAGTAIL_CORE_ADMIN_LOGIN_ENABLED and not AUTH_TOKEN_REFRESH_URL:
     raise ValueError("AUTH_TOKEN_REFRESH_URL must be set when WAGTAIL_CORE_ADMIN_LOGIN_ENABLED is False")
 
 # Groups
-PUBLISHING_OFFICERS_GROUP_NAME = "Publishing Officers"
+PUBLISHING_ADMIN_GROUP_NAME = "Publishing Admins"
+PUBLISHING_OFFICER_GROUP_NAME = "Publishing Officers"
 VIEWERS_GROUP_NAME = "Viewers"
 ROLE_GROUP_IDS = {"role-admin", "role-publisher"}
-
 
 # Cookie Names
 ACCESS_TOKEN_COOKIE_NAME = "access_token"  # noqa: S105

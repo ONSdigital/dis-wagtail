@@ -22,17 +22,15 @@ def update_user_groups(apps, schema_editor):
     viewer_group.permissions.add(admin_permission)
     viewer_group.save()
 
-    # Rename existing 'Moderators' to 'Publishing Officers'
+    # Rename existing 'Moderators' to 'Publishing Admins'
     moderators_group = Group.objects.get(name="Moderators")
-    moderators_group.name = settings.PUBLISHING_OFFICERS_GROUP_NAME
+    moderators_group.name = settings.PUBLISHING_ADMIN_GROUP_NAME
     moderators_group.save()
 
-    # Delete existing 'Editors' group if it exists
-    try:
-        editors_group = Group.objects.get(name="Editors")
-        editors_group.delete()
-    except Group.DoesNotExist:
-        pass
+    # Rename existing 'Editors' group to 'Publishing Officers'
+    editors_group = Group.objects.get(name="Editors")
+    editors_group.name = settings.PUBLISHING_OFFICER_GROUP_NAME
+    editors_group.save()
 
 
 class Migration(migrations.Migration):
