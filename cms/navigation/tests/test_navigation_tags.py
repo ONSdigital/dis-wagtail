@@ -1,10 +1,13 @@
 import wagtail.coreutils
 from django.test import TestCase
 
-from cms.navigation.templatetags.navigation_tags import main_menu_columns, main_menu_highlights
+from cms.core.tests.factories import LinkBlockFactory
+from cms.navigation.templatetags.navigation_tags import footer_menu_columns, main_menu_columns, main_menu_highlights
 from cms.navigation.tests.factories import (
     ColumnBlockFactory,
+    FooterMenuFactory,
     HighlightsBlockFactory,
+    LinksColumnFactory,
     MainMenuFactory,
     SectionBlockFactory,
     TopicLinkBlockFactory,
@@ -80,4 +83,48 @@ class MainMenuTemplateTagTests(TestCase):
     def test_main_menu_columns_empty_menu(self):
         """Test that main_menu_columns returns an empty list for a None menu."""
         columns = main_menu_columns({}, None)
+        self.assertEqual(columns, [])
+
+
+class FooterMenuTemplateTagTests(TestCase):
+    @classmethod
+    def setUpTestData(cls):
+        cls.mock_request = wagtail.coreutils.get_dummy_request()
+
+        links = LinkBlockFactory.create_batch(5)
+        columns = [
+            {
+                "type": "column",
+                "value": LinksColumnFactory(links=links),
+            }
+        ] * 3
+
+        cls.footer_menu = FooterMenuFactory(columns=columns)
+
+    def test_footer_menu_output_format(self):
+        """Test that footer_menu outputs the correct format."""
+        columns = footer_menu_columns({"request": self.mock_request}, self.footer_menu)
+
+        expected_columns = [
+            {
+                "title": column.value["title"],
+                "itemsList": [
+                    {
+                        "text": item["title"],
+                        "url": item["external_url"],
+                    }
+                    for item in column.value["links"]
+                ],
+            }
+            for column_index, column in enumerate(self.footer_menu.columns)
+        ]
+
+        self.assertIsInstance(columns, list)
+        self.assertEqual(len(columns), 3)
+
+        self.assertListEqual(columns, expected_columns)
+
+    def test_footer_menu_empty_menu(self):
+        """Test that footer_menu returns an empty list for a None menu."""
+        columns = footer_menu_columns({}, None)
         self.assertEqual(columns, [])
