@@ -13,7 +13,7 @@ from cms.core.blocks import (
     RelatedLinksBlock,
 )
 from cms.core.blocks.glossary_terms import GlossaryTermsBlock
-from cms.core.models.snippets import GlossaryTerm
+from cms.core.tests.factories import GlossaryTermFactory
 from cms.core.tests.utils import get_test_document
 from cms.home.models import HomePage
 
@@ -288,18 +288,33 @@ class CoreBlocksTestCase(TestCase):
 class GlossaryTermBlockTestCase(TestCase):
     """Test for Glossary Term block."""
 
-    def test_glossary_term_block_clean_method(self):
-        """Test that the clean method of the GlossaryTermsBlock removes duplicated terms."""
-        term = GlossaryTerm()
+    def test_glossary_term_block_clean_method_removes_duplicates(self):
+        """Test that the clean method of the GlossaryTermsBlock removes duplicated instances of glossary terms."""
+        term = GlossaryTermFactory()
+        another_term = GlossaryTermFactory()
         block = GlossaryTermsBlock()
 
-        value = block.to_python(
+        value = block.to_python([term.pk, term.pk, another_term.pk])
+        clean_value = block.clean(value)
+
+        self.assertEqual(len(clean_value), 2)
+        self.assertEqual(clean_value[0].pk, term.pk)
+        self.assertEqual(clean_value[1].pk, another_term.pk)
+
+    def test_documents_block__get_context(self):
+        """Test that get_context returns correctly formatted data to be used by the ONS Accordion component."""
+        term = GlossaryTermFactory()
+        block = GlossaryTermsBlock()
+
+        value = block.to_python([term.pk])
+        context = block.get_context(value)
+
+        self.assertListEqual(
+            context["formatted_glossary_terms"],
             [
-                term.id,
-                term.id,
-            ]
+                {
+                    "title": term.name,
+                    "content": term.definition,
+                }
+            ],
         )
-
-        block.clean(value)
-
-        self.assertEqual(len(block.child_block), 1)

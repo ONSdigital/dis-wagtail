@@ -7,6 +7,7 @@ Scenario: A CMS user can create a Glossary Term
     And the Updated time is displayed
     And the Updated by field is populated with the user's name
     And the Owner field is populated with the user's name
+
 Scenario: A CMS user can access the past revisions of the Glossary Term
     Given a CMS user logs into the admin site
     And the user adds a Glossary Terms snippet 

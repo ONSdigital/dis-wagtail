@@ -25,6 +25,11 @@ def click_the_given_button(context: Context, button_text: str) -> None:
     context.page.get_by_role("button", name=button_text).click()
 
 
+@when("the user opens the preview in a new tab")
+def open_preview_in_new_tab(context: Context) -> None:
+    context.page.get_by_role("link", name="Preview in new tab").click()
+
+
 @when("the user edits the {page} page")
 def the_user_edits_a_page(context: Context, page: str) -> None:
     the_page = page.lower().replace(" ", "_")

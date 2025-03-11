@@ -7,9 +7,12 @@
     {# fmt:off #}
     {{
         onsAccordion({
-            "id": "glossary-terms-accordion",
-  
-            "itemsList": formatted_glossary_terms
+            "id": "accordion-" ~ block_id,
+            "allButton": {
+                "open": _("Show all"),
+                "close": _("Hide all")
+            },
+            "itemsList": formatted_glossary_terms,
         })
     }}
     {# fmt:on#}
