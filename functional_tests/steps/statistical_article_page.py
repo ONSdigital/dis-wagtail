@@ -25,7 +25,7 @@ def user_populates_the_statistical_article_page(context: Context):
     page = context.page
     page.get_by_placeholder("Page title*").fill("The article page")
     page.get_by_role("region", name="Summary*").get_by_role("textbox").fill("Page summary")
-    page.locator('[data-contentpath="main_points_summary"]').get_by_role("textbox").fill("Main points summary")
+    page.locator('[data-contentpath="main_points_summary"] [role="textbox"]').fill("Main points summary")
 
     page.get_by_label("Release date*").fill("2025-01-11")
 
@@ -43,9 +43,11 @@ def user_populates_the_statistical_article_page(context: Context):
 def user_adds_table_with_pasted_content(context: Context):
     page = context.page
     page.locator("#panel-child-content-content-content").get_by_role("button", name="Insert a block").nth(2).click()
-    page.get_by_text("Table").click()
+    page.get_by_text("Table").last.click()
+    page.locator('[data-contentpath="footnotes"] [role="textbox"]').fill("some footnotes")
     page.get_by_role("region", name="Table", exact=True).get_by_label("Title").fill("The table title")
     page.get_by_role("region", name="Table", exact=True).get_by_label("Caption").fill("The caption")
+    page.get_by_role("region", name="Table", exact=True).get_by_label("Source").fill("The source")
 
     tinymce = (
         page.get_by_role("region", name="Table", exact=True).locator('iframe[title="Rich Text Area"]').content_frame
@@ -54,8 +56,8 @@ def user_adds_table_with_pasted_content(context: Context):
     tinymce.get_by_role("cell").nth(0).fill("cell1")
     tinymce.get_by_role("cell").nth(1).fill("cell2")
 
-    page.get_by_role("region", name="Table", exact=True).get_by_label("Source").fill("The source")
-    page.get_by_role("region", name="Table", exact=True).get_by_role("textbox").nth(3).fill("some footnotes")
+    page.locator('[data-contentpath="footnotes"] [role="textbox"]').scroll_into_view_if_needed()
+    page.locator('[data-contentpath="footnotes"] [role="textbox"]').fill("some footnotes")
 
 
 @then("the published statistical article page is displayed with the populated data")
@@ -80,6 +82,8 @@ def the_published_statistical_article_page_has_the_added_table(context: Context)
 @then("the user can expand the footnotes")
 def expand_footnotes(context: Context):
     page = context.page
+
+    # page.wait_for_timeout(750)  # added to allow JS to be ready
     footnotes_content = page.get_by_text("some footnotes", exact=True)
     expect(page.get_by_role("link", name="Footnotes")).to_be_visible()
     expect(footnotes_content).to_be_hidden()
