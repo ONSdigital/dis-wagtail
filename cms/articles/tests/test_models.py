@@ -1,14 +1,11 @@
-import calendar
 import math
 from datetime import datetime
 
-from dill.pointers import parent
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.test import TestCase, override_settings
 from django.utils import timezone
 from django.utils.formats import date_format
-from factory import create_batch
 from wagtail.test.utils import WagtailTestUtils
 
 from cms.articles.tests.factories import ArticleSeriesPageFactory, StatisticalArticlePageFactory
@@ -294,12 +291,11 @@ class PreviousReleasesWithPaginationPage3TestCase(TestCase):
 
     def test_pagination_is_shown(self):
         response = self.client.get(self.previous_releases_url)
-        expected = ['class="ons-pagination__position">Page {} of {}'.
-                    format(self.current_page_number,self.total_no_of_pages),
+        expected = [f'class="ons-pagination__position">Page {self.current_page_number} of {self.total_no_of_pages}',
                     'aria-label="Go to the first page (Page 1)"',
                     'class="ons-pagination__item ons-pagination__item--previous"',
                     'class="ons-pagination__item ons-pagination__item--current"',
-                    'aria-label="Go to the last page (Page {})"'.format(self.total_no_of_pages),
+                    f'aria-label="Go to the last page (Page {self.total_no_of_pages})"',
                     'class="ons-pagination__item ons-pagination__item--next"'
                     ]
         not_expected = []
@@ -331,10 +327,9 @@ class PreviousReleasesWithPaginationPage1TestCase(TestCase):
 
     def test_pagination_is_shown(self):
         response = self.client.get(self.previous_releases_url)
-        expected = ['class="ons-pagination__position">Page {} of {}'.
-                    format(self.current_page_number,self.total_no_of_pages),
+        expected = [f'class="ons-pagination__position">Page {self.current_page_number} of {self.total_no_of_pages}',
                     'class="ons-pagination__item ons-pagination__item--current"',
-                    'aria-label="Go to the last page (Page {})"'.format(self.total_no_of_pages),
+                    f'aria-label="Go to the last page (Page {self.total_no_of_pages})"',
                     'class="ons-pagination__item ons-pagination__item--next"'
                     ]
         not_expected = ['aria-label="Go to the first page (Page 1)"',
@@ -368,14 +363,13 @@ class PreviousReleasesWithPaginationPage5TestCase(TestCase):
 
     def test_pagination_is_shown(self):
         response = self.client.get(self.previous_releases_url)
-        expected = ['class="ons-pagination__position">Page {} of {}'.
-                    format(self.current_page_number,self.total_no_of_pages),
+        expected = [f'class="ons-pagination__position">Page {self.current_page_number} of {self.total_no_of_pages}',
                     'aria-label="Go to the first page (Page 1)"',
                     'class="ons-pagination__item ons-pagination__item--previous"',
                     'class="ons-pagination__item ons-pagination__item--current"'
                     ]
         not_expected = [
-            'aria-label="Go to the last page (Page {})"'.format(self.total_no_of_pages),
+            f'aria-label="Go to the last page (Page {self.total_no_of_pages}"',
             'class="ons-pagination__item ons-pagination__item--next"'
         ]
         for expect in expected:
