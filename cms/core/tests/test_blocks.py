@@ -12,6 +12,8 @@ from cms.core.blocks import (
     RelatedContentBlock,
     RelatedLinksBlock,
 )
+from cms.core.blocks.glossary_terms import GlossaryTermsBlock
+from cms.core.models.snippets import GlossaryTerm
 from cms.core.tests.utils import get_test_document
 from cms.home.models import HomePage
 
@@ -281,3 +283,23 @@ class CoreBlocksTestCase(TestCase):
                 "trs": [{"tds": [{"value": "one"}, {"value": "two"}]}],
             },
         )
+
+
+class GlossaryTermBlockTestCase(TestCase):
+    """Test for Glossary Term block."""
+
+    def test_glossary_term_block_clean_method(self):
+        """Test that the clean method of the GlossaryTermsBlock removes duplicated terms."""
+        term = GlossaryTerm()
+        block = GlossaryTermsBlock()
+
+        value = block.to_python(
+            [
+                term.id,
+                term.id,
+            ]
+        )
+
+        block.clean(value)
+
+        self.assertEqual(len(block.child_block), 1)
