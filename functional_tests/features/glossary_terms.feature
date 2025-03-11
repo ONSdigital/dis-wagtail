@@ -35,4 +35,5 @@ Scenario: The user can add the Glossary Terms in a section of a page
     And the user populates the methodology page
     And adds Glossary Terms to the page content
     When the user clicks the "Preview" button
+    And the user clicks the "Preview in new tab" button
     Then the user can see the preview of the Glossary Term
