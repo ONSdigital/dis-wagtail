@@ -83,7 +83,6 @@ def the_published_statistical_article_page_has_the_added_table(context: Context)
 def expand_footnotes(context: Context):
     page = context.page
 
-    # page.wait_for_timeout(750)  # added to allow JS to be ready
     footnotes_content = page.get_by_text("some footnotes", exact=True)
     expect(page.get_by_role("link", name="Footnotes")).to_be_visible()
     expect(footnotes_content).to_be_hidden()
