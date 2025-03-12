@@ -1,5 +1,6 @@
 from typing import ClassVar
 
+from django.db.models import F, QuerySet
 from wagtail.admin.ui.tables import Column, UpdatedAtColumn, UserColumn
 from wagtail.snippets.views.chooser import ChooseResultsView as SnippetChooseResultsView
 from wagtail.snippets.views.chooser import ChooseView as SnippetChooseView
@@ -56,6 +57,10 @@ class GlossaryTermsIndex(SnippetIndexView):
         UserColumn("owner"),
     ]
 
+    def get_base_queryset(self) -> QuerySet[GlossaryTerm]:
+        queryset: QuerySet[GlossaryTerm] = super().get_base_queryset()
+        return queryset.select_related("latest_revision__user", "latest_revision__user__wagtail_userprofile")
+
 
 class GlossaryTermsChooseColumnsMixin:
     @property
@@ -63,6 +68,13 @@ class GlossaryTermsChooseColumnsMixin:
         title_column = self.title_column  # type: ignore[attr-defined]
         title_column.label = "Name"
         return [title_column, UpdatedAtColumn(), UserColumn("updated_by")]
+
+    def get_object_list(self) -> QuerySet[GlossaryTerm]:
+        queryset = GlossaryTerm.objects.select_related(
+            "latest_revision", "latest_revision__user", "latest_revision__user__wagtail_userprofile"
+        )
+        queryset = queryset.annotate(_updated_at=F("latest_revision__created_at"))
+        return queryset
 
 
 class GlossaryChooseView(GlossaryTermsChooseColumnsMixin, SnippetChooseView): ...

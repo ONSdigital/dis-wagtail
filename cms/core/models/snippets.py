@@ -1,5 +1,5 @@
 from collections.abc import Collection
-from typing import TYPE_CHECKING, Any, ClassVar
+from typing import TYPE_CHECKING, Any, ClassVar, Optional
 
 from django.conf import settings
 from django.contrib.contenttypes.fields import GenericRelation
@@ -13,6 +13,8 @@ from wagtail.search import index
 if TYPE_CHECKING:
     from django.http import HttpRequest
     from wagtail.admin.panels import Panel
+
+    from cms.users.models import User
 
 
 class ContactDetails(index.Indexed, models.Model):
@@ -70,16 +72,6 @@ class GlossaryTerm(TranslatableMixin, PreviewableMixin, RevisionMixin, index.Ind
         on_delete=models.SET_NULL,
         related_name="owned_glossary_terms",
     )
-    # to allow for a user to be set on creation and seen in the IndexView
-    updated_by = models.ForeignKey(
-        "users.User",
-        null=True,
-        blank=True,
-        on_delete=models.SET_NULL,
-        related_name="glossary_terms",
-    )
-    # See https://docs.wagtail.org/en/stable/advanced_topics/reference_index.html
-    updated_by.wagtail_reference_index_ignore = True  # type: ignore[attr-defined]
 
     revisions = GenericRelation("wagtailcore.Revision", related_query_name="glossary_term")
 
@@ -107,6 +99,10 @@ class GlossaryTerm(TranslatableMixin, PreviewableMixin, RevisionMixin, index.Ind
                 fields=("translation_key", "locale"), name="unique_translation_key_locale_core_glossaryterm"
             ),
         ]
+
+    @property
+    def updated_by(self) -> Optional["User"]:
+        return self.latest_revision.user if self.latest_revision else None
 
     def validate_unique(self, exclude: Collection[str] | None = None) -> None:
         # Include the locale field for validation as it's not included by default

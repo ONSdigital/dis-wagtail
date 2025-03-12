@@ -56,16 +56,6 @@ class Migration(migrations.Migration):
                         to=settings.AUTH_USER_MODEL,
                     ),
                 ),
-                (
-                    "updated_by",
-                    models.ForeignKey(
-                        blank=True,
-                        null=True,
-                        on_delete=django.db.models.deletion.SET_NULL,
-                        related_name="glossary_terms",
-                        to=settings.AUTH_USER_MODEL,
-                    ),
-                ),
             ],
             options={
                 "constraints": [
