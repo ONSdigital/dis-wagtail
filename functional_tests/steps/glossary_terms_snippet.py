@@ -74,11 +74,27 @@ def the_past_revisions_are_visible(context: Context) -> None:
     expect(context.page.get_by_role("cell", name="Just now").first).to_be_visible()
 
 
-@then("the user can see the preview of the Glossary Term")
-def the_user_can_see_the_preview_of_the_glossary_term(context: Context) -> None:
-    # iframe_locator = context.page.frame_locator("#w-preview-iframe")
-    iframe_locator = context.page
-
-    iframe_locator.get_by_role("link", name="Term").click()
+@then("the user can see the Glossary Term in the preview tab")
+def the_glossary_term_is_visible_in_preview_tab(context: Context):
+    iframe_locator = context.page.frame_locator("#w-preview-iframe")
     expect(iframe_locator.get_by_role("link", name="Term")).to_be_visible()
-    expect(iframe_locator.get_by_text("Definition")).to_be_visible(timeout=5_000)
+    expect(iframe_locator.get_by_text("Definition", exact=True)).to_be_hidden()
+
+
+@then("the user can click the Glossary Term to see the definition in the preview tab")
+def the_glossary_term_definition_is_visible_in_preview_tab(context: Context):
+    iframe_locator = context.page.frame_locator("#w-preview-iframe")
+    iframe_locator.get_by_role("link", name="Term").click()
+    expect(iframe_locator.get_by_text("Definition", exact=True)).to_be_visible()
+
+
+@then("the user can see the Glossary Term")
+def the_user_can_see_the_preview_of_the_glossary_term(context: Context) -> None:
+    expect(context.page.get_by_text("Term")).to_be_visible()
+    expect(context.page.get_by_text("Definition", exact=True)).to_be_hidden()
+
+
+@then("the user can click the Glossary Term to see the definition")
+def the_user_clicks_the_glossary_term_to_see_the_definition(context: Context):
+    context.page.get_by_role("link", name="Term").click()
+    expect(context.page.get_by_text("Definition", exact=True)).to_be_visible()

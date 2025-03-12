@@ -19,14 +19,14 @@ Scenario: A CMS user can see the preview of the Glossary Term
     Given a CMS user logs into the admin site
     And the user fills in Glossary Term details
     When the user clicks the "Preview" button
-    Then the user can see the preview of the Glossary Term
+    Then the user can see the Glossary Term in the preview tab
+    And the user can click the Glossary Term to see the definition in the preview tab
 
 Scenario: The Glossary Term raise validation errors when name is duplicated
     Given a CMS user logs into the admin site
     And the user adds a Glossary Terms snippet 
     When the user adds another Glossary Terms snippet with the same name
     Then a validation error is displayed
-
 
 Scenario: The user can add the Glossary Terms in a section of a page
     Given a topic page exists under a theme page
@@ -35,6 +35,7 @@ Scenario: The user can add the Glossary Terms in a section of a page
     When the user creates a methodology page as a child of the existing topic page
     And the user populates the methodology page
     And adds Glossary Terms to the page content
-    When the user clicks the "Preview" button
-    And the user clicks the "Preview in new tab" button
-    Then the user can see the preview of the Glossary Term
+    And the user clicks "Publish page"
+    And the user clicks "View Live" on the publish confirmation banner
+    Then the user can see the Glossary Term
+    And the user can click the Glossary Term to see the definition
