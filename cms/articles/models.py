@@ -1,6 +1,5 @@
 from typing import TYPE_CHECKING, Any, ClassVar, Optional
 
-from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.core.paginator import EmptyPage, Paginator
 from django.db import models
@@ -76,7 +75,7 @@ class ArticleSeriesPage(RoutablePageMixin, GenericTaxonomyMixin, BasePage):  # t
 
         try:
             pages = paginator.page(int(request.GET.get("page", 1)))
-            ons_pagination_url_list = [{"url": "?page=" + str(n + 1)} for n in range(paginator.num_pages)]
+            ons_pagination_url_list = [{"url": f"?page={n}"} for n in paginator.page_range]
         except (EmptyPage, ValueError) as e:
             raise Http404 from e
         else:

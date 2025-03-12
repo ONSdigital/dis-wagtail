@@ -7,6 +7,7 @@
 {% block header_area %}
     <div class="common-header article-header {% if page.updates %}article-header--flush{% endif %}">
         <div class="ons-container">
+            {% include "templates/components/navigation/breadcrumbs.html" %}
             <p class="article-header__doc-type ons-u-fs-l">{{ _("Statistical article") }}</p>
 
             <div class="ons-grid ons-grid-flex-gap ons-grid-flex-gap--40">

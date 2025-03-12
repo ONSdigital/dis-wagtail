@@ -234,10 +234,10 @@ class StatisticalArticlePageRenderTestCase(WagtailTestUtils, TestCase):
         response = self.client.get(self.basic_page_url)
         self.assertNotContains(response, expected)
 
-    def test_breadcrumb_is_not_shown(self):
+    def test_breadcrumb_is_shown(self):
         response = self.client.get(self.basic_page_url)
         expected = 'class="ons-breadcrumbs__link"'
-        self.assertNotContains(response, expected)
+        self.assertContains(response, expected)
 
     def test_pagination_is_not_shown(self):
         response = self.client.get(self.basic_page_url)
@@ -250,7 +250,6 @@ class PreviousReleasesWithoutPaginationTestCase(TestCase):
     @classmethod
     def setUpTestData(cls):
         batch_num = 1
-        cls.settings.PREVIOUS_RELEASES_PER_PAGE = 3
         cls.article_series = ArticleSeriesPageFactory(title="Article Series")
         cls.articles = StatisticalArticlePageFactory.create_batch(batch_num, parent=cls.article_series)
         cls.previous_releases_url = cls.article_series.url + cls.article_series.reverse_subpage(
@@ -275,14 +274,12 @@ class PreviousReleasesWithPaginationPage3TestCase(TestCase):
     total_no_of_pages = math.ceil(total_batch / PREVIOUS_RELEASES_PER_PAGE)
 
     @classmethod
-    def setUpTestData(cls):
-        total_batch = 13
-        current_page_number = 3
-        cls.settings.PREVIOUS_RELEASES_PER_PAGE = 3
+    def setUpTestData(cls,cls_total_batch: int = total_batch,cls_current_page_number: int = current_page_number, cls_previous_releases_per_page: int = PREVIOUS_RELEASES_PER_PAGE):
+        cls.settings.PREVIOUS_RELEASES_PER_PAGE = cls_previous_releases_per_page
         cls.article_series = ArticleSeriesPageFactory(title="Article Series")
-        cls.articles = StatisticalArticlePageFactory.create_batch(total_batch, parent=cls.article_series)
+        cls.articles = StatisticalArticlePageFactory.create_batch(cls_total_batch, parent=cls.article_series)
         cls.previous_releases_url = cls.article_series.url + cls.article_series.reverse_subpage(
-            "previous_releases")+ "?page=" + str(current_page_number)
+            "previous_releases") + f"?page={cls_current_page_number}"
 
     def test_breadcrumb_is_shown(self):
         response = self.client.get(self.previous_releases_url)
@@ -291,7 +288,8 @@ class PreviousReleasesWithPaginationPage3TestCase(TestCase):
 
     def test_pagination_is_shown(self):
         response = self.client.get(self.previous_releases_url)
-        expected = [f'class="ons-pagination__position">Page {self.current_page_number} of {self.total_no_of_pages}',
+        expected = [f'class="ons-pagination__position">Page {self.current_page_number} of {
+        math.ceil(self.total_batch / settings.PREVIOUS_RELEASES_PER_PAGE)}',
                     'aria-label="Go to the first page (Page 1)"',
                     'class="ons-pagination__item ons-pagination__item--previous"',
                     'class="ons-pagination__item ons-pagination__item--current"',
@@ -311,14 +309,12 @@ class PreviousReleasesWithPaginationPage1TestCase(TestCase):
     total_no_of_pages = math.ceil(total_batch / PREVIOUS_RELEASES_PER_PAGE)
 
     @classmethod
-    def setUpTestData(cls):
-        total_batch = 13
-        current_page_number = 1
-        cls.settings.PREVIOUS_RELEASES_PER_PAGE = 3
+    def setUpTestData(cls,cls_total_batch: int = total_batch,cls_current_page_number: int = current_page_number, cls_previous_releases_per_page: int = PREVIOUS_RELEASES_PER_PAGE):
+        cls.settings.PREVIOUS_RELEASES_PER_PAGE = cls_previous_releases_per_page
         cls.article_series = ArticleSeriesPageFactory(title="Article Series")
-        cls.articles = StatisticalArticlePageFactory.create_batch(total_batch, parent=cls.article_series)
+        cls.articles = StatisticalArticlePageFactory.create_batch(cls_total_batch, parent=cls.article_series)
         cls.previous_releases_url = cls.article_series.url + cls.article_series.reverse_subpage(
-            "previous_releases")+ "?page=" + str(current_page_number)
+            "previous_releases") + f"?page={cls_current_page_number}"
 
     def test_breadcrumb_is_shown(self):
         response = self.client.get(self.previous_releases_url)
@@ -347,14 +343,15 @@ class PreviousReleasesWithPaginationPage5TestCase(TestCase):
     total_no_of_pages = math.ceil(total_batch / PREVIOUS_RELEASES_PER_PAGE)
 
     @classmethod
-    def setUpTestData(cls):
+    def setUpTestData(cls,cls_total_batch: int = total_batch,cls_current_page_number: int = current_page_number, cls_previous_releases_per_page: int = PREVIOUS_RELEASES_PER_PAGE):
+        cls.settings.PREVIOUS_RELEASES_PER_PAGE = cls_previous_releases_per_page
         total_batch = 13
         current_page_number = 5
         cls.settings.PREVIOUS_RELEASES_PER_PAGE = 3
         cls.article_series = ArticleSeriesPageFactory(title="Article Series")
         cls.articles = StatisticalArticlePageFactory.create_batch(total_batch, parent=cls.article_series)
         cls.previous_releases_url = cls.article_series.url + cls.article_series.reverse_subpage(
-            "previous_releases")+ "?page=" + str(current_page_number)
+            "previous_releases") + f"?page={cls_current_page_number}"
 
     def test_breadcrumb_is_shown(self):
         response = self.client.get(self.previous_releases_url)

@@ -10,10 +10,12 @@
         {% endfor %}
     </ul>
 
-    {% block ONS_pagination_v1 %}
+    {% block pagination %}
         {% from "components/pagination/_macro.njk" import onsPagination %}
         {% if pages.paginator.num_pages > 1 %}
-            <div class="ons-pagination__position">Page {{ pages.number }} of {{pages.paginator.num_pages }}</div>
+            <div class="ons-pagination__position">Page {{ pages.number }} of
+                {{pages.paginator.num_pages }}</div>
+{# fmt:off #}
 
             {{
             onsPagination({
@@ -22,6 +24,7 @@
             "pages": ons_pagination_url_list
             })
             }}
+        {# fmt:on #}
         {% endif %}
     {% endblock %}
 
