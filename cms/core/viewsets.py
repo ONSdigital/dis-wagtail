@@ -4,8 +4,6 @@ from wagtail.admin.ui.tables import Column, UpdatedAtColumn, UserColumn
 from wagtail.snippets.views.chooser import ChooseResultsView as SnippetChooseResultsView
 from wagtail.snippets.views.chooser import ChooseView as SnippetChooseView
 from wagtail.snippets.views.chooser import SnippetChooserViewSet
-from wagtail.snippets.views.snippets import CreateView as SnippetCreateView
-from wagtail.snippets.views.snippets import EditView as SnippetEditView
 from wagtail.snippets.views.snippets import IndexView as SnippetIndexView
 from wagtail.snippets.views.snippets import SnippetViewSet
 
@@ -50,24 +48,6 @@ class ContactDetailsViewSet(SnippetViewSet):
     chooser_viewset_class = ContactDetailsChooserViewset
 
 
-class GlossaryTermCreateView(SnippetCreateView):
-    def save_instance(self) -> GlossaryTerm:
-        """Automatically set the last updating user on Glossary Term on creation and modification."""
-        instance: GlossaryTerm = super().save_instance()
-        instance.updated_by = self.request.user
-        instance.save(update_fields=["updated_by"])
-        return instance
-
-
-class GlossaryTermEditView(SnippetEditView):
-    def save_instance(self) -> GlossaryTerm:
-        """Automatically set the last updating user on Glossary Term on creation and modification."""
-        instance: GlossaryTerm = super().save_instance()
-        instance.updated_by = self.request.user
-        instance.save(update_fields=["updated_by"])
-        return instance
-
-
 class GlossaryTermsIndex(SnippetIndexView):
     list_display: ClassVar[list[str | Column]] = [
         "name",
@@ -104,6 +84,3 @@ class GlossaryViewSet(SnippetViewSet):
 
     index_view_class = GlossaryTermsIndex
     chooser_viewset_class = GlossaryChooserViewset
-
-    add_view_class = GlossaryTermCreateView
-    edit_view_class = GlossaryTermEditView
