@@ -320,6 +320,7 @@ class GlossaryTermBlockTestCase(TestCase):
             ],
         )
 
+
 class ONSTableBlockTestCase(TestCase):
     @classmethod
     def setUpTestData(cls):
