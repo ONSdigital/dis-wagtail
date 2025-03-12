@@ -274,7 +274,8 @@ class PreviousReleasesWithPaginationPage3TestCase(TestCase):
     total_no_of_pages = math.ceil(total_batch / PREVIOUS_RELEASES_PER_PAGE)
 
     @classmethod
-    def setUpTestData(cls,cls_total_batch: int = total_batch,cls_current_page_number: int = current_page_number, cls_previous_releases_per_page: int = PREVIOUS_RELEASES_PER_PAGE):
+    def setUpTestData(cls,cls_total_batch: int = total_batch,cls_current_page_number: int = current_page_number,
+                      cls_previous_releases_per_page: int = PREVIOUS_RELEASES_PER_PAGE):
         cls.settings.PREVIOUS_RELEASES_PER_PAGE = cls_previous_releases_per_page
         cls.article_series = ArticleSeriesPageFactory(title="Article Series")
         cls.articles = StatisticalArticlePageFactory.create_batch(cls_total_batch, parent=cls.article_series)
@@ -309,7 +310,9 @@ class PreviousReleasesWithPaginationPage1TestCase(TestCase):
     total_no_of_pages = math.ceil(total_batch / PREVIOUS_RELEASES_PER_PAGE)
 
     @classmethod
-    def setUpTestData(cls,cls_total_batch: int = total_batch,cls_current_page_number: int = current_page_number, cls_previous_releases_per_page: int = PREVIOUS_RELEASES_PER_PAGE):
+    def setUpTestData(cls,cls_total_batch: int = total_batch,
+                      cls_current_page_number: int = current_page_number,
+                      cls_previous_releases_per_page: int = PREVIOUS_RELEASES_PER_PAGE):
         cls.settings.PREVIOUS_RELEASES_PER_PAGE = cls_previous_releases_per_page
         cls.article_series = ArticleSeriesPageFactory(title="Article Series")
         cls.articles = StatisticalArticlePageFactory.create_batch(cls_total_batch, parent=cls.article_series)
@@ -343,13 +346,11 @@ class PreviousReleasesWithPaginationPage5TestCase(TestCase):
     total_no_of_pages = math.ceil(total_batch / PREVIOUS_RELEASES_PER_PAGE)
 
     @classmethod
-    def setUpTestData(cls,cls_total_batch: int = total_batch,cls_current_page_number: int = current_page_number, cls_previous_releases_per_page: int = PREVIOUS_RELEASES_PER_PAGE):
-        cls.settings.PREVIOUS_RELEASES_PER_PAGE = cls_previous_releases_per_page
-        total_batch = 13
-        current_page_number = 5
+    def setUpTestData(cls,cls_total_batch: int = total_batch,cls_current_page_number: int = current_page_number,
+                      cls_previous_releases_per_page: int = PREVIOUS_RELEASES_PER_PAGE):
         cls.settings.PREVIOUS_RELEASES_PER_PAGE = 3
         cls.article_series = ArticleSeriesPageFactory(title="Article Series")
-        cls.articles = StatisticalArticlePageFactory.create_batch(total_batch, parent=cls.article_series)
+        cls.articles = StatisticalArticlePageFactory.create_batch(cls_total_batch, parent=cls.article_series)
         cls.previous_releases_url = cls.article_series.url + cls.article_series.reverse_subpage(
             "previous_releases") + f"?page={cls_current_page_number}"
 

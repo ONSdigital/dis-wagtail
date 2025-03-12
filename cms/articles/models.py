@@ -1,5 +1,6 @@
 from typing import TYPE_CHECKING, Any, ClassVar, Optional
 
+from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.core.paginator import EmptyPage, Paginator
 from django.db import models
@@ -18,7 +19,6 @@ from cms.core.blocks import HeadlineFiguresBlock
 from cms.core.blocks.stream_blocks import SectionStoryBlock
 from cms.core.fields import StreamField
 from cms.core.models import BasePage
-from django.conf import settings
 from cms.taxonomy.mixins import GenericTaxonomyMixin
 
 if TYPE_CHECKING:
@@ -37,21 +37,15 @@ class ArticleSeriesPage(RoutablePageMixin, GenericTaxonomyMixin, BasePage):  # t
     page_description = _("A container for statistical article series.")
     exclude_from_breadcrumbs = True
 
-    content_panels: ClassVar[list["Panel"]] = [
-        *Page.content_panels,
-        HelpPanel(
-            content=_(
-                "This is a container for article series. It provides the <code>/latest</code>,"
-                "<code>/previous-releases</code> evergreen paths, as well as the actual statistical article pages. "
-                "Add a new Statistical article page under this container."
-            )
-        ),
-    ]
+    content_panels: ClassVar[list["Panel"]] = [*Page.content_panels,
+        HelpPanel(content=_("This is a container for article series. It provides the <code>/latest</code>,"
+                            "<code>/previous-releases</code> evergreen paths, "
+                            "as well as the actual statistical article pages. "
+                            "Add a new Statistical article page under this container.")), ]
 
     def get_latest(self) -> Optional["StatisticalArticlePage"]:
         latest: StatisticalArticlePage | None = (
-            StatisticalArticlePage.objects.live().child_of(self).order_by("-release_date").first()
-        )
+            StatisticalArticlePage.objects.live().child_of(self).order_by("-release_date").first())
         return latest
 
     @path("")
@@ -71,7 +65,7 @@ class ArticleSeriesPage(RoutablePageMixin, GenericTaxonomyMixin, BasePage):  # t
     @path("previous-releases/")
     def previous_releases(self, request: "HttpRequest") -> "TemplateResponse":
         children = StatisticalArticlePage.objects.live().child_of(self).order_by("-release_date")
-        paginator = Paginator(children, per_page= settings.PREVIOUS_RELEASES_PER_PAGE)
+        paginator = Paginator(children, per_page=settings.PREVIOUS_RELEASES_PER_PAGE)
 
         try:
             pages = paginator.page(int(request.GET.get("page", 1)))
@@ -79,12 +73,10 @@ class ArticleSeriesPage(RoutablePageMixin, GenericTaxonomyMixin, BasePage):  # t
         except (EmptyPage, ValueError) as e:
             raise Http404 from e
         else:
-            response: TemplateResponse = self.render(
-                request,
+            response: TemplateResponse = self.render(request,
                 # TODO: update to include drafts when looking at previews holistically.
                 context_overrides={"pages": pages, "ons_pagination_url_list": ons_pagination_url_list},
-                template="templates/pages/statistical_article_page--previous-releases.html",
-            )
+                template="templates/pages/statistical_article_page--previous-releases.html", )
         return response
 
 
@@ -103,36 +95,22 @@ class StatisticalArticlePage(BundledPageMixin, BasePage):  # type: ignore[django
     news_headline = models.CharField(max_length=255, blank=True)
     summary = RichTextField(features=settings.RICH_TEXT_BASIC)
 
-    main_points_summary = RichTextField(
-        features=settings.RICH_TEXT_BASIC, help_text=_("Used when featured on a topic page.")
-    )
+    main_points_summary = RichTextField(features=settings.RICH_TEXT_BASIC,
+        help_text=_("Used when featured on a topic page."))
 
     # Fields: dates
     release_date = models.DateField()
     next_release_date = models.DateField(blank=True, null=True)
 
-    contact_details = models.ForeignKey(
-        "core.ContactDetails",
-        null=True,
-        blank=True,
-        on_delete=models.SET_NULL,
-        related_name="+",
-    )
+    contact_details = models.ForeignKey("core.ContactDetails", null=True, blank=True, on_delete=models.SET_NULL,
+        related_name="+", )
 
     # Fields: accredited/census. A bit of "about the data".
-    is_accredited = models.BooleanField(
-        _("Accredited Official Statistics"),
-        default=False,
-        help_text=_(
-            "If ticked, will display an information block about the data being accredited official statistics "
-            "and include the accredited logo."
-        ),
-    )
-    is_census = models.BooleanField(
-        _("Census"),
-        default=False,
-        help_text=_("If ticked, will display an information block about the data being related to the Census."),
-    )
+    is_accredited = models.BooleanField(_("Accredited Official Statistics"), default=False,
+        help_text=_("If ticked, will display an information block about the data being accredited official statistics "
+                    "and include the accredited logo."), )
+    is_census = models.BooleanField(_("Census"), default=False,
+        help_text=_("If ticked, will display an information block about the data being related to the Census."), )
 
     # Fields: content
     headline_figures = StreamField([("figures", HeadlineFiguresBlock())], blank=True, max_num=1)
@@ -140,61 +118,24 @@ class StatisticalArticlePage(BundledPageMixin, BasePage):  # type: ignore[django
 
     show_cite_this_page = models.BooleanField(default=True)
 
-    content_panels: ClassVar[list["Panel"]] = [
-        *BundledPageMixin.panels,
-        MultiFieldPanel(
-            [
-                TitleFieldPanel("title", help_text=_("Also known as the release edition. e.g. 'November 2024'.")),
-                FieldPanel(
-                    "news_headline",
-                    help_text=(
-                        "Use this as a news headline. When populated, replaces the title displayed on the page. "
-                        "Note: the page slug is powered by the title field. "
-                        "You can change the slug in the 'Promote' tab."
-                    ),
-                    icon="news",
-                ),
-            ],
-            heading="Title",
-        ),
-        "summary",
-        MultiFieldPanel(
-            [
-                FieldRowPanel(
-                    [
-                        FieldPanel("release_date", help_text=_("The actual release date")),
-                        FieldPanel(
-                            "next_release_date",
-                            help_text=_("If no next date is chosen, 'To be announced' will be displayed."),
-                        ),
-                    ],
-                    heading=_("Dates"),
-                ),
-                FieldRowPanel(
-                    ["is_accredited", "is_census"],
-                    heading=_("About the data"),
-                ),
-                "contact_details",
-                "show_cite_this_page",
-                "main_points_summary",
-            ],
-            heading=_("Metadata"),
-            icon="cog",
-        ),
-        FieldPanel("headline_figures", icon="data-analysis"),
-        FieldPanel("content", icon="list-ul"),
-    ]
+    content_panels: ClassVar[list["Panel"]] = [*BundledPageMixin.panels, MultiFieldPanel(
+        [TitleFieldPanel("title", help_text=_("Also known as the release edition. e.g. 'November 2024'.")),
+            FieldPanel("news_headline",
+                help_text=("Use this as a news headline. When populated, replaces the title displayed on the page. "
+                           "Note: the page slug is powered by the title field. "
+                           "You can change the slug in the 'Promote' tab."), icon="news", ), ], heading="Title", ),
+        "summary", MultiFieldPanel([FieldRowPanel([FieldPanel("release_date",
+                                                              help_text=_("The actual release date")),
+            FieldPanel("next_release_date",
+                help_text=_("If no next date is chosen, 'To be announced' will be displayed."), ), ],
+            heading=_("Dates"), ), FieldRowPanel(["is_accredited", "is_census"], heading=_("About the data"), ),
+            "contact_details", "show_cite_this_page", "main_points_summary", ], heading=_("Metadata"), icon="cog", ),
+        FieldPanel("headline_figures", icon="data-analysis"), FieldPanel("content", icon="list-ul"), ]
 
-    search_fields: ClassVar[list[index.BaseField]] = [
-        *BasePage.search_fields,
-        index.SearchField("summary"),
-        index.SearchField("headline_figures"),
-        index.SearchField("content"),
-        index.SearchField("get_admin_display_title", boost=2),
-        index.AutocompleteField("get_admin_display_title"),
-        index.SearchField("news_headline"),
-        index.AutocompleteField("news_headline"),
-    ]
+    search_fields: ClassVar[list[index.BaseField]] = [*BasePage.search_fields, index.SearchField("summary"),
+        index.SearchField("headline_figures"), index.SearchField("content"),
+        index.SearchField("get_admin_display_title", boost=2), index.AutocompleteField("get_admin_display_title"),
+        index.SearchField("news_headline"), index.AutocompleteField("news_headline"), ]
 
     def clean(self) -> None:
         """Additional validation on save."""
@@ -234,11 +175,6 @@ class StatisticalArticlePage(BundledPageMixin, BasePage):  # type: ignore[django
     @property
     def is_latest(self) -> bool:
         """Returns True if the statistical article page is latest in its series based on the release date."""
-        latest_id = (
-            StatisticalArticlePage.objects.sibling_of(self)
-            .live()
-            .order_by("-release_date")
-            .values_list("id", flat=True)
-            .first()
-        )
+        latest_id = (StatisticalArticlePage.objects.sibling_of(self).live().order_by("-release_date").values_list("id",
+                                                                                                                  flat=True).first())
         return bool(self.pk == latest_id)  # to placate mypy
