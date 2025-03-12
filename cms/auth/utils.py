@@ -1,17 +1,8 @@
 import logging
-from collections.abc import Iterable
-from typing import TYPE_CHECKING
 
 import jwt
-from django.conf import settings
 from django.contrib.auth import get_user_model
-from django.contrib.auth.models import Group
 from jwt import ExpiredSignatureError, InvalidTokenError
-
-from cms.teams.models import Team
-
-if TYPE_CHECKING:
-    from cms.users.models import User as UserModel
 
 logger = logging.getLogger(__name__)
 
@@ -47,57 +38,3 @@ def extract_and_validate_token(token: str, token_type: str) -> dict | None:
     except Exception:  # pylint: disable=broad-except
         logger.exception("Failed to validate %s", token_type)
     return None
-
-
-def update_user_details(user: "UserModel", *, email: str, first_name: str, last_name: str, created: bool) -> None:
-    """Update user details regardless of whether the user was newly created."""
-    user.email = email
-    user.first_name = first_name
-    user.last_name = last_name
-    if created:
-        user.set_unusable_password()
-
-
-def assign_groups(user: "UserModel", cognito_groups: Iterable[str]) -> None:
-    """Assign groups to the user based on their Cognito groups."""
-    role_to_group = {
-        "role-admin": settings.PUBLISHING_ADMIN_GROUP_NAME,
-        "role-publisher": settings.PUBLISHING_OFFICER_GROUP_NAME,
-    }
-
-    groups = {name: Group.objects.get(name=group_name) for name, group_name in role_to_group.items()}
-    viewer_group = Group.objects.get(name=settings.VIEWERS_GROUP_NAME)
-
-    # Assign or remove groups based on roles
-    for role, group in groups.items():
-        if role in cognito_groups:
-            user.groups.add(group)
-        else:
-            user.groups.remove(group)
-
-    # Always add the viewer group
-    user.groups.add(viewer_group)
-
-
-def assign_teams(user: "UserModel", cognito_groups: Iterable[str]) -> None:
-    """Assign teams to the user based on their Cognito groups."""
-    teams_to_add = set(cognito_groups) - set(settings.ROLE_GROUP_IDS)
-    existing_teams = {team.identifier: team for team in Team.objects.filter(identifier__in=teams_to_add)}
-    missing_team_ids = teams_to_add - set(existing_teams.keys())
-
-    # Create missing teams in bulk
-    if missing_team_ids:
-        missing_teams = [
-            Team(
-                identifier=team_id,
-                name=team_id.replace("-", " ").title(),  # Temporary name, will be updated on sync
-            )
-            for team_id in missing_team_ids
-        ]
-        Team.objects.bulk_create(missing_teams)
-        # Refresh the queryset to include newly created teams
-        new_teams = Team.objects.filter(identifier__in=missing_team_ids)
-        existing_teams |= {team.identifier: team for team in new_teams}
-
-    teams_for_user = list(existing_teams.values())
-    user.teams.set(teams_for_user)

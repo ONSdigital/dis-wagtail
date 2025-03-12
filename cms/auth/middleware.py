@@ -7,10 +7,7 @@ from django.contrib.auth import get_user_model, login, logout
 from django.contrib.auth.middleware import AuthenticationMiddleware
 
 from cms.auth.utils import (
-    assign_groups,
-    assign_teams,
     extract_and_validate_token,
-    update_user_details,
 )
 
 if TYPE_CHECKING:
@@ -61,7 +58,7 @@ class ONSAuthMiddleware(AuthenticationMiddleware):
 
         if request.user.is_authenticated:
             # Check cookie user against token user
-            user = User.objects.filter(username=id_payload_username).first()
+            user = User.objects.filter(user_id=id_payload_username).first()
             if user == request.user:
                 # User already authenticated and validated
                 return
@@ -84,24 +81,18 @@ class ONSAuthMiddleware(AuthenticationMiddleware):
     @staticmethod
     def _authenticate_user(request: "HttpRequest", id_payload: Mapping) -> None:
         """Authenticate user based on token payloads."""
-        username = id_payload["cognito:username"]
+        user_id = id_payload["cognito:username"]
         email = id_payload["email"]
         first_name = id_payload.get("given_name", "")
         last_name = id_payload.get("family_name", "")
 
         # Get or create user and update details
-        user, created = User.objects.get_or_create(username=username, defaults={"email": email})
-        update_user_details(user, email=email, first_name=first_name, last_name=last_name, created=created)
+        user, created = User.objects.get_or_create(user_id=user_id, defaults={"email": email, "username": email})
+        user.update_details(email=email, first_name=first_name, last_name=last_name, created=created)
 
-        # Assign groups
-        cognito_groups = id_payload.get("cognito:groups") or []
-        assign_groups(user, cognito_groups)
-
-        # Assign teams
-        assign_teams(user, cognito_groups)
-
-        # Save any changes to the user
-        user.save()
+        # Assign Django user groups and preview teams
+        groups_ids = id_payload.get("cognito:groups") or []
+        user.assign_groups_and_teams(groups_ids)
 
         # Authenticate user
         login(request, user)
