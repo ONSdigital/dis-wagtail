@@ -302,7 +302,7 @@ class GlossaryTermBlockTestCase(TestCase):
         self.assertEqual(clean_value[0].pk, term.pk)
         self.assertEqual(clean_value[1].pk, another_term.pk)
 
-    def test_documents_block__get_context(self):
+    def test_glossary_term_block__get_context(self):
         """Test that get_context returns correctly formatted data to be used by the ONS Accordion component."""
         term = GlossaryTermFactory()
         block = GlossaryTermsBlock()
@@ -315,7 +315,7 @@ class GlossaryTermBlockTestCase(TestCase):
             [
                 {
                     "title": term.name,
-                    "content": term.definition,
+                    "content": f'<div class="rich-text">{term.definition}</div>',
                 }
             ],
         )
