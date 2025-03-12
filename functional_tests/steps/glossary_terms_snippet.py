@@ -2,6 +2,8 @@ from behave import given, step, then, when  # pylint: disable=no-name-in-module
 from behave.runner import Context
 from playwright.sync_api import expect
 
+from cms.core.models import GlossaryTerm
+
 
 @step("the user adds another Glossary Terms snippet with the same name")
 @step("the user adds a Glossary Terms snippet")
@@ -17,7 +19,13 @@ def user_fills_in_glossary_term_details(context: Context) -> None:
     context.page.get_by_role("link", name="Add glossary term").click()
     context.page.get_by_role("textbox", name="Name*").fill("Term")
     context.page.get_by_role("region", name="Definition*").get_by_role("textbox").fill("Definition")
-    context.page.locator("#id_owner").select_option("1")
+    context.page.get_by_role("button", name="Choose a user").click()
+    context.page.get_by_role("link", name=context.user_data["full_name"]).first.click()
+
+
+@given("a Glossary Terms snippet exists")
+def a_glossary_terms_snippet_exists(context: Context) -> None:
+    context.glossary_term = GlossaryTerm.objects.create(name="Term", definition="Definition")
 
 
 @then("a validation error is displayed")
@@ -41,13 +49,17 @@ def the_last_edited_time_column_is_displayed(context: Context) -> None:
 @then("the Updated by field is populated with the user's name")
 def the_edited_by_column_is_displayed(context: Context) -> None:
     expect(context.page.get_by_role("row", name="Name").get_by_role("cell").nth(3)).to_contain_text("Updated by")
-    expect(context.page.get_by_role("row", name="Term").get_by_role("cell").nth(3)).to_contain_text(context.full_name)
+    expect(context.page.get_by_role("row", name="Term").get_by_role("cell").nth(3)).to_contain_text(
+        context.user_data["full_name"]
+    )
 
 
 @then("the Owner field is populated with the user's name")
 def owner_field_has_the_correct_user(context: Context) -> None:
     expect(context.page.get_by_role("row", name="Name").get_by_role("cell").nth(4)).to_contain_text("Owner")
-    expect(context.page.get_by_role("row", name="Term").get_by_role("cell").nth(4)).to_contain_text(context.full_name)
+    expect(context.page.get_by_role("row", name="Term").get_by_role("cell").nth(4)).to_contain_text(
+        context.user_data["full_name"]
+    )
 
 
 @given("the user modifies the Glossary Term description")
@@ -66,11 +78,11 @@ def the_user_navigates_to_the_page_history_menu(context: Context) -> None:
 @then("the past revisions of the snippet are displayed")
 def the_past_revisions_are_visible(context: Context) -> None:
     expect(context.page.get_by_role("cell", name="Created")).to_be_visible()
-    expect(context.page.get_by_role("cell", name=context.full_name).nth(1)).to_be_visible()
+    expect(context.page.get_by_role("cell", name=context.user_data["full_name"]).nth(1)).to_be_visible()
     expect(context.page.get_by_role("cell", name="Just now").nth(1)).to_be_visible()
 
     expect(context.page.get_by_role("cell", name="Edited")).to_be_visible()
-    expect(context.page.get_by_role("cell", name=context.full_name).first).to_be_visible()
+    expect(context.page.get_by_role("cell", name=context.user_data["full_name"]).first).to_be_visible()
     expect(context.page.get_by_role("cell", name="Just now").first).to_be_visible()
 
 

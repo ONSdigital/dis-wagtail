@@ -7,7 +7,7 @@ from functional_tests.step_helpers.users import create_cms_admin_user
 
 @given("the user is a CMS admin")  # pylint: disable=not-callable
 def user_is_cms_admin(context: Context) -> None:
-    context.username, context.full_name, context.password = create_cms_admin_user()
+    context.user_data = create_cms_admin_user()
 
 
 @when("the user navigates to the beta CMS admin page")  # pylint: disable=not-callable
@@ -17,8 +17,8 @@ def cms_admin_navigates_to_beta_homepage(context: Context) -> None:
 
 @when("they enter a their valid username and password and click login")  # pylint: disable=not-callable
 def enter_a_valid_username_and_password_and_sign_in(context: Context) -> None:
-    context.page.get_by_placeholder("Enter your username").fill(context.username)
-    context.page.get_by_placeholder("Enter password").fill(context.password)
+    context.page.get_by_placeholder("Enter your username").fill(context.user_data["username"])
+    context.page.get_by_placeholder("Enter password").fill(context.user_data["password"])
     context.page.get_by_role("button", name="Sign in").click()
 
 
@@ -31,8 +31,8 @@ def user_sees_admin_homepage(context: Context) -> None:
 
 @given("a CMS user logs into the admin site")
 def user_logs_into_the_admin_site(context: Context) -> None:
-    context.username, context.full_name, context.password = create_cms_admin_user()
+    context.user_data = create_cms_admin_user()
     context.page.goto(f"{context.base_url}/admin/login/")
-    context.page.get_by_placeholder("Enter your username").fill(context.username)
-    context.page.get_by_placeholder("Enter password").fill(context.password)
+    context.page.get_by_placeholder("Enter your username").fill(context.user_data["username"])
+    context.page.get_by_placeholder("Enter password").fill(context.user_data["password"])
     context.page.get_by_role("button", name="Sign in").click()
