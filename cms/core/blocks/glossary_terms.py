@@ -3,6 +3,7 @@ from typing import TYPE_CHECKING, Any
 
 from wagtail.blocks import ListBlock
 from wagtail.snippets.blocks import SnippetChooserBlock
+from wagtail.templatetags.wagtailcore_tags import richtext
 
 from cms.core.models import GlossaryTerm
 
@@ -23,7 +24,7 @@ class GlossaryTermsBlock(ListBlock):
         context["formatted_glossary_terms"] = [
             {
                 "title": glossary_term.name,
-                "content": glossary_term.definition,
+                "content": richtext(glossary_term.definition),
             }
             for glossary_term in value
         ]
