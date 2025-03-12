@@ -19,9 +19,9 @@ internal_urlpatterns = [path("readiness/", core_views.ready, name="readiness")]
 
 # Private URLs are not meant to be cached.
 private_urlpatterns = [
-    path("-/", include((internal_urlpatterns, "internal"))),
+    path(f"-/{settings.WAGTAIL_URL_PREFIX}", include((internal_urlpatterns, "internal"))),
     path(
-        "documents/authenticate_with_password/<int:restriction_id>/",
+        f"{settings.WAGTAIL_URL_PREFIX}documents/authenticate_with_password/<int:restriction_id>/",
         authenticate_with_password,
         name="wagtaildocs_authenticate_with_password",
     ),
@@ -35,22 +35,22 @@ if not settings.IS_EXTERNAL_ENV:
     # Conditionally include Wagtail admin URLs
     wagtail_admin_patterns = [
         path(
-            "logout/",
+            f"{settings.WAGTAIL_URL_PREFIX}logout/",
             ONSLogoutView.as_view(),
             name="wagtailadmin_logout",
         ),
-        path("extend-session/", extend_session, name="extend_session"),
+        path(f"{settings.WAGTAIL_URL_PREFIX}extend-session/", extend_session, name="extend_session"),
     ]
     if not settings.WAGTAIL_CORE_ADMIN_LOGIN_ENABLED:
         # Filter wagtail admin patterns to exclude /login and /password_reset
         wagtail_admin_patterns += [
             path(
-                "login/",
+                f"{settings.WAGTAIL_URL_PREFIX}login/",
                 RedirectView.as_view(url=settings.WAGTAILADMIN_LOGIN_URL, permanent=False),
                 name="wagtailadmin_login",
             ),
             path(
-                "password_reset/",
+                f"{settings.WAGTAIL_URL_PREFIX}password_reset/",
                 RedirectView.as_view(url=settings.WAGTAILADMIN_LOGIN_URL, permanent=False),
                 name="wagtailadmin_password_reset",
             ),
@@ -67,7 +67,7 @@ if apps.is_installed("django.contrib.admin") and settings.WAGTAIL_CORE_ADMIN_LOG
 # django-defender
 if getattr(settings, "ENABLE_DJANGO_DEFENDER", False):
     private_urlpatterns += [
-        path("django-admin/defender/", include("defender.urls")),
+        path(f"{settings.DJANGO_ADMIN_HOME_PATH}/defender/", include("defender.urls")),
     ]
 
 
@@ -128,12 +128,12 @@ urlpatterns = (
     + urlpatterns
     + [
         re_path(
-            r"^documents/(\d+)/(.*)$",
+            rf"^{settings.WAGTAIL_URL_PREFIX}documents/(\d+)/(.*)$",
             private_media_views.DocumentServeView.as_view(),
             name="wagtaildocs_serve",
         ),
         re_path(
-            r"^images/([^/]*)/(\d*)/([^/]*)/[^/]*$",
+            rf"^{settings.WAGTAIL_URL_PREFIX}images/([^/]*)/(\d*)/([^/]*)/[^/]*$",
             private_media_views.ImageServeView.as_view(),
             name="wagtailimages_serve",
         ),
