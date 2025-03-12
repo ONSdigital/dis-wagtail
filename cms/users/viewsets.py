@@ -4,7 +4,7 @@ from django.contrib.admin.utils import quote
 from django.urls import reverse
 from django.utils.functional import cached_property
 from wagtail.admin.forms.choosers import BaseFilterForm, SearchFilterMixin
-from wagtail.admin.ui.tables import Column, DateColumn, StatusTagColumn
+from wagtail.admin.ui.tables import Column, StatusTagColumn
 from wagtail.admin.utils import get_user_display_name
 from wagtail.admin.views.generic.chooser import ChooseResultsView, ChooseView
 from wagtail.admin.viewsets.chooser import ChooserViewSet
@@ -19,9 +19,13 @@ if TYPE_CHECKING:
 class UserFilterForm(SearchFilterMixin, BaseFilterForm):
     @cached_property
     def model_fields(self) -> set[str]:
-        return {f.name for f in User._meta.get_fields()}
+        return {field.name for field in User._meta.get_fields()}
 
     def filter(self, objects: "QuerySet[User]") -> "QuerySet[User]":
+        """The User model doesn't have search_fields.
+
+        So we take the same approach as the core UserViewSet when it comes to searching.
+        """
         if search_query := self.cleaned_data.get("q"):
             conditions = get_users_filter_query(search_query, self.model_fields)
             return objects.filter(conditions)
@@ -60,11 +64,6 @@ class UserChooserMixin:
                 primary=lambda u: u.is_active,
                 label="Status",
                 width="10%",
-            ),
-            DateColumn(
-                "last_login",
-                label="Last login",
-                width="15%",
             ),
         ]
 
