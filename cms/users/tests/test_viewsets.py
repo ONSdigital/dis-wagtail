@@ -23,7 +23,10 @@ class TestUserChooserViewSet(WagtailTestUtils, TestCase):
         self.login(user=self.user_with_full_name)
 
     def test_chooser_viewset(self):
-        response = self.client.get(self.chooser_url)
+        with self.assertNumQueries(5):
+            # admin (3): session, admin user, admin userprofile
+            # chooser (2): user count + user list
+            response = self.client.get(self.chooser_url)
 
         self.assertContains(response, self.user_without_name.username, 2)  # Name and username
         self.assertContains(response, self.user_with_first_name.username)
