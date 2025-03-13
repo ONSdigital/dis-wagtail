@@ -7,7 +7,6 @@ def get_publisher():
     backend = settings.PUBLISHER_BACKEND
     if backend == "kafka":
         return KafkaPublisher()
-    elif backend == "log":
+    if backend == "log":
         return LogPublisher()
-    else:
-        return NullPublisher()
+    return NullPublisher()

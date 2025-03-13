@@ -45,21 +45,18 @@ class BasePublisher(ABC):
         """Each child class defines how to actually send/publish
         the message (e.g., Kafka, logging, etc.).
         """
-        pass
 
     @abstractmethod
     def get_topic_created_or_updated(self):
         """Provide the topic (or other necessary routing key) for created/updated.
         This can be a no-op or empty string for some implementations.
         """
-        pass
 
     @abstractmethod
     def get_topic_deleted(self):
         """Provide the topic (or other necessary routing key) for deleted messages.
         This can be a no-op or empty string for some implementations.
         """
-        pass
 
     def _construct_message_for_create_update(self, page):
         """Build a dict that matches the agreed metadata schema for 'created/updated'.

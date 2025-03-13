@@ -1,19 +1,17 @@
 from unittest.mock import patch
 
+import wagtail.coreutils
 from django.test import TestCase
 
-from cms.search.wagtail_hooks import EXCLUDED_PAGE_TYPES, page_published, page_unpublished
-
-import wagtail.coreutils
-
-from cms.standard_pages.tests.factories import IndexPageFactory, InformationPageFactory
 from cms.articles.tests.factories import ArticleSeriesPageFactory, StatisticalArticlePageFactory
-from cms.release_calendar.tests.factories import ReleaseCalendarPageFactory
+from cms.home.models import HomePage
 from cms.methodology.tests.factories import MethodologyPageFactory
+from cms.release_calendar.models import ReleaseCalendarIndex
+from cms.release_calendar.tests.factories import ReleaseCalendarPageFactory
+from cms.search.wagtail_hooks import page_published, page_unpublished
+from cms.standard_pages.tests.factories import IndexPageFactory, InformationPageFactory
 from cms.themes.tests.factories import ThemePageFactory
 from cms.topics.tests.factories import TopicPageFactory
-from cms.release_calendar.models import ReleaseCalendarIndex
-from cms.home.models import HomePage
 
 # Pages to exclude
 
