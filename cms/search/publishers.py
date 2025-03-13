@@ -129,8 +129,6 @@ class BasePublisher(ABC):
 
     def _map_page_type_to_content_type(self, page):
         """Maps the class name of a given page object to a corresponding content type string."""
-        page_class_name = page.__class__.__name__
-
         mapping = {
             "ReleaseCalendarPage": "release",
             "StatisticalArticlePage": "bulletin",
@@ -139,7 +137,7 @@ class BasePublisher(ABC):
             "MethodologyPage": "static_methodology",
         }
 
-        return mapping.get(page_class_name)
+        return mapping.get(page.__class__.__name__)
 
 
 class KafkaPublisher(BasePublisher):
