@@ -67,6 +67,9 @@ class UserChooserMixin:
             ),
         ]
 
+    def get_object_list(self) -> "QuerySet[User]":
+        return User.objects.select_related("wagtail_userprofile")
+
 
 class UserChooseView(UserChooserMixin, ChooseView): ...
 
