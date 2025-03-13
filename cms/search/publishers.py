@@ -1,63 +1,65 @@
-from abc import ABC, abstractmethod
 import json
-from kafka import KafkaProducer
 import logging
+from abc import ABC, abstractmethod
+
 from django.conf import settings
+from kafka import KafkaProducer
 
 logger = logging.getLogger(__name__)
 
 
 class BasePublisher(ABC):
-    @abstractmethod
-    def publish_created_or_updated(self, page):
-        pass
-
-    @abstractmethod
-    def publish_deleted(self, page):
-        pass
-
-
-class KafkaPublisher(BasePublisher):
-    """Publishes messages to Kafka for 'search-content-updated' (created or updated)
-    and 'search-content-deleted' (deleted) events, aligning with the StandardPayload / ReleasePayload / content-deleted schema definitions.
+    """BasePublisher defines shared functionalities, such as how to build a message
+    for created/updated or deleted events. Each subclass only needs to define how
+    to actually publish (i.e., send) the built message.
     """
 
-    def __init__(self):
-        # Read Kafka configs settings
-        self.kafka_server = settings.KAFKA_SERVER
-        self.topic_created_or_updated = settings.KAFKA_TOPIC_CREATED_OR_UPDATED
-        self.topic_deleted = settings.KAFKA_TOPIC_DELETED
-
-        self.producer = KafkaProducer(
-            bootstrap_servers=[self.kafka_server],
-            api_version=(3, 8, 0),
-            value_serializer=lambda v: json.dumps(v).encode("utf-8"),
-        )
-
     def publish_created_or_updated(self, page):
-        """Build and publish a message to the search-content-updated topic.
-        The message will be either:
-          - StandardPayload, if content_type != "release"
-          - ReleasePayload, if content_type == "release".
+        """Build the message for the created/updated event.
+        Delegate sending to the subclass's _publish_to_service().
         """
+        topic = self.get_topic_created_or_updated()
         message = self._construct_message_for_create_update(page)
-        logger.info("Publishing CREATED/UPDATED to topic=%s, message=%s", self.topic_created_or_updated, message)
-
-        future = self.producer.send(self.topic_created_or_updated, message)
-        # Optionally block for the result, capturing metadata or error
-        result = future.get(timeout=10)  # Wait up to 10s for send to complete
-        logger.info("Publish result for topic %s: %s", self.topic_created_or_updated, result)
+        logger.info(
+            "BasePublisher: About to publish created/updated message=%s to topic=%s",
+            message,
+            topic,
+        )
+        return self._publish_to_service(topic, message)
 
     def publish_deleted(self, page):
-        """Build and publish a 'content-deleted' message to Kafka,
-        matching the content-deleted schema (requires only 'uri').
+        """Build the message for the deleted event.
+        Delegate sending to the subclass's _publish_to_service().
         """
+        topic = self.get_topic_deleted()
         message = self._construct_message_for_delete(page)
-        logger.info("Publishing DELETED to topic=%s, message=%s", self.topic_deleted, message)
+        logger.info(
+            "BasePublisher: About to publish deleted message=%s to topic=%s",
+            message,
+            topic,
+        )
+        return self._publish_to_service(topic, message)
 
-        future = self.producer.send(self.topic_deleted, message)
-        result = future.get(timeout=10)
-        logger.info("Publish result for topic %s: %s", self.topic_deleted, result)
+    @abstractmethod
+    def _publish_to_service(self, topic, message):
+        """Each child class defines how to actually send/publish
+        the message (e.g., Kafka, logging, etc.).
+        """
+        pass
+
+    @abstractmethod
+    def get_topic_created_or_updated(self):
+        """Provide the topic (or other necessary routing key) for created/updated.
+        This can be a no-op or empty string for some implementations.
+        """
+        pass
+
+    @abstractmethod
+    def get_topic_deleted(self):
+        """Provide the topic (or other necessary routing key) for deleted messages.
+        This can be a no-op or empty string for some implementations.
+        """
+        pass
 
     def _construct_message_for_create_update(self, page):
         """Build a dict that matches the agreed metadata schema for 'created/updated'.
@@ -74,10 +76,14 @@ class KafkaPublisher(BasePublisher):
         message = {
             "uri": page.url_path,
             "content_type": page.content_type_id,
-            "release_date": page.release_date.isoformat().replace("+00:00", "Z") if content_type == "release" else None,
+            "release_date": (
+                page.release_date.isoformat().replace("+00:00", "Z")
+                if content_type == "release" and getattr(page, "release_date", None)
+                else None
+            ),
             "summary": page.summary,
             "title": page.title,
-            "topics": list(page.topics.values_list("topic_id", flat=True)),
+            "topics": list(page.topics.values_list("topic_id", flat=True)) if hasattr(page, "topics") else [],
         }
 
         # If it's a Release, we add the extra fields from ReleasePayload
@@ -91,18 +97,20 @@ class KafkaPublisher(BasePublisher):
             "finalised": page.status in ["CONFIRMED", "PROVISIONAL"],
             "cancelled": page.status == "CANCELLED",
             "published": page.status == "PUBLISHED",
-            "date_changes": [
-                {
-                    "change_notice": page.changes_to_release_date[0].value["reason_for_change"],
-                    "previous_date": page.changes_to_release_date[0]
-                    .value["previous_date"]
-                    .isoformat()
-                    .replace("+00:00", "Z"),
-                }
-            ]
-            if page.changes_to_release_date
-            else [],
+            "date_changes": [],
         }
+
+        # If page.changes_to_release_date exists, add the first item's reason & previous date
+        if hasattr(page, "changes_to_release_date") and page.changes_to_release_date:
+            first_change = page.changes_to_release_date[0].value
+            release_fields["date_changes"].append(
+                {
+                    "change_notice": first_change.get("reason_for_change"),
+                    "previous_date": str(first_change.get("previous_date").isoformat().replace("+00:00", "Z"))
+                    if first_change.get("previous_date")
+                    else None,
+                }
+            )
         return release_fields
 
     def _construct_message_for_delete(self, page):
@@ -134,17 +142,61 @@ class KafkaPublisher(BasePublisher):
         return mapping.get(page_class_name)
 
 
-class LogPublisher(BasePublisher):
-    def publish_created_or_updated(self, page):
-        logger.info("Created/Updated event for page ID %s", page.id)
+class KafkaPublisher(BasePublisher):
+    """Publishes messages to Kafka for 'search-content-updated' (created or updated)
+    and 'search-content-deleted' (deleted) events, aligning with the StandardPayload
+    / ReleasePayload / content-deleted schema definitions.
+    """
 
-    def publish_deleted(self, page):
-        logger.info("Deleted event for page ID %s", page.id)
+    def __init__(self):
+        # Read Kafka configs settings
+        self.kafka_server = settings.KAFKA_SERVER
+        self._topic_created_or_updated = settings.KAFKA_TOPIC_CREATED_OR_UPDATED
+        self._topic_deleted = settings.KAFKA_TOPIC_DELETED
+
+        self.producer = KafkaProducer(
+            bootstrap_servers=[self.kafka_server],
+            api_version=(3, 8, 0),
+            value_serializer=lambda v: json.dumps(v).encode("utf-8"),
+        )
+
+    def get_topic_created_or_updated(self):
+        return self._topic_created_or_updated
+
+    def get_topic_deleted(self):
+        return self._topic_deleted
+
+    def _publish_to_service(self, topic, message):
+        """Send the message to Kafka."""
+        logger.info("KafkaPublisher: Publishing to topic=%s, message=%s", topic, message)
+        future = self.producer.send(topic, message)
+        # Optionally block for the result, capturing metadata or error
+        result = future.get(timeout=10)  # Wait up to 10s for send to complete
+        logger.info("KafkaPublisher: Publish result for topic %s: %s", topic, result)
+        return result
+
+
+class LogPublisher(BasePublisher):
+    """Publishes 'messages' by simply logging them (no real message bus)."""
+
+    def get_topic_created_or_updated(self):
+        return "log-created-or-updated"
+
+    def get_topic_deleted(self):
+        return "log-deleted"
+
+    def _publish_to_service(self, topic, message):
+        logger.info("LogPublisher: topic=%s message=%s", topic, message)
 
 
 class NullPublisher(BasePublisher):
-    def publish_created_or_updated(self, page):
+    """Publisher that does nothing—no logs, no sends—used to disable publishing entirely."""
+
+    def get_topic_created_or_updated(self):
         pass
 
-    def publish_deleted(self, page):
+    def get_topic_deleted(self):
+        pass
+
+    def _publish_to_service(self, topic, message):
         pass
