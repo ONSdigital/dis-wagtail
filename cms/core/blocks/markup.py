@@ -1,10 +1,12 @@
 from typing import TYPE_CHECKING, Any, Union
 
+from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.utils.text import slugify
 from django.utils.translation import gettext as _
 from wagtail import blocks
 from wagtail.contrib.table_block.blocks import TableBlock as WagtailTableBlock
+from wagtail_tinytableblock.blocks import TinyTableBlock
 
 if TYPE_CHECKING:
     from django.utils.safestring import SafeString
@@ -52,8 +54,8 @@ class BasicTableBlock(WagtailTableBlock):
 
     class Meta:
         icon = "table"
-        template = "templates/components/streamfield/table_block.html"
-        label = "Basic table"
+        template = "templates/components/streamfield/basic_table_block.html"
+        label = _("Basic table")
 
     def _get_header(self, value: dict) -> list[dict[str, str]]:
         """Prepares the table header for the Design System."""
@@ -105,3 +107,35 @@ class BasicTableBlock(WagtailTableBlock):
         """The Wagtail core TableBlock has a very custom `render` method. We don't want that."""
         rendered: str | SafeString = super(blocks.FieldBlock, self).render(value, context)
         return rendered
+
+
+class ONSTableBlock(TinyTableBlock):
+    """The ONS table block."""
+
+    source = blocks.CharBlock(label=_("Source"), required=False)
+    footnotes = blocks.RichTextBlock(label=_("Footnotes"), features=settings.RICH_TEXT_BASIC, required=False)
+
+    def get_context(self, value: dict, parent_context: dict | None = None) -> dict:
+        """Insert the DS-ready options in the template context."""
+        context: dict = super().get_context(value, parent_context=parent_context)
+
+        data = value.get("data", {})
+
+        if not data["rows"] and not data["headers"]:
+            return context
+
+        return {
+            "title": value.get("title"),
+            "options": {
+                "caption": value.get("caption"),
+                "headers": data.get("headers", []),
+                "trs": [{"tds": row} for row in data.get("rows", [])],
+            },
+            "source": value.get("source"),
+            "footnotes": value.get("footnotes"),
+            **context,
+        }
+
+    class Meta:
+        icon = "table"
+        template = "templates/components/streamfield/table_block.html"

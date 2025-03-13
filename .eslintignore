@@ -7,3 +7,4 @@ venv
 .mypy_cache
 .venv
 .coverage
+**/vendor/*
