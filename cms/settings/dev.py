@@ -69,10 +69,6 @@ CACHES["default"] = {  # noqa: F405
 ENABLE_DJANGO_DEFENDER = False
 
 # PUBLISHER_BACKEND = os.getenv("PUBLISHER_BACKEND", "log")  # Options: log, kafka, none
-PUBLISHER_BACKEND = os.getenv("PUBLISHER_BACKEND", "kafka")
-KAFKA_SERVER = os.getenv("KAFKA_SERVER", "localhost:9092")
-KAFKA_TOPIC_CREATED_OR_UPDATED = os.getenv("KAFKA_TOPIC_CREATED_OR_UPDATED", "search-content-updated")
-KAFKA_TOPIC_DELETED = os.getenv("KAFKA_TOPIC_DELETED", "search-content-deleted")
 
 # Import settings from local.py file if it exists. Please use it to keep
 # settings that are not meant to be checked into Git and never check it in.
