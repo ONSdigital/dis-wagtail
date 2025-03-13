@@ -4,7 +4,7 @@ from .publishers import KafkaPublisher, LogPublisher, NullPublisher
 
 
 def get_publisher():
-    backend = getattr(settings, "PUBLISHER_BACKEND", "log")
+    backend = settings.PUBLISHER_BACKEND
     if backend == "kafka":
         return KafkaPublisher()
     elif backend == "log":
