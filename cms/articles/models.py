@@ -22,7 +22,7 @@ from cms.taxonomy.mixins import GenericTaxonomyMixin
 
 if TYPE_CHECKING:
     from django.http import HttpRequest
-    from django.http.response import HttpResponseRedirect
+    from django.http.response import HttpResponse, HttpResponseRedirect
     from django.template.response import TemplateResponse
     from wagtail.admin.panels import Panel
 
@@ -75,6 +75,13 @@ class ArticleSeriesPage(RoutablePageMixin, GenericTaxonomyMixin, BasePage):  # t
             context_overrides={"pages": StatisticalArticlePage.objects.live().child_of(self).order_by("-release_date")},
             template="templates/pages/statistical_article_page--previous-releases.html",
         )
+        return response
+
+    @path("edition/<str:slug>/")
+    def edition(self, request: "HttpRequest", slug: str) -> "TemplateResponse":
+        if not (edition := StatisticalArticlePage.objects.live().child_of(self).filter(slug=slug).first()):
+            raise Http404
+        response: TemplateResponse = edition.serve(request, serve_as_edition=True)
         return response
 
 
@@ -232,3 +239,23 @@ class StatisticalArticlePage(BundledPageMixin, BasePage):  # type: ignore[django
             .first()
         )
         return bool(self.pk == latest_id)  # to placate mypy
+
+    def get_url_parts(self, request=None):
+        site_id, root_url, page_path = super().get_url_parts(request=request)
+
+        # inject the "edition" slug before the page slug in the path
+        # works in conjunction with ArticleSeriesPage.edition()
+        split = page_path.strip("/").split("/")
+        split.insert(-1, "edition")
+        page_path = "/".join(["", *split, ""])
+
+        return (site_id, root_url, page_path)
+
+    def serve(self, request, *args, **kwargs) -> "HttpResponse":
+        if not kwargs.get("serve_as_edition"):
+            # if for some reason we're getting the non-editioned path
+            # redirect to the path with the /edition/ slug
+            page_url = self.get_url(request=request)
+            if page_url != request.path:
+                return redirect(page_url)
+        return super().serve(request, *args, **kwargs)
