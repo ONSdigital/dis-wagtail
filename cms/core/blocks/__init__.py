@@ -6,7 +6,7 @@ from .embeddable import (
     VideoEmbedBlock,
 )
 from .headline_figures import HeadlineFiguresBlock
-from .markup import BasicTableBlock, HeadingBlock, QuoteBlock
+from .markup import BasicTableBlock, HeadingBlock, ONSTableBlock, QuoteBlock
 from .panels import AnnouncementPanelBlock, InformationPanelBlock, WarningPanelBlock
 from .related import LinkBlock, RelatedContentBlock, RelatedLinksBlock
 
@@ -21,6 +21,7 @@ __all__ = [
     "InformationPanelBlock",
     "LinkBlock",
     "ONSEmbedBlock",
+    "ONSTableBlock",
     "QuoteBlock",
     "RelatedContentBlock",
     "RelatedLinksBlock",

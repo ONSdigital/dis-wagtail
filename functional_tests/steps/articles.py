@@ -13,6 +13,11 @@ def create_article_in_a_series(context: Context):
     context.article = StatisticalArticlePageFactory(parent=context.article_series)
 
 
+@given("an article series has been created under the topic page")
+def create_article_series(context: Context):
+    context.article_series = ArticleSeriesPageFactory(parent=context.topic_page)
+
+
 @when("the user creates a new statistical article in the series")
 def create_a_new_article_in_the_series(context: Context):
     old_article_release_date = context.article.release_date
