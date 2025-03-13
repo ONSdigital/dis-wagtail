@@ -881,6 +881,6 @@ WAGTAILADMIN_HOME_PATH = env.get("WAGTAILADMIN_HOME_PATH", "admin/")
 DJANGO_ADMIN_HOME_PATH = env.get("DJANGO_ADMIN_HOME_PATH", "django-admin/")
 
 # Requests to Wagtail in the internal cluster has to be namespaced
-WAGTAIL_URL_PREFIX = env.get("CMS_URL_PREFIX", "")
+WAGTAIL_URL_PREFIX = env.get("WAGTAIL_URL_PREFIX", "")
 if not IS_EXTERNAL_ENV:
     WAGTAIL_URL_PREFIX = env.get("WAGTAIL_URL_PREFIX", "wagtail-")

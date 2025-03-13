@@ -35,22 +35,22 @@ if not settings.IS_EXTERNAL_ENV:
     # Conditionally include Wagtail admin URLs
     wagtail_admin_patterns = [
         path(
-            f"{settings.WAGTAIL_URL_PREFIX}logout/",
+            "logout/",
             ONSLogoutView.as_view(),
             name="wagtailadmin_logout",
         ),
-        path(f"{settings.WAGTAIL_URL_PREFIX}extend-session/", extend_session, name="extend_session"),
+        path("extend-session/", extend_session, name="extend_session"),
     ]
     if not settings.WAGTAIL_CORE_ADMIN_LOGIN_ENABLED:
         # Filter wagtail admin patterns to exclude /login and /password_reset
         wagtail_admin_patterns += [
             path(
-                f"{settings.WAGTAIL_URL_PREFIX}login/",
+                "login/",
                 RedirectView.as_view(url=settings.WAGTAILADMIN_LOGIN_URL, permanent=False),
                 name="wagtailadmin_login",
             ),
             path(
-                f"{settings.WAGTAIL_URL_PREFIX}password_reset/",
+                "password_reset/",
                 RedirectView.as_view(url=settings.WAGTAILADMIN_LOGIN_URL, permanent=False),
                 name="wagtailadmin_password_reset",
             ),
