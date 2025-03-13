@@ -17,6 +17,7 @@ from cms.core.blocks import (
     VideoEmbedBlock,
     WarningPanelBlock,
 )
+from cms.core.blocks.glossary_terms import GlossaryTermsBlock
 from cms.core.blocks.markup import ONSTableBlock
 
 if TYPE_CHECKING:
@@ -38,6 +39,7 @@ class SectionContentBlock(StreamBlock):
     equation = MathBlock(group="DataVis", icon="decimal")
     ons_embed = ONSEmbedBlock(group="DataVis", label=_("ONS General Embed"))
     related_links = RelatedLinksBlock(icon="link")
+    definitions = GlossaryTermsBlock()
 
     class Meta:
         template = "templates/components/streamfield/stream_block.html"
@@ -50,9 +52,9 @@ class SectionBlock(StructBlock):
     title = HeadingBlock()
     content = SectionContentBlock()
 
+    class Meta:
+        template = "templates/components/streamfield/section_block.html"
+
     def to_table_of_contents_items(self, value: "StructValue") -> list[dict[str, str]]:
         """Convert the value to the table of contents component macro format."""
         return [{"url": "#" + slugify(value["title"]), "text": value["title"]}]
-
-    class Meta:
-        template = "templates/components/streamfield/section_block.html"
