@@ -1,5 +1,4 @@
 from behave import given, step, then, when  # pylint: disable=no-name-in-module
-from behave import given, step, then, when  # pylint: disable=no-name-in-module
 from behave.runner import Context
 from playwright.sync_api import expect
 
@@ -12,15 +11,6 @@ def create_footer_menu(context: Context):
 
 
 @when("the user creates a footer menu instance")
-from cms.navigation.tests.factories import FooterMenuFactory
-
-
-@given("footer menu exists")
-def create_footer_menu(context: Context):
-    context.footer_menu = FooterMenuFactory()
-
-
-@when("the user creates a footer menu")
 def user_creates_footer_menu(context: Context):
     context.page.get_by_role("link", name="Snippets").click()
     context.page.get_by_role("link", name="Footer menus").click()
@@ -34,15 +24,9 @@ def user_click_footer(context: Context):
     context.page.get_by_role("link", name="Footer Menu", exact=True).click(timeout=5000)
 
 
-@when("user clicks footer menu")
-def user_click_footer(context: Context):
-    context.page.get_by_role("link", name="Snippets").click()
-    context.page.get_by_role("link", name="Footer menus").click()
-    context.page.get_by_role("link", name="Footer Menu", exact=True).click(timeout=5000)
-
-
 @when("the user populates the footer menu")
 def user_populates_footer_menu(context: Context):
+    context.page.get_by_role("button", name="Insert a block").click()
     context.page.get_by_role("textbox", name="Column title*").click()
     context.page.get_by_role("textbox", name="Column title*").press("CapsLock")
     context.page.get_by_role("textbox", name="Column title*").fill("About")
@@ -130,6 +114,8 @@ def deleted_footer(context: Context):
 def publish_menu(context: Context):
     context.page.get_by_role("button", name="More actions").click()
     context.page.get_by_role("button", name="Publish").click()
+
+
 @when("the user edits a footer menu")
 def edit_footer_menu(context: Context):
     context.page.get_by_role("textbox", name="Column title*").click()
@@ -206,6 +192,8 @@ def user_edit_footer(context: Context):
 @then("the preview of the footer menu is displayed with the added data")
 def preview_edit_footer_menu(context: Context):
     expect(context.page.get_by_role("heading", name="More")).to_be_visible()
+
+
 @when("the preview of the footer menu is displayed with the edited data")
 def edited_footer_menu(context: Context):
     expect(context.page.get_by_role("link", name="Site")).to_be_visible()
