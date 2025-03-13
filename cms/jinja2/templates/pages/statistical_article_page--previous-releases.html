@@ -9,4 +9,23 @@
             <p>{{ _("There are currently no releases") }}</p>
         {% endfor %}
     </ul>
+
+    {% block pagination %}
+        {% from "components/pagination/_macro.njk" import onsPagination %}
+        {% if pages.paginator.num_pages > 1 %}
+            <div class="ons-pagination__position">Page {{ pages.number }} of
+                {{pages.paginator.num_pages }}</div>
+{# fmt:off #}
+
+            {{
+            onsPagination({
+            "hideRangeIndicator": true,
+            "currentPageNumber": pages.number ,
+            "pages": ons_pagination_url_list
+            })
+            }}
+        {# fmt:on #}
+        {% endif %}
+    {% endblock %}
+
 {% endblock %}

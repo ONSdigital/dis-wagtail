@@ -99,3 +99,4 @@ MIGRATION_LINTER_OPTIONS = {
         "0002_articleseriespage_listing_image_and_more",  # Ignoring NOT NULL constraint on columns
     ],
 }
+
