@@ -204,7 +204,7 @@ if "PG_DB_ADDR" in env:
                 "HOST": env["PG_DB_ADDR"],
                 "PORT": env["PG_DB_PORT"],
                 "CONN_MAX_AGE": db_conn_max_age,
-                "OPTIONS": {"use_iam_auth": True, "sslmode": "require"},
+                "OPTIONS": {"use_iam_auth": True, "sslmode": "require", "region_name": env["AWS_REGION"]},
             },
         )
     }
@@ -274,7 +274,7 @@ elif elasticache_addr := env.get("ELASTICACHE_ADDR"):
                 "credential_provider": ElastiCacheIAMCredentialProvider(
                     user=env["ELASTICACHE_USER_NAME"],
                     cluster_name=env["ELASTICACHE_CLUSTER_NAME"],
-                    region=env["ELASTICACHE_CLUSTER_REGION"],
+                    region=env["AWS_REGION"],
                 )
             },
         },
