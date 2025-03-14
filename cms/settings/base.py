@@ -71,6 +71,7 @@ INSTALLED_APPS = [
     "cms.methodology",
     "cms.navigation",
     "cms.taxonomy",
+    "cms.search",
     "wagtail.embeds",
     "wagtail.sites",
     "wagtail.users",
@@ -850,3 +851,8 @@ MANAGE_COOKIE_SETTINGS_URL = env.get("MANAGE_COOKIE_SETTINGS_URL", "https://www.
 SLACK_NOTIFICATIONS_WEBHOOK_URL = env.get("SLACK_NOTIFICATIONS_WEBHOOK_URL")
 
 ONS_API_BASE_URL = env.get("ONS_API_BASE_URL")
+
+PUBLISHER_BACKEND = os.getenv("PUBLISHER_BACKEND")
+KAFKA_SERVER = os.getenv("KAFKA_SERVER")
+KAFKA_TOPIC_CREATED_OR_UPDATED = os.getenv("KAFKA_TOPIC_CREATED_OR_UPDATED")
+KAFKA_TOPIC_DELETED = os.getenv("KAFKA_TOPIC_DELETED")
