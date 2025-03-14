@@ -75,7 +75,9 @@ class WagtailHooksTests(TestCase):
 
     @patch("cms.search.wagtail_hooks.publisher")
     def test_page_unpublished_excluded_page_type(self, mock_publisher):
-        """Pages in EXCLUDED_PAGE_TYPES should not trigger any unpublish calls."""
+        """Pages in EXCLUDED_PAGE_TYPES should not trigger any unpublish calls,
+        publisher.publish_deleted().
+        """
         for factory in self.excluded_factories:
             page = factory()
             page_unpublished(self.mock_request, page)
@@ -83,7 +85,9 @@ class WagtailHooksTests(TestCase):
 
     @patch("cms.search.wagtail_hooks.publisher")
     def test_page_unpublished_included_page_type(self, mock_publisher):
-        """Non-excluded page triggers publish_deleted()."""
+        """Pages not in EXCLUDED_PAGE_TYPES should not trigger any unpublish calls,
+        publisher.publish_deleted().
+        """
         for factory in self.included_factories:
             page = factory()
             page_unpublished(self.mock_request, page)

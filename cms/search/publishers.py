@@ -12,6 +12,10 @@ class BasePublisher(ABC):
     """BasePublisher defines shared functionalities, such as how to build a message
     for created/updated or deleted events. Each subclass only needs to define how
     to actually publish (i.e., send) the built message.
+
+    dp-search-data-extractor spec link: https://github.com/ONSdigital/dp-search-data-extractor/blob/develop/specification.yml#L53
+    dp-search-data-importer spec link: https://github.com/ONSdigital/dp-search-data-importer/blob/30fb507e90f2cf1974ec0ca43bb0466307e2f112/specification.yml#L186
+    contract: https://github.com/ONSdigital/dis-search-upstream-stub/blob/main/docs/contract/resource_metadata.yml
     """
 
     def publish_created_or_updated(self, page):
@@ -182,16 +186,3 @@ class LogPublisher(BasePublisher):
 
     def _publish_to_service(self, topic, message):
         logger.info("LogPublisher: topic=%s message=%s", topic, message)
-
-
-class NullPublisher(BasePublisher):
-    """Publisher that does nothing—no logs, no sends—used to disable publishing entirely."""
-
-    def get_topic_created_or_updated(self):
-        pass
-
-    def get_topic_deleted(self):
-        pass
-
-    def _publish_to_service(self, topic, message):
-        pass
