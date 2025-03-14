@@ -8,9 +8,10 @@ from typing import Any, cast
 
 import dj_database_url
 from django.core.exceptions import ImproperlyConfigured
-from django.utils.module_loading import import_string
 from django.utils.translation import gettext_lazy as _
 from django_jinja.builtins import DEFAULT_EXTENSIONS
+
+from cms.core.elasticache import ElastiCacheIAMCredentialProvider
 
 env = os.environ.copy()
 
@@ -203,7 +204,7 @@ if "PG_DB_ADDR" in env:
                 "HOST": env["PG_DB_ADDR"],
                 "PORT": env["PG_DB_PORT"],
                 "CONN_MAX_AGE": db_conn_max_age,
-                "OPTIONS": {"use_iam_auth": True, "sslmode": "require"},
+                "OPTIONS": {"use_iam_auth": True, "sslmode": "require", "region_name": env["AWS_REGION"]},
             },
         )
     }
@@ -270,10 +271,10 @@ elif elasticache_addr := env.get("ELASTICACHE_ADDR"):
         "OPTIONS": {
             **redis_options,
             "CONNECTION_POOL_KWARGS": {
-                "credential_provider": import_string("cms.core.cache.ElastiCacheIAMCredentialProvider")(
+                "credential_provider": ElastiCacheIAMCredentialProvider(
                     user=env["ELASTICACHE_USER_NAME"],
                     cluster_name=env["ELASTICACHE_CLUSTER_NAME"],
-                    region=env["ELASTICACHE_CLUSTER_REGION"],
+                    region=env["AWS_REGION"],
                 )
             },
         },
