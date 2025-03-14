@@ -217,8 +217,6 @@ ECR_AWS_ACCOUNT_ID := $(shell aws sts get-caller-identity --query "Account" --ou
 AWS_REGION ?= eu-west-2
 ECR_REGISTRY := $(ECR_AWS_ACCOUNT_ID).dkr.ecr.$(AWS_REGION).amazonaws.com
 
-TAG ?=
-
 .PHONY: create_ecr_repo
 create_ecr_repo:
 	@echo "Ensuring ECR repository exists: $(ECR_REPO)..."
@@ -245,21 +243,21 @@ check_ecr:
 	fi
 	@echo "✅ Tag '$(TAG)' is available for use."
 
-.PHONY: build_local
-build_local:
+.PHONY: build_ecr_local
+build_ecr_local:
 	docker build -t $(ECR_REPO):$(TAG) --target=web -f $(DOCKERFILE) .
 	docker tag $(ECR_REPO):$(TAG) $(ECR_REPO):latest
 
-.PHONY:
-build_remote:
+.PHONY: build_ecr_remote
+build_ecr_remote:
 	@$(MAKE) create_ecr_repo
 	@$(MAKE) check_ecr
 	docker build -t $(ECR_REGISTRY)/$(ECR_REPO):$(TAG) --target=web -f $(DOCKERFILE) .
 	docker tag $(ECR_REGISTRY)/$(ECR_REPO):$(TAG) $(ECR_REGISTRY)/$(ECR_REPO):latest
 
-.PHONY: push
-push:
-	@$(MAKE) build_remote
+.PHONY: push_ecr
+push_ecr:
+	@$(MAKE) build_ecr_remote
 	@echo "🛠️  Logging into ECR..."
 	@aws ecr get-login-password --region $(AWS_REGION) --profile $(ECR_PROFILE_NAME) | docker login --username AWS --password-stdin $(ECR_REGISTRY) || (echo "❌ Failed to log in to ECR"; exit 1)
 
