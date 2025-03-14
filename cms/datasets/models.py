@@ -7,8 +7,6 @@ from django.db import models
 from django.db.models import UniqueConstraint
 from queryish.rest import APIModel, APIQuerySet
 
-from cms.core.cache import memory_cache
-
 logger = logging.getLogger(__name__)
 
 EDITIONS_PATTERN = re.compile(r"/editions/([^/]+)/")
@@ -16,7 +14,7 @@ DATASETS_BASE_API_URL = f"{settings.ONS_API_BASE_URL}/datasets"
 
 
 # This needs a revisit. Consider caching + fewer requests
-class ONSApiQuerySet(APIQuerySet):
+class ONSDatasetApiQuerySet(APIQuerySet):
     def get_results_from_response(self, response):
         logger.info("Fetching results from response")
         return response["items"]
@@ -44,16 +42,8 @@ class ONSApiQuerySet(APIQuerySet):
         return super().run_count()
 
 
-class ONSDatasetManager(models.Manager):
-    # Override the filter manager method with a short term memory cache to reduce the rate of API requests
-    @memory_cache(timeout=30)
-    def filter(self, *args, **kwargs):
-        return super(*args, **kwargs).filter()
-
-
 class ONSDataset(APIModel):
-    base_query_class = ONSApiQuerySet
-    objects = ONSDatasetManager()
+    base_query_class = ONSDatasetApiQuerySet
 
     class Meta:
         base_url: str = DATASETS_BASE_API_URL

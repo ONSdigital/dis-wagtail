@@ -45,6 +45,7 @@ ruff = "0.9.5"  # keep version in sync with .pre-commit-config.yaml
 
 wagtail-factories = "^4.1.0"
 coverage = "^7.6.4"
+responses = "^0.25.7"
 
 dslr = "^0.4.0"
 psycopg2-binary = "^2.9.10"

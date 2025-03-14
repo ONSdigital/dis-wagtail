@@ -71,4 +71,4 @@ TASKS = {
 # Silence Slack notifications by default
 SLACK_NOTIFICATIONS_WEBHOOK_URL = None
 
-ONS_API_BASE_URL = "dummy_url"
+ONS_API_BASE_URL = "http://dummy_url"
