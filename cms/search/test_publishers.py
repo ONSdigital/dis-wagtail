@@ -9,6 +9,9 @@ from cms.articles.tests.factories import StatisticalArticlePageFactory
 from cms.methodology.tests.factories import MethodologyPageFactory
 from cms.release_calendar.tests.factories import ReleaseCalendarPageFactory
 from cms.standard_pages.tests.factories import IndexPageFactory, InformationPageFactory
+from cms.release_calendar.enums import ReleaseStatus
+from django.utils import timezone
+from datetime import timedelta
 
 
 class DummyPublisher(BasePublisher):
@@ -42,6 +45,23 @@ class BasePublisherTests(TestCase):
         cls.index_page = IndexPageFactory(slug="custom-slug-1")
         cls.included_factories.append(lambda: cls.index_page)
 
+        cls.release_calendar_page_provisional = ReleaseCalendarPageFactory(
+            status=ReleaseStatus.PROVISIONAL,
+            release_date=timezone.now() - timedelta(minutes=1),
+        )
+        cls.release_calendar_page_confirmed = ReleaseCalendarPageFactory(
+            status=ReleaseStatus.CONFIRMED,
+            release_date=timezone.now() - timedelta(minutes=1),
+        )
+        cls.release_calendar_page_cancelled = ReleaseCalendarPageFactory(
+            status=ReleaseStatus.CANCELLED,
+            release_date=timezone.now() - timedelta(minutes=1),
+        )
+        cls.release_calendar_page_published = ReleaseCalendarPageFactory(
+            status=ReleaseStatus.PUBLISHED,
+            release_date=timezone.now() - timedelta(minutes=1),
+        )
+
     def setUp(self):
         self.publisher = DummyPublisher(
             topic_created_or_updated="dummy-topic-created",
@@ -51,13 +71,6 @@ class BasePublisherTests(TestCase):
     def test_publish_created_or_updated_calls_publish_to_service(self):
         """Verify `publish_created_or_updated` calls `_publish_to_service` with the correct topic & message."""
         with patch.object(self.publisher, "_publish_to_service", return_value=None) as mock_method:
-            # mock_page = MagicMock()
-            # mock_page.url_path = "/some/path/"
-            # mock_page.title = "Test Page"
-            # mock_page.summary = "Some summary"
-            # mock_page.__class__.__name__ = "InformationPage"
-            # mock_page.content_type_id = 1001
-            # # No release_date/status => not a release page
             for factory in self.included_factories:
                 page = factory()
 
@@ -86,62 +99,132 @@ class BasePublisherTests(TestCase):
     def test_publish_deleted_calls_publish_to_service(self):
         """Verify `publish_deleted` calls `_publish_to_service` with the correct topic & message."""
         with patch.object(self.publisher, "_publish_to_service", return_value=None) as mock_method:
-            mock_page = MagicMock()
-            mock_page.url_path = "/delete/path/"
-            mock_page.trace_id = "XYZ-123"
+            for factory in self.included_factories:
+                page = factory()
+                self.publisher.publish_deleted(page)
 
-            self.publisher.publish_deleted(mock_page)
-            mock_method.assert_called_once()
-            called_topic, called_message = mock_method.call_args[0]
-            self.assertEqual(called_topic, "dummy-topic-deleted")
-            self.assertIn("uri", called_message)
-            self.assertEqual(called_message["uri"], "/delete/path/")
-            # Because `trace_id` was present:
-            self.assertEqual(called_message["trace_id"], "XYZ-123")
+                mock_method.assert_called_once()
+                called_topic, called_message = mock_method.call_args[0]
+                self.assertEqual(called_topic, "dummy-topic-deleted")
 
-    def test_construct_message_for_release_page(self):
+                self.assertIn("uri", called_message)
+
+                self.assertEqual(called_message["uri"], page.url_path)
+
+                mock_method.reset_mock()
+
+    def test_construct_message_for_release_page_provisional_confirmed(self):
         """Ensure that for a release-type page, release-specific fields get added."""
-        mock_page = MagicMock()
-        mock_page.url_path = "/releases/page-1/"
-        mock_page.title = "Release Page"
-        mock_page.summary = "Release summary"
-        mock_page.__class__.__name__ = "ReleaseCalendarPage"  # maps to 'release'
-        mock_page.content_type_id = 2002
-
-        # Pretend there's a release_date
-        import datetime
-
-        mock_page.release_date = datetime.datetime(2025, 3, 1, 10, 0, 0)
-
-        # Pretend there's a status and changes
-        mock_page.status = "PUBLISHED"
-        mock_page.changes_to_release_date = [
-            MagicMock(
-                value={
-                    "reason_for_change": "Some reason",
-                    "previous_date": datetime.datetime(2024, 12, 25, 9, 30, 0),
-                }
-            )
+        release_calendar_pages = [
+            self.release_calendar_page_provisional,
+            self.release_calendar_page_confirmed,
         ]
 
-        message = self.publisher._construct_message_for_create_update(mock_page)
-        self.assertEqual(message["content_type"], 2002)
-        self.assertEqual(message["title"], "Release Page")
-        self.assertEqual(message["uri"], "/releases/page-1/")
+        for page in release_calendar_pages:
+            message = self.publisher._construct_message_for_create_update(page)
+
+            self.assertEqual(message["content_type"], page.content_type_id)
+            self.assertEqual(message["title"], page.title)
+            self.assertEqual(message["summary"], page.summary)
+            self.assertEqual(message["uri"], page.url_path)
+
+            self.assertIsNotNone(message["release_date"])  # because it's a release
+
+            self.assertEqual(message["release_date"], page.release_date.isoformat().replace("+00:00", "Z"))
+
+            self.assertIn("finalised", message)
+            self.assertIn("cancelled", message)
+            self.assertIn("published", message)
+
+            self.assertTrue(message["finalised"])
+            self.assertFalse(message["published"])
+            self.assertFalse(message["cancelled"])
+
+    def test_construct_message_for_release_page_confirmed_date_change(self):
+        """Ensure that for a release-type page, release-specific fields get added."""
+        page = self.release_calendar_page_confirmed
+        page.changes_to_release_date = [
+            {
+                "type": "date_change_log",
+                "value": {"previous_date": timezone.now() - timedelta(days=5), "reason_for_change": "The reason"},
+            }
+        ]
+
+        message = self.publisher._construct_message_for_create_update(page)
+
+        self.assertEqual(message["content_type"], page.content_type_id)
+        self.assertEqual(message["title"], page.title)
+        self.assertEqual(message["summary"], page.summary)
+        self.assertEqual(message["uri"], page.url_path)
+
         self.assertIsNotNone(message["release_date"])  # because it's a release
-        self.assertEqual(message["release_date"], "2025-03-01T10:00:00")
+
+        self.assertEqual(message["release_date"], page.release_date.isoformat().replace("+00:00", "Z"))
+
         self.assertIn("finalised", message)
         self.assertIn("cancelled", message)
         self.assertIn("published", message)
-        self.assertTrue(message["published"])  # status = "PUBLISHED"
+
+        self.assertTrue(message["finalised"])
+        self.assertFalse(message["published"])
         self.assertFalse(message["cancelled"])
-        self.assertFalse(message["finalised"])
+
         self.assertIn("date_changes", message)
+
         self.assertEqual(len(message["date_changes"]), 1)
 
         date_change = message["date_changes"][0]
-        self.assertEqual(date_change["change_notice"], "Some reason")
-        self.assertEqual(date_change["previous_date"], "2024-12-25T09:30:00")
+        self.assertEqual(date_change["change_notice"], page.changes_to_release_date[0].value["reason_for_change"])
+        self.assertEqual(
+            date_change["previous_date"],
+            page.changes_to_release_date[0].value["previous_date"].isoformat().replace("+00:00", "Z"),
+        )
+
+    def test_construct_message_for_release_page_published(self):
+        """Ensure that for a release-type page, release-specific fields get added."""
+        page = self.release_calendar_page_published
+
+        message = self.publisher._construct_message_for_create_update(page)
+
+        self.assertEqual(message["content_type"], page.content_type_id)
+        self.assertEqual(message["title"], page.title)
+        self.assertEqual(message["summary"], page.summary)
+        self.assertEqual(message["uri"], page.url_path)
+
+        self.assertIsNotNone(message["release_date"])  # because it's a release
+
+        self.assertEqual(message["release_date"], page.release_date.isoformat().replace("+00:00", "Z"))
+
+        self.assertIn("finalised", message)
+        self.assertIn("cancelled", message)
+        self.assertIn("published", message)
+
+        self.assertFalse(message["finalised"])
+        self.assertTrue(message["published"])
+        self.assertFalse(message["cancelled"])
+
+    def test_construct_message_for_release_page_cancelled(self):
+        """Ensure that for a release-type page, release-specific fields get added."""
+        page = self.release_calendar_page_cancelled
+
+        message = self.publisher._construct_message_for_create_update(page)
+
+        self.assertEqual(message["content_type"], page.content_type_id)
+        self.assertEqual(message["title"], page.title)
+        self.assertEqual(message["summary"], page.summary)
+        self.assertEqual(message["uri"], page.url_path)
+
+        self.assertIsNotNone(message["release_date"])  # because it's a release
+
+        self.assertEqual(message["release_date"], page.release_date.isoformat().replace("+00:00", "Z"))
+
+        self.assertIn("finalised", message)
+        self.assertIn("cancelled", message)
+        self.assertIn("published", message)
+
+        self.assertFalse(message["finalised"])
+        self.assertFalse(message["published"])
+        self.assertTrue(message["cancelled"])
 
 
 @override_settings(
