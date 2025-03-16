@@ -1,4 +1,3 @@
-# test_kafka_integration.py
 import json
 import logging
 import time
