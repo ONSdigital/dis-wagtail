@@ -13,8 +13,10 @@ class BasePublisher(ABC):
     for created/updated or deleted events. Each subclass only needs to define how
     to actually publish (i.e., send) the built message.
 
-    dp-search-data-extractor spec link: https://github.com/ONSdigital/dp-search-data-extractor/blob/develop/specification.yml#L53
-    dp-search-data-importer spec link: https://github.com/ONSdigital/dp-search-data-importer/blob/30fb507e90f2cf1974ec0ca43bb0466307e2f112/specification.yml#L186
+    dp-search-data-extractor spec link:
+    https://github.com/ONSdigital/dp-search-data-extractor/blob/develop/specification.yml#L53
+    dp-search-data-importer spec link:
+    https://github.com/ONSdigital/dp-search-data-importer/blob/30fb507e90f2cf1974ec0ca43bb0466307e2f112/specification.yml#L186
     contract: https://github.com/ONSdigital/dis-search-upstream-stub/blob/main/docs/contract/resource_metadata.yml
     """
 

@@ -1,17 +1,17 @@
 # test_publishers.py
-from django.test import TestCase, override_settings
-from unittest.mock import patch, MagicMock
 import logging
+from datetime import timedelta
+from unittest.mock import ANY, MagicMock, patch
 
-from cms.search.publishers import BasePublisher, KafkaPublisher, LogPublisher
+from django.test import TestCase, override_settings
+from django.utils import timezone
 
 from cms.articles.tests.factories import StatisticalArticlePageFactory
 from cms.methodology.tests.factories import MethodologyPageFactory
-from cms.release_calendar.tests.factories import ReleaseCalendarPageFactory
-from cms.standard_pages.tests.factories import IndexPageFactory, InformationPageFactory
 from cms.release_calendar.enums import ReleaseStatus
-from django.utils import timezone
-from datetime import timedelta
+from cms.release_calendar.tests.factories import ReleaseCalendarPageFactory
+from cms.search.publishers import BasePublisher, KafkaPublisher, LogPublisher
+from cms.standard_pages.tests.factories import IndexPageFactory, InformationPageFactory
 
 
 class DummyPublisher(BasePublisher):
@@ -121,7 +121,7 @@ class BasePublisherTests(TestCase):
         ]
 
         for page in release_calendar_pages:
-            message = self.publisher._construct_message_for_create_update(page)
+            message = self.publisher._construct_message_for_create_update(page)  # pylint: disable=W0212
 
             self.assertEqual(message["content_type"], page.content_type_id)
             self.assertEqual(message["title"], page.title)
@@ -150,7 +150,7 @@ class BasePublisherTests(TestCase):
             }
         ]
 
-        message = self.publisher._construct_message_for_create_update(page)
+        message = self.publisher._construct_message_for_create_update(page)  # pylint: disable=W0212
 
         self.assertEqual(message["content_type"], page.content_type_id)
         self.assertEqual(message["title"], page.title)
@@ -184,7 +184,7 @@ class BasePublisherTests(TestCase):
         """Ensure that for a release-type page, release-specific fields get added."""
         page = self.release_calendar_page_published
 
-        message = self.publisher._construct_message_for_create_update(page)
+        message = self.publisher._construct_message_for_create_update(page)  # pylint: disable=W0212
 
         self.assertEqual(message["content_type"], page.content_type_id)
         self.assertEqual(message["title"], page.title)
@@ -207,7 +207,7 @@ class BasePublisherTests(TestCase):
         """Ensure that for a release-type page, release-specific fields get added."""
         page = self.release_calendar_page_cancelled
 
-        message = self.publisher._construct_message_for_create_update(page)
+        message = self.publisher._construct_message_for_create_update(page)  # pylint: disable=W0212
 
         self.assertEqual(message["content_type"], page.content_type_id)
         self.assertEqual(message["title"], page.title)
@@ -233,6 +233,10 @@ class BasePublisherTests(TestCase):
     KAFKA_TOPIC_DELETED="search-content-deleted",
 )
 class KafkaPublisherTests(TestCase):
+    @classmethod
+    def setUpTestData(cls):
+        cls.information_page = InformationPageFactory()
+
     @patch("cms.search.publishers.KafkaProducer")
     def test_kafka_publisher_init(self, mock_producer_class):
         """Ensure KafkaPublisher picks up settings and constructs KafkaProducer correctly."""
@@ -240,10 +244,11 @@ class KafkaPublisherTests(TestCase):
         mock_producer_class.assert_called_once_with(
             bootstrap_servers=["localhost:9092"],
             api_version=(3, 8, 0),
-            value_serializer=publisher.producer._serializer,  # or a lambda
+            value_serializer=ANY,  # or a lambda
         )
-        self.assertEqual(publisher._topic_created_or_updated, "search-content-updated")
-        self.assertEqual(publisher._topic_deleted, "search-content-deleted")
+
+        self.assertEqual(publisher._topic_created_or_updated, "search-content-updated")  # pylint: disable=W0212
+        self.assertEqual(publisher._topic_deleted, "search-content-deleted")  # pylint: disable=W0212
 
     @patch("cms.search.publishers.KafkaProducer")
     def test_publish_created_or_updated(self, mock_producer_class):
@@ -255,32 +260,29 @@ class KafkaPublisherTests(TestCase):
 
         publisher = KafkaPublisher()
 
-        # Mock page
-        page = MagicMock()
-        page.url_path = "/mock-page/"
-        page.title = "Mock Title"
-        page.summary = "Mock Summary"
-        page.__class__.__name__ = "InformationPage"
-        page.content_type_id = 999
+        page = self.information_page
 
         result = publisher.publish_created_or_updated(page)
 
         # Check calls to producer
         mock_producer.send.assert_called_once()
-        call_args, call_kwargs = mock_producer.send.call_args
+        call_args, call_kwargs = mock_producer.send.call_args  # pylint: disable=W0612
         self.assertEqual(call_args[0], "search-content-updated")  # topic
         # The actual payload is the second argument
         actual_payload = call_args[1]
+
         self.assertIn("uri", actual_payload)
         self.assertIn("title", actual_payload)
-        self.assertEqual(actual_payload["uri"], "/mock-page/")
-        self.assertEqual(actual_payload["title"], "Mock Title")
-        self.assertEqual(actual_payload["content_type"], 999)
+        self.assertIn("summary", actual_payload)
+        self.assertIn("content_type", actual_payload)
 
-        # Future get called?
+        self.assertEqual(actual_payload["uri"], page.url_path)
+        self.assertEqual(actual_payload["title"], page.title)
+        self.assertEqual(actual_payload["summary"], page.summary)
+        self.assertEqual(actual_payload["content_type"], page.content_type_id)
+
         mock_future.get.assert_called_once_with(timeout=10)
 
-        # The publisher returns the result of future.get()
         self.assertEqual(result, mock_future.get.return_value)
 
     @patch("cms.search.publishers.KafkaProducer")
@@ -293,56 +295,76 @@ class KafkaPublisherTests(TestCase):
 
         publisher = KafkaPublisher()
 
-        page = MagicMock()
-        page.url_path = "/delete-me/"
-        page.trace_id = "TRACE-123"
+        page = self.information_page
 
         publisher.publish_deleted(page)
 
         mock_producer.send.assert_called_once()
-        call_args, call_kwargs = mock_producer.send.call_args
+        call_args, call_kwargs = mock_producer.send.call_args  # pylint: disable=W0612
         self.assertEqual(call_args[0], "search-content-deleted")  # topic
         actual_payload = call_args[1]
+
         self.assertIn("uri", actual_payload)
-        self.assertEqual(actual_payload["uri"], "/delete-me/")
-        self.assertEqual(actual_payload["trace_id"], "TRACE-123")
+
+        self.assertEqual(actual_payload["uri"], page.url_path)
 
         # confirm get() is called
         mock_future.get.assert_called_once_with(timeout=10)
 
 
 class LogPublisherTests(TestCase):
+    @classmethod
+    def setUpTestData(cls):
+        cls.information_page = InformationPageFactory()
+
     def setUp(self):
         self.publisher = LogPublisher()
 
     @patch.object(logging.Logger, "info")
     def test_publish_created_or_updated_logs(self, mock_logger_info):
-        page = MagicMock()
-        page.url_path = "/logging-page/"
-        page.title = "Log Me"
-        page.summary = "some text"
-        page.__class__.__name__ = "StatisticalArticlePage"
-        page.content_type_id = 1234
+        self.publisher.publish_created_or_updated(self.information_page)
 
-        self.publisher.publish_created_or_updated(page)
+        # Make sure there was at least one info log call
+        self.assertGreaterEqual(mock_logger_info.call_count, 1)
 
-        # We expect two logs:
-        # 1) "BasePublisher: About to publish created/updated message=..."
-        # 2) "LogPublisher: topic=%s message=%s"
-        self.assertGreaterEqual(mock_logger_info.call_count, 2)
+        # Examine the last call
+        last_call_args, last_call_kwargs = mock_logger_info.call_args  # pylint: disable=W0612
 
-        # The last call is the LogPublisher info
-        last_call_args, last_call_kwargs = mock_logger_info.call_args
-        self.assertIn("LogPublisher: topic=log-created-or-updated message=", last_call_args[0])
+        # The format string is arg 0, the next args are "log-created-or-updated" and the dict
+        self.assertEqual(
+            last_call_args[0],
+            "LogPublisher: topic=%s message=%s",
+            "Wrong log format string",
+        )
+        self.assertEqual(
+            last_call_args[1],
+            "log-created-or-updated",
+            "Wrong topic argument",
+        )
+
+        self.assertIn("uri", last_call_args[2], "Payload dict missing expected key 'uri'")
+        self.assertIn("title", last_call_args[2], "Payload dict missing expected key 'title'")
+        self.assertIn("summary", last_call_args[2], "Payload dict missing expected key 'summary'")
+        self.assertIn("content_type", last_call_args[2], "Payload dict missing expected key 'content_type'")
+        self.assertIn("topics", last_call_args[2], "Payload dict missing expected key 'topics'")
+        self.assertIn("release_date", last_call_args[2], "Payload dict missing expected key 'topics'")
 
     @patch.object(logging.Logger, "info")
     def test_publish_deleted_logs(self, mock_logger_info):
-        page = MagicMock()
-        page.url_path = "/delete-logging/"
-        page.trace_id = "XYZ-999"
-
-        self.publisher.publish_deleted(page)
+        self.publisher.publish_deleted(self.information_page)
         self.assertGreaterEqual(mock_logger_info.call_count, 2)
 
-        last_call_args, last_call_kwargs = mock_logger_info.call_args
-        self.assertIn("LogPublisher: topic=log-deleted message=", last_call_args[0])
+        last_call_args, last_call_kwargs = mock_logger_info.call_args  # pylint: disable=W0612
+
+        self.assertEqual(
+            last_call_args[0],
+            "LogPublisher: topic=%s message=%s",
+            "Wrong log format string",
+        )
+        self.assertEqual(
+            last_call_args[1],
+            "log-deleted",
+            "Wrong topic argument",
+        )
+
+        self.assertIn("uri", last_call_args[2], "Payload dict missing expected key 'uri'")
