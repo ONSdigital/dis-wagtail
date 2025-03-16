@@ -1,11 +1,17 @@
 import json
 import logging
 from abc import ABC, abstractmethod
+from typing import TYPE_CHECKING, Optional
 
 from django.conf import settings
 from kafka import KafkaProducer
 
 logger = logging.getLogger(__name__)
+
+
+if TYPE_CHECKING:
+    from kafka.producer.future import RecordMetadata
+    from wagtail.models import Page
 
 
 class BasePublisher(ABC):
@@ -20,7 +26,7 @@ class BasePublisher(ABC):
     contract: https://github.com/ONSdigital/dis-search-upstream-stub/blob/main/docs/contract/resource_metadata.yml
     """
 
-    def publish_created_or_updated(self, page):
+    def publish_created_or_updated(self, page: "Page") -> None:
         """Build the message for the created/updated event.
         Delegate sending to the subclass's _publish_to_service().
         """
@@ -33,7 +39,7 @@ class BasePublisher(ABC):
         )
         return self._publish_to_service(topic, message)
 
-    def publish_deleted(self, page):
+    def publish_deleted(self, page: "Page") -> None:
         """Build the message for the deleted event.
         Delegate sending to the subclass's _publish_to_service().
         """
@@ -47,24 +53,24 @@ class BasePublisher(ABC):
         return self._publish_to_service(topic, message)
 
     @abstractmethod
-    def _publish_to_service(self, topic, message):
+    def _publish_to_service(self, topic: str, message: dict) -> None:
         """Each child class defines how to actually send/publish
         the message (e.g., Kafka, logging, etc.).
         """
 
     @abstractmethod
-    def get_topic_created_or_updated(self):
+    def get_topic_created_or_updated(self) -> str:
         """Provide the topic (or other necessary routing key) for created/updated.
         This can be a no-op or empty string for some implementations.
         """
 
     @abstractmethod
-    def get_topic_deleted(self):
+    def get_topic_deleted(self) -> str:
         """Provide the topic (or other necessary routing key) for deleted messages.
         This can be a no-op or empty string for some implementations.
         """
 
-    def _construct_message_for_create_update(self, page):
+    def _construct_message_for_create_update(self, page: "Page") -> dict:
         """Build a dict that matches the agreed metadata schema for 'created/updated'.
 
         resource_metadata.yml:
@@ -94,7 +100,7 @@ class BasePublisher(ABC):
             message.update(self._construct_release_specific_fields(page))
         return message
 
-    def _construct_release_specific_fields(self, page):
+    def _construct_release_specific_fields(self, page: "Page") -> dict:
         """Constructs and returns a dictionary with release-specific fields."""
         release_fields = {
             "finalised": page.status in ["CONFIRMED", "PROVISIONAL"],
@@ -116,7 +122,7 @@ class BasePublisher(ABC):
             )
         return release_fields
 
-    def _construct_message_for_delete(self, page):
+    def _construct_message_for_delete(self, page: "Page") -> dict:
         """Build a dict that matches the 'content-deleted' schema:
         - required: uri
         - optional: trace_id.
@@ -130,7 +136,7 @@ class BasePublisher(ABC):
 
         return message
 
-    def _map_page_type_to_content_type(self, page):
+    def _map_page_type_to_content_type(self, page: "Page") -> Optional[str]:
         """Maps the class name of a given page object to a corresponding content type string."""
         mapping = {
             "ReleaseCalendarPage": "release",
@@ -149,11 +155,11 @@ class KafkaPublisher(BasePublisher):
     / ReleasePayload / content-deleted schema definitions.
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         # Read Kafka configs settings
         self.kafka_server = settings.KAFKA_SERVER
-        self._topic_created_or_updated = settings.KAFKA_TOPIC_CREATED_OR_UPDATED
-        self._topic_deleted = settings.KAFKA_TOPIC_DELETED
+        self._topic_created_or_updated: Optional[str] = settings.KAFKA_TOPIC_CREATED_OR_UPDATED
+        self._topic_deleted: Optional[str] = settings.KAFKA_TOPIC_DELETED
 
         self.producer = KafkaProducer(
             bootstrap_servers=[self.kafka_server],
@@ -161,30 +167,36 @@ class KafkaPublisher(BasePublisher):
             value_serializer=lambda v: json.dumps(v).encode("utf-8"),
         )
 
-    def get_topic_created_or_updated(self):
+    def get_topic_created_or_updated(self) -> str:
+        if self._topic_created_or_updated is None:
+            raise ValueError("Topic must not be None here.")
         return self._topic_created_or_updated
 
-    def get_topic_deleted(self):
+    def get_topic_deleted(self) -> str:
+        if self._topic_deleted is None:
+            raise ValueError("Topic must not be None here.")
         return self._topic_deleted
 
-    def _publish_to_service(self, topic, message):
+    def _publish_to_service(self, topic: str, message: dict) -> "RecordMetadata":
         """Send the message to Kafka."""
         logger.info("KafkaPublisher: Publishing to topic=%s, message=%s", topic, message)
         future = self.producer.send(topic, message)
         # Optionally block for the result, capturing metadata or error
         result = future.get(timeout=10)  # Wait up to 10s for send to complete
         logger.info("KafkaPublisher: Publish result for topic %s: %s", topic, result)
+        # breakpoint()
         return result
 
 
 class LogPublisher(BasePublisher):
     """Publishes 'messages' by simply logging them (no real message bus)."""
 
-    def get_topic_created_or_updated(self):
+    def get_topic_created_or_updated(self) -> str:
         return "log-created-or-updated"
 
-    def get_topic_deleted(self):
+    def get_topic_deleted(self) -> str:
         return "log-deleted"
 
-    def _publish_to_service(self, topic, message):
+    def _publish_to_service(self, topic: str, message: dict) -> None:
+        """Log the message."""
         logger.info("LogPublisher: topic=%s message=%s", topic, message)
