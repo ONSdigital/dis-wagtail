@@ -1,7 +1,8 @@
 # test_kafka_integration.py
 import json
-import time
 import logging
+import time
+
 from django.test import TestCase, override_settings
 from kafka import KafkaConsumer
 
@@ -49,32 +50,29 @@ class KafkaIntegrationTests(TestCase):
         cls.consumer_deleted.close()
         super().tearDownClass()
 
+    def _poll_for_message(self, consumer, expected_uri, timeout_secs=5):
+        """Polls the given consumer for up to `timeout_secs` seconds,
+        returning True if a message with the given `expected_uri` is found.
+        """
+        start_time = time.time()
+        while time.time() - start_time < timeout_secs:
+            raw_msgs = consumer.poll(timeout_ms=1000)
+            for _tp, msgs in raw_msgs.items():
+                for msg in msgs:
+                    payload = json.loads(msg.value.decode("utf-8"))
+                    if payload.get("uri") == expected_uri:
+                        return True
+        return False
+
     def test_publish_created_or_updated_integration(self):
         """Publish a "created/updated" message to Kafka and consume it,
         verifying that the message is indeed in the topic.
         """
-        # 1) Publish a test message
         page = InformationPageFactory()
         publish_result = self.publisher.publish_created_or_updated(page)
         self.assertIsNotNone(publish_result)  # We get some metadata from Kafka
 
-        # 2) Attempt to consume the message
-        # We'll poll for a limited time to see if we can read a new message off 'search-content-updated'.
-        msg_found = False
-        start_time = time.time()
-        while time.time() - start_time < 5:  # up to 5 seconds
-            raw_msgs = self.consumer_created.poll(timeout_ms=1000)
-            for tp, msgs in raw_msgs.items():
-                for msg in msgs:
-                    payload = json.loads(msg.value.decode("utf-8"))
-                    if payload.get("uri") == page.url_path:
-                        msg_found = True
-                        break
-                if msg_found:
-                    break
-            if msg_found:
-                break
-
+        msg_found = self._poll_for_message(self.consumer_created, page.url_path)
         self.assertTrue(msg_found, "No matching message found in 'search-content-updated' topic.")
 
     def test_publish_deleted_integration(self):
@@ -83,19 +81,5 @@ class KafkaIntegrationTests(TestCase):
 
         _ = self.publisher.publish_deleted(page)
 
-        msg_found = False
-        start_time = time.time()
-        while time.time() - start_time < 5:  # up to 5 seconds
-            raw_msgs = self.consumer_deleted.poll(timeout_ms=1000)
-            for tp, msgs in raw_msgs.items():
-                for msg in msgs:
-                    payload = json.loads(msg.value.decode("utf-8"))
-                    if payload.get("uri") == page.url_path:
-                        msg_found = True
-                        break
-                if msg_found:
-                    break
-            if msg_found:
-                break
-
+        msg_found = self._poll_for_message(self.consumer_deleted, page.url_path)
         self.assertTrue(msg_found, "No matching message found in 'search-content-deleted' topic.")
