@@ -235,7 +235,8 @@ class StatisticalArticlePageRenderTestCase(WagtailTestUtils, TestCase):
         self.assertNotContains(response, expected)
 
     def test_breadcrumb_is_shown(self):
-        # Statistical Articles are a special case regarding breadcrumbs the url includes a series page which is not accessable externally
+        # Statistical Articles are a special case regarding breadcrumbs the url includes a series page which is not
+        # accessable externally
         response = self.client.get(self.basic_page_url)
         mock_url = response.request['PATH_INFO']
         mock_url = mock_url.split("/")
