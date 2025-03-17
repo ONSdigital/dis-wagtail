@@ -68,7 +68,6 @@ CACHES["default"] = {  # noqa: F405
 # Django Defender
 ENABLE_DJANGO_DEFENDER = False
 
-# PUBLISHER_BACKEND = os.getenv("PUBLISHER_BACKEND", "log")  # Options: log, kafka, none
 
 # Import settings from local.py file if it exists. Please use it to keep
 # settings that are not meant to be checked into Git and never check it in.
