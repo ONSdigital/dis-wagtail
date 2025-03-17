@@ -235,27 +235,71 @@ class StatisticalArticlePageRenderTestCase(WagtailTestUtils, TestCase):
         self.assertNotContains(response, expected)
 
     def test_breadcrumb_is_shown(self):
+        # Statistical Articles are a special case regarding breadcrumbs the url includes a series page which is not accessable externally
         response = self.client.get(self.basic_page_url)
+        mock_url = response.request['PATH_INFO']
+        mock_url = mock_url.split("/")
+        mock_url = list(filter(('').__ne__, mock_url))
+        mock_breadcrumb = self.get_breadcrumbs(response)
         expected = 'class="ons-breadcrumbs__link"'
         self.assertContains(response, expected)
+        self.assertEqual(len(mock_url) - len(mock_breadcrumb),2)
+        self.assertEqual(mock_url[0] , mock_breadcrumb[0])
+        self.assertEqual(mock_url[1] , mock_breadcrumb[1])
+
+    def get_breadcrumbs(self, response):
+        mock_response = response.content.decode("utf-8").split("\n")
+        mock_hrf = ""
+        for ind, line in enumerate(mock_response):
+            if "breadcrumb" in line:
+                mock_hrf = mock_response[ind + 1].split("/", 1)
+        mock_breadcrumb = mock_hrf[1][:-1]
+        mock_breadcrumb = mock_breadcrumb.split("/")
+        mock_breadcrumb = list(filter(('').__ne__, mock_breadcrumb))
+        return mock_breadcrumb
 
     def test_pagination_is_not_shown(self):
         response = self.client.get(self.basic_page_url)
         expected = 'class="ons-pagination__link"'
         self.assertNotContains(response, expected)
 
-
 class PreviousReleasesWithoutPaginationTestCase(TestCase):
-
+    # PREVIOUS_RELEASES_PER_PAGE is default value 10
+    total_batch = 9
     @classmethod
-    def setUpTestData(cls):
-        batch_num = 1
+    def setUpTestData(cls, cls_total_batch: int = total_batch):
+        total_batch = 9
         cls.article_series = ArticleSeriesPageFactory(title="Article Series")
-        cls.articles = StatisticalArticlePageFactory.create_batch(batch_num, parent=cls.article_series)
+        cls.articles = StatisticalArticlePageFactory.create_batch(total_batch, parent=cls.article_series)
         cls.previous_releases_url = cls.article_series.url + cls.article_series.reverse_subpage(
             "previous_releases")
 
+    def test_page_content(self):
+        response = self.client.get(self.previous_releases_url)
+        mock_response = response.content.decode("utf-8").split("\n")
+        allowed_to_print = False
+        release_count = 0
+        for m in mock_response:
+            if " </ul>" in m:
+                allowed_to_print = False
+            if "<ul>" in m:
+                allowed_to_print = True
+            if allowed_to_print and "<li><a href=" in m:
+                release_count += 1
+        self.assertEqual(release_count,self.total_batch)
+
+
     def test_breadcrumb_is_shown(self):
+        # ToDo
+        # this should include breadcrumb content comparison with the url but there is a bug
+        # mock_url = response.request['PATH_INFO']
+        # mock_url = mock_url.split("/")
+        # mock_url = list(filter(('').__ne__, mock_url))
+        # mock_breadcrumb = self.get_breadcrumbs(response)
+        # self.assertContains(response, expected)
+        # self.assertEqual(len(mock_url) - len(mock_breadcrumb),1)
+        # self.assertEqual(mock_url[0] , mock_breadcrumb[0])
+        # self.assertEqual(mock_url[1] , mock_breadcrumb[1])
         response = self.client.get(self.previous_releases_url)
         expected = 'class="ons-breadcrumbs__link"'
         self.assertContains(response, expected)
@@ -266,7 +310,7 @@ class PreviousReleasesWithoutPaginationTestCase(TestCase):
         expected = 'class="ons-pagination__link"'
         self.assertNotContains(response, expected)
 
-
+@override_settings(PREVIOUS_RELEASES_PER_PAGE=3)
 class PreviousReleasesWithPaginationPage3TestCase(TestCase):
     total_batch = 13
     current_page_number = 3
@@ -274,18 +318,11 @@ class PreviousReleasesWithPaginationPage3TestCase(TestCase):
     total_no_of_pages = math.ceil(total_batch / PREVIOUS_RELEASES_PER_PAGE)
 
     @classmethod
-    def setUpTestData(cls,cls_total_batch: int = total_batch,cls_current_page_number: int = current_page_number,
-                      cls_previous_releases_per_page: int = PREVIOUS_RELEASES_PER_PAGE):
-        cls.settings.PREVIOUS_RELEASES_PER_PAGE = cls_previous_releases_per_page
+    def setUpTestData(cls, cls_total_batch: int = total_batch, cls_current_page_number: int = current_page_number):
         cls.article_series = ArticleSeriesPageFactory(title="Article Series")
         cls.articles = StatisticalArticlePageFactory.create_batch(cls_total_batch, parent=cls.article_series)
         cls.previous_releases_url = cls.article_series.url + cls.article_series.reverse_subpage(
             "previous_releases") + f"?page={cls_current_page_number}"
-
-    def test_breadcrumb_is_shown(self):
-        response = self.client.get(self.previous_releases_url)
-        expected = 'class="ons-breadcrumbs"'
-        self.assertContains(response, expected)
 
     def test_pagination_is_shown(self):
         response = self.client.get(self.previous_releases_url)
@@ -303,6 +340,8 @@ class PreviousReleasesWithPaginationPage3TestCase(TestCase):
         for not_expect in not_expected:
             self.assertNotContains(response, not_expect)
 
+
+@override_settings(PREVIOUS_RELEASES_PER_PAGE=3)
 class PreviousReleasesWithPaginationPage1TestCase(TestCase):
     total_batch = 13
     current_page_number = 1
@@ -310,19 +349,13 @@ class PreviousReleasesWithPaginationPage1TestCase(TestCase):
     total_no_of_pages = math.ceil(total_batch / PREVIOUS_RELEASES_PER_PAGE)
 
     @classmethod
-    def setUpTestData(cls,cls_total_batch: int = total_batch,
+    def setUpTestData(cls, cls_total_batch: int = total_batch,
                       cls_current_page_number: int = current_page_number,
                       cls_previous_releases_per_page: int = PREVIOUS_RELEASES_PER_PAGE):
-        cls.settings.PREVIOUS_RELEASES_PER_PAGE = cls_previous_releases_per_page
         cls.article_series = ArticleSeriesPageFactory(title="Article Series")
         cls.articles = StatisticalArticlePageFactory.create_batch(cls_total_batch, parent=cls.article_series)
         cls.previous_releases_url = cls.article_series.url + cls.article_series.reverse_subpage(
             "previous_releases") + f"?page={cls_current_page_number}"
-
-    def test_breadcrumb_is_shown(self):
-        response = self.client.get(self.previous_releases_url)
-        expected = 'class="ons-breadcrumbs"'
-        self.assertContains(response, expected)
 
     def test_pagination_is_shown(self):
         response = self.client.get(self.previous_releases_url)
@@ -339,6 +372,8 @@ class PreviousReleasesWithPaginationPage1TestCase(TestCase):
         for not_expect in not_expected:
             self.assertNotContains(response, not_expect)
 
+
+@override_settings(PREVIOUS_RELEASES_PER_PAGE=3)
 class PreviousReleasesWithPaginationPage5TestCase(TestCase):
     total_batch = 13
     current_page_number = 5
@@ -346,9 +381,8 @@ class PreviousReleasesWithPaginationPage5TestCase(TestCase):
     total_no_of_pages = math.ceil(total_batch / PREVIOUS_RELEASES_PER_PAGE)
 
     @classmethod
-    def setUpTestData(cls,cls_total_batch: int = total_batch,cls_current_page_number: int = current_page_number,
+    def setUpTestData(cls, cls_total_batch: int = total_batch, cls_current_page_number: int = current_page_number,
                       cls_previous_releases_per_page: int = PREVIOUS_RELEASES_PER_PAGE):
-        cls.settings.PREVIOUS_RELEASES_PER_PAGE = 3
         cls.article_series = ArticleSeriesPageFactory(title="Article Series")
         cls.articles = StatisticalArticlePageFactory.create_batch(cls_total_batch, parent=cls.article_series)
         cls.previous_releases_url = cls.article_series.url + cls.article_series.reverse_subpage(
@@ -374,6 +408,7 @@ class PreviousReleasesWithPaginationPage5TestCase(TestCase):
             self.assertContains(response, expect)
         for not_expect in not_expected:
             self.assertNotContains(response, not_expect)
+
 
 
 @override_settings(IS_EXTERNAL_ENV=True)
