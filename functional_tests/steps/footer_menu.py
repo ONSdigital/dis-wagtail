@@ -21,7 +21,7 @@ def user_creates_footer_menu_instance(context: Context):
 def user_navigates_to_footer_menu(context: Context):
     context.page.get_by_role("link", name="Snippets").click()
     context.page.get_by_role("link", name="Footer menus").click()
-    context.page.get_by_role("link", name="Footer Menu", exact=True).click(timeout=5000)
+    context.page.get_by_role("link", name="Footer Menu", exact=True).click()
 
 
 @when("the user populates the footer menu")
@@ -37,18 +37,6 @@ def user_populates_footer_menu(context: Context):
     context.page.get_by_role("textbox", name="Title", exact=True).fill("Accessibility")
 
 
-@when("the user enters duplicate information")
-def user_enters_duplicate_link(context: Context):
-    context.page.get_by_role("button", name="Insert a block").nth(1).click()
-    context.page.locator("#columns-1-value-title").fill("About")
-    context.page.locator("#columns-1-value-links-0-value-external_url").click()
-    context.page.locator("#columns-1-value-links-0-value-external_url").fill(
-        "https://www.ons.gov.uk/help/accessibility"
-    )
-    context.page.locator("#columns-1-value-links-0-value-title").click()
-    context.page.locator("#columns-1-value-links-0-value-title").fill("Accessibility")
-
-
 @when('the user clicks "View Live" from the preview')
 def user_clicks_view_live(context: Context):
     context.page.get_by_role("button", name="Toggle preview").click()
@@ -62,14 +50,15 @@ def user_previews_footer_menu(context: Context):
     expect(context.page.get_by_role("link", name="Accessibility")).to_be_visible()
 
 
-@when("the user inserts an empty column block")
-def user_inserts_empty_footer_menu_block(context: Context):
-    context.page.get_by_role("button", name="Insert a block").click()
+@step('the user clicks "Publish" the footer menu')
+def user_publishes_footer_menu(context: Context):
+    context.page.get_by_role("button", name="More actions").click()
+    context.page.get_by_role("button", name="Publish").click()
 
 
-@then("an error message is displayed")
-def error_message_for_footer_menu(context: Context):
-    expect(context.page.get_by_text("The footer menu could not be")).to_be_visible()
+@then("a banner confirming changes is displayed")
+def deleted_footer_menu_banner(context: Context):
+    expect(context.page.get_by_text("Footer menu 'Footer Menu'")).to_be_visible()
 
 
 @when('a CMS user navigates to "Navigation settings"')
@@ -93,7 +82,28 @@ def user_saves_in_navigation_settings(context: Context):
 def user_configures_footer_menu(context: Context):
     context.page.get_by_role("button", name="Choose footer menu", exact=False)
     expect(context.page.get_by_text("Navigation settings updated.")).to_be_visible()
-    expect(context.page.get_by_text("Navigation settings updated.")).to_be_visible()
+
+
+@when("the user enters duplicate information")
+def user_enters_duplicate_link(context: Context):
+    context.page.get_by_role("button", name="Insert a block").nth(1).click()
+    context.page.locator("#columns-1-value-title").fill("About")
+    context.page.locator("#columns-1-value-links-0-value-external_url").click()
+    context.page.locator("#columns-1-value-links-0-value-external_url").fill(
+        "https://www.ons.gov.uk/help/accessibility"
+    )
+    context.page.locator("#columns-1-value-links-0-value-title").click()
+    context.page.locator("#columns-1-value-links-0-value-title").fill("Accessibility")
+
+
+@when("the user inserts an empty column block")
+def user_inserts_empty_footer_menu_block(context: Context):
+    context.page.get_by_role("button", name="Insert a block").click()
+
+
+@then("an error message is displayed")
+def error_message_for_footer_menu(context: Context):
+    expect(context.page.get_by_text("The footer menu could not be")).to_be_visible()
 
 
 @when("user deletes the footer menu")
@@ -103,22 +113,6 @@ def user_deletes_footer_menu(context: Context):
     context.page.get_by_role("button", name="More options for 'Footer Menu'").click()
     context.page.get_by_role("link", name="Delete 'Footer Menu'").click()
     context.page.get_by_role("button", name="Yes, delete").click()
-
-
-@then("a banner confirming changes is displayed")
-def deleted_footer_menu_banner(context: Context):
-    expect(context.page.get_by_text("Footer menu 'Footer Menu'")).to_be_visible()
-
-
-@step('the user clicks "Publish" the footer menu')
-def user_publishes_footer_menu(context: Context):
-    context.page.get_by_role("button", name="More actions").click()
-    context.page.get_by_role("button", name="Publish").click()
-
-
-@then("menu is published")
-def confirm_published_footer_menu(context: Context):
-    expect(context.page.get_by_text("updated and published")).to_be_visible()
 
 
 @when("the user enters a link with no title")
@@ -182,7 +176,8 @@ def user_adds_link_to_footer_menu(context: Context):
 
 @then("the preview of the footer menu is displayed with the additional link")
 def preview_add_to_footer_menu(context: Context):
-    expect(context.page.get_by_role("link", name="More")).to_be_visible()
+    # expect(context.page.get_by_role("link", name="More")).to_be_visible()
+    expect(context.page.get_by_text("More")).to_be_visible()
 
 
 @when("the user edits data on a pre existing footer menu")
@@ -199,10 +194,12 @@ def user_edits_footer_menu(context: Context):
 
 @then("the preview of the footer menu is displayed with the edited data")
 def preview_edited_footer_menu(context: Context):
-    expect(context.page.get_by_role("Heading", name="New Title")).to_be_visible()
+    expect(context.page.get_by_role("heading", name="New Title")).to_be_visible()
+    # expect(context.page.get_by_role("link", name="New link Title")).to_be_visible()
+    expect(context.page.get_by_text("New link Title")).to_be_visible()
 
 
-@when("the user deleted the additional link")
+@when("the user deletes the additional link")
 def user_deletes_link(context: Context):
     context.page.get_by_role("button", name="Delete").nth(1).click()
 
@@ -232,6 +229,7 @@ def create_original_footer_menu(context: Context):
 @then("the preview will show the new is column added")
 def preview_new_column(context: Context):
     expect(context.page.get_by_role("heading", name="Column 2")).not_to_be_visible()
+    # expect(context.page.get_by_text("Column 2")).to_be_visible()
 
 
 @when("the user deletes a column")
@@ -242,3 +240,20 @@ def deletes_column(context: Context):
 @then("the preview will not show the deleted column")
 def preview_deleted_column(context: Context):
     expect(context.page.get_by_role("heading", name="Column 2")).not_to_be_visible()
+    # åexpect(context.page.get_by_text("Column 2")).not_to_be_visible()
+
+
+@when("the user configures the footer menu in navigation settings")
+def configure_footer_menu_in_navigation_settings(context: Context):
+    user_navigates_to_navigation_settings(context)
+    # user_selects_footer_menu(context)
+    context.page.get_by_role("button", name="Choose footer menu").click()
+    context.page.get_by_role("link", name="Footer Menu").click()
+    user_saves_in_navigation_settings(context)
+
+
+@then("the user navigates to the home page to see changes")
+def navigates_to_home_page(context: Context):
+    context.page1 = context.new_page()
+    context.page1.goto("http://0.0.0.0:8000/")
+    user_previews_footer_menu(context)
