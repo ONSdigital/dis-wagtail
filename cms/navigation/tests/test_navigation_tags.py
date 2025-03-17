@@ -4,12 +4,12 @@ from django.test import TestCase
 from cms.core.tests.factories import LinkBlockFactory
 from cms.navigation.templatetags.navigation_tags import footer_menu_columns, main_menu_columns, main_menu_highlights
 from cms.navigation.tests.factories import (
-    ColumnBlockFactory,
     FooterMenuFactory,
     HighlightsBlockFactory,
     LinksColumnFactory,
+    MainMenuColumnBlockFactory,
     MainMenuFactory,
-    SectionBlockFactory,
+    MainMenuSectionBlockFactory,
     TopicLinkBlockFactory,
 )
 
@@ -24,9 +24,9 @@ class MainMenuTemplateTagTests(TestCase):
 
         topic_links = [TopicLinkBlockFactory()] * 5
 
-        sections = [SectionBlockFactory(links=topic_links)] * 3
+        sections = [MainMenuSectionBlockFactory(links=topic_links)] * 3
 
-        column_value = ColumnBlockFactory(sections=sections)
+        column_value = MainMenuColumnBlockFactory(sections=sections)
 
         columns = [
             {
