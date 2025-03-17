@@ -268,6 +268,7 @@ class StatisticalArticlePageRenderTestCase(WagtailTestUtils, TestCase):
 class PreviousReleasesWithoutPaginationTestCase(TestCase):
     # PREVIOUS_RELEASES_PER_PAGE is default value 10
     total_batch = 9
+
     @classmethod
     def setUpTestData(cls, cls_total_batch: int = total_batch):
         cls.article_series = ArticleSeriesPageFactory(title="Article Series")
