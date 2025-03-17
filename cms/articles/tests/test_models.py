@@ -238,15 +238,15 @@ class StatisticalArticlePageRenderTestCase(WagtailTestUtils, TestCase):
         # Statistical Articles are a special case regarding breadcrumbs the url includes a series page which is not
         # accessable externally
         response = self.client.get(self.basic_page_url)
-        mock_url = response.request['PATH_INFO']
+        mock_url = response.request["PATH_INFO"]
         mock_url = mock_url.split("/")
-        mock_url = list(filter(('').__ne__, mock_url))
+        mock_url = list(filter(("").__ne__, mock_url))
         mock_breadcrumb = self.get_breadcrumbs(response)
         expected = 'class="ons-breadcrumbs__link"'
         self.assertContains(response, expected)
-        self.assertEqual(len(mock_url) - len(mock_breadcrumb),2)
-        self.assertEqual(mock_url[0] , mock_breadcrumb[0])
-        self.assertEqual(mock_url[1] , mock_breadcrumb[1])
+        self.assertEqual(len(mock_url) - len(mock_breadcrumb), 2)
+        self.assertEqual(mock_url[0], mock_breadcrumb[0])
+        self.assertEqual(mock_url[1], mock_breadcrumb[1])
 
     def get_breadcrumbs(self, response):
         mock_response = response.content.decode("utf-8").split("\n")
@@ -256,7 +256,7 @@ class StatisticalArticlePageRenderTestCase(WagtailTestUtils, TestCase):
                 mock_hrf = mock_response[ind + 1].split("/", 1)
         mock_breadcrumb = mock_hrf[1][:-1]
         mock_breadcrumb = mock_breadcrumb.split("/")
-        mock_breadcrumb = list(filter(('').__ne__, mock_breadcrumb))
+        mock_breadcrumb = list(filter(("").__ne__, mock_breadcrumb))
         return mock_breadcrumb
 
     def test_pagination_is_not_shown(self):
@@ -264,16 +264,17 @@ class StatisticalArticlePageRenderTestCase(WagtailTestUtils, TestCase):
         expected = 'class="ons-pagination__link"'
         self.assertNotContains(response, expected)
 
+
 class PreviousReleasesWithoutPaginationTestCase(TestCase):
     # PREVIOUS_RELEASES_PER_PAGE is default value 10
     total_batch = 9
+
     @classmethod
     def setUpTestData(cls, cls_total_batch: int = total_batch):
         total_batch = 9
         cls.article_series = ArticleSeriesPageFactory(title="Article Series")
         cls.articles = StatisticalArticlePageFactory.create_batch(total_batch, parent=cls.article_series)
-        cls.previous_releases_url = cls.article_series.url + cls.article_series.reverse_subpage(
-            "previous_releases")
+        cls.previous_releases_url = cls.article_series.url + cls.article_series.reverse_subpage("previous_releases")
 
     def test_page_content(self):
         response = self.client.get(self.previous_releases_url)
@@ -287,8 +288,7 @@ class PreviousReleasesWithoutPaginationTestCase(TestCase):
                 allowed_to_print = True
             if allowed_to_print and "<li><a href=" in m:
                 release_count += 1
-        self.assertEqual(release_count,self.total_batch)
-
+        self.assertEqual(release_count, self.total_batch)
 
     def test_breadcrumb_is_shown(self):
         # ToDo
@@ -311,6 +311,7 @@ class PreviousReleasesWithoutPaginationTestCase(TestCase):
         expected = 'class="ons-pagination__link"'
         self.assertNotContains(response, expected)
 
+
 @override_settings(PREVIOUS_RELEASES_PER_PAGE=3)
 class PreviousReleasesWithPaginationPage3TestCase(TestCase):
     total_batch = 13
@@ -322,19 +323,24 @@ class PreviousReleasesWithPaginationPage3TestCase(TestCase):
     def setUpTestData(cls, cls_total_batch: int = total_batch, cls_current_page_number: int = current_page_number):
         cls.article_series = ArticleSeriesPageFactory(title="Article Series")
         cls.articles = StatisticalArticlePageFactory.create_batch(cls_total_batch, parent=cls.article_series)
-        cls.previous_releases_url = cls.article_series.url + cls.article_series.reverse_subpage(
-            "previous_releases") + f"?page={cls_current_page_number}"
+        cls.previous_releases_url = (
+            cls.article_series.url
+            + cls.article_series.reverse_subpage("previous_releases")
+            + f"?page={cls_current_page_number}"
+        )
 
     def test_pagination_is_shown(self):
         response = self.client.get(self.previous_releases_url)
-        expected = [f'class="ons-pagination__position">Page {self.current_page_number} of {
-        math.ceil(self.total_batch / settings.PREVIOUS_RELEASES_PER_PAGE)}',
-                    'aria-label="Go to the first page (Page 1)"',
-                    'class="ons-pagination__item ons-pagination__item--previous"',
-                    'class="ons-pagination__item ons-pagination__item--current"',
-                    f'aria-label="Go to the last page (Page {self.total_no_of_pages})"',
-                    'class="ons-pagination__item ons-pagination__item--next"'
-                    ]
+        expected = [
+            f'class="ons-pagination__position">Page {self.current_page_number} of {
+                math.ceil(self.total_batch / settings.PREVIOUS_RELEASES_PER_PAGE)
+            }',
+            'aria-label="Go to the first page (Page 1)"',
+            'class="ons-pagination__item ons-pagination__item--previous"',
+            'class="ons-pagination__item ons-pagination__item--current"',
+            f'aria-label="Go to the last page (Page {self.total_no_of_pages})"',
+            'class="ons-pagination__item ons-pagination__item--next"',
+        ]
         not_expected = []
         for expect in expected:
             self.assertContains(response, expect)
@@ -350,24 +356,32 @@ class PreviousReleasesWithPaginationPage1TestCase(TestCase):
     total_no_of_pages = math.ceil(total_batch / PREVIOUS_RELEASES_PER_PAGE)
 
     @classmethod
-    def setUpTestData(cls, cls_total_batch: int = total_batch,
-                      cls_current_page_number: int = current_page_number,
-                      cls_previous_releases_per_page: int = PREVIOUS_RELEASES_PER_PAGE):
+    def setUpTestData(
+        cls,
+        cls_total_batch: int = total_batch,
+        cls_current_page_number: int = current_page_number,
+        cls_previous_releases_per_page: int = PREVIOUS_RELEASES_PER_PAGE,
+    ):
         cls.article_series = ArticleSeriesPageFactory(title="Article Series")
         cls.articles = StatisticalArticlePageFactory.create_batch(cls_total_batch, parent=cls.article_series)
-        cls.previous_releases_url = cls.article_series.url + cls.article_series.reverse_subpage(
-            "previous_releases") + f"?page={cls_current_page_number}"
+        cls.previous_releases_url = (
+            cls.article_series.url
+            + cls.article_series.reverse_subpage("previous_releases")
+            + f"?page={cls_current_page_number}"
+        )
 
     def test_pagination_is_shown(self):
         response = self.client.get(self.previous_releases_url)
-        expected = [f'class="ons-pagination__position">Page {self.current_page_number} of {self.total_no_of_pages}',
-                    'class="ons-pagination__item ons-pagination__item--current"',
-                    f'aria-label="Go to the last page (Page {self.total_no_of_pages})"',
-                    'class="ons-pagination__item ons-pagination__item--next"'
-                    ]
-        not_expected = ['aria-label="Go to the first page (Page 1)"',
-                        'class="ons-pagination__item ons-pagination__item--previous"'
-                        ]
+        expected = [
+            f'class="ons-pagination__position">Page {self.current_page_number} of {self.total_no_of_pages}',
+            'class="ons-pagination__item ons-pagination__item--current"',
+            f'aria-label="Go to the last page (Page {self.total_no_of_pages})"',
+            'class="ons-pagination__item ons-pagination__item--next"',
+        ]
+        not_expected = [
+            'aria-label="Go to the first page (Page 1)"',
+            'class="ons-pagination__item ons-pagination__item--previous"',
+        ]
         for expect in expected:
             self.assertContains(response, expect)
         for not_expect in not_expected:
@@ -382,12 +396,19 @@ class PreviousReleasesWithPaginationPage5TestCase(TestCase):
     total_no_of_pages = math.ceil(total_batch / PREVIOUS_RELEASES_PER_PAGE)
 
     @classmethod
-    def setUpTestData(cls, cls_total_batch: int = total_batch, cls_current_page_number: int = current_page_number,
-                      cls_previous_releases_per_page: int = PREVIOUS_RELEASES_PER_PAGE):
+    def setUpTestData(
+        cls,
+        cls_total_batch: int = total_batch,
+        cls_current_page_number: int = current_page_number,
+        cls_previous_releases_per_page: int = PREVIOUS_RELEASES_PER_PAGE,
+    ):
         cls.article_series = ArticleSeriesPageFactory(title="Article Series")
         cls.articles = StatisticalArticlePageFactory.create_batch(cls_total_batch, parent=cls.article_series)
-        cls.previous_releases_url = cls.article_series.url + cls.article_series.reverse_subpage(
-            "previous_releases") + f"?page={cls_current_page_number}"
+        cls.previous_releases_url = (
+            cls.article_series.url
+            + cls.article_series.reverse_subpage("previous_releases")
+            + f"?page={cls_current_page_number}"
+        )
 
     def test_breadcrumb_is_shown(self):
         response = self.client.get(self.previous_releases_url)
@@ -396,20 +417,20 @@ class PreviousReleasesWithPaginationPage5TestCase(TestCase):
 
     def test_pagination_is_shown(self):
         response = self.client.get(self.previous_releases_url)
-        expected = [f'class="ons-pagination__position">Page {self.current_page_number} of {self.total_no_of_pages}',
-                    'aria-label="Go to the first page (Page 1)"',
-                    'class="ons-pagination__item ons-pagination__item--previous"',
-                    'class="ons-pagination__item ons-pagination__item--current"'
-                    ]
+        expected = [
+            f'class="ons-pagination__position">Page {self.current_page_number} of {self.total_no_of_pages}',
+            'aria-label="Go to the first page (Page 1)"',
+            'class="ons-pagination__item ons-pagination__item--previous"',
+            'class="ons-pagination__item ons-pagination__item--current"',
+        ]
         not_expected = [
             f'aria-label="Go to the last page (Page {self.total_no_of_pages}"',
-            'class="ons-pagination__item ons-pagination__item--next"'
+            'class="ons-pagination__item ons-pagination__item--next"',
         ]
         for expect in expected:
             self.assertContains(response, expect)
         for not_expect in not_expected:
             self.assertNotContains(response, not_expect)
-
 
 
 @override_settings(IS_EXTERNAL_ENV=True)
