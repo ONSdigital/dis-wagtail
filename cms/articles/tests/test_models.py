@@ -236,11 +236,11 @@ class StatisticalArticlePageRenderTestCase(WagtailTestUtils, TestCase):
 
     def test_breadcrumb_is_shown(self):
         # Statistical Articles are a special case regarding breadcrumbs the url includes a series page which is not
-        # accessable externally
+        # accessible externally
         response = self.client.get(self.basic_page_url)
         mock_url = response.request["PATH_INFO"]
         mock_url = mock_url.split("/")
-        mock_url = list(filter(("").__ne__, mock_url))
+        mock_url = list(filter("".__ne__, mock_url))
         mock_breadcrumb = self.get_breadcrumbs(response)
         expected = 'class="ons-breadcrumbs__link"'
         self.assertContains(response, expected)
@@ -256,7 +256,7 @@ class StatisticalArticlePageRenderTestCase(WagtailTestUtils, TestCase):
                 mock_hrf = mock_response[ind + 1].split("/", 1)
         mock_breadcrumb = mock_hrf[1][:-1]
         mock_breadcrumb = mock_breadcrumb.split("/")
-        mock_breadcrumb = list(filter(("").__ne__, mock_breadcrumb))
+        mock_breadcrumb = list(filter("".__ne__, mock_breadcrumb))
         return mock_breadcrumb
 
     def test_pagination_is_not_shown(self):
@@ -306,7 +306,6 @@ class PreviousReleasesWithoutPaginationTestCase(TestCase):
         self.assertContains(response, expected)
 
     def test_pagination_is_not_shown(self):
-        response = self.client.get(self.previous_releases_url)
         response = self.client.get(self.previous_releases_url)
         expected = 'class="ons-pagination__link"'
         self.assertNotContains(response, expected)
