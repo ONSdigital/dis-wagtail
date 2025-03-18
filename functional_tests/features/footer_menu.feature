@@ -1,15 +1,5 @@
 Feature: CMS users can create the footer menu
     
-    Scenario: A CMS user can delete a column in an existing footer menu
-        Given a CMS user logs into the admin site
-        When a populated footer menu has been created
-        And the user adds an additional column and link
-        And the user clicks the "Save Draft" button
-        And the user deletes a column
-        And the user clicks the "Save Draft" button
-        And the user clicks "View Live" from the preview
-        Then the preview will not show the deleted column
-
     Scenario: A CMS user can create and save a footer menu instance under Snippets
         Given a CMS user logs into the admin site
         When the user creates a footer menu instance
@@ -110,7 +100,7 @@ Feature: CMS users can create the footer menu
         And the user adds an additional column and link
         And the user clicks the "Save Draft" button
         And the user clicks "View Live" from the preview
-        Then the preview will show the new is column added
+        Then the preview will show the new column is added
 
     Scenario: A CMS user can delete a column in an existing footer menu
         Given a CMS user logs into the admin site
@@ -131,5 +121,6 @@ Feature: CMS users can create the footer menu
     Scenario: The footer menu is present at the home page
         Given a CMS user logs into the admin site
         When a populated footer menu has been created
+        And the user clicks the "Save Draft" button
         And the user configures the footer menu in navigation settings
         Then the user navigates to the home page to see changes
