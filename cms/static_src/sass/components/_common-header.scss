@@ -35,6 +35,11 @@ Styles common to more than one header component
         }
     }
 
+    &__release-version {
+        display: flex;
+        align-items: center;
+    }
+
     &__releases {
         display: grid;
         gap: rem-sizing(8) rem-sizing(40);

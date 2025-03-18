@@ -31,7 +31,26 @@
                     {% include "templates/components/census/census-logo.html" %}
                 </div>
             {% endif %}
-            <div class="ons-container common-header__releases">
+            <div class="ons-container article-header__release-banner">
+                <span>
+                    {# fmt:off #}
+                    {{
+                        onsPanel({
+                            "variant": 'success',
+                            "body": 'Latest release'
+                        })
+                    }}
+                    {# fmt:on #}
+                </span>
+                <span class="ons-u-nowrap">
+                    {% if page.is_latest %}
+                        <a href="{{ routablepageurl(page.get_parent().specific, "previous_releases") }}">{{ _("View previous releases") }}</a>
+                    {% else %}
+                        <a href="{{ routablepageurl(page.get_parent().specific, "latest_release") }}">{{ _("View latest release") }}</a>
+                    {% endif %}
+                </span>
+            </div>
+            <div class="ons-container common-header__releases common-header__releases--single-row">
                 <div>
                     <span class="ons-u-fs-r--b common-header__releases-label">{{ _("Release date") }}:</span>
                     <span class="ons-u-nowrap">{{ page.release_date|date("DATE_FORMAT") }}</span>
@@ -40,11 +59,11 @@
                     <span class="ons-u-fs-r--b common-header__releases-label">{{ _("Next release") }}:</span>
                     <span class="ons-u-nowrap">{{ page.next_release_date|date("DATE_FORMAT") or _("To be announced") }}</span>
                 </div>
-                <div>
+                <div class="ons-u-d-no@l">
                     <span class="ons-u-fs-r--b common-header__releases-label">{{ _("Edition") }}:</span>
                     <span class="ons-u-nowrap">{{ _("Latest") }}</span>
                 </div>
-                <div>
+                <div class="ons-u-d-no@l">
                     <span class="ons-u-fs-r--b common-header__releases-label">{{ _("Releases") }}:</span>
                     {% if page.is_latest %}
                         <a href="{{ routablepageurl(page.get_parent().specific, "previous_releases") }}">{{ _("View previous releases") }}</a>
@@ -52,6 +71,7 @@
                         <a href="{{ routablepageurl(page.get_parent().specific, "latest_release") }}">{{ _("View latest release") }}</a>
                     {% endif %}
                 </div>
+
                 {% if page.contact_details %}
                     <div>
                         <span class="ons-u-fs-r--b common-header__releases-label">{{ _("Contact") }}:</span>
