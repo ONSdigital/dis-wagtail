@@ -2,10 +2,10 @@ from typing import TYPE_CHECKING
 
 from wagtail import hooks
 
-from cms.teams.views import team_chooser_viewset, teams_viewset
+from cms.teams.viewsets import team_chooser_viewset, teams_viewset
 
 if TYPE_CHECKING:
-    from .views import TeamChooserViewSet, TeamsViewSet
+    from .viewsets import TeamChooserViewSet, TeamsViewSet
 
 
 @hooks.register("register_admin_viewset")
