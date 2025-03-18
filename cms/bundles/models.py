@@ -8,7 +8,7 @@ from django.utils.timezone import now
 from django.utils.translation import gettext_lazy as _
 from modelcluster.fields import ParentalKey
 from modelcluster.models import ClusterableModel
-from wagtail.admin.panels import FieldPanel, FieldRowPanel, InlinePanel
+from wagtail.admin.panels import FieldPanel, FieldRowPanel, InlinePanel, MultipleChooserPanel
 from wagtail.models import Orderable, Page
 from wagtail.search import index
 
@@ -23,6 +23,8 @@ if TYPE_CHECKING:
 
     from wagtail.admin.panels import Panel
 
+    from cms.teams.models import Team
+
 
 class BundlePage(Orderable):
     parent = ParentalKey("Bundle", related_name="bundled_pages", on_delete=models.CASCADE)
@@ -36,6 +38,14 @@ class BundlePage(Orderable):
 
     def __str__(self) -> str:
         return f"BundlePage: page {self.page_id} in bundle {self.parent_id}"
+
+
+class BundleTeam(Orderable):
+    parent = ParentalKey("Bundle", on_delete=models.CASCADE, related_name="teams")
+    team: "models.ForeignKey[Team]" = models.ForeignKey("teams.Team", on_delete=models.CASCADE)
+
+    def __str__(self) -> str:
+        return f"BundleTeam: {self.pk} bundle {self.parent_id} team: {self.team_id}"
 
 
 class BundlesQuerySet(QuerySet):
@@ -114,6 +124,9 @@ class Bundle(index.Indexed, ClusterableModel, models.Model):  # type: ignore[dja
         ),
         "status",
         InlinePanel("bundled_pages", heading=_("Bundled pages"), icon="doc-empty", label=_("Page")),
+        MultipleChooserPanel(
+            "teams", heading="Preview teams", icon="user", label="Preview team", chooser_field_name="team"
+        ),
         # these are handled by the form
         FieldPanel("approved_by", classname="hidden w-hidden"),
         FieldPanel("approved_at", classname="hidden w-hidden"),
@@ -147,6 +160,11 @@ class Bundle(index.Indexed, ClusterableModel, models.Model):  # type: ignore[dja
     def get_bundled_pages(self) -> QuerySet[Page]:
         pages: QuerySet[Page] = Page.objects.filter(pk__in=self.bundled_pages.values_list("page__pk", flat=True))
         return pages
+
+    def get_teams_display(self) -> str:
+        return ", ".join(
+            list(self.teams.values_list("team__name", flat=True)) or ["-"],
+        )
 
     def save(self, **kwargs: Any) -> None:  # type: ignore[override]
         """Adds additional behaviour on bundle saving.
