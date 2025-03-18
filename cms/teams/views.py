@@ -1,6 +1,9 @@
-# Create TeamsViewSet
 from typing import TYPE_CHECKING, ClassVar
 
+from django.conf import settings
+from wagtail.admin.ui.tables import Column, DateColumn
+from wagtail.admin.views.generic.chooser import ChooseResultsView, ChooseView
+from wagtail.admin.viewsets.chooser import ChooserViewSet
 from wagtail.admin.viewsets.model import ModelViewSet
 from wagtail.permission_policies import ModelPermissionPolicy
 
@@ -17,7 +20,8 @@ class ViewOnlyModelPermissionPolicy(ModelPermissionPolicy):
 
     def user_has_permission(self, user: "User", action: str) -> bool:
         """Ensure only view action is allowed."""
-        if action != "view":
+        # Note: we allow temporary management, hidden behind a flag
+        if action != "view" and not settings.ALLOW_TEAM_MANAGEMENT:
             return False
 
         return user.has_perm(self._get_permission_name(action))
@@ -49,3 +53,35 @@ class TeamsViewSet(ModelViewSet):
 
 
 teams_viewset = TeamsViewSet("teams")
+
+
+class TeamChooseMixin:
+    @property
+    def columns(self) -> list[Column]:
+        return [
+            self.title_column,  # type: ignore[attr-defined]
+            Column("identifier"),
+            DateColumn(
+                "updated_at",
+                label="Last Updated",
+                width="12%",
+            ),
+            Column("is_active", label="Active?", width="10%"),
+        ]
+
+
+class TeamChooseView(TeamChooseMixin, ChooseView): ...
+
+
+class TeamChooseResultsView(TeamChooseMixin, ChooseResultsView): ...
+
+
+class TeamChooserViewSet(ChooserViewSet):
+    model = Team
+    choose_view_class = TeamChooseView
+    choose_results_view_class = TeamChooseResultsView
+
+    icon = "group"
+
+
+team_chooser_viewset = TeamChooserViewSet("team_chooser")
