@@ -30,6 +30,7 @@ class Team(index.Indexed, models.Model):
         """Return the total number of users in the team."""
         return self.users.count()
 
+    @cached_property
     def get_users_display(self) -> str:
         """Return a comma separated list of users in the team."""
         return ", ".join(

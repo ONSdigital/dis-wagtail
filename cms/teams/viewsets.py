@@ -53,7 +53,7 @@ class TeamsViewSet(ModelViewSet):
 
     @property
     def form_fields(self) -> list[str]:
-        # note: when ALLOW_TEAM_MANAGEMENT is removed, conver this to an actual property
+        # note: when ALLOW_TEAM_MANAGEMENT is removed, convert this to an actual property
         # form_fields: ClassVar[list[str]] = ["name"]
         return ["name", "identifier"] if settings.ALLOW_TEAM_MANAGEMENT else ["name"]
 
