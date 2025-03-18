@@ -66,6 +66,7 @@ class BundleAdminFormTestCase(TestCase):
             "name": "First Bundle",
             "status": BundleStatus.IN_REVIEW,
             "bundled_pages": inline_formset([]),
+            "teams": inline_formset([]),
         }
 
     def test_form_init__status_choices(self):

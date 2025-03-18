@@ -76,16 +76,14 @@ class BundleViewSetTestCase(WagtailTestUtils, TestCase):
         """Test bundle creation."""
         response = self.client.post(
             self.bundle_add_url,
-            {
-                "name": "A New Bundle",
-                "status": BundleStatus.PENDING,
-                "bundled_pages-TOTAL_FORMS": "1",
-                "bundled_pages-INITIAL_FORMS": "0",
-                "bundled_pages-MIN_NUM_FORMS": "0",
-                "bundled_pages-MAX_NUM_FORMS": "1000",
-                "bundled_pages-0-page": str(self.statistical_article_page.id),
-                "bundled_pages-0-ORDER": "0",
-            },
+            nested_form_data(
+                {
+                    "name": "A New Bundle",
+                    "status": BundleStatus.PENDING,
+                    "bundled_pages": inline_formset([{"page": self.statistical_article_page.id}]),
+                    "teams": inline_formset([]),
+                }
+            ),
         )
 
         self.assertEqual(response.status_code, 302)
@@ -95,16 +93,14 @@ class BundleViewSetTestCase(WagtailTestUtils, TestCase):
         """Test bundle creation."""
         response = self.client.post(
             self.bundle_add_url,
-            {
-                "name": "A New Bundle",
-                "status": BundleStatus.PENDING,
-                "bundled_pages-TOTAL_FORMS": "1",
-                "bundled_pages-INITIAL_FORMS": "0",
-                "bundled_pages-MIN_NUM_FORMS": "0",
-                "bundled_pages-MAX_NUM_FORMS": "1000",
-                "bundled_pages-0-page": str(self.statistical_article_page.id),
-                "bundled_pages-0-ORDER": "0",
-            },
+            nested_form_data(
+                {
+                    "name": "A New Bundle",
+                    "status": BundleStatus.PENDING,
+                    "bundled_pages": inline_formset([{"page": self.statistical_article_page.id}]),
+                    "teams": inline_formset([]),
+                }
+            ),
         )
 
         self.assertEqual(response.status_code, 302)
@@ -128,6 +124,7 @@ class BundleViewSetTestCase(WagtailTestUtils, TestCase):
                     "name": "Updated Bundle",
                     "status": self.bundle.status,
                     "bundled_pages": inline_formset([{"page": self.statistical_article_page.id}]),
+                    "teams": inline_formset([]),
                 }
             ),
         )
@@ -151,6 +148,7 @@ class BundleViewSetTestCase(WagtailTestUtils, TestCase):
                     "name": "Updated Bundle",
                     "status": self.bundle.status,  # correct. "save and approve" should update the status directly
                     "bundled_pages": inline_formset([]),
+                    "teams": inline_formset([]),
                     "action-save-and-approve": "save-and-approve",
                 }
             ),
@@ -166,17 +164,14 @@ class BundleViewSetTestCase(WagtailTestUtils, TestCase):
         self.client.force_login(self.superuser)
         response = self.client.post(
             self.edit_url,
-            {
-                "name": self.bundle.name,
-                "status": BundleStatus.APPROVED,
-                "bundled_pages-TOTAL_FORMS": "1",
-                "bundled_pages-INITIAL_FORMS": "1",
-                "bundled_pages-MIN_NUM_FORMS": "0",
-                "bundled_pages-MAX_NUM_FORMS": "1000",
-                "bundled_pages-0-id": "",
-                "bundled_pages-0-page": str(self.statistical_article_page.id),
-                "bundled_pages-0-ORDER": "0",
-            },
+            nested_form_data(
+                {
+                    "name": self.bundle.name,
+                    "status": BundleStatus.APPROVED,
+                    "bundled_pages": inline_formset([{"page": self.statistical_article_page.id}]),
+                    "teams": inline_formset([]),
+                }
+            ),
         )
 
         self.assertEqual(response.status_code, 302)

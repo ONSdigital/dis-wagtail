@@ -146,7 +146,7 @@ class BundleInspectView(InspectView):
 
     def get_fields(self) -> list[str]:
         """Returns the list of fields to include in the inspect view."""
-        return ["name", "status", "created_at", "created_by", "approved", "scheduled_publication", "pages"]
+        return ["name", "status", "created_at", "created_by", "approved", "scheduled_publication", "teams", "pages"]
 
     def get_field_label(self, field_name: str, field: "Field") -> str:
         match field_name:
@@ -213,6 +213,10 @@ class BundleInspectView(InspectView):
             page_data,
         )
 
+    def get_teams_display_value(self) -> str:
+        value: str = self.object.get_teams_display()
+        return value
+
 
 class BundleIndexView(IndexView):
     """The Bundle index view class.
@@ -226,7 +230,7 @@ class BundleIndexView(IndexView):
         """Modifies the Bundle queryset with the related created_by ForeignKey selected to avoid N+1 queries."""
         queryset: QuerySet[Bundle] = super().get_base_queryset()
 
-        return queryset.select_related("created_by")
+        return queryset.select_related("created_by").prefetch_related("teams__team")
 
     def get_edit_url(self, instance: Bundle) -> str | None:
         """Override the default edit url to disable the edit URL for released bundles."""
@@ -244,11 +248,12 @@ class BundleIndexView(IndexView):
         """Defines the list of desired columns in the listing."""
         return [
             self._get_title_column("__str__"),
-            Column("scheduled_publication_date"),
+            Column("scheduled_publication_date", label="Scheduled for"),
             Column("get_status_display", label=_("Status")),
             UpdatedAtColumn(),
             DateColumn(name="created_at", label=_("Added"), sort_key="created_at"),
             UserColumn("created_by", label=_("Added by")),
+            Column(name="teams", accessor="get_teams_display", label="Preview teams"),
             DateColumn(name="approved_at", label=_("Approved at"), sort_key="approved_at"),
             UserColumn("approved_by"),
         ]
