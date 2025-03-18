@@ -36,9 +36,6 @@ class TeamsViewSet(ModelViewSet):
     model = Team
     index_view_class = TeamsIndexView
     menu_label = "Preview teams"
-    # Not important for the PoC but for Beta build, we need a
-    # custom admin view or disable ability to add/edit/delete.
-    form_fields: ClassVar[list[str]] = ["name"]
     icon = "group"
     add_to_admin_menu = True
     menu_order = 200
@@ -53,6 +50,12 @@ class TeamsViewSet(ModelViewSet):
         "total_members",
         "users",
     ]
+
+    @property
+    def form_fields(self) -> list[str]:
+        # note: when ALLOW_TEAM_MANAGEMENT is removed, conver this to an actual property
+        # form_fields: ClassVar[list[str]] = ["name"]
+        return ["name", "identifier"] if settings.ALLOW_TEAM_MANAGEMENT else ["name"]
 
     @property
     def permission_policy(self) -> ViewOnlyModelPermissionPolicy:
