@@ -4,7 +4,7 @@ from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.db import models
 from django.http import Http404
-from django.shortcuts import redirect
+from django.shortcuts import get_object_or_404, redirect
 from django.utils.functional import cached_property
 from django.utils.translation import gettext_lazy as _
 from wagtail.admin.panels import FieldPanel, FieldRowPanel, HelpPanel, MultiFieldPanel, TitleFieldPanel
@@ -15,8 +15,9 @@ from wagtail.search import index
 
 from cms.bundles.models import BundledPageMixin
 from cms.core.blocks import HeadlineFiguresBlock
-from cms.core.blocks.stream_blocks import SectionStoryBlock
+from cms.core.blocks.stream_blocks import CorrectionsNoticesStoryBlock, SectionStoryBlock
 from cms.core.fields import StreamField
+from cms.core.forms import PageWithUpdatesAdminForm
 from cms.core.models import BasePage
 from cms.taxonomy.mixins import GenericTaxonomyMixin
 
@@ -78,11 +79,13 @@ class ArticleSeriesPage(RoutablePageMixin, GenericTaxonomyMixin, BasePage):  # t
         return response
 
 
-class StatisticalArticlePage(BundledPageMixin, BasePage):  # type: ignore[django-manager-missing]
+class StatisticalArticlePage(BundledPageMixin, RoutablePageMixin, BasePage):  # type: ignore[django-manager-missing]
     """The statistical article page model.
 
     Previously known as statistical bulletin, statistical analysis article, analysis page.
     """
+
+    base_form_class = PageWithUpdatesAdminForm
 
     parent_page_types: ClassVar[list[str]] = ["ArticleSeriesPage"]
     subpage_types: ClassVar[list[str]] = []
@@ -130,6 +133,8 @@ class StatisticalArticlePage(BundledPageMixin, BasePage):  # type: ignore[django
 
     show_cite_this_page = models.BooleanField(default=True)
 
+    updates = StreamField(CorrectionsNoticesStoryBlock(), blank=True, use_json_field=True)
+
     content_panels: ClassVar[list["Panel"]] = [
         *BundledPageMixin.panels,
         MultiFieldPanel(
@@ -173,6 +178,10 @@ class StatisticalArticlePage(BundledPageMixin, BasePage):  # type: ignore[django
         ),
         FieldPanel("headline_figures", icon="data-analysis"),
         FieldPanel("content", icon="list-ul"),
+    ]
+
+    corrections_and_updates_panels: ClassVar[list["Panel"]] = [
+        FieldPanel("updates"),
     ]
 
     search_fields: ClassVar[list[index.BaseField]] = [
@@ -232,3 +241,22 @@ class StatisticalArticlePage(BundledPageMixin, BasePage):  # type: ignore[django
             .first()
         )
         return bool(self.pk == latest_id)  # to placate mypy
+
+    @path("previous/v<int:version>/")
+    def previous_version(self, request, version):
+        if version <= 0:
+            raise Http404
+
+        corrections = self.updates.blocks_by_name("correction")  # pylint: disable=no-member
+
+        try:
+            correction = corrections[version - 1]
+        except IndexError:
+            raise Http404 from None
+
+        # NB: Little validation is done on previous_version, as it's assumed handled on save
+        revision = get_object_or_404(self.revisions, pk=correction.value["previous_version"])
+
+        return self.render(
+            request, context_overrides={"page": revision.as_object(), "latest_version_url": self.get_url(request)}
+        )

@@ -1,0 +1,25 @@
+{% from "components/details/_macro.njk" import onsDetails %}
+
+{% set correction_blocks = value.blocks_by_name("correction") %}
+{% set notice_blocks = value.blocks_by_name("notice") %}
+
+{% if correction_blocks or notice_blocks %}
+    {% call onsDetails({"id": "corrections-and-notices", "title": _("Corrections and notices")}) %}
+        {% if correction_blocks %}
+            <h3>{{ _("Corrections") }}</h3>
+
+            {% for block in correction_blocks %}
+                {% set version_num = loop.index %}
+                {% include_block block %}
+            {% endfor %}
+        {% endif %}
+
+        {% if notice_blocks %}
+            <h3>{{ _("Notices") }}</h3>
+
+            {% for block in notice_blocks %}
+                {% include_block block %}
+            {% endfor %}
+        {% endif %}
+    {% endcall %}
+{% endif %}

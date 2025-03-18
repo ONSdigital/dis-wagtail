@@ -345,8 +345,10 @@ STORAGES = {
 STATICFILES_DIRS = [
     # "static_compiled" is a folder used by the front-end tooling
     # to output compiled static assets.
+    # "static" is a folder used for any static assets that are not compiled.
     (PROJECT_DIR / "jinja2" / "assets"),
     (PROJECT_DIR / "static_compiled"),
+    (PROJECT_DIR / "static"),
 ]
 
 

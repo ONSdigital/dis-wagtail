@@ -1,6 +1,10 @@
 from django.conf import settings
+from django.forms import Media
+from django.utils.functional import cached_property
 from django.utils.translation import gettext_lazy as _
 from wagtail import blocks
+from wagtail.blocks.field_block import FieldBlockAdapter
+from wagtail.telepath import register
 
 
 class BasePanelBlock(blocks.StructBlock):
@@ -37,3 +41,37 @@ class InformationPanelBlock(BasePanelBlock):
         template = "templates/components/streamfield/information_panel.html"
         icon = "info-circle"
         label = _("Information Panel")
+
+
+class PreviousVersionBlock(blocks.IntegerBlock):
+    pass
+
+
+class CorrectionBlock(blocks.StructBlock):
+    when = blocks.DateTimeBlock()
+    text = blocks.RichTextBlock(features=settings.RICH_TEXT_BASIC)
+    previous_version = PreviousVersionBlock(required=False)
+
+    class Meta:
+        template = "templates/components/streamfield/corrections_block.html"
+        help_text = _("Warning: Reordering or deleting a correction will change its (and others') version number.")
+
+
+class PreviousVersionBlockAdapter(FieldBlockAdapter):
+    js_constructor = "cms.core.blocks.panels.PreviousVersionBlock"
+
+    @cached_property
+    def media(self):
+        structblock_media = super().media
+        return Media(js=[*structblock_media._js, "js/previous-version-block.js"], css=structblock_media._css)  # pylint: disable=protected-access
+
+
+register(PreviousVersionBlockAdapter(), PreviousVersionBlock)
+
+
+class NoticeBlock(blocks.StructBlock):
+    when = blocks.DateTimeBlock()
+    text = blocks.RichTextBlock(features=settings.RICH_TEXT_BASIC)
+
+    class Meta:
+        template = "templates/components/streamfield/notices_block.html"

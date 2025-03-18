@@ -72,8 +72,8 @@ class BasePage(ListingFieldsMixin, SocialFieldsMixin, Page):  # type: ignore[dja
         if hasattr(cls, "edit_handler"):
             edit_handler = cls.edit_handler
         else:
-            # construct a TabbedInterface made up of content_panels, promote_panels
-            # and settings_panels, skipping any which are empty
+            # construct a TabbedInterface made up of content_panels, promote_panels,
+            # settings_panels and corrections_and_updates_panels, skipping any which are empty
             tabs = []
 
             if cls.content_panels:
@@ -84,6 +84,8 @@ class BasePage(ListingFieldsMixin, SocialFieldsMixin, Page):  # type: ignore[dja
                 tabs.append(ObjectList(cls.promote_panels, heading="Promote"))
             if cls.settings_panels:
                 tabs.append(ObjectList(cls.settings_panels, heading="Settings"))
+            if hasattr(cls, "corrections_and_updates_panels"):
+                tabs.append(ObjectList(cls.corrections_and_updates_panels, heading="Corrections & Updates"))
 
             edit_handler = TabbedInterface(tabs, base_form_class=cls.base_form_class)
 
