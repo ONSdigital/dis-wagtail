@@ -2,9 +2,10 @@
 
 {% from "components/table-of-contents/_macro.njk" import onsTableOfContents %}
 {% from "components/list/_macro.njk" import onsList %}
+{% from "components/button/_macro.njk" import onsButton %}
 
 {% block header_area %}
-    <div class="common-header article-header {% if page.updates %}article-header--flush{% endif %}">
+    <div class="common-header article-header ons-u-pb-xl {% if page.updates %}article-header--flush{% endif %}">
         <div class="ons-container">
             {% include "templates/components/navigation/breadcrumbs.html" %}
             <p class="article-header__doc-type ons-u-fs-l">{{ _("Methodology") }}</p>
@@ -21,22 +22,11 @@
         </div>
 
         {% block release_meta %}
-            <div class="ons-container common-header__releases">
-                <div>
-                    <span class="ons-u-fs-r--b common-header__releases-label">{{ _("Published") }}:</span>
-                    <span class="ons-u-nowrap">{{ page.publication_date|date("DATE_FORMAT") }}</span>
-                </div>
+            <div class="ons-container common-header__releases common-header__releases--single-row">
                 {% if page.last_revised_date %}
                     <div>
                         <span class="ons-u-fs-r--b common-header__releases-label">{{ _("Last revised") }}:</span>
                         <span class="ons-u-nowrap">{{ page.last_revised_date|date("DATE_FORMAT")}}</span>
-                    </div>
-                {% endif %}
-
-                {% if page.contact_details %}
-                    <div>
-                        <span class="ons-u-fs-r--b common-header__releases-label">{{ _("Contact") }}:</span>
-                        <a href="mailto:{{ page.contact_details.email }}">{{ page.contact_details.name }}</a>
                     </div>
                 {% endif %}
             </div>
@@ -58,6 +48,31 @@
                 }}
                 {# fmt:on #}
             {% endwith %}
+
+            {% if related_publications %}
+                {% with related_publications_title=_("Related publications"), related_publications_aria_label=_("Related publications") %}
+                    {# fmt:off #}
+                    {{-
+                        onsTableOfContents({
+                            "title": related_publications_title,
+                            "ariaLabel": related_publications_aria_label,
+                            "itemsList": related_publications
+                        })
+                    }}
+                    {# fmt:on #}
+                {% endwith %}
+            {% endif %}
+
+            <div class="ons-u-d-no@l">
+                {# fmt:off #}
+                    {{-
+                        onsButton({
+                            "text": 'Print this page',
+                            "variants": ['print', 'small', 'secondary'],
+                        })
+                    }}
+                {# fmt:on #}
+            </div>
         </div>
 
         <div class="ons-grid__col ons-col-8@m">
@@ -70,13 +85,6 @@
             {% endif %}
 
             {% include_block page.content %}
-
-            {% if related_publications %}
-                <section id="related-publications" class="spacing">
-                    <h2 class="ons-u-fs-l">{{ _("Related publications") }}</h2>
-                    {{- onsList({"itemsList": related_publications}) -}}
-                </section>
-            {% endif %}
 
             {% if page.show_cite_this_page %}
                 <section id="cite-this-page" class="spacing">
