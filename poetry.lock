@@ -2591,13 +2591,13 @@ files = [
 
 [[package]]
 name = "wagtail-tinytableblock"
-version = "0.2.1"
+version = "0.2.2"
 description = "A Wagtail StreamField block powered by TinyMCE and its table plugin"
 optional = false
 python-versions = ">=3.12"
 files = [
-    {file = "wagtail_tinytableblock-0.2.1-py3-none-any.whl", hash = "sha256:8cae541ac0aaeb33af17b37ab14d68cbe6aee432b24081bb313608839c9ffd59"},
-    {file = "wagtail_tinytableblock-0.2.1.tar.gz", hash = "sha256:bca9225e2e15ae6259a1f14ff63fcbea81880c1fad503137bf1fc9c77dc6516e"},
+    {file = "wagtail_tinytableblock-0.2.2-py3-none-any.whl", hash = "sha256:ecc3d570a34e76044a8caa5dc206ad7cd113de85e6db6b6b39c45c88c495bed4"},
+    {file = "wagtail_tinytableblock-0.2.2.tar.gz", hash = "sha256:17eace3351b7d5510557d0928de40b715e3d447c01bd291e2cffc99888057696"},
 ]
 
 [package.dependencies]
@@ -2707,4 +2707,4 @@ files = [
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.12"
-content-hash = "af193191c79a04daacde04ede9d8d8c13a1d177f44fae00fda0c530e6da8d50a"
+content-hash = "85958cc7aeebd4687282e901e5ad43b4b61619eb9cf0261307f621351ff11e59"
