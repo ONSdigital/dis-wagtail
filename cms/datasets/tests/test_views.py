@@ -14,8 +14,7 @@ class ExampleSearchableModel:
     search_fields: ClassVar = ["title", "description"]
 
 
-class ExampleFilterForm(DatasetSearchFilterMixin, BaseFilterForm):
-    cleaned_data: ClassVar = {}
+class ExampleFilterForm(DatasetSearchFilterMixin, BaseFilterForm): ...
 
 
 class TestDatasetSearchFilterMixin(TestCase):
@@ -28,6 +27,7 @@ class TestDatasetSearchFilterMixin(TestCase):
         objects = [obj1, obj2]
 
         filter_form = ExampleFilterForm()
+        filter_form.cleaned_data = {}  # pylint: disable=attribute-defined-outside-init
         test_searches = [
             ("foo", [obj1]),
             ("bar", [obj1]),
