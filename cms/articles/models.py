@@ -7,7 +7,7 @@ from django.http import Http404
 from django.shortcuts import get_object_or_404, redirect
 from django.utils.functional import cached_property
 from django.utils.translation import gettext_lazy as _
-from wagtail.admin.panels import FieldPanel, FieldRowPanel, HelpPanel, MultiFieldPanel, ObjectList, TitleFieldPanel
+from wagtail.admin.panels import FieldPanel, FieldRowPanel, HelpPanel, MultiFieldPanel, TitleFieldPanel
 from wagtail.contrib.routable_page.models import RoutablePageMixin, path
 from wagtail.fields import RichTextField
 from wagtail.models import Page
@@ -184,8 +184,8 @@ class StatisticalArticlePage(BundledPageMixin, RoutablePageMixin, BasePage):  # 
         FieldPanel("updates"),
     ]
 
-    additional_panel_tabs: ClassVar[list["ObjectList"]] = [
-        ObjectList(corrections_and_updates_panels, heading=_("Corrections and updates")),
+    additional_panel_tabs: ClassVar[list[tuple[list["Panel"], str]]] = [
+        (corrections_and_updates_panels, "Corrections and updates")
     ]
 
     search_fields: ClassVar[list[index.BaseField]] = [
