@@ -72,7 +72,7 @@ class AddToBundleViewTestCase(WagtailTestUtils, TestCase):
         BundlePageFactory(parent=another_bundle, page=self.statistical_article_page)
         response = self.client.get(self.add_url, follow=True)
         self.assertRedirects(response, "/admin/")
-        self.assertContains(response, "PSF: November 2024 is already in a bundle")
+        self.assertContains(response, "Page &#x27;PSF: November 2024&#x27; is already in a bundle")
 
     def test_post__successful(self):
         """Checks that on successful post, the page is added to the bundle and

@@ -4,7 +4,6 @@ from typing import TYPE_CHECKING, Any, Union
 from django.db.models import QuerySet
 from django.urls import include, path
 from django.utils.timezone import now
-from django.utils.translation import gettext_lazy as _
 from wagtail import hooks
 from wagtail.admin.ui.components import Component
 from wagtail.admin.widgets import PageListingButton
@@ -40,9 +39,9 @@ def register_viewset() -> list:
 class PageAddToBundleButton(PageListingButton):
     """Defines the 'Add to Bundle' button to use in different contexts in the admin."""
 
-    label = _("Add to Bundle")
+    label = "Add to Bundle"
     icon_name = "boxes-stacked"
-    aria_label_format = _("Add '%(title)s' to a bundle")
+    aria_label_format = "Add '%(title)s' to a bundle"
     url_name = "bundles:add_to_bundle"
 
     @property
@@ -178,24 +177,24 @@ def register_bundle_log_actions(actions: "LogActionRegistry") -> None:
     class ChangeBundleStatus(LogFormatter):  # pylint: disable=unused-variable
         """LogFormatter class for the bundle status change actions."""
 
-        label = _("Change bundle status")
+        label = "Change bundle status"
 
         def format_message(self, log_entry: "ModelLogEntry") -> Any:
             """Returns the formatted log message."""
             try:
-                return _(f"Changed the bundle status from '{log_entry.data['old']}' to '{log_entry.data['new']}'")
+                return f"Changed the bundle status from '{log_entry.data['old']}' to '{log_entry.data['new']}'"
             except KeyError:
-                return _("Changed the bundle status")
+                return "Changed the bundle status"
 
     @actions.register_action("bundles.approve")
     class ApproveBundle(LogFormatter):  # pylint: disable=unused-variable
         """LogFormatter class for the bundle approval actions."""
 
-        label = _("Approve bundle")
+        label = "Approve bundle"
 
         def format_message(self, log_entry: "ModelLogEntry") -> Any:
             """Returns the formatted log message."""
             try:
-                return _(f"Approved the bundle. (Old status: '{log_entry.data['old']}')")
+                return f"Approved the bundle. (Old status: '{log_entry.data['old']}')"
             except KeyError:
-                return _("Approved the bundle")
+                return "Approved the bundle"
