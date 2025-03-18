@@ -8,7 +8,6 @@ from django.shortcuts import redirect
 from django.urls import reverse
 from django.utils import timezone
 from django.utils.html import format_html, format_html_join
-from django.utils.translation import gettext as _
 from wagtail.admin.ui.tables import Column, DateColumn, UpdatedAtColumn, UserColumn
 from wagtail.admin.views.generic import CreateView, EditView, IndexView, InspectView
 from wagtail.admin.views.generic.chooser import ChooseResultsView, ChooseView
@@ -151,11 +150,11 @@ class BundleInspectView(InspectView):
     def get_field_label(self, field_name: str, field: "Field") -> str:
         match field_name:
             case "approved":
-                return _("Approval status")
+                return "Approval status"
             case "scheduled_publication":
-                return _("Scheduled publication")
+                return "Scheduled publication"
             case "pages":
-                return _("Pages")
+                return "Pages"
             case _:
                 return super().get_field_label(field_name, field)  # type: ignore[no-any-return]
 
@@ -175,12 +174,12 @@ class BundleInspectView(InspectView):
         if self.object.status in [BundleStatus.APPROVED, BundleStatus.RELEASED]:
             if self.object.approved_by_id and self.object.approved_at:
                 return f"{self.object.approved_by} on {self.object.approved_at}"
-            return _("Unknown approval data")
-        return _("Pending approval")
+            return "Unknown approval data"
+        return "Pending approval"
 
     def get_scheduled_publication_display_value(self) -> str:
         """Displays the scheduled publication date, if set."""
-        return self.object.scheduled_publication_date or _("No scheduled publication")
+        return self.object.scheduled_publication_date or "No scheduled publication"
 
     def get_pages_display_value(self) -> "SafeString":
         """Returns formatted markup for Pages linked to the Bundle."""
@@ -249,12 +248,12 @@ class BundleIndexView(IndexView):
         return [
             self._get_title_column("__str__"),
             Column("scheduled_publication_date", label="Scheduled for"),
-            Column("get_status_display", label=_("Status")),
+            Column("get_status_display", label="Status"),
             UpdatedAtColumn(),
-            DateColumn(name="created_at", label=_("Added"), sort_key="created_at"),
-            UserColumn("created_by", label=_("Added by")),
+            DateColumn(name="created_at", label="Added", sort_key="created_at"),
+            UserColumn("created_by", label="Added by"),
             Column(name="teams", accessor="get_teams_display", label="Preview teams"),
-            DateColumn(name="approved_at", label=_("Approved at"), sort_key="approved_at"),
+            DateColumn(name="approved_at", label="Approved at", sort_key="approved_at"),
             UserColumn("approved_by"),
         ]
 
