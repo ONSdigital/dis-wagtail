@@ -66,6 +66,8 @@ class BasePage(ListingFieldsMixin, SocialFieldsMixin, Page):  # type: ignore[dja
         *SocialFieldsMixin.promote_panels,
     ]
 
+    additional_panel_tabs: ClassVar[list["ObjectList"]] = []
+
     @cached_classmethod
     def get_edit_handler(cls) -> TabbedInterface:  # pylint: disable=no-self-argument
         """Override the default edit handler property, enabling us to add editor tabs."""
@@ -80,12 +82,12 @@ class BasePage(ListingFieldsMixin, SocialFieldsMixin, Page):  # type: ignore[dja
                 tabs.append(ObjectList(cls.content_panels, heading="Content"))
             if taxonomy_panels := getattr(cls, "taxonomy_panels", None):
                 tabs.append(ObjectList(taxonomy_panels, heading="Taxonomy"))
+            if cls.additional_panel_tabs:
+                tabs.append(*cls.additional_panel_tabs)
             if cls.promote_panels:
                 tabs.append(ObjectList(cls.promote_panels, heading="Promote"))
             if cls.settings_panels:
                 tabs.append(ObjectList(cls.settings_panels, heading="Settings"))
-            if hasattr(cls, "corrections_and_updates_panels"):
-                tabs.append(ObjectList(cls.corrections_and_updates_panels, heading="Corrections & Updates"))
 
             edit_handler = TabbedInterface(tabs, base_form_class=cls.base_form_class)
 

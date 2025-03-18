@@ -47,14 +47,20 @@ class PreviousVersionBlock(blocks.IntegerBlock):
     pass
 
 
-class CorrectionBlock(blocks.StructBlock):
+class CorrectionOrNoticeBlock(blocks.StructBlock):
     when = blocks.DateTimeBlock()
     text = blocks.RichTextBlock(features=settings.RICH_TEXT_BASIC)
+
+    class Meta:
+        abstract = True
+
+
+class CorrectionBlock(CorrectionOrNoticeBlock):
     previous_version = PreviousVersionBlock(required=False)
 
     class Meta:
         template = "templates/components/streamfield/corrections_block.html"
-        help_text = _("Warning: Reordering or deleting a correction will change its (and others') version number.")
+        help_text = "Warning: Reordering or deleting a correction will change its (and others') version number."
 
 
 class PreviousVersionBlockAdapter(FieldBlockAdapter):
@@ -69,9 +75,6 @@ class PreviousVersionBlockAdapter(FieldBlockAdapter):
 register(PreviousVersionBlockAdapter(), PreviousVersionBlock)
 
 
-class NoticeBlock(blocks.StructBlock):
-    when = blocks.DateTimeBlock()
-    text = blocks.RichTextBlock(features=settings.RICH_TEXT_BASIC)
-
+class NoticeBlock(CorrectionOrNoticeBlock):
     class Meta:
         template = "templates/components/streamfield/notices_block.html"

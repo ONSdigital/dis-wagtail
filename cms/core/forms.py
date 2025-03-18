@@ -8,6 +8,13 @@ class PageWithUpdatesAdminForm(DeduplicateTopicsAdminForm):
     def clean_updates(self):
         updates = self.cleaned_data["updates"]
 
+        if self.instance.pk is None:
+            self.add_error(
+                "updates",
+                ValidationError("You cannot create a notice or correction for a page that has not been created yet"),
+            )
+            return
+
         latest_published_revision_id = (
             PageLogEntry.objects.filter(page=self.instance, action="wagtail.publish")
             .order_by("-timestamp")
