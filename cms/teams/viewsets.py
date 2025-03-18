@@ -2,6 +2,7 @@ from typing import TYPE_CHECKING, ClassVar
 
 from django.conf import settings
 from wagtail.admin.ui.tables import Column, DateColumn
+from wagtail.admin.views.generic import IndexView
 from wagtail.admin.views.generic.chooser import ChooseResultsView, ChooseView
 from wagtail.admin.viewsets.chooser import ChooserViewSet
 from wagtail.admin.viewsets.model import ModelViewSet
@@ -27,8 +28,14 @@ class ViewOnlyModelPermissionPolicy(ModelPermissionPolicy):
         return user.has_perm(self._get_permission_name(action))
 
 
+class TeamsIndexView(IndexView):
+    page_title = "Preview teams"
+
+
 class TeamsViewSet(ModelViewSet):
     model = Team
+    index_view_class = TeamsIndexView
+    menu_label = "Preview teams"
     # Not important for the PoC but for Beta build, we need a
     # custom admin view or disable ability to add/edit/delete.
     form_fields: ClassVar[list[str]] = ["name"]
