@@ -1,3 +1,6 @@
+from collections.abc import Iterable
+from typing import Any
+
 from django import forms
 from django.views import View
 from wagtail.admin.forms.choosers import BaseFilterForm
@@ -25,37 +28,34 @@ class DatasetBaseChooseViewMixin:
         ]
 
 
-class CustomSearchFilterMixin(forms.Form):
+class DatasetSearchFilterMixin(forms.Form):
     q = forms.CharField(
         label="Search datasets",
         widget=forms.TextInput(attrs={"placeholder": "Dataset title"}),
         required=False,
     )
 
-    def filter(self, objects):
+    def filter(self, objects: Iterable[Any]):
         objects = super().filter(objects)
         search_query = self.cleaned_data.get("q")
         if search_query:
             search_query_lower = search_query.strip().lower()
-            # This is brittle, as it doesn't use dynamically set search fields
-            objects = [
-                obj
-                for obj in objects
-                if search_query_lower in obj.title.lower()
-                or search_query_lower in obj.formatted_edition.lower()
-                or search_query_lower in obj.version.lower()
-            ]
+            objects = [obj for obj in objects if self.obj_matches_search_query(obj, search_query_lower)]
             self.is_searching = True
             self.search_query = search_query
         return objects
 
+    @staticmethod
+    def obj_matches_search_query(obj: Any, search_query_lower: str):
+        return any(search_query_lower in getattr(obj, search_field).lower() for search_field in obj.search_fields)
 
-class CustomFilterForm(CustomSearchFilterMixin, BaseFilterForm): ...
+
+class DatasetFilterForm(DatasetSearchFilterMixin, BaseFilterForm): ...
 
 
 class ONSDatasetBaseChooseView(BaseChooseView):
     model_class = ONSDataset
-    filter_form_class = CustomFilterForm
+    filter_form_class = DatasetFilterForm
 
     def get_object_list(self):
         # Due to pagination this is required for search to check entire list

@@ -45,6 +45,8 @@ class ONSDatasetApiQuerySet(APIQuerySet):
 class ONSDataset(APIModel):
     base_query_class = ONSDatasetApiQuerySet
 
+    search_fields: ClassVar = ["title", "version", "formatted_edition"]
+
     class Meta:
         base_url: str = DATASETS_BASE_API_URL
         detail_url: str = f"{DATASETS_BASE_API_URL}/%s"
