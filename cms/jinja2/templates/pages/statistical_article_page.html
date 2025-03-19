@@ -70,7 +70,7 @@
         {% endblock %}
     </div>
 
-    {% if page.updates %}
+    {% if page.updates and not latest_version_url %}
         <div class="ons-container">
             {% include_block page.updates %}
         </div>
