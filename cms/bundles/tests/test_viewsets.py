@@ -11,7 +11,7 @@ from cms.articles.tests.factories import StatisticalArticlePageFactory
 from cms.bundles.enums import BundleStatus
 from cms.bundles.models import Bundle
 from cms.bundles.tests.factories import BundleFactory
-from cms.bundles.tests.utils import grant_all_bundle_permissions, make_bundle_viewer
+from cms.bundles.tests.utils import grant_all_bundle_permissions, make_bundle_viewer, mark_page_as_ready_to_publish
 from cms.bundles.viewsets import bundle_chooser_viewset
 from cms.release_calendar.viewsets import FutureReleaseCalendarChooserWidget
 from cms.users.tests.factories import GroupFactory, UserFactory
@@ -162,6 +162,9 @@ class BundleViewSetTestCase(WagtailTestUtils, TestCase):
     def test_bundle_approval__happy_path(self, mock_notify_slack):
         """Test bundle approval workflow."""
         self.client.force_login(self.superuser)
+
+        mark_page_as_ready_to_publish(self.statistical_article_page, self.superuser)
+
         response = self.client.post(
             self.edit_url,
             nested_form_data(
@@ -188,19 +191,18 @@ class BundleViewSetTestCase(WagtailTestUtils, TestCase):
         self.client.force_login(self.publishing_officer)
         original_status = self.bundle.status
 
+        mark_page_as_ready_to_publish(self.statistical_article_page, self.publishing_officer)
+
         response = self.client.post(
             self.edit_url,
-            {
-                "name": self.bundle.name,
-                "status": BundleStatus.APPROVED,
-                "bundled_pages-TOTAL_FORMS": "1",
-                "bundled_pages-INITIAL_FORMS": "1",
-                "bundled_pages-MIN_NUM_FORMS": "0",
-                "bundled_pages-MAX_NUM_FORMS": "1000",
-                "bundled_pages-0-id": "",
-                "bundled_pages-0-page": str(self.statistical_article_page.id),
-                "bundled_pages-0-ORDER": "0",
-            },
+            nested_form_data(
+                {
+                    "name": self.bundle.name,
+                    "status": BundleStatus.APPROVED,
+                    "bundled_pages": inline_formset([{"page": self.statistical_article_page.id}]),
+                    "teams": inline_formset([]),
+                }
+            ),
             follow=True,
         )
 
@@ -213,6 +215,44 @@ class BundleViewSetTestCase(WagtailTestUtils, TestCase):
         self.assertIsNone(form.cleaned_data["approved_at"])
         self.assertIsNone(form.fields["approved_by"].initial)
         self.assertIsNone(form.fields["approved_at"].initial)
+
+        self.bundle.refresh_from_db()
+        self.assertEqual(self.bundle.status, original_status)
+        self.assertIsNone(self.bundle.approved_at)
+        self.assertIsNone(self.bundle.approved_by)
+
+        self.assertFalse(mock_notify_slack.called)
+
+    @mock.patch("cms.bundles.viewsets.notify_slack_of_status_change")
+    def test_bundle_approval__cannot__approve_if_pages_are_not_ready_to_publish(self, mock_notify_slack):
+        """Test bundle approval workflow."""
+        self.client.force_login(self.publishing_officer)
+        original_status = self.bundle.status
+
+        response = self.client.post(
+            self.edit_url,
+            nested_form_data(
+                {
+                    "name": self.bundle.name,
+                    "status": BundleStatus.APPROVED,
+                    "bundled_pages": inline_formset([{"page": self.statistical_article_page.id}]),
+                    "teams": inline_formset([]),
+                }
+            ),
+            follow=True,
+        )
+
+        self.assertEqual(response.status_code, HTTPStatus.OK)
+        self.assertEqual(response.context["request"].path, self.edit_url)
+        self.assertContains(response, "Cannot approve the bundle with 1 page not ready to be published.")
+
+        form = response.context["form"]
+        self.assertIsNone(form.cleaned_data["approved_by"])
+        self.assertIsNone(form.cleaned_data["approved_at"])
+        self.assertIsNone(form.fields["approved_by"].initial)
+        self.assertIsNone(form.fields["approved_at"].initial)
+
+        self.assertFormSetError(form.formsets["bundled_pages"], 0, "page", "This page is not ready to be published")
 
         self.bundle.refresh_from_db()
         self.assertEqual(self.bundle.status, original_status)
