@@ -98,7 +98,7 @@ class BundleAdminForm(WagtailAdminModelForm):
     def clean(self) -> dict[str, Any] | None:
         """Validates the form.
 
-        - the bundle cannot be self-approved. That is, someone other than the bundle creator must approve it.
+        - the bundle cannot be approved if any the referenced pages are not ready to be published
         - tidies up/ populates approved at/by
         """
         cleaned_data: dict[str, Any] = super().clean()
@@ -111,13 +111,8 @@ class BundleAdminForm(WagtailAdminModelForm):
             if status == BundleStatus.APPROVED:
                 self._validate_bundled_pages_status()
 
-                if self.instance.created_by_id == self.for_user.pk:
-                    cleaned_data["status"] = self.instance.status
-                    self.add_error("status", ValidationError("You cannot self-approve your own bundle!"))
-                else:
-                    # the approver is different from the creator, so let's populate the relevant fields.
-                    cleaned_data["approved_at"] = timezone.now()
-                    cleaned_data["approved_by"] = self.for_user
+                cleaned_data["approved_at"] = timezone.now()
+                cleaned_data["approved_by"] = self.for_user
             elif self.instance.status == BundleStatus.APPROVED:
                 cleaned_data["approved_at"] = None
                 cleaned_data["approved_by"] = None

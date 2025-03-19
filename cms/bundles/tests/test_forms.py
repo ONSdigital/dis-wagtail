@@ -138,17 +138,6 @@ class BundleAdminFormTestCase(TestCase):
         self.assertTrue(form.is_valid())
         self.assertEqual(form.cleaned_data["approved_by"], approver)
 
-    def test_clean__doesnt_set_approved_by_and_approved_at_if_self_approving(self):
-        data = self.form_data
-        data["status"] = BundleStatus.APPROVED
-        form = self.form_class(instance=self.bundle, data=data, for_user=self.bundle.created_by)
-
-        self.assertFalse(form.is_valid())
-
-        self.assertFormError(form, "status", ["You cannot self-approve your own bundle!"])
-        self.assertIsNone(form.cleaned_data["approved_by"])
-        self.assertIsNone(form.cleaned_data["approved_at"])
-
     def test_clean__validates_page_must_be_ready_for_review(self):
         raw_data = self.raw_form_data()
         raw_data["bundled_pages"] = inline_formset([{"page": self.page.id}])

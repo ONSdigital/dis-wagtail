@@ -186,44 +186,6 @@ class BundleViewSetTestCase(WagtailTestUtils, TestCase):
         self.assertTrue(mock_notify_slack.called)
 
     @mock.patch("cms.bundles.viewsets.notify_slack_of_status_change")
-    def test_bundle_approval__cannot__self_approve(self, mock_notify_slack):
-        """Test bundle approval workflow."""
-        self.client.force_login(self.publishing_officer)
-        original_status = self.bundle.status
-
-        mark_page_as_ready_to_publish(self.statistical_article_page, self.publishing_officer)
-
-        response = self.client.post(
-            self.edit_url,
-            nested_form_data(
-                {
-                    "name": self.bundle.name,
-                    "status": BundleStatus.APPROVED,
-                    "bundled_pages": inline_formset([{"page": self.statistical_article_page.id}]),
-                    "teams": inline_formset([]),
-                }
-            ),
-            follow=True,
-        )
-
-        self.assertEqual(response.status_code, HTTPStatus.OK)
-        self.assertEqual(response.context["request"].path, self.edit_url)
-        self.assertContains(response, "You cannot self-approve your own bundle!")
-
-        form = response.context["form"]
-        self.assertIsNone(form.cleaned_data["approved_by"])
-        self.assertIsNone(form.cleaned_data["approved_at"])
-        self.assertIsNone(form.fields["approved_by"].initial)
-        self.assertIsNone(form.fields["approved_at"].initial)
-
-        self.bundle.refresh_from_db()
-        self.assertEqual(self.bundle.status, original_status)
-        self.assertIsNone(self.bundle.approved_at)
-        self.assertIsNone(self.bundle.approved_by)
-
-        self.assertFalse(mock_notify_slack.called)
-
-    @mock.patch("cms.bundles.viewsets.notify_slack_of_status_change")
     def test_bundle_approval__cannot__approve_if_pages_are_not_ready_to_publish(self, mock_notify_slack):
         """Test bundle approval workflow."""
         self.client.force_login(self.publishing_officer)
