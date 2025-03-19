@@ -8,9 +8,8 @@ def user_creates_methodology_page(context: Context):
     context.page.get_by_role("button", name="Pages").click()
     context.page.get_by_role("link", name="View child pages of 'Home'").click()
     context.page.get_by_role("link", name=f"View child pages of '{context.theme_page.title}'").click()
-    context.page.get_by_role("link", name=f"Edit '{context.topic_page.title}'").click()
-    context.page.get_by_role("button", name="Actions", exact=True).click()
-    context.page.get_by_label(f"Add a child page to '{context.topic_page.title}'").click()
+    context.page.get_by_role("link", name=context.topic_page.title, exact=True).click()
+    context.page.get_by_role("link", name="Add child page", exact=True).click()
     context.page.get_by_role("link", name="Methodology page", exact=True).click()
 
 
