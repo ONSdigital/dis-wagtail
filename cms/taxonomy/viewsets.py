@@ -1,3 +1,4 @@
+from django.conf import settings
 from django.db.models import QuerySet
 from django.utils.translation import gettext_lazy as _
 from wagtail.admin.ui.tables import Column
@@ -47,6 +48,8 @@ class ExclusiveTopicChooserViewSet(TopicChooserViewSet):
         # Get the HTTP_REFERER from meta request headers, extract the page type either from the URL or by looking up
         # the page ID to get the page type.
 
+        if not settings.ENFORCE_EXCLUSIVE_TAXONOMY:
+            return Topic.objects.all()
         return Topic.objects.filter(related_themepage=None, related_topicpage=None)
 
 
