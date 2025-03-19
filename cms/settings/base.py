@@ -64,6 +64,7 @@ INSTALLED_APPS = [
     "cms.images",
     "cms.private_media",
     "cms.release_calendar",
+    "cms.teams",
     "cms.themes",
     "cms.topics",
     "cms.users",
@@ -850,3 +851,7 @@ MANAGE_COOKIE_SETTINGS_URL = env.get("MANAGE_COOKIE_SETTINGS_URL", "https://www.
 SLACK_NOTIFICATIONS_WEBHOOK_URL = env.get("SLACK_NOTIFICATIONS_WEBHOOK_URL")
 
 ONS_API_BASE_URL = env.get("ONS_API_BASE_URL")
+
+# FIXME: remove before going live
+ENFORCE_EXCLUSIVE_TAXONOMY = env.get("ENFORCE_EXCLUSIVE_TAXONOMY", "true").lower() == "true"
+ALLOW_TEAM_MANAGEMENT = env.get("ALLOW_TEAM_MANAGEMENT", "false").lower() == "true"
