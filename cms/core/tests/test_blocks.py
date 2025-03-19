@@ -1,8 +1,11 @@
+from datetime import datetime
+
 from django.conf import settings
 from django.test import TestCase
 from wagtail.blocks import StreamBlockValidationError, StructBlockValidationError
 from wagtail.rich_text import RichText
 
+from cms.articles.tests.factories import ArticleSeriesPageFactory, StatisticalArticlePageFactory
 from cms.core.blocks import (
     BasicTableBlock,
     DocumentBlock,
@@ -14,6 +17,7 @@ from cms.core.blocks import (
     RelatedLinksBlock,
 )
 from cms.core.blocks.glossary_terms import GlossaryTermsBlock
+from cms.core.blocks.panels import CorrectionBlock, NoticeBlock
 from cms.core.tests.factories import GlossaryTermFactory
 from cms.core.tests.utils import get_test_document
 from cms.home.models import HomePage
@@ -532,3 +536,44 @@ class ONSTableBlockTestCase(TestCase):
         </table>
         """
         self.assertInHTML(expected, rendered)
+
+
+class NoticeBlockTestCase(TestCase):
+    @classmethod
+    def setUpTestData(cls):
+        cls.notice_data = {
+            "when": datetime(2025, 1, 1),
+            "text": "Notice text",
+        }
+
+    def test_render_block(self):
+        block = NoticeBlock()
+        rendered = block.render(self.notice_data)
+
+        self.assertIn("1 January 2025", rendered)
+        self.assertIn("Notice text", rendered)
+
+
+class CorrectionBlockTestCase(TestCase):
+    def setUp(self):
+        self.series = ArticleSeriesPageFactory()
+        self.statistical_article = StatisticalArticlePageFactory(parent=self.series)
+
+    @classmethod
+    def setUpTestData(cls):
+        cls.correction_data = {
+            "when": datetime(2025, 1, 1),
+            "text": "Correction text",
+            "previous_version": 1,
+        }
+
+    def test_render_block(self):
+        block = CorrectionBlock()
+        rendered = block.render(
+            self.correction_data, context={"request": None, "page": self.statistical_article, "version_num": 1}
+        )
+
+        self.assertIn("1 January 2025", rendered)
+        self.assertIn("Correction text", rendered)
+        self.assertIn("View superseded version", rendered)
+        self.assertIn("/previous/v1", rendered)

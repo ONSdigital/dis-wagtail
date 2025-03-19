@@ -89,3 +89,41 @@ def expand_footnotes(context: Context):
 
     page.get_by_role("link", name="Footnotes").click()
     expect(footnotes_content).to_be_visible()
+
+
+@step("the user adds a correction")
+def user_adds_a_correction(context: Context):
+    page = context.page
+    page.locator("#tab-label-corrections_and_updates").click()
+    page.locator("#panel-child-corrections_and_updates-updates-content").get_by_role(
+        "button", name="Insert a block"
+    ).click()
+    page.get_by_text("Correction").last.click()
+    page.get_by_label("When*").fill("2025-03-13 13:59")
+    page.locator('[data-contentpath="text"] [role="textbox"]').fill("Correction text")
+
+
+@step("the user adds a notice")
+def user_adds_a_notice(context: Context):
+    page = context.page
+    page.locator("#tab-label-corrections_and_updates").click()
+    page.locator("#panel-child-corrections_and_updates-updates-content").get_by_role(
+        "button", name="Insert a block"
+    ).click()
+    page.get_by_text("Notice").last.click()
+    page.get_by_label("When*").fill("2025-03-13 13:59")
+    page.locator('[data-contentpath="text"] [role="textbox"]').fill("Notice text")
+
+
+@then("the published statistical article page has the added correction")
+def the_published_statistical_article_page_has_the_added_correction(context: Context):
+    expect(context.page.get_by_text("Corrections and notices")).to_be_visible()
+    expect(context.page.get_by_text("13 March 2025 1:59p.m.")).to_be_hidden()
+    expect(context.page.get_by_text("Correction text")).to_be_hidden()
+
+
+@then("the published statistical article page has the added notice")
+def the_published_statistical_article_page_has_the_added_notice(context: Context):
+    expect(context.page.get_by_text("Corrections and notices")).to_be_visible()
+    expect(context.page.get_by_text("13 March 2025 1:59p.m.")).to_be_hidden()
+    expect(context.page.get_by_text("Notice text")).to_be_hidden()
