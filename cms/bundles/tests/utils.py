@@ -2,12 +2,13 @@ from typing import TYPE_CHECKING
 
 from django.contrib.auth.models import Permission
 from django.db.models import QuerySet
-from wagtail.models import GroupPagePermission
+from wagtail.models import GroupPagePermission, Workflow
 
 from cms.home.models import HomePage
 
 if TYPE_CHECKING:
     from django.contrib.auth.models import Group
+    from wagtail.models import Page
 
     from cms.users.models import User
 
@@ -54,3 +55,13 @@ def grant_all_page_permissions(group: "Group") -> None:
     home = HomePage.objects.first()
     for permission_type in ["add", "change", "delete", "view"]:
         GroupPagePermission.objects.create(group=group, page=home, permission_type=permission_type)
+
+
+def mark_page_as_ready_to_publish(page: "Page", user: "User") -> None:
+    page.save_revision()
+    workflow = Workflow.objects.get(name="Release review")
+    # start the workflow
+    workflow_state = workflow.start(page, user)
+    task_state = workflow_state.current_task_state
+    # approve the first task ("review" / "preview")
+    task_state.task.on_action(task_state, user=None, action_name="approve")
