@@ -4,8 +4,8 @@
 Overrides to ons table of contents styles - to be discussed if these should be merged back to the design system
 */
 
-.ons-table-of-contents {
+.ons-toc {
     &-container {
-        border-bottom: 3px solid var(--ons-color-ocean-blue);
+        border-bottom: 0;
     }
 }
