@@ -33,6 +33,7 @@
             {% endif %}
             <div class="ons-container article-header__release-banner">
                 <span>
+                    {% if page.is_latest %}
                     {# fmt:off #}
                     {{
                         onsPanel({
@@ -41,6 +42,16 @@
                         })
                     }}
                     {# fmt:on #}
+                    {% else %}
+                {# TBD: add variants for 'Not latest release' and 'This version has been amended' as per designs #}
+                {# fmt:off #}
+                    {{
+                        onsPanel({
+                            "body": 'Latest release'
+                        })
+                    }}
+                    {# fmt:on #}
+                    {% endif %}
                 </span>
                 <span class="ons-u-nowrap">
                     {% if page.is_latest %}
