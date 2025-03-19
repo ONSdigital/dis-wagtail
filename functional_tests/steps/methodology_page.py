@@ -131,5 +131,5 @@ def preview_is_visible(context: Context):
 @then("the preview of the methodology page matches the populated data")
 def saved_draft_data_matches_populated_data(context: Context):
     context.page.get_by_role("button", name="Actions").click()
-    context.page.get_by_role("link", name="Preview").click()
+    context.page.get_by_role("link", name="Preview", exact=True).click()
     the_methodology_page_is_displayed_with_the_populated_data(context)
