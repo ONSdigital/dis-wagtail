@@ -11,16 +11,15 @@ from cms.articles.tests.factories import StatisticalArticlePageFactory
 from cms.bundles.enums import BundleStatus
 from cms.bundles.models import Bundle
 from cms.bundles.tests.factories import BundleFactory, BundlePageFactory
-from cms.bundles.tests.utils import (
-    grant_all_bundle_permissions,
-    make_bundle_viewer,
+from cms.bundles.tests.utils import grant_all_bundle_permissions, make_bundle_viewer
+from cms.bundles.viewsets import bundle_chooser_viewset
+from cms.release_calendar.viewsets import FutureReleaseCalendarChooserWidget
+from cms.users.tests.factories import GroupFactory, UserFactory
+from cms.workflows.tests.utils import (
     mark_page_as_ready_for_review,
     mark_page_as_ready_to_publish,
     progress_page_workflow,
 )
-from cms.bundles.viewsets import bundle_chooser_viewset
-from cms.release_calendar.viewsets import FutureReleaseCalendarChooserWidget
-from cms.users.tests.factories import GroupFactory, UserFactory
 
 
 class BundleViewSetTestCase(WagtailTestUtils, TestCase):
