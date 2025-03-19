@@ -35,5 +35,8 @@ class AddToBundleForm(forms.Form):
 
         bundle = self.cleaned_data.get("bundle")
         if bundle and bundle.bundled_pages.filter(page=self.page_to_add).exists():
-            message = f"Page '{self.page_to_add.get_admin_display_title()}' is already in bundle '{bundle}'"
+            message = (
+                f"Page '{self.page_to_add.get_admin_display_title()}' "  # type: ignore [attr-defined]
+                f"is already in bundle '{bundle}'"
+            )
             raise ValidationError({"bundle": message})
