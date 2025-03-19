@@ -8,7 +8,7 @@ from cms.home.models import HomePage
 
 if TYPE_CHECKING:
     from django.contrib.auth.models import Group
-    from wagtail.models import Page
+    from wagtail.models import Page, WorkflowState
 
     from cms.users.models import User
 
@@ -57,11 +57,23 @@ def grant_all_page_permissions(group: "Group") -> None:
         GroupPagePermission.objects.create(group=group, page=home, permission_type=permission_type)
 
 
+def progress_page_workflow(workflow_state: "WorkflowState") -> "WorkflowState":
+    task_state = workflow_state.current_task_state
+    task_state.task.on_action(task_state, user=None, action_name="approve")
+
+
+def mark_page_as_ready_for_review(page: "Page", user: "User") -> "WorkflowState":
+    page.save_revision()
+    workflow = Workflow.objects.get(name="Release review")
+    # start the workflow
+    return workflow.start(page, user)
+
+
 def mark_page_as_ready_to_publish(page: "Page", user: "User") -> None:
     page.save_revision()
     workflow = Workflow.objects.get(name="Release review")
     # start the workflow
     workflow_state = workflow.start(page, user)
-    task_state = workflow_state.current_task_state
+
     # approve the first task ("review" / "preview")
-    task_state.task.on_action(task_state, user=None, action_name="approve")
+    progress_page_workflow(workflow_state)

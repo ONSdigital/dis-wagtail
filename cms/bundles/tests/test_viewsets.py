@@ -10,8 +10,14 @@ from wagtail.test.utils.form_data import inline_formset, nested_form_data
 from cms.articles.tests.factories import StatisticalArticlePageFactory
 from cms.bundles.enums import BundleStatus
 from cms.bundles.models import Bundle
-from cms.bundles.tests.factories import BundleFactory
-from cms.bundles.tests.utils import grant_all_bundle_permissions, make_bundle_viewer, mark_page_as_ready_to_publish
+from cms.bundles.tests.factories import BundleFactory, BundlePageFactory
+from cms.bundles.tests.utils import (
+    grant_all_bundle_permissions,
+    make_bundle_viewer,
+    mark_page_as_ready_for_review,
+    mark_page_as_ready_to_publish,
+    progress_page_workflow,
+)
 from cms.bundles.viewsets import bundle_chooser_viewset
 from cms.release_calendar.viewsets import FutureReleaseCalendarChooserWidget
 from cms.users.tests.factories import GroupFactory, UserFactory
@@ -157,6 +163,21 @@ class BundleViewSetTestCase(WagtailTestUtils, TestCase):
         self.assertEqual(self.bundle.status, BundleStatus.APPROVED)
         self.assertIsNotNone(self.bundle.approved_at)
         self.assertEqual(self.bundle.approved_by, self.superuser)
+
+    def test_bundle_edit_view__page_chooser_contain_workflow_state_information(self):
+        BundlePageFactory(parent=self.bundle, page=self.statistical_article_page)
+        page_title = self.statistical_article_page.get_admin_display_title()
+
+        response = self.client.get(self.edit_url)
+        self.assertContains(response, f"{page_title} (not in a workflow)")
+
+        workflow_state = mark_page_as_ready_for_review(self.statistical_article_page, self.publishing_officer)
+        response = self.client.get(self.edit_url)
+        self.assertContains(response, f"{page_title} (In Preview)")
+
+        progress_page_workflow(workflow_state)
+        response = self.client.get(self.edit_url)
+        self.assertContains(response, f"{page_title} (Ready to publish)")
 
     @mock.patch("cms.bundles.viewsets.notify_slack_of_status_change")
     def test_bundle_approval__happy_path(self, mock_notify_slack):
