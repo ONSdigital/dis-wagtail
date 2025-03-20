@@ -1,8 +1,8 @@
 from django.urls import path
 
-from . import views
+from .views.add_to_bundle import AddToBundleView
 
 app_name = "bundles"
 urlpatterns = [
-    path("add/<int:page_to_add_id>/", views.add_to_bundle, name="add_to_bundle"),
+    path("add/<int:page_to_add_id>/", AddToBundleView.as_view(), name="add_to_bundle"),
 ]

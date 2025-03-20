@@ -11,8 +11,8 @@ from wagtail.admin import messages
 from wagtail.models import Page
 from wagtail.permission_policies import ModelPermissionPolicy
 
-from .admin_forms import AddToBundleForm
-from .models import Bundle, BundledPageMixin, BundlePage
+from cms.bundles.admin_forms import AddToBundleForm
+from cms.bundles.models import Bundle, BundledPageMixin, BundlePage
 
 if TYPE_CHECKING:
     from django.http import HttpRequest, HttpResponseBase, HttpResponseRedirect
@@ -95,6 +95,3 @@ class AddToBundleView(FormView):
             return redirect(redirect_to)
 
         return redirect("wagtailadmin_explore", self.page_to_add.get_parent().id)
-
-
-add_to_bundle = AddToBundleView.as_view()
