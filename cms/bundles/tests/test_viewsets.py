@@ -250,9 +250,9 @@ class BundleViewSetTestCase(WagtailTestUtils, TestCase):
         self.assertContains(response, self.approved_bundle_edit_url)
         self.assertNotContains(response, self.released_bundle_edit_url)
 
-        self.assertContains(response, "Pending", 2)  # status + status filter
-        self.assertContains(response, "Released", 2)  # status + status filter
-        self.assertContains(response, "Approved", 5)  # status + status filter, approved at/by
+        self.assertContains(response, BundleStatus.PENDING.label, 2)  # status + status filter
+        self.assertContains(response, BundleStatus.RELEASED.label, 2)  # status + status filter
+        self.assertContains(response, BundleStatus.APPROVED.label, 2)  # status + status filter
 
         self.assertContains(response, self.released_bundle.name)
         self.assertContains(response, self.approved_bundle.name)
