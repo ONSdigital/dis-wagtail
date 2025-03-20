@@ -41,10 +41,10 @@ class PreviousVersionBlock {
   focus() { }
 }
 
-class PrevionsVersionBlockDefinition extends window.wagtailStreamField.blocks.FieldBlockDefinition {
+class PreviousVersionBlockDefinition extends window.wagtailStreamField.blocks.FieldBlockDefinition {
   render(placeholder, prefix, initialState) {
     return new PreviousVersionBlock(this, placeholder, prefix, initialState);
   }
 }
 
-window.telepath.register("cms.core.blocks.panels.PreviousVersionBlock", PrevionsVersionBlockDefinition);
+window.telepath.register("cms.core.blocks.panels.PreviousVersionBlock", PreviousVersionBlockDefinition);
