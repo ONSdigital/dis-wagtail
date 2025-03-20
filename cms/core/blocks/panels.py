@@ -4,6 +4,7 @@ from django.utils.functional import cached_property
 from django.utils.translation import gettext_lazy as _
 from wagtail import blocks
 from wagtail.blocks.field_block import FieldBlockAdapter
+from wagtail.blocks.struct_block import StructBlockAdapter
 from wagtail.telepath import register
 
 
@@ -57,10 +58,24 @@ class CorrectionOrNoticeBlock(blocks.StructBlock):
 
 class CorrectionBlock(CorrectionOrNoticeBlock):
     previous_version = PreviousVersionBlock(required=False)
+    frozen = blocks.BooleanBlock(required=False)
+    version_id = blocks.IntegerBlock(required=False)
 
     class Meta:
         template = "templates/components/streamfield/corrections_block.html"
-        help_text = "Warning: Reordering or deleting a correction will change its (and others') version number."
+        help_text = "Warning: Once a correction is published, it cannot be edited or deleted."
+
+
+class CorrectionBlockAdapter(StructBlockAdapter):
+    js_constructor = "cms.core.blocks.panels.CorrectionBlock"
+
+    @cached_property
+    def media(self):
+        structblock_media = super().media
+        return Media(js=[*structblock_media._js, "js/correction-block.js"], css=structblock_media._css)  # pylint: disable=protected-access
+
+
+register(CorrectionBlockAdapter(), CorrectionBlock)
 
 
 class PreviousVersionBlockAdapter(FieldBlockAdapter):

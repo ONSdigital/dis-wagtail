@@ -253,10 +253,12 @@ class StatisticalArticlePage(BundledPageMixin, RoutablePageMixin, BasePage):  # 
 
         corrections = self.updates.blocks_by_name("correction")  # pylint: disable=no-member
 
-        try:
-            correction = corrections[version - 1]
-        except IndexError:
-            raise Http404 from None
+        # Find correction by version
+        for correction in corrections:
+            if correction.value["version_id"] == version:
+                break
+        else:
+            raise Http404
 
         # NB: Little validation is done on previous_version, as it's assumed handled on save
         revision = get_object_or_404(self.revisions, pk=correction.value["previous_version"])

@@ -9,7 +9,6 @@
             <h3>{{ _("Corrections") }}</h3>
 
             {% for block in correction_blocks %}
-                {% set version_num = loop.index %}
                 {% include_block block %}
             {% endfor %}
         {% endif %}
