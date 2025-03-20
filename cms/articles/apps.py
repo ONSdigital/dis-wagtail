@@ -5,5 +5,5 @@ class ArticlesConfig(AppConfig):
     default_auto_field = "django.db.models.AutoField"
     name = "cms.articles"
 
-    def ready(self):
+    def ready(self) -> None:
         import cms.articles.signals  # noqa  # pylint: disable=unused-import,import-outside-toplevel

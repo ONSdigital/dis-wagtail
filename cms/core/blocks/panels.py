@@ -70,7 +70,7 @@ class CorrectionBlockAdapter(StructBlockAdapter):
     js_constructor = "cms.core.blocks.panels.CorrectionBlock"
 
     @cached_property
-    def media(self):
+    def media(self) -> Media:
         structblock_media = super().media
         return Media(js=[*structblock_media._js, "js/correction-block.js"], css=structblock_media._css)  # pylint: disable=protected-access
 
@@ -82,7 +82,7 @@ class PreviousVersionBlockAdapter(FieldBlockAdapter):
     js_constructor = "cms.core.blocks.panels.PreviousVersionBlock"
 
     @cached_property
-    def media(self):
+    def media(self) -> Media:
         structblock_media = super().media
         return Media(js=[*structblock_media._js, "js/previous-version-block.js"], css=structblock_media._css)  # pylint: disable=protected-access
 

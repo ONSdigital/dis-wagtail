@@ -14,11 +14,11 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name="statisticalarticlepage",
             name="corrections",
-            field=cms.core.fields.StreamField(blank=True, block_lookup={}),
+            field=cms.core.fields.StreamField(blank=True, block_lookup={}, null=True),
         ),
         migrations.AddField(
             model_name="statisticalarticlepage",
             name="notices",
-            field=cms.core.fields.StreamField(blank=True, block_lookup={}),
+            field=cms.core.fields.StreamField(blank=True, block_lookup={}, null=True),
         ),
     ]

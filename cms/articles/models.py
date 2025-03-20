@@ -134,8 +134,8 @@ class StatisticalArticlePage(BundledPageMixin, RoutablePageMixin, BasePage):  # 
 
     show_cite_this_page = models.BooleanField(default=True)
 
-    corrections = StreamField([("correction", CorrectionBlock())], blank=True, use_json_field=True)
-    notices = StreamField([("notice", NoticeBlock())], blank=True, use_json_field=True)
+    corrections = StreamField([("correction", CorrectionBlock())], blank=True, use_json_field=True, null=True)
+    notices = StreamField([("notice", NoticeBlock())], blank=True, use_json_field=True, null=True)
 
     content_panels: ClassVar[list["Panel"]] = [
         *BundledPageMixin.panels,
@@ -250,12 +250,12 @@ class StatisticalArticlePage(BundledPageMixin, RoutablePageMixin, BasePage):  # 
         return bool(self.pk == latest_id)  # to placate mypy
 
     @path("previous/v<int:version>/")
-    def previous_version(self, request, version):
-        if version <= 0:
+    def previous_version(self, request: "HttpRequest", version: int) -> "TemplateResponse":
+        if version <= 0 or not self.corrections:
             raise Http404
 
         # Find correction by version
-        for correction in self.corrections:
+        for correction in self.corrections:  # pylint: disable=not-an-iterable
             if correction.value["version_id"] == version:
                 break
         else:
@@ -264,6 +264,8 @@ class StatisticalArticlePage(BundledPageMixin, RoutablePageMixin, BasePage):  # 
         # NB: Little validation is done on previous_version, as it's assumed handled on save
         revision = get_object_or_404(self.revisions, pk=correction.value["previous_version"])
 
-        return self.render(
+        response: TemplateResponse = self.render(
             request, context_overrides={"page": revision.as_object(), "latest_version_url": self.get_url(request)}
         )
+
+        return response

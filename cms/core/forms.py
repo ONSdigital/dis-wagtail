@@ -5,8 +5,8 @@ from cms.taxonomy.forms import DeduplicateTopicsAdminForm
 
 
 class PageWithCorrectionsAdminForm(DeduplicateTopicsAdminForm):
-    def clean_corrections(self):  # noqa: C901
-        corrections = self.cleaned_data["corrections"]
+    def clean_corrections(self) -> list:  # noqa: C901
+        corrections: list = self.cleaned_data["corrections"]
 
         if self.instance.pk is None:
             if corrections:
