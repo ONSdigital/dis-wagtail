@@ -24,7 +24,11 @@ class BaseVisualisationBlock(blocks.StructBlock):
 
     # Attributes
     show_legend = blocks.BooleanBlock(default=True, required=False)
-    show_value_labels = blocks.BooleanBlock(default=False, required=False)
+    show_value_labels = blocks.BooleanBlock(
+        default=False,
+        required=False,
+        help_text="For cluster charts with 3 or more series, the data labels will be hidden.",
+    )
     use_stacked_layout = blocks.BooleanBlock(default=False, required=False)
     show_markers = blocks.BooleanBlock(default=False, required=False)
 
@@ -61,13 +65,14 @@ class BaseVisualisationBlock(blocks.StructBlock):
     )
 
     class Meta:
-        template = "templates/components/streamfield/base_highcharts_chart_block.html"
+        template = "templates/components/streamfield/datavis/base_highcharts_chart_block.html"
 
     def get_context(self, value: "StructValue", parent_context: Optional[dict[str, Any]] = None) -> dict[str, Any]:
         context: dict[str, Any] = super().get_context(value, parent_context)
 
         # Add template and visualisation context to support rendering
         context["config"] = self.get_component_config(value)
+        context["annotations_values"] = self.get_annotations_config(value)
         return context
 
     def get_component_config(self, value: "StructValue") -> dict[str, Any]:
@@ -83,13 +88,6 @@ class BaseVisualisationBlock(blocks.StructBlock):
             },
             "xAxis": self.get_x_axis_config(value.get("x_axis"), headers, rows),
             "yAxis": self.get_y_axis_config(value.get("y_axis"), headers, rows),
-            "navigation": {
-                "enabled": False,
-            },
-            "annotations": self.get_annotations_config(value),
-            "credits": {
-                "enabled": False,
-            },
             "series": self.get_series_data(value, headers, rows),
         }
 
@@ -145,38 +143,21 @@ class BaseVisualisationBlock(blocks.StructBlock):
         return config
 
     def get_annotations_config(self, value: "StructValue") -> list[dict[str, Any]]:
-        config: list[dict[str, Any]] = []
-        annotation_group: dict[str, Any] = {
-            "draggable": "",
-            "labelOptions": {
-                "backgroundColor": "rgba(255,255,255,0.5)",
-                "verticalAlign": "top",
-            },
-        }
-        # TODO: It's likely we'll want to support a few different style
-        # options for annotations, in which case, we'd split annotations
-        # into multiple groups, each with a separate 'labelOptions' value
-        # to control the styling.
-        group_labels: list[dict[str, Any]] = []
+        annotations_values: list[dict[str, Any]] = []
         for item in value.get("annotations", []):
-            match item.block_type:
-                case "point":
-                    group_labels.append(
-                        {
-                            "text": item.value["label"],
-                            "point": {
-                                "x": item.value["x_position"],
-                                "y": item.value["y_position"],
-                                "xAxis": 0,
-                                "yAxis": 0,
-                            },
-                        }
-                    )
-
-        if group_labels:
-            annotation_group["labels"] = group_labels
-            config.append(annotation_group)
-        return config
+            # TODO: handle different annotation types
+            # match item.block_type:
+            #   case "point":
+            annotations_values.append(
+                {
+                    "text": item.value["label"],
+                    "point": {
+                        "x": item.value["x_position"],
+                        "y": item.value["y_position"],
+                    },
+                }
+            )
+        return annotations_values
 
     def get_series_data(
         self, value: "StructValue", headers: Sequence[str], rows: Sequence[list[str | int | float]]
@@ -215,5 +196,6 @@ class BaseVisualisationBlock(blocks.StructBlock):
                 "https://code.highcharts.com/modules/exporting.js",
                 "https://code.highcharts.com/modules/export-data.js",
                 "https://code.highcharts.com/modules/accessibility.js",
+                "https://code.highcharts.com/modules/annotations.js",
             ]
         )

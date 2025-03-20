@@ -1,34 +1,13 @@
-class ChartOptions {
-  static options() {
-    return this.options;
-  }
+/* this contains global options for all charts */
+import ChartConstants from './chart-constants';
 
+class CommonChartOptions {
   constructor(theme, title, type) {
-    // Primary theme colours from https://service-manual.ons.gov.uk/data-visualisation/colours/using-colours-in-charts
-    const primaryTheme = [
-      '#206095',
-      '#27a0cc',
-      '#003c57',
-      '#118c7b',
-      '#a8bd3a',
-      '#871a5b',
-      '#f66068',
-      '#746cb1',
-      '#22d0b6',
-    ];
-    // Alternate theme colours from https://service-manual.ons.gov.uk/data-visualisation/colours/using-colours-in-charts
-    const alternateTheme = ['#206095', '#27A0CC', '#871A5B', '#A8BD3A', '#F66068'];
-    const labelColor = '#414042';
-    const axisLabelColor = '#707071';
-    const gridLineColor = '#d9d9d9';
-    const zeroLineColor = '#b3b3b3';
-    // Responsive font sizes
-    const mobileFontSize = '0.875rem';
-    const desktopFontSize = '1rem';
+    this.constants = ChartConstants.constants();
 
     // These options can be set globally for all charts
     this.options = {
-      colors: theme === 'primary' ? primaryTheme : alternateTheme,
+      colors: theme === 'primary' ? this.constants.primaryTheme : this.constants.alternateTheme,
       chart: {
         backgroundColor: 'transparent',
         style: {
@@ -44,8 +23,8 @@ class ChartOptions {
         symbolHeight: type === 'line' ? 3 : 12,
         margin: 30,
         itemStyle: {
-          color: labelColor,
-          fontSize: desktopFontSize,
+          color: this.constants.labelColor,
+          fontSize: this.constants.desktopFontSize,
           fontWeight: 'normal',
         },
       },
@@ -62,72 +41,37 @@ class ChartOptions {
         // Remove Highcharts watermark
         enabled: false,
       },
-      plotOptions: {
-        bar: {
-          // Set the width of the bars to be 30px and the spacing between them to be 10px
-          pointWidth: 30, // Fixed bar height
-          groupPadding: 0, // No padding between groups
-          pointPadding: 0, // No padding within groups
-          borderWidth: 0,
-          borderRadius: 0,
-          spacing: [10, 0, 0, 0], // [top, right, bottom, left] spacing between bars
-          // Set the data labels to be enabled and positioned outside the bars
-          // We can add custom formatting on each chart to move the labels inside the bars if the bar is wide enough
-          dataLabels: {
-            enabled: true,
-            inside: false,
-            style: {
-              textOutline: 'none',
-              // there is no semibold font weight available in the design system fonts, so we use 400 instead
-              fontWeight: '400',
-              color: labelColor,
-              fontSize: mobileFontSize,
-            },
-          },
-        },
-        line: {
-          lineWidth: 3, // Sets the line thickness to 3px
-          linecap: 'round',
-          marker: {
-            enabled: false,
-          },
-          states: {
-            hover: {
-              lineWidth: 3, // Maintain line width on hover
-            },
-          },
-        },
-        column: {
-          groupPadding: 0.2,
-          borderWidth: 0,
-          borderRadius: 0,
+      // disabled the download button for now
+      navigation: {
+        buttonOptions: {
+          enabled: false,
         },
       },
       yAxis: {
         labels: {
           style: {
-            color: axisLabelColor,
-            fontSize: desktopFontSize,
+            color: this.constants.axisLabelColor,
+            fontSize: this.constants.desktopFontSize,
           },
         },
-        lineColor: gridLineColor,
-        gridLineColor: gridLineColor,
-        zeroLineColor: zeroLineColor,
+        lineColor: this.constants.gridLineColor,
+        gridLineColor: this.constants.gridLineColor,
+        zeroLineColor: this.constants.zeroLineColor,
       },
       xAxis: {
         labels: {
           style: {
-            color: axisLabelColor,
-            fontSize: desktopFontSize,
+            color: this.constants.axisLabelColor,
+            fontSize: this.constants.desktopFontSize,
           },
         },
-        lineColor: gridLineColor,
-        gridLineColor: gridLineColor,
-        zeroLineColor: zeroLineColor,
+        lineColor: this.constants.gridLineColor,
+        gridLineColor: this.constants.gridLineColor,
+        zeroLineColor: this.constants.zeroLineColor,
         // Add tick marks
         tickWidth: 1,
         tickLength: 6,
-        tickColor: gridLineColor,
+        tickColor: this.constants.gridLineColor,
       },
       // Adjust font size for smaller width of chart
       // Note this is not the same as the viewport width
@@ -140,20 +84,20 @@ class ChartOptions {
             chartOptions: {
               legend: {
                 itemStyle: {
-                  fontSize: mobileFontSize,
+                  fontSize: this.constants.mobileFontSize,
                 },
               },
               xAxis: {
                 labels: {
                   style: {
-                    fontSize: mobileFontSize,
+                    fontSize: this.constants.mobileFontSize,
                   },
                 },
               },
               yAxis: {
                 labels: {
                   style: {
-                    fontSize: mobileFontSize,
+                    fontSize: this.constants.mobileFontSize,
                   },
                 },
               },
@@ -163,6 +107,29 @@ class ChartOptions {
       },
     };
   }
+
+  getOptions = () => this.options;
+
+  getAnnotationLabelOptions = () => ({
+    style: {
+      color: this.constants.axisLabelColor,
+      fontSize: this.constants.desktopFontSize,
+    },
+    borderWidth: 0,
+    backgroundColor: undefined,
+  });
+
+  /* eslint-disable class-methods-use-this */
+  getBarChartLabelsInsideOptions = () => ({
+    inside: true,
+    align: 'right',
+    verticalAlign: 'middle',
+    style: {
+      color: 'white',
+      fontWeight: 'bold',
+    },
+  });
+  /* eslint-enable class-methods-use-this */
 }
 
-export default ChartOptions;
+export default CommonChartOptions;
