@@ -16,7 +16,6 @@ from cms.core.blocks import (
     VideoEmbedBlock,
     WarningPanelBlock,
 )
-from cms.core.blocks.panels import CorrectionBlock, NoticeBlock
 from cms.core.blocks.section_blocks import SectionBlock
 
 if TYPE_CHECKING:
@@ -67,11 +66,3 @@ class CoreStoryBlock(StreamBlock):
     def has_ons_embed(self, value: "StreamValue") -> bool:
         """Checks if there are any ONS embed blocks."""
         return value.first_block_by_name(block_name="ons_embed") is not None
-
-
-class CorrectionsNoticesStoryBlock(StreamBlock):
-    correction = CorrectionBlock()
-    notice = NoticeBlock()
-
-    class Meta:
-        template = "templates/components/streamfield/corrections_notices_block.html"

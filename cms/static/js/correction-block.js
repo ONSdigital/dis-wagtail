@@ -11,16 +11,8 @@ class CorrectionBlockDefinition extends window.wagtailStreamField.blocks
     const parent = `[data-streamfield-child]:has([id^="${prefix}"])`;
 
     if (initialState.frozen) {
-      const whenField = document.getElementById(prefix + '-when');
-      whenField.setAttribute('readonly', 'readonly');
-      whenField.style.pointerEvents = 'none';
-
-      const wagtailEditor = document.querySelector(`#${prefix}-text+.Draftail-Editor__wrapper .public-DraftEditor-content`);
-      wagtailEditor.setAttribute('contenteditable', 'false');
-
-
       const helpText = document.querySelector(`${parent} .help`);
-      helpText.innerHTML = '<b>This correction is published and cannot be edited or removed.</b>';
+      helpText.innerHTML = '<b>This correction is published and cannot be deleted.</b>';
 
       const getActionButton = (action) => document.querySelector(`${parent} [data-streamfield-action="${action}"]`);
 

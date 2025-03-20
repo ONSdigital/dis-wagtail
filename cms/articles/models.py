@@ -15,9 +15,10 @@ from wagtail.search import index
 
 from cms.bundles.models import BundledPageMixin
 from cms.core.blocks import HeadlineFiguresBlock
-from cms.core.blocks.stream_blocks import CorrectionsNoticesStoryBlock, SectionStoryBlock
+from cms.core.blocks.panels import CorrectionBlock, NoticeBlock
+from cms.core.blocks.stream_blocks import SectionStoryBlock
 from cms.core.fields import StreamField
-from cms.core.forms import PageWithUpdatesAdminForm
+from cms.core.forms import PageWithCorrectionsAdminForm
 from cms.core.models import BasePage
 from cms.taxonomy.mixins import GenericTaxonomyMixin
 
@@ -85,7 +86,7 @@ class StatisticalArticlePage(BundledPageMixin, RoutablePageMixin, BasePage):  # 
     Previously known as statistical bulletin, statistical analysis article, analysis page.
     """
 
-    base_form_class = PageWithUpdatesAdminForm
+    base_form_class = PageWithCorrectionsAdminForm
 
     parent_page_types: ClassVar[list[str]] = ["ArticleSeriesPage"]
     subpage_types: ClassVar[list[str]] = []
@@ -133,7 +134,8 @@ class StatisticalArticlePage(BundledPageMixin, RoutablePageMixin, BasePage):  # 
 
     show_cite_this_page = models.BooleanField(default=True)
 
-    updates = StreamField(CorrectionsNoticesStoryBlock(), blank=True, use_json_field=True)
+    corrections = StreamField([("correction", CorrectionBlock())], blank=True, use_json_field=True)
+    notices = StreamField([("notice", NoticeBlock())], blank=True, use_json_field=True)
 
     content_panels: ClassVar[list["Panel"]] = [
         *BundledPageMixin.panels,
@@ -180,12 +182,13 @@ class StatisticalArticlePage(BundledPageMixin, RoutablePageMixin, BasePage):  # 
         FieldPanel("content", icon="list-ul"),
     ]
 
-    corrections_and_updates_panels: ClassVar[list["Panel"]] = [
-        FieldPanel("updates"),
+    corrections_and_notices_panels: ClassVar[list["Panel"]] = [
+        FieldPanel("corrections", icon="warning"),
+        FieldPanel("notices", icon="info-circle"),
     ]
 
     additional_panel_tabs: ClassVar[list[tuple[list["Panel"], str]]] = [
-        (corrections_and_updates_panels, "Corrections and updates")
+        (corrections_and_notices_panels, "Corrections and notices")
     ]
 
     search_fields: ClassVar[list[index.BaseField]] = [
@@ -251,10 +254,8 @@ class StatisticalArticlePage(BundledPageMixin, RoutablePageMixin, BasePage):  # 
         if version <= 0:
             raise Http404
 
-        corrections = self.updates.blocks_by_name("correction")  # pylint: disable=no-member
-
         # Find correction by version
-        for correction in corrections:
+        for correction in self.corrections:
             if correction.value["version_id"] == version:
                 break
         else:

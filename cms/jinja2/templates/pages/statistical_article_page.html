@@ -1,5 +1,6 @@
 {% extends "templates/base_page.html" %}
 
+{% from "components/details/_macro.njk" import onsDetails %}
 {% from "components/panel/_macro.njk" import onsPanel %}
 {% from "components/table-of-contents/_macro.njk" import onsTableOfContents %}
 
@@ -70,9 +71,20 @@
         {% endblock %}
     </div>
 
-    {% if page.updates and not latest_version_url %}
+    {% if page.corrections or page.notices %}
         <div class="ons-container">
-            {% include_block page.updates %}
+            {% call onsDetails({"id": "corrections-and-notices", "title": _("Corrections and notices")}) %}
+                {% if page.corrections %}
+                    <h3>{{ _("Corrections") }}</h3>
+                    {% for correction in page.corrections %}
+                        {% include_block correction %}
+                    {% endfor %}
+                {% endif %}
+                {% if page.notices %}
+                    <h3>{{ _("Notices") }}</h3>
+                    {{ page.notices }}
+                {% endif %}
+            {% endcall %}
         </div>
     {% endif %}
 

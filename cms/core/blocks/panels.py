@@ -63,7 +63,7 @@ class CorrectionBlock(CorrectionOrNoticeBlock):
 
     class Meta:
         template = "templates/components/streamfield/corrections_block.html"
-        help_text = "Warning: Once a correction is published, it cannot be edited or deleted."
+        help_text = "Warning: Once a correction is published, it cannot be deleted."
 
 
 class CorrectionBlockAdapter(StructBlockAdapter):
