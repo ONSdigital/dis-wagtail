@@ -134,8 +134,8 @@ class StatisticalArticlePage(BundledPageMixin, RoutablePageMixin, BasePage):  # 
 
     show_cite_this_page = models.BooleanField(default=True)
 
-    corrections = StreamField([("correction", CorrectionBlock())], blank=True, use_json_field=True, null=True)
-    notices = StreamField([("notice", NoticeBlock())], blank=True, use_json_field=True, null=True)
+    corrections = StreamField([("correction", CorrectionBlock())], blank=True, null=True)
+    notices = StreamField([("notice", NoticeBlock())], blank=True, null=True)
 
     content_panels: ClassVar[list["Panel"]] = [
         *BundledPageMixin.panels,
