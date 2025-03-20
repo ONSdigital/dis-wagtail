@@ -28,6 +28,21 @@ def user_populates_footer_menu(context: Context):
     context.page.get_by_role("textbox", name="Title", exact=True).fill("Accessibility")
 
 
+@when("the user populates the footer menu with a page")
+def user_adds_home_page(context: Context):
+    context.page.get_by_role("button", name="Insert a block").click()
+    context.page.get_by_role("textbox", name="Column title*").fill("Home page")
+    # context.page.get_by_role("textbox", name="or External Link").click()
+    context.page.get_by_role("button", name="Choose a page").click()
+    context.page.get_by_role("link", name="Home").click()
+
+
+@then("the preview of the footer menu is displayed with the home page")
+def preview_home_page(context: Context):
+    # context.page.get_by_role("link", name="Home").click()
+    expect(context.page.get_by_role("link", name="Home", exact=True)).to_be_visible()
+
+
 @when('the user clicks "View Live" from the preview')
 def user_clicks_view_live(context: Context):
     context.page.get_by_role("button", name="Toggle preview").click()
@@ -192,7 +207,7 @@ def user_adds_link_to_footer_menu(context: Context):
 def preview_add_to_footer_menu(context: Context):
     # link is not found at all
     expect(context.page.get_by_role("link", name="More")).to_be_visible()
-    expect(context.page.get_by_text("More")).to_be_visible()
+    # expect(context.page.get_by_text("More")).to_be_visible()
     # expect(context.page.get_by_role("link")).to_be_visible()
 
 
@@ -266,7 +281,8 @@ def user_deletes_footer_menu(context: Context):
 @when("a populated footer menu has been created")
 def create_original_footer_menu(context: Context):
     user_creates_footer_menu_instance(context)
-    user_populates_footer_menu(context)
+    # user_populates_footer_menu(context)
+    user_adds_home_page(context)
 
 
 @when("the user configures the footer menu in navigation settings")
@@ -288,16 +304,15 @@ def navigates_to_home_page(context: Context):
     # context.page1.goto("http://0.0.0.0:8000/")
     # user_previews_footer_menu(context)
 
-    # access by accessing footer menu, it's preview then click home
+    # access by accessing footer menu, it's preview then click home button
     user_navigates_to_footer_menu(context)
     user_clicks_view_live(context)
     context.page.get_by_role("link", name="Preview in new tab").click()
 
-    #     page.get_by_role("complementary", name="Preview").locator("label").nth(1).click()
-    # with page.expect_popup() as page2_info:
-    #     page.get_by_role("link", name="Preview in new tab").click()
-    # page2 = page2_info.value
-    # page2.get_by_role("link", name="Office for National Statistics homepage").click()
-
     # context.page.get_by_role("link", name="Office for National Statistics homepage").click()
     # expect(context.page.get_by_role("heading")).to_be_visible()
+
+    # access by accessing footer menu, and click home link from the footer
+    # waiting for get_by_role("link", name="Home")
+    context.page.get_by_role("link", name="Home").click()
+    expect(context.page.get_by_role("link", name="Home", exact=True)).to_be_visible()

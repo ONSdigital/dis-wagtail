@@ -1,5 +1,12 @@
 Feature: CMS users can create the footer menu
-    
+    Scenario: A CMS user can add a page to the footer menu under Snippets
+        Given a CMS user logs into the admin site
+        When the user creates a footer menu instance
+        And the user populates the footer menu with a page
+        And the user clicks the "Save Draft" button
+        And the user clicks "View Live" from the preview
+        Then  the preview of the footer menu is displayed with the home page
+
     Scenario: A CMS user can create and save a footer menu instance under Snippets
         Given a CMS user logs into the admin site
         When the user creates a footer menu instance
@@ -14,6 +21,7 @@ Feature: CMS users can create the footer menu
         And the user populates the footer menu
         And the user clicks "Publish" the footer menu
         Then a banner confirming changes is displayed
+
 
     Scenario: a CMS user can select and configure the footer menu in Navigation settings.
         Given a CMS user logs into the admin site
@@ -54,7 +62,7 @@ Feature: CMS users can create the footer menu
         And the user clicks the "Save Draft" button
         Then an error message confirming the footer cannot be saved is displayed
     
-    Scenario: Validation errors are raised when more than 3 columns added
+    Scenario: Validation errors are raised when more than 3 columns are added
         Given a CMS user logs into the admin site
         When the user creates a footer menu instance
         And the user populates the footer menu
