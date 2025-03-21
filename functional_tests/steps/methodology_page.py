@@ -34,6 +34,7 @@ def user_populates_the_methodology_page(context: Context):
 @when("adds Glossary Terms to the page content")
 def user_adds_glossary_terms(context: Context):
     context.page.get_by_role("button", name="Insert a block").nth(2).click()
+    context.page.wait_for_timeout(500)  # ensure that the Definitions option is ready
     context.page.get_by_role("option", name="Definitions").click()
     context.page.get_by_role("button", name="Choose glossary term").click()
     context.page.get_by_role("link", name="Term", exact=True).click()
