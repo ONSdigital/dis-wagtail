@@ -14,7 +14,7 @@ from cms.core.blocks import (
     VideoEmbedBlock,
 )
 from cms.core.blocks.section_blocks import SectionBlock
-from cms.datavis.blocks import DataVisBlock
+from cms.datavis.blocks import BarChartBlock, ColumnChartBlock, LineChartBlock
 
 if TYPE_CHECKING:
     from wagtail.blocks import StreamValue
@@ -49,11 +49,15 @@ class CoreStoryBlock(StreamBlock):
     documents = DocumentsBlock(group="Media")
     related_links = RelatedLinksBlock()
     equation = MathBlock(group="DataVis", icon="decimal")
-    datavis = DataVisBlock(group="DataVis", label="Visualisation")
     ons_embed = ONSEmbedBlock(group="DataVis", label="ONS General Embed")
+
+    line_chart = LineChartBlock(group="DataVis", label="Line Chart")
+    bar_chart = BarChartBlock(group="DataVis", label="Bar Chart")
+    column_chart = ColumnChartBlock(group="DataVis", label="Column Chart")
 
     class Meta:
         block_counts: ClassVar[dict[str, dict]] = {"related_links": {"max_num": 1}}
+        template = "templates/components/streamfield/stream_block.html"
 
     def has_equations(self, value: "StreamValue") -> bool:
         """Checks if there are any equation blocks."""
