@@ -149,33 +149,33 @@ def create_page_permissions(apps):
 
 def create_topic_page_headline_figures_permissions(apps):
     """Create custom permission that will be used on the TopicPage's HeadlineFigures FieldPanel."""
-    assign_permission_to_group(
-        apps,
-        group_name=settings.PUBLISHING_ADMINS_GROUP_NAME,
-        permission_codename="change_topicpage_headlinefigures",
-        app="wagtailadmin",
-        model="Admin",
-    )
+    # assign_permission_to_group(
+    #     apps,
+    #     group_name=settings.PUBLISHING_ADMINS_GROUP_NAME,
+    #     permission_codename="change_topicpage_headlinefigures",
+    #     app="wagtailadmin",
+    #     model="Admin",
+    # )
 
     # Explicit steps from the above function for debugging
 
-    # ContentType = apps.get_model("contenttypes.ContentType")
-    # Permission = apps.get_model("auth.Permission")
-    # Group = apps.get_model("auth.Group")
+    ContentType = apps.get_model("contenttypes.ContentType")
+    Permission = apps.get_model("auth.Permission")
+    Group = apps.get_model("auth.Group")
 
-    # wagtailadmin_content_type = ContentType.objects.get(
-    #     app_label="wagtailadmin",
-    #     model="admin",
-    # )
-    # permission, _ = Permission.objects.get_or_create(
-    #     content_type=wagtailadmin_content_type,
-    #     codename="change_topicpage_headlinefigures",
-    #     defaults={"name": "Can change headline figures on topic page"},
-    # )
+    wagtailadmin_content_type = ContentType.objects.get(
+        app_label="wagtailadmin",
+        model="admin",
+    )
+    permission, _ = Permission.objects.get_or_create(
+        content_type=wagtailadmin_content_type,
+        codename="topicpage_headlinefigures_permission",
+        defaults={"name": "Can change headline figures on topic page"},
+    )
 
-    # group = Group.objects.get(name=settings.PUBLISHING_ADMINS_GROUP_NAME)
-    # group.permissions.add(permission)
-    # group.save()
+    group = Group.objects.get(name=settings.PUBLISHING_ADMINS_GROUP_NAME)
+    group.permissions.add(permission)
+    group.save()
 
 
 def update_user_groups(apps, schema_editor):
@@ -185,6 +185,7 @@ def update_user_groups(apps, schema_editor):
     create_snippet_permissions(apps)
     create_bundle_permissions(apps)
     create_reporting_permissions(apps)
+    create_topic_page_headline_figures_permissions(apps)
 
 
 class Migration(migrations.Migration):
