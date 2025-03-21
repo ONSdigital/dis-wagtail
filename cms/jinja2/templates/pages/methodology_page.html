@@ -12,7 +12,7 @@
         onsHero({
             "variants": 'grey',
             "detailsColumns": '12',
-            "topic": 'Methodology',
+            "topic": _("Methodology"),
             "title": page.title,
             "text": page.summary|richtext(),
             "officialStatisticsBadge": page.is_accredited,
@@ -21,7 +21,7 @@
                 "descriptionCol": "6",
                 "itemsList": [
                     {
-                        "term": "Last revised:",
+                        "term": _("Last revised:"),
                         "descriptions": [
                             {
                                 "description": page.last_revised_date|date("DATE_FORMAT"),
@@ -74,7 +74,7 @@
                 {# fmt:off #}
                     {{-
                         onsButton({
-                            "text": 'Print this page',
+                            "text": _("Print this page"),
                             "variants": ['print', 'small', 'secondary'],
                         })
                     }}
