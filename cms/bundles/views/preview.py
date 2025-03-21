@@ -17,7 +17,7 @@ if TYPE_CHECKING:
 class PreviewBundleView(TemplateView):
     http_method_names: Sequence[str] = ["get"]
 
-    def get(self, request: "HttpRequest", *args: Any, **kwargs: Any):
+    def get(self, request: "HttpRequest", *args: Any, **kwargs: Any) -> TemplateResponse:
         bundle_id = kwargs["bundle_id"]
         bundle = get_object_or_404(Bundle, id=bundle_id)
 
@@ -30,9 +30,10 @@ class PreviewBundleView(TemplateView):
         if page not in pages_in_bundle:
             raise Http404
 
-        request.is_dummy = True
-        request.is_preview = True
-        request.preview_mode = "bundle-preview"
+        # set the "preview" flags on the request
+        request.is_dummy = True  # type: ignore[attr-defined]
+        request.is_preview = True  # type: ignore[attr-defined]
+        request.preview_mode = "bundle-preview"  # type: ignore[attr-defined]
 
         context = page.get_context(request)
         context["bundle_inspect_url"] = reverse("bundle:inspect", args=[bundle_id])

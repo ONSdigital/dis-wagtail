@@ -7,6 +7,7 @@ from wagtail.admin.widgets import AdminPageChooser
 if TYPE_CHECKING:
     from django.db.models import Model
     from django.utils.safestring import SafeString
+    from wagtail.models import Page
 
 
 class BundleNotePanel(HelpPanel):
@@ -41,8 +42,8 @@ class BundleNotePanel(HelpPanel):
 
 
 class CustomAdminPageChooser(AdminPageChooser):
-    def get_display_title(self, instance):
-        title = super().get_display_title(instance)
+    def get_display_title(self, instance: "Page") -> str:
+        title: str = super().get_display_title(instance)
 
         if workflow_state := instance.current_workflow_state:
             title = f"{title} ({workflow_state.current_task_state.task.name})"
@@ -56,7 +57,7 @@ class PageChooserWithStatusPanel(PageChooserPanel):
     """A custom page chooser panel that includes the page workflow status."""
 
     def get_form_options(self) -> dict[str, list | dict]:
-        opts = super().get_form_options()
+        opts: dict[str, list | dict] = super().get_form_options()
 
         if self.page_type or self.can_choose_root:
             widgets = opts.setdefault("widgets", {})

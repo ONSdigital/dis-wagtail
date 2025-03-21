@@ -22,6 +22,7 @@ if TYPE_CHECKING:
     import datetime
 
     from wagtail.admin.panels import Panel
+    from wagtail.query import PageQuerySet
 
     from cms.teams.models import Team
 
@@ -157,9 +158,8 @@ class Bundle(index.Indexed, ClusterableModel, models.Model):  # type: ignore[dja
         """
         return self.status in [BundleStatus.PENDING, BundleStatus.IN_REVIEW]
 
-    def get_bundled_pages(self) -> QuerySet[Page]:
-        pages: QuerySet[Page] = Page.objects.filter(pk__in=self.bundled_pages.values_list("page__pk", flat=True))
-        return pages
+    def get_bundled_pages(self) -> "PageQuerySet[Page]":
+        return Page.objects.filter(pk__in=self.bundled_pages.values_list("page__pk", flat=True))
 
     def get_pages_ready_for_review(self) -> list[Page]:
         return [
@@ -183,8 +183,7 @@ class Bundle(index.Indexed, ClusterableModel, models.Model):  # type: ignore[dja
 
         if self.scheduled_publication_date and self.scheduled_publication_date >= now():
             # Schedule publishing for related pages.
-            # ignoring [attr-defined] because Wagtail is not fully typed and mypy is confused.
-            for bundled_page in self.get_bundled_pages().defer_streamfields().specific():  # type: ignore[attr-defined]
+            for bundled_page in self.get_bundled_pages().specific().defer_streamfields():
                 if bundled_page.go_live_at == self.scheduled_publication_date:
                     continue
 
