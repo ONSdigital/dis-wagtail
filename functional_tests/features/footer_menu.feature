@@ -40,40 +40,40 @@ Feature: CMS users can create the footer menu
 
     Scenario: Validation errors are raised when duplicate links are entered on the footer menu
         Given a CMS user logs into the admin site
-        When the user creates a footer menu instance
+        And the user creates a footer menu instance
         And the user populates the footer menu
-        And the user enters duplicate information
+        When the user enters duplicate information
         And the user clicks the "Save Draft" button
         Then an error message confirming the footer cannot be saved is displayed
 
     Scenario: Validation errors are raised when an external_url with no title is submitted
         Given a CMS user logs into the admin site
-        When the user creates a footer menu instance
+        And the user creates a footer menu instance
         And the user populates the footer menu
-        And the user enters a link with no title
+        When the user enters a link with no title
         And the user clicks the "Save Draft" button
         Then an error message confirming the footer cannot be saved is displayed
 
     Scenario: Validation errors are raised with an incorrect url submitted
         Given a CMS user logs into the admin site
-        When the user creates a footer menu instance
+        And the user creates a footer menu instance
         And the user populates the footer menu
-        And the user enters an incorrect url
+        When the user enters an incorrect url
         And the user clicks the "Save Draft" button
         Then an error message confirming the footer cannot be saved is displayed
     
     Scenario: Validation errors are raised when more than 3 columns are added
         Given a CMS user logs into the admin site
-        When the user creates a footer menu instance
+        And the user creates a footer menu instance
         And the user populates the footer menu
-        And the user enters more than 3 columns
+        When the user enters more than 3 columns
         And the user clicks the "Save Draft" button
         Then an error message and maximum number of column notification is displayed
 
     Scenario: Validation errors are raised when more than 10 links are added
         Given a CMS user logs into the admin site
-        When a populated footer menu has been created
-        And the user adds above the maximum links
+        And a populated footer menu has been created
+        When the user adds above the maximum links
         And the user clicks the "Save Draft" button
         Then an error message confirming the footer cannot be saved is displayed
 
