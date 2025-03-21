@@ -21,4 +21,5 @@ class TextInputFloatBlock(blocks.FloatBlock):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self.field.widget = TextInput(attrs={"inputmode": "decimal", "pattern": "[0-9]*\\.?[0-9]*"})
+        # NB inputmode is not "decimal" as per the guidance linked in the docstring above
+        self.field.widget = TextInput(attrs={"inputmode": "text", "pattern": "[0-9]*\\.?[0-9]*"})
