@@ -7,12 +7,13 @@ from wagtail import blocks
 from wagtail.blocks.struct_block import StructValue
 
 from cms.datavis.blocks.table import SimpleTableBlock
+from cms.datavis.blocks.utils import TextInputCharBlock, TextInputFloatBlock
 
 
 class PointAnnotationBlock(blocks.StructBlock):
     label = blocks.CharBlock(required=True)
-    x_position = blocks.IntegerBlock(label="x-position", required=True)
-    y_position = blocks.IntegerBlock(label="y-position", required=True)
+    x_position = TextInputCharBlock(label="x-position", required=True)
+    y_position = TextInputFloatBlock(label="y-position", required=True)
 
 
 class BaseVisualisationBlock(blocks.StructBlock):
@@ -36,9 +37,12 @@ class BaseVisualisationBlock(blocks.StructBlock):
     x_axis = blocks.StructBlock(
         [
             ("label", blocks.CharBlock(label="Label", required=False)),
-            ("min", blocks.FloatBlock(label="Minimum", required=False)),
-            ("max", blocks.FloatBlock(label="Maximum", required=False)),
-            ("tick_interval", blocks.FloatBlock(label="Tick interval", required=False)),
+            ("min", TextInputFloatBlock(label="Minimum", required=False)),
+            ("max", TextInputFloatBlock(label="Maximum", required=False)),
+            (
+                "tick_interval",
+                TextInputFloatBlock(label="Tick interval", required=False),
+            ),
         ]
     )
 
@@ -46,9 +50,9 @@ class BaseVisualisationBlock(blocks.StructBlock):
     y_axis = blocks.StructBlock(
         [
             ("label", blocks.CharBlock(required=False)),
-            ("min", blocks.FloatBlock(label="Minimum", required=False)),
-            ("max", blocks.FloatBlock(label="Maximum", required=False)),
-            ("tick_interval", blocks.FloatBlock(required=False)),
+            ("min", TextInputFloatBlock(label="Minimum", required=False)),
+            ("max", TextInputFloatBlock(label="Maximum", required=False)),
+            ("tick_interval", TextInputFloatBlock(required=False)),
             # TODO: implement non-stripping charblock
             ("value_suffix", blocks.CharBlock(required=False)),
             ("tooltip_suffix", blocks.CharBlock(required=False)),
