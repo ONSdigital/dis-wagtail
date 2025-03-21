@@ -72,8 +72,15 @@
     </div>
 
     {% if page.corrections or page.notices %}
+        {% if page.corrections and page.notices %}
+            {% set corrections_and_notices_title = _("Corrections and notices") %}
+        {% elif page.notices %}
+            {% set corrections_and_notices_title = _("Notices") %}
+        {% else %}
+            {% set corrections_and_notices_title = _("Corrections") %}
+        {% endif %}
         <div class="ons-container">
-            {% call onsDetails({"id": "corrections-and-notices", "title": _("Corrections and notices")}) %}
+            {% call onsDetails({"id": "corrections-and-notices", "title": corrections_and_notices_title}) %}
                 {% if page.corrections %}
                     <h3>{{ _("Corrections") }}</h3>
                     {% for correction in page.corrections %}
