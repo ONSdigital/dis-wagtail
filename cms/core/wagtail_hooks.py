@@ -1,3 +1,4 @@
+from django.contrib.auth.models import Permission
 from django.templatetags.static import static
 from django.utils.html import format_html
 from wagtail import hooks
@@ -26,6 +27,13 @@ def register_icons(icons: list[str]) -> list[str]:
 def editor_js() -> str:
     """Modify the default behavior of the Wagtail admin editor."""
     return format_html('<script src="{}"></script>', static("js/wagtail-editor-customisations.js"))
+
+
+@hooks.register("register_permissions")
+def register_topic_page_highlighted_articles_permission():
+    app = "wagtailadmin"
+
+    return Permission.objects.filter(content_type__app_label=app, codename="add_topic_page_highlighted_articles")
 
 
 register_snippet(ContactDetailsViewSet)
