@@ -1,8 +1,8 @@
 @use 'config' as *;
 
 .headline-figures {
-    //padding-top: rem-sizing(24);
-    padding-bottom: rem-sizing(40);
+    padding-top: rem-sizing(24);
+    padding-bottom: rem-sizing(24);
 
     &__grid {
         row-gap: rem-sizing(24);
