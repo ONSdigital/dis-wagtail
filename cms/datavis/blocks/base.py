@@ -58,6 +58,8 @@ class BaseVisualisationBlock(blocks.StructBlock):
     annotations = blocks.StreamBlock(
         [
             ("point", PointAnnotationBlock()),
+            # TODO: future implementation will have different block types, and
+            # possibly split Point too to cater for continuous vs discrete data
             # ("line", LineAnnotationBlock()),
             # ("area", AreaAnnotationBlock()),
         ],
@@ -121,7 +123,7 @@ class BaseVisualisationBlock(blocks.StructBlock):
         rows: Sequence[list[str | int | float]],  # pylint: disable=unused-argument
     ) -> dict[str, Any]:
         config = {
-            # TODO: remove y_reversed
+            # TODO: hard code y_reversed for horizontal bar charts
             # "reversed": self.y_reversed,
         }
         label = y_value.get("label") or headers[1]
