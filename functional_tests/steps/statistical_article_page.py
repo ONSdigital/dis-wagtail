@@ -37,6 +37,7 @@ def user_populates_the_statistical_article_page(context: Context):
     ).click()
     page.get_by_text("Rich text").click()
     page.get_by_role("region", name="Rich text *").get_by_role("textbox").fill("Content")
+    page.wait_for_timeout(500)  # ensure that the rich text content is picked up
 
 
 @step("the user updates the statistical article page content")
@@ -122,23 +123,27 @@ def expand_footnotes(context: Context):
 @step("the user adds a correction")
 def user_adds_a_correction(context: Context):
     page = context.page
+    page.wait_for_timeout(500)
     page.locator("#tab-label-corrections_and_notices").click()
     page.locator("#panel-child-corrections_and_notices-corrections-content").get_by_role(
         "button", name="Insert a block"
     ).click()
     page.get_by_label("When*").fill("2025-03-13 13:59")
     page.locator('[data-contentpath="text"] [role="textbox"]').fill("Correction text")
+    page.wait_for_timeout(500)
 
 
 @step("the user adds a notice")
 def user_adds_a_notice(context: Context):
     page = context.page
+    page.wait_for_timeout(500)
     page.locator("#tab-label-corrections_and_notices").click()
     page.locator("#panel-child-corrections_and_notices-notices-content").get_by_role(
         "button", name="Insert a block"
     ).click()
     page.get_by_label("When*").fill("2025-03-13 13:59")
     page.locator('[data-contentpath="text"] [role="textbox"]').fill("Notice text")
+    page.wait_for_timeout(500)
 
 
 @then("the published statistical article page has the added correction")
@@ -158,13 +163,16 @@ def the_published_statistical_article_page_has_the_added_notice(context: Context
 @then("the user can edit the correction")
 def user_cannot_edit_the_correction(context: Context):
     page = context.page
+    page.wait_for_timeout(500)  # added to allow JS to be ready
     page.locator("#tab-label-corrections_and_notices").click()
     expect(page.locator("#corrections-0-value-when")).to_be_editable()
+    page.wait_for_timeout(50)  # added to prevent flakiness
 
 
 @then("the user cannot delete the correction")
 def user_cannot_delete_the_correction(context: Context):
     page = context.page
+    page.wait_for_timeout(500)  # added to allow JS to be ready
     page.locator("#tab-label-corrections_and_notices").click()
     expect(
         page.locator("#panel-child-corrections_and_notices-corrections-content [data-streamfield-action='DELETE']")
