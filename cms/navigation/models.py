@@ -9,7 +9,7 @@ from wagtail.models import DraftStateMixin, PreviewableMixin, RevisionMixin
 
 from cms.core.fields import StreamField
 from cms.core.models import BaseSiteSetting
-from cms.navigation.blocks import ColumnBlock, HighlightsBlock, LinksColumn
+from cms.navigation.blocks import LinksColumn, MainMenuColumnBlock, MainMenuHighlightsBlock
 from cms.navigation.forms import FooterMenuAdminForm, MainMenuAdminForm
 
 if TYPE_CHECKING:
@@ -21,13 +21,13 @@ class MainMenu(DraftStateMixin, RevisionMixin, PreviewableMixin, models.Model):
     base_form_class = MainMenuAdminForm
 
     highlights = StreamField(
-        [("highlight", HighlightsBlock())],
+        [("highlight", MainMenuHighlightsBlock())],
         blank=True,
         max_num=3,
         help_text=_("Up to 3 highlights. Each highlight must have either a page or a URL."),
     )
     columns = StreamField(
-        [("column", ColumnBlock())],
+        [("column", MainMenuColumnBlock())],
         blank=True,
         max_num=3,
         help_text=_("Up to 3 columns. Each column contains sections with links."),

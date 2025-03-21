@@ -17,16 +17,17 @@ def user_clicks_view_live_on_publish_confirmation_banner(context: Context) -> No
     context.page.get_by_role("link", name="View live").click()
 
 
-@when('the user clicks the "Save Draft" button')
-def click_save_draft_with_delay(context: Context):
-    # add a small delay to allow any client-side JS to initialize.
-    context.page.wait_for_timeout(500)
-    context.page.get_by_role("button", name="Save Draft").click()
-
-
-@when('clicks the "{button_text}" button')
-def clicks_the_given_button(context: Context, button_text: str):
+@step('the user clicks the "{button_text}" button')
+def click_the_given_button(context: Context, button_text: str) -> None:
+    if button_text in ("Save Draft", "Preview"):
+        # add a small delay to allow any client-side JS to initialize.
+        context.page.wait_for_timeout(500)
     context.page.get_by_role("button", name=button_text).click()
+
+
+@when("the user opens the preview in a new tab")
+def open_preview_in_new_tab(context: Context) -> None:
+    context.page.get_by_role("link", name="Preview in new tab").click()
 
 
 @when("the user edits the {page} page")
