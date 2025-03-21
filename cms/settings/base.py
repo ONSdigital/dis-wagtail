@@ -65,6 +65,7 @@ INSTALLED_APPS = [
     "cms.images",
     "cms.private_media",
     "cms.release_calendar",
+    "cms.teams",
     "cms.themes",
     "cms.topics",
     "cms.users",
@@ -96,6 +97,7 @@ INSTALLED_APPS = [
     "django_jinja",
     "wagtailmath",
     "wagtailfontawesomesvg",
+    "wagtail_tinytableblock",
 ]
 
 if not IS_EXTERNAL_ENV:
@@ -753,7 +755,7 @@ if ENABLE_DJANGO_DEFENDER:
 # This name is displayed in the Wagtail admin.
 WAGTAIL_SITE_NAME = "Office for National Statistics"
 
-# Base URL to use when formatting ahsolute URLs within the Wagtail admin in
+# Base URL to use when formatting absolute URLs within the Wagtail admin in
 # contexts without a request, e.g. in notification emails. Don't include '/admin'
 # or a trailing slash.
 if "WAGTAILADMIN_BASE_URL" in env:
@@ -851,3 +853,7 @@ SLACK_NOTIFICATIONS_WEBHOOK_URL = env.get("SLACK_NOTIFICATIONS_WEBHOOK_URL")
 
 ONS_API_BASE_URL = env.get("ONS_API_BASE_URL", "https://api.beta.ons.gov.uk/v1")
 ONS_WEBSITE_DATASET_BASE_URL = env.get("ONS_WEBSITE_DATASET_BASE_URL", "https://www.ons.gov.uk/datasets")
+
+# FIXME: remove before going live
+ENFORCE_EXCLUSIVE_TAXONOMY = env.get("ENFORCE_EXCLUSIVE_TAXONOMY", "true").lower() == "true"
+ALLOW_TEAM_MANAGEMENT = env.get("ALLOW_TEAM_MANAGEMENT", "false").lower() == "true"

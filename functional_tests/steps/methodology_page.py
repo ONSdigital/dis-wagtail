@@ -8,9 +8,8 @@ def user_creates_methodology_page(context: Context):
     context.page.get_by_role("button", name="Pages").click()
     context.page.get_by_role("link", name="View child pages of 'Home'").click()
     context.page.get_by_role("link", name=f"View child pages of '{context.theme_page.title}'").click()
-    context.page.get_by_role("link", name=f"Edit '{context.topic_page.title}'").click()
-    context.page.get_by_role("button", name="Actions", exact=True).click()
-    context.page.get_by_label(f"Add a child page to '{context.topic_page.title}'").click()
+    context.page.get_by_role("link", name=context.topic_page.title, exact=True).click()
+    context.page.get_by_role("link", name="Add child page", exact=True).click()
     context.page.get_by_role("link", name="Methodology page", exact=True).click()
 
 
@@ -22,12 +21,21 @@ def user_populates_the_methodology_page(context: Context):
     context.page.get_by_label("Publication date*").fill("1950-01-01")
 
     context.page.get_by_title("Insert a block").click()
+
     context.page.get_by_label("Section heading*").fill("Heading")
     context.page.locator("#panel-child-content-content-content").get_by_role("region").get_by_role(
         "button", name="Insert a block"
     ).click()
     context.page.get_by_text("Rich text").click()
     context.page.get_by_role("region", name="Rich text *").get_by_role("textbox").fill("Content")
+
+
+@when("adds Glossary Terms to the page content")
+def user_adds_glossary_terms(context: Context):
+    context.page.get_by_role("button", name="Insert a block").nth(2).click()
+    context.page.get_by_role("option", name="Definitions").click()
+    context.page.get_by_role("button", name="Choose glossary term").click()
+    context.page.get_by_role("link", name="Term", exact=True).click()
 
 
 @then("the published methodology page is displayed with the populated data")
@@ -123,5 +131,5 @@ def preview_is_visible(context: Context):
 @then("the preview of the methodology page matches the populated data")
 def saved_draft_data_matches_populated_data(context: Context):
     context.page.get_by_role("button", name="Actions").click()
-    context.page.get_by_role("link", name="Preview").click()
+    context.page.get_by_role("link", name="Preview", exact=True).click()
     the_methodology_page_is_displayed_with_the_populated_data(context)

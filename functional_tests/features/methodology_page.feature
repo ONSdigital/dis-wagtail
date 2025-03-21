@@ -44,7 +44,7 @@ Feature: A general use of Methodology Page
         When the user creates a methodology page as a child of the existing topic page
         And the user populates the methodology page
         And the Last revised date is set to be before the Publication date
-        And clicks the "Save Draft" button
+        And the user clicks the "Save Draft" button
         Then a validation error for the Last revised date is displayed
 
     Scenario: A CMS user can create and preview the Methodology page
@@ -59,7 +59,7 @@ Feature: A general use of Methodology Page
         And a CMS user logs into the admin site
         And the user creates a methodology page as a child of the existing topic page
         And the user populates the methodology page
-        When clicks the "Save Draft" button
+        When the user clicks the "Save Draft" button
         And the user navigates to the page history menu
         Then the saved draft version is visible
         And the preview of the methodology page matches the populated data
