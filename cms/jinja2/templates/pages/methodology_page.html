@@ -1,37 +1,38 @@
 {% extends "templates/base_page.html" %}
 
 {% from "components/table-of-contents/_macro.njk" import onsTableOfContents %}
+{% from "components/hero/_macro.njk" import onsHero %}
 {% from "components/list/_macro.njk" import onsList %}
 {% from "components/button/_macro.njk" import onsButton %}
+{% from "components/related-content/_macro.njk" import onsRelatedContent %}
 
 {% block header_area %}
-    <div class="common-header article-header ons-u-pb-xl {% if page.updates %}article-header--flush{% endif %}">
-        <div class="ons-container">
-            {% include "templates/components/navigation/breadcrumbs.html" %}
-            <p class="article-header__doc-type ons-u-fs-l">{{ _("Methodology") }}</p>
-
-            <div class="ons-grid ons-grid-flex-gap ons-grid-flex-gap--40">
-                <div class="ons-grid__col ons-col-10@m ">
-                    <h1 class="ons-u-fs-3xl common-header__heading">
-                        {{ page.title }}
-                    </h1>
-
-                    <div class="common-header__summary">{{ page.summary|richtext() }}</div>
-                </div>
-            </div>
-        </div>
-
-        {% block release_meta %}
-            <div class="ons-container common-header__releases common-header__releases--single-row">
-                {% if page.last_revised_date %}
-                    <div>
-                        <span class="ons-u-fs-r--b common-header__releases-label">{{ _("Last revised") }}:</span>
-                        <span class="ons-u-nowrap">{{ page.last_revised_date|date("DATE_FORMAT")}}</span>
-                    </div>
-                {% endif %}
-            </div>
-        {% endblock %}
-    </div>
+    {# fmt:off #}
+    {{
+        onsHero({
+            "variants": 'grey',
+            "detailsColumns": '12',
+            "topic": 'Methodology',
+            "title": page.title,
+            "text": page.summary|richtext(),
+            "officialStatisticsBadge": page.is_accredited,
+            "descriptionList": {
+                "termCol": "6",
+                "descriptionCol": "6",
+                "itemsList": [
+                    {
+                        "term": "Last revised:",
+                        "descriptions": [
+                            {
+                                "description": page.last_revised_date|date("DATE_FORMAT"),
+                            }
+                        ]
+                    }
+                ]
+            }
+        })
+    }}
+    {# fmt:on #}
 {% endblock %}
 
 {% block main %}
@@ -52,13 +53,19 @@
             {% if related_publications %}
                 {% with related_publications_title=_("Related publications"), related_publications_aria_label=_("Related publications") %}
                     {# fmt:off #}
-                    {{-
-                        onsTableOfContents({
-                            "title": related_publications_title,
-                            "ariaLabel": related_publications_aria_label,
-                            "itemsList": related_publications
-                        })
-                    }}
+                        {% from "components/related-content/_macro.njk" import onsRelatedContent %}
+                        {{
+                            onsRelatedContent({
+                                "ariaLabel": related_publications_aria_label,
+                                "classes": 'related-publications',
+                                "rows": [
+                                    {
+                                        "title": related_publications_title,
+                                        "itemsList":  related_publications
+                                    }
+                                ]
+                            })
+                        }}
                     {# fmt:on #}
                 {% endwith %}
             {% endif %}
