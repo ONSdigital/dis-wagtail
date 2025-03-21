@@ -43,10 +43,11 @@ def preview_home_page(context: Context):
     expect(context.page.get_by_role("link", name="Home", exact=True)).to_be_visible()
 
 
-@when('the user clicks "View Live" from the preview')
+@when("the user clicks to the preview")
 def user_clicks_view_live(context: Context):
     context.page.get_by_role("button", name="Toggle preview").click()
 
+    #'the user clicks "View Live" from the preview'
     # This opens preview in another tab which is not necessary in most cases
     # context.page.get_by_role("link", name="Preview in new tab").click()
 
@@ -187,7 +188,7 @@ def max_column_error_in_footer_menu(context: Context):
     expect(context.page.get_by_text("The maximum number of items is")).to_be_visible()
 
 
-@when("the user navigates to edit the footer menu")
+@step("the user navigates to edit the footer menu")
 def user_navigates_to_footer_menu(context: Context):
     context.page.get_by_role("link", name="Snippets").click()
     context.page.get_by_role("link", name="Footer menus").click()
@@ -218,6 +219,7 @@ def user_deletes_link(context: Context):
 
 @then("the preview does not show the deleted link")
 def preview_deleted_link(context: Context):
+    user_clicks_view_live(context)
     expect(context.page.get_by_role("link", name="More")).not_to_be_visible()
 
 
@@ -240,7 +242,7 @@ def preview_edited_footer_menu(context: Context):
     expect(context.page.get_by_role("link", name="New link Title")).to_be_visible()
 
 
-@when("the user adds an additional column and link")
+@step("the user adds an additional column and link")
 def user_adds_new_column(context: Context):
     context.page.get_by_role("button", name="Insert a block").nth(1).click()
     context.page.locator("#columns-1-value-title").fill("Column 2")
@@ -278,7 +280,7 @@ def user_deletes_footer_menu(context: Context):
     context.page.get_by_role("button", name="Yes, delete").click()
 
 
-@when("a populated footer menu has been created")
+@step("a populated footer menu has been created")
 def create_original_footer_menu(context: Context):
     user_creates_footer_menu_instance(context)
     # user_populates_footer_menu(context)
