@@ -2,6 +2,7 @@ from django.core.exceptions import ValidationError
 from wagtail.blocks import (
     CharBlock,
     StreamBlock,
+    StreamValue,
     StructBlock,
     StructBlockValidationError,
     TextBlock,
@@ -37,7 +38,7 @@ class DatasetStoryBlock(StreamBlock):
     class Meta:
         template = "templates/components/streamfield/datasets_block.html"
 
-    def clean(self, value):
+    def clean(self, value: StreamValue) -> StreamValue:
         cleaned_value = super().clean(value)
 
         # Check for duplicate datasets selected through the chooser

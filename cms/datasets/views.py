@@ -2,6 +2,7 @@ from collections.abc import Iterable
 from typing import Any
 
 from django import forms
+from django.db.models import QuerySet
 from django.views import View
 from wagtail.admin.forms.choosers import BaseFilterForm
 from wagtail.admin.ui.tables import Column
@@ -28,14 +29,14 @@ class DatasetBaseChooseViewMixin:
         ]
 
 
-class DatasetSearchFilterMixin(forms.Form):
+class DatasetSearchFilterForm(BaseFilterForm):
     q = forms.CharField(
         label="Search datasets",
         widget=forms.TextInput(attrs={"placeholder": "Dataset title"}),
         required=False,
     )
 
-    def filter(self, objects: Iterable[Any]):
+    def filter(self, objects: Iterable[Any]) -> Iterable[Any]:
         objects = super().filter(objects)
         search_query = self.cleaned_data.get("q")
         if search_query:
@@ -46,23 +47,21 @@ class DatasetSearchFilterMixin(forms.Form):
         return objects
 
     @staticmethod
-    def obj_matches_search_query(obj: Any, search_query_lower: str):
+    def obj_matches_search_query(obj: Any, search_query_lower: str) -> bool:
         return any(search_query_lower in getattr(obj, search_field).lower() for search_field in obj.search_fields)
-
-
-class DatasetFilterForm(DatasetSearchFilterMixin, BaseFilterForm): ...
 
 
 class ONSDatasetBaseChooseView(BaseChooseView):
     model_class = ONSDataset
-    filter_form_class = DatasetFilterForm
+    filter_form_class = DatasetSearchFilterForm
 
-    def get_object_list(self):
+    def get_object_list(self) -> QuerySet[ONSDataset]:
         # Due to pagination this is required for search to check entire list
         # The hardcoded limit will need changing.
-        return self.model_class.objects.filter(limit=1000)  # pylint: disable=no-member
+        object_list: QuerySet[ONSDataset] = self.model_class.objects.filter(limit=1000)  # pylint: disable=no-member
+        return object_list
 
-    def render_to_response(self):
+    def render_to_response(self) -> None:
         raise NotImplementedError()
 
 
@@ -79,7 +78,7 @@ class DatasetChooseResultsView(DatasetBaseChooseViewMixin, CustomChooseResultVie
 
 
 class DatasetChosenView(ChosenViewMixin, ChosenResponseMixin, View):
-    def get_object(self, pk):
+    def get_object(self, pk: Any) -> Dataset:
         # get_object is called before get_chosen_response_data
         # and self.model_class is Dataset, so we get or create the Dataset from ONSDatasets here
         # create the dataset object from the API response

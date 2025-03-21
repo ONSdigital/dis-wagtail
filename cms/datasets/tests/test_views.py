@@ -1,9 +1,8 @@
 from typing import ClassVar
 
 from django.test import TestCase
-from wagtail.admin.forms.choosers import BaseFilterForm
 
-from cms.datasets.views import DatasetSearchFilterMixin
+from cms.datasets.views import DatasetSearchFilterForm
 
 
 class ExampleSearchableModel:
@@ -12,9 +11,6 @@ class ExampleSearchableModel:
     not_searched = "no match"
 
     search_fields: ClassVar = ["title", "description"]
-
-
-class ExampleFilterForm(DatasetSearchFilterMixin, BaseFilterForm): ...
 
 
 class TestDatasetSearchFilterMixin(TestCase):
@@ -26,7 +22,7 @@ class TestDatasetSearchFilterMixin(TestCase):
 
         objects = [obj1, obj2]
 
-        filter_form = ExampleFilterForm()
+        filter_form = DatasetSearchFilterForm()
         filter_form.cleaned_data = {}  # pylint: disable=attribute-defined-outside-init
         test_searches = [
             ("foo", [obj1]),

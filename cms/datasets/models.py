@@ -1,5 +1,6 @@
 import logging
 import re
+from collections.abc import Iterable, Mapping
 from typing import ClassVar
 
 from django.conf import settings
@@ -15,31 +16,16 @@ DATASETS_BASE_API_URL = f"{settings.ONS_API_BASE_URL}/datasets"
 
 # This needs a revisit. Consider caching + fewer requests
 class ONSDatasetApiQuerySet(APIQuerySet):
-    def get_results_from_response(self, response):
-        logger.info("Fetching results from response")
-        return response["items"]
+    def get_results_from_response(self, response: Mapping) -> Iterable:
+        results: Iterable = response["items"]
+        return results
 
-    # Override as ONS API returns 'total_count' instead of 'count'
-    def run_count(self):
-        params = self.get_filters_as_query_dict()
-
-        if self.pagination_style in ("offset-limit", "page-number"):
-            if self.pagination_style == "offset-limit":
-                params[self.limit_query_param] = 1
-            else:
-                params[self.page_query_param] = 1
-
-            response_json = self.fetch_api_response(params=params)
-            count = response_json["total_count"]
-            # count is the full result set without considering slicing;
-            # we need to adjust it to the slice
-            if self.limit is not None:
-                count = min(count, self.limit)
-            count = max(0, count - self.offset)
-            return count
-
-        # default to standard behaviour of getting all results and counting them
-        return super().run_count()
+    def fetch_api_response(self, url: str | None = None, params: Mapping | None = None) -> dict:
+        api_response: dict = super().fetch_api_response(url=url, params=params)
+        # Queryish expects the results count to be returned as "count", but the dataset API returns "total_count"
+        if (count := api_response.get("total_count")) and api_response.get("count") is None:
+            api_response["count"] = count
+        return api_response
 
 
 class ONSDataset(APIModel):
@@ -55,9 +41,12 @@ class ONSDataset(APIModel):
         verbose_name_plural = "ONS Datasets"
 
     @classmethod
-    def from_query_data(cls, data):
-        url = data["links"]["latest_version"]["href"]
-        edition = EDITIONS_PATTERN.search(url).group(1)
+    def from_query_data(cls, data: Mapping) -> "ONSDataset":
+        url: str = data["links"]["latest_version"]["href"]
+        edition_match = EDITIONS_PATTERN.search(url)
+        if not edition_match:
+            raise ValueError(f"Found invalid dataset URL, missing edition: {url} for dataset: {data['id']}")
+        edition = edition_match.group(1)
         return cls(
             id=data["id"],
             title=data["title"],
@@ -68,11 +57,13 @@ class ONSDataset(APIModel):
         )
 
     @property
-    def formatted_edition(self):
-        return self.edition.replace("-", " ").title()  # pylint: disable=no-member
+    def formatted_edition(self) -> str:
+        edition: str = self.edition.replace("-", " ").title()  # pylint: disable=no-member
+        return edition
 
-    def __str__(self):
-        return self.title  # pylint: disable=no-member
+    def __str__(self) -> str:
+        title: str = self.title  # pylint: disable=no-member
+        return title
 
 
 class Dataset(models.Model):
@@ -88,13 +79,13 @@ class Dataset(models.Model):
             UniqueConstraint(fields=["namespace", "edition", "version"], name="dataset_id")
         ]
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"{self.title} (Edition: {self.formatted_edition}, Ver: {self.version})"
 
     @property
-    def formatted_edition(self):
+    def formatted_edition(self) -> str:
         return self.edition.replace("-", " ").title()
 
     @property
-    def website_url(self):
+    def website_url(self) -> str:
         return self.url.replace(DATASETS_BASE_API_URL, settings.ONS_WEBSITE_DATASET_BASE_URL)
