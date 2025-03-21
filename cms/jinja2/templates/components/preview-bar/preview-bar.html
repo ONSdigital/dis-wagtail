@@ -1,0 +1,43 @@
+{% from "components/panel/_macro.njk" import onsPanel %}
+{% from "components/select/_macro.njk" import onsSelect %}
+{% from "components/button/_macro.njk" import onsButton %}
+
+{% call onsPanel({"classes": "ons-container ons-u-mb-xs preview-bar"}) %}
+    <div class="ons-grid">
+
+        <div class="ons-grid__col ons-col-8@m">
+            {# fmt:off #}
+            {{-
+                onsSelect({
+                    "id": "preview-items",
+                    "name": "select",
+                    "label": {
+                        "text": "Preview items",
+                        "inline": true
+                    },
+                    "options": preview_items
+                })
+            -}}
+            {# fmt:on #}
+        </div>
+        <div class="ons-grid__col ons-col-3@m ons-push-1@m">
+          {# fmt:off #}
+            {{-
+                onsButton({
+                    "text": "Back to bundle",
+                    "url": bundle_inspect_url,
+                    "variants": ["small"],
+                    "iconType": "exit",
+                })
+            -}}
+            {# fmt:on #}
+        </div>
+    </div>
+
+
+    <script>
+        document.getElementById("preview-items").addEventListener("change", function() {
+            window.location = this.value;
+        });
+    </script>
+{% endcall %}

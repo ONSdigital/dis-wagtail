@@ -12,6 +12,7 @@ from wagtail.models import Orderable, Page
 from wagtail.search import index
 
 from cms.release_calendar.viewsets import FutureReleaseCalendarChooserWidget
+from cms.workflows.utils import is_page_ready_to_preview
 
 from .enums import ACTIVE_BUNDLE_STATUSES, EDITABLE_BUNDLE_STATUSES, BundleStatus
 from .forms import BundleAdminForm
@@ -159,6 +160,11 @@ class Bundle(index.Indexed, ClusterableModel, models.Model):  # type: ignore[dja
     def get_bundled_pages(self) -> QuerySet[Page]:
         pages: QuerySet[Page] = Page.objects.filter(pk__in=self.bundled_pages.values_list("page__pk", flat=True))
         return pages
+
+    def get_pages_ready_for_review(self) -> list[Page]:
+        return [
+            page for page in self.get_bundled_pages().specific().defer_streamfields() if is_page_ready_to_preview(page)
+        ]
 
     def get_teams_display(self) -> str:
         return ", ".join(

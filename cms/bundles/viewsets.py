@@ -194,7 +194,13 @@ class BundleInspectView(InspectView):
                     if page.current_workflow_state
                     else "not in a workflow"
                 ),
-                reverse("wagtailadmin_pages:view_draft", args=(page.pk,)),
+                reverse(
+                    "bundles:preview",
+                    args=(
+                        self.object.pk,
+                        page.pk,
+                    ),
+                ),
             )
             for page in pages
         )
