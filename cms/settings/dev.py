@@ -68,6 +68,7 @@ CACHES["default"] = {  # noqa: F405
 # Django Defender
 ENABLE_DJANGO_DEFENDER = False
 
+
 # Import settings from local.py file if it exists. Please use it to keep
 # settings that are not meant to be checked into Git and never check it in.
 # pylint: disable=unused-wildcard-import,useless-suppression
