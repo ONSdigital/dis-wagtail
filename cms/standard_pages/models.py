@@ -24,6 +24,7 @@ class InformationPage(GenericTaxonomyMixin, BasePage):  # type: ignore[django-ma
     template = "templates/pages/information_page.html"
 
     parent_page_types: ClassVar[list[str]] = ["home.HomePage", "InformationPage", "IndexPage"]
+    search_index_content_type: ClassVar[str] = "static_page"
 
     summary = RichTextField(features=settings.RICH_TEXT_BASIC)
     last_updated = models.DateField(blank=True, null=True)
@@ -43,17 +44,13 @@ class InformationPage(GenericTaxonomyMixin, BasePage):  # type: ignore[django-ma
         index.SearchField("content"),
     ]
 
-    @property
-    def search_index_content_type(self) -> str:
-        """Returns the content type string for the search index."""
-        return "static_page"
-
 
 class IndexPage(BasePage):  # type: ignore[django-manager-missing]
     template = "templates/pages/index_page.html"
 
     parent_page_types: ClassVar[list[str]] = ["home.HomePage", "IndexPage"]
     subpage_types: ClassVar[list[str]] = ["IndexPage", "InformationPage"]
+    search_index_content_type: ClassVar[str] = "static_landing_page"
 
     summary = RichTextField(features=settings.RICH_TEXT_BASIC)
     featured_items = StreamField(
@@ -143,8 +140,3 @@ class IndexPage(BasePage):  # type: ignore[django-manager-missing]
         context["related_links_list"] = self.get_formatted_related_links_list()
 
         return context
-
-    @property
-    def search_index_content_type(self) -> str:
-        """Returns the content type string for the search index."""
-        return "static_landing_page"

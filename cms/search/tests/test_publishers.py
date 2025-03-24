@@ -140,7 +140,7 @@ class BasePublisherTests(TestCase):
 
             self.assertIsNotNone(message["release_date"])  # because it's a release
 
-            self.assertEqual(message["release_date"], page.release_date.isoformat().replace("+00:00", "Z"))
+            self.assertEqual(message["release_date"], page.release_date.isoformat())
 
             self.assertIn("finalised", message)
             self.assertIn("cancelled", message)
@@ -170,7 +170,7 @@ class BasePublisherTests(TestCase):
 
         self.assertIsNotNone(message["release_date"])  # because it's a release
 
-        self.assertEqual(message["release_date"], page.release_date.isoformat().replace("+00:00", "Z"))
+        self.assertEqual(message["release_date"], page.release_date.isoformat())
 
         self.assertIn("finalised", message)
         self.assertIn("cancelled", message)
@@ -188,7 +188,7 @@ class BasePublisherTests(TestCase):
         self.assertEqual(date_change["change_notice"], page.changes_to_release_date[0].value["reason_for_change"])
         self.assertEqual(
             date_change["previous_date"],
-            page.changes_to_release_date[0].value["previous_date"].isoformat().replace("+00:00", "Z"),
+            page.changes_to_release_date[0].value["previous_date"].isoformat(),
         )
 
     def test_construct_message_for_release_page_published(self):
@@ -205,7 +205,7 @@ class BasePublisherTests(TestCase):
 
         self.assertIsNotNone(message["release_date"])  # because it's a release
 
-        self.assertEqual(message["release_date"], page.release_date.isoformat().replace("+00:00", "Z"))
+        self.assertEqual(message["release_date"], page.release_date.isoformat())
 
         self.assertIn("finalised", message)
         self.assertIn("cancelled", message)
@@ -229,7 +229,7 @@ class BasePublisherTests(TestCase):
 
         self.assertIsNotNone(message["release_date"])  # because it's a release
 
-        self.assertEqual(message["release_date"], page.release_date.isoformat().replace("+00:00", "Z"))
+        self.assertEqual(message["release_date"], page.release_date.isoformat())
 
         self.assertIn("finalised", message)
         self.assertIn("cancelled", message)

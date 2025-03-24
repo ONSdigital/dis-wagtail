@@ -87,7 +87,7 @@ class BasePublisher(ABC):
             "uri": page.url_path,
             "content_type": page.search_index_content_type,
             "release_date": (
-                page.release_date.isoformat().replace("+00:00", "Z")
+                page.release_date.isoformat()
                 if page.search_index_content_type == "release" and getattr(page, "release_date", None)
                 else None
             ),
@@ -116,7 +116,7 @@ class BasePublisher(ABC):
             release_fields["date_changes"].append(
                 {
                     "change_notice": first_change.get("reason_for_change"),
-                    "previous_date": str(first_change.get("previous_date").isoformat().replace("+00:00", "Z"))
+                    "previous_date": str(first_change.get("previous_date").isoformat())
                     if first_change.get("previous_date")
                     else None,
                 }

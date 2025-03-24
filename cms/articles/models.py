@@ -86,6 +86,7 @@ class StatisticalArticlePage(BundledPageMixin, BasePage):  # type: ignore[django
 
     parent_page_types: ClassVar[list[str]] = ["ArticleSeriesPage"]
     subpage_types: ClassVar[list[str]] = []
+    search_index_content_type: ClassVar[str] = "bulletin"
     template = "templates/pages/statistical_article_page.html"
     label = _("Article")
 
@@ -232,8 +233,3 @@ class StatisticalArticlePage(BundledPageMixin, BasePage):  # type: ignore[django
             .first()
         )
         return bool(self.pk == latest_id)  # to placate mypy
-
-    @property
-    def search_index_content_type(self) -> str:
-        """Returns the content type string for the search index."""
-        return "bulletin"

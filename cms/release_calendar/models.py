@@ -43,6 +43,7 @@ class ReleaseCalendarPage(BasePage):  # type: ignore[django-manager-missing]
     template = "templates/pages/release_calendar/release_calendar_page.html"
     parent_page_types: ClassVar[list[str]] = ["ReleaseCalendarIndex"]
     subpage_types: ClassVar[list[str]] = []
+    search_index_content_type: ClassVar[str] = "release"
 
     # Fields
     status = models.CharField(choices=ReleaseStatus.choices, default=ReleaseStatus.PROVISIONAL, max_length=32)
@@ -195,8 +196,3 @@ class ReleaseCalendarPage(BasePage):  # type: ignore[django-manager-missing]
                 items += [{"url": "#links", "text": _("You might also be interested in")}]
 
         return items
-
-    @property
-    def search_index_content_type(self) -> str:
-        """Returns the content type string for the search index."""
-        return "release"
