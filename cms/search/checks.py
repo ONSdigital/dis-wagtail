@@ -1,13 +1,17 @@
+from collections.abc import Iterable
+from typing import Any, Optional
+
+from django.apps import AppConfig
 from django.conf import settings
 from django.core.checks import Error, register
 
 
 @register()
-def check_kafka_settings(app_configs, **kwargs) -> list[Error]:
+def check_kafka_settings(app_configs: Optional[Iterable[AppConfig]], **kwargs: Any) -> list[Error]:  # pylint: disable=unused-argument
     """Check that required Kafka settings are present."""
-    errors = []
+    errors: list[Error] = []
 
-    kafka_settings = [
+    kafka_settings: list[tuple[str, str, str, str]] = [
         ("KAFKA_SERVER", "localhost:9092", "search.E001", "search.E002"),
         (
             "KAFKA_CHANNEL_CREATED_OR_UPDATED",

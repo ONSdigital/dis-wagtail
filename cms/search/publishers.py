@@ -57,19 +57,19 @@ class BasePublisher(ABC):
         return self._publish(channel, message)
 
     @abstractmethod
-    def _publish(self, channel: str, message: dict) -> None:
+    def _publish(self, channel: str | None, message: dict) -> None:
         """Each child class defines how to actually send/publish
         the message (e.g., Kafka, logging, etc.).
         """
 
     @abstractmethod
-    def get_created_or_updated_channel(self) -> str:
+    def get_created_or_updated_channel(self) -> str | None:
         """Provide the channel (or other necessary routing key) for created/updated.
         This can be a no-op or empty string for some implementations.
         """
 
     @abstractmethod
-    def get_deleted_channel(self) -> str:
+    def get_deleted_channel(self) -> str | None:
         """Provide the channel (or other necessary routing key) for deleted messages.
         This can be a no-op or empty string for some implementations.
         """
@@ -142,13 +142,13 @@ class KafkaPublisher(BasePublisher):
             value_serializer=lambda v: json.dumps(v).encode("utf-8"),
         )
 
-    def get_created_or_updated_channel(self) -> str:
+    def get_created_or_updated_channel(self) -> str | None:
         return self._channel_created_or_updated
 
-    def get_deleted_channel(self) -> str:
+    def get_deleted_channel(self) -> str | None:
         return self._channel_deleted
 
-    def _publish(self, channel: str, message: dict) -> "RecordMetadata":
+    def _publish(self, channel: str | None, message: dict) -> "RecordMetadata":
         """Send the message to Kafka."""
         logger.info("KafkaPublisher: Publishing to channel=%s, message=%s", channel, message)
         future = self.producer.send(channel, message)
@@ -167,6 +167,6 @@ class LogPublisher(BasePublisher):
     def get_deleted_channel(self) -> str:
         return "log-deleted"
 
-    def _publish(self, channel: str, message: dict) -> None:
+    def _publish(self, channel: str | None, message: dict) -> None:
         """Log the message."""
         logger.info("LogPublisher: channel=%s message=%s", channel, message)
