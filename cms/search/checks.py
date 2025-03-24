@@ -11,6 +11,10 @@ def check_kafka_settings(app_configs: Optional[Iterable[AppConfig]], **kwargs: A
     """Check that required Kafka settings are present."""
     errors: list[Error] = []
 
+    # Only run checks if the provider is set to "kafka"
+    if getattr(settings, "SEARCH_INDEX_PUBLISHER_BACKEND", "") != "kafka":
+        return errors
+
     kafka_settings: list[tuple[str, str, str, str]] = [
         ("KAFKA_SERVER", "localhost:9092", "search.E001", "search.E002"),
         (
