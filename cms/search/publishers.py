@@ -93,7 +93,7 @@ class BasePublisher(ABC):
             ),
             "summary": get_text_for_indexing(force_str(page.summary)),
             "title": page.title,
-            "topics": list(page.topics.values_list("topic_id", flat=True)) if hasattr(page, "topics") else [],
+            "topics": getattr(page, "topic_ids", []),
         }
 
         # If it's a Release, we add the extra fields from ReleasePayload
