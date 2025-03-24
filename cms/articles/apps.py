@@ -6,4 +6,4 @@ class ArticlesConfig(AppConfig):
     name = "cms.articles"
 
     def ready(self) -> None:
-        import cms.articles.signals  # noqa  # pylint: disable=unused-import,import-outside-toplevel
+        import cms.articles.signal_handlers  # noqa  # pylint: disable=unused-import,import-outside-toplevel

@@ -555,10 +555,6 @@ class NoticeBlockTestCase(TestCase):
 
 
 class CorrectionBlockTestCase(TestCase):
-    def setUp(self):
-        self.series = ArticleSeriesPageFactory()
-        self.statistical_article = StatisticalArticlePageFactory(parent=self.series)
-
     @classmethod
     def setUpTestData(cls):
         cls.correction_data = {
@@ -567,6 +563,8 @@ class CorrectionBlockTestCase(TestCase):
             "previous_version": 1,
             "version_id": 1,
         }
+        cls.series = ArticleSeriesPageFactory()
+        cls.statistical_article = StatisticalArticlePageFactory(parent=cls.series)
 
     def test_render_block(self):
         block = CorrectionBlock()

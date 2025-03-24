@@ -3,7 +3,7 @@
 
     {{ value.text|richtext }}
 
-    <a href="{% if value.version_id %}{{ routablepageurl(page, 'previous_version', value.version_id) }}{% else %}#{% endif %}">
+    <a href="{{ routablepageurl(page, 'previous_version', value.version_id) }}">
         {{ _("View superseded version") }}
     </a>
 </div>

@@ -58,7 +58,7 @@ class CorrectionOrNoticeBlock(blocks.StructBlock):
 
 class CorrectionBlock(CorrectionOrNoticeBlock):
     previous_version = PreviousVersionBlock(required=False)
-    frozen = blocks.BooleanBlock(required=False)
+    frozen = blocks.BooleanBlock(required=False, default=False)
     version_id = blocks.IntegerBlock(required=False)
 
     class Meta:
@@ -72,7 +72,7 @@ class CorrectionBlockAdapter(StructBlockAdapter):
     @cached_property
     def media(self) -> Media:
         structblock_media = super().media
-        return Media(js=[*structblock_media._js, "js/correction-block.js"], css=structblock_media._css)  # pylint: disable=protected-access
+        return Media(js=[*structblock_media._js, "js/blocks/correction-block.js"], css=structblock_media._css)  # pylint: disable=protected-access
 
 
 register(CorrectionBlockAdapter(), CorrectionBlock)
@@ -84,7 +84,7 @@ class PreviousVersionBlockAdapter(FieldBlockAdapter):
     @cached_property
     def media(self) -> Media:
         structblock_media = super().media
-        return Media(js=[*structblock_media._js, "js/previous-version-block.js"], css=structblock_media._css)  # pylint: disable=protected-access
+        return Media(js=[*structblock_media._js, "js/blocks/previous-version-block.js"], css=structblock_media._css)  # pylint: disable=protected-access
 
 
 register(PreviousVersionBlockAdapter(), PreviousVersionBlock)
