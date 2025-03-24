@@ -1,5 +1,6 @@
-from django.conf import settings
 from functools import cache
+
+from django.conf import settings
 
 from .publishers import KafkaPublisher, LogPublisher
 

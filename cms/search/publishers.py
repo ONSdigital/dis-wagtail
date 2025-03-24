@@ -8,7 +8,6 @@ from django.utils.encoding import force_str
 from kafka import KafkaProducer
 from wagtail.rich_text import get_text_for_indexing
 
-
 logger = logging.getLogger(__name__)
 
 
