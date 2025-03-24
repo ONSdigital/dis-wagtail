@@ -882,6 +882,7 @@ SEARCH_INDEX_EXCLUDED_PAGE_TYPES = (
     "ReleaseCalendarIndex",
     "ThemePage",
     "TopicPage",
+    "Page",
 )
 
 # FIXME: remove before going live
