@@ -3,7 +3,8 @@ from django.core.checks import Error, register
 
 
 @register()
-def check_kafka_settings(app_configs, **kwargs):
+def check_kafka_settings(app_configs, **kwargs) -> list[Error]:
+    """Check that required Kafka settings are present."""
     errors = []
 
     kafka_settings = [
