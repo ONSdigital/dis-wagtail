@@ -158,13 +158,14 @@ class Bundle(index.Indexed, ClusterableModel, models.Model):  # type: ignore[dja
         """
         return self.status in [BundleStatus.PENDING, BundleStatus.IN_REVIEW]
 
-    def get_bundled_pages(self) -> "PageQuerySet[Page]":
-        return Page.objects.filter(pk__in=self.bundled_pages.values_list("page__pk", flat=True))
+    def get_bundled_pages(self, specific=False) -> "PageQuerySet[Page]":
+        pages = Page.objects.filter(pk__in=self.bundled_pages.values_list("page__pk", flat=True))
+        if specific:
+            pages = pages.specific().defer_streamfields()
+        return pages
 
     def get_pages_ready_for_review(self) -> list[Page]:
-        return [
-            page for page in self.get_bundled_pages().specific().defer_streamfields() if is_page_ready_to_preview(page)
-        ]
+        return [page for page in self.get_bundled_pages(specific=True) if is_page_ready_to_preview(page)]
 
     def get_teams_display(self) -> str:
         return ", ".join(
@@ -183,7 +184,7 @@ class Bundle(index.Indexed, ClusterableModel, models.Model):  # type: ignore[dja
 
         if self.scheduled_publication_date and self.scheduled_publication_date >= now():
             # Schedule publishing for related pages.
-            for bundled_page in self.get_bundled_pages().specific().defer_streamfields():
+            for bundled_page in self.get_bundled_pages(specific=True):
                 if bundled_page.go_live_at == self.scheduled_publication_date:
                     continue
 
