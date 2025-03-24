@@ -138,7 +138,7 @@ class KafkaPublisher(BasePublisher):
 
         self.producer = KafkaProducer(
             bootstrap_servers=[self.kafka_server],
-            api_version=(3, 8, 0),
+            api_version=settings.KAFKA_API_VERSION,
             value_serializer=lambda v: json.dumps(v).encode("utf-8"),
         )
 

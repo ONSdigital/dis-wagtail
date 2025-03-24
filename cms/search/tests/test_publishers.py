@@ -256,7 +256,7 @@ class KafkaPublisherTests(TestCase):
         publisher = KafkaPublisher()
         mock_producer_class.assert_called_once_with(
             bootstrap_servers=["localhost:9092"],
-            api_version=(3, 8, 0),
+            api_version=(3, 5, 1),
             value_serializer=ANY,  # or a lambda
         )
 
