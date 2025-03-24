@@ -143,13 +143,9 @@ class KafkaPublisher(BasePublisher):
         )
 
     def get_created_or_updated_channel(self) -> str:
-        if self._channel_created_or_updated is None:
-            raise ValueError("Channel must not be None here.")
         return self._channel_created_or_updated
 
     def get_deleted_channel(self) -> str:
-        if self._channel_deleted is None:
-            raise ValueError("Channel must not be None here.")
         return self._channel_deleted
 
     def _publish(self, channel: str, message: dict) -> "RecordMetadata":

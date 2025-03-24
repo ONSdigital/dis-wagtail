@@ -1,6 +1,6 @@
 from unittest.mock import patch
 
-import wagtail.coreutils
+from wagtail.coreutils import get_dummy_request
 from django.test import TestCase
 
 from cms.articles.tests.factories import ArticleSeriesPageFactory, StatisticalArticlePageFactory
@@ -33,7 +33,7 @@ from cms.topics.tests.factories import TopicPageFactory
 class WagtailHooksTests(TestCase):
     @classmethod
     def setUpTestData(cls):
-        cls.mock_request = wagtail.coreutils.get_dummy_request()
+        cls.mock_request = get_dummy_request()
 
         cls.excluded_factories = [
             ArticleSeriesPageFactory,

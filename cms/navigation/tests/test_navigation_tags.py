@@ -1,4 +1,4 @@
-import wagtail.coreutils
+from wagtail.coreutils import get_dummy_request
 from django.test import TestCase
 
 from cms.core.tests.factories import LinkBlockFactory
@@ -17,7 +17,7 @@ from cms.navigation.tests.factories import (
 class MainMenuTemplateTagTests(TestCase):
     @classmethod
     def setUpTestData(cls):
-        cls.mock_request = wagtail.coreutils.get_dummy_request()
+        cls.mock_request = get_dummy_request()
         cls.main_menu = MainMenuFactory()
 
         highlights = [{"type": "highlight", "value": HighlightsBlockFactory()}] * 3
@@ -89,7 +89,7 @@ class MainMenuTemplateTagTests(TestCase):
 class FooterMenuTemplateTagTests(TestCase):
     @classmethod
     def setUpTestData(cls):
-        cls.mock_request = wagtail.coreutils.get_dummy_request()
+        cls.mock_request = get_dummy_request()
 
         links = LinkBlockFactory.create_batch(5)
         columns = [
