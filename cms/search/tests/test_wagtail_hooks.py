@@ -1,7 +1,7 @@
 from unittest.mock import patch
 
-from wagtail.coreutils import get_dummy_request
 from django.test import TestCase
+from wagtail.coreutils import get_dummy_request
 
 from cms.articles.tests.factories import ArticleSeriesPageFactory, StatisticalArticlePageFactory
 from cms.home.models import HomePage

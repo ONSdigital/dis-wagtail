@@ -1,5 +1,5 @@
-from wagtail.coreutils import get_dummy_request
 from django.test import TestCase
+from wagtail.coreutils import get_dummy_request
 
 from cms.core.tests.factories import LinkBlockFactory
 from cms.navigation.templatetags.navigation_tags import footer_menu_columns, main_menu_columns, main_menu_highlights
