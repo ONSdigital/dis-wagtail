@@ -1,66 +1,90 @@
 {% extends "templates/base_page.html" %}
 
 {% from "components/panel/_macro.njk" import onsPanel %}
+{% from "components/hero/_macro.njk" import onsHero %}
 {% from "components/table-of-contents/_macro.njk" import onsTableOfContents %}
 
 {% block header_area %}
-    <div class="common-header article-header {% if page.updates %}article-header--flush{% endif %}">
-        <div class="ons-container">
-            {% include "templates/components/navigation/breadcrumbs.html" %}
-            <p class="article-header__doc-type ons-u-fs-l">{{ _("Statistical article") }}</p>
+    {# Currently missing email link as the onsDescriptionList does not allow markup #}
+    {% if page.contact_details %}
+        {# fmt:off #}
+        {% set contact_details =
+            {
+                "term": "Contact:",
+                "descriptions": [
+                    {
+                        "description": page.contact_details.name
+                    }
+                ]
+            }
+        %}
+        {# fmt:on #}
+    {% else %}
+        {% set contact_details = "" %}
+    {% endif %}
+    {# Currently missing links as the onsDescriptionList does not allow markup #}
+    {% if page.is_latest %}
+        {% set releases_text = _("View previous releases") %}
+    {% else %}
+        {% set releases_text = _("View latest release") %}
+    {% endif %}
+    {% set next_release_date_text = page.next_release_date|date("DATE_FORMAT") or _("To be announced") %}
 
-            <div class="ons-grid ons-grid-flex-gap ons-grid-flex-gap--40">
-                <div class="ons-grid__col ons-col-10@m ">
-                    <h1 class="ons-u-fs-3xl common-header__heading">
-                        {{ page.display_title }}
-                    </h1>
+    {# fmt:off #}
+    {{
+        onsHero({
+            "topic": _("Statistical article"),
+            "title": page.display_title,
+            "variants": 'grey',
+            "text": page.summary,
+            "officialStatisticsBadge": page.is_accredited,
+            "wide": true,
+            "detailsColumns": 12,
+            "censusLogo": page.is_census,
+            "descriptionList": {
 
-                    <div class="common-header__summary">{{ page.summary|richtext() }}</div>
-                </div>
-                <div class="ons-grid__col ons-col-2@m common-header__kitemark">
-                    {% if page.is_accredited %}
-                        {% include "templates/components/accredited/accredited-logo.html" %}
-                    {% endif %}
-                </div>
-            </div>
-        </div>
-
-        {% block release_meta %}
-            {% if page.is_census %}
-                <div class="ons-container">
-                    {% include "templates/components/census/census-logo.html" %}
-                </div>
-            {% endif %}
-            <div class="ons-container common-header__releases">
-                <div>
-                    <span class="ons-u-fs-r--b common-header__releases-label">{{ _("Release date") }}:</span>
-                    <span class="ons-u-nowrap">{{ page.release_date|date("DATE_FORMAT") }}</span>
-                </div>
-                <div>
-                    <span class="ons-u-fs-r--b common-header__releases-label">{{ _("Next release") }}:</span>
-                    <span class="ons-u-nowrap">{{ page.next_release_date|date("DATE_FORMAT") or _("To be announced") }}</span>
-                </div>
-                <div>
-                    <span class="ons-u-fs-r--b common-header__releases-label">{{ _("Edition") }}:</span>
-                    <span class="ons-u-nowrap">{{ _("Latest") }}</span>
-                </div>
-                <div>
-                    <span class="ons-u-fs-r--b common-header__releases-label">{{ _("Releases") }}:</span>
-                    {% if page.is_latest %}
-                        <a href="{{ routablepageurl(page.get_parent().specific, "previous_releases") }}">{{ _("View previous releases") }}</a>
-                    {% else %}
-                        <a href="{{ routablepageurl(page.get_parent().specific, "latest_release") }}">{{ _("View latest release") }}</a>
-                    {% endif %}
-                </div>
-                {% if page.contact_details %}
-                    <div>
-                        <span class="ons-u-fs-r--b common-header__releases-label">{{ _("Contact") }}:</span>
-                        <a href="mailto:{{ page.contact_details.email }}">{{ page.contact_details.name }}</a>
-                    </div>
-                {% endif %}
-            </div>
-        {% endblock %}
-    </div>
+                "descriptionListLabel": "",
+                "termCol": "6",
+                "descriptionCol": "6",
+                "itemsList": [
+                    {
+                        "term": _("Release date"),
+                        "descriptions": [
+                            {
+                                "description": page.release_date|date("DATE_FORMAT")
+                            }
+                        ]
+                    },
+                    {
+                        "term": _("Next release"),
+                        "descriptions": [
+                            {
+                                "description": next_release_date_text
+                            }
+                        ]
+                    },
+                    {
+                        "term": _("Edition"),
+                        "descriptions": [
+                            {
+                                "description": _("Latest")
+                            }
+                        ]
+                    },
+                    {
+                        "term": _("Releases"),
+                        "descriptions": [
+                            {
+                                "description": releases_text
+                            }
+                        ]
+                    },
+                    contact_details,
+                ]
+            },
+        })
+    }}
+    {# fmt:on #}
 
     {% if page.updates %}
         {% include_block page.updates %}
