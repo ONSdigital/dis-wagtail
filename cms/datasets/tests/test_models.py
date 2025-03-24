@@ -1,5 +1,3 @@
-import json
-
 import responses
 from django.test import TestCase
 
@@ -9,7 +7,7 @@ from cms.datasets.models import DATASETS_BASE_API_URL, ONSDataset, ONSDatasetApi
 class TestONSDatasetApiQuerySet(TestCase):
     @responses.activate
     def test_count_uses_total_count(self):
-        responses.add(responses.GET, DATASETS_BASE_API_URL, body=json.dumps({"total_count": 2, "items": []}))
+        responses.add(responses.GET, DATASETS_BASE_API_URL, json={"total_count": 2, "items": []})
         api_queryset = ONSDatasetApiQuerySet()
         api_queryset.base_url = DATASETS_BASE_API_URL
         api_queryset.pagination_style = "offset-limit"
@@ -20,15 +18,14 @@ class TestONSDatasetApiQuerySet(TestCase):
         responses.add(
             responses.GET,
             DATASETS_BASE_API_URL,
-            body=json.dumps(
-                {
-                    "items": [
-                        {"dummy": "test"},
-                        {"dummy": "test2"},
-                    ]
-                }
-            ),
+            json={
+                "items": [
+                    {"dummy": "test"},
+                    {"dummy": "test2"},
+                ]
+            },
         )
+
         api_queryset = ONSDatasetApiQuerySet()
         api_queryset.base_url = DATASETS_BASE_API_URL
         self.assertEqual(api_queryset.count(), 2)
@@ -52,13 +49,11 @@ class TestONSDataset(TestCase):
         responses.add(
             responses.GET,
             DATASETS_BASE_API_URL,
-            body=json.dumps(
-                {
-                    "items": [
-                        response_dataset,
-                    ]
-                }
-            ),
+            json={
+                "items": [
+                    response_dataset,
+                ]
+            },
         )
 
         dataset = ONSDataset.objects.all().first()  # pylint: disable=no-member

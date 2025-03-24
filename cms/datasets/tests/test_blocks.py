@@ -8,7 +8,7 @@ from cms.datasets.models import Dataset
 
 class TestDatasetStoryBlock(TestCase):
     def setUp(self):
-        self.dataset = Dataset(
+        self.dataset = Dataset.objects.create(
             namespace="1",
             edition="test1_edition",
             version="test_version",
@@ -16,7 +16,6 @@ class TestDatasetStoryBlock(TestCase):
             description="test_description",
             url="https://example.com",
         )
-        self.dataset.save()
 
     def test_validation_fails_on_duplicate_datasets(self):
         block = DatasetStoryBlock()

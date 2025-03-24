@@ -23,8 +23,8 @@ class ONSDatasetApiQuerySet(APIQuerySet):
     def fetch_api_response(self, url: str | None = None, params: Mapping | None = None) -> dict:
         api_response: dict = super().fetch_api_response(url=url, params=params)
         # Queryish expects the results count to be returned as "count", but the dataset API returns "total_count"
-        if (count := api_response.get("total_count")) and api_response.get("count") is None:
-            api_response["count"] = count
+        if count := api_response.get("total_count"):
+            api_response.setdefault("count", count)
         return api_response
 
 
