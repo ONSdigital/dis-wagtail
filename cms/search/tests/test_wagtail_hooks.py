@@ -35,29 +35,28 @@ class WagtailHooksTests(TestCase):
     def setUpTestData(cls):
         cls.mock_request = get_dummy_request()
 
-        cls.excluded_factories = [
-            ArticleSeriesPageFactory,
-            HomePage,
-            ReleaseCalendarIndex,
-            ThemePageFactory,
-            TopicPageFactory,
+        cls.excluded_pages = [
+            ArticleSeriesPageFactory(),
+            HomePage(),
+            ReleaseCalendarIndex(),
+            ThemePageFactory(),
+            TopicPageFactory(),
         ]
 
-        cls.included_factories = [
-            InformationPageFactory,
-            MethodologyPageFactory,
-            ReleaseCalendarPageFactory,
-            StatisticalArticlePageFactory,
+        cls.included_pages = [
+            InformationPageFactory(),
+            MethodologyPageFactory(),
+            ReleaseCalendarPageFactory(),
+            StatisticalArticlePageFactory(),
         ]
 
         cls.index_page = IndexPageFactory(slug="custom-slug-1")
-        cls.included_factories.append(lambda: cls.index_page)
+        cls.included_pages.append(cls.index_page)
 
     @patch("cms.search.wagtail_hooks.publisher")
     def test_page_published_excluded_page_type(self, mock_publisher):
         """Pages in SEARCH_INDEX_EXCLUDED_PAGE_TYPES should not trigger any publish calls."""
-        for factory in self.excluded_factories:
-            page = factory()
+        for page in self.excluded_pages:
             page_published(self.mock_request, page)
             mock_publisher.publish_created_or_updated.assert_not_called()
 
@@ -66,8 +65,7 @@ class WagtailHooksTests(TestCase):
         """Pages not in SEARCH_INDEX_EXCLUDED_PAGE_TYPES should trigger
         publisher.publish_created_or_updated().
         """
-        for factory in self.included_factories:
-            page = factory()
+        for page in self.included_pages:
             page_published(self.mock_request, page)
             mock_publisher.publish_created_or_updated.assert_called_once_with(page)
 
@@ -78,8 +76,7 @@ class WagtailHooksTests(TestCase):
         """Pages in SEARCH_INDEX_EXCLUDED_PAGE_TYPES should not trigger any unpublish calls,
         publisher.publish_deleted().
         """
-        for factory in self.excluded_factories:
-            page = factory()
+        for page in self.excluded_pages:
             page_unpublished(self.mock_request, page)
             mock_publisher.publish_deleted.assert_not_called()
 
@@ -88,8 +85,7 @@ class WagtailHooksTests(TestCase):
         """Pages not in SEARCH_INDEX_EXCLUDED_PAGE_TYPES should not trigger any unpublish calls,
         publisher.publish_deleted().
         """
-        for factory in self.included_factories:
-            page = factory()
+        for page in self.included_pages:
             page_unpublished(self.mock_request, page)
             mock_publisher.publish_deleted.assert_called_once_with(page)
 
