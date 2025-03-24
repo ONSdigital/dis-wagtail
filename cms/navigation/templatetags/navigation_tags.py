@@ -2,11 +2,15 @@ from typing import TYPE_CHECKING, Optional, TypedDict, cast
 
 import jinja2
 from django.http import HttpRequest
+from django.utils.translation import gettext_lazy as _
 
 if TYPE_CHECKING:
     from wagtail.blocks import StructValue
+    from wagtail.models import Page
 
     from cms.navigation.models import FooterMenu, MainMenu
+
+BREACRUMBS_HOMEPAGE_DEPTH = 2
 
 
 class NavigationItem(TypedDict, total=False):
@@ -121,3 +125,17 @@ def footer_menu_columns(
 
         columns_data.append(cast(FooterColumnData, {"title": column_title, "itemsList": links_list}))
     return columns_data
+
+
+@jinja2.pass_context
+def breadcrumbs(context: jinja2.runtime.Context, page: "Page") -> list[dict[str, object]]:
+    """Returns the breadcrumbs as a list of dictionaries for the given page."""
+    breadcrumbs_list = []
+    request = context.get("request")
+    for ancestor_page in page.get_ancestors().specific().defer_streamfields():
+        if not ancestor_page.is_root():
+            if ancestor_page.depth <= BREACRUMBS_HOMEPAGE_DEPTH:
+                breadcrumbs_list.append({"url": "/", "text": _("Home")})
+            elif not getattr(ancestor_page, "exclude_from_breadcrumbs", False):
+                breadcrumbs_list.append({"url": ancestor_page.get_url(request=request), "text": ancestor_page.title})
+    return breadcrumbs_list
