@@ -7,12 +7,12 @@ from wagtail import blocks
 from wagtail.blocks.struct_block import StructValue
 
 from cms.datavis.blocks.table import SimpleTableBlock
-from cms.datavis.blocks.utils import TextInputCharBlock, TextInputFloatBlock
+from cms.datavis.blocks.utils import TextInputFloatBlock, TextInputIntegerBlock
 
 
 class PointAnnotationBlock(blocks.StructBlock):
     label = blocks.CharBlock(required=True)
-    x_position = TextInputCharBlock(label="x-position", required=True)
+    x_position = TextInputIntegerBlock(label="x-position", required=True)
     y_position = TextInputFloatBlock(label="y-position", required=True)
 
 
