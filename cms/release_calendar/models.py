@@ -195,3 +195,8 @@ class ReleaseCalendarPage(BasePage):  # type: ignore[django-manager-missing]
                 items += [{"url": "#links", "text": _("You might also be interested in")}]
 
         return items
+
+    @property
+    def search_index_content_type(self) -> str:
+        """Returns the content type string for the search index."""
+        return "release"

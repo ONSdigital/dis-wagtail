@@ -1,8 +1,10 @@
 from django.conf import settings
+from functools import cache
 
 from .publishers import KafkaPublisher, LogPublisher
 
 
+@cache
 def get_publisher() -> KafkaPublisher | LogPublisher:
     """Return the configured publisher backend."""
     backend = settings.SEARCH_INDEX_PUBLISHER_BACKEND

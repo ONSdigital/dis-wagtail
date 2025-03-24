@@ -8,6 +8,7 @@ from django.utils.encoding import force_str
 from kafka import KafkaProducer
 from wagtail.rich_text import get_text_for_indexing
 
+
 logger = logging.getLogger(__name__)
 
 
@@ -30,7 +31,7 @@ class BasePublisher(ABC):
 
     def publish_created_or_updated(self, page: "Page") -> None:
         """Build the message for the created/updated event.
-        Delegate sending to the subclass's _publish_to_service().
+        Delegate sending to the subclass's _publish().
         """
         channel = self.get_created_or_updated_channel()
         message = self._construct_message_for_create_update(page)
@@ -39,11 +40,11 @@ class BasePublisher(ABC):
             message,
             channel,
         )
-        return self._publish_to_service(channel, message)
+        return self._publish(channel, message)
 
     def publish_deleted(self, page: "Page") -> None:
         """Build the message for the deleted event.
-        Delegate sending to the subclass's _publish_to_service().
+        Delegate sending to the subclass's _publish().
         """
         channel = self.get_deleted_channel()
         message = {
@@ -54,10 +55,10 @@ class BasePublisher(ABC):
             message,
             channel,
         )
-        return self._publish_to_service(channel, message)
+        return self._publish(channel, message)
 
     @abstractmethod
-    def _publish_to_service(self, channel: str, message: dict) -> None:
+    def _publish(self, channel: str, message: dict) -> None:
         """Each child class defines how to actually send/publish
         the message (e.g., Kafka, logging, etc.).
         """
@@ -81,17 +82,14 @@ class BasePublisher(ABC):
            - StandardPayload: requires {uri, title, content_type}, optional fields
            - ReleasePayload: extends StandardPayload with release-specific fields
         """
-        # For pages that are 'release' content, we add release fields below.
-        content_type = self._map_page_type_to_content_type(page)
-
         # Common fields for StandardPayload (also part of ReleasePayload)
         # The schema requires at minimum: uri, title, content_type
         message = {
             "uri": page.url_path,
-            "content_type": content_type,
+            "content_type": page.search_index_content_type,
             "release_date": (
                 page.release_date.isoformat().replace("+00:00", "Z")
-                if content_type == "release" and getattr(page, "release_date", None)
+                if page.search_index_content_type == "release" and getattr(page, "release_date", None)
                 else None
             ),
             "summary": get_text_for_indexing(force_str(page.summary)),
@@ -100,7 +98,7 @@ class BasePublisher(ABC):
         }
 
         # If it's a Release, we add the extra fields from ReleasePayload
-        if content_type == "release":
+        if page.search_index_content_type == "release":
             message.update(self._construct_release_specific_fields(page))
         return message
 
@@ -125,18 +123,6 @@ class BasePublisher(ABC):
                 }
             )
         return release_fields
-
-    def _map_page_type_to_content_type(self, page: "Page") -> Optional[str]:
-        """Maps the class name of a given page object to a corresponding content type string."""
-        mapping = {
-            "ReleaseCalendarPage": "release",
-            "StatisticalArticlePage": "bulletin",
-            "InformationPage": "static_page",
-            "IndexPage": "static_landing_page",
-            "MethodologyPage": "static_methodology",
-        }
-
-        return mapping.get(page.__class__.__name__)
 
 
 class KafkaPublisher(BasePublisher):
@@ -167,7 +153,7 @@ class KafkaPublisher(BasePublisher):
             raise ValueError("Channel must not be None here.")
         return self._channel_deleted
 
-    def _publish_to_service(self, channel: str, message: dict) -> "RecordMetadata":
+    def _publish(self, channel: str, message: dict) -> "RecordMetadata":
         """Send the message to Kafka."""
         logger.info("KafkaPublisher: Publishing to channel=%s, message=%s", channel, message)
         future = self.producer.send(channel, message)
@@ -186,6 +172,6 @@ class LogPublisher(BasePublisher):
     def get_deleted_channel(self) -> str:
         return "log-deleted"
 
-    def _publish_to_service(self, channel: str, message: dict) -> None:
+    def _publish(self, channel: str, message: dict) -> None:
         """Log the message."""
         logger.info("LogPublisher: channel=%s message=%s", channel, message)

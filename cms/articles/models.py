@@ -232,3 +232,8 @@ class StatisticalArticlePage(BundledPageMixin, BasePage):  # type: ignore[django
             .first()
         )
         return bool(self.pk == latest_id)  # to placate mypy
+
+    @property
+    def search_index_content_type(self) -> str:
+        """Returns the content type string for the search index."""
+        return "bulletin"

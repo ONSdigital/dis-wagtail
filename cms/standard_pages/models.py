@@ -43,6 +43,11 @@ class InformationPage(GenericTaxonomyMixin, BasePage):  # type: ignore[django-ma
         index.SearchField("content"),
     ]
 
+    @property
+    def search_index_content_type(self) -> str:
+        """Returns the content type string for the search index."""
+        return "static_page"
+
 
 class IndexPage(BasePage):  # type: ignore[django-manager-missing]
     template = "templates/pages/index_page.html"
@@ -138,3 +143,8 @@ class IndexPage(BasePage):  # type: ignore[django-manager-missing]
         context["related_links_list"] = self.get_formatted_related_links_list()
 
         return context
+
+    @property
+    def search_index_content_type(self) -> str:
+        """Returns the content type string for the search index."""
+        return "static_landing_page"

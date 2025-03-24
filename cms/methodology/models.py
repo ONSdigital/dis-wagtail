@@ -146,3 +146,8 @@ class MethodologyPage(GenericTaxonomyMixin, BasePage):  # type: ignore[django-ma
         if self.contact_details_id:
             items += [{"url": "#contact-details", "text": _("Contact details")}]
         return items
+
+    @property
+    def search_index_content_type(self) -> str:
+        """Returns the content type string for the search index."""
+        return "static_methodology"

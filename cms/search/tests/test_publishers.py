@@ -29,7 +29,7 @@ class DummyPublisher(BasePublisher):
         self._channel_created_or_updated = channel_created_or_updated
         self._channel_deleted = channel_deleted
 
-    def _publish_to_service(self, channel, message):
+    def _publish(self, channel, message):
         # We don't actually publish in tests; we just want to spy on the calls.
         pass
 
@@ -76,9 +76,9 @@ class BasePublisherTests(TestCase):
             channel_deleted="dummy-channel-deleted",
         )
 
-    def test_publish_created_or_updated_calls_publish_to_service(self):
-        """Verify `publish_created_or_updated` calls `_publish_to_service` with the correct channel & message."""
-        with patch.object(self.publisher, "_publish_to_service", return_value=None) as mock_method:
+    def test_publish_created_or_updated_calls_publish(self):
+        """Verify `publish_created_or_updated` calls `_publish` with the correct channel & message."""
+        with patch.object(self.publisher, "_publish", return_value=None) as mock_method:
             for factory in self.included_factories:
                 page = factory()
 
@@ -105,9 +105,9 @@ class BasePublisherTests(TestCase):
                 mock_method.reset_mock()
                 # Not a release => no date
 
-    def test_publish_deleted_calls_publish_to_service(self):
-        """Verify `publish_deleted` calls `_publish_to_service` with the correct channel & message."""
-        with patch.object(self.publisher, "_publish_to_service", return_value=None) as mock_method:
+    def test_publish_deleted_calls_publish(self):
+        """Verify `publish_deleted` calls `_publish` with the correct channel & message."""
+        with patch.object(self.publisher, "_publish", return_value=None) as mock_method:
             for factory in self.included_factories:
                 page = factory()
                 self.publisher.publish_deleted(page)
