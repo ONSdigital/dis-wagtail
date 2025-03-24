@@ -14,15 +14,18 @@ from wagtail.admin.views.generic.chooser import ChooseResultsView, ChooseView
 from wagtail.admin.viewsets.chooser import ChooserViewSet
 from wagtail.admin.viewsets.model import ModelViewSet
 from wagtail.log_actions import log
+from wagtail.models import Page
 
 from .enums import BundleStatus
 from .models import Bundle
 from .notifications import notify_slack_of_publication_start, notify_slack_of_publish_end, notify_slack_of_status_change
+from .permissions import user_can_manage, user_can_preview
 
 if TYPE_CHECKING:
     from django.db.models.fields import Field
     from django.http import HttpResponseBase
     from django.utils.safestring import SafeString
+    from wagtail.query import PageQuerySet
 
 
 class BundleCreateView(CreateView):
@@ -181,9 +184,17 @@ class BundleInspectView(InspectView):
         """Displays the scheduled publication date, if set."""
         return self.object.scheduled_publication_date or "No scheduled publication"
 
+    def get_pages_for_user(self) -> "PageQuerySet[Page]":
+        if user_can_manage(self.request.user):
+            return self.object.get_bundled_pages().specific()
+
+        if user_can_preview(self.request.user, self.object):
+            return self.object.get_pages_ready_for_review()
+
+        return Page.objects.none()
+
     def get_pages_display_value(self) -> "SafeString":
         """Returns formatted markup for Pages linked to the Bundle."""
-        pages = self.object.get_bundled_pages().specific()
         data = (
             (
                 reverse("wagtailadmin_pages:edit", args=(page.pk,)),
@@ -202,7 +213,7 @@ class BundleInspectView(InspectView):
                     ),
                 ),
             )
-            for page in pages
+            for page in self.get_pages_for_user()
         )
 
         page_data = format_html_join(

@@ -150,6 +150,10 @@ class Bundle(index.Indexed, ClusterableModel, models.Model):  # type: ignore[dja
             date = self.release_calendar_page.release_date  # type: ignore[union-attr]
         return date
 
+    @cached_property
+    def active_team_ids(self) -> list[int]:
+        return list(self.teams.filter(team__is_active=True).values_list("team__pk", flat=True))
+
     @property
     def can_be_approved(self) -> bool:
         """Determines whether the bundle can be approved (i.e. is not already approved or released).
@@ -158,7 +162,7 @@ class Bundle(index.Indexed, ClusterableModel, models.Model):  # type: ignore[dja
         """
         return self.status in [BundleStatus.PENDING, BundleStatus.IN_REVIEW]
 
-    def get_bundled_pages(self, specific=False) -> "PageQuerySet[Page]":
+    def get_bundled_pages(self, specific: bool = False) -> "PageQuerySet[Page]":
         pages = Page.objects.filter(pk__in=self.bundled_pages.values_list("page__pk", flat=True))
         if specific:
             pages = pages.specific().defer_streamfields()

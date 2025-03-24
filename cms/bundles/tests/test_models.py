@@ -5,8 +5,10 @@ from django.utils import timezone
 
 from cms.articles.tests.factories import StatisticalArticlePageFactory
 from cms.bundles.enums import BundleStatus
+from cms.bundles.models import BundleTeam
 from cms.bundles.tests.factories import BundleFactory, BundlePageFactory
 from cms.release_calendar.tests.factories import ReleaseCalendarPageFactory
+from cms.teams.models import Team
 
 
 class BundleModelTestCase(TestCase):
@@ -75,6 +77,15 @@ class BundleModelTestCase(TestCase):
         bundle_page = BundlePageFactory(parent=self.bundle, page=self.statistical_article)
 
         self.assertEqual(str(bundle_page), f"BundlePage: page {self.statistical_article.pk} in bundle {self.bundle.id}")
+
+    def test_active_teams(self):
+        team = Team.objects.create(identifier="foo", name="Active team")
+        inactive_team = Team.objects.create(identifier="inactive", name="Inactive team", is_active=False)
+
+        BundleTeam.objects.create(parent=self.bundle, team=team)
+        BundleTeam.objects.create(parent=self.bundle, team=inactive_team)
+
+        self.assertListEqual(self.bundle.active_team_ids, [team.pk])
 
 
 class BundledPageMixinTestCase(TestCase):
