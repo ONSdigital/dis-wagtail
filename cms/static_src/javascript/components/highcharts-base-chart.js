@@ -169,7 +169,6 @@ class HighchartsBaseChart {
     };
 
     this.annotationsValues.forEach((annotation) => {
-      console.log(annotation);
       annotationConfig.labels.push({
         text: annotation.text,
         point: {
@@ -205,7 +204,6 @@ class HighchartsBaseChart {
     });
 
     this.apiConfig.annotations = [annotationConfig];
-    console.log(this.apiConfig);
   };
 }
 
