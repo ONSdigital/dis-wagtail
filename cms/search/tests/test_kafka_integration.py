@@ -11,8 +11,8 @@ from cms.standard_pages.tests.factories import InformationPageFactory
 
 @override_settings(
     KAFKA_SERVER="localhost:9092",
-    KAFKA_TOPIC_CREATED_OR_UPDATED="search-content-updated",
-    KAFKA_TOPIC_DELETED="search-content-deleted",
+    KAFKA_CHANNEL_CREATED_OR_UPDATED="search-content-updated",
+    KAFKA_CHANNEL_DELETED="search-content-deleted",
 )
 class KafkaIntegrationTests(TestCase):
     """These tests will attempt to connect to a real Kafka instance at localhost:9092."""
@@ -49,12 +49,12 @@ class KafkaIntegrationTests(TestCase):
         cls.consumer_deleted.close()
         super().tearDownClass()
 
-    def _poll_for_message(self, consumer, expected_uri, timeout_secs=5):
-        """Polls the given consumer for up to `timeout_secs` seconds,
+    def _poll_for_message(self, consumer, expected_uri, timeout_seconds=5):
+        """Polls the given consumer for up to `timeout_seconds` seconds,
         returning True if a message with the given `expected_uri` is found.
         """
         start_time = time.time()
-        while time.time() - start_time < timeout_secs:
+        while time.time() - start_time < timeout_seconds:
             raw_msgs = consumer.poll(timeout_ms=1000)
             for _tp, msgs in raw_msgs.items():
                 for msg in msgs:
@@ -65,20 +65,20 @@ class KafkaIntegrationTests(TestCase):
 
     def test_publish_created_or_updated_integration(self):
         """Publish a "created/updated" message to Kafka and consume it,
-        verifying that the message is indeed in the topic.
+        verifying that the message is indeed in the channel.
         """
         page = InformationPageFactory()
         publish_result = self.publisher.publish_created_or_updated(page)
         self.assertIsNotNone(publish_result)  # We get some metadata from Kafka
 
         msg_found = self._poll_for_message(self.consumer_created, page.url_path)
-        self.assertTrue(msg_found, "No matching message found in 'search-content-updated' topic.")
+        self.assertTrue(msg_found, "No matching message found in 'search-content-updated' channel.")
 
     def test_publish_deleted_integration(self):
         """Publish a "deleted" message to Kafka and consume it from 'search-content-deleted'."""
         page = InformationPageFactory()
 
-        _ = self.publisher.publish_deleted(page)
+        self.publisher.publish_deleted(page)
 
         msg_found = self._poll_for_message(self.consumer_deleted, page.url_path)
-        self.assertTrue(msg_found, "No matching message found in 'search-content-deleted' topic.")
+        self.assertTrue(msg_found, "No matching message found in 'search-content-deleted' channel.")

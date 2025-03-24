@@ -1,13 +1,11 @@
-from typing import Union
-
 from django.conf import settings
 
 from .publishers import KafkaPublisher, LogPublisher
 
 
-def get_publisher() -> Union[KafkaPublisher, LogPublisher]:
+def get_publisher() -> KafkaPublisher | LogPublisher:
     """Return the configured publisher backend."""
-    backend = settings.PUBLISHER_BACKEND
+    backend = settings.SEARCH_INDEX_PUBLISHER_BACKEND
     if backend == "kafka":
         return KafkaPublisher()
     return LogPublisher()

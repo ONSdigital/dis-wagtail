@@ -13,23 +13,31 @@ from cms.release_calendar.tests.factories import ReleaseCalendarPageFactory
 from cms.search.publishers import BasePublisher, KafkaPublisher, LogPublisher
 from cms.standard_pages.tests.factories import IndexPageFactory, InformationPageFactory
 
+EXPECTED_CONTENT_TYPES = {
+    "ReleaseCalendarPage": "release",
+    "StatisticalArticlePage": "bulletin",
+    "InformationPage": "static_page",
+    "IndexPage": "static_landing_page",
+    "MethodologyPage": "static_methodology",
+}
+
 
 class DummyPublisher(BasePublisher):
     """Concrete subclass of BasePublisher for testing the shared functionality."""
 
-    def __init__(self, topic_created_or_updated, topic_deleted):
-        self._topic_created_or_updated = topic_created_or_updated
-        self._topic_deleted = topic_deleted
+    def __init__(self, channel_created_or_updated, channel_deleted):
+        self._channel_created_or_updated = channel_created_or_updated
+        self._channel_deleted = channel_deleted
 
-    def _publish_to_service(self, topic, message):
+    def _publish_to_service(self, channel, message):
         # We don't actually publish in tests; we just want to spy on the calls.
         pass
 
-    def get_topic_created_or_updated(self):
-        return self._topic_created_or_updated
+    def get_created_or_updated_channel(self):
+        return self._channel_created_or_updated
 
-    def get_topic_deleted(self):
-        return self._topic_deleted
+    def get_deleted_channel(self):
+        return self._channel_deleted
 
 
 class BasePublisherTests(TestCase):
@@ -64,22 +72,23 @@ class BasePublisherTests(TestCase):
 
     def setUp(self):
         self.publisher = DummyPublisher(
-            topic_created_or_updated="dummy-topic-created",
-            topic_deleted="dummy-topic-deleted",
+            channel_created_or_updated="dummy-channel-created",
+            channel_deleted="dummy-channel-deleted",
         )
 
     def test_publish_created_or_updated_calls_publish_to_service(self):
-        """Verify `publish_created_or_updated` calls `_publish_to_service` with the correct topic & message."""
+        """Verify `publish_created_or_updated` calls `_publish_to_service` with the correct channel & message."""
         with patch.object(self.publisher, "_publish_to_service", return_value=None) as mock_method:
             for factory in self.included_factories:
                 page = factory()
 
                 self.publisher.publish_created_or_updated(page)
+                expected_type = EXPECTED_CONTENT_TYPES[type(page).__name__]
 
-                # The topic should come from get_topic_created_or_updated()
+                # The channel should come from get_channel_created_or_updated()
                 mock_method.assert_called_once()
-                called_topic, called_message = mock_method.call_args[0]
-                self.assertEqual(called_topic, "dummy-topic-created")
+                called_channel, called_message = mock_method.call_args[0]
+                self.assertEqual(called_channel, "dummy-channel-created")
 
                 # Check the message structure from _construct_message_for_create_update
                 self.assertIn("uri", called_message)
@@ -91,21 +100,21 @@ class BasePublisherTests(TestCase):
                 self.assertEqual(called_message["uri"], page.url_path)
                 self.assertEqual(called_message["title"], page.title)
                 self.assertEqual(called_message["summary"], page.summary)
-                self.assertEqual(called_message["content_type"], page.content_type_id)
+                self.assertEqual(called_message["content_type"], expected_type)
 
                 mock_method.reset_mock()
                 # Not a release => no date
 
     def test_publish_deleted_calls_publish_to_service(self):
-        """Verify `publish_deleted` calls `_publish_to_service` with the correct topic & message."""
+        """Verify `publish_deleted` calls `_publish_to_service` with the correct channel & message."""
         with patch.object(self.publisher, "_publish_to_service", return_value=None) as mock_method:
             for factory in self.included_factories:
                 page = factory()
                 self.publisher.publish_deleted(page)
 
                 mock_method.assert_called_once()
-                called_topic, called_message = mock_method.call_args[0]
-                self.assertEqual(called_topic, "dummy-topic-deleted")
+                called_channel, called_message = mock_method.call_args[0]
+                self.assertEqual(called_channel, "dummy-channel-deleted")
 
                 self.assertIn("uri", called_message)
 
@@ -122,8 +131,9 @@ class BasePublisherTests(TestCase):
 
         for page in release_calendar_pages:
             message = self.publisher._construct_message_for_create_update(page)  # pylint: disable=W0212
+            expected_type = EXPECTED_CONTENT_TYPES[type(page).__name__]
 
-            self.assertEqual(message["content_type"], page.content_type_id)
+            self.assertEqual(message["content_type"], expected_type)
             self.assertEqual(message["title"], page.title)
             self.assertEqual(message["summary"], page.summary)
             self.assertEqual(message["uri"], page.url_path)
@@ -151,8 +161,9 @@ class BasePublisherTests(TestCase):
         ]
 
         message = self.publisher._construct_message_for_create_update(page)  # pylint: disable=W0212
+        expected_type = EXPECTED_CONTENT_TYPES[type(page).__name__]
 
-        self.assertEqual(message["content_type"], page.content_type_id)
+        self.assertEqual(message["content_type"], expected_type)
         self.assertEqual(message["title"], page.title)
         self.assertEqual(message["summary"], page.summary)
         self.assertEqual(message["uri"], page.url_path)
@@ -185,8 +196,9 @@ class BasePublisherTests(TestCase):
         page = self.release_calendar_page_published
 
         message = self.publisher._construct_message_for_create_update(page)  # pylint: disable=W0212
+        expected_type = EXPECTED_CONTENT_TYPES[type(page).__name__]
 
-        self.assertEqual(message["content_type"], page.content_type_id)
+        self.assertEqual(message["content_type"], expected_type)
         self.assertEqual(message["title"], page.title)
         self.assertEqual(message["summary"], page.summary)
         self.assertEqual(message["uri"], page.url_path)
@@ -208,8 +220,9 @@ class BasePublisherTests(TestCase):
         page = self.release_calendar_page_cancelled
 
         message = self.publisher._construct_message_for_create_update(page)  # pylint: disable=W0212
+        expected_type = EXPECTED_CONTENT_TYPES[type(page).__name__]
 
-        self.assertEqual(message["content_type"], page.content_type_id)
+        self.assertEqual(message["content_type"], expected_type)
         self.assertEqual(message["title"], page.title)
         self.assertEqual(message["summary"], page.summary)
         self.assertEqual(message["uri"], page.url_path)
@@ -229,8 +242,8 @@ class BasePublisherTests(TestCase):
 
 @override_settings(
     KAFKA_SERVER="localhost:9092",
-    KAFKA_TOPIC_CREATED_OR_UPDATED="search-content-updated",
-    KAFKA_TOPIC_DELETED="search-content-deleted",
+    KAFKA_CHANNEL_CREATED_OR_UPDATED="search-content-updated",
+    KAFKA_CHANNEL_DELETED="search-content-deleted",
 )
 class KafkaPublisherTests(TestCase):
     @classmethod
@@ -247,12 +260,12 @@ class KafkaPublisherTests(TestCase):
             value_serializer=ANY,  # or a lambda
         )
 
-        self.assertEqual(publisher._topic_created_or_updated, "search-content-updated")  # pylint: disable=W0212
-        self.assertEqual(publisher._topic_deleted, "search-content-deleted")  # pylint: disable=W0212
+        self.assertEqual(publisher._channel_created_or_updated, "search-content-updated")  # pylint: disable=W0212
+        self.assertEqual(publisher._channel_deleted, "search-content-deleted")  # pylint: disable=W0212
 
     @patch("cms.search.publishers.KafkaProducer")
     def test_publish_created_or_updated(self, mock_producer_class):
-        """Check that publish_created_or_updated sends to Kafka with the correct topic & message."""
+        """Check that publish_created_or_updated sends to Kafka with the correct channel & message."""
         mock_producer = MagicMock()
         mock_future = MagicMock()
         mock_producer.send.return_value = mock_future
@@ -263,11 +276,12 @@ class KafkaPublisherTests(TestCase):
         page = self.information_page
 
         result = publisher.publish_created_or_updated(page)
+        expected_type = EXPECTED_CONTENT_TYPES[type(page).__name__]
 
         # Check calls to producer
         mock_producer.send.assert_called_once()
         call_args, call_kwargs = mock_producer.send.call_args  # pylint: disable=W0612
-        self.assertEqual(call_args[0], "search-content-updated")  # topic
+        self.assertEqual(call_args[0], "search-content-updated")  # channel
         # The actual payload is the second argument
         actual_payload = call_args[1]
 
@@ -279,7 +293,7 @@ class KafkaPublisherTests(TestCase):
         self.assertEqual(actual_payload["uri"], page.url_path)
         self.assertEqual(actual_payload["title"], page.title)
         self.assertEqual(actual_payload["summary"], page.summary)
-        self.assertEqual(actual_payload["content_type"], page.content_type_id)
+        self.assertEqual(actual_payload["content_type"], expected_type)
 
         mock_future.get.assert_called_once_with(timeout=10)
 
@@ -287,7 +301,7 @@ class KafkaPublisherTests(TestCase):
 
     @patch("cms.search.publishers.KafkaProducer")
     def test_publish_deleted(self, mock_producer_class):
-        """Check that publish_deleted sends to Kafka with the correct topic & message."""
+        """Check that publish_deleted sends to Kafka with the correct channel & message."""
         mock_producer = MagicMock()
         mock_future = MagicMock()
         mock_producer.send.return_value = mock_future
@@ -301,7 +315,7 @@ class KafkaPublisherTests(TestCase):
 
         mock_producer.send.assert_called_once()
         call_args, call_kwargs = mock_producer.send.call_args  # pylint: disable=W0612
-        self.assertEqual(call_args[0], "search-content-deleted")  # topic
+        self.assertEqual(call_args[0], "search-content-deleted")  # channel
         actual_payload = call_args[1]
 
         self.assertIn("uri", actual_payload)
@@ -333,13 +347,13 @@ class LogPublisherTests(TestCase):
         # The format string is arg 0, the next args are "log-created-or-updated" and the dict
         self.assertEqual(
             last_call_args[0],
-            "LogPublisher: topic=%s message=%s",
+            "LogPublisher: channel=%s message=%s",
             "Wrong log format string",
         )
         self.assertEqual(
             last_call_args[1],
             "log-created-or-updated",
-            "Wrong topic argument",
+            "Wrong channel argument",
         )
 
         self.assertIn("uri", last_call_args[2], "Payload dict missing expected key 'uri'")
@@ -358,13 +372,13 @@ class LogPublisherTests(TestCase):
 
         self.assertEqual(
             last_call_args[0],
-            "LogPublisher: topic=%s message=%s",
+            "LogPublisher: channel=%s message=%s",
             "Wrong log format string",
         )
         self.assertEqual(
             last_call_args[1],
             "log-deleted",
-            "Wrong topic argument",
+            "Wrong channel argument",
         )
 
         self.assertIn("uri", last_call_args[2], "Payload dict missing expected key 'uri'")

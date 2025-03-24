@@ -4,7 +4,9 @@ from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, Optional
 
 from django.conf import settings
+from django.utils.encoding import force_str
 from kafka import KafkaProducer
+from wagtail.rich_text import get_text_for_indexing
 
 logger = logging.getLogger(__name__)
 
@@ -30,43 +32,45 @@ class BasePublisher(ABC):
         """Build the message for the created/updated event.
         Delegate sending to the subclass's _publish_to_service().
         """
-        topic = self.get_topic_created_or_updated()
+        channel = self.get_created_or_updated_channel()
         message = self._construct_message_for_create_update(page)
         logger.info(
-            "BasePublisher: About to publish created/updated message=%s to topic=%s",
+            "BasePublisher: About to publish created/updated message=%s to channel=%s",
             message,
-            topic,
+            channel,
         )
-        return self._publish_to_service(topic, message)
+        return self._publish_to_service(channel, message)
 
     def publish_deleted(self, page: "Page") -> None:
         """Build the message for the deleted event.
         Delegate sending to the subclass's _publish_to_service().
         """
-        topic = self.get_topic_deleted()
-        message = self._construct_message_for_delete(page)
+        channel = self.get_deleted_channel()
+        message = {
+            "uri": page.url_path,
+        }
         logger.info(
-            "BasePublisher: About to publish deleted message=%s to topic=%s",
+            "BasePublisher: About to publish deleted message=%s to channel=%s",
             message,
-            topic,
+            channel,
         )
-        return self._publish_to_service(topic, message)
+        return self._publish_to_service(channel, message)
 
     @abstractmethod
-    def _publish_to_service(self, topic: str, message: dict) -> None:
+    def _publish_to_service(self, channel: str, message: dict) -> None:
         """Each child class defines how to actually send/publish
         the message (e.g., Kafka, logging, etc.).
         """
 
     @abstractmethod
-    def get_topic_created_or_updated(self) -> str:
-        """Provide the topic (or other necessary routing key) for created/updated.
+    def get_created_or_updated_channel(self) -> str:
+        """Provide the channel (or other necessary routing key) for created/updated.
         This can be a no-op or empty string for some implementations.
         """
 
     @abstractmethod
-    def get_topic_deleted(self) -> str:
-        """Provide the topic (or other necessary routing key) for deleted messages.
+    def get_deleted_channel(self) -> str:
+        """Provide the channel (or other necessary routing key) for deleted messages.
         This can be a no-op or empty string for some implementations.
         """
 
@@ -84,13 +88,13 @@ class BasePublisher(ABC):
         # The schema requires at minimum: uri, title, content_type
         message = {
             "uri": page.url_path,
-            "content_type": page.content_type_id,
+            "content_type": content_type,
             "release_date": (
                 page.release_date.isoformat().replace("+00:00", "Z")
                 if content_type == "release" and getattr(page, "release_date", None)
                 else None
             ),
-            "summary": page.summary,
+            "summary": get_text_for_indexing(force_str(page.summary)),
             "title": page.title,
             "topics": list(page.topics.values_list("topic_id", flat=True)) if hasattr(page, "topics") else [],
         }
@@ -122,20 +126,6 @@ class BasePublisher(ABC):
             )
         return release_fields
 
-    def _construct_message_for_delete(self, page: "Page") -> dict:
-        """Build a dict that matches the 'content-deleted' schema:
-        - required: uri
-        - optional: trace_id.
-        """
-        message = {
-            "uri": page.url_path,
-        }
-
-        if hasattr(page, "trace_id"):
-            message["trace_id"] = page.trace_id
-
-        return message
-
     def _map_page_type_to_content_type(self, page: "Page") -> Optional[str]:
         """Maps the class name of a given page object to a corresponding content type string."""
         mapping = {
@@ -158,8 +148,8 @@ class KafkaPublisher(BasePublisher):
     def __init__(self) -> None:
         # Read Kafka configs settings
         self.kafka_server = settings.KAFKA_SERVER
-        self._topic_created_or_updated: Optional[str] = settings.KAFKA_TOPIC_CREATED_OR_UPDATED
-        self._topic_deleted: Optional[str] = settings.KAFKA_TOPIC_DELETED
+        self._channel_created_or_updated: Optional[str] = settings.KAFKA_CHANNEL_CREATED_OR_UPDATED
+        self._channel_deleted: Optional[str] = settings.KAFKA_CHANNEL_DELETED
 
         self.producer = KafkaProducer(
             bootstrap_servers=[self.kafka_server],
@@ -167,36 +157,35 @@ class KafkaPublisher(BasePublisher):
             value_serializer=lambda v: json.dumps(v).encode("utf-8"),
         )
 
-    def get_topic_created_or_updated(self) -> str:
-        if self._topic_created_or_updated is None:
-            raise ValueError("Topic must not be None here.")
-        return self._topic_created_or_updated
+    def get_created_or_updated_channel(self) -> str:
+        if self._channel_created_or_updated is None:
+            raise ValueError("Channel must not be None here.")
+        return self._channel_created_or_updated
 
-    def get_topic_deleted(self) -> str:
-        if self._topic_deleted is None:
-            raise ValueError("Topic must not be None here.")
-        return self._topic_deleted
+    def get_deleted_channel(self) -> str:
+        if self._channel_deleted is None:
+            raise ValueError("Channel must not be None here.")
+        return self._channel_deleted
 
-    def _publish_to_service(self, topic: str, message: dict) -> "RecordMetadata":
+    def _publish_to_service(self, channel: str, message: dict) -> "RecordMetadata":
         """Send the message to Kafka."""
-        logger.info("KafkaPublisher: Publishing to topic=%s, message=%s", topic, message)
-        future = self.producer.send(topic, message)
+        logger.info("KafkaPublisher: Publishing to channel=%s, message=%s", channel, message)
+        future = self.producer.send(channel, message)
         # Optionally block for the result, capturing metadata or error
         result = future.get(timeout=10)  # Wait up to 10s for send to complete
-        logger.info("KafkaPublisher: Publish result for topic %s: %s", topic, result)
-        # breakpoint()
+        logger.info("KafkaPublisher: Publish result for channel %s: %s", channel, result)
         return result
 
 
 class LogPublisher(BasePublisher):
     """Publishes 'messages' by simply logging them (no real message bus)."""
 
-    def get_topic_created_or_updated(self) -> str:
+    def get_created_or_updated_channel(self) -> str:
         return "log-created-or-updated"
 
-    def get_topic_deleted(self) -> str:
+    def get_deleted_channel(self) -> str:
         return "log-deleted"
 
-    def _publish_to_service(self, topic: str, message: dict) -> None:
+    def _publish_to_service(self, channel: str, message: dict) -> None:
         """Log the message."""
-        logger.info("LogPublisher: topic=%s message=%s", topic, message)
+        logger.info("LogPublisher: channel=%s message=%s", channel, message)
