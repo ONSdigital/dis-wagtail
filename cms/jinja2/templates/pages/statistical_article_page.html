@@ -95,7 +95,7 @@
     {% if latest_version_url %}
         <div class="ons-container">
             {% call onsPanel({"variant": 'warn', "classes": "ons-u-mt-s"}) %}
-            <p>{{ _("This has been superseded.") }} <a href="{{ latest_version_url }}">{{ _("View corrected version") }}</a></p>
+                <p>{{ _("This has been superseded.") }} <a href="{{ latest_version_url }}">{{ _("View corrected version") }}</a></p>
             {% endcall %}
         </div>
     {% endif %}
