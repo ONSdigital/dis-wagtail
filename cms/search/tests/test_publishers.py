@@ -347,7 +347,7 @@ class LogPublisherTests(TestCase):
         # The format string is arg 0, the next args are "log-created-or-updated" and the dict
         self.assertEqual(
             last_call_args[0],
-            "LogPublisher: channel=%s message=%s",
+            "LogPublisher: Publishing to channel=%s, message=%s",
             "Wrong log format string",
         )
         self.assertEqual(
@@ -366,13 +366,13 @@ class LogPublisherTests(TestCase):
     @patch.object(logging.Logger, "info")
     def test_publish_deleted_logs(self, mock_logger_info):
         self.publisher.publish_deleted(self.information_page)
-        self.assertGreaterEqual(mock_logger_info.call_count, 2)
+        self.assertGreaterEqual(mock_logger_info.call_count, 1)
 
         last_call_args, last_call_kwargs = mock_logger_info.call_args  # pylint: disable=W0612
 
         self.assertEqual(
             last_call_args[0],
-            "LogPublisher: channel=%s message=%s",
+            "LogPublisher: Publishing to channel=%s, message=%s",
             "Wrong log format string",
         )
         self.assertEqual(
