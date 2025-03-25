@@ -1,0 +1,9 @@
+<div>
+    {{ value.when|date("DATETIME_FORMAT") }}
+
+    {{ value.text|richtext }}
+
+    <a href="{{ routablepageurl(page, 'previous_version', value.version_id) }}">
+        {{ _("View superseded version") }}
+    </a>
+</div>

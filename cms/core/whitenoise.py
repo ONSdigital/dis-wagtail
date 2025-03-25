@@ -34,6 +34,7 @@ class CMSWhiteNoiseMiddleware(WhiteNoiseMiddleware):
         "wagtailimages/*",
         "wagtailsnippets/*",
         "wagtailusers/*",
+        "js/blocks/*",
     )
     files: dict = {}  # noqa: RUF012
 

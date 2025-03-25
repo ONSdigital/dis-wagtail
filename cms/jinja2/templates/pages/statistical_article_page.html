@@ -1,5 +1,6 @@
 {% extends "templates/base_page.html" %}
 
+{% from "components/details/_macro.njk" import onsDetails %}
 {% from "components/panel/_macro.njk" import onsPanel %}
 {% from "components/hero/_macro.njk" import onsHero %}
 {% from "components/table-of-contents/_macro.njk" import onsTableOfContents %}
@@ -91,8 +92,36 @@
     }}
     {# fmt:on #}
 
-    {% if page.updates %}
-        {% include_block page.updates %}
+    {% if latest_version_url %}
+        <div class="ons-container">
+            {% call onsPanel({"variant": 'warn', "classes": "ons-u-mt-s"}) %}
+            <p>{{ _("This has been superseded.") }} <a href="{{ latest_version_url }}">{{ _("View corrected version") }}</a></p>
+            {% endcall %}
+        </div>
+    {% endif %}
+
+    {% if page.corrections or page.notices %}
+        {% if page.corrections and page.notices %}
+            {% set corrections_and_notices_title = _("Corrections and notices") %}
+        {% elif page.notices %}
+            {% set corrections_and_notices_title = _("Notices") %}
+        {% else %}
+            {% set corrections_and_notices_title = _("Corrections") %}
+        {% endif %}
+        <div class="ons-container">
+            {% call onsDetails({"id": "corrections-and-notices", "title": corrections_and_notices_title}) %}
+                {% if page.corrections %}
+                    <h3>{{ _("Corrections") }}</h3>
+                    {% for correction in page.corrections %}
+                        {% include_block correction %}
+                    {% endfor %}
+                {% endif %}
+                {% if page.notices %}
+                    <h3>{{ _("Notices") }}</h3>
+                    {{ page.notices }}
+                {% endif %}
+            {% endcall %}
+        </div>
     {% endif %}
 
     {% if page.headline_figures %}
