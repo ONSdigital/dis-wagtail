@@ -166,7 +166,7 @@ def user_cannot_edit_the_correction(context: Context):
     page.wait_for_timeout(500)  # added to allow JS to be ready
     page.locator("#tab-label-corrections_and_notices").click()
     expect(page.locator("#corrections-0-value-when")).to_be_editable()
-    page.wait_for_timeout(50)  # added to prevent flakiness
+    page.wait_for_timeout(50)  # added to prevent flakiness, as the test following this check would sometimes fail
 
 
 @then("the user cannot delete the correction")
