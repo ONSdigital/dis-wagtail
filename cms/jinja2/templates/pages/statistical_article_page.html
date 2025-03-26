@@ -6,15 +6,18 @@
 {% from "components/table-of-contents/_macro.njk" import onsTableOfContents %}
 
 {% block header_area %}
-    {# Currently missing email link as the onsDescriptionList does not allow markup #}
     {% if page.contact_details %}
+        {% set contact_description_html -%}
+            <a href="mailto:{{ page.contact_details.email }}">{{ page.contact_details.name }}</a>
+        {%- endset %}
+
         {# fmt:off #}
         {% set contact_details =
             {
                 "term": "Contact:",
                 "descriptions": [
                     {
-                        "description": page.contact_details.name
+                        "description": contact_description_html
                     }
                 ]
             }
@@ -23,12 +26,17 @@
     {% else %}
         {% set contact_details = "" %}
     {% endif %}
-    {# Currently missing links as the onsDescriptionList does not allow markup #}
+
     {% if page.is_latest %}
-        {% set releases_text = _("View previous releases") %}
+        {% set release_html -%}
+            <a href="{{ routablepageurl(page.get_parent().specific, "previous_releases") }}">{{ _("View previous releases") }}</a>
+        {%- endset %}
     {% else %}
-        {% set releases_text = _("View latest release") %}
+        {% set release_html -%}
+            <a href="{{ routablepageurl(page.get_parent().specific, "latest_release") }}">{{ _("View latest release") }}</a>
+        {%- endset %}
     {% endif %}
+    
     {% set next_release_date_text = page.next_release_date|date("DATE_FORMAT") or _("To be announced") %}
 
     {# fmt:off #}
@@ -43,7 +51,6 @@
             "detailsColumns": 12,
             "censusLogo": page.is_census,
             "descriptionList": {
-
                 "descriptionListLabel": "",
                 "termCol": "6",
                 "descriptionCol": "6",
@@ -76,7 +83,7 @@
                         "term": _("Releases"),
                         "descriptions": [
                             {
-                                "description": releases_text
+                                "description": release_html
                             }
                         ]
                     },
