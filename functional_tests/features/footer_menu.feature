@@ -4,6 +4,7 @@ Feature: CMS users can manage footer menus via the Wagtail admin interface
         Given a CMS user logs into the admin site
 
     # Footer Menu Creation and Basic Actions
+    @trace
     Scenario: User creates a footer menu under Snippets
         When the user creates a footer menu instance
         And the user populates the footer menu with a page
@@ -57,14 +58,14 @@ Feature: CMS users can manage footer menus via the Wagtail admin interface
         Then an error message is displayed about column limit
 
     Scenario: Validation error when more than 10 links are added
-        When a populated footer menu is created
+        When the user creates and populates a footer menu
         And the user adds more than 10 links
         And the user clicks the "Save Draft" button
         Then an error message is displayed about the link limit
 
     # Item Management
     Scenario: User can add a new link to an existing footer menu
-        When the user creates and publishes a footer menu instance
+        When the user creates and publishes a footer menu
         And the user edits the footer menu to add a new link
         And the user clicks the "Save Draft" button
         And the user previews the footer menu
@@ -86,7 +87,7 @@ Feature: CMS users can manage footer menus via the Wagtail admin interface
 
     # Column Management
     Scenario: User can add a new column to the footer menu
-        When the user creates a footer menu
+        When the user creates and populates a footer menu
         And the user adds a new column and link
         And the user clicks the "Save Draft" button
         And the user previews the footer menu
@@ -108,5 +109,6 @@ Feature: CMS users can manage footer menus via the Wagtail admin interface
     # Final Verification
     Scenario: Footer menu appears on the live home page
         When a populated footer menu is created and saved
+        And the user clicks the "Save Draft" button
         And the user configures the footer menu in Navigation Settings
         Then the footer menu appears on the home page
