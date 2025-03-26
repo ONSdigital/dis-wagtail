@@ -135,9 +135,7 @@ class BundleEditView(EditView):
         """
         context: dict = super().get_context_data(**kwargs)
 
-        context["show_save_and_approve"] = (
-            self.object.can_be_approved and self.form.for_user.pk != self.object.created_by_id
-        )
+        context["show_save_and_approve"] = self.object.can_be_approved
         context["show_publish"] = (
             self.object.status == BundleStatus.APPROVED and not self.object.scheduled_publication_date
         )

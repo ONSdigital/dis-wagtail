@@ -12,7 +12,7 @@ from wagtail.models import Orderable, Page
 from wagtail.search import index
 
 from cms.release_calendar.viewsets import FutureReleaseCalendarChooserWidget
-from cms.workflows.utils import is_page_ready_to_preview
+from cms.workflows.utils import is_page_ready_to_preview, is_page_ready_to_publish
 
 from .enums import ACTIVE_BUNDLE_STATUSES, EDITABLE_BUNDLE_STATUSES, BundleStatus
 from .forms import BundleAdminForm
@@ -159,11 +159,14 @@ class Bundle(index.Indexed, ClusterableModel, models.Model):  # type: ignore[dja
 
     @property
     def can_be_approved(self) -> bool:
-        """Determines whether the bundle can be approved (i.e. is not already approved or released).
+        """Determines whether the bundle can be approved.
 
-        Note: strictly speaking, the bundle should be in "in review" in order for it to be approved.
+        That is, the bundle is in review and all the bundled pages are ready to publish.
         """
-        return self.status in [BundleStatus.PENDING, BundleStatus.IN_REVIEW]
+        if self.status != BundleStatus.IN_REVIEW:
+            return False
+
+        return all(is_page_ready_to_publish(page) for page in self.get_bundled_pages())
 
     def get_bundled_pages(self, specific: bool = False) -> "PageQuerySet[Page]":
         pages = Page.objects.filter(pk__in=self.bundled_pages.values_list("page__pk", flat=True))

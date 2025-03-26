@@ -9,6 +9,8 @@ from cms.bundles.models import BundleTeam
 from cms.bundles.tests.factories import BundleFactory, BundlePageFactory
 from cms.release_calendar.tests.factories import ReleaseCalendarPageFactory
 from cms.teams.models import Team
+from cms.users.tests.factories import UserFactory
+from cms.workflows.tests.utils import mark_page_as_ready_to_publish
 
 
 class BundleModelTestCase(TestCase):
@@ -32,9 +34,9 @@ class BundleModelTestCase(TestCase):
         self.bundle.release_calendar_page = release_page
         self.assertEqual(self.bundle.scheduled_publication_date, release_page.release_date)
 
-    def test_can_be_approved(self):
+    def test_can_be_approved__by_status_only(self):
         test_cases = [
-            (BundleStatus.PENDING, True),
+            (BundleStatus.PENDING, False),
             (BundleStatus.IN_REVIEW, True),
             (BundleStatus.APPROVED, False),
             (BundleStatus.RELEASED, False),
@@ -44,6 +46,15 @@ class BundleModelTestCase(TestCase):
             with self.subTest(status=status):
                 self.bundle.status = status
                 self.assertEqual(self.bundle.can_be_approved, expected)
+
+    def test_can_be_approved__with_pages(self):
+        BundlePageFactory(parent=self.bundle, page=self.statistical_article)
+
+        self.bundle.status = BundleStatus.IN_REVIEW
+        self.assertFalse(self.bundle.can_be_approved)
+
+        mark_page_as_ready_to_publish(self.statistical_article, UserFactory())
+        self.assertTrue(self.bundle.can_be_approved)
 
     def test_get_bundled_pages(self):
         """Test get_bundled_pages returns correct queryset."""
