@@ -1,26 +1,10 @@
-import contextlib
-
 from django.conf import settings
 from django.db import migrations
-from wagtail.models import GroupPagePermission
+from wagtail.models import PAGE_PERMISSION_CODENAMES, GroupCollectionPermission, GroupPagePermission
 
-WAGTAIL_PERMISSION_PREFIXES = [
-    "add_",
-    "change_",
-    "delete_",
-    "view_",
-]
+WAGTAIL_PERMISSION_TYPES = ["add", "change", "delete"]
 
-# Taken from:
-# https://github.com/wagtail/wagtail/blob/8f640a8cdb0dfcf14e611d33cbff388d5db7cf9d/wagtail/models/pages.py#L264
-WAGTAIL_PAGE_PERMISSION_TYPES = [
-    "add",
-    "bulk_delete",
-    "change",
-    "lock",
-    "publish",
-    "unlock",
-]
+WAGTAIL_PAGE_PERMISSION_TYPES = [codename.replace("_page", "") for codename in PAGE_PERMISSION_CODENAMES]
 
 
 def assign_permission_to_group(apps, group_name, permission_codename, app, model):
@@ -43,21 +27,11 @@ def assign_permission_to_group(apps, group_name, permission_codename, app, model
 
 
 def create_user_groups(apps):
-    ContentType = apps.get_model("contenttypes.ContentType")
-    Permission = apps.get_model("auth.Permission")
     Group = apps.get_model("auth.Group")
 
     # Remove existing Wagtail groups
     for wagtail_group in Group.objects.all():
-        with contextlib.suppress(Group.DoesNotExist):
-            wagtail_group.delete()
-
-    # Get the 'access_admin' permission and assign to the new groups
-    wagtailadmin_content_type = ContentType.objects.get(
-        app_label="wagtailadmin",
-        model="admin",
-    )
-    access_admin_permission = Permission.objects.get(content_type=wagtailadmin_content_type, codename="access_admin")
+        wagtail_group.delete()
 
     # Create the Publishing Admin, Publishing Officer and Viewer groups and give them the 'access_admin' permission
     for group_name in [
@@ -65,9 +39,8 @@ def create_user_groups(apps):
         settings.PUBLISHING_OFFICERS_GROUP_NAME,
         settings.VIEWERS_GROUP_NAME,
     ]:
-        group, _was_created = Group.objects.get_or_create(name=group_name)
-        group.permissions.add(access_admin_permission)
-        group.save()
+        Group.objects.create(name=group_name)
+        assign_permission_to_group(apps, group_name, "access_admin", "wagtailadmin", "admin")
 
 
 def create_reporting_permissions(apps):
@@ -75,6 +48,32 @@ def create_reporting_permissions(apps):
     # The "Reports" section and everything under it
     assign_permission_to_group(
         apps, settings.PUBLISHING_ADMINS_GROUP_NAME, "view_logentry", "wagtailcore", "PageLogEntry"
+    )
+
+
+def create_image_permissions(apps):
+    """Allow Publishing Admins to add and edit images in the image library.
+    Note that the 'choose_image' permission isn't needed as it's given to all users by default.
+    """
+    # TODO:  these shouldn't be imported directly and should be using historical models instead
+    # Group = apps.get_model("auth.Group")
+    # Permission = apps.get_model("auth.Permission")
+    # Collection = apps.get_model("wagtailcore.Collection")
+    from django.contrib.auth.models import Group, Permission
+    from wagtail.models import Collection
+
+    group = Group.objects.get(name=settings.PUBLISHING_ADMINS_GROUP_NAME)
+    root_collection = Collection.get_first_root_node()
+
+    GroupCollectionPermission.objects.create(
+        group=group,
+        collection=root_collection,
+        permission=Permission.objects.get(content_type__app_label="wagtailimages", codename="add_image"),
+    )
+    GroupCollectionPermission.objects.create(
+        group=group,
+        collection=root_collection,
+        permission=Permission.objects.get(content_type__app_label="wagtailimages", codename="change_image"),
     )
 
 
@@ -88,11 +87,11 @@ def create_snippet_permissions(apps):
     }
 
     for model, app in snippet_classes_dict.items():
-        for permission in WAGTAIL_PERMISSION_PREFIXES:
+        for permission in WAGTAIL_PERMISSION_TYPES:
             assign_permission_to_group(
                 apps,
                 settings.PUBLISHING_ADMINS_GROUP_NAME,
-                permission_codename=f"{permission}{model.lower()}",
+                permission_codename=f"{permission}_{model.lower()}",
                 app=app,
                 model=model,
             )
@@ -102,12 +101,12 @@ def create_bundle_permissions(apps):
     bundles_app = "bundles"
     bundle_class = "Bundle"
 
-    for permission in WAGTAIL_PERMISSION_PREFIXES:
+    for permission in WAGTAIL_PERMISSION_TYPES:
         for group_name in [settings.PUBLISHING_ADMINS_GROUP_NAME, settings.PUBLISHING_OFFICERS_GROUP_NAME]:
             assign_permission_to_group(
                 apps,
                 group_name=group_name,
-                permission_codename=f"{permission}{bundle_class.lower()}",
+                permission_codename=f"{permission}_{bundle_class.lower()}",
                 app=bundles_app,
                 model=bundle_class,
             )
@@ -118,7 +117,7 @@ def create_bundle_permissions(apps):
 
 def create_page_permissions(apps):
     """Allow Publishing Admins and Publishing Officers all permissions on the HomePage and its children."""
-    # TODO: these shouldn't be imported
+    # TODO: these shouldn't be imported directly and should use historical models instead
     from django.contrib.auth.models import Group
 
     from cms.home.models import HomePage
@@ -135,11 +134,9 @@ def create_page_permissions(apps):
 
 
 def create_topic_page_highlighted_permissions(apps):
-    """Create custom permission that will be used on the TopicPage's highlighted articles FieldPanel."""
-    # TODO: Implementation of this permission on the Topic Page out of scope
-    # Will require a workaround as InlinePanels don't directly support permissions
-    # see: https://github.com/wagtail/wagtail/issues/8684
-
+    """Create a custom permission that will be used on the TopicPage's featured article series FieldPanel
+    and assign it to the Publishing Admins group.
+    """
     ContentType = apps.get_model("contenttypes.ContentType")
     Permission = apps.get_model("auth.Permission")
     Group = apps.get_model("auth.Group")
@@ -147,8 +144,8 @@ def create_topic_page_highlighted_permissions(apps):
     wagtailadmin_content_type = ContentType.objects.get(app_label="wagtailadmin", model="admin")
     permission = Permission.objects.create(
         content_type=wagtailadmin_content_type,
-        codename="add_topic_page_highlighted_articles",
-        name="Can add and modify highlighted articles on the Topic page",
+        codename="add_topic_page_featured_article_series",
+        name="Can add and modify featured article series on the Topic page",
     )
     permission.save()
 
@@ -161,6 +158,7 @@ def update_user_groups(apps, schema_editor):
     """Update the core user groups for the CMS."""
     create_user_groups(apps)
     create_page_permissions(apps)
+    create_image_permissions(apps)
     create_snippet_permissions(apps)
     create_bundle_permissions(apps)
     create_reporting_permissions(apps)
@@ -169,11 +167,16 @@ def update_user_groups(apps, schema_editor):
 
 class Migration(migrations.Migration):
     dependencies = [
-        ("wagtailadmin", "0001_create_admin_access_permissions"),  # Ensure this migration runs after Wagtail's setup
-        ("core", "0005_glossaryterm"),
-        ("home", "0002_create_homepage"),  # and HomePage exists
-        ("navigation", "0002_footermenu_navigationsettings_footer_menu"),
-        ("wagtailcore", "0094_alter_page_locale"),
+        # Wagtail dependencies
+        ("wagtailadmin", "0005_editingsession_is_editing"),  # latest Wagtail admin migration
+        ("wagtailcore", "0094_alter_page_locale"),  # latest Wagtail core migration
+        ("wagtailimages", "0027_image_description"),  # latest Wagtail images migration
+        # CMS dependencies
+        ("core", "0005_glossaryterm"),  # Snippets in the 'core' app
+        ("home", "0002_create_homepage"),  # HomePage
+        ("topics", "0002_featured_series_explore_more_related"),  # Featured article series on TopicPage
+        ("navigation", "0002_footermenu_navigationsettings_footer_menu"),  # MainMenu and FooterMenu
+        ("bundles", "0001_initial"),  # Bundles
     ]
 
     operations = [
