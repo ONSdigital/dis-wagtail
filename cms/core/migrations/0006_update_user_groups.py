@@ -27,6 +27,9 @@ def assign_permission_to_group(apps, group_name, permission_codename, app, model
 
 
 def create_user_groups(apps):
+    """Remove the existing Wagtail user groups and create new ones,
+    and give them  the "Access the Wagtail admin" permission.
+    """
     Group = apps.get_model("auth.Group")
 
     # Remove existing Wagtail groups
@@ -53,7 +56,9 @@ def create_reporting_permissions(apps):
 
 def create_image_permissions(apps):
     """Allow Publishing Admins to add and edit images in the image library.
-    Note that the 'choose_image' permission isn't needed as it's given to all users by default.
+    Note that the 'choose_image' permission isn't required
+    as it's assigned to all users which have the "Access the Wagtail admin" permission.
+    See: https://github.com/wagtail/wagtail/blob/125a749a9ab785757dd898e2f88bfb8fd3f65e11/wagtail/images/migrations/0023_add_choose_permissions.py#L23.
     """
     # TODO:  these shouldn't be imported directly and should be using historical models instead
     # Group = apps.get_model("auth.Group")
@@ -78,7 +83,7 @@ def create_image_permissions(apps):
 
 
 def create_snippet_permissions(apps):
-    """Allow admin users to create, edit and delete snippets."""
+    """Allow Publishing Admins to create, edit and delete snippets."""
     snippet_classes_dict = {
         "GlossaryTerm": "core",
         "ContactDetails": "core",
@@ -95,9 +100,21 @@ def create_snippet_permissions(apps):
                 app=app,
                 model=model,
             )
+        if model in ("MainMenu", "FooterMenu"):
+            # MainMenu and FooterMenu are publishable
+            assign_permission_to_group(
+                apps,
+                settings.PUBLISHING_ADMINS_GROUP_NAME,
+                permission_codename=f"publish_{model.lower()}",
+                app=app,
+                model=model,
+            )
 
 
 def create_bundle_permissions(apps):
+    """Grant all permissions on Bundles to Publishing Admins and Publishing Officers,
+    and view-only access to Viewers.
+    """
     bundles_app = "bundles"
     bundle_class = "Bundle"
 
@@ -111,7 +128,7 @@ def create_bundle_permissions(apps):
                 model=bundle_class,
             )
 
-    # Explicitly allow Viewers to view Bundles (but not edit them)
+    # View-only access for the Viewers group
     assign_permission_to_group(apps, settings.VIEWERS_GROUP_NAME, "view_bundle", bundles_app, bundle_class)
 
 
@@ -134,9 +151,9 @@ def create_page_permissions(apps):
 
 
 def create_topic_page_featured_series_permission(apps):
-    """Create a custom permission that will be registered using a Wagtail hook
-    and used on the TopicPage's featured article series FieldPanel
-    and assign it to the Publishing Admins group.
+    """Create a custom permission that will be registered using a Wagtail hook,
+    given to the Publishing Admins group,
+    and used on the TopicPage's featured article series FieldPanel.
     """
     assign_permission_to_group(
         apps,
@@ -148,7 +165,7 @@ def create_topic_page_featured_series_permission(apps):
 
 
 def update_user_groups(apps, schema_editor):
-    """Update the core user groups for the CMS."""
+    """Create user groups for the CMS."""
     create_user_groups(apps)
     create_page_permissions(apps)
     create_image_permissions(apps)
