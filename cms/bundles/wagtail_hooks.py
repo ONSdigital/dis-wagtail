@@ -135,7 +135,7 @@ class LatestBundlesPanel(Component):
     def is_shown(self) -> bool:
         """Determine if the panel is shown based on whether the user can modify it."""
         has_permission: bool = self.permission_policy.user_has_any_permission(
-            self.request.user, {"add", "change", "delete", "view"}
+            self.request.user, {"add", "change", "delete"}
         )
         return has_permission
 
@@ -143,7 +143,7 @@ class LatestBundlesPanel(Component):
         """Returns the latest 10 bundles if the panel is shown."""
         queryset: QuerySet[Bundle] = Bundle.objects.none()
         if self.is_shown:
-            queryset = Bundle.objects.active().select_related("created_by")[:10]
+            queryset = Bundle.objects.active().select_related("created_by", "created_by__wagtail_userprofile")[:10]
 
         return queryset
 
@@ -156,6 +156,51 @@ class LatestBundlesPanel(Component):
         return context
 
 
+class BundlesInReviewPanel(Component):
+    name = "bundles_in_review"
+    order = 150
+    template_name = "bundles/wagtailadmin/panels/bundles_in_review.html"
+
+    def __init__(self, request: "HttpRequest") -> None:
+        self.request = request
+        self.permission_policy = ModelPermissionPolicy(Bundle)
+
+    @cached_property
+    def is_shown(self) -> bool:
+        """Only show to users that can view, but not manage bundles."""
+        if self.request.user.is_superuser:
+            return True
+
+        has_view_permission = self.permission_policy.user_has_permission(self.request.user, "view")
+        if not has_view_permission:
+            return False
+
+        has_manage_permissions: bool = self.permission_policy.user_has_any_permission(
+            self.request.user, {"add", "change", "delete"}
+        )
+        return not has_manage_permissions
+
+    def get_bundles(self) -> QuerySet[Bundle]:
+        """Returns the latest 10 bundles if the panel is shown."""
+        queryset: QuerySet[Bundle] = Bundle.objects.none()
+        if self.is_shown:
+            queryset = (
+                Bundle.objects.previewable()
+                .filter(teams__team__in=self.request.user.active_team_ids)  # type: ignore[union-attr]
+                .select_related("created_by", "created_by__wagtail_userprofile")
+            )
+
+        return queryset
+
+    def get_context_data(self, parent_context: "Optional[RenderContext]" = None) -> "Optional[RenderContext]":
+        """Adds the request, the latest bundles and whether the panel is shown to the panel context."""
+        context = super().get_context_data(parent_context)
+        context["request"] = self.request
+        context["bundles"] = self.get_bundles()
+        context["is_shown"] = self.is_shown
+        return context
+
+
 @hooks.register("construct_homepage_panels")
 def add_latest_bundles_panel(request: "HttpRequest", panels: list[Component]) -> None:
     """Adds the LatestBundlesPanel to the list of Wagtail admin dashboard panels.
@@ -163,6 +208,7 @@ def add_latest_bundles_panel(request: "HttpRequest", panels: list[Component]) ->
     @see https://docs.wagtail.org/en/stable/reference/hooks.html#construct-homepage-panels
     """
     panels.append(LatestBundlesPanel(request))
+    panels.append(BundlesInReviewPanel(request))
 
 
 @hooks.register("register_log_actions")

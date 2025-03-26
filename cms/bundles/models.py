@@ -58,6 +58,9 @@ class BundlesQuerySet(QuerySet):
         """Provides a pre-filtered queryset for editable bundles. Usage: Bundle.objects.editable()."""
         return self.filter(status__in=EDITABLE_BUNDLE_STATUSES)
 
+    def previewable(self) -> Self:
+        return self.filter(status=BundleStatus.IN_REVIEW)
+
 
 # note: mypy doesn't cope with dynamic base classes and fails with:
 # 'Unsupported dynamic base class "models.Manager.from_queryset"  [misc]'

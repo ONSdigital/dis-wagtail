@@ -9,11 +9,12 @@ from wagtail.test.utils.form_data import inline_formset, nested_form_data
 
 from cms.articles.tests.factories import StatisticalArticlePageFactory
 from cms.bundles.enums import BundleStatus
-from cms.bundles.models import Bundle
+from cms.bundles.models import Bundle, BundleTeam
 from cms.bundles.tests.factories import BundleFactory, BundlePageFactory
 from cms.bundles.tests.utils import grant_all_bundle_permissions, make_bundle_viewer
 from cms.bundles.viewsets import bundle_chooser_viewset
 from cms.release_calendar.viewsets import FutureReleaseCalendarChooserWidget
+from cms.teams.models import Team
 from cms.users.tests.factories import GroupFactory, UserFactory
 from cms.workflows.tests.utils import (
     mark_page_as_ready_for_review,
@@ -22,9 +23,7 @@ from cms.workflows.tests.utils import (
 )
 
 
-class BundleViewSetTestCase(WagtailTestUtils, TestCase):
-    """Test Bundle viewset functionality."""
-
+class BundleViewSetTestCaseBase(WagtailTestUtils, TestCase):
     @classmethod
     def setUpTestData(cls):
         cls.superuser = cls.create_superuser(username="admin")
@@ -49,6 +48,15 @@ class BundleViewSetTestCase(WagtailTestUtils, TestCase):
         cls.approved_bundle = BundleFactory(approved=True, name="Approve Bundle")
         cls.approved_bundle_edit_url = reverse("bundle:edit", args=[cls.approved_bundle.id])
 
+        cls.in_review_bundle = BundleFactory(in_review=True, name="Preview Bundle")
+
+        preview_team = Team.objects.create(identifier="foo", name="Preview team")
+        BundleTeam.objects.create(parent=cls.in_review_bundle, team=preview_team)
+        BundleTeam.objects.create(parent=cls.released_bundle, team=preview_team)
+        cls.bundle_viewer.teams.add(preview_team)
+
+        cls.another_in_review_bundle = BundleFactory(in_review=True, name="Another preview Bundle")
+
     def setUp(self):
         self.bundle = BundleFactory(name="Original bundle", created_by=self.publishing_officer)
         self.statistical_article_page = StatisticalArticlePageFactory(title="PSF")
@@ -57,25 +65,9 @@ class BundleViewSetTestCase(WagtailTestUtils, TestCase):
 
         self.client.force_login(self.publishing_officer)
 
-    def test_bundle_index__unhappy_paths(self):
-        """Test bundle list view permissions."""
-        self.client.logout()
-        response = self.client.get(self.bundle_index_url)
-        self.assertEqual(response.status_code, HTTPStatus.FOUND)
-        self.assertRedirects(response, f"/admin/login/?next={self.bundle_index_url}")
 
-        self.client.force_login(self.generic_user)
-        response = self.client.get(self.bundle_index_url, follow=True)
-        self.assertRedirects(response, "/admin/")
-        self.assertContains(response, "Sorry, you do not have permission to access this area.")
-
-    def test_bundle_index__happy_path(self):
-        """Users with bundle permissions can see the index."""
-        for user in [self.bundle_viewer, self.publishing_officer, self.superuser]:
-            with self.subTest(user=user):
-                self.client.force_login(user)
-                response = self.client.get(self.bundle_index_url)
-                self.assertEqual(response.status_code, HTTPStatus.OK)
+class BundleViewSetTestCase(BundleViewSetTestCaseBase):
+    """Test Bundle viewset functionality."""
 
     def test_bundle_add_view(self):
         """Test bundle creation."""
@@ -243,25 +235,6 @@ class BundleViewSetTestCase(WagtailTestUtils, TestCase):
 
         self.assertFalse(mock_notify_slack.called)
 
-    def test_index_view(self):
-        """Checks the content of the index page."""
-        response = self.client.get(self.bundle_index_url)
-        self.assertContains(response, self.edit_url)
-        self.assertContains(response, self.approved_bundle_edit_url)
-        self.assertNotContains(response, self.released_bundle_edit_url)
-
-        self.assertContains(response, BundleStatus.PENDING.label, 2)  # status + status filter
-        self.assertContains(response, BundleStatus.RELEASED.label, 2)  # status + status filter
-        self.assertContains(response, BundleStatus.APPROVED.label, 2)  # status + status filter
-
-        self.assertContains(response, self.released_bundle.name)
-        self.assertContains(response, self.approved_bundle.name)
-
-    def test_index_view_search(self):
-        response = self.client.get(f"{self.bundle_index_url}?q=release")
-        self.assertContains(response, self.released_bundle.name)
-        self.assertNotContains(response, self.approved_bundle.name)
-
     def test_bundle_form_uses_release_calendar_chooser_widget(self):
         form_class = get_edit_handler(Bundle).get_form_class()
         form = form_class(instance=self.bundle)
@@ -281,6 +254,100 @@ class BundleViewSetTestCase(WagtailTestUtils, TestCase):
         )
         self.assertContains(response, "Choose Release Calendar page")
 
+    def test_inspect_view__previewers__access(self):
+        self.client.force_login(self.bundle_viewer)
+
+        scenarios = [
+            # bundle id, HTTP status code, message if not allowed
+            (self.in_review_bundle.pk, HTTPStatus.OK, False),
+            (self.another_in_review_bundle.pk, HTTPStatus.FOUND, True),
+            (self.approved_bundle.pk, HTTPStatus.FOUND, True),
+            (self.released_bundle.pk, HTTPStatus.FOUND, True),
+        ]
+        for bundle_id, status_code, check_message in scenarios:
+            with self.subTest():
+                response = self.client.get(reverse("bundle:inspect", args=[bundle_id]))
+                self.assertEqual(response.status_code, status_code)
+                if check_message:
+                    self.assertEqual(
+                        response.context["message"], "Sorry, you do not have permission to access this area."
+                    )
+
+    def test_inspect_view__managers__contains_all_fiewls(self):
+        response = self.client.get(reverse("bundle:inspect", args=[self.in_review_bundle.pk]))
+
+        self.assertContains(response, "Name")
+        self.assertContains(response, "Pages")
+        self.assertContains(response, "Created at")
+        self.assertContains(response, "Created by")
+        self.assertContains(response, "Scheduled publication")
+        self.assertContains(response, "Approval status")
+        self.assertContains(response, "Status")
+
+    def test_inspect_view__previewers__contains_only_relevant_fields(self):
+        self.client.force_login(self.bundle_viewer)
+        response = self.client.get(reverse("bundle:inspect", args=[self.in_review_bundle.pk]))
+
+        self.assertContains(response, "Name")
+        self.assertContains(response, "Pages")
+        self.assertContains(response, "Created at")
+        self.assertContains(response, "Created by")
+        self.assertContains(response, "Scheduled publication")
+        self.assertNotContains(response, "Approval status")
+        self.assertNotContains(response, "Status")
+
+
+class BundleIndexViewTestCase(BundleViewSetTestCaseBase):
+    def test_bundle_index__unhappy_paths(self):
+        """Test bundle list view permissions."""
+        self.client.logout()
+        response = self.client.get(self.bundle_index_url)
+        self.assertEqual(response.status_code, HTTPStatus.FOUND)
+        self.assertRedirects(response, f"/admin/login/?next={self.bundle_index_url}")
+
+        self.client.force_login(self.generic_user)
+        response = self.client.get(self.bundle_index_url, follow=True)
+        self.assertRedirects(response, "/admin/")
+        self.assertContains(response, "Sorry, you do not have permission to access this area.")
+
+    def test_bundle_index__happy_path(self):
+        """Users with bundle permissions can see the index."""
+        for user in [self.bundle_viewer, self.publishing_officer, self.superuser]:
+            with self.subTest(user=user):
+                self.client.force_login(user)
+                response = self.client.get(self.bundle_index_url)
+                self.assertEqual(response.status_code, HTTPStatus.OK)
+
+    def test_index_view(self):
+        """Checks the content of the index page."""
+        response = self.client.get(self.bundle_index_url)
+        self.assertContains(response, self.edit_url)
+        self.assertContains(response, self.approved_bundle_edit_url)
+        self.assertNotContains(response, self.released_bundle_edit_url)
+
+        self.assertContains(response, BundleStatus.PENDING.label, 2)  # status + status filter
+        self.assertContains(response, BundleStatus.RELEASED.label, 2)  # status + status filter
+        self.assertContains(response, BundleStatus.APPROVED.label, 2)  # status + status filter
+
+        self.assertContains(response, self.released_bundle.name)
+        self.assertContains(response, self.approved_bundle.name)
+
+    def test_index_view_search(self):
+        response = self.client.get(f"{self.bundle_index_url}?q=release")
+        self.assertContains(response, self.released_bundle.name)
+        self.assertNotContains(response, self.approved_bundle.name)
+
+    def test_index_view__previewers__contains_only_relevant_bundles(self):
+        self.client.force_login(self.bundle_viewer)
+
+        response = self.client.get(self.bundle_index_url)
+        self.assertContains(response, self.in_review_bundle.name)
+        self.assertNotContains(response, self.released_bundle.name)
+        self.assertNotContains(response, self.approved_bundle.name)
+        self.assertNotContains(response, self.another_in_review_bundle.name)
+
+
+class BundleChooserViewsetTestCase(BundleViewSetTestCaseBase):
     def test_chooser_viewset(self):
         pending_bundle = BundleFactory(name="Pending")
         response = self.client.get(bundle_chooser_viewset.widget_class().get_chooser_modal_url())

@@ -1,0 +1,39 @@
+{% load wagtailcore_tags wagtailadmin_tags %}
+{% if is_shown %}
+    {% panel id="bundles-for-preview" heading="Bundles ready for preview" %}
+        {% if bundles %}
+            <table class="listing">
+                <col />
+                <col width="15%"/>
+                <col width="15%"/>
+                <col width="15%"/>
+                <thead>{# add class="w-sr-only" to make this visible for screen readers only #}
+                    <tr>
+                        <th class="title">Title</th>
+                        <th>Scheduled publication date</th>
+                        <th>Added</th>
+                        <th>Added by</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for bundle in bundles %}
+                        <tr>
+                            <td class="title">
+                                <div class="title-wrapper">
+                                    <a href="{% url 'bundle:inspect' bundle.pk %}" title="View">{{ bundle.name }}</a>
+                                </div>
+                            </td>
+                            <td>
+                                {{ bundle.scheduled_publication_date|default_if_none:"" }}
+                            </td>
+                            <td>{% human_readable_date bundle.created_at %}</td>
+                            <td>{% if bundle.created_by %}{% include "wagtailadmin/shared/user_avatar.html" with user=bundle.created_by username=bundle.created_by.get_full_name|default:bundle.created_by.get_username %}{% endif %}</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        {% else %}
+            <p>There are currently no bundles for preview.</p>
+        {% endif %}
+    {% endpanel %}
+{% endif %}
