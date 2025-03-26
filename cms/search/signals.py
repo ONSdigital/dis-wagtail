@@ -28,7 +28,7 @@ def on_page_unpublished(sender: "Page", instance: "Page", **kwargs: dict) -> Non
         publisher.publish_deleted(instance)
 
 
-@receiver(post_delete)
+@receiver(post_delete, sender=Page)
 def on_page_deleted(sender: "Page", instance: "Page", **kwargs: dict) -> None:
     """Catches all subclass deletions of Wagtail's Page model.
     Only fires if the page is not in SEARCH_INDEX_EXCLUDED_PAGE_TYPES.
