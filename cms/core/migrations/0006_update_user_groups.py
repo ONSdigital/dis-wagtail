@@ -70,16 +70,12 @@ def create_image_permissions(apps):
     group = Group.objects.get(name=settings.PUBLISHING_ADMINS_GROUP_NAME)
     root_collection = Collection.get_first_root_node()
 
-    GroupCollectionPermission.objects.create(
-        group=group,
-        collection=root_collection,
-        permission=Permission.objects.get(content_type__app_label="wagtailimages", codename="add_image"),
-    )
-    GroupCollectionPermission.objects.create(
-        group=group,
-        collection=root_collection,
-        permission=Permission.objects.get(content_type__app_label="wagtailimages", codename="change_image"),
-    )
+    for permission in WAGTAIL_PERMISSION_TYPES:
+        GroupCollectionPermission.objects.create(
+            group=group,
+            collection=root_collection,
+            permission=Permission.objects.get(content_type__app_label="wagtailimages", codename=f"{permission}_image"),
+        )
 
 
 def create_snippet_permissions(apps):
@@ -147,6 +143,8 @@ def create_page_permissions(apps):
     for group_name in [settings.PUBLISHING_ADMINS_GROUP_NAME, settings.PUBLISHING_OFFICERS_GROUP_NAME]:
         group = Group.objects.get(name=group_name)
         for permission_type in WAGTAIL_PAGE_PERMISSION_TYPES:
+            if group_name == settings.PUBLISHING_OFFICERS_GROUP_NAME and permission_type not in ("add", "change"):
+                continue  # Only allow Publishing Officers to add and change pages
             GroupPagePermission.objects.create(group=group, page=home_page, permission_type=permission_type)
 
 
