@@ -8,12 +8,13 @@ class PreviousVersionBlock {
 
     placeholder.replaceWith(this.element);
 
-    this.renderContent(initialState);
+    this.renderContent(initialState, prefix);
   }
 
-  renderContent(state) {
+  renderContent(state, prefix) {
     if (state) {
       this.element.innerHTML = `
+                <input type="hidden" name="${prefix}" value="${state}">
                 <a class="button button-small button-secondary" target="_blank" href="../revisions/${state}/view/">Preview revision</a>
             `;
     } else {
