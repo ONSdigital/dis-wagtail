@@ -133,25 +133,18 @@ def create_page_permissions(apps):
             GroupPagePermission.objects.create(group=group, page=home_page, permission_type=permission_type)
 
 
-def create_topic_page_highlighted_permissions(apps):
-    """Create a custom permission that will be used on the TopicPage's featured article series FieldPanel
+def create_topic_page_featured_series_permission(apps):
+    """Create a custom permission that will be registered using a Wagtail hook
+    and used on the TopicPage's featured article series FieldPanel
     and assign it to the Publishing Admins group.
     """
-    ContentType = apps.get_model("contenttypes.ContentType")
-    Permission = apps.get_model("auth.Permission")
-    Group = apps.get_model("auth.Group")
-
-    wagtailadmin_content_type = ContentType.objects.get(app_label="wagtailadmin", model="admin")
-    permission = Permission.objects.create(
-        content_type=wagtailadmin_content_type,
-        codename="add_topic_page_featured_article_series",
-        name="Can add and modify featured article series on the Topic page",
+    assign_permission_to_group(
+        apps,
+        group_name=settings.PUBLISHING_ADMINS_GROUP_NAME,
+        permission_codename="add_featured_article_series_on_topic_page",
+        app="wagtailadmin",
+        model="admin",
     )
-    permission.save()
-
-    group = Group.objects.get(name=settings.PUBLISHING_ADMINS_GROUP_NAME)
-    group.permissions.add(permission)
-    group.save()
 
 
 def update_user_groups(apps, schema_editor):
@@ -162,7 +155,7 @@ def update_user_groups(apps, schema_editor):
     create_snippet_permissions(apps)
     create_bundle_permissions(apps)
     create_reporting_permissions(apps)
-    create_topic_page_highlighted_permissions(apps)
+    create_topic_page_featured_series_permission(apps)
 
 
 class Migration(migrations.Migration):

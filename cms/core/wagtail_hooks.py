@@ -31,9 +31,10 @@ def editor_js() -> str:
 
 @hooks.register("register_permissions")
 def register_topic_page_highlighted_articles_permission():
-    app = "wagtailadmin"
-
-    return Permission.objects.filter(content_type__app_label=app, codename="add_topic_page_highlighted_articles")
+    """Register a custom permission for the featured article FieldPanel on the Topic page."""
+    return Permission.objects.filter(
+        content_type__app_label="wagtailadmin", codename="add_featured_article_series_on_topic_page"
+    )
 
 
 register_snippet(ContactDetailsViewSet)
