@@ -41,14 +41,16 @@ def check_kafka_settings(app_configs: Optional[Iterable[AppConfig]], **kwargs: A
                     id=missing_id,
                 )
             )
-        elif not getattr(settings, setting):
-            errors.append(
-                Error(
-                    f"{setting} setting is empty.",
-                    hint=f"Set {setting} to e.g. '{hint_value}'.",
-                    id=empty_id,
+        else:
+            value = getattr(settings, setting)
+            if value is None or value == "":
+                errors.append(
+                    Error(
+                        f"{setting} setting is empty.",
+                        hint=f"Set {setting} to e.g. '{hint_value}'.",
+                        id=empty_id,
+                    )
                 )
-            )
 
     return errors
 
