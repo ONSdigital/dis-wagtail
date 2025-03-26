@@ -78,10 +78,10 @@ class SearchIndexContentTypeCheckTests(TestCase):
         and does not define 'search_index_content_type', we should get an error.
         """
 
-        class MyPageModelWithoutAttr(Page):
+        class MyPageModelWithoutAttrTest1(Page):
             pass
 
-        mock_get_page_models.return_value = [MyPageModelWithoutAttr]
+        mock_get_page_models.return_value = [MyPageModelWithoutAttrTest1]
         errors = check_search_index_content_type(app_configs=None)
 
         self.assertEqual(len(errors), 1)
@@ -90,17 +90,17 @@ class SearchIndexContentTypeCheckTests(TestCase):
         self.assertIn("does not define a 'search_index_content_type'", error.msg)
         self.assertIn("Either add an attribute/property 'search_index_content_type'", error.hint)
 
-    @override_settings(SEARCH_INDEX_EXCLUDED_PAGE_TYPES=("MyPageModelWithoutAttr",))
+    @override_settings(SEARCH_INDEX_EXCLUDED_PAGE_TYPES=("MyPageModelWithoutAttrTest2",))
     @patch("cms.search.checks.get_page_models")
     def test_model_excluded_no_error(self, mock_get_page_models):
         """If a page model is listed in SEARCH_INDEX_EXCLUDED_PAGE_TYPES,
         we ignore it even if it doesn't define 'search_index_content_type'.
         """
 
-        class MyPageModelWithoutAttr(Page):
+        class MyPageModelWithoutAttrTest2(Page):
             pass
 
-        mock_get_page_models.return_value = [MyPageModelWithoutAttr]
+        mock_get_page_models.return_value = [MyPageModelWithoutAttrTest2]
         errors = check_search_index_content_type(app_configs=None)
         self.assertEqual(errors, [])
 
