@@ -76,11 +76,11 @@ class PageWithCorrectionsAdminForm(DeduplicateTopicsAdminForm):
             ):
                 # Prevent tampering
                 self.add_error("corrections", ValidationError("The chosen revision is not valid for the current page"))
-            elif latest_published_revision_id is not None:
-                # If there's no value, set it to the latest revision
-                correction.value["previous_version"] = latest_published_revision_id
 
-        if new_correction and not new_correction.value["version_id"]:
-            new_correction.value["version_id"] = latest_correction_version + 1
+        if new_correction:
+            if not new_correction.value["version_id"]:
+                new_correction.value["version_id"] = latest_correction_version + 1
+            if not new_correction.value["previous_version"]:
+                new_correction.value["previous_version"] = latest_published_revision_id
 
         return corrections
