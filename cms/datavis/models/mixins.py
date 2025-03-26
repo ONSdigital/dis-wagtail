@@ -4,13 +4,11 @@ from typing import TYPE_CHECKING, Any
 from django.db import models
 from django.forms import Media
 
-from cms.datavis.blocks import DataVisBlock
+from cms.datavis.blocks.base import BaseVisualisationBlock
 
 if TYPE_CHECKING:
     from django.http import HttpRequest
     from wagtail.blocks.stream_block import StreamValue
-
-    from cms.datavis.models import Visualisation
 
 
 class VisualisationsPageMixin(models.Model):
@@ -26,11 +24,11 @@ class VisualisationsPageMixin(models.Model):
     class Meta:
         abstract = True
 
-    def get_visualisations(self) -> Iterator["Visualisation"]:
+    def get_visualisations(self) -> Iterator[BaseVisualisationBlock]:
         content: StreamValue = self.content  # type: ignore[attr-defined]
         for bound_block in content:
-            if isinstance(bound_block.block, DataVisBlock):
-                yield bound_block.value["visualisation"].specific
+            if isinstance(bound_block.block, BaseVisualisationBlock):
+                yield bound_block.block
 
     def get_visualisation_media(self, request: "HttpRequest") -> Media:
         """Return all media required to successfully render all of the

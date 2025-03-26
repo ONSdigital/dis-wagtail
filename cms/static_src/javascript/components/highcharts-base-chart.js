@@ -172,7 +172,7 @@ class HighchartsBaseChart {
       annotationConfig.labels.push({
         text: annotation.text,
         point: {
-          x: annotation.xValue,
+          x: annotation.point.x,
           // hard coded to be 20px from the top of the chart
           y: 20,
           xAxis: 0,
@@ -185,14 +185,14 @@ class HighchartsBaseChart {
         points: [
           // the position of the top of the arrow
           {
-            x: annotation.xValue,
+            x: annotation.point.x,
             y: 30, // hard coded to be 10px from the label
             xAxis: 0,
           },
           // the position of the bottom of the arrow - at the point being labelled
           {
-            x: annotation.xValue,
-            y: annotation.yValue,
+            x: annotation.point.x,
+            y: annotation.point.y,
             xAxis: 0,
             yAxis: 0,
           },
