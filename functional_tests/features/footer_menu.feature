@@ -1,143 +1,112 @@
-Feature: CMS users can create the footer menu
-    Scenario: A CMS user can add a page to the footer menu under Snippets
+Feature: CMS users can manage footer menus via the Wagtail admin interface
+
+    Background:
         Given a CMS user logs into the admin site
+
+    # Footer Menu Creation and Basic Actions
+    Scenario: User creates a footer menu under Snippets
         When the user creates a footer menu instance
         And the user populates the footer menu with a page
         And the user clicks the "Save Draft" button
-        And the user clicks to the preview
-        Then  the preview of the footer menu is displayed with the home page
+        And the user clicks to preview the menu
+        Then the preview of the footer menu is displayed with the home page
 
-    Scenario: A CMS user can create and save a footer menu instance under Snippets
-        Given a CMS user logs into the admin site
-        When the user creates a footer menu instance
-        And the user populates the footer menu
-        And the user clicks the "Save Draft" button
-        And the user clicks to the preview
-        Then the preview of the footer menu is displayed with the populated data
-    
-    Scenario: A CMS user can create and publish a footer menu under Snippets
-        Given a CMS user logs into the admin site
+    Scenario: User creates and publishes a footer menu
         When the user creates a footer menu instance
         And the user populates the footer menu
         And the user clicks "Publish" the footer menu
         Then a banner confirming changes is displayed
 
+    # Navigation Settings Integration
+    Scenario: Footer menu can be configured via Navigation Settings
+        Given a footer menu exists
+        When the user navigates to "Navigation Settings"
+        And the user selects the footer menu
+        And the user clicks "Save" in the Navigation Settings
+        Then the footer menu is configured successfully
 
-    Scenario: a CMS user can select and configure the footer menu in Navigation settings.
-        Given a CMS user logs into the admin site
-        And a footer menu exists
-        When a CMS user navigates to "Navigation settings"
-        And the user selects footer menu in "Navigation settings"
-        And the user clicks "saves" in the "Navigation Settings"
-        Then the footer menu is configured
-
-    Scenario: Validation errors are raised when footer menu is left empty
-        Given a CMS user logs into the admin site
+    # Field Validation and Error Handling
+    Scenario: Validation error when footer menu is left empty
         When the user creates a footer menu instance
         And the user inserts an empty column block
         And the user clicks the "Save Draft" button
-        Then an error message confirming the footer cannot be saved is displayed
+        Then an error message is displayed preventing save
 
-    Scenario: Validation errors are raised when duplicate links are entered on the footer menu
-        Given a CMS user logs into the admin site
-        And the user creates a footer menu instance
-        And the user populates the footer menu
-        When the user enters duplicate information
-        And the user clicks the "Save Draft" button
-        Then an error message confirming the footer cannot be saved is displayed
-
-    Scenario: Validation errors are raised when an external_url with no title is submitted
-        Given a CMS user logs into the admin site
-        And the user creates a footer menu instance
-        And the user populates the footer menu
-        When the user enters a link with no title
-        And the user clicks the "Save Draft" button
-        Then an error message confirming the footer cannot be saved is displayed
-
-    Scenario: Validation errors are raised with an incorrect url submitted
-        Given a CMS user logs into the admin site
-        And the user creates a footer menu instance
-        And the user populates the footer menu
-        When the user enters an incorrect url
-        And the user clicks the "Save Draft" button
-        Then an error message confirming the footer cannot be saved is displayed
-    
-    Scenario: Validation errors are raised when more than 3 columns are added
-        Given a CMS user logs into the admin site
-        And the user creates a footer menu instance
-        And the user populates the footer menu
-        When the user enters more than 3 columns
-        And the user clicks the "Save Draft" button
-        Then an error message and maximum number of column notification is displayed
-
-    Scenario: Validation errors are raised when more than 10 links are added
-        Given a CMS user logs into the admin site
-        And a populated footer menu has been created
-        When the user adds above the maximum links
-        And the user clicks the "Save Draft" button
-        Then an error message confirming the footer cannot be saved is displayed
-
-    Scenario: A CMS user can add a link to an existing footer menu
-        Given a CMS user logs into the admin site
-        And the user creates a footer menu instance
-        And the user populates the footer menu
-        And the user clicks "Publish" the footer menu
-        And the user navigates to edit the footer menu
-        When the user adds an additional link to a footer menu
-        And the user clicks the "Save Draft" button
-        And the user clicks to the preview
-        Then the preview of the footer menu is displayed with the additional link
-
-    Scenario: A CMS user can delete a link from an existing footer menu
-        Given a CMS user logs into the admin site
+    Scenario: Validation error for duplicate links
         When the user creates a footer menu instance
-        And the user populates the footer menu
-        And the user adds an additional link to a footer menu
+        And the user populates the footer menu with duplicate links
         And the user clicks the "Save Draft" button
-        When the user deletes the additional link
-        And the user clicks the "Save Draft" button
-        And the user clicks to the preview
-        Then the preview does not show the deleted link
+        Then an error message is displayed for duplicate links
 
-    Scenario: A CMS user can edit item to an existing footer menu
-        Given a CMS user logs into the admin site
-        And the user creates a footer menu instance
-        And the user populates the footer menu
-        And the user clicks "Publish" the footer menu
-        When the user navigates to edit the footer menu
-        And the user edits data on a pre existing footer menu
+    Scenario: Validation error for missing title on external URL
+        When the user creates a footer menu instance
+        And the user adds a link with no title
         And the user clicks the "Save Draft" button
-        And the user clicks to the preview
-        Then the preview of the footer menu is displayed with the edited data
-    
-    Scenario: A CMS user can add a column to an existing footer menu
-        Given a CMS user logs into the admin site
-        And the user creates a footer menu instance
-        And the user populates the footer menu
-        When the user adds an additional column and link
-        And the user clicks the "Save Draft" button
-        And the user clicks to the preview
-        Then the preview will show the new column is added
+        Then an error message is displayed about the missing title
 
-    Scenario: A CMS user can delete a column in an existing footer menu
-        Given a CMS user logs into the admin site
-        And a populated footer menu has been created
-        And the user adds an additional column and link
+    Scenario: Validation error for malformed URL
+        When the user creates a footer menu instance
+        And the user adds a malformed URL
         And the user clicks the "Save Draft" button
-        When the user deletes a column
-        And the user clicks the "Save Draft" button
-        And the user clicks to the preview
-        Then the preview will not show the deleted column
+        Then an error message is displayed about the URL format
 
-    Scenario: A CMS user can delete a footer menu instance
+    Scenario: Validation error when more than 3 columns are added
+        When the user creates a footer menu instance
+        And the user adds more than 3 columns
+        And the user clicks the "Save Draft" button
+        Then an error message is displayed about column limit
+
+    Scenario: Validation error when more than 10 links are added
+        When a populated footer menu is created
+        And the user adds more than 10 links
+        And the user clicks the "Save Draft" button
+        Then an error message is displayed about the link limit
+
+    # Item Management
+    Scenario: User can add a new link to an existing footer menu
+        When the user creates and publishes a footer menu instance
+        And the user edits the footer menu to add a new link
+        And the user clicks the "Save Draft" button
+        And the user previews the footer menu
+        Then the new link appears in the preview
+
+    Scenario: User can delete a link from an existing footer menu
+        When the user creates and populates a footer menu
+        And the user adds and then deletes a link
+        And the user clicks the "Save Draft" button
+        And the user previews the footer menu
+        Then the deleted link is not shown in the preview
+
+    Scenario: User can edit a link in an existing footer menu
+        When the user creates and publishes a footer menu
+        And the user edits a link
+        And the user clicks the "Save Draft" button
+        And the user previews the footer menu
+        Then the edited link is shown in the preview
+
+    # Column Management
+    Scenario: User can add a new column to the footer menu
+        When the user creates a footer menu
+        And the user adds a new column and link
+        And the user clicks the "Save Draft" button
+        And the user previews the footer menu
+        Then the new column is shown in the preview
+
+    Scenario: User can delete a column from the footer menu
+        When a populated footer menu is created with additional columns
+        And the user deletes a column
+        And the user clicks the "Save Draft" button
+        And the user previews the footer menu
+        Then the deleted column is not shown in the preview
+
+    # Deletion and Confirmation
+    Scenario: User can delete a footer menu instance
         Given a footer menu exists
-        And a CMS user logs into the admin site
-        When user deletes the footer menu
-        Then a banner confirming changes is displayed
+        When the user deletes the footer menu
+        Then a banner confirming the deletion is displayed
 
-    Scenario: The footer menu is present at the home page
-        Given a CMS user logs into the admin site
-        And a populated footer menu has been created
-        And the user clicks the "Save Draft" button
-        When the user configures the footer menu in navigation settings
-        Then the user navigates to the home page to see changes
+    # Final Verification
+    Scenario: Footer menu appears on the live home page
+        When a populated footer menu is created and saved
+        And the user configures the footer menu in Navigation Settings
+        Then the footer menu appears on the home page
