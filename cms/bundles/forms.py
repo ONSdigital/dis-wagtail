@@ -95,6 +95,15 @@ class BundleAdminForm(WagtailAdminModelForm):
                 f"page{pluralize(num_pages_not_ready)} not ready to be published."
             )
 
+    def _validate_publication_date(self):
+        release_calendar_page = self.cleaned_data["release_calendar_page"]
+        if release_calendar_page and release_calendar_page.release_date < timezone.now():
+            raise ValidationError({"release_calendar_page": "The release date cannot be in the past"})
+
+        publication_date = self.cleaned_data["publication_date"]
+        if publication_date and publication_date < timezone.now():
+            raise ValidationError({"publication_date": "The release date cannot be in the past"})
+
     def clean(self) -> dict[str, Any] | None:
         """Validates the form.
 
@@ -103,6 +112,11 @@ class BundleAdminForm(WagtailAdminModelForm):
         """
         cleaned_data: dict[str, Any] = super().clean()
 
+        if self.cleaned_data["release_calendar_page"] and self.cleaned_data["publication_date"]:
+            error = "You must choose either a Release Calendar page or a Publication date, not both."
+            self.add_error("release_calendar_page", error)
+            self.add_error("publication_date", error)
+
         self._validate_bundled_pages()
 
         status = cleaned_data["status"]
@@ -110,16 +124,12 @@ class BundleAdminForm(WagtailAdminModelForm):
             # the status has changed, let's check
             if status == BundleStatus.APPROVED:
                 self._validate_bundled_pages_status()
+                self._validate_publication_date()
 
                 cleaned_data["approved_at"] = timezone.now()
                 cleaned_data["approved_by"] = self.for_user
             elif self.instance.status == BundleStatus.APPROVED:
                 cleaned_data["approved_at"] = None
                 cleaned_data["approved_by"] = None
-
-        if self.cleaned_data["release_calendar_page"] and self.cleaned_data["publication_date"]:
-            error = "You must choose either a Release Calendar page or a Publication date, not both."
-            self.add_error("release_calendar_page", error)
-            self.add_error("publication_date", error)
 
         return cleaned_data

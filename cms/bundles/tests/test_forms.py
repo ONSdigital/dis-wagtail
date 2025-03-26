@@ -1,3 +1,4 @@
+from datetime import timedelta
 from typing import Any
 
 from django import forms
@@ -178,3 +179,23 @@ class BundleAdminFormTestCase(TestCase):
         form.save()
 
         self.assertEqual(self.bundle.bundled_pages.count(), 1)
+
+    def test_clean_validates_release_calendar_page_date_is_future(self):
+        release_calendar_page = ReleaseCalendarPageFactory(release_date=timezone.now() - timedelta(hours=2))
+        data = self.form_data
+
+        data["release_calendar_page"] = release_calendar_page.id
+        data["status"] = BundleStatus.APPROVED
+        form = self.form_class(instance=self.bundle, data=data)
+        self.assertFalse(form.is_valid())
+
+        self.assertFormError(form, "release_calendar_page", ["The release date cannot be in the past"])
+
+    def test_clean_validates_release_date_is_future(self):
+        data = self.form_data
+        data["publication_date"] = timezone.now() - timedelta(hours=2)
+        data["status"] = BundleStatus.APPROVED
+        form = self.form_class(instance=self.bundle, data=data)
+        self.assertFalse(form.is_valid())
+
+        self.assertFormError(form, "publication_date", ["The release date cannot be in the past"])
