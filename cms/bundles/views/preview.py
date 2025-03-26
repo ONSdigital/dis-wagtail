@@ -7,6 +7,7 @@ from django.shortcuts import get_object_or_404
 from django.template.response import TemplateResponse
 from django.urls import reverse
 from django.views.generic import TemplateView
+from wagtail.log_actions import log
 from wagtail.models import Page
 
 from cms.bundles.models import Bundle
@@ -23,11 +24,16 @@ class PreviewBundleView(TemplateView):
         bundle_id = kwargs["bundle_id"]
         bundle = get_object_or_404(Bundle, id=bundle_id)
 
-        if not user_can_preview(request.user, bundle):
-            raise PermissionDenied
-
         page_id = kwargs["page_id"]
         page = get_object_or_404(Page, id=page_id).get_latest_revision_as_object()
+
+        if not user_can_preview(request.user, bundle):
+            log(
+                action="bundles.preview.attempt",
+                instance=bundle,
+                data={"type": "page", "id": page_id, "title": getattr(page, "display_title", page.title)},
+            )
+            raise PermissionDenied
 
         if user_can_manage(self.request.user):
             pages_in_bundle = bundle.get_bundled_pages(specific=True)
@@ -53,5 +59,10 @@ class PreviewBundleView(TemplateView):
             for item in pages_in_bundle
         ]
 
-        # TODO: log access
+        log(
+            action="bundles.preview",
+            instance=bundle,
+            data={"type": "page", "id": page_id, "title": getattr(page, "display_title", page.title)},
+        )
+
         return TemplateResponse(request, page.get_template(request), context)

@@ -2,6 +2,7 @@ from http import HTTPStatus
 
 from django.test import TestCase
 from django.urls import reverse
+from wagtail.models import ModelLogEntry
 from wagtail.test.utils.wagtail_tests import WagtailTestUtils
 
 from cms.articles.tests.factories import StatisticalArticlePageFactory
@@ -210,3 +211,45 @@ class PreviewBundleViewTestCase(WagtailTestUtils, TestCase):
         self.client.force_login(self.publishing_officer)
         response = self.client.get(self.url_not_preview_ready)
         self.assertEqual(response.status_code, HTTPStatus.OK)
+
+    def test_preview_logs_action(self):
+        self.client.force_login(self.publishing_officer)
+
+        self.assertEqual(ModelLogEntry.objects.filter(action="bundles.preview").count(), 0)
+
+        self.client.get(self.url_preview_ready)
+
+        log_entries = ModelLogEntry.objects.filter(action="bundles.preview")
+        self.assertEqual(len(log_entries), 1)
+
+        entry = log_entries[0]
+        self.assertEqual(entry.user, self.publishing_officer)
+        self.assertDictEqual(
+            entry.data,
+            {
+                "type": "page",
+                "id": self.page_ready_for_publishing.pk,
+                "title": self.page_ready_for_publishing.display_title,
+            },
+        )
+
+    def test_preview_without_access_logs_action(self):
+        self.client.force_login(self.user_with_only_admin_access)
+
+        self.client.get(self.url_preview_ready)
+
+        log_entries = ModelLogEntry.objects.filter(action="bundles.preview.attempt")
+        self.assertEqual(len(log_entries), 1)
+
+        entry = log_entries[0]
+        self.assertEqual(entry.user, self.user_with_only_admin_access)
+        self.assertDictEqual(
+            entry.data,
+            {
+                "type": "page",
+                "id": self.page_ready_for_publishing.pk,
+                "title": self.page_ready_for_publishing.display_title,
+            },
+        )
+
+        self.assertEqual(ModelLogEntry.objects.filter(action="bundles.preview").count(), 0)

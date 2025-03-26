@@ -198,3 +198,29 @@ def register_bundle_log_actions(actions: "LogActionRegistry") -> None:
                 return f"Approved the bundle. (Old status: '{log_entry.data['old']}')"
             except KeyError:
                 return "Approved the bundle"
+
+    @actions.register_action("bundles.preview")
+    class PreviewBundle(LogFormatter):  # pylint: disable=unused-variable
+        """LogFormatter class for the bundle item preview actions."""
+
+        label = "Preview bundle item"
+
+        def format_message(self, log_entry: "ModelLogEntry") -> Any:
+            """Returns the formatted log message."""
+            try:
+                return f"Previewed {log_entry.data['type']} '{log_entry.data['title']}'."
+            except KeyError:
+                return "Previewed an item."
+
+    @actions.register_action("bundles.preview.attempt")
+    class PreviewBundleAttempt(LogFormatter):  # pylint: disable=unused-variable
+        """LogFormatter class for the bundle item preview attempt actions."""
+
+        label = "Attempt bundle item preview"
+
+        def format_message(self, log_entry: "ModelLogEntry") -> Any:
+            """Returns the formatted log message."""
+            try:
+                return f"Attempted preview of {log_entry.data['type']} '{log_entry.data['title']}'."
+            except KeyError:
+                return "Attempted to preview an item."
