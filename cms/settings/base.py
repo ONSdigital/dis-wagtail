@@ -190,7 +190,9 @@ WSGI_APPLICATION = "cms.wsgi.application"
 
 # Database
 
-db_conn_max_age = int(env.get("PG_CONN_MAX_AGE", 870))  # Just under 15 minutes, to match password expiry
+# None allows connections to be reused for longer, since opening them is expensive.
+# CONN_HEALTH_CHECK ensures they're still healthy before attempting to use them.
+db_conn_max_age = int(env["PG_CONN_MAX_AGE"]) if "PG_CONN_MAX_AGE" in env else None
 
 if "PG_DB_ADDR" in env:
     # Use IAM authentication to connect to the Database
@@ -204,6 +206,7 @@ if "PG_DB_ADDR" in env:
                 "HOST": env["PG_DB_ADDR"],
                 "PORT": env["PG_DB_PORT"],
                 "CONN_MAX_AGE": db_conn_max_age,
+                "CONN_HEALTH_CHECK": True,
                 "OPTIONS": {"use_iam_auth": True, "sslmode": "require", "region_name": env["AWS_REGION"]},
             },
         )
@@ -215,7 +218,9 @@ if "PG_DB_ADDR" in env:
 
 else:
     DATABASES = {
-        "default": dj_database_url.config(conn_max_age=db_conn_max_age, default="postgres:///ons"),
+        "default": dj_database_url.config(
+            conn_max_age=db_conn_max_age, conn_health_checks=True, default="postgres:///ons"
+        ),
     }
 
     if "READ_REPLICA_DATABASE_URL" in env:
