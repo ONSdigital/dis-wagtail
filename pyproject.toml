@@ -34,6 +34,7 @@ django-treebeard = "^4.7.1"
 kafka-python = "^2.0.5"
 wagtail-tinytableblock = "^0.2.4"
 queryish = "^0.2"
+python-json-logger = "^3.3.0"
 
 [tool.poetry.group.dev.dependencies]
 # :TODO: Remove pylint when ruff supports all pylint rules

@@ -478,10 +478,13 @@ LOGGING = {
         "console": {
             "level": "INFO",
             "class": "logging.StreamHandler",
-            "formatter": "verbose",
+            "formatter": "json",
         },
     },
-    "formatters": {"verbose": {"format": "[%(asctime)s][%(process)d][%(levelname)s][%(name)s] %(message)s"}},
+    "formatters": {
+        "verbose": {"format": "[%(asctime)s][%(process)d][%(levelname)s][%(name)s] %(message)s"},
+        "json": {"()": "pythonjsonlogger.json.JsonFormatter"},
+    },
     "loggers": {
         "cms": {
             "handlers": ["console"],
