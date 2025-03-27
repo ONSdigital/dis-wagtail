@@ -2,74 +2,109 @@
 
 {% from "components/details/_macro.njk" import onsDetails %}
 {% from "components/panel/_macro.njk" import onsPanel %}
+{% from "components/hero/_macro.njk" import onsHero %}
 {% from "components/table-of-contents/_macro.njk" import onsTableOfContents %}
 
 {% block header_area %}
-    <div class="common-header article-header {% if page.updates %}article-header--flush{% endif %}">
+    {% if page.contact_details %}
+        {% set contact_description_html -%}
+            <a href="mailto:{{ page.contact_details.email }}">{{ page.contact_details.name }}</a>
+        {%- endset %}
+
+        {# fmt:off #}
+        {% set contact_details =
+            {
+                "term": "Contact:",
+                "descriptions": [
+                    {
+                        "description": contact_description_html
+                    }
+                ]
+            }
+        %}
+        {# fmt:on #}
+    {% else %}
+        {% set contact_details = "" %}
+    {% endif %}
+
+    {% if page.is_latest %}
+        {% set release_html -%}
+            <a href="{{ routablepageurl(page.get_parent().specific, "previous_releases") }}">{{ _("View previous releases") }}</a>
+        {%- endset %}
+    {% else %}
+        {% set release_html -%}
+            <a href="{{ routablepageurl(page.get_parent().specific, "latest_release") }}">{{ _("View latest release") }}</a>
+        {%- endset %}
+    {% endif %}
+
+    {% set next_release_date_text = page.next_release_date|date("DATE_FORMAT") or _("To be announced") %}
+
+    {# fmt:off #}
+    {{
+        onsHero({
+            "topic": _("Statistical article"),
+            "title": page.display_title,
+            "variants": 'grey',
+            "text": page.summary,
+            "officialStatisticsBadge": page.is_accredited,
+            "wide": true,
+            "detailsColumns": 12,
+            "censusLogo": page.is_census,
+            "descriptionList": {
+                "descriptionListLabel": "",
+                "termCol": "6",
+                "descriptionCol": "6",
+                "itemsList": [
+                    {
+                        "term": _("Release date:"),
+                        "descriptions": [
+                            {
+                                "description": page.release_date|date("DATE_FORMAT")
+                            }
+                        ]
+                    },
+                    {
+                        "term": _("Next release:"),
+                        "descriptions": [
+                            {
+                                "description": next_release_date_text
+                            }
+                        ]
+                    },
+                    {
+                        "term": _("Edition:"),
+                        "descriptions": [
+                            {
+                                "description": _("Latest")
+                            }
+                        ]
+                    },
+                    {
+                        "term": _("Releases:"),
+                        "descriptions": [
+                            {
+                                "description": release_html
+                            }
+                        ]
+                    },
+                    contact_details,
+                ]
+            },
+            "breadcrumbs": {
+                "ariaLabel": _("Breadcrumbs"),
+                "itemsList": breadcrumbs(page),
+            }
+        })
+    }}
+    {# fmt:on #}
+
+    {% if latest_version_url %}
         <div class="ons-container">
-            {% include "templates/components/navigation/breadcrumbs.html" %}
-            <p class="article-header__doc-type ons-u-fs-l">{{ _("Statistical article") }}</p>
-
-            <div class="ons-grid ons-grid-flex-gap ons-grid-flex-gap--40">
-                <div class="ons-grid__col ons-col-10@m ">
-                    <h1 class="ons-u-fs-3xl common-header__heading">
-                        {{ page.display_title }}
-                    </h1>
-
-                    <div class="common-header__summary">{{ page.summary|richtext() }}</div>
-                </div>
-                <div class="ons-grid__col ons-col-2@m common-header__kitemark">
-                    {% if page.is_accredited %}
-                        {% include "templates/components/accredited/accredited-logo.html" %}
-                    {% endif %}
-                </div>
-            </div>
+            {% call onsPanel({"variant": 'warn', "classes": "ons-u-mt-s"}) %}
+                <p>{{ _("This has been superseded.") }} <a href="{{ latest_version_url }}">{{ _("View corrected version") }}</a></p>
+            {% endcall %}
         </div>
-
-        {% if latest_version_url %}
-            <div class="ons-container">
-                {% call onsPanel({"variant": 'warn', "classes": "ons-u-mt-s"}) %}
-                    <p>{{ _("This has been superseded.") }} <a href="{{ latest_version_url }}">{{ _("View corrected version") }}</a></p>
-                {% endcall %}
-            </div>
-        {% endif %}
-
-        {% block release_meta %}
-            {% if page.is_census %}
-                <div class="ons-container">
-                    {% include "templates/components/census/census-logo.html" %}
-                </div>
-            {% endif %}
-            <div class="ons-container common-header__releases">
-                <div>
-                    <span class="ons-u-fs-r--b common-header__releases-label">{{ _("Release date") }}:</span>
-                    <span class="ons-u-nowrap">{{ page.release_date|date("DATE_FORMAT") }}</span>
-                </div>
-                <div>
-                    <span class="ons-u-fs-r--b common-header__releases-label">{{ _("Next release") }}:</span>
-                    <span class="ons-u-nowrap">{{ page.next_release_date|date("DATE_FORMAT") or _("To be announced") }}</span>
-                </div>
-                <div>
-                    <span class="ons-u-fs-r--b common-header__releases-label">{{ _("Edition") }}:</span>
-                    <span class="ons-u-nowrap">{{ _("Latest") }}</span>
-                </div>
-                <div>
-                    <span class="ons-u-fs-r--b common-header__releases-label">{{ _("Releases") }}:</span>
-                    {% if page.is_latest %}
-                        <a href="{{ routablepageurl(page.get_parent().specific, "previous_releases") }}">{{ _("View previous releases") }}</a>
-                    {% else %}
-                        <a href="{{ routablepageurl(page.get_parent().specific, "latest_release") }}">{{ _("View latest release") }}</a>
-                    {% endif %}
-                </div>
-                {% if page.contact_details %}
-                    <div>
-                        <span class="ons-u-fs-r--b common-header__releases-label">{{ _("Contact") }}:</span>
-                        <a href="mailto:{{ page.contact_details.email }}">{{ page.contact_details.name }}</a>
-                    </div>
-                {% endif %}
-            </div>
-        {% endblock %}
-    </div>
+    {% endif %}
 
     {% if page.corrections or page.notices %}
         {% if page.corrections and page.notices %}
