@@ -95,7 +95,7 @@ class BundleAdminForm(WagtailAdminModelForm):
                 f"page{pluralize(num_pages_not_ready)} not ready to be published."
             )
 
-    def _validate_publication_date(self):
+    def _validate_publication_date(self) -> None:
         release_calendar_page = self.cleaned_data["release_calendar_page"]
         if release_calendar_page and release_calendar_page.release_date < timezone.now():
             raise ValidationError({"release_calendar_page": "The release date cannot be in the past"})
