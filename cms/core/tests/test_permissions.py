@@ -20,7 +20,6 @@ class PermissionsTestCase(TestCase):
         # Assign user to group
         group = Group.objects.get(name=group_name)
         group.user_set.add(cls.user)
-        group.save()
 
     def all_permissions_check_helper(self, app: str, model: str):
         """A helper method to check if a user has all permissions for a model."""
@@ -31,9 +30,7 @@ class PermissionsTestCase(TestCase):
 class PublishingAdminPermissionsTestCase(PermissionsTestCase):
     @classmethod
     def setUpTestData(cls):
-        super().create_user(
-            first_name="Publishing", last_name="Admin", group_name=settings.PUBLISHING_ADMINS_GROUP_NAME
-        )
+        cls.create_user(first_name="Publishing", last_name="Admin", group_name=settings.PUBLISHING_ADMINS_GROUP_NAME)
 
     def test_publishing_admin_can_access_admin(self):
         """Check that the Publishing Admin can access the Wagtail admin."""
@@ -76,7 +73,7 @@ class PublishingAdminPermissionsTestCase(PermissionsTestCase):
 class PublishingOfficerPermissionsTestCase(PermissionsTestCase):
     @classmethod
     def setUpTestData(cls):
-        super().create_user(
+        cls.create_user(
             first_name="Publishing", last_name="Officer", group_name=settings.PUBLISHING_OFFICERS_GROUP_NAME
         )
 
@@ -101,7 +98,7 @@ class PublishingOfficerPermissionsTestCase(PermissionsTestCase):
 class ViewerPermissionsTestCase(PermissionsTestCase):
     @classmethod
     def setUpTestData(cls):
-        super().create_user(first_name="Viewer", last_name="User", group_name=settings.VIEWERS_GROUP_NAME)
+        cls.create_user(first_name="Viewer", last_name="User", group_name=settings.VIEWERS_GROUP_NAME)
 
     def test_viewers_can_access_admin(self):
         self.assertTrue(self.user.has_perm("wagtailadmin.access_admin"))

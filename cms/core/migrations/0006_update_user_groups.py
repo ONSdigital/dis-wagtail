@@ -1,10 +1,9 @@
 from django.conf import settings
 from django.db import migrations
-from wagtail.models import PAGE_PERMISSION_CODENAMES, GroupCollectionPermission, GroupPagePermission
 
 WAGTAIL_PERMISSION_TYPES = ["add", "change", "delete"]
 
-WAGTAIL_PAGE_PERMISSION_TYPES = [codename.replace("_page", "") for codename in PAGE_PERMISSION_CODENAMES]
+WAGTAIL_PAGE_PERMISSION_TYPES = ["add", "change", "bulk_delete", "lock", "publish", "unlock"]
 
 
 def assign_permission_to_group(apps, group_name, permission_codename, app, model):
@@ -60,15 +59,13 @@ def create_image_permissions(apps):
     as it's assigned to all users which have the "Access the Wagtail admin" permission.
     See: https://github.com/wagtail/wagtail/blob/125a749a9ab785757dd898e2f88bfb8fd3f65e11/wagtail/images/migrations/0023_add_choose_permissions.py#L23.
     """
-    # TODO:  these shouldn't be imported directly and should be using historical models instead
-    # Group = apps.get_model("auth.Group")
-    # Permission = apps.get_model("auth.Permission")
-    # Collection = apps.get_model("wagtailcore.Collection")
-    from django.contrib.auth.models import Group, Permission
-    from wagtail.models import Collection
+    Group = apps.get_model("auth.Group")
+    Permission = apps.get_model("auth.Permission")
+    Collection = apps.get_model("wagtailcore.Collection")
+    GroupCollectionPermission = apps.get_model("wagtailcore.GroupCollectionPermission")
 
     group = Group.objects.get(name=settings.PUBLISHING_ADMINS_GROUP_NAME)
-    root_collection = Collection.get_first_root_node()
+    root_collection = Collection.objects.get(depth=1)
 
     for permission in WAGTAIL_PERMISSION_TYPES:
         GroupCollectionPermission.objects.create(
@@ -80,14 +77,15 @@ def create_image_permissions(apps):
 
 def create_snippet_permissions(apps):
     """Allow Publishing Admins to create, edit and delete snippets."""
-    snippet_classes_dict = {
-        "GlossaryTerm": "core",
-        "ContactDetails": "core",
-        "MainMenu": "navigation",
-        "FooterMenu": "navigation",
-    }
+    snippet_classes = [
+        # app, model, add publish permission
+        ("core", "GlossaryTerm", False),
+        ("core", "ContactDetails", False),
+        ("navigation", "MainMenu", True),
+        ("navigation", "FooterMenu", True),
+    ]
 
-    for model, app in snippet_classes_dict.items():
+    for app, model, add_publish_permission in snippet_classes:
         for permission in WAGTAIL_PERMISSION_TYPES:
             assign_permission_to_group(
                 apps,
@@ -96,8 +94,7 @@ def create_snippet_permissions(apps):
                 app=app,
                 model=model,
             )
-        if model in ("MainMenu", "FooterMenu"):
-            # MainMenu and FooterMenu are publishable
+        if add_publish_permission:
             assign_permission_to_group(
                 apps,
                 settings.PUBLISHING_ADMINS_GROUP_NAME,
@@ -130,22 +127,23 @@ def create_bundle_permissions(apps):
 
 def create_page_permissions(apps):
     """Allow Publishing Admins and Publishing Officers all permissions on the HomePage and its children."""
-    # TODO: these shouldn't be imported directly and should use historical models instead
-    from django.contrib.auth.models import Group
+    Page = apps.get_model("wagtailcore.Page")
+    Group = apps.get_model("auth.Group")
+    Permission = apps.get_model("auth.Permission")
 
-    from cms.home.models import HomePage
+    GroupPagePermission = apps.get_model("wagtailcore.GroupPagePermission")
 
-    # HomePage = apps.get_model("home.HomePage")
-    # Group = apps.get_model("auth.Group")
-
-    home_page = HomePage.objects.first()
+    root_page = Page.objects.get(depth=1)
 
     for group_name in [settings.PUBLISHING_ADMINS_GROUP_NAME, settings.PUBLISHING_OFFICERS_GROUP_NAME]:
         group = Group.objects.get(name=group_name)
-        for permission_type in WAGTAIL_PAGE_PERMISSION_TYPES:
-            if group_name == settings.PUBLISHING_OFFICERS_GROUP_NAME and permission_type not in ("add", "change"):
+        for type in WAGTAIL_PAGE_PERMISSION_TYPES:
+            if group_name == settings.PUBLISHING_OFFICERS_GROUP_NAME and type not in ("add", "change"):
                 continue  # Only allow Publishing Officers to add and change pages
-            GroupPagePermission.objects.create(group=group, page=home_page, permission_type=permission_type)
+
+            permission = Permission.objects.get(codename=f"{type}_page")
+
+            GroupPagePermission.objects.create(group=group, page=root_page, permission=permission)
 
 
 def create_topic_page_featured_series_permission(apps):
