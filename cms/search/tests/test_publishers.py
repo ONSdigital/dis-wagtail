@@ -43,15 +43,14 @@ class DummyPublisher(BasePublisher):
 class BasePublisherTests(TestCase):
     @classmethod
     def setUpTestData(cls):
-        cls.included_factories = [
-            InformationPageFactory,
-            MethodologyPageFactory,
-            ReleaseCalendarPageFactory,
-            StatisticalArticlePageFactory,
+        # Pages that are NOT in SEARCH_INDEX_EXCLUDED_PAGE_TYPES
+        cls.included_pages = [
+            InformationPageFactory(),
+            MethodologyPageFactory(),
+            ReleaseCalendarPageFactory(),
+            StatisticalArticlePageFactory(),
+            IndexPageFactory(slug="custom-slug-1"),
         ]
-
-        cls.index_page = IndexPageFactory(slug="custom-slug-1")
-        cls.included_factories.append(lambda: cls.index_page)
 
         cls.release_calendar_page_provisional = ReleaseCalendarPageFactory(
             status=ReleaseStatus.PROVISIONAL,
@@ -79,9 +78,7 @@ class BasePublisherTests(TestCase):
     def test_publish_created_or_updated_calls_publish(self):
         """Verify `publish_created_or_updated` calls `_publish` with the correct channel & message."""
         with patch.object(self.publisher, "_publish", return_value=None) as mock_method:
-            for factory in self.included_factories:
-                page = factory()
-
+            for page in self.included_pages:
                 self.publisher.publish_created_or_updated(page)
                 expected_type = EXPECTED_CONTENT_TYPES[type(page).__name__]
 
@@ -108,8 +105,7 @@ class BasePublisherTests(TestCase):
     def test_publish_deleted_calls_publish(self):
         """Verify `publish_deleted` calls `_publish` with the correct channel & message."""
         with patch.object(self.publisher, "_publish", return_value=None) as mock_method:
-            for factory in self.included_factories:
-                page = factory()
+            for page in self.included_pages:
                 self.publisher.publish_deleted(page)
 
                 mock_method.assert_called_once()

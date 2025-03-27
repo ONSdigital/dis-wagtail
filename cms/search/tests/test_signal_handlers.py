@@ -38,7 +38,7 @@ class SearchSignalsTest(TestCase):
             IndexPageFactory(slug="custom-slug-1"),
         ]
 
-    @patch("cms.search.signals.publisher")
+    @patch("cms.search.signal_handlers.publisher")
     def test_on_page_published_excluded_page_type(self, mock_publisher):
         """Excluded pages should not trigger publish_created_or_updated."""
         for page in self.excluded_pages:
@@ -46,7 +46,7 @@ class SearchSignalsTest(TestCase):
             page_published.send(sender=type(page), instance=page, request=self.mock_request)
             mock_publisher.publish_created_or_updated.assert_not_called()
 
-    @patch("cms.search.signals.publisher")
+    @patch("cms.search.signal_handlers.publisher")
     def test_on_page_published_included_page_type(self, mock_publisher):
         """Included pages should trigger publish_created_or_updated."""
         for page in self.included_pages:
@@ -54,7 +54,7 @@ class SearchSignalsTest(TestCase):
             mock_publisher.publish_created_or_updated.assert_called_once_with(page)
             mock_publisher.publish_created_or_updated.reset_mock()
 
-    @patch("cms.search.signals.publisher")
+    @patch("cms.search.signal_handlers.publisher")
     def test_on_page_unpublished_excluded_page_type(self, mock_publisher):
         """Excluded pages should not trigger publish_deleted."""
         for page in self.excluded_pages:
@@ -62,7 +62,7 @@ class SearchSignalsTest(TestCase):
             page_unpublished.send(sender=type(page), instance=page, request=self.mock_request)
             mock_publisher.publish_deleted.assert_not_called()
 
-    @patch("cms.search.signals.publisher")
+    @patch("cms.search.signal_handlers.publisher")
     def test_on_page_unpublished_included_page_type(self, mock_publisher):
         """Included pages should trigger publish_deleted."""
         for page in self.included_pages:
@@ -70,7 +70,7 @@ class SearchSignalsTest(TestCase):
             mock_publisher.publish_deleted.assert_called_once_with(page)
             mock_publisher.publish_deleted.reset_mock()
 
-    @patch("cms.search.signals.publisher")
+    @patch("cms.search.signal_handlers.publisher")
     def test_on_page_deleted_excluded_page_type(self, mock_publisher):
         """Excluded pages should not trigger publish_deleted on delete."""
         for page in self.excluded_pages:
@@ -78,7 +78,7 @@ class SearchSignalsTest(TestCase):
             post_delete.send(sender=type(page), instance=page)
             mock_publisher.publish_deleted.assert_not_called()
 
-    @patch("cms.search.signals.publisher")
+    @patch("cms.search.signal_handlers.publisher")
     def test_on_page_deleted_included_page_type(self, mock_publisher):
         """Included pages should trigger publish_deleted on delete."""
         for page in self.included_pages:
