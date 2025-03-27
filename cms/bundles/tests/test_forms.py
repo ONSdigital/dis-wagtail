@@ -1,3 +1,4 @@
+from datetime import timedelta
 from typing import Any
 
 from django import forms
@@ -66,6 +67,7 @@ class BundleAdminFormTestCase(TestCase):
             "name": "First Bundle",
             "status": BundleStatus.IN_REVIEW,
             "bundled_pages": inline_formset([]),
+            "teams": inline_formset([]),
         }
 
     def test_form_init__status_choices(self):
@@ -137,13 +139,18 @@ class BundleAdminFormTestCase(TestCase):
         self.assertTrue(form.is_valid())
         self.assertEqual(form.cleaned_data["approved_by"], approver)
 
-    def test_clean__doesnt_set_approved_by_and_approved_at_if_self_approving(self):
-        data = self.form_data
+    def test_clean__validates_page_must_be_ready_for_review(self):
+        raw_data = self.raw_form_data()
+        raw_data["bundled_pages"] = inline_formset([{"page": self.page.id}])
+        data = nested_form_data(raw_data)
         data["status"] = BundleStatus.APPROVED
         form = self.form_class(instance=self.bundle, data=data, for_user=self.bundle.created_by)
 
         self.assertFalse(form.is_valid())
-        self.assertFormError(form, "status", ["You cannot self-approve your own bundle!"])
+
+        self.assertFormError(form, None, "Cannot approve the bundle with 1 page not ready to be published.")
+        self.assertFormSetError(form.formsets["bundled_pages"], 0, "page", "This page is not ready to be published")
+
         self.assertIsNone(form.cleaned_data["approved_by"])
         self.assertIsNone(form.cleaned_data["approved_at"])
 
@@ -172,3 +179,23 @@ class BundleAdminFormTestCase(TestCase):
         form.save()
 
         self.assertEqual(self.bundle.bundled_pages.count(), 1)
+
+    def test_clean_validates_release_calendar_page_date_is_future(self):
+        release_calendar_page = ReleaseCalendarPageFactory(release_date=timezone.now() - timedelta(hours=2))
+        data = self.form_data
+
+        data["release_calendar_page"] = release_calendar_page.id
+        data["status"] = BundleStatus.APPROVED
+        form = self.form_class(instance=self.bundle, data=data)
+        self.assertFalse(form.is_valid())
+
+        self.assertFormError(form, "release_calendar_page", ["The release date cannot be in the past"])
+
+    def test_clean_validates_release_date_is_future(self):
+        data = self.form_data
+        data["publication_date"] = timezone.now() - timedelta(hours=2)
+        data["status"] = BundleStatus.APPROVED
+        form = self.form_class(instance=self.bundle, data=data)
+        self.assertFalse(form.is_valid())
+
+        self.assertFormError(form, "publication_date", ["The release date cannot be in the past"])

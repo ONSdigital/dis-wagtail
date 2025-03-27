@@ -5,6 +5,7 @@ from django.db.models import QuerySet
 from wagtail.models import GroupPagePermission
 
 from cms.home.models import HomePage
+from cms.users.tests.factories import GroupFactory, UserFactory
 
 if TYPE_CHECKING:
     from django.contrib.auth.models import Group
@@ -29,9 +30,27 @@ def get_view_bundle_permission() -> Permission:
     return Permission.objects.get(codename="view_bundle")
 
 
+def create_bundle_manager(username: str = "publishing_officer") -> "User":
+    publishing_group = GroupFactory(name="Publishing Officers", access_admin=True)
+    grant_all_bundle_permissions(publishing_group)
+    grant_all_page_permissions(publishing_group)
+
+    publishing_officer = UserFactory(username=username)
+    publishing_officer.groups.add(publishing_group)
+
+    return publishing_officer
+
+
 def make_bundle_manager(user: "User") -> None:
-    """Givess all the bundle permissions to the given user."""
+    """Gives all the bundle permissions to the given user."""
     user.user_permissions.add(*get_all_bundle_permissions())
+
+
+def create_bundle_viewer(username: str = "bundle.viewer") -> "User":
+    bundle_viewer = UserFactory(username=username, access_admin=True)
+    make_bundle_viewer(bundle_viewer)
+
+    return bundle_viewer
 
 
 def make_bundle_viewer(user: "User") -> None:

@@ -5,14 +5,14 @@ from django.db.models import F, QuerySet
 from django.db.models.functions import Coalesce
 from django.utils.functional import cached_property
 from django.utils.timezone import now
-from django.utils.translation import gettext_lazy as _
 from modelcluster.fields import ParentalKey
 from modelcluster.models import ClusterableModel
-from wagtail.admin.panels import FieldPanel, FieldRowPanel, InlinePanel
+from wagtail.admin.panels import FieldPanel, FieldRowPanel, InlinePanel, MultipleChooserPanel
 from wagtail.models import Orderable, Page
 from wagtail.search import index
 
 from cms.release_calendar.viewsets import FutureReleaseCalendarChooserWidget
+from cms.workflows.utils import is_page_ready_to_preview, is_page_ready_to_publish
 
 from .enums import ACTIVE_BUNDLE_STATUSES, EDITABLE_BUNDLE_STATUSES, BundleStatus
 from .forms import BundleAdminForm
@@ -22,6 +22,9 @@ if TYPE_CHECKING:
     import datetime
 
     from wagtail.admin.panels import Panel
+    from wagtail.query import PageQuerySet
+
+    from cms.teams.models import Team
 
 
 class BundlePage(Orderable):
@@ -38,6 +41,14 @@ class BundlePage(Orderable):
         return f"BundlePage: page {self.page_id} in bundle {self.parent_id}"
 
 
+class BundleTeam(Orderable):
+    parent = ParentalKey("Bundle", on_delete=models.CASCADE, related_name="teams")
+    team: "models.ForeignKey[Team]" = models.ForeignKey("teams.Team", on_delete=models.CASCADE)
+
+    def __str__(self) -> str:
+        return f"BundleTeam: {self.pk} bundle {self.parent_id} team: {self.team_id}"
+
+
 class BundlesQuerySet(QuerySet):
     def active(self) -> Self:
         """Provides a pre-filtered queryset for active bundles. Usage: Bundle.objects.active()."""
@@ -46,6 +57,9 @@ class BundlesQuerySet(QuerySet):
     def editable(self) -> Self:
         """Provides a pre-filtered queryset for editable bundles. Usage: Bundle.objects.editable()."""
         return self.filter(status__in=EDITABLE_BUNDLE_STATUSES)
+
+    def previewable(self) -> Self:
+        return self.filter(status=BundleStatus.IN_REVIEW)
 
 
 # note: mypy doesn't cope with dynamic base classes and fails with:
@@ -109,11 +123,14 @@ class Bundle(index.Indexed, ClusterableModel, models.Model):  # type: ignore[dja
                 ),
                 FieldPanel("publication_date", heading="or Publication date"),
             ],
-            heading=_("Scheduling"),
+            heading="Scheduling",
             icon="calendar",
         ),
         "status",
-        InlinePanel("bundled_pages", heading=_("Bundled pages"), icon="doc-empty", label=_("Page")),
+        InlinePanel("bundled_pages", heading="Bundled pages", icon="doc-empty", label="Page"),
+        MultipleChooserPanel(
+            "teams", heading="Preview teams", icon="user", label="Preview team", chooser_field_name="team"
+        ),
         # these are handled by the form
         FieldPanel("approved_by", classname="hidden w-hidden"),
         FieldPanel("approved_at", classname="hidden w-hidden"),
@@ -136,17 +153,34 @@ class Bundle(index.Indexed, ClusterableModel, models.Model):  # type: ignore[dja
             date = self.release_calendar_page.release_date  # type: ignore[union-attr]
         return date
 
+    @cached_property
+    def active_team_ids(self) -> list[int]:
+        return list(self.teams.filter(team__is_active=True).values_list("team__pk", flat=True))
+
     @property
     def can_be_approved(self) -> bool:
-        """Determines whether the bundle can be approved (i.e. is not already approved or released).
+        """Determines whether the bundle can be approved.
 
-        Note: strictly speaking, the bundle should be in "in review" in order for it to be approved.
+        That is, the bundle is in review and all the bundled pages are ready to publish.
         """
-        return self.status in [BundleStatus.PENDING, BundleStatus.IN_REVIEW]
+        if self.status != BundleStatus.IN_REVIEW:
+            return False
 
-    def get_bundled_pages(self) -> QuerySet[Page]:
-        pages: QuerySet[Page] = Page.objects.filter(pk__in=self.bundled_pages.values_list("page__pk", flat=True))
+        return all(is_page_ready_to_publish(page) for page in self.get_bundled_pages())
+
+    def get_bundled_pages(self, specific: bool = False) -> "PageQuerySet[Page]":
+        pages = Page.objects.filter(pk__in=self.bundled_pages.values_list("page__pk", flat=True))
+        if specific:
+            pages = pages.specific().defer_streamfields()
         return pages
+
+    def get_pages_ready_for_review(self) -> list[Page]:
+        return [page for page in self.get_bundled_pages(specific=True) if is_page_ready_to_preview(page)]
+
+    def get_teams_display(self) -> str:
+        return ", ".join(
+            list(self.teams.values_list("team__name", flat=True)) or ["-"],
+        )
 
     def save(self, **kwargs: Any) -> None:  # type: ignore[override]
         """Adds additional behaviour on bundle saving.
@@ -160,8 +194,7 @@ class Bundle(index.Indexed, ClusterableModel, models.Model):  # type: ignore[dja
 
         if self.scheduled_publication_date and self.scheduled_publication_date >= now():
             # Schedule publishing for related pages.
-            # ignoring [attr-defined] because Wagtail is not fully typed and mypy is confused.
-            for bundled_page in self.get_bundled_pages().defer_streamfields().specific():  # type: ignore[attr-defined]
+            for bundled_page in self.get_bundled_pages(specific=True):
                 if bundled_page.go_live_at == self.scheduled_publication_date:
                     continue
 

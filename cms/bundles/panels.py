@@ -1,12 +1,13 @@
 from typing import TYPE_CHECKING, Any, Union
 
 from django.utils.html import format_html, format_html_join
-from django.utils.translation import gettext as _
 from wagtail.admin.panels import HelpPanel, PageChooserPanel
+from wagtail.admin.widgets import AdminPageChooser
 
 if TYPE_CHECKING:
     from django.db.models import Model
     from django.utils.safestring import SafeString
+    from wagtail.models import Page
 
 
 class BundleNotePanel(HelpPanel):
@@ -34,16 +35,37 @@ class BundleNotePanel(HelpPanel):
                     ),
                 )
 
-                content = format_html(
-                    "<p>{}</p><ul>{}</ul>", _("This page is in the following bundle(s):"), content_html
-                )
+                content = format_html("<p>{}</p><ul>{}</ul>", "This page is in the following bundle(s):", content_html)
             else:
-                content = format_html("<p>{}</p>", _("This page is not part of any bundles."))
+                content = format_html("<p>{}</p>", "This page is not part of any bundles.")
             return content
+
+
+class CustomAdminPageChooser(AdminPageChooser):
+    def get_display_title(self, instance: "Page") -> str:
+        title: str = super().get_display_title(instance)
+
+        if workflow_state := instance.current_workflow_state:
+            title = f"{title} ({workflow_state.current_task_state.task.name})"
+        else:
+            title = f"{title} (not in a workflow)"
+
+        return title
 
 
 class PageChooserWithStatusPanel(PageChooserPanel):
     """A custom page chooser panel that includes the page workflow status."""
+
+    def get_form_options(self) -> dict[str, list | dict]:
+        opts: dict[str, list | dict] = super().get_form_options()
+
+        if self.page_type or self.can_choose_root:
+            widgets = opts.setdefault("widgets", {})
+            widgets[self.field_name] = CustomAdminPageChooser(
+                target_models=self.page_type, can_choose_root=self.can_choose_root
+            )
+
+        return opts
 
     class BoundPanel(PageChooserPanel.BoundPanel):
         def __init__(self, **kwargs: Any) -> None:

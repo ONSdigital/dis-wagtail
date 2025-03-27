@@ -1,24 +1,15 @@
 {% load wagtailcore_tags wagtailadmin_tags %}
 {% if is_shown %}
-    {% panel id="latest-bundles" heading="Latest active bundles" %}
-        {% help_block status="info" %}
-            <p>Bundles are collections of pages and datasets to publish together.</p>
-        {% endhelp_block %}
-        <p>
-            <a href="{% url 'bundle:add' %}" class="button bicolor button--icon">{% icon name="plus" wrapped=1 %}Add bundle</a>
-            <a href="{% url 'bundle:index' %}" class="button button-secondary">View all bundles</a>
-        </p>
+    {% panel id="bundles-for-preview" heading="Bundles ready for preview" %}
         {% if bundles %}
             <table class="listing">
                 <col />
                 <col width="15%"/>
                 <col width="15%"/>
                 <col width="15%"/>
-                <col width="15%"/>
                 <thead>{# add class="w-sr-only" to make this visible for screen readers only #}
                     <tr>
                         <th class="title">Title</th>
-                        <th>Status</th>
                         <th>Scheduled publication date</th>
                         <th>Added</th>
                         <th>Added by</th>
@@ -29,19 +20,8 @@
                         <tr>
                             <td class="title">
                                 <div class="title-wrapper">
-                                    <a href="{% url 'bundle:edit' bundle.pk %}" title="Edit this bundle">{{ bundle.name }}</a>
+                                    <a href="{% url 'bundle:inspect' bundle.pk %}" title="View">{{ bundle.name }}</a>
                                 </div>
-                                <ul class="actions">
-                                    <li>
-                                        {% dropdown toggle_icon="dots-horizontal" toggle_aria_label="Actions" %}
-                                            <a href="{% url 'bundle:edit' bundle.pk %}">Edit</a>
-                                            <a href="{% url 'bundle:inspect' bundle.pk %}">View</a>
-                                        {% enddropdown %}
-                                    </li>
-                                </ul>
-                            </td>
-                            <td>
-                                {{ bundle.get_status_display }}
                             </td>
                             <td>
                                 {{ bundle.scheduled_publication_date|default_if_none:"" }}
@@ -53,7 +33,7 @@
                 </tbody>
             </table>
         {% else %}
-            <p>There are currently no active bundles.</p>
+            <p>There are currently no bundles for preview.</p>
         {% endif %}
     {% endpanel %}
 {% endif %}

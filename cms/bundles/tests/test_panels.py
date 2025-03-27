@@ -38,7 +38,7 @@ class BundleNotePanelTestCase(WagtailTestUtils, TestCase):
 
         self.assertIn("This page is in the following bundle(s):", content)
         self.assertIn("Test Bundle", content)
-        self.assertIn("Status: Pending", content)
+        self.assertIn(f"Status: {BundleStatus.PENDING.label}", content)
 
     def test_panel_content_non_bundled_model(self):
         """Test panel content for non-bundled models."""

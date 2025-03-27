@@ -6,7 +6,7 @@ from wagtail.admin.utils import get_user_display_name
 from wagtail.search import index
 
 
-class Team(index.Indexed, models.Model):
+class Team(index.Indexed, models.Model):  # type: ignore[django-manager-missing]
     identifier = models.CharField(max_length=255, unique=True)
     name = models.CharField(max_length=255)
     precedence = models.PositiveIntegerField(null=True)
