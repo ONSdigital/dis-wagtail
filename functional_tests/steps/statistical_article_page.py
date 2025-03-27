@@ -37,6 +37,19 @@ def user_populates_the_statistical_article_page(context: Context):
     ).click()
     page.get_by_text("Rich text").click()
     page.get_by_role("region", name="Rich text *").get_by_role("textbox").fill("Content")
+    page.wait_for_timeout(500)  # ensure that the rich text content is picked up
+
+
+@step("the user updates the statistical article page content")
+def user_updates_the_statistical_article_page_content(context: Context):
+    context.page.get_by_role("region", name="Rich text *").get_by_role("textbox").fill("Updated content")
+
+
+@step('the user clicks on "View superseded version"')
+def user_clicks_on_view_superseded_version(context: Context):
+    page = context.page
+    page.locator("#corrections-and-notices .ons-details__heading").click()
+    page.get_by_role("link", name="View superseded version").click()
 
 
 @step("the user adds a table with pasted content")
@@ -72,6 +85,22 @@ def the_statistical_article_page_is_displayed_with_the_populated_data(context: C
     expect(context.page.get_by_role("heading", name="Content")).to_be_visible()
 
 
+@then("the published statistical article page is displayed with the updated data")
+def the_statistical_article_page_is_displayed_with_the_updated_data(context: Context):
+    expect(context.page.get_by_text("Updated content")).to_be_visible()
+
+
+@then("the user can view the superseeded statistical article page")
+def user_can_view_the_superseeded_statistical_article_page(context: Context):
+    expect(context.page.get_by_role("heading", name="The article page")).to_be_visible()
+    expect(context.page.get_by_text("Content", exact=True)).to_be_visible()
+
+
+@step("the user returns to editing the statistical article page")
+def user_returns_to_editing_the_statistical_article_page(context: Context):
+    context.page.get_by_role("link", name="PSF: The article page", exact=True).click()
+
+
 @then("the published statistical article page has the added table")
 def the_published_statistical_article_page_has_the_added_table(context: Context):
     expect(context.page.get_by_role("table")).to_be_visible()
@@ -89,3 +118,62 @@ def expand_footnotes(context: Context):
 
     page.get_by_role("link", name="Footnotes").click()
     expect(footnotes_content).to_be_visible()
+
+
+@step("the user adds a correction")
+def user_adds_a_correction(context: Context):
+    page = context.page
+    page.wait_for_timeout(500)
+    page.locator("#tab-label-corrections_and_notices").click()
+    page.locator("#panel-child-corrections_and_notices-corrections-content").get_by_role(
+        "button", name="Insert a block"
+    ).click()
+    page.get_by_label("When*").fill("2025-03-13 13:59")
+    page.locator('[data-contentpath="text"] [role="textbox"]').fill("Correction text")
+    page.wait_for_timeout(500)
+
+
+@step("the user adds a notice")
+def user_adds_a_notice(context: Context):
+    page = context.page
+    page.wait_for_timeout(500)
+    page.locator("#tab-label-corrections_and_notices").click()
+    page.locator("#panel-child-corrections_and_notices-notices-content").get_by_role(
+        "button", name="Insert a block"
+    ).click()
+    page.get_by_label("When*").fill("2025-03-13 13:59")
+    page.locator('[data-contentpath="text"] [role="textbox"]').fill("Notice text")
+    page.wait_for_timeout(500)
+
+
+@then("the published statistical article page has the added correction")
+def the_published_statistical_article_page_has_the_added_correction(context: Context):
+    expect(context.page.get_by_role("link", name="Corrections ons-icon-chevron")).to_be_visible()
+    expect(context.page.get_by_text("13 March 2025 1:59p.m.")).to_be_hidden()
+    expect(context.page.get_by_text("Correction text")).to_be_hidden()
+
+
+@then("the published statistical article page has the added notice")
+def the_published_statistical_article_page_has_the_added_notice(context: Context):
+    expect(context.page.get_by_role("link", name="Notices ons-icon-chevron")).to_be_visible()
+    expect(context.page.get_by_text("13 March 2025 1:59p.m.")).to_be_hidden()
+    expect(context.page.get_by_text("Notice text")).to_be_hidden()
+
+
+@then("the user can edit the correction")
+def user_cannot_edit_the_correction(context: Context):
+    page = context.page
+    page.wait_for_timeout(500)  # added to allow JS to be ready
+    page.locator("#tab-label-corrections_and_notices").click()
+    expect(page.locator("#corrections-0-value-when")).to_be_editable()
+    page.wait_for_timeout(50)  # added to prevent flakiness, as the test following this check would sometimes fail
+
+
+@then("the user cannot delete the correction")
+def user_cannot_delete_the_correction(context: Context):
+    page = context.page
+    page.wait_for_timeout(500)  # added to allow JS to be ready
+    page.locator("#tab-label-corrections_and_notices").click()
+    expect(
+        page.locator("#panel-child-corrections_and_notices-corrections-content [data-streamfield-action='DELETE']")
+    ).to_be_hidden()
