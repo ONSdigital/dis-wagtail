@@ -30,7 +30,7 @@
         {# fmt:off #}
         {% set last_revised =
             {
-                "term": _("Last revised"),
+                "term": _("Last revised:"),
                 "descriptions": [
                     {
                         "description": page.last_revised_date|date("DATE_FORMAT")
@@ -58,7 +58,7 @@
                 "descriptionCol": "6",
                 "itemsList": [
                     {
-                        "term": _("Published"),
+                        "term": _("Published:"),
                         "descriptions": [
                             {
                                 "description": page.publication_date|date("DATE_FORMAT")
