@@ -27,6 +27,7 @@
     {% endif %}
 
     {% if page.last_revised_date %}
+        {# fmt:off #}
         {% set last_revised =
             {
                 "term": _("Last revised"),
@@ -37,6 +38,7 @@
                 ]
             }
         %}
+        {# fmt:on #}
     {% else %}
         {% set last_revised = "" %}
     {% endif %}

@@ -36,7 +36,7 @@
             <a href="{{ routablepageurl(page.get_parent().specific, "latest_release") }}">{{ _("View latest release") }}</a>
         {%- endset %}
     {% endif %}
-    
+
     {% set next_release_date_text = page.next_release_date|date("DATE_FORMAT") or _("To be announced") %}
 
     {# fmt:off #}
