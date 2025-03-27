@@ -10,7 +10,7 @@ from . import get_publisher
 publisher = get_publisher()
 
 
-@receiver(page_published, sender=Page)
+@receiver(page_published)
 def on_page_published(sender: "Page", instance: "Page", **kwargs: dict) -> None:  # pylint: disable=unused-argument
     """Called whenever a Wagtail Page is published (UI or code).
     instance is the published Page object.
@@ -19,7 +19,7 @@ def on_page_published(sender: "Page", instance: "Page", **kwargs: dict) -> None:
         publisher.publish_created_or_updated(instance)
 
 
-@receiver(page_unpublished, sender=Page)
+@receiver(page_unpublished)
 def on_page_unpublished(sender: "Page", instance: "Page", **kwargs: dict) -> None:  # pylint: disable=unused-argument
     """Called whenever a Wagtail Page is unpublished (UI or code).
     instance is the unpublished Page object.
