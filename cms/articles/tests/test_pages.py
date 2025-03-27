@@ -1,6 +1,53 @@
+from http import HTTPStatus
+
 from wagtail.test.utils import WagtailPageTestCase
 
-from cms.articles.tests.factories import StatisticalArticlePageFactory
+from cms.articles.tests.factories import ArticleSeriesPageFactory, StatisticalArticlePageFactory
+
+
+class ArticleSeriesPageTests(WagtailPageTestCase):
+    @classmethod
+    def setUpTestData(cls):
+        cls.page = ArticleSeriesPageFactory()
+
+    def test_default_route(self):
+        self.assertPageIsRoutable(self.page)
+
+    def test_default_route_redirect(self):
+        StatisticalArticlePageFactory(parent=self.page)
+        response = self.client.get(self.page.url)
+        self.assertRedirects(response, self.page.url + "latest/")
+
+    def test_latest_route(self):
+        self.assertPageIsRoutable(self.page, "latest/")
+
+    def test_latest_route_rendering(self):
+        self.assertPageIsRenderable(self.page, "latest/", accept_404=True)
+
+    def test_latest_route_rendering_of_article(self):
+        article = StatisticalArticlePageFactory(parent=self.page)
+        response = self.client.get(self.page.url + "latest/")
+        self.assertEqual(response.status_code, HTTPStatus.OK)
+        self.assertContains(response, article.title)
+
+    def test_previous_releases_route(self):
+        self.assertPageIsRoutable(self.page, "previous-releases/")
+
+    def test_previous_releases_route_rendering(self):
+        self.assertPageIsRenderable(self.page, "previous-releases/")
+
+    def test_previous_releases_article_list(self):
+        response = self.client.get(self.page.url + "previous-releases/")
+        self.assertEqual(response.status_code, HTTPStatus.OK)
+        self.assertContains(response, "There are currently no releases")
+
+        first_article = StatisticalArticlePageFactory(parent=self.page)
+        second_article = StatisticalArticlePageFactory(parent=self.page)
+
+        response = self.client.get(self.page.url + "previous-releases/")
+        self.assertEqual(response.status_code, HTTPStatus.OK)
+        self.assertContains(response, first_article.title)
+        self.assertContains(response, second_article.title)
 
 
 class StatisticalArticlePageTests(WagtailPageTestCase):
@@ -16,7 +63,7 @@ class StatisticalArticlePageTests(WagtailPageTestCase):
 
     def test_page_content(self):
         response = self.client.get(self.page.url)
-        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.status_code, HTTPStatus.OK)
         self.assertContains(response, self.page.title)
         self.assertContains(response, self.page.summary)
 
@@ -76,7 +123,7 @@ class StatisticalArticlePageTests(WagtailPageTestCase):
 
         # V2 doesn't exist yet, should return 404
         v2_response = self.client.get(self.page.url + "previous/v2/")
-        self.assertEqual(v2_response.status_code, 404)
+        self.assertEqual(v2_response.status_code, HTTPStatus.NOT_FOUND)
 
         second_correction = {
             "version_id": 2,
@@ -112,7 +159,7 @@ class StatisticalArticlePageTests(WagtailPageTestCase):
 
         # V2 now exists
         v2_response = self.client.get(self.page.url + "previous/v2/")
-        self.assertEqual(v2_response.status_code, 200)
+        self.assertEqual(v2_response.status_code, HTTPStatus.OK)
 
         self.assertContains(v2_response, "Corrections")
         self.assertContains(v2_response, "First correction text")
@@ -120,7 +167,7 @@ class StatisticalArticlePageTests(WagtailPageTestCase):
 
         # V3 doesn't exist yet, should return 404
         v3_response = self.client.get(self.page.url + "previous/v3/")
-        self.assertEqual(v3_response.status_code, 404)
+        self.assertEqual(v3_response.status_code, HTTPStatus.NOT_FOUND)
 
         third_correction = {
             "version_id": 3,
@@ -159,7 +206,7 @@ class StatisticalArticlePageTests(WagtailPageTestCase):
 
         # V3 now exists
         v3_response = self.client.get(self.page.url + "previous/v3/")
-        self.assertEqual(v3_response.status_code, 200)
+        self.assertEqual(v3_response.status_code, HTTPStatus.OK)
 
         self.assertContains(v3_response, "Corrections")
         self.assertContains(v3_response, "First correction text")
