@@ -133,6 +133,27 @@ def user_adds_a_correction(context: Context):
     page.wait_for_timeout(500)
 
 
+@step("the user adds another correction using the add button at the bottom")
+def user_adds_a_correction_using_bottom_add_button(context: Context):
+    page = context.page
+    page.wait_for_timeout(500)
+    page.locator("#tab-label-corrections_and_notices").click()
+    block_area = page.locator(
+        "#panel-child-corrections_and_notices-corrections-content [data-streamfield-stream-container]"
+    )
+
+    block_area.locator("div:last-child").get_by_role("button", name="Insert a block").click()
+    block_area.locator("[name='corrections-1-id']+section").get_by_label("When*").fill("2025-03-14 13:59")
+    block_area.locator("[name='corrections-1-id']+section").locator(
+        '[data-contentpath="text"] [role="textbox"]'
+    ).scroll_into_view_if_needed()
+    page.wait_for_timeout(500)
+    block_area.locator("[name='corrections-1-id']+section").locator('[data-contentpath="text"] [role="textbox"]').fill(
+        "Correction text"
+    )
+    page.wait_for_timeout(500)
+
+
 @step("the user adds a notice")
 def user_adds_a_notice(context: Context):
     page = context.page
@@ -151,6 +172,12 @@ def the_published_statistical_article_page_has_the_added_correction(context: Con
     expect(context.page.get_by_role("link", name="Corrections ons-icon-chevron")).to_be_visible()
     expect(context.page.get_by_text("13 March 2025 1:59p.m.")).to_be_hidden()
     expect(context.page.get_by_text("Correction text")).to_be_hidden()
+
+
+@then("the published statistical article page has corrections in chronological order")
+def the_published_statistical_article_page_has_corrections_in_chronological_order(context: Context):
+    expect(context.page.locator("#corrections div:first-child").get_by_text("14 March 2025 1:59p.m.")).to_be_hidden()
+    expect(context.page.locator("#corrections div:nth-child(2)").get_by_text("13 March 2025 1:59p.m.")).to_be_hidden()
 
 
 @then("the published statistical article page has the added notice")

@@ -1,12 +1,13 @@
 from django.forms import ValidationError
+from wagtail.blocks.stream_block import StreamValue
 from wagtail.models import PageLogEntry
 
 from cms.taxonomy.forms import DeduplicateTopicsAdminForm
 
 
 class PageWithCorrectionsAdminForm(DeduplicateTopicsAdminForm):
-    def clean_corrections(self) -> list:  # noqa: C901
-        corrections: list = self.cleaned_data["corrections"]
+    def clean_corrections(self) -> StreamValue:  # noqa: C901
+        corrections: StreamValue = self.cleaned_data["corrections"]
 
         if self.instance.pk is None:
             if corrections:
@@ -24,6 +25,10 @@ class PageWithCorrectionsAdminForm(DeduplicateTopicsAdminForm):
         new_frozen_versions = [
             correction.value["version_id"] for correction in corrections if correction.value["frozen"]
         ]
+
+        latest_frozen_date = max(
+            (correction.value["when"] for correction in corrections if correction.value["frozen"]), default=None
+        )
 
         # This will check if any frozen corrections are being removed or tampered with
         if old_frozen_versions != new_frozen_versions:
@@ -51,7 +56,6 @@ class PageWithCorrectionsAdminForm(DeduplicateTopicsAdminForm):
         page_revision_ids = set(self.instance.revisions.order_by().values_list("id", flat=True).distinct())
 
         new_correction = None
-        last_date = None
         latest_correction_version = 0
 
         for correction in corrections:
@@ -62,11 +66,13 @@ class PageWithCorrectionsAdminForm(DeduplicateTopicsAdminForm):
                     break
                 new_correction = correction
 
-            # Check if the order is chronological (newest first, descending)
-            if last_date and correction.value["when"] > last_date:
-                self.add_error("corrections", ValidationError("Corrections must be in chronological, descending order"))
-                break
-            last_date = correction.value["when"]
+                if latest_frozen_date and new_correction.value["when"] < latest_frozen_date:
+                    self.add_error(
+                        "corrections",
+                        ValidationError(
+                            "You cannot create a correction with a date earlier than the latest correction"
+                        ),
+                    )
 
             latest_correction_version = max(latest_correction_version, correction.value["version_id"] or 0)
 
@@ -83,4 +89,7 @@ class PageWithCorrectionsAdminForm(DeduplicateTopicsAdminForm):
             if not new_correction.value["previous_version"]:
                 new_correction.value["previous_version"] = latest_published_revision_id
 
-        return corrections
+        # Sort corrections
+        sorted_corrections = sorted(corrections, key=lambda correction: correction.value["when"], reverse=True)
+
+        return StreamValue(corrections.stream_block, sorted_corrections)
