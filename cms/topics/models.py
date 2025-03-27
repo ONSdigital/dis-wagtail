@@ -91,7 +91,6 @@ class TopicPage(ExclusiveTaxonomyMixin, BasePage):  # type: ignore[django-manage
             "featured_series",
             heading=_("Featured"),
             widget=FeaturedSeriesPageChooserWidget(linked_fields={"topic_page_id": "#id_topic_page_id"}),
-            permission="wagtailadmin.add_featured_article_series_on_topic_page",
         ),
         InlinePanel(
             "related_articles",

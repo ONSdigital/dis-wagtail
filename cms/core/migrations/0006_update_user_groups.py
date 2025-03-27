@@ -146,20 +146,6 @@ def create_page_permissions(apps):
             GroupPagePermission.objects.create(group=group, page=root_page, permission=permission)
 
 
-def create_topic_page_featured_series_permission(apps):
-    """Create a custom permission that will be registered using a Wagtail hook,
-    given to the Publishing Admins group,
-    and used on the TopicPage's featured article series FieldPanel.
-    """
-    assign_permission_to_group(
-        apps,
-        group_name=settings.PUBLISHING_ADMINS_GROUP_NAME,
-        permission_codename="add_featured_article_series_on_topic_page",
-        app="wagtailadmin",
-        model="admin",
-    )
-
-
 def update_user_groups(apps, schema_editor):
     """Create user groups for the CMS."""
     create_user_groups(apps)
@@ -168,7 +154,6 @@ def update_user_groups(apps, schema_editor):
     create_snippet_permissions(apps)
     create_bundle_permissions(apps)
     create_reporting_permissions(apps)
-    create_topic_page_featured_series_permission(apps)
 
 
 class Migration(migrations.Migration):
