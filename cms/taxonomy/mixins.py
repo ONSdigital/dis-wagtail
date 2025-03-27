@@ -57,3 +57,8 @@ class GenericTaxonomyMixin(models.Model):
 
     class Meta:
         abstract = True
+
+    @property
+    def topic_ids(self) -> list[str]:
+        """Returns a list of topic IDs associated with the page."""
+        return list(self.topics.values_list("topic_id", flat=True)) if hasattr(self, "topics") else []

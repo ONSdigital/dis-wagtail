@@ -46,6 +46,11 @@ services:
       file: docker-compose-dev.yml
       service: redis
 
+  broker:
+    extends:
+      file: docker-compose-dev.yml
+      service: broker
+
 volumes:
   node_modules:
   pgdata:
