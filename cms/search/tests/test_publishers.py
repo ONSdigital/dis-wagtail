@@ -75,48 +75,48 @@ class BasePublisherTests(TestCase):
             channel_deleted="dummy-channel-deleted",
         )
 
-    def test_publish_created_or_updated_calls_publish(self):
+    @patch.object(DummyPublisher, "_publish", return_value=None)
+    def test_publish_created_or_updated_calls_publish(self, mock_method):
         """Verify `publish_created_or_updated` calls `_publish` with the correct channel & message."""
-        with patch.object(self.publisher, "_publish", return_value=None) as mock_method:
-            for page in self.included_pages:
-                self.publisher.publish_created_or_updated(page)
-                expected_type = EXPECTED_CONTENT_TYPES[type(page).__name__]
+        for page in self.included_pages:
+            self.publisher.publish_created_or_updated(page)
+            expected_type = EXPECTED_CONTENT_TYPES[type(page).__name__]
 
-                # The channel should come from get_channel_created_or_updated()
-                mock_method.assert_called_once()
-                called_channel, called_message = mock_method.call_args[0]
-                self.assertEqual(called_channel, "dummy-channel-created")
+            # The channel should come from get_channel_created_or_updated()
+            mock_method.assert_called_once()
+            called_channel, called_message = mock_method.call_args[0]
+            self.assertEqual(called_channel, "dummy-channel-created")
 
-                # Check the message structure from _construct_message_for_create_update
-                self.assertIn("uri", called_message)
-                self.assertIn("title", called_message)
-                self.assertIn("content_type", called_message)
-                self.assertIn("summary", called_message)
-                self.assertIn("topics", called_message)
+            # Check the message structure from _construct_message_for_create_update
+            self.assertIn("uri", called_message)
+            self.assertIn("title", called_message)
+            self.assertIn("content_type", called_message)
+            self.assertIn("summary", called_message)
+            self.assertIn("topics", called_message)
 
-                self.assertEqual(called_message["uri"], page.url_path)
-                self.assertEqual(called_message["title"], page.title)
-                self.assertEqual(called_message["summary"], page.summary)
-                self.assertEqual(called_message["content_type"], expected_type)
+            self.assertEqual(called_message["uri"], page.url_path)
+            self.assertEqual(called_message["title"], page.title)
+            self.assertEqual(called_message["summary"], page.summary)
+            self.assertEqual(called_message["content_type"], expected_type)
 
-                mock_method.reset_mock()
-                # Not a release => no date
+            mock_method.reset_mock()
+            # Not a release => no date
 
-    def test_publish_deleted_calls_publish(self):
+    @patch.object(DummyPublisher, "_publish", return_value=None)
+    def test_publish_deleted_calls_publish(self, mock_method):
         """Verify `publish_deleted` calls `_publish` with the correct channel & message."""
-        with patch.object(self.publisher, "_publish", return_value=None) as mock_method:
-            for page in self.included_pages:
-                self.publisher.publish_deleted(page)
+        for page in self.included_pages:
+            self.publisher.publish_deleted(page)
 
-                mock_method.assert_called_once()
-                called_channel, called_message = mock_method.call_args[0]
-                self.assertEqual(called_channel, "dummy-channel-deleted")
+            mock_method.assert_called_once()
+            called_channel, called_message = mock_method.call_args[0]
+            self.assertEqual(called_channel, "dummy-channel-deleted")
 
-                self.assertIn("uri", called_message)
+            self.assertIn("uri", called_message)
 
-                self.assertEqual(called_message["uri"], page.url_path)
+            self.assertEqual(called_message["uri"], page.url_path)
 
-                mock_method.reset_mock()
+            mock_method.reset_mock()
 
     def test_construct_message_for_release_page_provisional_confirmed(self):
         """Ensure that for a release-type page, release-specific fields get added."""
