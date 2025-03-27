@@ -1,10 +1,13 @@
+from collections import defaultdict
+from urllib.parse import urlparse
+
 from django.core.exceptions import ValidationError
 from wagtail.blocks import (
     CharBlock,
     StreamBlock,
+    StreamBlockValidationError,
     StreamValue,
     StructBlock,
-    StructBlockValidationError,
     TextBlock,
     URLBlock,
 )
@@ -41,9 +44,20 @@ class DatasetStoryBlock(StreamBlock):
     def clean(self, value: StreamValue) -> StreamValue:
         cleaned_value = super().clean(value)
 
-        # Check for duplicate datasets selected through the chooser
-        chosen_datasets = [block.value for block in cleaned_value.blocks_by_name("dataset_lookup")]
-        if len(chosen_datasets) != len(set(chosen_datasets)):
-            raise StructBlockValidationError(non_block_errors=[ValidationError("Duplicate datasets are not allowed")])
+        url_paths = defaultdict(set)
+        for block_index, block in enumerate(cleaned_value):
+            url_path = (
+                block.value.url_path if block.block_type == "dataset_lookup" else urlparse(block.value["url"]).path
+            )
+            url_paths[url_path].add(block_index)
+
+        block_errors = {}
+        for block_indices in url_paths.values():
+            if len(block_indices) > 1:
+                for index in block_indices:
+                    block_errors[index] = ValidationError("Duplicate datasets are not allowed")
+
+        if block_errors:
+            raise StreamBlockValidationError(block_errors=block_errors)
 
         return cleaned_value

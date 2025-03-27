@@ -7,7 +7,7 @@ from cms.datasets.models import DATASETS_BASE_API_URL, ONSDataset, ONSDatasetApi
 class TestONSDatasetApiQuerySet(TestCase):
     @responses.activate
     def test_count_uses_total_count(self):
-        responses.add(responses.GET, DATASETS_BASE_API_URL, json={"total_count": 2, "items": []})
+        responses.add(responses.GET, DATASETS_BASE_API_URL, json={"total_count": 2, "count": 0, "items": []})
         api_queryset = ONSDatasetApiQuerySet()
         api_queryset.base_url = DATASETS_BASE_API_URL
         api_queryset.pagination_style = "offset-limit"

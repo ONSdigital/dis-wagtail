@@ -37,7 +37,7 @@ class ONSDataset(APIModel):
     class Meta:
         base_url: str = DATASETS_BASE_API_URL
         detail_url: str = f"{DATASETS_BASE_API_URL}/%s"
-        fields: ClassVar = ["id", "description", "title", "version", "url", "edition"]
+        fields: ClassVar = ["id", "description", "title", "version", "edition"]
         pagination_style = "offset-limit"
         verbose_name_plural = "ONS Datasets"
 
@@ -53,7 +53,6 @@ class ONSDataset(APIModel):
             title=data["title"],
             description=data["description"],
             version=data["links"]["latest_version"]["id"],
-            url=url,
             edition=edition,
         )
 
@@ -72,7 +71,6 @@ class Dataset(models.Model):
     title = models.CharField(max_length=255)
     description = models.TextField()
     version = models.CharField(max_length=255)
-    url = models.URLField()
     edition = models.CharField(max_length=255)
 
     class Meta:
@@ -88,5 +86,9 @@ class Dataset(models.Model):
         return self.edition.replace("-", " ").title()
 
     @property
+    def url_path(self) -> str:
+        return f"/datasets/{self.namespace}/editions/{self.edition}/versions/{self.version}"
+
+    @property
     def website_url(self) -> str:
-        return self.url.replace(DATASETS_BASE_API_URL, settings.ONS_WEBSITE_DATASET_BASE_URL)
+        return f"{settings.ONS_WEBSITE_BASE_URL}/{self.url_path}"

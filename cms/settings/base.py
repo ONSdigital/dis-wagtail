@@ -852,7 +852,7 @@ MANAGE_COOKIE_SETTINGS_URL = env.get("MANAGE_COOKIE_SETTINGS_URL", "https://www.
 SLACK_NOTIFICATIONS_WEBHOOK_URL = env.get("SLACK_NOTIFICATIONS_WEBHOOK_URL")
 
 ONS_API_BASE_URL = env.get("ONS_API_BASE_URL", "https://api.beta.ons.gov.uk/v1")
-ONS_WEBSITE_DATASET_BASE_URL = env.get("ONS_WEBSITE_DATASET_BASE_URL", "https://www.ons.gov.uk/datasets")
+ONS_WEBSITE_BASE_URL = env.get("ONS_WEBSITE_BASE_URL", "https://www.ons.gov.uk")
 
 # FIXME: remove before going live
 ENFORCE_EXCLUSIVE_TAXONOMY = env.get("ENFORCE_EXCLUSIVE_TAXONOMY", "true").lower() == "true"
