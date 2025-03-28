@@ -114,6 +114,8 @@ convention = "google"
 "**/tests/*" = [
     # Allow use of assert statements in tests
     "S101",
+    # Allow what looks like hard-coded credentials
+    "S106"
 ]
 "cms/*/migrations/*" = [
     "RUF012"
