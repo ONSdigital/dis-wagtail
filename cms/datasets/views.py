@@ -90,7 +90,6 @@ class DatasetChosenView(ChosenViewMixin, ChosenResponseMixin, View):
             defaults={
                 "title": item.title,
                 "description": item.description,
-                "url": item.url,
             },
         )
         return dataset
