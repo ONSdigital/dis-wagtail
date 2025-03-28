@@ -45,9 +45,9 @@ def get_formatted_pages_list(
     return data
 
 
-def get_client_ip(request: "HttpRequest") -> str:
+def get_client_ip(request: "HttpRequest") -> str | None:
     """Get the IP address of the client.
 
     It's assumed this has been overridden by `django-xff`
     """
-    return request.META["REMOTE_ADDR"]
+    return request.META.get("REMOTE_ADDR")
