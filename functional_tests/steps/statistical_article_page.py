@@ -90,8 +90,8 @@ def the_statistical_article_page_is_displayed_with_the_updated_data(context: Con
     expect(context.page.get_by_text("Updated content")).to_be_visible()
 
 
-@then("the user can view the superseeded statistical article page")
-def user_can_view_the_superseeded_statistical_article_page(context: Context):
+@then("the user can view the superseded statistical article page")
+def user_can_view_the_superseded_statistical_article_page(context: Context):
     expect(context.page.get_by_role("heading", name="The article page")).to_be_visible()
     expect(context.page.get_by_text("Content", exact=True)).to_be_visible()
 

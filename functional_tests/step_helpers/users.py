@@ -1,9 +1,23 @@
+from django.conf import settings
+from django.contrib.auth.models import Group
+
 from cms.users.tests.factories import UserFactory
 
 
-def create_cms_admin_user() -> dict[str, str]:
-    """Creates a CMS admin user using a factory, returns the username and password."""
-    user = UserFactory(is_superuser=True)
+def create_user(user_type: str) -> dict[str, str]:
+    match user_type:
+        case "superuser":
+            user = UserFactory(is_superuser=True)
+        case "Publishing Admin":
+            user = UserFactory()
+            user.groups.add(Group.objects.get(name=settings.PUBLISHING_ADMINS_GROUP_NAME))
+        case "Publishing Officer":
+            user = UserFactory()
+            user.groups.add(Group.objects.get(name=settings.PUBLISHING_OFFICERS_GROUP_NAME))
+        case "Viewer":
+            user = UserFactory()
+            user.groups.add(Group.objects.get(name=settings.VIEWERS_GROUP_NAME))
+
     return {
         "username": user.username,
         "full_name": f"{user.first_name} {user.last_name}",
