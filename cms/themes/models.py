@@ -1,7 +1,6 @@
 from typing import TYPE_CHECKING, ClassVar
 
 from django.conf import settings
-from django.utils.translation import gettext_lazy as _
 from wagtail.fields import RichTextField
 
 from cms.core.models import BasePage
@@ -17,8 +16,8 @@ class ThemePage(ExclusiveTaxonomyMixin, BasePage):  # type: ignore[django-manage
     template = "templates/pages/theme_page.html"
     parent_page_types: ClassVar[list[str]] = ["home.HomePage", "ThemePage"]
     subpage_types: ClassVar[list[str]] = ["ThemePage", "topics.TopicPage"]
-    page_description = _("A theme page, such as 'Economy'.")
-    label = _("Theme")
+    page_description = "A theme page, such as 'Economy'."
+    label = "Theme"
 
     summary = RichTextField(features=settings.RICH_TEXT_BASIC)
 

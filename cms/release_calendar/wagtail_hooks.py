@@ -1,7 +1,6 @@
 from typing import TYPE_CHECKING, Optional
 
 from django.shortcuts import redirect
-from django.utils.translation import gettext as _
 from wagtail import hooks
 from wagtail.admin import messages
 from wagtail.admin.utils import get_valid_next_url_from_request
@@ -20,13 +19,11 @@ if TYPE_CHECKING:
 def before_delete_page(request: "HttpRequest", page: "Page") -> Optional["HttpResponseRedirect"]:
     """Block release calendar page deletion and show a message."""
     if page.specific_class == ReleaseCalendarPage:
-        messages.warning(
-            request, _("Release Calendar pages cannot be deleted. You can mark them as cancelled instead.")
-        )
+        messages.warning(request, "Release Calendar pages cannot be deleted. You can mark them as cancelled instead.")
         return redirect("wagtailadmin_pages:edit", page.pk)
 
     if page.specific_class == ReleaseCalendarIndex:
-        messages.warning(request, _("The Release Calendar index cannot be deleted."))
+        messages.warning(request, "The Release Calendar index cannot be deleted.")
 
         # redirect to a valid next url (passed via the 'next' query parameter)
         if next_url := get_valid_next_url_from_request(request):

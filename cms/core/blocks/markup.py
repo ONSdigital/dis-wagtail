@@ -3,7 +3,6 @@ from typing import TYPE_CHECKING, Any, Union
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.utils.text import slugify
-from django.utils.translation import gettext as _
 from wagtail import blocks
 from wagtail.contrib.table_block.blocks import TableBlock as WagtailTableBlock
 from wagtail_tinytableblock.blocks import TinyTableBlock
@@ -55,7 +54,7 @@ class BasicTableBlock(WagtailTableBlock):
     class Meta:
         icon = "table"
         template = "templates/components/streamfield/basic_table_block.html"
-        label = _("Basic table")
+        label = "Basic table"
 
     def _get_header(self, value: dict) -> list[dict[str, str]]:
         """Prepares the table header for the Design System."""
@@ -80,12 +79,12 @@ class BasicTableBlock(WagtailTableBlock):
     def clean(self, value: dict) -> dict:
         """Validate that a header was chosen, and the cells are not empty."""
         if not value or not value.get("table_header_choice"):
-            raise ValidationError(_("Select an option for Table headers"))
+            raise ValidationError("Select an option for Table headers")
 
         data = value.get("data", [])
         all_cells_empty = all(not cell for row in data for cell in row)
         if all_cells_empty:
-            raise ValidationError(_("The table cannot be empty"))
+            raise ValidationError("The table cannot be empty")
 
         cleaned_value: dict = super().clean(value)
         return cleaned_value
@@ -112,8 +111,8 @@ class BasicTableBlock(WagtailTableBlock):
 class ONSTableBlock(TinyTableBlock):
     """The ONS table block."""
 
-    source = blocks.CharBlock(label=_("Source"), required=False)
-    footnotes = blocks.RichTextBlock(label=_("Footnotes"), features=settings.RICH_TEXT_BASIC, required=False)
+    source = blocks.CharBlock(label="Source", required=False)
+    footnotes = blocks.RichTextBlock(label="Footnotes", features=settings.RICH_TEXT_BASIC, required=False)
 
     def get_context(self, value: dict, parent_context: dict | None = None) -> dict:
         """Insert the DS-ready options in the template context."""

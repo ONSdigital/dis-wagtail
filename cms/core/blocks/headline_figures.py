@@ -1,15 +1,14 @@
 from typing import Any
 
-from django.utils.translation import gettext as _
 from wagtail.blocks import CharBlock, ListBlock, StructBlock
 
 
 class HeadlineFiguresItemBlock(StructBlock):
     """Represents a headline figure."""
 
-    title = CharBlock(label=_("Title"), max_length=60, required=True)
-    figure = CharBlock(label=_("Figure"), max_length=10, required=True)
-    supporting_text = CharBlock(label=_("Supporting text"), max_length=100, required=True)
+    title = CharBlock(label="Title", max_length=60, required=True)
+    figure = CharBlock(label="Figure", max_length=10, required=True)
+    supporting_text = CharBlock(label="Supporting text", max_length=100, required=True)
 
 
 class HeadlineFiguresBlock(ListBlock):
@@ -21,5 +20,5 @@ class HeadlineFiguresBlock(ListBlock):
 
     class Meta:
         icon = "data-analysis"
-        label = _("Headline figures")
+        label = "Headline figures"
         template = "templates/components/streamfield/headline_figures_block.html"

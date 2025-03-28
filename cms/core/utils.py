@@ -2,7 +2,6 @@ from typing import TYPE_CHECKING, Any, Optional, TypedDict
 
 from django.db.models import QuerySet
 from django.utils.formats import date_format
-from django.utils.translation import gettext_lazy as _
 
 if TYPE_CHECKING:
     from django.http import HttpRequest
@@ -30,13 +29,13 @@ def get_formatted_pages_list(
                 "url": page.get_url(request=request),
             },
             "metadata": {
-                "object": {"text": getattr(page, "label", _("Page"))},
+                "object": {"text": getattr(page, "label", "Page")},
             },
             "description": getattr(page, "listing_summary", "") or getattr(page, "summary", ""),
         }
         if release_date := page.release_date:
             datum["metadata"]["date"] = {
-                "prefix": _("Released"),
+                "prefix": "Released",
                 "showPrefix": True,
                 "iso": date_format(release_date, "c"),
                 "short": date_format(release_date, "DATE_FORMAT"),

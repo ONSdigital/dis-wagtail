@@ -3,7 +3,6 @@ from typing import TYPE_CHECKING, Any
 from django import forms
 from django.core.exceptions import ValidationError
 from django.utils import timezone
-from django.utils.translation import gettext as _
 from wagtail.admin.forms import WagtailAdminModelForm
 
 from cms.bundles.enums import ACTIVE_BUNDLE_STATUS_CHOICES, EDITABLE_BUNDLE_STATUSES, BundleStatus
@@ -67,13 +66,7 @@ class BundleAdminForm(WagtailAdminModelForm):
             if not form.cleaned_data["DELETE"]:
                 page = page.specific
                 if page.in_active_bundle and page.active_bundle != self.instance:
-                    raise ValidationError(
-                        _("'%(page)s' is already in an active bundle (%(bundle)s)")
-                        % {
-                            "page": page,
-                            "bundle": page.active_bundle,
-                        }
-                    )
+                    raise ValidationError(f"'{page}' is already in an active bundle ({page.active_bundle})")
 
     def clean(self) -> dict[str, Any] | None:
         """Validates the form.
@@ -101,7 +94,7 @@ class BundleAdminForm(WagtailAdminModelForm):
                 cleaned_data["approved_by"] = None
 
         if self.cleaned_data["release_calendar_page"] and self.cleaned_data["publication_date"]:
-            error = _("You must choose either a Release Calendar page or a Publication date, not both.")
+            error = "You must choose either a Release Calendar page or a Publication date, not both."
             self.add_error("release_calendar_page", error)
             self.add_error("publication_date", error)
 

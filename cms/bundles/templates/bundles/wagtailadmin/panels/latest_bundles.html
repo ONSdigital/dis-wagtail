@@ -1,6 +1,6 @@
 {% load i18n wagtailcore_tags wagtailadmin_tags %}
 {% if is_shown %}
-    {% panel id="latest-bundles" heading=_("Latest active bundles") %}
+    {% panel id="latest-bundles" heading"Latest active bundles" %}
         {% help_block status="info" %}
             <p>Bundles are collections of pages and datasets to publish together.</p>
         {% endhelp_block %}
@@ -33,7 +33,7 @@
                                 </div>
                                 <ul class="actions">
                                     <li>
-                                        {% dropdown toggle_icon="dots-horizontal" toggle_aria_label=_("Actions") %}
+                                        {% dropdown toggle_icon="dots-horizontal" toggle_aria_label="Actions" %}
                                             <a href="{% url 'bundle:edit' bundle.pk %}">{% trans "Edit" %}</a>
                                             <a href="{% url 'bundle:inspect' bundle.pk %}">{% trans "View" %}</a>
                                         {% enddropdown %}

@@ -2,7 +2,6 @@ from typing import TYPE_CHECKING, ClassVar, Union
 
 from django.contrib.contenttypes.fields import GenericRelation
 from django.db import models
-from django.utils.translation import gettext_lazy as _
 from wagtail.admin.panels import PublishingPanel
 from wagtail.contrib.settings.models import register_setting
 from wagtail.models import DraftStateMixin, PreviewableMixin, RevisionMixin
@@ -24,13 +23,13 @@ class MainMenu(DraftStateMixin, RevisionMixin, PreviewableMixin, models.Model):
         [("highlight", MainMenuHighlightsBlock())],
         blank=True,
         max_num=3,
-        help_text=_("Up to 3 highlights. Each highlight must have either a page or a URL."),
+        help_text="Up to 3 highlights. Each highlight must have either a page or a URL.",
     )
     columns = StreamField(
         [("column", MainMenuColumnBlock())],
         blank=True,
         max_num=3,
-        help_text=_("Up to 3 columns. Each column contains sections with links."),
+        help_text="Up to 3 columns. Each column contains sections with links.",
     )
 
     _revisions = GenericRelation("wagtailcore.Revision", related_query_name="main_menu")
@@ -59,7 +58,7 @@ class FooterMenu(DraftStateMixin, RevisionMixin, PreviewableMixin, models.Model)
         [("column", LinksColumn())],
         blank=True,
         max_num=3,
-        help_text=_("Up to 3 columns. Each column contains a title with links."),
+        help_text="Up to 3 columns. Each column contains a title with links.",
     )
     _revisions = GenericRelation("wagtailcore.Revision", related_query_name="footer_menu")
 
@@ -87,7 +86,7 @@ class NavigationSettings(BaseSiteSetting):
         null=True,
         blank=True,
         related_name="+",
-        help_text=_("Select the main menu to display on the site."),
+        help_text="Select the main menu to display on the site.",
     )
 
     footer_menu = models.ForeignKey(
@@ -96,7 +95,7 @@ class NavigationSettings(BaseSiteSetting):
         null=True,
         blank=True,
         related_name="+",
-        help_text=_("Select the footer menu to display on the site."),
+        help_text="Select the footer menu to display on the site.",
     )
 
     panels: ClassVar[list] = ["main_menu", "footer_menu"]

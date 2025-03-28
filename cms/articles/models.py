@@ -35,13 +35,13 @@ class ArticleSeriesPage(RoutablePageMixin, GenericTaxonomyMixin, BasePage):  # t
     parent_page_types: ClassVar[list[str]] = ["topics.TopicPage"]
     subpage_types: ClassVar[list[str]] = ["StatisticalArticlePage"]
     preview_modes: ClassVar[list[str]] = []  # Disabling the preview mode due to it being a container page.
-    page_description = _("A container for statistical article series.")
+    page_description = "A container for statistical article series."
     exclude_from_breadcrumbs = True
 
     content_panels: ClassVar[list["Panel"]] = [
         *Page.content_panels,
         HelpPanel(
-            content=_(
+            content=(
                 "This is a container for article series. It provides the <code>/latest</code>,"
                 "<code>/previous-releases</code> evergreen paths, as well as the actual statistical article pages. "
                 "Add a new Statistical article page under this container."
@@ -91,14 +91,14 @@ class StatisticalArticlePage(BundledPageMixin, RoutablePageMixin, BasePage):  # 
     parent_page_types: ClassVar[list[str]] = ["ArticleSeriesPage"]
     subpage_types: ClassVar[list[str]] = []
     template = "templates/pages/statistical_article_page.html"
-    label = _("Article")
+    label = "Article"
 
     # Fields
     news_headline = models.CharField(max_length=255, blank=True)
     summary = RichTextField(features=settings.RICH_TEXT_BASIC)
 
     main_points_summary = RichTextField(
-        features=settings.RICH_TEXT_BASIC, help_text=_("Used when featured on a topic page.")
+        features=settings.RICH_TEXT_BASIC, help_text="Used when featured on a topic page."
     )
 
     # Fields: dates
@@ -115,17 +115,17 @@ class StatisticalArticlePage(BundledPageMixin, RoutablePageMixin, BasePage):  # 
 
     # Fields: accredited/census. A bit of "about the data".
     is_accredited = models.BooleanField(
-        _("Accredited Official Statistics"),
+        "Accredited Official Statistics",
         default=False,
-        help_text=_(
+        help_text=(
             "If ticked, will display an information block about the data being accredited official statistics "
             "and include the accredited logo."
         ),
     )
     is_census = models.BooleanField(
-        _("Census"),
+        "Census",
         default=False,
-        help_text=_("If ticked, will display an information block about the data being related to the Census."),
+        help_text="If ticked, will display an information block about the data being related to the Census.",
     )
 
     # Fields: content
@@ -141,7 +141,7 @@ class StatisticalArticlePage(BundledPageMixin, RoutablePageMixin, BasePage):  # 
         *BundledPageMixin.panels,
         MultiFieldPanel(
             [
-                TitleFieldPanel("title", help_text=_("Also known as the release edition. e.g. 'November 2024'.")),
+                TitleFieldPanel("title", help_text="Also known as the release edition. e.g. 'November 2024'."),
                 FieldPanel(
                     "news_headline",
                     help_text=(
@@ -159,23 +159,23 @@ class StatisticalArticlePage(BundledPageMixin, RoutablePageMixin, BasePage):  # 
             [
                 FieldRowPanel(
                     [
-                        FieldPanel("release_date", help_text=_("The actual release date")),
+                        FieldPanel("release_date", help_text="The actual release date"),
                         FieldPanel(
                             "next_release_date",
-                            help_text=_("If no next date is chosen, 'To be announced' will be displayed."),
+                            help_text="If no next date is chosen, 'To be announced' will be displayed.",
                         ),
                     ],
-                    heading=_("Dates"),
+                    heading="Dates",
                 ),
                 FieldRowPanel(
                     ["is_accredited", "is_census"],
-                    heading=_("About the data"),
+                    heading="About the data",
                 ),
                 "contact_details",
                 "show_cite_this_page",
                 "main_points_summary",
             ],
-            heading=_("Metadata"),
+            heading="Metadata",
             icon="cog",
         ),
         FieldPanel("headline_figures", icon="data-analysis"),
@@ -207,7 +207,7 @@ class StatisticalArticlePage(BundledPageMixin, RoutablePageMixin, BasePage):  # 
         super().clean()
 
         if self.next_release_date and self.next_release_date <= self.release_date:
-            raise ValidationError({"next_release_date": _("The next release date must be after the release date.")})
+            raise ValidationError({"next_release_date": "The next release date must be after the release date."})
 
     def get_context(self, request: "HttpRequest", *args: Any, **kwargs: Any) -> dict:
         """Additional context for the template."""

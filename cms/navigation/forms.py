@@ -3,7 +3,6 @@ from typing import TYPE_CHECKING
 
 from django.core.exceptions import ValidationError
 from django.forms.utils import ErrorList
-from django.utils.translation import gettext as _
 from wagtail.admin.forms import WagtailAdminModelForm
 from wagtail.blocks import StreamBlockValidationError, StructBlock, StructBlockValidationError, StructValue
 from wagtail.models import Page
@@ -59,9 +58,9 @@ def validate_links(
     link_url = link_value.get("external_url")
 
     if link_page is not None:
-        errors += check_duplicates(link_page, seen_pages, "page", _("Duplicate page. Please choose a different one."))
+        errors += check_duplicates(link_page, seen_pages, "page", "Duplicate page. Please choose a different one.")
     if link_url is not None:
-        errors += check_duplicates(link_url, seen_urls, "external_url", _("Duplicate URL. Please add a different one."))
+        errors += check_duplicates(link_url, seen_urls, "external_url", "Duplicate URL. Please add a different one.")
     return errors
 
 
@@ -83,9 +82,9 @@ class MainMenuAdminForm(WagtailAdminModelForm):
             external_url = block_value.get("external_url")
 
             errors = []
-            errors += check_duplicates(page, seen_pages, "page", _("Duplicate page. Please choose a different one."))
+            errors += check_duplicates(page, seen_pages, "page", "Duplicate page. Please choose a different one.")
             errors += check_duplicates(
-                external_url, seen_urls, "external_url", _("Duplicate URL. Please add a different one.")
+                external_url, seen_urls, "external_url", "Duplicate URL. Please add a different one."
             )
             return errors
 
@@ -111,10 +110,10 @@ class MainMenuAdminForm(WagtailAdminModelForm):
             section_url = section_link.get("external_url")
 
             sec_errors += check_duplicates(
-                section_page, seen_pages, "section_link", _("Duplicate page. Please choose a different one.")
+                section_page, seen_pages, "section_link", "Duplicate page. Please choose a different one."
             )
             sec_errors += check_duplicates(
-                section_url, seen_urls, "section_link", _("Duplicate URL. Please add a different one.")
+                section_url, seen_urls, "section_link", "Duplicate URL. Please add a different one."
             )
 
             sub_links = section_value.get("links", [])

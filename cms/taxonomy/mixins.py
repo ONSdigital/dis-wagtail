@@ -3,7 +3,6 @@ from typing import ClassVar
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.db import models
-from django.utils.translation import gettext_lazy as _
 from wagtail.admin.panels import FieldPanel, MultipleChooserPanel, Panel
 
 from cms.taxonomy.models import Topic
@@ -28,7 +27,7 @@ class ExclusiveTaxonomyMixin(models.Model):
         super().clean()
 
         if not self.topic_id:
-            raise ValidationError({"topic": _("A topic is required.")})
+            raise ValidationError({"topic": "A topic is required."})
 
         if not settings.ENFORCE_EXCLUSIVE_TAXONOMY:
             return
@@ -45,14 +44,14 @@ class ExclusiveTaxonomyMixin(models.Model):
                 qs = qs.exclude(pk=self.pk)
 
             if qs.exists():
-                raise ValidationError({"topic": _("This topic is already linked to another theme or topic page.")})
+                raise ValidationError({"topic": "This topic is already linked to another theme or topic page."})
 
 
 class GenericTaxonomyMixin(models.Model):
     """Generic Taxonomy mixin allows pages to be tagged with one or more topics non-exclusively."""
 
     taxonomy_panels: ClassVar[list["Panel"]] = [
-        MultipleChooserPanel("topics", label=_("Topics"), chooser_field_name=_("topic")),
+        MultipleChooserPanel("topics", label="Topics", chooser_field_name="topic"),
     ]
 
     class Meta:
