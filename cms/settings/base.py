@@ -119,6 +119,7 @@ MIDDLEWARE = [
     # SecurityMiddleware.
     # http://whitenoise.evans.io/en/stable/#quickstart-for-django-apps
     "cms.core.whitenoise.CMSWhiteNoiseMiddleware",
+    "xff.middleware.XForwardedForMiddleware",
     "django.middleware.locale.LocaleMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
@@ -452,10 +453,23 @@ LOGGING = {
         "console": {
             "level": "INFO",
             "class": "logging.StreamHandler",
-            "formatter": "verbose",
+            "formatter": "json",
+        },
+        "gunicorn_access": {
+            "level": "INFO",
+            "class": "logging.StreamHandler",
+            "formatter": "gunicorn_json",
         },
     },
-    "formatters": {"verbose": {"format": "[%(asctime)s][%(process)d][%(levelname)s][%(name)s] %(message)s"}},
+    "formatters": {
+        "verbose": {"format": "[%(asctime)s][%(process)d][%(levelname)s][%(name)s] %(message)s"},
+        "json": {
+            "()": "cms.core.logs.JSONFormatter",
+        },
+        "gunicorn_json": {
+            "()": "cms.core.logs.GunicornJsonFormatter",
+        },
+    },
     "loggers": {
         "cms": {
             "handlers": ["console"],
@@ -479,6 +493,12 @@ LOGGING = {
         },
         "apscheduler": {
             "handlers": ["console"],
+            "level": "INFO",
+            "propagate": False,
+        },
+        "xff": {"handlers": ["console"], "level": "WARNING", "propagate": False},
+        "gunicorn.access": {
+            "handlers": ["gunicorn_access"],
             "level": "INFO",
             "propagate": False,
         },
@@ -621,6 +641,12 @@ CACHE_CONTROL_STALE_WHILE_REVALIDATE = int(env.get("CACHE_CONTROL_STALE_WHILE_RE
 # https://docs.djangoproject.com/en/stable/ref/settings/#use-x-forwarded-port
 USE_X_FORWARDED_PORT = env.get("USE_X_FORWARDED_PORT", "true").lower().strip() == "true"
 
+XFF_TRUSTED_PROXY_DEPTH = int(env.get("XFF_TRUSTED_PROXY_DEPTH", 1))
+XFF_EXEMPT_URLS = [r"^-/.*"]
+
+# Error if there aren't enough proxies in between?
+XFF_ALWAYS_PROXY = env.get("XFF_ALWAYS_PROXY", "false").lower().strip() == "true"
+
 # Security configuration
 # This configuration is required to achieve good security rating.
 # You can test it using https://securityheaders.com/
@@ -747,6 +773,11 @@ if ENABLE_DJANGO_DEFENDER:
     DEFENDER_LOGIN_FAILURE_LIMIT_USERNAME = 5
     DEFENDER_COOLOFF_TIME = int(env.get("DJANGO_DEFENDER_COOLOFF_TIME", 600))  # default to 10 minutes
     DEFENDER_LOCKOUT_TEMPLATE = "pages/defender/lockout.html"
+
+    # Whilst we frequently are behind a reverse proxy, using `False` ensures Defender falls
+    # back to using `REMOTE_ADDR`, which is set correctly by `django-xff`.
+    DEFENDER_BEHIND_REVERSE_PROXY = False
+
 
 # Wagtail settings
 
