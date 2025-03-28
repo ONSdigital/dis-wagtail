@@ -484,7 +484,12 @@ LOGGING = {
     },
     "formatters": {
         "verbose": {"format": "[%(asctime)s][%(process)d][%(levelname)s][%(name)s] %(message)s"},
-        "json": {"()": "pythonjsonlogger.json.JsonFormatter"},
+        "json": {
+            "()": "pythonjsonlogger.json.JsonFormatter",
+            "fmt": "{message}{asctime}{name}",
+            "style": "{",
+            "rename_fields": {"asctime": "created_at", "name": "namespace"},
+        },
     },
     "loggers": {
         "cms": {
