@@ -2,7 +2,6 @@ from collections.abc import Iterable
 from typing import Any
 
 from django import forms
-from django.db.models import QuerySet
 from django.views import View
 from wagtail.admin.forms.choosers import BaseFilterForm
 from wagtail.admin.ui.tables import Column
@@ -38,6 +37,8 @@ class DatasetSearchFilterForm(BaseFilterForm):
 
     def filter(self, objects: Iterable[Any]) -> Iterable[Any]:
         objects = super().filter(objects)
+
+        # This search filter implementation is required on our side as the API does not support filtering yet
         search_query = self.cleaned_data.get("q")
         if search_query:
             search_query_lower = search_query.strip().lower()
@@ -54,12 +55,6 @@ class DatasetSearchFilterForm(BaseFilterForm):
 class ONSDatasetBaseChooseView(BaseChooseView):
     model_class = ONSDataset
     filter_form_class = DatasetSearchFilterForm
-
-    def get_object_list(self) -> QuerySet[ONSDataset]:
-        # Due to pagination this is required for search to check entire list
-        # The hardcoded limit will need changing.
-        object_list: QuerySet[ONSDataset] = self.model_class.objects.filter(limit=1000)  # pylint: disable=no-member
-        return object_list
 
     def render_to_response(self) -> None:
         raise NotImplementedError()

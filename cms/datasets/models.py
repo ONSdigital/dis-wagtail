@@ -32,7 +32,7 @@ class ONSDatasetApiQuerySet(APIQuerySet):
 class ONSDataset(APIModel):
     base_query_class = ONSDatasetApiQuerySet
 
-    search_fields: ClassVar = ["title", "version", "formatted_edition"]
+    search_fields: ClassVar[list[str]] = ["title", "version", "formatted_edition"]
 
     class Meta:
         base_url: str = DATASETS_BASE_API_URL
