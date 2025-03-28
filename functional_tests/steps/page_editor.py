@@ -127,3 +127,24 @@ def the_user_hides_the_minimap(context: Context):
 @then("the minimap is hidden")
 def the_minimap_is_hidden(context: Context):
     expect(context.page.get_by_role("complementary", name="Minimap").locator("div").first).not_to_be_visible()
+
+
+@step("the user can create and save a page")
+def the_user_can_create_and_save_a_page(context: Context):
+    # Create an information page
+    context.page.get_by_role("button", name="Pages").click()
+    context.page.get_by_role("link", name="Home", exact=True).click()
+    context.page.get_by_role("link", name="Add child page").click()
+    context.page.get_by_role("link", name="Information page", exact=True).click()
+
+    expect(context.page.get_by_role("button", name="Save draft")).to_be_visible()
+
+
+@step("the user can create and publish a page")
+def the_user_can_save_and_publish_a_page(context: Context):
+    the_user_can_create_and_save_a_page(context)
+
+    # The user can also publish the page
+    expect(context.page.get_by_role("button", name="More actions")).to_be_visible()
+    context.page.get_by_role("button", name="More actions").click()
+    expect(context.page.get_by_role("button", name="Publish")).to_be_visible()
