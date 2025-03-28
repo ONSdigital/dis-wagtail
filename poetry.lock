@@ -1270,6 +1270,16 @@ files = [
 ]
 
 [[package]]
+name = "json-log-formatter"
+version = "1.1.1"
+description = "JSON log formatter"
+optional = false
+python-versions = ">=3.6"
+files = [
+    {file = "json_log_formatter-1.1.1.tar.gz", hash = "sha256:0815e3b4469e5c79cf3f6dc8a0613ba6601f4a7464f85ba03655cfa6e3e17d10"},
+]
+
+[[package]]
 name = "kafka-python"
 version = "2.0.5"
 description = "Pure Python client for Apache Kafka"
@@ -2770,4 +2780,4 @@ files = [
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.12"
-content-hash = "b94866be86bad21f8134b20742cb65ff869d47e0ff705f93918c59f12034856e"
+content-hash = "6a5d93cb432d260328ae62720b5b53f3d5299f52e48ef0d7d1672dc7537f1622"

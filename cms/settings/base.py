@@ -481,14 +481,19 @@ LOGGING = {
             "class": "logging.StreamHandler",
             "formatter": "json",
         },
+        "gunicorn_access": {
+            "level": "INFO",
+            "class": "logging.StreamHandler",
+            "formatter": "gunicorn_json",
+        },
     },
     "formatters": {
         "verbose": {"format": "[%(asctime)s][%(process)d][%(levelname)s][%(name)s] %(message)s"},
         "json": {
-            "()": "pythonjsonlogger.json.JsonFormatter",
-            "fmt": "{message}{asctime}{name}{exc_info}",
-            "style": "{",
-            "rename_fields": {"asctime": "created_at", "name": "namespace"},
+            "()": "cms.core.logs.JSONFormatter",
+        },
+        "gunicorn_json": {
+            "()": "cms.core.logs.GunicornJsonFormatter",
         },
     },
     "loggers": {
@@ -518,6 +523,11 @@ LOGGING = {
             "propagate": False,
         },
         "xff": {"handlers": ["console"], "level": "WARNING", "propagate": False},
+        "gunicorn.access": {
+            "handlers": ["gunicorn_access"],
+            "level": "INFO",
+            "propagate": False,
+        },
     },
 }
 
