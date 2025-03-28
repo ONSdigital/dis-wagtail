@@ -1,0 +1,11 @@
+@use 'config' as *;
+
+/*
+Styles for the related publications component
+*/
+
+.related-publications {
+    border-bottom: 3px solid var(--ons-color-ocean-blue);
+    margin-bottom: rem-sizing(40);
+    padding-bottom: rem-sizing(40);
+}
