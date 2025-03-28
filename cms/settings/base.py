@@ -486,7 +486,7 @@ LOGGING = {
         "verbose": {"format": "[%(asctime)s][%(process)d][%(levelname)s][%(name)s] %(message)s"},
         "json": {
             "()": "pythonjsonlogger.json.JsonFormatter",
-            "fmt": "{message}{asctime}{name}",
+            "fmt": "{message}{asctime}{name}{exc_info}",
             "style": "{",
             "rename_fields": {"asctime": "created_at", "name": "namespace"},
         },

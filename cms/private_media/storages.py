@@ -30,20 +30,26 @@ class AccessControlledS3Storage(S3Storage):
         try:
             obj = self.bucket.Object(file.name)
         except (ClientError, Boto3Error):
-            logger.exception("Failed to retrieve object for %s", file.name)
+            logger.exception(
+                "Failed to retrieve object",
+                extra={
+                    "key": file.name,
+                    "event": "object_retrieve_failed",
+                },
+            )
             return False
         try:
             obj_acl = obj.Acl()
         except (ClientError, Boto3Error):
-            logger.exception("Failed to retrieve ACL for %s", file.name)
+            logger.exception("Failed to retrieve ACL", extra={"key": file.name, "event": "acl_retrieve_failed"})
             return False
         try:
             obj_acl.put(ACL=acl_name)
         except (ClientError, Boto3Error):
-            logger.exception("Failed to set ACL for %s", file.name)
+            logger.exception("Failed to set ACL", extra={"key": file.name, "event": "acl_set_failed"})
             return False
 
-        logger.info("ACL set successfully for %s", file.name)
+        logger.info("ACL set successfully", extra={"key": file.name, "event": "acl_set"})
         return True
 
 
