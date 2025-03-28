@@ -127,3 +127,13 @@ def the_user_hides_the_minimap(context: Context):
 @then("the minimap is hidden")
 def the_minimap_is_hidden(context: Context):
     expect(context.page.get_by_role("complementary", name="Minimap").locator("div").first).not_to_be_visible()
+
+
+@when('the user clicks "Save" to save the Snippet')
+def user_saves_in_navigation_settings(context: Context):
+    context.page.get_by_role("button", name="Save").click()
+
+
+@when("the user clicks toggle preview ")
+def user_clicks_view_live(context: Context):
+    context.page.get_by_role("button", name="Toggle preview").click()
