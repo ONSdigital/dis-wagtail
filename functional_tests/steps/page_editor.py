@@ -129,22 +129,36 @@ def the_minimap_is_hidden(context: Context):
     expect(context.page.get_by_role("complementary", name="Minimap").locator("div").first).not_to_be_visible()
 
 
-@step("the user can create and save a page")
-def the_user_can_create_and_save_a_page(context: Context):
-    # Create an information page
-    context.page.get_by_role("button", name="Pages").click()
-    context.page.get_by_role("link", name="Home", exact=True).click()
-    context.page.get_by_role("link", name="Add child page").click()
-    context.page.get_by_role("link", name="Information page", exact=True).click()
-
+@step("the user can save a page")
+def the_user_can_save_a_page(context: Context):
     expect(context.page.get_by_role("button", name="Save draft")).to_be_visible()
 
 
-@step("the user can create and publish a page")
-def the_user_can_save_and_publish_a_page(context: Context):
-    the_user_can_create_and_save_a_page(context)
-
-    # The user can also publish the page
+@step("the user can publish a page")
+def the_user_can_publish_a_page(context: Context):
     expect(context.page.get_by_role("button", name="More actions")).to_be_visible()
     context.page.get_by_role("button", name="More actions").click()
     expect(context.page.get_by_role("button", name="Publish")).to_be_visible()
+
+
+@step("the user can lock and unlock a page")
+def the_user_can_lock_and_unlock_a_page(context: Context):
+    context.page.get_by_role("button", name="Toggle status").click()
+
+    context.page.get_by_text("Lock", exact=True).click()
+    expect(context.page.get_by_text("'Information page' was locked")).to_be_visible()
+
+    context.page.get_by_text("Lock", exact=True).click()
+    expect(context.page.get_by_text("Page 'Information page' is now unlocked.")).to_be_visible()
+
+
+@step("the user can bulk delete the Theme page and its children")
+def the_user_can_bulk_delete_a_theme_page_and_its_children(context: Context):
+    context.page.get_by_role("button", name="Pages").click()
+    context.page.get_by_role("link", name="Home", exact=True).click()
+    context.page.get_by_role("button", name=f"More options for '{context.theme_page.title}'").click()
+    context.page.get_by_role("link", name=f"Delete page '{context.theme_page.title}'").click()
+    expect(context.page.get_by_role("link", name="This theme page is referenced")).to_be_visible()
+    expect(context.page.get_by_text("Are you sure you want to")).to_be_visible()
+    context.page.get_by_role("button", name="Yes, delete it").click()
+    expect(context.page.get_by_text(f"Page '{context.theme_page.title}' deleted.")).to_be_visible()

@@ -9,7 +9,7 @@ Feature: Statistical Article Page components
         Then the published statistical article page is displayed with the populated data
 
 
-    Scenario: A CMS user can add a table a Statistical Article Page
+    Scenario: A CMS user can add a table on a Statistical Article Page
         Given a superuser logs into the admin site
         When the user goes to add a new statistical article page
         And the user adds basic statistical article page content
@@ -53,7 +53,7 @@ Feature: Statistical Article Page components
         And the user returns to editing the statistical article page
         Then the user cannot delete the correction
 
-    Scenario: A CMS user can view a superseeded Statistical Article Page
+    Scenario: A CMS user can view a superseded Statistical Article Page
         Given a superuser logs into the admin site
         When the user goes to add a new statistical article page
         And the user adds basic statistical article page content
@@ -64,7 +64,7 @@ Feature: Statistical Article Page components
         And the user clicks "Publish page"
         And the user clicks "View Live" on the publish confirmation banner
         And the user clicks on "View superseded version"
-        Then the user can view the superseeded statistical article page
+        Then the user can view the superseded statistical article page
 
     Scenario: A CMS user can add a notice to a Statistical Article Page
         Given a superuser logs into the admin site

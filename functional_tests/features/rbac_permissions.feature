@@ -8,10 +8,25 @@ Feature: Role Based Access Control Permission as defined in data migrations
     Scenario: A Publishing Admin can create and publish pages
         When a Publishing Admin logs into the admin site
         Then the user can see the Pages menu item
-        And the user can create and publish a page
+        And the user creates an information page as a child of the home page
+        And the user can save a page
+        And the user can publish a page
 
-    # TODO - Other page permissions from: WAGTAIL_PAGE_PERMISSION_TYPES = ["add", "change", "bulk_delete", "lock", "publish", "unlock"]
+    Scenario: A Publishing Admin can bulk delete pages
+        Given a topic page exists under a theme page
+        And a statistical article page has been published under the topic page
+        When a Publishing Admin logs into the admin site
+        Then the user can bulk delete the Theme page and its children
 
+    # TODO: This fails: for some reason the "Locked" section doesn't come up in the test, 
+    # but is working fine in the actual admin
+
+    # Scenario: A Publishing Admin can lock and unlock a page
+    #     Given a Publishing Admin logs into the admin site
+    #     And the user can see the Pages menu item
+    #     When the user creates an information page as a child of the home page
+    #     Then the user can lock and unlock a page
+        
     Scenario: A Publishing Admin can manage image collections
         When a Publishing Admin logs into the admin site
         Then the user can see the Images menu item
@@ -40,20 +55,21 @@ Feature: Role Based Access Control Permission as defined in data migrations
         When the user navigates to the Snippets admin page
         Then the user can create and publish the Footer menus snippet
 
-    Scenario: A Publishing Admin can manage Bundles
+    Scenario: A Publishing Admin can add Bundles
         Given a Publishing Admin logs into the admin site 
         And the user can see the Bundles menu item
         When the user navigates to the Bundles admin page
         Then the user can add Bundles
-        
 
     # Publishing Officer
+
     Scenario: A Publishing Officer can create pages
         When a Publishing Officer logs into the admin site
         Then the user can see the Pages menu item
-        And the user can create and save a page
+        And the user creates an information page as a child of the home page
+        And the user can save a page
 
-    Scenario: A Publishing Officer can manage Bundles
+    Scenario: A Publishing Officer can add Bundles
         Given a Publishing Officer logs into the admin site
         And the user can see the Bundles menu item
         When the user navigates to the Bundles admin page
@@ -61,7 +77,10 @@ Feature: Role Based Access Control Permission as defined in data migrations
 
     # Viewer
 
-    Scenario: A Viewer can see Bundles
-        Given a Viewer logs into the admin site
-        And the user can see the Bundles menu item
+    Scenario: A Viewer can inspect Bundles details
+        Given a bundle has been created
+        When a Viewer logs into the admin site
+        Then the user can see the Bundles menu item
+        And the user can inspect bundle details
+
 

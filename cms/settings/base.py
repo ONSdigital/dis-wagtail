@@ -327,7 +327,6 @@ LOCALE_PATHS = [PROJECT_DIR / "locale"]
 PUBLISHING_ADMINS_GROUP_NAME = "Publishing Admins"
 PUBLISHING_OFFICERS_GROUP_NAME = "Publishing Officers"
 VIEWERS_GROUP_NAME = "Viewers"
-ROLE_GROUP_IDS = {"role-admin", "role-publisher", "role-viewer"}
 
 
 # Static files (CSS, JavaScript, Images)

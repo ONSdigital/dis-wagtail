@@ -11,6 +11,13 @@ def the_user_can_see_reports_menu_item(context: Context, menu_item: str) -> None
     expect(context.page.get_by_role(role, name=menu_item, exact=True)).to_be_visible()
 
 
+@then("the user can inspect bundle details")
+def the_user_can_see_the_bundle_details(context: Context) -> None:
+    context.page.get_by_role("link", name="Bundles", exact=True).click()
+    context.page.get_by_role("button", name=f"More options for '{context.bundle.name}'").click()
+    context.page.get_by_role("link", name=f"Inspect '{context.bundle.name}'").click()
+
+
 @then("the user can add {object_name} snippet")
 def the_user_can_see_snippet(context: Context, object_name: str) -> None:
     context.page.get_by_role("link", name=object_name).click()
