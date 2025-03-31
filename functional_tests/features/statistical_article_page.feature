@@ -42,7 +42,7 @@ Feature: Statistical Article Page components
         And the user returns to editing the statistical article page
         Then the user can edit the correction
 
-      Scenario: A CMS user cannot delete a correction to a Statistical Article Page once it is published
+    Scenario: A CMS user cannot delete a correction to a Statistical Article Page once it is published
         Given a superuser logs into the admin site
         When the user goes to add a new statistical article page
         And the user adds basic statistical article page content
@@ -53,7 +53,21 @@ Feature: Statistical Article Page components
         And the user returns to editing the statistical article page
         Then the user cannot delete the correction
 
-    Scenario: A CMS user can view a superseded Statistical Article Page
+    Scenario: Corrections are saved in chronological order
+        Given a superuser logs into the admin site
+        When the user goes to add a new statistical article page
+        And the user adds basic statistical article page content
+        And the user clicks "Publish page"
+        And the user returns to editing the statistical article page
+        And the user adds a correction
+        And the user clicks "Publish page"
+        And the user returns to editing the statistical article page
+        And the user adds another correction using the add button at the bottom
+        And the user clicks "Publish page"
+        And the user clicks "View Live" on the publish confirmation banner
+        Then the published statistical article page has corrections in chronological order
+
+    Scenario: A CMS user can view a superseeded Statistical Article Page
         Given a superuser logs into the admin site
         When the user goes to add a new statistical article page
         And the user adds basic statistical article page content
