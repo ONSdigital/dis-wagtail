@@ -41,7 +41,7 @@ class MethodologyRelatedPage(Orderable):
 class MethodologyPage(GenericTaxonomyMixin, BasePage):  # type: ignore[django-manager-missing]
     parent_page_types: ClassVar[list[str]] = ["topics.TopicPage"]
     template = "templates/pages/methodology_page.html"
-    label = "Methodology"
+    label = _("Methodology")
 
     summary = RichTextField(features=settings.RICH_TEXT_BASIC)
     publication_date = models.DateField()
