@@ -49,13 +49,15 @@ class AddToBundleView(FormView):
 
         if self.page_to_add.in_active_bundle:
             text_list = get_text_list(
-                list(self.page_to_add.active_bundles.values_list("name", flat=True)),  # type: ignore[attr-defined]
+                list(self.page_to_add.active_bundles.values_list("name", flat=True)),
                 last_word="and",
             )
 
+            admin_display_title = self.page_to_add.get_admin_display_title()  # type: ignore[attr-defined]
+
             messages.warning(
                 request,
-                f"Page {self.page_to_add.get_admin_display_title()} is already in a bundle ('{text_list}')",
+                f"Page {admin_display_title} is already in a bundle ('{text_list}')",
             )
             if self.goto_next:
                 return redirect(self.goto_next)

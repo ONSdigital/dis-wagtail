@@ -91,7 +91,7 @@ class StatisticalArticlePage(BundledPageMixin, RoutablePageMixin, BasePage):  # 
     parent_page_types: ClassVar[list[str]] = ["ArticleSeriesPage"]
     subpage_types: ClassVar[list[str]] = []
     template = "templates/pages/statistical_article_page.html"
-    label = _("Article")
+    label = _("Article")  # type: ignore[assignment]
 
     # Fields
     news_headline = models.CharField(max_length=255, blank=True)
