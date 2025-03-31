@@ -29,7 +29,7 @@ def editor_js() -> str:
 
 
 @hooks.register("insert_global_admin_css")
-def global_admin_css():
+def global_admin_css() -> str:
     return format_html('<link rel="stylesheet" href="{}">', static("css/admin.css"))
 
 
