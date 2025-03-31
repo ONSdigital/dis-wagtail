@@ -295,7 +295,7 @@ class BundleIndexView(IndexView):
         queryset: BundlesQuerySet = super().get_base_queryset()
 
         if not self.can_manage:
-            queryset = queryset.previewable().filter(teams__team__in=self.request.user.active_team_ids)
+            queryset = queryset.previewable().filter(teams__team__in=self.request.user.active_team_ids).distinct()
 
         return queryset.select_related("created_by").prefetch_related("teams__team")
 

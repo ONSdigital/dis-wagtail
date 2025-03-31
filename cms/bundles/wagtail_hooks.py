@@ -188,6 +188,7 @@ class BundlesInReviewPanel(Component):
                 Bundle.objects.previewable()
                 .filter(teams__team__in=self.request.user.active_team_ids)  # type: ignore[union-attr]
                 .select_related("created_by", "created_by__wagtail_userprofile")
+                .distinct()
             )
 
         return queryset

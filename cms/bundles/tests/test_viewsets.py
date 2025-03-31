@@ -340,8 +340,13 @@ class BundleIndexViewTestCase(BundleViewSetTestCaseBase):
     def test_index_view__previewers__contains_only_relevant_bundles(self):
         self.client.force_login(self.bundle_viewer)
 
+        another_preview_team = Team.objects.create(identifier="bar", name="Another preview team")
+        BundleTeam.objects.create(parent=self.in_review_bundle, team=another_preview_team)
+        self.bundle_viewer.teams.add(another_preview_team)
+
         response = self.client.get(self.bundle_index_url)
-        self.assertContains(response, self.in_review_bundle.name)
+        # the title + label for inspect link + label for the dropdown button
+        self.assertContains(response, self.in_review_bundle.name, 3)
         self.assertNotContains(response, self.released_bundle.name)
         self.assertNotContains(response, self.approved_bundle.name)
         self.assertNotContains(response, self.another_in_review_bundle.name)
