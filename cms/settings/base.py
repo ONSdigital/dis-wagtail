@@ -9,6 +9,7 @@ from typing import Any, cast
 import dj_database_url
 from django.core.exceptions import ImproperlyConfigured
 from django.utils.module_loading import import_string
+from django.utils.translation import gettext_lazy as _
 from django_jinja.builtins import DEFAULT_EXTENSIONS
 
 env = os.environ.copy()
@@ -315,9 +316,9 @@ WAGTAIL_I18N_ENABLED = False
 
 LANGUAGE_CODE = "en-gb"
 WAGTAIL_CONTENT_LANGUAGES = LANGUAGES = [
-    ("en-gb", "English"),
-    ("cy", "Welsh"),
-    ("uk", "Ukrainian"),
+    ("en-gb", _("English")),
+    ("cy", _("Welsh")),
+    ("uk", _("Ukrainian")),
 ]
 
 LOCALE_PATHS = [PROJECT_DIR / "locale"]
