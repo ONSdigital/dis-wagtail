@@ -42,6 +42,10 @@ class AuditLogTestCase(WagtailTestUtils, TestCase):
         self.assertIsNone(record.ip_address)
         self.assertIsNone(record.user_agent)
 
+    def test_logout_without_login(self):
+        with self.assertNoLogs("cms.users"):
+            self.client.logout()
+
     def test_login_failed(self):
         with self.assertLogs("cms.users") as logs:
             self.client.login(username="username", password="password")

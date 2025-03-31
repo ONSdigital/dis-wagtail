@@ -27,7 +27,11 @@ def audit_user_logged_in(sender: Any, request: HttpRequest, user: User, **kwargs
 
 
 @receiver(user_logged_out)
-def audit_user_logged_out(sender: Any, request: HttpRequest, user: User, **kwargs: Any) -> None:  # pylint: disable=unused-argument
+def audit_user_logged_out(sender: Any, request: HttpRequest, user: User | None, **kwargs: Any) -> None:  # pylint: disable=unused-argument
+    if user is None:
+        # We don't care that no one logged out
+        return
+
     logger.info(
         "User logged out",
         extra={
