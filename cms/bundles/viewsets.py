@@ -21,7 +21,7 @@ from wagtail.log_actions import log
 from .enums import BundleStatus
 from .models import Bundle
 from .notifications import notify_slack_of_publication_start, notify_slack_of_publish_end, notify_slack_of_status_change
-from .permissions import user_can_manage, user_can_preview
+from .permissions import user_can_manage_bundles, user_can_preview_bundle
 
 if TYPE_CHECKING:
     from django.db.models.fields import Field
@@ -149,13 +149,13 @@ class BundleInspectView(InspectView):
     template_name = "bundles/wagtailadmin/inspect.html"
 
     def dispatch(self, request: "HttpRequest", *args: Any, **kwargs: Any) -> "TemplateResponse":
-        if not user_can_preview(self.request.user, self.object):
+        if not user_can_preview_bundle(self.request.user, self.object):
             raise PermissionDenied
         return super().dispatch(request, *args, **kwargs)  # type: ignore[no-any-return]
 
     @cached_property
     def can_manage(self) -> bool:
-        return user_can_manage(self.request.user)
+        return user_can_manage_bundles(self.request.user)
 
     def get_fields(self) -> list[str]:
         """Returns the list of fields to include in the inspect view."""
@@ -272,7 +272,7 @@ class BundleInspectView(InspectView):
         if self.can_manage:
             return self.get_pages_for_manager()
 
-        if user_can_preview(self.request.user, self.object):
+        if user_can_preview_bundle(self.request.user, self.object):
             return self.get_pages_for_previewer()
 
         return ""
@@ -312,7 +312,7 @@ class BundleIndexView(IndexView):
 
     @cached_property
     def can_manage(self) -> bool:
-        return user_can_manage(self.request.user)
+        return user_can_manage_bundles(self.request.user)
 
     @cached_property
     def columns(self) -> list[Column]:

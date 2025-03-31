@@ -2,6 +2,8 @@ from typing import TYPE_CHECKING
 
 from django.contrib.auth.models import AnonymousUser
 
+from cms.users.permissions import get_permission_name
+
 from .enums import BundleStatus
 
 if TYPE_CHECKING:
@@ -10,7 +12,14 @@ if TYPE_CHECKING:
     from .models import Bundle
 
 
-def user_can_manage(user: "User | AnonymousUser") -> bool:
+def get_bundle_permission(action: str) -> str:
+    # imported inline to prevent partial initialization and circular import errors
+    from .models import Bundle  # pylint: disable=import-outside-toplevel
+
+    return get_permission_name(Bundle, action)
+
+
+def user_can_manage_bundles(user: "User | AnonymousUser") -> bool:
     if isinstance(user, AnonymousUser):
         return False
 
@@ -19,20 +28,22 @@ def user_can_manage(user: "User | AnonymousUser") -> bool:
         return True
 
     # users that can manage or view bundles can preview any bundle
-    return any(user.has_perm(permission) for permission in ["bundles.add_bundle", "bundles.change_bundle"])
+    return any(
+        user.has_perm(permission) for permission in [get_bundle_permission("add"), get_bundle_permission("change")]
+    )
 
 
-def user_can_preview(user: "User | AnonymousUser", bundle: "Bundle") -> bool:
+def user_can_preview_bundle(user: "User | AnonymousUser", bundle: "Bundle") -> bool:
     if isinstance(user, AnonymousUser):
         return False
 
     # if the user can manage bundles, they can preview
-    if user_can_manage(user):
+    if user_can_manage_bundles(user):
         return True
 
     # otherwise, only users in the same team(s) as the bundle team(s)
-    has_view_permission = user.has_perm("bundles.view_bundle")
-    bundle_in_review = bundle.status == BundleStatus.IN_REVIEW
-    has_the_right_team = bool(set(user.active_team_ids) & set(bundle.active_team_ids))
-
-    return has_view_permission and bundle_in_review and has_the_right_team
+    return (
+        user.has_perm(get_bundle_permission("view"))
+        and bundle.status == BundleStatus.IN_REVIEW
+        and bool(set(user.active_team_ids) & set(bundle.active_team_ids))
+    )

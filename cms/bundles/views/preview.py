@@ -11,7 +11,7 @@ from wagtail.log_actions import log
 from wagtail.models import Page
 
 from cms.bundles.models import Bundle
-from cms.bundles.permissions import user_can_manage, user_can_preview
+from cms.bundles.permissions import user_can_manage_bundles, user_can_preview_bundle
 
 if TYPE_CHECKING:
     from django.http import HttpRequest
@@ -27,7 +27,7 @@ class PreviewBundleView(TemplateView):
         page_id = kwargs["page_id"]
         page = get_object_or_404(Page, id=page_id).get_latest_revision_as_object()
 
-        if not user_can_preview(request.user, bundle):
+        if not user_can_preview_bundle(request.user, bundle):
             log(
                 action="bundles.preview.attempt",
                 instance=bundle,
@@ -35,7 +35,7 @@ class PreviewBundleView(TemplateView):
             )
             raise PermissionDenied
 
-        if user_can_manage(self.request.user):
+        if user_can_manage_bundles(self.request.user):
             pages_in_bundle = bundle.get_bundled_pages(specific=True)
         else:
             pages_in_bundle = bundle.get_pages_ready_for_review()
