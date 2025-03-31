@@ -62,15 +62,23 @@ Feature: CMS users can manage footer menus via the Wagtail admin interface
         And the user clicks the "Save Draft" button
         Then an error message is displayed about the link limit
 
-# # Deletion and Confirmation
-# Scenario: User can delete a footer menu instance
-#     Given a footer menu exists
-#     When the user deletes the footer menu
-#     Then a banner confirming the deletion is displayed
+    # Deletion and Confirmation
+    Scenario: User can delete a footer menu instance
+        Given a footer menu exists
+        When the user navigates to Snippets
+        And the user clicks on "Footer menus"
+        And the user selects "More options for Footer Menu"
+        And the user clicks "Delete Footer Menu"
+        Then a banner confirming the deletion is displayed
 
-# # Final Verification
-# Scenario: Footer menu appears on the live home page
-#     When a populated footer menu is created and saved
-#     And the user clicks the "Save Draft" button
-#     And the user configures the footer menu in Navigation Settings
-#     Then the footer menu appears on the home page
+    # Final Verification
+    Scenario: Footer menu appears on the live home page
+        When the user creates a footer menu instance
+        And a footer menu is populated with 3 columns
+        And the user clicks "Publish page"
+        And the user navigates to navigation settings
+        And the user selects the footer menu
+        And the user clicks "Save" to save the Snippet
+        Then the footer menu appears on the home page
+
+
