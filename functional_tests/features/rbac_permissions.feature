@@ -9,7 +9,7 @@ Feature: Role Based Access Control Permission as defined in data migrations
         When a Publishing Admin logs into the admin site
         Then the user can see the Pages menu item
         And the user creates an information page as a child of the home page
-        And the user can save a page
+        And the user can save a draft version of the page
         And the user can publish a page
 
     Scenario: A Publishing Admin can bulk delete pages
@@ -22,6 +22,8 @@ Feature: Role Based Access Control Permission as defined in data migrations
         Given a Publishing Admin logs into the admin site
         And the user can see the Pages menu item
         When the user creates an information page as a child of the home page
+        And the user adds content to the new information page
+        And the user clicks the "Save Draft" button
         Then the user can lock and unlock a page
         
     Scenario: A Publishing Admin can manage image collections
@@ -64,7 +66,7 @@ Feature: Role Based Access Control Permission as defined in data migrations
         When a Publishing Officer logs into the admin site
         Then the user can see the Pages menu item
         And the user creates an information page as a child of the home page
-        And the user can save a page
+        And the user can save a draft version of the page
 
     Scenario: A Publishing Officer can add Bundles
         Given a Publishing Officer logs into the admin site

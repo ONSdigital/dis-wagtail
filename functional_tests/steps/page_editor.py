@@ -129,7 +129,7 @@ def the_minimap_is_hidden(context: Context):
     expect(context.page.get_by_role("complementary", name="Minimap").locator("div").first).not_to_be_visible()
 
 
-@step("the user can save a page")
+@step("the user can save a draft version of the page")
 def the_user_can_save_a_page(context: Context):
     expect(context.page.get_by_role("button", name="Save draft")).to_be_visible()
 
@@ -146,10 +146,10 @@ def the_user_can_lock_and_unlock_a_page(context: Context):
     context.page.get_by_role("button", name="Toggle status").click()
 
     context.page.get_by_text("Lock", exact=True).click()
-    expect(context.page.get_by_text("'Information page' was locked")).to_be_visible()
+    expect(context.page.get_by_text("'Test Info Page' was locked by you")).to_be_visible()
 
     context.page.get_by_text("Lock", exact=True).click()
-    expect(context.page.get_by_text("Page 'Information page' is now unlocked.")).to_be_visible()
+    expect(context.page.get_by_text("Page 'Test Info Page' is now unlocked.")).to_be_visible()
 
 
 @step("the user can bulk delete the Theme page and its children")
