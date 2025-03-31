@@ -22,7 +22,6 @@ def assign_permission_to_group(apps, group_name, permission_codename, app, model
     group = Group.objects.get(name=group_name)
 
     group.permissions.add(permission)
-    group.save()
 
 
 def create_user_groups(apps):
@@ -31,9 +30,8 @@ def create_user_groups(apps):
     """
     Group = apps.get_model("auth.Group")
 
-    # Remove existing Wagtail groups
-    for wagtail_group in Group.objects.all():
-        wagtail_group.delete()
+    # Remove all existing Wagtail groups
+    Group.objects.all().delete()
 
     # Create the Publishing Admin, Publishing Officer and Viewer groups and give them the 'access_admin' permission
     for group_name in [

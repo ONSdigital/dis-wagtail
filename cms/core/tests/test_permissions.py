@@ -2,7 +2,7 @@ from django.conf import settings
 from django.contrib.auth.models import Group
 from django.test import TestCase
 
-from cms.users.models import User
+from cms.users.tests.factories import UserFactory
 
 WAGTAIL_PERMISSION_TYPES = ["add", "change", "delete"]
 
@@ -11,17 +11,15 @@ WAGTAIL_PAGE_PERMISSION_TYPES = ["add", "change", "bulk_delete", "lock", "publis
 
 class PermissionsTestCase(TestCase):
     @classmethod
-    def create_user(cls, first_name, last_name, group_name):
-        # Create user
-        cls.user = User(first_name=first_name, last_name=last_name)
-        cls.user.save()
+    def create_user(cls, group_name):
+        """Helper method to create a user and assign them to a group."""
+        cls.user = UserFactory()
 
-        # Assign user to group
         group = Group.objects.get(name=group_name)
         group.user_set.add(cls.user)
 
     def all_permissions_check_helper(self, app: str, model: str):
-        """A helper method to check if a user has all permissions for a model."""
+        """Helper method to check if a user has all permissions for a model."""
         for permission_type in WAGTAIL_PERMISSION_TYPES:
             self.assertTrue(self.user.has_perm(f"{app}.{permission_type}_{model}"))
 
@@ -29,7 +27,7 @@ class PermissionsTestCase(TestCase):
 class PublishingAdminPermissionsTestCase(PermissionsTestCase):
     @classmethod
     def setUpTestData(cls):
-        cls.create_user(first_name="Publishing", last_name="Admin", group_name=settings.PUBLISHING_ADMINS_GROUP_NAME)
+        cls.create_user(group_name=settings.PUBLISHING_ADMINS_GROUP_NAME)
 
     def test_publishing_admin_can_access_admin(self):
         """Check that the Publishing Admin can access the Wagtail admin."""
@@ -68,9 +66,7 @@ class PublishingAdminPermissionsTestCase(PermissionsTestCase):
 class PublishingOfficerPermissionsTestCase(PermissionsTestCase):
     @classmethod
     def setUpTestData(cls):
-        cls.create_user(
-            first_name="Publishing", last_name="Officer", group_name=settings.PUBLISHING_OFFICERS_GROUP_NAME
-        )
+        cls.create_user(group_name=settings.PUBLISHING_OFFICERS_GROUP_NAME)
 
     def test_publishing_officer_can_access_admin(self):
         """Check that the Publishing Admin can access the Wagtail admin."""
@@ -93,7 +89,7 @@ class PublishingOfficerPermissionsTestCase(PermissionsTestCase):
 class ViewerPermissionsTestCase(PermissionsTestCase):
     @classmethod
     def setUpTestData(cls):
-        cls.create_user(first_name="Viewer", last_name="User", group_name=settings.VIEWERS_GROUP_NAME)
+        cls.create_user(group_name=settings.VIEWERS_GROUP_NAME)
 
     def test_viewers_can_access_admin(self):
         self.assertTrue(self.user.has_perm("wagtailadmin.access_admin"))
