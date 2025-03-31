@@ -72,7 +72,7 @@ class TopicPage(ExclusiveTaxonomyMixin, BasePage):  # type: ignore[django-manage
     parent_page_types: ClassVar[list[str]] = ["themes.ThemePage"]
     subpage_types: ClassVar[list[str]] = ["articles.ArticleSeriesPage", "methodology.MethodologyPage"]
     page_description = "A specific topic page. e.g. 'Public sector finance' or 'Inflation and price indices'."
-    label = "Topic"
+    label = _("Topic")
 
     summary = RichTextField(features=settings.RICH_TEXT_BASIC)
     featured_series = models.ForeignKey(
