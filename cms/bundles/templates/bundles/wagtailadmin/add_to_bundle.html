@@ -1,5 +1,5 @@
 {% extends "wagtailadmin/base.html" %}
-{% load wagtailadmin_tags %}
+{% load wagtailadmin_tags i18n %}
 {% block titletag %}{% blocktrans trimmed with title=page_to_move.specific_deferred.get_admin_display_title %}Add {{ title }} to a bundle{% endblocktrans %}{% endblock %}
 {% block content %}
     {% include "wagtailadmin/shared/header.html" with title="Add" subtitle=page_to_move.specific_deferred.get_admin_display_title icon="boxes-stacked" %}
