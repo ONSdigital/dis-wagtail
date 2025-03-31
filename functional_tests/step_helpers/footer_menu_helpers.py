@@ -24,8 +24,6 @@ def fill_column_title(page: Page, col_index: int, title: str):
 
 def fill_column_link(page: Page, col_index: int, link_index: int, external_url: str, link_title: str = ""):
     """Fills the external URL and link title for a given link index inside a column block."""
-    # If we're adding a link beyond the first, we need to click 'Add'
-    # The snippet below adds an extra link whenever link_index > 0.
     if link_index > 0:
         page.get_by_role("button", name="Add").nth(link_index).click()
 

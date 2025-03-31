@@ -84,7 +84,6 @@ def user_inserts_empty_footer_menu_block(context: Context):
 def empty_column_error(context: Context):
     expect(context.page.get_by_text("This field is required.")).to_be_visible()
     context.page.get_by_text("Missing required fields").click()
-    # etc. The logic checks remain as is, or factor them out similarly:
     context.page.locator("#columns-0-value-links-0-value-page-errors").get_by_text(
         "Either Page or External Link"
     ).click()
@@ -95,9 +94,7 @@ def empty_column_error(context: Context):
 
 @when("the user populates the footer menu with duplicate links")
 def user_enters_duplicate_link(context: Context):
-    # Re-use the same step for populating initial column link:
     user_populates_footer_menu(context)
-    # Then add a second link in the same column:
     fill_column_link(
         context.page,
         col_index=0,
