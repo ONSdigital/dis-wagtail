@@ -1,6 +1,7 @@
 from django.conf import settings
-from django.contrib.auth.models import Group
+from django.contrib.auth.models import Group, Permission
 from django.test import TestCase
+from wagtail.models import Collection, GroupCollectionPermission, GroupPagePermission, Page
 
 from cms.users.tests.factories import UserFactory
 
@@ -23,6 +24,36 @@ class PermissionsTestCase(TestCase):
         for permission_type in WAGTAIL_PERMISSION_TYPES:
             self.assertTrue(self.user.has_perm(f"{app}.{permission_type}_{model}"))
 
+    def page_permission_check_helper(self, permission_type: str):
+        """Helper method to check if the group that the user is a member of
+        has the given permission for the root page.
+        """
+        group = self.user.groups.first()
+        root_page = Page.objects.get(depth=1)
+        page_permission = Permission.objects.get(codename=f"{permission_type}_page")
+
+        group_page_permissions = GroupPagePermission.objects.get(
+            group=group,
+            permission=page_permission,
+            page=root_page,
+        )
+
+        self.assertIsNotNone(group_page_permissions)
+
+    def image_collection_permission_check_helper(self, permission_type: str):
+        """Helper method to check if the group that the user is a member of has the given permission for images."""
+        group = self.user.groups.first()
+        root_collection = Collection.objects.get(depth=1)
+        permission = Permission.objects.get(codename=f"{permission_type}_image")
+
+        group_page_permissions = GroupCollectionPermission.objects.get(
+            group=group,
+            permission=permission,
+            collection=root_collection,
+        )
+
+        self.assertIsNotNone(group_page_permissions)
+
 
 class PublishingAdminPermissionsTestCase(PermissionsTestCase):
     @classmethod
@@ -40,11 +71,16 @@ class PublishingAdminPermissionsTestCase(PermissionsTestCase):
     def test_publishing_admin_can_manage_pages(self):
         """Check that the Publishing Admin can manage the root page and its children."""
         for permission_type in WAGTAIL_PAGE_PERMISSION_TYPES:
-            self.assertTrue(self.user.has_perm(f"wagtailcore.{permission_type}_page"))
+            self.page_permission_check_helper(permission_type)
 
     def test_publishing_admin_can_manage_images(self):
         """Check that the Publishing Admin can manage images."""
-        self.all_permissions_check_helper("wagtailimages", "image")
+        for permission_type in WAGTAIL_PERMISSION_TYPES:
+            self.image_collection_permission_check_helper(permission_type)
+
+    def test_publishing_admin_can_choose_images(self):
+        """Check that the Publishing Admin can choose images on pages."""
+        self.image_collection_permission_check_helper("choose")
 
     def test_publishing_admin_can_manage_glossary_term(self):
         self.all_permissions_check_helper("core", "glossaryterm")
@@ -79,11 +115,11 @@ class PublishingOfficerPermissionsTestCase(PermissionsTestCase):
     def test_publishing_officer_can_manage_pages(self):
         """Check that the Publishing Officer can create and edit the root page and its children."""
         for permission_type in ("add", "change"):
-            self.assertTrue(self.user.has_perm(f"wagtailcore.{permission_type}_page"))
+            self.page_permission_check_helper(permission_type)
 
-    def test_publishing_officer_can_choose_image(self):
-        """Check that the Publishing Officer can choose an images on pages."""
-        self.assertTrue(self.user.has_perm("wagtailimages.choose_image"))
+    def test_publishing_officer_can_choose_images(self):
+        """Check that the Publishing Officer can choose images on pages."""
+        self.image_collection_permission_check_helper("choose")
 
 
 class ViewerPermissionsTestCase(PermissionsTestCase):

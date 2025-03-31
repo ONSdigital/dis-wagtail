@@ -52,24 +52,31 @@ def create_reporting_permissions(apps):
 
 
 def create_image_permissions(apps):
-    """Allow Publishing Admins to add and edit images in the image library.
-    Note that the 'choose_image' permission isn't required
-    as it's assigned to all users which have the "Access the Wagtail admin" permission.
-    See: https://github.com/wagtail/wagtail/blob/125a749a9ab785757dd898e2f88bfb8fd3f65e11/wagtail/images/migrations/0023_add_choose_permissions.py#L23.
+    """Grant Publishing Admins full permissions on the root image collection,
+    and allow Publishing Officers to select images for use on pages.
     """
     Group = apps.get_model("auth.Group")
     Permission = apps.get_model("auth.Permission")
     Collection = apps.get_model("wagtailcore.Collection")
     GroupCollectionPermission = apps.get_model("wagtailcore.GroupCollectionPermission")
 
-    group = Group.objects.get(name=settings.PUBLISHING_ADMINS_GROUP_NAME)
     root_collection = Collection.objects.get(depth=1)
 
+    # Grant add, change and delete permissions to Publishing Admins
     for permission in WAGTAIL_PERMISSION_TYPES:
+        GroupCollectionPermission.objects.create(
+            group=Group.objects.get(name=settings.PUBLISHING_ADMINS_GROUP_NAME),
+            collection=root_collection,
+            permission=Permission.objects.get(content_type__app_label="wagtailimages", codename=f"{permission}_image"),
+        )
+
+    # Grant "choose" permission to Publishing Admins and Publishing Officers
+    for group_name in [settings.PUBLISHING_ADMINS_GROUP_NAME, settings.PUBLISHING_OFFICERS_GROUP_NAME]:
+        group = Group.objects.get(name=group_name)
         GroupCollectionPermission.objects.create(
             group=group,
             collection=root_collection,
-            permission=Permission.objects.get(content_type__app_label="wagtailimages", codename=f"{permission}_image"),
+            permission=Permission.objects.get(content_type__app_label="wagtailimages", codename="choose_image"),
         )
 
 
@@ -124,7 +131,9 @@ def create_bundle_permissions(apps):
 
 
 def create_page_permissions(apps):
-    """Allow Publishing Admins and Publishing Officers all permissions on the HomePage and its children."""
+    """Grant Publishing Admins full permissions on the root page and all its subpages.
+    Allow Publishing Officers to add, edit and delete unpublished pages.
+    """
     Page = apps.get_model("wagtailcore.Page")
     Group = apps.get_model("auth.Group")
     Permission = apps.get_model("auth.Permission")
