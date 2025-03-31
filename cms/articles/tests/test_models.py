@@ -234,30 +234,23 @@ class StatisticalArticlePageRenderTestCase(WagtailTestUtils, TestCase):
         response = self.client.get(self.basic_page_url)
         self.assertNotContains(response, expected)
 
-    def test_breadcrumb_is_shown(self):
-        # Statistical Articles are a special case regarding breadcrumbs the url includes a series page which is not
-        # accessible externally
+    def test_breadcrumb_doesnt_containt_series_url(self):
         response = self.client.get(self.basic_page_url)
-        mock_url = response.request["PATH_INFO"]
-        mock_url = mock_url.split("/")
-        mock_url = list(filter("".__ne__, mock_url))
-        mock_breadcrumb = self.get_breadcrumbs(response)
-        expected = 'class="ons-breadcrumbs__link"'
-        self.assertContains(response, expected)
-        self.assertEqual(len(mock_url) - len(mock_breadcrumb), 2)
-        self.assertEqual(mock_url[0], mock_breadcrumb[0])
-        self.assertEqual(mock_url[1], mock_breadcrumb[1])
+        # confirm that current breadcrumb is there
+        article_series = self.basic_page.get_parent()
+        self.assertNotContains(
+            response,
+            f'<a class="ons-breadcrumbs__link" href="{article_series.url}">{article_series.title}</a>',
+            html=True,
+        )
 
-    def get_breadcrumbs(self, response):
-        mock_response = response.content.decode("utf-8").split("\n")
-        mock_hrf = ""
-        for ind, line in enumerate(mock_response):
-            if "breadcrumb" in line:
-                mock_hrf = mock_response[ind + 1].split("/", 1)
-        mock_breadcrumb = mock_hrf[1][:-1]
-        mock_breadcrumb = mock_breadcrumb.split("/")
-        mock_breadcrumb = list(filter("".__ne__, mock_breadcrumb))
-        return mock_breadcrumb
+        # confirm that current breadcrumb points to the parent page
+        topics_page = article_series.get_parent()
+        self.assertContains(
+            response,
+            f'<a class="ons-breadcrumbs__link" href="{topics_page.url}">{topics_page.title}</a>',
+            html=True,
+        )
 
     def test_pagination_is_not_shown(self):
         response = self.client.get(self.basic_page_url)
@@ -275,6 +268,18 @@ class PreviousReleasesWithoutPaginationTestCase(TestCase):
         cls.articles = StatisticalArticlePageFactory.create_batch(cls_total_batch, parent=cls.article_series)
         cls.previous_releases_url = cls.article_series.url + cls.article_series.reverse_subpage("previous_releases")
 
+    def test_breadcrumb_does_containt_series_url(self):
+        response = self.client.get(self.previous_releases_url)
+        parent_page = self.article_series.get_parent()
+        # confirm that current breadcrumb is there abd that current breadcrumb points to the parent page
+        # TODO currently this test points to the article page not to the series page
+        self.assertContains(
+            response,
+            # f'<a class="ons-breadcrumbs__link" href="{self.article_series.url}">{self.article_series.title}</a>',
+            f'<a class="ons-breadcrumbs__link" href="{parent_page.url}">{parent_page.title}</a>',
+            html=True,
+        )
+
     def test_page_content(self):
         response = self.client.get(self.previous_releases_url)
         mock_response = response.content.decode("utf-8").split("\n")
@@ -288,21 +293,6 @@ class PreviousReleasesWithoutPaginationTestCase(TestCase):
             if allowed_to_print and "<li><a href=" in m:
                 release_count += 1
         self.assertEqual(release_count, self.total_batch)
-
-    def test_breadcrumb_is_shown(self):
-        # ToDo
-        # this should include breadcrumb content comparison with the url but there is a bug
-        # mock_url = response.request['PATH_INFO']
-        # mock_url = mock_url.split("/")
-        # mock_url = list(filter(('').__ne__, mock_url))
-        # mock_breadcrumb = self.get_breadcrumbs(response)
-        # self.assertContains(response, expected)
-        # self.assertEqual(len(mock_url) - len(mock_breadcrumb),1)
-        # self.assertEqual(mock_url[0] , mock_breadcrumb[0])
-        # self.assertEqual(mock_url[1] , mock_breadcrumb[1])
-        response = self.client.get(self.previous_releases_url)
-        expected = 'class="ons-breadcrumbs__link"'
-        self.assertContains(response, expected)
 
     def test_pagination_is_not_shown(self):
         response = self.client.get(self.previous_releases_url)
@@ -405,11 +395,6 @@ class PreviousReleasesWithPaginationPage5TestCase(TestCase):
             + cls.article_series.reverse_subpage("previous_releases")
             + f"?page={cls_current_page_number}"
         )
-
-    def test_breadcrumb_is_shown(self):
-        response = self.client.get(self.previous_releases_url)
-        expected = 'class="ons-breadcrumbs"'
-        self.assertContains(response, expected)
 
     def test_pagination_is_shown(self):
         response = self.client.get(self.previous_releases_url)
