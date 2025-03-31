@@ -3,7 +3,6 @@ from typing import TYPE_CHECKING, Any, Union
 
 from django.db.models import QuerySet
 from django.urls import include, path
-from django.utils.timezone import now
 from wagtail import hooks
 from wagtail.admin.ui.components import Component
 from wagtail.admin.widgets import PageListingButton
@@ -93,31 +92,6 @@ def register_admin_urls() -> list[Union["URLPattern", "URLResolver"]]:
     @see https://docs.wagtail.org/en/stable/reference/hooks.html#register-admin-urls.
     """
     return [path("bundles/", include(admin_urls))]
-
-
-@hooks.register("before_edit_page")
-def preset_golive_date(request: "HttpRequest", page: "Page") -> None:
-    """Implements the before_edit_page to preset the golive date on pages in active bundles.
-
-    @see https://docs.wagtail.org/en/stable/reference/hooks.html#before-edit-page.
-    """
-    if not isinstance(page, BundledPageMixin):
-        return
-
-    if not page.in_active_bundle:
-        return
-
-    scheduled_date = page.active_bundle.scheduled_publication_date  # type: ignore[union-attr]
-    # note: ignoring union-attr because we already check that the page is in an active bundle.
-    if not scheduled_date:
-        return
-
-    # note: ignoring
-    # - attr-defined because mypy thinks page is only a BundledPageMixin class, rather than Page and BundledPageMixin.
-    # - union-attr because active_bundle can be none, but we check for that above
-    if now() < scheduled_date and scheduled_date != page.go_live_at:  # type: ignore[attr-defined]
-        # pre-set the scheduled publishing time
-        page.go_live_at = scheduled_date  # type: ignore[attr-defined]
 
 
 class LatestBundlesPanel(Component):

@@ -1,10 +1,9 @@
-from typing import TYPE_CHECKING, Any, ClassVar, Optional, Self
+from typing import TYPE_CHECKING, ClassVar, Optional, Self
 
 from django.db import models
 from django.db.models import F, QuerySet
 from django.db.models.functions import Coalesce
 from django.utils.functional import cached_property
-from django.utils.timezone import now
 from modelcluster.fields import ParentalKey
 from modelcluster.models import ClusterableModel
 from wagtail.admin.panels import FieldPanel, FieldRowPanel, InlinePanel, MultipleChooserPanel
@@ -181,27 +180,6 @@ class Bundle(index.Indexed, ClusterableModel, models.Model):  # type: ignore[dja
         return ", ".join(
             list(self.teams.values_list("team__name", flat=True)) or ["-"],
         )
-
-    def save(self, **kwargs: Any) -> None:  # type: ignore[override]
-        """Adds additional behaviour on bundle saving.
-
-        For non-released bundles, we update the publication date for related pages if needed.
-        """
-        super().save(**kwargs)
-
-        if self.status == BundleStatus.RELEASED:
-            return
-
-        if self.scheduled_publication_date and self.scheduled_publication_date >= now():
-            # Schedule publishing for related pages.
-            for bundled_page in self.get_bundled_pages(specific=True):
-                if bundled_page.go_live_at == self.scheduled_publication_date:
-                    continue
-
-                # note: this could use a custom log action for history
-                bundled_page.go_live_at = self.scheduled_publication_date
-                revision = bundled_page.save_revision()
-                revision.publish()
 
 
 class BundledPageMixin:

@@ -1,8 +1,5 @@
-from datetime import timedelta
-
 from django.test import TestCase
 from django.urls import reverse
-from django.utils import timezone
 from wagtail.test.utils.wagtail_tests import WagtailTestUtils
 
 from cms.articles.tests.factories import StatisticalArticlePageFactory
@@ -121,65 +118,6 @@ class WagtailHooksTestCase(WagtailTestUtils, TestCase):
         self.assertNotContains(response, self.pending_bundle.name)
         self.assertNotContains(response, self.approved_bundle.name)
         self.assertNotContains(response, self.released_bundle.name)
-
-    def test_preset_golive_date__happy_path(self):
-        """Checks we update the page go live at on page edit , if in the future and doesn't match the bundle date."""
-        self.client.force_login(self.publishing_officer)
-
-        BundlePageFactory(parent=self.pending_bundle, page=self.statistical_article_page)
-
-        # set to +15 minutes as the check is on now() < scheduled_publication_date & page.go_live_at != scheduled
-        nowish = timezone.now() + timedelta(minutes=15)
-        bundle_date = nowish + timedelta(hours=1)
-
-        cases = [
-            # bundle publication date, page go_live_at, expected change, case description
-            (nowish - timedelta(hours=1), nowish, nowish, "Go live unchanged as bundle date in the past"),
-            (bundle_date, bundle_date, bundle_date, "Go live unchanged as it matches bundle"),
-            (bundle_date, nowish + timedelta(days=1), bundle_date, "Go live updated to match bundle"),
-        ]
-        for bundle_publication_date, go_live_at, expected, case in cases:
-            with self.subTest(go_live_at=go_live_at, expected=expected, case=case):
-                self.pending_bundle.publication_date = bundle_publication_date
-                self.pending_bundle.save(update_fields=["publication_date"])
-
-                self.statistical_article_page.go_live_at = go_live_at
-                self.statistical_article_page.save(update_fields=["go_live_at"])
-
-                response = self.client.get(self.article_edit_url)
-                context_page = response.context["page"]
-                self.assertEqual(context_page.go_live_at, expected)
-
-    def test_preset_golive_date__updates_only_if_page_in_active_bundle(self):
-        """Checks the go live at update only happens if the page is in active bundle."""
-        self.client.force_login(self.publishing_officer)
-
-        nowish = timezone.now() + timedelta(minutes=15)
-        self.pending_bundle.publication_date = nowish + timedelta(hours=1)
-        self.pending_bundle.save(update_fields=["publication_date"])
-
-        self.statistical_article_page.go_live_at = nowish
-        self.statistical_article_page.save(update_fields=["go_live_at"])
-
-        response = self.client.get(self.article_edit_url)
-        context_page = response.context["page"]
-        self.assertEqual(context_page.go_live_at, nowish)
-
-    def test_preset_golive_date__updates_only_if_page_is_bundleable(self):
-        """Checks the go live at change happens only for bundleable pages.."""
-        self.client.force_login(self.publishing_officer)
-
-        nowish = timezone.now() + timedelta(minutes=15)
-        self.pending_bundle.publication_date = nowish + timedelta(hours=1)
-        self.pending_bundle.save(update_fields=["publication_date"])
-
-        page = ReleaseCalendarPageFactory()
-        page.go_live_at = nowish
-        page.save(update_fields=["go_live_at"])
-
-        response = self.client.get(reverse("wagtailadmin_pages:edit", args=[page.id]))
-        context_page = response.context["page"]
-        self.assertEqual(context_page.go_live_at, nowish)
 
     def test_add_to_bundle_buttons(self):
         """Tests that the 'Add to Bundle' button appears in appropriate contexts."""

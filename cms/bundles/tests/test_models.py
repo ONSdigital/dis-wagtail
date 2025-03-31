@@ -1,5 +1,3 @@
-from datetime import timedelta
-
 from django.test import TestCase
 from django.utils import timezone
 
@@ -24,7 +22,6 @@ class BundleModelTestCase(TestCase):
         self.assertEqual(str(self.bundle), self.bundle.name)
 
     def test_scheduled_publication_date__direct(self):
-        del self.bundle.scheduled_publication_date  # clear the cached property
         now = timezone.now()
         self.bundle.publication_date = now
         self.assertEqual(self.bundle.scheduled_publication_date, now)
@@ -62,27 +59,6 @@ class BundleModelTestCase(TestCase):
         page_ids = self.bundle.get_bundled_pages().values_list("pk", flat=True)
         self.assertEqual(len(page_ids), 1)
         self.assertEqual(page_ids[0], self.statistical_article.pk)
-
-    def test_save_updates_page_publication_dates(self):
-        BundlePageFactory(parent=self.bundle, page=self.statistical_article)
-        del self.bundle.scheduled_publication_date  # clear the cached property
-        future_date = timezone.now() + timedelta(days=1)
-        self.bundle.publication_date = future_date
-        self.bundle.save()
-
-        self.statistical_article.refresh_from_db()
-        self.assertEqual(self.statistical_article.go_live_at, future_date)
-
-    def test_save_doesnt_update_dates_when_released(self):
-        future_date = timezone.now() + timedelta(days=1)
-        self.bundle.status = BundleStatus.RELEASED
-        self.bundle.publication_date = future_date
-        BundlePageFactory(parent=self.bundle, page=self.statistical_article)
-
-        self.bundle.save()
-        self.statistical_article.refresh_from_db()
-
-        self.assertNotEqual(self.statistical_article.go_live_at, future_date)
 
     def test_bundlepage_orderable_str(self):
         bundle_page = BundlePageFactory(parent=self.bundle, page=self.statistical_article)
