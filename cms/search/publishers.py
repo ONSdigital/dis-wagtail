@@ -100,17 +100,14 @@ class BasePublisher(ABC):
             "date_changes": [],
         }
 
-        # If page.changes_to_release_date exists, add the first item's reason & previous date
-        if hasattr(page, "changes_to_release_date") and page.changes_to_release_date:
-            first_change = page.changes_to_release_date[0].value
-            release_fields["date_changes"].append(
+        if getattr(page, "changes_to_release_date", None):
+            release_fields["date_changes"] = [
                 {
-                    "change_notice": first_change.get("reason_for_change"),
-                    "previous_date": str(first_change.get("previous_date").isoformat())
-                    if first_change.get("previous_date")
-                    else None,
+                    "change_notice": change.value.get("reason_for_change"),
+                    "previous_date": change.value.get("previous_date").isoformat(),
                 }
-            )
+                for change in page.changes_to_release_date
+            ]
         return release_fields
 
 
@@ -118,6 +115,12 @@ class KafkaPublisher(BasePublisher):
     """Publishes messages to Kafka for 'search-content-updated' (created or updated)
     and 'search-content-deleted' (deleted) events, aligning with the StandardPayload
     / ReleasePayload / content-deleted schema definitions.
+
+    dp-search-data-extractor spec link:
+    https://github.com/ONSdigital/dp-search-data-extractor/blob/develop/specification.yml#L53
+    dp-search-data-importer spec link:
+    https://github.com/ONSdigital/dp-search-data-importer/blob/30fb507e90f2cf1974ec0ca43bb0466307e2f112/specification.yml#L186
+    contract: https://github.com/ONSdigital/dis-search-upstream-stub/blob/main/docs/contract/resource_metadata.yml
     """
 
     def __init__(self) -> None:

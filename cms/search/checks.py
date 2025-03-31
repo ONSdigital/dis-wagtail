@@ -16,41 +16,31 @@ def check_kafka_settings(app_configs: Optional[Iterable[AppConfig]], **kwargs: A
     if getattr(settings, "SEARCH_INDEX_PUBLISHER_BACKEND", "") != "kafka":
         return errors
 
-    kafka_settings: list[tuple[str, str, str, str]] = [
-        ("KAFKA_SERVER", "localhost:9092", "search.E001", "search.E002"),
+    kafka_settings: list[tuple[str, str, str]] = [
+        ("KAFKA_SERVER", "localhost:9092", "search.E001"),
         (
             "KAFKA_CHANNEL_CREATED_OR_UPDATED",
             "the Kafka topic you use for content updates",
-            "search.E003",
-            "search.E004",
+            "search.E002",
         ),
         (
             "KAFKA_CHANNEL_DELETED",
             "the Kafka topic you use for content deletions",
-            "search.E005",
-            "search.E006",
+            "search.E003",
         ),
     ]
 
-    for setting, hint_value, missing_id, empty_id in kafka_settings:
-        if not hasattr(settings, setting):
+    for setting, hint_value, missing_id in kafka_settings:
+        # Checking if not value catches None, empty string, 0, False, etc.
+        value = getattr(settings, setting, None)
+        if not value:
             errors.append(
                 Error(
-                    f"Missing required setting {setting}",
-                    hint=f"Add {setting} to your Django settings.",
+                    f"{setting} is missing or empty.",
+                    hint=f"Set {setting} to e.g. '{hint_value}'.",
                     id=missing_id,
                 )
             )
-        else:
-            value = getattr(settings, setting)
-            if value is None or value == "":
-                errors.append(
-                    Error(
-                        f"{setting} setting is empty.",
-                        hint=f"Set {setting} to e.g. '{hint_value}'.",
-                        id=empty_id,
-                    )
-                )
 
     return errors
 
@@ -73,7 +63,7 @@ def check_search_index_content_type(app_configs: Optional[Iterable[AppConfig]], 
         if model.__name__ in excluded_types:
             continue
 
-        if not hasattr(model, "search_index_content_type"):
+        if not getattr(model, "search_index_content_type", None):
             errors.append(
                 Error(
                     f"Page model '{model.__name__}' is not in SEARCH_INDEX_EXCLUDED_PAGE_TYPES "
