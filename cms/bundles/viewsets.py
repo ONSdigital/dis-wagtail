@@ -388,6 +388,7 @@ class BundleViewSet(ModelViewSet):
     list_filter: ClassVar[list[str]] = ["status", "created_by"]
     add_to_admin_menu = True
     inspect_view_enabled = True
+    menu_order = 150
 
 
 bundle_viewset = BundleViewSet("bundle")
