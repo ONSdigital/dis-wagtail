@@ -18,14 +18,11 @@ Feature: Role Based Access Control Permission as defined in data migrations
         When a Publishing Admin logs into the admin site
         Then the user can bulk delete the Theme page and its children
 
-    # TODO: This fails: for some reason the "Locked" section doesn't come up in the test, 
-    # but is working fine in the actual admin
-
-    # Scenario: A Publishing Admin can lock and unlock a page
-    #     Given a Publishing Admin logs into the admin site
-    #     And the user can see the Pages menu item
-    #     When the user creates an information page as a child of the home page
-    #     Then the user can lock and unlock a page
+    Scenario: A Publishing Admin can lock and unlock a page
+        Given a Publishing Admin logs into the admin site
+        And the user can see the Pages menu item
+        When the user creates an information page as a child of the home page
+        Then the user can lock and unlock a page
         
     Scenario: A Publishing Admin can manage image collections
         When a Publishing Admin logs into the admin site

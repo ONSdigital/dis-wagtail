@@ -29,7 +29,6 @@ def user_sees_admin_homepage(context: Context) -> None:
     expect(context.page.get_by_label("Dashboard")).to_be_visible()
 
 
-# @step("'{user_type}' logs into the admin site")
 @step("a {user_type} logs into the admin site")
 def user_logs_in(context: Context, user_type: str) -> None:
     context.user_data = create_user(user_type)
