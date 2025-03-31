@@ -1,8 +1,8 @@
 {% load wagtailcore_tags wagtailadmin_tags %}
 {% if is_shown %}
-    {% panel id="bundles-for-preview" heading="Bundles ready for preview" %}
+    {% panel id="bundles-for-preview" heading="Bundles ready for preview" classname="w-panel--dashboard" %}
         {% if bundles %}
-            <table class="listing">
+            <table class="listing listing--dashboard">
                 <col />
                 <col width="15%"/>
                 <col width="15%"/>
@@ -33,7 +33,7 @@
                 </tbody>
             </table>
         {% else %}
-            <p>There are currently no bundles for preview.</p>
+            <p class="ons-padding-start">There are currently no bundles for preview.</p>
         {% endif %}
     {% endpanel %}
 {% endif %}

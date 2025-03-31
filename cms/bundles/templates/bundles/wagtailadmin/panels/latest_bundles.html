@@ -1,15 +1,17 @@
 {% load wagtailcore_tags wagtailadmin_tags %}
 {% if is_shown %}
-    {% panel id="latest-bundles" heading="Latest active bundles" %}
-        {% help_block status="info" %}
-            <p>Bundles are collections of pages and datasets to publish together.</p>
-        {% endhelp_block %}
-        <p>
-            <a href="{% url 'bundle:add' %}" class="button bicolor button--icon">{% icon name="plus" wrapped=1 %}Add bundle</a>
-            <a href="{% url 'bundle:index' %}" class="button button-secondary">View all bundles</a>
-        </p>
+    {% panel id="latest-bundles" heading="Latest active bundles" classname="w-panel--dashboard" %}
+        <div class="ons-padding-start ons-padding-end">
+            {% help_block status="info" %}
+                <p>Bundles are collections of pages and datasets to publish together.</p>
+            {% endhelp_block %}
+            <p>
+                <a href="{% url 'bundle:add' %}" class="button bicolor button--icon">{% icon name="plus" wrapped=1 %}Add bundle</a>
+                <a href="{% url 'bundle:index' %}" class="button button-secondary">View all bundles</a>
+            </p>
+        </div>
         {% if bundles %}
-            <table class="listing">
+            <table class="listing listing--dashboard">
                 <col />
                 <col width="15%"/>
                 <col width="15%"/>
@@ -53,7 +55,7 @@
                 </tbody>
             </table>
         {% else %}
-            <p>There are currently no active bundles.</p>
+            <p class="ons-padding-start">There are currently no active bundles.</p>
         {% endif %}
     {% endpanel %}
 {% endif %}
