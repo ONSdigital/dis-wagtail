@@ -20,6 +20,7 @@ class BaseVisualisationBlock(blocks.StructBlock):
     title = blocks.CharBlock()
     subtitle = blocks.CharBlock()
     table = SimpleTableBlock(label="Data table")
+    source = blocks.CharBlock()
 
     highcharts_chart_type: ClassVar[str]
 
