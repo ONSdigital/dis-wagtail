@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional
 
 from wagtail.models import Workflow
 
@@ -13,18 +13,18 @@ def progress_page_workflow(workflow_state: "WorkflowState") -> "WorkflowState":
     task_state.task.on_action(task_state, user=None, action_name="approve")
 
 
-def mark_page_as_ready_for_review(page: "Page", user: "User") -> "WorkflowState":
+def mark_page_as_ready_for_review(page: "Page", user: Optional["User"] = None) -> "WorkflowState":
     page.save_revision()
     workflow = Workflow.objects.get(name="Release review")
     # start the workflow
-    return workflow.start(page, user)
+    return workflow.start(page, user=user)
 
 
-def mark_page_as_ready_to_publish(page: "Page", user: "User") -> None:
+def mark_page_as_ready_to_publish(page: "Page", user: Optional["User"] = None) -> None:
     page.save_revision()
     workflow = Workflow.objects.get(name="Release review")
     # start the workflow
-    workflow_state = workflow.start(page, user)
+    workflow_state = workflow.start(page, user=user)
 
     # approve the first task ("review" / "preview")
     progress_page_workflow(workflow_state)

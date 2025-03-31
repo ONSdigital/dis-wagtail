@@ -70,12 +70,13 @@ class Command(BaseCommand):
         logger.info("Publishing bundle=%d", bundle.id)
         start_time = time.time()
         notify_slack_of_publication_start(bundle, url=inspect_url)
-        for page in bundle.get_bundled_pages():
-            if (revision := page.scheduled_revision) is None:
-                continue
-            # just run publish for the revision -- since the approved go
-            # live datetime is before now it will make the object live
-            revision.publish(log_action="wagtail.publish.scheduled")
+        for page in bundle.get_bundled_pages().specific(defer=True).select_related("latest_revision"):
+            if workflow_state := page.current_workflow_state:
+                # finish the workflow
+                workflow_state.finish()
+            else:
+                # just run publish
+                page.latest_revision.publish(log_action="wagtail.publish.scheduled")
 
         # update the related release calendar and publish
         if bundle.release_calendar_page_id:
