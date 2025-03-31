@@ -138,13 +138,14 @@ class BundleViewSetTestCase(BundleViewSetTestCaseBase):
     def test_bundle_edit_view__updates_approved_fields_on_save_and_approve(self):
         """Checks the fields are populated if the user clicks the 'Save and approve' button."""
         self.client.force_login(self.superuser)
+        mark_page_as_ready_to_publish(self.statistical_article_page, self.superuser)
         self.client.post(
             self.edit_url,
             nested_form_data(
                 {
                     "name": "Updated Bundle",
                     "status": self.bundle.status,  # correct. "save and approve" should update the status directly
-                    "bundled_pages": inline_formset([]),
+                    "bundled_pages": inline_formset([{"page": self.statistical_article_page.id}]),
                     "teams": inline_formset([]),
                     "action-save-and-approve": "save-and-approve",
                 }

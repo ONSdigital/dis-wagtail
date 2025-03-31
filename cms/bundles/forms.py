@@ -72,12 +72,14 @@ class BundleAdminForm(WagtailAdminModelForm):
                     raise ValidationError(f"'{page}' is already in an active bundle ({page.active_bundle})")
 
     def _validate_bundled_pages_status(self) -> None:
+        has_pages = False
         num_pages_not_ready = 0
         for form in self.formsets["bundled_pages"].forms:
             if form.cleaned_data["DELETE"]:
                 continue
 
             if page := form.clean().get("page"):
+                has_pages = True
                 page = page.specific
                 workflow_state = page.current_workflow_state
 
@@ -88,6 +90,9 @@ class BundleAdminForm(WagtailAdminModelForm):
                     form.add_error("page", "This page is not ready to be published")
                     num_pages_not_ready += 1
 
+        if not has_pages:
+            raise ValidationError("Cannot approve the bundle without any pages")
+
         if num_pages_not_ready:
             self.cleaned_data["status"] = self.instance.status
             raise ValidationError(
@@ -97,12 +102,19 @@ class BundleAdminForm(WagtailAdminModelForm):
 
     def _validate_publication_date(self) -> None:
         release_calendar_page = self.cleaned_data["release_calendar_page"]
-        if release_calendar_page and release_calendar_page.release_date < timezone.now():
-            raise ValidationError({"release_calendar_page": "The release date cannot be in the past"})
-
         publication_date = self.cleaned_data["publication_date"]
+
+        if release_calendar_page and publication_date:
+            error = "You must choose either a Release Calendar page or a Publication date, not both."
+            self.add_error("release_calendar_page", error)
+            self.add_error("publication_date", error)
+
+        if release_calendar_page and release_calendar_page.release_date < timezone.now():
+            error = "The release date on the release calendar page cannot be in the past."
+            raise ValidationError({"release_calendar_page": error})
+
         if publication_date and publication_date < timezone.now():
-            raise ValidationError({"publication_date": "The release date cannot be in the past"})
+            raise ValidationError({"publication_date": "The release date cannot be in the past."})
 
     def clean(self) -> dict[str, Any] | None:
         """Validates the form.
@@ -112,23 +124,21 @@ class BundleAdminForm(WagtailAdminModelForm):
         """
         cleaned_data: dict[str, Any] = super().clean()
 
-        if self.cleaned_data["release_calendar_page"] and self.cleaned_data["publication_date"]:
-            error = "You must choose either a Release Calendar page or a Publication date, not both."
-            self.add_error("release_calendar_page", error)
-            self.add_error("publication_date", error)
+        self._validate_publication_date()
 
         self._validate_bundled_pages()
 
-        status = cleaned_data["status"]
-        if self.instance.status != status:
-            # the status has changed, let's check
-            if status == BundleStatus.APPROVED:
+        submitted_status = cleaned_data["status"]
+        if self.instance.status != submitted_status:
+            # the status has changed
+            if submitted_status == BundleStatus.APPROVED:
+                # ensure all bundled pages are ready to publish
                 self._validate_bundled_pages_status()
-                self._validate_publication_date()
 
                 cleaned_data["approved_at"] = timezone.now()
                 cleaned_data["approved_by"] = self.for_user
             elif self.instance.status == BundleStatus.APPROVED:
+                # the bundle was approved, and is now unapproved.
                 cleaned_data["approved_at"] = None
                 cleaned_data["approved_by"] = None
 
