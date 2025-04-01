@@ -2,7 +2,7 @@ from typing import TYPE_CHECKING, Any, ClassVar, Optional
 
 from django.conf import settings
 from django.core.exceptions import ValidationError
-from django.core.paginator import EmptyPage, Paginator
+from django.core.paginator import EmptyPage, PageNotAnInteger, Paginator
 from django.db import models
 from django.http import Http404
 from django.shortcuts import get_object_or_404, redirect
@@ -77,17 +77,17 @@ class ArticleSeriesPage(RoutablePageMixin, GenericTaxonomyMixin, BasePage):  # t
         paginator = Paginator(children, per_page=settings.PREVIOUS_RELEASES_PER_PAGE)
 
         try:
-            pages = paginator.page(int(request.GET.get("page", 1)))
+            pages = paginator.page(request.GET.get("page", 1))
             ons_pagination_url_list = [{"url": f"?page={n}"} for n in paginator.page_range]
-        except (EmptyPage, ValueError) as e:
+        except (EmptyPage, PageNotAnInteger) as e:
             raise Http404 from e
-        else:
-            response: TemplateResponse = self.render(
-                request,
-                # TODO: update to include drafts when looking at previews holistically.
-                context_overrides={"pages": pages, "ons_pagination_url_list": ons_pagination_url_list},
-                template="templates/pages/statistical_article_page--previous-releases.html",
-            )
+
+        response: TemplateResponse = self.render(
+            request,
+            # TODO: update to include drafts when looking at previews holistically.
+            context_overrides={"pages": pages, "ons_pagination_url_list": ons_pagination_url_list},
+            template="templates/pages/statistical_article_page--previous-releases.html",
+        )
         return response
 
 
