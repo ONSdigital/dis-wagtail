@@ -298,9 +298,8 @@ class PreviousReleasesWithoutPaginationTestCase(TestCase):
 
 
 @override_settings(PREVIOUS_RELEASES_PER_PAGE=3)
-class PreviousReleasesWithPaginationPage3TestCase(TestCase):
+class PreviousReleasesWithPaginationPagesTestCase(TestCase):
     total_batch = 13
-    current_page_number = 3
     test_previous_releases_per_page = 3
     total_no_of_pages = math.ceil(total_batch / test_previous_releases_per_page)
 
@@ -308,14 +307,17 @@ class PreviousReleasesWithPaginationPage3TestCase(TestCase):
     def setUpTestData(cls):
         cls.article_series = ArticleSeriesPageFactory(title="Article Series")
         cls.articles = StatisticalArticlePageFactory.create_batch(13, parent=cls.article_series)
-        cls.previous_releases_url = (
-            cls.article_series.url + cls.article_series.reverse_subpage("previous_releases") + f"?page={3}"
-        )
+        cls.previous_releases_urls = [
+            (cls.article_series.url + cls.article_series.reverse_subpage("previous_releases") + f"?page={3}"),
+            (cls.article_series.url + cls.article_series.reverse_subpage("previous_releases") + f"?page={1}"),
+            (cls.article_series.url + cls.article_series.reverse_subpage("previous_releases") + f"?page={5}"),
+        ]
 
-    def test_pagination_is_shown(self):
-        response = self.client.get(self.previous_releases_url)
+    def test_pagination_is_shown_page_3(self):
+        current_page = 3
+        response = self.client.get(self.previous_releases_urls[0])
         expected = [
-            f'class="ons-pagination__position">Page {self.current_page_number} of {
+            f'class="ons-pagination__position">Page {current_page} of {
                 math.ceil(self.total_batch / settings.PREVIOUS_RELEASES_PER_PAGE)
             }',
             'aria-label="Go to the first page (Page 1)"',
@@ -330,26 +332,11 @@ class PreviousReleasesWithPaginationPage3TestCase(TestCase):
         for not_expect in not_expected:
             self.assertNotContains(response, not_expect)
 
-
-@override_settings(PREVIOUS_RELEASES_PER_PAGE=3)
-class PreviousReleasesWithPaginationPage1TestCase(TestCase):
-    total_batch = 13
-    current_page_number = 1
-    test_previous_releases_per_page = 3
-    total_no_of_pages = math.ceil(total_batch / test_previous_releases_per_page)
-
-    @classmethod
-    def setUpTestData(cls):
-        cls.article_series = ArticleSeriesPageFactory(title="Article Series")
-        cls.articles = StatisticalArticlePageFactory.create_batch(13, parent=cls.article_series)
-        cls.previous_releases_url = (
-            cls.article_series.url + cls.article_series.reverse_subpage("previous_releases") + f"?page={1}"
-        )
-
-    def test_pagination_is_shown(self):
-        response = self.client.get(self.previous_releases_url)
+    def test_pagination_is_shown_page_1(self):
+        current_page = 1
+        response = self.client.get(self.previous_releases_urls[1])
         expected = [
-            f'class="ons-pagination__position">Page {self.current_page_number} of {self.total_no_of_pages}',
+            f'class="ons-pagination__position">Page {current_page} of {self.total_no_of_pages}',
             'class="ons-pagination__item ons-pagination__item--current"',
             f'aria-label="Go to the last page (Page {self.total_no_of_pages})"',
             'class="ons-pagination__item ons-pagination__item--next"',
@@ -363,26 +350,11 @@ class PreviousReleasesWithPaginationPage1TestCase(TestCase):
         for not_expect in not_expected:
             self.assertNotContains(response, not_expect)
 
-
-@override_settings(PREVIOUS_RELEASES_PER_PAGE=3)
-class PreviousReleasesWithPaginationPage5TestCase(TestCase):
-    total_batch = 13
-    current_page_number = 5
-    test_previous_releases_per_page = 3
-    total_no_of_pages = math.ceil(total_batch / test_previous_releases_per_page)
-
-    @classmethod
-    def setUpTestData(cls):
-        cls.article_series = ArticleSeriesPageFactory(title="Article Series")
-        cls.articles = StatisticalArticlePageFactory.create_batch(13, parent=cls.article_series)
-        cls.previous_releases_url = (
-            cls.article_series.url + cls.article_series.reverse_subpage("previous_releases") + f"?page={5}"
-        )
-
-    def test_pagination_is_shown(self):
-        response = self.client.get(self.previous_releases_url)
+    def test_pagination_is_shown_page_5(self):
+        current_page = 5
+        response = self.client.get(self.previous_releases_urls[2])
         expected = [
-            f'class="ons-pagination__position">Page {self.current_page_number} of {self.total_no_of_pages}',
+            f'class="ons-pagination__position">Page {current_page} of {self.total_no_of_pages}',
             'aria-label="Go to the first page (Page 1)"',
             'class="ons-pagination__item ons-pagination__item--previous"',
             'class="ons-pagination__item ons-pagination__item--current"',
