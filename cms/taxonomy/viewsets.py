@@ -1,6 +1,5 @@
 from django.conf import settings
 from django.db.models import QuerySet
-from django.utils.translation import gettext_lazy as _
 from wagtail.admin.ui.tables import Column
 from wagtail.admin.views.generic.chooser import ChooseResultsView, ChooseView
 from wagtail.admin.viewsets.chooser import ChooserViewSet
@@ -18,7 +17,7 @@ class TopicChooseViewMixin:
     def columns(self) -> list[Column]:
         return [
             *getattr(super(), "columns", []),
-            Column("parent_topics", label=_("Parent Topics"), accessor="display_parent_topics"),
+            Column("parent_topics", label="Parent Topics", accessor="display_parent_topics"),
         ]
 
 
@@ -32,8 +31,8 @@ class TopicChooserViewSet(ChooserViewSet):
     model = Topic
     icon = "tag"
 
-    choose_one_text = _("Choose a topic")
-    choose_another_text = _("Choose a different topic")
+    choose_one_text = "Choose a topic"
+    choose_another_text = "Choose a different topic"
 
     choose_view_class = TopicChooseView
     choose_results_view_class = TopicChooseResultsView
