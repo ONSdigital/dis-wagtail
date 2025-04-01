@@ -1,19 +1,26 @@
-from django.db.models import QuerySet
+from django.db.models import Q, QuerySet
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 from wagtail.admin.ui.tables import Column, DateColumn
 from wagtail.admin.views.generic.chooser import ChooseResultsView, ChooseView
 from wagtail.admin.viewsets.chooser import ChooserViewSet
 
+from cms.bundles.enums import ACTIVE_BUNDLE_STATUSES
 from cms.release_calendar.enums import ReleaseStatus
 from cms.release_calendar.models import ReleaseCalendarPage
 
 
 class FutureReleaseCalendarMixin:
+    results_template_name = "release_calendar/future_release_calendar_page_chooser_results.html"
+
     def get_object_list(self) -> QuerySet[ReleaseCalendarPage]:
-        return ReleaseCalendarPage.objects.exclude(
-            status__in=[ReleaseStatus.CANCELLED, ReleaseStatus.PUBLISHED]
-        ).exclude(release_date__lt=timezone.now())
+        # note: using this method to allow search to work without adding the bundle data in the index
+        calendar_pages_to_exclude_qs = ReleaseCalendarPage.objects.filter(
+            Q(status__in=[ReleaseStatus.CANCELLED, ReleaseStatus.PUBLISHED])
+            | Q(release_date__lt=timezone.now())
+            | Q(bundles__status__in=ACTIVE_BUNDLE_STATUSES)
+        )
+        return ReleaseCalendarPage.objects.exclude(pk__in=calendar_pages_to_exclude_qs)
 
     @property
     def columns(self) -> list[Column]:
