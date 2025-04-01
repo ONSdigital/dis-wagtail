@@ -51,9 +51,9 @@ def create_reporting_permissions(apps):
     )
 
 
-def create_image_permissions(apps):
-    """Grant Publishing Admins full permissions on the root image collection,
-    and allow Publishing Officers to select images for use on pages.
+def create_collection_permissions(apps):
+    """Grant Publishing Admins full permissions on the root collections for images and documents,
+    and allow Publishing Officers to select images and documents for use on pages.
     """
     Group = apps.get_model("auth.Group")
     Permission = apps.get_model("auth.Permission")
@@ -62,22 +62,29 @@ def create_image_permissions(apps):
 
     root_collection = Collection.objects.get(depth=1)
 
+    collection_classes = [
+        # app_label, model
+        ("wagtailimages", "image"),
+        ("wagtaildocs", "document"),
+    ]
+
     # Grant add, change and delete permissions to Publishing Admins
     for permission in WAGTAIL_PERMISSION_TYPES:
-        GroupCollectionPermission.objects.create(
-            group=Group.objects.get(name=settings.PUBLISHING_ADMINS_GROUP_NAME),
-            collection=root_collection,
-            permission=Permission.objects.get(content_type__app_label="wagtailimages", codename=f"{permission}_image"),
-        )
+        for app, model in collection_classes:
+            GroupCollectionPermission.objects.create(
+                group=Group.objects.get(name=settings.PUBLISHING_ADMINS_GROUP_NAME),
+                collection=root_collection,
+                permission=Permission.objects.get(content_type__app_label=app, codename=f"{permission}_{model}"),
+            )
 
     # Grant "choose" permission to Publishing Admins and Publishing Officers
     for group_name in [settings.PUBLISHING_ADMINS_GROUP_NAME, settings.PUBLISHING_OFFICERS_GROUP_NAME]:
-        group = Group.objects.get(name=group_name)
-        GroupCollectionPermission.objects.create(
-            group=group,
-            collection=root_collection,
-            permission=Permission.objects.get(content_type__app_label="wagtailimages", codename="choose_image"),
-        )
+        for app, model in collection_classes:
+            GroupCollectionPermission.objects.create(
+                group=Group.objects.get(name=group_name),
+                collection=root_collection,
+                permission=Permission.objects.get(content_type__app_label=app, codename=f"choose_{model}"),
+            )
 
 
 def create_snippet_permissions(apps):
@@ -116,6 +123,15 @@ def create_bundle_permissions(apps):
     bundles_app = "bundles"
     bundle_class = "Bundle"
 
+    # Allow all users to view the bundles
+    for group_name in [
+        settings.PUBLISHING_ADMINS_GROUP_NAME,
+        settings.PUBLISHING_OFFICERS_GROUP_NAME,
+        settings.VIEWERS_GROUP_NAME,
+    ]:
+        assign_permission_to_group(apps, group_name, "view_bundle", bundles_app, bundle_class)
+
+    # Allow PAs and POs to manage the bundles
     for permission in WAGTAIL_PERMISSION_TYPES:
         for group_name in [settings.PUBLISHING_ADMINS_GROUP_NAME, settings.PUBLISHING_OFFICERS_GROUP_NAME]:
             assign_permission_to_group(
@@ -125,9 +141,6 @@ def create_bundle_permissions(apps):
                 app=bundles_app,
                 model=bundle_class,
             )
-
-    # View-only access for the Viewers group
-    assign_permission_to_group(apps, settings.VIEWERS_GROUP_NAME, "view_bundle", bundles_app, bundle_class)
 
 
 def create_page_permissions(apps):
@@ -157,7 +170,7 @@ def update_user_groups(apps, schema_editor):
     """Create user groups for the CMS."""
     create_user_groups(apps)
     create_page_permissions(apps)
-    create_image_permissions(apps)
+    create_collection_permissions(apps)
     create_snippet_permissions(apps)
     create_bundle_permissions(apps)
     create_reporting_permissions(apps)
