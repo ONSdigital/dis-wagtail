@@ -5,13 +5,17 @@ from unittest.mock import ANY, MagicMock, patch
 
 from django.test import TestCase, override_settings
 from django.utils import timezone
+from wagtail.models import Page
+from wagtail.test.utils import WagtailTestUtils
 
 from cms.articles.tests.factories import StatisticalArticlePageFactory
 from cms.methodology.tests.factories import MethodologyPageFactory
 from cms.release_calendar.enums import ReleaseStatus
 from cms.release_calendar.tests.factories import ReleaseCalendarPageFactory
 from cms.search.publishers import BasePublisher, KafkaPublisher, LogPublisher
+from cms.standard_pages.models import InformationPage  # Uses GenericTaxonomyMixin
 from cms.standard_pages.tests.factories import IndexPageFactory, InformationPageFactory
+from cms.taxonomy.models import GenericPageToTaxonomyTopic, Topic
 
 EXPECTED_CONTENT_TYPES = {
     "ReleaseCalendarPage": "release",
@@ -40,9 +44,10 @@ class DummyPublisher(BasePublisher):
         return self._channel_deleted
 
 
-class BasePublisherTests(TestCase):
+class BasePublisherTests(TestCase, WagtailTestUtils):
     @classmethod
     def setUpTestData(cls):
+        cls.superuser = cls.create_superuser(username="admin")
         # Pages that are NOT in SEARCH_INDEX_EXCLUDED_PAGE_TYPES
         cls.included_pages = [
             InformationPageFactory(),
@@ -74,6 +79,25 @@ class BasePublisherTests(TestCase):
             channel_created_or_updated="dummy-channel-created",
             channel_deleted="dummy-channel-deleted",
         )
+
+        self.client.force_login(self.superuser)
+
+        self.root_page = Page.objects.get(id=1)
+        # self.root_topic = Topic.objects.root_topic()
+
+        self.topic_a = Topic(id="topic-a", title="Topic A")
+        Topic.save_new(self.topic_a)
+
+        self.topic_b = Topic(id="topic-b", title="Topic B")
+        Topic.save_new(self.topic_b)
+
+        self.info_page = InformationPage(title="My Info Page", summary="My info page summary")
+        self.root_page.add_child(instance=self.info_page)
+        self.info_page.save()
+
+        # Add topics to the information page
+        GenericPageToTaxonomyTopic.objects.create(page=self.info_page, topic=self.topic_a)
+        GenericPageToTaxonomyTopic.objects.create(page=self.info_page, topic=self.topic_b)
 
     @patch.object(DummyPublisher, "_publish", return_value=None)
     def test_publish_created_or_updated_calls_publish(self, mock_method):
@@ -152,8 +176,16 @@ class BasePublisherTests(TestCase):
         page.changes_to_release_date = [
             {
                 "type": "date_change_log",
-                "value": {"previous_date": timezone.now() - timedelta(days=5), "reason_for_change": "The reason"},
-            }
+                "value": {"previous_date": timezone.now() - timedelta(days=5), "reason_for_change": "Reason 1"},
+            },
+            {
+                "type": "date_change_log",
+                "value": {"previous_date": timezone.now() - timedelta(days=10), "reason_for_change": "Reason 2"},
+            },
+            {
+                "type": "date_change_log",
+                "value": {"previous_date": timezone.now() - timedelta(days=15), "reason_for_change": "Reason 3"},
+            },
         ]
 
         message = self.publisher._construct_message_for_create_update(page)  # pylint: disable=W0212
@@ -178,14 +210,14 @@ class BasePublisherTests(TestCase):
 
         self.assertIn("date_changes", message)
 
-        self.assertEqual(len(message["date_changes"]), 1)
+        self.assertEqual(len(message["date_changes"]), 3)
 
-        date_change = message["date_changes"][0]
-        self.assertEqual(date_change["change_notice"], page.changes_to_release_date[0].value["reason_for_change"])
-        self.assertEqual(
-            date_change["previous_date"],
-            page.changes_to_release_date[0].value["previous_date"].isoformat(),
-        )
+        for i, date_change in enumerate(message["date_changes"]):
+            self.assertEqual(date_change["change_notice"], page.changes_to_release_date[i].value["reason_for_change"])
+            self.assertEqual(
+                date_change["previous_date"],
+                page.changes_to_release_date[i].value["previous_date"].isoformat(),
+            )
 
     def test_construct_message_for_release_page_published(self):
         """Ensure that for a release-type page, release-specific fields get added."""
@@ -234,6 +266,19 @@ class BasePublisherTests(TestCase):
         self.assertFalse(message["finalised"])
         self.assertFalse(message["published"])
         self.assertTrue(message["cancelled"])
+
+    def test_construct_message_for_information_page_with_topics(self):
+        """Ensure that the information page message contains the correct topics."""
+        page = self.info_page
+
+        message = self.publisher._construct_message_for_create_update(page)  # pylint: disable=W0212
+        expected_type = EXPECTED_CONTENT_TYPES[type(page).__name__]
+
+        self.assertEqual(message["content_type"], expected_type)
+        self.assertEqual(message["title"], page.title)
+        self.assertEqual(message["summary"], page.summary)
+        self.assertEqual(message["uri"], page.url_path)
+        self.assertEqual(message["topics"], [self.topic_a.id, self.topic_b.id])
 
 
 @override_settings(
