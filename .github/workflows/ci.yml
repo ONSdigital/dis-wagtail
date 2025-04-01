@@ -119,6 +119,8 @@ jobs:
           KAFKA_CFG_TRANSACTION_STATE_LOG_MIN_ISR: '1'
           KAFKA_CFG_GROUP_INITIAL_REBALANCE_DELAY_MS: '0'
           KAFKA_CFG_NUM_PARTITIONS: '3'
+          # Enable auto-creation of topics
+          KAFKA_CFG_AUTO_CREATE_TOPICS_ENABLE: 'true'
         ports:
           - '9092:9092'
 
