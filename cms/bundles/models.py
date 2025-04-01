@@ -167,6 +167,10 @@ class Bundle(index.Indexed, ClusterableModel, models.Model):  # type: ignore[dja
 
         return all(is_page_ready_to_publish(page) for page in self.get_bundled_pages())
 
+    @property
+    def is_ready_to_be_published(self) -> bool:
+        return self.status == BundleStatus.APPROVED
+
     def get_bundled_pages(self, specific: bool = False) -> "PageQuerySet[Page]":
         pages = Page.objects.filter(pk__in=self.bundled_pages.values_list("page__pk", flat=True))
         if specific:
