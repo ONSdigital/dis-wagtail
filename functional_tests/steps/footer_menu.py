@@ -206,13 +206,7 @@ def create_populated_footer_menu(context: Context):
 
 @then("the footer menu appears on the home page")
 def footer_menu_appears_on_home_page(context: Context):
-    # Check that the footer menu appears on the home page
-    # Extract the current port from the page's URL
-    current_url = context.page.url
-    port = current_url.split(":")[2].split("/")[0]
-
-    # Navigate to the desired URL with the extracted port
-    context.page.goto(f"http://localhost:{port}/")
+    context.page.goto(context.base_url)
 
     column_headings = ["Link Column 1", "Link Column 2", "Link Column 3"]
     link_titles = ["Link Title 1", "Link Title 2", "Link Title 3"]

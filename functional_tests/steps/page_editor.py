@@ -134,6 +134,6 @@ def user_saves_in_navigation_settings(context: Context):
     context.page.get_by_role("button", name="Save").click()
 
 
-@when("the user clicks toggle preview ")
+@when("the user clicks toggle preview")
 def user_clicks_view_live(context: Context):
     context.page.get_by_role("button", name="Toggle preview").click()
