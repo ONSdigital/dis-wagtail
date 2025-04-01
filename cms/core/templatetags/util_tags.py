@@ -48,3 +48,6 @@ def set_attributes_filter(attributes: dict, new_attributes: dict) -> dict:
     """
     attributes.update(new_attributes)
     return attributes
+
+
+# Jinja filter that uses our custom date format classes. Usage in template: {{ some_datetime|custom_date("j F Y g:ia") }}.
