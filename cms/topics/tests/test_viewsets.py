@@ -2,7 +2,6 @@ from datetime import datetime
 
 from django.test import TestCase
 from django.urls import reverse
-from django.utils.translation import gettext_lazy as _
 from wagtail.test.utils import WagtailTestUtils
 
 from cms.articles.tests.factories import ArticleSeriesPageFactory, StatisticalArticlePageFactory
@@ -71,11 +70,9 @@ class FeaturedSeriesPageChooserViewSetTest(WagtailTestUtils, TestCase):
     def test_featured_series_viewset_configuration(self):
         self.assertFalse(featured_series_page_chooser_viewset.register_widget)
         self.assertEqual(featured_series_page_chooser_viewset.model, ArticleSeriesPageFactory._meta.model)
-        self.assertEqual(featured_series_page_chooser_viewset.choose_one_text, _("Choose Article Series page"))
-        self.assertEqual(
-            featured_series_page_chooser_viewset.choose_another_text, _("Choose another Article Series page")
-        )
-        self.assertEqual(featured_series_page_chooser_viewset.edit_item_text, _("Edit Article Series page"))
+        self.assertEqual(featured_series_page_chooser_viewset.choose_one_text, "Choose Article Series page")
+        self.assertEqual(featured_series_page_chooser_viewset.choose_another_text, "Choose another Article Series page")
+        self.assertEqual(featured_series_page_chooser_viewset.edit_item_text, "Edit Article Series page")
 
 
 class HighlightedPageChooserViewSetTest(WagtailTestUtils, TestCase):
@@ -197,17 +194,17 @@ class HighlightedPageChooserViewSetTest(WagtailTestUtils, TestCase):
     def test_highlighted_article_viewset_configuration(self):
         self.assertFalse(highlighted_article_page_chooser_viewset.register_widget)
         self.assertEqual(highlighted_article_page_chooser_viewset.model, StatisticalArticlePageFactory._meta.model)
-        self.assertEqual(highlighted_article_page_chooser_viewset.choose_one_text, _("Choose Article page"))
-        self.assertEqual(highlighted_article_page_chooser_viewset.choose_another_text, _("Choose another Article page"))
-        self.assertEqual(highlighted_article_page_chooser_viewset.edit_item_text, _("Edit Article page"))
+        self.assertEqual(highlighted_article_page_chooser_viewset.choose_one_text, "Choose Article page")
+        self.assertEqual(highlighted_article_page_chooser_viewset.choose_another_text, "Choose another Article page")
+        self.assertEqual(highlighted_article_page_chooser_viewset.edit_item_text, "Edit Article page")
         self.assertIn("topic_page_id", highlighted_article_page_chooser_viewset.preserve_url_parameters)
 
     def test_highlighted_methodology_viewset_configuration(self):
         self.assertFalse(highlighted_methodology_page_chooser_viewset.register_widget)
         self.assertEqual(highlighted_methodology_page_chooser_viewset.model, MethodologyPageFactory._meta.model)
-        self.assertEqual(highlighted_methodology_page_chooser_viewset.choose_one_text, _("Choose Methodology page"))
+        self.assertEqual(highlighted_methodology_page_chooser_viewset.choose_one_text, "Choose Methodology page")
         self.assertEqual(
-            highlighted_methodology_page_chooser_viewset.choose_another_text, _("Choose another Methodology page")
+            highlighted_methodology_page_chooser_viewset.choose_another_text, "Choose another Methodology page"
         )
-        self.assertEqual(highlighted_methodology_page_chooser_viewset.edit_item_text, _("Edit Methodology page"))
+        self.assertEqual(highlighted_methodology_page_chooser_viewset.edit_item_text, "Edit Methodology page")
         self.assertIn("topic_page_id", highlighted_methodology_page_chooser_viewset.preserve_url_parameters)

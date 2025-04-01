@@ -5,7 +5,6 @@ from django.db.models import F, QuerySet
 from django.db.models.functions import Coalesce
 from django.utils.functional import cached_property
 from django.utils.timezone import now
-from django.utils.translation import gettext_lazy as _
 from modelcluster.fields import ParentalKey
 from modelcluster.models import ClusterableModel
 from wagtail.admin.panels import FieldPanel, FieldRowPanel, InlinePanel
@@ -109,11 +108,11 @@ class Bundle(index.Indexed, ClusterableModel, models.Model):  # type: ignore[dja
                 ),
                 FieldPanel("publication_date", heading="or Publication date"),
             ],
-            heading=_("Scheduling"),
+            heading="Scheduling",
             icon="calendar",
         ),
         "status",
-        InlinePanel("bundled_pages", heading=_("Bundled pages"), icon="doc-empty", label=_("Page")),
+        InlinePanel("bundled_pages", heading="Bundled pages", icon="doc-empty", label="Page"),
         # these are handled by the form
         FieldPanel("approved_by", classname="hidden w-hidden"),
         FieldPanel("approved_at", classname="hidden w-hidden"),

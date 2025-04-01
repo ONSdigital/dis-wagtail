@@ -5,7 +5,6 @@ from django.conf import settings
 from django.contrib.contenttypes.fields import GenericRelation
 from django.db import models
 from django.db.models.functions import Lower
-from django.utils.translation import gettext_lazy as _
 from wagtail.fields import RichTextField
 from wagtail.models import PreviewableMixin, RevisionMixin, TranslatableMixin
 from wagtail.search import index
@@ -42,13 +41,13 @@ class ContactDetails(index.Indexed, models.Model):
     ]
 
     class Meta:
-        verbose_name_plural = _("contact details")
+        verbose_name_plural = "contact details"
         constraints: ClassVar[list[models.BaseConstraint]] = [
             models.UniqueConstraint(
                 Lower("name"),
                 Lower("email"),
                 name="core_contactdetails_name_unique",
-                violation_error_message=_("Contact details with this name and email combination already exists."),
+                violation_error_message="Contact details with this name and email combination already exists.",
             ),
         ]
 
@@ -93,7 +92,7 @@ class GlossaryTerm(TranslatableMixin, PreviewableMixin, RevisionMixin, index.Ind
             models.UniqueConstraint(
                 Lower("name"),
                 name="core_glossary_term_name_unique",
-                violation_error_message=_("A glossary term with this name already exists."),
+                violation_error_message="A glossary term with this name already exists.",
             ),
             models.UniqueConstraint(
                 fields=("translation_key", "locale"), name="unique_translation_key_locale_core_glossaryterm"
