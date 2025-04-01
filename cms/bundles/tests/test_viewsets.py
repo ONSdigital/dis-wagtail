@@ -173,6 +173,25 @@ class BundleViewSetTestCase(BundleViewSetTestCaseBase):
         response = self.client.get(self.edit_url)
         self.assertContains(response, f"{page_title} (Ready to publish)")
 
+    def test_bundle_edit_view__goes_back_to_draft_on_unschedule(self):
+        """Checks the fields are populated if the user clicks the 'Save and approve' button."""
+        self.client.force_login(self.superuser)
+        mark_page_as_ready_to_publish(self.statistical_article_page, self.superuser)
+        self.client.post(
+            self.edit_url,
+            nested_form_data(
+                {
+                    "name": "Updated Bundle",
+                    "status": self.bundle.status,  # correct. "unschedule" should update the status directly
+                    "bundled_pages": inline_formset([{"page": self.statistical_article_page.id}]),
+                    "teams": inline_formset([]),
+                    "action-unschedule": "unschedule",
+                }
+            ),
+        )
+        self.bundle.refresh_from_db()
+        self.assertEqual(self.bundle.status, BundleStatus.PENDING)
+
     @mock.patch("cms.bundles.viewsets.bundle.notify_slack_of_status_change")
     def test_bundle_approval__happy_path(self, mock_notify_slack):
         """Test bundle approval workflow."""

@@ -47,7 +47,7 @@ class BundleCreateView(CreateView):
 class BundleEditView(EditView):
     """The Bundle edit view class."""
 
-    actions: ClassVar[list[str]] = ["edit", "save-and-approve", "publish"]
+    actions: ClassVar[list[str]] = ["edit", "save-and-approve", "publish", "unschedule"]
     template_name = "bundles/wagtailadmin/edit.html"
     has_content_changes: bool = False
     start_time: float | None = None
@@ -67,6 +67,9 @@ class BundleEditView(EditView):
                 data["status"] = BundleStatus.APPROVED.value
                 data["approved_at"] = timezone.now()
                 data["approved_by"] = self.request.user
+                kwargs["data"] = data
+            elif "action-unschedule" in self.request.POST:
+                data["status"] = BundleStatus.PENDING.value
                 kwargs["data"] = data
             elif "action-publish" in self.request.POST:
                 data["status"] = BundleStatus.RELEASED.value
@@ -139,6 +142,9 @@ class BundleEditView(EditView):
         context["show_save_and_approve"] = self.object.can_be_approved
         context["show_publish"] = (
             self.object.status == BundleStatus.APPROVED and not self.object.scheduled_publication_date
+        )
+        context["show_unschedule"] = (
+            self.object.status == BundleStatus.APPROVED and self.object.scheduled_publication_date
         )
 
         return context
