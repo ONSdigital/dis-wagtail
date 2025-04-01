@@ -12,7 +12,7 @@ from cms.bundles.enums import BundleStatus
 from cms.bundles.models import Bundle, BundleTeam
 from cms.bundles.tests.factories import BundleFactory, BundlePageFactory
 from cms.bundles.tests.utils import grant_all_bundle_permissions, make_bundle_viewer
-from cms.bundles.viewsets import bundle_chooser_viewset
+from cms.bundles.viewsets.bundle_chooser import bundle_chooser_viewset
 from cms.release_calendar.viewsets import FutureReleaseCalendarChooserWidget
 from cms.teams.models import Team
 from cms.users.tests.factories import GroupFactory, UserFactory
@@ -171,7 +171,7 @@ class BundleViewSetTestCase(BundleViewSetTestCaseBase):
         response = self.client.get(self.edit_url)
         self.assertContains(response, f"{page_title} (Ready to publish)")
 
-    @mock.patch("cms.bundles.viewsets.notify_slack_of_status_change")
+    @mock.patch("cms.bundles.viewsets.bundle.notify_slack_of_status_change")
     def test_bundle_approval__happy_path(self, mock_notify_slack):
         """Test bundle approval workflow."""
         self.client.force_login(self.superuser)
@@ -198,7 +198,7 @@ class BundleViewSetTestCase(BundleViewSetTestCaseBase):
 
         self.assertTrue(mock_notify_slack.called)
 
-    @mock.patch("cms.bundles.viewsets.notify_slack_of_status_change")
+    @mock.patch("cms.bundles.viewsets.bundle.notify_slack_of_status_change")
     def test_bundle_approval__cannot__approve_if_pages_are_not_ready_to_publish(self, mock_notify_slack):
         """Test bundle approval workflow."""
         self.client.force_login(self.publishing_officer)

@@ -11,7 +11,8 @@ from wagtail.permission_policies import ModelPermissionPolicy
 
 from . import admin_urls
 from .models import Bundle, BundledPageMixin
-from .viewsets import bundle_chooser_viewset, bundle_viewset
+from .viewsets.bundle import bundle_viewset
+from .viewsets.bundle_chooser import bundle_chooser_viewset
 
 if TYPE_CHECKING:
     from typing import Optional

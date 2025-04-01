@@ -4,7 +4,6 @@ from typing import TYPE_CHECKING, Any, ClassVar
 
 from django.conf import settings
 from django.core.exceptions import PermissionDenied
-from django.db.models import QuerySet
 from django.http import HttpRequest
 from django.shortcuts import redirect
 from django.urls import reverse
@@ -13,15 +12,17 @@ from django.utils.formats import date_format
 from django.utils.html import format_html, format_html_join
 from wagtail.admin.ui.tables import Column, DateColumn, UpdatedAtColumn, UserColumn
 from wagtail.admin.views.generic import CreateView, EditView, IndexView, InspectView
-from wagtail.admin.views.generic.chooser import ChooseResultsView, ChooseView
-from wagtail.admin.viewsets.chooser import ChooserViewSet
 from wagtail.admin.viewsets.model import ModelViewSet
 from wagtail.log_actions import log
 
-from .enums import BundleStatus
-from .models import Bundle
-from .notifications import notify_slack_of_publication_start, notify_slack_of_publish_end, notify_slack_of_status_change
-from .permissions import user_can_manage_bundles, user_can_preview_bundle
+from cms.bundles.enums import BundleStatus
+from cms.bundles.models import Bundle
+from cms.bundles.notifications import (
+    notify_slack_of_publication_start,
+    notify_slack_of_publish_end,
+    notify_slack_of_status_change,
+)
+from cms.bundles.permissions import user_can_manage_bundles, user_can_preview_bundle
 
 if TYPE_CHECKING:
     from django.db.models.fields import Field
@@ -29,7 +30,7 @@ if TYPE_CHECKING:
     from django.template.response import TemplateResponse
     from django.utils.safestring import SafeString
 
-    from .models import BundlesQuerySet
+    from cms.bundles.models import BundlesQuerySet
 
 
 class BundleCreateView(CreateView):
@@ -338,39 +339,6 @@ class BundleIndexView(IndexView):
         ]
 
 
-class BundleChooseViewMixin:
-    icon = "boxes-stacked"
-
-    @property
-    def columns(self) -> list[Column]:
-        """Defines the list of desired columns in the chooser."""
-        return [
-            *super().columns,  # type: ignore[misc]
-            Column("scheduled_publication_date"),
-            UserColumn("created_by"),
-        ]
-
-    def get_object_list(self) -> QuerySet[Bundle]:
-        """Overrides the default object list to only fetch the fields we're using."""
-        queryset: QuerySet[Bundle] = Bundle.objects.editable().select_related("created_by").only("name", "created_by")
-        return queryset
-
-
-class BundleChooseView(BundleChooseViewMixin, ChooseView): ...
-
-
-class BundleChooseResultsView(BundleChooseViewMixin, ChooseResultsView): ...
-
-
-class BundleChooserViewSet(ChooserViewSet):
-    """Defines the chooser viewset for Bundles."""
-
-    model = Bundle
-    icon = "boxes-stacked"
-    choose_view_class = BundleChooseView
-    choose_results_view_class = BundleChooseResultsView
-
-
 class BundleViewSet(ModelViewSet):
     """The viewset class for Bundle.
 
@@ -384,7 +352,6 @@ class BundleViewSet(ModelViewSet):
     edit_view_class = BundleEditView
     inspect_view_class = BundleInspectView
     index_view_class = BundleIndexView
-    chooser_viewset_class = BundleChooserViewSet
     list_filter: ClassVar[list[str]] = ["status", "created_by"]
     add_to_admin_menu = True
     inspect_view_enabled = True
@@ -392,6 +359,3 @@ class BundleViewSet(ModelViewSet):
 
 
 bundle_viewset = BundleViewSet("bundle")
-bundle_chooser_viewset = BundleChooserViewSet("bundle_chooser")
-
-BundleChooserWidget = bundle_chooser_viewset.widget_class

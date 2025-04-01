@@ -12,7 +12,7 @@ from cms.bundles.admin_forms import AddToBundleForm
 from cms.bundles.enums import ACTIVE_BUNDLE_STATUS_CHOICES, BundleStatus
 from cms.bundles.models import Bundle
 from cms.bundles.tests.factories import BundleFactory, BundlePageFactory
-from cms.bundles.viewsets import BundleChooserWidget
+from cms.bundles.viewsets.bundle_chooser import BundleChooserWidget
 from cms.release_calendar.tests.factories import ReleaseCalendarPageFactory
 from cms.users.tests.factories import UserFactory
 from cms.workflows.tests.utils import mark_page_as_ready_to_publish
