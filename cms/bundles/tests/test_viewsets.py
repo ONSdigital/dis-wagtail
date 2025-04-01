@@ -377,3 +377,6 @@ class BundleChooserViewsetTestCase(BundleViewSetTestCaseBase):
         self.assertContains(response, pending_bundle.name)
         self.assertNotContains(response, self.released_bundle.name)
         self.assertNotContains(response, self.approved_bundle.name)
+
+
+class BundlePageChooserViewsetTestCase(BundleViewSetTestCaseBase): ...

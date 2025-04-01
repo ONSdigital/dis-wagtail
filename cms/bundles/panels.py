@@ -3,9 +3,9 @@ from typing import TYPE_CHECKING, Any, Union
 from django.urls import reverse
 from django.utils.html import format_html
 from wagtail.admin.panels import HelpPanel, PageChooserPanel
-from wagtail.admin.widgets import AdminPageChooser
 
 from cms.bundles.permissions import user_can_manage_bundles
+from cms.bundles.viewsets.bundle_page_chooser import PagesWithDraftsForBundleChooserWidget
 
 if TYPE_CHECKING:
     from django.db.models import Model
@@ -45,9 +45,9 @@ class BundleNotePanel(HelpPanel):
             return content
 
 
-class CustomAdminPageChooser(AdminPageChooser):
+class CustomAdminPageChooser(PagesWithDraftsForBundleChooserWidget):
     def get_display_title(self, instance: "Page") -> str:
-        title: str = super().get_display_title(instance)
+        title: str = instance.specific_deferred.get_admin_display_title()
 
         if workflow_state := instance.current_workflow_state:
             title = f"{title} ({workflow_state.current_task_state.task.name})"
@@ -65,9 +65,7 @@ class PageChooserWithStatusPanel(PageChooserPanel):
 
         if self.page_type or self.can_choose_root:
             widgets = opts.setdefault("widgets", {})
-            widgets[self.field_name] = CustomAdminPageChooser(
-                target_models=self.page_type, can_choose_root=self.can_choose_root
-            )
+            widgets[self.field_name] = CustomAdminPageChooser()
 
         return opts
 
@@ -76,4 +74,4 @@ class PageChooserWithStatusPanel(PageChooserPanel):
             """Sets the panel heading to the page verbose name to help differentiate page types."""
             super().__init__(**kwargs)
             if page := self.instance.page:
-                self.heading = page.specific.get_verbose_name()
+                self.heading = page.specific_deferred.get_verbose_name()

@@ -13,6 +13,7 @@ from . import admin_urls
 from .models import Bundle, BundledPageMixin
 from .viewsets.bundle import bundle_viewset
 from .viewsets.bundle_chooser import bundle_chooser_viewset
+from .viewsets.bundle_page_chooser import bundle_page_chooser_viewset
 
 if TYPE_CHECKING:
     from typing import Optional
@@ -33,7 +34,7 @@ def register_viewset() -> list:
 
     @see https://docs.wagtail.org/en/stable/reference/hooks.html#register-admin-viewset
     """
-    return [bundle_viewset, bundle_chooser_viewset]
+    return [bundle_viewset, bundle_chooser_viewset, bundle_page_chooser_viewset]
 
 
 class PageAddToBundleButton(PageListingButton):
