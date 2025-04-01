@@ -304,8 +304,8 @@ class PreviousReleasesWithoutPaginationTestCase(TestCase):
 class PreviousReleasesWithPaginationPage3TestCase(TestCase):
     total_batch = 13
     current_page_number = 3
-    PREVIOUS_RELEASES_PER_PAGE = 3
-    total_no_of_pages = math.ceil(total_batch / PREVIOUS_RELEASES_PER_PAGE)
+    test_previous_releases_per_page = 3
+    total_no_of_pages = math.ceil(total_batch / test_previous_releases_per_page)
 
     @classmethod
     def setUpTestData(cls, cls_total_batch: int = total_batch, cls_current_page_number: int = current_page_number):
@@ -340,8 +340,8 @@ class PreviousReleasesWithPaginationPage3TestCase(TestCase):
 class PreviousReleasesWithPaginationPage1TestCase(TestCase):
     total_batch = 13
     current_page_number = 1
-    PREVIOUS_RELEASES_PER_PAGE = 3
-    total_no_of_pages = math.ceil(total_batch / PREVIOUS_RELEASES_PER_PAGE)
+    test_previous_releases_per_page = 3
+    total_no_of_pages = math.ceil(total_batch / test_previous_releases_per_page)
 
     @classmethod
     def setUpTestData(
@@ -379,8 +379,8 @@ class PreviousReleasesWithPaginationPage1TestCase(TestCase):
 class PreviousReleasesWithPaginationPage5TestCase(TestCase):
     total_batch = 13
     current_page_number = 5
-    PREVIOUS_RELEASES_PER_PAGE = 3
-    total_no_of_pages = math.ceil(total_batch / PREVIOUS_RELEASES_PER_PAGE)
+    test_previous_releases_per_page = 3
+    total_no_of_pages = math.ceil(total_batch / test_previous_releases_per_page)
 
     @classmethod
     def setUpTestData(
