@@ -139,7 +139,7 @@ class FooterMenuTemplateTagTests(TestCase):
 class BreadcrumbsTemplateTagTests(TestCase):
     @classmethod
     def setUpTestData(cls):
-        cls.mock_request = wagtail.coreutils.get_dummy_request()
+        cls.mock_request = get_dummy_request()
         cls.series = ArticleSeriesPageFactory()
         cls.statistical_article = StatisticalArticlePageFactory(parent=cls.series)
 
