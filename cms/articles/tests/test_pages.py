@@ -224,3 +224,74 @@ class StatisticalArticlePageTests(WagtailPageTestCase):
         self.assertContains(v2_response, "Corrections")
         self.assertContains(v2_response, "First correction text")
         self.assertNotContains(v2_response, "Second correction text")
+
+    def test_hero_rendering(self):
+        response = self.client.get(self.page.url)
+
+        # Breadcrumbs
+        content = response.content.decode(encoding="utf-8")
+
+        topic = self.page.get_parent().get_parent()
+        theme = topic.get_parent()
+
+        self.assertInHTML(
+            f'<a class="ons-breadcrumbs__link" href="{topic.url}">{topic.title}</a>',
+            content,
+        )
+
+        self.assertInHTML(
+            f'<a class="ons-breadcrumbs__link" href="{theme.url}">{theme.title}</a>',
+            content,
+        )
+
+        # Census
+        self.assertNotContains(response, "ons-hero__census-logo")
+
+        self.page.is_census = True
+        self.page.save_revision().publish()
+
+        response = self.client.get(self.page.url)
+        self.assertContains(response, "ons-hero__census-logo")
+
+        # Accreditation badge
+        self.assertNotContains(response, "ons-hero__badge")
+
+        self.page.is_accredited = True
+        self.page.save_revision().publish()
+        response = self.client.get(self.page.url)
+
+        self.assertContains(response, "ons-hero__badge")
+
+        # Release dates
+        self.page.release_date = "2025-01-01"
+        self.page.next_release_date = None
+        self.page.save_revision().publish()
+        response = self.client.get(self.page.url)
+        content = response.content.decode(encoding="utf-8")
+
+        self.assertInHTML(
+            '<dd class="ons-description-list__value ons-grid__col ons-col-6@xs@l">1 January 2025</dd>',
+            content,
+        )
+        self.assertInHTML(
+            '<dd class="ons-description-list__value ons-grid__col ons-col-6@xs@l">To be announced</dd>',
+            content,
+        )
+
+        self.page.next_release_date = "2025-02-03"
+        self.page.save_revision().publish()
+        response = self.client.get(self.page.url)
+        content = response.content.decode(encoding="utf-8")
+
+        self.assertInHTML(
+            '<dd class="ons-description-list__value ons-grid__col ons-col-6@xs@l">1 January 2025</dd>',
+            content,
+        )
+        self.assertInHTML(
+            '<dd class="ons-description-list__value ons-grid__col ons-col-6@xs@l">3 February 2025</dd>',
+            content,
+        )
+        self.assertNotInHTML(
+            '<dd class="ons-description-list__value ons-grid__col ons-col-6@xs@l">To be announced</dd>',
+            content,
+        )
