@@ -2,10 +2,13 @@ from datetime import datetime
 from typing import Any
 
 from django.core.exceptions import ValidationError
+from django.urls import reverse
+from django.utils.html import format_html
 from django.utils.translation import gettext as _
 from wagtail.admin.forms import WagtailAdminPageForm
 from wagtail.models import Locale
 
+from ..bundles.permissions import user_can_manage_bundles
 from .enums import NON_PROVISIONAL_STATUS_CHOICES, ReleaseStatus
 
 
@@ -28,8 +31,11 @@ class ReleaseCalendarPageAdminForm(WagtailAdminPageForm):
 
         status = cleaned_data.get("status")
 
-        if status == ReleaseStatus.CANCELLED and not cleaned_data.get("notice"):
-            raise ValidationError({"notice": _("The notice field is required when the release is cancelled")})
+        if status == ReleaseStatus.CANCELLED:
+            if not cleaned_data.get("notice"):
+                raise ValidationError({"notice": _("The notice field is required when the release is cancelled")})
+
+            self.validate_bundle_not_pending_publication(status)
 
         if status in [ReleaseStatus.CONFIRMED, ReleaseStatus.PUBLISHED]:
             if not cleaned_data.get("release_date"):
@@ -93,3 +99,27 @@ class ReleaseCalendarPageAdminForm(WagtailAdminPageForm):
                     )
                 }
             ) from None
+
+    def validate_bundle_not_pending_publication(self, status: str) -> None:
+        if self.instance.status == status:
+            return
+
+        bundle = self.instance.active_bundle
+        if not (bundle and bundle.is_ready_to_be_published):
+            return
+
+        if self.for_user and user_can_manage_bundles(self.for_user):
+            bundle_str = format_html(
+                '<a href="{}" target="_blank" title="Manage bundle">{}</a>',
+                reverse("bundle:edit", args=[bundle.pk]),
+                bundle.name,
+            )
+        else:
+            bundle_str = bundle.name
+
+        message = format_html(
+            "This release calendar page is linked to bundle '{}' which is ready to be published. "
+            "Please unschedule the bundle and unlink the release calendar page before making the cancellation.",
+            bundle_str,
+        )
+        raise ValidationError({"status": message})
