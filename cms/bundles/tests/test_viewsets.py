@@ -4,6 +4,7 @@ from unittest import mock
 from django.test import TestCase
 from django.urls import reverse
 from wagtail.admin.panels import get_edit_handler
+from wagtail.models import Page
 from wagtail.test.utils import WagtailTestUtils
 from wagtail.test.utils.form_data import inline_formset, nested_form_data
 
@@ -13,6 +14,7 @@ from cms.bundles.models import Bundle, BundleTeam
 from cms.bundles.tests.factories import BundleFactory, BundlePageFactory
 from cms.bundles.tests.utils import grant_all_bundle_permissions, make_bundle_viewer
 from cms.bundles.viewsets.bundle_chooser import bundle_chooser_viewset
+from cms.bundles.viewsets.bundle_page_chooser import PagesWithDraftsForBundleChooserWidget, bundle_page_chooser_viewset
 from cms.release_calendar.viewsets import FutureReleaseCalendarChooserWidget
 from cms.teams.models import Team
 from cms.users.tests.factories import GroupFactory, UserFactory
@@ -379,4 +381,87 @@ class BundleChooserViewsetTestCase(BundleViewSetTestCaseBase):
         self.assertNotContains(response, self.approved_bundle.name)
 
 
-class BundlePageChooserViewsetTestCase(BundleViewSetTestCaseBase): ...
+class BundlePageChooserViewsetTestCase(WagtailTestUtils, TestCase):
+    @classmethod
+    def setUpTestData(cls):
+        cls.superuser = cls.create_superuser(username="admin")
+
+        cls.bundle = BundleFactory()
+
+        cls.page_draft = StatisticalArticlePageFactory(live=False, title="Article draft")
+        cls.page_draft.save_revision()
+        cls.page_live = StatisticalArticlePageFactory(live=True, title="Live page")
+        cls.page_live_plus_draft = StatisticalArticlePageFactory(live=True, title="Live page with draft")
+        cls.page_live_plus_draft.save_revision()
+
+        cls.page_draft_in_bundle = StatisticalArticlePageFactory(live=False, title="Draft page in a bundle")
+        cls.page_draft_in_bundle.save_revision()
+        BundlePageFactory(parent=cls.bundle, page=cls.page_draft_in_bundle)
+
+        cls.chooser_url = bundle_page_chooser_viewset.widget_class().get_chooser_modal_url()
+        cls.chooser_results_url = reverse(bundle_page_chooser_viewset.get_url_name("choose_results"))
+
+    def setUp(self):
+        self.client.force_login(self.superuser)
+
+    def test_bundle_form_uses_bundle_page_chooser_widget(self):
+        form_class = get_edit_handler(Bundle).get_form_class()
+        form = form_class(instance=self.bundle).formsets["bundled_pages"].forms[0]
+
+        self.assertIn("page", form.fields)
+        chooser_widget = form.fields["page"].widget
+        self.assertIsInstance(chooser_widget, PagesWithDraftsForBundleChooserWidget)
+
+        self.assertEqual(
+            chooser_widget.get_chooser_modal_url(),
+            # the admin path + the chooser namespace
+            reverse("wagtailadmin_home") + "bundle_page_chooser/",
+        )
+
+    def test_choose_view(self):
+        response = self.client.get(self.chooser_url)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, "wagtailadmin/generic/chooser/chooser.html")
+
+        self.assertContains(response, self.page_draft.get_admin_display_title())
+        self.assertContains(response, self.page_live_plus_draft.get_admin_display_title())
+        self.assertNotContains(response, self.page_live.get_admin_display_title())
+        self.assertNotContains(response, self.page_draft_in_bundle.get_admin_display_title())
+
+    def test_choose_view__includes_page_in_inactive_bundle(self):
+        self.bundle.status = BundleStatus.RELEASED
+        self.bundle.save(update_fields=["status"])
+
+        response = self.client.get(self.chooser_url)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, "wagtailadmin/generic/chooser/chooser.html")
+
+        self.assertContains(response, self.page_draft_in_bundle.get_admin_display_title())
+
+    def test_choose_view__no_results(self):
+        self.page_draft.save_revision().publish()
+        self.page_live_plus_draft.save_revision().publish()
+
+        response = self.client.get(f"{self.chooser_url}")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "There are no draft pages that are not in an active bundle.")
+
+    def test_chooser_search(self):
+        response = self.client.get(f"{self.chooser_results_url}?q=Article")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, "bundles/bundle_page_chooser_results.html")
+
+        self.assertContains(response, self.page_draft.get_admin_display_title())
+        self.assertNotContains(response, self.page_live.get_admin_display_title())
+        self.assertNotContains(response, self.page_draft_in_bundle.get_admin_display_title())
+
+    def test_featured_series_viewset_configuration(self):
+        self.assertFalse(bundle_page_chooser_viewset.register_widget)
+        self.assertEqual(bundle_page_chooser_viewset.model, Page)
+        self.assertEqual(bundle_page_chooser_viewset.choose_one_text, "Choose a page")
+        self.assertEqual(bundle_page_chooser_viewset.choose_another_text, "Choose another page")
+        self.assertEqual(bundle_page_chooser_viewset.edit_item_text, "Edit this page")

@@ -2,7 +2,7 @@ from typing import TYPE_CHECKING, Any, Union
 
 from django.urls import reverse
 from django.utils.html import format_html
-from wagtail.admin.panels import HelpPanel, PageChooserPanel
+from wagtail.admin.panels import FieldPanel, HelpPanel
 
 from cms.bundles.permissions import user_can_manage_bundles
 from cms.bundles.viewsets.bundle_page_chooser import PagesWithDraftsForBundleChooserWidget
@@ -57,19 +57,18 @@ class CustomAdminPageChooser(PagesWithDraftsForBundleChooserWidget):
         return title
 
 
-class PageChooserWithStatusPanel(PageChooserPanel):
+class PageChooserWithStatusPanel(FieldPanel):
     """A custom page chooser panel that includes the page workflow status."""
 
     def get_form_options(self) -> dict[str, list | dict]:
         opts: dict[str, list | dict] = super().get_form_options()
 
-        if self.page_type or self.can_choose_root:
-            widgets = opts.setdefault("widgets", {})
-            widgets[self.field_name] = CustomAdminPageChooser()
+        widgets = opts.setdefault("widgets", {})
+        widgets[self.field_name] = CustomAdminPageChooser()
 
         return opts
 
-    class BoundPanel(PageChooserPanel.BoundPanel):
+    class BoundPanel(FieldPanel.BoundPanel):
         def __init__(self, **kwargs: Any) -> None:
             """Sets the panel heading to the page verbose name to help differentiate page types."""
             super().__init__(**kwargs)

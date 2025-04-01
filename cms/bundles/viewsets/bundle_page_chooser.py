@@ -1,31 +1,35 @@
-from functools import cache
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, ClassVar
 
 from wagtail.admin.ui.tables import Column, DateColumn
 from wagtail.admin.ui.tables.pages import PageStatusColumn
 from wagtail.admin.views.generic.chooser import ChooseResultsView, ChooseView
 from wagtail.admin.viewsets.chooser import ChooserViewSet
 from wagtail.admin.widgets import BaseChooser
-from wagtail.models import Page, get_page_models
+from wagtail.models import Page
+
+from cms.bundles.utils import get_bundleable_page_types, get_pages_in_active_bundles
 
 if TYPE_CHECKING:
     from wagtail.query import PageQuerySet
 
 
-@cache
-def get_bundleable_page_types() -> list[type[Page]]:
-    # imported inline to avoid partial-loaded module error
-    from cms.bundles.models import BundledPageMixin  # pylint: disable=import-outside-toplevel
-
-    return [model for model in get_page_models() if issubclass(model, BundledPageMixin)]
-
-
 class PagesWithDraftsMixin:
+    results_template_name = "bundles/bundle_page_chooser_results.html"
+
     def get_object_list(self) -> "PageQuerySet":
+        """Limits the pages that can be chosen for a bundle.
+
+        Pages are included if they
+        - are a BundledPageMixin subclass
+        - have unpublished changes
+        - are not in another active bundle
+        """
         return (
-            Page.objects.type(*get_bundleable_page_types())
-            .specific(defer=True)
-            .filter(has_unpublished_changes=True)
+            Page.objects.specific(defer=True)
+            # using pk_in because the direct has_unpublished_changes=True filter
+            # requires Page to have has_unpublished_changes added to search fields which we cannot do
+            .filter(pk__in=Page.objects.type(*get_bundleable_page_types()).filter(has_unpublished_changes=True))
+            .exclude(pk__in=get_pages_in_active_bundles())
             .order_by("-latest_revision_created_at")
         )
 
@@ -63,6 +67,7 @@ class PagesWithDraftsForBundleChooserViewSet(ChooserViewSet):
     model = Page
     choose_view_class = PagesWithDraftsForBundleChooseView
     choose_results_view_class = PagesWithDraftsForBundleChooseResultsView
+    preserve_url_parameters: ClassVar[list[str]] = ["multiple", "bundle_id"]
     register_widget = False
 
     icon = "doc-empty-inverse"
