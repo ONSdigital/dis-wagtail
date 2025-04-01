@@ -1,8 +1,14 @@
 from django.test import TestCase
 from wagtail.coreutils import get_dummy_request
 
+from cms.articles.tests.factories import ArticleSeriesPageFactory, StatisticalArticlePageFactory
 from cms.core.tests.factories import LinkBlockFactory
-from cms.navigation.templatetags.navigation_tags import footer_menu_columns, main_menu_columns, main_menu_highlights
+from cms.navigation.templatetags.navigation_tags import (
+    breadcrumbs,
+    footer_menu_columns,
+    main_menu_columns,
+    main_menu_highlights,
+)
 from cms.navigation.tests.factories import (
     FooterMenuFactory,
     HighlightsBlockFactory,
@@ -128,3 +134,36 @@ class FooterMenuTemplateTagTests(TestCase):
         """Test that footer_menu returns an empty list for a None menu."""
         columns = footer_menu_columns({}, None)
         self.assertEqual(columns, [])
+
+
+class BreadcrumbsTemplateTagTests(TestCase):
+    @classmethod
+    def setUpTestData(cls):
+        cls.mock_request = wagtail.coreutils.get_dummy_request()
+        cls.series = ArticleSeriesPageFactory()
+        cls.statistical_article = StatisticalArticlePageFactory(parent=cls.series)
+
+    def test_breadcrumbs_output_format(self):
+        """Test that breadcrumbs outputs the correct format."""
+        breadcrumbs_output = breadcrumbs({"request": self.mock_request}, self.statistical_article)
+
+        series_parent = self.series.get_parent()
+
+        expected_entries = [
+            {
+                "url": "/",
+                "text": "Home",
+            },
+            {
+                "url": series_parent.get_parent().get_url(),
+                "text": series_parent.get_parent().title,
+            },
+            {
+                "url": series_parent.get_url(),
+                "text": series_parent.title,
+            },
+        ]
+
+        self.assertIsInstance(breadcrumbs_output, list)
+        self.assertEqual(len(breadcrumbs_output), 3)
+        self.assertListEqual(breadcrumbs_output, expected_entries)
