@@ -30,34 +30,46 @@ Feature: Role Based Access Control Permission as defined in data migrations
         When a Publishing Admin logs into the admin site
         Then the user can see the Images menu item
 
+    Scenario: A Publishing Admin can manage document collections
+        When a Publishing Admin logs into the admin site
+        Then the user can see the Documents menu item
+
+    Scenario: A Publishing Admin can manage Wagtail settings
+        When a Publishing Admin logs into the admin site
+        And the user can see the Settings menu item
+        And the user clicks the Settings menu item
+        Then the user can see the Redirects menu item
+        And the user can see the Navigation settings menu item
+        And the user can see the Social media settings menu item
+
     Scenario: A Publishing Admin can manage Glossary Terms
         Given a Publishing Admin logs into the admin site
         And the user can see the Snippets menu item
-        When the user navigates to the Snippets admin page
+        When the user clicks the Snippets menu item
         Then the user can add Glossary terms snippet
     
     Scenario: A Publishing Admin can manage Contact Details
         Given a Publishing Admin logs into the admin site
         And the user can see the Snippets menu item
-        When the user navigates to the Snippets admin page
+        When the user clicks the Snippets menu item
         Then the user can add Contact details snippet
 
     Scenario: A Publishing Admin can manage and publish Main Menu
         Given a Publishing Admin logs into the admin site
         And the user can see the Snippets menu item
-        When the user navigates to the Snippets admin page
+        When the user clicks the Snippets menu item
         Then the user can create and publish the Main menus snippet
 
     Scenario: A Publishing Admin can manage and publish Footer Menu
         Given a Publishing Admin logs into the admin site
         And the user can see the Snippets menu item
-        When the user navigates to the Snippets admin page
+        When the user clicks the Snippets menu item
         Then the user can create and publish the Footer menus snippet
 
     Scenario: A Publishing Admin can add Bundles
         Given a Publishing Admin logs into the admin site 
         And the user can see the Bundles menu item
-        When the user navigates to the Bundles admin page
+        When the user clicks the Bundles menu item
         Then the user can add Bundles
 
     # Publishing Officer
@@ -71,7 +83,7 @@ Feature: Role Based Access Control Permission as defined in data migrations
     Scenario: A Publishing Officer can add Bundles
         Given a Publishing Officer logs into the admin site
         And the user can see the Bundles menu item
-        When the user navigates to the Bundles admin page
+        When the user clicks the Bundles menu item
         Then the user can add Bundles
 
     # Viewer

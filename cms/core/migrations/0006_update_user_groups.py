@@ -166,6 +166,37 @@ def create_page_permissions(apps):
             GroupPagePermission.objects.create(group=group, page=root_page, permission=permission)
 
 
+def create_settings_permissions(apps):
+    """Allow Publishing Admins to edit Wagtail settings."""
+    # Redirect
+    for permission in WAGTAIL_PERMISSION_TYPES:
+        assign_permission_to_group(
+            apps,
+            group_name=settings.PUBLISHING_ADMINS_GROUP_NAME,
+            permission_codename=f"{permission}_redirect",
+            app="wagtailredirects",
+            model="redirect",
+        )
+
+    # Navigation Settings
+    assign_permission_to_group(
+        apps,
+        group_name=settings.PUBLISHING_ADMINS_GROUP_NAME,
+        permission_codename="change_navigationsettings",
+        app="navigation",
+        model="navigationsettings",
+    )
+
+    # Social Media Settings
+    assign_permission_to_group(
+        apps,
+        group_name=settings.PUBLISHING_ADMINS_GROUP_NAME,
+        permission_codename="change_socialmediasettings",
+        app="core",
+        model="socialmediasettings",
+    )
+
+
 def update_user_groups(apps, schema_editor):
     """Create user groups for the CMS."""
     create_user_groups(apps)
@@ -173,6 +204,7 @@ def update_user_groups(apps, schema_editor):
     create_collection_permissions(apps)
     create_snippet_permissions(apps)
     create_bundle_permissions(apps)
+    create_settings_permissions(apps)
     create_reporting_permissions(apps)
 
 
@@ -182,6 +214,8 @@ class Migration(migrations.Migration):
         ("wagtailadmin", "0005_editingsession_is_editing"),  # latest Wagtail admin migration
         ("wagtailcore", "0094_alter_page_locale"),  # latest Wagtail core migration
         ("wagtailimages", "0027_image_description"),  # latest Wagtail images migration
+        ("wagtaildocs", "0014_alter_document_file_size"),  # latest Wagtail documents migration
+        ("wagtailredirects", "0008_add_verbose_name_plural"),  # latest Wagtail redirects migration
         # CMS dependencies
         ("core", "0005_glossaryterm"),  # Snippets in the 'core' app
         ("home", "0002_create_homepage"),  # HomePage

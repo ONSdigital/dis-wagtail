@@ -7,8 +7,14 @@ from playwright.sync_api import expect
 
 @step("the user can see the {menu_item} menu item")
 def the_user_can_see_reports_menu_item(context: Context, menu_item: str) -> None:
-    role = "button" if menu_item in ("Reports", "Pages") else "link"
+    role = "button" if menu_item in ("Reports", "Pages", "Settings") else "link"
     expect(context.page.get_by_role(role, name=menu_item, exact=True)).to_be_visible()
+
+
+@when("the user clicks the {menu_item} menu item")
+def user_navigates_to_snippets_admin_page(context: Context, menu_item: str) -> None:
+    role = "button" if menu_item in ("Reports", "Pages", "Settings") else "link"
+    context.page.get_by_role(role, name=menu_item, exact=True).click()
 
 
 @then("the user can inspect bundle details")
@@ -37,8 +43,3 @@ def the_user_can_create_and_publish_snippet(context: Context, snippet_name: str)
     expect(context.page.get_by_role("button", name="Save draft")).to_be_visible()
     context.page.get_by_role("button", name="More actions").click()
     expect(context.page.get_by_role("button", name="Publish")).to_be_visible()
-
-
-@when("the user navigates to the {page_name} admin page")
-def user_navigates_to_snippets_admin_page(context: Context, page_name: str) -> None:
-    context.page.get_by_role("link", name=page_name, exact=True).click()
