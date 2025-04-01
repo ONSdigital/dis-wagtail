@@ -48,7 +48,7 @@ services:
       KAFKA_CFG_NUM_PARTITIONS: '3'
 
       # Enable auto-creation of topics
-      KAFKA_CFG_AUTO_CREATE_TOPICS_ENABLE: "true"
+      KAFKA_CFG_AUTO_CREATE_TOPICS_ENABLE: 'true'
     ports:
       - '9092:9092'
 
