@@ -34,6 +34,10 @@ Feature: Role Based Access Control Permission as defined in data migrations
         When a Publishing Admin logs into the admin site
         Then the user can see the Documents menu item
 
+    Scenario: A Publishing Admin can view Preview teams
+        When a Publishing Admin logs into the admin site
+        Then the user can see the Preview teams menu item
+
     Scenario: A Publishing Admin can manage Wagtail settings
         When a Publishing Admin logs into the admin site
         And the user can see the Settings menu item
@@ -85,6 +89,10 @@ Feature: Role Based Access Control Permission as defined in data migrations
         And the user can see the Bundles menu item
         When the user clicks the Bundles menu item
         Then the user can add Bundles
+
+    Scenario: A Publishing Officer can view Preview teams
+        When a Publishing Officer logs into the admin site
+        Then the user can see the Preview teams menu item
 
     # Viewer
 

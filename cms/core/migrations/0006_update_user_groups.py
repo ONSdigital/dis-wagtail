@@ -166,6 +166,18 @@ def create_page_permissions(apps):
             GroupPagePermission.objects.create(group=group, page=root_page, permission=permission)
 
 
+def create_team_permissions(apps):
+    """Grant Publishing Admins and Publishing Officers view Preview Teams permission."""
+    for group_name in [settings.PUBLISHING_ADMINS_GROUP_NAME, settings.PUBLISHING_OFFICERS_GROUP_NAME]:
+        assign_permission_to_group(
+            apps,
+            group_name=group_name,
+            permission_codename="view_team",
+            app="teams",
+            model="team",
+        )
+
+
 def create_settings_permissions(apps):
     """Allow Publishing Admins to edit Wagtail settings."""
     # Redirect
@@ -204,6 +216,7 @@ def update_user_groups(apps, schema_editor):
     create_collection_permissions(apps)
     create_snippet_permissions(apps)
     create_bundle_permissions(apps)
+    create_team_permissions(apps)
     create_settings_permissions(apps)
     create_reporting_permissions(apps)
 
@@ -222,6 +235,7 @@ class Migration(migrations.Migration):
         ("topics", "0002_featured_series_explore_more_related"),  # Featured article series on TopicPage
         ("navigation", "0002_footermenu_navigationsettings_footer_menu"),  # MainMenu and FooterMenu
         ("bundles", "0001_initial"),  # Bundles
+        ("teams", "0001_initial"),  # Teams
     ]
 
     operations = [

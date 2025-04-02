@@ -114,6 +114,9 @@ class PublishingAdminPermissionsTestCase(PermissionsTestCase):
         # also check that the PA can view bundles
         self.assertTrue(self.user.has_perm("bundles.view_bundle"))
 
+    def test_publishing_admin_can_view_teams(self):
+        self.assertTrue(self.user.has_perm("teams.view_team"))
+
     def test_publishing_admin_can_manage_redirects(self):
         self.all_permissions_check_helper("wagtailredirects", "redirect")
 
@@ -151,6 +154,9 @@ class PublishingOfficerPermissionsTestCase(PermissionsTestCase):
     def test_publishing_officer_can_choose_documents(self):
         """Check that the Publishing Officer can choose documents on pages."""
         self.collection_permission_check_helper("choose", "document")
+
+    def test_publishing_officer_can_view_teams(self):
+        self.assertTrue(self.user.has_perm("teams.view_team"))
 
 
 class ViewerPermissionsTestCase(PermissionsTestCase):
