@@ -108,7 +108,7 @@ class ReleaseCalendarPage(BasePage):  # type: ignore[django-manager-missing]
             [
                 *Page.content_panels,
                 "status",
-                ReleaseCalendarBundleNotePanel(heading="Note"),
+                ReleaseCalendarBundleNotePanel(heading="Note", classname="bundle-note"),
                 FieldRowPanel(
                     [
                         "release_date",
@@ -202,5 +202,7 @@ class ReleaseCalendarPage(BasePage):  # type: ignore[django-manager-missing]
 
     @cached_property
     def active_bundle(self) -> Optional["Bundle"]:
+        if not self.pk:
+            return None
         bundle: Optional[Bundle] = self.bundles.active().first()  # pylint: disable=no-member
         return bundle
