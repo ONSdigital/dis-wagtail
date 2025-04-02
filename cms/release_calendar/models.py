@@ -69,7 +69,7 @@ class ReleaseCalendarPage(BasePage):  # type: ignore[django-manager-missing]
     )
 
     content = StreamField(ReleaseCalendarStoryBlock(), blank=True)
-    datasets = StreamField(DatasetStoryBlock(), blank=True)
+    datasets = StreamField(DatasetStoryBlock(), blank=True, default=list)
 
     contact_details = models.ForeignKey(
         "core.ContactDetails",
