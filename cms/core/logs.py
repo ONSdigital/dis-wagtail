@@ -22,10 +22,7 @@ class JSONFormatter(json_log_formatter.JSONFormatter):
 
 
 class GunicornJsonFormatter(JSONFormatter):
-    """A log formatter which extracts the required details from gunicorn's access logger.
-
-    https://docs.gunicorn.org/en/stable/settings.html#access-log-format
-    """
+    """A log formatter which extracts the required details from gunicorn's access logger."""
 
     def json_record(
         self, message: str, extra: dict[str, str | int | float], record: LogRecord
@@ -36,6 +33,7 @@ class GunicornJsonFormatter(JSONFormatter):
 
         response_time = datetime.datetime.strptime(record_args["t"], "[%d/%b/%Y:%H:%M:%S %z]")
 
+        # https://docs.gunicorn.org/en/stable/settings.html#access-log-format
         record_data["http"] = {
             "method": record_args["m"],
             "scheme": record_args["{wsgi.url_scheme}e"],
