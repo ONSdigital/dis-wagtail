@@ -31,8 +31,8 @@ def on_page_unpublished(sender: "Page", instance: "Page", **kwargs: dict) -> Non
 @receiver(post_delete, sender=Page)
 def on_page_deleted(sender: "Page", instance: "Page", **kwargs: dict) -> None:  # pylint: disable=unused-argument
     """Catches all subclass deletions of Wagtail's Page model.
-    Only fires if the page is not in SEARCH_INDEX_EXCLUDED_PAGE_TYPES.
+    Only fires if the page is published and not in SEARCH_INDEX_EXCLUDED_PAGE_TYPES.
     """
-    # Only proceed if `sender` is a subclass of Wagtail Page
-    if instance.specific_class.__name__ not in SEARCH_INDEX_EXCLUDED_PAGE_TYPES:
+    # Only proceed if `sender` is a subclass of Wagtail Page and the page is published
+    if instance.live and instance.specific_class.__name__ not in SEARCH_INDEX_EXCLUDED_PAGE_TYPES:
         publisher.publish_deleted(instance)

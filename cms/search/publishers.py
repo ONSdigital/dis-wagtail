@@ -32,7 +32,7 @@ class BasePublisher(ABC):
         """Build the message for the created/updated event.
         Delegate sending to the subclass's _publish().
         """
-        channel = self.get_created_or_updated_channel()
+        channel = self.created_or_updated_channel
         message = self._construct_message_for_create_update(page)
         return self._publish(channel, message)
 
@@ -40,7 +40,7 @@ class BasePublisher(ABC):
         """Build the message for the deleted event.
         Delegate sending to the subclass's _publish().
         """
-        channel = self.get_deleted_channel()
+        channel = self.deleted_channel
         message = {
             "uri": page.url_path,
         }
@@ -52,14 +52,16 @@ class BasePublisher(ABC):
         the message (e.g., Kafka, logging, etc.).
         """
 
+    @property
     @abstractmethod
-    def get_created_or_updated_channel(self) -> str | None:
+    def created_or_updated_channel(self) -> str | None:
         """Provide the channel (or other necessary routing key) for created/updated.
         This can be a no-op or empty string for some implementations.
         """
 
+    @property
     @abstractmethod
-    def get_deleted_channel(self) -> str | None:
+    def deleted_channel(self) -> str | None:
         """Provide the channel (or other necessary routing key) for deleted messages.
         This can be a no-op or empty string for some implementations.
         """
@@ -91,7 +93,8 @@ class BasePublisher(ABC):
             message.update(self._construct_release_specific_fields(page))
         return message
 
-    def _construct_release_specific_fields(self, page: "Page") -> dict:
+    @staticmethod
+    def _construct_release_specific_fields(page: "Page") -> dict:
         """Constructs and returns a dictionary with release-specific fields."""
         release_fields = {
             "finalised": page.status in ["CONFIRMED", "PROVISIONAL"],
@@ -125,22 +128,19 @@ class KafkaPublisher(BasePublisher):
 
     def __init__(self) -> None:
         # Read Kafka configs settings
-        self.kafka_server = settings.KAFKA_SERVER
-        self.kafka_api_version = settings.KAFKA_API_VERSION
-        self._channel_created_or_updated: Optional[str] = settings.KAFKA_CHANNEL_CREATED_OR_UPDATED
-        self._channel_deleted: Optional[str] = settings.KAFKA_CHANNEL_DELETED
-
         self.producer = KafkaProducer(
-            bootstrap_servers=[self.kafka_server],
-            api_version=self.kafka_api_version,
+            bootstrap_servers=[settings.KAFKA_SERVER],
+            api_version=settings.KAFKA_API_VERSION,
             value_serializer=lambda v: json.dumps(v).encode("utf-8"),
         )
 
-    def get_created_or_updated_channel(self) -> str | None:
-        return self._channel_created_or_updated
+    @property
+    def created_or_updated_channel(self) -> str | None:
+        return settings.KAFKA_CHANNEL_CREATED_OR_UPDATED
 
-    def get_deleted_channel(self) -> str | None:
-        return self._channel_deleted
+    @property
+    def deleted_channel(self) -> str | None:
+        return settings.KAFKA_CHANNEL_DELETED
 
     def _publish(self, channel: str | None, message: dict) -> "RecordMetadata":
         """Send the message to Kafka."""
@@ -155,10 +155,12 @@ class KafkaPublisher(BasePublisher):
 class LogPublisher(BasePublisher):
     """Publishes 'messages' by simply logging them (no real message bus)."""
 
-    def get_created_or_updated_channel(self) -> str:
+    @property
+    def created_or_updated_channel(self) -> str:
         return "log-created-or-updated"
 
-    def get_deleted_channel(self) -> str:
+    @property
+    def deleted_channel(self) -> str:
         return "log-deleted"
 
     def _publish(self, channel: str | None, message: dict) -> None:

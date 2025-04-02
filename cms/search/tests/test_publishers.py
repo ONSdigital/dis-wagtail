@@ -33,15 +33,17 @@ class DummyPublisher(BasePublisher):
         self._channel_created_or_updated = channel_created_or_updated
         self._channel_deleted = channel_deleted
 
+    @property
+    def created_or_updated_channel(self) -> str | None:
+        return self._channel_created_or_updated
+
+    @property
+    def deleted_channel(self) -> str | None:
+        return self._channel_deleted
+
     def _publish(self, channel, message):
         # We don't actually publish in tests; we just want to spy on the calls.
         pass
-
-    def get_created_or_updated_channel(self):
-        return self._channel_created_or_updated
-
-    def get_deleted_channel(self):
-        return self._channel_deleted
 
 
 class BasePublisherTests(TestCase, WagtailTestUtils):
@@ -300,8 +302,8 @@ class KafkaPublisherTests(TestCase):
             value_serializer=ANY,  # or a lambda
         )
 
-        self.assertEqual(publisher._channel_created_or_updated, "search-content-updated")  # pylint: disable=W0212
-        self.assertEqual(publisher._channel_deleted, "search-content-deleted")  # pylint: disable=W0212
+        self.assertEqual(publisher.created_or_updated_channel, "search-content-updated")  # pylint: disable=W0212
+        self.assertEqual(publisher.deleted_channel, "search-content-deleted")  # pylint: disable=W0212
 
     @patch("cms.search.publishers.KafkaProducer")
     def test_publish_created_or_updated(self, mock_producer_class):
