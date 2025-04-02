@@ -55,10 +55,7 @@ def check_search_index_content_type(app_configs: Optional[Iterable[AppConfig]], 
     # Fetch the excluded list (defaulting to empty tuple if not set)
     excluded_types = getattr(settings, "SEARCH_INDEX_EXCLUDED_PAGE_TYPES", ())
 
-    # Get all Wagtail Page subclasses
-    page_models = get_page_models()
-
-    for model in page_models:
+    for model in get_page_models():
         # Skip anything that appears in the exclusion list by class name
         if model.__name__ in excluded_types:
             continue

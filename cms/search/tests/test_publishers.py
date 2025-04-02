@@ -83,7 +83,6 @@ class BasePublisherTests(TestCase, WagtailTestUtils):
         self.client.force_login(self.superuser)
 
         self.root_page = Page.objects.get(id=1)
-        # self.root_topic = Topic.objects.root_topic()
 
         self.topic_a = Topic(id="topic-a", title="Topic A")
         Topic.save_new(self.topic_a)
