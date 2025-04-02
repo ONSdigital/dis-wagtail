@@ -14,7 +14,7 @@ EDITIONS_PATTERN = re.compile(r"/editions/([^/]+)/")
 DATASETS_BASE_API_URL = f"{settings.ONS_API_BASE_URL}/datasets"
 
 
-# This needs a revisit. Consider caching + fewer requests
+# TODO: This needs a revisit. Consider caching + fewer requests
 class ONSDatasetApiQuerySet(APIQuerySet):
     def get_results_from_response(self, response: Mapping) -> Iterable:
         results: Iterable = response["items"]
