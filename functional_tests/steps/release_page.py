@@ -1,12 +1,9 @@
-import json
-
-import responses
 from behave import then, when  # pylint: disable=no-name-in-module
 from behave.runner import Context
 from django.conf import settings
 from playwright.sync_api import expect
 
-from cms.datasets.models import DATASETS_BASE_API_URL
+from functional_tests.step_helpers.datasets import mock_datasets_responses
 
 
 @when("the user navigates to the release calendar page")
@@ -70,26 +67,7 @@ def look_up_and_select_dataset(context: Context):
 
     context.selected_datasets = [*getattr(context, "selected_datasets", []), dataset_displayed_fields]
 
-    with responses.RequestsMock(assert_all_requests_are_fired=False) as mock_responses:
-        mock_responses.add(
-            responses.GET,
-            DATASETS_BASE_API_URL,
-            body=json.dumps(
-                {
-                    "items": [
-                        mock_dataset,
-                    ],
-                    "total_count": 1,
-                }
-            ),
-        )
-        mock_responses.add(
-            responses.GET,
-            f"{DATASETS_BASE_API_URL}/{mock_dataset['id']}",
-            body=json.dumps(
-                mock_dataset,
-            ),
-        )
+    with mock_datasets_responses(datasets=[mock_dataset]):
         context.page.locator("#panel-child-content-datasets-content").get_by_role(
             "button", name="Insert a block"
         ).first.click()
