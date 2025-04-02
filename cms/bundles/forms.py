@@ -7,8 +7,7 @@ from django.utils import timezone
 from wagtail.admin.forms import WagtailAdminModelForm
 
 from cms.bundles.enums import ACTIVE_BUNDLE_STATUS_CHOICES, EDITABLE_BUNDLE_STATUSES, BundleStatus
-
-from ..workflows.models import ReadyToPublishGroupTask
+from cms.workflows.models import ReadyToPublishGroupTask
 
 if TYPE_CHECKING:
     from .models import Bundle
