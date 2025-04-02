@@ -59,6 +59,7 @@ INSTALLED_APPS = [
     "cms.articles",
     "cms.bundles",
     "cms.core",
+    "cms.datasets",
     "cms.documents",
     "cms.home",
     "cms.images",
@@ -868,7 +869,8 @@ MANAGE_COOKIE_SETTINGS_URL = env.get("MANAGE_COOKIE_SETTINGS_URL", "https://www.
 
 SLACK_NOTIFICATIONS_WEBHOOK_URL = env.get("SLACK_NOTIFICATIONS_WEBHOOK_URL")
 
-ONS_API_BASE_URL = env.get("ONS_API_BASE_URL")
+ONS_API_BASE_URL = env.get("ONS_API_BASE_URL", "https://api.beta.ons.gov.uk/v1")
+ONS_WEBSITE_BASE_URL = env.get("ONS_WEBSITE_BASE_URL", "https://www.ons.gov.uk")
 
 # Configuration for the External Search service
 SEARCH_INDEX_PUBLISHER_BACKEND = os.getenv("SEARCH_INDEX_PUBLISHER_BACKEND")
