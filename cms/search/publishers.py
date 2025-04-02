@@ -70,19 +70,15 @@ class BasePublisher(ABC):
         """Build a dict that matches the agreed metadata schema for 'created/updated'.
 
         resource_metadata.yml:
-           - StandardPayload: requires {uri, title, content_type}, optional fields
-           - ReleasePayload: extends StandardPayload with release-specific fields
+        - StandardPayload: requires {uri, title, content_type}, optional fields
+        - ReleasePayload: extends StandardPayload with release-specific fields
         """
         # Common fields for StandardPayload (also part of ReleasePayload)
         # The schema requires at minimum: uri, title, content_type
         message = {
             "uri": page.url_path,
             "content_type": page.search_index_content_type,
-            "release_date": (
-                page.release_date.isoformat()
-                if page.search_index_content_type == "release" and getattr(page, "release_date", None)
-                else None
-            ),
+            "release_date": (page.release_date.isoformat() if getattr(page, "release_date", None) else None),
             "summary": get_text_for_indexing(force_str(page.summary)),
             "title": page.title,
             "topics": getattr(page, "topic_ids", []),
@@ -97,11 +93,16 @@ class BasePublisher(ABC):
     def _construct_release_specific_fields(page: "Page") -> dict:
         """Constructs and returns a dictionary with release-specific fields."""
         release_fields = {
+            "provisional_date": None,
             "finalised": page.status in ["CONFIRMED", "PROVISIONAL"],
             "cancelled": page.status == "CANCELLED",
             "published": page.status == "PUBLISHED",
             "date_changes": [],
         }
+
+        # If we do NOT have release_date but we do have release_date_text, treat that as provisional_date
+        if not page.release_date and page.release_date_text:
+            release_fields["provisional_date"] = page.release_date_text
 
         if getattr(page, "changes_to_release_date", None):
             release_fields["date_changes"] = [
