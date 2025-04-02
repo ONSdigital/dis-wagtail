@@ -14,7 +14,8 @@ from cms.bundles.tests.factories import BundleFactory, BundlePageFactory
 from cms.home.models import HomePage
 from cms.release_calendar.enums import ReleaseStatus
 from cms.release_calendar.tests.factories import ReleaseCalendarPageFactory
-from cms.workflows.tests.utils import mark_page_as_ready_for_review
+from cms.workflows.models import ReadyToPublishGroupTask
+from cms.workflows.tests.utils import mark_page_as_ready_to_publish
 
 
 class PublishBundlesCommandTestCase(TestCase):
@@ -109,7 +110,9 @@ class PublishBundlesCommandTestCase(TestCase):
 
         BundlePageFactory(parent=self.bundle, page=self.statistical_article)
 
-        mark_page_as_ready_for_review(self.statistical_article)
+        mark_page_as_ready_to_publish(self.statistical_article)
+
+        self.assertIsNotNone(self.statistical_article.current_workflow_state)
 
         self.call_command()
 
@@ -118,6 +121,12 @@ class PublishBundlesCommandTestCase(TestCase):
 
         self.statistical_article.refresh_from_db()
         self.assertTrue(self.statistical_article.live)
+        self.assertIsNone(self.statistical_article.current_workflow_state)
+
+        workflow_state = self.statistical_article.workflow_states[0]
+        self.assertEqual(workflow_state.status, "approved")
+        self.assertEqual(workflow_state.current_task_state.status, "approved")
+        self.assertIsInstance(workflow_state.current_task_state.task.specific, ReadyToPublishGroupTask)
 
         # Check notifications were sent
         self.assertTrue(mock_notify_start.called)

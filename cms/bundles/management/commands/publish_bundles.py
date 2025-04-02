@@ -73,7 +73,7 @@ class Command(BaseCommand):
         for page in bundle.get_bundled_pages().specific(defer=True).select_related("latest_revision"):
             if workflow_state := page.current_workflow_state:
                 # finish the workflow
-                workflow_state.finish()
+                workflow_state.current_task_state.approve()
             else:
                 # just run publish
                 page.latest_revision.publish(log_action="wagtail.publish.scheduled")
