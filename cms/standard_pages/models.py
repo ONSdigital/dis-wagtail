@@ -23,6 +23,7 @@ class InformationPage(GenericTaxonomyMixin, BasePage):  # type: ignore[django-ma
     template = "templates/pages/information_page.html"
 
     parent_page_types: ClassVar[list[str]] = ["home.HomePage", "InformationPage", "IndexPage"]
+    search_index_content_type: ClassVar[str] = "static_page"
 
     summary = RichTextField(features=settings.RICH_TEXT_BASIC)
     last_updated = models.DateField(blank=True, null=True)
@@ -48,6 +49,7 @@ class IndexPage(BasePage):  # type: ignore[django-manager-missing]
 
     parent_page_types: ClassVar[list[str]] = ["home.HomePage", "IndexPage"]
     subpage_types: ClassVar[list[str]] = ["IndexPage", "InformationPage"]
+    search_index_content_type: ClassVar[str] = "static_landing_page"
 
     summary = RichTextField(features=settings.RICH_TEXT_BASIC)
     featured_items = StreamField(

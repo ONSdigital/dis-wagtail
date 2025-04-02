@@ -85,6 +85,7 @@ if settings.DEBUG:
 # Public URLs that are meant to be cached.
 urlpatterns = [
     path("sitemap.xml", sitemap),
+    path("search/", include("cms.search.urls")),  # or wherever you want to mount it
 ]
 # Set public URLs to use the "default" cache settings.
 urlpatterns = decorate_urlpatterns(urlpatterns, get_default_cache_control_decorator())

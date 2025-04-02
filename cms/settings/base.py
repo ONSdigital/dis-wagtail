@@ -72,6 +72,7 @@ INSTALLED_APPS = [
     "cms.methodology",
     "cms.navigation",
     "cms.taxonomy",
+    "cms.search",
     "wagtail.embeds",
     "wagtail.sites",
     "wagtail.users",
@@ -97,6 +98,7 @@ INSTALLED_APPS = [
     "wagtailmath",
     "wagtailfontawesomesvg",
     "wagtail_tinytableblock",
+    "rest_framework",
 ]
 
 if not IS_EXTERNAL_ENV:
@@ -855,3 +857,5 @@ ONS_API_BASE_URL = env.get("ONS_API_BASE_URL")
 # FIXME: remove before going live
 ENFORCE_EXCLUSIVE_TAXONOMY = env.get("ENFORCE_EXCLUSIVE_TAXONOMY", "true").lower() == "true"
 ALLOW_TEAM_MANAGEMENT = env.get("ALLOW_TEAM_MANAGEMENT", "false").lower() == "true"
+
+IS_EXTERNAL_ENV = os.getenv("IS_EXTERNAL_ENV", "True").lower() == "true"

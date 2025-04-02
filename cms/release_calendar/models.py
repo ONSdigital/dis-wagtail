@@ -42,6 +42,7 @@ class ReleaseCalendarPage(BasePage):  # type: ignore[django-manager-missing]
     base_form_class = ReleaseCalendarPageAdminForm
     template = "templates/pages/release_calendar/release_calendar_page.html"
     parent_page_types: ClassVar[list[str]] = ["ReleaseCalendarIndex"]
+    search_index_content_type: ClassVar[str] = "release"
     subpage_types: ClassVar[list[str]] = []
 
     # Fields

@@ -90,6 +90,7 @@ class StatisticalArticlePage(BundledPageMixin, RoutablePageMixin, BasePage):  # 
 
     parent_page_types: ClassVar[list[str]] = ["ArticleSeriesPage"]
     subpage_types: ClassVar[list[str]] = []
+    search_index_content_type: ClassVar[str] = "bulletin"
     template = "templates/pages/statistical_article_page.html"
     label = _("Article")  # type: ignore[assignment]
 
