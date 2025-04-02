@@ -1,0 +1,10 @@
+<section id="datasets" class="ons-u-mb-l">
+    <h2>{{ _("Data") }}</h2>
+
+    <ul class="ons-list ons-list--bare">
+        {% for block in value %}
+            {% include_block block %}
+        {% endfor %}
+    </ul>
+
+</section>
