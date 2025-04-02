@@ -12,6 +12,7 @@ from wagtail.search import index
 
 from cms.core.fields import StreamField
 from cms.core.models import BasePage
+from cms.datasets.blocks import DatasetStoryBlock
 
 from .blocks import (
     ReleaseCalendarChangesStoryBlock,
@@ -68,6 +69,7 @@ class ReleaseCalendarPage(BasePage):  # type: ignore[django-manager-missing]
     )
 
     content = StreamField(ReleaseCalendarStoryBlock(), blank=True)
+    datasets = StreamField(DatasetStoryBlock(), blank=True, default=list)
 
     contact_details = models.ForeignKey(
         "core.ContactDetails",
@@ -126,6 +128,7 @@ class ReleaseCalendarPage(BasePage):  # type: ignore[django-manager-missing]
         ),
         "summary",
         FieldPanel("content", icon="list-ul"),
+        FieldPanel("datasets", help_text="Select the datasets that this release relates to.", icon="doc-full"),
         FieldPanel("contact_details", icon="group"),
         MultiFieldPanel(
             [
@@ -174,6 +177,9 @@ class ReleaseCalendarPage(BasePage):  # type: ignore[django-manager-missing]
         if self.status == ReleaseStatus.PUBLISHED:
             for block in self.content:  # pylint: disable=not-an-iterable
                 items += block.block.to_table_of_contents_items(block.value)
+
+            if self.datasets:
+                items += [{"url": "#datasets", "text": _("Data")}]
 
         if self.status in NON_PROVISIONAL_STATUSES and self.changes_to_release_date:
             items += [{"url": "#changes-to-release-date", "text": _("Changes to this release date")}]
