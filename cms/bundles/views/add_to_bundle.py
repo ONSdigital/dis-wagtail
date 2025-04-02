@@ -54,7 +54,7 @@ class AddToBundleView(FormView):
             )
             admin_display_title = self.page_to_add.get_admin_display_title()  # type: ignore[attr-defined]
 
-            messages.warning(request, f"Page {admin_display_title} is already in a bundle ('{text_list}')")
+            messages.warning(request, f"Page '{admin_display_title}' is already in a bundle ('{text_list}')")
 
             if self.goto_next:
                 return redirect(self.goto_next)
