@@ -2,46 +2,80 @@
 
 {% from "components/table-of-contents/_macro.njk" import onsTableOfContents %}
 {% from "components/list/_macro.njk" import onsList %}
+{% from "components/hero/_macro.njk" import onsHero %}
 
 {% block header_area %}
-    <div class="common-header article-header {% if page.updates %}article-header--flush{% endif %}">
-        <div class="ons-container">
-            {% include "templates/components/navigation/breadcrumbs.html" %}
-            <p class="article-header__doc-type ons-u-fs-l">{{ _("Methodology") }}</p>
+    {% if page.contact_details %}
+        {% set contact_description_html -%}
+            <a href="mailto:{{ page.contact_details.email }}">{{ page.contact_details.name }}</a>
+        {%- endset %}
 
-            <div class="ons-grid ons-grid-flex-gap ons-grid-flex-gap--40">
-                <div class="ons-grid__col ons-col-10@m ">
-                    <h1 class="ons-u-fs-3xl common-header__heading">
-                        {{ page.title }}
-                    </h1>
+        {# fmt:off #}
+        {% set contact_details =
+            {
+                "term": "Contact:",
+                "descriptions": [
+                    {
+                        "description": contact_description_html
+                    }
+                ]
+            }
+        %}
+        {# fmt:on #}
+    {% else %}
+        {% set contact_details = "" %}
+    {% endif %}
 
-                    <div class="common-header__summary">{{ page.summary|richtext() }}</div>
-                </div>
-            </div>
-        </div>
+    {% if page.last_revised_date %}
+        {# fmt:off #}
+        {% set last_revised =
+            {
+                "term": _("Last revised:"),
+                "descriptions": [
+                    {
+                        "description": page.last_revised_date|date("DATE_FORMAT")
+                    }
+                ]
+            }
+        %}
+        {# fmt:on #}
+    {% else %}
+        {% set last_revised = "" %}
+    {% endif %}
 
-        {% block release_meta %}
-            <div class="ons-container common-header__releases">
-                <div>
-                    <span class="ons-u-fs-r--b common-header__releases-label">{{ _("Published") }}:</span>
-                    <span class="ons-u-nowrap">{{ page.publication_date|date("DATE_FORMAT") }}</span>
-                </div>
-                {% if page.last_revised_date %}
-                    <div>
-                        <span class="ons-u-fs-r--b common-header__releases-label">{{ _("Last revised") }}:</span>
-                        <span class="ons-u-nowrap">{{ page.last_revised_date|date("DATE_FORMAT")}}</span>
-                    </div>
-                {% endif %}
-
-                {% if page.contact_details %}
-                    <div>
-                        <span class="ons-u-fs-r--b common-header__releases-label">{{ _("Contact") }}:</span>
-                        <a href="mailto:{{ page.contact_details.email }}">{{ page.contact_details.name }}</a>
-                    </div>
-                {% endif %}
-            </div>
-        {% endblock %}
-    </div>
+    {# fmt:off #}
+    {{
+        onsHero({
+            "topic": _("Methodology"),
+            "title": page.title,
+            "variants": 'grey',
+            "text": page.summary|richtext(),
+            "wide": true,
+            "detailsColumns": 12,
+            "descriptionList": {
+                "descriptionListLabel": "",
+                "termCol": "6",
+                "descriptionCol": "6",
+                "itemsList": [
+                    {
+                        "term": _("Published:"),
+                        "descriptions": [
+                            {
+                                "description": page.publication_date|date("DATE_FORMAT")
+                            }
+                        ]
+                    },
+                    last_revised,
+                    contact_details,
+                ]
+            },
+            "breadcrumbs": {
+                "ariaLabel": _("Breadcrumbs"),
+                "itemsList": breadcrumbs(page),
+            }
+        })
+    }}
+    {# fmt:on #}
 {% endblock %}
 
 {% block main %}

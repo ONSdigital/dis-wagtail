@@ -52,20 +52,20 @@ class ReleaseCalendarPage(BasePage):  # type: ignore[django-manager-missing]
     summary = RichTextField(features=settings.RICH_TEXT_BASIC)
 
     release_date = models.DateTimeField(
-        blank=True, null=True, help_text=_("Required once the release has been confirmed.")
+        blank=True, null=True, help_text="Required once the release has been confirmed."
     )
     release_date_text = models.CharField(
-        max_length=50, blank=True, help_text=_("Format: 'Month YYYY', or 'Month YYYY to Month YYYY'.")
+        max_length=50, blank=True, help_text="Format: 'Month YYYY', or 'Month YYYY to Month YYYY'."
     )
     next_release_date = models.DateTimeField(blank=True, null=True)
     next_release_text = models.CharField(
-        max_length=255, blank=True, help_text=_("Formats: 'DD Month YYYY Time' or 'To be confirmed'.")
+        max_length=255, blank=True, help_text="Formats: 'DD Month YYYY Time' or 'To be confirmed'."
     )
 
     notice = RichTextField(
         features=settings.RICH_TEXT_BASIC,
         blank=True,
-        help_text=_(
+        help_text=(
             "Used for data change or cancellation notices. The notice is required when the release is cancelled"
         ),
     )
@@ -82,23 +82,23 @@ class ReleaseCalendarPage(BasePage):  # type: ignore[django-manager-missing]
 
     # Fields: about the data
     is_accredited = models.BooleanField(
-        _("Accredited Official Statistics"),
+        "Accredited Official Statistics",
         default=False,
-        help_text=_(
+        help_text=(
             "If ticked, will display an information block about the data being accredited official statistics "
             "and include the accredited logo."
         ),
     )
     is_census = models.BooleanField(
-        _("Census"),
+        "Census",
         default=False,
-        help_text=_("If ticked, will display an information block about the data being related to the Census."),
+        help_text="If ticked, will display an information block about the data being related to the Census.",
     )
 
     changes_to_release_date = StreamField(
         ReleaseCalendarChangesStoryBlock(),
         blank=True,
-        help_text=_("Required if making changes to confirmed release dates."),
+        help_text="Required if making changes to confirmed release dates.",
     )
     pre_release_access = StreamField(ReleaseCalendarPreReleaseAccessStoryBlock(), blank=True)
     related_links = StreamField(ReleaseCalendarRelatedLinksStoryBlock(), blank=True)
@@ -112,20 +112,20 @@ class ReleaseCalendarPage(BasePage):  # type: ignore[django-manager-missing]
                 FieldRowPanel(
                     [
                         "release_date",
-                        FieldPanel("release_date_text", heading=_("Or, release date text")),
+                        FieldPanel("release_date_text", heading="Or, release date text"),
                     ],
                     heading="",
                 ),
                 FieldRowPanel(
                     [
                         "next_release_date",
-                        FieldPanel("next_release_text", heading=_("Or, next release text")),
+                        FieldPanel("next_release_text", heading="Or, next release text"),
                     ],
                     heading="",
                 ),
                 "notice",
             ],
-            heading=_("Metadata"),
+            heading="Metadata",
             icon="cog",
         ),
         "summary",
@@ -136,7 +136,7 @@ class ReleaseCalendarPage(BasePage):  # type: ignore[django-manager-missing]
                 "is_accredited",
                 "is_census",
             ],
-            heading=_("About the data"),
+            heading="About the data",
             icon="info-circle",
         ),
         FieldPanel("changes_to_release_date", icon="comment"),

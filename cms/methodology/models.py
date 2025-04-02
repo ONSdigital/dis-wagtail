@@ -41,7 +41,7 @@ class MethodologyRelatedPage(Orderable):
 class MethodologyPage(GenericTaxonomyMixin, BasePage):  # type: ignore[django-manager-missing]
     parent_page_types: ClassVar[list[str]] = ["topics.TopicPage"]
     template = "templates/pages/methodology_page.html"
-    label = _("Methodology")
+    label = _("Methodology")  # type: ignore[assignment]
 
     summary = RichTextField(features=settings.RICH_TEXT_BASIC)
     publication_date = models.DateField()
@@ -73,7 +73,7 @@ class MethodologyPage(GenericTaxonomyMixin, BasePage):  # type: ignore[django-ma
                 "contact_details",
                 "show_cite_this_page",
             ],
-            heading=_("Metadata"),
+            heading="Metadata",
             icon="cog",
         ),
         FieldPanel("content", icon="list-ul"),
@@ -91,7 +91,7 @@ class MethodologyPage(GenericTaxonomyMixin, BasePage):  # type: ignore[django-ma
         super().clean()
 
         if self.last_revised_date and self.last_revised_date <= self.publication_date:
-            raise ValidationError({"last_revised_date": _("The last revised date must be after the published date.")})
+            raise ValidationError({"last_revised_date": "The last revised date must be after the published date."})
 
     def get_context(self, request: HttpRequest, *args: Any, **kwargs: Any) -> dict:
         """Additional context for the template."""

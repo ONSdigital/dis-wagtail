@@ -4,7 +4,6 @@ from typing import Any
 from django.core.exceptions import ValidationError
 from django.urls import reverse
 from django.utils.html import format_html
-from django.utils.translation import gettext as _
 from wagtail.admin.forms import WagtailAdminPageForm
 from wagtail.models import Locale
 
@@ -33,14 +32,14 @@ class ReleaseCalendarPageAdminForm(WagtailAdminPageForm):
 
         if status == ReleaseStatus.CANCELLED:
             if not cleaned_data.get("notice"):
-                raise ValidationError({"notice": _("The notice field is required when the release is cancelled")})
+                raise ValidationError({"notice": "The notice field is required when the release is cancelled"})
 
             self.validate_bundle_not_pending_publication(status)
 
         if status in [ReleaseStatus.CONFIRMED, ReleaseStatus.PUBLISHED]:
             if not cleaned_data.get("release_date"):
                 raise ValidationError(
-                    {"release_date": _("The release date field is required when the release is confirmed")}
+                    {"release_date": "The release date field is required when the release is confirmed"}
                 )
 
             if (
@@ -51,7 +50,7 @@ class ReleaseCalendarPageAdminForm(WagtailAdminPageForm):
                 # A change in the release date requires updating changes_to_release_date
                 raise ValidationError(
                     {
-                        "changes_to_release_date": _(
+                        "changes_to_release_date": (
                             "If a confirmed calendar entry needs to be rescheduled, "
                             "the 'Changes to release date' field must be filled out."
                         )
@@ -63,15 +62,15 @@ class ReleaseCalendarPageAdminForm(WagtailAdminPageForm):
             and cleaned_data.get("next_release_date")
             and cleaned_data["release_date"] >= cleaned_data["next_release_date"]
         ):
-            raise ValidationError({"next_release_date": _("The next release date must be after the release date.")})
+            raise ValidationError({"next_release_date": "The next release date must be after the release date."})
 
         release_date_text = cleaned_data.get("release_date_text")
         if cleaned_data.get("release_date") and release_date_text:
-            error = _("Please enter the release date or the release date text, not both.")
+            error = "Please enter the release date or the release date text, not both."
             raise ValidationError({"release_date": error, "release_date_text": error})
 
         if cleaned_data.get("next_release_date") and cleaned_data.get("next_release_text"):
-            error = _("Please enter the next release date or the next release text, not both.")
+            error = "Please enter the next release date or the next release text, not both."
             raise ValidationError({"next_release_date": error, "next_release_text": error})
 
         # TODO: expand to validate for non-English locales when adding multi-language.
@@ -89,12 +88,12 @@ class ReleaseCalendarPageAdminForm(WagtailAdminPageForm):
             if len(parts) > 1:
                 date_to = datetime.strptime(parts[1], "%B %Y")
                 if date_from >= date_to:
-                    raise ValidationError({"release_date_text": _("The end month must be after the start month.")})
+                    raise ValidationError({"release_date_text": "The end month must be after the start month."})
 
         except ValueError:
             raise ValidationError(
                 {
-                    "release_date_text": _(
+                    "release_date_text": (
                         "The release date text must be in the 'Month YYYY' or 'Month YYYY to Month YYYY' format."
                     )
                 }
