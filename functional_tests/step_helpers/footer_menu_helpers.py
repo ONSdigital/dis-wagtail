@@ -1,5 +1,5 @@
 from behave.runner import Context
-from playwright.sync_api import Page, expect
+from playwright.sync_api import Page
 
 
 def navigate_to_snippets(page: Page):
@@ -32,11 +32,6 @@ def fill_column_link(page: Page, col_index: int, link_index: int, external_url: 
     if link_title:
         page.locator(f"#columns-{col_index}-value-links-{link_index}-value-title").click()
         page.locator(f"#columns-{col_index}-value-links-{link_index}-value-title").fill(link_title)
-
-
-def expect_alert_banner(page: Page, text_snippet: str):
-    """Expects a success/failure banner or text snippet to be visible."""
-    expect(page.get_by_text(text_snippet)).to_be_visible()
 
 
 def choose_page_link(page: Page, page_name: str = "Home"):

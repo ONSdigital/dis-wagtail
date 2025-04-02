@@ -6,7 +6,6 @@ from cms.navigation.tests.factories import FooterMenuFactory
 from functional_tests.step_helpers.footer_menu_helpers import (
     choose_page_link,
     create_new_footer_menu,
-    expect_alert_banner,
     fill_column_link,
     fill_column_title,
     generate_columns,
@@ -55,7 +54,14 @@ def user_populates_footer_menu(context: Context):
 @step("a banner confirming the deletion is displayed")
 @then("a banner confirming changes is displayed")
 def footer_menu_banner_confirmation(context: Context):
-    expect_alert_banner(context.page, "Footer menu 'Footer Menu'")
+    expect(context.page.get_by_text("Footer menu 'Footer Menu'")).to_be_visible()
+
+
+@then("the populated footer menu is displayed on the preview pane")
+def populated_footer_menu_preview_pane(context: Context):
+    iframe_locator = context.page.frame_locator("#w-preview-iframe")
+    expect(iframe_locator.get_by_role("heading", name="Link Column 1")).to_be_visible()
+    expect(iframe_locator.get_by_role("link", name="Link Title 1")).to_be_visible()
 
 
 @when("the user navigates to navigation settings")
@@ -72,7 +78,7 @@ def user_selects_footer_menu(context: Context):
 
 @step("the footer menu is configured successfully")
 def user_configures_footer_menu(context: Context):
-    expect_alert_banner(context.page, "Navigation settings updated.")
+    expect(context.page.get_by_text("Navigation settings updated.")).to_be_visible()
 
 
 @when("the user inserts an empty column block")
@@ -83,13 +89,13 @@ def user_inserts_empty_footer_menu_block(context: Context):
 @then("an error message is displayed preventing saving an empty column block")
 def empty_column_error(context: Context):
     expect(context.page.get_by_text("This field is required.")).to_be_visible()
-    context.page.get_by_text("Missing required fields").click()
-    context.page.locator("#columns-0-value-links-0-value-page-errors").get_by_text(
+    expect(context.page.get_by_text("Missing required fields")).to_be_visible()
+    expect(context.page.locator("#columns-0-value-links-0-value-page-errors")).to_contain_text(
         "Either Page or External Link"
-    ).click()
-    context.page.locator("#columns-0-value-links-0-value-external_url-errors").get_by_text(
+    )
+    expect(context.page.locator("#columns-0-value-links-0-value-external_url-errors")).to_contain_text(
         "Either Page or External Link"
-    ).click()
+    )
 
 
 @when("the user populates the footer menu with duplicate links")
@@ -196,7 +202,7 @@ def user_selects_delete_footer_menu(context: Context):
 
 @then("a banner confirming the deletion is displayed")
 def user_sees_deletion_confirmation(context: Context):
-    expect_alert_banner(context.page, "Footer menu 'Footer Menu' deleted.")
+    expect(context.page.get_by_text("Footer menu 'Footer Menu' deleted.")).to_be_visible()
 
 
 @when("a footer menu is populated with 3 columns")

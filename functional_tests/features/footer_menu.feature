@@ -17,6 +17,13 @@ Feature: CMS users can manage footer menus via the Wagtail admin interface
         And the user clicks "Publish page"
         Then a banner confirming changes is displayed
 
+    Scenario: User creates and previews a populated footer menu
+        When the user creates a footer menu instance
+        And the user populates the footer menu
+        And the user clicks the "Save Draft" button
+        And the user clicks the "Preview" button
+        Then the populated footer menu is displayed on the preview pane
+
     # Navigation Settings Integration
     Scenario: Footer menu can be configured via Navigation Settings
         Given a footer menu exists
