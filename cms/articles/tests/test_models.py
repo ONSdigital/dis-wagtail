@@ -260,6 +260,8 @@ class StatisticalArticlePageRenderTestCase(WagtailTestUtils, TestCase):
 
 class PreviousReleasesWithoutPaginationTestCase(TestCase):
     # PREVIOUS_RELEASES_PER_PAGE is default value 10
+    total_batch: int = 9
+
     @classmethod
     def setUpTestData(cls):
         cls.article_series = ArticleSeriesPageFactory(title="Article Series")
@@ -271,6 +273,8 @@ class PreviousReleasesWithoutPaginationTestCase(TestCase):
         parent_page = self.article_series.get_parent()
         # confirm that current breadcrumb is there abd that current breadcrumb points to the parent page
         # TODO currently this test points to the article page not to the series page
+        # f'<a class="ons-breadcrumbs__link" href="{self.article_series.url}">{self.article_series.title}</a>',
+
         self.assertContains(
             response,
             f'<a class="ons-breadcrumbs__link" href="{parent_page.url}">{parent_page.title}</a>',
@@ -289,7 +293,8 @@ class PreviousReleasesWithoutPaginationTestCase(TestCase):
                 allowed_to_print = True
             if allowed_to_print and "<li><a href=" in m:
                 release_count += 1
-        self.assertEqual(release_count, 9)
+        self.assertEqual(release_count, self.total_batch)
+        self.assertLessEqual(release_count, settings.PREVIOUS_RELEASES_PER_PAGE)
 
     def test_pagination_is_not_shown(self):
         response = self.client.get(self.previous_releases_url)
@@ -307,10 +312,12 @@ class PreviousReleasesWithPaginationPagesTestCase(TestCase):
     def setUpTestData(cls):
         cls.article_series = ArticleSeriesPageFactory(title="Article Series")
         cls.articles = StatisticalArticlePageFactory.create_batch(13, parent=cls.article_series)
+
+        previous_releases_url = cls.article_series.url + cls.article_series.reverse_subpage("previous_releases")
         cls.previous_releases_urls = [
-            (cls.article_series.url + cls.article_series.reverse_subpage("previous_releases") + f"?page={3}"),
-            (cls.article_series.url + cls.article_series.reverse_subpage("previous_releases") + f"?page={1}"),
-            (cls.article_series.url + cls.article_series.reverse_subpage("previous_releases") + f"?page={5}"),
+            f"{previous_releases_url}?page={3}",
+            f"{previous_releases_url}?page={1}",
+            f"{previous_releases_url}?page={5}",
         ]
 
     def test_pagination_is_shown_page_3(self):
