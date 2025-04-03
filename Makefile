@@ -161,30 +161,6 @@ migrate: ## Apply the database migrations
 createsuperuser: ## Create a super user with a default username and password
 	poetry run python ./manage.py shell -c "from cms.users.models import User;(not User.objects.filter(username='admin').exists()) and User.objects.create_superuser('admin', 'super@example.com', 'changeme')"
 
-#####  The below commands are not intended to be merged, and are only convenient shortcuts for testing for this PR
-
-.PHONY: createtestuser
-createtestuser:
-	poetry run python ./manage.py shell -c "from cms.users.models import User;(not User.objects.filter(username='test_user').exists()) and User.objects.create_user('test_user', 'test@example.com', 'test_user', first_name='Test', last_name='User')"
-
-.PHONY: clear-groups
-clear-groups:
-	poetry run python ./manage.py shell -c "from cms.users.models import User; user=User.objects.filter(username='test_user').first(); user.groups.clear()"
-
-.PHONY: make-admin
-make-admin: clear-groups
-	poetry run python ./manage.py shell -c "from cms.users.models import User; user=User.objects.filter(username='test_user').first(); from django.conf import settings; from django.contrib.auth.models import Group; Group.objects.get(name=settings.PUBLISHING_ADMINS_GROUP_NAME).user_set.add(user);"
-
-.PHONY: make-officer
-make-officer: clear-groups
-	poetry run python ./manage.py shell -c "from cms.users.models import User; user=User.objects.filter(username='test_user').first(); from django.conf import settings; from django.contrib.auth.models import Group; Group.objects.get(name=settings.PUBLISHING_OFFICERS_GROUP_NAME).user_set.add(user);"
-
-.PHONY: make-viewer
-make-viewer: clear-groups
-	poetry run python ./manage.py shell -c "from cms.users.models import User; user=User.objects.filter(username='test_user').first(); from django.conf import settings; from django.contrib.auth.models import Group; Group.objects.get(name=settings.VIEWERS_GROUP_NAME).user_set.add(user);"
-
-#####
-
 .PHONY: runserver
 runserver: ## Run the Django application locally
 	poetry run python ./manage.py runserver 0:8000
