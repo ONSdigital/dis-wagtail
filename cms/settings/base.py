@@ -74,6 +74,7 @@ INSTALLED_APPS = [
     "cms.navigation",
     "cms.taxonomy",
     "cms.search",
+    "cms.workflows",
     "wagtail.embeds",
     "wagtail.sites",
     "wagtail.users",

@@ -25,7 +25,7 @@ Feature: Role Based Access Control Permission as defined in data migrations
         And the user adds content to the new information page
         And the user clicks the "Save Draft" button
         Then the user can lock and unlock a page
-        
+
     Scenario: A Publishing Admin can manage image collections
         When a Publishing Admin logs into the admin site
         Then the user can see the Images menu item
@@ -51,7 +51,7 @@ Feature: Role Based Access Control Permission as defined in data migrations
         And the user can see the Snippets menu item
         When the user clicks the Snippets menu item
         Then the user can add Glossary terms snippet
-    
+
     Scenario: A Publishing Admin can manage Contact Details
         Given a Publishing Admin logs into the admin site
         And the user can see the Snippets menu item
@@ -71,7 +71,7 @@ Feature: Role Based Access Control Permission as defined in data migrations
         Then the user can create and publish the Footer menus snippet
 
     Scenario: A Publishing Admin can add Bundles
-        Given a Publishing Admin logs into the admin site 
+        Given a Publishing Admin logs into the admin site
         And the user can see the Bundles menu item
         When the user clicks the Bundles menu item
         Then the user can add Bundles
@@ -98,8 +98,9 @@ Feature: Role Based Access Control Permission as defined in data migrations
 
     Scenario: A Viewer can inspect Bundles details
         Given a bundle has been created
+        And is ready for review
+        And has a preview team
         When a Viewer logs into the admin site
+        And the viewer is in the preview team
         Then the user can see the Bundles menu item
         And the user can inspect bundle details
-
-

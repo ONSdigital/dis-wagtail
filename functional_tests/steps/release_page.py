@@ -74,6 +74,7 @@ def look_up_and_select_dataset(context: Context):
         context.page.get_by_text("Lookup Dataset").click()
         context.page.get_by_role("button", name="Choose a dataset").click()
         context.page.get_by_role("link", name=mock_dataset["title"]).click()
+        context.page.wait_for_timeout(500)
 
 
 @when("manually enters a dataset link")
