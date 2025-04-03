@@ -155,6 +155,8 @@ jobs:
         run: poetry run ./manage.py createcachetable
       - name: Run migrations to work around Django bug (#35967)
         run: poetry run ./manage.py migrate --noinput
+      - name: Compile translations
+        run: poetry run ./manage.py compilemessages
       - name: Test
         run: make test
       - name: Add coverage data to GitHub Action summary
@@ -216,6 +218,9 @@ jobs:
         with:
           name: static
           path: cms/static_compiled/
+
+      - name: Compile translations
+        run: poetry run ./manage.py compilemessages
 
       - name: Run Functional Tests
         run: make functional-tests

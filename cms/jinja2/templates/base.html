@@ -46,13 +46,24 @@
 
 {% set footer_menu = footer_menu | default(navigation_settings.footer_menu.localized) %}
 
+{% set badge_label = _("Beta") %}
+{% set badge_html = _("This is a new service.") %}
+{% set menu_label = _("Menu") %}
+{% set menu_label = _("Main menu") %}
+{% set menu_toggle_aria_label = _("Toggle main menu") %}
+
+{% set ogl_pre = _('All content is available under the') %}
+{% set ogl_text = 'Open Government Licence v3.0' %}
+{% set ogl_url = 'https://www.nationalarchives.gov.uk/doc/open-government-licence/version/3/' %}
+{% set ogl_post = _(', except where otherwise stated') %}
+
 {% set pageConfig = {
     "bodyClasses": body_class,
     "title": page_title,
     "header": {
         "phase": {
-            "badge": _('Beta'),
-            "html": _('This is a new service.')
+            "badge": badge_label,
+            "html": badge_html
         },
         "language": {
             "languages": languages
@@ -60,11 +71,11 @@
         "mastheadLogoUrl": "/",
         "navLinks": {
             "id": "nav-links-external",
-            "ariaLabel": _('Main menu'),
-            "ariaListLabel": _('Menu'),
+            "ariaLabel": menu_label,
+            "ariaListLabel": menu_label,
             "toggleNavButton": {
-                "text": _('Menu'),
-                "ariaLabel": _('Toggle main menu')
+                "text":menu_label,
+                "ariaLabel": menu_toggle_aria_label
             },
             "keyLinksList": main_menu_highlights(main_menu),
             "itemsList": main_menu_columns(main_menu)
@@ -72,12 +83,12 @@
     },
     "footer": {
         "cols": footer_menu_columns(footer_menu),
-    "oglLink": {
-        "pre": _('All content is available under the'),
-        "text": 'Open Government Licence v3.0',
-        "url": 'https://www.nationalarchives.gov.uk/doc/open-government-licence/version/3/',
-        "post": _(', except where otherwise stated')
-    }
+        "oglLink": {
+            "pre": ogl_pre,
+            "text": ogl_text,
+            "url": ogl_url,
+            "post": ogl_post
+        }
     }
 }
 %}
