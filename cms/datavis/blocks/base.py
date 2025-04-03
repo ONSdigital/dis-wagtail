@@ -114,7 +114,6 @@ class BaseVisualisationBlock(blocks.StructBlock):
         # Add template and visualisation context to support rendering
         context["config"] = self.get_component_config(value)
         context["annotations_values"] = self.get_annotations_config(value)
-        context["highcharts_chart_type"] = self.highcharts_chart_type
         return context
 
     def get_component_config(self, value: "StructValue") -> dict[str, Any]:
