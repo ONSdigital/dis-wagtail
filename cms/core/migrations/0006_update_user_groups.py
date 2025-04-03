@@ -239,5 +239,5 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        migrations.RunPython(update_user_groups),
+        migrations.RunPython(update_user_groups, migrations.RunPython.noop),
     ]

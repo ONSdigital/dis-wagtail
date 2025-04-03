@@ -1,3 +1,4 @@
+from django.conf import settings
 from django.db import migrations
 
 
@@ -31,11 +32,16 @@ def create_tasks_and_workflow(apps, schema_editor):
     WorkflowPage = apps.get_model("wagtailcore.WorkflowPage")
     WorkflowTask = apps.get_model("wagtailcore.WorkflowTask")
     Page = apps.get_model("wagtailcore.Page")
+    Group = apps.get_model("auth.Group")
     GroupReviewTask = apps.get_model("workflows.GroupReviewTask")
     ReadyToPublishGroupTask = apps.get_model("workflows.ReadyToPublishGroupTask")
 
+    publishing_admins = Group.objects.get(name=settings.PUBLISHING_ADMINS_GROUP_NAME)
+    publishing_officers = Group.objects.get(name=settings.PUBLISHING_OFFICERS_GROUP_NAME)
+
     review_task_content_type, _ = ContentType.objects.get_or_create(model="groupreviewtask", app_label="workflows")
     review_task = GroupReviewTask.objects.create(name="In Preview", content_type=review_task_content_type, active=True)
+    review_task.groups.set([publishing_admins, publishing_officers])
 
     ready_task_content_type, _ = ContentType.objects.get_or_create(
         model="readytopublishgrouptask", app_label="workflows"
@@ -43,6 +49,7 @@ def create_tasks_and_workflow(apps, schema_editor):
     ready_to_publish_task = ReadyToPublishGroupTask.objects.create(
         name="Ready to publish", content_type=ready_task_content_type, active=True
     )
+    ready_to_publish_task.groups.set([publishing_admins, publishing_officers])
 
     workflow = Workflow.objects.create(name="Release review", active=True)
     WorkflowTask.objects.create(workflow=workflow, task=review_task, sort_order=0)
@@ -62,7 +69,7 @@ def remove_tasks_and_workflow(apps, schema_editor):
 
 
 class Migration(migrations.Migration):
-    dependencies = [("workflows", "0001_initial")]
+    dependencies = [("workflows", "0001_initial"), ("core", "0006_update_user_groups")]
 
     operations = [
         migrations.RunPython(disable_core_workflow, enable_core_workflow),
