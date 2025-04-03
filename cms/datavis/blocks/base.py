@@ -143,7 +143,9 @@ class BaseVisualisationBlock(blocks.StructBlock):
             "categories": [r[0] for r in rows],
         }
 
-        # Only add axis title if supported and provided
+        # Only add x-axis title if supported and provided, as the Highcharts
+        # x-axis title default value is undefined. See
+        # https://api.highcharts.com/highcharts/xAxis.title.text
         if (title := attrs.get("title")) and getattr(self, "supports_x_axis_title", False):
             config["title"] = {
                 "text": title,
@@ -166,8 +168,11 @@ class BaseVisualisationBlock(blocks.StructBlock):
             # "reversed": self.y_reversed,
         }
 
-        # Only add axis title if supported and provided
-        if (title := attrs.get("title")) and getattr(self, "supports_y_axis_title", False):
+        # Only add y-axis title if supported
+        if getattr(self, "supports_y_axis_title", False):
+            # Highcharts y-axis title default value is "Values". Set to undefined to
+            # disable. See https://api.highcharts.com/highcharts/yAxis.title.text
+            title = attrs["title"] or None
             config["title"] = {
                 "text": title,
             }

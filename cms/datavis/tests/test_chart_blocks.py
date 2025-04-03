@@ -33,13 +33,13 @@ class BaseChartBlockTestCase(SimpleTestCase, WagtailTestUtils):
             "use_stacked_layout": False,
             "show_markers": True,
             "x_axis": {
-                "label": "",
+                "title": "",
                 "min": None,
                 "max": None,
                 "tick_interval": None,
             },
             "y_axis": {
-                "label": "",
+                "title": "",
                 "min": None,
                 "max": None,
                 "tick_interval": None,
@@ -155,7 +155,20 @@ class LineChartBlockTestCase(BaseChartBlockTestCase):
     def test_blank_x_axis_title(self):
         self.raw_data["x_axis"]["title"] = ""
         config = self.get_component_config()
-        self.assertEqual("", config["xAxis"]["title"]["text"])
+        # For line charts, editable X-axis title is supported, but the default
+        # value is `undefined`, so we expect it not to be set.
+        self.assertNotIn("title", config["xAxis"])
+
+    def test_editable_y_axis_title(self):
+        self.raw_data["y_axis"]["title"] = "Editable Y-axis Title"
+        config = self.get_component_config()
+        self.assertEqual({"text": "Editable Y-axis Title"}, config["yAxis"]["title"])
+
+    def test_blank_y_axis_title(self):
+        """A blank value should be converted to None."""
+        self.raw_data["y_axis"]["title"] = ""
+        config = self.get_component_config()
+        self.assertEqual({"text": None}, config["yAxis"]["title"])
 
     def test_no_show_data_labels_option(self):
         """Test that this option is not present for line charts."""
