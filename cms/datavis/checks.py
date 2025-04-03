@@ -3,6 +3,7 @@ from typing import Any
 
 from django.apps import apps
 from django.core.checks import CheckMessage, Error, register
+from wagtail import blocks
 from wagtail.models import Page
 
 from cms.core.fields import StreamField
@@ -35,7 +36,7 @@ def check_visualisation_blocks_mixin(*args: Any, **kwargs: Any) -> Iterator[Chec
                 )
 
 
-def _contains_visualisation_block(block):
+def _contains_visualisation_block(block: blocks.Block) -> bool:
     """Recursively check whether a block, or any descendant block, is an instance
     of BaseVisualisationBlock.
     """

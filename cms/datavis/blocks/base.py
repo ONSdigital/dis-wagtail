@@ -136,7 +136,7 @@ class BaseVisualisationBlock(blocks.StructBlock):
         attrs: "StructValue",
         rows: Sequence[list[str | int | float]],
     ) -> dict[str, Any]:
-        config = {
+        config: dict[str, Any] = {
             "type": "linear",
             "categories": [r[0] for r in rows],
         }
