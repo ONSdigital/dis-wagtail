@@ -211,7 +211,9 @@ jobs:
           cache: poetry
 
       - name: Install dependencies
-        run: make install-dev
+        run: /
+          make install-dev
+          sudo apt-get install -y gettext
 
       - name: Playwright Install
         run: poetry run python -m playwright install --with-deps ${{ matrix.browser }}
