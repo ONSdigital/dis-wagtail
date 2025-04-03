@@ -6,8 +6,6 @@ from cms.users.tests.factories import UserFactory
 
 def create_user(user_type: str) -> dict[str, str]:
     match user_type:
-        case "superuser":
-            user = UserFactory(is_superuser=True)
         case "Publishing Admin":
             user = UserFactory()
             user.groups.add(Group.objects.get(name=settings.PUBLISHING_ADMINS_GROUP_NAME))
@@ -17,8 +15,11 @@ def create_user(user_type: str) -> dict[str, str]:
         case "Viewer":
             user = UserFactory()
             user.groups.add(Group.objects.get(name=settings.VIEWERS_GROUP_NAME))
+        case _:
+            user = UserFactory(is_superuser=True)
 
     return {
+        "user": user,
         "username": user.username,
         "full_name": f"{user.first_name} {user.last_name}",
         "password": "password",  # pragma: allowlist secret
