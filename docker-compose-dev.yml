@@ -23,5 +23,34 @@ services:
     ports:
       - 6379:6379
 
+  broker:
+    image: bitnami/kafka:3.5.1
+    container_name: broker
+    environment:
+      # Enable plaintext connections for local testing.
+      ALLOW_PLAINTEXT_LISTENER: 'yes'
+
+      # Enable KRaft mode.
+      KAFKA_ENABLE_KRAFT: 'yes'
+
+      # Use the KAFKA_CFG_ prefix for Kafka config.
+      KAFKA_CFG_NODE_ID: '1'
+      KAFKA_CFG_PROCESS_ROLES: 'broker,controller'
+      KAFKA_CFG_LISTENERS: 'PLAINTEXT://0.0.0.0:9092,CONTROLLER://0.0.0.0:9093'
+      KAFKA_CFG_ADVERTISED_LISTENERS: 'PLAINTEXT://localhost:9092'
+      KAFKA_CFG_CONTROLLER_LISTENER_NAMES: 'CONTROLLER'
+      KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP: 'CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT'
+      KAFKA_CFG_CONTROLLER_QUORUM_VOTERS: '1@localhost:9093'
+      KAFKA_CFG_OFFSETS_TOPIC_REPLICATION_FACTOR: '1'
+      KAFKA_CFG_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: '1'
+      KAFKA_CFG_TRANSACTION_STATE_LOG_MIN_ISR: '1'
+      KAFKA_CFG_GROUP_INITIAL_REBALANCE_DELAY_MS: '0'
+      KAFKA_CFG_NUM_PARTITIONS: '3'
+
+      # Enable auto-creation of topics
+      KAFKA_CFG_AUTO_CREATE_TOPICS_ENABLE: 'true'
+    ports:
+      - '9092:9092'
+
 volumes:
   pgdata:

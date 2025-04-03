@@ -40,6 +40,7 @@ class MethodologyRelatedPage(Orderable):
 
 class MethodologyPage(GenericTaxonomyMixin, BasePage):  # type: ignore[django-manager-missing]
     parent_page_types: ClassVar[list[str]] = ["topics.TopicPage"]
+    search_index_content_type: ClassVar[str] = "static_methodology"
     template = "templates/pages/methodology_page.html"
     label = _("Methodology")  # type: ignore[assignment]
 

@@ -90,6 +90,7 @@ class StatisticalArticlePage(BundledPageMixin, RoutablePageMixin, BasePage):  # 
 
     parent_page_types: ClassVar[list[str]] = ["ArticleSeriesPage"]
     subpage_types: ClassVar[list[str]] = []
+    search_index_content_type: ClassVar[str] = "bulletin"
     template = "templates/pages/statistical_article_page.html"
     label = _("Article")  # type: ignore[assignment]
 
@@ -269,3 +270,8 @@ class StatisticalArticlePage(BundledPageMixin, RoutablePageMixin, BasePage):  # 
         )
 
         return response
+
+    @property
+    def topic_ids(self) -> list[str]:
+        """Returns a list of topic IDs associated with the parent article series page."""
+        return list(self.get_parent().specific_deferred.topics.values_list("topic_id", flat=True))
