@@ -2,7 +2,7 @@ Feature: CMS users can draft, edit, and publish release pages
 
     Scenario: A CMS user can author and publish release page
         Given a contact details snippet exists
-        And a CMS user logs into the admin site
+        And a superuser logs into the admin site
         When the user navigates to the release calendar page
         And clicks "add child page" to create a new draft release page
         And the user sets the page status to "Published"
