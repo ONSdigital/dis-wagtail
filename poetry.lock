@@ -1256,6 +1256,24 @@ files = [
 ]
 
 [[package]]
+name = "kafka-python"
+version = "2.0.5"
+description = "Pure Python client for Apache Kafka"
+optional = false
+python-versions = "*"
+files = [
+    {file = "kafka_python-2.0.5-py2.py3-none-any.whl", hash = "sha256:f2efd895579c105f327097989ca357df539cebc2c5961a85d94b1bb561d34a2c"},
+    {file = "kafka_python-2.0.5.tar.gz", hash = "sha256:49ca4e9318992c716b2eef5b893a80c52c37bfb107a90dd074afca859dcfdd14"},
+]
+
+[package.extras]
+crc32c = ["crc32c"]
+lz4 = ["lz4"]
+snappy = ["python-snappy"]
+testing = ["mock", "pytest", "pytest-mock"]
+zstd = ["zstandard"]
+
+[[package]]
 name = "laces"
 version = "0.1.2"
 description = "Django components that know how to render themselves."
@@ -2724,4 +2742,4 @@ files = [
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.12"
-content-hash = "c0a2dd4c02f36972d0823231c665958f12f4c53fa45a9d54fbea7a4daa04003a"
+content-hash = "16f88eb4e4d104187853e397f98668dfb958a5c6aa3db855b1f15a10bb40cb0d"
