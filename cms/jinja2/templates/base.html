@@ -8,21 +8,7 @@
 {% endset %}
 
 {# fmt:off #}
-{% set languages = languages | default([
-    {
-        "url": "#",
-        "isoCode": "en",
-        "text": "English",
-        "current": true
-    },
-    {
-        "url": "#",
-        "isoCode": "cy",
-        "text": "Cymraeg",
-        "current": false
-    }
-])
-%}
+{% set languages=translation_urls() %}
 
 {% if page %}
     {% set body_class = ["template-", page.get_verbose_name()| lower | replace(" ", "-")] | join %}
@@ -89,7 +75,8 @@
             "url": ogl_url,
             "post": ogl_post
         }
-    }
+    },
+    "page": page
 }
 %}
 

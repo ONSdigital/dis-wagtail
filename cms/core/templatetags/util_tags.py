@@ -4,6 +4,7 @@ import jinja2
 from django import template
 from django.template.loader import render_to_string
 from django_jinja import library
+from wagtail.models import Locale
 
 from cms.core.models import SocialMediaSettings
 
@@ -48,3 +49,32 @@ def set_attributes_filter(attributes: dict, new_attributes: dict) -> dict:
     """
     attributes.update(new_attributes)
     return attributes
+
+
+@jinja2.pass_context
+def get_translation_urls(context) -> list[dict[str, str | bool]]:
+    if not (page := context.get("page")):
+        return []
+
+    default_locale = Locale.get_default()
+    variants = {variant.locale_id: variant for variant in page.get_translations(inclusive=True)}
+    default_page = variants.get(default_locale.pk)
+    urls = []
+    for locale in Locale.objects.all().order_by("pk"):
+        variant = variants.get(locale.pk, default_page)
+        url = variant.get_url(request=context["request"])
+        if variant == default_page and locale.pk != variant.locale_id:
+            # if there is no translation in this locale, append the language code to the path
+            # Wagtail will serve the original page, but strings in templates will be localized
+            url = f"/{locale.language_code}{url}"
+
+        urls.append(
+            {
+                "url": url,
+                "isoCode": locale.language_code.split("-", 1)[0],
+                "text": "English" if locale.language_name_local == "British English" else locale.language_name_local,
+                "current": locale.is_active,
+            }
+        )
+
+    return urls
