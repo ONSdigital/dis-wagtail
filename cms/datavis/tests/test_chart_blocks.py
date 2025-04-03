@@ -54,6 +54,10 @@ class BaseChartBlockTestCase(SimpleTestCase, WagtailTestUtils):
             raw_data = self.raw_data
         return self.block.to_python(raw_data)
 
+    def get_component_config(self, raw_data: dict[str, Any] | None = None):
+        value = self.get_value(raw_data)
+        return self.block.get_component_config(value)
+
     def _test_generic_properties(self):
         """Test attributes that are common to all chart blocks."""
         value = self.get_value()
@@ -81,8 +85,7 @@ class BaseChartBlockTestCase(SimpleTestCase, WagtailTestUtils):
         )
 
     def _test_get_component_config(self):
-        block_value = self.block.to_python(self.raw_data)
-        config = self.block.get_component_config(block_value)
+        config = self.get_component_config()
 
         # Test basic structure
         self.assertIn("legend", config)
@@ -137,30 +140,28 @@ class LineChartBlockTestCase(BaseChartBlockTestCase):
 
     def test_get_series_data(self):
         """Test that we identify two separate series in the data."""
-        block_value = self.block.to_python(self.raw_data)
-        series = self.block.get_series_data(block_value, block_value["table"].headers, block_value["table"].rows)
-        self.assertEqual(len(series), 2)
-        self.assertEqual(series[0]["name"], "Height")
-        self.assertEqual(series[0]["data"], [100, 120, 140])
-        self.assertEqual(series[1]["name"], "Weight")
-        self.assertEqual(series[1]["data"], [50, 55, 60])
+        config = self.get_component_config()
+        self.assertEqual(len(config["series"]), 2)
+        self.assertEqual(config["series"][0]["name"], "Height")
+        self.assertEqual(config["series"][0]["data"], [100, 120, 140])
+        self.assertEqual(config["series"][1]["name"], "Weight")
+        self.assertEqual(config["series"][1]["data"], [50, 55, 60])
 
     def test_editable_x_axis_title(self):
         self.raw_data["x_axis"]["title"] = "Editable X-axis Title"
-        value = self.get_value()
-        self.assertEqual("Editable X-axis Title", value["x_axis"]["title"])
+        config = self.get_component_config()
+        self.assertEqual("Editable X-axis Title", config["xAxis"]["title"]["text"])
 
     def test_blank_x_axis_title(self):
         self.raw_data["x_axis"]["title"] = ""
-        value = self.get_value()
-        self.assertEqual("", value["x_axis"]["title"])
+        config = self.get_component_config()
+        self.assertEqual("", config["xAxis"]["title"]["text"])
 
     def test_no_show_data_labels_option(self):
         """Test that this option is not present for line charts."""
         with self.subTest("base case"):
-            block_value = self.get_value()
-            series = self.block.get_series_data(block_value, block_value["table"].headers, block_value["table"].rows)
-            for item in series:
+            config = self.get_component_config()
+            for item in config["series"]:
                 # Check that we're looking at the right object
                 self.assertIn("name", item)
                 self.assertIn("data", item)
@@ -169,9 +170,8 @@ class LineChartBlockTestCase(BaseChartBlockTestCase):
         with self.subTest("errantly try to force show_data_labels to True"):
             # Test that even if we try to pass it in the form cleaned data, it is not in the output.
             self.raw_data["show_data_labels"] = True
-            block_value = self.get_value()
-            series = self.block.get_series_data(block_value, block_value["table"].headers, block_value["table"].rows)
-            for item in series:
+            config = self.get_component_config()
+            for item in config["series"]:
                 # Check that we're looking at the right object
                 self.assertIn("name", item)
                 self.assertIn("data", item)
@@ -181,15 +181,11 @@ class LineChartBlockTestCase(BaseChartBlockTestCase):
         for show_markers in [False, True]:
             with self.subTest(show_markers=show_markers):
                 self.raw_data["show_markers"] = show_markers
-                block_value = self.get_value()
-                series = self.block.get_series_data(
-                    block_value, block_value["table"].headers, block_value["table"].rows
-                )
-                for item in series:
+                config = self.get_component_config()
+                for item in config["series"]:
                     self.assertEqual({"enabled": show_markers}, item["marker"])
 
     def test_connect_nulls(self):
-        block_value = self.get_value()
-        series = self.block.get_series_data(block_value, block_value["table"].headers, block_value["table"].rows)
-        for item in series:
+        config = self.get_component_config()
+        for item in config["series"]:
             self.assertEqual(True, item["connectNulls"])
