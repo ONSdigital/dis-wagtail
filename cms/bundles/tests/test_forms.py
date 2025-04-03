@@ -205,3 +205,13 @@ class BundleAdminFormTestCase(TestCase):
         self.assertFalse(form.is_valid())
 
         self.assertFormError(form, "publication_date", ["The release date cannot be in the past."])
+
+    def test_clean_validates_the_bundle_has_content(self):
+        raw_data = self.raw_form_data()
+        raw_data["bundled_pages"] = inline_formset([])
+        raw_data["status"] = BundleStatus.APPROVED
+
+        form = self.form_class(instance=self.bundle, data=nested_form_data(raw_data))
+
+        self.assertFalse(form.is_valid())
+        self.assertFormError(form, None, "Cannot approve the bundle without any pages")

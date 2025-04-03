@@ -50,11 +50,9 @@ class CustomAdminPageChooser(PagesWithDraftsForBundleChooserWidget):
         title: str = instance.specific_deferred.get_admin_display_title()
 
         if workflow_state := instance.current_workflow_state:
-            title = f"{title} ({workflow_state.current_task_state.task.name})"
-        else:
-            title = f"{title} (not in a workflow)"
+            return f"{title} ({workflow_state.current_task_state.task.name})"
 
-        return title
+        return f"{title} (not in a workflow)"
 
 
 class PageChooserWithStatusPanel(FieldPanel):

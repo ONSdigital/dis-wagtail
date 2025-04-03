@@ -7,7 +7,8 @@ from django.utils.html import format_html
 from wagtail.admin.forms import WagtailAdminPageForm
 from wagtail.models import Locale
 
-from ..bundles.permissions import user_can_manage_bundles
+from cms.bundles.permissions import user_can_manage_bundles
+
 from .enums import NON_PROVISIONAL_STATUS_CHOICES, ReleaseStatus
 
 
