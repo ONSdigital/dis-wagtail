@@ -122,7 +122,9 @@ class BaseVisualisationBlock(blocks.StructBlock):
         rows: list[list[str | int | float]] = value["table"].rows
 
         return {
-            "type": self.highcharts_chart_type,  # TODO: remove this once we upgrade to the latest version of the DS
+            "chart": {
+                "type": self.highcharts_chart_type,  # TODO: remove this once we upgrade to the latest version of the DS
+            },
             "legend": {
                 "enabled": value.get("show_legend", True),
             },
