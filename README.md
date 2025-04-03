@@ -126,7 +126,7 @@ Follow these steps to set up and run the project using Docker.
 
 3. **Compile translations**
 
-  In order to see pages in different languages, you'll need to compile the translations. This is done by running:
+In order to see pages in different languages, you'll need to compile the translations. This is done by running:
 
     ```bash
     make compilemessages
