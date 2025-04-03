@@ -6,31 +6,34 @@ Feature: CMS users can manage footer menus via the Wagtail admin interface
     # Footer Menu Creation and Basic Actions
     Scenario: User creates a footer menu under Snippets
         When the user creates a footer menu instance
-        And the user populates the footer menu with a page
+        And the user populates the footer menu with an internal link
         And the user clicks the "Save Draft" button
         And the user clicks the "Preview" button
-        Then the footer menu is displayed on the preview pane
+        Then the footer menu is displayed on the preview pane with an internal link
 
     Scenario: User creates and publishes a footer menu
         When the user creates a footer menu instance
-        And the user populates the footer menu
-        And the user clicks "Publish page"
+        And the user populates the footer menu with an external link
+        And the user clicks "Publish"
         Then a banner confirming changes is displayed
 
     Scenario: User creates and previews a populated footer menu
         When the user creates a footer menu instance
-        And the user populates the footer menu
+        And the user populates the footer menu with an external link
         And the user clicks the "Save Draft" button
         And the user clicks the "Preview" button
-        Then the populated footer menu is displayed on the preview pane
+        Then the footer menu is displayed on the preview pane with an external link
 
-    # Navigation Settings Integration
-    Scenario: Footer menu can be configured via Navigation Settings
-        Given a footer menu exists
-        When the user navigates to navigation settings
+    # Navigation Settings Integration and Verification
+    Scenario: Footer menu can be configured via Navigation Settings and appears on the live home page
+        When the user creates a footer menu instance
+        And a footer menu is populated with 3 columns
+        And the user clicks "Publish"
+        And the user navigates to navigation settings
         And the user selects the footer menu
         And the user clicks "Save" to save the Snippet
-        Then the footer menu is configured successfully
+        And the footer menu is configured successfully
+        Then the footer menu appears on the home page
 
     # Field Validation and Error Handling
     Scenario: Validation error when footer menu is left empty
@@ -77,15 +80,5 @@ Feature: CMS users can manage footer menus via the Wagtail admin interface
         And the user selects "More options for Footer Menu"
         And the user clicks "Delete Footer Menu"
         Then a banner confirming the deletion is displayed
-
-    # Final Verification
-    Scenario: Footer menu appears on the live home page
-        When the user creates a footer menu instance
-        And a footer menu is populated with 3 columns
-        And the user clicks "Publish page"
-        And the user navigates to navigation settings
-        And the user selects the footer menu
-        And the user clicks "Save" to save the Snippet
-        Then the footer menu appears on the home page
 
 

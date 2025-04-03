@@ -5,12 +5,10 @@ from playwright.sync_api import expect
 from cms.navigation.tests.factories import FooterMenuFactory
 from functional_tests.step_helpers.footer_menu_helpers import (
     choose_page_link,
-    create_new_footer_menu,
     fill_column_link,
     fill_column_title,
     generate_columns,
     insert_block,
-    navigate_to_snippets,
 )
 
 
@@ -21,24 +19,25 @@ def create_footer_menu(context: Context):
 
 @step("the user creates a footer menu instance")
 def user_creates_footer_menu_instance(context: Context):
-    navigate_to_snippets(context.page)
-    create_new_footer_menu(context.page)
+    context.page.get_by_role("link", name="Snippets").click()
+    context.page.get_by_role("link", name="Footer menus").click()
+    context.page.get_by_role("link", name="Add footer menu").click()
 
 
-@when("the user populates the footer menu with a page")
+@when("the user populates the footer menu with an internal link")
 def user_populates_footer_menu_with_page(context: Context):
     insert_block(context.page)
     context.page.get_by_role("textbox", name="Column title*").fill("Home page")
     choose_page_link(context.page, page_name="Home")
 
 
-@then("the footer menu is displayed on the preview pane")
+@then("the footer menu is displayed on the preview pane with an internal link")
 def footer_menu_preview_pane(context: Context):
     iframe_locator = context.page.frame_locator("#w-preview-iframe")
     expect(iframe_locator.get_by_role("link", name="Home")).to_be_visible()
 
 
-@step("the user populates the footer menu")
+@step("the user populates the footer menu with an external link")
 def user_populates_footer_menu(context: Context):
     insert_block(context.page)
     fill_column_title(context.page, col_index=0, title="Link Column 1")
@@ -57,7 +56,7 @@ def footer_menu_banner_confirmation(context: Context):
     expect(context.page.get_by_text("Footer menu 'Footer Menu'")).to_be_visible()
 
 
-@then("the populated footer menu is displayed on the preview pane")
+@then("the footer menu is displayed on the preview pane with an external link")
 def populated_footer_menu_preview_pane(context: Context):
     iframe_locator = context.page.frame_locator("#w-preview-iframe")
     expect(iframe_locator.get_by_role("heading", name="Link Column 1")).to_be_visible()

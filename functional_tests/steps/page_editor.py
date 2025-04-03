@@ -6,10 +6,12 @@ from playwright.sync_api import expect
 from cms.themes.tests.factories import ThemePageFactory
 
 
+@when('the user clicks "Publish"')
 @when('the user clicks "Publish page"')
 @when("publishes the page")
-def user_clicks_publish_page(context: Context) -> None:
-    publish_page(context)
+def user_clicks_publish(context: Context) -> None:
+    context.page.get_by_role("button", name="More actions").click()
+    context.page.get_by_role("button", name="Publish").click()
 
 
 @when('the user clicks "View Live" on the publish confirmation banner')

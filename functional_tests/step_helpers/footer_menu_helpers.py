@@ -2,16 +2,6 @@ from behave.runner import Context
 from playwright.sync_api import Page
 
 
-def navigate_to_snippets(page: Page):
-    page.get_by_role("link", name="Snippets").click()
-    page.get_by_role("link", name="Footer menus").click()
-
-
-def create_new_footer_menu(page: Page):
-    """Click the 'Add footer menu' button from the Footer Menus snippet listing page."""
-    page.get_by_role("link", name="Add footer menu").click()
-
-
 def insert_block(page: Page, nth: int = 0):
     """Inserts a new column block by clicking the 'Insert a block' button."""
     page.get_by_role("button", name="Insert a block").nth(nth).click()
