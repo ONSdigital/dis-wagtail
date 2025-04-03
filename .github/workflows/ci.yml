@@ -136,7 +136,7 @@ jobs:
           cache: poetry
 
       - name: Install dependencies
-        run: /
+        run: |
           make install-dev
           sudo apt-get install -y gettext
 
@@ -211,7 +211,7 @@ jobs:
           cache: poetry
 
       - name: Install dependencies
-        run: /
+        run: |
           make install-dev
           sudo apt-get install -y gettext
 
