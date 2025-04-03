@@ -274,5 +274,4 @@ class StatisticalArticlePage(BundledPageMixin, RoutablePageMixin, BasePage):  # 
     @property
     def topic_ids(self) -> list[str]:
         """Returns a list of topic IDs associated with the parent article series page."""
-        parent = self.get_parent().specific
-        return list(parent.topics.values_list("topic_id", flat=True)) if hasattr(parent, "topics") else []
+        return list(self.get_parent().specific_deferred.topics.values_list("topic_id", flat=True))
