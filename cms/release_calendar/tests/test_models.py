@@ -3,9 +3,12 @@ from http import HTTPStatus
 from django.test import RequestFactory, TestCase, override_settings
 from django.urls import reverse
 from django.utils import timezone
+from wagtail.blocks import StreamValue
 from wagtail.test.utils.wagtail_tests import WagtailTestUtils
 
 from cms.core.models import ContactDetails
+from cms.datasets.blocks import DatasetStoryBlock
+from cms.datasets.models import Dataset
 from cms.release_calendar.enums import ReleaseStatus
 from cms.release_calendar.models import ReleaseCalendarIndex
 from cms.release_calendar.tests.factories import ReleaseCalendarPageFactory
@@ -351,6 +354,48 @@ class ReleaseCalendarPageRenderTestCase(TestCase):
                 response = self.client.get(self.page.url)
 
                 self.assertEqual("pre-release access notes" in str(response.content), is_shown)
+
+    def test_rendered__datasets(self):
+        """Check datasets are shown only in a published state."""
+        lookup_dataset = Dataset.objects.create(
+            namespace="LOOKUP",
+            edition="lookup_edition",
+            version="lookup_version",
+            title="test lookup",
+            description="lookup description",
+        )
+        manual_dataset = {"title": "test manual", "description": "manual description", "url": "https://example.com"}
+
+        cases = [
+            (ReleaseStatus.PROVISIONAL, False),
+            (ReleaseStatus.CONFIRMED, False),
+            (ReleaseStatus.PUBLISHED, True),
+            (ReleaseStatus.CANCELLED, False),
+        ]
+        self.page.datasets = StreamValue(
+            DatasetStoryBlock(),
+            stream_data=[
+                ("dataset_lookup", lookup_dataset),
+                ("manual_link", manual_dataset),
+            ],
+        )
+
+        for status, is_shown in cases:
+            with self.subTest(status=status, is_shown=is_shown):
+                self.page.status = status
+                self.page.save_revision().publish()
+
+                response = self.client.get(self.page.url)
+
+                self.assertEqual("Data" in str(response.content), is_shown)
+
+                self.assertEqual(lookup_dataset.title in str(response.content), is_shown)
+                self.assertEqual(lookup_dataset.description in str(response.content), is_shown)
+                self.assertEqual(lookup_dataset.website_url in str(response.content), is_shown)
+
+                self.assertEqual(manual_dataset["title"] in str(response.content), is_shown)
+                self.assertEqual(manual_dataset["description"] in str(response.content), is_shown)
+                self.assertEqual(manual_dataset["url"] in str(response.content), is_shown)
 
     def test_render_in_external_env(self):
         """Check calendar page renders in external env."""

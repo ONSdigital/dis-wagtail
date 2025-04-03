@@ -35,6 +35,7 @@ class ReleaseCalendarPageAdminFormTestCase(WagtailTestUtils, TestCase):
             "status": ReleaseStatus.PROVISIONAL,
             "notice": '{"entityMap": {},"blocks": []}',  # an empty rich text
             "related_links": streamfield([]),
+            "datasets": streamfield([]),
         }
 
     def test_form_init__status_choices(self):
