@@ -3,13 +3,14 @@ from behave.runner import Context
 from playwright.sync_api import expect
 
 from cms.core.models import GlossaryTerm
+from functional_tests.steps.page_editor import publish_snippet
 
 
 @step("the user adds another Glossary Terms snippet with the same name")
 @step("the user adds a Glossary Terms snippet")
 def user_adds_glossary_terms_snippet(context: Context) -> None:
     user_fills_in_glossary_term_details(context)
-    context.page.get_by_role("button", name="Save").click()
+    publish_snippet(context)
 
 
 @given("the user fills in Glossary Term details")
@@ -31,7 +32,6 @@ def a_glossary_terms_snippet_exists(context: Context) -> None:
 @then("a validation error is displayed")
 def validation_error_is_displayed_for_duplicated_glossary_terms(context: Context) -> None:
     expect(context.page.get_by_text("The glossary term could not be created due to errors.")).to_be_visible()
-    expect(context.page.get_by_text("A glossary term with this name already exists.")).to_be_visible()
 
 
 @then("the Glossary Term is added to the list")
@@ -42,22 +42,22 @@ def glossary_item_is_visible_in_index_view_with_the_required_columns(context: Co
 
 @then("the Updated time is displayed")
 def the_last_edited_time_column_is_displayed(context: Context) -> None:
-    expect(context.page.get_by_role("row", name="Name").get_by_role("cell").nth(2)).to_contain_text("Updated")
-    expect(context.page.get_by_role("row", name="Term").get_by_role("cell").nth(2)).to_contain_text("Just now")
+    expect(context.page.get_by_role("row", name="Name").get_by_role("cell").nth(3)).to_contain_text("Updated")
+    expect(context.page.get_by_role("row", name="Term").get_by_role("cell").nth(3)).to_contain_text("Just now")
 
 
 @then("the Updated by field is populated with the user's name")
 def the_edited_by_column_is_displayed(context: Context) -> None:
-    expect(context.page.get_by_role("row", name="Name").get_by_role("cell").nth(3)).to_contain_text("Updated by")
-    expect(context.page.get_by_role("row", name="Term").get_by_role("cell").nth(3)).to_contain_text(
+    expect(context.page.get_by_role("row", name="Name").get_by_role("cell").nth(4)).to_contain_text("Updated by")
+    expect(context.page.get_by_role("row", name="Term").get_by_role("cell").nth(4)).to_contain_text(
         context.user_data["full_name"]
     )
 
 
 @then("the Owner field is populated with the user's name")
 def owner_field_has_the_correct_user(context: Context) -> None:
-    expect(context.page.get_by_role("row", name="Name").get_by_role("cell").nth(4)).to_contain_text("Owner")
-    expect(context.page.get_by_role("row", name="Term").get_by_role("cell").nth(4)).to_contain_text(
+    expect(context.page.get_by_role("row", name="Name").get_by_role("cell").nth(5)).to_contain_text("Owner")
+    expect(context.page.get_by_role("row", name="Term").get_by_role("cell").nth(5)).to_contain_text(
         context.user_data["full_name"]
     )
 

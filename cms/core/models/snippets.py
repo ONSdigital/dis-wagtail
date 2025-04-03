@@ -88,17 +88,7 @@ class GlossaryTerm(TranslatableMixin, DraftStateMixin, PreviewableMixin, Revisio
     ]
 
     class Meta:
-        constraints: ClassVar[list[models.BaseConstraint]] = [
-            models.UniqueConstraint(
-                Lower("name"),
-                "locale",
-                name="core_glossary_term_name_unique",
-                violation_error_message="A glossary term with this name for this locale already exists.",
-            ),
-            models.UniqueConstraint(
-                fields=("translation_key", "locale"), name="unique_translation_key_locale_core_glossaryterm"
-            ),
-        ]
+        unique_together: ClassVar[list[tuple[str, ...]]] = [*TranslatableMixin.Meta.unique_together, ("name", "locale")]
 
     @property
     def updated_by(self) -> Optional["User"]:

@@ -84,6 +84,10 @@ def publish_page(context: Context) -> None:
     context.page.get_by_role("button", name="Publish").click()
 
 
+def publish_snippet(context: Context) -> None:  # Create an alias so it reads better
+    publish_page(context)
+
+
 @when("the user navigates to the page history menu")
 def user_navigates_to_the_history_menu(context: Context):
     context.page.get_by_role("link", name="History").click()

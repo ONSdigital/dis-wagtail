@@ -33,7 +33,7 @@ def user_adds_info_page_contents(context: Context) -> None:
 
     context.page.get_by_role("button", name="Add related pages").click()
     context.page.get_by_role("button", name="Choose a page").click()
-    context.page.get_by_role("cell", name="Home", exact=True).get_by_role("link").click()
+    context.page.get_by_role("cell", name="Home English", exact=True).get_by_role("link").click()
 
 
 @then("the new information page with the added content is displayed")
