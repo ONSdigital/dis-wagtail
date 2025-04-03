@@ -30,7 +30,7 @@ class SingleInstanceModelPermissionPolicy(ModelPermissionPolicy):
 class MenuChooseColumnsMixin:
     @property
     def columns(self) -> list[Column]:
-        return [self.title_column, Column("locale")]
+        return [self.title_column, Column("locale")]  # type: ignore[attr-defined]
 
 
 class MenuChooseView(MenuChooseColumnsMixin, SnippetChooseView): ...

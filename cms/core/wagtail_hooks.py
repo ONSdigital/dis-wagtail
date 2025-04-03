@@ -1,3 +1,5 @@
+from typing import TYPE_CHECKING
+
 from django.conf import settings
 from django.templatetags.static import static
 from django.utils.html import format_html
@@ -6,6 +8,10 @@ from wagtail.admin import messages
 from wagtail.snippets.models import register_snippet
 
 from cms.core.viewsets import ContactDetailsViewSet, GlossaryViewSet
+
+if TYPE_CHECKING:
+    from django.http import HttpRequest
+    from wagtail.models import Page
 
 
 @hooks.register("register_icons")
@@ -40,7 +46,7 @@ register_snippet(GlossaryViewSet)
 
 
 @hooks.register("after_edit_page")
-def after_edit_page(request, page):
+def after_edit_page(request: "HttpRequest", page: "Page") -> None:
     if page.locale.language_code != settings.LANGUAGE_CODE:
         return
 

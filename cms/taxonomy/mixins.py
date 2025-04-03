@@ -35,8 +35,8 @@ class ExclusiveTaxonomyMixin(models.Model):
         for exclusive_sub_page_type in ExclusiveTaxonomyMixin.__subclasses__():
             # Check if other pages are exclusively linked to this topic.
             # Translations of the same page are allowed, but other pages aren't.
-            qs = exclusive_sub_page_type.objects.filter(
-                topic=self.topic_id,  # type: ignore[attr-defined]
+            qs = exclusive_sub_page_type.objects.filter(  # type: ignore[attr-defined]
+                topic=self.topic_id,
                 locale=self.locale,  # type: ignore[attr-defined]
             )
             if not self._state.adding:
