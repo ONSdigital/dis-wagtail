@@ -1,3 +1,5 @@
+from http import HTTPStatus
+
 from django.test import RequestFactory, TestCase, override_settings
 from django.urls import reverse
 from django.utils import timezone
@@ -14,6 +16,11 @@ from cms.release_calendar.tests.factories import ReleaseCalendarPageFactory
 
 class ReleaseCalendarPageTestCase(WagtailTestUtils, TestCase):
     """Test Release CalendarPage model properties and logic."""
+
+    @classmethod
+    def setUpTestData(cls):
+        cls.superuser = cls.create_superuser(username="admin")
+        cls.release_calendar_index = ReleaseCalendarIndex.objects.first()
 
     def setUp(self):
         self.page = ReleaseCalendarPageFactory()
@@ -214,7 +221,7 @@ class ReleaseCalendarPageTestCase(WagtailTestUtils, TestCase):
 
     def test_delete_redirects_back_to_edit(self):
         """Test that we get redirected back to edit when trying to delete a release calendar page."""
-        self.login()  # creates a superuser and logs them in
+        self.client.force_login(self.superuser)
         response = self.client.post(
             reverse("wagtailadmin_pages:delete", args=(self.page.id,)),
             follow=True,
@@ -233,6 +240,17 @@ class ReleaseCalendarPageTestCase(WagtailTestUtils, TestCase):
             follow=True,
         )
         self.assertRedirects(response, edit_url)
+
+    def test_add_view_does_not_contain_the_bundle_note_panel(self):
+        self.client.force_login(self.superuser)
+        response = self.client.get(
+            reverse(
+                "wagtailadmin_pages:add",
+                args=("release_calendar", "releasecalendarpage", self.release_calendar_index.pk),
+            )
+        )
+        self.assertEqual(response.status_code, HTTPStatus.OK)
+        self.assertNotContains(response, "bundle-note")
 
 
 class ReleaseCalendarPageRenderTestCase(TestCase):

@@ -14,7 +14,7 @@ def user_creates_information_page(context: Context) -> None:
 
 @when("the user adds content to the new information page")
 def user_adds_info_page_contents(context: Context) -> None:
-    context.page.get_by_placeholder("Page title*").fill(" Test Info Page")
+    context.page.get_by_placeholder("Page title*").fill("Test Info Page")
 
     context.page.get_by_role("region", name="Summary*").get_by_role("textbox").fill("My test information page")
 

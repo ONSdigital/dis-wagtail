@@ -1,0 +1,9 @@
+.listing--dashboard th:first-child,
+.ons-padding-start {
+    padding-inline-start: 1.5rem;
+}
+
+.listing--dashboard th:last-child,
+.ons-padding-end {
+    padding-inline-end: 1.5rem;
+}
