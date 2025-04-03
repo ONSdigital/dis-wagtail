@@ -2,27 +2,35 @@ import time
 from functools import cached_property
 from typing import TYPE_CHECKING, Any, ClassVar
 
-from django.db.models import QuerySet
+from django.conf import settings
+from django.core.exceptions import PermissionDenied
 from django.http import HttpRequest
 from django.shortcuts import redirect
 from django.urls import reverse
 from django.utils import timezone
+from django.utils.formats import date_format
 from django.utils.html import format_html, format_html_join
 from wagtail.admin.ui.tables import Column, DateColumn, UpdatedAtColumn, UserColumn
 from wagtail.admin.views.generic import CreateView, EditView, IndexView, InspectView
-from wagtail.admin.views.generic.chooser import ChooseResultsView, ChooseView
-from wagtail.admin.viewsets.chooser import ChooserViewSet
 from wagtail.admin.viewsets.model import ModelViewSet
 from wagtail.log_actions import log
 
-from .enums import BundleStatus
-from .models import Bundle
-from .notifications import notify_slack_of_publication_start, notify_slack_of_publish_end, notify_slack_of_status_change
+from cms.bundles.enums import BundleStatus
+from cms.bundles.models import Bundle
+from cms.bundles.notifications import (
+    notify_slack_of_publication_start,
+    notify_slack_of_publish_end,
+    notify_slack_of_status_change,
+)
+from cms.bundles.permissions import user_can_manage_bundles, user_can_preview_bundle
 
 if TYPE_CHECKING:
     from django.db.models.fields import Field
     from django.http import HttpResponseBase
+    from django.template.response import TemplateResponse
     from django.utils.safestring import SafeString
+
+    from cms.bundles.models import BundlesQuerySet
 
 
 class BundleCreateView(CreateView):
@@ -39,7 +47,7 @@ class BundleCreateView(CreateView):
 class BundleEditView(EditView):
     """The Bundle edit view class."""
 
-    actions: ClassVar[list[str]] = ["edit", "save-and-approve", "publish"]
+    actions: ClassVar[list[str]] = ["edit", "save-and-approve", "publish", "unschedule"]
     template_name = "bundles/wagtailadmin/edit.html"
     has_content_changes: bool = False
     start_time: float | None = None
@@ -59,6 +67,9 @@ class BundleEditView(EditView):
                 data["status"] = BundleStatus.APPROVED.value
                 data["approved_at"] = timezone.now()
                 data["approved_by"] = self.request.user
+                kwargs["data"] = data
+            elif "action-unschedule" in self.request.POST:
+                data["status"] = BundleStatus.PENDING.value
                 kwargs["data"] = data
             elif "action-publish" in self.request.POST:
                 data["status"] = BundleStatus.RELEASED.value
@@ -128,11 +139,12 @@ class BundleEditView(EditView):
         """
         context: dict = super().get_context_data(**kwargs)
 
-        context["show_save_and_approve"] = (
-            self.object.can_be_approved and self.form.for_user.pk != self.object.created_by_id
-        )
+        context["show_save_and_approve"] = self.object.can_be_approved
         context["show_publish"] = (
             self.object.status == BundleStatus.APPROVED and not self.object.scheduled_publication_date
+        )
+        context["show_unschedule"] = (
+            self.object.status == BundleStatus.APPROVED and self.object.scheduled_publication_date
         )
 
         return context
@@ -143,9 +155,21 @@ class BundleInspectView(InspectView):
 
     template_name = "bundles/wagtailadmin/inspect.html"
 
+    def dispatch(self, request: "HttpRequest", *args: Any, **kwargs: Any) -> "TemplateResponse":
+        if not user_can_preview_bundle(self.request.user, self.object):
+            raise PermissionDenied
+        return super().dispatch(request, *args, **kwargs)  # type: ignore[no-any-return]
+
+    @cached_property
+    def can_manage(self) -> bool:
+        return user_can_manage_bundles(self.request.user)
+
     def get_fields(self) -> list[str]:
         """Returns the list of fields to include in the inspect view."""
-        return ["name", "status", "created_at", "created_by", "approved", "scheduled_publication", "pages"]
+        if self.can_manage:
+            return ["name", "status", "created_at", "created_by", "approved", "scheduled_publication", "teams", "pages"]
+
+        return ["name", "created_at", "created_by", "scheduled_publication", "pages"]
 
     def get_field_label(self, field_name: str, field: "Field") -> str:
         match field_name:
@@ -173,20 +197,22 @@ class BundleInspectView(InspectView):
         """Custom approved by formatting. Varies based on status, and approver/time of approval."""
         if self.object.status in [BundleStatus.APPROVED, BundleStatus.RELEASED]:
             if self.object.approved_by_id and self.object.approved_at:
-                return f"{self.object.approved_by} on {self.object.approved_at}"
+                return f"{self.object.approved_by} on {date_format(self.object.approved_at, settings.DATETIME_FORMAT)}"
             return "Unknown approval data"
         return "Pending approval"
 
     def get_scheduled_publication_display_value(self) -> str:
         """Displays the scheduled publication date, if set."""
-        return self.object.scheduled_publication_date or "No scheduled publication"
+        if self.object.scheduled_publication_date:
+            return date_format(self.object.scheduled_publication_date, settings.DATETIME_FORMAT)
+        return "No scheduled publication"
 
-    def get_pages_display_value(self) -> "SafeString":
-        """Returns formatted markup for Pages linked to the Bundle."""
+    def get_pages_for_manager(self) -> "SafeString":
         pages = self.object.get_bundled_pages().specific()
+
         data = (
             (
-                reverse("wagtailadmin_pages:edit", args=(page.pk,)),
+                reverse("wagtailadmin_pages:edit", args=[page.pk]),
                 page.get_admin_display_title(),
                 page.get_verbose_name(),
                 (
@@ -194,7 +220,13 @@ class BundleInspectView(InspectView):
                     if page.current_workflow_state
                     else "not in a workflow"
                 ),
-                reverse("wagtailadmin_pages:view_draft", args=(page.pk,)),
+                reverse(
+                    "bundles:preview",
+                    args=(
+                        self.object.pk,
+                        page.pk,
+                    ),
+                ),
             )
             for page in pages
         )
@@ -212,6 +244,50 @@ class BundleInspectView(InspectView):
             page_data,
         )
 
+    def get_pages_for_previewer(self) -> "SafeString":
+        pages = self.object.get_pages_ready_for_review()
+
+        data = (
+            (
+                page.get_admin_display_title(),
+                page.get_verbose_name(),
+                reverse(
+                    "bundles:preview",
+                    args=(
+                        self.object.pk,
+                        page.pk,
+                    ),
+                ),
+            )
+            for page in pages
+        )
+
+        page_data = format_html_join(
+            "\n",
+            '<tr><td class="title"><strong>{}</strong></td><td>{}</td> '
+            '<td><a href="{}" class="button button-small button-secondary">Preview</a></td></tr>',
+            data,
+        )
+
+        return format_html(
+            "<table class='listing'><thead><tr><th>Title</th><th>Type</th><th>Actions</th></tr></thead>{}</table>",
+            page_data,
+        )
+
+    def get_pages_display_value(self) -> "SafeString | str":
+        """Returns formatted markup for Pages linked to the Bundle."""
+        if self.can_manage:
+            return self.get_pages_for_manager()
+
+        if user_can_preview_bundle(self.request.user, self.object):
+            return self.get_pages_for_previewer()
+
+        return ""
+
+    def get_teams_display_value(self) -> str:
+        value: str = self.object.get_teams_display()
+        return value
+
 
 class BundleIndexView(IndexView):
     """The Bundle index view class.
@@ -221,11 +297,14 @@ class BundleIndexView(IndexView):
 
     model = Bundle
 
-    def get_base_queryset(self) -> QuerySet[Bundle]:
+    def get_base_queryset(self) -> "BundlesQuerySet":
         """Modifies the Bundle queryset with the related created_by ForeignKey selected to avoid N+1 queries."""
-        queryset: QuerySet[Bundle] = super().get_base_queryset()
+        queryset: BundlesQuerySet = super().get_base_queryset()
 
-        return queryset.select_related("created_by")
+        if not self.can_manage:
+            queryset = queryset.previewable().filter(teams__team__in=self.request.user.active_team_ids).distinct()
+
+        return queryset.select_related("created_by").prefetch_related("teams__team")
 
     def get_edit_url(self, instance: Bundle) -> str | None:
         """Override the default edit url to disable the edit URL for released bundles."""
@@ -239,51 +318,31 @@ class BundleIndexView(IndexView):
         return None
 
     @cached_property
+    def can_manage(self) -> bool:
+        return user_can_manage_bundles(self.request.user)
+
+    @cached_property
     def columns(self) -> list[Column]:
         """Defines the list of desired columns in the listing."""
+        if self.can_manage:
+            return [
+                self._get_title_column("__str__"),
+                Column("scheduled_publication_date", label="Scheduled for"),
+                Column("get_status_display", label="Status"),
+                UpdatedAtColumn(),
+                DateColumn(name="created_at", label="Added", sort_key="created_at"),
+                UserColumn("created_by", label="Added by"),
+                Column(name="teams", accessor="get_teams_display", label="Preview teams"),
+                DateColumn(name="approved_at", label="Approved at", sort_key="approved_at"),
+                UserColumn("approved_by"),
+            ]
+
         return [
             self._get_title_column("__str__"),
-            Column("scheduled_publication_date"),
-            Column("get_status_display", label="Status"),
-            UpdatedAtColumn(),
+            Column("scheduled_publication_date", label="Scheduled for"),
             DateColumn(name="created_at", label="Added", sort_key="created_at"),
             UserColumn("created_by", label="Added by"),
-            DateColumn(name="approved_at", label="Approved at", sort_key="approved_at"),
-            UserColumn("approved_by"),
         ]
-
-
-class BundleChooseViewMixin:
-    icon = "boxes-stacked"
-
-    @property
-    def columns(self) -> list[Column]:
-        """Defines the list of desired columns in the chooser."""
-        return [
-            *super().columns,  # type: ignore[misc]
-            Column("scheduled_publication_date"),
-            UserColumn("created_by"),
-        ]
-
-    def get_object_list(self) -> QuerySet[Bundle]:
-        """Overrides the default object list to only fetch the fields we're using."""
-        queryset: QuerySet[Bundle] = Bundle.objects.editable().select_related("created_by").only("name", "created_by")
-        return queryset
-
-
-class BundleChooseView(BundleChooseViewMixin, ChooseView): ...
-
-
-class BundleChooseResultsView(BundleChooseViewMixin, ChooseResultsView): ...
-
-
-class BundleChooserViewSet(ChooserViewSet):
-    """Defines the chooser viewset for Bundles."""
-
-    model = Bundle
-    icon = "boxes-stacked"
-    choose_view_class = BundleChooseView
-    choose_results_view_class = BundleChooseResultsView
 
 
 class BundleViewSet(ModelViewSet):
@@ -299,13 +358,10 @@ class BundleViewSet(ModelViewSet):
     edit_view_class = BundleEditView
     inspect_view_class = BundleInspectView
     index_view_class = BundleIndexView
-    chooser_viewset_class = BundleChooserViewSet
     list_filter: ClassVar[list[str]] = ["status", "created_by"]
     add_to_admin_menu = True
     inspect_view_enabled = True
+    menu_order = 150
 
 
 bundle_viewset = BundleViewSet("bundle")
-bundle_chooser_viewset = BundleChooserViewSet("bundle_chooser")
-
-BundleChooserWidget = bundle_chooser_viewset.widget_class

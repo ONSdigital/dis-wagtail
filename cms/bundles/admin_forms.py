@@ -4,7 +4,7 @@ from django import forms
 from django.core.exceptions import ValidationError
 
 from .models import Bundle, BundledPageMixin
-from .viewsets import BundleChooserWidget
+from .viewsets.bundle_chooser import BundleChooserWidget
 
 if TYPE_CHECKING:
     from wagtail.models import Page
