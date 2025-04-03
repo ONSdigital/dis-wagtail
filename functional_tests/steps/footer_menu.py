@@ -75,7 +75,7 @@ def user_selects_footer_menu(context: Context):
     context.page.get_by_role("link", name="Footer Menu", exact=True).click()
 
 
-@step("the footer menu is configured successfully")
+@step("the footer menu is saved successfully")
 def user_configures_footer_menu(context: Context):
     expect(context.page.get_by_text("Navigation settings updated.")).to_be_visible()
 

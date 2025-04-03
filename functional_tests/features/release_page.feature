@@ -9,7 +9,7 @@ Feature: CMS users can draft, edit, and publish release pages
         And enters some example content on the page
         And looks up and selects a dataset
         And manually enters a dataset link
-        And the user clicks "Publish page"
+        And the user clicks "Publish"
         And the user clicks "View Live" on the publish confirmation banner
         Then the new published release page with the example content is displayed
         And the selected datasets are displayed on the page

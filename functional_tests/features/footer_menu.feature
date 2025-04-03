@@ -25,14 +25,14 @@ Feature: CMS users can manage footer menus via the Wagtail admin interface
         Then the footer menu is displayed on the preview pane with an external link
 
     # Navigation Settings Integration and Verification
-    Scenario: Footer menu can be configured via Navigation Settings and appears on the live home page
+    Scenario: Footer menu can be saved via Navigation Settings and appears on the live home page
         When the user creates a footer menu instance
         And a footer menu is populated with 3 columns
         And the user clicks "Publish"
         And the user navigates to navigation settings
         And the user selects the footer menu
         And the user clicks "Save" to save the Snippet
-        And the footer menu is configured successfully
+        And the footer menu is saved successfully
         Then the footer menu appears on the home page
 
     # Field Validation and Error Handling

@@ -5,7 +5,7 @@ Feature: A general use of Methodology Page
         And a CMS user logs into the admin site
         When the user creates a methodology page as a child of the existing topic page
         And the user populates the methodology page
-        And the user clicks "Publish page"
+        And the user clicks "Publish"
         And the user clicks "View Live" on the publish confirmation banner
         Then the published methodology page is displayed with the populated data
     
@@ -16,7 +16,7 @@ Feature: A general use of Methodology Page
         When the user creates a methodology page as a child of the existing topic page
         And the user populates the methodology page
         And the user selects the article page in the Related publications block
-        And the user clicks "Publish page"
+        And the user clicks "Publish"
         And the user clicks "View Live" on the publish confirmation banner
         Then the article is displayed correctly under the Related publication section
 
@@ -27,7 +27,7 @@ Feature: A general use of Methodology Page
         When the user creates a methodology page as a child of the existing topic page
         And the user populates the methodology page
         And the user selects the Contact Details
-        And the user clicks "Publish page"
+        And the user clicks "Publish"
         And the user clicks "View Live" on the publish confirmation banner
         Then the Contact Details are visible on the page
 
