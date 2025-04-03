@@ -8,7 +8,7 @@ from django.utils import timezone
 from wagtail.models import Page
 from wagtail.test.utils import WagtailTestUtils
 
-from cms.articles.tests.factories import StatisticalArticlePageFactory
+from cms.articles.tests.factories import ArticleSeriesPageFactory, StatisticalArticlePageFactory
 from cms.methodology.tests.factories import MethodologyPageFactory
 from cms.release_calendar.enums import ReleaseStatus
 from cms.release_calendar.tests.factories import ReleaseCalendarPageFactory
@@ -171,6 +171,48 @@ class BasePublisherTests(TestCase, WagtailTestUtils):
             self.assertFalse(message["published"])
             self.assertFalse(message["cancelled"])
 
+    def test_release_date_exists_provisional_date_absent(self):
+        """Ensure that if release_date exists, provisional_date should not exist."""
+        page = self.release_calendar_page_confirmed
+
+        message = self.publisher._construct_message_for_create_update(page)  # pylint: disable=W0212
+        expected_type = EXPECTED_CONTENT_TYPES[type(page).__name__]
+
+        self.assertEqual(message["content_type"], expected_type)
+        self.assertEqual(message["title"], page.title)
+        self.assertEqual(message["summary"], page.summary)
+        self.assertEqual(message["uri"], page.url_path)
+
+        # Check release_date exists
+        self.assertIsNotNone(message.get("release_date"), "release_date should exist for this page")
+        self.assertEqual(message["release_date"], page.release_date.isoformat())
+
+        # Check provisional_date does not exist
+        self.assertIsNone(message.get("provisional_date"), "provisional_date should not exist if release_date exists")
+
+    def test_provisional_date_exists_when_release_date_absent(self):
+        """Ensure that if release_date is absent, provisional_date should exist and have a value."""
+        page = ReleaseCalendarPageFactory(
+            status=ReleaseStatus.PROVISIONAL,
+            release_date=None,
+            release_date_text="Provisional release date text",
+        )
+
+        message = self.publisher._construct_message_for_create_update(page)  # pylint: disable=W0212
+        expected_type = EXPECTED_CONTENT_TYPES[type(page).__name__]
+
+        self.assertEqual(message["content_type"], expected_type)
+        self.assertEqual(message["title"], page.title)
+        self.assertEqual(message["summary"], page.summary)
+        self.assertEqual(message["uri"], page.url_path)
+
+        # Check release_date is absent
+        self.assertIsNone(message.get("release_date"), "release_date should be None for this page")
+
+        # Check provisional_date exists and has the correct value
+        self.assertIsNotNone(message.get("provisional_date"), "provisional_date should exist if release_date is absent")
+        self.assertEqual(message["provisional_date"], page.release_date_text)
+
     def test_construct_message_for_release_page_confirmed_date_change(self):
         """Ensure that for a release-type page, release-specific fields get added."""
         page = self.release_calendar_page_confirmed
@@ -279,6 +321,31 @@ class BasePublisherTests(TestCase, WagtailTestUtils):
         self.assertEqual(message["title"], page.title)
         self.assertEqual(message["summary"], page.summary)
         self.assertEqual(message["uri"], page.url_path)
+        self.assertEqual(message["topics"], [self.topic_a.id, self.topic_b.id])
+
+    def test_construct_message_for_article_page_with_inherited_topics(self):
+        """Ensure that the article page message contains topics inherited from the parent article series."""
+        # Create an ArticleSeriesPage and associate it with topics
+        series_page = ArticleSeriesPageFactory(title="Article Series")
+        GenericPageToTaxonomyTopic.objects.create(page=series_page, topic=self.topic_a)
+        GenericPageToTaxonomyTopic.objects.create(page=series_page, topic=self.topic_b)
+
+        # Create a StatisticalArticlePage under the ArticleSeriesPage
+        article_page = StatisticalArticlePageFactory(
+            parent=series_page, title="Statistical Article", summary="Article summary"
+        )
+
+        # Construct the message
+        message = self.publisher._construct_message_for_create_update(article_page)  # pylint: disable=W0212
+        expected_type = EXPECTED_CONTENT_TYPES[type(article_page).__name__]
+
+        # Validate the message structure
+        self.assertEqual(message["content_type"], expected_type)
+        self.assertEqual(message["title"], article_page.title)
+        self.assertEqual(message["summary"], article_page.summary)
+        self.assertEqual(message["uri"], article_page.url_path)
+
+        # Ensure the topics are inherited from the parent ArticleSeriesPage
         self.assertEqual(message["topics"], [self.topic_a.id, self.topic_b.id])
 
 

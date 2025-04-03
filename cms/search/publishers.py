@@ -93,7 +93,6 @@ class BasePublisher(ABC):
     def _construct_release_specific_fields(page: "Page") -> dict:
         """Constructs and returns a dictionary with release-specific fields."""
         release_fields = {
-            "provisional_date": None,
             "finalised": page.status in ["CONFIRMED", "PROVISIONAL"],
             "cancelled": page.status == "CANCELLED",
             "published": page.status == "PUBLISHED",
@@ -101,7 +100,7 @@ class BasePublisher(ABC):
         }
 
         # If we do NOT have release_date but we do have release_date_text, treat that as provisional_date
-        if not page.release_date and page.release_date_text:
+        if page.release_date_text:
             release_fields["provisional_date"] = page.release_date_text
 
         if getattr(page, "changes_to_release_date", None):

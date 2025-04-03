@@ -83,3 +83,15 @@ class SearchSignalsTest(TestCase):
             post_delete.send(sender=Page, instance=page)
             mock_publisher.publish_deleted.assert_called_once_with(page)
             mock_publisher.publish_deleted.reset_mock()
+
+    @patch("cms.search.signal_handlers.publisher")
+    def test_on_page_deleted_draft_page(self, mock_publisher):
+        """Draft pages should not trigger publish_deleted on delete."""
+        for page in self.included_pages:
+            # Set the page to be a draft (not live)
+            page.live = False
+            page.save()
+
+            # Fire the Django post_delete signal for a Wagtail Page
+            post_delete.send(sender=Page, instance=page)
+            mock_publisher.publish_deleted.assert_not_called()
