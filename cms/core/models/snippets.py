@@ -6,7 +6,7 @@ from django.contrib.contenttypes.fields import GenericRelation
 from django.db import models
 from django.db.models.functions import Lower
 from wagtail.fields import RichTextField
-from wagtail.models import PreviewableMixin, RevisionMixin, TranslatableMixin
+from wagtail.models import DraftStateMixin, PreviewableMixin, RevisionMixin, TranslatableMixin
 from wagtail.search import index
 
 if TYPE_CHECKING:
@@ -59,7 +59,7 @@ class ContactDetails(index.Indexed, models.Model):
         return str(self.name)
 
 
-class GlossaryTerm(TranslatableMixin, PreviewableMixin, RevisionMixin, index.Indexed, models.Model):
+class GlossaryTerm(TranslatableMixin, DraftStateMixin, PreviewableMixin, RevisionMixin, index.Indexed, models.Model):
     """A model for glossary terms."""
 
     name = models.CharField(max_length=255)
@@ -91,8 +91,9 @@ class GlossaryTerm(TranslatableMixin, PreviewableMixin, RevisionMixin, index.Ind
         constraints: ClassVar[list[models.BaseConstraint]] = [
             models.UniqueConstraint(
                 Lower("name"),
+                "locale",
                 name="core_glossary_term_name_unique",
-                violation_error_message="A glossary term with this name already exists.",
+                violation_error_message="A glossary term with this name for this locale already exists.",
             ),
             models.UniqueConstraint(
                 fields=("translation_key", "locale"), name="unique_translation_key_locale_core_glossaryterm"

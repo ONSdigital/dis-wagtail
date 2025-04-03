@@ -2,6 +2,7 @@ from typing import TYPE_CHECKING, Union
 
 from django.apps import apps
 from django.conf import settings
+from django.conf.urls.i18n import i18n_patterns
 from django.urls import include, path, re_path
 from django.views.decorators.cache import never_cache
 from django.views.decorators.vary import vary_on_headers
@@ -116,10 +117,11 @@ urlpatterns = (
             private_media_views.ImageServeView.as_view(),
             name="wagtailimages_serve",
         ),
-        # Add Wagtail URLs at the end.
-        # Wagtail cache-control is set on the page models' serve methods
-        path("", include(wagtail_urls)),
     ]
+    + i18n_patterns(
+        path("", include(wagtail_urls)),
+        prefix_default_language=False,
+    )
 )
 
 # Error handlers

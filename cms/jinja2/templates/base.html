@@ -30,6 +30,11 @@
     {% set body_class = '' %}
 {% endif %}
 
+{# Untranslated pages will have aliases to the original page #}
+{% if page.alias_of and request.LANGUAGE_CODE != page.alias_of.locale.language_code %}
+    {% set localised_version_not_available = true %}
+{% endif %}
+
 {%- set page_title -%}
     {%- with current_site=wagtail_site() -%}
         {% if current_site and page.pk == current_site.root_page.pk and current_site.site_name %}{{ current_site.site_name }} - {% endif %}{% if page.seo_title %}{{ page.seo_title }}{% else %}{{ page.display_title | default(page.title) }}{% endif %}{% if current_site and page.pk != current_site.root_page.pk and current_site.site_name %} - {{ current_site.site_name }}{% endif %}
@@ -37,17 +42,17 @@
 {%- endset -%}
 
 {% set navigation_settings = settings.navigation.NavigationSettings %}
-{% set main_menu = main_menu | default(navigation_settings.main_menu) %}
+{% set main_menu = main_menu | default(navigation_settings.main_menu.localized) %}
 
-{% set footer_menu = footer_menu | default(navigation_settings.footer_menu) %}
+{% set footer_menu = footer_menu | default(navigation_settings.footer_menu.localized) %}
 
 {% set pageConfig = {
     "bodyClasses": body_class,
     "title": page_title,
     "header": {
         "phase": {
-            "badge": 'Beta',
-            "html": 'This is a new service.'
+            "badge": _('Beta'),
+            "html": _('This is a new service.')
         },
         "language": {
             "languages": languages
@@ -55,11 +60,11 @@
         "mastheadLogoUrl": "/",
         "navLinks": {
             "id": "nav-links-external",
-            "ariaLabel": 'Main menu',
-            "ariaListLabel": 'Menu',
+            "ariaLabel": _('Main menu'),
+            "ariaListLabel": _('Menu'),
             "toggleNavButton": {
-                "text": 'Menu',
-                "ariaLabel": 'Toggle main menu'
+                "text": _('Menu'),
+                "ariaLabel": _('Toggle main menu')
             },
             "keyLinksList": main_menu_highlights(main_menu),
             "itemsList": main_menu_columns(main_menu)
