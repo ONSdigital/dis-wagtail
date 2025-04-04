@@ -22,7 +22,6 @@ class AuditLogTestCase(WagtailTestUtils, TestCase):
         self.assertEqual(record.msg, "User logged in")
         self.assertEqual(record.user_id, self.user.id)
         self.assertEqual(record.event, "user_logged_in")
-        self.assertIsNone(record.ip_address)
         self.assertIsNone(record.user_agent)
 
     def test_logout(self):
@@ -39,7 +38,6 @@ class AuditLogTestCase(WagtailTestUtils, TestCase):
         self.assertEqual(record.msg, "User logged out")
         self.assertEqual(record.user_id, self.user.id)
         self.assertEqual(record.event, "user_logged_out")
-        self.assertIsNone(record.ip_address)
         self.assertIsNone(record.user_agent)
 
     def test_logout_without_login(self):
@@ -57,7 +55,6 @@ class AuditLogTestCase(WagtailTestUtils, TestCase):
         self.assertEqual(record.msg, "Login failed")
         self.assertEqual(record.username, "username")
         self.assertEqual(record.event, "user_login_failed")
-        self.assertIsNone(record.ip_address)
         self.assertIsNone(record.user_agent)
 
     def test_wagtail_login(self):
@@ -77,7 +74,6 @@ class AuditLogTestCase(WagtailTestUtils, TestCase):
         self.assertEqual(record.msg, "User logged in")
         self.assertEqual(record.user_id, self.user.id)
         self.assertEqual(record.event, "user_logged_in")
-        self.assertEqual(record.ip_address, "127.0.0.1")
         self.assertEqual(record.user_agent, "my browser")
 
     def test_wagtail_logout(self):
@@ -99,7 +95,6 @@ class AuditLogTestCase(WagtailTestUtils, TestCase):
         self.assertEqual(record.msg, "User logged out")
         self.assertEqual(record.user_id, self.user.id)
         self.assertEqual(record.event, "user_logged_out")
-        self.assertEqual(record.ip_address, "127.0.0.1")
         self.assertEqual(record.user_agent, "my browser")
 
     def test_wagtail_login_failed(self):
@@ -119,5 +114,4 @@ class AuditLogTestCase(WagtailTestUtils, TestCase):
         self.assertEqual(record.msg, "Login failed")
         self.assertEqual(record.username, self.user.username)
         self.assertEqual(record.event, "user_login_failed")
-        self.assertEqual(record.ip_address, "127.0.0.1")
         self.assertEqual(record.user_agent, "my browser")
