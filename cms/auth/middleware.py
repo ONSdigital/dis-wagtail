@@ -7,7 +7,7 @@ from django.contrib.auth import get_user_model, login, logout
 from django.contrib.auth.middleware import AuthenticationMiddleware
 
 from cms.auth.utils import (
-    extract_and_validate_token,
+    validate_jwt,
 )
 
 if TYPE_CHECKING:
@@ -38,8 +38,8 @@ class ONSAuthMiddleware(AuthenticationMiddleware):
             return
 
         # Validate tokens
-        access_payload = extract_and_validate_token(access_token, settings.ACCESS_TOKEN_COOKIE_NAME)
-        id_payload = extract_and_validate_token(id_token, settings.ID_TOKEN_COOKIE_NAME)
+        access_payload = validate_jwt(access_token, token_type="access")  # noqa: S106
+        id_payload = validate_jwt(id_token, token_type="id")  # noqa: S106
 
         if not access_payload or not id_payload:
             if request.user.is_authenticated:
@@ -48,15 +48,11 @@ class ONSAuthMiddleware(AuthenticationMiddleware):
 
             return
 
-        access_payload_username = access_payload.get("username")
-        id_payload_username = id_payload.get("cognito:username")
-        email = id_payload.get("email")
+        access_payload_username = access_payload["username"]
+        id_payload_username = id_payload["cognito:username"]
 
-        # if required fields are missing or the tokens do not match, stop processing
-        if (
-            not all([access_payload_username, id_payload_username, email])
-            or access_payload_username != id_payload_username
-        ):
+        if access_payload_username != id_payload_username:
+            logger.error("Access token and ID token do not match.")
             return
 
         if request.user.is_authenticated:

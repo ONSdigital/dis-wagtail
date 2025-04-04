@@ -907,16 +907,23 @@ LOGOUT_REDIRECT_URL = env.get("LOGOUT_REDIRECT_URL", env.get("WAGTAILADMIN_LOGIN
 AUTH_TOKEN_REFRESH_URL = env.get("AUTH_TOKEN_REFRESH_URL")
 SESSION_COOKIE_AGE = env.get("SESSION_COOKIE_AGE", 60 * 15)  # 15 minutes
 SESSION_EXPIRE_AT_BROWSER_CLOSE = True
-IDENTITY_API_URL = env.get("IDENTITY_API_URL")
+IDENTITY_API_BASE_URL = env.get("IDENTITY_API_BASE_URL")
 AWS_COGNITO_LOGIN_ENABLED = env.get("AWS_COGNITO_LOGIN_ENABLED", "true").lower() == "true"
+AWS_COGNITO_USER_POOL_ID = env.get("AWS_COGNITO_USER_POOL_ID")
+AWS_COGNITO_APP_CLIENT_ID = env.get("AWS_COGNITO_APP_CLIENT_ID")
 
 # TODO: Make system checks
-if not WAGTAIL_CORE_ADMIN_LOGIN_ENABLED:
-    if not AUTH_TOKEN_REFRESH_URL:
-        raise ValueError("AUTH_TOKEN_REFRESH_URL must be set when WAGTAIL_CORE_ADMIN_LOGIN_ENABLED is False")
+if AWS_COGNITO_LOGIN_ENABLED:
+    required_env_vars = [
+        "IDENTITY_API_BASE_URL",
+        "AUTH_TOKEN_REFRESH_URL",
+        "AWS_COGNITO_APP_CLIENT_ID",
+        "AWS_COGNITO_USER_POOL_ID",
+    ]
+    for var in required_env_vars:
+        if not env.get(var):
+            raise ImproperlyConfigured(f"Missing required environment variable: {var}")
 
-    if not IDENTITY_API_URL:
-        raise ValueError("IDENTITY_API_URL must be set when WAGTAIL_CORE_ADMIN_LOGIN_ENABLED is False")
 
 # Groups
 PUBLISHING_ADMIN_GROUP_NAME = "Publishing Admins"

@@ -95,7 +95,7 @@ select = [
 ]
 
 ignore = [
-    # Conflicts with google docstring style
+    # Conflicts with Google docstring style
     "D205",
     # Allow missing docstring, remove to enforce docstrings across the board
     "D100", "D101", "D102", "D103", "D104", "D105", "D106", "D107",
