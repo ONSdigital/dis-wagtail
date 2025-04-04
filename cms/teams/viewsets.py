@@ -8,6 +8,7 @@ from wagtail.admin.viewsets.chooser import ChooserViewSet
 from wagtail.admin.viewsets.model import ModelViewSet
 from wagtail.permission_policies import ModelPermissionPolicy
 
+from .admin_forms import TeamAdminForm
 from .models import Team
 
 if TYPE_CHECKING:
@@ -51,11 +52,8 @@ class TeamsViewSet(ModelViewSet):
         "users",
     ]
 
-    @property
-    def form_fields(self) -> list[str]:
-        # note: when ALLOW_TEAM_MANAGEMENT is removed, convert this to an actual property
-        # form_fields: ClassVar[list[str]] = ["name"]
-        return ["name", "identifier"] if settings.ALLOW_TEAM_MANAGEMENT else ["name"]
+    def get_form_class(self, for_update: bool = False) -> type[TeamAdminForm]:
+        return TeamAdminForm
 
     @property
     def permission_policy(self) -> ViewOnlyModelPermissionPolicy:
