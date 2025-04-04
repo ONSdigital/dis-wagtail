@@ -2,11 +2,16 @@ import factory
 import wagtail_factories
 from wagtail import blocks
 from wagtail.rich_text import RichText
-from wagtail_factories.blocks import BlockFactory, PageChooserBlockFactory, StructBlockFactory
+from wagtail_factories.blocks import (
+    BlockFactory,
+    PageChooserBlockFactory,
+    StructBlockFactory,
+)
 
 from cms.core.blocks.related import LinkBlock, RelatedContentBlock
 from cms.core.blocks.section_blocks import SectionBlock, SectionContentBlock
 from cms.core.models import ContactDetails
+from cms.core.models.snippets import GlossaryTerm
 
 
 class DateTimeBlockFactory(BlockFactory):
@@ -53,6 +58,16 @@ class ContactDetailsFactory(factory.django.DjangoModelFactory):
 
     name = factory.Faker("name")
     email = factory.Faker("email")
+
+
+class GlossaryTermFactory(factory.django.DjangoModelFactory):
+    """Factory for GlossaryTerm."""
+
+    class Meta:
+        model = GlossaryTerm
+
+    name = factory.Faker("text", max_nb_chars=20)
+    definition = factory.Faker("text", max_nb_chars=100)
 
 
 class SectionContentBlockFactory(StructBlockFactory):

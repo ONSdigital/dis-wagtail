@@ -24,9 +24,6 @@ class TestTopicChooserViewSet(TestCase, WagtailTestUtils):
     def setUp(self):
         self.client.force_login(self.superuser)
 
-        # Ensure dummy root exists
-        self.root_topic = Topic.objects.root_topic()
-
         # Create some normal topics under the dummy root
         self.topic_a = Topic(id="topic-a", title="Topic A")
         Topic.save_new(self.topic_a)
@@ -82,9 +79,6 @@ class TestExclusiveTopicChooserViewSet(TestCase, WagtailTestUtils):
 
         # Wagtail root page
         self.root_page = Page.objects.get(pk=1)
-
-        # Ensure the dummy root topic is created
-        self.root_topic = Topic.objects.root_topic()
 
         # Create two normal topics
         self.topic_x = Topic(id="topic-x", title="Topic X")

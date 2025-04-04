@@ -2,14 +2,22 @@ from http import HTTPStatus
 
 from django.test import TestCase
 from django.urls import reverse
+from wagtail.models import ModelLogEntry
 from wagtail.test.utils.wagtail_tests import WagtailTestUtils
 
 from cms.articles.tests.factories import StatisticalArticlePageFactory
 from cms.bundles.admin_forms import AddToBundleForm
-from cms.bundles.models import Bundle
+from cms.bundles.enums import BundleStatus
+from cms.bundles.models import Bundle, BundleTeam
 from cms.bundles.tests.factories import BundleFactory, BundlePageFactory
-from cms.bundles.tests.utils import grant_all_bundle_permissions, grant_all_page_permissions, make_bundle_viewer
-from cms.users.tests.factories import GroupFactory, UserFactory
+from cms.bundles.tests.utils import (
+    create_bundle_manager,
+    create_bundle_viewer,
+)
+from cms.home.models import HomePage
+from cms.teams.models import Team
+from cms.users.tests.factories import UserFactory
+from cms.workflows.tests.utils import mark_page_as_ready_to_publish
 
 
 class AddToBundleViewTestCase(WagtailTestUtils, TestCase):
@@ -17,14 +25,8 @@ class AddToBundleViewTestCase(WagtailTestUtils, TestCase):
     def setUpTestData(cls):
         cls.superuser = cls.create_superuser(username="admin")
 
-        cls.publishing_group = GroupFactory(name="Publishing Officers", access_admin=True)
-        grant_all_bundle_permissions(cls.publishing_group)
-        grant_all_page_permissions(cls.publishing_group)
-        cls.publishing_officer = UserFactory(username="publishing_officer")
-        cls.publishing_officer.groups.add(cls.publishing_group)
-
-        cls.bundle_viewer = UserFactory(username="bundle.viewer", access_admin=True)
-        make_bundle_viewer(cls.bundle_viewer)
+        cls.publishing_officer = create_bundle_manager()
+        cls.bundle_viewer = create_bundle_viewer()
 
     def setUp(self):
         self.bundle = BundleFactory(name="First Bundle", created_by=self.publishing_officer)
@@ -72,7 +74,7 @@ class AddToBundleViewTestCase(WagtailTestUtils, TestCase):
         BundlePageFactory(parent=another_bundle, page=self.statistical_article_page)
         response = self.client.get(self.add_url, follow=True)
         self.assertRedirects(response, "/admin/")
-        self.assertContains(response, "PSF: November 2024 is already in a bundle")
+        self.assertContains(response, "Page &#x27;PSF: November 2024&#x27; is already in a bundle")
 
     def test_post__successful(self):
         """Checks that on successful post, the page is added to the bundle and
@@ -85,3 +87,169 @@ class AddToBundleViewTestCase(WagtailTestUtils, TestCase):
         self.assertEqual(response.status_code, HTTPStatus.OK)
         self.assertContains(response, "Page &#x27;PSF: November 2024&#x27; added to bundle &#x27;First Bundle&#x27;")
         self.assertQuerySetEqual(self.statistical_article_page.bundles, Bundle.objects.all())
+
+
+class PreviewBundleViewTestCase(WagtailTestUtils, TestCase):
+    @classmethod
+    def setUpTestData(cls):
+        cls.superuser = cls.create_superuser(username="admin")
+
+        cls.publishing_officer = create_bundle_manager()
+        cls.previewer = create_bundle_viewer()
+
+        cls.user_with_only_admin_access = UserFactory(access_admin=True)
+
+        cls.bundle = BundleFactory(name="First Bundle", in_review=True, created_by=cls.publishing_officer)
+
+        cls.page_ready_for_publishing = StatisticalArticlePageFactory(title="March 2025", parent__title="PSF")
+        mark_page_as_ready_to_publish(cls.page_ready_for_publishing, cls.publishing_officer)
+
+        cls.page_not_ready_for_publishing = StatisticalArticlePageFactory(title="January 2025", parent__title="PSF")
+
+        BundlePageFactory(parent=cls.bundle, page=cls.page_ready_for_publishing)
+        BundlePageFactory(parent=cls.bundle, page=cls.page_not_ready_for_publishing)
+
+        cls.preview_team = Team.objects.create(identifier="psf", name="PSF preview")
+        cls.team = Team.objects.create(identifier="foo", name="Not a preview team")
+        cls.inactive_team = Team.objects.create(identifier="inactive", name="Retired", is_active=False)
+
+        BundleTeam.objects.create(parent=cls.bundle, team=cls.preview_team)
+        BundleTeam.objects.create(parent=cls.bundle, team=cls.inactive_team)
+
+        cls.url_preview_ready = reverse("bundles:preview", args=[cls.bundle.pk, cls.page_ready_for_publishing.pk])
+        cls.url_not_preview_ready = reverse(
+            "bundles:preview", args=[cls.bundle.pk, cls.page_not_ready_for_publishing.pk]
+        )
+
+    def test_view_requires_access_to_admin(self):
+        response = self.client.get(self.url_preview_ready, follow=True)
+        self.assertRedirects(response, f"/admin/login/?next={self.url_preview_ready}")
+
+        self.client.force_login(self.publishing_officer)
+        response = self.client.get(self.url_preview_ready)
+        self.assertEqual(response.status_code, HTTPStatus.OK)
+
+    def test_view_checks__bundle_and_page_exists(self):
+        self.client.force_login(self.superuser)
+        scenarios = [
+            # bundle id, page id, success
+            (self.bundle.pk, self.page_ready_for_publishing.pk, HTTPStatus.OK),
+            (self.bundle.pk, 99999, HTTPStatus.NOT_FOUND),
+            (99999, self.page_ready_for_publishing.pk, HTTPStatus.NOT_FOUND),
+        ]
+
+        for bundle_id, page_id, status_code in scenarios:
+            with self.subTest(f"Bundle {bundle_id}, Page {page_id}, HTTP Status: {status_code}"):
+                response = self.client.get(reverse("bundles:preview", args=[bundle_id, page_id]))
+                self.assertEqual(response.status_code, status_code)
+
+    def test_view_checks__page_in_bundle(self):
+        # log in with the superuser as the check is whether the page is in the bundle or not
+        self.client.force_login(self.superuser)
+
+        page = HomePage.objects.first()
+        response = self.client.get(reverse("bundles:preview", args=[self.bundle.pk, page.pk]))
+        self.assertEqual(response.status_code, HTTPStatus.NOT_FOUND)
+
+    def test_view_checks__user_can_preview(self):
+        scenarios = [
+            (self.superuser, HTTPStatus.OK, None),
+            (self.publishing_officer, HTTPStatus.OK, None),
+            # while they are previewer, they are not in the right team
+            (self.previewer, HTTPStatus.FOUND, "Sorry, you do not have permission to access this area."),
+            (
+                self.user_with_only_admin_access,
+                HTTPStatus.FOUND,
+                "Sorry, you do not have permission to access this area.",
+            ),
+        ]
+
+        for user, status_code, message in scenarios:
+            with self.subTest(f"User: {user}, HTTP status: {status_code}"):
+                self.client.force_login(user)
+                response = self.client.get(self.url_preview_ready)
+                self.assertEqual(response.status_code, status_code)
+
+                if message:
+                    self.assertEqual(response.context["message"], message)
+
+    def test_view__previewer_can_preview_only_when_in_the_correct_preview_team(self):
+        self.client.force_login(self.previewer)
+
+        # while the team is in the bundle, it is inactive, so no access
+        self.previewer.teams.add(self.inactive_team)
+        response = self.client.get(self.url_preview_ready, follow=True)
+        self.assertContains(response, "Sorry, you do not have permission to access this area.")
+
+        self.previewer.teams.add(self.preview_team)
+        response = self.client.get(self.url_preview_ready)
+        self.assertEqual(response.status_code, HTTPStatus.OK)
+
+        self.assertContains(response, self.url_preview_ready)
+        self.assertContains(response, self.page_ready_for_publishing.display_title)
+        self.assertNotContains(response, self.url_not_preview_ready)
+
+    def test_view__previewer_can_preview_only_when_bundle_in_review(self):
+        self.client.force_login(self.previewer)
+
+        self.previewer.teams.add(self.preview_team)
+        for status in [BundleStatus.PENDING, BundleStatus.APPROVED, BundleStatus.RELEASED]:
+            self.bundle.status = status
+            self.bundle.save(update_fields=["status"])
+            response = self.client.get(self.url_preview_ready, follow=True)
+            self.assertContains(response, "Sorry, you do not have permission to access this area.")
+
+    def test_view_checks__page_ready_to_be_published(self):
+        # previewers can only access pages that are ready to publish
+        self.client.force_login(self.previewer)
+        self.previewer.teams.add(self.preview_team)
+
+        response = self.client.get(self.url_not_preview_ready)
+        self.assertEqual(response.status_code, HTTPStatus.NOT_FOUND)
+
+        # bundle managers can use the preview even if the page is not ready
+        self.client.force_login(self.publishing_officer)
+        response = self.client.get(self.url_not_preview_ready)
+        self.assertEqual(response.status_code, HTTPStatus.OK)
+
+    def test_preview_logs_action(self):
+        self.client.force_login(self.publishing_officer)
+
+        self.assertEqual(ModelLogEntry.objects.filter(action="bundles.preview").count(), 0)
+
+        self.client.get(self.url_preview_ready)
+
+        log_entries = ModelLogEntry.objects.filter(action="bundles.preview")
+        self.assertEqual(len(log_entries), 1)
+
+        entry = log_entries[0]
+        self.assertEqual(entry.user, self.publishing_officer)
+        self.assertDictEqual(
+            entry.data,
+            {
+                "type": "page",
+                "id": self.page_ready_for_publishing.pk,
+                "title": self.page_ready_for_publishing.display_title,
+            },
+        )
+
+    def test_preview_without_access_logs_action(self):
+        self.client.force_login(self.user_with_only_admin_access)
+
+        self.client.get(self.url_preview_ready)
+
+        log_entries = ModelLogEntry.objects.filter(action="bundles.preview.attempt")
+        self.assertEqual(len(log_entries), 1)
+
+        entry = log_entries[0]
+        self.assertEqual(entry.user, self.user_with_only_admin_access)
+        self.assertDictEqual(
+            entry.data,
+            {
+                "type": "page",
+                "id": self.page_ready_for_publishing.pk,
+                "title": self.page_ready_for_publishing.display_title,
+            },
+        )
+
+        self.assertEqual(ModelLogEntry.objects.filter(action="bundles.preview").count(), 0)

@@ -71,8 +71,8 @@ class TopicPage(ExclusiveTaxonomyMixin, BasePage):  # type: ignore[django-manage
     template = "templates/pages/topic_page.html"
     parent_page_types: ClassVar[list[str]] = ["themes.ThemePage"]
     subpage_types: ClassVar[list[str]] = ["articles.ArticleSeriesPage", "methodology.MethodologyPage"]
-    page_description = _("A specific topic page. e.g. 'Public sector finance' or 'Inflation and price indices'.")
-    label = _("Topic")
+    page_description = "A specific topic page. e.g. 'Public sector finance' or 'Inflation and price indices'."
+    label = _("Topic")  # type: ignore[assignment]
 
     summary = RichTextField(features=settings.RICH_TEXT_BASIC)
     featured_series = models.ForeignKey(
@@ -89,13 +89,13 @@ class TopicPage(ExclusiveTaxonomyMixin, BasePage):  # type: ignore[django-manage
         "summary",
         FieldPanel(
             "featured_series",
-            heading=_("Featured"),
+            heading="Featured",
             widget=FeaturedSeriesPageChooserWidget(linked_fields={"topic_page_id": "#id_topic_page_id"}),
         ),
         InlinePanel(
             "related_articles",
-            heading=_("Highlighted articles"),
-            help_text=_(
+            heading="Highlighted articles",
+            help_text=(
                 f"Choose up to {MAX_ITEMS_PER_SECTION} articles to highlight. "
                 "The 'Related articles' section will be topped up automatically."
             ),
@@ -103,14 +103,14 @@ class TopicPage(ExclusiveTaxonomyMixin, BasePage):  # type: ignore[django-manage
         ),
         InlinePanel(
             "related_methodologies",
-            heading=_("Highlighted methods and quality information"),
-            help_text=_(
+            heading="Highlighted methods and quality information",
+            help_text=(
                 f"Choose up to {MAX_ITEMS_PER_SECTION} methodologies to highlight. "
                 "The 'Methods and quality information' section will be topped up automatically."
             ),
             max_num=MAX_ITEMS_PER_SECTION,
         ),
-        FieldPanel("explore_more", heading=_("Explore more")),
+        FieldPanel("explore_more", heading="Explore more"),
     ]
 
     search_fields: ClassVar[list[index.BaseField]] = [*BasePage.search_fields, index.SearchField("summary")]

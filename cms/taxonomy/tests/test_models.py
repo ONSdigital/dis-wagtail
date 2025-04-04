@@ -135,7 +135,6 @@ class GenericPageToTaxonomyTopicModelTest(TestCase):
         """
         self.root_page = Page.objects.get(id=1)
         self.child_page = self.root_page.add_child(instance=Page(title="My Test Page"))
-        self.dummy_root = Topic.objects.root_topic()
 
         # Create some normal topics (depth=2) using save_topic()
         self.topic_a = Topic(id="topic-a", title="Topic A")

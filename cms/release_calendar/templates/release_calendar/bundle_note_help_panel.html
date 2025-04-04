@@ -1,0 +1,11 @@
+{% load wagtailadmin_tags %}
+
+<div class="{{ self.classname }} help-block help-{{ self.status }}">
+    {% if self.status == "info" %}
+        {% icon name="help" %}
+    {% elif self.status == "warning" %}
+        {% icon name="warning" %}
+    {% endif %}
+
+    {{ self.content|safe }}
+</div>

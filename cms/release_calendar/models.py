@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, Any, ClassVar
+from typing import TYPE_CHECKING, Any, ClassVar, Optional
 
 from django.conf import settings
 from django.db import models
@@ -12,6 +12,7 @@ from wagtail.search import index
 
 from cms.core.fields import StreamField
 from cms.core.models import BasePage
+from cms.datasets.blocks import DatasetStoryBlock
 
 from .blocks import (
     ReleaseCalendarChangesStoryBlock,
@@ -21,9 +22,12 @@ from .blocks import (
 )
 from .enums import NON_PROVISIONAL_STATUSES, ReleaseStatus
 from .forms import ReleaseCalendarPageAdminForm
+from .panels import ReleaseCalendarBundleNotePanel
 
 if TYPE_CHECKING:
     from django.http import HttpRequest
+
+    from cms.bundles.models import Bundle
 
 
 class ReleaseCalendarIndex(BasePage):  # type: ignore[django-manager-missing]
@@ -43,31 +47,33 @@ class ReleaseCalendarPage(BasePage):  # type: ignore[django-manager-missing]
     template = "templates/pages/release_calendar/release_calendar_page.html"
     parent_page_types: ClassVar[list[str]] = ["ReleaseCalendarIndex"]
     subpage_types: ClassVar[list[str]] = []
+    search_index_content_type: ClassVar[str] = "release"
 
     # Fields
     status = models.CharField(choices=ReleaseStatus.choices, default=ReleaseStatus.PROVISIONAL, max_length=32)
     summary = RichTextField(features=settings.RICH_TEXT_BASIC)
 
     release_date = models.DateTimeField(
-        blank=True, null=True, help_text=_("Required once the release has been confirmed.")
+        blank=True, null=True, help_text="Required once the release has been confirmed."
     )
     release_date_text = models.CharField(
-        max_length=50, blank=True, help_text=_("Format: 'Month YYYY', or 'Month YYYY to Month YYYY'.")
+        max_length=50, blank=True, help_text="Format: 'Month YYYY', or 'Month YYYY to Month YYYY'."
     )
     next_release_date = models.DateTimeField(blank=True, null=True)
     next_release_text = models.CharField(
-        max_length=255, blank=True, help_text=_("Formats: 'DD Month YYYY Time' or 'To be confirmed'.")
+        max_length=255, blank=True, help_text="Formats: 'DD Month YYYY Time' or 'To be confirmed'."
     )
 
     notice = RichTextField(
         features=settings.RICH_TEXT_BASIC,
         blank=True,
-        help_text=_(
+        help_text=(
             "Used for data change or cancellation notices. The notice is required when the release is cancelled"
         ),
     )
 
     content = StreamField(ReleaseCalendarStoryBlock(), blank=True)
+    datasets = StreamField(DatasetStoryBlock(), blank=True, default=list)
 
     contact_details = models.ForeignKey(
         "core.ContactDetails",
@@ -79,23 +85,23 @@ class ReleaseCalendarPage(BasePage):  # type: ignore[django-manager-missing]
 
     # Fields: about the data
     is_accredited = models.BooleanField(
-        _("Accredited Official Statistics"),
+        "Accredited Official Statistics",
         default=False,
-        help_text=_(
+        help_text=(
             "If ticked, will display an information block about the data being accredited official statistics "
             "and include the accredited logo."
         ),
     )
     is_census = models.BooleanField(
-        _("Census"),
+        "Census",
         default=False,
-        help_text=_("If ticked, will display an information block about the data being related to the Census."),
+        help_text="If ticked, will display an information block about the data being related to the Census.",
     )
 
     changes_to_release_date = StreamField(
         ReleaseCalendarChangesStoryBlock(),
         blank=True,
-        help_text=_("Required if making changes to confirmed release dates."),
+        help_text="Required if making changes to confirmed release dates.",
     )
     pre_release_access = StreamField(ReleaseCalendarPreReleaseAccessStoryBlock(), blank=True)
     related_links = StreamField(ReleaseCalendarRelatedLinksStoryBlock(), blank=True)
@@ -105,34 +111,36 @@ class ReleaseCalendarPage(BasePage):  # type: ignore[django-manager-missing]
             [
                 *Page.content_panels,
                 "status",
+                ReleaseCalendarBundleNotePanel(heading="Note", classname="bundle-note"),
                 FieldRowPanel(
                     [
                         "release_date",
-                        FieldPanel("release_date_text", heading=_("Or, release date text")),
+                        FieldPanel("release_date_text", heading="Or, release date text"),
                     ],
                     heading="",
                 ),
                 FieldRowPanel(
                     [
                         "next_release_date",
-                        FieldPanel("next_release_text", heading=_("Or, next release text")),
+                        FieldPanel("next_release_text", heading="Or, next release text"),
                     ],
                     heading="",
                 ),
                 "notice",
             ],
-            heading=_("Metadata"),
+            heading="Metadata",
             icon="cog",
         ),
         "summary",
         FieldPanel("content", icon="list-ul"),
+        FieldPanel("datasets", help_text="Select the datasets that this release relates to.", icon="doc-full"),
         FieldPanel("contact_details", icon="group"),
         MultiFieldPanel(
             [
                 "is_accredited",
                 "is_census",
             ],
-            heading=_("About the data"),
+            heading="About the data",
             icon="info-circle",
         ),
         FieldPanel("changes_to_release_date", icon="comment"),
@@ -175,6 +183,9 @@ class ReleaseCalendarPage(BasePage):  # type: ignore[django-manager-missing]
             for block in self.content:  # pylint: disable=not-an-iterable
                 items += block.block.to_table_of_contents_items(block.value)
 
+            if self.datasets:
+                items += [{"url": "#datasets", "text": _("Data")}]
+
         if self.status in NON_PROVISIONAL_STATUSES and self.changes_to_release_date:
             items += [{"url": "#changes-to-release-date", "text": _("Changes to this release date")}]
 
@@ -195,3 +206,10 @@ class ReleaseCalendarPage(BasePage):  # type: ignore[django-manager-missing]
                 items += [{"url": "#links", "text": _("You might also be interested in")}]
 
         return items
+
+    @cached_property
+    def active_bundle(self) -> Optional["Bundle"]:
+        if not self.pk:
+            return None
+        bundle: Optional[Bundle] = self.bundles.active().first()  # pylint: disable=no-member
+        return bundle

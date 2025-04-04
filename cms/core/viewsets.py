@@ -1,14 +1,14 @@
 from typing import ClassVar
 
-from django.utils.translation import gettext_lazy as _
-from wagtail.admin.ui.tables import Column, UpdatedAtColumn
+from django.db.models import F, QuerySet
+from wagtail.admin.ui.tables import Column, UpdatedAtColumn, UserColumn
 from wagtail.snippets.views.chooser import ChooseResultsView as SnippetChooseResultsView
 from wagtail.snippets.views.chooser import ChooseView as SnippetChooseView
 from wagtail.snippets.views.chooser import SnippetChooserViewSet
 from wagtail.snippets.views.snippets import IndexView as SnippetIndexView
 from wagtail.snippets.views.snippets import SnippetViewSet
 
-from cms.core.models import ContactDetails
+from cms.core.models import ContactDetails, GlossaryTerm
 
 
 class ContactDetailsIndex(SnippetIndexView):
@@ -19,7 +19,7 @@ class ContactDetailsChooseColumnsMixin:
     @property
     def columns(self) -> list[Column]:
         title_column = self.title_column  # type: ignore[attr-defined]
-        title_column.label = _("Name")
+        title_column.label = "Name"
         return [title_column, Column("email"), Column("phone")]
 
 
@@ -47,3 +47,52 @@ class ContactDetailsViewSet(SnippetViewSet):
 
     index_view_class = ContactDetailsIndex
     chooser_viewset_class = ContactDetailsChooserViewset
+
+
+class GlossaryTermsIndex(SnippetIndexView):
+    list_display: ClassVar[list[str | Column]] = [
+        "name",
+        UpdatedAtColumn(),
+        UserColumn("updated_by"),
+        UserColumn("owner"),
+    ]
+
+    def get_base_queryset(self) -> QuerySet[GlossaryTerm]:
+        queryset: QuerySet[GlossaryTerm] = super().get_base_queryset()
+        return queryset.select_related("latest_revision__user", "latest_revision__user__wagtail_userprofile")
+
+
+class GlossaryTermsChooseColumnsMixin:
+    @property
+    def columns(self) -> list[Column]:
+        title_column = self.title_column  # type: ignore[attr-defined]
+        title_column.label = "Name"
+        return [title_column, UpdatedAtColumn(), UserColumn("updated_by")]
+
+    def get_object_list(self) -> QuerySet[GlossaryTerm]:
+        queryset = GlossaryTerm.objects.select_related(
+            "latest_revision", "latest_revision__user", "latest_revision__user__wagtail_userprofile"
+        )
+        queryset = queryset.annotate(_updated_at=F("latest_revision__created_at"))
+        return queryset
+
+
+class GlossaryChooseView(GlossaryTermsChooseColumnsMixin, SnippetChooseView): ...
+
+
+class GlossaryChooseResultsView(GlossaryTermsChooseColumnsMixin, SnippetChooseResultsView): ...
+
+
+class GlossaryChooserViewset(SnippetChooserViewSet):
+    choose_view_class = GlossaryChooseView
+    choose_results_view_class = GlossaryChooseResultsView
+
+
+class GlossaryViewSet(SnippetViewSet):
+    """A snippet viewset for Glossary."""
+
+    model = GlossaryTerm
+    icon = "list-ul"
+
+    index_view_class = GlossaryTermsIndex
+    chooser_viewset_class = GlossaryChooserViewset

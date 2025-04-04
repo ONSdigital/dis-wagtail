@@ -1,17 +1,24 @@
-# fmt: off
-from django.conf import settings
-from django.urls import reverse
-from wagtail import hooks
-from wagtail.admin.menu import MenuItem
+from typing import TYPE_CHECKING
 
+from django.conf import settings
+from wagtail import hooks
+
+from .viewsets import user_chooser_viewset
+
+if TYPE_CHECKING:
+    from .viewsets import UserChooserViewSet
+
+# fmt: off
 if getattr(settings, "ENABLE_DJANGO_DEFENDER", False):
-    from typing import TYPE_CHECKING
+    from django.urls import reverse  # pylint: disable=ungrouped-imports
+    from wagtail.admin.menu import MenuItem  # pylint: disable=ungrouped-imports
+
     if TYPE_CHECKING:
         from django.http import HttpRequest
 
 
     class DjangoAdminMenuItem(MenuItem):
-        """Custom menu item visible only to super users."""
+        """Custom menu item visible only to superusers."""
         def is_shown(self, request: "HttpRequest") -> bool:
             return request.user.is_superuser
 
@@ -25,3 +32,8 @@ if getattr(settings, "ENABLE_DJANGO_DEFENDER", False):
             order=601,
         )
 # fmt: on
+
+
+@hooks.register("register_admin_viewset")
+def register_viewset() -> "UserChooserViewSet":
+    return user_chooser_viewset

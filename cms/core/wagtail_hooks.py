@@ -3,7 +3,7 @@ from django.utils.html import format_html
 from wagtail import hooks
 from wagtail.snippets.models import register_snippet
 
-from cms.core.viewsets import ContactDetailsViewSet
+from cms.core.viewsets import ContactDetailsViewSet, GlossaryViewSet
 
 
 @hooks.register("register_icons")
@@ -28,4 +28,10 @@ def editor_js() -> str:
     return format_html('<script src="{}"></script>', static("js/wagtail-editor-customisations.js"))
 
 
+@hooks.register("insert_global_admin_css")
+def global_admin_css() -> str:
+    return format_html('<link rel="stylesheet" href="{}">', static("css/admin.css"))
+
+
 register_snippet(ContactDetailsViewSet)
+register_snippet(GlossaryViewSet)

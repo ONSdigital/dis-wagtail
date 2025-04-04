@@ -1,5 +1,5 @@
+from django.conf import settings
 from django.db.models import QuerySet
-from django.utils.translation import gettext_lazy as _
 from wagtail.admin.ui.tables import Column
 from wagtail.admin.views.generic.chooser import ChooseResultsView, ChooseView
 from wagtail.admin.viewsets.chooser import ChooserViewSet
@@ -17,7 +17,7 @@ class TopicChooseViewMixin:
     def columns(self) -> list[Column]:
         return [
             *getattr(super(), "columns", []),
-            Column("parent_topics", label=_("Parent Topics"), accessor="display_parent_topics"),
+            Column("parent_topics", label="Parent Topics", accessor="display_parent_topics"),
         ]
 
 
@@ -31,8 +31,8 @@ class TopicChooserViewSet(ChooserViewSet):
     model = Topic
     icon = "tag"
 
-    choose_one_text = _("Choose a topic")
-    choose_another_text = _("Choose a different topic")
+    choose_one_text = "Choose a topic"
+    choose_another_text = "Choose a different topic"
 
     choose_view_class = TopicChooseView
     choose_results_view_class = TopicChooseResultsView
@@ -47,6 +47,8 @@ class ExclusiveTopicChooserViewSet(TopicChooserViewSet):
         # Get the HTTP_REFERER from meta request headers, extract the page type either from the URL or by looking up
         # the page ID to get the page type.
 
+        if not settings.ENFORCE_EXCLUSIVE_TAXONOMY:
+            return Topic.objects.all()
         return Topic.objects.filter(related_themepage=None, related_topicpage=None)
 
 

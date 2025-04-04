@@ -4,6 +4,7 @@ from collections.abc import Iterable
 from django.conf import settings
 from django.contrib.auth.models import AbstractUser, Group
 from django.db import models
+from django.utils.functional import cached_property
 
 from cms.teams.models import Team
 
@@ -21,6 +22,10 @@ class User(AbstractUser):
         self._assign_teams(groups_ids)
 
         self.save()
+
+    @cached_property
+    def active_team_ids(self) -> list[int]:
+        return list(self.teams.filter(is_active=True).values_list("pk", flat=True))
 
     def _assign_groups(self, /, groups_ids: Iterable[str]) -> None:
         """Assign groups to the user based on their Cognito groups."""

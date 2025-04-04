@@ -1,6 +1,5 @@
 from typing import TYPE_CHECKING, ClassVar
 
-from django.utils.translation import gettext_lazy as _
 from wagtail.admin.ui.tables import Column, DateColumn
 from wagtail.admin.ui.tables.pages import PageStatusColumn
 from wagtail.admin.views.generic.chooser import ChooseResultsView, ChooseView
@@ -25,14 +24,14 @@ class FeaturedSeriesPageChooseViewMixin:
     def columns(self) -> list["Column"]:
         return [
             self.title_column,  # type: ignore[attr-defined]
-            Column("parent", label=_("Topic"), accessor="get_parent"),
+            Column("parent", label="Topic", accessor="get_parent"),
             DateColumn(
                 "updated",
-                label=_("Updated"),
+                label="Updated",
                 width="12%",
                 accessor="latest_revision_created_at",
             ),
-            PageStatusColumn("status", label=_("Status"), width="12%"),
+            PageStatusColumn("status", label="Status", width="12%"),
         ]
 
 
@@ -47,9 +46,9 @@ class FeaturedSeriesPageChooserViewSet(ChooserViewSet):
     choose_view_class = FeaturedSeriesPageChooseView
     choose_results_view_class = FeaturedSeriesPageChooseResultsView
     register_widget = False
-    choose_one_text = _("Choose Article Series page")
-    choose_another_text = _("Choose another Article Series page")
-    edit_item_text = _("Edit Article Series page")
+    choose_one_text = "Choose Article Series page"
+    choose_another_text = "Choose another Article Series page"
+    edit_item_text = "Edit Article Series page"
 
 
 class HighlightedChildPageChooseViewMixin:
@@ -82,11 +81,11 @@ class HighlightedChildPageChooseViewMixin:
             title_column,
             Column(
                 "release_date",
-                label=_("Release date"),
+                label="Release date",
                 width="12%",
                 accessor="release_date",
             ),
-            PageStatusColumn("status", label=_("Status"), width="12%"),
+            PageStatusColumn("status", label="Status", width="12%"),
         ]
 
 
@@ -106,16 +105,16 @@ class BaseHighlightedChildrenViewSet(ChooserViewSet):
 
 class HighlightedArticlePageChooserViewSet(BaseHighlightedChildrenViewSet):
     model = StatisticalArticlePage
-    choose_one_text = _("Choose Article page")
-    choose_another_text = _("Choose another Article page")
-    edit_item_text = _("Edit Article page")
+    choose_one_text = "Choose Article page"
+    choose_another_text = "Choose another Article page"
+    edit_item_text = "Edit Article page"
 
 
 class HighlightedMethodologyPageChooserViewSet(BaseHighlightedChildrenViewSet):
     model = MethodologyPage
-    choose_one_text = _("Choose Methodology page")
-    choose_another_text = _("Choose another Methodology page")
-    edit_item_text = _("Edit Methodology page")
+    choose_one_text = "Choose Methodology page"
+    choose_another_text = "Choose another Methodology page"
+    edit_item_text = "Edit Methodology page"
 
 
 featured_series_page_chooser_viewset = FeaturedSeriesPageChooserViewSet("topic_featured_series_page_chooser")

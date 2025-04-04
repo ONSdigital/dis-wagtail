@@ -68,6 +68,7 @@ CACHES["default"] = {  # noqa: F405
 # Django Defender
 ENABLE_DJANGO_DEFENDER = False
 
+
 # Import settings from local.py file if it exists. Please use it to keep
 # settings that are not meant to be checked into Git and never check it in.
 # pylint: disable=unused-wildcard-import,useless-suppression
@@ -97,5 +98,6 @@ MIGRATION_LINTER_OPTIONS = {
         "0003_customimage__privacy_and_more",
         "0003_customdocument__privacy_and_more",
         "0002_articleseriespage_listing_image_and_more",  # Ignoring NOT NULL constraint on columns
+        "0003_releasecalendarpage_datasets",
     ],
 }

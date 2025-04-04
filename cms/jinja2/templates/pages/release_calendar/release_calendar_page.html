@@ -74,6 +74,10 @@
             {% block release_content %}
                 {% include_block page.content %}
 
+                {% if page.datasets %}
+                    {% include_block page.datasets %}
+                {% endif %}
+
                 {% with contact_details = page.contact_details%}
                     {% include "templates/components/contact_details/contact_details.html" %}
                 {% endwith %}

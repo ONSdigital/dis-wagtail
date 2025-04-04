@@ -6,14 +6,13 @@ from django.shortcuts import get_object_or_404, redirect
 from django.urls import reverse
 from django.utils.http import url_has_allowed_host_and_scheme
 from django.utils.text import get_text_list
-from django.utils.translation import gettext as _
 from django.views.generic import FormView
 from wagtail.admin import messages
 from wagtail.models import Page
 from wagtail.permission_policies import ModelPermissionPolicy
 
-from .admin_forms import AddToBundleForm
-from .models import Bundle, BundledPageMixin, BundlePage
+from cms.bundles.admin_forms import AddToBundleForm
+from cms.bundles.models import Bundle, BundledPageMixin, BundlePage
 
 if TYPE_CHECKING:
     from django.http import HttpRequest, HttpResponseBase, HttpResponseRedirect
@@ -32,7 +31,7 @@ class AddToBundleView(FormView):
         )
 
         if not isinstance(self.page_to_add, BundledPageMixin):
-            raise Http404(_("Cannot add this page type to a bundle"))
+            raise Http404("Cannot add this page type to a bundle")
 
         page_perms = self.page_to_add.permissions_for_user(request.user)  # type: ignore[attr-defined]
         # TODO: add the relevant permission checks
@@ -49,16 +48,14 @@ class AddToBundleView(FormView):
             self.goto_next = redirect_to
 
         if self.page_to_add.in_active_bundle:
-            messages.warning(
-                request,
-                _("Page %(title)s is already in a bundle ('%(bundles)s')")
-                % {
-                    "title": self.page_to_add.get_admin_display_title(),  # type: ignore[attr-defined]
-                    "bundles": get_text_list(
-                        list(self.page_to_add.active_bundles.values_list("name", flat=True)), last_word="and"
-                    ),
-                },
+            text_list = get_text_list(
+                list(self.page_to_add.active_bundles.values_list("name", flat=True)),
+                last_word="and",
             )
+            admin_display_title = self.page_to_add.get_admin_display_title()  # type: ignore[attr-defined]
+
+            messages.warning(request, f"Page '{admin_display_title}' is already in a bundle ('{text_list}')")
+
             if self.goto_next:
                 return redirect(self.goto_next)
 
@@ -92,7 +89,7 @@ class AddToBundleView(FormView):
             buttons=[
                 messages.button(
                     reverse("wagtailadmin_pages:edit", args=(self.page_to_add.id,)),
-                    _("Edit"),
+                    "Edit",
                 )
             ],
         )
@@ -101,6 +98,3 @@ class AddToBundleView(FormView):
             return redirect(redirect_to)
 
         return redirect("wagtailadmin_explore", self.page_to_add.get_parent().id)
-
-
-add_to_bundle = AddToBundleView.as_view()

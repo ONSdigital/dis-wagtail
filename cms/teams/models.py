@@ -2,10 +2,11 @@ from functools import cached_property
 from typing import ClassVar
 
 from django.db import models
+from wagtail.admin.utils import get_user_display_name
 from wagtail.search import index
 
 
-class Team(index.Indexed, models.Model):
+class Team(index.Indexed, models.Model):  # type: ignore[django-manager-missing]
     identifier = models.CharField(max_length=255, unique=True)
     name = models.CharField(max_length=255)
     precedence = models.PositiveIntegerField(null=True)
@@ -29,6 +30,9 @@ class Team(index.Indexed, models.Model):
         """Return the total number of users in the team."""
         return self.users.count()
 
+    @cached_property
     def get_users_display(self) -> str:
         """Return a comma separated list of users in the team."""
-        return ", ".join(user.get_full_name() for user in self.users.all())
+        return ", ".join(
+            get_user_display_name(user) for user in self.users.all().only("first_name", "last_name", "username")
+        )

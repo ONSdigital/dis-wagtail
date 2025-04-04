@@ -37,3 +37,14 @@ def social_image(page: "Page", site: "Site") -> Optional["CustomImage"]:
 def include_django(context: jinja2.runtime.Context, template_name: str) -> "SafeString":
     """Allow importing a pre-rendered Django template into jinja2."""
     return render_to_string(template_name, context=dict(context), request=context.get("request", None))
+
+
+def set_attributes_filter(attributes: dict, new_attributes: dict) -> dict:
+    """Update attributes dictionary with new_attributes.
+    This is a Python reimplementation of the Nunjucks setAttributes filter.
+    See:
+    https://github.com/ONSdigital/design-system/blob/d4d4e171690141678af022379273f1e408f5a4e3/lib/filters/set-attributes.js#L1-L9
+    Usage in template: {{ attributes|setAttributes(new_attributes) }}.
+    """
+    attributes.update(new_attributes)
+    return attributes

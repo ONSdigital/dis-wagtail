@@ -1,17 +1,18 @@
-from datetime import timedelta
-
 from django.test import TestCase
 from django.urls import reverse
-from django.utils import timezone
 from wagtail.test.utils.wagtail_tests import WagtailTestUtils
 
 from cms.articles.tests.factories import StatisticalArticlePageFactory
-from cms.bundles.models import Bundle
+from cms.bundles.models import Bundle, BundleTeam
 from cms.bundles.tests.factories import BundleFactory, BundlePageFactory
-from cms.bundles.tests.utils import grant_all_bundle_permissions, grant_all_page_permissions, make_bundle_viewer
-from cms.bundles.wagtail_hooks import LatestBundlesPanel
+from cms.bundles.tests.utils import (
+    create_bundle_manager,
+    create_bundle_viewer,
+)
+from cms.bundles.wagtail_hooks import BundlesInReviewPanel, LatestBundlesPanel
 from cms.release_calendar.tests.factories import ReleaseCalendarPageFactory
-from cms.users.tests.factories import GroupFactory, UserFactory
+from cms.teams.models import Team
+from cms.users.tests.factories import UserFactory
 
 
 class WagtailHooksTestCase(WagtailTestUtils, TestCase):
@@ -19,14 +20,8 @@ class WagtailHooksTestCase(WagtailTestUtils, TestCase):
     def setUpTestData(cls):
         cls.superuser = cls.create_superuser(username="admin")
 
-        cls.publishing_group = GroupFactory(name="Publishing Officers", access_admin=True)
-        grant_all_page_permissions(cls.publishing_group)
-        grant_all_bundle_permissions(cls.publishing_group)
-        cls.publishing_officer = UserFactory(username="publishing_officer")
-        cls.publishing_officer.groups.add(cls.publishing_group)
-
-        cls.bundle_viewer = UserFactory(username="bundle.viewer", access_admin=True)
-        make_bundle_viewer(cls.bundle_viewer)
+        cls.publishing_officer = create_bundle_manager()
+        cls.bundle_viewer = create_bundle_viewer()
 
         # a regular generic_user that can only access the Wagtail admin
         cls.generic_user = UserFactory(username="generic.generic_user", access_admin=True)
@@ -45,11 +40,14 @@ class WagtailHooksTestCase(WagtailTestUtils, TestCase):
         cls.article_parent_url = reverse("wagtailadmin_explore", args=[cls.statistical_article_page.get_parent().id])
         cls.add_to_bundle_url = reverse("bundles:add_to_bundle", args=[cls.statistical_article_page.id])
 
+        cls.preview_team = Team.objects.create(identifier="foo", name="Preview team")
+        BundleTeam.objects.create(parent=cls.in_review_bundle, team=cls.preview_team)
+
     def test_latest_bundles_panel_is_shown(self):
         """Checks that the latest bundles dashboard panel is shown to relevant users."""
         cases = [
             (self.generic_user, 0),
-            (self.bundle_viewer, 1),
+            (self.bundle_viewer, 0),
             (self.publishing_officer, 1),
             (self.superuser, 1),
         ]
@@ -66,6 +64,7 @@ class WagtailHooksTestCase(WagtailTestUtils, TestCase):
 
         panels = response.context["panels"]
         self.assertIsInstance(panels[0], LatestBundlesPanel)
+        self.assertTrue(panels[0].is_shown)
         self.assertIs(panels[0].permission_policy.model, Bundle)
 
         self.assertContains(response, self.bundle_add_url)
@@ -78,64 +77,47 @@ class WagtailHooksTestCase(WagtailTestUtils, TestCase):
             self.assertContains(response, bundle.status.label)
         self.assertNotContains(response, self.released_bundle.status.label)
 
-    def test_preset_golive_date__happy_path(self):
-        """Checks we update the page go live at on page edit , if in the future and doesn't match the bundle date."""
-        self.client.force_login(self.publishing_officer)
-
-        BundlePageFactory(parent=self.pending_bundle, page=self.statistical_article_page)
-
-        # set to +15 minutes as the check is on now() < scheduled_publication_date & page.go_live_at != scheduled
-        nowish = timezone.now() + timedelta(minutes=15)
-        bundle_date = nowish + timedelta(hours=1)
-
+    def test_bundle_to_preview_panel_is_shown(self):
         cases = [
-            # bundle publication date, page go_live_at, expected change, case description
-            (nowish - timedelta(hours=1), nowish, nowish, "Go live unchanged as bundle date in the past"),
-            (bundle_date, bundle_date, bundle_date, "Go live unchanged as it matches bundle"),
-            (bundle_date, nowish + timedelta(days=1), bundle_date, "Go live updated to match bundle"),
+            (self.generic_user, 0),
+            (self.bundle_viewer, 1),
+            (self.publishing_officer, 0),
+            (self.superuser, 1),
         ]
-        for bundle_publication_date, go_live_at, expected, case in cases:
-            with self.subTest(go_live_at=go_live_at, expected=expected, case=case):
-                self.pending_bundle.publication_date = bundle_publication_date
-                self.pending_bundle.save(update_fields=["publication_date"])
+        for user, shown in cases:
+            with self.subTest(user=user.username, shown=shown):
+                self.client.force_login(user)
+                response = self.client.get(self.dashboard_url)
+                self.assertContains(response, "Bundles ready for preview", count=shown)
 
-                self.statistical_article_page.go_live_at = go_live_at
-                self.statistical_article_page.save(update_fields=["go_live_at"])
+    def test_bundles_to_preview_panel_content(self):
+        self.client.force_login(self.bundle_viewer)
+        response = self.client.get(self.dashboard_url)
 
-                response = self.client.get(self.article_edit_url)
-                context_page = response.context["page"]
-                self.assertEqual(context_page.go_live_at, expected)
+        panels = response.context["panels"]
+        self.assertIsInstance(panels[0], LatestBundlesPanel)
+        self.assertFalse(panels[0].is_shown)
 
-    def test_preset_golive_date__updates_only_if_page_in_active_bundle(self):
-        """Checks the go live at update only happens if the page is in active bundle."""
-        self.client.force_login(self.publishing_officer)
+        self.assertIsInstance(panels[1], BundlesInReviewPanel)
+        self.assertTrue(panels[1].is_shown)
+        self.assertIs(panels[1].permission_policy.model, Bundle)
 
-        nowish = timezone.now() + timedelta(minutes=15)
-        self.pending_bundle.publication_date = nowish + timedelta(hours=1)
-        self.pending_bundle.save(update_fields=["publication_date"])
+        self.assertContains(response, "There are currently no bundles for preview.")
 
-        self.statistical_article_page.go_live_at = nowish
-        self.statistical_article_page.save(update_fields=["go_live_at"])
+        self.bundle_viewer.teams.add(self.preview_team)
 
-        response = self.client.get(self.article_edit_url)
-        context_page = response.context["page"]
-        self.assertEqual(context_page.go_live_at, nowish)
+        response = self.client.get(self.dashboard_url)
+        self.assertNotContains(response, "There are currently no bundles for preview.")
+        self.assertNotContains(response, self.bundle_add_url)
+        self.assertContains(response, reverse("bundle:inspect", args=[self.in_review_bundle.pk]))
 
-    def test_preset_golive_date__updates_only_if_page_is_bundleable(self):
-        """Checks the go live at change happens only for bundleable pages.."""
-        self.client.force_login(self.publishing_officer)
+        self.assertContains(response, self.in_review_bundle.name)
+        self.assertContains(response, self.in_review_bundle.created_by.get_full_name())
+        self.assertNotContains(response, self.in_review_bundle.status.label)
 
-        nowish = timezone.now() + timedelta(minutes=15)
-        self.pending_bundle.publication_date = nowish + timedelta(hours=1)
-        self.pending_bundle.save(update_fields=["publication_date"])
-
-        page = ReleaseCalendarPageFactory()
-        page.go_live_at = nowish
-        page.save(update_fields=["go_live_at"])
-
-        response = self.client.get(reverse("wagtailadmin_pages:edit", args=[page.id]))
-        context_page = response.context["page"]
-        self.assertEqual(context_page.go_live_at, nowish)
+        self.assertNotContains(response, self.pending_bundle.name)
+        self.assertNotContains(response, self.approved_bundle.name)
+        self.assertNotContains(response, self.released_bundle.name)
 
     def test_add_to_bundle_buttons(self):
         """Tests that the 'Add to Bundle' button appears in appropriate contexts."""

@@ -1,12 +1,14 @@
-from datetime import timedelta
-
 from django.test import TestCase
 from django.utils import timezone
 
 from cms.articles.tests.factories import StatisticalArticlePageFactory
 from cms.bundles.enums import BundleStatus
+from cms.bundles.models import BundleTeam
 from cms.bundles.tests.factories import BundleFactory, BundlePageFactory
 from cms.release_calendar.tests.factories import ReleaseCalendarPageFactory
+from cms.teams.models import Team
+from cms.users.tests.factories import UserFactory
+from cms.workflows.tests.utils import mark_page_as_ready_to_publish
 
 
 class BundleModelTestCase(TestCase):
@@ -20,7 +22,6 @@ class BundleModelTestCase(TestCase):
         self.assertEqual(str(self.bundle), self.bundle.name)
 
     def test_scheduled_publication_date__direct(self):
-        del self.bundle.scheduled_publication_date  # clear the cached property
         now = timezone.now()
         self.bundle.publication_date = now
         self.assertEqual(self.bundle.scheduled_publication_date, now)
@@ -30,9 +31,9 @@ class BundleModelTestCase(TestCase):
         self.bundle.release_calendar_page = release_page
         self.assertEqual(self.bundle.scheduled_publication_date, release_page.release_date)
 
-    def test_can_be_approved(self):
+    def test_can_be_approved__by_status_only(self):
         test_cases = [
-            (BundleStatus.PENDING, True),
+            (BundleStatus.PENDING, False),
             (BundleStatus.IN_REVIEW, True),
             (BundleStatus.APPROVED, False),
             (BundleStatus.RELEASED, False),
@@ -43,6 +44,15 @@ class BundleModelTestCase(TestCase):
                 self.bundle.status = status
                 self.assertEqual(self.bundle.can_be_approved, expected)
 
+    def test_can_be_approved__with_pages(self):
+        BundlePageFactory(parent=self.bundle, page=self.statistical_article)
+
+        self.bundle.status = BundleStatus.IN_REVIEW
+        self.assertFalse(self.bundle.can_be_approved)
+
+        mark_page_as_ready_to_publish(self.statistical_article, UserFactory())
+        self.assertTrue(self.bundle.can_be_approved)
+
     def test_get_bundled_pages(self):
         """Test get_bundled_pages returns correct queryset."""
         BundlePageFactory(parent=self.bundle, page=self.statistical_article)
@@ -50,31 +60,19 @@ class BundleModelTestCase(TestCase):
         self.assertEqual(len(page_ids), 1)
         self.assertEqual(page_ids[0], self.statistical_article.pk)
 
-    def test_save_updates_page_publication_dates(self):
-        BundlePageFactory(parent=self.bundle, page=self.statistical_article)
-        del self.bundle.scheduled_publication_date  # clear the cached property
-        future_date = timezone.now() + timedelta(days=1)
-        self.bundle.publication_date = future_date
-        self.bundle.save()
-
-        self.statistical_article.refresh_from_db()
-        self.assertEqual(self.statistical_article.go_live_at, future_date)
-
-    def test_save_doesnt_update_dates_when_released(self):
-        future_date = timezone.now() + timedelta(days=1)
-        self.bundle.status = BundleStatus.RELEASED
-        self.bundle.publication_date = future_date
-        BundlePageFactory(parent=self.bundle, page=self.statistical_article)
-
-        self.bundle.save()
-        self.statistical_article.refresh_from_db()
-
-        self.assertNotEqual(self.statistical_article.go_live_at, future_date)
-
     def test_bundlepage_orderable_str(self):
         bundle_page = BundlePageFactory(parent=self.bundle, page=self.statistical_article)
 
         self.assertEqual(str(bundle_page), f"BundlePage: page {self.statistical_article.pk} in bundle {self.bundle.id}")
+
+    def test_active_teams(self):
+        team = Team.objects.create(identifier="foo", name="Active team")
+        inactive_team = Team.objects.create(identifier="inactive", name="Inactive team", is_active=False)
+
+        BundleTeam.objects.create(parent=self.bundle, team=team)
+        BundleTeam.objects.create(parent=self.bundle, team=inactive_team)
+
+        self.assertListEqual(self.bundle.active_team_ids, [team.pk])
 
 
 class BundledPageMixinTestCase(TestCase):
