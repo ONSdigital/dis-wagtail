@@ -47,6 +47,7 @@ class ReleaseCalendarPage(BasePage):  # type: ignore[django-manager-missing]
     template = "templates/pages/release_calendar/release_calendar_page.html"
     parent_page_types: ClassVar[list[str]] = ["ReleaseCalendarIndex"]
     subpage_types: ClassVar[list[str]] = []
+    search_index_content_type: ClassVar[str] = "release"
 
     # Fields
     status = models.CharField(choices=ReleaseStatus.choices, default=ReleaseStatus.PROVISIONAL, max_length=32)
