@@ -33,5 +33,6 @@ class CoreExtension(Extension):  # pylint: disable=abstract-method
                 "social_text": social_text,
                 "social_image": social_image,
                 "setAttributes": set_attributes_filter,
+                # define a filter to use custom_date_format here
             }
         )
