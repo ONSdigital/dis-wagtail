@@ -9,6 +9,8 @@ from jwt import InvalidTokenError, get_unverified_header
 from jwt import decode as jwt_decode
 from jwt.exceptions import ExpiredSignatureError
 
+from cms.core.cache import memory_cache
+
 logger = logging.getLogger(__name__)
 
 JWKS_URL = f"{settings.IDENTITY_API_BASE_URL}/jwt-keys"  # Adjust for env config
@@ -23,13 +25,12 @@ def _parse_der_public_key(b64_der_key: str):
     return serialization.load_der_public_key(der, backend=default_backend())
 
 
-# @memory_cache(60 * 30)
+@memory_cache(60 * 30)
 def get_jwks() -> dict:
     """Retrieves and caches JWKS."""
     response = requests.get(JWKS_URL, timeout=5)
     response.raise_for_status()
-    jwks_data = response.json()
-    return {kid: _parse_der_public_key(b64_der_key) for kid, b64_der_key in jwks_data.items()}
+    return response.json()
 
 
 def validate_jwt(token: str, token_type: str) -> dict | None:
@@ -50,7 +51,7 @@ def validate_jwt(token: str, token_type: str) -> dict | None:
 
         claims = jwt_decode(
             token,
-            key=public_key,
+            key=_parse_der_public_key(public_key),
             algorithms=ALGORITHMS,
             issuer=EXPECTED_ISSUER,
             audience=EXPECTED_AUDIENCE,
