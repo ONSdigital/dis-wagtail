@@ -52,7 +52,7 @@ def set_attributes_filter(attributes: dict, new_attributes: dict) -> dict:
 
 
 @jinja2.pass_context
-def get_translation_urls(context) -> list[dict[str, str | bool]]:
+def get_translation_urls(context: jinja2.runtime.Context) -> list[dict[str, str | bool]]:
     if not (page := context.get("page")):
         return []
 
