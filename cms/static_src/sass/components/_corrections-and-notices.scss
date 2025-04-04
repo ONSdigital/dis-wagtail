@@ -7,10 +7,15 @@
     outline: 1px solid transparent;
 
     &__info-icon {
-        width: 32px;
-        height: 32px;
-        color: var(--ons-color-white);
-        margin-right: 8px;
+        background: var(--ons-color-white);
+        border-radius: 50%;
+        color: var(--ons-color-ocean-blue);
+        font-size: 1.5rem;
+        font-weight: 700;
+        line-height: 2rem;
+        height: 2rem;
+        width: 2rem;
+        text-align: center;
     }
 
     &__banner {
