@@ -12,15 +12,23 @@ from wagtailtables.blocks import TableAdapter, TableBlock
 
 from cms.datavis.utils import numberfy
 
+RowType = list[str | float | int]
+TableDataType = Sequence[RowType]
+
 
 class SimpleTableStructValue(StructValue):
     @cached_property
-    def _data(self) -> Sequence[Sequence[str | int | float]]:
+    def _data(self) -> TableDataType:
         """Cache the extracted and processed table data."""
         if not self.get("table_data"):
             return []
         # Decoding the json string value
-        data: list[list[str | float | int]] = json.loads(self.get("table_data"))["data"]
+        table_data: dict[str, TableDataType] = json.loads(self.get("table_data"))
+        try:
+            data: TableDataType = table_data["data"]
+        except TypeError:
+            # When the table is empty, the json is not a dict
+            return []
 
         # Convert valid number strings to ints/floats
         if len(data) > 1:
@@ -31,17 +39,17 @@ class SimpleTableStructValue(StructValue):
         return data
 
     @cached_property
-    def headers(self) -> Sequence[str | int | float]:
+    def headers(self) -> RowType:
         if not self._data:
             return []
-        headers: Sequence[str | int | float] = self._data[0]
+        headers: RowType = self._data[0]
         return headers
 
     @cached_property
-    def rows(self) -> Sequence[Sequence[str | int | float]]:
+    def rows(self) -> TableDataType:
         if not self._data:
             return []
-        rows: Sequence[Sequence[str | int | float]] = self._data[1:]
+        rows: TableDataType = self._data[1:]
         return rows
 
 
