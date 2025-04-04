@@ -26,6 +26,9 @@ class ONSAuthMiddleware(AuthenticationMiddleware):
     def process_request(self, request: "HttpRequest") -> None:
         super().process_request(request)
 
+        if not settings.AWS_COGNITO_LOGIN_ENABLED:
+            return
+
         # Extract tokens from cookies
         access_token = request.COOKIES.get(settings.ACCESS_TOKEN_COOKIE_NAME)
         id_token = request.COOKIES.get(settings.ID_TOKEN_COOKIE_NAME)

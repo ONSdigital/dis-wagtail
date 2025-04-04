@@ -19,9 +19,9 @@ internal_urlpatterns = [path("readiness/", core_views.ready, name="readiness")]
 
 # Private URLs are not meant to be cached.
 private_urlpatterns = [
-    path(f"-/{settings.WAGTAIL_URL_PREFIX}", include((internal_urlpatterns, "internal"))),
+    path("-/", include((internal_urlpatterns, "internal"))),
     path(
-        f"{settings.WAGTAIL_URL_PREFIX}documents/authenticate_with_password/<int:restriction_id>/",
+        "documents/authenticate_with_password/<int:restriction_id>/",
         authenticate_with_password,
         name="wagtaildocs_authenticate_with_password",
     ),
@@ -128,12 +128,12 @@ urlpatterns = (
     + urlpatterns
     + [
         re_path(
-            rf"^{settings.WAGTAIL_URL_PREFIX}documents/(\d+)/(.*)$",
+            r"^documents/(\d+)/(.*)$",
             private_media_views.DocumentServeView.as_view(),
             name="wagtaildocs_serve",
         ),
         re_path(
-            rf"^{settings.WAGTAIL_URL_PREFIX}images/([^/]*)/(\d*)/([^/]*)/[^/]*$",
+            r"^images/([^/]*)/(\d*)/([^/]*)/[^/]*$",
             private_media_views.ImageServeView.as_view(),
             name="wagtailimages_serve",
         ),

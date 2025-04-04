@@ -907,9 +907,16 @@ LOGOUT_REDIRECT_URL = env.get("LOGOUT_REDIRECT_URL", env.get("WAGTAILADMIN_LOGIN
 AUTH_TOKEN_REFRESH_URL = env.get("AUTH_TOKEN_REFRESH_URL")
 SESSION_COOKIE_AGE = env.get("SESSION_COOKIE_AGE", 60 * 15)  # 15 minutes
 SESSION_EXPIRE_AT_BROWSER_CLOSE = True
+IDENTITY_API_URL = env.get("IDENTITY_API_URL")
+AWS_COGNITO_LOGIN_ENABLED = env.get("AWS_COGNITO_LOGIN_ENABLED", "true").lower() == "true"
 
-if not WAGTAIL_CORE_ADMIN_LOGIN_ENABLED and not AUTH_TOKEN_REFRESH_URL:
-    raise ValueError("AUTH_TOKEN_REFRESH_URL must be set when WAGTAIL_CORE_ADMIN_LOGIN_ENABLED is False")
+# TODO: Make system checks
+if not WAGTAIL_CORE_ADMIN_LOGIN_ENABLED:
+    if not AUTH_TOKEN_REFRESH_URL:
+        raise ValueError("AUTH_TOKEN_REFRESH_URL must be set when WAGTAIL_CORE_ADMIN_LOGIN_ENABLED is False")
+
+    if not IDENTITY_API_URL:
+        raise ValueError("IDENTITY_API_URL must be set when WAGTAIL_CORE_ADMIN_LOGIN_ENABLED is False")
 
 # Groups
 PUBLISHING_ADMIN_GROUP_NAME = "Publishing Admins"
@@ -924,8 +931,3 @@ ID_TOKEN_COOKIE_NAME = "id_token"  # noqa: S105
 
 WAGTAILADMIN_HOME_PATH = env.get("WAGTAILADMIN_HOME_PATH", "admin/")
 DJANGO_ADMIN_HOME_PATH = env.get("DJANGO_ADMIN_HOME_PATH", "django-admin/")
-
-# Requests to Wagtail in the internal cluster has to be namespaced
-WAGTAIL_URL_PREFIX = env.get("WAGTAIL_URL_PREFIX", "")
-if not IS_EXTERNAL_ENV:
-    WAGTAIL_URL_PREFIX = env.get("WAGTAIL_URL_PREFIX", "wagtail-")
