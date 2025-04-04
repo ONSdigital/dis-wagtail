@@ -32,6 +32,7 @@
 
 {% set footer_menu = footer_menu | default(navigation_settings.footer_menu.localized) %}
 
+{# We set variables for text so that it gets picked up by makemessages #}
 {% set badge_label = _("Beta") %}
 {% set badge_html = _("This is a new service.") %}
 {% set menu_label = _("Menu") %}
