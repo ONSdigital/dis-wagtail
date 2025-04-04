@@ -25,7 +25,7 @@ class BaseVisualisationBlock(blocks.StructBlock):
     supports_y_axis_title: ClassVar[bool]
     supports_data_labels: ClassVar[bool]
     supports_markers: ClassVar[bool]
-    extra_item_attributes: ClassVar[dict[str, Any]]
+    extra_series_attributes: ClassVar[dict[str, Any]]
 
     # Editable fields
     title = blocks.CharBlock()
@@ -230,7 +230,8 @@ class BaseVisualisationBlock(blocks.StructBlock):
             if getattr(self, "supports_markers", False):
                 item["marker"] = {"enabled": value.get("show_markers")}
 
-            for key, val in getattr(self, "extra_item_attributes", {}).items():
+            # Allow subclasses to specify additional parameters for each series
+            for key, val in getattr(self, "extra_series_attributes", {}).items():
                 item[key] = val
 
             if tooltip_suffix := value["y_axis"].get("tooltip_suffix"):

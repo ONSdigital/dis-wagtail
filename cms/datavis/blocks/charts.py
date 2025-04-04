@@ -10,7 +10,7 @@ class LineChartBlock(BaseVisualisationBlock):
     supports_y_axis_title = True
     supports_data_labels = False
     supports_markers = True
-    extra_item_attributes: ClassVar = {
+    extra_series_attributes: ClassVar = {
         "connectNulls": True,
     }
 
