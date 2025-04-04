@@ -132,22 +132,26 @@
                             <span class="ons-corrections-notices__banner-detail-text">{{ _("Show detail") }}</span>
                             <span class="ons-corrections-notices__banner-detail-icon">
                                 {% from "components/icon/_macro.njk" import onsIcon %}
+                                {# fmt:off #}
                                 {{
-                                onsIcon({
-                                "iconType": "chevron"
-                                })
+                                    onsIcon({
+                                        "iconType": "chevron"
+                                    })
                                 }}
+                                {# fmt:on #}
                             </span>
                         </div>
                         <div class="ons-corrections-notices__banner-detail-hide">
                             <span class="ons-corrections-notices__banner-detail-text">{{ _("Close detail") }}</span>
                             <span class="ons-corrections-notices__banner-detail-icon">
                                 {% from "components/icon/_macro.njk" import onsIcon %}
+                                {# fmt:off #}
                                 {{
-                                onsIcon({
-                                "iconType": "chevron"
-                                })
+                                    onsIcon({
+                                        "iconType": "chevron"
+                                    })
                                 }}
+                                {# fmt:on #}
                             </span>
                         </div>
                     </div>
