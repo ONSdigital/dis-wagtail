@@ -62,6 +62,9 @@ def get_translation_urls(context: jinja2.runtime.Context) -> list[dict[str, str 
     urls = []
     for locale in Locale.objects.all().order_by("pk"):
         variant = variants.get(locale.pk, default_page)
+        if not variant:
+            # This can be the case when a preview of a non-existent page is requested
+            continue
         url = variant.get_url(request=context["request"])
         if variant == default_page and locale.pk != variant.locale_id:
             # if there is no translation in this locale, append the language code to the path

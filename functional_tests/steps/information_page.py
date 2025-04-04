@@ -36,6 +36,11 @@ def user_adds_info_page_contents(context: Context) -> None:
     context.page.get_by_role("cell", name="Home English", exact=True).get_by_role("link").click()
 
 
+@when("the user updates the content of the information page")
+def user_updates_info_page_contents(context: Context) -> None:
+    context.page.get_by_role("region", name="Summary*").get_by_role("textbox").fill("Updated test information page")
+
+
 @step("the user returns to editing the information page")
 def user_returns_to_editing_the_statistical_article_page(context: Context):
     context.page.get_by_role("link", name="Test Info Page", exact=True).click()

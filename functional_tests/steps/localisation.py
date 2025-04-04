@@ -15,7 +15,7 @@ def user_goes_to_edit_home_page(context: Context) -> None:
     context.page.get_by_role("link", name="Edit 'Home'").click()
 
 
-@given("the user creates a Welsh version of the home page")
+@step("the user creates a Welsh version of the home page")
 def user_creates_welsh_version_of_home_page(context: Context) -> None:
     user_goes_to_edit_home_page(context)
     user_creates_welsh_version_of_page(context)
@@ -46,6 +46,13 @@ def user_switches_to_welsh_locale(context: Context) -> None:
     context.page.get_by_role("link", name="Welsh").click()
 
 
+@step("the user switches to the English locale")
+def user_switches_to_english_locale(context: Context) -> None:
+    # Status tab is normally shown at this point
+    context.page.get_by_role("button", name="Switch locales").click()
+    context.page.get_by_role("link", name="English").click()
+
+
 @step("the user converts the alias into an ordinary page")
 def user_converts_the_alias_into_an_ordinary_page(context: Context) -> None:
     context.page.get_by_role("link", name="Convert this alias into an ordinary page").click()
@@ -73,6 +80,11 @@ def user_switches_page_language_to_welsh(context: Context) -> None:
     context.page.locator(".ons-header__top").get_by_role("link", name="Cymraeg").click()
 
 
+@step("the user returns to editing the Welsh information page")
+def user_returns_to_editing_the_welsh_statistical_article_page(context: Context):
+    context.page.get_by_role("link", name="Tudalen Gwybodaeth Profi", exact=True).click()
+
+
 @then("the published information page is displayed with Welsh content")
 def check_new_information_is_displayed_with_welsh_content(context: Context) -> None:
     expect(context.page.get_by_role("heading", name="Tudalen Gwybodaeth Profi")).to_be_visible()
@@ -94,6 +106,17 @@ def check_page_furniture_is_displayed_in_welsh(context: Context) -> None:
 def check_message_is_displayed(context: Context) -> None:
     expect(
         context.page.get_by_text(
+            # This is currently in English, but should be in Welsh
+            # when the Welsh translation is available.
             "This page is currently not available in your locale. The English version is shown instead."
+        )
+    ).to_be_visible()
+
+
+@then("a warning is displayed explaining that the page has existing translations")
+def check_warning_is_displayed(context: Context) -> None:
+    expect(
+        context.page.get_by_text(
+            "A translated version of this page exists. If you make any changes, please make sure to update it."
         )
     ).to_be_visible()
