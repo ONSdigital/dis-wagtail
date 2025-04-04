@@ -1,9 +1,17 @@
+from typing import TYPE_CHECKING
+
+from django.conf import settings
 from django.templatetags.static import static
 from django.utils.html import format_html
 from wagtail import hooks
+from wagtail.admin import messages
 from wagtail.snippets.models import register_snippet
 
 from cms.core.viewsets import ContactDetailsViewSet, GlossaryViewSet
+
+if TYPE_CHECKING:
+    from django.http import HttpRequest
+    from wagtail.models import Page
 
 
 @hooks.register("register_icons")
@@ -35,3 +43,18 @@ def global_admin_css() -> str:
 
 register_snippet(ContactDetailsViewSet)
 register_snippet(GlossaryViewSet)
+
+
+@hooks.register("after_edit_page")
+def after_edit_page(request: "HttpRequest", page: "Page") -> None:
+    if page.locale.language_code != settings.LANGUAGE_CODE:
+        return
+
+    # Check if proper translations of the page exist, which are not simple aliases
+    proper_translations = [
+        translation for translation in page.get_translations().only("alias_of") if not translation.alias_of
+    ]
+    if len(proper_translations) > 0:
+        messages.warning(
+            request, "A translated version of this page exists. If you make any changes, please make sure to update it."
+        )

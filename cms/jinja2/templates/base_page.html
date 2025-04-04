@@ -42,6 +42,15 @@
     {# Changes the location of the <main> tag from the base template - ensures it surrounds the header area #}
     {# This change should be adopted by the design system soon #}
     <main id="main-content">
+        {% if localised_version_not_available %}
+            <div class="ons-announcement">
+                <div class="ons-container">
+                    <div class="ons-panel ons-panel--announcement ons-panel--no-title">
+                        {{ _("This page is currently not available in your locale. The English version is shown instead.") }}
+                    </div>
+                </div>
+            </div>
+        {% endif %}
         {# This block should be overriden on individual page templates and include the breadcrumbs and page heading. This is default content while the build is in progress. #}
         {% block header_area %}
             <div class="ons-container">

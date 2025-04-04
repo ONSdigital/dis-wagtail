@@ -52,6 +52,7 @@ class ContactDetailsViewSet(SnippetViewSet):
 class GlossaryTermsIndex(SnippetIndexView):
     list_display: ClassVar[list[str | Column]] = [
         "name",
+        "locale",
         UpdatedAtColumn(),
         UserColumn("updated_by"),
         UserColumn("owner"),
@@ -67,7 +68,7 @@ class GlossaryTermsChooseColumnsMixin:
     def columns(self) -> list[Column]:
         title_column = self.title_column  # type: ignore[attr-defined]
         title_column.label = "Name"
-        return [title_column, UpdatedAtColumn(), UserColumn("updated_by")]
+        return [title_column, Column("locale"), UpdatedAtColumn(), UserColumn("updated_by")]
 
     def get_object_list(self) -> QuerySet[GlossaryTerm]:
         queryset = GlossaryTerm.objects.select_related(
