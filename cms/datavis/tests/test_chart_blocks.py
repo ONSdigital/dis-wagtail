@@ -78,12 +78,6 @@ class BaseChartBlockTestCase(SimpleTestCase, WagtailTestUtils):
             # contains other fields to do with SimpleTable configuration.
             self.assertEqual(self.raw_data["table"]["table_data"], value["table"]["table_data"])
 
-    def _test_context(self):
-        self.assertEqual(
-            self.block_type.highcharts_chart_type,
-            self.block.get_context(self.get_value())["highcharts_chart_type"],
-        )
-
     def _test_get_component_config(self):
         config = self.get_component_config()
 
@@ -111,15 +105,13 @@ class LineChartBlockTestCase(BaseChartBlockTestCase):
     def test_generic_properties(self):
         self._test_generic_properties()
 
-    def test_context(self):
-        self._test_context()
-
     def test_get_component_config(self):
         self._test_get_component_config()
 
     def test_highcharts_chart_type(self):
-        context = self.block.get_context(self.get_value())
-        self.assertEqual("line", context["highcharts_chart_type"])
+        self.assertEqual("line", self.block.highcharts_chart_type)
+        value = self.get_value()
+        self.assertEqual("line", value.block.highcharts_chart_type)
 
     def test_validating_data(self):
         """Test that the data we're using for these unit tests is good."""
