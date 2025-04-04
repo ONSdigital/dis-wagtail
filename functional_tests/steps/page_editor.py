@@ -6,10 +6,11 @@ from playwright.sync_api import expect
 from cms.themes.tests.factories import ThemePageFactory
 
 
-@when('the user clicks "Publish page"')
+@when('the user clicks "Publish"')
 @when("publishes the page")
-def user_clicks_publish_page(context: Context) -> None:
-    publish_page(context)
+def user_clicks_publish(context: Context) -> None:
+    context.page.get_by_role("button", name="More actions").click()
+    context.page.get_by_role("button", name="Publish").click()
 
 
 @when('the user clicks "View Live" on the publish confirmation banner')
@@ -20,7 +21,7 @@ def user_clicks_view_live_on_publish_confirmation_banner(context: Context) -> No
 @step('the user clicks the "{button_text}" button')
 def click_the_given_button(context: Context, button_text: str) -> None:
     if button_text in ("Save Draft", "Preview"):
-        # add a small delay to allow any client-side JS to initialize.
+        # add a small delay to allow any client-side JS to initialise.
         context.page.wait_for_timeout(500)
     context.page.get_by_role("button", name=button_text).click()
 
@@ -127,3 +128,48 @@ def the_user_hides_the_minimap(context: Context):
 @then("the minimap is hidden")
 def the_minimap_is_hidden(context: Context):
     expect(context.page.get_by_role("complementary", name="Minimap").locator("div").first).not_to_be_visible()
+
+
+@step("the user can save a draft version of the page")
+def the_user_can_save_a_page(context: Context):
+    expect(context.page.get_by_role("button", name="Save draft")).to_be_visible()
+
+
+@step("the user can publish a page")
+def the_user_can_publish_a_page(context: Context):
+    expect(context.page.get_by_role("button", name="More actions")).to_be_visible()
+    context.page.get_by_role("button", name="More actions").click()
+    expect(context.page.get_by_role("button", name="Publish")).to_be_visible()
+
+
+@step("the user can lock and unlock a page")
+def the_user_can_lock_and_unlock_a_page(context: Context):
+    context.page.get_by_role("button", name="Toggle status").click()
+
+    context.page.get_by_text("Lock", exact=True).click()
+    expect(context.page.get_by_text("'Test Info Page' was locked by you")).to_be_visible()
+
+    context.page.get_by_text("Lock", exact=True).click()
+    expect(context.page.get_by_text("Page 'Test Info Page' is now unlocked.")).to_be_visible()
+
+
+@step("the user can bulk delete the Theme page and its children")
+def the_user_can_bulk_delete_a_theme_page_and_its_children(context: Context):
+    context.page.get_by_role("button", name="Pages").click()
+    context.page.get_by_role("link", name="Home", exact=True).click()
+    context.page.get_by_role("button", name=f"More options for '{context.theme_page.title}'").click()
+    context.page.get_by_role("link", name=f"Delete page '{context.theme_page.title}'").click()
+    expect(context.page.get_by_role("link", name="This theme page is referenced")).to_be_visible()
+    expect(context.page.get_by_text("Are you sure you want to")).to_be_visible()
+    context.page.get_by_role("button", name="Yes, delete it").click()
+    expect(context.page.get_by_text(f"Page '{context.theme_page.title}' deleted.")).to_be_visible()
+
+
+@when('the user clicks "Save" to save the Snippet')
+def user_saves_in_navigation_settings(context: Context):
+    context.page.get_by_role("button", name="Save").click()
+
+
+@when("the user clicks toggle preview")
+def user_clicks_view_live(context: Context):
+    context.page.get_by_role("button", name="Toggle preview").click()

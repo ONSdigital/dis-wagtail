@@ -4,10 +4,10 @@ from django.db import models
 class BundleStatus(models.TextChoices):
     """The bundle statuses."""
 
-    PENDING = "PENDING", "Pending"
-    IN_REVIEW = "IN_REVIEW", "In Review"
-    APPROVED = "APPROVED", "Approved"
-    RELEASED = "RELEASED", "Released"
+    PENDING = "PENDING", "Draft"
+    IN_REVIEW = "IN_REVIEW", "In Preview"
+    APPROVED = "APPROVED", "Ready to publish"
+    RELEASED = "RELEASED", "Published"
 
 
 ACTIVE_BUNDLE_STATUSES = [BundleStatus.PENDING, BundleStatus.IN_REVIEW, BundleStatus.APPROVED]

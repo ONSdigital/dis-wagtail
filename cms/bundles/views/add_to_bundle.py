@@ -11,8 +11,8 @@ from wagtail.admin import messages
 from wagtail.models import Page
 from wagtail.permission_policies import ModelPermissionPolicy
 
-from .admin_forms import AddToBundleForm
-from .models import Bundle, BundledPageMixin, BundlePage
+from cms.bundles.admin_forms import AddToBundleForm
+from cms.bundles.models import Bundle, BundledPageMixin, BundlePage
 
 if TYPE_CHECKING:
     from django.http import HttpRequest, HttpResponseBase, HttpResponseRedirect
@@ -52,13 +52,10 @@ class AddToBundleView(FormView):
                 list(self.page_to_add.active_bundles.values_list("name", flat=True)),
                 last_word="and",
             )
-
             admin_display_title = self.page_to_add.get_admin_display_title()  # type: ignore[attr-defined]
 
-            messages.warning(
-                request,
-                f"Page {admin_display_title} is already in a bundle ('{text_list}')",
-            )
+            messages.warning(request, f"Page '{admin_display_title}' is already in a bundle ('{text_list}')")
+
             if self.goto_next:
                 return redirect(self.goto_next)
 
@@ -101,6 +98,3 @@ class AddToBundleView(FormView):
             return redirect(redirect_to)
 
         return redirect("wagtailadmin_explore", self.page_to_add.get_parent().id)
-
-
-add_to_bundle = AddToBundleView.as_view()
