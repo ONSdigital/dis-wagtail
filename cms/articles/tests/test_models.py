@@ -271,7 +271,7 @@ class PreviousReleasesWithoutPaginationTestCase(TestCase):
     def test_breadcrumb_does_contains_series_url(self):
         response = self.client.get(self.previous_releases_url)
         parent_page = self.article_series.get_parent()
-        # confirm that current breadcrumb is there abd that current breadcrumb points to the parent page
+        # confirm that current breadcrumb is there and that current breadcrumb points to the parent page
         # TODO currently this test points to the article page not to the series page
         # f'<a class="ons-breadcrumbs__link" href="{self.article_series.url}">{self.article_series.title}</a>',
 
