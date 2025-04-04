@@ -16,7 +16,7 @@ logger = logging.getLogger(__name__)
 
 class Command(BaseCommand):
     help = "Syncs teams from the identity API"
-    identity_api_url: str | None = None
+    identity_api_base_url: str | None = None
 
     def add_arguments(self, parser: argparse.ArgumentParser) -> None:
         parser.add_argument(
@@ -32,9 +32,9 @@ class Command(BaseCommand):
         if dry_run:
             self.stdout.write(self.style.WARNING("Running in dry-run mode. No changes will be made."))
 
-        self.identity_api_url = getattr(settings, "IDENTITY_API_URL", None)
-        if not self.identity_api_url:
-            raise CommandError("IDENTITY_API_URL is not set in settings.")
+        self.identity_api_base_url = getattr(settings, "IDENTITY_API_BASE_URL", None)
+        if not self.identity_api_base_url:
+            raise CommandError("IDENTITY_API_BASE_URL is not set in settings.")
 
         try:
             self.sync_teams(dry_run)
@@ -53,9 +53,9 @@ class Command(BaseCommand):
 
     def fetch_groups_from_api(self) -> list[dict] | None:
         """Fetches groups from the identity API."""
-        url = f"{self.identity_api_url}/groups"
+        url = f"{self.identity_api_base_url}/groups"
         try:
-            response = requests.get(url, timeout=30)
+            response = requests.get(url, timeout=120)
             response.raise_for_status()
             data: dict[str, Any] = response.json()
             groups: list[dict] = data.get("groups", [])
@@ -97,20 +97,28 @@ class Command(BaseCommand):
 
         name: str = group["name"].strip()
         precedence: int = group["precedence"]
-        created_str: str = group["created"]
+        created_str: str = group["creation_date"]
+        updated_str: str = group["last_modified_date"]
 
         # Parse the created date string to a datetime object
         created_at: datetime = datetime.fromisoformat(created_str).replace(tzinfo=UTC)
+        updated_at: datetime = datetime.fromisoformat(updated_str).replace(tzinfo=UTC)
 
         if group_id in existing_teams:
             team = existing_teams[group_id]
 
-            if team.name != name or team.precedence != precedence or team.created_at != created_at:
+            if (
+                team.name != name
+                or team.precedence != precedence
+                or team.created_at != created_at
+                or team.updated_at != updated_at
+            ):
                 self.stdout.write(f"Updating team: {group_id}")
                 if not dry_run:
                     team.name = name
                     team.precedence = precedence
                     team.created_at = created_at
+                    team.updated_at = updated_at
                     team.save()
         else:
             self.stdout.write(f"Creating new team: {name} (ID: {group_id})")
@@ -120,5 +128,6 @@ class Command(BaseCommand):
                     name=name,
                     precedence=precedence,
                     created_at=created_at,
+                    updated_at=updated_at,
                     is_active=True,
                 )
