@@ -19,7 +19,10 @@ if TYPE_CHECKING:
     from django.urls import URLPattern, URLResolver
 
 # Internal URLs are not intended for public use.
-internal_urlpatterns = [path("readiness/", core_views.ready, name="readiness")]
+internal_urlpatterns = [
+    path("readiness/", core_views.ready, name="readiness"),
+    path("liveness/", core_views.liveness, name="liveness"),
+]
 
 # Private URLs are not meant to be cached.
 private_urlpatterns = [
