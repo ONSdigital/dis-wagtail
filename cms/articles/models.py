@@ -2,6 +2,7 @@ from typing import TYPE_CHECKING, Any, ClassVar, Optional
 
 from django.conf import settings
 from django.core.exceptions import ValidationError
+from django.core.paginator import EmptyPage, PageNotAnInteger, Paginator
 from django.db import models
 from django.http import Http404
 from django.shortcuts import get_object_or_404, redirect
@@ -43,7 +44,8 @@ class ArticleSeriesPage(RoutablePageMixin, GenericTaxonomyMixin, BasePage):  # t
         HelpPanel(
             content=(
                 "This is a container for article series. It provides the <code>/latest</code>,"
-                "<code>/previous-releases</code> evergreen paths, as well as the actual statistical article pages. "
+                "<code>/previous-releases</code> evergreen paths, "
+                "as well as the actual statistical article pages. "
                 "Add a new Statistical article page under this container."
             )
         ),
@@ -71,10 +73,19 @@ class ArticleSeriesPage(RoutablePageMixin, GenericTaxonomyMixin, BasePage):  # t
 
     @path("previous-releases/")
     def previous_releases(self, request: "HttpRequest") -> "TemplateResponse":
+        children = StatisticalArticlePage.objects.live().child_of(self).order_by("-release_date")
+        paginator = Paginator(children, per_page=settings.PREVIOUS_RELEASES_PER_PAGE)
+
+        try:
+            pages = paginator.page(request.GET.get("page", 1))
+            ons_pagination_url_list = [{"url": f"?page={n}"} for n in paginator.page_range]
+        except (EmptyPage, PageNotAnInteger) as e:
+            raise Http404 from e
+
         response: TemplateResponse = self.render(
             request,
             # TODO: update to include drafts when looking at previews holistically.
-            context_overrides={"pages": StatisticalArticlePage.objects.live().child_of(self).order_by("-release_date")},
+            context_overrides={"pages": pages, "ons_pagination_url_list": ons_pagination_url_list},
             template="templates/pages/statistical_article_page--previous-releases.html",
         )
         return response
