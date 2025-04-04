@@ -918,20 +918,6 @@ files = [
 Django = ">=3.2"
 
 [[package]]
-name = "django-xff"
-version = "1.5.0"
-description = "Django X-Forwarded-For Properly"
-optional = false
-python-versions = "*"
-files = [
-    {file = "django_xff-1.5.0-py2.py3-none-any.whl", hash = "sha256:78148498bf74f60db573a43acfe9e6b81c2ef30fa609664fe7887b2bdf2e749e"},
-    {file = "django_xff-1.5.0.tar.gz", hash = "sha256:cd63c6da00d8f4b4a909f26c8bb23beeb66fadb400522674c4d93786170e16e4"},
-]
-
-[package.dependencies]
-Django = ">=4.2"
-
-[[package]]
 name = "djangorestframework"
 version = "3.15.2"
 description = "Web APIs for Django, made easy."
@@ -2780,4 +2766,4 @@ files = [
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.12"
-content-hash = "6a5d93cb432d260328ae62720b5b53f3d5299f52e48ef0d7d1672dc7537f1622"
+content-hash = "9a10e932939b8e9ac68318446990ff22c0c715b1f0144b9ac2bcb898b3a7a6e2"
