@@ -1,13 +1,14 @@
 import argparse
 import logging
 from collections.abc import Iterable, Mapping
-from datetime import UTC, datetime
-from typing import Any
+from datetime import datetime
+from typing import Any, Optional
 
 import requests
 from django.conf import settings
 from django.core.management.base import BaseCommand, CommandError
 from django.db import transaction
+from django.utils import timezone
 
 from cms.teams.models import Team
 
@@ -55,31 +56,39 @@ class Command(BaseCommand):
         """Fetches groups from the identity API."""
         url = f"{self.identity_api_base_url}/groups"
         try:
-            response = requests.get(url, timeout=120)
-            response.raise_for_status()
-            data: dict[str, Any] = response.json()
-            groups: list[dict] = data.get("groups", [])
-            self.stdout.write(f"Fetched {len(groups)} groups from the API.")
-            return groups
-        except requests.RequestException as e:
-            logger.error("Error fetching groups from API: %s", e)
+            return self._fetch_groups(url)
+        except requests.RequestException:
+            logger.exception("Failed to fetch groups from the API")
             return None
+
+    def _fetch_groups(self, url: str) -> Optional[list[dict]]:
+        response = requests.get(url, timeout=120)
+        response.raise_for_status()
+        try:
+            data: dict[str, Any] = response.json()
+        except ValueError:
+            logger.exception("Invalid JSON response from API")
+            return None
+
+        groups: list[dict] = data.get("groups", [])
+        self.stdout.write(f"Fetched {len(groups)} groups from the API.")
+        return groups
 
     @transaction.atomic
     def update_teams(self, groups: Iterable[dict], *, dry_run: bool) -> None:
         """Updates the local database with the teams fetched from the API."""
         # Fetch existing Teams from the database
         existing_teams: dict[str, Team] = {team.identifier: team for team in Team.objects.all()}
-        teams_from_api: set[str] = {group["id"] for group in groups if group["id"] not in settings.ROLE_GROUP_IDS}
+        api_team_groups = [group for group in groups if group["id"] not in settings.ROLE_GROUP_IDS]
+        teams_from_api: set[str] = {group["id"] for group in api_team_groups}
 
-        for group in groups:
+        for group in api_team_groups:
             self._update_team(group, existing_teams=existing_teams, dry_run=dry_run)
 
         # Deactivate teams not present in the API
-        teams_to_deactivate = existing_teams.keys() - teams_from_api
+        teams_to_deactivate = set(existing_teams.keys()) - teams_from_api
         if teams_to_deactivate:
             self.stdout.write(f"Deactivating {len(teams_to_deactivate)} team(s) not present in the API.")
-
             for team_id in teams_to_deactivate:
                 team = existing_teams[team_id]
                 self.stdout.write(f"Deactivating team: {team_id} - {team.name}")
@@ -90,23 +99,16 @@ class Command(BaseCommand):
     def _update_team(self, group: Mapping, *, existing_teams: Mapping[str, Team], dry_run: bool) -> None:
         """Updates a single team in the database."""
         group_id: str = group["id"]
-
-        if group_id in settings.ROLE_GROUP_IDS:
-            # Skip role groups as they are handled separately
-            return
-
         name: str = group["name"].strip()
         precedence: int = group["precedence"]
         created_str: str = group["creation_date"]
         updated_str: str = group["last_modified_date"]
 
-        # Parse the created date string to a datetime object
-        created_at: datetime = datetime.fromisoformat(created_str).replace(tzinfo=UTC)
-        updated_at: datetime = datetime.fromisoformat(updated_str).replace(tzinfo=UTC)
+        created_at: datetime = timezone.make_aware(datetime.fromisoformat(created_str))
+        updated_at: datetime = timezone.make_aware(datetime.fromisoformat(updated_str))
 
         if group_id in existing_teams:
             team = existing_teams[group_id]
-
             if (
                 team.name != name
                 or team.precedence != precedence
@@ -119,6 +121,7 @@ class Command(BaseCommand):
                     team.precedence = precedence
                     team.created_at = created_at
                     team.updated_at = updated_at
+                    team.is_active = True
                     team.save()
         else:
             self.stdout.write(f"Creating new team: {name} (ID: {group_id})")
