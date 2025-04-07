@@ -44,12 +44,14 @@
     <main id="main-content">
         {% if localised_version_not_available %}
             {% from "components/panel/_macro.njk" import onsPanel %}
+            {# fmt:off #}
             {{-
-            onsPanel({
-            "variant": "announcement",
-            "body": _("This page is currently not available in your locale. The English version is shown instead.")
-            })
+                onsPanel({
+                    "variant": "announcement",
+                    "body": _("This page is currently not available in your locale. The English version is shown instead.")
+                })
             -}}
+            {# fmt:on #}
         {% endif %}
         {# This block should be overriden on individual page templates and include the breadcrumbs and page heading. This is default content while the build is in progress. #}
         {% block header_area %}
