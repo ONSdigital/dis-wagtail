@@ -1,5 +1,5 @@
 # Override the default date format to use am/ pm instead of a.m./ p.m.
-from datetime import datetime
+from datetime import datetime, time
 
 from django.utils.dateformat import DateFormat
 
@@ -11,9 +11,10 @@ PM_TIME = 11
 class NewDateFormat(DateFormat):
     def a(self) -> str:
         """Am or pm."""
-        if self.data.hour > PM_TIME:
-            return "pm"
-        return "am"
+        # To fix error: Item "date" of "date | time" has no attribute "hour"
+        if isinstance(self.data, datetime | time):
+            return "pm" if self.data.hour > PM_TIME else "am"
+        return ""
 
 
 def new_date_format(value: datetime, format_string: str) -> str:

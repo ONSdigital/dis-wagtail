@@ -53,7 +53,7 @@ def set_attributes_filter(attributes: dict, new_attributes: dict) -> dict:
 
 
 @register.filter(name="custom_date")
-def custom_date_format(value: datetime, format_string="DATETIME_FORMAT") -> str:
+def custom_date_format(value: datetime, format_string: str) -> str:
     if not value:
         return ""
     if format_string == "DATETIME_FORMAT":

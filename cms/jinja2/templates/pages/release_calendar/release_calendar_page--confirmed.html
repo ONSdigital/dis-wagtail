@@ -5,7 +5,7 @@
     <div class="ons-container common-header__releases common-header__releases--single-row">
         <div>
             <span class="ons-u-fs-r--b common-header__releases-label">{{ _("Release date") }}:</span>
-            <span class="ons-u-nowrap">{{ page.release_date|date("DATETIME_FORMAT") }}</span>
+            <span class="ons-u-nowrap">{{ page.release_date|custom_date("DATETIME_FORMAT") }}</span>
         </div>
     </div>
 {% endblock %}
