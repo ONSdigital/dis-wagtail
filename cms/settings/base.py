@@ -168,6 +168,7 @@ TEMPLATES = [
                 "wagtail.images.jinja2tags.images",
                 "wagtail.contrib.settings.jinja2tags.settings",
                 "cms.core.jinja2tags.CoreExtension",
+                "jinja2.ext.do",
             ],
         },
     },
