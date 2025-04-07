@@ -6,7 +6,7 @@ from jinja2.ext import Extension
 from wagtail.contrib.routable_page.templatetags.wagtailroutablepage_tags import routablepageurl
 from wagtailmath.templatetags.wagtailmath import mathjax
 
-from cms.core.templatetags.util_tags import dump, json_script, social_image, social_text
+from cms.core.templatetags.util_tags import dump, extend, json_script, social_image, social_text
 
 if TYPE_CHECKING:
     from jinja2 import Environment
@@ -25,6 +25,7 @@ class CoreExtension(Extension):  # pylint: disable=abstract-method
                 "mathjax": mathjax,
                 "static": static,
                 "routablepageurl": pass_context(routablepageurl),
+                "extend": extend,
             }
         )
 
