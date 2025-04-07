@@ -2,10 +2,13 @@ import logging
 from http import HTTPStatus
 from typing import TYPE_CHECKING
 
+from django.core.cache import caches
 from django.db import connections
 from django.http import HttpResponse, HttpResponseServerError
 from django.shortcuts import render
 from django.views import defaults
+from django_redis import get_redis_connection
+from django_redis.cache import RedisCache
 
 if TYPE_CHECKING:
     from django.http import HttpRequest
@@ -58,5 +61,8 @@ def liveness(request: "HttpRequest") -> HttpResponse:
 
         if not connection.is_usable():
             return HttpResponseServerError(content=f"'{connection.alias}' database connection is not usable.")
+
+    if isinstance(caches["default"], RedisCache):
+        get_redis_connection().ping()
 
     return HttpResponse(status=200)

@@ -3,8 +3,9 @@ from http import HTTPMethod
 
 from django.conf import settings
 from django.db import connections
-from django.test import Client, SimpleTestCase, TestCase
+from django.test import Client, SimpleTestCase, TestCase, override_settings
 from django.urls import reverse
+from fakeredis import FakeConnection
 
 
 class CSRFTestCase(TestCase):
@@ -57,6 +58,17 @@ class ReadinessProbeTestCase(SimpleTestCase):
                 self.assertEqual(response.templates, [])
 
 
+@override_settings(
+    CACHES={
+        "default": {
+            "BACKEND": "django_redis.cache.RedisCache",
+            "LOCATION": "redis://",
+            "OPTIONS": {
+                "CONNECTION_POOL_KWARGS": {"connection_class": FakeConnection},
+            },
+        }
+    }
+)
 class LivenessProbeTestCase(TestCase):
     """Tests for the liveness probe endpoint."""
 
