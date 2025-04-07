@@ -34,6 +34,8 @@ django-treebeard = "^4.7.1"
 kafka-python = "^2.0.5"
 wagtail-tinytableblock = "^0.3.2"
 queryish = "^0.2"
+python-json-logger = "^3.3.0"
+json-log-formatter = "^1.1.1"
 
 [tool.poetry.group.dev.dependencies]
 # :TODO: Remove pylint when ruff supports all pylint rules
@@ -112,6 +114,8 @@ convention = "google"
 "**/tests/*" = [
     # Allow use of assert statements in tests
     "S101",
+    # Allow what looks like hard-coded credentials
+    "S106"
 ]
 "cms/*/migrations/*" = [
     "RUF012"
