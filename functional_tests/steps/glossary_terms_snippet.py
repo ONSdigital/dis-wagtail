@@ -3,14 +3,13 @@ from behave.runner import Context
 from playwright.sync_api import expect
 
 from cms.core.models import GlossaryTerm
-from functional_tests.steps.page_editor import publish_snippet
 
 
 @step("the user adds another Glossary Terms snippet with the same name")
 @step("the user adds a Glossary Terms snippet")
 def user_adds_glossary_terms_snippet(context: Context) -> None:
     user_fills_in_glossary_term_details(context)
-    publish_snippet(context)
+    context.page.get_by_role("button", name="Save").click()
 
 
 @given("the user fills in Glossary Term details")

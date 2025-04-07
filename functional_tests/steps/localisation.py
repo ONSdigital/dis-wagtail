@@ -61,13 +61,15 @@ def user_converts_the_alias_into_an_ordinary_page(context: Context) -> None:
 
 @step("the user adds Welsh content to the information page")
 def user_populates_the_information_page_with_welsh_content(context: Context) -> None:
+    context.page.wait_for_timeout(50)  # added to allow JS to be ready
     context.page.get_by_placeholder("Page title*").fill("Tudalen Gwybodaeth Profi")
 
     context.page.get_by_role("region", name="Summary*").get_by_role("textbox").fill("Tudalen wybodaeth fy mhrawf")
-
+    context.page.wait_for_timeout(50)  # added to allow JS to be ready
     context.page.get_by_role("region", name="Rich text *").get_by_role("textbox").fill(
         "Rhywfaint o gynnwys testun enghreifftiol"
     )
+    context.page.wait_for_timeout(500)  # ensure that the rich text content is picked up
 
 
 @step("the user switches the page language to English")
@@ -94,11 +96,13 @@ def check_new_information_is_displayed_with_welsh_content(context: Context) -> N
 
 @then("the page furniture is displayed in English")
 def check_page_furniture_is_displayed_in_english(context: Context) -> None:
-    expect(context.page.get_by_text("Mae'r holl gynnwys ar gael o dan delerau'r")).to_be_visible()
+    context.page.get_by_text("All content is available under the").scroll_into_view_if_needed()
+    expect(context.page.get_by_text("All content is available under the")).to_be_visible()
 
 
 @then("the page furniture is displayed in Welsh")
 def check_page_furniture_is_displayed_in_welsh(context: Context) -> None:
+    context.page.get_by_text("Mae'r holl gynnwys ar gael o dan delerau'r").scroll_into_view_if_needed()
     expect(context.page.get_by_text("Mae'r holl gynnwys ar gael o dan delerau'r")).to_be_visible()
 
 
