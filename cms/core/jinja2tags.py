@@ -25,7 +25,7 @@ class CoreExtension(Extension):  # pylint: disable=abstract-method
                 "mathjax": mathjax,
                 "static": static,
                 "routablepageurl": pass_context(routablepageurl),
-                "translation_urls": get_translation_urls,
+                "get_translation_urls": get_translation_urls,
             }
         )
 
