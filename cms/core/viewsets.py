@@ -12,7 +12,7 @@ from cms.core.models import ContactDetails, GlossaryTerm
 
 
 class ContactDetailsIndex(SnippetIndexView):
-    list_display: ClassVar[list[str | Column]] = ["name", "email", "phone", UpdatedAtColumn()]
+    list_display: ClassVar[list[str | Column]] = ["name", "locale", "email", "phone", UpdatedAtColumn()]
 
 
 class ContactDetailsChooseColumnsMixin:
@@ -20,7 +20,7 @@ class ContactDetailsChooseColumnsMixin:
     def columns(self) -> list[Column]:
         title_column = self.title_column  # type: ignore[attr-defined]
         title_column.label = "Name"
-        return [title_column, Column("email"), Column("phone")]
+        return [title_column, Column("locale"), Column("email"), Column("phone")]
 
 
 class ContactDetailsChooseView(ContactDetailsChooseColumnsMixin, SnippetChooseView): ...

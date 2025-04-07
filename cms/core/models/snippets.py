@@ -4,7 +4,6 @@ from typing import TYPE_CHECKING, Any, ClassVar, Optional
 from django.conf import settings
 from django.contrib.contenttypes.fields import GenericRelation
 from django.db import models
-from django.db.models.functions import Lower
 from wagtail.fields import RichTextField
 from wagtail.models import PreviewableMixin, RevisionMixin, TranslatableMixin
 from wagtail.search import index
@@ -16,7 +15,7 @@ if TYPE_CHECKING:
     from cms.users.models import User
 
 
-class ContactDetails(index.Indexed, models.Model):
+class ContactDetails(TranslatableMixin, index.Indexed, models.Model):
     """A model for contact details.
 
     Note that this is registered as a snippet in core.wagtail_hooks to allow customising the icon.
@@ -42,14 +41,17 @@ class ContactDetails(index.Indexed, models.Model):
 
     class Meta:
         verbose_name_plural = "contact details"
-        constraints: ClassVar[list[models.BaseConstraint]] = [
-            models.UniqueConstraint(
-                Lower("name"),
-                Lower("email"),
-                name="core_contactdetails_name_unique",
-                violation_error_message="Contact details with this name and email combination already exists.",
-            ),
+        unique_together: ClassVar[list[tuple[str, ...]]] = [
+            *TranslatableMixin.Meta.unique_together,
+            ("name", "email", "locale"),
         ]
+
+    def validate_unique(self, exclude: Collection[str] | None = None) -> None:
+        # Include the locale field for validation as it's not included by default
+        # See https://github.com/wagtail/wagtail/issues/8918#issuecomment-1208670360
+        if exclude and "locale" in exclude:
+            exclude.remove("locale")  # type: ignore[attr-defined]
+        return super().validate_unique(exclude)
 
     def save(self, *args: Any, **kwargs: Any) -> None:
         self.name = self.name.strip()
