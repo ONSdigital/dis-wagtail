@@ -20,7 +20,7 @@
 
     {% if params.language and params.language.languages %}
         {% set currentLanguage = params.language.languages | selectattr("current") | first %}
-        {% set otherLanguage = params.language.languages | rejectattr("current") | first %}
+        {% set otherLanguages = params.language.languages | rejectattr("current") %}
         {% set currentLanguageIsoCode = currentLanguage.isoCode | default(currentLanguageIsoCode) %}
     {% endif %}
 
@@ -139,7 +139,11 @@
                                 </div>
                             {% endif %}
                             <div class="ons-grid__col ons-col-auto">
-                                <a href={{ otherLanguage.url }}>{{ otherLanguage.text }}</a>
+                                {% for otherLanguage in otherLanguages %}
+                                    <div>
+                                        <a href={{ otherLanguage.url }}>{{ otherLanguage.text }}</a>
+                                    </div>
+                                {% endfor %}
                             </div>
                         </div>
                     {% endif %}
