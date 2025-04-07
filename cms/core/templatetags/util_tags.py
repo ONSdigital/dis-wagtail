@@ -1,3 +1,4 @@
+from datetime import datetime
 from typing import TYPE_CHECKING, Optional
 
 import jinja2
@@ -5,6 +6,7 @@ from django import template
 from django.template.loader import render_to_string
 from django_jinja import library
 
+from cms.core.custom_dateformat import new_date_format
 from cms.core.models import SocialMediaSettings
 
 register = template.Library()
@@ -50,4 +52,10 @@ def set_attributes_filter(attributes: dict, new_attributes: dict) -> dict:
     return attributes
 
 
-# Jinja filter that uses our custom date format classes. Usage in template: {{ some_datetime|custom_date("j F Y g:ia") }}.
+@register.filter(name="custom_date")
+def custom_date_format(value: datetime, format_string="DATETIME_FORMAT") -> str:
+    if not value:
+        return ""
+    if format_string == "DATETIME_FORMAT":
+        format_string = "j F Y g:ia"
+    return new_date_format(value, format_string)

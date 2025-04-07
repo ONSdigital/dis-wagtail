@@ -6,7 +6,7 @@ from jinja2.ext import Extension
 from wagtail.contrib.routable_page.templatetags.wagtailroutablepage_tags import routablepageurl
 from wagtailmath.templatetags.wagtailmath import mathjax
 
-from cms.core.templatetags.util_tags import set_attributes_filter, social_image, social_text
+from cms.core.templatetags.util_tags import custom_date_format, set_attributes_filter, social_image, social_text
 
 if TYPE_CHECKING:
     from jinja2 import Environment
@@ -33,6 +33,7 @@ class CoreExtension(Extension):  # pylint: disable=abstract-method
                 "social_text": social_text,
                 "social_image": social_image,
                 "setAttributes": set_attributes_filter,
-                # define a filter to use custom_date_format here
+                # define a filter to use custom_date_format her
+                "custom_date": custom_date_format,
             }
         )
