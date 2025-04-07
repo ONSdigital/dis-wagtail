@@ -1,7 +1,6 @@
 from django.conf import settings
 from django.forms import Media
 from django.utils.functional import cached_property
-from django.utils.translation import gettext_lazy as _
 from wagtail import blocks
 from wagtail.blocks.field_block import FieldBlockAdapter
 from wagtail.blocks.struct_block import StructBlockAdapter
@@ -18,30 +17,30 @@ class BasePanelBlock(blocks.StructBlock):
 
     class Meta:
         abstract = True
-        group = _("Panels")
+        group = "Panels"
 
 
 class WarningPanelBlock(BasePanelBlock):
     class Meta:
         template = "templates/components/streamfield/warning_panel.html"
         icon = "warning"
-        label = _("Warning Panel")
+        label = "Warning Panel"
 
 
 class AnnouncementPanelBlock(BasePanelBlock):
     class Meta:
         template = "templates/components/streamfield/announcement_panel.html"
         icon = "pick"
-        label = _("Announcement Panel")
+        label = "Announcement Panel"
 
 
 class InformationPanelBlock(BasePanelBlock):
-    title = blocks.CharBlock(required=True, label=_("Title"))
+    title = blocks.CharBlock(required=True, label="Title")
 
     class Meta:
         template = "templates/components/streamfield/information_panel.html"
         icon = "info-circle"
-        label = _("Information Panel")
+        label = "Information Panel"
 
 
 class PreviousVersionBlock(blocks.IntegerBlock):

@@ -2,7 +2,6 @@ from typing import TYPE_CHECKING, Any, ClassVar
 
 from django.conf import settings
 from django.db import models
-from django.utils.translation import gettext_lazy as _
 from wagtail.admin.panels import InlinePanel
 from wagtail.fields import RichTextField
 from wagtail.search import index
@@ -24,6 +23,7 @@ class InformationPage(GenericTaxonomyMixin, BasePage):  # type: ignore[django-ma
     template = "templates/pages/information_page.html"
 
     parent_page_types: ClassVar[list[str]] = ["home.HomePage", "InformationPage", "IndexPage"]
+    search_index_content_type: ClassVar[str] = "static_page"
 
     summary = RichTextField(features=settings.RICH_TEXT_BASIC)
     last_updated = models.DateField(blank=True, null=True)
@@ -49,11 +49,12 @@ class IndexPage(BasePage):  # type: ignore[django-manager-missing]
 
     parent_page_types: ClassVar[list[str]] = ["home.HomePage", "IndexPage"]
     subpage_types: ClassVar[list[str]] = ["IndexPage", "InformationPage"]
+    search_index_content_type: ClassVar[str] = "static_landing_page"
 
     summary = RichTextField(features=settings.RICH_TEXT_BASIC)
     featured_items = StreamField(
         [("featured_item", RelatedContentBlock())],
-        help_text=_("Leave blank to automatically populate with child pages. Only published pages will be displayed."),
+        help_text="Leave blank to automatically populate with child pages. Only published pages will be displayed.",
         blank=True,
     )
 

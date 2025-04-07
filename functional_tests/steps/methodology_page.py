@@ -123,7 +123,7 @@ def preview_is_visible(context: Context):
 
     expect(iframe_locator.get_by_role("heading", name="Methodology page")).to_be_visible()
     expect(iframe_locator.get_by_text("Page summary")).to_be_visible()
-    expect(iframe_locator.get_by_text("Published: 1 January 1950")).to_be_visible()
+    expect(iframe_locator.get_by_text("1 January 1950", exact=True)).to_be_visible()
     expect(iframe_locator.get_by_role("heading", name="Cite this methodology")).to_be_visible()
     expect(iframe_locator.get_by_role("heading", name="Heading")).to_be_visible()
     expect(iframe_locator.get_by_role("heading", name="Content")).to_be_visible()

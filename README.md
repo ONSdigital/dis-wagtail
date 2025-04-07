@@ -342,6 +342,11 @@ To lint the django migration files:
 make lint-migrations
 ```
 
+##### Ignoring Migrations
+
+If you need to bypass migration linting on certain files, add the migration name (the file name minus the `.py`) to the list of ignored migrations in the
+`MIGRATION_LINTER_OPTIONS` setting in the [dev settings file](cms/settings/dev.py), with a comment explaining why the file is ignored.
+
 #### Format
 
 To auto-format the Python code, and correct fixable linting issues, run:
