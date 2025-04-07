@@ -51,10 +51,8 @@ def after_edit_page(request: "HttpRequest", page: "Page") -> None:
         return
 
     # Check if proper translations of the page exist, which are not simple aliases
-    proper_translations = [
-        translation for translation in page.get_translations().only("alias_of") if not translation.alias_of
-    ]
-    if len(proper_translations) > 0:
+    has_proper_translations = page.get_translations().filter(alias_of__isnull=True).exists()
+    if has_proper_translations:
         messages.warning(
             request, "A translated version of this page exists. If you make any changes, please make sure to update it."
         )

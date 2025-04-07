@@ -37,7 +37,7 @@ class ExclusiveTaxonomyMixin(models.Model):
             # Translations of the same page are allowed, but other pages aren't.
             qs = exclusive_sub_page_type.objects.filter(  # type: ignore[attr-defined]
                 topic=self.topic_id,
-                locale=self.locale,  # type: ignore[attr-defined]
+                locale=self.locale_id,  # type: ignore[attr-defined]
             )
             if not self._state.adding:
                 # On edit, ensure we exclude the page being edited.

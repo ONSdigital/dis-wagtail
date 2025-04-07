@@ -16,9 +16,9 @@
     {% set body_class = '' %}
 {% endif %}
 
-{# Untranslated pages will have aliases to the original page #}
+{#- Untranslated pages will have aliases to the original page -#}
 {% if page.alias_of and request.LANGUAGE_CODE != page.alias_of.locale.language_code %}
-    {% set localised_version_not_available = true %}
+    {%- set localised_version_not_available = true -%}
 {% endif %}
 
 {%- set page_title -%}
@@ -32,17 +32,17 @@
 
 {% set footer_menu = footer_menu | default(navigation_settings.footer_menu.localized) %}
 
-{# We set variables for text so that it gets picked up by makemessages #}
-{% set badge_label = _("Beta") %}
-{% set badge_html = _("This is a new service.") %}
-{% set menu_label = _("Menu") %}
-{% set menu_label = _("Main menu") %}
-{% set menu_toggle_aria_label = _("Toggle main menu") %}
+{#- We set variables for text so that it gets picked up by makemessages -#}
+{%- set badge_label = _("Beta") -%}
+{%- set badge_html = _("This is a new service.") -%}
+{%- set menu_label = _("Menu") -%}
+{%- set menu_label = _("Main menu") -%}
+{%- set menu_toggle_aria_label = _("Toggle main menu") -%}
 
-{% set ogl_pre = _('All content is available under the') %}
-{% set ogl_text = 'Open Government Licence v3.0' %}
-{% set ogl_url = 'https://www.nationalarchives.gov.uk/doc/open-government-licence/version/3/' %}
-{% set ogl_post = _(', except where otherwise stated') %}
+{%- set ogl_pre = _('All content is available under the') -%}
+{%- set ogl_text = 'Open Government Licence v3.0' -%}
+{%- set ogl_url = 'https://www.nationalarchives.gov.uk/doc/open-government-licence/version/3/' -%}
+{%- set ogl_post = _(', except where otherwise stated') -%}
 
 {% set pageConfig = {
     "bodyClasses": body_class,
