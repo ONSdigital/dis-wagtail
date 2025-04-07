@@ -2,6 +2,7 @@ import logging
 from http import HTTPMethod
 
 from django.conf import settings
+from django.db import connections
 from django.test import Client, SimpleTestCase, TestCase
 from django.urls import reverse
 
@@ -51,6 +52,38 @@ class ReadinessProbeTestCase(SimpleTestCase):
             with self.subTest(method):
                 response = getattr(self.client, method.value.lower())(self.url)
 
-                self.assertEqual(response.status_code, 204)
+                self.assertEqual(response.status_code, 200)
                 self.assertEqual(response.content, b"")
                 self.assertEqual(response.templates, [])
+
+
+class LivenessProbeTestCase(TestCase):
+    """Tests for the liveness probe endpoint."""
+
+    databases = "__all__"
+
+    url = reverse("internal:liveness")
+
+    def test_all_methods(self):
+        """Check the liveness endpoint works with all methods."""
+        for method in iter(HTTPMethod):
+            if method == HTTPMethod.CONNECT:
+                # CONNECT isn't a valid method in this context
+                continue
+
+            with self.subTest(method):
+                response = getattr(self.client, method.value.lower())(self.url)
+
+                self.assertEqual(response.status_code, 200)
+                self.assertEqual(response.content, b"")
+                self.assertEqual(response.templates, [])
+
+    def test_fails(self):
+        # Force close the connections to simulate a broken connection.
+        for connection in connections.all():
+            connection.close()
+
+        response = self.client.get(self.url)
+
+        self.assertEqual(response.status_code, 500)
+        self.assertEqual(response.content, b"'default' database connection is not usable.")

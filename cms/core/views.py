@@ -2,12 +2,16 @@ import logging
 from http import HTTPStatus
 from typing import TYPE_CHECKING
 
-from django.http import HttpResponse
+from django.db import connections
+from django.http import HttpResponse, HttpResponseServerError
 from django.shortcuts import render
 from django.views import defaults
 
 if TYPE_CHECKING:
     from django.http import HttpRequest
+
+
+logger = logging.getLogger(__name__)
 
 
 def page_not_found(
@@ -35,5 +39,24 @@ def csrf_failure(
 
 
 def ready(request: "HttpRequest") -> HttpResponse:
-    """Readiness probe endpoint."""
-    return HttpResponse(status=204)
+    """Readiness probe endpoint.
+
+    If this fails, requests will not be routed to the container.
+    """
+    return HttpResponse(status=200)
+
+
+def liveness(request: "HttpRequest") -> HttpResponse:
+    """Liveness probe endpoint.
+
+    If this fails, the container will be restarted.
+    """
+    for connection in connections.all():
+        # If this endpoint is the first request Django runs,
+        # it won't have a connection yet.
+        connection.ensure_connection()
+
+        if not connection.is_usable():
+            return HttpResponseServerError(content=f"'{connection.alias}' database connection is not usable.")
+
+    return HttpResponse(status=200)
