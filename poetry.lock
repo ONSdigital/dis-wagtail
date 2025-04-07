@@ -1256,6 +1256,16 @@ files = [
 ]
 
 [[package]]
+name = "json-log-formatter"
+version = "1.1.1"
+description = "JSON log formatter"
+optional = false
+python-versions = ">=3.6"
+files = [
+    {file = "json_log_formatter-1.1.1.tar.gz", hash = "sha256:0815e3b4469e5c79cf3f6dc8a0613ba6601f4a7464f85ba03655cfa6e3e17d10"},
+]
+
+[[package]]
 name = "kafka-python"
 version = "2.0.5"
 description = "Pure Python client for Apache Kafka"
@@ -2022,6 +2032,20 @@ files = [
 six = ">=1.5"
 
 [[package]]
+name = "python-json-logger"
+version = "3.3.0"
+description = "JSON Log Formatter for the Python Logging Package"
+optional = false
+python-versions = ">=3.8"
+files = [
+    {file = "python_json_logger-3.3.0-py3-none-any.whl", hash = "sha256:dd980fae8cffb24c13caf6e158d3d61c0d6d22342f932cb6e9deedab3d35eec7"},
+    {file = "python_json_logger-3.3.0.tar.gz", hash = "sha256:12b7e74b17775e7d565129296105bbe3910842d9d0eb083fc83a6a617aa8df84"},
+]
+
+[package.extras]
+dev = ["backports.zoneinfo", "black", "build", "freezegun", "mdx_truly_sane_lists", "mike", "mkdocs", "mkdocs-awesome-pages-plugin", "mkdocs-gen-files", "mkdocs-literate-nav", "mkdocs-material (>=8.5)", "mkdocstrings[python]", "msgspec", "mypy", "orjson", "pylint", "pytest", "tzdata", "validate-pyproject[all]"]
+
+[[package]]
 name = "pyyaml"
 version = "6.0.2"
 description = "YAML parser and emitter for Python"
@@ -2626,13 +2650,13 @@ files = [
 
 [[package]]
 name = "wagtail-tinytableblock"
-version = "0.2.4"
+version = "0.3.2"
 description = "A Wagtail StreamField block powered by TinyMCE and its table plugin"
 optional = false
 python-versions = ">=3.12"
 files = [
-    {file = "wagtail_tinytableblock-0.2.4-py3-none-any.whl", hash = "sha256:25d45aeea4d9db8a5d9fa9462e977e4160f70c1ff50b1c45824cdb98836b6300"},
-    {file = "wagtail_tinytableblock-0.2.4.tar.gz", hash = "sha256:be6252ba86ff73f09255e063bd70c35a9e83a3130d005044cc4d36d579a64370"},
+    {file = "wagtail_tinytableblock-0.3.2-py3-none-any.whl", hash = "sha256:1bd21e2ef6558f76eac588d5cb66e38a23dd4012cb909a5267fa675f469c8fe6"},
+    {file = "wagtail_tinytableblock-0.3.2.tar.gz", hash = "sha256:9b57df3806a2a81e2ad8467f8807502b97c0f1273873fb3c9e116139c2bd0629"},
 ]
 
 [package.dependencies]
@@ -2742,4 +2766,4 @@ files = [
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.12"
-content-hash = "b076f0ce67ccce880ddd5e374bcb27ca037edecb47e585511e74af9f926770d6"
+content-hash = "79226e48ac68ecbffd47b27a23b7af0c5ffda8b037dd7ed0dbfad69c8ea80a1d"
