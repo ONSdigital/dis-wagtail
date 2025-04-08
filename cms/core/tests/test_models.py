@@ -1,4 +1,3 @@
-from django.db import IntegrityError
 from django.test import TestCase
 from django.urls import reverse
 from wagtail.test.utils.wagtail_tests import WagtailTestUtils
