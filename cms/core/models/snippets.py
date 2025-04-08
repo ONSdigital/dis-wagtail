@@ -39,7 +39,7 @@ class ContactDetails(TranslatableMixin, index.Indexed, models.Model):
         index.SearchField("phone"),
     ]
 
-    class Meta:
+    class Meta(TranslatableMixin.Meta):
         verbose_name_plural = "contact details"
         unique_together: ClassVar[list[tuple[str, ...]]] = [
             *TranslatableMixin.Meta.unique_together,
