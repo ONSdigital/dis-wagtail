@@ -48,7 +48,7 @@ def user_updates_the_statistical_article_page_content(context: Context):
 @step('the user clicks on "View superseded version"')
 def user_clicks_on_view_superseded_version(context: Context):
     page = context.page
-    page.locator("#corrections-and-notices .ons-details__heading").click()
+    page.locator(".ons-corrections-notices__banner").click()
     page.get_by_role("link", name="View superseded version").click()
 
 
@@ -169,7 +169,7 @@ def user_adds_a_notice(context: Context):
 
 @then("the published statistical article page has the added correction")
 def the_published_statistical_article_page_has_the_added_correction(context: Context):
-    expect(context.page.get_by_role("link", name="Corrections ons-icon-chevron")).to_be_visible()
+    expect(context.page.get_by_role("heading", name="Corrections")).to_be_visible()
     expect(context.page.get_by_text("13 March 2025 1:59p.m.")).to_be_hidden()
     expect(context.page.get_by_text("Correction text")).to_be_hidden()
 
@@ -182,7 +182,7 @@ def the_published_statistical_article_page_has_corrections_in_chronological_orde
 
 @then("the published statistical article page has the added notice")
 def the_published_statistical_article_page_has_the_added_notice(context: Context):
-    expect(context.page.get_by_role("link", name="Notices ons-icon-chevron")).to_be_visible()
+    expect(context.page.get_by_role("heading", name="Notices")).to_be_visible()
     expect(context.page.get_by_text("13 March 2025 1:59p.m.")).to_be_hidden()
     expect(context.page.get_by_text("Notice text")).to_be_hidden()
 
