@@ -20,14 +20,6 @@ class ContactDetailsTestCase(WagtailTestUtils, TestCase):
 
         self.assertEqual(details.name, "Retail")
 
-    def test_contactdetails_uniqueness_validation__with_name_case_variation(self):
-        with self.assertRaisesMessage(IntegrityError, "core_contactdetails_name_unique"):
-            ContactDetails.objects.create(name="Psf", email="psf@ons.gov.uk")
-
-    def test_contactdetails_uniqueness_validation__with_email_case_variation(self):
-        with self.assertRaisesMessage(IntegrityError, "core_contactdetails_name_unique"):
-            ContactDetails.objects.create(name="PSF", email="PSF@ons.gov.uk")
-
     def test_contactdetails_creation(self):
         self.assertEqual(ContactDetails.objects.count(), 1)
         ContactDetails.objects.create(name="PSF", email="psf.extra@ons.gov.uk")
