@@ -16,5 +16,5 @@ class MarkerStyle(TextChoices):
 
 
 class HighchartsTheme(TextChoices):
-    PRIMARY = "primary", _("Primary")
-    ALTERNATE = "alternate", _("Alternate")
+    PRIMARY = "primary", "Primary"
+    ALTERNATE = "alternate", "Alternate"
