@@ -9,6 +9,7 @@
 
 {# fmt:off #}
 {% set languages=get_translation_urls() %}
+{% set hreflangs=get_hreflangs() %}
 
 {% if page %}
     {% set body_class = ["template-", page.get_verbose_name()| lower | replace(" ", "-")] | join %}
@@ -76,6 +77,9 @@
             "url": ogl_url,
             "post": ogl_post
         }
+    },
+    "meta": {
+        "hrefLangs": hreflangs,
     },
     "page": page
 }

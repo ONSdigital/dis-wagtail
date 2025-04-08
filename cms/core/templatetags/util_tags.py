@@ -81,3 +81,30 @@ def get_translation_urls(context: jinja2.runtime.Context) -> list[dict[str, str 
         )
 
     return urls
+
+
+@jinja2.pass_context
+def get_hreflangs(context: jinja2.runtime.Context) -> list[dict[str, str | bool]]:
+    if not (page := context.get("page")):
+        return []
+
+    default_locale = Locale.get_default()
+    variants = {variant.locale_id: variant for variant in page.get_translations(inclusive=True)}
+    default_page = variants.get(default_locale.pk)
+    urls = []
+    for locale in Locale.objects.all().order_by("pk"):
+        variant = variants.get(locale.pk, default_page)
+        if not variant:
+            continue
+        url = variant.get_url(request=context["request"])
+        if variant == default_page and locale.pk != variant.locale_id:
+            url = f"/{locale.language_code}{url}"
+
+        urls.append(
+            {
+                "url": url,
+                "lang": locale.language_code,
+            }
+        )
+
+    return urls

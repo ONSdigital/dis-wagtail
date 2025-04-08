@@ -115,7 +115,7 @@
                         {%- endif -%}
                     </div>
                     {# Note that navLinks replaces the previous serviceLinks #}
-                    {% if params.navLinks %}
+                    {% if params.language or params.navLinks %}
                         <div class="ons-header__links ons-grid__col ons-u-ml-auto">
                             {% if params.navLinks %}
                                 {# May need to be replaced with a custom button - for now use the design system one with some modifications #}
@@ -138,13 +138,12 @@
                                     }}
                                 </div>
                             {% endif %}
-                            <div class="ons-grid__col ons-col-auto">
-                                {% for otherLanguage in otherLanguages %}
-                                    <div>
-                                        <a href={{ otherLanguage.url }}>{{ otherLanguage.text }}</a>
-                                    </div>
-                                {% endfor %}
-                            </div>
+                            {% if params.language %}
+                                <div class="ons-grid__col ons-col-auto{{ ' ons-u-mr-s ons-u-d-no@2xs@xs' if params.navLinks }}">
+                                    {% from "components/language-selector/_macro.njk" import onsLanguageSelector %}
+                                    {{ onsLanguageSelector(params.language) }}
+                                </div>
+                            {% endif %}
                         </div>
                     {% endif %}
                 </div>

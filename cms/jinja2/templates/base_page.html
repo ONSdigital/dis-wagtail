@@ -1,7 +1,7 @@
 {% extends "templates/base.html" %}
 {% from "components/back-to-top/_macro.njk" import onsBackToTop %}
 
-{% block meta %}
+{% block social %}
     {% with current_site=wagtail_site() %}
         <meta name="twitter:card" content="summary" />
         <meta name="twitter:site" content="@{{ settings.core.SocialMediaSettings.twitter_handle }}" />
@@ -28,7 +28,7 @@
         <meta property="og:description" content="{{ page|social_text(current_site) }}" />
         <meta property="og:site_name" content="{{ settings.core.SocialMediaSettings.site_name }}" />
     {% endwith %}
-{% endblock meta %}
+{% endblock social %}
 
 {%- block bodyStart -%}
     {%- if request.is_preview and request.preview_mode == "bundle-preview" -%}

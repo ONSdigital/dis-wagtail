@@ -6,7 +6,13 @@ from jinja2.ext import Extension
 from wagtail.contrib.routable_page.templatetags.wagtailroutablepage_tags import routablepageurl
 from wagtailmath.templatetags.wagtailmath import mathjax
 
-from cms.core.templatetags.util_tags import get_translation_urls, set_attributes_filter, social_image, social_text
+from cms.core.templatetags.util_tags import (
+    get_hreflangs,
+    get_translation_urls,
+    set_attributes_filter,
+    social_image,
+    social_text,
+)
 
 if TYPE_CHECKING:
     from jinja2 import Environment
@@ -26,6 +32,7 @@ class CoreExtension(Extension):  # pylint: disable=abstract-method
                 "static": static,
                 "routablepageurl": pass_context(routablepageurl),
                 "get_translation_urls": get_translation_urls,
+                "get_hreflangs": get_hreflangs,
             }
         )
 
