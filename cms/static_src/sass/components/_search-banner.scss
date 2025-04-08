@@ -1,0 +1,87 @@
+@use 'config' as *;
+
+// Focus state taken directly from the ONS Design System stylesheet
+%ons-input-focus {
+    box-shadow:
+        0 0 0 1px var(--ons-color-input-border),
+        0 0 0 4px var(--ons-color-focus);
+
+    // Add transparent outline because Windows High Contrast Mode doesn't show box-shadows
+    outline: 3px solid transparent;
+    outline-offset: 1px;
+
+    @media screen and (forced-colors: active) {
+        // To better match the focus states of native controls
+        outline-color: Highlight;
+    }
+}
+
+.search-banner {
+    background-color: var(--ons-color-info-tint);
+    // add transparent outline for Windows High Contrast Mode which doesn't show backgrounds
+    outline: 1px solid transparent;
+
+    &__form {
+        border-bottom: 1px solid var(--ons-color-branded);
+        display: flex;
+        flex-direction: row;
+        padding-bottom: rem-sizing(40);
+    }
+
+    &__form-input {
+        border-radius: 0;
+        border: 2px solid var(--ons-color-branded);
+        line-height: 1.75rem;
+        height: rem-sizing(44);
+        width: 100%;
+
+        &:focus {
+            @extend %ons-input-focus;
+            border-color: var(--ons-color-input-border);
+        }
+
+        &:disabled {
+            border-color: var(--ons-color-grey-75);
+            cursor: not-allowed;
+        }
+
+        @include media-query('l') {
+            height: rem-sizing(56);
+        }
+    }
+
+    &__form-button {
+        background-color: var(--ons-color-branded);
+        border: 0;
+        color: var(--ons-color-text-inverse);
+        width: rem-sizing(44);
+        height: rem-sizing(44);
+        // add transparent outline for Windows High Contrast Mode which doesn't show background colours
+        outline: 1px solid transparent;
+
+        &:hover {
+            cursor: pointer;
+        }
+
+        &:focus {
+            background: var(--ons-color-focus);
+            box-shadow: 0 ems(3px) 0 var(--ons-color-text-link-focus);
+            color: var(--ons-color-text-link-focus);
+
+            .ons-icon {
+                fill: var(--ons-color-text-link-focus);
+            }
+        }
+
+        @include media-query('l') {
+            width: rem-sizing(56);
+            height: rem-sizing(56);
+        }
+    }
+
+    &__search-suggestions {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+    }
+}

@@ -41,6 +41,11 @@
     {# Adds a full-width section for the header area before the main page content #}
     {# Changes the location of the <main> tag from the base template - ensures it surrounds the header area #}
     {# This change should be adopted by the design system soon #}
+
+    {# Search component - uncomment the include below to test the front-end/non-JS search #}
+    {# Temporarily placed here for testing as we don't have a standalone search page yet #}
+    {# {% include "templates/components/navigation/search.html" %} #}
+
     <main id="main-content">
         {# This block should be overriden on individual page templates and include the breadcrumbs and page heading. This is default content while the build is in progress. #}
         {% block header_area %}
