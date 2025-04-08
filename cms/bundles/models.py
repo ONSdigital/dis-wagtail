@@ -13,7 +13,7 @@ from wagtail.search import index
 from cms.release_calendar.viewsets import FutureReleaseCalendarChooserWidget
 from cms.workflows.utils import is_page_ready_to_preview, is_page_ready_to_publish
 
-from .enums import ACTIVE_BUNDLE_STATUSES, EDITABLE_BUNDLE_STATUSES, BundleStatus
+from .enums import ACTIVE_BUNDLE_STATUSES, EDITABLE_BUNDLE_STATUSES, PREVIEWABLE_BUNDLE_STATUSES, BundleStatus
 from .forms import BundleAdminForm
 from .panels import BundleNotePanel, PageChooserWithStatusPanel
 
@@ -58,7 +58,7 @@ class BundlesQuerySet(QuerySet):
         return self.filter(status__in=EDITABLE_BUNDLE_STATUSES)
 
     def previewable(self) -> Self:
-        return self.filter(status=BundleStatus.IN_REVIEW)
+        return self.filter(status__in=PREVIEWABLE_BUNDLE_STATUSES)
 
 
 # note: mypy doesn't cope with dynamic base classes and fails with:
