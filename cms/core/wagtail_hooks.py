@@ -2,6 +2,7 @@ from typing import TYPE_CHECKING
 
 from django.conf import settings
 from django.templatetags.static import static
+from django.urls import reverse
 from django.utils.html import format_html
 from wagtail import hooks
 from wagtail.admin import messages
@@ -51,8 +52,14 @@ def after_edit_page(request: "HttpRequest", page: "Page") -> None:
         return
 
     # Check if proper translations of the page exist, which are not simple aliases
-    has_proper_translations = page.get_translations().filter(alias_of__isnull=True).exists()
-    if has_proper_translations:
+    proper_translation = page.get_translations().filter(alias_of__isnull=True).only("id").first()
+    if proper_translation:
+        admin_edit_url = reverse("wagtailadmin_pages:edit", args=[proper_translation.id])
         messages.warning(
-            request, "A translated version of this page exists. If you make any changes, please make sure to update it."
+            request,
+            "A translated version of this page exists. If you make any changes, please make sure to update it.",
+            buttons=[
+                messages.button(admin_edit_url, "Go to translation"),
+            ],
+            extra_tags="safe",
         )
