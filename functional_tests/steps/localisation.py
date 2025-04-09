@@ -3,12 +3,6 @@ from behave.runner import Context
 from playwright.sync_api import expect
 
 
-@given("a CMS user creates the Welsh locale")
-def user_goes_to_add_new_article_page(context: Context) -> None:
-    context.page.goto(f"{context.base_url}/admin/locales/new/")
-    context.page.get_by_role("button", name="Create").click()
-
-
 @given("a CMS user edits the home page")
 def user_goes_to_edit_home_page(context: Context) -> None:
     context.page.get_by_role("button", name="Pages").click()

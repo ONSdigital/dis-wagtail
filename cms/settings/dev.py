@@ -101,5 +101,6 @@ MIGRATION_LINTER_OPTIONS = {
         "0003_releasecalendarpage_datasets",
         "0003_footermenu_locale_footermenu_translation_key_and_more",  # Ignoring NOT NULL constraint on columns
         "0007_remove_glossaryterm_core_glossary_term_name_unique_and_more",  # Ignoring NOT NULL constraint
+        "0009_remove_contactdetails_core_contactdetails_name_unique_and_more",  # Ignoring NOT NULL constraint
     ],
 }

@@ -3,7 +3,9 @@ from typing import TYPE_CHECKING, Any, ClassVar, Optional
 
 from django.conf import settings
 from django.contrib.contenttypes.fields import GenericRelation
+from django.core.exceptions import ValidationError
 from django.db import models
+from django.db.models.functions import Lower
 from wagtail.fields import RichTextField
 from wagtail.models import PreviewableMixin, RevisionMixin, TranslatableMixin
 from wagtail.search import index
@@ -41,17 +43,22 @@ class ContactDetails(TranslatableMixin, index.Indexed, models.Model):
 
     class Meta(TranslatableMixin.Meta):
         verbose_name_plural = "contact details"
-        unique_together: ClassVar[list[tuple[str, ...]]] = [
-            *TranslatableMixin.Meta.unique_together,
-            ("name", "email", "locale"),
+        constraints: ClassVar[list[models.BaseConstraint]] = [
+            models.UniqueConstraint(
+                Lower("name"),
+                Lower("email"),
+                "locale",
+                name="core_contactdetails_name_unique",
+                violation_error_message="Contact details with this name and email combination already exists.",
+            ),
         ]
 
-    def validate_unique(self, exclude: Collection[str] | None = None) -> None:
-        # Include the locale field for validation as it's not included by default
-        # See https://github.com/wagtail/wagtail/issues/8918#issuecomment-1208670360
-        if exclude and "locale" in exclude:
-            exclude.remove("locale")  # type: ignore[attr-defined]
-        return super().validate_unique(exclude)
+    def clean(self) -> None:
+        super().clean()
+        if ContactDetails.objects.filter(
+            name__iexact=self.name.strip(), email__iexact=self.email.strip(), locale=self.locale
+        ).exists():
+            raise ValidationError("Contact details with this name and email combination already exists.")
 
     def save(self, *args: Any, **kwargs: Any) -> None:
         self.name = self.name.strip()

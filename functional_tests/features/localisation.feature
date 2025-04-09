@@ -1,7 +1,6 @@
 Feature: Users can create localised content in the CMS
     Background:
         Given a CMS user logs into the admin site
-        Given a CMS user creates the Welsh locale
 
     Scenario: The user is able to translate a page
         And a CMS user edits the home page
