@@ -187,7 +187,7 @@ def user_can_click_on_view_detail_to_expand_block(context: Context, block_type: 
     context.page.get_by_text("Show detail").click()
     expect(context.page.get_by_text(text)).to_be_visible()
     expect(context.page.get_by_text(date)).to_be_visible()
-    if block_type == "notice":
+    if block_type == "correction":
         expect(context.page.get_by_role("link", name="View superseded version")).to_be_visible()
 
     context.page.wait_for_timeout(500)
