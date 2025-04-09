@@ -38,9 +38,8 @@ class ONSAuthMiddleware(AuthenticationMiddleware):
         id_payload = validate_jwt(id_token, token_type="id")  # noqa: S106
 
         if not access_payload or not id_payload:
-            if request.user.is_authenticated:
-                logger.info("Invalid or expired tokens detected; logging out user.")
-                logout(request)
+            logger.info("Invalid or expired tokens detected; logging out user.")
+            logout(request)
             return
 
         # Ensure that tokens belong to the same user.

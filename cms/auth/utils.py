@@ -86,7 +86,7 @@ def _validate_jwt(token: str, *, additional_fields: Iterable, token_type: str):
             "verify_sub": True,
             "verify_jti": True,
             "verify_nbf": False,  # AWS Cognito does not use 'nbf'
-            "require": ["token_use", "cognito:groups", *additional_fields],
+            "require": ["token_use", *additional_fields],
         },
     )
 

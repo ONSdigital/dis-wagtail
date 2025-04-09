@@ -1,5 +1,6 @@
 from typing import TYPE_CHECKING, Any
 
+from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.http import HttpResponse, JsonResponse
@@ -20,6 +21,12 @@ class ONSLogoutView(LogoutView):
         response: HttpResponse = super().dispatch(request, *args, **kwargs)
         # Clear the messages from the request
         list(messages.get_messages(request))
+
+        # Delete the auth cookies
+        if settings.AWS_COGNITO_LOGIN_ENABLED:
+            response.delete_cookie(settings.ACCESS_TOKEN_COOKIE_NAME)
+            response.delete_cookie(settings.ID_TOKEN_COOKIE_NAME)
+
         return response
 
 

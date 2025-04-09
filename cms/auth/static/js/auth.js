@@ -1,31 +1,28 @@
-/* eslint-disable no-undef */
 /* eslint-disable no-console */
 
-function getCookieValue(name) {
-  return (
-    document.cookie
-      .split(';')
-      .map((cookie) => cookie.trim().split('='))
-      .find(([key]) => key === name)?.[1] || null
-  );
-}
+import SessionManagement from 'dis-authorisation-client-js';
 
-function decodeJWT(token) {
-  try {
-    const [, payload] = token.split('.');
-    if (!payload) throw new Error('Invalid JWT format');
-    const json = atob(payload.replace(/-/g, '+').replace(/_/g, '/'));
-    return JSON.parse(json);
-  } catch (error) {
-    console.error('Error decoding JWT:', error);
+const logoutURL = `${window.location.origin}/${window.wagtailAdminHomePath}logout/`;
+const extendSessionURL = `${window.location.origin}/${window.wagtailAdminHomePath}extend-session/`;
+
+function getCookieByName(name) {
+  console.debug('[WAGTAIL] Getting cookie by name:', name);
+  const cookies = document.cookie;
+  if (!cookies) {
     return null;
   }
+  const cookie = cookies
+    .split(';')
+    .map((c) => c.trim())
+    .map((c) => c.split('='))
+    .find((pair) => pair[0] === name);
+  return cookie ? cookie[1] : null;
 }
 
-async function fetchWithCsrf(url, method = 'POST', body = null, headers = {}) {
-  const csrfToken = getCookieValue(window.csrfCookieName);
+function fetchWithCsrf(url, method = 'POST', body = null, headers = {}) {
+  const csrfToken = getCookieByName(window.csrfCookieName);
   if (!csrfToken) {
-    console.error('CSRF token not found.');
+    console.error('[WAGTAIL] CSRF token not found.');
     return null;
   }
 
@@ -35,136 +32,94 @@ async function fetchWithCsrf(url, method = 'POST', body = null, headers = {}) {
   };
 
   try {
-    const response = await fetch(url, {
+    return fetch(url, {
       method,
       headers: { ...defaultHeaders, ...headers },
       credentials: 'include',
       body: body ? JSON.stringify(body) : null,
     });
-    return response;
   } catch (error) {
-    console.error(`Error during ${method} request to ${url}:`, error);
+    console.error(`[WAGTAIL] Error during ${method} request to ${url}:`, error);
     return null;
   }
 }
 
-async function logout(config) {
-  console.log('Attempting logout...');
-  const response = await fetchWithCsrf(config.LOGOUT_URL);
-  if (response?.ok) {
-    console.log('Logout successful.');
-    window.location.href = response.redirected ? response.url : config.baseURL;
-  } else {
-    console.error('Logout failed.');
-  }
-}
+function logout() {
+  console.log('[WAGTAIL] Attempting logout...');
+  fetchWithCsrf(logoutURL)
+    .then((response) => {
+      if (response?.ok) {
+        const redirectURL = response.redirected ? response.url : window.location.origin;
+        console.log('[WAGTAIL] Logout successful. Redirecting to:', redirectURL);
+        window.location.href = redirectURL;
+        return;
+      }
 
-async function refreshAuthToken(config) {
-  console.log('Refreshing auth token...');
-  try {
-    const refreshResponse = await fetch(config.AUTH_TOKEN_REFRESH_URL, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      credentials: 'include',
+      console.error('[WAGTAIL] Logout failed.', response);
+      //   reload the window to clear the cookie that have immediate expiry. If so some reason, the request failed but the cookies were deleted, reload the page to force
+      //   a redirection.
+      window.location.reload();
+    })
+    .catch((error) => {
+      console.error('[WAGTAIL] Error during logout:', error);
     });
-
-    if (!refreshResponse.ok) {
-      console.error('Auth token refresh failed:', await extractErrorDetails(refreshResponse));
-      await logout(config);
-      return;
-    }
-
-    console.log('Auth token refreshed successfully.');
-
-    // Extend Django session
-    const extendResponse = await fetchWithCsrf(config.EXTEND_SESSION_URL);
-
-    if (!extendResponse.ok) {
-      console.error('Django session extension failed:');
-      await logout(config);
-      return;
-    }
-
-    console.log('Django session extended successfully.');
-  } catch (error) {
-    console.error('Error refreshing auth token:', error);
-    await logout(config);
-  }
 }
 
-// Main session management logic
-async function handleSession(config) {
-  const idToken = getCookieValue('id_token');
-  if (!idToken) {
-    console.log('No id_token cookie found. No action needed.');
-    return;
-  }
+// Define session configuration
+const sessionConfig = {
+  timeOffsets: { passiveRenewal: window.sessionRenewalOffsetSeconds * 1000 }, // Session renewal offset in milliseconds
+  apiEndpoints: {
+    renewSession: window.authTokenRefreshUrl,
+  },
+  onRenewSuccess: (sessionExpiryTime, refreshExpiryTime) => {
+    console.debug(
+      `[WAGTAIL] Auth Session renewed successfully! Session: ${sessionExpiryTime} and refresh: ${refreshExpiryTime}`,
+    );
 
-  const payload = decodeJWT(idToken);
-  if (!payload || typeof payload.exp !== 'number') {
-    console.error('Invalid JWT or missing expiration claim.');
-    await logout(config);
-    return;
-  }
+    // Extend Wagtail session
+    fetchWithCsrf(extendSessionURL)
+      .then((extendResponse) => {
+        if (!extendResponse?.ok) {
+          console.error('[WAGTAIL] Wagtail session extension failed:', extendResponse);
+          logout();
+          return;
+        }
 
-  // Note: This implementation assumes that the expiration times (exp) for the id_token and access_token are the same.
-  // However, this is not the case in the current CMS.
-  // Further discussion is needed to address this discrepancy—either by aligning their expiration times.
-  // or by providing an alternative mechanism, such as an API or cookie, to indicate the tokens' expiry times.
-  // This is also now aware of the expiration time of the refresh token.
+        console.log('Wagtail session extended successfully.');
+      })
+      .catch((error) => {
+        console.error('[WAGTAIL] Error during Wagtail session extension:', error);
+        logout();
+      });
+  },
+  onRenewFailure: (error) => {
+    console.error('[WAGTAIL] Session renewal failed:', error);
+    logout();
+  },
+  onSessionValid: (sessionExpiryTime, refreshExpiryTime) => {
+    console.debug(
+      `[WAGTAIL] Session is valid. Session: ${sessionExpiryTime} and refresh: ${refreshExpiryTime}`,
+    );
+  },
+  onSessionInvalid: () => {
+    console.warn('[WAGTAIL] Session is invalid.');
+    logout();
+  },
+  onError: (error) => {
+    console.error('[WAGTAIL] Error:', error);
+    logout();
+  },
+};
 
-  // Expiry time is in seconds since Unix epoch
-  const currentTime = Math.floor(Date.now() / 1000);
-  const timeToExpiry = payload.exp - currentTime;
+const hasIdToken = !!getCookieByName('id_token');
 
-  console.log('Session expires in', timeToExpiry, 'seconds');
+// Only initialise the SessionManagement library if the id_token cookie
+// is present implying the user is logged in via AWS Cognito
+if (hasIdToken) {
+  // Initialise the SessionManagement library
+  SessionManagement.init(sessionConfig);
 
-  if (timeToExpiry <= config.EXPIRY_BUFFER_SECONDS) {
-    console.log('Token nearing expiry. Refreshing...');
-    await refreshAuthToken(config);
-  } else {
-    console.log('Token is valid and not expiring soon.');
-  }
+  // These will be fetched from localStorage which is set by the auth service before redirect.
+  // If they do not exist, then the session is invalid and the user will be logged out.
+  SessionManagement.setSessionExpiryTime(null, null);
 }
-
-// Attach user activity event listeners
-function attachUserActivityListeners(callback) {
-  const events = ['mousemove', 'mousedown', 'keydown', 'scroll', 'touchstart', 'load'];
-  events.forEach((event) => window.addEventListener(event, callback, { passive: true }));
-}
-
-// Main entry point
-(function initSessionManagement() {
-  const config = {
-    baseURL: window.location.origin,
-    wagtailAdminHomePath: window.wagtailAdminHomePath,
-    CSRF_COOKIE_NAME: window.csrfCookieName,
-    CSRF_HEADER_NAME: window.csrfHeaderName,
-    EXPIRY_BUFFER_SECONDS: 5 * 60,
-    AUTH_TOKEN_REFRESH_URL: window.authTokenRefreshUrl || null,
-    LOGOUT_URL: `${window.location.origin}/${window.wagtailAdminHomePath}logout/`,
-    EXTEND_SESSION_URL: `${window.location.origin}/${window.wagtailAdminHomePath}extend-session/`,
-  };
-
-  let lastChecked = 0;
-
-  const sessionManager = async () => {
-    const now = Date.now();
-    if (now - lastChecked < 60 * 1000) {
-      console.log('Session checked less than a minute ago. Skipping.');
-      return;
-    }
-    lastChecked = now;
-    console.log('Checking session due to user activity...');
-
-    try {
-      await handleSession(config);
-    } catch (error) {
-      console.error('Error handling session:', error);
-      await logout(config);
-    }
-  };
-
-  attachUserActivityListeners(sessionManager);
-  console.log('Session management initialised.');
-})();
