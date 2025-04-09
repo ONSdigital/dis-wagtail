@@ -59,6 +59,7 @@ INSTALLED_APPS = [
     "cms.articles",
     "cms.bundles",
     "cms.core",
+    "cms.datasets",
     "cms.documents",
     "cms.home",
     "cms.images",
@@ -73,6 +74,7 @@ INSTALLED_APPS = [
     "cms.navigation",
     "cms.taxonomy",
     "cms.search",
+    "cms.workflows",
     "wagtail.embeds",
     "wagtail.sites",
     "wagtail.users",
@@ -131,10 +133,19 @@ MIDDLEWARE = [
 # Some middleware isn't needed for a external environment.
 # Disable them to improve performance
 if not IS_EXTERNAL_ENV:
-    common_middleware_index = MIDDLEWARE.index("django.middleware.common.CommonMiddleware")
-    MIDDLEWARE.insert(common_middleware_index, "django.contrib.messages.middleware.MessageMiddleware")
-    MIDDLEWARE.insert(common_middleware_index, "django.contrib.auth.middleware.AuthenticationMiddleware")
-    MIDDLEWARE.insert(common_middleware_index, "django.contrib.sessions.middleware.SessionMiddleware")
+    common_middleware_index = MIDDLEWARE.index(
+        "django.middleware.common.CommonMiddleware"
+    )
+    MIDDLEWARE.insert(
+        common_middleware_index, "django.contrib.messages.middleware.MessageMiddleware"
+    )
+    MIDDLEWARE.insert(
+        common_middleware_index,
+        "django.contrib.auth.middleware.AuthenticationMiddleware",
+    )
+    MIDDLEWARE.insert(
+        common_middleware_index, "django.contrib.sessions.middleware.SessionMiddleware"
+    )
 
 ROOT_URLCONF = "cms.urls"
 
@@ -149,7 +160,10 @@ context_processors = [
 
 if not IS_EXTERNAL_ENV:
     context_processors.extend(
-        ["django.contrib.messages.context_processors.messages", "django.contrib.auth.context_processors.auth"]
+        [
+            "django.contrib.messages.context_processors.messages",
+            "django.contrib.auth.context_processors.auth",
+        ]
     )
 
 TEMPLATES = [
@@ -182,7 +196,10 @@ TEMPLATES = [
             "context_processors": context_processors,
         },
         "DIRS": [
-            PROJECT_DIR / "jinja2" / "assets" / "icons",  # for icons registered with register_icons
+            PROJECT_DIR
+            / "jinja2"
+            / "assets"
+            / "icons",  # for icons registered with register_icons
         ],
     },
 ]
@@ -192,7 +209,9 @@ WSGI_APPLICATION = "cms.wsgi.application"
 
 # Database
 
-db_conn_max_age = int(env.get("PG_CONN_MAX_AGE", 870))  # Just under 15 minutes, to match password expiry
+db_conn_max_age = int(
+    env.get("PG_CONN_MAX_AGE", 870)
+)  # Just under 15 minutes, to match password expiry
 
 if "PG_DB_ADDR" in env:
     # Use IAM authentication to connect to the Database
@@ -213,11 +232,16 @@ if "PG_DB_ADDR" in env:
 
     # Additionally configure a read-replica
     if "PG_DB_READ_ADDR" in env:
-        DATABASES["read_replica"] = {**deepcopy(DATABASES["default"]), "HOST": env["PG_DB_READ_ADDR"]}
+        DATABASES["read_replica"] = {
+            **deepcopy(DATABASES["default"]),
+            "HOST": env["PG_DB_READ_ADDR"],
+        }
 
 else:
     DATABASES = {
-        "default": dj_database_url.config(conn_max_age=db_conn_max_age, default="postgres:///ons"),
+        "default": dj_database_url.config(
+            conn_max_age=db_conn_max_age, default="postgres:///ons"
+        ),
     }
 
     if "READ_REPLICA_DATABASE_URL" in env:
@@ -228,7 +252,10 @@ else:
 if "read_replica" not in DATABASES:
     DATABASES["read_replica"] = deepcopy(DATABASES["default"])
 
-DATABASE_ROUTERS = ["cms.core.db_router.ExternalEnvRouter", "cms.core.db_router.ReadReplicaRouter"]
+DATABASE_ROUTERS = [
+    "cms.core.db_router.ExternalEnvRouter",
+    "cms.core.db_router.ReadReplicaRouter",
+]
 
 # Server-side cache settings. Do not confuse with front-end cache.
 # https://docs.djangoproject.com/en/stable/topics/cache/
@@ -240,7 +267,12 @@ DATABASE_ROUTERS = ["cms.core.db_router.ExternalEnvRouter", "cms.core.db_router.
 #
 # Do not use the same Redis instance for other things like Celery!
 
-CACHES: dict = {"memory": {"BACKEND": "django.core.cache.backends.locmem.LocMemCache", "LOCATION": "memory"}}
+CACHES: dict = {
+    "memory": {
+        "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
+        "LOCATION": "memory",
+    }
+}
 
 redis_options = {
     "IGNORE_EXCEPTIONS": True,
@@ -273,7 +305,9 @@ elif elasticache_addr := env.get("ELASTICACHE_ADDR"):
         "OPTIONS": {
             **redis_options,
             "CONNECTION_POOL_KWARGS": {
-                "credential_provider": import_string("cms.core.cache.ElastiCacheIAMCredentialProvider")(
+                "credential_provider": import_string(
+                    "cms.core.cache.ElastiCacheIAMCredentialProvider"
+                )(
                     user=env["ELASTICACHE_USER_NAME"],
                     cluster_name=env["ELASTICACHE_CLUSTER_NAME"],
                     region=env["ELASTICACHE_CLUSTER_REGION"],
@@ -297,7 +331,9 @@ WAGTAILSEARCH_BACKENDS = {"default": {"BACKEND": "wagtail.search.backends.databa
 # https://docs.djangoproject.com/en/stable/ref/settings/#auth-password-validators
 
 AUTH_PASSWORD_VALIDATORS = [
-    {"NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"},
+    {
+        "NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"
+    },
     {"NAME": "django.contrib.auth.password_validation.MinimumLengthValidator"},
     {"NAME": "django.contrib.auth.password_validation.CommonPasswordValidator"},
     {"NAME": "django.contrib.auth.password_validation.NumericPasswordValidator"},
@@ -325,6 +361,12 @@ WAGTAIL_CONTENT_LANGUAGES = LANGUAGES = [
 
 LOCALE_PATHS = [PROJECT_DIR / "locale"]
 
+# User groups
+PUBLISHING_ADMINS_GROUP_NAME = "Publishing Admins"
+PUBLISHING_OFFICERS_GROUP_NAME = "Publishing Officers"
+VIEWERS_GROUP_NAME = "Viewers"
+
+
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/stable/howto/static-files/
 
@@ -337,8 +379,12 @@ LOCALE_PATHS = [PROJECT_DIR / "locale"]
 # http://whitenoise.evans.io/en/stable/#quickstart-for-django-apps
 # https://docs.djangoproject.com/en/stable/ref/settings/#std-setting-STORAGES
 STORAGES = {
-    "default": {"BACKEND": "cms.private_media.storages.AccessControlLoggingFileSystemStorage"},
-    "staticfiles": {"BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage"},
+    "default": {
+        "BACKEND": "cms.private_media.storages.AccessControlLoggingFileSystemStorage"
+    },
+    "staticfiles": {
+        "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage"
+    },
 }
 
 
@@ -399,7 +445,9 @@ if "AWS_STORAGE_BUCKET_NAME" in env:
     INSTALLED_APPS += ["storages"]
 
     # https://docs.djangoproject.com/en/stable/ref/settings/#std-setting-STORAGES
-    STORAGES["default"]["BACKEND"] = "cms.private_media.storages.AccessControlledS3Storage"
+    STORAGES["default"]["BACKEND"] = (
+        "cms.private_media.storages.AccessControlledS3Storage"
+    )
 
     AWS_STORAGE_BUCKET_NAME = env["AWS_STORAGE_BUCKET_NAME"]
 
@@ -436,7 +484,9 @@ if "AWS_STORAGE_BUCKET_NAME" in env:
     # https://github.com/jschneier/django-storages/blob/10d1929de5e0318dbd63d715db4bebc9a42257b5/storages/backends/s3boto3.py#L217
     AWS_S3_URL_PROTOCOL = env.get("AWS_S3_URL_PROTOCOL", "https:")
 
-PRIVATE_MEDIA_BULK_UPDATE_MAX_WORKERS = env.get("PRIVATE_MEDIA_BULK_UPDATE_MAX_WORKERS", 5)
+PRIVATE_MEDIA_BULK_UPDATE_MAX_WORKERS = env.get(
+    "PRIVATE_MEDIA_BULK_UPDATE_MAX_WORKERS", 5
+)
 
 # Logging
 # This logging is configured to be used with Sentry and console logs. Console
@@ -454,10 +504,25 @@ LOGGING = {
         "console": {
             "level": "INFO",
             "class": "logging.StreamHandler",
-            "formatter": "verbose",
+            "formatter": "json",
+        },
+        "gunicorn_access": {
+            "level": "INFO",
+            "class": "logging.StreamHandler",
+            "formatter": "gunicorn_json",
         },
     },
-    "formatters": {"verbose": {"format": "[%(asctime)s][%(process)d][%(levelname)s][%(name)s] %(message)s"}},
+    "formatters": {
+        "verbose": {
+            "format": "[%(asctime)s][%(process)d][%(levelname)s][%(name)s] %(message)s"
+        },
+        "json": {
+            "()": "cms.core.logs.JSONFormatter",
+        },
+        "gunicorn_json": {
+            "()": "cms.core.logs.GunicornJsonFormatter",
+        },
+    },
     "loggers": {
         "cms": {
             "handlers": ["console"],
@@ -484,6 +549,11 @@ LOGGING = {
             "level": "INFO",
             "propagate": False,
         },
+        "gunicorn.access": {
+            "handlers": ["gunicorn_access"],
+            "level": "INFO",
+            "propagate": False,
+        },
     },
 }
 
@@ -502,7 +572,9 @@ if "EMAIL_HOST" in env:
 try:
     EMAIL_PORT = int(env.get("EMAIL_PORT", 587))
 except ValueError:
-    raise ImproperlyConfigured("The setting EMAIL_PORT should be an integer, e.g. 587") from None
+    raise ImproperlyConfigured(
+        "The setting EMAIL_PORT should be an integer, e.g. 587"
+    ) from None
 
 # https://docs.djangoproject.com/en/stable/ref/settings/#email-host-user
 if "EMAIL_HOST_USER" in env:
@@ -572,7 +644,10 @@ if "SENTRY_DSN" in env and not is_in_shell:
 # The backend can be configured to use an account-wide API key, or an API token with
 # restricted access.
 
-if "FRONTEND_CACHE_CLOUDFLARE_TOKEN" in env or "FRONTEND_CACHE_CLOUDFLARE_BEARER_TOKEN" in env:
+if (
+    "FRONTEND_CACHE_CLOUDFLARE_TOKEN" in env
+    or "FRONTEND_CACHE_CLOUDFLARE_BEARER_TOKEN" in env
+):
     INSTALLED_APPS.append("wagtail.contrib.frontend_cache")
     WAGTAILFRONTENDCACHE = {
         "default": {
@@ -598,7 +673,9 @@ if "FRONTEND_CACHE_CLOUDFLARE_TOKEN" in env or "FRONTEND_CACHE_CLOUDFLARE_BEARER
         # To use an API token with restricted access, set the following environment variables:
         #  * FRONTEND_CACHE_CLOUDFLARE_BEARER_TOKEN
         #  * FRONTEND_CACHE_CLOUDFLARE_ZONEID
-        WAGTAILFRONTENDCACHE["default"].update({"BEARER_TOKEN": env["FRONTEND_CACHE_CLOUDFLARE_BEARER_TOKEN"]})
+        WAGTAILFRONTENDCACHE["default"].update(
+            {"BEARER_TOKEN": env["FRONTEND_CACHE_CLOUDFLARE_BEARER_TOKEN"]}
+        )
 
     # Set up front-end cache if the S3 uses custom domain. This assumes that
     # the same Cloudflare zone is used.
@@ -616,7 +693,9 @@ except ValueError:
 
 # Give front-end cache 30 second to revalidate the cache to avoid hitting the
 # backend. See urls.py.
-CACHE_CONTROL_STALE_WHILE_REVALIDATE = int(env.get("CACHE_CONTROL_STALE_WHILE_REVALIDATE", 30))
+CACHE_CONTROL_STALE_WHILE_REVALIDATE = int(
+    env.get("CACHE_CONTROL_STALE_WHILE_REVALIDATE", 30)
+)
 
 
 # Required to get e.g. wagtail-sharing working on Heroku and probably many other platforms.
@@ -671,7 +750,9 @@ SECURE_CONTENT_TYPE_NOSNIFF = True
 
 
 # https://docs.djangoproject.com/en/stable/ref/middleware/#referrer-policy
-SECURE_REFERRER_POLICY = env.get("SECURE_REFERRER_POLICY", "no-referrer-when-downgrade").strip()
+SECURE_REFERRER_POLICY = env.get(
+    "SECURE_REFERRER_POLICY", "no-referrer-when-downgrade"
+).strip()
 
 
 # Content Security policy settings
@@ -720,12 +801,18 @@ if env.get("BASIC_AUTH_ENABLED", "false").lower().strip() == "true":
     # check. This may be useful to e.g. white-list "llamasavers.com" but not
     # "llamasavers.production.onsdigital.com".
     if "BASIC_AUTH_WHITELISTED_HTTP_HOSTS" in env:
-        BASIC_AUTH_WHITELISTED_HTTP_HOSTS = env["BASIC_AUTH_WHITELISTED_HTTP_HOSTS"].split(",")
+        BASIC_AUTH_WHITELISTED_HTTP_HOSTS = env[
+            "BASIC_AUTH_WHITELISTED_HTTP_HOSTS"
+        ].split(",")
 
 
 # Django REST framework settings
 # Change default settings that enable basic auth.
-REST_FRAMEWORK = {"DEFAULT_AUTHENTICATION_CLASSES": ("rest_framework.authentication.SessionAuthentication",)}
+REST_FRAMEWORK = {
+    "DEFAULT_AUTHENTICATION_CLASSES": (
+        "rest_framework.authentication.SessionAuthentication",
+    )
+}
 
 
 AUTH_USER_MODEL = "users.User"
@@ -747,8 +834,11 @@ if ENABLE_DJANGO_DEFENDER:
     DEFENDER_REDIS_NAME = "default"
     DEFENDER_LOGIN_FAILURE_LIMIT_IP = 20
     DEFENDER_LOGIN_FAILURE_LIMIT_USERNAME = 5
-    DEFENDER_COOLOFF_TIME = int(env.get("DJANGO_DEFENDER_COOLOFF_TIME", 600))  # default to 10 minutes
+    DEFENDER_COOLOFF_TIME = int(
+        env.get("DJANGO_DEFENDER_COOLOFF_TIME", 600)
+    )  # default to 10 minutes
     DEFENDER_LOCKOUT_TEMPLATE = "pages/defender/lockout.html"
+
 
 # Wagtail settings
 
@@ -794,13 +884,16 @@ WAGTAILDOCS_DOCUMENT_MODEL = "documents.CustomDocument"
 WAGTAILDOCS_SERVE_METHOD = "serve_view"
 
 
-WAGTAIL_FRONTEND_LOGIN_TEMPLATE = "templates/pages/login_page.html"  # pragma: allowlist secret
+WAGTAIL_FRONTEND_LOGIN_TEMPLATE = (
+    "templates/pages/login_page.html"  # pragma: allowlist secret
+)
 # pragma: allowlist nextline secret
 WAGTAIL_PASSWORD_REQUIRED_TEMPLATE = "templates/pages/wagtail/password_required.html"  # noqa: S105
 
 
 # Default size of the pagination used on the front-end.
 DEFAULT_PER_PAGE = 20
+PREVIOUS_RELEASES_PER_PAGE = int(env.get("PREVIOUS_RELEASES_PER_PAGE", 10))
 
 # Google Tag Manager ID from env
 GOOGLE_TAG_MANAGER_CONTAINER_ID = env.get("GOOGLE_TAG_MANAGER_CONTAINER_ID", "")
@@ -846,16 +939,39 @@ DATETIME_FORMAT = "j F Y g:ia"  # 1 November 2024, 1 p.m.
 ONS_EMBED_PREFIX = env.get("ONS_EMBED_PREFIX", "https://www.ons.gov.uk/visualisations/")
 
 # ONS Cookie banner settings
-ONS_COOKIE_BANNER_SERVICE_NAME = env.get("ONS_COOKIE_BANNER_SERVICE_NAME", "www.ons.gov.uk")
-MANAGE_COOKIE_SETTINGS_URL = env.get("MANAGE_COOKIE_SETTINGS_URL", "https://www.ons.gov.uk/cookies")
+ONS_COOKIE_BANNER_SERVICE_NAME = env.get(
+    "ONS_COOKIE_BANNER_SERVICE_NAME", "www.ons.gov.uk"
+)
+MANAGE_COOKIE_SETTINGS_URL = env.get(
+    "MANAGE_COOKIE_SETTINGS_URL", "https://www.ons.gov.uk/cookies"
+)
 
 
 SLACK_NOTIFICATIONS_WEBHOOK_URL = env.get("SLACK_NOTIFICATIONS_WEBHOOK_URL")
 
-ONS_API_BASE_URL = env.get("ONS_API_BASE_URL")
+ONS_API_BASE_URL = env.get("ONS_API_BASE_URL", "https://api.beta.ons.gov.uk/v1")
+ONS_WEBSITE_BASE_URL = env.get("ONS_WEBSITE_BASE_URL", "https://www.ons.gov.uk")
+
+# Configuration for the External Search service
+SEARCH_INDEX_PUBLISHER_BACKEND = os.getenv("SEARCH_INDEX_PUBLISHER_BACKEND")
+KAFKA_SERVER = os.getenv("KAFKA_SERVER")
+KAFKA_CHANNEL_CREATED_OR_UPDATED = os.getenv("KAFKA_CHANNEL_CREATED_OR_UPDATED")
+KAFKA_CHANNEL_DELETED = os.getenv("KAFKA_CHANNEL_DELETED")
+KAFKA_API_VERSION = tuple(map(int, os.getenv("KAFKA_API_VERSION", "3,5,1").split(",")))
+
+SEARCH_INDEX_EXCLUDED_PAGE_TYPES = (
+    "HomePage",
+    "ArticleSeriesPage",
+    "ReleaseCalendarIndex",
+    "ThemePage",
+    "TopicPage",
+    "Page",
+)
 
 # FIXME: remove before going live
-ENFORCE_EXCLUSIVE_TAXONOMY = env.get("ENFORCE_EXCLUSIVE_TAXONOMY", "true").lower() == "true"
+ENFORCE_EXCLUSIVE_TAXONOMY = (
+    env.get("ENFORCE_EXCLUSIVE_TAXONOMY", "true").lower() == "true"
+)
 ALLOW_TEAM_MANAGEMENT = env.get("ALLOW_TEAM_MANAGEMENT", "false").lower() == "true"
 
 IS_EXTERNAL_ENV = os.getenv("IS_EXTERNAL_ENV", "True").lower() == "true"

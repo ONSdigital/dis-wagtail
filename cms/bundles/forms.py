@@ -2,10 +2,12 @@ from typing import TYPE_CHECKING, Any
 
 from django import forms
 from django.core.exceptions import ValidationError
+from django.template.defaultfilters import pluralize
 from django.utils import timezone
 from wagtail.admin.forms import WagtailAdminModelForm
 
 from cms.bundles.enums import ACTIVE_BUNDLE_STATUS_CHOICES, EDITABLE_BUNDLE_STATUSES, BundleStatus
+from cms.workflows.models import ReadyToPublishGroupTask
 
 if TYPE_CHECKING:
     from .models import Bundle
@@ -68,34 +70,75 @@ class BundleAdminForm(WagtailAdminModelForm):
                 if page.in_active_bundle and page.active_bundle != self.instance:
                     raise ValidationError(f"'{page}' is already in an active bundle ({page.active_bundle})")
 
+    def _validate_bundled_pages_status(self) -> None:
+        has_pages = False
+        num_pages_not_ready = 0
+        for form in self.formsets["bundled_pages"].forms:
+            if form.cleaned_data["DELETE"]:
+                continue
+
+            if page := form.clean().get("page"):
+                has_pages = True
+                page = page.specific
+                workflow_state = page.current_workflow_state
+
+                if not (
+                    workflow_state
+                    and isinstance(workflow_state.current_task_state.task.specific, ReadyToPublishGroupTask)
+                ):
+                    form.add_error("page", "This page is not ready to be published")
+                    num_pages_not_ready += 1
+
+        if not has_pages:
+            raise ValidationError("Cannot approve the bundle without any pages")
+
+        if num_pages_not_ready:
+            self.cleaned_data["status"] = self.instance.status
+            raise ValidationError(
+                f"Cannot approve the bundle with {num_pages_not_ready} "
+                f"page{pluralize(num_pages_not_ready)} not ready to be published."
+            )
+
+    def _validate_publication_date(self) -> None:
+        release_calendar_page = self.cleaned_data["release_calendar_page"]
+        publication_date = self.cleaned_data["publication_date"]
+
+        if release_calendar_page and publication_date:
+            error = "You must choose either a Release Calendar page or a Publication date, not both."
+            self.add_error("release_calendar_page", error)
+            self.add_error("publication_date", error)
+
+        if release_calendar_page and release_calendar_page.release_date < timezone.now():
+            error = "The release date on the release calendar page cannot be in the past."
+            raise ValidationError({"release_calendar_page": error})
+
+        if publication_date and publication_date < timezone.now():
+            raise ValidationError({"publication_date": "The release date cannot be in the past."})
+
     def clean(self) -> dict[str, Any] | None:
         """Validates the form.
 
-        - the bundle cannot be self-approved. That is, someone other than the bundle creator must approve it.
+        - the bundle cannot be approved if any the referenced pages are not ready to be published
         - tidies up/ populates approved at/by
         """
         cleaned_data: dict[str, Any] = super().clean()
 
+        self._validate_publication_date()
+
         self._validate_bundled_pages()
 
-        status = cleaned_data["status"]
-        if self.instance.status != status:
-            # the status has changed, let's check
-            if status == BundleStatus.APPROVED:
-                if self.instance.created_by_id == self.for_user.pk:
-                    cleaned_data["status"] = self.instance.status
-                    self.add_error("status", ValidationError("You cannot self-approve your own bundle!"))
-                else:
-                    # the approver is different from the creator, so let's populate the relevant fields.
-                    cleaned_data["approved_at"] = timezone.now()
-                    cleaned_data["approved_by"] = self.for_user
+        submitted_status = cleaned_data["status"]
+        if self.instance.status != submitted_status:
+            # the status has changed
+            if submitted_status == BundleStatus.APPROVED:
+                # ensure all bundled pages are ready to publish
+                self._validate_bundled_pages_status()
+
+                cleaned_data["approved_at"] = timezone.now()
+                cleaned_data["approved_by"] = self.for_user
             elif self.instance.status == BundleStatus.APPROVED:
+                # the bundle was approved, and is now unapproved.
                 cleaned_data["approved_at"] = None
                 cleaned_data["approved_by"] = None
-
-        if self.cleaned_data["release_calendar_page"] and self.cleaned_data["publication_date"]:
-            error = "You must choose either a Release Calendar page or a Publication date, not both."
-            self.add_error("release_calendar_page", error)
-            self.add_error("publication_date", error)
 
         return cleaned_data

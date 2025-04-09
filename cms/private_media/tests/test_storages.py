@@ -26,10 +26,10 @@ class AccessControlledS3StorageTests(TestCase):
     def test_make_private_client_error_on_acl_set(self):
         with self.assertLogs("cms.private_media.storages", level="ERROR") as logs:
             self.assertFalse(self.storage.make_private(self.document.file))
-        self.assertIn(
-            f"ERROR:cms.private_media.storages:Failed to set ACL for {self.document.file.name}",
-            logs.output[0],
-        )
+
+        self.assertEqual(len(logs.records), 1)
+        self.assertEqual(logs.records[0].message, "Failed to set ACL")
+        self.assertEqual(logs.records[0].key, str(self.document.file))
 
     def test_make_private_client_error_on_acl_get(self):
         object_mock = mock.MagicMock()
@@ -39,10 +39,10 @@ class AccessControlledS3StorageTests(TestCase):
         with mock.patch.object(self.storage._bucket, "Object", return_value=object_mock):  # pylint: disable=protected-access  # noqa: SIM117
             with self.assertLogs("cms.private_media.storages", level="ERROR") as logs:
                 self.assertFalse(self.storage.make_private(self.document.file))
-        self.assertIn(
-            f"ERROR:cms.private_media.storages:Failed to retrieve ACL for {self.document.file.name}",
-            logs.output[0],
-        )
+
+        self.assertEqual(len(logs.records), 1)
+        self.assertEqual(logs.records[0].message, "Failed to retrieve ACL")
+        self.assertEqual(logs.records[0].key, str(self.document.file))
 
     def test_make_public_success(self):
         acl_mock = mock.MagicMock()
@@ -54,7 +54,7 @@ class AccessControlledS3StorageTests(TestCase):
         with mock.patch.object(self.storage._bucket, "Object", return_value=object_mock):  # pylint: disable=protected-access  # noqa: SIM117
             with self.assertLogs("cms.private_media.storages", level="INFO") as logs:
                 self.assertTrue(self.storage.make_public(self.document.file))
-        self.assertIn(
-            f"INFO:cms.private_media.storages:ACL set successfully for {self.document.file}",
-            logs.output,
-        )
+
+        self.assertEqual(len(logs.records), 1)
+        self.assertEqual(logs.records[0].message, "ACL set successfully")
+        self.assertEqual(logs.records[0].key, str(self.document.file))

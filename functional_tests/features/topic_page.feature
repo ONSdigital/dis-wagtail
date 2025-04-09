@@ -1,7 +1,7 @@
 Feature: CMS users can draft, edit, and publish topic pages
 
     Scenario: A CMS user can feature an article series
-        Given a CMS user logs into the admin site
+        Given a superuser logs into the admin site
         And a topic page exists under a theme page
         And the topic page has a statistical article in a series
         When the user edits the topic page
