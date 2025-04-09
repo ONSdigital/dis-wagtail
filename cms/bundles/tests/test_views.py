@@ -7,7 +7,7 @@ from wagtail.test.utils.wagtail_tests import WagtailTestUtils
 
 from cms.articles.tests.factories import StatisticalArticlePageFactory
 from cms.bundles.admin_forms import AddToBundleForm
-from cms.bundles.enums import BundleStatus
+from cms.bundles.enums import PREVIEWABLE_BUNDLE_STATUSES, BundleStatus
 from cms.bundles.models import Bundle, BundleTeam
 from cms.bundles.tests.factories import BundleFactory, BundlePageFactory
 from cms.bundles.tests.utils import (
@@ -189,15 +189,23 @@ class PreviewBundleViewTestCase(WagtailTestUtils, TestCase):
         self.assertContains(response, self.page_ready_for_publishing.display_title)
         self.assertNotContains(response, self.url_not_preview_ready)
 
-    def test_view__previewer_can_preview_only_when_bundle_in_review(self):
+    def test_view__previewer_can_preview_only_when_bundle_in_review_or_ready_to_be_published(self):
         self.client.force_login(self.previewer)
 
         self.previewer.teams.add(self.preview_team)
-        for status in [BundleStatus.PENDING, BundleStatus.APPROVED, BundleStatus.RELEASED]:
+        for status in [BundleStatus.PENDING, BundleStatus.RELEASED]:
             self.bundle.status = status
             self.bundle.save(update_fields=["status"])
             response = self.client.get(self.url_preview_ready, follow=True)
             self.assertContains(response, "Sorry, you do not have permission to access this area.")
+
+        for status in PREVIEWABLE_BUNDLE_STATUSES:
+            with self.subTest(f"Status: {status}"):
+                self.bundle.status = status
+                self.bundle.save(update_fields=["status"])
+                response = self.client.get(self.url_preview_ready)
+                self.assertEqual(response.status_code, HTTPStatus.OK)
+                self.assertContains(response, self.page_ready_for_publishing.title)
 
     def test_view_checks__page_ready_to_be_published(self):
         # previewers can only access pages that are ready to publish

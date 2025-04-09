@@ -1,5 +1,5 @@
 import IframeResize from './components/iframe-resize';
-
+import detailsToggle from './components/details';
 import '../sass/main.scss';
 
 function initComponent(ComponentClass) {
@@ -9,4 +9,5 @@ function initComponent(ComponentClass) {
 
 document.addEventListener('DOMContentLoaded', () => {
   initComponent(IframeResize);
+  initComponent(detailsToggle);
 });

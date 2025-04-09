@@ -132,6 +132,7 @@ class KafkaPublisher(BasePublisher):
             bootstrap_servers=[settings.KAFKA_SERVER],
             api_version=settings.KAFKA_API_VERSION,
             value_serializer=lambda v: json.dumps(v).encode("utf-8"),
+            retries=5,
         )
 
     @property

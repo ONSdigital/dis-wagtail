@@ -3,3 +3,6 @@
 
 # Django Debug Toolbar
 SHOW_TOOLBAR = True
+
+ # Override size of the pagination used on the previous_release page.
+ # PREVIOUS_RELEASES_PER_PAGE = 3

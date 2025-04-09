@@ -4,7 +4,7 @@ Feature: A general use information page
         Given a superuser logs into the admin site
         When the user creates an information page as a child of the home page
         And the user adds content to the new information page
-        And the user clicks "Publish page"
+        And the user clicks "Publish"
         And the user clicks "View Live" on the publish confirmation banner
         Then the new information page with the added content is displayed
         And the user can see the breadcrumbs

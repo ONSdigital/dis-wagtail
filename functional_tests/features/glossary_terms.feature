@@ -35,7 +35,7 @@ Scenario: The user can add the Glossary Terms in a section of a page
     When the user creates a methodology page as a child of the existing topic page
     And the user populates the methodology page
     And adds Glossary Terms to the page content
-    And the user clicks "Publish page"
+    And the user clicks "Publish"
     And the user clicks "View Live" on the publish confirmation banner
     Then the user can see the Glossary Term
     And the user can click the Glossary Term to see the definition

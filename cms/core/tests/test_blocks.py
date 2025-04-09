@@ -4,6 +4,7 @@ from django.conf import settings
 from django.test import TestCase
 from wagtail.blocks import StreamBlockValidationError, StructBlockValidationError
 from wagtail.rich_text import RichText
+from wagtail.test.utils.wagtail_tests import WagtailTestUtils
 
 from cms.articles.tests.factories import ArticleSeriesPageFactory, StatisticalArticlePageFactory
 from cms.core.blocks import (
@@ -325,7 +326,7 @@ class GlossaryTermBlockTestCase(TestCase):
         )
 
 
-class ONSTableBlockTestCase(TestCase):
+class ONSTableBlockTestCase(WagtailTestUtils, TestCase):
     @classmethod
     def setUpTestData(cls):
         cls.simple_table_data = {
@@ -422,6 +423,23 @@ class ONSTableBlockTestCase(TestCase):
 
                 for field in not_present:
                     self.assertNotIn(data[field], rendered)
+
+    def test_render_block__alignment_and_width(self):
+        table_data = {
+            "headers": [[{"value": "header cell", "type": "th", "width": "20px", "align": "center"}]],
+            "rows": [[{"value": "row cell", "type": "td", "width": "50%", "align": "right"}]],
+        }
+
+        rendered = self.block.render({"data": table_data})
+
+        self.assertTagInHTML(
+            '<th scope="col" class="ons-table__header ons-u-ta-center" width="20px">'
+            '<span class="ons-table__header-text">header cell</span></th>',
+            rendered,
+        )
+        self.assertTagInHTML('<td class="ons-table__cell ons-u-ta-right">row cell</td>', rendered)
+        self.assertIn("header cell", rendered)
+        self.assertIn("row cell", rendered)
 
     def test_render_block__ds_component_markup(self):
         table = {
@@ -536,6 +554,28 @@ class ONSTableBlockTestCase(TestCase):
         </table>
         """
         self.assertInHTML(expected, rendered)
+
+    def test__align_to_ons_classname(self):
+        scenarios = {"right": "ons-u-ta-right", "left": "ons-u-ta-left", "center": "ons-u-ta-center", "foo": ""}
+        for alignment, classname in scenarios.items():
+            self.assertEqual(
+                self.block._align_to_ons_classname(alignment),  # pylint: disable=protected-access
+                classname,
+            )
+
+    def test__prepare_cells(self):
+        scenarios = [
+            (
+                [{"value": "header cell", "type": "th", "width": "20px", "align": "center"}],
+                [{"value": "header cell", "type": "th", "width": "20px", "thClasses": "ons-u-ta-center"}],
+            ),
+            (
+                [{"value": "row cell", "type": "td", "width": "50%", "align": "right"}],
+                [{"value": "row cell", "type": "td", "width": "50%", "tdClasses": "ons-u-ta-right"}],
+            ),
+        ]
+        for cells, expected in scenarios:
+            self.assertListEqual(self.block._prepare_cells(cells), expected)  # pylint: disable=protected-access
 
 
 class NoticeBlockTestCase(TestCase):

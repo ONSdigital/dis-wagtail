@@ -4,7 +4,7 @@ from django.contrib.auth.models import AnonymousUser
 
 from cms.users.permissions import get_permission_name
 
-from .enums import BundleStatus
+from .enums import PREVIEWABLE_BUNDLE_STATUSES
 
 if TYPE_CHECKING:
     from cms.users.models import User
@@ -44,6 +44,6 @@ def user_can_preview_bundle(user: "User | AnonymousUser", bundle: "Bundle") -> b
     # otherwise, only users in the same team(s) as the bundle team(s)
     return (
         user.has_perm(get_bundle_permission("view"))
-        and bundle.status == BundleStatus.IN_REVIEW
+        and bundle.status in PREVIEWABLE_BUNDLE_STATUSES
         and bool(set(user.active_team_ids) & set(bundle.active_team_ids))
     )
