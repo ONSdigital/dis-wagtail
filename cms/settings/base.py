@@ -193,6 +193,7 @@ WSGI_APPLICATION = "cms.wsgi.application"
 # None allows connections to be reused for longer, since opening them is expensive.
 # CONN_HEALTH_CHECK ensures they're still healthy before attempting to use them.
 db_conn_max_age = int(env["PG_CONN_MAX_AGE"]) if "PG_CONN_MAX_AGE" in env else None
+db_read_conn_max_age = int(env["PG_READ_CONN_MAX_AGE"]) if "PG_READ_CONN_MAX_AGE" in env else None
 
 if "PG_DB_ADDR" in env:
     # Use IAM authentication to connect to the Database
@@ -214,7 +215,11 @@ if "PG_DB_ADDR" in env:
 
     # Additionally configure a read-replica
     if "PG_DB_READ_ADDR" in env:
-        DATABASES["read_replica"] = {**deepcopy(DATABASES["default"]), "HOST": env["PG_DB_READ_ADDR"]}
+        DATABASES["read_replica"] = {
+            **deepcopy(DATABASES["default"]),
+            "HOST": env["PG_DB_READ_ADDR"],
+            "CONN_MAX_AGE": db_read_conn_max_age,
+        }
 
 else:
     DATABASES = {
@@ -225,7 +230,7 @@ else:
 
     if "READ_REPLICA_DATABASE_URL" in env:
         DATABASES["read_replica"] = dj_database_url.config(
-            env="READ_REPLICA_DATABASE_URL", conn_max_age=db_conn_max_age
+            env="READ_REPLICA_DATABASE_URL", conn_max_age=db_read_conn_max_age
         )
 
 if "read_replica" not in DATABASES:
