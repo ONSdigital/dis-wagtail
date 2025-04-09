@@ -9,7 +9,7 @@ from django.db import migrations, models
 
 class Migration(migrations.Migration):
     dependencies = [
-        ("core", "0008_auto_20250409_1555"),
+        ("core", "0008_bootstrap_translatable_model"),
         ("wagtailcore", "0094_alter_page_locale"),
     ]
 
