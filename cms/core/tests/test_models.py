@@ -32,5 +32,5 @@ class ContactDetailsTestCase(WagtailTestUtils, TestCase):
             data={"name": self.contact.name, "email": self.contact.email},
         )
 
-        self.assertContains(response, "Contact details with this Name, Email and Locale already exists.")
+        self.assertContains(response, "Contact details with this name and email combination already exists.")
         self.assertEqual(ContactDetails.objects.count(), 1)
