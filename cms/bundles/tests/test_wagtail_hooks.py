@@ -105,6 +105,7 @@ class WagtailHooksTestCase(WagtailTestUtils, TestCase):
         self.assertContains(response, "There are currently no bundles for preview.")
 
         self.bundle_viewer.teams.add(self.preview_team)
+        BundleTeam.objects.create(parent=self.approved_bundle, team=self.preview_team)
 
         response = self.client.get(self.dashboard_url)
         self.assertNotContains(response, "There are currently no bundles for preview.")
@@ -115,8 +116,10 @@ class WagtailHooksTestCase(WagtailTestUtils, TestCase):
         self.assertContains(response, self.in_review_bundle.created_by.get_full_name())
         self.assertNotContains(response, self.in_review_bundle.status.label)
 
+        self.assertContains(response, self.approved_bundle.name)
+        self.assertNotContains(response, self.approved_bundle.status.label)
+
         self.assertNotContains(response, self.pending_bundle.name)
-        self.assertNotContains(response, self.approved_bundle.name)
         self.assertNotContains(response, self.released_bundle.name)
 
     def test_add_to_bundle_buttons(self):
