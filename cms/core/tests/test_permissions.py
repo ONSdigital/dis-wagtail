@@ -1,16 +1,126 @@
+import http
+import importlib
+
+from django.apps import apps
 from django.conf import settings
 from django.contrib.auth.models import Group, Permission
 from django.test import TestCase
+from django.urls import reverse
 from wagtail.models import Collection, GroupCollectionPermission, GroupPagePermission, Page
 
+from cms.core.models.snippets import ContactDetails
 from cms.users.tests.factories import UserFactory
+
+assign_permission_to_group = importlib.import_module(
+    "cms.core.migrations.0006_update_user_groups"
+).assign_permission_to_group
+
 
 WAGTAIL_PERMISSION_TYPES = ["add", "change", "delete"]
 
 WAGTAIL_PAGE_PERMISSION_TYPES = ["add", "change", "bulk_delete", "lock", "publish", "unlock"]
 
 
-class PermissionsTestCase(TestCase):
+class TestPermissions(TestCase):
+    def test_raises_error_when_app_doesnt_exist(self):
+        """Check that an exception is raised when an app isn't registered."""
+        app = "non_existent_app"
+        model = "contactdetails"
+
+        permission_codename = "add_contactdetails"
+        group_name = settings.PUBLISHING_ADMINS_GROUP_NAME
+
+        with self.assertRaises(LookupError):
+            assign_permission_to_group(apps, group_name, permission_codename, app, model)
+
+    def test_raises_error_when_model_doesnt_exist(self):
+        """Check that an exception is raised when a model isn't registered in an app."""
+        app = "core"
+        model = "non_existent_model"
+        permission_codename = "add_contactdetails"
+        group_name = settings.PUBLISHING_ADMINS_GROUP_NAME
+
+        with self.assertRaises(LookupError):
+            assign_permission_to_group(apps, group_name, permission_codename, app, model)
+
+    def test_raises_error_when_permission_code_doesnt_match(self):
+        app = "core"
+        model = "contactdetails"
+        permission_codename = "non_existent_permission_codename"
+        group_name = settings.PUBLISHING_ADMINS_GROUP_NAME
+
+        assign_permission_to_group(apps, group_name, permission_codename, app, model)
+
+    def test_raises_error_when_group_doesnt_exist(self):
+        app = "core"
+        model = "contactdetails"
+        permission_codename = "add_contactdetails"
+        group_name = "non_existent_group"
+
+        with self.assertRaises(Group.DoesNotExist):
+            assign_permission_to_group(apps, group_name, permission_codename, app, model)
+
+    def test_user_can_update_model_when_has_permission(self):
+        """Check that the user can add a Contact Details snippet when they have the required permission."""
+        # the Publishing Admin group has the core.add_contactdetails permission
+        group_name = settings.PUBLISHING_ADMINS_GROUP_NAME
+
+        user = UserFactory()
+        group = Group.objects.get(name=group_name)
+        group.user_set.add(user)
+
+        self.client.force_login(user)
+
+        add_url = reverse("wagtailsnippets_core_contactdetails:add")
+
+        post_data = {
+            "name": "Contact details",
+            "email": "example@mail.com",
+            "phone": "1233456789",
+        }
+
+        response = self.client.post(add_url, post_data)
+
+        self.assertEqual(
+            response.status_code,
+            http.HTTPStatus.FOUND,
+        )
+
+        contact_details = ContactDetails.objects.get(name="Contact details")
+        self.assertIsNotNone(contact_details)
+
+    def test_user_cannot_update_model_when_doesnt_have_permission(self):
+        """Check that the user cannot add a Contact Details snippet when they don't have the required permission."""
+        # the Viewer group doesn't have the core.add_contactdetails permission
+        group_name = settings.VIEWERS_GROUP_NAME
+
+        user = UserFactory()
+        group = Group.objects.get(name=group_name)
+        group.user_set.add(user)
+
+        self.client.force_login(user)
+
+        add_url = reverse("wagtailsnippets_core_contactdetails:add")
+        post_data = {
+            "name": "Contact details",
+            "email": "example@mail.com",
+            "phone": "1233456789",
+        }
+
+        response = self.client.post(add_url, post_data, follow=True)
+
+        self.assertIn(
+            "Sorry, you do not have permission to access this area.", response.content.decode(encoding="utf-8")
+        )
+
+        with self.assertRaises(ContactDetails.DoesNotExist):
+            contact_details = ContactDetails.objects.get(name="Contact details")
+            self.assertIsNone(contact_details)
+
+
+class GroupPermissionTestCase(TestCase):
+    """Base class for all group permission test cases."""
+
     @classmethod
     def create_user(cls, group_name):
         """Helper method to create a user and assign them to a group."""
@@ -18,6 +128,11 @@ class PermissionsTestCase(TestCase):
 
         group = Group.objects.get(name=group_name)
         group.user_set.add(cls.user)
+
+    @classmethod
+    def get_user_permission_list(cls):
+        """Helper method to get all permissions of the user."""
+        return list(cls.user.user_permissions.all() | Permission.objects.filter(group__user=cls.user))
 
     def permission_check_helper(self, app: str, model: str, permission_type: str, has_permission: bool):
         """Helper method to check if a user has - or doesn't have - a permission for a model."""
@@ -85,15 +200,52 @@ class PermissionsTestCase(TestCase):
         if is_publishable:
             self.permission_check_helper(app, model, "publish", has_permission)
 
+    def check_and_remove_from_user_permissions(self, app, model, permission_type):
+        """Assert the user has the permission and remove it from the temporary user permission list."""
+        self.assertTrue(self.user.has_perm(f"{app}.{permission_type}_{model}"))
+        permission = Permission.objects.get(content_type__app_label=app, codename=f"{permission_type}_{model}")
+        # Ignore linter errors because self.user_permissions is created in the setUpTestData for each concrete subclass
+        self.user_permissions.remove(permission)  # pylint: disable=no-member
+        self.assertNotIn(permission, self.user_permissions)  # pylint: disable=no-member
 
-class PublishingAdminPermissionsTestCase(PermissionsTestCase):
+
+class PublishingAdminPermissionsTestCase(GroupPermissionTestCase):
     @classmethod
     def setUpTestData(cls):
         cls.create_user(group_name=settings.PUBLISHING_ADMINS_GROUP_NAME)
 
-    def test_publishing_admin_can_access_admin(self):
-        """Check that the Publishing Admin can access the Wagtail admin."""
-        self.assertTrue(self.user.has_perm("wagtailadmin.access_admin"))
+        cls.user_permissions = cls.get_user_permission_list()
+
+    def test_publishing_admin_permissions(self):
+        """Check that the Publishing Admin has all required permissions and not more."""
+        self.check_and_remove_from_user_permissions("wagtailadmin", "admin", "access")
+
+        self.check_and_remove_from_user_permissions("teams", "team", "view")
+
+        # Snippet permissions (app, model, permission types)
+        snippet_permissions = [
+            ("core", "glossaryterm", WAGTAIL_PERMISSION_TYPES),
+            ("core", "contactdetails", WAGTAIL_PERMISSION_TYPES),
+            ("navigation", "mainmenu", [*WAGTAIL_PERMISSION_TYPES, "publish"]),
+            ("navigation", "footermenu", [*WAGTAIL_PERMISSION_TYPES, "publish"]),
+        ]
+
+        for app, model, permission_types in snippet_permissions:
+            for permission_type in permission_types:
+                self.check_and_remove_from_user_permissions(app, model, permission_type)
+
+        for permission_type in [*WAGTAIL_PERMISSION_TYPES, "view"]:
+            self.check_and_remove_from_user_permissions("bundles", "bundle", permission_type)
+
+        for permission_type in WAGTAIL_PERMISSION_TYPES:
+            self.check_and_remove_from_user_permissions("wagtailredirects", "redirect", permission_type)
+
+        self.check_and_remove_from_user_permissions("navigation", "navigationsettings", "change")
+        self.check_and_remove_from_user_permissions("core", "socialmediasettings", "change")
+        self.check_and_remove_from_user_permissions("wagtailcore", "logentry", "view")
+
+        # Check that there are no other unexpected permissions
+        self.assertListEqual([], self.user_permissions)
 
     def test_publishing_admin_can_manage_pages(self):
         """Check that the Publishing Admin can manage the root page and its children."""
@@ -118,52 +270,12 @@ class PublishingAdminPermissionsTestCase(PermissionsTestCase):
         """Check that the Publishing Admin can choose images on pages."""
         self.collection_permission_check_helper("choose", "document", has_permission=True)
 
-    def test_publishing_admin_can_manage_glossary_term(self):
-        """Check that the Publishing Admin can manage Glossary terms."""
-        self.snippet_permission_check_helper("core", "glossaryterm", is_publishable=False, has_permission=True)
 
-    def test_publishing_admin_can_manage_contact_details(self):
-        """Check that the Publishing Admin can manage Contact details."""
-        self.snippet_permission_check_helper("core", "contactdetails", is_publishable=False, has_permission=True)
-
-    def test_publishing_admin_can_manage_main_menu(self):
-        """Check that the Publishing Admin can manage and publish the main menu."""
-        self.snippet_permission_check_helper("navigation", "mainmenu", is_publishable=True, has_permission=True)
-
-    def test_publishing_admin_can_manage_footer_menu(self):
-        """Check that the Publishing Admin can manage and publish the main menu."""
-        self.snippet_permission_check_helper("navigation", "footermenu", is_publishable=True, has_permission=True)
-
-    def test_publishing_admin_can_manage_bundles(self):
-        self.all_permissions_check_helper("bundles", "bundle", has_permission=True)
-        # also check that the PA can view bundles
-        self.assertTrue(self.user.has_perm("bundles.view_bundle"))
-
-    def test_publishing_admin_can_view_teams(self):
-        self.assertTrue(self.user.has_perm("teams.view_team"))
-
-    def test_publishing_admin_can_manage_redirects(self):
-        self.all_permissions_check_helper("wagtailredirects", "redirect", has_permission=True)
-
-    def test_publishing_admin_can_manage_navigation_settings(self):
-        self.assertTrue(self.user.has_perm("navigation.change_navigationsettings"))
-
-    def test_publishing_admin_can_manage_social_media_settings(self):
-        self.assertTrue(self.user.has_perm("core.change_socialmediasettings"))
-
-    def test_publishing_admin_log_entry(self):
-        """Check that the Publishing Admin can see the logs."""
-        self.assertTrue(self.user.has_perm("wagtailcore.view_logentry"))
-
-
-class PublishingOfficerPermissionsTestCase(PermissionsTestCase):
+class PublishingOfficerPermissionsTestCase(GroupPermissionTestCase):
     @classmethod
     def setUpTestData(cls):
         cls.create_user(group_name=settings.PUBLISHING_OFFICERS_GROUP_NAME)
-
-    def test_publishing_officer_can_access_admin(self):
-        """Check that the Publishing Admin can access the Wagtail admin."""
-        self.assertTrue(self.user.has_perm("wagtailadmin.access_admin"))
+        cls.user_permissions = cls.get_user_permission_list()
 
     def test_publishing_officer_can_create_and_change_pages(self):
         """Check that the Publishing Officer can only add and change pages."""
@@ -173,6 +285,21 @@ class PublishingOfficerPermissionsTestCase(PermissionsTestCase):
             else:
                 # Publishing Officers should not have bulk_delete, lock, publish or unlock permissions
                 self.page_permission_check_helper(permission_type, has_permission=False)
+
+    def test_publishing_officer_permissions(self):
+        """Check that the Publishing Officer has all required permissions but not more."""
+        # Can access the Wagtail admin
+        self.check_and_remove_from_user_permissions("wagtailadmin", "admin", "access")
+
+        # bundles permissions
+        for permission_type in [*WAGTAIL_PERMISSION_TYPES, "view"]:
+            self.check_and_remove_from_user_permissions("bundles", "bundle", permission_type)
+
+        # Can view teams
+        self.check_and_remove_from_user_permissions("teams", "team", "view")
+
+        # Check that there are no other unexpected permissions
+        self.assertListEqual([], self.user_permissions)
 
     def test_publishing_officer_cannot_manage_images(self):
         """Check that the Publishing Officer cannot manage image collection."""
@@ -192,56 +319,24 @@ class PublishingOfficerPermissionsTestCase(PermissionsTestCase):
         """Check that the Publishing Officer can choose documents on pages."""
         self.collection_permission_check_helper("choose", "document", has_permission=True)
 
-    def test_publishing_officer_cannot_manage_glossary_terms(self):
-        """Check that the Publishing Officer can't manage Glossary terms."""
-        self.snippet_permission_check_helper("core", "glossaryterm", is_publishable=False, has_permission=False)
 
-    def test_publishing_officer_cannot_manage_contact_details(self):
-        """Check that the Publishing Officer can't manage Contact details."""
-        self.snippet_permission_check_helper("core", "contactdetails", is_publishable=False, has_permission=False)
-
-    def test_publishing_officer_cannot_manage_main_menu(self):
-        """Check that the Publishing Officer can't manage and publish the main menu."""
-        self.snippet_permission_check_helper("navigation", "mainmenu", is_publishable=True, has_permission=False)
-
-    def test_publishing_officer_cannot_manage_footer_menu(self):
-        """Check that the Publishing Officer can't manage and publish the main menu."""
-        self.snippet_permission_check_helper("navigation", "footermenu", is_publishable=True, has_permission=False)
-
-    def test_publishing_officer_can_manage_bundles(self):
-        """Check that the Publishing Officer can manage bundles."""
-        self.all_permissions_check_helper("bundles", "bundle", has_permission=True)
-        # also check that the PO can view bundles
-        self.assertTrue(self.user.has_perm("bundles.view_bundle"))
-
-    def test_publishing_officer_can_view_teams(self):
-        """Check that the Publishing Officer can view teams."""
-        self.assertTrue(self.user.has_perm("teams.view_team"))
-
-    def test_publishing_officer_cannot_manage_redirects(self):
-        """Check that the Publishing Officer can't manage redirects."""
-        self.all_permissions_check_helper("wagtailredirects", "redirect", has_permission=False)
-
-    def test_publishing_officer_cannot_manage_navigation_settings(self):
-        """Check that the Publishing Officer can't change navigation settings."""
-        self.assertFalse(self.user.has_perm("navigation.change_navigationsettings"))
-
-    def test_publishing_officer_cannot_manage_social_media_settings(self):
-        """Check that the Publishing Officer can't change social media settings."""
-        self.assertFalse(self.user.has_perm("core.change_socialmediasettings"))
-
-    def test_publishing_officer_log_entry(self):
-        """Check that the Publishing Officer can't see the logs."""
-        self.assertFalse(self.user.has_perm("wagtailcore.view_logentry"))
-
-
-class ViewerPermissionsTestCase(PermissionsTestCase):
+class ViewerPermissionsTestCase(GroupPermissionTestCase):
     @classmethod
     def setUpTestData(cls):
         cls.create_user(group_name=settings.VIEWERS_GROUP_NAME)
 
-    def test_viewers_can_access_admin(self):
-        self.assertTrue(self.user.has_perm("wagtailadmin.access_admin"))
+        cls.user_permissions = cls.get_user_permission_list()
+
+    def test_viewer_permissions(self):
+        """Check that the Viewer has all required permissions and not more."""
+        # Can access the Wagtail admin
+        self.check_and_remove_from_user_permissions("wagtailadmin", "admin", "access")
+
+        # bundles permissions
+        self.check_and_remove_from_user_permissions("bundles", "bundle", "view")
+
+        # Check that there are no other unexpected permissions
+        self.assertListEqual([], self.user_permissions)
 
     def test_viewer_doesnt_have_page_permissions(self):
         """Check that the Viewer doesn't have any permissions for pages."""
@@ -265,45 +360,3 @@ class ViewerPermissionsTestCase(PermissionsTestCase):
     def test_viewer_cannot_choose_documents(self):
         """Check that the Viewer can't choose documents on pages."""
         self.collection_permission_check_helper("choose", "document", has_permission=False)
-
-    def test_viewer_cannot_manage_glossary_terms(self):
-        """Check that the Viewer can't manage Glossary terms."""
-        self.snippet_permission_check_helper("core", "glossaryterm", is_publishable=False, has_permission=False)
-
-    def test_viewer_cannot_manage_contact_details(self):
-        """Check that the Viewer can't manage Contact details."""
-        self.snippet_permission_check_helper("core", "contactdetails", is_publishable=False, has_permission=False)
-
-    def test_viewer_cannot_manage_main_menu(self):
-        """Check that the Viewer can't manage and publish the main menu."""
-        self.snippet_permission_check_helper("navigation", "mainmenu", is_publishable=True, has_permission=False)
-
-    def test_viewer_cannot_manage_footer_menu(self):
-        """Check that the Viewer can't manage and publish the main menu."""
-        self.snippet_permission_check_helper("navigation", "footermenu", is_publishable=True, has_permission=False)
-
-    def test_viewer_can_view_bundles(self):
-        """Check that the Viewer can only view bundles and not manage it."""
-        self.all_permissions_check_helper("bundles", "bundle", has_permission=False)
-
-        self.assertTrue(self.user.has_perm("bundles.view_bundle"))
-
-    def test_viewer_cannot_view_teams(self):
-        """Check that the Viewer can't view teams."""
-        self.assertFalse(self.user.has_perm("teams.view_team"))
-
-    def test_viewer_cannot_manage_redirects(self):
-        """Check that the Viewer can't manage redirects."""
-        self.all_permissions_check_helper("wagtailredirects", "redirect", has_permission=False)
-
-    def test_viewer_cannot_manage_navigation_settings(self):
-        """Check that the Viewer can't change navigation settings."""
-        self.assertFalse(self.user.has_perm("navigation.change_navigationsettings"))
-
-    def test_viewer_cannot_manage_social_media_settings(self):
-        """Check that the Viewer can't change social media settings."""
-        self.assertFalse(self.user.has_perm("core.change_socialmediasettings"))
-
-    def test_viewer_cannot_see_reporting(self):
-        """Check that the Viewer can't see the logs."""
-        self.assertFalse(self.user.has_perm("wagtailcore.view_logentry"))
