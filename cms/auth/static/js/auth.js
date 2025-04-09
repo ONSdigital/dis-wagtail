@@ -2,8 +2,16 @@
 
 import SessionManagement from 'dis-authorisation-client-js';
 
-const logoutURL = `${window.location.origin}/${window.wagtailAdminHomePath}logout/`;
-const extendSessionURL = `${window.location.origin}/${window.wagtailAdminHomePath}extend-session/`;
+const {
+  location: { origin },
+  wagtailAdminHomePath,
+  csrfCookieName,
+  csrfHeaderName,
+  sessionRenewalOffsetSeconds,
+  authTokenRefreshUrl,
+} = window;
+const logoutURL = `${origin}/${wagtailAdminHomePath}logout/`;
+const extendSessionURL = `${origin}/${wagtailAdminHomePath}extend-session/`;
 
 function getCookieByName(name) {
   console.debug('[WAGTAIL] Getting cookie by name:', name);
@@ -19,104 +27,98 @@ function getCookieByName(name) {
   return cookie ? cookie[1] : null;
 }
 
-function fetchWithCsrf(url, method = 'POST', body = null, headers = {}) {
-  const csrfToken = getCookieByName(window.csrfCookieName);
+// Performs a fetch request with CSRF protection.
+const fetchWithCsrf = async (url, method = 'POST', body = null, additionalHeaders = {}) => {
+  const csrfToken = getCookieByName(csrfCookieName);
   if (!csrfToken) {
     console.error('[WAGTAIL] CSRF token not found.');
     return null;
   }
 
-  const defaultHeaders = {
+  const headers = {
     'Content-Type': 'application/json',
-    [window.csrfHeaderName]: csrfToken,
+    [csrfHeaderName]: csrfToken,
+    ...additionalHeaders,
+  };
+
+  const config = {
+    method,
+    headers,
+    credentials: 'include',
+    ...(body && { body: JSON.stringify(body) }),
   };
 
   try {
-    return fetch(url, {
-      method,
-      headers: { ...defaultHeaders, ...headers },
-      credentials: 'include',
-      body: body ? JSON.stringify(body) : null,
-    });
+    return await fetch(url, config);
   } catch (error) {
     console.error(`[WAGTAIL] Error during ${method} request to ${url}:`, error);
     return null;
   }
-}
+};
 
-function logout() {
-  console.log('[WAGTAIL] Attempting logout...');
-  fetchWithCsrf(logoutURL)
-    .then((response) => {
-      if (response?.ok) {
-        const redirectURL = response.redirected ? response.url : window.location.origin;
-        console.log('[WAGTAIL] Logout successful. Redirecting to:', redirectURL);
-        window.location.href = redirectURL;
-        return;
-      }
-
-      console.error('[WAGTAIL] Logout failed.', response);
-      //   reload the window to clear the cookie that have immediate expiry. If so some reason, the request failed but the cookies were deleted, reload the page to force
-      //   a redirection.
+// Initiates the logout process and handles redirection.
+const logout = async () => {
+  console.info('[WAGTAIL] Initiating logout...');
+  try {
+    const response = await fetchWithCsrf(logoutURL);
+    if (response?.ok) {
+      const redirectURL = response.redirected ? response.url : origin;
+      console.info('[WAGTAIL] Logout successful. Redirecting to:', redirectURL);
+      window.location.href = redirectURL;
+    } else {
+      console.error('[WAGTAIL] Logout failed:', response);
+      // Reload the page to handle any session inconsistencies.
       window.location.reload();
-    })
-    .catch((error) => {
-      console.error('[WAGTAIL] Error during logout:', error);
-    });
-}
+    }
+  } catch (error) {
+    console.error('[WAGTAIL] Exception during logout:', error);
+  }
+};
 
-// Define session configuration
+// Session configuration
 const sessionConfig = {
-  timeOffsets: { passiveRenewal: window.sessionRenewalOffsetSeconds * 1000 }, // Session renewal offset in milliseconds
+  timeOffsets: { passiveRenewal: sessionRenewalOffsetSeconds * 1000 }, // milliseconds
   apiEndpoints: {
-    renewSession: window.authTokenRefreshUrl,
+    renewSession: authTokenRefreshUrl,
   },
-  onRenewSuccess: (sessionExpiryTime, refreshExpiryTime) => {
+  onRenewSuccess: async (sessionExpiryTime, refreshExpiryTime) => {
     console.debug(
-      `[WAGTAIL] Auth Session renewed successfully! Session: ${sessionExpiryTime} and refresh: ${refreshExpiryTime}`,
+      `[WAGTAIL] Session renewed! (Session: ${sessionExpiryTime}, Refresh: ${refreshExpiryTime})`,
     );
-
-    // Extend Wagtail session
-    fetchWithCsrf(extendSessionURL)
-      .then((extendResponse) => {
-        if (!extendResponse?.ok) {
-          console.error('[WAGTAIL] Wagtail session extension failed:', extendResponse);
-          logout();
-          return;
-        }
-
-        console.log('Wagtail session extended successfully.');
-      })
-      .catch((error) => {
-        console.error('[WAGTAIL] Error during Wagtail session extension:', error);
-        logout();
-      });
+    try {
+      const extendResponse = await fetchWithCsrf(extendSessionURL);
+      if (extendResponse?.ok) {
+        console.info('[WAGTAIL] Wagtail session extended successfully.');
+      } else {
+        console.error('[WAGTAIL] Session extension failed:', extendResponse);
+        await logout();
+      }
+    } catch (error) {
+      console.error('[WAGTAIL] Error extending session:', error);
+      await logout();
+    }
   },
-  onRenewFailure: (error) => {
+  onRenewFailure: async (error) => {
     console.error('[WAGTAIL] Session renewal failed:', error);
-    logout();
+    await logout();
   },
   onSessionValid: (sessionExpiryTime, refreshExpiryTime) => {
     console.debug(
-      `[WAGTAIL] Session is valid. Session: ${sessionExpiryTime} and refresh: ${refreshExpiryTime}`,
+      `[WAGTAIL] Session valid. (Session: ${sessionExpiryTime}, Refresh: ${refreshExpiryTime})`,
     );
   },
-  onSessionInvalid: () => {
-    console.warn('[WAGTAIL] Session is invalid.');
-    logout();
+  onSessionInvalid: async () => {
+    console.warn('[WAGTAIL] Session invalid.');
+    await logout();
   },
-  onError: (error) => {
-    console.error('[WAGTAIL] Error:', error);
-    logout();
+  onError: async (error) => {
+    console.error('[WAGTAIL] General error:', error);
+    await logout();
   },
 };
 
-const hasIdToken = !!getCookieByName('id_token');
-
-// Only initialise the SessionManagement library if the id_token cookie
-// is present implying the user is logged in via AWS Cognito
-if (hasIdToken) {
-  // Initialise the SessionManagement library
+// Initialise SessionManagement only if the user is logged in via Cognito (indicated by the presence of an id_token cookie).
+if (getCookieByName('id_token')) {
   SessionManagement.init(sessionConfig);
 
   // These will be fetched from localStorage which is set by the auth service before redirect.
