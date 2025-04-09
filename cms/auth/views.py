@@ -43,7 +43,7 @@ def extend_session(request: HttpRequest) -> JsonResponse:
     """Extends the session by marking it as modified, which resets its expiry timer."""
     if request.method == "POST":
         request.session.modified = True  # Flag session as modified to update expiry
-        logger.info("Session extended successfully for user: %s", request.user)
+        logger.info("Session extended successfully for user", extra={"user_id": request.user.user_id})
         return JsonResponse({"status": "success", "message": "Session extended."})
 
     return JsonResponse({"status": "error", "message": "Invalid request method."}, status=405)

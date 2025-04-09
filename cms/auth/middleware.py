@@ -33,8 +33,8 @@ class ONSAuthMiddleware(AuthenticationMiddleware):
         if not settings.AWS_COGNITO_LOGIN_ENABLED:
             if request.user.is_authenticated and not request.user.has_usable_password():
                 logger.info(
-                    "AWS Cognito disabled; logging out user without a usable password: %s",
-                    request.user.user_id,
+                    "AWS Cognito disabled; logging out user without a usable password",
+                    extra={"user_id": request.user.user_id},
                 )
                 logout(request)
             return
@@ -52,7 +52,7 @@ class ONSAuthMiddleware(AuthenticationMiddleware):
         id_payload = validate_jwt(id_token, token_type="id")  # noqa: S106
 
         if not access_payload or not id_payload:
-            logger.info("Invalid or expired tokens detected; logging out user: %s", request.user.user_id)
+            logger.info("Invalid or expired tokens detected; logging out user")
             logout(request)
             return
 
@@ -61,9 +61,8 @@ class ONSAuthMiddleware(AuthenticationMiddleware):
         id_username = id_payload["cognito:username"]
         if access_username != id_username:
             logger.error(
-                "Token mismatch: access token username (%s) does not match ID token username (%s). Logging out user.",
-                access_username,
-                id_username,
+                "Token mismatch: access token username does not match ID token username. Logging out user.",
+                extra={"access_username": access_username, "id_username": id_username},
             )
             logout(request)
             return
@@ -74,7 +73,10 @@ class ONSAuthMiddleware(AuthenticationMiddleware):
             if user == request.user:
                 return  # User already authenticated and validated
 
-            logger.info("Authenticated user mismatch; logging out current session for user %s.", request.user.user_id)
+            logger.info(
+                "Authenticated user mismatch; logging out current session for user",
+                extra={"user_id": request.user.user_id},
+            )
             logout(request)
 
         # Authenticate and log in the user using token payload data.
@@ -88,8 +90,8 @@ class ONSAuthMiddleware(AuthenticationMiddleware):
 
         if not settings.WAGTAIL_CORE_ADMIN_LOGIN_ENABLED or not request.user.has_usable_password():
             logger.info(
-                "User %s session terminated due to missing authentication tokens or unsuitable login configuration.",
-                request.user.user_id,
+                "User session terminated due to missing authentication tokens or unsuitable login configuration.",
+                extra={"user_id": request.user.user_id},
             )
             logout(request)
 
@@ -117,5 +119,5 @@ class ONSAuthMiddleware(AuthenticationMiddleware):
         groups_ids = id_payload.get("cognito:groups") or []
         user.assign_groups_and_teams(groups_ids)
 
-        logger.info("Authenticating user %s (new: %s)", user_id, created)
+        logger.info("Authenticating user", extra={"user_id": user.user_id, "created": created})
         login(request, user)
