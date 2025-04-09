@@ -1,28 +1,34 @@
-from typing import TYPE_CHECKING, Any
+import logging
+from typing import Any
 
 from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
-from django.http import HttpResponse, JsonResponse
+from django.http import HttpRequest, HttpResponse, JsonResponse
 from django.views.decorators.cache import never_cache
 from django.views.decorators.csrf import csrf_protect
 from wagtail.admin.views.account import LogoutView
 
-if TYPE_CHECKING:
-    from django.http import HttpRequest
+logger = logging.getLogger(__name__)
 
 
 class ONSLogoutView(LogoutView):
-    """Log out the user from Wagtail and delete the auth cookies."""
+    """Logs out the user from Wagtail and removes authentication cookies.
 
+    This view extends Wagtail's LogoutView by clearing any site messages
+    and deleting AWS Cognito authentication cookies, if enabled.
+    """
+
+    # Setting next_page to None will redirect to the default logout URL configured by 'LOGOUT_REDIRECT_URL'.
     next_page = None
 
-    def dispatch(self, request: "HttpRequest", *args: Any, **kwargs: Any) -> "HttpResponse":
+    def dispatch(self, request: HttpRequest, *args: Any, **kwargs: Any) -> HttpResponse:
         response: HttpResponse = super().dispatch(request, *args, **kwargs)
-        # Clear the messages from the request
+
+        # Clear user messages. Converting to list ensures that the iterator is exhausted.
         list(messages.get_messages(request))
 
-        # Delete the auth cookies
+        # Delete authentication cookies if AWS Cognito is enabled.
         if settings.AWS_COGNITO_LOGIN_ENABLED:
             response.delete_cookie(settings.ACCESS_TOKEN_COOKIE_NAME)
             response.delete_cookie(settings.ID_TOKEN_COOKIE_NAME)
@@ -33,9 +39,11 @@ class ONSLogoutView(LogoutView):
 @csrf_protect
 @never_cache
 @login_required
-def extend_session(request: "HttpRequest") -> JsonResponse:
-    """Extend the session by marking the session as modified."""
+def extend_session(request: HttpRequest) -> JsonResponse:
+    """Extends the session by marking it as modified, which resets its expiry timer."""
     if request.method == "POST":
-        request.session.modified = True  # Mark the session as modified to reset its timer
+        request.session.modified = True  # Flag session as modified to update expiry
+        logger.info("Session extended successfully for user: %s", request.user)
         return JsonResponse({"status": "success", "message": "Session extended."})
+
     return JsonResponse({"status": "error", "message": "Invalid request method."}, status=405)
