@@ -1,0 +1,44 @@
+{% from "components/icon/_macro.njk" import onsIcon %}
+
+<div class="search-banner">
+    <div class="ons-container">
+        <h2 class="ons-u-fs-r--b ons-u-mb-s ons-u-pt-2xl">
+            {{ _("Search the ONS") }}
+        </h2>
+        <form action="" method="get" class="search-banner__form">
+            <input type="text" name="query"{% if search_query %} value="{{ search_query }}"{% endif %} class="search-banner__form-input ons-u-pl-s ons-u-pr-s">
+            <button type="submit" class="search-banner__form-button" aria-label="Search the ONS website">
+                {# fmt:off #}
+                {{
+                    onsIcon({
+                        "iconType": 'search',
+                        "iconSize": 'l'
+                    })
+                }}
+                {# fmt:on #}
+            </button>
+        </form>
+
+        <h2 class="ons-u-fs-r--b ons-u-mb-s ons-u-pt-2xl">
+            {{ _("Popular searches") }}
+        </h2>
+
+        <ul class="ons-grid-flex ons-grid-flex-gap--40 ons-u-pb-4xl search-banner__search-suggestions">
+            <li>
+                <a href="#0">{{ _("Cost of living") }}</a>
+            </li>
+            <li>
+                <a href="#0">{{ _("Inflation") }}</a>
+            </li>
+            <li>
+                <a href="#0">{{ _("NHS waiting times") }}</a>
+            </li>
+            <li>
+                <a href="#0">{{ _("Wellbeing") }}</a>
+            </li>
+            <li>
+                <a href="#0">{{ _("Baby names") }}</a>
+            </li>
+        </ul>
+    </div>
+</div>
