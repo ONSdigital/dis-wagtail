@@ -56,7 +56,7 @@ class ContactDetails(TranslatableMixin, index.Indexed, models.Model):
     def clean(self) -> None:
         super().clean()
         if ContactDetails.objects.filter(
-            name__iexact=self.name.strip(), email__iexact=self.email.strip(), locale=self.locale
+            name__iexact=self.name.strip(), email__iexact=self.email.strip(), locale=self.locale_id
         ).exists():
             raise ValidationError("Contact details with this name and email combination already exists.")
 
