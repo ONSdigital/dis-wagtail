@@ -20,7 +20,6 @@
 
     {% if params.language and params.language.languages %}
         {% set currentLanguage = params.language.languages | selectattr("current") | first %}
-        {% set otherLanguages = params.language.languages | rejectattr("current") %}
         {% set currentLanguageIsoCode = currentLanguage.isoCode | default(currentLanguageIsoCode) %}
     {% endif %}
 
