@@ -193,6 +193,14 @@ functional-tests: functional-tests-up functional-tests-run functional-tests-down
 playwright-install:  ## Install Playwright dependencies
 	poetry run playwright install --with-deps
 
+.PHONY: makemessages
+makemessages:  ## We currently just require Welsh (cy), change to -a for all languages
+	poetry run python ./manage.py makemessages --locale cy
+
+.PHONY: compilemessages
+compilemessages:
+	poetry run python ./manage.py compilemessages
+
 # Aliases
 .PHONY: start
 start: compose-up

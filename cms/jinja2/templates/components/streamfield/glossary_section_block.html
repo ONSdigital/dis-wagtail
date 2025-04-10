@@ -1,5 +1,9 @@
 {% from "components/accordion/_macro.njk" import onsAccordion %}
 
+{#- We set variables for text so that it gets picked up by makemessages -#}
+{%- set show_all_label = _("Show all") -%}
+{%- set hide_all_label = _("Hide all") -%}
+
 <section id="{{ value.title|slugify() }}">
 
     <h2 class="ons-u-fs-l">{{ value.title }}</h2>
@@ -9,8 +13,8 @@
         onsAccordion({
             "id": "accordion-" ~ block_id,
             "allButton": {
-                "open": _("Show all"),
-                "close": _("Hide all")
+                "open": show_all_label,
+                "close": hide_all_label
             },
             "itemsList": formatted_glossary_terms,
         })

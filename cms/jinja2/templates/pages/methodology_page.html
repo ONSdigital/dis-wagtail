@@ -4,6 +4,11 @@
 {% from "components/list/_macro.njk" import onsList %}
 {% from "components/hero/_macro.njk" import onsHero %}
 
+{#- We set variables for text so that it gets picked up by makemessages -#}
+{%- set last_revised_label = _("Last revised:") -%}
+{%- set published_label = _("Published:") -%}
+{%- set breadcrumbs_label = _("Breadcrumbs") -%}
+
 {% block header_area %}
     {% if page.contact_details %}
         {% set contact_description_html -%}
@@ -30,7 +35,7 @@
         {# fmt:off #}
         {% set last_revised =
             {
-                "term": _("Last revised:"),
+                "term": last_revised_label,
                 "descriptions": [
                     {
                         "description": page.last_revised_date|date("DATE_FORMAT")
@@ -58,7 +63,7 @@
                 "descriptionCol": "6",
                 "itemsList": [
                     {
-                        "term": _("Published:"),
+                        "term": published_label,
                         "descriptions": [
                             {
                                 "description": page.publication_date|date("DATE_FORMAT")
@@ -70,7 +75,7 @@
                 ]
             },
             "breadcrumbs": {
-                "ariaLabel": _("Breadcrumbs"),
+                "ariaLabel": breadcrumbs_label,
                 "itemsList": breadcrumbs(page),
             }
         })

@@ -84,7 +84,7 @@ class TestInformationPageIntegration(TestCase, WagtailTestUtils):
             http.HTTPStatus.FOUND,
             f"Form was not submitted successfully; got {response.status_code}",
         )
-        new_page = InformationPage.objects.get(slug="info-page-1")
+        new_page = InformationPage.objects.get(slug="info-page-1", locale=self.root_page.locale)
 
         self.assertEqual(new_page.topics.count(), 2, "Duplicates should have been removed")
         self.assertIn(self.topic1.pk, new_page.topics.values_list("topic_id", flat=True))
