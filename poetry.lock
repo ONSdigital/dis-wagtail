@@ -578,13 +578,13 @@ typing_extensions = ">=3.10.0.0"
 
 [[package]]
 name = "django"
-version = "5.1.7"
+version = "5.1.8"
 description = "A high-level Python web framework that encourages rapid development and clean, pragmatic design."
 optional = false
 python-versions = ">=3.10"
 files = [
-    {file = "Django-5.1.7-py3-none-any.whl", hash = "sha256:1323617cb624add820cb9611cdcc788312d250824f92ca6048fda8625514af2b"},
-    {file = "Django-5.1.7.tar.gz", hash = "sha256:30de4ee43a98e5d3da36a9002f287ff400b43ca51791920bfb35f6917bfe041c"},
+    {file = "Django-5.1.8-py3-none-any.whl", hash = "sha256:11b28fa4b00e59d0def004e9ee012fefbb1065a5beb39ee838983fd24493ad4f"},
+    {file = "Django-5.1.8.tar.gz", hash = "sha256:42e92a1dd2810072bcc40a39a212b693f94406d0ba0749e68eb642f31dc770b4"},
 ]
 
 [package.dependencies]
@@ -2650,13 +2650,13 @@ files = [
 
 [[package]]
 name = "wagtail-tinytableblock"
-version = "0.3.2"
+version = "0.3.4"
 description = "A Wagtail StreamField block powered by TinyMCE and its table plugin"
 optional = false
 python-versions = ">=3.12"
 files = [
-    {file = "wagtail_tinytableblock-0.3.2-py3-none-any.whl", hash = "sha256:1bd21e2ef6558f76eac588d5cb66e38a23dd4012cb909a5267fa675f469c8fe6"},
-    {file = "wagtail_tinytableblock-0.3.2.tar.gz", hash = "sha256:9b57df3806a2a81e2ad8467f8807502b97c0f1273873fb3c9e116139c2bd0629"},
+    {file = "wagtail_tinytableblock-0.3.4-py3-none-any.whl", hash = "sha256:3b38fd59689a53ace5afbf2cdfedc4787b769727ebf8e9ffa1f339fcfd4a6485"},
+    {file = "wagtail_tinytableblock-0.3.4.tar.gz", hash = "sha256:8d0f68bf935e146cf20e75a7af89b262b8fd473fd365606252201b283d94f7c4"},
 ]
 
 [package.dependencies]
@@ -2766,4 +2766,4 @@ files = [
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.12"
-content-hash = "79226e48ac68ecbffd47b27a23b7af0c5ffda8b037dd7ed0dbfad69c8ea80a1d"
+content-hash = "08092a9630a970b68463c5460795eb40a8ada392154b20751796e75dcd5bcf91"
