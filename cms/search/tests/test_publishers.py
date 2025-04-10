@@ -367,6 +367,7 @@ class KafkaPublisherTests(TestCase):
             bootstrap_servers=["localhost:9092"],
             api_version=(3, 5, 1),
             value_serializer=ANY,  # or a lambda
+            retries=5,
         )
 
         self.assertEqual(publisher.created_or_updated_channel, "search-content-updated")  # pylint: disable=W0212

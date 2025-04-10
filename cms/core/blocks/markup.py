@@ -114,21 +114,42 @@ class ONSTableBlock(TinyTableBlock):
     source = blocks.CharBlock(label="Source", required=False)
     footnotes = blocks.RichTextBlock(label="Footnotes", features=settings.RICH_TEXT_BASIC, required=False)
 
+    def _align_to_ons_classname(self, alignment: str) -> str:
+        match alignment:
+            case "right":
+                return "ons-u-ta-right"
+            case "left":
+                return "ons-u-ta-left"
+            case "center":
+                return "ons-u-ta-center"
+            case _:
+                return ""
+
+    def _prepare_cells(self, row: list[dict[str, str | int]]) -> list[dict[str, str | int]]:
+        # Note: while this makes use of list mutability, returning a value to placate mypy
+        for cell in row:
+            if alignment := cell.get("align"):
+                classname_key = "thClasses" if cell["type"] == "th" else "tdClasses"
+                cell[classname_key] = self._align_to_ons_classname(str(alignment))
+                del cell["align"]
+
+        return row
+
     def get_context(self, value: dict, parent_context: dict | None = None) -> dict:
         """Insert the DS-ready options in the template context."""
         context: dict = super().get_context(value, parent_context=parent_context)
 
         data = value.get("data", {})
 
-        if not data["rows"] and not data["headers"]:
+        if not data.get("rows") and not data.get("headers"):
             return context
 
         return {
             "title": value.get("title"),
             "options": {
                 "caption": value.get("caption"),
-                "headers": data.get("headers", []),
-                "trs": [{"tds": row} for row in data.get("rows", [])],
+                "headers": [self._prepare_cells(header_row) for header_row in data.get("headers", [])],
+                "trs": [{"tds": self._prepare_cells(row)} for row in data.get("rows", [])],
             },
             "source": value.get("source"),
             "footnotes": value.get("footnotes"),

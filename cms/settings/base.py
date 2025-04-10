@@ -478,10 +478,23 @@ LOGGING = {
         "console": {
             "level": "INFO",
             "class": "logging.StreamHandler",
-            "formatter": "verbose",
+            "formatter": "json",
+        },
+        "gunicorn_access": {
+            "level": "INFO",
+            "class": "logging.StreamHandler",
+            "formatter": "gunicorn_json",
         },
     },
-    "formatters": {"verbose": {"format": "[%(asctime)s][%(process)d][%(levelname)s][%(name)s] %(message)s"}},
+    "formatters": {
+        "verbose": {"format": "[%(asctime)s][%(process)d][%(levelname)s][%(name)s] %(message)s"},
+        "json": {
+            "()": "cms.core.logs.JSONFormatter",
+        },
+        "gunicorn_json": {
+            "()": "cms.core.logs.GunicornJsonFormatter",
+        },
+    },
     "loggers": {
         "cms": {
             "handlers": ["console"],
@@ -505,6 +518,11 @@ LOGGING = {
         },
         "apscheduler": {
             "handlers": ["console"],
+            "level": "INFO",
+            "propagate": False,
+        },
+        "gunicorn.access": {
+            "handlers": ["gunicorn_access"],
             "level": "INFO",
             "propagate": False,
         },
@@ -774,6 +792,7 @@ if ENABLE_DJANGO_DEFENDER:
     DEFENDER_COOLOFF_TIME = int(env.get("DJANGO_DEFENDER_COOLOFF_TIME", 600))  # default to 10 minutes
     DEFENDER_LOCKOUT_TEMPLATE = "pages/defender/lockout.html"
 
+
 # Wagtail settings
 
 
@@ -825,6 +844,7 @@ WAGTAIL_PASSWORD_REQUIRED_TEMPLATE = "templates/pages/wagtail/password_required.
 
 # Default size of the pagination used on the front-end.
 DEFAULT_PER_PAGE = 20
+PREVIOUS_RELEASES_PER_PAGE = int(env.get("PREVIOUS_RELEASES_PER_PAGE", 10))
 
 # Google Tag Manager ID from env
 GOOGLE_TAG_MANAGER_CONTAINER_ID = env.get("GOOGLE_TAG_MANAGER_CONTAINER_ID", "")
