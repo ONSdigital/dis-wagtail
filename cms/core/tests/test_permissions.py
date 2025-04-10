@@ -22,7 +22,9 @@ WAGTAIL_PAGE_PERMISSION_TYPES = ["add", "change", "bulk_delete", "lock", "publis
 
 
 class TestPermissions(TestCase):
-    def test_raises_error_when_app_doesnt_exist(self):
+    """Test edge cases for the mechanism used for adding permissions in the data migration."""
+
+    def test_raises_exception_when_app_doesnt_exist(self):
         """Check that an exception is raised when an app isn't registered."""
         app = "non_existent_app"
         model = "contactdetails"
@@ -33,7 +35,7 @@ class TestPermissions(TestCase):
         with self.assertRaises(LookupError):
             assign_permission_to_group(apps, group_name, permission_codename, app, model)
 
-    def test_raises_error_when_model_doesnt_exist(self):
+    def test_raises_exception_when_model_doesnt_exist(self):
         """Check that an exception is raised when a model isn't registered in an app."""
         app = "core"
         model = "non_existent_model"
@@ -43,15 +45,7 @@ class TestPermissions(TestCase):
         with self.assertRaises(LookupError):
             assign_permission_to_group(apps, group_name, permission_codename, app, model)
 
-    def test_raises_error_when_permission_code_doesnt_match(self):
-        app = "core"
-        model = "contactdetails"
-        permission_codename = "non_existent_permission_codename"
-        group_name = settings.PUBLISHING_ADMINS_GROUP_NAME
-
-        assign_permission_to_group(apps, group_name, permission_codename, app, model)
-
-    def test_raises_error_when_group_doesnt_exist(self):
+    def test_raises_exception_when_group_doesnt_exist(self):
         app = "core"
         model = "contactdetails"
         permission_codename = "add_contactdetails"
@@ -60,7 +54,7 @@ class TestPermissions(TestCase):
         with self.assertRaises(Group.DoesNotExist):
             assign_permission_to_group(apps, group_name, permission_codename, app, model)
 
-    def test_user_can_update_model_when_has_permission(self):
+    def test_user_can_add_model_when_has_permission(self):
         """Check that the user can add a Contact Details snippet when they have the required permission."""
         # the Publishing Admin group has the core.add_contactdetails permission
         group_name = settings.PUBLISHING_ADMINS_GROUP_NAME
@@ -81,6 +75,8 @@ class TestPermissions(TestCase):
 
         response = self.client.post(add_url, post_data)
 
+        self.assertTrue(user.has_perm("core.add_contactdetails"))
+
         self.assertEqual(
             response.status_code,
             http.HTTPStatus.FOUND,
@@ -89,7 +85,7 @@ class TestPermissions(TestCase):
         contact_details = ContactDetails.objects.get(name="Contact details")
         self.assertIsNotNone(contact_details)
 
-    def test_user_cannot_update_model_when_doesnt_have_permission(self):
+    def test_user_cannot_add_model_when_doesnt_have_permission(self):
         """Check that the user cannot add a Contact Details snippet when they don't have the required permission."""
         # the Viewer group doesn't have the core.add_contactdetails permission
         group_name = settings.VIEWERS_GROUP_NAME
@@ -109,6 +105,12 @@ class TestPermissions(TestCase):
 
         response = self.client.post(add_url, post_data, follow=True)
 
+        self.assertFalse(user.has_perm("core.add_contactdetails"))
+
+        self.assertEqual(
+            response.status_code,
+            http.HTTPStatus.OK,
+        )
         self.assertIn(
             "Sorry, you do not have permission to access this area.", response.content.decode(encoding="utf-8")
         )
@@ -118,7 +120,7 @@ class TestPermissions(TestCase):
             self.assertIsNone(contact_details)
 
 
-class GroupPermissionTestCase(TestCase):
+class BaseGroupPermissionTestCase(TestCase):
     """Base class for all group permission test cases."""
 
     @classmethod
@@ -129,24 +131,24 @@ class GroupPermissionTestCase(TestCase):
         group = Group.objects.get(name=group_name)
         group.user_set.add(cls.user)
 
-    @classmethod
-    def get_user_permission_list(cls):
-        """Helper method to get all permissions of the user."""
-        return list(cls.user.user_permissions.all() | Permission.objects.filter(group__user=cls.user))
+        cls.user_permissions = list(cls.user.user_permissions.all() | Permission.objects.filter(group__user=cls.user))
 
-    def permission_check_helper(self, app: str, model: str, permission_type: str, has_permission: bool):
-        """Helper method to check if a user has - or doesn't have - a permission for a model."""
-        user_has_perm: bool = self.user.has_perm(f"{app}.{permission_type}_{model}")
+    def check_and_remove_from_user_permissions(self, app, model, permission_type):
+        """Assert the user has the permission and if so remove it from the temporary user permission list."""
+        self.assertTrue(self.user.has_perm(f"{app}.{permission_type}_{model}"))
+        permission = Permission.objects.get(content_type__app_label=app, codename=f"{permission_type}_{model}")
+        self.user_permissions.remove(permission)
+        self.assertNotIn(permission, self.user_permissions)
 
-        if has_permission:
-            self.assertTrue(user_has_perm)
-        else:
-            self.assertFalse(user_has_perm)
-
-    def all_permissions_check_helper(self, app: str, model: str, has_permission: bool):
-        """Helper to check if the user has - or doesn't have - all permissions for a model."""
+    def snippet_permission_check_helper(self, app: str, model: str, is_publishable: bool, expected_has_perm: bool):
+        """Helper method to check if the user has - or doesn't have - the permissions to manage a snippet."""
         for permission_type in WAGTAIL_PERMISSION_TYPES:
-            self.permission_check_helper(app, model, permission_type, has_permission)
+            actual_has_perm: bool = self.user.has_perm(f"{app}.{permission_type}_{model}")
+            self.assertEqual(expected_has_perm, actual_has_perm)
+
+        if is_publishable:
+            actual_has_perm: bool = self.user.has_perm(f"{app}.publish_{model}")
+            self.assertEqual(expected_has_perm, actual_has_perm)
 
     def page_permission_check_helper(self, permission_type: str, has_permission: bool):
         """Helper method to check if the group that the user is a member of
@@ -192,29 +194,11 @@ class GroupPermissionTestCase(TestCase):
         else:
             self.assertIsNone(group_collection_permission)
 
-    def snippet_permission_check_helper(self, app: str, model: str, is_publishable: bool, has_permission: bool):
-        """Helper method to check if the user has - or doesn't have - the permissions to manage a snippet."""
-        for permission_type in WAGTAIL_PERMISSION_TYPES:
-            self.permission_check_helper(app, model, permission_type, has_permission)
 
-        if is_publishable:
-            self.permission_check_helper(app, model, "publish", has_permission)
-
-    def check_and_remove_from_user_permissions(self, app, model, permission_type):
-        """Assert the user has the permission and remove it from the temporary user permission list."""
-        self.assertTrue(self.user.has_perm(f"{app}.{permission_type}_{model}"))
-        permission = Permission.objects.get(content_type__app_label=app, codename=f"{permission_type}_{model}")
-        # Ignore linter errors because self.user_permissions is created in the setUpTestData for each concrete subclass
-        self.user_permissions.remove(permission)  # pylint: disable=no-member
-        self.assertNotIn(permission, self.user_permissions)  # pylint: disable=no-member
-
-
-class PublishingAdminPermissionsTestCase(GroupPermissionTestCase):
+class PublishingAdminPermissionsTestCase(BaseGroupPermissionTestCase):
     @classmethod
     def setUpTestData(cls):
         cls.create_user(group_name=settings.PUBLISHING_ADMINS_GROUP_NAME)
-
-        cls.user_permissions = cls.get_user_permission_list()
 
     def test_publishing_admin_permissions(self):
         """Check that the Publishing Admin has all required permissions and not more."""
@@ -271,11 +255,22 @@ class PublishingAdminPermissionsTestCase(GroupPermissionTestCase):
         self.collection_permission_check_helper("choose", "document", has_permission=True)
 
 
-class PublishingOfficerPermissionsTestCase(GroupPermissionTestCase):
+class PublishingOfficerPermissionsTestCase(BaseGroupPermissionTestCase):
     @classmethod
     def setUpTestData(cls):
         cls.create_user(group_name=settings.PUBLISHING_OFFICERS_GROUP_NAME)
-        cls.user_permissions = cls.get_user_permission_list()
+
+    def test_publishing_officer_permissions(self):
+        """Check that the Publishing Officer has all required permissions but not more."""
+        self.check_and_remove_from_user_permissions("wagtailadmin", "admin", "access")
+
+        for permission_type in [*WAGTAIL_PERMISSION_TYPES, "view"]:
+            self.check_and_remove_from_user_permissions("bundles", "bundle", permission_type)
+
+        self.check_and_remove_from_user_permissions("teams", "team", "view")
+
+        # Check that there are no other unexpected permissions
+        self.assertListEqual([], self.user_permissions)
 
     def test_publishing_officer_can_create_and_change_pages(self):
         """Check that the Publishing Officer can only add and change pages."""
@@ -285,21 +280,6 @@ class PublishingOfficerPermissionsTestCase(GroupPermissionTestCase):
             else:
                 # Publishing Officers should not have bulk_delete, lock, publish or unlock permissions
                 self.page_permission_check_helper(permission_type, has_permission=False)
-
-    def test_publishing_officer_permissions(self):
-        """Check that the Publishing Officer has all required permissions but not more."""
-        # Can access the Wagtail admin
-        self.check_and_remove_from_user_permissions("wagtailadmin", "admin", "access")
-
-        # bundles permissions
-        for permission_type in [*WAGTAIL_PERMISSION_TYPES, "view"]:
-            self.check_and_remove_from_user_permissions("bundles", "bundle", permission_type)
-
-        # Can view teams
-        self.check_and_remove_from_user_permissions("teams", "team", "view")
-
-        # Check that there are no other unexpected permissions
-        self.assertListEqual([], self.user_permissions)
 
     def test_publishing_officer_cannot_manage_images(self):
         """Check that the Publishing Officer cannot manage image collection."""
@@ -320,19 +300,15 @@ class PublishingOfficerPermissionsTestCase(GroupPermissionTestCase):
         self.collection_permission_check_helper("choose", "document", has_permission=True)
 
 
-class ViewerPermissionsTestCase(GroupPermissionTestCase):
+class ViewerPermissionsTestCase(BaseGroupPermissionTestCase):
     @classmethod
     def setUpTestData(cls):
         cls.create_user(group_name=settings.VIEWERS_GROUP_NAME)
 
-        cls.user_permissions = cls.get_user_permission_list()
-
     def test_viewer_permissions(self):
         """Check that the Viewer has all required permissions and not more."""
-        # Can access the Wagtail admin
         self.check_and_remove_from_user_permissions("wagtailadmin", "admin", "access")
 
-        # bundles permissions
         self.check_and_remove_from_user_permissions("bundles", "bundle", "view")
 
         # Check that there are no other unexpected permissions
