@@ -61,7 +61,7 @@ class LangageTemplateTagTests(TestCase):
     def test_get_hreflangs_with_different_base_locale(self):
         """Test that get_hreflangs returns the correct hreflang URLs with a different base locale."""
         # Replace the default locale with Polish
-        main_locale = Locale.objects.filter(language_code="en-gb").first()
+        main_locale = Locale.objects.get(language_code="en-gb")
         main_locale.language_code = "pl"
         main_locale.save()
 
