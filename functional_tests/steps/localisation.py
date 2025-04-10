@@ -106,7 +106,7 @@ def check_message_is_displayed(context: Context) -> None:
         context.page.get_by_text(
             # This is currently in English, but should be in Welsh
             # when the Welsh translation is available.
-            "This page is currently not available in your locale. The English version is shown instead."
+            "This page is currently not available in English. It is displayed in its original language."
         )
     ).to_be_visible()
 

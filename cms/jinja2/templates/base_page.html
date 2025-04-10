@@ -38,6 +38,7 @@
 {%- endblock -%}
 
 {% block pageContent %}
+    {%- set announcement_text = _("This page is currently not available in English. It is displayed in its original language.") -%}
     {# Adds a full-width section for the header area before the main page content #}
     {# Changes the location of the <main> tag from the base template - ensures it surrounds the header area #}
     {# This change should be adopted by the design system soon #}
@@ -48,7 +49,7 @@
             {{-
                 onsPanel({
                     "variant": "announcement",
-                    "body": _("This page is currently not available in your locale. The English version is shown instead.")
+                    "body": announcement_text
                 })
             -}}
             {# fmt:on #}
