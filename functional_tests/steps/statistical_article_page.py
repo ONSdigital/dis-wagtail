@@ -59,7 +59,7 @@ def user_adds_table_with_pasted_content(context: Context):
     page.get_by_text("Table").last.click()
     page.locator('[data-contentpath="footnotes"] [role="textbox"]').fill("some footnotes")
     page.get_by_role("region", name="Table", exact=True).get_by_label("Title").fill("The table title")
-    page.get_by_role("region", name="Table", exact=True).get_by_label("Caption").fill("The caption")
+    page.get_by_role("region", name="Table", exact=True).get_by_label("Sub-heading").fill("The caption")
     page.get_by_role("region", name="Table", exact=True).get_by_label("Source").fill("The source")
 
     tinymce = (
