@@ -7,7 +7,7 @@ import cms.core.fields
 
 class Migration(migrations.Migration):
     dependencies = [
-        ("topics", "0002_featured_series_explore_more_related"),
+        ("topics", "0003_topicpage_topic"),
     ]
 
     operations = [
