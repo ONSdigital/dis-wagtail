@@ -18,7 +18,7 @@ from cms.core.query import order_by_pk_position
 from cms.core.utils import get_formatted_pages_list
 from cms.methodology.models import MethodologyPage
 from cms.taxonomy.mixins import ExclusiveTaxonomyMixin
-from cms.topics.blocks import ExploreMoreStoryBlock
+from cms.topics.blocks import ExploreMoreStoryBlock, TopicHeadlineFiguresStreamBlock
 from cms.topics.forms import TopicPageAdminForm
 from cms.topics.viewsets import (
     FeaturedSeriesPageChooserWidget,
@@ -84,9 +84,12 @@ class TopicPage(ExclusiveTaxonomyMixin, BasePage):  # type: ignore[django-manage
     )
     explore_more = StreamField(ExploreMoreStoryBlock(), blank=True)
 
+    headline_figures = StreamField(TopicHeadlineFiguresStreamBlock(), blank=True)
+
     content_panels: ClassVar[list["Panel"]] = [
         *BasePage.content_panels,
         "summary",
+        FieldPanel("headline_figures"),
         FieldPanel(
             "featured_series",
             heading="Featured",

@@ -1,11 +1,20 @@
-from typing import TYPE_CHECKING
+from collections.abc import Callable, Sequence
+from typing import TYPE_CHECKING, Any
 
+from django import forms
+from django.utils.functional import cached_property
 from wagtail.blocks import CharBlock, PageChooserBlock, StreamBlock, StructBlock, URLBlock
+from wagtail.blocks.struct_block import StructBlockAdapter
 from wagtail.images.blocks import ImageChooserBlock
+from wagtail.telepath import register
+
+from .viewsets import series_with_headline_figures_chooser_viewset
 
 if TYPE_CHECKING:
-    from wagtail.blocks import StreamValue, StructValue
+    from wagtail.blocks import ChooserBlock, StreamValue, StructValue
     from wagtail.models import Page
+
+    from cms.articles.models import ArticleSeriesPage, StatisticalArticlePage
 
 
 class ExploreMoreExternalLinkBlock(StructBlock):
@@ -87,3 +96,66 @@ class ExploreMoreStoryBlock(StreamBlock):
 
         context["formatted_items"] = formatted_items
         return context
+
+
+SeriesChooserBlock: "ChooserBlock" = series_with_headline_figures_chooser_viewset.get_block_class(
+    name="SeriesChooserBlock", module_path="cms.topics.blocks"
+)
+
+
+class LinkedSeriesChooserBlock(SeriesChooserBlock):
+    def __init__(
+        self,
+        required: bool = True,
+        help_text: str | None = None,
+        validators: Sequence[Callable[[Any], None]] = (),
+        **kwargs: Any,
+    ) -> None:
+        super().__init__(required=required, help_text=help_text, validators=validators, **kwargs)
+        self.widget = series_with_headline_figures_chooser_viewset.widget_class(
+            linked_fields={"topic_page_id": "#id_topic_page_id"}
+        )
+
+
+class TopicHeadlineFigureBlock(StructBlock):
+    series = LinkedSeriesChooserBlock()
+    figure = CharBlock()
+
+
+class TopicHeadlineFiguresStreamBlock(StreamBlock):
+    figures = TopicHeadlineFigureBlock()
+
+    def get_context(self, value: "StreamValue", parent_context: dict | None = None) -> dict:
+        context: dict = super().get_context(value, parent_context=parent_context)
+
+        figure_data = []
+        for item in value:
+            series: ArticleSeriesPage = item.value["series"]
+            latest_article: StatisticalArticlePage | None = series.get_latest()
+
+            if not latest_article:
+                continue
+
+            if figure := latest_article.get_headline_figure(item.value["figure"]):
+                figure["url"] = latest_article.get_url(request=context.get("request"))
+                figure_data.append(figure)
+
+        context["figure_data"] = figure_data
+        return context
+
+    class Meta:
+        icon = "pick"
+        label = "Headline figures"
+        template = "templates/components/streamfield/topic_headline_figures_block.html"
+
+
+class SeriesWithHeadlineChooserAdapter(StructBlockAdapter):
+    js_constructor = "cms.topics.widgets.TopicHeadlineFigureBlock"
+
+    @cached_property
+    def media(self) -> forms.Media:
+        parent_js = super().media._js  # pylint: disable=protected-access
+        return forms.Media(js=[*parent_js, "topics/js/headline-figure-block.js"])
+
+
+register(SeriesWithHeadlineChooserAdapter(), TopicHeadlineFigureBlock)
