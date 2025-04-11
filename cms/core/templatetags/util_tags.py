@@ -52,7 +52,7 @@ def set_attributes_filter(attributes: dict, new_attributes: dict) -> dict:
     return attributes
 
 
-@register.filter(name="custom_date")
+@register.filter(name="ons_date")
 def ons_date_format_filter(value: datetime, format_string: str) -> str:
     if not value:
         return ""
