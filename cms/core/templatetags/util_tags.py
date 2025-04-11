@@ -6,7 +6,7 @@ from django import template
 from django.template.loader import render_to_string
 from django_jinja import library
 
-from cms.core.custom_dateformat import new_date_format
+from cms.core.custom_dateformat import ons_date_format
 from cms.core.models import SocialMediaSettings
 
 register = template.Library()
@@ -53,9 +53,7 @@ def set_attributes_filter(attributes: dict, new_attributes: dict) -> dict:
 
 
 @register.filter(name="custom_date")
-def custom_date_format(value: datetime, format_string: str) -> str:
+def ons_date_format_filter(value: datetime, format_string: str) -> str:
     if not value:
         return ""
-    if format_string == "DATETIME_FORMAT":
-        format_string = "j F Y g:ia"
-    return new_date_format(value, format_string)
+    return ons_date_format(value, format_string)
