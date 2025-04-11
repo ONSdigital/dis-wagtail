@@ -1,4 +1,5 @@
-from typing import TYPE_CHECKING
+from collections.abc import Callable, Sequence
+from typing import TYPE_CHECKING, Any
 
 from django import forms
 from django.utils.functional import cached_property
@@ -103,7 +104,13 @@ SeriesChooserBlock: "ChooserBlock" = series_with_headline_figures_chooser_viewse
 
 
 class LinkedSeriesChooserBlock(SeriesChooserBlock):
-    def __init__(self, required=True, help_text=None, validators=(), **kwargs):
+    def __init__(
+        self,
+        required: bool = True,
+        help_text: str | None = None,
+        validators: Sequence[Callable[[Any], None]] = (),
+        **kwargs: Any,
+    ) -> None:
         super().__init__(required=required, help_text=help_text, validators=validators, **kwargs)
         self.widget = series_with_headline_figures_chooser_viewset.widget_class(
             linked_fields={"topic_page_id": "#id_topic_page_id"}
@@ -124,7 +131,10 @@ class TopicHeadlineFiguresStreamBlock(StreamBlock):
         figure_data = []
         for item in value:
             series: ArticleSeriesPage = item.value["series"]
-            latest_article: StatisticalArticlePage = series.get_latest()
+            latest_article: StatisticalArticlePage | None = series.get_latest()
+
+            if not latest_article:
+                continue
 
             if figure := latest_article.get_headline_figure(item.value["figure"]):
                 figure["url"] = latest_article.get_url(request=context.get("request"))
@@ -143,7 +153,7 @@ class SeriesWithHeadlineChooserAdapter(StructBlockAdapter):
     js_constructor = "cms.topics.widgets.TopicHeadlineFigureBlock"
 
     @cached_property
-    def media(self):
+    def media(self) -> forms.Media:
         parent_js = super().media._js  # pylint: disable=protected-access
         return forms.Media(js=[*parent_js, "topics/js/headline-figure-block.js"])
 

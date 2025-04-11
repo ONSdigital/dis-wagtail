@@ -1,10 +1,11 @@
 import copy
 import hashlib
-from typing import TYPE_CHECKING, ClassVar, Optional
+from typing import TYPE_CHECKING, Any, ClassVar, Optional
 
 from django.contrib.admin.utils import quote, unquote
 from django.core.exceptions import ObjectDoesNotExist
 from django.core.paginator import InvalidPage, Paginator
+from django.db.models import Model
 from django.http import Http404
 from django.urls import reverse
 from django.utils.http import urlencode
@@ -18,7 +19,8 @@ from wagtail.coreutils import resolve_model_string
 from cms.articles.models import ArticleSeriesPage
 
 if TYPE_CHECKING:
-    from django.http import HttpRequest
+    from django.core.paginator import Page as PaginatorPage
+    from django.http import HttpRequest, HttpResponse
     from wagtail.query import PageQuerySet
 
 
@@ -30,9 +32,9 @@ def get_signature(seed: str) -> str:
 
 
 class SpecialTitleColumn(TitleColumn):
-    def get_link_url(self, instance, parent_context):
+    def get_link_url(self, instance: Column, parent_context: Any) -> str:
         """Extends the core chooser title column to pass on the headline figure id to the ChosenView."""
-        url = super().get_link_url(instance, parent_context)
+        url: str = super().get_link_url(instance, parent_context)
         figure_id = instance.headline_figure["figure_id"]
         separator = "&" if "?" in url else "?"
         params = {"figure_id": figure_id, "sig": get_signature(f"{quote(instance.pk)} - {figure_id!s}")}
@@ -43,15 +45,15 @@ class SpecialTitleColumn(TitleColumn):
 class HeadlineFigureColumn(Column):
     def __init__(
         self,
-        name,
-        key,
-        **kwargs,
+        name: str,
+        key: str,
+        **kwargs: Any,
     ):
         super().__init__(name, **kwargs)
         self.key = key
 
-    def get_cell_context_data(self, instance, parent_context):
-        context = super().get_cell_context_data(instance, parent_context)
+    def get_cell_context_data(self, instance: Column, parent_context: Any) -> dict[str, Any]:
+        context: dict[str, Any] = super().get_cell_context_data(instance, parent_context)
         value = self.get_value(instance)
         context["value"] = value.get(self.key, "")
         return context
@@ -61,7 +63,7 @@ class SeriesWithHeadlineFiguresChooserMixin:
     model_class: ArticleSeriesPage
 
     def get_queryset(self) -> "PageQuerySet[ArticleSeriesPage]":
-        topic_page_id = self.request.GET.get("topic_page_id")
+        topic_page_id = self.request.GET.get("topic_page_id")  # type: ignore[attr-defined]
         if not topic_page_id:
             return ArticleSeriesPage.objects.none()
 
@@ -91,17 +93,17 @@ class SeriesWithHeadlineFiguresChooserMixin:
 
         return filtered_series
 
-    def get_results_page(self, request: "HttpRequest") -> "list[ArticleSeriesPage]":
+    def get_results_page(self, request: "HttpRequest") -> "PaginatorPage[ArticleSeriesPage]":
         """Overrides the parent to apply the filtering on the queryset.
 
         Our get_object_list() returns a list of pages with duplicates (depending on the headline figures count),
         rather than a queryset as expected by filter_object_list().
         """
         objects = self.get_queryset()
-        objects = self.filter_object_list(objects)
+        objects = self.filter_object_list(objects)  # type: ignore[attr-defined]
         objects = self.get_object_list(objects=objects)
 
-        paginator = Paginator(objects, per_page=self.per_page)
+        paginator = Paginator(objects, per_page=self.per_page)  # type: ignore[attr-defined]
         try:
             return paginator.page(request.GET.get("p", 1))
         except InvalidPage as e:
@@ -115,7 +117,9 @@ class SeriesWithHeadlineFiguresChooserMixin:
             label="Title",
             accessor=str,
             get_url=(
-                lambda obj: self.append_preserved_url_parameters(reverse(self.chosen_url_name, args=(quote(obj.pk),)))
+                lambda obj: self.append_preserved_url_parameters(  # type: ignore[attr-defined]
+                    reverse(self.chosen_url_name, args=(quote(obj.pk),))  # type: ignore[attr-defined]
+                )
             ),
             link_attrs={"data-chooser-modal-choice": True},
         )
@@ -123,7 +127,7 @@ class SeriesWithHeadlineFiguresChooserMixin:
     @property
     def columns(self) -> list["Column"]:
         return [
-            self.title_column,  # type: ignore[attr-defined]
+            self.title_column,
             Column("parent", label="Topic", accessor="get_parent"),
             DateColumn(
                 "updated",
@@ -146,15 +150,15 @@ class SeriesWithHeadlineFiguresChooseResultsView(SeriesWithHeadlineFiguresChoose
 
 
 class SeriesWithHeadlineFiguresChosenResponseMixin(ChosenResponseMixin):
-    def get_chosen_response_data(self, item):
-        response_data = super().get_chosen_response_data(item)
-        response_data["figure_id"] = item._figure_id  # pylint: disable=protected-access
+    def get_chosen_response_data(self, item: Model) -> dict[str, Any]:
+        response_data: dict[str, Any] = super().get_chosen_response_data(item)
+        response_data["figure_id"] = item._figure_id  # type: ignore[attr-defined] # pylint: disable=protected-access
 
         return response_data
 
 
 class SeriesWithHeadlineFiguresChosenViewMixin(ChosenViewMixin):
-    def get(self, request, pk):
+    def get(self, request: "HttpRequest", pk: Any) -> "HttpResponse":
         try:
             item = self.get_object(unquote(pk))
         except ObjectDoesNotExist as e:
@@ -169,7 +173,8 @@ class SeriesWithHeadlineFiguresChosenViewMixin(ChosenViewMixin):
 
         item._figure_id = figure_id  # pylint: disable=protected-access
 
-        return self.get_chosen_response(item)
+        response: HttpResponse = self.get_chosen_response(item)
+        return response
 
 
 class SeriesWithHeadlineChosenView(
