@@ -1,4 +1,5 @@
 import base64
+import json
 import logging
 from collections.abc import Iterable
 
@@ -95,3 +96,21 @@ def _validate_jwt(token: str, *, additional_fields: Iterable, token_type: str):
         return None
 
     return claims
+
+
+def get_auth_config() -> str:
+    """Get the authentication configuration."""
+    # Default value for csrf_header_name is "HTTP_X_CSRFTOKEN", the header needs to be set as "X-CSRFToken"
+    # Django will convert the header to "HTTP_X_CSRFTOKEN" when it is received
+    # @see: https://docs.djangoproject.com/en/5.1/ref/settings/#csrf-header-name
+    csrf_header_name = settings.CSRF_HEADER_NAME.replace("HTTP_", "").replace("_", "-")
+    return json.dumps(
+        {
+            "authTokenRefreshUrl": settings.AUTH_TOKEN_REFRESH_URL,
+            "wagtailAdminHomePath": settings.WAGTAILADMIN_HOME_PATH,
+            "csrfCookieName": settings.CSRF_COOKIE_NAME,
+            "csrfHeaderName": csrf_header_name,
+            "logoutRedirectUrl": settings.LOGOUT_REDIRECT_URL,
+            "sessionRenewalOffsetSeconds": settings.SESSION_RENEWAL_OFFSET_SECONDS,
+        }
+    )

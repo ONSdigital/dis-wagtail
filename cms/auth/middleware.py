@@ -119,5 +119,5 @@ class ONSAuthMiddleware(AuthenticationMiddleware):
         groups_ids = id_payload.get("cognito:groups") or []
         user.assign_groups_and_teams(groups_ids)
 
-        logger.info("Authenticating user", extra={"user_id": user.user_id, "created": created})
+        logger.info("Authenticating user", extra={"user_id": user.user_id, "user_created": created})
         login(request, user)

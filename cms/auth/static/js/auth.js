@@ -2,14 +2,16 @@
 
 import SessionManagement from 'dis-authorisation-client-js';
 
+window.authConfig = window.authConfig || {};
+
 const {
-  location: { origin },
   wagtailAdminHomePath,
   csrfCookieName,
   csrfHeaderName,
   sessionRenewalOffsetSeconds,
   authTokenRefreshUrl,
-} = window;
+} = window.authConfig;
+const { origin } = window.location;
 const logoutURL = `${origin}/${wagtailAdminHomePath}logout/`;
 const extendSessionURL = `${origin}/${wagtailAdminHomePath}extend-session/`;
 
@@ -118,7 +120,8 @@ const sessionConfig = {
 };
 
 // Initialise SessionManagement only if the user is logged in via Cognito (indicated by the presence of an id_token cookie).
-if (getCookieByName('id_token')) {
+// Don't load if it's in an iframe (e.g. the Wagtail admin interface preview).
+if (window.self === window.top && getCookieByName('id_token')) {
   SessionManagement.init(sessionConfig);
 
   // These will be fetched from localStorage which is set by the auth service before redirect.
