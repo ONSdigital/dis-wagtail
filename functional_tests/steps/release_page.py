@@ -114,3 +114,30 @@ def check_selected_datasets_are_displayed(context: Context):
     for dataset in context.selected_datasets:
         expect(context.page.get_by_role("link", name=dataset["title"])).to_be_visible()
         expect(context.page.get_by_text(dataset["description"])).to_be_visible()
+
+
+@when("the user creates and populates a release calendar page")
+def create_page(context: Context):
+    navigate_to_release_page(context)
+    click_add_child_page(context)
+    enter_example_release_content(context)
+
+
+@when("the user adds an AM datetime")
+def add_am_datetime(context: Context):
+    context.page.get_by_label("Release date", exact=True).fill("2025-3-1 10:00")
+
+
+@then('the datetime is displayed with "am"')
+def display_am_datetime(context: Context):
+    expect(context.page.get_by_text("March 2025 10:00am")).to_be_visible()
+
+
+@when("the user adds an PM datetime")
+def add_pm_datetime(context: Context):
+    context.page.get_by_label("Release date", exact=True).fill("2025-3-1 17:00")
+
+
+@then('the datetime is displayed with "pm"')
+def display_pm_datetime(context: Context):
+    expect(context.page.get_by_text("March 2025 5:00pm")).to_be_visible()
