@@ -7,31 +7,6 @@ from wagtail.models import Page
 from .pagination import CustomLimitOffsetPagination
 from .serializers import ReleaseResourceSerializer, ResourceSerializer
 
-# class ResourceListView(APIView):
-#     """Provides the list of indexable Wagtail resources for external use.
-#     Only available if IS_EXTERNAL_ENV is True.
-#     """
-
-#     pagination_class = CustomLimitOffsetPagination
-
-#     def get(self, request, *args, **kwargs):
-#         if not settings.IS_EXTERNAL_ENV:
-#             return Response({"detail": "Not found."}, status=status.HTTP_404_NOT_FOUND)
-
-#         queryset = self.get_queryset()
-
-#         # Instantiate the paginator and paginate the queryset
-#         paginator = self.pagination_class()
-#         paginated_qs = paginator.paginate_queryset(queryset, request, view=self)
-
-#         # Serialize each page
-#         data = []
-#         for page in paginated_qs:
-#             data.append(self.serialize_page(page))
-
-#         # Return paginated response using DRF's helper
-#         return paginator.get_paginated_response(data)
-
 
 class ResourceListView(APIView):
     """Provides the list of indexable Wagtail resources for external use.
@@ -81,14 +56,3 @@ class ResourceListView(APIView):
         qs = [page for page in qs if page.specific_class.__name__ not in exclude_model_names]
 
         return qs
-
-    # def serialize_page(self, page):
-    #     """Minimal example returning the basic fields.
-    #     We will refine this with actual schema-based data and/or separate serializers.
-    #     """
-    #     return {
-    #         "uri": page.url_path,
-    #         "title": page.title,
-    #         "content_type": getattr(page, "search_index_content_type", "unknown"),
-    #         # Add more fields as required by your schema...
-    #     }
