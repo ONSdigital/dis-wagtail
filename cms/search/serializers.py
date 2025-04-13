@@ -8,6 +8,7 @@ class ResourceSerializer(serializers.Serializer):
     summary = serializers.SerializerMethodField()
     title = serializers.CharField()
     topics = serializers.SerializerMethodField()
+    release_date = serializers.SerializerMethodField(required=False)
 
     def get_uri(self, obj):
         return obj.url_path
@@ -22,6 +23,14 @@ class ResourceSerializer(serializers.Serializer):
             return obj.topic_ids
         return []
 
+    def get_release_date(self, obj):
+        """Return the ISO-formatted 'release_date' if present on the page,
+        else None.
+        """
+        if hasattr(obj, "release_date") and obj.release_date:
+            return obj.release_date.isoformat()
+        return None
+
 
 class ReleaseResourceSerializer(ResourceSerializer):
     release_date = serializers.DateTimeField(required=False)
@@ -29,6 +38,7 @@ class ReleaseResourceSerializer(ResourceSerializer):
     cancelled = serializers.SerializerMethodField()
     published = serializers.SerializerMethodField()
     date_changes = serializers.SerializerMethodField()
+    provisional_date = serializers.SerializerMethodField()
 
     def get_finalised(self, obj):
         return obj.status in ["CONFIRMED", "PROVISIONAL"]
@@ -49,3 +59,9 @@ class ReleaseResourceSerializer(ResourceSerializer):
                 for c in obj.changes_to_release_date
             ]
         return []
+
+    def get_provisional_date(self, obj):
+        """If the page has 'release_date_text', return it as 'provisional_date'."""
+        if hasattr(obj, "release_date_text") and obj.release_date_text:
+            return obj.release_date_text
+        return None
