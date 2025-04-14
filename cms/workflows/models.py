@@ -6,6 +6,8 @@ from wagtail.models import AbstractGroupApprovalTask
 if TYPE_CHECKING:
     from wagtail.models import TaskState
 
+    from cms.users.models import User
+
 
 class GroupReviewTask(AbstractGroupApprovalTask):
     """A special workflow task model aimed to prevent the last editor from approving their own work."""
@@ -21,6 +23,16 @@ class GroupReviewTask(AbstractGroupApprovalTask):
 
 class ReadyToPublishGroupTask(AbstractGroupApprovalTask):
     """Placeholder task model to use in the Bundle approval logic."""
+
+    def locked_for_user(self, obj, user: "User") -> bool:
+        # TODO: update lock message (needs PR to core)
+        if user.is_superuser:
+            return False
+
+        if getattr(obj, "active_bundle", None) is not None:
+            return True
+
+        return super().locked_for_user(obj, user)
 
     @classmethod
     def get_description(cls) -> str:
