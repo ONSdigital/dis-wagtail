@@ -76,29 +76,26 @@ class BasePublisherTests(TestCase, WagtailTestUtils):
             release_date=timezone.now() - timedelta(minutes=1),
         )
 
-    def setUp(self):
-        self.publisher = DummyPublisher(
+        cls.publisher = DummyPublisher(
             channel_created_or_updated="dummy-channel-created",
             channel_deleted="dummy-channel-deleted",
         )
 
-        self.client.force_login(self.superuser)
+        cls.root_page = Page.objects.get(id=1)
 
-        self.root_page = Page.objects.get(id=1)
+        cls.topic_a = Topic(id="topic-a", title="Topic A")
+        Topic.save_new(cls.topic_a)
 
-        self.topic_a = Topic(id="topic-a", title="Topic A")
-        Topic.save_new(self.topic_a)
+        cls.topic_b = Topic(id="topic-b", title="Topic B")
+        Topic.save_new(cls.topic_b)
 
-        self.topic_b = Topic(id="topic-b", title="Topic B")
-        Topic.save_new(self.topic_b)
-
-        self.info_page = InformationPage(title="My Info Page", summary="My info page summary")
-        self.root_page.add_child(instance=self.info_page)
-        self.info_page.save()
+        cls.info_page = InformationPage(title="My Info Page", summary="My info page summary")
+        cls.root_page.add_child(instance=cls.info_page)
+        cls.info_page.save()
 
         # Add topics to the information page
-        GenericPageToTaxonomyTopic.objects.create(page=self.info_page, topic=self.topic_a)
-        GenericPageToTaxonomyTopic.objects.create(page=self.info_page, topic=self.topic_b)
+        GenericPageToTaxonomyTopic.objects.create(page=cls.info_page, topic=cls.topic_a)
+        GenericPageToTaxonomyTopic.objects.create(page=cls.info_page, topic=cls.topic_b)
 
     @patch.object(DummyPublisher, "_publish", return_value=None)
     def test_publish_created_or_updated_calls_publish(self, mock_method):
@@ -441,8 +438,7 @@ class LogPublisherTests(TestCase):
     def setUpTestData(cls):
         cls.information_page = InformationPageFactory()
 
-    def setUp(self):
-        self.publisher = LogPublisher()
+        cls.publisher = LogPublisher()
 
     @patch.object(logging.Logger, "info")
     def test_publish_created_or_updated_logs(self, mock_logger_info):

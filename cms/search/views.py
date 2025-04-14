@@ -4,7 +4,9 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from wagtail.models import Page
 
-from .pagination import CustomLimitOffsetPagination
+from cms.settings.base import SEARCH_INDEX_EXCLUDED_PAGE_TYPES
+
+from .pagination import CustomPageNumberPagination
 from .serializers import ReleaseResourceSerializer, ResourceSerializer
 
 
@@ -13,7 +15,7 @@ class ResourceListView(APIView):
     Only available if IS_EXTERNAL_ENV is True.
     """
 
-    pagination_class = CustomLimitOffsetPagination
+    pagination_class = CustomPageNumberPagination
 
     def get(self, request, *args, **kwargs):
         if not settings.IS_EXTERNAL_ENV:
@@ -43,16 +45,7 @@ class ResourceListView(APIView):
         # all published pages
         qs = Page.objects.live().specific()
 
-        # exclude certain page types (adjust the model names to match your codebase)
-        exclude_model_names = [
-            "HomePage",
-            "ArticleSeriesPage",
-            "ReleaseCalendarIndex",
-            "ThemePage",
-            "TopicPage",
-            "Page",
-        ]
-
-        qs = [page for page in qs if page.specific_class.__name__ not in exclude_model_names]
+        # exclude pages we do not want to index
+        qs = [page for page in qs if page.specific_class.__name__ not in SEARCH_INDEX_EXCLUDED_PAGE_TYPES]
 
         return qs
