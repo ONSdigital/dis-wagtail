@@ -133,7 +133,7 @@ class BaseGroupPermissionTestCase(TestCase):
 
         cls.user_permissions = list(cls.user.user_permissions.all() | Permission.objects.filter(group__user=cls.user))
 
-    def check_and_remove_from_user_permissions(self, app, model, permission_type):
+    def check_and_remove_from_user_permissions_helper(self, app, model, permission_type) -> None:
         """Assert the user has the permission and if so remove it from the temporary user permission list."""
         self.assertTrue(self.user.has_perm(f"{app}.{permission_type}_{model}"))
         permission = Permission.objects.get(content_type__app_label=app, codename=f"{permission_type}_{model}")
@@ -202,9 +202,9 @@ class PublishingAdminPermissionsTestCase(BaseGroupPermissionTestCase):
 
     def test_publishing_admin_permissions(self):
         """Check that the Publishing Admin has all required permissions and not more."""
-        self.check_and_remove_from_user_permissions("wagtailadmin", "admin", "access")
+        self.check_and_remove_from_user_permissions_helper("wagtailadmin", "admin", "access")
 
-        self.check_and_remove_from_user_permissions("teams", "team", "view")
+        self.check_and_remove_from_user_permissions_helper("teams", "team", "view")
 
         # Snippet permissions (app, model, permission types)
         snippet_permissions = [
@@ -216,17 +216,17 @@ class PublishingAdminPermissionsTestCase(BaseGroupPermissionTestCase):
 
         for app, model, permission_types in snippet_permissions:
             for permission_type in permission_types:
-                self.check_and_remove_from_user_permissions(app, model, permission_type)
+                self.check_and_remove_from_user_permissions_helper(app, model, permission_type)
 
         for permission_type in [*WAGTAIL_PERMISSION_TYPES, "view"]:
-            self.check_and_remove_from_user_permissions("bundles", "bundle", permission_type)
+            self.check_and_remove_from_user_permissions_helper("bundles", "bundle", permission_type)
 
         for permission_type in WAGTAIL_PERMISSION_TYPES:
-            self.check_and_remove_from_user_permissions("wagtailredirects", "redirect", permission_type)
+            self.check_and_remove_from_user_permissions_helper("wagtailredirects", "redirect", permission_type)
 
-        self.check_and_remove_from_user_permissions("navigation", "navigationsettings", "change")
-        self.check_and_remove_from_user_permissions("core", "socialmediasettings", "change")
-        self.check_and_remove_from_user_permissions("wagtailcore", "logentry", "view")
+        self.check_and_remove_from_user_permissions_helper("navigation", "navigationsettings", "change")
+        self.check_and_remove_from_user_permissions_helper("core", "socialmediasettings", "change")
+        self.check_and_remove_from_user_permissions_helper("wagtailcore", "logentry", "view")
 
         # Check that there are no other unexpected permissions
         self.assertListEqual([], self.user_permissions)
@@ -262,12 +262,12 @@ class PublishingOfficerPermissionsTestCase(BaseGroupPermissionTestCase):
 
     def test_publishing_officer_permissions(self):
         """Check that the Publishing Officer has all required permissions but not more."""
-        self.check_and_remove_from_user_permissions("wagtailadmin", "admin", "access")
+        self.check_and_remove_from_user_permissions_helper("wagtailadmin", "admin", "access")
 
         for permission_type in [*WAGTAIL_PERMISSION_TYPES, "view"]:
-            self.check_and_remove_from_user_permissions("bundles", "bundle", permission_type)
+            self.check_and_remove_from_user_permissions_helper("bundles", "bundle", permission_type)
 
-        self.check_and_remove_from_user_permissions("teams", "team", "view")
+        self.check_and_remove_from_user_permissions_helper("teams", "team", "view")
 
         # Check that there are no other unexpected permissions
         self.assertListEqual([], self.user_permissions)
@@ -307,9 +307,9 @@ class ViewerPermissionsTestCase(BaseGroupPermissionTestCase):
 
     def test_viewer_permissions(self):
         """Check that the Viewer has all required permissions and not more."""
-        self.check_and_remove_from_user_permissions("wagtailadmin", "admin", "access")
+        self.check_and_remove_from_user_permissions_helper("wagtailadmin", "admin", "access")
 
-        self.check_and_remove_from_user_permissions("bundles", "bundle", "view")
+        self.check_and_remove_from_user_permissions_helper("bundles", "bundle", "view")
 
         # Check that there are no other unexpected permissions
         self.assertListEqual([], self.user_permissions)
