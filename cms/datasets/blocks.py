@@ -4,6 +4,7 @@ from urllib.parse import urlparse
 from django.core.exceptions import ValidationError
 from wagtail.blocks import (
     CharBlock,
+    DateBlock,
     StreamBlock,
     StreamBlockValidationError,
     StreamValue,
@@ -19,28 +20,7 @@ DatasetChooserBlock = dataset_chooser_viewset.get_block_class(
 )
 
 
-class ManualDatasetBlock(StructBlock):
-    title = CharBlock(required=True)
-    description = TextBlock(required=False)
-    url = URLBlock(required=True)
-
-    class Meta:
-        icon = "link"
-        template = "templates/components/streamfield/dataset_link_block.html"
-
-
-class DatasetStoryBlock(StreamBlock):
-    dataset_lookup = DatasetChooserBlock(
-        label="Lookup Dataset", template="templates/components/streamfield/dataset_link_block.html"
-    )
-    manual_link = ManualDatasetBlock(
-        required=False,
-        label="Manually Linked Dataset",
-    )
-
-    class Meta:
-        template = "templates/components/streamfield/datasets_block.html"
-
+class DatasetValidationMixin:
     def clean(self, value: StreamValue) -> StreamValue:
         cleaned_value = super().clean(value)
 
@@ -67,3 +47,50 @@ class DatasetStoryBlock(StreamBlock):
             raise StreamBlockValidationError(block_errors=block_errors)
 
         return cleaned_value
+
+
+class ManualDatasetBlock(StructBlock):
+    title = CharBlock(required=True)
+    description = TextBlock(required=False)
+    url = URLBlock(required=True)
+
+    class Meta:
+        icon = "link"
+        template = "templates/components/streamfield/dataset_link_block.html"
+
+
+class DatasetStoryBlock(DatasetValidationMixin, StreamBlock):
+    dataset_lookup = DatasetChooserBlock(
+        label="Lookup Dataset", template="templates/components/streamfield/dataset_link_block.html"
+    )
+    manual_link = ManualDatasetBlock(
+        required=False,
+        label="Manually Linked Dataset",
+    )
+
+    class Meta:
+        template = "templates/components/streamfield/datasets_block.html"
+
+
+class ManualRelatedDatasetBlock(StructBlock):
+    title = CharBlock(required=True)
+    url = URLBlock(required=True)
+    description = TextBlock(required=False)
+    released_on = DateBlock(required=False)
+    dataset_id = CharBlock(required=False)
+
+    class Meta:
+        icon = "link"
+
+
+class RelatedDatasetStoryBlock(DatasetValidationMixin, StreamBlock):
+    dataset_lookup = DatasetChooserBlock(
+        label="Lookup Dataset", template="templates/components/streamfield/dataset_link_block.html"
+    )
+    manual_link = ManualRelatedDatasetBlock(
+        required=False,
+        label="Manually Linked Dataset",
+    )
+
+    class Meta:
+        template = "templates/components/streamfield/datasets_block.html"

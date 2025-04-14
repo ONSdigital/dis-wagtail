@@ -128,7 +128,7 @@ def footer_menu_columns(
 
 
 @jinja2.pass_context
-def breadcrumbs(context: jinja2.runtime.Context, page: "Page") -> list[dict[str, object]]:
+def breadcrumbs(context: jinja2.runtime.Context, page: "Page", include_self: bool = False) -> list[dict[str, object]]:
     """Returns the breadcrumbs as a list of dictionaries for the given page."""
     breadcrumbs_list = []
     request = context.get("request")
@@ -139,4 +139,6 @@ def breadcrumbs(context: jinja2.runtime.Context, page: "Page") -> list[dict[str,
             breadcrumbs_list.append({"url": "/", "text": _("Home")})
         elif not getattr(ancestor_page, "exclude_from_breadcrumbs", False):
             breadcrumbs_list.append({"url": ancestor_page.get_url(request=request), "text": ancestor_page.title})
+    if include_self:
+        breadcrumbs_list.append({"url": page.get_url(request=request), "text": page.title})
     return breadcrumbs_list

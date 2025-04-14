@@ -14,6 +14,7 @@ from wagtail.fields import RichTextField
 from wagtail.models import Page
 from wagtail.search import index
 
+from cms.articles.enums import SortingChoices
 from cms.bundles.models import BundledPageMixin
 from cms.core.blocks import HeadlineFiguresBlock
 from cms.core.blocks.panels import CorrectionBlock, NoticeBlock
@@ -21,6 +22,7 @@ from cms.core.blocks.stream_blocks import SectionStoryBlock
 from cms.core.fields import StreamField
 from cms.core.forms import PageWithCorrectionsAdminForm
 from cms.core.models import BasePage
+from cms.datasets.blocks import RelatedDatasetStoryBlock
 from cms.taxonomy.mixins import GenericTaxonomyMixin
 
 if TYPE_CHECKING:
@@ -149,6 +151,9 @@ class StatisticalArticlePage(BundledPageMixin, RoutablePageMixin, BasePage):  # 
     corrections = StreamField([("correction", CorrectionBlock())], blank=True, null=True)
     notices = StreamField([("notice", NoticeBlock())], blank=True, null=True)
 
+    dataset_sorting = models.CharField(choices=SortingChoices.choices, default=SortingChoices.MANUAL, max_length=32)
+    datasets = StreamField(RelatedDatasetStoryBlock(), blank=True, default=list)
+
     content_panels: ClassVar[list["Panel"]] = [
         *BundledPageMixin.panels,
         MultiFieldPanel(
@@ -199,8 +204,14 @@ class StatisticalArticlePage(BundledPageMixin, RoutablePageMixin, BasePage):  # 
         FieldPanel("notices", icon="info-circle"),
     ]
 
+    related_data_panels: ClassVar[list["Panel"]] = [
+        "dataset_sorting",
+        FieldPanel("datasets", icon="table"),
+    ]
+
     additional_panel_tabs: ClassVar[list[tuple[list["Panel"], str]]] = [
-        (corrections_and_notices_panels, "Corrections and notices")
+        (corrections_and_notices_panels, "Corrections and notices"),
+        (related_data_panels, "Related data"),
     ]
 
     search_fields: ClassVar[list[index.BaseField]] = [
@@ -280,6 +291,58 @@ class StatisticalArticlePage(BundledPageMixin, RoutablePageMixin, BasePage):  # 
             request, context_overrides={"page": revision.as_object(), "latest_version_url": self.get_url(request)}
         )
 
+        return response
+
+    @property
+    def related_data_display_title(self):
+        return f"{_('All data related to')} {self.title}"
+
+    @path("related-data/")
+    def related_data(self, request: "HttpRequest") -> "TemplateResponse":
+        dataset_documents = []
+        for dataset in self.datasets:  # pylint: disable=not-an-iterable
+            if dataset.block_type == "manual_link":
+                metadata = {"object": {"text": "Dataset"}}
+                if released_on := dataset.value.get("released_on"):
+                    metadata.update(
+                        {
+                            "date": {
+                                "prefix": "Released on",
+                                "showPrefix": True,
+                                "iso": released_on.isoformat(),
+                                "short": released_on.strftime("%d %B %Y"),
+                            }
+                        }
+                    )
+                dataset_document = {
+                    "title": {"text": dataset.value["title"], "url": dataset.value["url"]},
+                    "metadata": metadata,
+                    "description": f"<p>{dataset.value['description']}</p>",
+                }
+            else:
+                dataset_document = {
+                    "title": {"text": dataset.value.title, "url": dataset.value.website_url},
+                    "metadata": {"object": {"text": "Dataset"}},
+                    "description": f"<p>{dataset.value.description}</p>",
+                }
+            dataset_documents.append(dataset_document)
+
+        paginator = Paginator(dataset_documents, per_page=settings.RELATED_DATASETS_PER_PAGE)
+
+        try:
+            paginated_datasets = paginator.page(request.GET.get("page", 1))
+            ons_pagination_url_list = [{"url": f"?page={n}"} for n in paginator.page_range]
+        except (EmptyPage, PageNotAnInteger) as e:
+            raise Http404 from e
+
+        response: TemplateResponse = self.render(
+            request,
+            context_overrides={
+                "paginated_datasets": paginated_datasets,
+                "ons_pagination_url_list": ons_pagination_url_list,
+            },
+            template="templates/pages/statistical_article_page--related_data.html",
+        )
         return response
 
     @property

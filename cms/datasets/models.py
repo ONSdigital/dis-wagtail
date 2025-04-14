@@ -87,7 +87,7 @@ class Dataset(models.Model):
 
     @property
     def url_path(self) -> str:
-        return f"/datasets/{self.namespace}/editions/{self.edition}/versions/{self.version}"
+        return f"datasets/{self.namespace}"
 
     @property
     def website_url(self) -> str:
