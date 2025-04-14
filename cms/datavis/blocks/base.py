@@ -114,6 +114,7 @@ class BaseVisualisationBlock(blocks.StructBlock):
         # Add template and visualisation context to support rendering
         context["config"] = self.get_component_config(value)
         context["annotations_values"] = self.get_annotations_config(value)
+        context["download"] = self.get_download_config(value)
         return context
 
     def get_component_config(self, value: "StructValue") -> dict[str, Any]:
@@ -121,9 +122,6 @@ class BaseVisualisationBlock(blocks.StructBlock):
         rows: list[list[str | int | float]] = value["table"].rows
 
         return {
-            "chart": {
-                "type": self.highcharts_chart_type,  # TODO: remove this once we upgrade to the latest version of the DS
-            },
             "legend": {
                 "enabled": value.get("show_legend", True),
             },
@@ -146,9 +144,7 @@ class BaseVisualisationBlock(blocks.StructBlock):
         # x-axis title default value is undefined. See
         # https://api.highcharts.com/highcharts/xAxis.title.text
         if (title := attrs.get("title")) and getattr(self, "supports_x_axis_title", False):
-            config["title"] = {
-                "text": title,
-            }
+            config["title"] = title
 
         if (tick_interval := attrs.get("tick_interval")) is not None:
             config["tickInterval"] = tick_interval
@@ -172,9 +168,7 @@ class BaseVisualisationBlock(blocks.StructBlock):
             # Highcharts y-axis title default value is "Values". Set to undefined to
             # disable. See https://api.highcharts.com/highcharts/yAxis.title.text
             title = attrs["title"] or None
-            config["title"] = {
-                "text": title,
-            }
+            config["title"] = title
 
         if (tick_interval := attrs.get("tick_interval")) is not None:
             config["tickInterval"] = tick_interval
@@ -228,7 +222,7 @@ class BaseVisualisationBlock(blocks.StructBlock):
                 }
 
             if getattr(self, "supports_markers", False):
-                item["marker"] = {"enabled": value.get("show_markers")}
+                item["marker"] = value.get("show_markers")
 
             # Allow subclasses to specify additional parameters for each series
             for key, val in getattr(self, "extra_series_attributes", {}).items():
@@ -243,6 +237,25 @@ class BaseVisualisationBlock(blocks.StructBlock):
 
             series.append(item)
         return series
+
+    def get_download_config(self, value: "StructValue") -> dict[str, Any]:
+        return {
+            "title": f"Download: {value['title'][:30]} ... ",  # TODO work on download metadata
+            "itemsList": [
+                {
+                    "text": "Download image (18KB)",
+                    "url": "xyz",
+                },
+                {
+                    "text": "Download CSV (25KB)",
+                    "url": "xyz",
+                },
+                {
+                    "text": "Download Excel (25KB)",
+                    "url": "xyz",
+                },
+            ],
+        }
 
     @cached_property
     def media(self) -> Media:

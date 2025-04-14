@@ -1,5 +1,4 @@
 import IframeResize from './components/iframe-resize';
-import HighchartsBaseChart from './components/highcharts-base-chart';
 
 import '../sass/main.scss';
 
@@ -10,5 +9,4 @@ function initComponent(ComponentClass) {
 
 document.addEventListener('DOMContentLoaded', () => {
   initComponent(IframeResize);
-  initComponent(HighchartsBaseChart);
 });
