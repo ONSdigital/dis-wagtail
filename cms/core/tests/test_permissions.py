@@ -133,7 +133,7 @@ class BaseGroupPermissionTestCase(TestCase):
 
         cls.user_permissions = list(cls.user.user_permissions.all() | Permission.objects.filter(group__user=cls.user))
 
-    def check_and_remove_from_user_permissions_helper(self, app, model, permission_type) -> None:
+    def check_and_remove_from_user_permissions_helper(self, app: str, model: str, permission_type: str) -> None:
         """Assert the user has the permission and if so remove it from the temporary user permission list."""
         self.assertTrue(self.user.has_perm(f"{app}.{permission_type}_{model}"))
         permission = Permission.objects.get(content_type__app_label=app, codename=f"{permission_type}_{model}")
