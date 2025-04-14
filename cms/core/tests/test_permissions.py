@@ -24,7 +24,7 @@ WAGTAIL_PAGE_PERMISSION_TYPES = ["add", "change", "bulk_delete", "lock", "publis
 class TestPermissions(TestCase):
     """Test edge cases for the mechanism used for adding permissions in the data migration."""
 
-    def test_raises_exception_when_app_doesnt_exist(self):
+    def test_raises_exception_when_app_not_found(self):
         """Check that an exception is raised when an app isn't registered."""
         app = "non_existent_app"
         model = "contactdetails"
@@ -35,7 +35,7 @@ class TestPermissions(TestCase):
         with self.assertRaises(LookupError):
             assign_permission_to_group(apps, group_name, permission_codename, app, model)
 
-    def test_raises_exception_when_model_doesnt_exist(self):
+    def test_raises_exception_when_model_not_found(self):
         """Check that an exception is raised when a model isn't registered in an app."""
         app = "core"
         model = "non_existent_model"
@@ -45,7 +45,7 @@ class TestPermissions(TestCase):
         with self.assertRaises(LookupError):
             assign_permission_to_group(apps, group_name, permission_codename, app, model)
 
-    def test_raises_exception_when_group_doesnt_exist(self):
+    def test_raises_exception_when_group_not_found(self):
         app = "core"
         model = "contactdetails"
         permission_codename = "add_contactdetails"
@@ -54,7 +54,7 @@ class TestPermissions(TestCase):
         with self.assertRaises(Group.DoesNotExist):
             assign_permission_to_group(apps, group_name, permission_codename, app, model)
 
-    def test_user_can_add_model_when_has_permission(self):
+    def test_user_can_add_model_with_permission(self):
         """Check that the user can add a Contact Details snippet when they have the required permission."""
         # the Publishing Admin group has the core.add_contactdetails permission
         group_name = settings.PUBLISHING_ADMINS_GROUP_NAME
@@ -85,7 +85,7 @@ class TestPermissions(TestCase):
         contact_details = ContactDetails.objects.get(name="Contact details")
         self.assertIsNotNone(contact_details)
 
-    def test_user_cannot_add_model_when_doesnt_have_permission(self):
+    def test_user_cannot_add_model_without_permission(self):
         """Check that the user cannot add a Contact Details snippet when they don't have the required permission."""
         # the Viewer group doesn't have the core.add_contactdetails permission
         group_name = settings.VIEWERS_GROUP_NAME
