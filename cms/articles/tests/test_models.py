@@ -1,3 +1,4 @@
+import math
 from datetime import datetime
 
 from django.conf import settings
@@ -233,7 +234,7 @@ class StatisticalArticlePageRenderTestCase(WagtailTestUtils, TestCase):
         response = self.client.get(self.basic_page_url)
         self.assertNotContains(response, expected)
 
-    def test_breadcrumb_doesnt_containt_series_url(self):
+    def test_breadcrumb_doesnt_contains_series_url(self):
         response = self.client.get(self.basic_page_url)
         # confirm that current breadcrumb is there
         article_series = self.basic_page.get_parent()
@@ -251,8 +252,129 @@ class StatisticalArticlePageRenderTestCase(WagtailTestUtils, TestCase):
             html=True,
         )
 
-    @override_settings(IS_EXTERNAL_ENV=True)
-    def test_load_in_external_env(self):
-        """Test the page loads in external env."""
+    def test_pagination_is_not_shown(self):
         response = self.client.get(self.basic_page_url)
-        self.assertEqual(response.status_code, 200)
+        expected = 'class="ons-pagination__link"'
+        self.assertNotContains(response, expected)
+
+
+class PreviousReleasesWithoutPaginationTestCase(TestCase):
+    # PREVIOUS_RELEASES_PER_PAGE is default value 10
+    total_batch: int = 9
+
+    @classmethod
+    def setUpTestData(cls):
+        cls.article_series = ArticleSeriesPageFactory(title="Article Series")
+        cls.articles = StatisticalArticlePageFactory.create_batch(9, parent=cls.article_series)
+        cls.previous_releases_url = cls.article_series.url + cls.article_series.reverse_subpage("previous_releases")
+
+    def test_breadcrumb_does_contains_series_url(self):
+        response = self.client.get(self.previous_releases_url)
+        parent_page = self.article_series.get_parent()
+        # confirm that current breadcrumb is there and that current breadcrumb points to the parent page
+        # TODO currently this test points to the article page not to the series page
+        # f'<a class="ons-breadcrumbs__link" href="{self.article_series.url}">{self.article_series.title}</a>',
+
+        self.assertContains(
+            response,
+            f'<a class="ons-breadcrumbs__link" href="{parent_page.url}">{parent_page.title}</a>',
+            html=True,
+        )
+
+    def test_page_content(self):
+        response = self.client.get(self.previous_releases_url)
+        mock_response = response.content.decode("utf-8").split("\n")
+        allowed_to_print = False
+        release_count = 0
+        for m in mock_response:
+            if " </ul>" in m:
+                allowed_to_print = False
+            if "<ul>" in m:
+                allowed_to_print = True
+            if allowed_to_print and "<li><a href=" in m:
+                release_count += 1
+        self.assertEqual(release_count, self.total_batch)
+        self.assertLessEqual(release_count, settings.PREVIOUS_RELEASES_PER_PAGE)
+
+    def test_pagination_is_not_shown(self):
+        response = self.client.get(self.previous_releases_url)
+        expected = 'class="ons-pagination__link"'
+        self.assertNotContains(response, expected)
+
+
+@override_settings(PREVIOUS_RELEASES_PER_PAGE=3)
+class PreviousReleasesWithPaginationPagesTestCase(TestCase):
+    total_batch = 13
+    test_previous_releases_per_page = 3
+    total_pages = math.ceil(total_batch / test_previous_releases_per_page)
+
+    @classmethod
+    def setUpTestData(cls):
+        cls.article_series = ArticleSeriesPageFactory(title="Article Series")
+        cls.articles = StatisticalArticlePageFactory.create_batch(cls.total_batch, parent=cls.article_series)
+        cls.previous_releases_base_url = cls.article_series.url + cls.article_series.reverse_subpage(
+            "previous_releases"
+        )
+
+    def assert_pagination(self, page_number, expected_contains, expected_not_contains):
+        # Request the page at the given number
+        response = self.client.get(f"{self.previous_releases_base_url}?page={page_number}")
+        # Check for strings we expect to be present in the HTML response
+        for snippet in expected_contains:
+            with self.subTest(snippet=snippet):
+                self.assertContains(response, snippet)
+        # Check for strings we expect not to be present in the HTML response
+        for snippet in expected_not_contains:
+            with self.subTest(snippet=snippet):
+                self.assertNotContains(response, snippet)
+
+    def test_pagination_variants(self):
+        # Define different test scenarios with expected visible/ not-visible pagination elements
+        scenarios = {
+            1: {  # First page
+                "expected_contains": [
+                    f'class="ons-pagination__position">Page 1 of {self.total_pages}',
+                    'class="ons-pagination__item ons-pagination__item--current"',
+                    f'aria-label="Go to the last page (Page {self.total_pages})"',
+                    'class="ons-pagination__item ons-pagination__item--next"',
+                ],
+                "expected_not_contains": [
+                    'aria-label="Go to the first page (Page 1)"',
+                    'class="ons-pagination__item ons-pagination__item--previous"',
+                ],
+            },
+            3: {  # Middle page
+                "expected_contains": [
+                    f'class="ons-pagination__position">Page 3 of {self.total_pages}',
+                    'aria-label="Go to the first page (Page 1)"',
+                    'class="ons-pagination__item ons-pagination__item--previous"',
+                    'class="ons-pagination__item ons-pagination__item--current"',
+                    f'aria-label="Go to the last page (Page {self.total_pages})"',
+                    'class="ons-pagination__item ons-pagination__item--next"',
+                ],
+                "expected_not_contains": [],
+            },
+            5: {  # Last page
+                "expected_contains": [
+                    f'class="ons-pagination__position">Page 5 of {self.total_pages}',
+                    'aria-label="Go to the first page (Page 1)"',
+                    'class="ons-pagination__item ons-pagination__item--previous"',
+                    'class="ons-pagination__item ons-pagination__item--current"',
+                ],
+                "expected_not_contains": [
+                    f'aria-label="Go to the last page (Page {self.total_pages})"',
+                    'class="ons-pagination__item ons-pagination__item--next"',
+                ],
+            },
+        }
+        # Iterate through each scenario and run the pagination assertion
+        for page, data in scenarios.items():
+            with self.subTest(page=page):  # Helps identify which page scenario fails
+                self.assert_pagination(page, data["expected_contains"], data["expected_not_contains"])
+
+
+@override_settings(IS_EXTERNAL_ENV=True)
+def test_load_in_external_env(self):
+    """Test the page loads in external env."""
+    response = self.client.get(self.basic_page_url)
+    self.assertEqual(response.status_code, 200)

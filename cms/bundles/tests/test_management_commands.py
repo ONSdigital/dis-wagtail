@@ -170,7 +170,9 @@ class PublishBundlesCommandTestCase(TestCase):
             self.call_command()
 
         # Check error was logged
-        mock_logger.exception.assert_called_with("Publish failed bundle=%d", self.bundle.id)
+        mock_logger.exception.assert_called_with(
+            "Publish failed", extra={"bundle_id": self.bundle.id, "event": "publish_failed"}
+        )
 
         # Check bundle status wasn't changed due to error
         self.bundle.refresh_from_db()
