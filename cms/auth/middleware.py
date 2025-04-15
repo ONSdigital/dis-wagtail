@@ -69,6 +69,7 @@ class ONSAuthMiddleware(AuthenticationMiddleware):
 
         # If a user is already authenticated, verify if the token's user matches.
         if request.user.is_authenticated:
+            # Check use jti and session jti matches.
             user = User.objects.filter(user_id=id_username).first()
             if user == request.user:
                 return  # User already authenticated and validated

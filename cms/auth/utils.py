@@ -58,7 +58,6 @@ def validate_jwt(token: str, token_type: str) -> dict | None:
     return None
 
 
-# TODO Rename this here and in `validate_jwt`
 def _validate_jwt(token: str, *, additional_fields: Iterable, token_type: str):
     header = get_unverified_header(token)
     kid = header.get("kid")
