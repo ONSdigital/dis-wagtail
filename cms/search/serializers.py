@@ -33,7 +33,7 @@ class ResourceSerializer(serializers.Serializer):
 
 
 class ReleaseResourceSerializer(ResourceSerializer):
-    release_date = serializers.DateTimeField(required=False)
+    release_date = serializers.SerializerMethodField()
     finalised = serializers.SerializerMethodField()
     cancelled = serializers.SerializerMethodField()
     published = serializers.SerializerMethodField()
@@ -48,6 +48,11 @@ class ReleaseResourceSerializer(ResourceSerializer):
 
     def get_published(self, obj):
         return obj.status == "PUBLISHED"
+
+    def get_release_date(self, obj):
+        if hasattr(obj, "release_date") and obj.release_date:
+            return obj.release_date.isoformat()
+        return None
 
     def get_date_changes(self, obj):
         if hasattr(obj, "changes_to_release_date") and obj.changes_to_release_date:

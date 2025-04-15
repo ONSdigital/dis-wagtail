@@ -26,10 +26,9 @@ class ResourceListView(APIView):
         paginator = self.pagination_class()
         paginated_qs = paginator.paginate_queryset(queryset, request, view=self)
 
-        # Distinguish between "release" content types vs. other
+        # Distinguish between "release" content types vs other
         data = []
         for page in paginated_qs:
-            # breakpoint()
             if getattr(page, "search_index_content_type", None) == "release":
                 serializer = ReleaseResourceSerializer(page)
             else:

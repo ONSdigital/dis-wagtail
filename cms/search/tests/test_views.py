@@ -65,6 +65,7 @@ class SearchResourcesViewTests(TestCase):
         )
 
         cls.index_page = cls.included_pages[0].get_parent()
+        cls.article_series = cls.included_pages[3].get_parent()
 
         cls.topic_a = Topic(id="topic-a", title="Topic A")
         Topic.save_new(cls.topic_a)
@@ -73,12 +74,6 @@ class SearchResourcesViewTests(TestCase):
         Topic.save_new(cls.topic_b)
 
         cls.info_page = InformationPage(title="My Info Page", summary="My info page summary")
-        cls.index_page.add_child(instance=cls.info_page)
-        cls.info_page.save()
-
-        # Add topics to the information page
-        GenericPageToTaxonomyTopic.objects.create(page=cls.info_page, topic=cls.topic_a)
-        GenericPageToTaxonomyTopic.objects.create(page=cls.info_page, topic=cls.topic_b)
 
     def call_view_as_external(self, url):
         with override_settings(IS_EXTERNAL_ENV=True):
@@ -95,7 +90,8 @@ class SearchResourcesViewTests(TestCase):
             expected_type = EXPECTED_CONTENT_TYPES[type(page).__name__]
 
             matching_page = next((item for item in data["results"] if item.get("uri") == page.url_path), None)
-            self.assertIsNotNone(matching_page)
+
+            self.assertIsNotNone(matching_page, f"Expected page with URI {page.url_path} to be present in the results")
 
             self.assertEqual(matching_page.get("title"), page.title)
             self.assertEqual(matching_page.get("content_type"), expected_type)
@@ -103,6 +99,13 @@ class SearchResourcesViewTests(TestCase):
 
     def test_resources_result_information_page_with_topics(self):
         """InformationPage with topics should include topic titles in the results."""
+        self.index_page.add_child(instance=self.info_page)
+        self.info_page.save()
+
+        # Add topics to the information page
+        GenericPageToTaxonomyTopic.objects.create(page=self.info_page, topic=self.topic_a)
+        GenericPageToTaxonomyTopic.objects.create(page=self.info_page, topic=self.topic_b)
+
         response = self.call_view_as_external("/v1/resources/")
         self.assertEqual(response.status_code, 200, "Expected 200 OK from /v1/resources/")
         data = json.loads(response.content)
@@ -110,26 +113,260 @@ class SearchResourcesViewTests(TestCase):
         expected_type = EXPECTED_CONTENT_TYPES[type(self.info_page).__name__]
 
         matching_page = next((item for item in data["results"] if item.get("uri") == self.info_page.url_path), None)
-        self.assertIsNotNone(matching_page)
+
+        self.assertIsNotNone(
+            matching_page, f"Expected page with URI {self.info_page.url_path} to be present in the results"
+        )
 
         self.assertEqual(matching_page.get("title"), self.info_page.title)
         self.assertEqual(matching_page.get("content_type"), expected_type)
         self.assertEqual(matching_page.get("summary"), self.info_page.summary)
         self.assertEqual(matching_page.get("topics"), [self.topic_a.id, self.topic_b.id])
 
-    # def test_resources_result_release_page_provisional_confirmed(self):
+    def test_resources_result_release_page_provisional_confirmed(self):
+        """Ensure that for a release-type page, release-specific fields are included in the results."""
+        release_calendar_pages = [
+            self.release_calendar_page_provisional,
+            self.release_calendar_page_confirmed,
+        ]
 
-    # def test_resources_result_release_date_exists_provisional_date_absent(self):
+        response = self.call_view_as_external("/v1/resources/")
+        self.assertEqual(response.status_code, 200, "Expected 200 OK from /v1/resources/")
+        data = json.loads(response.content)
+        self.assertIn("results", data, "Response JSON should contain 'results' list")
 
-    # def test_resources_result_provisional_date_exists_when_release_date_absent(self):
+        for page in release_calendar_pages:
+            expected_type = EXPECTED_CONTENT_TYPES[type(page).__name__]
 
-    # def test_resources_result_release_page_confirmed_date_change(self):
+            matching_page = next((item for item in data["results"] if item.get("uri") == page.url_path), None)
 
-    # def test_resources_result_release_page_published(self):
+            self.assertIsNotNone(matching_page, f"Expected page with URI {page.url_path} to be present in the results")
 
-    # def test_resources_result_release_page_cancelled(self):
+            self.assertEqual(matching_page.get("content_type"), expected_type)
+            self.assertEqual(matching_page.get("title"), page.title)
+            self.assertEqual(matching_page.get("summary"), page.summary)
+            self.assertEqual(matching_page.get("uri"), page.url_path)
 
-    # def test_resources_article_page_with_inherited_topics(self):
+            self.assertIsNotNone(matching_page.get("release_date"), "Release date should be present for release pages")
+            self.assertEqual(matching_page.get("release_date"), page.release_date.isoformat())
+
+            self.assertIn("finalised", matching_page)
+            self.assertIn("cancelled", matching_page)
+            self.assertIn("published", matching_page)
+
+            self.assertTrue(matching_page.get("finalised"), "Finalised should be True for provisional/confirmed pages")
+            self.assertFalse(
+                matching_page.get("published"), "Published should be False for provisional/confirmed pages"
+            )
+            self.assertFalse(
+                matching_page.get("cancelled"), "Cancelled should be False for provisional/confirmed pages"
+            )
+
+    def test_resources_result_release_date_exists_provisional_date_absent(self):
+        """Ensure that if release_date exists, provisional_date should not exist."""
+        page = self.release_calendar_page_confirmed
+        response = self.call_view_as_external("/v1/resources/")
+        self.assertEqual(response.status_code, 200, "Expected 200 OK from /v1/resources/")
+        data = json.loads(response.content)
+        self.assertIn("results", data, "Response JSON should contain 'results' list")
+
+        matching_page = next((item for item in data["results"] if item.get("uri") == page.url_path), None)
+        self.assertIsNotNone(matching_page, f"Expected page with URI {page.url_path} to be present in the results")
+
+        expected_type = EXPECTED_CONTENT_TYPES[type(page).__name__]
+        self.assertEqual(matching_page["content_type"], expected_type)
+        self.assertEqual(matching_page["title"], page.title)
+        self.assertEqual(matching_page["summary"], page.summary)
+        self.assertEqual(matching_page["uri"], page.url_path)
+
+        # Check release_date exists
+        self.assertIsNotNone(matching_page.get("release_date"), "release_date should exist for this page")
+        self.assertEqual(matching_page["release_date"], page.release_date.isoformat())
+
+        # Check provisional_date does not exist
+        self.assertIsNone(
+            matching_page.get("provisional_date"), "provisional_date should not exist if release_date exists"
+        )
+
+    def test_resources_result_provisional_date_exists_when_release_date_absent(self):
+        """Ensure that if release_date is absent, provisional_date should exist and have a value."""
+        page = ReleaseCalendarPageFactory(
+            status=ReleaseStatus.PROVISIONAL,
+            release_date=None,
+            release_date_text="Provisional release date text",
+        )
+
+        response = self.call_view_as_external("/v1/resources/")
+        self.assertEqual(response.status_code, 200, "Expected 200 OK from /v1/resources/")
+        data = json.loads(response.content)
+        self.assertIn("results", data, "Response JSON should contain 'results' list")
+
+        matching_page = next((item for item in data["results"] if item.get("uri") == page.url_path), None)
+        self.assertIsNotNone(matching_page, f"Expected page with URI {page.url_path} to be present in the results")
+
+        expected_type = EXPECTED_CONTENT_TYPES[type(page).__name__]
+        self.assertEqual(matching_page["content_type"], expected_type)
+        self.assertEqual(matching_page["title"], page.title)
+        self.assertEqual(matching_page["summary"], page.summary)
+        self.assertEqual(matching_page["uri"], page.url_path)
+
+        # Check release_date is absent
+        self.assertIsNone(matching_page.get("release_date"), "release_date should be None for this page")
+
+        # Check provisional_date exists and has the correct value
+        self.assertIsNotNone(
+            matching_page.get("provisional_date"), "provisional_date should exist if release_date is absent"
+        )
+        self.assertEqual(matching_page["provisional_date"], page.release_date_text)
+
+    def test_resources_result_release_page_confirmed_date_change(self):
+        """Ensure that for a release-type page, release-specific fields get added."""
+        page = self.release_calendar_page_confirmed
+        page.changes_to_release_date = [
+            {
+                "type": "date_change_log",
+                "value": {"previous_date": timezone.now() - timedelta(days=5), "reason_for_change": "Reason 1"},
+            },
+            {
+                "type": "date_change_log",
+                "value": {"previous_date": timezone.now() - timedelta(days=10), "reason_for_change": "Reason 2"},
+            },
+            {
+                "type": "date_change_log",
+                "value": {"previous_date": timezone.now() - timedelta(days=15), "reason_for_change": "Reason 3"},
+            },
+        ]
+        page.save()
+
+        response = self.call_view_as_external("/v1/resources/")
+        self.assertEqual(response.status_code, 200, "Expected 200 OK from /v1/resources/")
+        data = json.loads(response.content)
+        self.assertIn("results", data, "Response JSON should contain 'results' list")
+
+        matching_page = next((item for item in data["results"] if item.get("uri") == page.url_path), None)
+        self.assertIsNotNone(matching_page, f"Expected page with URI {page.url_path} to be present in the results")
+
+        expected_type = EXPECTED_CONTENT_TYPES[type(page).__name__]
+        self.assertEqual(matching_page["content_type"], expected_type)
+        self.assertEqual(matching_page["title"], page.title)
+        self.assertEqual(matching_page["summary"], page.summary)
+        self.assertEqual(matching_page["uri"], page.url_path)
+
+        self.assertIsNotNone(matching_page["release_date"], "release_date should exist for this page")
+        self.assertEqual(matching_page["release_date"], page.release_date.isoformat())
+
+        self.assertIn("finalised", matching_page)
+        self.assertIn("cancelled", matching_page)
+        self.assertIn("published", matching_page)
+
+        self.assertTrue(matching_page["finalised"], "Finalised should be True for confirmed pages")
+        self.assertFalse(matching_page["published"], "Published should be False for confirmed pages")
+        self.assertFalse(matching_page["cancelled"], "Cancelled should be False for confirmed pages")
+
+        self.assertIn("date_changes", matching_page, "date_changes should be present in the results")
+        self.assertEqual(len(matching_page["date_changes"]), 3, "Expected 3 date changes in the results")
+
+        for i, date_change in enumerate(matching_page["date_changes"]):
+            # The test only checks string equality at the microsecond level,
+            # any slight storage/serialization difference can make the test fail
+            # The fix is her is to compare datetimes in a way that ignores microseconds
+            # so we do not rely on real microsecond precision.
+            api_dt = timezone.datetime.fromisoformat(date_change["previous_date"])
+            expected_page_dt = page.changes_to_release_date[i].value["previous_date"]
+
+            self.assertEqual(date_change["change_notice"], page.changes_to_release_date[i].value["reason_for_change"])
+            self.assertEqual(
+                api_dt.replace(microsecond=0),
+                expected_page_dt.replace(microsecond=0),
+                "Expected date change to match the page's date change",
+            )
+
+    def test_resources_result_release_page_published(self):
+        """Ensure that for a release-type page, release-specific fields get added."""
+        page = self.release_calendar_page_published
+
+        response = self.call_view_as_external("/v1/resources/")
+        self.assertEqual(response.status_code, 200, "Expected 200 OK from /v1/resources/")
+        data = json.loads(response.content)
+        self.assertIn("results", data, "Response JSON should contain 'results' list")
+
+        matching_page = next((item for item in data["results"] if item.get("uri") == page.url_path), None)
+        self.assertIsNotNone(matching_page, f"Expected page with URI {page.url_path} to be present in the results")
+
+        expected_type = EXPECTED_CONTENT_TYPES[type(page).__name__]
+        self.assertEqual(matching_page["content_type"], expected_type)
+        self.assertEqual(matching_page["title"], page.title)
+        self.assertEqual(matching_page["summary"], page.summary)
+        self.assertEqual(matching_page["uri"], page.url_path)
+
+        self.assertIsNotNone(matching_page["release_date"], "release_date should exist for this page")
+        self.assertEqual(matching_page["release_date"], page.release_date.isoformat())
+
+        self.assertIn("finalised", matching_page)
+        self.assertIn("cancelled", matching_page)
+        self.assertIn("published", matching_page)
+
+        self.assertFalse(matching_page["finalised"], "Finalised should be False for published pages")
+        self.assertTrue(matching_page["published"], "Published should be True for published pages")
+        self.assertFalse(matching_page["cancelled"], "Cancelled should be False for published pages")
+
+    def test_resources_result_release_page_cancelled(self):
+        """Ensure that for a release-type page, release-specific fields get added."""
+        page = self.release_calendar_page_cancelled
+
+        response = self.call_view_as_external("/v1/resources/")
+        self.assertEqual(response.status_code, 200, "Expected 200 OK from /v1/resources/")
+        data = json.loads(response.content)
+        self.assertIn("results", data, "Response JSON should contain 'results' list")
+
+        matching_page = next((item for item in data["results"] if item.get("uri") == page.url_path), None)
+        self.assertIsNotNone(matching_page, f"Expected page with URI {page.url_path} to be present in the results")
+
+        expected_type = EXPECTED_CONTENT_TYPES[type(page).__name__]
+        self.assertEqual(matching_page["content_type"], expected_type)
+        self.assertEqual(matching_page["title"], page.title)
+        self.assertEqual(matching_page["summary"], page.summary)
+        self.assertEqual(matching_page["uri"], page.url_path)
+
+        self.assertIsNotNone(matching_page["release_date"], "release_date should exist for this page")
+        self.assertEqual(matching_page["release_date"], page.release_date.isoformat())
+
+        self.assertIn("finalised", matching_page)
+        self.assertIn("cancelled", matching_page)
+        self.assertIn("published", matching_page)
+
+        self.assertFalse(matching_page["finalised"], "Finalised should be False for cancelled pages")
+        self.assertFalse(matching_page["published"], "Published should be False for cancelled pages")
+        self.assertTrue(matching_page["cancelled"], "Cancelled should be True for cancelled pages")
+
+    def test_resources_article_page_with_inherited_topics(self):
+        """Ensure that the article page contains topics inherited from the parent article series."""
+        GenericPageToTaxonomyTopic.objects.create(page=self.article_series, topic=self.topic_a)
+        GenericPageToTaxonomyTopic.objects.create(page=self.article_series, topic=self.topic_b)
+
+        # Create a StatisticalArticlePage under the ArticleSeriesPage
+        self.article_page = StatisticalArticlePageFactory(
+            parent=self.article_series, title="Statistical Article", summary="Article summary"
+        )
+
+        response = self.call_view_as_external("/v1/resources/")
+        self.assertEqual(response.status_code, 200, "Expected 200 OK from /v1/resources/")
+        data = json.loads(response.content)
+        self.assertIn("results", data, "Response JSON should contain 'results' list")
+
+        matching_page = next((item for item in data["results"] if item.get("uri") == self.article_page.url_path), None)
+        self.assertIsNotNone(
+            matching_page, f"Expected page with URI {self.article_page.url_path} to be present in the results"
+        )
+
+        expected_type = EXPECTED_CONTENT_TYPES[type(self.article_page).__name__]
+        self.assertEqual(matching_page["content_type"], expected_type)
+        self.assertEqual(matching_page["title"], self.article_page.title)
+        self.assertEqual(matching_page["summary"], self.article_page.summary)
+        self.assertEqual(matching_page["uri"], self.article_page.url_path)
+
+        # Ensure the topics are inherited from the parent ArticleSeriesPage
+        self.assertEqual(matching_page["topics"], [self.topic_a.id, self.topic_b.id])
 
     def test_resources_excludes_non_indexable_pages(self):
         """Non-indexable pages (ArticleSeries, Home, ReleaseCalendarIndex, Theme, Topic)
@@ -145,121 +382,6 @@ class SearchResourcesViewTests(TestCase):
             expected_uri = page.url_path
             matching_page = next((item for item in data["results"] if item.get("uri") == expected_uri), None)
             self.assertIsNone(matching_page, f"Expected page with URI {expected_uri} to NOT be present in the results")
-
-    # def test_resources_result_structure_and_fields(self):
-    #     """Each result should contain the expected fields per the search API contract."""
-    #     # Create one example page of each main type to inspect fields
-    #     release = ReleaseCalendarPageFactory(title="Release Fields Test")
-    #     release.finalised = False
-    #     release.published = False
-    #     release.cancelled = False
-    #     release.release_date = "2025-03-01T00:00:00Z"
-    #     release.provisional_date = "2025-04-01T00:00:00Z"  # simulate a provisional future date
-    #     release.save()
-    #     methodology = MethodologyPageFactory(title="Methodology Fields Test", release_date="2024-12-12T00:00:00Z")
-    #     info = InformationPageFactory(title="Static Fields Test")
-
-    #     # Optionally assign a topic to one of them for topic field test (will also test separately below)
-    #     topic_page = None
-    #     try:
-    #         theme = ThemePageFactory(title="Health")
-    #         topic_page = TopicPageFactory(title="Nutrition", parent=theme)
-    #         # Assign the topic to the release page (assuming a ManyToMany relation like release.topics)
-    #         if hasattr(release, "topics"):
-    #             release.topics.add(topic_page)
-    #             release.save()
-    #     except Exception:
-    #         # If topic assignment fails (perhaps due to model differences), we'll handle in separate topic test
-    #         topic_page = None
-
-    #     response = self.client.get("/v1/resources/")
-    #     data = json.loads(response.content)
-    #     self.assertEqual(response.status_code, 200)
-    #     results = data.get("results", [])
-    #     # Find our specific pages in results
-    #     release_item = next((item for item in results if item.get("title") == "Release Fields Test"), None)
-    #     meth_item = next((item for item in results if item.get("title") == "Methodology Fields Test"), None)
-    #     info_item = next((item for item in results if item.get("title") == "Static Fields Test"), None)
-    #     self.assertIsNotNone(release_item, "Release page should be in results")
-    #     self.assertIsNotNone(meth_item, "Methodology page should be in results")
-    #     self.assertIsNotNone(info_item, "Static page should be in results")
-
-    #     # Common fields present in all
-    #     for item in (release_item, meth_item, info_item):
-    #         for field in ("title", "summary", "uri", "type"):
-    #             self.assertIn(field, item, f"Every result item should have '{field}' field")
-
-    #     # Check release-specific fields
-    #     # Release should have release_date, finalised, published, cancelled, date_changes, provisional_date
-    #     for field in ("release_date", "finalised", "published", "cancelled", "date_changes"):
-    #         self.assertIn(field, release_item, f"Release result missing '{field}'")
-    #     # provisional_date should be present because we set one
-    #     self.assertIn("provisional_date", release_item, "Release result missing 'provisional_date'")
-    #     # Verify the values match what was set
-    #     self.assertEqual(release_item["finalised"], False)
-    #     self.assertEqual(release_item["published"], False)
-    #     self.assertEqual(release_item["cancelled"], False)
-    #     self.assertEqual(release_item["release_date"], "2025-03-01T00:00:00Z")
-    #     self.assertEqual(release_item.get("provisional_date"), "2025-04-01T00:00:00Z")
-    #     # date_changes likely an empty list since none were explicitly added
-    #     self.assertIn("date_changes", release_item)
-    #     self.assertIsInstance(release_item["date_changes"], list)
-    #     # (If date_changes were added, we would verify their structure here)
-
-    #     # Check that methodology has release_date but not release-only extras
-    #     self.assertIn("release_date", meth_item, "Methodology result should have 'release_date'")
-    #     self.assertNotIn("finalised", meth_item, "Methodology result should not have 'finalised'")
-    #     self.assertNotIn("published", meth_item, "Methodology result should not have 'published'")
-    #     self.assertNotIn("cancelled", meth_item, "Methodology result should not have 'cancelled'")
-    #     self.assertNotIn("provisional_date", meth_item, "Methodology result should not have 'provisional_date'")
-    #     self.assertNotIn("date_changes", meth_item, "Methodology result should not have 'date_changes'")
-
-    #     # Check that static page has no release_date or release fields (assuming static pages don't have those)
-    #     self.assertNotIn("release_date", info_item, "Static page result should not have 'release_date'")
-    #     self.assertNotIn("finalised", info_item, "Static page result should not have 'finalised'")
-    #     self.assertNotIn("published", info_item, "Static page result should not have 'published'")
-    #     self.assertNotIn("cancelled", info_item, "Static page result should not have 'cancelled'")
-    #     self.assertNotIn("provisional_date", info_item, "Static page result should not have 'provisional_date'")
-    #     self.assertNotIn("date_changes", info_item, "Static page result should not have 'date_changes'")
-
-    #     # If topic was assigned to release, verify topics field
-    #     if topic_page:
-    #         self.assertIn("topics", release_item, "Topics field should be present when topics are assigned")
-    #         self.assertIsInstance(release_item["topics"], list)
-    #         self.assertIn("Nutrition", release_item["topics"], "Assigned topic name should appear in topics list")
-
-    # def test_resources_includes_topics_in_results(self):
-    #     """Topics assigned to pages should be reflected in the results."""
-    #     # Create a theme and topic, then a page with that topic.
-    #     theme = ThemePageFactory(title="Population")
-    #     topic = TopicPageFactory(title="Census", parent=theme)
-    #     # Create an indexable page and assign the topic (if the page model has a topics relation)
-    #     page = InformationPageFactory(title="Topic Test Page")
-    #     if hasattr(page, "topics"):
-    #         page.topics.add(topic)
-    #         page.save()
-    #     else:
-    #         # If InformationPage does not have topics, use a release or methodology page for this test
-    #         page = ReleaseCalendarPageFactory(
-    #             title="Topic Test Release",
-    #             topics=[topic] if "topics" in ReleaseCalendarPageFactory._meta.model.__dict__ else None,
-    #         )
-    #         # Ensure it's published
-    #         page.release_date = "2025-05-01T00:00:00Z"
-    #         page.save()
-    #         if not hasattr(page, "topics"):
-    #             # If even release doesn't have a topics field (unlikely), skip test
-    #             self.skipTest("No topics field available to test topic inclusion.")
-
-    #     response = self.client.get("/v1/resources")
-    #     data = json.loads(response.content)
-    #     result_item = next((item for item in data.get("results", []) if item.get("title") == page.title), None)
-    #     self.assertIsNotNone(result_item, "The page with topics should be present in results")
-    #     # The topics field should include the topic's title
-    #     self.assertIn("topics", result_item, "Result item should have 'topics' key")
-    #     topics_list = result_item["topics"]
-    #     self.assertIsInstance(topics_list, list, "Topics field should be a list")
-    #     self.assertIn("Census", topics_list, "Topics list should contain the assigned topic name")
 
     def test_resources_disabled_when_external_env_false(self):
         """Endpoint should return 404 when IS_EXTERNAL_ENV is False."""
