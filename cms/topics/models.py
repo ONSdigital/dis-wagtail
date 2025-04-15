@@ -1,6 +1,7 @@
 from typing import TYPE_CHECKING, Any, ClassVar
 
 from django.conf import settings
+from django.core.exceptions import ValidationError
 from django.db import models
 from django.db.models import OuterRef, Subquery
 from django.utils.functional import cached_property
@@ -84,7 +85,7 @@ class TopicPage(ExclusiveTaxonomyMixin, BasePage):  # type: ignore[django-manage
     )
     explore_more = StreamField(ExploreMoreStoryBlock(), blank=True)
 
-    headline_figures = StreamField(TopicHeadlineFiguresStreamBlock(), blank=True)
+    headline_figures = StreamField(TopicHeadlineFiguresStreamBlock(), blank=True, max_num=6)
 
     content_panels: ClassVar[list["Panel"]] = [
         *BasePage.content_panels,
@@ -227,3 +228,10 @@ class TopicPage(ExclusiveTaxonomyMixin, BasePage):  # type: ignore[django-manage
         if self.explore_more:
             items += [{"url": "#explore-more", "text": _("Explore more")}]
         return items
+
+    def clean(self) -> None:
+        super().clean()
+
+        # Check if headline_figures has 1 item (we can't use min_num because we allow 0)
+        if self.headline_figures and len(self.headline_figures) == 1:
+            raise ValidationError({"headline_figures": "If you add headline figures, please add at least 2."})
