@@ -79,10 +79,10 @@ class BundleAdminFormTestCase(TestCase):
     def test_form_init__status_choices(self):
         """Checks status choices variation."""
         cases = [
-            (BundleStatus.PENDING, ACTIVE_BUNDLE_STATUS_CHOICES),
+            (BundleStatus.DRAFT, ACTIVE_BUNDLE_STATUS_CHOICES),
             (BundleStatus.IN_REVIEW, ACTIVE_BUNDLE_STATUS_CHOICES),
             (BundleStatus.APPROVED, BundleStatus.choices),
-            (BundleStatus.RELEASED, BundleStatus.choices),
+            (BundleStatus.PUBLISHED, BundleStatus.choices),
         ]
         for status, choices in cases:
             with self.subTest(status=status, choices=choices):

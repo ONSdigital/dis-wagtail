@@ -78,7 +78,7 @@ class BundleViewSetTestCase(BundleViewSetTestCaseBase):
             nested_form_data(
                 {
                     "name": "A New Bundle",
-                    "status": BundleStatus.PENDING,
+                    "status": BundleStatus.DRAFT,
                     "bundled_pages": inline_formset([{"page": self.statistical_article_page.id}]),
                     "teams": inline_formset([]),
                 }
@@ -95,7 +95,7 @@ class BundleViewSetTestCase(BundleViewSetTestCaseBase):
             nested_form_data(
                 {
                     "name": "A New Bundle",
-                    "status": BundleStatus.PENDING,
+                    "status": BundleStatus.DRAFT,
                     "bundled_pages": inline_formset([{"page": self.statistical_article_page.id}]),
                     "teams": inline_formset([]),
                 }
@@ -190,7 +190,7 @@ class BundleViewSetTestCase(BundleViewSetTestCaseBase):
             ),
         )
         self.bundle.refresh_from_db()
-        self.assertEqual(self.bundle.status, BundleStatus.PENDING)
+        self.assertEqual(self.bundle.status, BundleStatus.DRAFT)
 
     @mock.patch("cms.bundles.viewsets.bundle.notify_slack_of_status_change")
     def test_bundle_approval__happy_path(self, mock_notify_slack):
@@ -347,8 +347,8 @@ class BundleIndexViewTestCase(BundleViewSetTestCaseBase):
         self.assertContains(response, self.approved_bundle_edit_url)
         self.assertNotContains(response, self.released_bundle_edit_url)
 
-        self.assertContains(response, BundleStatus.PENDING.label, 2)  # status + status filter
-        self.assertContains(response, BundleStatus.RELEASED.label, 2)  # status + status filter
+        self.assertContains(response, BundleStatus.DRAFT.label, 2)  # status + status filter
+        self.assertContains(response, BundleStatus.PUBLISHED.label, 2)  # status + status filter
         self.assertContains(response, BundleStatus.APPROVED.label, 2)  # status + status filter
 
         self.assertContains(response, self.released_bundle.name)
@@ -449,7 +449,7 @@ class BundlePageChooserViewsetTestCase(WagtailTestUtils, TestCase):
         self.assertNotContains(response, self.page_draft_in_bundle.get_admin_display_title())
 
     def test_choose_view__includes_page_in_inactive_bundle(self):
-        self.bundle.status = BundleStatus.RELEASED
+        self.bundle.status = BundleStatus.PUBLISHED
         self.bundle.save(update_fields=["status"])
 
         response = self.client.get(self.chooser_url)

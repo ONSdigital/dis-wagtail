@@ -25,7 +25,7 @@ class Migration(migrations.Migration):
                 ("created_at", models.DateTimeField(auto_now_add=True)),
                 ("approved_at", models.DateTimeField(blank=True, null=True)),
                 ("publication_date", models.DateTimeField(blank=True, null=True)),
-                ("status", models.CharField(default="PENDING", max_length=32)),
+                ("status", models.CharField(default="DRAFT", max_length=32)),
                 (
                     "approved_by",
                     models.ForeignKey(

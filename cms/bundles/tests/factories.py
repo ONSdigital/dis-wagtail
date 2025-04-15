@@ -15,7 +15,7 @@ class BundleFactory(factory.django.DjangoModelFactory):
     name = factory.Faker("sentence", nb_words=4)
     created_at = factory.LazyFunction(timezone.now)
     created_by = factory.SubFactory(UserFactory)
-    status = BundleStatus.PENDING
+    status = BundleStatus.DRAFT
 
     class Params:
         """Defines custom factory traits.
@@ -38,7 +38,7 @@ class BundleFactory(factory.django.DjangoModelFactory):
 
         # Trait for released bundles
         released = factory.Trait(
-            status=BundleStatus.RELEASED,
+            status=BundleStatus.PUBLISHED,
             approved_at=factory.LazyFunction(lambda: timezone.now() - timezone.timedelta(days=1)),
             approved_by=factory.SubFactory(UserFactory),
             publication_date=factory.LazyFunction(timezone.now),

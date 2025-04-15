@@ -53,7 +53,7 @@ class BundleEditView(EditView):
     start_time: float | None = None
 
     def dispatch(self, request: HttpRequest, *args: Any, **kwargs: Any) -> "HttpResponseBase":
-        if (instance := self.get_object()) and instance.status == BundleStatus.RELEASED:
+        if (instance := self.get_object()) and instance.status == BundleStatus.PUBLISHED:
             return redirect(self.index_url_name)
 
         response: HttpResponseBase = super().dispatch(request, *args, **kwargs)
@@ -69,10 +69,10 @@ class BundleEditView(EditView):
                 data["approved_by"] = self.request.user
                 kwargs["data"] = data
             elif "action-unschedule" in self.request.POST:
-                data["status"] = BundleStatus.PENDING.value
+                data["status"] = BundleStatus.DRAFT.value
                 kwargs["data"] = data
             elif "action-publish" in self.request.POST:
-                data["status"] = BundleStatus.RELEASED.value
+                data["status"] = BundleStatus.PUBLISHED.value
                 kwargs["data"] = data
         return kwargs
 
@@ -96,7 +96,7 @@ class BundleEditView(EditView):
             action = "bundles.approve"
             kwargs["data"] = {"old": original_status}
             notify_slack_of_status_change(instance, original_status, user=self.request.user, url=url)
-        elif instance.status == BundleStatus.RELEASED.value:
+        elif instance.status == BundleStatus.PUBLISHED.value:
             action = "wagtail.publish"
             self.start_time = time.time()
         else:
@@ -122,7 +122,7 @@ class BundleEditView(EditView):
         In our case, we want to send a Slack notification if manually published, and approve any of the
         related pages that are in a Wagtail workflow.
         """
-        if self.action == "publish" or (self.action == "edit" and self.object.status == BundleStatus.RELEASED):
+        if self.action == "publish" or (self.action == "edit" and self.object.status == BundleStatus.PUBLISHED):
             notify_slack_of_publication_start(self.object, user=self.request.user)
             start_time = self.start_time or time.time()
             for page in self.object.get_bundled_pages():
@@ -195,7 +195,7 @@ class BundleInspectView(InspectView):
 
     def get_approved_display_value(self) -> str:
         """Custom approved by formatting. Varies based on status, and approver/time of approval."""
-        if self.object.status in [BundleStatus.APPROVED, BundleStatus.RELEASED]:
+        if self.object.status in [BundleStatus.APPROVED, BundleStatus.PUBLISHED]:
             if self.object.approved_by_id and self.object.approved_at:
                 return f"{self.object.approved_by} on {date_format(self.object.approved_at, settings.DATETIME_FORMAT)}"
             return "Unknown approval data"
@@ -308,7 +308,7 @@ class BundleIndexView(IndexView):
 
     def get_edit_url(self, instance: Bundle) -> str | None:
         """Override the default edit url to disable the edit URL for released bundles."""
-        if instance.status != BundleStatus.RELEASED:
+        if instance.status != BundleStatus.PUBLISHED:
             edit_url: str | None = super().get_edit_url(instance)
             return edit_url
         return None
