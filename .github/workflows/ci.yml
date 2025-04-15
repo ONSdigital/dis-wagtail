@@ -109,8 +109,8 @@ jobs:
           # Use the KAFKA_CFG_ prefix for Kafka config.
           KAFKA_CFG_NODE_ID: '1'
           KAFKA_CFG_PROCESS_ROLES: 'broker,controller'
-          KAFKA_CFG_LISTENERS: 'PLAINTEXT://0.0.0.0:9092,CONTROLLER://0.0.0.0:9093'
-          KAFKA_CFG_ADVERTISED_LISTENERS: 'PLAINTEXT://localhost:9092'
+          KAFKA_CFG_LISTENERS: 'PLAINTEXT://0.0.0.0:19092,CONTROLLER://0.0.0.0:9093'
+          KAFKA_CFG_ADVERTISED_LISTENERS: 'PLAINTEXT://localhost:19092'
           KAFKA_CFG_CONTROLLER_LISTENER_NAMES: 'CONTROLLER'
           KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP: 'CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT'
           KAFKA_CFG_CONTROLLER_QUORUM_VOTERS: '1@localhost:9093'
@@ -122,7 +122,7 @@ jobs:
           # Enable auto-creation of topics
           KAFKA_CFG_AUTO_CREATE_TOPICS_ENABLE: 'true'
         ports:
-          - '9092:9092'
+          - '19092:19092'
 
     steps:
       - uses: actions/checkout@v4
