@@ -29,6 +29,8 @@ if TYPE_CHECKING:
     from django.template.response import TemplateResponse
     from wagtail.admin.panels import Panel
 
+    from cms.topics.models import TopicPage
+
 
 class ArticleSeriesPage(RoutablePageMixin, GenericTaxonomyMixin, BasePage):  # type: ignore[django-manager-missing]
     """The article series model."""
@@ -220,6 +222,27 @@ class StatisticalArticlePage(BundledPageMixin, RoutablePageMixin, BasePage):  # 
 
         if self.next_release_date and self.next_release_date <= self.release_date:
             raise ValidationError({"next_release_date": "The next release date must be after the release date."})
+
+        if self.pk and self.is_latest:
+            # TODO: Find a way to prevent a user from deleting the headline figure on the frontend
+            # Get headline_figures figure ids
+            figure_ids = [figure["figure_id"] for figure in self.headline_figures[0].value]  # pylint: disable=unsubscriptable-object
+
+            # Get parent topic page
+            series = self.get_parent()
+            topic: TopicPage = series.get_parent().specific
+            for headline_figure in topic.headline_figures:
+                if (
+                    headline_figure.value["series"].id == series.id
+                    and headline_figure.value["figure"] not in figure_ids
+                ):
+                    raise ValidationError(
+                        {
+                            "headline_figures": f"Figure ID {
+                                headline_figure.value['figure']
+                            } cannot be removed as it is referenced in a topic page.",
+                        }
+                    )
 
     def get_context(self, request: "HttpRequest", *args: Any, **kwargs: Any) -> dict:
         """Additional context for the template."""
