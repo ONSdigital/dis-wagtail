@@ -60,7 +60,7 @@ class ReleaseCalendarPage(BasePage):  # type: ignore[django-manager-missing]
         max_length=50, blank=True, help_text="Format: 'Month YYYY', or 'Month YYYY to Month YYYY'."
     )
     next_release_date = models.DateTimeField(blank=True, null=True)
-    next_release_text = models.CharField(
+    next_release_date_text = models.CharField(
         max_length=255, blank=True, help_text="Formats: 'DD Month YYYY Time' or 'To be confirmed'."
     )
 
@@ -122,7 +122,7 @@ class ReleaseCalendarPage(BasePage):  # type: ignore[django-manager-missing]
                 FieldRowPanel(
                     [
                         "next_release_date",
-                        FieldPanel("next_release_text", heading="Or, next release text"),
+                        FieldPanel("next_release_date_text", heading="Or, next release date text"),
                     ],
                     heading="",
                 ),

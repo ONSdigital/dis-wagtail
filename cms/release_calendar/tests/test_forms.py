@@ -209,14 +209,14 @@ class ReleaseCalendarPageAdminFormTestCase(WagtailTestUtils, TestCase):
         data = self.raw_form_data()
         data["notice"] = rich_text("")
         data["next_release_date"] = timezone.now()
-        data["next_release_text"] = "November 2024"
+        data["next_release_date_text"] = "November 2024"
         data = nested_form_data(data)
         form = self.form_class(instance=self.page, data=data)
 
         self.assertFalse(form.is_valid())
         message = ["Please enter the next release date or the next release text, not both."]
         self.assertFormError(form, "next_release_date", message)
-        self.assertFormError(form, "next_release_text", message)
+        self.assertFormError(form, "next_release_date_text", message)
 
     def test_form_clean__validates_next_release_date_is_after_release_date(self):
         """Checks that editors enter a release that that is after the release date."""

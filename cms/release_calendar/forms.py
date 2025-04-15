@@ -68,9 +68,9 @@ class ReleaseCalendarPageAdminForm(WagtailAdminPageForm):
             error = "Please enter the release date or the release date text, not both."
             raise ValidationError({"release_date": error, "release_date_text": error})
 
-        if cleaned_data.get("next_release_date") and cleaned_data.get("next_release_text"):
+        if cleaned_data.get("next_release_date") and cleaned_data.get("next_release_date_text"):
             error = "Please enter the next release date or the next release text, not both."
-            raise ValidationError({"next_release_date": error, "next_release_text": error})
+            raise ValidationError({"next_release_date": error, "next_release_date_text": error})
 
         # TODO: expand to validate for non-English locales when adding multi-language.
         if release_date_text and self.instance.locale_id == Locale.get_default().pk:
