@@ -1,3 +1,4 @@
+from datetime import datetime
 from typing import TYPE_CHECKING, Optional
 
 import jinja2
@@ -5,6 +6,7 @@ from django import template
 from django.template.loader import render_to_string
 from django_jinja import library
 
+from cms.core.custom_dateformat import ons_date_format
 from cms.core.models import SocialMediaSettings
 
 register = template.Library()
@@ -48,3 +50,10 @@ def set_attributes_filter(attributes: dict, new_attributes: dict) -> dict:
     """
     attributes.update(new_attributes)
     return attributes
+
+
+@register.filter(name="ons_date")
+def ons_date_format_filter(value: datetime, format_string: str) -> str:
+    if not value:
+        return ""
+    return ons_date_format(value, format_string)
