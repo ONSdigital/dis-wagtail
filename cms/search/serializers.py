@@ -3,6 +3,14 @@ from wagtail.rich_text import get_text_for_indexing
 
 
 class ResourceSerializer(serializers.Serializer):
+    def create(self, validated_data):
+        """This serializer is read-only, so creation is not supported."""
+        raise NotImplementedError("ResourceSerializer is read-only")
+
+    def update(self, instance, validated_data):
+        """This serializer is read-only, so updates are not supported."""
+        raise NotImplementedError("ResourceSerializer is read-only")
+
     uri = serializers.SerializerMethodField()
     content_type = serializers.CharField(source="search_index_content_type")
     summary = serializers.SerializerMethodField()
