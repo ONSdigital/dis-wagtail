@@ -16,7 +16,7 @@ def before_create_page(
     parent_page: "Page",  # pylint: disable=unused-argument
     page_class: type["Page"],
 ) -> None:
-    if page_class == StatisticalArticlePage:
+    if page_class == StatisticalArticlePage and parent_page.get_latest():
         messages.info(
             request,
             "This page has been prepopulated with the content from the latest page in the series.",
