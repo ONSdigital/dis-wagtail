@@ -13,18 +13,18 @@ class KafkaSettingsCheckTests(TestCase):
             errors = check_kafka_settings(app_configs=None)
         self.assertEqual(errors, [])
 
-    @override_settings(SEARCH_INDEX_PUBLISHER_BACKEND="kafka")
+    # Remove any existing KAFKA_* settings if present
+    @override_settings(
+        SEARCH_INDEX_PUBLISHER_BACKEND="kafka",
+        KAFKA_SERVER=None,
+        KAFKA_CHANNEL_CREATED_OR_UPDATED=None,
+        KAFKA_CHANNEL_DELETED=None,
+    )
     def test_missing_kafka_settings(self):
         """If SEARCH_INDEX_PUBLISHER_BACKEND='kafka' but required Kafka settings are missing,
         each missing setting should raise an Error with the appropriate id.
         """
-        # Remove any existing KAFKA_* settings if present
-        with override_settings(
-            KAFKA_SERVER=None,
-            KAFKA_CHANNEL_CREATED_OR_UPDATED=None,
-            KAFKA_CHANNEL_DELETED=None,
-        ):
-            errors = check_kafka_settings(app_configs=None)
+        errors = check_kafka_settings(app_configs=None)
 
         # Expect 3 missing-settings errors: E001, E002, and E003
         self.assertEqual(len(errors), 3)
