@@ -4,5 +4,13 @@
 # Django Debug Toolbar
 SHOW_TOOLBAR = True
 
- # Override size of the pagination used on the previous_release page.
- # PREVIOUS_RELEASES_PER_PAGE = 3
+# Override size of the pagination used on the previous_release page.
+PREVIOUS_RELEASES_PER_PAGE = 3
+
+# Search Integration Kafka Events Env Vars
+SEARCH_INDEX_PUBLISHER_BACKEND = "kafka" # if this env var is not set to "Kafka" then LogPublisher will be used
+KAFKA_SERVER = "localhost:19092"
+KAFKA_CHANNEL_CREATED_OR_UPDATED = "search-content-updated"
+KAFKA_CHANNEL_DELETED = "search-content-deleted"
+KAFKA_API_VERSION = tuple(map(int, "3,5,1".split(",")))
+

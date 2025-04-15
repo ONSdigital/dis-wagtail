@@ -1,6 +1,5 @@
 from unittest.mock import patch
 
-from django.conf import settings
 from django.test import TestCase, override_settings
 from wagtail.models import Page
 
@@ -20,15 +19,14 @@ class KafkaSettingsCheckTests(TestCase):
         each missing setting should raise an Error with the appropriate id.
         """
         # Remove any existing KAFKA_* settings if present
-        custom_settings = {
-            key: value
-            for key, value in settings._wrapped.__dict__.items()  # pylint: disable=protected-access
-            if not key.startswith("KAFKA_")
-        }
-        with self.settings(**custom_settings):
+        with override_settings(
+            KAFKA_SERVER=None,
+            KAFKA_CHANNEL_CREATED_OR_UPDATED=None,
+            KAFKA_CHANNEL_DELETED=None,
+        ):
             errors = check_kafka_settings(app_configs=None)
 
-        # Expect 3 missing-settings errors: E002, E004, and E006
+        # Expect 3 missing-settings errors: E001, E002, and E003
         self.assertEqual(len(errors), 3)
         error_ids = [error.id for error in errors]
         self.assertIn("search.E001", error_ids)  # Missing KAFKA_SERVER

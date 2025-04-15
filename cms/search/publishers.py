@@ -147,7 +147,7 @@ class KafkaPublisher(BasePublisher):
         """Send the message to Kafka."""
         logger.info("KafkaPublisher: Publishing to channel=%s, message=%s", channel, message)
         future = self.producer.send(channel, message)
-        # Optionally block for the result, capturing metadata or error
+        # Wait for the send to complete and get the result
         result = future.get(timeout=10)  # Wait up to 10s for send to complete
         logger.info("KafkaPublisher: Publish result for channel %s: %s", channel, result)
         return result
