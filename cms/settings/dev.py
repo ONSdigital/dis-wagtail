@@ -99,5 +99,6 @@ MIGRATION_LINTER_OPTIONS = {
         "0003_customdocument__privacy_and_more",
         "0002_articleseriespage_listing_image_and_more",  # Ignoring NOT NULL constraint on columns
         "0003_releasecalendarpage_datasets",
+        "0004_topicpage_headline_figures",
     ],
 }

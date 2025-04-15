@@ -36,8 +36,13 @@ class SpecialTitleColumn(TitleColumn):
         """Extends the core chooser title column to pass on the headline figure id to the ChosenView."""
         url: str = super().get_link_url(instance, parent_context)
         figure_id = instance.headline_figure["figure_id"]
+        figure_title = instance.headline_figure["title"]
         separator = "&" if "?" in url else "?"
-        params = {"figure_id": figure_id, "sig": get_signature(f"{quote(instance.pk)} - {figure_id!s}")}
+        params = {
+            "figure_id": figure_id,
+            "figure_title": figure_title,
+            "sig": get_signature(f"{quote(instance.pk)} - {figure_id!s} - {figure_title}"),
+        }
         url += f"{separator}{urlencode(params)}"
         return url
 
@@ -153,7 +158,7 @@ class SeriesWithHeadlineFiguresChosenResponseMixin(ChosenResponseMixin):
     def get_chosen_response_data(self, item: Model) -> dict[str, Any]:
         response_data: dict[str, Any] = super().get_chosen_response_data(item)
         response_data["figure_id"] = item._figure_id  # type: ignore[attr-defined] # pylint: disable=protected-access
-
+        response_data["figure_title"] = item._figure_title  # type: ignore[attr-defined] # pylint: disable=protected-access
         return response_data
 
 
@@ -166,12 +171,14 @@ class SeriesWithHeadlineFiguresChosenViewMixin(ChosenViewMixin):
 
         # check that the passed figure_id is correct (in that it was passed from the chooser and not tampered with)
         figure_id = request.GET.get("figure_id", "")
+        figure_title = request.GET.get("figure_title", "")
         signature = request.GET.get("sig", "")
 
-        if signature != get_signature(f"{quote(item.pk)} - {figure_id!s}"):
+        if signature != get_signature(f"{quote(item.pk)} - {figure_id!s} - {figure_title}"):
             raise Http404
 
         item._figure_id = figure_id  # pylint: disable=protected-access
+        item._figure_title = figure_title  # pylint: disable=protected-access
 
         response: HttpResponse = self.get_chosen_response(item)
         return response
