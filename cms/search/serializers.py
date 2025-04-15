@@ -41,6 +41,14 @@ class ResourceSerializer(serializers.Serializer):
 
 
 class ReleaseResourceSerializer(ResourceSerializer):
+    def create(self, validated_data):
+        """This serializer is read-only, so creation is not supported."""
+        raise NotImplementedError("ResourceSerializer is read-only")
+
+    def update(self, instance, validated_data):
+        """This serializer is read-only, so updates are not supported."""
+        raise NotImplementedError("ResourceSerializer is read-only")
+
     release_date = serializers.SerializerMethodField()
     finalised = serializers.SerializerMethodField()
     cancelled = serializers.SerializerMethodField()
