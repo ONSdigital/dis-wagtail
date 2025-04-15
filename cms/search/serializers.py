@@ -27,9 +27,7 @@ class ResourceSerializer(serializers.Serializer):
         return ""
 
     def get_topics(self, obj):
-        if hasattr(obj, "topic_ids"):
-            return obj.topic_ids
-        return []
+        return getattr(obj, "topic_ids", [])
 
     def get_release_date(self, obj):
         """Return the ISO-formatted 'release_date' if present on the page,
@@ -83,6 +81,4 @@ class ReleaseResourceSerializer(ResourceSerializer):
 
     def get_provisional_date(self, obj):
         """If the page has 'release_date_text', return it as 'provisional_date'."""
-        if hasattr(obj, "release_date_text") and obj.release_date_text:
-            return obj.release_date_text
-        return None
+        return getattr(obj, "release_date_text", None) or None

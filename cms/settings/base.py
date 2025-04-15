@@ -919,5 +919,3 @@ SEARCH_INDEX_EXCLUDED_PAGE_TYPES = (
 # FIXME: remove before going live
 ENFORCE_EXCLUSIVE_TAXONOMY = env.get("ENFORCE_EXCLUSIVE_TAXONOMY", "true").lower() == "true"
 ALLOW_TEAM_MANAGEMENT = env.get("ALLOW_TEAM_MANAGEMENT", "false").lower() == "true"
-
-IS_EXTERNAL_ENV = os.getenv("IS_EXTERNAL_ENV", "True").lower() == "true"
