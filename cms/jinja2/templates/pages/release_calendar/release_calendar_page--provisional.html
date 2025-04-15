@@ -1,23 +1,57 @@
 {% extends "templates/pages/release_calendar/release_calendar_page.html" %}
 {% from "components/panel/_macro.njk" import onsPanel %}
 
-{% block release_meta %}
+{% block header_area %}
     {% if page.release_date or page.release_text %}
-        <div class="ons-container common-header__releases common-header__releases--single-row">
-            <div>
-                <span class="ons-u-fs-r--b common-header__releases-label">{{ _("Provisional release date") }}:</span>
-                <span class="ons-u-nowrap">{{ page.release_date|date("DATETIME_FORMAT") or page.release_date_text }}</span>
-            </div>
-        </div>
+        {# fmt:off #}
+        {% set release_date_html =
+            {
+                "term": 'Provisional release date:',
+                "descriptions": [
+                    {
+                        "description": page.release_date|date("DATE_FORMAT") or page.release_date_text
+                    }
+                ]
+            }
+        %}
+        {# fmt:on #}
+    {% else %}
+        {% set release_date_html = "" %}
     {% endif %}
-{% endblock %}
 
-{% block release_note %}
-    <div class="ons-container">
-        {% call onsPanel() %}
-            <p>{{ _("This release is not yet published") }}</p>
-        {% endcall %}
-    </div>
+    {# fmt:off #}
+    {{
+        onsHero({
+            "topic": _("Release"),
+            "title": page.title,
+            "variants": 'grey',
+            "officialStatisticsBadge": page.is_accredited,
+            "wide": true,
+            "detailsColumns": 12,
+            "censusLogo": page.is_census,
+            "descriptionList": {
+                "descriptionListLabel": "",
+                "termCol": "6",
+                "descriptionCol": "6",
+                "itemsList": [
+                    release_date_html
+                ]
+            },
+            "breadcrumbs": {
+                "ariaLabel": _("Breadcrumbs"),
+                "itemsList": breadcrumbs(page),
+            }
+        })
+    }}
+    {# fmt:on #}
+
+    {% block release_note %}
+        <div class="ons-container ons-u-mt-m">
+            {% call onsPanel() %}
+                <p>{{ _("This release is not yet published") }}</p>
+            {% endcall %}
+        </div>
+    {% endblock %}
 {% endblock %}
 
 {% block release_content %}{% endblock %} {# we want to show this only for published content #}
