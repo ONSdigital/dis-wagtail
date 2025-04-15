@@ -13,7 +13,7 @@ if TYPE_CHECKING:
 @hooks.register("before_create_page")
 def before_create_page(
     request: "HttpRequest",
-    parent_page: "Page",  # pylint: disable=unused-argument
+    parent_page: "Page",
     page_class: type["Page"],
 ) -> None:
     if page_class == StatisticalArticlePage and parent_page.get_latest():
