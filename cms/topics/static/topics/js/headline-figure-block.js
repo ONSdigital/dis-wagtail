@@ -1,4 +1,4 @@
-class HeadlineFigureBlock extends window.wagtailStreamField.blocks.StructBlockDefinition {
+class TopicHeadlineFigureBlock extends window.wagtailStreamField.blocks.StructBlockDefinition {
   constructor(name, childBlockDefs, meta) {
     super(name, childBlockDefs, meta);
 
@@ -61,4 +61,4 @@ class HeadlineFigureBlock extends window.wagtailStreamField.blocks.StructBlockDe
 }
 
 
-window.telepath.register("cms.topics.widgets.TopicHeadlineFigureBlock", HeadlineFigureBlock);
+window.telepath.register("cms.topics.widgets.TopicHeadlineFigureBlock", TopicHeadlineFigureBlock);
