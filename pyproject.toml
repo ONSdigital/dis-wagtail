@@ -36,6 +36,7 @@ wagtail-tinytableblock = "^0.3.4"
 queryish = "^0.2"
 python-json-logger = "^3.3.0"
 json-log-formatter = "^1.1.1"
+django-xff = "^1.5.0"
 
 [tool.poetry.group.dev.dependencies]
 # :TODO: Remove pylint when ruff supports all pylint rules

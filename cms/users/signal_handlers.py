@@ -5,6 +5,8 @@ from django.contrib.auth.signals import user_logged_in, user_logged_out, user_lo
 from django.dispatch import receiver
 from django.http import HttpRequest
 
+from cms.core.utils import get_client_ip
+
 from .models import User
 
 logger = logging.getLogger("cms.users")
@@ -18,6 +20,7 @@ def audit_user_logged_in(sender: Any, request: HttpRequest, user: User, **kwargs
             "user_id": user.id,
             "email": user.email,
             "event": "user_logged_in",
+            "ip_address": get_client_ip(request),
             "user_agent": request.headers.get("User-Agent"),
         },
     )
@@ -35,6 +38,7 @@ def audit_user_logged_out(sender: Any, request: HttpRequest, user: User | None, 
             "user_id": user.id,
             "email": user.email,
             "event": "user_logged_out",
+            "ip_address": get_client_ip(request),
             "user_agent": request.headers.get("User-Agent"),
         },
     )
@@ -47,6 +51,7 @@ def audit_user_login_failed(sender: Any, credentials: dict, request: HttpRequest
         extra={
             "username": credentials.get("username"),
             "event": "user_login_failed",
+            "ip_address": get_client_ip(request) if request else None,
             "user_agent": request.headers.get("User-Agent") if request else None,
         },
     )
