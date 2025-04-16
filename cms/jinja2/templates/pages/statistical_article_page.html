@@ -32,24 +32,18 @@
             {% set infoPanelText = _("This version has been amended since publication") %}
             {% set releases_text = _("View amended version") %}
             {% set infoPanelType = 'ons-red' %}
-            {% set releases_url -%}
-                {{ latest_version_url }}
-            {%- endset %}
+            {% set releases_url = latest_version_url %}
         {% else %}
             {% set infoPanelText = _("Latest release") %}
             {% set releases_text = _("View previous releases") %}
             {% set infoPanelType = 'ons-green' %}
-            {% set releases_url -%}
-                {{ routablepageurl(page.get_parent().specific, "previous_releases") }}
-            {%- endset %}
+            {% set releases_url = routablepageurl(page.get_parent().specific, "previous_releases") %}
         {% endif %}
     {% else %}
         {% set infoPanelText = _("Not the latest release") %}
         {% set releases_text = _("View latest release") %}
         {% set infoPanelType = 'ons-orange' %}
-        {% set releases_url -%}
-            {{ routablepageurl(page.get_parent().specific, "latest_release") }}
-        {%- endset %}
+        {% set releases_url = routablepageurl(page.get_parent().specific, "latest_release") %}
     {% endif %}
 
     {% set next_release_date_text = page.next_release_date|date("DATE_FORMAT") or _("To be announced") %}
