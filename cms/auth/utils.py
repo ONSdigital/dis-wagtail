@@ -2,6 +2,7 @@ import base64
 import json
 import logging
 from collections.abc import Iterable
+from typing import Optional
 
 import requests
 from cryptography.hazmat.backends import default_backend
@@ -44,21 +45,20 @@ def validate_jwt(token: str, token_type: str) -> dict | None:
     """Validates the given JWT and returns its claims if valid, otherwise returns None."""
     token = token.split(" ")[1] if token.startswith("Bearer ") else token
     # Set required fields based on token type.
-    additional_fields = ["username"] if token_type == "access" else ["cognito:username", "email"]  # noqa: S105
+    extra_fields = ["username", "client_id"] if token_type == "access" else ["cognito:username", "email"]  # noqa: S105
 
     try:
-        return _validate_jwt(token, additional_fields=additional_fields, token_type=token_type)
+        return _validate_jwt(token, extra_fields=extra_fields, token_type=token_type)
     except ExpiredSignatureError:
         logger.exception("Token has expired", extra={"token_type": token_type})
     except InvalidTokenError:
         logger.exception("Invalid token", extra={"token_type": token_type})
     except Exception:  # pylint: disable=broad-except
         logger.exception("Error decoding token", extra={"token_type": token_type})
-
     return None
 
 
-def _validate_jwt(token: str, *, additional_fields: Iterable, token_type: str):
+def _validate_jwt(token: str, *, extra_fields: Iterable, token_type: str) -> Optional[dict]:
     header = get_unverified_header(token)
     kid = header.get("kid")
     if not kid:
@@ -76,17 +76,17 @@ def _validate_jwt(token: str, *, additional_fields: Iterable, token_type: str):
         key=_parse_der_public_key(public_key_b64),
         algorithms=ALGORITHMS,
         issuer=EXPECTED_ISSUER,
-        audience=EXPECTED_AUDIENCE,
+        audience=EXPECTED_AUDIENCE if token_type == "id" else None,  # noqa: S105  aud is not present in access token
         options={
             "verify_signature": True,
             "verify_exp": True,
             "verify_iat": True,
-            "verify_aud": True,
+            "verify_aud": token_type == "id",  # noqa: S105  aud is not present in access token
             "verify_iss": True,
             "verify_sub": True,
             "verify_jti": True,
-            "verify_nbf": False,  # AWS Cognito does not use 'nbf'
-            "require": ["token_use", *additional_fields],
+            "verify_nbf": False,  # AWS Cognito does not utilise 'nbf'
+            "require": ["token_use", *extra_fields],
         },
     )
 
@@ -98,18 +98,17 @@ def _validate_jwt(token: str, *, additional_fields: Iterable, token_type: str):
 
 
 def get_auth_config() -> str:
-    """Get the authentication configuration."""
+    """Returns a JSON string containing authentication configuration details."""
     # Default value for csrf_header_name is "HTTP_X_CSRFTOKEN", the header needs to be set as "X-CSRFToken"
     # Django will convert the header to "HTTP_X_CSRFTOKEN" when it is received
     # @see: https://docs.djangoproject.com/en/5.1/ref/settings/#csrf-header-name
     csrf_header_name = settings.CSRF_HEADER_NAME.replace("HTTP_", "").replace("_", "-")
-    return json.dumps(
-        {
-            "authTokenRefreshUrl": settings.AUTH_TOKEN_REFRESH_URL,
-            "wagtailAdminHomePath": settings.WAGTAILADMIN_HOME_PATH,
-            "csrfCookieName": settings.CSRF_COOKIE_NAME,
-            "csrfHeaderName": csrf_header_name,
-            "logoutRedirectUrl": settings.LOGOUT_REDIRECT_URL,
-            "sessionRenewalOffsetSeconds": settings.SESSION_RENEWAL_OFFSET_SECONDS,
-        }
-    )
+    config = {
+        "authTokenRefreshUrl": settings.AUTH_TOKEN_REFRESH_URL,
+        "wagtailAdminHomePath": settings.WAGTAILADMIN_HOME_PATH,
+        "csrfCookieName": settings.CSRF_COOKIE_NAME,
+        "csrfHeaderName": csrf_header_name,
+        "logoutRedirectUrl": settings.LOGOUT_REDIRECT_URL,
+        "sessionRenewalOffsetSeconds": settings.SESSION_RENEWAL_OFFSET_SECONDS,
+    }
+    return json.dumps(config)

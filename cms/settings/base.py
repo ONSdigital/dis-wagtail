@@ -476,7 +476,7 @@ LOGGING = {
         "console": {
             "level": "INFO",
             "class": "logging.StreamHandler",
-            "formatter": "json",
+            "formatter": "verbose",
         },
         "gunicorn_access": {
             "level": "INFO",
