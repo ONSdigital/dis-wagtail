@@ -8,7 +8,6 @@ from django.views.decorators.cache import never_cache
 from django.views.decorators.vary import vary_on_headers
 from django.views.generic import TemplateView
 from wagtail import urls as wagtail_urls
-from wagtail.contrib.sitemaps.views import sitemap
 from wagtail.documents.views.serve import authenticate_with_password
 from wagtail.utils.urlpatterns import decorate_urlpatterns
 
@@ -84,9 +83,7 @@ if settings.DEBUG:
         debug_urlpatterns = [path("__debug__/", include(debug_toolbar.urls)), *debug_urlpatterns]
 
 # Public URLs that are meant to be cached.
-urlpatterns = [
-    path("sitemap.xml", sitemap),
-]
+urlpatterns: list[Union["URLResolver", "URLPattern"]] = []
 # Set public URLs to use the "default" cache settings.
 urlpatterns = decorate_urlpatterns(urlpatterns, get_default_cache_control_decorator())
 

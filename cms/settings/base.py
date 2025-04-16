@@ -97,7 +97,6 @@ INSTALLED_APPS = [
     "django.contrib.contenttypes",
     "whitenoise.runserver_nostatic",  # Must be before `django.contrib.staticfiles`
     "django.contrib.staticfiles",
-    "django.contrib.sitemaps",
     "django_jinja",
     "wagtailmath",
     "wagtailfontawesomesvg",
