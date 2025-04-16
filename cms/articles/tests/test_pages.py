@@ -56,6 +56,7 @@ class StatisticalArticlePageTests(WagtailPageTestCase):
     @classmethod
     def setUpTestData(cls):
         cls.page = StatisticalArticlePageFactory()
+        cls.user = get_user_model().objects.create(username="wagtailer", is_superuser=True)
 
     def test_default_route(self):
         self.assertPageIsRoutable(self.page)
@@ -299,7 +300,6 @@ class StatisticalArticlePageTests(WagtailPageTestCase):
         )
 
     def test_prepopulated_content(self):
-        self.user = get_user_model().objects.create(username="wagtailer", is_superuser=True)
         self.client.force_login(self.user)
         parent_page = self.page.get_parent()
         add_sibling_url = reverse("wagtailadmin_pages:add_subpage", args=[parent_page.id])
