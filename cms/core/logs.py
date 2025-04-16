@@ -44,6 +44,7 @@ class GunicornJsonFormatter(JSONFormatter):
             "ended_at": response_time,
             "duration": record_args["D"] * 1000,
             "response_content_length": record_args["B"],
+            "ip_address": record_args["h"],  # This uses the overridden value by django-xff
         }
 
         return record_data
