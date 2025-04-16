@@ -8,7 +8,7 @@ from cms.methodology.tests.factories import MethodologyPageFactory
 from cms.release_calendar.enums import ReleaseStatus
 from cms.release_calendar.tests.factories import ReleaseCalendarPageFactory
 from cms.search.tests.helpers import ResourceDictAssertions
-from cms.search.utils.resource_builders import build_resource_dict
+from cms.search.utils import build_resource_dict
 from cms.standard_pages.tests.factories import IndexPageFactory, InformationPageFactory
 from cms.taxonomy.models import GenericPageToTaxonomyTopic, Topic
 

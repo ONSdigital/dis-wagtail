@@ -1,5 +1,6 @@
 from typing import TYPE_CHECKING
 
+from django.apps import apps
 from django.utils.encoding import force_str
 from wagtail.rich_text import get_text_for_indexing
 
@@ -57,3 +58,10 @@ def build_resource_dict(page: "Page") -> dict:
         base_data.update(release_data)
 
     return base_data
+
+
+def get_model_by_name(model_name: str) -> type:
+    for model in apps.get_models():
+        if model.__name__ == model_name:
+            return model
+    raise LookupError(f"No model named '{model_name}' was found.")

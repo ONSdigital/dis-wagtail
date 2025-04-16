@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING
 from django.conf import settings
 from kafka import KafkaProducer
 
-from cms.search.utils.resource_builders import build_resource_dict
+from cms.search.utils import build_resource_dict
 
 logger = logging.getLogger(__name__)
 
