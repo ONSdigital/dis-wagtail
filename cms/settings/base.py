@@ -57,6 +57,7 @@ if "CSRF_TRUSTED_ORIGINS" in env:
 
 INSTALLED_APPS = [
     "cms.articles",
+    "cms.auth",
     "cms.bundles",
     "cms.core",
     "cms.datasets",
@@ -133,10 +134,7 @@ MIDDLEWARE = [
 if not IS_EXTERNAL_ENV:
     common_middleware_index = MIDDLEWARE.index("django.middleware.common.CommonMiddleware")
     MIDDLEWARE.insert(common_middleware_index, "django.contrib.messages.middleware.MessageMiddleware")
-    MIDDLEWARE.insert(
-        common_middleware_index,
-        "django.contrib.auth.middleware.AuthenticationMiddleware",
-    )
+    MIDDLEWARE.insert(common_middleware_index, "cms.auth.middleware.ONSAuthMiddleware")
     MIDDLEWARE.insert(common_middleware_index, "django.contrib.sessions.middleware.SessionMiddleware")
 
 ROOT_URLCONF = "cms.urls"
@@ -804,6 +802,10 @@ WAGTAIL_SITE_NAME = "Office for National Statistics"
 if "WAGTAILADMIN_BASE_URL" in env:
     WAGTAILADMIN_BASE_URL = env["WAGTAILADMIN_BASE_URL"]
 
+# https://docs.wagtail.org/en/latest/reference/settings.html#wagtailadmin-login-url
+if "WAGTAILADMIN_LOGIN_URL" in env:
+    WAGTAILADMIN_LOGIN_URL = env["WAGTAILADMIN_LOGIN_URL"]
+
 # Custom image model
 # https://docs.wagtail.io/en/stable/advanced_topics/images/custom_image_model.html
 WAGTAILIMAGES_IMAGE_MODEL = "images.CustomImage"
@@ -917,3 +919,42 @@ SEARCH_INDEX_EXCLUDED_PAGE_TYPES = (
 # FIXME: remove before going live
 ENFORCE_EXCLUSIVE_TAXONOMY = env.get("ENFORCE_EXCLUSIVE_TAXONOMY", "true").lower() == "true"
 ALLOW_TEAM_MANAGEMENT = env.get("ALLOW_TEAM_MANAGEMENT", "false").lower() == "true"
+
+# Auth
+WAGTAIL_CORE_ADMIN_LOGIN_ENABLED = env.get("WAGTAIL_CORE_ADMIN_LOGIN_ENABLED", "false").lower() == "true"
+LOGOUT_REDIRECT_URL = env.get("LOGOUT_REDIRECT_URL", env.get("WAGTAILADMIN_LOGIN_URL"))
+AUTH_TOKEN_REFRESH_URL = env.get("AUTH_TOKEN_REFRESH_URL")
+SESSION_COOKIE_AGE = env.get("SESSION_COOKIE_AGE", 60 * 15)  # 15 minutes to match Auth Service
+SESSION_EXPIRE_AT_BROWSER_CLOSE = True
+IDENTITY_API_BASE_URL = env.get("IDENTITY_API_BASE_URL")
+AWS_COGNITO_LOGIN_ENABLED = env.get("AWS_COGNITO_LOGIN_ENABLED", "true").lower() == "true"
+AWS_COGNITO_USER_POOL_ID = env.get("AWS_COGNITO_USER_POOL_ID")
+AWS_COGNITO_APP_CLIENT_ID = env.get("AWS_COGNITO_APP_CLIENT_ID")
+
+# TODO: Make system checks
+if AWS_COGNITO_LOGIN_ENABLED:
+    required_env_vars = [
+        "IDENTITY_API_BASE_URL",
+        "AUTH_TOKEN_REFRESH_URL",
+        "AWS_COGNITO_APP_CLIENT_ID",
+        "AWS_COGNITO_USER_POOL_ID",
+    ]
+    for var in required_env_vars:
+        if not env.get(var):
+            raise ImproperlyConfigured(f"Missing required environment variable: {var}")
+
+
+# Groups
+PUBLISHING_ADMIN_GROUP_NAME = "Publishing Admins"
+PUBLISHING_OFFICER_GROUP_NAME = "Publishing Officers"
+VIEWERS_GROUP_NAME = "Viewers"
+ROLE_GROUP_IDS = {"role-admin", "role-publisher"}
+
+# Cookie Names
+ACCESS_TOKEN_COOKIE_NAME = "access_token"  # noqa: S105
+REFRESH_TOKEN_COOKIE_NAME = "refresh_token"  # noqa: S105
+ID_TOKEN_COOKIE_NAME = "id_token"  # noqa: S105
+
+WAGTAILADMIN_HOME_PATH = env.get("WAGTAILADMIN_HOME_PATH", "admin/")
+DJANGO_ADMIN_HOME_PATH = env.get("DJANGO_ADMIN_HOME_PATH", "django-admin/")
+SESSION_RENEWAL_OFFSET_SECONDS = env.get("SESSION_RENEWAL_OFFSET_SECONDS", 60 * 5)  # 5 minutes
