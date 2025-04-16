@@ -26,12 +26,12 @@ class HeadlineFiguresItemBlock extends window.wagtailStreamField.blocks.StructBl
       const parent = `[name="${shortPrefix}id"]+section`;
       const helpText = document.querySelector(`${parent} .help`);
       const deleteSelector = "[data-streamfield-action='DELETE']";
-      helpText.innerHTML = "<b>This figure is currently referenced and cannot be deleted.</b>";
+      helpText.innerHTML = "<b>This figure is currently referenced by a published page and cannot be deleted.</b>";
       const deleteButton = document.querySelector(`${parent} ${deleteSelector}`);
       deleteButton.style.display = "none";
 
       // The main delete button can delete all of the items, it needs to be hidden as well
-      const mainDeleteButton = document.querySelector(`[name="headline_figures-0-id"]+section ${deleteSelector}]`);
+      const mainDeleteButton = document.querySelector(`[name="headline_figures-0-id"]+section ${deleteSelector}`);
       mainDeleteButton.style.display = "none";
     }
 

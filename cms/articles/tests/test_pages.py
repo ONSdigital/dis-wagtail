@@ -1,5 +1,7 @@
 from http import HTTPStatus
 
+from django.contrib.auth import get_user_model
+from django.urls import reverse
 from wagtail.test.utils import WagtailPageTestCase
 
 from cms.articles.tests.factories import ArticleSeriesPageFactory, StatisticalArticlePageFactory
@@ -295,3 +297,20 @@ class StatisticalArticlePageTests(WagtailPageTestCase):
             '<dd class="ons-description-list__value ons-grid__col ons-col-6@xs@l">To be announced</dd>',
             content,
         )
+
+    def test_prepopulated_content(self):
+        self.user = get_user_model().objects.create(username="wagtailer", is_superuser=True)
+        self.client.force_login(self.user)
+        parent_page = self.page.get_parent()
+        add_sibling_url = reverse("wagtailadmin_pages:add_subpage", args=[parent_page.id])
+
+        response = self.client.get(add_sibling_url, follow=True)
+        self.assertEqual(response.status_code, HTTPStatus.OK)
+
+        self.assertContains(
+            response, "This page has been prepopulated with the content from the latest page in the series."
+        )
+
+        self.assertContains(response, self.page.summary)
+        self.assertContains(response, self.page.contact_details)
+        self.assertContains(response, self.page.search_description)
