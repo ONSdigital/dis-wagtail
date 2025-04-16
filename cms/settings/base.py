@@ -669,8 +669,8 @@ USE_X_FORWARDED_PORT = env.get("USE_X_FORWARDED_PORT", "true").lower().strip() =
 XFF_TRUSTED_PROXY_DEPTH = int(env.get("XFF_TRUSTED_PROXY_DEPTH", 1))
 XFF_EXEMPT_URLS = [r"^-/.*"]
 
-# Error if there aren't enough proxies in between?
-XFF_ALWAYS_PROXY = env.get("XFF_ALWAYS_PROXY", "false").lower().strip() == "true"
+# Error if there are the wrong number of proxies
+XFF_STRICT = env.get("XFF_STRICT", "false").lower().strip() == "true"
 
 # Security configuration
 # This configuration is required to achieve good security rating.

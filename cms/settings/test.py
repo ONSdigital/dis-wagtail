@@ -75,4 +75,4 @@ ONS_API_BASE_URL = "https://dummy_base_api"
 ONS_WEBSITE_DATASET_BASE_URL = "https://dummy_datasets/datasets"
 
 # Ignore proxy count in tests
-XFF_ALWAYS_PROXY = False
+XFF_STRICT = False
