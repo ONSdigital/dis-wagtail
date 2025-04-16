@@ -1,3 +1,5 @@
+from typing import TYPE_CHECKING
+
 from django.conf import settings
 from rest_framework import status
 from rest_framework.response import Response
@@ -9,6 +11,9 @@ from cms.settings.base import SEARCH_INDEX_EXCLUDED_PAGE_TYPES
 from .pagination import CustomPageNumberPagination
 from .serializers import ReleaseResourceSerializer, ResourceSerializer
 
+if TYPE_CHECKING:
+    from django.http import HttpRequest
+
 
 class ResourceListView(APIView):
     """Provides the list of indexable Wagtail resources for external use.
@@ -17,7 +22,7 @@ class ResourceListView(APIView):
 
     pagination_class = CustomPageNumberPagination
 
-    def get(self, request, *args, **kwargs):
+    def get(self, request: "HttpRequest", *args: tuple, **kwargs: dict) -> Response:
         if not settings.IS_EXTERNAL_ENV:
             return Response({"detail": "Not found."}, status=status.HTTP_404_NOT_FOUND)
 
@@ -37,12 +42,12 @@ class ResourceListView(APIView):
 
         return paginator.get_paginated_response(data)
 
-    def get_queryset(self):
+    def get_queryset(self) -> list[Page]:
         """Returns a queryset of 'published' pages that are indexable,
         excluding pages we do not want to index.
         """
         # all published pages
-        qs = Page.objects.live().specific()
+        qs: list[Page] = Page.objects.live().specific()
 
         # exclude pages we do not want to index
         qs = [page for page in qs if page.specific_class.__name__ not in SEARCH_INDEX_EXCLUDED_PAGE_TYPES]
