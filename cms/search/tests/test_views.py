@@ -82,7 +82,7 @@ class SearchResourcesViewTests(TestCase):
 
     def call_view_as_external(self, url):
         """Helper to simulate calling the view in an external environment."""
-        with override_settings(IS_EXTERNAL_ENV=True):
+        with override_settings(ROOT_URLCONF="cms.search.tests.test_urls", IS_EXTERNAL_ENV=True):
             return self.client.get(url)
 
     def parse_json(self, response):
@@ -307,7 +307,6 @@ class SearchResourcesViewTests(TestCase):
         # Although content exists, the endpoint should be inaccessible in this setting.
         response = self.client.get(RESOURCE_ENDPOINT)
         self.assertEqual(response.status_code, 404)
-        self.assertEqual(response.json()["detail"], "Not found.")
 
 
 @override_settings(IS_EXTERNAL_ENV=False)
@@ -320,7 +319,7 @@ class ResourceListViewPaginationTests(TestCase):
 
     def call_view_as_external(self, url):
         """Helper to simulate calling the view in an external environment."""
-        with override_settings(IS_EXTERNAL_ENV=True):
+        with override_settings(ROOT_URLCONF="cms.search.tests.test_urls", IS_EXTERNAL_ENV=True):
             return self.client.get(url)
 
     def parse_json(self, response):

@@ -1,4 +1,3 @@
-# test_publishers.py
 import logging
 from datetime import timedelta
 from unittest.mock import ANY, MagicMock, patch
@@ -46,7 +45,55 @@ class DummyPublisher(BasePublisher):
         pass
 
 
-class BasePublisherTests(TestCase, WagtailTestUtils):
+class BasePublisherTestCase(TestCase):
+    """Base TestCase providing helper methods for checking the messages
+    sent to publishers.
+    """
+
+    def assert_page_message_fields(self, message, page):
+        """Assert that the message dict from a publisher call has the correct basic fields
+        (uri, title, summary, content_type) matching the given page.
+        """
+        expected_type = EXPECTED_CONTENT_TYPES[type(page).__name__]
+
+        self.assertIn("uri", message, "Message dict missing 'uri'")
+        self.assertIn("title", message, "Message dict missing 'title'")
+        self.assertIn("summary", message, "Message dict missing 'summary'")
+        self.assertIn("content_type", message, "Message dict missing 'content_type'")
+        self.assertIn("topics", message, "Message dict missing 'topics'")
+
+        self.assertEqual(message["uri"], page.url_path)
+        self.assertEqual(message["title"], page.title)
+        self.assertEqual(message["summary"], page.summary)
+        self.assertEqual(message["content_type"], expected_type)
+
+    def assert_release_page_fields(self, message, page):
+        """Additional assertions for release-type pages (release_date, finalised, cancelled, published, etc.)."""
+        self.assertIn("release_date", message, "Message dict missing 'release_date' for release page")
+        self.assertIn("finalised", message, "Message dict missing 'finalised' field")
+        self.assertIn("cancelled", message, "Message dict missing 'cancelled' field")
+        self.assertIn("published", message, "Message dict missing 'published' field")
+
+        self.assertEqual(message["release_date"], page.release_date.isoformat())
+
+    def assert_date_changes(self, message, page):
+        """If the page has date_changes, verify they match the page's changes_to_release_date entries."""
+        self.assertIn("date_changes", message)
+        self.assertEqual(len(message["date_changes"]), len(page.changes_to_release_date))
+
+        for i, date_change in enumerate(message["date_changes"]):
+            expected_value = page.changes_to_release_date[i].value
+            self.assertIn("previous_date", date_change, "date_change missing 'previous_date'")
+            self.assertIn("change_notice", date_change, "date_change missing 'change_notice'")
+
+            self.assertEqual(date_change["change_notice"], expected_value["reason_for_change"])
+            self.assertEqual(
+                date_change["previous_date"],
+                expected_value["previous_date"].isoformat(),
+            )
+
+
+class BasePublisherTests(BasePublisherTestCase, WagtailTestUtils):
     @classmethod
     def setUpTestData(cls):
         cls.superuser = cls.create_superuser(username="admin")
@@ -99,30 +146,18 @@ class BasePublisherTests(TestCase, WagtailTestUtils):
 
     @patch.object(DummyPublisher, "_publish", return_value=None)
     def test_publish_created_or_updated_calls_publish(self, mock_method):
-        """Verify `publish_created_or_updated` calls `_publish` with the correct channel & message."""
+        """Verify `publish_created_or_updated` calls `_publish` with correct channel & message."""
         for page in self.included_pages:
             self.publisher.publish_created_or_updated(page)
-            expected_type = EXPECTED_CONTENT_TYPES[type(page).__name__]
 
-            # The channel should come from get_channel_created_or_updated()
+            # The channel should come from created_or_updated_channel
             mock_method.assert_called_once()
-            called_channel, called_message = mock_method.call_args[0]
-            self.assertEqual(called_channel, "dummy-channel-created")
+            channel_called, message_called = mock_method.call_args[0]
 
-            # Check the message structure from _construct_message_for_create_update
-            self.assertIn("uri", called_message)
-            self.assertIn("title", called_message)
-            self.assertIn("content_type", called_message)
-            self.assertIn("summary", called_message)
-            self.assertIn("topics", called_message)
-
-            self.assertEqual(called_message["uri"], page.url_path)
-            self.assertEqual(called_message["title"], page.title)
-            self.assertEqual(called_message["summary"], page.summary)
-            self.assertEqual(called_message["content_type"], expected_type)
+            self.assertEqual(channel_called, "dummy-channel-created")
+            self.assert_page_message_fields(message_called, page)
 
             mock_method.reset_mock()
-            # Not a release => no date
 
     @patch.object(DummyPublisher, "_publish", return_value=None)
     def test_publish_deleted_calls_publish(self, mock_method):
@@ -131,87 +166,54 @@ class BasePublisherTests(TestCase, WagtailTestUtils):
             self.publisher.publish_deleted(page)
 
             mock_method.assert_called_once()
-            called_channel, called_message = mock_method.call_args[0]
-            self.assertEqual(called_channel, "dummy-channel-deleted")
+            channel_called, message_called = mock_method.call_args[0]
 
-            self.assertIn("uri", called_message)
-
-            self.assertEqual(called_message["uri"], page.url_path)
+            self.assertEqual(channel_called, "dummy-channel-deleted")
+            self.assertIn("uri", message_called)
+            self.assertEqual(message_called["uri"], page.url_path)
 
             mock_method.reset_mock()
 
     def test_construct_message_for_release_page_provisional_confirmed(self):
-        """Ensure that for a release-type page, release-specific fields get added."""
+        """For release pages (provisional/confirmed), release-specific fields should appear."""
         release_calendar_pages = [
             self.release_calendar_page_provisional,
             self.release_calendar_page_confirmed,
         ]
-
         for page in release_calendar_pages:
             message = self.publisher._construct_message_for_create_update(page)  # pylint: disable=W0212
-            expected_type = EXPECTED_CONTENT_TYPES[type(page).__name__]
+            self.assert_page_message_fields(message, page)
+            self.assert_release_page_fields(message, page)
 
-            self.assertEqual(message["content_type"], expected_type)
-            self.assertEqual(message["title"], page.title)
-            self.assertEqual(message["summary"], page.summary)
-            self.assertEqual(message["uri"], page.url_path)
-
-            self.assertIsNotNone(message["release_date"])  # because it's a release
-
-            self.assertEqual(message["release_date"], page.release_date.isoformat())
-
-            self.assertIn("finalised", message)
-            self.assertIn("cancelled", message)
-            self.assertIn("published", message)
-
+            # finalised = True, published/cancelled = False
             self.assertTrue(message["finalised"])
             self.assertFalse(message["published"])
             self.assertFalse(message["cancelled"])
 
     def test_release_date_exists_provisional_date_absent(self):
-        """Ensure that if release_date exists, provisional_date should not exist."""
+        """If release_date is set, provisional_date should not be present."""
         page = self.release_calendar_page_confirmed
-
         message = self.publisher._construct_message_for_create_update(page)  # pylint: disable=W0212
-        expected_type = EXPECTED_CONTENT_TYPES[type(page).__name__]
 
-        self.assertEqual(message["content_type"], expected_type)
-        self.assertEqual(message["title"], page.title)
-        self.assertEqual(message["summary"], page.summary)
-        self.assertEqual(message["uri"], page.url_path)
-
-        # Check release_date exists
-        self.assertIsNotNone(message.get("release_date"), "release_date should exist for this page")
-        self.assertEqual(message["release_date"], page.release_date.isoformat())
-
-        # Check provisional_date does not exist
-        self.assertIsNone(message.get("provisional_date"), "provisional_date should not exist if release_date exists")
+        self.assert_page_message_fields(message, page)
+        self.assertIsNotNone(message.get("release_date"))
+        self.assertIsNone(message.get("provisional_date"))
 
     def test_provisional_date_exists_when_release_date_absent(self):
-        """Ensure that if release_date is absent, provisional_date should exist and have a value."""
+        """If release_date is absent, provisional_date should exist (for a provisional status)."""
         page = ReleaseCalendarPageFactory(
             status=ReleaseStatus.PROVISIONAL,
             release_date=None,
             release_date_text="Provisional release date text",
         )
-
         message = self.publisher._construct_message_for_create_update(page)  # pylint: disable=W0212
-        expected_type = EXPECTED_CONTENT_TYPES[type(page).__name__]
 
-        self.assertEqual(message["content_type"], expected_type)
-        self.assertEqual(message["title"], page.title)
-        self.assertEqual(message["summary"], page.summary)
-        self.assertEqual(message["uri"], page.url_path)
-
-        # Check release_date is absent
-        self.assertIsNone(message.get("release_date"), "release_date should be None for this page")
-
-        # Check provisional_date exists and has the correct value
-        self.assertIsNotNone(message.get("provisional_date"), "provisional_date should exist if release_date is absent")
-        self.assertEqual(message["provisional_date"], page.release_date_text)
+        self.assert_page_message_fields(message, page)
+        self.assertIsNone(message.get("release_date"))
+        self.assertEqual(message.get("provisional_date"), page.release_date_text)
 
     def test_construct_message_for_release_page_confirmed_date_change(self):
-        """Ensure that for a release-type page, release-specific fields get added."""
+        """Confirmed page with changes_to_release_date should return date_changes array."""
         page = self.release_calendar_page_confirmed
         page.changes_to_release_date = [
             {
@@ -227,122 +229,60 @@ class BasePublisherTests(TestCase, WagtailTestUtils):
                 "value": {"previous_date": timezone.now() - timedelta(days=15), "reason_for_change": "Reason 3"},
             },
         ]
+        page.save()
 
         message = self.publisher._construct_message_for_create_update(page)  # pylint: disable=W0212
-        expected_type = EXPECTED_CONTENT_TYPES[type(page).__name__]
-
-        self.assertEqual(message["content_type"], expected_type)
-        self.assertEqual(message["title"], page.title)
-        self.assertEqual(message["summary"], page.summary)
-        self.assertEqual(message["uri"], page.url_path)
-
-        self.assertIsNotNone(message["release_date"])  # because it's a release
-
-        self.assertEqual(message["release_date"], page.release_date.isoformat())
-
-        self.assertIn("finalised", message)
-        self.assertIn("cancelled", message)
-        self.assertIn("published", message)
-
+        self.assert_page_message_fields(message, page)
+        self.assert_release_page_fields(message, page)
         self.assertTrue(message["finalised"])
         self.assertFalse(message["published"])
         self.assertFalse(message["cancelled"])
 
-        self.assertIn("date_changes", message)
-
-        self.assertEqual(len(message["date_changes"]), 3)
-
-        for i, date_change in enumerate(message["date_changes"]):
-            self.assertEqual(date_change["change_notice"], page.changes_to_release_date[i].value["reason_for_change"])
-            self.assertEqual(
-                date_change["previous_date"],
-                page.changes_to_release_date[i].value["previous_date"].isoformat(),
-            )
+        self.assert_date_changes(message, page)
 
     def test_construct_message_for_release_page_published(self):
-        """Ensure that for a release-type page, release-specific fields get added."""
+        """A published release page should have release_date, published=True, finalised=False, cancelled=False."""
         page = self.release_calendar_page_published
-
         message = self.publisher._construct_message_for_create_update(page)  # pylint: disable=W0212
-        expected_type = EXPECTED_CONTENT_TYPES[type(page).__name__]
 
-        self.assertEqual(message["content_type"], expected_type)
-        self.assertEqual(message["title"], page.title)
-        self.assertEqual(message["summary"], page.summary)
-        self.assertEqual(message["uri"], page.url_path)
-
-        self.assertIsNotNone(message["release_date"])  # because it's a release
-
-        self.assertEqual(message["release_date"], page.release_date.isoformat())
-
-        self.assertIn("finalised", message)
-        self.assertIn("cancelled", message)
-        self.assertIn("published", message)
-
+        self.assert_page_message_fields(message, page)
+        self.assert_release_page_fields(message, page)
         self.assertFalse(message["finalised"])
         self.assertTrue(message["published"])
         self.assertFalse(message["cancelled"])
 
     def test_construct_message_for_release_page_cancelled(self):
-        """Ensure that for a release-type page, release-specific fields get added."""
+        """A cancelled release page should have release_date, cancelled=True, finalised=False, published=False."""
         page = self.release_calendar_page_cancelled
-
         message = self.publisher._construct_message_for_create_update(page)  # pylint: disable=W0212
-        expected_type = EXPECTED_CONTENT_TYPES[type(page).__name__]
 
-        self.assertEqual(message["content_type"], expected_type)
-        self.assertEqual(message["title"], page.title)
-        self.assertEqual(message["summary"], page.summary)
-        self.assertEqual(message["uri"], page.url_path)
-
-        self.assertIsNotNone(message["release_date"])  # because it's a release
-
-        self.assertEqual(message["release_date"], page.release_date.isoformat())
-
-        self.assertIn("finalised", message)
-        self.assertIn("cancelled", message)
-        self.assertIn("published", message)
-
+        self.assert_page_message_fields(message, page)
+        self.assert_release_page_fields(message, page)
         self.assertFalse(message["finalised"])
         self.assertFalse(message["published"])
         self.assertTrue(message["cancelled"])
 
     def test_construct_message_for_information_page_with_topics(self):
-        """Ensure that the information page message contains the correct topics."""
+        """Ensure that the information page message includes the correct topics."""
         page = self.info_page
-
         message = self.publisher._construct_message_for_create_update(page)  # pylint: disable=W0212
-        expected_type = EXPECTED_CONTENT_TYPES[type(page).__name__]
+        self.assert_page_message_fields(message, page)
 
-        self.assertEqual(message["content_type"], expected_type)
-        self.assertEqual(message["title"], page.title)
-        self.assertEqual(message["summary"], page.summary)
-        self.assertEqual(message["uri"], page.url_path)
+        # Confirm the topics
         self.assertEqual(message["topics"], [self.topic_a.id, self.topic_b.id])
 
     def test_construct_message_for_article_page_with_inherited_topics(self):
-        """Ensure that the article page message contains topics inherited from the parent article series."""
-        # Create an ArticleSeriesPage and associate it with topics
+        """Ensure that the article page message contains topics inherited from the parent ArticleSeriesPage."""
         series_page = ArticleSeriesPageFactory(title="Article Series")
         GenericPageToTaxonomyTopic.objects.create(page=series_page, topic=self.topic_a)
         GenericPageToTaxonomyTopic.objects.create(page=series_page, topic=self.topic_b)
 
-        # Create a StatisticalArticlePage under the ArticleSeriesPage
         article_page = StatisticalArticlePageFactory(
             parent=series_page, title="Statistical Article", summary="Article summary"
         )
-
-        # Construct the message
         message = self.publisher._construct_message_for_create_update(article_page)  # pylint: disable=W0212
-        expected_type = EXPECTED_CONTENT_TYPES[type(article_page).__name__]
 
-        # Validate the message structure
-        self.assertEqual(message["content_type"], expected_type)
-        self.assertEqual(message["title"], article_page.title)
-        self.assertEqual(message["summary"], article_page.summary)
-        self.assertEqual(message["uri"], article_page.url_path)
-
-        # Ensure the topics are inherited from the parent ArticleSeriesPage
+        self.assert_page_message_fields(message, article_page)
         self.assertEqual(message["topics"], [self.topic_a.id, self.topic_b.id])
 
 
@@ -351,7 +291,7 @@ class BasePublisherTests(TestCase, WagtailTestUtils):
     KAFKA_CHANNEL_CREATED_OR_UPDATED="search-content-updated",
     KAFKA_CHANNEL_DELETED="search-content-deleted",
 )
-class KafkaPublisherTests(TestCase):
+class KafkaPublisherTests(BasePublisherTestCase):
     @classmethod
     def setUpTestData(cls):
         cls.information_page = InformationPageFactory()
@@ -363,12 +303,11 @@ class KafkaPublisherTests(TestCase):
         mock_producer_class.assert_called_once_with(
             bootstrap_servers=["localhost:9092"],
             api_version=(3, 5, 1),
-            value_serializer=ANY,  # or a lambda
+            value_serializer=ANY,
             retries=5,
         )
-
-        self.assertEqual(publisher.created_or_updated_channel, "search-content-updated")  # pylint: disable=W0212
-        self.assertEqual(publisher.deleted_channel, "search-content-deleted")  # pylint: disable=W0212
+        self.assertEqual(publisher.created_or_updated_channel, "search-content-updated")
+        self.assertEqual(publisher.deleted_channel, "search-content-deleted")
 
     @patch("cms.search.publishers.KafkaProducer")
     def test_publish_created_or_updated(self, mock_producer_class):
@@ -379,31 +318,20 @@ class KafkaPublisherTests(TestCase):
         mock_producer_class.return_value = mock_producer
 
         publisher = KafkaPublisher()
-
         page = self.information_page
 
         result = publisher.publish_created_or_updated(page)
-        expected_type = EXPECTED_CONTENT_TYPES[type(page).__name__]
 
         # Check calls to producer
         mock_producer.send.assert_called_once()
-        call_args, call_kwargs = mock_producer.send.call_args  # pylint: disable=W0612
-        self.assertEqual(call_args[0], "search-content-updated")  # channel
-        # The actual payload is the second argument
-        actual_payload = call_args[1]
+        call_args, _ = mock_producer.send.call_args
+        channel_called = call_args[0]  # "search-content-updated"
+        message_called = call_args[1]  # the actual payload
 
-        self.assertIn("uri", actual_payload)
-        self.assertIn("title", actual_payload)
-        self.assertIn("summary", actual_payload)
-        self.assertIn("content_type", actual_payload)
-
-        self.assertEqual(actual_payload["uri"], page.url_path)
-        self.assertEqual(actual_payload["title"], page.title)
-        self.assertEqual(actual_payload["summary"], page.summary)
-        self.assertEqual(actual_payload["content_type"], expected_type)
+        self.assertEqual(channel_called, "search-content-updated")
+        self.assert_page_message_fields(message_called, page)
 
         mock_future.get.assert_called_once_with(timeout=10)
-
         self.assertEqual(result, mock_future.get.return_value)
 
     @patch("cms.search.publishers.KafkaProducer")
@@ -415,76 +343,61 @@ class KafkaPublisherTests(TestCase):
         mock_producer_class.return_value = mock_producer
 
         publisher = KafkaPublisher()
-
         page = self.information_page
 
         publisher.publish_deleted(page)
 
         mock_producer.send.assert_called_once()
-        call_args, call_kwargs = mock_producer.send.call_args  # pylint: disable=W0612
-        self.assertEqual(call_args[0], "search-content-deleted")  # channel
-        actual_payload = call_args[1]
+        call_args, _ = mock_producer.send.call_args
+        channel_called = call_args[0]  # "search-content-deleted"
+        message_called = call_args[1]  # the actual payload
 
-        self.assertIn("uri", actual_payload)
+        self.assertEqual(channel_called, "search-content-deleted")
+        self.assertIn("uri", message_called)
+        self.assertEqual(message_called["uri"], page.url_path)
 
-        self.assertEqual(actual_payload["uri"], page.url_path)
-
-        # confirm get() is called
         mock_future.get.assert_called_once_with(timeout=10)
 
 
-class LogPublisherTests(TestCase):
+class LogPublisherTests(BasePublisherTestCase):
     @classmethod
     def setUpTestData(cls):
         cls.information_page = InformationPageFactory()
-
         cls.publisher = LogPublisher()
 
     @patch.object(logging.Logger, "info")
     def test_publish_created_or_updated_logs(self, mock_logger_info):
+        """Verify publish_created_or_updated logs to Logger.info with the correct arguments."""
         self.publisher.publish_created_or_updated(self.information_page)
-
-        # Make sure there was at least one info log call
         self.assertGreaterEqual(mock_logger_info.call_count, 1)
 
-        # Examine the last call
-        last_call_args, last_call_kwargs = mock_logger_info.call_args  # pylint: disable=W0612
-
-        # The format string is arg 0, the next args are "log-created-or-updated" and the dict
+        last_call_args, _ = mock_logger_info.call_args
+        # Format: ("LogPublisher: Publishing to channel=%s, message=%s", channel, message_dict)
         self.assertEqual(
             last_call_args[0],
             "LogPublisher: Publishing to channel=%s, message=%s",
             "Wrong log format string",
         )
-        self.assertEqual(
-            last_call_args[1],
-            "log-created-or-updated",
-            "Wrong channel argument",
-        )
+        self.assertEqual(last_call_args[1], "log-created-or-updated", "Wrong channel argument")
 
-        self.assertIn("uri", last_call_args[2], "Payload dict missing expected key 'uri'")
-        self.assertIn("title", last_call_args[2], "Payload dict missing expected key 'title'")
-        self.assertIn("summary", last_call_args[2], "Payload dict missing expected key 'summary'")
-        self.assertIn("content_type", last_call_args[2], "Payload dict missing expected key 'content_type'")
-        self.assertIn("topics", last_call_args[2], "Payload dict missing expected key 'topics'")
-        self.assertIn("release_date", last_call_args[2], "Payload dict missing expected key 'topics'")
+        # The dictionary is in last_call_args[2]
+        msg_dict = last_call_args[2]
+        self.assert_page_message_fields(msg_dict, self.information_page)
 
     @patch.object(logging.Logger, "info")
     def test_publish_deleted_logs(self, mock_logger_info):
+        """Verify publish_deleted logs to Logger.info with the correct arguments."""
         self.publisher.publish_deleted(self.information_page)
         self.assertGreaterEqual(mock_logger_info.call_count, 1)
 
-        last_call_args, last_call_kwargs = mock_logger_info.call_args  # pylint: disable=W0612
-
+        last_call_args, _ = mock_logger_info.call_args
         self.assertEqual(
             last_call_args[0],
             "LogPublisher: Publishing to channel=%s, message=%s",
             "Wrong log format string",
         )
-        self.assertEqual(
-            last_call_args[1],
-            "log-deleted",
-            "Wrong channel argument",
-        )
+        self.assertEqual(last_call_args[1], "log-deleted", "Wrong channel argument")
 
-        self.assertIn("uri", last_call_args[2], "Payload dict missing expected key 'uri'")
+        msg_dict = last_call_args[2]
+        self.assertIn("uri", msg_dict, "Payload dict missing expected key 'uri'")
+        self.assertEqual(msg_dict["uri"], self.information_page.url_path)
