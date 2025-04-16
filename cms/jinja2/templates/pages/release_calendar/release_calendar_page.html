@@ -1,54 +1,70 @@
 {% extends "templates/base_page.html" %}
 
 {% from "components/table-of-contents/_macro.njk" import onsTableOfContents %}
+{% from "components/hero/_macro.njk" import onsHero %}
 
 {% block header_area %}
-    <div class="common-header release-header">
-        <div class="ons-container">
-            {% include "templates/components/navigation/breadcrumbs.html" %}
-            <p class="article-header__doc-type ons-u-fs-l">{{ _("Release") }}</p>
+    {% if page.release_date or page.release_text %}
+        {# fmt:off #}
+        {% set release_date_html =
+            {
+                "term": 'Release date:',
+                "descriptions": [
+                    {
+                        "description": page.release_date|date("DATE_FORMAT") or page.release_date_text
+                    }
+                ]
+            }
+        %}
+        {# fmt:on #}
+    {% else %}
+        {% set release_date_html = "" %}
+    {% endif %}
 
-            <div class="ons-grid ons-grid-flex-gap ons-grid-flex-gap--40">
-                <div class="ons-grid__col ons-col-10@m ">
-                    <h1 class="ons-u-fs-3xl common-header__heading">
-                        {{ page.title }}
-                    </h1>
-                </div>
-                <div class="ons-grid__col ons-col-2@m common-header__kitemark">
-                    {% if page.is_accredited %}
-                        {% with accredited_logo_classes="common-header__accreditation-logo" %}
-                            {% include "templates/components/accredited/accredited-logo.html" %}
-                        {% endwith %}
-                    {% endif %}
-                </div>
-            </div>
-        </div>
+    {% if page.next_release_date or page.next_release_text %}
+        {# fmt:off #}
+        {% set next_release_html =
+            {
+                "term": 'Next release:',
+                "descriptions": [
+                    {
+                        "description": page.next_release_date|date("DATE_FORMAT") or page.next_release_text
+                    }
+                ]
+            }
+        %}
+        {# fmt:on #}
+    {% else %}
+        {% set next_release_html = "" %}
+    {% endif %}
 
-        {% if page.is_census %}
-            <div class="ons-container">
-                {% with census_logo_classes="ons-u-mt-2xs ons-u-mb-s ons-u-mt-s@m census-logo" %}
-                    {% include "templates/components/census/census-logo.html" %}
-                {% endwith %}
-            </div>
-        {% endif %}
+    {# fmt:off #}
+    {{
+        onsHero({
+            "topic": _("Release"),
+            "title": page.title,
+            "variants": 'grey',
+            "officialStatisticsBadge": page.is_accredited,
+            "wide": true,
+            "detailsColumns": 12,
+            "censusLogo": page.is_census,
+            "descriptionList": {
+                "descriptionListLabel": "",
+                "termCol": "6",
+                "descriptionCol": "6",
+                "itemsList": [
+                    release_date_html,
+                    next_release_html,
+                ]
+            },
+            "breadcrumbs": {
+                "ariaLabel": _("Breadcrumbs"),
+                "itemsList": breadcrumbs(page),
+            }
+        })
+    }}
+    {# fmt:on #}
 
-        {% block release_meta %}
-            <div class="ons-container common-header__releases common-header__releases--single-row">
-                {% if page.release_date or page.release_text %}
-                    <div>
-                        <span class="ons-u-fs-r--b common-header__releases-label">{{ _("Release date") }}:</span>
-                        <span class="ons-u-nowrap">{{ page.release_date|date("DATETIME_FORMAT") or page.release_date_text }}</span>
-                    </div>
-                {% endif %}
-                {% if page.next_release_date or page.next_release_text %}
-                    <div>
-                        <span class="ons-u-fs-r--b common-header__releases-label">{{ _("Next release") }}:</span>
-                        <span class="ons-u-nowrap">{{ page.next_release_date|date("DATETIME_FORMAT") or page.next_release_text }}</span>
-                    </div>
-                {% endif %}
-            </div>
-        {% endblock %}
-    </div>
     {% block release_note %}{% endblock %}
 {% endblock %}
 
