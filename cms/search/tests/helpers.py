@@ -43,7 +43,9 @@ class ResourceDictAssertions(SimpleTestCase):
         for key in ("release_date", "finalised", "cancelled", "published", "date_changes"):
             self.assertIn(key, payload)
 
-    def assert_release_booleans(self, payload: dict, *, finalised: bool, cancelled: bool, published: bool) -> None:
+    def assert_release_booleans(
+        self, payload: dict, *, finalised: bool = False, cancelled: bool = False, published: bool = False
+    ) -> None:
         self.assertEqual(payload["finalised"], finalised)
         self.assertEqual(payload["cancelled"], cancelled)
         self.assertEqual(payload["published"], published)

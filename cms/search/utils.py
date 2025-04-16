@@ -10,7 +10,7 @@ if TYPE_CHECKING:
 
 def build_standard_resource_dict(page: "Page") -> dict:
     """Returns a dict with the standard resource fields.
-    This covers the non-Release case (and also forms the base of the Release case).
+    This covers the non-release case (and also forms the base of the release case).
     """
     return {
         "uri": page.url_path,

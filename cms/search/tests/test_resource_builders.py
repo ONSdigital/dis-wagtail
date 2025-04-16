@@ -110,7 +110,7 @@ class ResourceBuildersTestCase(TestCase, ResourceDictAssertions):
 
         self.assert_base_fields(result, page)
         self.assert_release_fields_present(result)
-        self.assert_release_booleans(result, finalised=True, cancelled=False, published=False)
+        self.assert_release_booleans(result, finalised=True)
 
     def test_release_page_confirmed(self):
         """CONFIRMED => finalised=True, published=False, cancelled=False."""
@@ -119,7 +119,7 @@ class ResourceBuildersTestCase(TestCase, ResourceDictAssertions):
 
         self.assert_base_fields(result, page)
         self.assert_release_fields_present(result)
-        self.assert_release_booleans(result, finalised=True, cancelled=False, published=False)
+        self.assert_release_booleans(result, finalised=True)
 
     def test_release_page_cancelled(self):
         """CANCELLED => cancelled=True, finalised=False, published=False."""
@@ -128,7 +128,7 @@ class ResourceBuildersTestCase(TestCase, ResourceDictAssertions):
 
         self.assert_base_fields(result, page)
         self.assert_release_fields_present(result)
-        self.assert_release_booleans(result, finalised=False, cancelled=True, published=False)
+        self.assert_release_booleans(result, cancelled=True)
 
     def test_release_page_published(self):
         """PUBLISHED => published=True, finalised=False, cancelled=False."""
@@ -137,7 +137,7 @@ class ResourceBuildersTestCase(TestCase, ResourceDictAssertions):
 
         self.assert_base_fields(result, page)
         self.assert_release_fields_present(result)
-        self.assert_release_booleans(result, finalised=False, cancelled=False, published=True)
+        self.assert_release_booleans(result, published=True)
 
     def test_release_page_release_date_vs_provisional_date(self):
         """If release_date is set, we do NOT expect 'provisional_date' in the result

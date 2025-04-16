@@ -1,7 +1,5 @@
 from typing import TYPE_CHECKING
 
-from django.conf import settings
-from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from wagtail.models import Page
@@ -24,15 +22,11 @@ class ResourceListView(APIView):
     pagination_class = CustomPageNumberPagination
 
     def get(self, request: "HttpRequest", *args: tuple, **kwargs: dict) -> Response:
-        if not settings.IS_EXTERNAL_ENV:
-            return Response({"detail": "Not found."}, status=status.HTTP_404_NOT_FOUND)
-
         queryset = self.get_queryset()
 
         paginator = self.pagination_class()
         paginated_qs = paginator.paginate_queryset(queryset, request, view=self)
 
-        # Distinguish between "release" content types vs other
         data = []
         for page in paginated_qs:
             serializer = ResourceSerializer(page)
