@@ -10,7 +10,7 @@ from wagtail.models import Page
 from cms.settings.base import SEARCH_INDEX_EXCLUDED_PAGE_TYPES
 
 from .pagination import CustomPageNumberPagination
-from .serializers import ReleaseResourceSerializer, ResourceSerializer
+from .serializers import ResourceSerializer
 
 if TYPE_CHECKING:
     from django.http import HttpRequest
@@ -35,10 +35,7 @@ class ResourceListView(APIView):
         # Distinguish between "release" content types vs other
         data = []
         for page in paginated_qs:
-            if getattr(page, "search_index_content_type", None) == "release":
-                serializer = ReleaseResourceSerializer(page)
-            else:
-                serializer = ResourceSerializer(page)
+            serializer = ResourceSerializer(page)
             data.append(serializer.data)
 
         return paginator.get_paginated_response(data)
