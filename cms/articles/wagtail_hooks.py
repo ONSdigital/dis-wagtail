@@ -17,6 +17,7 @@ def before_create_page(
     page_class: type["Page"],
 ) -> None:
     if page_class == StatisticalArticlePage and parent_page.get_latest():
+        # Display message - the actual prepopulation is done in the signal handler
         messages.info(
             request,
             "This page has been prepopulated with the content from the latest page in the series.",

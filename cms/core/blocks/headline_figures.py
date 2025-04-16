@@ -17,6 +17,10 @@ class HeadlineFiguresItemBlock(StructBlock):
     figure = CharBlock(label="Figure", max_length=10, required=True)
     supporting_text = CharBlock(label="Supporting text", max_length=100, required=True)
 
+    class Meta:
+        # The help_text may be updated via JavaScript
+        help_text = "Enter the headline figure details."
+
     def clean(self, value: Any) -> dict[str, Any]:
         cleaned_data: dict[str, Any] = super().clean(value)
         # Generate a unique figure_id
