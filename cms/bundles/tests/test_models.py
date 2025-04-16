@@ -9,6 +9,7 @@ from cms.release_calendar.tests.factories import ReleaseCalendarPageFactory
 from cms.teams.models import Team
 from cms.users.tests.factories import UserFactory
 from cms.workflows.tests.utils import mark_page_as_ready_to_publish
+from functional_tests.step_helpers.users import create_user
 
 
 class BundleModelTestCase(TestCase):
@@ -73,6 +74,18 @@ class BundleModelTestCase(TestCase):
         BundleTeam.objects.create(parent=self.bundle, team=inactive_team)
 
         self.assertListEqual(self.bundle.active_team_ids, [team.pk])
+
+class BundelesCreatedbyTestCase(TestCase):
+    """Test Bundle model properties and methods."""
+
+    def setUp(self):
+        self.publishing_officer = UserFactory(username="publishing_officer")
+        self.bundle = BundleFactory(name="The bundle", created_by=self.publishing_officer)
+        self.statistical_article = StatisticalArticlePageFactory(title="PSF")
+
+    def test_str(self):
+        self.assertEqual(str(self.publishing_officer), str(self.bundle.created_by))
+
 
 
 class BundledPageMixinTestCase(TestCase):
