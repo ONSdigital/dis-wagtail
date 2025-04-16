@@ -5,4 +5,4 @@ class SortingChoices(models.TextChoices):
     """The choices for sorting."""
 
     ALPHABETIC = "ALPHABETIC", "Alphabetic"
-    MANUAL = "MANUAL", "Manual"
+    AS_SHOWN = "AS_SHOWN", "As shown"

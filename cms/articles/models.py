@@ -22,7 +22,7 @@ from cms.core.blocks.stream_blocks import SectionStoryBlock
 from cms.core.fields import StreamField
 from cms.core.forms import PageWithCorrectionsAdminForm
 from cms.core.models import BasePage
-from cms.datasets.blocks import RelatedDatasetStoryBlock
+from cms.datasets.blocks import DatasetStoryBlock
 from cms.taxonomy.mixins import GenericTaxonomyMixin
 
 if TYPE_CHECKING:
@@ -151,8 +151,8 @@ class StatisticalArticlePage(BundledPageMixin, RoutablePageMixin, BasePage):  # 
     corrections = StreamField([("correction", CorrectionBlock())], blank=True, null=True)
     notices = StreamField([("notice", NoticeBlock())], blank=True, null=True)
 
-    dataset_sorting = models.CharField(choices=SortingChoices.choices, default=SortingChoices.MANUAL, max_length=32)
-    datasets = StreamField(RelatedDatasetStoryBlock(), blank=True, default=list)
+    dataset_sorting = models.CharField(choices=SortingChoices.choices, default=SortingChoices.AS_SHOWN, max_length=32)
+    datasets = StreamField(DatasetStoryBlock(), blank=True, default=list)
 
     content_panels: ClassVar[list["Panel"]] = [
         *BundledPageMixin.panels,
@@ -293,30 +293,18 @@ class StatisticalArticlePage(BundledPageMixin, RoutablePageMixin, BasePage):  # 
 
         return response
 
-    @property
+    @cached_property
     def related_data_display_title(self):
         return f"{_('All data related to')} {self.title}"
 
-    @path("related-data/")
-    def related_data(self, request: "HttpRequest") -> "TemplateResponse":
+    @cached_property
+    def ordered_related_datasets(self) -> list[dict[str, Any]]:
         dataset_documents = []
         for dataset in self.datasets:  # pylint: disable=not-an-iterable
             if dataset.block_type == "manual_link":
-                metadata = {"object": {"text": "Dataset"}}
-                if released_on := dataset.value.get("released_on"):
-                    metadata.update(
-                        {
-                            "date": {
-                                "prefix": "Released on",
-                                "showPrefix": True,
-                                "iso": released_on.isoformat(),
-                                "short": released_on.strftime("%d %B %Y"),
-                            }
-                        }
-                    )
                 dataset_document = {
                     "title": {"text": dataset.value["title"], "url": dataset.value["url"]},
-                    "metadata": metadata,
+                    "metadata": {"object": {"text": "Dataset"}},
                     "description": f"<p>{dataset.value['description']}</p>",
                 }
             else:
@@ -327,7 +315,13 @@ class StatisticalArticlePage(BundledPageMixin, RoutablePageMixin, BasePage):  # 
                 }
             dataset_documents.append(dataset_document)
 
-        paginator = Paginator(dataset_documents, per_page=settings.RELATED_DATASETS_PER_PAGE)
+        if self.dataset_sorting == SortingChoices.ALPHABETIC:
+            dataset_documents = sorted(dataset_documents, key=lambda d: d["title"]["text"])
+        return dataset_documents
+
+    @path("related-data/")
+    def related_data(self, request: "HttpRequest") -> "TemplateResponse":
+        paginator = Paginator(self.ordered_related_datasets, per_page=settings.RELATED_DATASETS_PER_PAGE)
 
         try:
             paginated_datasets = paginator.page(request.GET.get("page", 1))
