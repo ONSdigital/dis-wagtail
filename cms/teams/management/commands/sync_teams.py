@@ -78,6 +78,7 @@ class Command(BaseCommand):
         """Updates the local database with the teams fetched from the API."""
         # Fetch existing Teams from the database
         existing_teams: dict[str, Team] = {team.identifier: team for team in Team.objects.all()}
+        active_team_ids = {team.identifier for team in existing_teams.values() if team.is_active}
         api_team_groups = [group for group in groups if group["id"] not in settings.ROLE_GROUP_IDS]
         teams_from_api: set[str] = {group["id"] for group in api_team_groups}
 
@@ -85,12 +86,11 @@ class Command(BaseCommand):
             self._update_team(group, existing_teams=existing_teams, dry_run=dry_run)
 
         # Deactivate teams not present in the API
-        teams_to_deactivate = set(existing_teams.keys()) - teams_from_api
+        teams_to_deactivate = set(active_team_ids) - teams_from_api
         if teams_to_deactivate:
             self.stdout.write(f"Deactivating {len(teams_to_deactivate)} team(s) not present in the API.")
             for team_id in teams_to_deactivate:
-                team = existing_teams[team_id]
-                self.stdout.write(f"Deactivating team: {team_id} - {team.name}")
+                self.stdout.write(f"Deactivating team: {team_id} - {existing_teams[team_id].name}")
 
             if not dry_run:
                 Team.objects.filter(identifier__in=teams_to_deactivate).update(is_active=False)
