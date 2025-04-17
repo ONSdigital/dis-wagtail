@@ -101,6 +101,7 @@ INSTALLED_APPS = [
     "wagtailmath",
     "wagtailfontawesomesvg",
     "wagtail_tinytableblock",
+    "rest_framework",
 ]
 
 if not IS_EXTERNAL_ENV:
