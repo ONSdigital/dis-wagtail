@@ -8,21 +8,8 @@
 {% endset %}
 
 {# fmt:off #}
-{% set languages = languages | default([
-    {
-        "url": "#",
-        "isoCode": "en",
-        "text": "English",
-        "current": true
-    },
-    {
-        "url": "#",
-        "isoCode": "cy",
-        "text": "Cymraeg",
-        "current": false
-    }
-])
-%}
+{% set languages=get_translation_urls() %}
+{% set hreflangs=get_hreflangs() %}
 
 {% if page %}
     {% set body_class = ["template-", page.get_verbose_name()| lower | replace(" ", "-")] | join %}
@@ -37,17 +24,29 @@
 {%- endset -%}
 
 {% set navigation_settings = settings.navigation.NavigationSettings %}
-{% set main_menu = main_menu | default(navigation_settings.main_menu) %}
+{% set main_menu = main_menu | default(navigation_settings.main_menu.localized) %}
 
-{% set footer_menu = footer_menu | default(navigation_settings.footer_menu) %}
+{% set footer_menu = footer_menu | default(navigation_settings.footer_menu.localized) %}
+
+{#- We set variables for text so that it gets picked up by makemessages -#}
+{%- set badge_label = _("Beta") -%}
+{%- set badge_html = _("This is a new service.") -%}
+{%- set menu_label = _("Menu") -%}
+{%- set menu_label = _("Main menu") -%}
+{%- set menu_toggle_aria_label = _("Toggle main menu") -%}
+
+{%- set ogl_pre = _('All content is available under the') -%}
+{%- set ogl_text = 'Open Government Licence v3.0' -%}
+{%- set ogl_url = 'https://www.nationalarchives.gov.uk/doc/open-government-licence/version/3/' -%}
+{%- set ogl_post = _(', except where otherwise stated') -%}
 
 {% set pageConfig = {
     "bodyClasses": body_class,
     "title": page_title,
     "header": {
         "phase": {
-            "badge": 'Beta',
-            "html": 'This is a new service.'
+            "badge": badge_label,
+            "html": badge_html
         },
         "language": {
             "languages": languages
@@ -55,11 +54,11 @@
         "mastheadLogoUrl": "/",
         "navLinks": {
             "id": "nav-links-external",
-            "ariaLabel": 'Main menu',
-            "ariaListLabel": 'Menu',
+            "ariaLabel": menu_label,
+            "ariaListLabel": menu_label,
             "toggleNavButton": {
-                "text": 'Menu',
-                "ariaLabel": 'Toggle main menu'
+                "text":menu_label,
+                "ariaLabel": menu_toggle_aria_label
             },
             "keyLinksList": main_menu_highlights(main_menu),
             "itemsList": main_menu_columns(main_menu)
@@ -67,12 +66,15 @@
     },
     "footer": {
         "cols": footer_menu_columns(footer_menu),
-    "oglLink": {
-        "pre": _('All content is available under the'),
-        "text": 'Open Government Licence v3.0',
-        "url": 'https://www.nationalarchives.gov.uk/doc/open-government-licence/version/3/',
-        "post": _(', except where otherwise stated')
-    }
+        "oglLink": {
+            "pre": ogl_pre,
+            "text": ogl_text,
+            "url": ogl_url,
+            "post": ogl_post
+        }
+    },
+    "meta": {
+        "hrefLangs": hreflangs,
     }
 }
 %}
