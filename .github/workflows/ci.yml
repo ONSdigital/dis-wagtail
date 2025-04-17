@@ -85,6 +85,7 @@ jobs:
       ENABLE_DJANGO_DEFENDER: 'false'
       POSTGRES_HOST_AUTH_METHOD: trust
       SECRET_KEY: fake_secret_key_to_run_tests # pragma: allowlist secret
+      KAFKA_SERVER: localhost:9092
 
     services:
       postgres:
@@ -110,7 +111,7 @@ jobs:
           KAFKA_CFG_NODE_ID: '1'
           KAFKA_CFG_PROCESS_ROLES: 'broker,controller'
           KAFKA_CFG_LISTENERS: 'PLAINTEXT://0.0.0.0:19092,CONTROLLER://0.0.0.0:9093'
-          KAFKA_CFG_ADVERTISED_LISTENERS: 'PLAINTEXT://localhost:19092'
+          KAFKA_CFG_ADVERTISED_LISTENERS: 'PLAINTEXT://localhost:9092'
           KAFKA_CFG_CONTROLLER_LISTENER_NAMES: 'CONTROLLER'
           KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP: 'CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT'
           KAFKA_CFG_CONTROLLER_QUORUM_VOTERS: '1@localhost:9093'
@@ -122,7 +123,7 @@ jobs:
           # Enable auto-creation of topics
           KAFKA_CFG_AUTO_CREATE_TOPICS_ENABLE: 'true'
         ports:
-          - '19092:19092'
+          - '9092:9092'
 
     steps:
       - uses: actions/checkout@v4
