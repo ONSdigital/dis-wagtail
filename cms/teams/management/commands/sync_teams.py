@@ -1,14 +1,13 @@
 import argparse
 import logging
 from collections.abc import Iterable, Mapping
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import Any, Optional
 
 import requests
 from django.conf import settings
 from django.core.management.base import BaseCommand, CommandError
 from django.db import transaction
-from django.utils import timezone
 
 from cms.teams.models import Team
 
@@ -104,8 +103,8 @@ class Command(BaseCommand):
         created_str: str = group["creation_date"]
         updated_str: str = group["last_modified_date"]
 
-        created_at: datetime = timezone.make_aware(datetime.fromisoformat(created_str))
-        updated_at: datetime = timezone.make_aware(datetime.fromisoformat(updated_str))
+        created_at: datetime = datetime.fromisoformat(created_str).replace(tzinfo=UTC)
+        updated_at: datetime = datetime.fromisoformat(updated_str).replace(tzinfo=UTC)
 
         if group_id in existing_teams:
             team = existing_teams[group_id]
