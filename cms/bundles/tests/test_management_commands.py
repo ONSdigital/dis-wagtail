@@ -85,7 +85,7 @@ class PublishBundlesCommandTestCase(TestCase):
         self.call_command()
 
         self.bundle.refresh_from_db()
-        self.assertEqual(self.bundle.status, BundleStatus.RELEASED)
+        self.assertEqual(self.bundle.status, BundleStatus.PUBLISHED)
 
         self.statistical_article.refresh_from_db()
         self.assertTrue(self.statistical_article.live)
@@ -117,7 +117,7 @@ class PublishBundlesCommandTestCase(TestCase):
         self.call_command()
 
         self.bundle.refresh_from_db()
-        self.assertEqual(self.bundle.status, BundleStatus.RELEASED)
+        self.assertEqual(self.bundle.status, BundleStatus.PUBLISHED)
 
         self.statistical_article.refresh_from_db()
         self.assertTrue(self.statistical_article.live)

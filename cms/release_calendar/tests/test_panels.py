@@ -20,7 +20,7 @@ class BundleNotePanelTestCase(WagtailTestUtils, TestCase):
     def setUpTestData(cls):
         cls.superuser = cls.create_superuser(username="admin")
         cls.page = ReleaseCalendarPageFactory()
-        cls.bundle = BundleFactory(name="Test Bundle", status=BundleStatus.PENDING, release_calendar_page=cls.page)
+        cls.bundle = BundleFactory(name="Test Bundle", status=BundleStatus.DRAFT, release_calendar_page=cls.page)
         cls.panel = ReleaseCalendarBundleNotePanel()
         cls.request = get_dummy_request()
         cls.request.user = cls.superuser
@@ -36,7 +36,7 @@ class BundleNotePanelTestCase(WagtailTestUtils, TestCase):
         self.assertTrue(self.get_bound_panel(self.page).is_shown())
         del self.page.active_bundle
 
-        self.bundle.status = BundleStatus.RELEASED
+        self.bundle.status = BundleStatus.PUBLISHED
         self.bundle.save(update_fields=["status"])
         self.assertFalse(self.get_bound_panel(self.page).is_shown())
         del self.page.active_bundle
@@ -51,7 +51,7 @@ class BundleNotePanelTestCase(WagtailTestUtils, TestCase):
         edit_url = reverse("bundle:edit", args=[self.bundle.pk])
         self.assertTagInHTML(
             f"<p>This page is in the following bundle: "
-            f'<a href"{edit_url}">{self.bundle.name} (Status: {BundleStatus.PENDING.label})</p>',
+            f'<a href"{edit_url}">{self.bundle.name} (Status: {BundleStatus.DRAFT.label})</p>',
             content,
         )
 
@@ -59,13 +59,13 @@ class BundleNotePanelTestCase(WagtailTestUtils, TestCase):
     def test_panel_content_when_in_bundle_but_cannot_manage_bundles(self, _mocked_can_manage):
         content = self.get_bound_panel(self.page).content
         self.assertTagInHTML(
-            f"<p>This page is in the following bundle: {self.bundle.name} (Status: {BundleStatus.PENDING.label})</p>",
+            f"<p>This page is in the following bundle: {self.bundle.name} (Status: {BundleStatus.DRAFT.label})</p>",
             content,
         )
 
     def test_panel_status(self):
         scenarios = [
-            (BundleStatus.PENDING, "info"),
+            (BundleStatus.DRAFT, "info"),
             (BundleStatus.IN_REVIEW, "info"),
             (BundleStatus.APPROVED, "warning"),
         ]
