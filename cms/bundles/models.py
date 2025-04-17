@@ -107,7 +107,7 @@ class Bundle(index.Indexed, ClusterableModel, models.Model):  # type: ignore[dja
         on_delete=models.SET_NULL,
         related_name="bundles",
     )
-    status = models.CharField(choices=BundleStatus.choices, default=BundleStatus.PENDING, max_length=32)
+    status = models.CharField(choices=BundleStatus.choices, default=BundleStatus.DRAFT, max_length=32)
 
     objects = BundleManager()
 

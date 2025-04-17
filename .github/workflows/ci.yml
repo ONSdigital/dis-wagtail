@@ -85,6 +85,7 @@ jobs:
       ENABLE_DJANGO_DEFENDER: 'false'
       POSTGRES_HOST_AUTH_METHOD: trust
       SECRET_KEY: fake_secret_key_to_run_tests # pragma: allowlist secret
+      KAFKA_SERVER: localhost:9092
 
     services:
       postgres:

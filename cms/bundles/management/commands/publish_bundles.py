@@ -88,7 +88,7 @@ class Command(BaseCommand):
         if bundle.release_calendar_page_id:
             self._update_related_release_calendar_page(bundle)
 
-        bundle.status = BundleStatus.RELEASED
+        bundle.status = BundleStatus.PUBLISHED
         bundle.save()
         publish_duration = time.time() - start_time
         logger.info(
