@@ -1,6 +1,11 @@
 {% extends "templates/base.html" %}
 {% from "components/back-to-top/_macro.njk" import onsBackToTop %}
 
+{#- Untranslated pages will have aliases to the original page -#}
+{%- if page.alias_of and request.LANGUAGE_CODE != page.alias_of.locale.language_code -%}
+    {%- set localised_version_not_available = true -%}
+{%- endif -%}
+
 {% block social %}
     {% with current_site=wagtail_site() %}
         <meta name="twitter:card" content="summary" />
