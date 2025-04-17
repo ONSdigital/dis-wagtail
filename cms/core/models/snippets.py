@@ -3,6 +3,7 @@ from typing import TYPE_CHECKING, Any, ClassVar, Optional
 
 from django.conf import settings
 from django.contrib.contenttypes.fields import GenericRelation
+from django.core.exceptions import ValidationError
 from django.db import models
 from django.db.models.functions import Lower
 from wagtail.fields import RichTextField
@@ -16,7 +17,7 @@ if TYPE_CHECKING:
     from cms.users.models import User
 
 
-class ContactDetails(index.Indexed, models.Model):
+class ContactDetails(TranslatableMixin, index.Indexed, models.Model):
     """A model for contact details.
 
     Note that this is registered as a snippet in core.wagtail_hooks to allow customising the icon.
@@ -40,16 +41,24 @@ class ContactDetails(index.Indexed, models.Model):
         index.SearchField("phone"),
     ]
 
-    class Meta:
+    class Meta(TranslatableMixin.Meta):
         verbose_name_plural = "contact details"
         constraints: ClassVar[list[models.BaseConstraint]] = [
             models.UniqueConstraint(
                 Lower("name"),
                 Lower("email"),
+                "locale",
                 name="core_contactdetails_name_unique",
                 violation_error_message="Contact details with this name and email combination already exists.",
             ),
         ]
+
+    def clean(self) -> None:
+        super().clean()
+        if ContactDetails.objects.filter(
+            name__iexact=self.name.strip(), email__iexact=self.email.strip(), locale=self.locale_id
+        ).exists():
+            raise ValidationError("Contact details with this name and email combination already exists.")
 
     def save(self, *args: Any, **kwargs: Any) -> None:
         self.name = self.name.strip()
@@ -88,16 +97,7 @@ class GlossaryTerm(TranslatableMixin, PreviewableMixin, RevisionMixin, index.Ind
     ]
 
     class Meta:
-        constraints: ClassVar[list[models.BaseConstraint]] = [
-            models.UniqueConstraint(
-                Lower("name"),
-                name="core_glossary_term_name_unique",
-                violation_error_message="A glossary term with this name already exists.",
-            ),
-            models.UniqueConstraint(
-                fields=("translation_key", "locale"), name="unique_translation_key_locale_core_glossaryterm"
-            ),
-        ]
+        unique_together: ClassVar[list[tuple[str, ...]]] = [*TranslatableMixin.Meta.unique_together, ("name", "locale")]
 
     @property
     def updated_by(self) -> Optional["User"]:
