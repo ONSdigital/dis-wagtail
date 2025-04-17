@@ -51,9 +51,6 @@ services:
     extends:
       file: docker-compose-dev.yml
       service: broker
-    environment:
-      KAFKA_CFG_ADVERTISED_LISTENERS: 'PLAINTEXT://broker:9092'
-      KAFKA_CFG_CONTROLLER_QUORUM_VOTERS: '1@broker:9093'
 
 volumes:
   node_modules:
