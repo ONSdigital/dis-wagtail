@@ -27,39 +27,30 @@ services:
     image: bitnami/kafka:3.5.1
     container_name: broker
     environment:
+      # Enable plaintext connections for local testing.
       ALLOW_PLAINTEXT_LISTENER: 'yes'
+
+      # Enable KRaft mode.
       KAFKA_ENABLE_KRAFT: 'yes'
 
-      # The node has both roles
-      KAFKA_CFG_PROCESS_ROLES: 'broker,controller'
+      # Use the KAFKA_CFG_ prefix for Kafka config.
       KAFKA_CFG_NODE_ID: '1'
-
-      # Listeners
-      KAFKA_CFG_LISTENERS: 'INSIDE_DOCKER://0.0.0.0:9092,OUTSIDE_DOCKER://0.0.0.0:19092,CONTROLLER://0.0.0.0:9093'
-
-      # Advertise the broker listeners only (not controller)
-      KAFKA_CFG_ADVERTISED_LISTENERS: 'INSIDE_DOCKER://broker:9092,OUTSIDE_DOCKER://localhost:19092'
-      KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP: 'INSIDE_DOCKER:PLAINTEXT,OUTSIDE_DOCKER:PLAINTEXT,CONTROLLER:PLAINTEXT'
-
-      # Inter-broker traffic uses the "INSIDE_DOCKER" listener
-      KAFKA_CFG_INTER_BROKER_LISTENER_NAME: 'INSIDE_DOCKER'
-
-      # KRaft controller config
+      KAFKA_CFG_PROCESS_ROLES: 'broker,controller'
+      KAFKA_CFG_LISTENERS: 'PLAINTEXT://0.0.0.0:9092,CONTROLLER://0.0.0.0:9093'
+      KAFKA_CFG_ADVERTISED_LISTENERS: 'PLAINTEXT://localhost:9092'
       KAFKA_CFG_CONTROLLER_LISTENER_NAMES: 'CONTROLLER'
-      KAFKA_CFG_CONTROLLER_QUORUM_VOTERS: '1@broker:9093'
-
-      # Single-node broker settings
+      KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP: 'CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT'
+      KAFKA_CFG_CONTROLLER_QUORUM_VOTERS: '1@localhost:9093'
       KAFKA_CFG_OFFSETS_TOPIC_REPLICATION_FACTOR: '1'
       KAFKA_CFG_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: '1'
       KAFKA_CFG_TRANSACTION_STATE_LOG_MIN_ISR: '1'
       KAFKA_CFG_GROUP_INITIAL_REBALANCE_DELAY_MS: '0'
       KAFKA_CFG_NUM_PARTITIONS: '3'
-      KAFKA_CFG_AUTO_CREATE_TOPICS_ENABLE: 'true'
 
+      # Enable auto-creation of topics
+      KAFKA_CFG_AUTO_CREATE_TOPICS_ENABLE: 'true'
     ports:
-      - '9092:9092' # Inside-docker
-      - '19092:19092' # Outside-docker
-      - '9093:9093' # Controller
+      - '9092:9092'
 
 volumes:
   pgdata:
