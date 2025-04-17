@@ -20,7 +20,7 @@ class BundleFactory(factory.django.DjangoModelFactory):
     class Params:
         """Defines custom factory traits.
 
-        Usage: BundlFactory(approved=True) or BundlFactory(released=True)
+        Usage: BundlFactory(approved=True) or BundlFactory(published=True)
         """
 
         in_review = factory.Trait(
@@ -28,7 +28,6 @@ class BundleFactory(factory.django.DjangoModelFactory):
             publication_date=factory.LazyFunction(lambda: timezone.now() + timezone.timedelta(days=1)),
         )
 
-        # Trait for approved bundles
         approved = factory.Trait(
             status=BundleStatus.APPROVED,
             approved_at=factory.LazyFunction(timezone.now),
@@ -36,8 +35,7 @@ class BundleFactory(factory.django.DjangoModelFactory):
             publication_date=factory.LazyFunction(lambda: timezone.now() + timezone.timedelta(days=1)),
         )
 
-        # Trait for released bundles
-        released = factory.Trait(
+        published = factory.Trait(
             status=BundleStatus.PUBLISHED,
             approved_at=factory.LazyFunction(lambda: timezone.now() - timezone.timedelta(days=1)),
             approved_by=factory.SubFactory(UserFactory),
