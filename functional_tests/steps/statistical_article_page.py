@@ -4,11 +4,13 @@ from django.urls import reverse
 from playwright.sync_api import expect
 
 from cms.articles.tests.factories import ArticleSeriesPageFactory
+from cms.topics.tests.factories import TopicPageFactory
 
 
 @given("an article series page exists")
 def the_topic_page_has_a_statistical_article_in_a_series(context: Context):
-    context.article_series = ArticleSeriesPageFactory(title="PSF")
+    context.topic_page = TopicPageFactory(title="Test Topic")
+    context.article_series = ArticleSeriesPageFactory(title="PSF", parent=context.topic_page)
 
 
 @when("the user goes to add a new statistical article page")
@@ -98,7 +100,8 @@ def user_can_view_the_superseded_statistical_article_page(context: Context):
 
 @step("the user returns to editing the statistical article page")
 def user_returns_to_editing_the_statistical_article_page(context: Context):
-    context.page.get_by_role("link", name="PSF: The article page", exact=True).click()
+    edit_url = reverse("wagtailadmin_pages:edit", args=(context.article_series.get_latest().id,))
+    context.page.goto(f"{context.base_url}{edit_url}")
 
 
 @then("the published statistical article page has the added table")
@@ -131,6 +134,66 @@ def user_adds_a_correction(context: Context):
     page.get_by_label("When*").fill("2025-03-13 13:59")
     page.locator('[data-contentpath="text"] [role="textbox"]').fill("Correction text")
     page.wait_for_timeout(500)
+
+
+@step("the user adds headline figures")
+def user_adds_headline_figures(context: Context):
+    page = context.page
+    panel = page.locator("#panel-child-content-headline_figures-content")
+    panel.get_by_role("button", name="Insert a block").click()
+    page.wait_for_timeout(100)
+    panel.get_by_role("button", name="Add", exact=True).nth(0).click()
+    page.wait_for_timeout(100)
+    panel.get_by_label("Title*").nth(0).fill("First headline figure")
+    panel.get_by_label("Figure*").nth(0).fill("~123%")
+    panel.get_by_label("Supporting text*").nth(0).fill("First supporting text")
+    panel.get_by_label("Title*").nth(1).fill("Second headline figure")
+    panel.get_by_label("Figure*").nth(1).fill("~321%")
+    panel.get_by_label("Supporting text*").nth(1).fill("Second supporting text")
+
+
+@step("the user edits the ancestor topic")
+def user_edits_the_ancestor_topic(context: Context):
+    edit_url = reverse("wagtailadmin_pages:edit", args=(context.topic_page.id,))
+    context.page.goto(f"{context.base_url}{edit_url}")
+
+
+@step("the user views the topic page")
+def user_views_the_topic_page(context: Context):
+    context.page.goto(f"{context.base_url}{context.topic_page.url}")
+
+
+@step("the user clicks to add headline figures to the topic page")
+def user_clicks_to_add_headline_figures_to_the_topic_page(context: Context, *, button_index: int = 0):
+    page = context.page
+    panel = page.locator("#panel-child-content-headline_figures-content")
+    panel.get_by_role("button", name="Insert a block").nth(button_index).click()
+    page.wait_for_timeout(100)
+    panel.get_by_role("button", name="Choose Article Series page").click()
+    page.wait_for_timeout(100)  # Wait for modal to open
+
+
+@step("the user adds two headline figures to the topic page")
+def user_adds_two_headline_figures_to_the_topic_page(context: Context):
+    page = context.page
+    user_clicks_to_add_headline_figures_to_the_topic_page(context)
+    page.locator(".modal-content").get_by_role("link", name="PSF").nth(0).click()
+    user_clicks_to_add_headline_figures_to_the_topic_page(context, button_index=1)
+    page.locator(".modal-content").get_by_role("link", name="PSF").nth(1).click()
+
+
+@step("the user reorders the headline figures on the topic page")
+def user_reorders_the_headline_figures_on_the_topic_page(context: Context):
+    page = context.page
+    panel = page.locator("#panel-child-content-headline_figures-content")
+    panel.get_by_role("button", name="Move up").nth(1).click()
+
+
+@step("the user reorders the headline figures on the Statistical Article Page")
+def user_reorders_the_headline_figures_on_the_statistical_article_page(context: Context):
+    page = context.page
+    panel = page.locator("#panel-child-content-headline_figures-content")
+    panel.get_by_role("button", name="Move up").nth(2).click()
 
 
 @step("the user adds another correction using the add button at the bottom")
@@ -200,6 +263,45 @@ def user_can_click_on_view_detail_to_expand_block(context: Context, block_type: 
 @then("the published statistical article page has the corrections and notices block")
 def the_published_statistical_article_page_has_the_corrections_and_notices_block(context: Context):
     expect(context.page.get_by_role("heading", name="Corrections and notices")).to_be_visible()
+
+
+@then("the published statistical article page has the added headline figures")
+@then("the published topic page has the added headline figures")
+@then("the headline figures are shown")
+def the_published_statistical_article_page_has_the_added_headline_figures(context: Context):
+    page = context.page
+    expect(page.get_by_text("First headline figure")).to_be_visible()
+    expect(page.get_by_text("~123%")).to_be_visible()
+    expect(page.get_by_text("Second headline figure")).to_be_visible()
+    expect(page.get_by_text("~321%")).to_be_visible()
+    expect(page.get_by_text("First supporting text")).to_be_visible()
+    expect(page.get_by_text("Second supporting text")).to_be_visible()
+
+
+@then("the published topic page has the added headline figures in the correct order")
+def the_published_topic_page_has_the_added_headline_figures_in_the_correct_order(context: Context):
+    page = context.page
+    headline_block = page.locator(".headline-figures .headline-figures__block")
+    expect(headline_block.nth(0).get_by_text("First headline figure")).to_be_visible()
+    expect(headline_block.nth(1).get_by_text("Second headline figure")).to_be_visible()
+
+
+@then("the published topic page has reordered headline figures")
+def the_published_topic_page_has_reordered_headline_figures(context: Context):
+    page = context.page
+    headline_block = page.locator(".headline-figures .headline-figures__block")
+    expect(headline_block.nth(0).get_by_text("Second headline figure")).to_be_visible()
+    expect(headline_block.nth(1).get_by_text("First headline figure")).to_be_visible()
+
+
+@then("the headline figures on the topic page link to the statistical page")
+def the_headline_figures_on_the_topic_page_link_to_the_statistical_page(context: Context):
+    page = context.page
+    page.get_by_text("First headline figure").click()
+    expect(page.get_by_role("heading", name="The article page")).to_be_visible()
+    page.go_back()
+    page.get_by_text("Second headline figure").click()
+    expect(page.get_by_role("heading", name="The article page")).to_be_visible()
 
 
 @then('the user can click on "Show detail" to expand the corrections and notices block')

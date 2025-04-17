@@ -29,6 +29,8 @@ if TYPE_CHECKING:
     from django.template.response import TemplateResponse
     from wagtail.admin.panels import Panel
 
+    from cms.topics.models import TopicPage
+
 
 class ArticleSeriesPage(RoutablePageMixin, GenericTaxonomyMixin, BasePage):  # type: ignore[django-manager-missing]
     """The article series model."""
@@ -221,6 +223,22 @@ class StatisticalArticlePage(BundledPageMixin, RoutablePageMixin, BasePage):  # 
         if self.next_release_date and self.next_release_date <= self.release_date:
             raise ValidationError({"next_release_date": "The next release date must be after the release date."})
 
+        if self.pk and self.is_latest:
+            # Get headline_figures figure ids
+            if self.headline_figures and len(self.headline_figures) > 0:
+                figure_ids = [figure["figure_id"] for figure in self.headline_figures[0].value]  # pylint: disable=unsubscriptable-object
+            else:
+                figure_ids = []
+            for headline_figure in self.figures_used_by_ancestor:
+                if headline_figure not in figure_ids:
+                    raise ValidationError(
+                        {
+                            "headline_figures": f"Figure ID {
+                                headline_figure
+                            } cannot be removed as it is referenced in a topic page.",
+                        }
+                    )
+
     def get_context(self, request: "HttpRequest", *args: Any, **kwargs: Any) -> dict:
         """Additional context for the template."""
         context: dict = super().get_context(request, *args, **kwargs)
@@ -230,6 +248,16 @@ class StatisticalArticlePage(BundledPageMixin, RoutablePageMixin, BasePage):  # 
     def get_admin_display_title(self) -> str:
         """Changes the admin display title to include the parent title."""
         return f"{self.get_parent().title}: {self.draft_title or self.title}"
+
+    def get_headline_figure(self, figure_id: str) -> dict[str, str]:
+        if not self.headline_figures:
+            return {}
+
+        for figure in self.headline_figures[0].value:  # pylint: disable=unsubscriptable-object
+            if figure["figure_id"] == figure_id:
+                return dict(figure)
+
+        return {}
 
     @property
     def display_title(self) -> str:
@@ -286,3 +314,10 @@ class StatisticalArticlePage(BundledPageMixin, RoutablePageMixin, BasePage):  # 
     def topic_ids(self) -> list[str]:
         """Returns a list of topic IDs associated with the parent article series page."""
         return list(self.get_parent().specific_deferred.topics.values_list("topic_id", flat=True))
+
+    @property
+    def figures_used_by_ancestor(self) -> list[str]:
+        """Returns a list of figure IDs used by the ancestor topic page."""
+        series = self.get_parent()
+        topic: TopicPage = series.get_parent().specific
+        return [figure.value["figure"] for figure in topic.headline_figures if figure.value["series"].id == series.id]

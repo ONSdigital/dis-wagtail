@@ -23,6 +23,10 @@
             </div>
         </div>
     </div>
+
+    {% if page.headline_figures %}
+        {% include_block page.headline_figures %}
+    {% endif %}
 {% endblock %}
 
 {% block main %}
