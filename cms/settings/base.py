@@ -932,16 +932,16 @@ AWS_COGNITO_USER_POOL_ID = env.get("AWS_COGNITO_USER_POOL_ID")
 AWS_COGNITO_APP_CLIENT_ID = env.get("AWS_COGNITO_APP_CLIENT_ID")
 
 # TODO: Make system checks
-if AWS_COGNITO_LOGIN_ENABLED:
-    required_env_vars = [
-        "IDENTITY_API_BASE_URL",
-        "AUTH_TOKEN_REFRESH_URL",
-        "AWS_COGNITO_APP_CLIENT_ID",
-        "AWS_COGNITO_USER_POOL_ID",
-    ]
-    for var in required_env_vars:
-        if not env.get(var):
-            raise ImproperlyConfigured(f"Missing required environment variable: {var}")
+# if AWS_COGNITO_LOGIN_ENABLED:
+#     required_env_vars = [
+#         "IDENTITY_API_BASE_URL",
+#         "AUTH_TOKEN_REFRESH_URL",
+#         "AWS_COGNITO_APP_CLIENT_ID",
+#         "AWS_COGNITO_USER_POOL_ID",
+#     ]
+#     for var in required_env_vars:
+#         if not env.get(var):
+#             raise ImproperlyConfigured(f"Missing required environment variable: {var}")
 
 
 # Groups
