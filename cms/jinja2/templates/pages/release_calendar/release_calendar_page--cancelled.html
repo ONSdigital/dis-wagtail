@@ -3,7 +3,7 @@
 {% from "components/table-of-contents/_macro.njk" import onsTableOfContents %}
 
 {% block release_meta %}
-    {% if page.release_date or page.release_text %}
+    {% if page.release_date or page.release_date_text %}
         <div class="ons-container common-header__releases common-header__releases--single-row">
             <div>
                 <span class="ons-u-fs-r--b">{{ _("Release date") }}:</span>

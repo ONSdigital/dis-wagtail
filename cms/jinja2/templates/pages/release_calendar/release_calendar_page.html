@@ -34,16 +34,16 @@
 
         {% block release_meta %}
             <div class="ons-container common-header__releases common-header__releases--single-row">
-                {% if page.release_date or page.release_text %}
+                {% if page.release_date or page.release_date_text %}
                     <div>
                         <span class="ons-u-fs-r--b common-header__releases-label">{{ _("Release date") }}:</span>
                         <span class="ons-u-nowrap">{{ page.release_date|date("DATETIME_FORMAT") or page.release_date_text }}</span>
                     </div>
                 {% endif %}
-                {% if page.next_release_date or page.next_release_text %}
+                {% if page.next_release_date or page.next_release_date_text %}
                     <div>
                         <span class="ons-u-fs-r--b common-header__releases-label">{{ _("Next release") }}:</span>
-                        <span class="ons-u-nowrap">{{ page.next_release_date|date("DATETIME_FORMAT") or page.next_release_text }}</span>
+                        <span class="ons-u-nowrap">{{ page.next_release_date|date("DATETIME_FORMAT") or page.next_release_date_text }}</span>
                     </div>
                 {% endif %}
             </div>
