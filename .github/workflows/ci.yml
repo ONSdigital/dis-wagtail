@@ -136,7 +136,9 @@ jobs:
           cache: poetry
 
       - name: Install dependencies
-        run: make install-dev
+        run: |
+          make install-dev
+          sudo apt-get install -y gettext
 
       - uses: actions/download-artifact@v4
         with:
@@ -155,6 +157,8 @@ jobs:
         run: poetry run ./manage.py createcachetable
       - name: Run migrations to work around Django bug (#35967)
         run: poetry run ./manage.py migrate --noinput
+      - name: Compile translations
+        run: make compilemessages
       - name: Test
         run: make test
       - name: Add coverage data to GitHub Action summary
@@ -207,7 +211,9 @@ jobs:
           cache: poetry
 
       - name: Install dependencies
-        run: make install-dev
+        run: |
+          make install-dev
+          sudo apt-get install -y gettext
 
       - name: Playwright Install
         run: poetry run python -m playwright install --with-deps ${{ matrix.browser }}
@@ -216,6 +222,9 @@ jobs:
         with:
           name: static
           path: cms/static_compiled/
+
+      - name: Compile translations
+        run: make compilemessages
 
       - name: Run Functional Tests
         run: make functional-tests

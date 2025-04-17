@@ -4,7 +4,7 @@ from django.contrib.contenttypes.fields import GenericRelation
 from django.db import models
 from wagtail.admin.panels import PublishingPanel
 from wagtail.contrib.settings.models import register_setting
-from wagtail.models import DraftStateMixin, PreviewableMixin, RevisionMixin
+from wagtail.models import DraftStateMixin, PreviewableMixin, RevisionMixin, TranslatableMixin
 
 from cms.core.fields import StreamField
 from cms.core.models import BaseSiteSetting
@@ -16,7 +16,7 @@ if TYPE_CHECKING:
     from wagtail.admin.panels import Panel
 
 
-class MainMenu(DraftStateMixin, RevisionMixin, PreviewableMixin, models.Model):
+class MainMenu(TranslatableMixin, DraftStateMixin, RevisionMixin, PreviewableMixin, models.Model):
     base_form_class = MainMenuAdminForm
 
     highlights = StreamField(
@@ -38,6 +38,10 @@ class MainMenu(DraftStateMixin, RevisionMixin, PreviewableMixin, models.Model):
     def revisions(self):  # type: ignore[no-untyped-def]
         return self._revisions
 
+    @property
+    def name(self) -> str:
+        return f"{self} ({self.locale})"  # To avoid ambiguity, we include the locale
+
     panels: ClassVar[list[Union[str, "Panel"]]] = [
         "highlights",
         "columns",
@@ -51,7 +55,7 @@ class MainMenu(DraftStateMixin, RevisionMixin, PreviewableMixin, models.Model):
         return "Main Menu"
 
 
-class FooterMenu(DraftStateMixin, RevisionMixin, PreviewableMixin, models.Model):
+class FooterMenu(TranslatableMixin, DraftStateMixin, RevisionMixin, PreviewableMixin, models.Model):
     base_form_class = FooterMenuAdminForm
 
     columns = StreamField(
@@ -65,6 +69,10 @@ class FooterMenu(DraftStateMixin, RevisionMixin, PreviewableMixin, models.Model)
     @property
     def revisions(self):  # type: ignore[no-untyped-def]
         return self._revisions
+
+    @property
+    def name(self) -> str:
+        return f"{self} ({self.locale})"  # To avoid ambiguity, we include the locale
 
     panels: ClassVar[list] = [
         "columns",
