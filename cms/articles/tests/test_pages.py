@@ -2,6 +2,7 @@ import uuid
 from http import HTTPStatus
 
 from django.contrib.auth import get_user_model
+from django.core.exceptions import ValidationError
 from django.urls import reverse
 from wagtail.test.utils import WagtailPageTestCase
 
@@ -66,6 +67,7 @@ class StatisticalArticlePageTests(WagtailPageTestCase):
                         "id": uuid.uuid4(),
                         "type": "item",
                         "value": {
+                            "figure_id": "figurexyz",
                             "title": "Figure title XYZ",
                             "figure": "XYZ",
                             "supporting_text": "Figure supporting text XYZ",
@@ -335,3 +337,33 @@ class StatisticalArticlePageTests(WagtailPageTestCase):
         self.assertContains(response, self.page.search_description)
         self.assertContains(response, self.page.headline_figures[0].value[0]["title"])
         self.assertContains(response, self.page.headline_figures[0].value[0]["supporting_text"])
+
+    def test_headline_figures_removal_validation(self):
+        series = self.page.get_parent()
+        topic = series.get_parent()
+        topic.headline_figures.extend(
+            [
+                (
+                    "figures",
+                    {
+                        "series": series,
+                        "figure": "figurexyz",
+                    },
+                ),
+                (
+                    "figures",
+                    {
+                        "series": series,
+                        "figure": "figurexyz",
+                    },
+                ),
+            ]
+        )
+
+        topic.save_revision().publish()
+
+        self.page.headline_figures = []
+
+        with self.assertRaises(ValidationError):
+            # We've removed the figures while they are referenced by the topic
+            self.page.clean()

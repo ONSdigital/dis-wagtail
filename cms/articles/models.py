@@ -223,11 +223,12 @@ class StatisticalArticlePage(BundledPageMixin, RoutablePageMixin, BasePage):  # 
         if self.next_release_date and self.next_release_date <= self.release_date:
             raise ValidationError({"next_release_date": "The next release date must be after the release date."})
 
-        if self.pk and self.is_latest and self.headline_figures and len(self.headline_figures) > 0:
-            # TODO: Find a way to prevent a user from deleting the headline figure on the frontend
+        if self.pk and self.is_latest:
             # Get headline_figures figure ids
-            figure_ids = [figure["figure_id"] for figure in self.headline_figures[0].value]  # pylint: disable=unsubscriptable-object
-
+            if self.headline_figures and len(self.headline_figures) > 0:
+                figure_ids = [figure["figure_id"] for figure in self.headline_figures[0].value]  # pylint: disable=unsubscriptable-object
+            else:
+                figure_ids = []
             for headline_figure in self.figures_used_by_ancestor:
                 if headline_figure not in figure_ids:
                     raise ValidationError(
