@@ -12,7 +12,7 @@ from cms.core.models import ContactDetails, GlossaryTerm
 
 
 class ContactDetailsIndex(SnippetIndexView):
-    list_display: ClassVar[list[str | Column]] = ["name", "email", "phone", UpdatedAtColumn()]
+    list_display: ClassVar[list[str | Column]] = ["name", "locale", "email", "phone", UpdatedAtColumn()]
 
 
 class ContactDetailsChooseColumnsMixin:
@@ -20,7 +20,7 @@ class ContactDetailsChooseColumnsMixin:
     def columns(self) -> list[Column]:
         title_column = self.title_column  # type: ignore[attr-defined]
         title_column.label = "Name"
-        return [title_column, Column("email"), Column("phone")]
+        return [title_column, Column("locale"), Column("email"), Column("phone")]
 
 
 class ContactDetailsChooseView(ContactDetailsChooseColumnsMixin, SnippetChooseView): ...
@@ -52,6 +52,7 @@ class ContactDetailsViewSet(SnippetViewSet):
 class GlossaryTermsIndex(SnippetIndexView):
     list_display: ClassVar[list[str | Column]] = [
         "name",
+        "locale",
         UpdatedAtColumn(),
         UserColumn("updated_by"),
         UserColumn("owner"),
@@ -67,7 +68,7 @@ class GlossaryTermsChooseColumnsMixin:
     def columns(self) -> list[Column]:
         title_column = self.title_column  # type: ignore[attr-defined]
         title_column.label = "Name"
-        return [title_column, UpdatedAtColumn(), UserColumn("updated_by")]
+        return [title_column, Column("locale"), UpdatedAtColumn(), UserColumn("updated_by")]
 
     def get_object_list(self) -> QuerySet[GlossaryTerm]:
         queryset = GlossaryTerm.objects.select_related(
