@@ -210,8 +210,8 @@ class StatisticalArticlePage(BundledPageMixin, RoutablePageMixin, BasePage):  # 
     ]
 
     additional_panel_tabs: ClassVar[list[tuple[list["Panel"], str]]] = [
-        (corrections_and_notices_panels, "Corrections and notices"),
         (related_data_panels, "Related data"),
+        (corrections_and_notices_panels, "Corrections and notices"),
     ]
 
     search_fields: ClassVar[list[index.BaseField]] = [
@@ -343,3 +343,12 @@ class StatisticalArticlePage(BundledPageMixin, RoutablePageMixin, BasePage):  # 
     def topic_ids(self) -> list[str]:
         """Returns a list of topic IDs associated with the parent article series page."""
         return list(self.get_parent().specific_deferred.topics.values_list("topic_id", flat=True))
+
+    @property
+    def preview_modes(self) -> list[tuple[str, str]]:
+        return [("default", "Article Page"), ("related_data", "Related Data Page")]
+
+    def serve_preview(self, request, mode_name):
+        if mode_name == "related_data":
+            return self.related_data(request)
+        return super().serve_preview(request, mode_name)
