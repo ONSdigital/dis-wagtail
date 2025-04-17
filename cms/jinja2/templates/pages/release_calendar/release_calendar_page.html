@@ -4,11 +4,15 @@
 {% from "components/hero/_macro.njk" import onsHero %}
 
 {% block header_area %}
+    {% set hero_topic = _("Release") %}
+    {% set breadcrumbs_aria_label = _("Breadcrumbs") %}
+
     {% if page.release_date or page.release_text %}
+        {% set release_date_term = _("Release date:") %}
         {# fmt:off #}
         {% set release_date_html =
             {
-                "term": 'Release date:',
+                "term": release_date_term,
                 "descriptions": [
                     {
                         "description": page.release_date|date("DATE_FORMAT") or page.release_date_text
@@ -22,10 +26,11 @@
     {% endif %}
 
     {% if page.next_release_date or page.next_release_text %}
+        {% set next_release_date_term = _("Next release:") %}
         {# fmt:off #}
         {% set next_release_html =
             {
-                "term": 'Next release:',
+                "term": next_release_date_term,
                 "descriptions": [
                     {
                         "description": page.next_release_date|date("DATE_FORMAT") or page.next_release_text
@@ -41,7 +46,7 @@
     {# fmt:off #}
     {{
         onsHero({
-            "topic": _("Release"),
+            "topic": hero_topic,
             "title": page.title,
             "variants": 'grey',
             "officialStatisticsBadge": page.is_accredited,
@@ -58,7 +63,7 @@
                 ]
             },
             "breadcrumbs": {
-                "ariaLabel": _("Breadcrumbs"),
+                "ariaLabel": breadcrumbs_aria_label,
                 "itemsList": breadcrumbs(page),
             }
         })

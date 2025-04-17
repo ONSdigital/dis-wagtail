@@ -3,14 +3,19 @@
 {% from "components/table-of-contents/_macro.njk" import onsTableOfContents %}
 
 {% block header_area %}
+    {% set hero_topic = _("Release") %}
+    {% set breadcrumbs_aria_label = _("Breadcrumbs") %}
+
     {% if page.release_date or page.release_text %}
+        {% set release_date_term = _("Release date:") %}
+        {% set release_date_desc = _("Cancelled") %}
         {# fmt:off #}
         {% set release_date_html =
             {
-                "term": 'Release date:',
+                "term": release_date_term,
                 "descriptions": [
                     {
-                        "description": _("Cancelled")
+                        "description": release_date_desc
                     }
                 ]
             }
@@ -23,7 +28,7 @@
     {# fmt:off #}
     {{
         onsHero({
-            "topic": _("Release"),
+            "topic": hero_topic,
             "title": page.title,
             "variants": 'grey',
             "officialStatisticsBadge": page.is_accredited,
@@ -39,7 +44,7 @@
                 ]
             },
             "breadcrumbs": {
-                "ariaLabel": _("Breadcrumbs"),
+                "ariaLabel": breadcrumbs_aria_label,
                 "itemsList": breadcrumbs(page),
             }
         })

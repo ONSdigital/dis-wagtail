@@ -2,11 +2,15 @@
 {% from "components/panel/_macro.njk" import onsPanel %}
 
 {% block header_area %}
+    {% set hero_topic = _("Release") %}
+    {% set breadcrumbs_aria_label = _("Breadcrumbs") %}
+
     {% if page.release_date or page.release_text %}
+        {% set release_date_term = _("Provisional release date:") %}
         {# fmt:off #}
         {% set release_date_html =
             {
-                "term": 'Provisional release date:',
+                "term": release_date_term,
                 "descriptions": [
                     {
                         "description": page.release_date|date("DATE_FORMAT") or page.release_date_text
@@ -22,7 +26,7 @@
     {# fmt:off #}
     {{
         onsHero({
-            "topic": _("Release"),
+            "topic": hero_topic,
             "title": page.title,
             "variants": 'grey',
             "officialStatisticsBadge": page.is_accredited,
@@ -38,7 +42,7 @@
                 ]
             },
             "breadcrumbs": {
-                "ariaLabel": _("Breadcrumbs"),
+                "ariaLabel": breadcrumbs_aria_label,
                 "itemsList": breadcrumbs(page),
             }
         })

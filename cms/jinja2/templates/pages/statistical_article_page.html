@@ -6,7 +6,12 @@
 {% from "components/table-of-contents/_macro.njk" import onsTableOfContents %}
 
 {% block header_area %}
+    {% set hero_topic = _("Statistical article") %}
+    {% set release_date_term = _("Release date:") %}
+    {% set next_release_date_term = _("Next release:") %}
+    {% set breadcrumbs_aria_label = _("Breadcrumbs") %}
     {% if page.contact_details %}
+        {% set contact_details_term = _("Contact:") %}
         {% set contact_description_html -%}
             <a href="mailto:{{ page.contact_details.email }}">{{ page.contact_details.name }}</a>
         {%- endset %}
@@ -14,7 +19,7 @@
         {# fmt:off #}
         {% set contact_details =
             {
-                "term": "Contact:",
+                "term": contact_details_term,
                 "descriptions": [
                     {
                         "description": contact_description_html
@@ -51,7 +56,7 @@
     {# fmt:off #}
     {{
         onsHero({
-            "topic": _("Statistical article"),
+            "topic": hero_topic,
             "title": page.display_title,
             "variants": 'grey',
             "text": page.summary,
@@ -73,7 +78,7 @@
                 "descriptionCol": "6",
                 "itemsList": [
                     {
-                        "term": _("Release date:"),
+                        "term": release_date_term,
                         "descriptions": [
                             {
                                 "description": page.release_date|date("DATE_FORMAT")
@@ -81,7 +86,7 @@
                         ]
                     },
                     {
-                        "term": _("Next release:"),
+                        "term": next_release_date_term,
                         "descriptions": [
                             {
                                 "description": next_release_date_text
@@ -92,7 +97,7 @@
                 ]
             },
             "breadcrumbs": {
-                "ariaLabel": _("Breadcrumbs"),
+                "ariaLabel": breadcrumbs_aria_label,
                 "itemsList": breadcrumbs(page),
             }
         })
