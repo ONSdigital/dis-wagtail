@@ -29,7 +29,7 @@ class PreviousVersionBlock {
   }
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  setError(_errorList) { }
+  setError(_errorList) {}
 
   getState() {
     return null;
@@ -39,7 +39,7 @@ class PreviousVersionBlock {
     return null;
   }
 
-  focus() { }
+  focus() {}
 }
 
 class PreviousVersionBlockDefinition extends window.wagtailStreamField.blocks.FieldBlockDefinition {
@@ -48,4 +48,7 @@ class PreviousVersionBlockDefinition extends window.wagtailStreamField.blocks.Fi
   }
 }
 
-window.telepath.register("cms.core.blocks.panels.PreviousVersionBlock", PreviousVersionBlockDefinition);
+window.telepath.register(
+  'cms.core.blocks.panels.PreviousVersionBlock',
+  PreviousVersionBlockDefinition,
+);

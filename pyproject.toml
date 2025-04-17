@@ -36,6 +36,8 @@ wagtail-tinytableblock = "^0.3.4"
 queryish = "^0.2"
 python-json-logger = "^3.3.0"
 json-log-formatter = "^1.1.1"
+pyjwt = "^2.10.1"
+cryptography = "^44.0.2"
 
 [tool.poetry.group.dev.dependencies]
 # :TODO: Remove pylint when ruff supports all pylint rules
@@ -46,7 +48,6 @@ django-stubs = { version="^5.1.1", extras=["compatible-mypy"]}
 pylint = "^3.3.1"
 pylint-django = "^2.6.1"
 ruff = "0.9.5"  # keep version in sync with .pre-commit-config.yaml
-
 wagtail-factories = "^4.1.0"
 coverage = "^7.6.4"
 responses = "^0.25.7"
@@ -59,7 +60,6 @@ tblib = "^3.0.0"
 Werkzeug = "~3.0.6"
 playwright = "^1.48.0"
 behave = "^1.2.6"
-
 setuptools = "^75.2.0"
 honcho = "^2.0.0"
 detect-secrets = "^1.5.0"
@@ -97,7 +97,7 @@ select = [
 ]
 
 ignore = [
-    # Conflicts with google docstring style
+    # Conflicts with Google docstring style
     "D205",
     # Allow missing docstring, remove to enforce docstrings across the board
     "D100", "D101", "D102", "D103", "D104", "D105", "D106", "D107",

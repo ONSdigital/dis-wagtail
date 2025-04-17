@@ -43,6 +43,11 @@ class Command(BaseCommand):
         """Configures the scheduler and triggers."""
         # "second=0" run the task every minute, on the minute (ie when the seconds = 0)
         self.add_management_command("publish_bundles", CronTrigger(second=0))
+
         # Run every 5 minutes.
         # See https://apscheduler.readthedocs.io/en/3.x/modules/triggers/cron.html#expression-types
         self.add_management_command("publish_scheduled_without_bundles", CronTrigger(minute="*/5"))
+
+        # Sync teams
+        # :TODO: Enable in ONS AWS environment.
+        # self.add_management_command("sync_teams", CronTrigger(minute="*/1"))
