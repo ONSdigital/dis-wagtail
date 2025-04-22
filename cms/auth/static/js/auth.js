@@ -10,6 +10,7 @@ const {
   csrfHeaderName,
   sessionRenewalOffsetSeconds,
   authTokenRefreshUrl,
+  idTokenCookieName,
 } = window.authConfig;
 const { origin } = window.location;
 const logoutURL = `${origin}/${wagtailAdminHomePath}logout/`;
@@ -121,7 +122,7 @@ const sessionConfig = {
 
 // Initialise SessionManagement only if the user is logged in via Cognito (indicated by the presence of an id_token cookie).
 // Don't load if it's in an iframe (e.g. the Wagtail admin interface preview).
-if (window.self === window.top && getCookieByName('id_token')) {
+if (window.self === window.top && getCookieByName(idTokenCookieName)) {
   SessionManagement.init(sessionConfig);
 
   // These will be fetched from localStorage which is set by the auth service before redirect.

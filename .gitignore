@@ -186,12 +186,7 @@ copier_scripts/
 /cms/static_compiled
 
 node_modules/
-# Ignore the top-level "static" directory
-/static
-
-# Don't ignore "static/" within subdirectories
-!/*/static/
-
+/static/
 
 # mkdocs
 /site

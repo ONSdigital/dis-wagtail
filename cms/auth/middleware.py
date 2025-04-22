@@ -60,14 +60,13 @@ class ONSAuthMiddleware(AuthenticationMiddleware):
             return
 
         # Check if the session is up-to-date.
-        access_jti = access_payload["jti"]
-        id_jti = id_payload["jti"]
-        if request.user.is_authenticated and request.session.get(JWT_SESSION_ID_KEY) == f"{access_jti}{id_jti}":
+        jwt_session_key = f"{access_payload['jti']}{id_payload['jti']}"
+        if request.user.is_authenticated and request.session.get(JWT_SESSION_ID_KEY) == jwt_session_key:
             # The session is up-to-date.
             return
 
         # Update the session with token identifiers.
-        request.session[JWT_SESSION_ID_KEY] = f"{access_jti}{id_jti}"
+        request.session[JWT_SESSION_ID_KEY] = jwt_session_key
 
         # Authenticate and log in the user.
         self._authenticate_user(request, id_payload)

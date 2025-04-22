@@ -49,6 +49,10 @@ def validate_jwt(token: str, token_type: str) -> dict | None:
 
     try:
         return _validate_jwt(token, extra_fields=extra_fields, token_type=token_type)
+    except requests.exceptions.RequestException:
+        logger.exception("Error fetching JWKS")
+    except json.decoder.JSONDecodeError:
+        logger.exception("Error decoding JWKS to JSON")
     except ExpiredSignatureError:
         logger.exception("Token has expired", extra={"token_type": token_type})
     except InvalidTokenError:
@@ -110,5 +114,6 @@ def get_auth_config() -> str:
         "csrfHeaderName": csrf_header_name,
         "logoutRedirectUrl": settings.LOGOUT_REDIRECT_URL,
         "sessionRenewalOffsetSeconds": settings.SESSION_RENEWAL_OFFSET_SECONDS,
+        "idTokenCookieName": settings.ID_TOKEN_COOKIE_NAME,
     }
     return json.dumps(config)
