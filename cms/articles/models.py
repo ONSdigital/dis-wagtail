@@ -14,13 +14,12 @@ from wagtail.fields import RichTextField
 from wagtail.models import Page
 from wagtail.search import index
 
-from cms.articles.forms import PageWithHeadlineFiguresAdminForm
+from cms.articles.forms import StatisticalArticlePageAdminForm
 from cms.bundles.models import BundledPageMixin
 from cms.core.blocks import HeadlineFiguresBlock
 from cms.core.blocks.panels import CorrectionBlock, NoticeBlock
 from cms.core.blocks.stream_blocks import SectionStoryBlock
 from cms.core.fields import StreamField
-from cms.core.forms import PageWithCorrectionsAdminForm
 from cms.core.models import BasePage
 from cms.taxonomy.mixins import GenericTaxonomyMixin
 
@@ -94,9 +93,6 @@ class ArticleSeriesPage(RoutablePageMixin, GenericTaxonomyMixin, BasePage):  # t
             template="templates/pages/statistical_article_page--previous-releases.html",
         )
         return response
-
-
-class StatisticalArticlePageAdminForm(PageWithHeadlineFiguresAdminForm, PageWithCorrectionsAdminForm): ...
 
 
 class StatisticalArticlePage(BundledPageMixin, RoutablePageMixin, BasePage):  # type: ignore[django-manager-missing]

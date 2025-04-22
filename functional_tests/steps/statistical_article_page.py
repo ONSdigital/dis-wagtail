@@ -281,7 +281,7 @@ def the_published_statistical_article_page_has_the_added_headline_figures(contex
 @then("the published topic page has the added headline figures in the correct order")
 def the_published_topic_page_has_the_added_headline_figures_in_the_correct_order(context: Context):
     page = context.page
-    headline_block = page.locator(".headline-figures .headline-figures__block")
+    headline_block = page.locator(".headline-figures .ons-grid__col")
     expect(headline_block.nth(0).get_by_text("First headline figure")).to_be_visible()
     expect(headline_block.nth(1).get_by_text("Second headline figure")).to_be_visible()
 
@@ -289,7 +289,7 @@ def the_published_topic_page_has_the_added_headline_figures_in_the_correct_order
 @then("the published topic page has reordered headline figures")
 def the_published_topic_page_has_reordered_headline_figures(context: Context):
     page = context.page
-    headline_block = page.locator(".headline-figures .headline-figures__block")
+    headline_block = page.locator(".headline-figures .ons-grid__col")
     expect(headline_block.nth(0).get_by_text("Second headline figure")).to_be_visible()
     expect(headline_block.nth(1).get_by_text("First headline figure")).to_be_visible()
 
