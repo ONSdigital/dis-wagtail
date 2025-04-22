@@ -6,9 +6,10 @@ from jinja2.ext import Extension
 from wagtail.contrib.routable_page.templatetags.wagtailroutablepage_tags import routablepageurl
 from wagtailmath.templatetags.wagtailmath import mathjax
 
-from cms.core.templatetags.util_tags import ons_date_format_filter, (
+from cms.core.templatetags.util_tags import (
     get_hreflangs,
     get_translation_urls,
+    ons_date_format_filter,
     set_attributes_filter,
     social_image,
     social_text,
