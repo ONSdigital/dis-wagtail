@@ -85,7 +85,12 @@ class TopicPage(ExclusiveTaxonomyMixin, BasePage):  # type: ignore[django-manage
     )
     explore_more = StreamField(ExploreMoreStoryBlock(), blank=True)
 
-    headline_figures = StreamField(TopicHeadlineFiguresStreamBlock(), blank=True, max_num=6)
+    headline_figures = StreamField(
+        TopicHeadlineFiguresStreamBlock(),
+        blank=True,
+        max_num=6,
+        help_text="Optional. If populating, it needs at least two headline figures.",
+    )
 
     content_panels: ClassVar[list["Panel"]] = [
         *BasePage.content_panels,
