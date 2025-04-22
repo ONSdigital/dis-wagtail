@@ -47,25 +47,25 @@ class SearchResourcesViewTests(TestCase, ResourceDictAssertions):
         return json.loads(response.content)
 
     def get_page_dict(self, data, page):
-        """Retrieve a specific page dict from the results by matching URI."""
-        return next((item for item in data["results"] if item.get("uri") == page.url_path), None)
+        """Retrieve a specific page dict from the items by matching URI."""
+        return next((item for item in data["items"] if item.get("uri") == page.url_path), None)
 
     def test_resources_returns_200_and_lists_various_page_types(self):
-        """Endpoint should return 200 and include all included_pages in the results."""
+        """Endpoint should return 200 and include all included_pages in the items."""
         response = self.call_view_as_external(RESOURCE_ENDPOINT)
         self.assertEqual(response.status_code, 200, f"Expected 200 OK from {RESOURCE_ENDPOINT}")
 
         data = self.parse_json(response)
-        self.assertIn("results", data, "Response JSON should contain 'results' list")
+        self.assertIn("items", data, "Response JSON should contain 'items' list")
 
         for page in self.included_pages:
             matching = self.get_page_dict(data, page)
-            self.assertIsNotNone(matching, f"Expected page with URI {page.url_path} to be present in the results")
+            self.assertIsNotNone(matching, f"Expected page with URI {page.url_path} to be present in the items")
             self.assert_base_fields(matching, page)
 
     def test_resources_excludes_non_indexable_pages(self):
         """Non-indexable pages (ArticleSeries, Home, ReleaseCalendarIndex, Theme, Topic)
-        should not appear in results.
+        should not appear in items.
         """
         response = self.call_view_as_external(RESOURCE_ENDPOINT)
         self.assertEqual(response.status_code, 200)
@@ -89,6 +89,7 @@ class ResourceListViewPaginationTests(TestCase):
         cls.index_page = IndexPageFactory(slug="custom-slug-1")
         # One parent + 12 child pages = 13 total
         cls.pages = [InformationPageFactory(slug=f"Page-{i}", parent=cls.index_page) for i in range(12)]
+        cls.total_resources = len(cls.pages) + 1  # +1 for the parent
 
     def call_view_as_external(self, url):
         """Helper to simulate calling the view in an external environment."""
@@ -99,44 +100,58 @@ class ResourceListViewPaginationTests(TestCase):
         """Helper to parse JSON from a Django test response."""
         return json.loads(response.content)
 
-    def test_default_pagination_returns_first_10(self):
-        """Should return the first 10 items by default (page_size=10)."""
+    def test_default_pagination_returns_first_slice(self):
+        """With no limit/ offset specified we should get DEFAULT_LIMIT (or all if fewer)."""
         response = self.call_view_as_external("/v1/resources/")
         self.assertEqual(response.status_code, 200)
 
         data = self.parse_json(response)
-        self.assertEqual(len(data["results"]), 10)
-        self.assertEqual(data["count"], 13)
-        self.assertIsNone(data["previous"])
-        self.assertIsNotNone(data["next"])
 
-    def test_second_page_returns_remaining_items(self):
-        """Page=2 should return the remaining 3 items (since total=13, default page_size=10)."""
-        response = self.call_view_as_external("/v1/resources/?page=2")
+        expected_items = min(self.total_resources, 20)  # Default page size is 20
+        self.assertEqual(len(data["items"]), expected_items)
+        self.assertEqual(data["count"], expected_items)
+        self.assertEqual(data["total_count"], self.total_resources)
+        self.assertEqual(data["offset"], 0)
+
+    def test_second_slice_returns_remaining_items(self):
+        """Requesting offset=<7> should return whatever is left after the first slice.
+        If the total number of resources is <= 7 the test is skipped.
+        """
+        min_resources_for_second_slice = 7
+        if self.total_resources <= min_resources_for_second_slice:
+            self.skipTest("Dataset not large enough to test second slice")
+
+        response = self.call_view_as_external(f"/v1/resources/?offset={7}")
         self.assertEqual(response.status_code, 200)
 
         data = self.parse_json(response)
-        self.assertEqual(len(data["results"]), 3)
-        self.assertEqual(data["count"], 13)
+        expected_remaining = self.total_resources - 7
+        self.assertEqual(len(data["items"]), expected_remaining)
+        self.assertEqual(data["count"], expected_remaining)
+        self.assertEqual(data["offset"], 7)
 
-    def test_custom_page_size_returns_requested_number(self):
-        """page_size=5 returns 5 items."""
-        response = self.call_view_as_external("/v1/resources/?page_size=5")
+    def test_custom_limit_returns_requested_number(self):
+        response = self.call_view_as_external("/v1/resources/?limit=5")
         self.assertEqual(response.status_code, 200)
 
         data = self.parse_json(response)
-        self.assertEqual(len(data["results"]), 5)
-        self.assertEqual(data["count"], 13)
+        self.assertEqual(len(data["items"]), 5)
+        self.assertEqual(data["count"], 5)
+        self.assertEqual(data["limit"], 5)
 
-    def test_page_size_exceeds_max_uses_max(self):
-        """When page_size exceeds max_page_size=100, results should be capped at 100."""
-        # Add extra 120 pages to exceed the maximum
-        for i in range(120):
-            InformationPageFactory(slug=f"Page-{12 + i}", parent=self.index_page)
+    def test_limit_exceeds_max_uses_max(self):
+        """When limit exceeds max_limit, results should be capped at max_limit.
+        We add enough extra pages to go past MAX_LIMIT of 500.
+        """
+        extra_needed = 500  # over the cap
+        for i in range(extra_needed):
+            InformationPageFactory(slug=f"Extra-Page-{i}", parent=self.index_page)
 
-        response = self.call_view_as_external("/v1/resources/?page_size=999")
+        response = self.call_view_as_external(f"/v1/resources/?limit={500 + 999}")
         self.assertEqual(response.status_code, 200)
 
         data = self.parse_json(response)
-        self.assertEqual(len(data["results"]), 100)
-        self.assertEqual(data["count"], 133)
+        self.assertEqual(len(data["items"]), 500)
+        self.assertEqual(data["count"], 500)
+        self.assertEqual(data["limit"], 500)
+        self.assertGreater(data["total_count"], 500)

@@ -922,3 +922,6 @@ SEARCH_INDEX_EXCLUDED_PAGE_TYPES = (
 # FIXME: remove before going live
 ENFORCE_EXCLUSIVE_TAXONOMY = env.get("ENFORCE_EXCLUSIVE_TAXONOMY", "true").lower() == "true"
 ALLOW_TEAM_MANAGEMENT = env.get("ALLOW_TEAM_MANAGEMENT", "false").lower() == "true"
+
+DEFAULT_LIMIT_PAGE_SIZE = int(os.getenv("DEFAULT_LIMIT", "20"))
+DEFAULT_MAXIMUM_LIMIT_PAGE_SIZE = int(os.getenv("MAX_LIMIT", "500"))

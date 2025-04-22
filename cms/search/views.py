@@ -6,7 +6,7 @@ from wagtail.models import Page
 
 from cms.settings.base import SEARCH_INDEX_EXCLUDED_PAGE_TYPES
 
-from .pagination import CustomPageNumberPagination
+from .pagination import CustomLimitOffsetPagination
 from .serializers import ResourceSerializer
 from .utils import get_model_by_name
 
@@ -19,7 +19,7 @@ class ResourceListView(APIView):
     Only available if IS_EXTERNAL_ENV is True.
     """
 
-    pagination_class = CustomPageNumberPagination
+    pagination_class = CustomLimitOffsetPagination
 
     def get(self, request: "HttpRequest", *args: tuple, **kwargs: dict) -> Response:
         queryset = self.get_queryset()
