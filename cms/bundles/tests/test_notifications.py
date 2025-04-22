@@ -35,7 +35,7 @@ class SlackNotificationsTestCase(TestCase):
         mock_client.return_value.send.return_value = self.mock_response
 
         self.bundle.status = BundleStatus.IN_REVIEW
-        notify_slack_of_status_change(self.bundle, BundleStatus.PENDING.label, self.user)
+        notify_slack_of_status_change(self.bundle, BundleStatus.DRAFT.label, self.user)
 
         mock_client.return_value.send.assert_called_once()
         call_kwargs = mock_client.return_value.send.call_args[1]
@@ -47,7 +47,7 @@ class SlackNotificationsTestCase(TestCase):
             [
                 {"title": "Title", "value": "First Bundle", "short": True},
                 {"title": "Changed by", "value": "Publishing Officer", "short": True},
-                {"title": "Old status", "value": BundleStatus.PENDING.label, "short": True},
+                {"title": "Old status", "value": BundleStatus.DRAFT.label, "short": True},
                 {"title": "New status", "value": BundleStatus.IN_REVIEW.label, "short": True},
             ],
         )
@@ -55,7 +55,7 @@ class SlackNotificationsTestCase(TestCase):
     @patch("cms.bundles.notifications.WebhookClient")
     def test_notify_slack_of_status_change__no_webhook_url(self, mock_client):
         """Should return early if no webhook URL is configured."""
-        notify_slack_of_status_change(self.bundle, BundleStatus.PENDING, self.user)
+        notify_slack_of_status_change(self.bundle, BundleStatus.DRAFT, self.user)
         mock_client.assert_not_called()
 
     @override_settings(SLACK_NOTIFICATIONS_WEBHOOK_URL="https://slack.ons.gov.uk")
@@ -68,14 +68,14 @@ class SlackNotificationsTestCase(TestCase):
             mock_client.return_value.send.return_value = self.mock_response
 
             self.bundle.status = BundleStatus.IN_REVIEW
-            notify_slack_of_status_change(self.bundle, BundleStatus.PENDING.label, self.user, self.inspect_url)
+            notify_slack_of_status_change(self.bundle, BundleStatus.DRAFT.label, self.user, self.inspect_url)
             call_kwargs = mock_client.return_value.send.call_args[1]
             self.assertListEqual(
                 call_kwargs["attachments"][0]["fields"],
                 [
                     {"title": "Title", "value": "First Bundle", "short": True},
                     {"title": "Changed by", "value": "Publishing Officer", "short": True},
-                    {"title": "Old status", "value": BundleStatus.PENDING.label, "short": True},
+                    {"title": "Old status", "value": BundleStatus.DRAFT.label, "short": True},
                     {"title": "New status", "value": BundleStatus.IN_REVIEW.label, "short": True},
                     {"title": "Link", "value": self.inspect_url, "short": False},
                 ],

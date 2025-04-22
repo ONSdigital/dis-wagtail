@@ -83,10 +83,12 @@ INSTALLED_APPS = [
     "wagtail.images",
     "wagtail.search",
     "wagtail.admin",
+    "wagtail.locales",
     "wagtail.contrib.settings",
     "wagtail.contrib.redirects",
     "wagtail.contrib.legacy.richtext",
     "wagtail.contrib.table_block",
+    "wagtail.contrib.simple_translation",
     "wagtail",
     "modelcluster",
     "taggit",
@@ -95,7 +97,6 @@ INSTALLED_APPS = [
     "django.contrib.contenttypes",
     "whitenoise.runserver_nostatic",  # Must be before `django.contrib.staticfiles`
     "django.contrib.staticfiles",
-    "django.contrib.sitemaps",
     "django_jinja",
     "wagtailmath",
     "wagtailfontawesomesvg",
@@ -332,7 +333,7 @@ TIME_ZONE = "Europe/London"
 USE_TZ = True
 
 USE_I18N = True
-WAGTAIL_I18N_ENABLED = False
+WAGTAIL_I18N_ENABLED = True
 
 LANGUAGE_CODE = "en-gb"
 WAGTAIL_CONTENT_LANGUAGES = LANGUAGES = [
@@ -478,10 +479,23 @@ LOGGING = {
         "console": {
             "level": "INFO",
             "class": "logging.StreamHandler",
-            "formatter": "verbose",
+            "formatter": "json",
+        },
+        "gunicorn_access": {
+            "level": "INFO",
+            "class": "logging.StreamHandler",
+            "formatter": "gunicorn_json",
         },
     },
-    "formatters": {"verbose": {"format": "[%(asctime)s][%(process)d][%(levelname)s][%(name)s] %(message)s"}},
+    "formatters": {
+        "verbose": {"format": "[%(asctime)s][%(process)d][%(levelname)s][%(name)s] %(message)s"},
+        "json": {
+            "()": "cms.core.logs.JSONFormatter",
+        },
+        "gunicorn_json": {
+            "()": "cms.core.logs.GunicornJsonFormatter",
+        },
+    },
     "loggers": {
         "cms": {
             "handlers": ["console"],
@@ -505,6 +519,11 @@ LOGGING = {
         },
         "apscheduler": {
             "handlers": ["console"],
+            "level": "INFO",
+            "propagate": False,
+        },
+        "gunicorn.access": {
+            "handlers": ["gunicorn_access"],
             "level": "INFO",
             "propagate": False,
         },
@@ -774,6 +793,7 @@ if ENABLE_DJANGO_DEFENDER:
     DEFENDER_COOLOFF_TIME = int(env.get("DJANGO_DEFENDER_COOLOFF_TIME", 600))  # default to 10 minutes
     DEFENDER_LOCKOUT_TEMPLATE = "pages/defender/lockout.html"
 
+
 # Wagtail settings
 
 
@@ -880,6 +900,8 @@ SLACK_NOTIFICATIONS_WEBHOOK_URL = env.get("SLACK_NOTIFICATIONS_WEBHOOK_URL")
 
 ONS_API_BASE_URL = env.get("ONS_API_BASE_URL", "https://api.beta.ons.gov.uk/v1")
 ONS_WEBSITE_BASE_URL = env.get("ONS_WEBSITE_BASE_URL", "https://www.ons.gov.uk")
+
+WAGTAILSIMPLETRANSLATION_SYNC_PAGE_TREE = True
 
 # Configuration for the External Search service
 SEARCH_INDEX_PUBLISHER_BACKEND = os.getenv("SEARCH_INDEX_PUBLISHER_BACKEND")

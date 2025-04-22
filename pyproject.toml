@@ -9,7 +9,7 @@ package-mode = false
 
 [tool.poetry.dependencies]
 python = "^3.12"
-django = "~5.1.6"
+django = "~5.1.8"
 wagtail = "~6.4"
 dj-database-url = "~2.3.0"
 django-basic-auth-ip-whitelist = "~0.6"
@@ -32,8 +32,10 @@ django-iam-dbauth = "^0.2.1"
 requests = "^2.32.3"
 django-treebeard = "^4.7.1"
 kafka-python = "^2.0.5"
-wagtail-tinytableblock = "^0.2.4"
+wagtail-tinytableblock = "^0.3.4"
 queryish = "^0.2"
+python-json-logger = "^3.3.0"
+json-log-formatter = "^1.1.1"
 
 [tool.poetry.group.dev.dependencies]
 # :TODO: Remove pylint when ruff supports all pylint rules
@@ -112,6 +114,8 @@ convention = "google"
 "**/tests/*" = [
     # Allow use of assert statements in tests
     "S101",
+    # Allow what looks like hard-coded credentials
+    "S106"
 ]
 "cms/*/migrations/*" = [
     "RUF012"

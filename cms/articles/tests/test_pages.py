@@ -67,6 +67,20 @@ class StatisticalArticlePageTests(WagtailPageTestCase):
         self.assertContains(response, self.page.title)
         self.assertContains(response, self.page.summary)
 
+    def test_localised_version_of_page_works(self):
+        response = self.client.get("/cy" + self.page.url)
+        self.assertEqual(response.status_code, HTTPStatus.OK)
+        # Body of the page is still English
+        self.assertContains(response, self.page.title)
+        self.assertContains(response, self.page.summary)
+
+        # However, the page's furniture should be in Welsh
+        self.assertContains(response, "Mae'r holl gynnwys ar gael o dan delerau'r")
+
+    def test_unknown_localised_version_of_page_404(self):
+        response = self.client.get("/fr" + self.page.url)
+        self.assertEqual(response.status_code, HTTPStatus.NOT_FOUND)
+
     def test_correction_routes(self):
         self.assertPageIsRoutable(self.page, "previous/v1/")
         self.assertPageIsRoutable(self.page, "previous/v2/")
