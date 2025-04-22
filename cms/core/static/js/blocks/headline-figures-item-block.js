@@ -20,6 +20,13 @@ class HeadlineFiguresItemBlock extends window.wagtailStreamField.blocks.StructBl
     figureInput.type = "hidden";
     container.style.display = "none";
 
+    if (figureInput.value) {
+      const figureIdLabel = document.createElement("div");
+      figureIdLabel.className = "w-field";
+      figureIdLabel.innerHTML = `<span class="w-field__label"><b>Figure ID:</b> ${figureInput.value}</span>`;
+      container.parentElement.appendChild(figureIdLabel);
+    }
+
     if (isUsed) {
       // This figure is used by a topic, we need to prevent deletion
       const shortPrefix = prefix.substr(0, prefix.length - 5);
