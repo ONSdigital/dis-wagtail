@@ -1,4 +1,3 @@
-from secrets import token_urlsafe
 from typing import Any
 
 from django import forms
@@ -11,7 +10,6 @@ from wagtail.telepath import register
 class HeadlineFiguresItemBlock(StructBlock):
     """Represents a headline figure."""
 
-    # TODO: make this a hidden value
     figure_id = CharBlock(required=False)
     title = CharBlock(label="Title", max_length=60, required=True)
     figure = CharBlock(label="Figure", max_length=10, required=True)
@@ -20,13 +18,6 @@ class HeadlineFiguresItemBlock(StructBlock):
     class Meta:
         # The help_text may be updated via JavaScript
         help_text = "Enter the headline figure details."
-
-    def clean(self, value: Any) -> dict[str, Any]:
-        cleaned_data: dict[str, Any] = super().clean(value)
-        # Generate a unique figure_id
-        if not cleaned_data["figure_id"]:
-            cleaned_data["figure_id"] = token_urlsafe(6)
-        return cleaned_data
 
 
 class HeadlineFiguresBlock(ListBlock):

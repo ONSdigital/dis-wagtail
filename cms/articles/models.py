@@ -19,7 +19,7 @@ from cms.core.blocks import HeadlineFiguresBlock
 from cms.core.blocks.panels import CorrectionBlock, NoticeBlock
 from cms.core.blocks.stream_blocks import SectionStoryBlock
 from cms.core.fields import StreamField
-from cms.core.forms import PageWithCorrectionsAdminForm
+from cms.core.forms import PageWithCorrectionsAdminForm, PageWithHeadlineFiguresAdminForm
 from cms.core.models import BasePage
 from cms.taxonomy.mixins import GenericTaxonomyMixin
 
@@ -30,6 +30,8 @@ if TYPE_CHECKING:
     from wagtail.admin.panels import Panel
 
     from cms.topics.models import TopicPage
+
+FIGURE_ID_SEPARATOR = ","
 
 
 class ArticleSeriesPage(RoutablePageMixin, GenericTaxonomyMixin, BasePage):  # type: ignore[django-manager-missing]
@@ -93,13 +95,16 @@ class ArticleSeriesPage(RoutablePageMixin, GenericTaxonomyMixin, BasePage):  # t
         return response
 
 
+class StatisticalArtivlePageAdminForm(PageWithHeadlineFiguresAdminForm, PageWithCorrectionsAdminForm): ...
+
+
 class StatisticalArticlePage(BundledPageMixin, RoutablePageMixin, BasePage):  # type: ignore[django-manager-missing]
     """The statistical article page model.
 
     Previously known as statistical bulletin, statistical analysis article, analysis page.
     """
 
-    base_form_class = PageWithCorrectionsAdminForm
+    base_form_class = StatisticalArtivlePageAdminForm
 
     parent_page_types: ClassVar[list[str]] = ["ArticleSeriesPage"]
     subpage_types: ClassVar[list[str]] = []
@@ -144,6 +149,11 @@ class StatisticalArticlePage(BundledPageMixin, RoutablePageMixin, BasePage):  # 
 
     # Fields: content
     headline_figures = StreamField([("figures", HeadlineFiguresBlock())], blank=True, max_num=1)
+    headline_figures_figure_ids = models.CharField(
+        max_length=128,
+        blank=True,
+        editable=False,
+    )
     content = StreamField(SectionStoryBlock())
 
     show_cite_this_page = models.BooleanField(default=True)
@@ -223,12 +233,20 @@ class StatisticalArticlePage(BundledPageMixin, RoutablePageMixin, BasePage):  # 
         if self.next_release_date and self.next_release_date <= self.release_date:
             raise ValidationError({"next_release_date": "The next release date must be after the release date."})
 
+        if self.headline_figures and len(self.headline_figures) > 0:
+            figure_ids = [figure["figure_id"] for figure in self.headline_figures[0].value]  # pylint: disable=unsubscriptable-object
+        else:
+            figure_ids = []
+
+        figure_ids_set = set(figure_ids)
+        existing_figure_ids_set = set(self.headline_figures_figure_ids_list)
+
+        # Check if the provided figure IDs have been registered by our custom form
+        if any(item not in existing_figure_ids_set for item in figure_ids_set):
+            # This means someone tampered with the figure ID
+            raise ValidationError({"headline_figures": "Invalid figure ID(s) provided."})
+
         if self.pk and self.is_latest:
-            # Get headline_figures figure ids
-            if self.headline_figures and len(self.headline_figures) > 0:
-                figure_ids = [figure["figure_id"] for figure in self.headline_figures[0].value]  # pylint: disable=unsubscriptable-object
-            else:
-                figure_ids = []
             for headline_figure in self.figures_used_by_ancestor:
                 if headline_figure not in figure_ids:
                     raise ValidationError(
@@ -238,6 +256,9 @@ class StatisticalArticlePage(BundledPageMixin, RoutablePageMixin, BasePage):  # 
                             } cannot be removed as it is referenced in a topic page.",
                         }
                     )
+
+        # At this stage we can ovveride the figure ids to account for deleted ones
+        self.update_headline_figures_figure_ids(figure_ids)
 
     def get_context(self, request: "HttpRequest", *args: Any, **kwargs: Any) -> dict:
         """Additional context for the template."""
@@ -258,6 +279,23 @@ class StatisticalArticlePage(BundledPageMixin, RoutablePageMixin, BasePage):  # 
                 return dict(figure)
 
         return {}
+
+    @cached_property
+    def headline_figures_figure_ids_list(self) -> list[str]:
+        """Returns a list of figure IDs from the headline figures."""
+        if self.headline_figures_figure_ids:
+            return self.headline_figures_figure_ids.split(FIGURE_ID_SEPARATOR)
+        return []
+
+    def add_headline_figures_figure_id(self, figure_id: str) -> None:
+        """Adds a figure ID to the list of headline figures."""
+        if figure_id not in self.headline_figures_figure_ids_list:
+            self.headline_figures_figure_ids_list.append(figure_id)
+            self.headline_figures_figure_ids = FIGURE_ID_SEPARATOR.join(self.headline_figures_figure_ids_list)
+
+    def update_headline_figures_figure_ids(self, figure_ids: list[str]) -> None:
+        """Updates the list of headline figures."""
+        self.headline_figures_figure_ids = FIGURE_ID_SEPARATOR.join(figure_ids)
 
     @property
     def display_title(self) -> str:
