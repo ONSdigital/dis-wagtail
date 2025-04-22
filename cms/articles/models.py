@@ -14,12 +14,13 @@ from wagtail.fields import RichTextField
 from wagtail.models import Page
 from wagtail.search import index
 
+from cms.articles.forms import PageWithHeadlineFiguresAdminForm
 from cms.bundles.models import BundledPageMixin
 from cms.core.blocks import HeadlineFiguresBlock
 from cms.core.blocks.panels import CorrectionBlock, NoticeBlock
 from cms.core.blocks.stream_blocks import SectionStoryBlock
 from cms.core.fields import StreamField
-from cms.core.forms import PageWithCorrectionsAdminForm, PageWithHeadlineFiguresAdminForm
+from cms.core.forms import PageWithCorrectionsAdminForm
 from cms.core.models import BasePage
 from cms.taxonomy.mixins import GenericTaxonomyMixin
 
@@ -95,7 +96,7 @@ class ArticleSeriesPage(RoutablePageMixin, GenericTaxonomyMixin, BasePage):  # t
         return response
 
 
-class StatisticalArtivlePageAdminForm(PageWithHeadlineFiguresAdminForm, PageWithCorrectionsAdminForm): ...
+class StatisticalArticlePageAdminForm(PageWithHeadlineFiguresAdminForm, PageWithCorrectionsAdminForm): ...
 
 
 class StatisticalArticlePage(BundledPageMixin, RoutablePageMixin, BasePage):  # type: ignore[django-manager-missing]
@@ -104,7 +105,7 @@ class StatisticalArticlePage(BundledPageMixin, RoutablePageMixin, BasePage):  # 
     Previously known as statistical bulletin, statistical analysis article, analysis page.
     """
 
-    base_form_class = StatisticalArtivlePageAdminForm
+    base_form_class = StatisticalArticlePageAdminForm
 
     parent_page_types: ClassVar[list[str]] = ["ArticleSeriesPage"]
     subpage_types: ClassVar[list[str]] = []
@@ -280,7 +281,7 @@ class StatisticalArticlePage(BundledPageMixin, RoutablePageMixin, BasePage):  # 
 
         return {}
 
-    @cached_property
+    @property
     def headline_figures_figure_ids_list(self) -> list[str]:
         """Returns a list of figure IDs from the headline figures."""
         if self.headline_figures_figure_ids:

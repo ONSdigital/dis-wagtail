@@ -76,6 +76,7 @@ class StatisticalArticlePageTests(WagtailPageTestCase):
                 ],
             }
         ]
+        cls.page.headline_figures_figure_ids = "figurexyz"
         cls.page.save_revision().publish()
         cls.user = get_user_model().objects.create(username="wagtailer", is_superuser=True)
 

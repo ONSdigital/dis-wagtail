@@ -41,6 +41,7 @@ class ArticleSeriesPageTests(WagtailPageTestCase):
                 ],
             }
         ]
+        cls.statistical_article_page.headline_figures_figure_ids = "figurexyz,figureabc"
         cls.statistical_article_page.save_revision().publish()
 
     def test_default_route(self):
