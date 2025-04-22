@@ -114,6 +114,13 @@ class ONSTableBlock(TinyTableBlock):
     source = blocks.CharBlock(label="Source", required=False)
     footnotes = blocks.RichTextBlock(label="Footnotes", features=settings.RICH_TEXT_BASIC, required=False)
 
+    def __init__(
+        self, *, local_blocks: list[blocks.Block] | None = None, search_index: bool = True, **kwargs: Any
+    ) -> None:
+        super().__init__(local_blocks=local_blocks, search_index=search_index, **kwargs)
+        # relabeled to match the publishing team's terminology
+        self.child_blocks["caption"].label = "Sub-heading"
+
     def _align_to_ons_classname(self, alignment: str) -> str:
         match alignment:
             case "right":

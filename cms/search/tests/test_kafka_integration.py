@@ -2,6 +2,7 @@ import json
 import logging
 import time
 
+from django.conf import settings
 from django.test import TestCase, override_settings
 from kafka import KafkaConsumer
 
@@ -10,7 +11,6 @@ from cms.standard_pages.tests.factories import InformationPageFactory
 
 
 @override_settings(
-    KAFKA_SERVER="localhost:9092",
     KAFKA_CHANNEL_CREATED_OR_UPDATED="search-content-updated",
     KAFKA_CHANNEL_DELETED="search-content-deleted",
 )
@@ -25,7 +25,7 @@ class KafkaIntegrationTests(TestCase):
         # so we can verify messages that come in.
         cls.consumer_created = KafkaConsumer(
             "search-content-updated",
-            bootstrap_servers=["localhost:9092"],
+            bootstrap_servers=[settings.KAFKA_SERVER],
             auto_offset_reset="earliest",
             enable_auto_commit=True,
             group_id="test-group-created-updated",
@@ -33,7 +33,7 @@ class KafkaIntegrationTests(TestCase):
 
         cls.consumer_deleted = KafkaConsumer(
             "search-content-deleted",
-            bootstrap_servers=["localhost:9092"],
+            bootstrap_servers=[settings.KAFKA_SERVER],
             auto_offset_reset="earliest",
             enable_auto_commit=True,
             group_id="test-group-deleted",

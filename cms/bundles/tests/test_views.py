@@ -193,7 +193,7 @@ class PreviewBundleViewTestCase(WagtailTestUtils, TestCase):
         self.client.force_login(self.previewer)
 
         self.previewer.teams.add(self.preview_team)
-        for status in [BundleStatus.PENDING, BundleStatus.RELEASED]:
+        for status in [BundleStatus.DRAFT, BundleStatus.PUBLISHED]:
             self.bundle.status = status
             self.bundle.save(update_fields=["status"])
             response = self.client.get(self.url_preview_ready, follow=True)
