@@ -42,7 +42,8 @@ class ReleaseCalendarPageAdminForm(WagtailAdminPageForm):
             raise ValidationError({"release_date": error, "release_date_text": error})
 
         if (
-            self.instance.release_date
+            self.instance.status != ReleaseStatus.PROVISIONAL
+            and self.instance.release_date
             and self.instance.release_date != cleaned_data.get("release_date")
             and len(self.instance.changes_to_release_date) == len(cleaned_data.get("changes_to_release_date", []))
         ):
