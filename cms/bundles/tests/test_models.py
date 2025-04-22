@@ -34,10 +34,10 @@ class BundleModelTestCase(TestCase):
 
     def test_can_be_approved__by_status_only(self):
         test_cases = [
-            (BundleStatus.PENDING, False),
+            (BundleStatus.DRAFT, False),
             (BundleStatus.IN_REVIEW, True),
             (BundleStatus.APPROVED, False),
-            (BundleStatus.RELEASED, False),
+            (BundleStatus.PUBLISHED, False),
         ]
 
         for status, expected in test_cases:
@@ -101,12 +101,12 @@ class BundledPageMixinTestCase(TestCase):
         self.assertEqual(self.page.bundles.first(), self.bundle)
 
     def test_active_bundles_property(self):
-        self.bundle.status = BundleStatus.RELEASED
+        self.bundle.status = BundleStatus.PUBLISHED
         self.bundle.save(update_fields=["status"])
 
         self.assertEqual(self.page.active_bundles.count(), 0)
 
-        self.bundle.status = BundleStatus.PENDING
+        self.bundle.status = BundleStatus.DRAFT
         self.bundle.save(update_fields=["status"])
 
         self.assertEqual(self.page.active_bundles.count(), 1)
@@ -114,7 +114,7 @@ class BundledPageMixinTestCase(TestCase):
     def test_in_active_bundle_property(self):
         self.assertTrue(self.page.in_active_bundle)
 
-        self.bundle.status = BundleStatus.RELEASED
+        self.bundle.status = BundleStatus.PUBLISHED
         self.bundle.save(update_fields=["status"])
 
         del self.page.in_active_bundle  # clear the cached property
@@ -124,7 +124,7 @@ class BundledPageMixinTestCase(TestCase):
     def test_active_bundle_property(self):
         self.assertEqual(self.page.active_bundle, self.bundle)
 
-        self.bundle.status = BundleStatus.RELEASED
+        self.bundle.status = BundleStatus.PUBLISHED
         self.bundle.save(update_fields=["status"])
 
         del self.page.active_bundle  # cleared cached property

@@ -1,9 +1,10 @@
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING, Optional, TypedDict
 
 import jinja2
 from django import template
 from django.template.loader import render_to_string
 from django_jinja import library
+from wagtail.models import Locale
 
 from cms.core.models import SocialMediaSettings
 
@@ -14,6 +15,24 @@ if TYPE_CHECKING:
     from wagtail.models import Page, Site
 
     from cms.images.models import CustomImage
+
+
+class LocaleURLsDict(TypedDict):
+    locale: "Locale"
+    variant: "Page"
+    url: str
+
+
+class TranslationURLDict(TypedDict):
+    url: str
+    isoCode: str
+    text: str
+    current: bool
+
+
+class HreflangDict(TypedDict):
+    url: str
+    lang: str
 
 
 # Social text
@@ -48,3 +67,67 @@ def set_attributes_filter(attributes: dict, new_attributes: dict) -> dict:
     """
     attributes.update(new_attributes)
     return attributes
+
+
+def _build_locale_urls(context: jinja2.runtime.Context) -> list[LocaleURLsDict]:
+    """Internal helper to build a list of dicts that map each locale to:
+    - its variant (or fallback to default_page if missing)
+    - the final URL to use
+    - the locale object itself.
+    """
+    page = context.get("page")
+    if not page:
+        return []
+    default_locale = Locale.get_default()
+    variants = {variant.locale_id: variant for variant in page.get_translations(inclusive=True).defer_streamfields()}
+    default_page = variants.get(default_locale.pk)
+    results: list[LocaleURLsDict] = []
+    for locale in Locale.objects.all().order_by("pk"):
+        variant = variants.get(locale.pk, default_page)
+        if not variant:
+            # In case a preview of a non-existent page is requested
+            continue
+        url = variant.get_url(request=context["request"])
+        # If there's no real translation in this locale, prepend
+        # the locale code to the default page's URL so that strings in
+        # templates can be localized:
+        if variant == default_page and locale.pk != variant.locale_id:
+            url = f"/{locale.language_code}{url}"
+        results.append(
+            {
+                "locale": locale,
+                "variant": variant,
+                "url": url,
+            }
+        )
+    return results
+
+
+@jinja2.pass_context
+def get_translation_urls(context: jinja2.runtime.Context) -> list[TranslationURLDict]:
+    """Returns a list of dictionaries containing URL, ISO code, language name,
+    and whether it is the current locale.
+    """
+    base_urls = _build_locale_urls(context)
+    urls: list[TranslationURLDict] = []
+    for item in base_urls:
+        locale = item["locale"]
+        urls.append(
+            {
+                "url": item["url"],
+                "isoCode": locale.language_code.split("-", 1)[0],
+                "text": ("English" if locale.language_name_local == "British English" else locale.language_name_local),
+                "current": locale.is_active,
+            }
+        )
+    return urls
+
+
+@jinja2.pass_context
+def get_hreflangs(context: jinja2.runtime.Context) -> list[HreflangDict]:
+    """Returns a list of dictionaries containing URL and the full locale code.
+    Typically used for HTML 'hreflang' tags.
+    """
+    base_urls = _build_locale_urls(context)
+    hreflangs: list[HreflangDict] = [{"url": item["url"], "lang": item["locale"].language_code} for item in base_urls]
+    return hreflangs
