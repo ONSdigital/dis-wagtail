@@ -1,5 +1,3 @@
-import json
-
 from django.test import TestCase, override_settings
 
 from cms.articles.tests.factories import ArticleSeriesPageFactory, StatisticalArticlePageFactory
@@ -7,7 +5,7 @@ from cms.home.models import HomePage
 from cms.methodology.tests.factories import MethodologyPageFactory
 from cms.release_calendar.models import ReleaseCalendarIndex
 from cms.release_calendar.tests.factories import ReleaseCalendarPageFactory
-from cms.search.tests.helpers import ResourceDictAssertions
+from cms.search.tests.helpers import ExternalAPITestMixin, ResourceDictAssertions
 from cms.standard_pages.tests.factories import IndexPageFactory, InformationPageFactory
 from cms.themes.tests.factories import ThemePageFactory
 from cms.topics.tests.factories import TopicPageFactory
@@ -16,7 +14,7 @@ RESOURCE_ENDPOINT = "/v1/resources/"
 
 
 @override_settings(IS_EXTERNAL_ENV=False)
-class SearchResourcesViewTests(TestCase, ResourceDictAssertions):
+class SearchResourcesViewTests(TestCase, ResourceDictAssertions, ExternalAPITestMixin):
     @classmethod
     def setUpTestData(cls):
         # Pages that are excluded from the search index
@@ -36,15 +34,6 @@ class SearchResourcesViewTests(TestCase, ResourceDictAssertions):
             StatisticalArticlePageFactory(),
             IndexPageFactory(slug="custom-slug-1"),
         ]
-
-    def call_view_as_external(self, url):
-        """Helper to simulate calling the view in an external environment."""
-        with override_settings(ROOT_URLCONF="cms.search.tests.test_urls", IS_EXTERNAL_ENV=True):
-            return self.client.get(url)
-
-    def parse_json(self, response):
-        """Helper to parse JSON from a Django test response."""
-        return json.loads(response.content)
 
     def get_page_dict(self, data, page):
         """Retrieve a specific page dict from the items by matching URI."""
@@ -83,22 +72,13 @@ class SearchResourcesViewTests(TestCase, ResourceDictAssertions):
 
 
 @override_settings(IS_EXTERNAL_ENV=False)
-class ResourceListViewPaginationTests(TestCase):
+class ResourceListViewPaginationTests(TestCase, ExternalAPITestMixin):
     @classmethod
     def setUpTestData(cls):
         cls.index_page = IndexPageFactory(slug="custom-slug-1")
         # One parent + 12 child pages = 13 total
         cls.pages = [InformationPageFactory(slug=f"Page-{i}", parent=cls.index_page) for i in range(12)]
         cls.total_resources = len(cls.pages) + 1  # +1 for the parent
-
-    def call_view_as_external(self, url):
-        """Helper to simulate calling the view in an external environment."""
-        with override_settings(ROOT_URLCONF="cms.search.tests.test_urls", IS_EXTERNAL_ENV=True):
-            return self.client.get(url)
-
-    def parse_json(self, response):
-        """Helper to parse JSON from a Django test response."""
-        return json.loads(response.content)
 
     def test_default_pagination_returns_first_slice(self):
         """With no limit/ offset specified we should get DEFAULT_LIMIT (or all if fewer)."""

@@ -3,7 +3,9 @@ Keep everything that describes the shape of the resource metadata
 dict in this file so all tests agree on a single truth.
 """
 
-from django.test import SimpleTestCase
+import json
+
+from django.test import SimpleTestCase, override_settings
 from wagtail.models import Page
 
 EXPECTED_CONTENT_TYPES = {
@@ -49,3 +51,28 @@ class ResourceDictAssertions(SimpleTestCase):
         self.assertEqual(payload["finalised"], finalised)
         self.assertEqual(payload["cancelled"], cancelled)
         self.assertEqual(payload["published"], published)
+
+
+class ExternalAPITestMixin:
+    """Helpers for calling an endpoint “as if” we were on the external
+    publishing stack (IS_EXTERNAL_ENV=True) and for decoding JSON.
+    """
+
+    EXTERNAL_URLCONF = "cms.search.tests.test_urls"
+
+    def call_view_as_external(self, url, **extra):
+        """Issue a GET with the same client but under
+          - ROOT_URLCONF = EXTERNAL_URLCONF
+          - IS_EXTERNAL_ENV = True
+        so the view passes its environment check.
+        """
+        with override_settings(
+            ROOT_URLCONF=self.EXTERNAL_URLCONF,
+            IS_EXTERNAL_ENV=True,
+        ):
+            return self.client.get(url, **extra)
+
+    @staticmethod
+    def parse_json(response):
+        """Return response.body decoded as JSON."""
+        return json.loads(response.content)
