@@ -144,7 +144,7 @@ class TopicPageTestCase(TestCase):
         self.assertContains(response, self.article.display_title)
 
     def test_headline_figures_clean(self):
-        with self.assertRaises(ValidationError):
+        with self.assertRaisesRegex(ValidationError, "If you add headline figures, please add at least 2."):
             # Should not validate with just one
             self.topic_page.headline_figures.append(
                 (

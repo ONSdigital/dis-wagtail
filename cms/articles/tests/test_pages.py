@@ -379,6 +379,8 @@ class StatisticalArticlePageTests(WagtailPageTestCase):
 
         self.page.headline_figures = []
 
-        with self.assertRaises(ValidationError):
+        with self.assertRaisesRegex(
+            ValidationError, "Figure ID figurexyz cannot be removed as it is referenced in a topic page."
+        ):
             # We've removed the figures while they are referenced by the topic
             self.page.clean()
