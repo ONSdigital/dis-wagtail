@@ -2,6 +2,8 @@ from collections.abc import Mapping
 from typing import TYPE_CHECKING, Optional
 
 from django.shortcuts import redirect
+from django.templatetags.static import static
+from django.utils.html import format_html
 from wagtail import hooks
 from wagtail.admin import messages
 
@@ -39,3 +41,8 @@ def before_edit_page(request: "HttpRequest", page: "Page") -> Optional["HttpResp
 
     messages.error(request, "Cannot self-approve your changes. Please ask another Publishing team member to do so.")
     return redirect("wagtailadmin_pages:edit", page.pk)
+
+
+@hooks.register("insert_editor_js")
+def insert_workflow_tweaks_js() -> str:
+    return format_html('<script src="{}"></script>', static("js/workflow-tweaks.js"))
