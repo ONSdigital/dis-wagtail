@@ -9,13 +9,11 @@ class CustomLimitOffsetPagination(LimitOffsetPagination):
     """
 
     default_limit = settings.DEFAULT_LIMIT_PAGE_SIZE  # Default number of items per page
-    max_limit = settings.DEFAULT_MAXIMUM_LIMIT_PAGE_SIZE  # Maximum number of items per page
-    limit_query_param = "limit"  # Query parameter for the limit
-    offset_query_param = "offset"  # Query parameter for the offset
+    max_limit = settings.DEFAULT_LIMIT_MAXIMUM_PAGE_SIZE  # Maximum number of items per page
 
     def get_paginated_response(self, data: list) -> Response:
         """Override DRF's default so we output the keys required by
-        dp-standards / specification.yml.
+        dp-standards.
         """
         return Response(
             {

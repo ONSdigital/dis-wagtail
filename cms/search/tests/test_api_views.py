@@ -35,7 +35,8 @@ class SearchResourcesViewTests(TestCase, ResourceDictAssertions, ExternalAPITest
             IndexPageFactory(slug="custom-slug-1"),
         ]
 
-    def get_page_dict(self, data, page):
+    @staticmethod
+    def get_page_dict(data, page):
         """Retrieve a specific page dict from the items by matching URI."""
         return next((item for item in data["items"] if item.get("uri") == page.url_path), None)
 
@@ -94,13 +95,7 @@ class ResourceListViewPaginationTests(TestCase, ExternalAPITestMixin):
         self.assertEqual(data["offset"], 0)
 
     def test_second_slice_returns_remaining_items(self):
-        """Requesting offset=<7> should return whatever is left after the first slice.
-        If the total number of resources is <= 7 the test is skipped.
-        """
-        min_resources_for_second_slice = 7
-        if self.total_resources <= min_resources_for_second_slice:
-            self.skipTest("Dataset not large enough to test second slice")
-
+        """Requesting offset=<7> should return whatever is left after the first slice."""
         response = self.call_view_as_external(f"/v1/resources/?offset={7}")
         self.assertEqual(response.status_code, 200)
 
