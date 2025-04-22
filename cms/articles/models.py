@@ -291,8 +291,9 @@ class StatisticalArticlePage(BundledPageMixin, RoutablePageMixin, BasePage):  # 
     def add_headline_figures_figure_id(self, figure_id: str) -> None:
         """Adds a figure ID to the list of headline figures."""
         if figure_id not in self.headline_figures_figure_ids_list:
-            self.headline_figures_figure_ids_list.append(figure_id)
-            self.headline_figures_figure_ids = FIGURE_ID_SEPARATOR.join(self.headline_figures_figure_ids_list)
+            id_list = self.headline_figures_figure_ids_list
+            id_list.append(figure_id)
+            self.headline_figures_figure_ids = FIGURE_ID_SEPARATOR.join(id_list)
 
     def update_headline_figures_figure_ids(self, figure_ids: list[str]) -> None:
         """Updates the list of headline figures."""

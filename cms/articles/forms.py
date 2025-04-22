@@ -1,9 +1,6 @@
-from collections.abc import Mapping
 from secrets import token_urlsafe
 from typing import Any
 
-from django.core.files.uploadedfile import UploadedFile
-from django.utils.datastructures import MultiValueDict
 from wagtail.blocks.stream_block import StreamValue
 from wagtail.models import Page
 
@@ -14,12 +11,10 @@ class PageWithHeadlineFiguresAdminForm(DeduplicateTopicsAdminForm):
     def __init__(
         self,
         *args: Any,
-        data: Mapping[str, Any] | None = None,
-        files: MultiValueDict[str, UploadedFile] | None = None,
         parent_page: Page | None = None,
         **kwargs: Any,
     ) -> None:
-        super().__init__(data, files, *args, **kwargs)
+        super().__init__(*args, **kwargs)
         # Save a reference to the parent page which we use in the clean method
         self.parent_page = parent_page
 
