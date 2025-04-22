@@ -41,6 +41,10 @@ class ReleaseCalendarPageAdminForm(WagtailAdminPageForm):
             error = "Either release date or release date text is required."
             raise ValidationError({"release_date": error, "release_date_text": error})
 
+        # Input field is hidden with custom JS for non-provisional releases, set to None to avoid unexpected behavior
+        if self.instance.status != ReleaseStatus.PROVISIONAL:
+            self.instance.release_date_text = None
+
         if (
             self.instance.status != ReleaseStatus.PROVISIONAL
             and self.instance.release_date
@@ -65,13 +69,6 @@ class ReleaseCalendarPageAdminForm(WagtailAdminPageForm):
             raise ValidationError({"next_release_date": "The next release date must be after the release date."})
 
         release_date_text = cleaned_data.get("release_date_text")
-        if cleaned_data.get("release_date") and release_date_text:
-            error = "Please enter the release date or the release date text, not both."
-            raise ValidationError({"release_date": error, "release_date_text": error})
-
-        if cleaned_data.get("next_release_date") and cleaned_data.get("next_release_date_text"):
-            error = "Please enter the next release date or the next release text, not both."
-            raise ValidationError({"next_release_date": error, "next_release_date_text": error})
 
         # TODO: expand to validate for non-English locales when adding multi-language.
         if release_date_text and self.instance.locale_id == Locale.get_default().pk:

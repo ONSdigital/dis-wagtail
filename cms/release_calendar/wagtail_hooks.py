@@ -1,6 +1,8 @@
 from typing import TYPE_CHECKING, Optional
 
 from django.shortcuts import redirect
+from django.templatetags.static import static
+from django.utils.html import format_html
 from wagtail import hooks
 from wagtail.admin import messages
 from wagtail.admin.utils import get_valid_next_url_from_request
@@ -38,3 +40,8 @@ def before_delete_page(request: "HttpRequest", page: "Page") -> Optional["HttpRe
 @hooks.register("register_admin_viewset")
 def register_chooser_viewset() -> "FutureReleaseCalendarPageChooserViewSet":
     return release_calendar_chooser_viewset
+
+
+@hooks.register("insert_editor_js")
+def hide_release_date_text_field_for_non_provisional_release_pages():
+    return format_html('<script src="{}"></script>', static("js/hide-date-text-on-non-provisional-release-pages.js"))
