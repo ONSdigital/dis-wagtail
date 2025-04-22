@@ -147,7 +147,8 @@ class BaseVisualisationBlock(blocks.StructBlock):
             config["title"] = title
 
         if (tick_interval := attrs.get("tick_interval")) is not None:
-            config["tickInterval"] = tick_interval
+            config["tickIntervalMobile"] = tick_interval
+            config["tickIntervalDesktop"] = tick_interval
         if (min_value := attrs.get("min")) is not None:
             config["min"] = min_value
         if (max_value := attrs.get("max")) is not None:
@@ -171,7 +172,8 @@ class BaseVisualisationBlock(blocks.StructBlock):
             config["title"] = title
 
         if (tick_interval := attrs.get("tick_interval")) is not None:
-            config["tickInterval"] = tick_interval
+            config["tickIntervalMobile"] = tick_interval
+            config["tickIntervalDesktop"] = tick_interval
         if (value_suffix := attrs.get("value_suffix")) is not None:
             config["labels"] = {
                 "format": "{value} " + value_suffix,
