@@ -1,13 +1,10 @@
-import json
 from typing import TYPE_CHECKING, Any, Optional
 
 import jinja2
 from django import template
-from django.core.serializers.json import DjangoJSONEncoder
 from django.template.loader import render_to_string
 from django.utils.html import json_script as _json_script
 from django_jinja import library
-from jinja2.runtime import ChainableUndefined
 
 from cms.core.models import SocialMediaSettings
 
@@ -50,23 +47,6 @@ def json_script(value: dict[str, Any], element_id: Optional[str] = None) -> "Saf
     tag (with an optional id).
     """
     return _json_script(value, element_id)
-
-
-# FIXME: This is a temporary encoder, intended to handle encoding ChainableUndefined objects.
-# Once the recent DS addition of `| tojson` is implemented in charts macros, this can be removed.
-class CustomJSONEncoder(DjangoJSONEncoder):
-    def default(self, obj: Any) -> Any:  # pylint: disable=arguments-renamed
-        if isinstance(obj, ChainableUndefined):
-            return None
-        return super().default(obj)
-
-
-# FIXME: This is a temporary filter, while the Design System components use the Nunjucks ` | dump` filter.
-# Once the recent DS addition of `| tojson` is implemented in charts macros, this can be removed.
-@register.filter(name="dump")
-def dump(value: Any) -> str:
-    """Dump a value to a string."""
-    return json.dumps(value, indent=4, cls=CustomJSONEncoder)
 
 
 def extend(value: list[Any], element: Any) -> None:
