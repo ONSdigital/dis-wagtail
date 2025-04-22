@@ -6,7 +6,7 @@ from django import template
 from django.template.loader import render_to_string
 from django_jinja import library
 
-from cms.core.custom_dateformat import ons_date_format
+from cms.core.custom_date_format import ons_date_format
 from cms.core.models import SocialMediaSettings
 
 register = template.Library()
@@ -54,6 +54,7 @@ def set_attributes_filter(attributes: dict, new_attributes: dict) -> dict:
 
 @register.filter(name="ons_date")
 def ons_date_format_filter(value: datetime, format_string: str) -> str:
+    """Format a date using the ons_date_format function."""
     if not value:
         return ""
     return ons_date_format(value, format_string)
