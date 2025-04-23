@@ -82,6 +82,13 @@ class LivenessProbeTestCase(TestCase):
         self.assertEqual(response.status_code, 500)
         self.assertEqual(response.content, b"'default' database returned unexpected value.")
 
+    @mock.patch("cms.core.views.DB_HEALTHCHECK_QUERY", "INVALID QUERY")
+    def test_unexpected_database_error(self):
+        response = self.client.get(self.url)
+
+        self.assertEqual(response.status_code, 500)
+        self.assertEqual(response.content, b"'default' database connection errored unexpectedly.")
+
     @override_settings(
         CACHES={
             "default": {

@@ -70,7 +70,7 @@ def liveness(request: "HttpRequest") -> HttpResponse:
             if result != (1,):
                 return HttpResponseServerError(content=f"'{connection.alias}' database returned unexpected value.")
         except DatabaseError:
-            return HttpResponseServerError(content=f"'{connection.alias}' database connection is not usable.")
+            return HttpResponseServerError(content=f"'{connection.alias}' database connection errored unexpectedly.")
 
     if isinstance(caches["default"], RedisCache):
         try:
