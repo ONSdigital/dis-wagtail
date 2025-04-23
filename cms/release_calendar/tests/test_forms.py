@@ -99,7 +99,6 @@ class ReleaseCalendarPageAdminFormTestCase(WagtailTestUtils, TestCase):
     def test_form_clean__validates_release_date_text(self):
         """Validates that the release date text format."""
         data = self.form_data
-        data["release_date"] = None  # date and date text are mutually exclusive
         cases = [
             ("November 2024", True),
             ("Nov 2024", False),
@@ -124,7 +123,6 @@ class ReleaseCalendarPageAdminFormTestCase(WagtailTestUtils, TestCase):
     def test_form_clean__validates_release_date_text_start_end_dates(self):
         """Validates that the release date text with start and end month make sense."""
         data = self.form_data
-        data["release_date"] = None  # date and date text are mutually exclusive
 
         data["release_date_text"] = "November 2024 to September 2024"
         form = self.form_class(instance=self.page, data=data)
@@ -146,7 +144,7 @@ class ReleaseCalendarPageAdminFormTestCase(WagtailTestUtils, TestCase):
 
     def test_form_clean__validates_changes_to_release_date_must_be_filled(self):
         """Checks that one must add data to changes_to_release_date if the confirmed release data changes."""
-        self.page.release_date = timezone.now()
+        self.page.status = ReleaseStatus.CONFIRMED
         data = self.form_data
         data["notice"] = rich_text("")
 
@@ -181,35 +179,6 @@ class ReleaseCalendarPageAdminFormTestCase(WagtailTestUtils, TestCase):
                 form = self.form_class(instance=self.page, data=data)
 
                 self.assertTrue(form.is_valid())
-
-    def test_form_clean__validates_either_release_date_or_text(self):
-        """Checks that editors can enter either the release date or the text, not both."""
-        data = self.raw_form_data()
-        data["notice"] = rich_text("")
-        data["release_date"] = timezone.now()
-        data["release_date_text"] = "November 2024"
-        data = nested_form_data(data)
-        form = self.form_class(instance=self.page, data=data)
-
-        self.assertFalse(form.is_valid())
-        message = ["Please enter the release date or the release date text, not both."]
-        self.assertFormError(form, "release_date", message)
-        self.assertFormError(form, "release_date_text", message)
-
-    def test_form_clean__validates_either_next_release_date_or_text(self):
-        """Checks that editors can enter either the next release date or the text, not both."""
-        data = self.raw_form_data()
-        data["notice"] = rich_text("")
-        data["next_release_date"] = timezone.now()
-        data["next_release_date_text"] = "November 2024"
-
-        data = nested_form_data(data)
-        form = self.form_class(instance=self.page, data=data)
-
-        self.assertFalse(form.is_valid())
-        message = ["Please enter the next release date or the next release text, not both."]
-        self.assertFormError(form, "next_release_date", message)
-        self.assertFormError(form, "next_release_date_text", message)
 
     def test_form_clean__validates_next_release_date_is_after_release_date(self):
         """Checks that editors enter a release that that is after the release date."""

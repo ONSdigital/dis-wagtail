@@ -53,15 +53,17 @@ class ReleaseCalendarPage(BasePage):  # type: ignore[django-manager-missing]
     status = models.CharField(choices=ReleaseStatus.choices, default=ReleaseStatus.PROVISIONAL, max_length=32)
     summary = RichTextField(features=settings.RICH_TEXT_BASIC)
 
-    release_date = models.DateTimeField(
-        blank=False, null=False, help_text="Required once the release has been confirmed."
-    )
+    release_date = models.DateTimeField(blank=False, null=False)
     release_date_text = models.CharField(
-        max_length=50, blank=True, help_text="Format: 'Month YYYY', or 'Month YYYY to Month YYYY'."
+        max_length=50,
+        blank=True,
+        help_text="Override release date. Format: 'Month YYYY', or 'Month YYYY to Month YYYY'.",
     )
     next_release_date = models.DateTimeField(blank=True, null=True)
     next_release_date_text = models.CharField(
-        max_length=255, blank=True, help_text="Formats: 'DD Month YYYY Time' or 'To be confirmed'."
+        max_length=255,
+        blank=True,
+        help_text="Override next release date. Formats: 'DD Month YYYY Time' or 'To be confirmed'.",
     )
 
     notice = RichTextField(
