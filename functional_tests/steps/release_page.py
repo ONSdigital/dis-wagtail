@@ -114,3 +114,14 @@ def check_selected_datasets_are_displayed(context: Context):
     for dataset in context.selected_datasets:
         expect(context.page.get_by_role("link", name=dataset["title"])).to_be_visible()
         expect(context.page.get_by_text(dataset["description"])).to_be_visible()
+
+
+@when('the page status is set to "Provisional" and the release date text field is visible')
+def check_that_default_status_is_provisional_and_release_date_text_is_visible(context: Context):
+    expect(context.page.get_by_label("Status*")).to_have_value("PROVISIONAL")
+    expect(context.page.get_by_text("Or, release date text")).to_be_visible()
+
+
+@then("the date text field is not visible")
+def check_date_text_field(context: Context):
+    expect(context.page.get_by_text("Or, release date text")).not_to_be_visible()
