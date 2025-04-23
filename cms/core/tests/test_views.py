@@ -1,8 +1,7 @@
 import logging
-from http import HTTPMethod
+from unittest import mock
 
 from django.conf import settings
-from django.db import connections
 from django.test import Client, SimpleTestCase, TestCase, override_settings
 from django.urls import reverse
 from fakeredis import FakeConnection
@@ -43,19 +42,12 @@ class ReadinessProbeTestCase(SimpleTestCase):
 
     url = reverse("internal:readiness")
 
-    def test_all_methods(self):
-        """Check the ready endpoint works with all methods."""
-        for method in iter(HTTPMethod):
-            if method == HTTPMethod.CONNECT:
-                # CONNECT isn't a valid method in this context
-                continue
+    def test_success(self):
+        response = self.client.get(self.url)
 
-            with self.subTest(method):
-                response = getattr(self.client, method.value.lower())(self.url)
-
-                self.assertEqual(response.status_code, 200)
-                self.assertEqual(response.content, b"")
-                self.assertEqual(response.templates, [])
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.content, b"")
+        self.assertEqual(response.templates, [])
 
 
 @override_settings(
@@ -76,29 +68,19 @@ class LivenessProbeTestCase(TestCase):
 
     url = reverse("internal:liveness")
 
-    def test_all_methods(self):
-        """Check the liveness endpoint works with all methods."""
-        for method in iter(HTTPMethod):
-            if method == HTTPMethod.CONNECT:
-                # CONNECT isn't a valid method in this context
-                continue
+    def test_success(self):
+        response = self.client.get(self.url)
 
-            with self.subTest(method):
-                response = getattr(self.client, method.value.lower())(self.url)
+        self.assertEqual(response.status_code, 200, response.content)
+        self.assertEqual(response.content, b"")
+        self.assertEqual(response.templates, [])
 
-                self.assertEqual(response.status_code, 200)
-                self.assertEqual(response.content, b"")
-                self.assertEqual(response.templates, [])
-
+    @mock.patch("cms.core.views.DB_HEALTHCHECK_QUERY", "SELECT 0")
     def test_closed_database_fails(self):
-        # Force close the connections to simulate a broken connection.
-        for connection in connections.all():
-            connection.close()
-
         response = self.client.get(self.url)
 
         self.assertEqual(response.status_code, 500)
-        self.assertEqual(response.content, b"'default' database connection is not usable.")
+        self.assertEqual(response.content, b"'default' database returned unexpected value.")
 
     @override_settings(
         CACHES={

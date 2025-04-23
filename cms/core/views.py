@@ -5,10 +5,11 @@ from typing import TYPE_CHECKING
 import redis
 import redis.exceptions
 from django.core.cache import caches
-from django.db import connections
+from django.db import DatabaseError, connections
 from django.http import HttpResponse, HttpResponseServerError
 from django.shortcuts import render
 from django.views import defaults
+from django.views.decorators.http import require_GET
 from django_redis import get_redis_connection
 from django_redis.cache import RedisCache
 
@@ -17,6 +18,8 @@ if TYPE_CHECKING:
 
 
 logger = logging.getLogger(__name__)
+
+DB_HEALTHCHECK_QUERY = "SELECT 1"
 
 
 def page_not_found(
@@ -43,6 +46,7 @@ def csrf_failure(
     return render(request, template_name, status=HTTPStatus.FORBIDDEN)
 
 
+@require_GET
 def ready(request: "HttpRequest") -> HttpResponse:
     """Readiness probe endpoint.
 
@@ -51,17 +55,21 @@ def ready(request: "HttpRequest") -> HttpResponse:
     return HttpResponse(status=200)
 
 
+@require_GET
 def liveness(request: "HttpRequest") -> HttpResponse:
     """Liveness probe endpoint.
 
     If this fails, the container will be restarted.
     """
     for connection in connections.all():
-        # If this endpoint is the first request Django runs,
-        # it won't have a connection yet.
-        connection.ensure_connection()
+        try:
+            with connection.cursor() as cursor:
+                cursor.execute(DB_HEALTHCHECK_QUERY)
+                result = cursor.fetchone()
 
-        if not connection.is_usable():
+            if result != (1,):
+                return HttpResponseServerError(content=f"'{connection.alias}' database returned unexpected value.")
+        except DatabaseError:
             return HttpResponseServerError(content=f"'{connection.alias}' database connection is not usable.")
 
     if isinstance(caches["default"], RedisCache):
