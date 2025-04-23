@@ -1,3 +1,7 @@
+from unittest.mock import patch
+
+import factory
+from django.conf import settings
 from django.test import TestCase, override_settings
 
 from cms.articles.tests.factories import ArticleSeriesPageFactory, StatisticalArticlePageFactory
@@ -78,7 +82,9 @@ class ResourceListViewPaginationTests(TestCase, ExternalAPITestMixin):
     def setUpTestData(cls):
         cls.index_page = IndexPageFactory(slug="custom-slug-1")
         # One parent + 12 child pages = 13 total
-        cls.pages = [InformationPageFactory(slug=f"Page-{i}", parent=cls.index_page) for i in range(12)]
+        cls.pages = InformationPageFactory.create_batch(
+            12, parent=cls.index_page, slug=factory.Sequence(lambda n: f"test_page_{n + 1}")
+        )
         cls.total_resources = len(cls.pages) + 1  # +1 for the parent
 
     def test_default_pagination_returns_first_slice(self):
@@ -88,7 +94,9 @@ class ResourceListViewPaginationTests(TestCase, ExternalAPITestMixin):
 
         data = self.parse_json(response)
 
-        expected_items = min(self.total_resources, 20)  # Default page size is 20
+        expected_items = min(
+            self.total_resources, settings.SEARCH_API_DEFAULT_PAGE_SIZE
+        )  # Default page size is 20 currently
         self.assertEqual(len(data["items"]), expected_items)
         self.assertEqual(data["count"], expected_items)
         self.assertEqual(data["total_count"], self.total_resources)
@@ -114,19 +122,20 @@ class ResourceListViewPaginationTests(TestCase, ExternalAPITestMixin):
         self.assertEqual(data["count"], 5)
         self.assertEqual(data["limit"], 5)
 
+    @patch("cms.search.pagination.CustomLimitOffsetPagination.max_limit", 20)
     def test_limit_exceeds_max_uses_max(self):
         """When limit exceeds max_limit, results should be capped at max_limit.
-        We add enough extra pages to go past MAX_LIMIT of 500.
+        We add enough extra pages to go past MAX_LIMIT of 20.
         """
-        extra_needed = 500  # over the cap
-        for i in range(extra_needed):
-            InformationPageFactory(slug=f"Extra-Page-{i}", parent=self.index_page)
+        InformationPageFactory.create_batch(
+            20, parent=self.index_page, slug=factory.Sequence(lambda n: f"extra_page_{n + 1}")
+        )
 
-        response = self.call_view_as_external(f"/v1/resources/?limit={500 + 999}")
+        response = self.call_view_as_external(f"/v1/resources/?limit={30}")
         self.assertEqual(response.status_code, 200)
 
         data = self.parse_json(response)
-        self.assertEqual(len(data["items"]), 500)
-        self.assertEqual(data["count"], 500)
-        self.assertEqual(data["limit"], 500)
-        self.assertGreater(data["total_count"], 500)
+        self.assertEqual(len(data["items"]), 20)
+        self.assertEqual(data["count"], 20)
+        self.assertEqual(data["limit"], 20)
+        self.assertGreater(data["total_count"], 20)

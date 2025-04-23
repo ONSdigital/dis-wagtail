@@ -4,6 +4,8 @@ from django.apps import apps
 from django.utils.encoding import force_str
 from wagtail.rich_text import get_text_for_indexing
 
+from cms.release_calendar.enums import ReleaseStatus
+
 if TYPE_CHECKING:
     from wagtail.models import Page
 
@@ -25,9 +27,9 @@ def build_standard_resource_dict(page: "Page") -> dict:
 def build_release_specific_fields(page: "Page") -> dict:
     """Builds the extra fields that only apply to release content_type."""
     data = {
-        "finalised": page.status in ["CONFIRMED", "PROVISIONAL"],
-        "cancelled": page.status == "CANCELLED",
-        "published": page.status == "PUBLISHED",
+        "finalised": page.status in [ReleaseStatus.CONFIRMED, ReleaseStatus.PROVISIONAL],
+        "cancelled": page.status == ReleaseStatus.CANCELLED,
+        "published": page.status == ReleaseStatus.PUBLISHED,
         "date_changes": [],
     }
     # If page.release_date_text is present, treat it as provisional_date

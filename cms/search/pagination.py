@@ -8,8 +8,8 @@ class CustomLimitOffsetPagination(LimitOffsetPagination):
     - https://github.com/ONSdigital/dp-standards/blob/main/API_STANDARDS.md.
     """
 
-    default_limit = settings.DEFAULT_LIMIT_PAGE_SIZE  # Default number of items per page
-    max_limit = settings.DEFAULT_LIMIT_MAXIMUM_PAGE_SIZE  # Maximum number of items per page
+    default_limit = settings.SEARCH_API_DEFAULT_PAGE_SIZE  # Default number of items per page
+    max_limit = settings.SEARCH_API_MAX_PAGE_SIZE  # Maximum number of items per page
 
     def get_paginated_response(self, data: list) -> Response:
         """Override DRF's default so we output the keys required by
