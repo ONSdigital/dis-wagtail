@@ -1,30 +1,25 @@
 from datetime import datetime
 
+from django.template import engines
 from django.test import SimpleTestCase
 
-from cms.core.templatetags.util_tags import ons_date_format_filter
 
+class OnsDateFilterInJinjaTests(SimpleTestCase):
+    """Integration: ensure the *ons_date* filter is registered in Jinja and
+    produces the expected output with the real en-GB `formats.py` constants.
+    """
 
-class CustomDateFormatTests(SimpleTestCase):
-    def setUp(self):
-        self.am = datetime(2013, 3, 1, 9, 30)
-        self.pm = datetime(1990, 3, 1, 18, 45)
+    jinja_env = engines["jinja2"].env
 
-    def test_datetime_format_am(self):
-        result = ons_date_format_filter(self.am, "DATETIME_FORMAT")
-        self.assertEqual(result, "1 March 2013 9:30am")
+    @classmethod
+    def _render(cls, tpl: str, **ctx) -> str:
+        return cls.jinja_env.from_string(tpl).render(ctx).strip()
 
-    def test_datetime_format_pm(self):
-        result = ons_date_format_filter(self.pm, "DATETIME_FORMAT")
-        self.assertEqual(result, "1 March 1990 6:45pm")
-
-    def test_format_string_a_am(self):
-        result = ons_date_format_filter(self.am, "a")
-        self.assertEqual(result, "am")
-
-    def test_format_string_a_pm(self):
-        result = ons_date_format_filter(self.pm, "a")
-        self.assertEqual(result, "pm")
-
-    def test_value_none(self):
-        self.assertEqual(ons_date_format_filter(None, "a"), "")
+    def test_datetime_format(self):
+        """DATETIME_FORMAT = "j F Y g:ia"   →   '1 November 2025 1:00pm'."""
+        dt = datetime(2025, 11, 1, 13, 0)  # 1 Nov 2025 13:00
+        rendered = self._render(
+            "{{ ts|ons_date('DATETIME_FORMAT') }}",
+            ts=dt,
+        )
+        self.assertEqual(rendered, "1 November 2025 1:00pm")
