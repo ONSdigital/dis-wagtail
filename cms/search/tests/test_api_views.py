@@ -123,20 +123,16 @@ class ResourceListViewPaginationTests(TestCase, ExternalAPITestMixin):
         self.assertEqual(data["count"], 5)
         self.assertEqual(data["limit"], 5)
 
-    @patch("cms.search.pagination.CustomLimitOffsetPagination.max_limit", 20)
+    @patch("cms.search.pagination.CustomLimitOffsetPagination.max_limit", 10)
     def test_limit_exceeds_max_uses_max(self):
         """When limit exceeds max_limit, results should be capped at max_limit.
         We add enough extra pages to go past MAX_LIMIT of 20.
         """
-        InformationPageFactory.create_batch(
-            20, parent=self.index_page, slug=factory.Sequence(lambda n: f"extra_page_{n + 1}")
-        )
-
         response = self.call_view_as_external(f"/v1/resources/?limit={30}")
         self.assertEqual(response.status_code, 200)
 
         data = self.parse_json(response)
-        self.assertEqual(len(data["items"]), 20)
-        self.assertEqual(data["count"], 20)
-        self.assertEqual(data["limit"], 20)
-        self.assertGreater(data["total_count"], 20)
+        self.assertEqual(len(data["items"]), 10)
+        self.assertEqual(data["count"], 10)
+        self.assertEqual(data["limit"], 10)
+        self.assertEqual(data["total_count"], 13)
