@@ -1,6 +1,4 @@
 from datetime import datetime
-from functools import cache
-from typing import cast
 
 from django.utils.dateformat import DateFormat
 from django.utils.formats import get_format
@@ -21,13 +19,5 @@ class ONSDateFormat(DateFormat):
         return ""
 
 
-@cache
-def _resolve_format(fmt: str) -> str:
-    """Resolve a Django format name (e.g. 'DATETIME_FORMAT') to its concrete
-    pattern once and cache the result for the life of the process.
-    """
-    return cast(str, get_format(fmt))
-
-
 def ons_date_format(value: datetime, format_string: str) -> str:
-    return ONSDateFormat(value).format(_resolve_format(format_string))
+    return ONSDateFormat(value).format(get_format(format_string))
