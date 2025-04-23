@@ -90,7 +90,7 @@ class LivenessProbeTestCase(TestCase):
                 self.assertEqual(response.content, b"")
                 self.assertEqual(response.templates, [])
 
-    def test_fails(self):
+    def test_closed_database_fails(self):
         # Force close the connections to simulate a broken connection.
         for connection in connections.all():
             connection.close()
@@ -99,3 +99,18 @@ class LivenessProbeTestCase(TestCase):
 
         self.assertEqual(response.status_code, 500)
         self.assertEqual(response.content, b"'default' database connection is not usable.")
+
+    @override_settings(
+        CACHES={
+            "default": {
+                "BACKEND": "django_redis.cache.RedisCache",
+                "LOCATION": "redis:///does-not-exist",
+                "OPTIONS": {},
+            }
+        }
+    )
+    def test_broken_redis_connection(self):
+        response = self.client.get(self.url)
+
+        self.assertEqual(response.status_code, 500)
+        self.assertEqual(response.content, b"Failed to connect to cache.")
