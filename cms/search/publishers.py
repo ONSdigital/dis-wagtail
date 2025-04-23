@@ -101,6 +101,7 @@ class BasePublisher(ABC):
 
         # If we do NOT have release_date but we do have release_date_text, treat that as provisional_date
         if page.release_date_text:
+            release_fields["release_date"] = None
             release_fields["provisional_date"] = page.release_date_text
 
         if getattr(page, "changes_to_release_date", None):

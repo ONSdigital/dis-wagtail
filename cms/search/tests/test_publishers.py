@@ -190,12 +190,12 @@ class BasePublisherTests(TestCase, WagtailTestUtils):
         # Check provisional_date does not exist
         self.assertIsNone(message.get("provisional_date"), "provisional_date should not exist if release_date exists")
 
-    def test_provisional_date_exists_when_release_date_absent(self):
-        """Ensure that if release_date is absent, provisional_date should exist and have a value."""
+    def test_provisional_date_is_sent_if_present(self):
+        """Ensure that if release_date_text is present it's sent as provisional_date and release_date isn't sent."""
         page = ReleaseCalendarPageFactory(
             status=ReleaseStatus.PROVISIONAL,
-            release_date=None,
-            release_date_text="Provisional release date text",
+            release_date=timezone.now(),
+            release_date_text="August 2025",
         )
 
         message = self.publisher._construct_message_for_create_update(page)  # pylint: disable=W0212
