@@ -28,7 +28,7 @@ class SearchResourcesViewTests(TestCase, ResourceDictAssertions, ExternalAPITest
             ReleaseCalendarIndex(),
             ThemePageFactory(),
             TopicPageFactory(),
-            InformationPageFactory(parent=IndexPageFactory(slug="custom-slug-0"), live=False),
+            InformationPageFactory(parent=IndexPageFactory(slug="custom-slug-0"), live=False),  # Not live
         ]
 
         # Pages that are included in the search index
