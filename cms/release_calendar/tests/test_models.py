@@ -314,6 +314,27 @@ class ReleaseCalendarPageRenderTestCase(TestCase):
 
                 self.assertEqual("The reason" in str(response.content), is_shown)
 
+    def test_release_date_text_overrides_release_datetime(self):
+        """Check that release date text overrides release datetime if both are present."""
+        self.page.status = ReleaseStatus.PROVISIONAL
+        self.page.release_date = timezone.now()
+        self.page.release_date_text = "January 2024"
+        self.page.save_revision().publish()
+
+        response = self.client.get(self.page.url)
+        self.assertIn("January 2024", str(response.content))
+
+    def test_next_release_date_text_overrides_next_release_datetime(self):
+        """Check that next release date text overrides next release datetime if both are present."""
+        self.page.status = ReleaseStatus.PUBLISHED
+        self.page.release_date = timezone.now()
+        self.page.next_release_date = timezone.now()
+        self.page.next_release_date_text = "January 2024"
+        self.page.save_revision().publish()
+
+        response = self.client.get(self.page.url)
+        self.assertIn("January 2024", str(response.content))
+
     def test_rendered__contact_details(self):
         """Check rendered content for contact details."""
         cases = [
