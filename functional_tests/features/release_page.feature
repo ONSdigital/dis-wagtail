@@ -17,16 +17,14 @@ Feature: CMS users can draft, edit, and publish release pages
         And the selected datasets are displayed on the page
         And the user can see the breadcrumbs
 
-    Scenario: A CMS user inputs AM datetime on a release calendar page and "am" is displayed
+    Scenario Outline: A CMS user inputs a datetime on a release calendar page and the correct period is displayed
         When the user creates and populates a release calendar page
-        And the user inputs an AM datetime
+        And the user inputs a <MeridiemIndicator> datetime
         And the user clicks "Publish"
         And the user clicks "View Live" on the publish confirmation banner
-        Then the datetime is displayed with "am"
-    
-    Scenario: A CMS user inputs PM datetime on a release calendar page and "pm" is displayed
-        When the user creates and populates a release calendar page
-        And the user inputs an PM datetime
-        And the user clicks "Publish"
-        And the user clicks "View Live" on the publish confirmation banner
-        Then the datetime is displayed with "pm"
+        Then the datetime is displayed with "<MeridiemIndicator>"
+
+        Examples:
+            | MeridiemIndicator |
+            | am                |
+            | pm                |
