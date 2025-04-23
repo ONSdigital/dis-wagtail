@@ -1,4 +1,4 @@
-function hideReleaseDateText() {
+function toggleDateTextVisibility() {
   var statusField = document.getElementById('id_status');
   const isProvisional = statusField.value.toLowerCase() === 'provisional';
 
@@ -9,8 +9,8 @@ function hideReleaseDateText() {
 }
 
 document.addEventListener('DOMContentLoaded', function () {
-  hideReleaseDateText();
+  toggleDateTextVisibility();
 
   var statusField = document.getElementById('id_status');
-  statusField.addEventListener('change', hideReleaseDateText);
+  statusField.addEventListener('change', toggleDateTextVisibility);
 });

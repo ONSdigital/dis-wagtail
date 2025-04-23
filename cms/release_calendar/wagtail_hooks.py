@@ -43,5 +43,6 @@ def register_chooser_viewset() -> "FutureReleaseCalendarPageChooserViewSet":
 
 
 @hooks.register("insert_editor_js")
-def hide_release_date_text_field_for_non_provisional_release_pages():
-    return format_html('<script src="{}"></script>', static("js/hide-date-text-on-non-provisional-release-pages.js"))
+def hide_release_date_text_field_for_non_provisional_release_pages() -> str:
+    """Hide the release date text field for non-provisional release pages."""
+    return format_html('<script src="{}"></script>', static("js/hide-date-text-on-non-provisional-releases.js"))

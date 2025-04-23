@@ -54,7 +54,7 @@ class ReleaseCalendarPage(BasePage):  # type: ignore[django-manager-missing]
     summary = RichTextField(features=settings.RICH_TEXT_BASIC)
 
     release_date = models.DateTimeField(
-        blank=True, null=True, help_text="Required once the release has been confirmed."
+        blank=False, null=False, help_text="Required once the release has been confirmed."
     )
     release_date_text = models.CharField(
         max_length=50, blank=True, help_text="Format: 'Month YYYY', or 'Month YYYY to Month YYYY'."

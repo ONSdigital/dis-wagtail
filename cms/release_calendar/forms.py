@@ -37,10 +37,6 @@ class ReleaseCalendarPageAdminForm(WagtailAdminPageForm):
 
             self.validate_bundle_not_pending_publication(status)
 
-        if not cleaned_data.get("release_date") and not cleaned_data.get("release_date_text"):
-            error = "Either release date or release date text is required."
-            raise ValidationError({"release_date": error, "release_date_text": error})
-
         # Input field is hidden with custom JS for non-provisional releases, set to None to avoid unexpected behavior
         if self.instance.status != ReleaseStatus.PROVISIONAL:
             self.instance.release_date_text = None
