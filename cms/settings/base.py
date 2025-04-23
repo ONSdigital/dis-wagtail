@@ -1,5 +1,6 @@
 """Django settings for ons project."""
 
+import datetime
 import os
 import sys
 from copy import deepcopy
@@ -916,6 +917,11 @@ ONS_EMBED_PREFIX = env.get("ONS_EMBED_PREFIX", "https://www.ons.gov.uk/visualisa
 ONS_COOKIE_BANNER_SERVICE_NAME = env.get("ONS_COOKIE_BANNER_SERVICE_NAME", "www.ons.gov.uk")
 MANAGE_COOKIE_SETTINGS_URL = env.get("MANAGE_COOKIE_SETTINGS_URL", "https://www.ons.gov.uk/cookies")
 
+# Project information
+BUILD_TIME = datetime.datetime.fromtimestamp(int(env["BUILD_TIME"])) if env.get("BUILD_TIME") else None
+GIT_COMMIT = env.get("GIT_COMMIT") or None
+TAG = env.get("TAG") or None
+START_TIME = datetime.datetime.now(tz=datetime.UTC)
 
 SLACK_NOTIFICATIONS_WEBHOOK_URL = env.get("SLACK_NOTIFICATIONS_WEBHOOK_URL")
 
