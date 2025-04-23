@@ -24,7 +24,7 @@ def amend_page_action_menu_items(menu_items: list["ActionMenuItem"], request: "H
     if not isinstance(page, BundledPageMixin):
         return
 
-    if page.latest_revision.user_id == request.user.pk:  # type: ignore[attr-defined]
+    if page.latest_revision and page.latest_revision.user_id == request.user.pk:  # type: ignore[attr-defined]
         # hide the "approve" action items if the current user was the last editor
         menu_items[:] = [item for item in menu_items if item.name != "approve"]
 
