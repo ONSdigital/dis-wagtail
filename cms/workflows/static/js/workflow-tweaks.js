@@ -1,43 +1,31 @@
 document.addEventListener('DOMContentLoaded', () => {
-    const editForm = document.getElementById("page-edit-form");
+  const editForm = document.getElementById('page-edit-form');
 
-    if (!editForm) {
-        return; // Exit if the edit form is not found
-    }
+  if (!editForm) {
+    return; // Exit if the edit form is not found
+  }
 
-    // Store the initial form payload on load
-    const initialFormPayload = new URLSearchParams(new FormData(editForm)).toString();
+  // Store the initial form payload on load
+  const initialFormPayload = new URLSearchParams(new FormData(editForm)).toString();
 
-    // Function to toggle approve buttons based on form changes
-    function toggleApproveButtons() {
-        const newPayload = new URLSearchParams(new FormData(editForm)).toString();
-        const approveButtons = document.querySelectorAll('[data-workflow-action-name="approve"]');
+  // Function to toggle approve buttons based on form changes
+  function toggleApproveButtons() {
+    const newPayload = new URLSearchParams(new FormData(editForm)).toString();
+    const approveButtons = document.querySelectorAll('[data-workflow-action-name="approve"]');
 
-        if (initialFormPayload !== newPayload) {
-            // Disable the approve buttons when form has changed
-            approveButtons.forEach(button => {
-                button.setAttribute('disabled', 'disabled');
-                button.classList.add('disabled');
-            });
-        } else {
-            // Re-enable the buttons when form returns to initial state
-            approveButtons.forEach(button => {
-                button.removeAttribute('disabled');
-                button.classList.remove('disabled');
-            });
-        }
-    }
-
-    // Add event listeners to form elements to detect changes
-    const formElements = editForm.querySelectorAll('input, textarea, select');
-    formElements.forEach(element => {
-        element.addEventListener('change', toggleApproveButtons);
-        element.addEventListener('input', toggleApproveButtons);
+    const formHasChanged = initialFormPayload !== newPayload;
+    // Disable the 'approve' buttons when the form has changed and re-enable them when it returns to its initial state
+    /* eslint no-param-reassign: ["error", { "props": false }] */
+    approveButtons.forEach((button) => {
+      button.disabled = formHasChanged;
+      button.classList.toggle('disabled', formHasChanged);
     });
+  }
 
-    // Also listen for changes that might be triggered by JavaScript
-    editForm.addEventListener('change', toggleApproveButtons);
+  // Listen to form changes
+  editForm.addEventListener('change', toggleApproveButtons);
+  editForm.addEventListener('input', toggleApproveButtons);
 
-    // Initial check
-    toggleApproveButtons();
+  // Initial check
+  toggleApproveButtons();
 });
