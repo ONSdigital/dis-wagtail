@@ -18,7 +18,7 @@ class Command(BaseCommand):
     def handle(self, *args: Any, **options: Any) -> None:
         logger.info("Fetching topics from API...")
         fetched_topics = _fetch_all_topics()
-        logger.info("Fetched %d topics", len(fetched_topics))
+        logger.info("Fetched topics", extra={"count": len(fetched_topics)})
 
         logger.info("Syncing topics...")
         _sync_with_fetched_topics(fetched_topics)
@@ -111,8 +111,8 @@ def _sync_with_fetched_topics(fetched_topics: Iterable[Mapping[str, str]]) -> No
             _create_topic(fetched_topic)
             created_count += 1
 
-    logger.info("Saved %d new topic(s)", created_count)
-    logger.info("Updated %d existing topic(s)", updated_count)
+    logger.info("Saved new topic(s)", extra={"count": created_count})
+    logger.info("Updated existing topic(s)", extra={"count": updated_count})
 
 
 def _check_for_duplicate_topics(fetched_topics: Iterable[Mapping[str, str]]) -> None:
@@ -150,7 +150,7 @@ def _update_topic(existing_topic: Topic, fetched_topic: Mapping[str, str]) -> No
     - If the `parent_id` differs from the current parent, moves the topic to the new parent.
     - Logs changes and warnings when moving topics.
     """
-    logger.info("Updating existing topic: %s with fetched topic: %s", existing_topic.id, fetched_topic)
+    logger.info("Updating existing topic", extra={"topic": existing_topic.id, "fetched_topic": fetched_topic})
     existing_topic.title = fetched_topic.get("title")
     existing_topic.description = fetched_topic.get("description")
     existing_topic.removed = False
@@ -166,17 +166,19 @@ def _update_topic(existing_topic: Topic, fetched_topic: Mapping[str, str]) -> No
                 f"Parent topic destination with id {new_parent_id} doesn't exist for moving topic {existing_topic.id}"
             )
         logger.warning(
-            "Moving topic %s from parent %s to new parent %s",
-            existing_topic.id,
-            existing_parent_id,
-            new_parent.id if new_parent else None,
+            "Moving topic to new parent",
+            extra={
+                "topic": existing_topic.id,
+                "old_parent": existing_parent_id,
+                "new_parent": new_parent.id if new_parent else None,
+            },
         )
         existing_topic.move(new_parent)
 
 
 def _create_topic(fetched_topic: Mapping[str, str]) -> None:
     """Creates a Topic object with the given id, title, and description, and parent."""
-    logger.info("Saving new topic %s", fetched_topic)
+    logger.info("Saving new topic", extra={"topic": fetched_topic["id"]})
     new_topic = Topic(
         id=fetched_topic["id"], title=fetched_topic["title"], description=fetched_topic.get("description")
     )
@@ -194,9 +196,9 @@ def _check_for_removed_topics(existing_topic_ids: set[str]) -> None:
     existing_topics = _get_all_existing_topic_ids()
     removed_topics = existing_topics.difference(existing_topic_ids)
     if removed_topics:
-        logger.warning("WARNING: Found %d removed topic(s)", len(removed_topics))
+        logger.warning("Found removed topic(s)", extra={"count": len(removed_topics)})
     for removed_topic_id in removed_topics:
-        logger.warning("Marking topic %s as removed", removed_topic_id)
+        logger.warning("Marking topic as removed", extra={"topic": removed_topic_id})
         _set_topic_as_removed(removed_topic_id)
 
 

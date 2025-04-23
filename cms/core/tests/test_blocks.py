@@ -1,8 +1,12 @@
+from datetime import datetime
+
 from django.conf import settings
 from django.test import TestCase
 from wagtail.blocks import StreamBlockValidationError, StructBlockValidationError
 from wagtail.rich_text import RichText
+from wagtail.test.utils.wagtail_tests import WagtailTestUtils
 
+from cms.articles.tests.factories import ArticleSeriesPageFactory, StatisticalArticlePageFactory
 from cms.core.blocks import (
     BasicTableBlock,
     DocumentBlock,
@@ -14,6 +18,7 @@ from cms.core.blocks import (
     RelatedLinksBlock,
 )
 from cms.core.blocks.glossary_terms import GlossaryTermsBlock
+from cms.core.blocks.panels import CorrectionBlock, NoticeBlock
 from cms.core.tests.factories import GlossaryTermFactory
 from cms.core.tests.utils import get_test_document
 from cms.home.models import HomePage
@@ -321,7 +326,7 @@ class GlossaryTermBlockTestCase(TestCase):
         )
 
 
-class ONSTableBlockTestCase(TestCase):
+class ONSTableBlockTestCase(WagtailTestUtils, TestCase):
     @classmethod
     def setUpTestData(cls):
         cls.simple_table_data = {
@@ -418,6 +423,23 @@ class ONSTableBlockTestCase(TestCase):
 
                 for field in not_present:
                     self.assertNotIn(data[field], rendered)
+
+    def test_render_block__alignment_and_width(self):
+        table_data = {
+            "headers": [[{"value": "header cell", "type": "th", "width": "20px", "align": "center"}]],
+            "rows": [[{"value": "row cell", "type": "td", "width": "50%", "align": "right"}]],
+        }
+
+        rendered = self.block.render({"data": table_data})
+
+        self.assertTagInHTML(
+            '<th scope="col" class="ons-table__header ons-u-ta-center" width="20px">'
+            '<span class="ons-table__header-text">header cell</span></th>',
+            rendered,
+        )
+        self.assertTagInHTML('<td class="ons-table__cell ons-u-ta-right">row cell</td>', rendered)
+        self.assertIn("header cell", rendered)
+        self.assertIn("row cell", rendered)
 
     def test_render_block__ds_component_markup(self):
         table = {
@@ -532,3 +554,63 @@ class ONSTableBlockTestCase(TestCase):
         </table>
         """
         self.assertInHTML(expected, rendered)
+
+    def test__align_to_ons_classname(self):
+        scenarios = {"right": "ons-u-ta-right", "left": "ons-u-ta-left", "center": "ons-u-ta-center", "foo": ""}
+        for alignment, classname in scenarios.items():
+            self.assertEqual(
+                self.block._align_to_ons_classname(alignment),  # pylint: disable=protected-access
+                classname,
+            )
+
+    def test__prepare_cells(self):
+        scenarios = [
+            (
+                [{"value": "header cell", "type": "th", "width": "20px", "align": "center"}],
+                [{"value": "header cell", "type": "th", "width": "20px", "thClasses": "ons-u-ta-center"}],
+            ),
+            (
+                [{"value": "row cell", "type": "td", "width": "50%", "align": "right"}],
+                [{"value": "row cell", "type": "td", "width": "50%", "tdClasses": "ons-u-ta-right"}],
+            ),
+        ]
+        for cells, expected in scenarios:
+            self.assertListEqual(self.block._prepare_cells(cells), expected)  # pylint: disable=protected-access
+
+
+class NoticeBlockTestCase(TestCase):
+    @classmethod
+    def setUpTestData(cls):
+        cls.notice_data = {
+            "when": datetime(2025, 1, 1),
+            "text": "Notice text",
+        }
+
+    def test_render_block(self):
+        block = NoticeBlock()
+        rendered = block.render(self.notice_data)
+
+        self.assertIn("1 January 2025", rendered)
+        self.assertIn("Notice text", rendered)
+
+
+class CorrectionBlockTestCase(TestCase):
+    @classmethod
+    def setUpTestData(cls):
+        cls.correction_data = {
+            "when": datetime(2025, 1, 1, 13, 59, 00),
+            "text": "Correction text",
+            "previous_version": 1,
+            "version_id": 1,
+        }
+        cls.series = ArticleSeriesPageFactory()
+        cls.statistical_article = StatisticalArticlePageFactory(parent=cls.series)
+
+    def test_render_block(self):
+        block = CorrectionBlock()
+        rendered = block.render(self.correction_data, context={"request": None, "page": self.statistical_article})
+
+        self.assertIn("1 January 2025 1:59p.m.", rendered)
+        self.assertIn("Correction text", rendered)
+        self.assertIn("View superseded version", rendered)
+        self.assertIn("/previous/v1", rendered)

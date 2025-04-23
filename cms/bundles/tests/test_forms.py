@@ -1,3 +1,4 @@
+from datetime import timedelta
 from typing import Any
 
 from django import forms
@@ -11,9 +12,10 @@ from cms.bundles.admin_forms import AddToBundleForm
 from cms.bundles.enums import ACTIVE_BUNDLE_STATUS_CHOICES, BundleStatus
 from cms.bundles.models import Bundle
 from cms.bundles.tests.factories import BundleFactory, BundlePageFactory
-from cms.bundles.viewsets import BundleChooserWidget
+from cms.bundles.viewsets.bundle_chooser import BundleChooserWidget
 from cms.release_calendar.tests.factories import ReleaseCalendarPageFactory
 from cms.users.tests.factories import UserFactory
+from cms.workflows.tests.utils import mark_page_as_ready_to_publish
 
 
 class AddToBundleFormTestCase(TestCase):
@@ -54,8 +56,13 @@ class BundleAdminFormTestCase(TestCase):
     @classmethod
     def setUpTestData(cls):
         cls.bundle = BundleFactory(name="First Bundle")
-        cls.page = StatisticalArticlePageFactory(title="The Statistical Article")
         cls.form_class = get_edit_handler(Bundle).get_form_class()
+
+        cls.page = StatisticalArticlePageFactory(title="The Statistical Article")
+        cls.page_ready_to_publish = StatisticalArticlePageFactory(title="Statistically Ready")
+
+        cls.approver = UserFactory()
+        mark_page_as_ready_to_publish(cls.page_ready_to_publish, cls.approver)
 
     def setUp(self):
         self.form_data = nested_form_data(self.raw_form_data())
@@ -65,16 +72,17 @@ class BundleAdminFormTestCase(TestCase):
         return {
             "name": "First Bundle",
             "status": BundleStatus.IN_REVIEW,
-            "bundled_pages": inline_formset([]),
+            "bundled_pages": inline_formset([{"page": self.page.id}]),
+            "teams": inline_formset([]),
         }
 
     def test_form_init__status_choices(self):
         """Checks status choices variation."""
         cases = [
-            (BundleStatus.PENDING, ACTIVE_BUNDLE_STATUS_CHOICES),
+            (BundleStatus.DRAFT, ACTIVE_BUNDLE_STATUS_CHOICES),
             (BundleStatus.IN_REVIEW, ACTIVE_BUNDLE_STATUS_CHOICES),
             (BundleStatus.APPROVED, BundleStatus.choices),
-            (BundleStatus.RELEASED, BundleStatus.choices),
+            (BundleStatus.PUBLISHED, BundleStatus.choices),
         ]
         for status, choices in cases:
             with self.subTest(status=status, choices=choices):
@@ -121,41 +129,44 @@ class BundleAdminFormTestCase(TestCase):
 
         raw_data = self.raw_form_data()
         raw_data["bundled_pages"] = inline_formset([{"page": self.page.id}])
-        data = nested_form_data(raw_data)
 
-        form = self.form_class(instance=self.bundle, data=data)
+        form = self.form_class(instance=self.bundle, data=nested_form_data(raw_data))
         self.assertFalse(form.is_valid())
         self.assertFormError(form, None, ["'The Statistical Article' is already in an active bundle (Another Bundle)"])
 
     def test_clean__sets_approved_by_and_approved_at(self):
-        approver = UserFactory()
-
-        data = self.form_data
-        data["status"] = BundleStatus.APPROVED
-        form = self.form_class(instance=self.bundle, data=data, for_user=approver)
+        raw_data = self.raw_form_data()
+        raw_data["bundled_pages"] = inline_formset([{"page": self.page_ready_to_publish.id}])
+        raw_data["status"] = BundleStatus.APPROVED
+        form = self.form_class(instance=self.bundle, data=nested_form_data(raw_data), for_user=self.approver)
 
         self.assertTrue(form.is_valid())
-        self.assertEqual(form.cleaned_data["approved_by"], approver)
+        self.assertEqual(form.cleaned_data["approved_by"], self.approver)
 
-    def test_clean__doesnt_set_approved_by_and_approved_at_if_self_approving(self):
+    def test_clean__validates_page_must_be_ready_for_review(self):
         data = self.form_data
         data["status"] = BundleStatus.APPROVED
         form = self.form_class(instance=self.bundle, data=data, for_user=self.bundle.created_by)
 
         self.assertFalse(form.is_valid())
-        self.assertFormError(form, "status", ["You cannot self-approve your own bundle!"])
+
+        self.assertFormError(form, None, "Cannot approve the bundle with 1 page not ready to be published.")
+        self.assertFormSetError(form.formsets["bundled_pages"], 0, "page", "This page is not ready to be published")
+
         self.assertIsNone(form.cleaned_data["approved_by"])
         self.assertIsNone(form.cleaned_data["approved_at"])
 
     def test_clean__validates_release_calendar_page_or_publication_date(self):
-        release_calendar_page = ReleaseCalendarPageFactory()
+        nowish = timezone.now() + timedelta(minutes=5)
+        release_calendar_page = ReleaseCalendarPageFactory(release_date=nowish)
         data = self.form_data
         data["release_calendar_page"] = release_calendar_page.id
-        data["publication_date"] = timezone.now()
+        data["publication_date"] = nowish
 
         form = self.form_class(data=data)
 
         self.assertFalse(form.is_valid())
+
         error = "You must choose either a Release Calendar page or a Publication date, not both."
         self.assertFormError(form, "release_calendar_page", [error])
         self.assertFormError(form, "publication_date", [error])
@@ -172,3 +183,35 @@ class BundleAdminFormTestCase(TestCase):
         form.save()
 
         self.assertEqual(self.bundle.bundled_pages.count(), 1)
+
+    def test_clean_validates_release_calendar_page_date_is_future(self):
+        release_calendar_page = ReleaseCalendarPageFactory(release_date=timezone.now() - timedelta(hours=2))
+        data = self.form_data
+
+        data["release_calendar_page"] = release_calendar_page.id
+        data["status"] = BundleStatus.APPROVED
+        form = self.form_class(instance=self.bundle, data=data)
+        self.assertFalse(form.is_valid())
+
+        self.assertFormError(
+            form, "release_calendar_page", ["The release date on the release calendar page cannot be in the past."]
+        )
+
+    def test_clean_validates_release_date_is_future(self):
+        data = self.form_data
+        data["publication_date"] = timezone.now() - timedelta(hours=2)
+        data["status"] = BundleStatus.APPROVED
+        form = self.form_class(instance=self.bundle, data=data)
+        self.assertFalse(form.is_valid())
+
+        self.assertFormError(form, "publication_date", ["The release date cannot be in the past."])
+
+    def test_clean_validates_the_bundle_has_content(self):
+        raw_data = self.raw_form_data()
+        raw_data["bundled_pages"] = inline_formset([])
+        raw_data["status"] = BundleStatus.APPROVED
+
+        form = self.form_class(instance=self.bundle, data=nested_form_data(raw_data))
+
+        self.assertFalse(form.is_valid())
+        self.assertFormError(form, None, "Cannot approve the bundle without any pages")

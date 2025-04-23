@@ -60,11 +60,13 @@ INSTALLED_APPS = [
     "cms.articles",
     "cms.bundles",
     "cms.core",
+    "cms.datasets",
     "cms.documents",
     "cms.home",
     "cms.images",
     "cms.private_media",
     "cms.release_calendar",
+    "cms.teams",
     "cms.themes",
     "cms.topics",
     "cms.users",
@@ -72,6 +74,8 @@ INSTALLED_APPS = [
     "cms.methodology",
     "cms.navigation",
     "cms.taxonomy",
+    "cms.search",
+    "cms.workflows",
     "wagtail.embeds",
     "wagtail.sites",
     "wagtail.users",
@@ -80,10 +84,12 @@ INSTALLED_APPS = [
     "wagtail.images",
     "wagtail.search",
     "wagtail.admin",
+    "wagtail.locales",
     "wagtail.contrib.settings",
     "wagtail.contrib.redirects",
     "wagtail.contrib.legacy.richtext",
     "wagtail.contrib.table_block",
+    "wagtail.contrib.simple_translation",
     "wagtail",
     "modelcluster",
     "taggit",
@@ -92,7 +98,6 @@ INSTALLED_APPS = [
     "django.contrib.contenttypes",
     "whitenoise.runserver_nostatic",  # Must be before `django.contrib.staticfiles`
     "django.contrib.staticfiles",
-    "django.contrib.sitemaps",
     "django_jinja",
     "wagtailmath",
     "wagtailfontawesomesvg",
@@ -131,7 +136,10 @@ MIDDLEWARE = [
 if not IS_EXTERNAL_ENV:
     common_middleware_index = MIDDLEWARE.index("django.middleware.common.CommonMiddleware")
     MIDDLEWARE.insert(common_middleware_index, "django.contrib.messages.middleware.MessageMiddleware")
-    MIDDLEWARE.insert(common_middleware_index, "django.contrib.auth.middleware.AuthenticationMiddleware")
+    MIDDLEWARE.insert(
+        common_middleware_index,
+        "django.contrib.auth.middleware.AuthenticationMiddleware",
+    )
     MIDDLEWARE.insert(common_middleware_index, "django.contrib.sessions.middleware.SessionMiddleware")
 
 ROOT_URLCONF = "cms.urls"
@@ -147,7 +155,10 @@ context_processors = [
 
 if not IS_EXTERNAL_ENV:
     context_processors.extend(
-        ["django.contrib.messages.context_processors.messages", "django.contrib.auth.context_processors.auth"]
+        [
+            "django.contrib.messages.context_processors.messages",
+            "django.contrib.auth.context_processors.auth",
+        ]
     )
 
 TEMPLATES = [
@@ -236,7 +247,10 @@ else:
 if "read_replica" not in DATABASES:
     DATABASES["read_replica"] = deepcopy(DATABASES["default"])
 
-DATABASE_ROUTERS = ["cms.core.db_router.ExternalEnvRouter", "cms.core.db_router.ReadReplicaRouter"]
+DATABASE_ROUTERS = [
+    "cms.core.db_router.ExternalEnvRouter",
+    "cms.core.db_router.ReadReplicaRouter",
+]
 
 # Server-side cache settings. Do not confuse with front-end cache.
 # https://docs.djangoproject.com/en/stable/topics/cache/
@@ -248,7 +262,12 @@ DATABASE_ROUTERS = ["cms.core.db_router.ExternalEnvRouter", "cms.core.db_router.
 #
 # Do not use the same Redis instance for other things like Celery!
 
-CACHES: dict = {"memory": {"BACKEND": "django.core.cache.backends.locmem.LocMemCache", "LOCATION": "memory"}}
+CACHES: dict = {
+    "memory": {
+        "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
+        "LOCATION": "memory",
+    }
+}
 
 redis_options = {
     "IGNORE_EXCEPTIONS": True,
@@ -322,7 +341,7 @@ TIME_ZONE = "Europe/London"
 USE_TZ = True
 
 USE_I18N = True
-WAGTAIL_I18N_ENABLED = False
+WAGTAIL_I18N_ENABLED = True
 
 LANGUAGE_CODE = "en-gb"
 WAGTAIL_CONTENT_LANGUAGES = LANGUAGES = [
@@ -332,6 +351,12 @@ WAGTAIL_CONTENT_LANGUAGES = LANGUAGES = [
 ]
 
 LOCALE_PATHS = [PROJECT_DIR / "locale"]
+
+# User groups
+PUBLISHING_ADMINS_GROUP_NAME = "Publishing Admins"
+PUBLISHING_OFFICERS_GROUP_NAME = "Publishing Officers"
+VIEWERS_GROUP_NAME = "Viewers"
+
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/stable/howto/static-files/
@@ -462,10 +487,23 @@ LOGGING = {
         "console": {
             "level": "INFO",
             "class": "logging.StreamHandler",
-            "formatter": "verbose",
+            "formatter": "json",
+        },
+        "gunicorn_access": {
+            "level": "INFO",
+            "class": "logging.StreamHandler",
+            "formatter": "gunicorn_json",
         },
     },
-    "formatters": {"verbose": {"format": "[%(asctime)s][%(process)d][%(levelname)s][%(name)s] %(message)s"}},
+    "formatters": {
+        "verbose": {"format": "[%(asctime)s][%(process)d][%(levelname)s][%(name)s] %(message)s"},
+        "json": {
+            "()": "cms.core.logs.JSONFormatter",
+        },
+        "gunicorn_json": {
+            "()": "cms.core.logs.GunicornJsonFormatter",
+        },
+    },
     "loggers": {
         "cms": {
             "handlers": ["console"],
@@ -489,6 +527,11 @@ LOGGING = {
         },
         "apscheduler": {
             "handlers": ["console"],
+            "level": "INFO",
+            "propagate": False,
+        },
+        "gunicorn.access": {
+            "handlers": ["gunicorn_access"],
             "level": "INFO",
             "propagate": False,
         },
@@ -758,6 +801,7 @@ if ENABLE_DJANGO_DEFENDER:
     DEFENDER_COOLOFF_TIME = int(env.get("DJANGO_DEFENDER_COOLOFF_TIME", 600))  # default to 10 minutes
     DEFENDER_LOCKOUT_TEMPLATE = "pages/defender/lockout.html"
 
+
 # Wagtail settings
 
 
@@ -809,6 +853,7 @@ WAGTAIL_PASSWORD_REQUIRED_TEMPLATE = "templates/pages/wagtail/password_required.
 
 # Default size of the pagination used on the front-end.
 DEFAULT_PER_PAGE = 20
+PREVIOUS_RELEASES_PER_PAGE = int(env.get("PREVIOUS_RELEASES_PER_PAGE", 10))
 
 # Google Tag Manager ID from env
 GOOGLE_TAG_MANAGER_CONTAINER_ID = env.get("GOOGLE_TAG_MANAGER_CONTAINER_ID", "")
@@ -860,4 +905,27 @@ MANAGE_COOKIE_SETTINGS_URL = env.get("MANAGE_COOKIE_SETTINGS_URL", "https://www.
 
 SLACK_NOTIFICATIONS_WEBHOOK_URL = env.get("SLACK_NOTIFICATIONS_WEBHOOK_URL")
 
-ONS_API_BASE_URL = env.get("ONS_API_BASE_URL")
+ONS_API_BASE_URL = env.get("ONS_API_BASE_URL", "https://api.beta.ons.gov.uk/v1")
+ONS_WEBSITE_BASE_URL = env.get("ONS_WEBSITE_BASE_URL", "https://www.ons.gov.uk")
+
+WAGTAILSIMPLETRANSLATION_SYNC_PAGE_TREE = True
+
+# Configuration for the External Search service
+SEARCH_INDEX_PUBLISHER_BACKEND = os.getenv("SEARCH_INDEX_PUBLISHER_BACKEND")
+KAFKA_SERVER = os.getenv("KAFKA_SERVER")
+KAFKA_CHANNEL_CREATED_OR_UPDATED = os.getenv("KAFKA_CHANNEL_CREATED_OR_UPDATED")
+KAFKA_CHANNEL_DELETED = os.getenv("KAFKA_CHANNEL_DELETED")
+KAFKA_API_VERSION = tuple(map(int, os.getenv("KAFKA_API_VERSION", "3,5,1").split(",")))
+
+SEARCH_INDEX_EXCLUDED_PAGE_TYPES = (
+    "HomePage",
+    "ArticleSeriesPage",
+    "ReleaseCalendarIndex",
+    "ThemePage",
+    "TopicPage",
+    "Page",
+)
+
+# FIXME: remove before going live
+ENFORCE_EXCLUSIVE_TAXONOMY = env.get("ENFORCE_EXCLUSIVE_TAXONOMY", "true").lower() == "true"
+ALLOW_TEAM_MANAGEMENT = env.get("ALLOW_TEAM_MANAGEMENT", "false").lower() == "true"

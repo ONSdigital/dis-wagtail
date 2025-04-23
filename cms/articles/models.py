@@ -2,9 +2,10 @@ from typing import TYPE_CHECKING, Any, ClassVar, Optional
 
 from django.conf import settings
 from django.core.exceptions import ValidationError
+from django.core.paginator import EmptyPage, PageNotAnInteger, Paginator
 from django.db import models
 from django.http import Http404
-from django.shortcuts import redirect
+from django.shortcuts import get_object_or_404, redirect
 from django.utils.functional import cached_property
 from django.utils.translation import gettext_lazy as _
 from wagtail.admin.panels import FieldPanel, FieldRowPanel, HelpPanel, MultiFieldPanel, TitleFieldPanel
@@ -15,8 +16,10 @@ from wagtail.search import index
 
 from cms.bundles.models import BundledPageMixin
 from cms.core.blocks import HeadlineFiguresBlock
+from cms.core.blocks.panels import CorrectionBlock, NoticeBlock
 from cms.core.blocks.stream_blocks import SectionStoryBlock
 from cms.core.fields import StreamField
+from cms.core.forms import PageWithCorrectionsAdminForm
 from cms.core.models import BasePage
 from cms.taxonomy.mixins import GenericTaxonomyMixin
 
@@ -33,15 +36,16 @@ class ArticleSeriesPage(RoutablePageMixin, GenericTaxonomyMixin, BasePage):  # t
     parent_page_types: ClassVar[list[str]] = ["topics.TopicPage"]
     subpage_types: ClassVar[list[str]] = ["StatisticalArticlePage"]
     preview_modes: ClassVar[list[str]] = []  # Disabling the preview mode due to it being a container page.
-    page_description = _("A container for statistical article series.")
+    page_description = "A container for statistical article series."
     exclude_from_breadcrumbs = True
 
     content_panels: ClassVar[list["Panel"]] = [
         *Page.content_panels,
         HelpPanel(
-            content=_(
+            content=(
                 "This is a container for article series. It provides the <code>/latest</code>,"
-                "<code>/previous-releases</code> evergreen paths, as well as the actual statistical article pages. "
+                "<code>/previous-releases</code> evergreen paths, "
+                "as well as the actual statistical article pages. "
                 "Add a new Statistical article page under this container."
             )
         ),
@@ -69,32 +73,44 @@ class ArticleSeriesPage(RoutablePageMixin, GenericTaxonomyMixin, BasePage):  # t
 
     @path("previous-releases/")
     def previous_releases(self, request: "HttpRequest") -> "TemplateResponse":
+        children = StatisticalArticlePage.objects.live().child_of(self).order_by("-release_date")
+        paginator = Paginator(children, per_page=settings.PREVIOUS_RELEASES_PER_PAGE)
+
+        try:
+            pages = paginator.page(request.GET.get("page", 1))
+            ons_pagination_url_list = [{"url": f"?page={n}"} for n in paginator.page_range]
+        except (EmptyPage, PageNotAnInteger) as e:
+            raise Http404 from e
+
         response: TemplateResponse = self.render(
             request,
             # TODO: update to include drafts when looking at previews holistically.
-            context_overrides={"pages": StatisticalArticlePage.objects.live().child_of(self).order_by("-release_date")},
+            context_overrides={"pages": pages, "ons_pagination_url_list": ons_pagination_url_list},
             template="templates/pages/statistical_article_page--previous-releases.html",
         )
         return response
 
 
-class StatisticalArticlePage(BundledPageMixin, BasePage):  # type: ignore[django-manager-missing]
+class StatisticalArticlePage(BundledPageMixin, RoutablePageMixin, BasePage):  # type: ignore[django-manager-missing]
     """The statistical article page model.
 
     Previously known as statistical bulletin, statistical analysis article, analysis page.
     """
 
+    base_form_class = PageWithCorrectionsAdminForm
+
     parent_page_types: ClassVar[list[str]] = ["ArticleSeriesPage"]
     subpage_types: ClassVar[list[str]] = []
+    search_index_content_type: ClassVar[str] = "bulletin"
     template = "templates/pages/statistical_article_page.html"
-    label = _("Article")
+    label = _("Article")  # type: ignore[assignment]
 
     # Fields
     news_headline = models.CharField(max_length=255, blank=True)
     summary = RichTextField(features=settings.RICH_TEXT_BASIC)
 
     main_points_summary = RichTextField(
-        features=settings.RICH_TEXT_BASIC, help_text=_("Used when featured on a topic page.")
+        features=settings.RICH_TEXT_BASIC, help_text="Used when featured on a topic page."
     )
 
     # Fields: dates
@@ -111,17 +127,17 @@ class StatisticalArticlePage(BundledPageMixin, BasePage):  # type: ignore[django
 
     # Fields: accredited/census. A bit of "about the data".
     is_accredited = models.BooleanField(
-        _("Accredited Official Statistics"),
+        "Accredited Official Statistics",
         default=False,
-        help_text=_(
+        help_text=(
             "If ticked, will display an information block about the data being accredited official statistics "
             "and include the accredited logo."
         ),
     )
     is_census = models.BooleanField(
-        _("Census"),
+        "Census",
         default=False,
-        help_text=_("If ticked, will display an information block about the data being related to the Census."),
+        help_text="If ticked, will display an information block about the data being related to the Census.",
     )
 
     # Fields: content
@@ -130,11 +146,14 @@ class StatisticalArticlePage(BundledPageMixin, BasePage):  # type: ignore[django
 
     show_cite_this_page = models.BooleanField(default=True)
 
+    corrections = StreamField([("correction", CorrectionBlock())], blank=True, null=True)
+    notices = StreamField([("notice", NoticeBlock())], blank=True, null=True)
+
     content_panels: ClassVar[list["Panel"]] = [
         *BundledPageMixin.panels,
         MultiFieldPanel(
             [
-                TitleFieldPanel("title", help_text=_("Also known as the release edition. e.g. 'November 2024'.")),
+                TitleFieldPanel("title", help_text="Also known as the release edition. e.g. 'November 2024'."),
                 FieldPanel(
                     "news_headline",
                     help_text=(
@@ -152,27 +171,36 @@ class StatisticalArticlePage(BundledPageMixin, BasePage):  # type: ignore[django
             [
                 FieldRowPanel(
                     [
-                        FieldPanel("release_date", help_text=_("The actual release date")),
+                        FieldPanel("release_date", help_text="The actual release date"),
                         FieldPanel(
                             "next_release_date",
-                            help_text=_("If no next date is chosen, 'To be announced' will be displayed."),
+                            help_text="If no next date is chosen, 'To be announced' will be displayed.",
                         ),
                     ],
-                    heading=_("Dates"),
+                    heading="Dates",
                 ),
                 FieldRowPanel(
                     ["is_accredited", "is_census"],
-                    heading=_("About the data"),
+                    heading="About the data",
                 ),
                 "contact_details",
                 "show_cite_this_page",
                 "main_points_summary",
             ],
-            heading=_("Metadata"),
+            heading="Metadata",
             icon="cog",
         ),
         FieldPanel("headline_figures", icon="data-analysis"),
         FieldPanel("content", icon="list-ul"),
+    ]
+
+    corrections_and_notices_panels: ClassVar[list["Panel"]] = [
+        FieldPanel("corrections", icon="warning"),
+        FieldPanel("notices", icon="info-circle"),
+    ]
+
+    additional_panel_tabs: ClassVar[list[tuple[list["Panel"], str]]] = [
+        (corrections_and_notices_panels, "Corrections and notices")
     ]
 
     search_fields: ClassVar[list[index.BaseField]] = [
@@ -191,7 +219,7 @@ class StatisticalArticlePage(BundledPageMixin, BasePage):  # type: ignore[django
         super().clean()
 
         if self.next_release_date and self.next_release_date <= self.release_date:
-            raise ValidationError({"next_release_date": _("The next release date must be after the release date.")})
+            raise ValidationError({"next_release_date": "The next release date must be after the release date."})
 
     def get_context(self, request: "HttpRequest", *args: Any, **kwargs: Any) -> dict:
         """Additional context for the template."""
@@ -232,3 +260,29 @@ class StatisticalArticlePage(BundledPageMixin, BasePage):  # type: ignore[django
             .first()
         )
         return bool(self.pk == latest_id)  # to placate mypy
+
+    @path("previous/v<int:version>/")
+    def previous_version(self, request: "HttpRequest", version: int) -> "TemplateResponse":
+        if version <= 0 or not self.corrections:
+            raise Http404
+
+        # Find correction by version
+        for correction in self.corrections:  # pylint: disable=not-an-iterable
+            if correction.value["version_id"] == version:
+                break
+        else:
+            raise Http404
+
+        # NB: Little validation is done on previous_version, as it's assumed handled on save
+        revision = get_object_or_404(self.revisions, pk=correction.value["previous_version"])
+
+        response: TemplateResponse = self.render(
+            request, context_overrides={"page": revision.as_object(), "latest_version_url": self.get_url(request)}
+        )
+
+        return response
+
+    @property
+    def topic_ids(self) -> list[str]:
+        """Returns a list of topic IDs associated with the parent article series page."""
+        return list(self.get_parent().specific_deferred.topics.values_list("topic_id", flat=True))

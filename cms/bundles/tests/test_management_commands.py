@@ -14,6 +14,8 @@ from cms.bundles.tests.factories import BundleFactory, BundlePageFactory
 from cms.home.models import HomePage
 from cms.release_calendar.enums import ReleaseStatus
 from cms.release_calendar.tests.factories import ReleaseCalendarPageFactory
+from cms.workflows.models import ReadyToPublishGroupTask
+from cms.workflows.tests.utils import mark_page_as_ready_to_publish
 
 
 class PublishBundlesCommandTestCase(TestCase):
@@ -74,7 +76,7 @@ class PublishBundlesCommandTestCase(TestCase):
         self.assertFalse(ModelLogEntry.objects.filter(action="wagtail.publish.scheduled").exists())
         self.assertFalse(PageLogEntry.objects.filter(action="wagtail.publish.scheduled").exists())
 
-        # add another page, but publish in the meantime.
+        # Add another page, but publish in the meantime.
         another_page = StatisticalArticlePageFactory(title="The Statistical Article", live=False)
         another_page.save_revision().publish()
         BundlePageFactory(parent=self.bundle, page=self.statistical_article)
@@ -83,7 +85,7 @@ class PublishBundlesCommandTestCase(TestCase):
         self.call_command()
 
         self.bundle.refresh_from_db()
-        self.assertEqual(self.bundle.status, BundleStatus.RELEASED)
+        self.assertEqual(self.bundle.status, BundleStatus.PUBLISHED)
 
         self.statistical_article.refresh_from_db()
         self.assertTrue(self.statistical_article.live)
@@ -94,7 +96,46 @@ class PublishBundlesCommandTestCase(TestCase):
 
         # Check that we have a log entry
         self.assertEqual(ModelLogEntry.objects.filter(action="wagtail.publish.scheduled").count(), 1)
-        self.assertEqual(PageLogEntry.objects.filter(action="wagtail.publish.scheduled").count(), 1)
+        self.assertEqual(PageLogEntry.objects.filter(action="wagtail.publish.scheduled").count(), 2)
+
+    @override_settings(SLACK_NOTIFICATIONS_WEBHOOK_URL="https://slack.example.com")
+    @patch("cms.bundles.management.commands.publish_bundles.notify_slack_of_publication_start")
+    @patch("cms.bundles.management.commands.publish_bundles.notify_slack_of_publish_end")
+    def test_publish_bundle_with_page_in_workflow(self, mock_notify_end, mock_notify_start):
+        """Test publishing a bundle."""
+        # Sanity checks
+        self.assertFalse(self.statistical_article.live)
+        self.assertFalse(ModelLogEntry.objects.filter(action="wagtail.publish.scheduled").exists())
+        self.assertFalse(PageLogEntry.objects.filter(action="wagtail.publish.scheduled").exists())
+
+        BundlePageFactory(parent=self.bundle, page=self.statistical_article)
+
+        mark_page_as_ready_to_publish(self.statistical_article)
+
+        self.assertIsNotNone(self.statistical_article.current_workflow_state)
+
+        self.call_command()
+
+        self.bundle.refresh_from_db()
+        self.assertEqual(self.bundle.status, BundleStatus.PUBLISHED)
+
+        self.statistical_article.refresh_from_db()
+        self.assertTrue(self.statistical_article.live)
+        self.assertIsNone(self.statistical_article.current_workflow_state)
+
+        workflow_state = self.statistical_article.workflow_states[0]
+        self.assertEqual(workflow_state.status, "approved")
+        self.assertEqual(workflow_state.current_task_state.status, "approved")
+        self.assertIsInstance(workflow_state.current_task_state.task.specific, ReadyToPublishGroupTask)
+
+        # Check notifications were sent
+        self.assertTrue(mock_notify_start.called)
+        self.assertTrue(mock_notify_end.called)
+
+        # Check that we have a log entry
+        self.assertEqual(ModelLogEntry.objects.filter(action="wagtail.publish.scheduled").count(), 1)
+        self.assertEqual(PageLogEntry.objects.filter(action="wagtail.publish.scheduled").count(), 0)
+        self.assertEqual(PageLogEntry.objects.filter(action="wagtail.publish").count(), 1)
 
     def test_publish_bundle_with_release_calendar(self):
         """Test publishing a bundle with an associated release calendar page."""
@@ -129,7 +170,9 @@ class PublishBundlesCommandTestCase(TestCase):
             self.call_command()
 
         # Check error was logged
-        mock_logger.exception.assert_called_with("Publish failed bundle=%d", self.bundle.id)
+        mock_logger.exception.assert_called_with(
+            "Publish failed", extra={"bundle_id": self.bundle.id, "event": "publish_failed"}
+        )
 
         # Check bundle status wasn't changed due to error
         self.bundle.refresh_from_db()

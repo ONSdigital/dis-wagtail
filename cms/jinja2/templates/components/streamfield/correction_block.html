@@ -1,0 +1,12 @@
+<div class="ons-corrections-notices__item">
+    <div class="ons-corrections-notices__content-meta">
+        <h3 class="ons-u-fs-r--b ons-corrections-notices__content-heading">{{ _("Correction") }}</h3>
+        <time class="ons-corrections-notices__content-date">{{ value.when|date("DATETIME_FORMAT") }}</time>
+    </div>
+    <div class="ons-corrections-notices__content-description">
+        <div class="ons-corrections-notices__content-text ons-u-mb-s">{{ value.text|richtext }}</div>
+        <a class="ons-corrections-notices__content-url" href="{{ routablepageurl(page, 'previous_version', value.version_id) }}">
+            {{ _("View superseded version") }}
+        </a>
+    </div>
+</div>

@@ -85,6 +85,7 @@ jobs:
       ENABLE_DJANGO_DEFENDER: 'false'
       POSTGRES_HOST_AUTH_METHOD: trust
       SECRET_KEY: fake_secret_key_to_run_tests # pragma: allowlist secret
+      KAFKA_SERVER: localhost:9092
 
     services:
       postgres:
@@ -96,6 +97,33 @@ jobs:
         ports:
           - 5432:5432
         options: --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
+
+      broker:
+        image: bitnami/kafka:3.5.1
+        env:
+          # Enable plaintext connections for local testing.
+          ALLOW_PLAINTEXT_LISTENER: 'yes'
+
+          # Enable KRaft mode (no ZooKeeper).
+          KAFKA_ENABLE_KRAFT: 'yes'
+
+          # Use the KAFKA_CFG_ prefix for Kafka config.
+          KAFKA_CFG_NODE_ID: '1'
+          KAFKA_CFG_PROCESS_ROLES: 'broker,controller'
+          KAFKA_CFG_LISTENERS: 'PLAINTEXT://0.0.0.0:9092,CONTROLLER://0.0.0.0:9093'
+          KAFKA_CFG_ADVERTISED_LISTENERS: 'PLAINTEXT://localhost:9092'
+          KAFKA_CFG_CONTROLLER_LISTENER_NAMES: 'CONTROLLER'
+          KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP: 'CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT'
+          KAFKA_CFG_CONTROLLER_QUORUM_VOTERS: '1@localhost:9093'
+          KAFKA_CFG_OFFSETS_TOPIC_REPLICATION_FACTOR: '1'
+          KAFKA_CFG_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: '1'
+          KAFKA_CFG_TRANSACTION_STATE_LOG_MIN_ISR: '1'
+          KAFKA_CFG_GROUP_INITIAL_REBALANCE_DELAY_MS: '0'
+          KAFKA_CFG_NUM_PARTITIONS: '3'
+          # Enable auto-creation of topics
+          KAFKA_CFG_AUTO_CREATE_TOPICS_ENABLE: 'true'
+        ports:
+          - '9092:9092'
 
     steps:
       - uses: actions/checkout@v4
@@ -109,7 +137,9 @@ jobs:
           cache: poetry
 
       - name: Install dependencies
-        run: make install-dev
+        run: |
+          make install-dev
+          sudo apt-get install -y gettext
 
       - uses: actions/download-artifact@v4
         with:
@@ -128,6 +158,8 @@ jobs:
         run: poetry run ./manage.py createcachetable
       - name: Run migrations to work around Django bug (#35967)
         run: poetry run ./manage.py migrate --noinput
+      - name: Compile translations
+        run: make compilemessages
       - name: Test
         run: make test
       - name: Add coverage data to GitHub Action summary
@@ -180,7 +212,9 @@ jobs:
           cache: poetry
 
       - name: Install dependencies
-        run: make install-dev
+        run: |
+          make install-dev
+          sudo apt-get install -y gettext
 
       - name: Playwright Install
         run: poetry run python -m playwright install --with-deps ${{ matrix.browser }}
@@ -189,6 +223,9 @@ jobs:
         with:
           name: static
           path: cms/static_compiled/
+
+      - name: Compile translations
+        run: make compilemessages
 
       - name: Run Functional Tests
         run: make functional-tests

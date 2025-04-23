@@ -1,0 +1,7 @@
+<div class="ons-corrections-notices__item ons-corrections-notices__item">
+    <div class="ons-corrections-notices__content-meta">
+        <h2 class="ons-u-fs-r--b ons-corrections-notices__content-heading">{{ _("Notice") }}</h2>
+        <time class="ons-corrections-notices__content-date">{{ value.when|date("DATETIME_FORMAT") }}</time>
+    </div>
+    <div class="ons-corrections-notices__content-text">{{ value.text|richtext }}</div>
+</div>

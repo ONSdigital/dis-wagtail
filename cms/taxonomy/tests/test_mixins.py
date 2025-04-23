@@ -24,7 +24,6 @@ class TestExclusiveTaxonomyMixin(TestCase, WagtailTestUtils):
         self.client.force_login(self.superuser)
 
         self.root_page = Page.objects.get(id=1)
-        self.root_topic = Topic.objects.root_topic()
 
         # Create normal topics (depth=2) using save_topic()
         self.topic_a = Topic(id="topic-a", title="Topic A")
@@ -150,7 +149,6 @@ class TestGenericTaxonomyMixin(TestCase, WagtailTestUtils):
         self.client.force_login(self.superuser)
 
         self.root_page = Page.objects.get(id=1)
-        self.root_topic = Topic.objects.root_topic()
 
         self.topic_c = Topic(id="topic-c", title="Topic C")
         Topic.save_new(self.topic_c)

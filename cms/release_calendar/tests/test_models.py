@@ -1,9 +1,14 @@
+from http import HTTPStatus
+
 from django.test import RequestFactory, TestCase, override_settings
 from django.urls import reverse
 from django.utils import timezone
+from wagtail.blocks import StreamValue
 from wagtail.test.utils.wagtail_tests import WagtailTestUtils
 
 from cms.core.models import ContactDetails
+from cms.datasets.blocks import DatasetStoryBlock
+from cms.datasets.models import Dataset
 from cms.release_calendar.enums import ReleaseStatus
 from cms.release_calendar.models import ReleaseCalendarIndex
 from cms.release_calendar.tests.factories import ReleaseCalendarPageFactory
@@ -11,6 +16,11 @@ from cms.release_calendar.tests.factories import ReleaseCalendarPageFactory
 
 class ReleaseCalendarPageTestCase(WagtailTestUtils, TestCase):
     """Test Release CalendarPage model properties and logic."""
+
+    @classmethod
+    def setUpTestData(cls):
+        cls.superuser = cls.create_superuser(username="admin")
+        cls.release_calendar_index = ReleaseCalendarIndex.objects.first()
 
     def setUp(self):
         self.page = ReleaseCalendarPageFactory()
@@ -211,7 +221,7 @@ class ReleaseCalendarPageTestCase(WagtailTestUtils, TestCase):
 
     def test_delete_redirects_back_to_edit(self):
         """Test that we get redirected back to edit when trying to delete a release calendar page."""
-        self.login()  # creates a superuser and logs them in
+        self.client.force_login(self.superuser)
         response = self.client.post(
             reverse("wagtailadmin_pages:delete", args=(self.page.id,)),
             follow=True,
@@ -230,6 +240,17 @@ class ReleaseCalendarPageTestCase(WagtailTestUtils, TestCase):
             follow=True,
         )
         self.assertRedirects(response, edit_url)
+
+    def test_add_view_does_not_contain_the_bundle_note_panel(self):
+        self.client.force_login(self.superuser)
+        response = self.client.get(
+            reverse(
+                "wagtailadmin_pages:add",
+                args=("release_calendar", "releasecalendarpage", self.release_calendar_index.pk),
+            )
+        )
+        self.assertEqual(response.status_code, HTTPStatus.OK)
+        self.assertNotContains(response, "bundle-note")
 
 
 class ReleaseCalendarPageRenderTestCase(TestCase):
@@ -333,6 +354,48 @@ class ReleaseCalendarPageRenderTestCase(TestCase):
                 response = self.client.get(self.page.url)
 
                 self.assertEqual("pre-release access notes" in str(response.content), is_shown)
+
+    def test_rendered__datasets(self):
+        """Check datasets are shown only in a published state."""
+        lookup_dataset = Dataset.objects.create(
+            namespace="LOOKUP",
+            edition="lookup_edition",
+            version="lookup_version",
+            title="test lookup",
+            description="lookup description",
+        )
+        manual_dataset = {"title": "test manual", "description": "manual description", "url": "https://example.com"}
+
+        cases = [
+            (ReleaseStatus.PROVISIONAL, False),
+            (ReleaseStatus.CONFIRMED, False),
+            (ReleaseStatus.PUBLISHED, True),
+            (ReleaseStatus.CANCELLED, False),
+        ]
+        self.page.datasets = StreamValue(
+            DatasetStoryBlock(),
+            stream_data=[
+                ("dataset_lookup", lookup_dataset),
+                ("manual_link", manual_dataset),
+            ],
+        )
+
+        for status, is_shown in cases:
+            with self.subTest(status=status, is_shown=is_shown):
+                self.page.status = status
+                self.page.save_revision().publish()
+
+                response = self.client.get(self.page.url)
+
+                self.assertEqual("Data" in str(response.content), is_shown)
+
+                self.assertEqual(lookup_dataset.title in str(response.content), is_shown)
+                self.assertEqual(lookup_dataset.description in str(response.content), is_shown)
+                self.assertEqual(lookup_dataset.website_url in str(response.content), is_shown)
+
+                self.assertEqual(manual_dataset["title"] in str(response.content), is_shown)
+                self.assertEqual(manual_dataset["description"] in str(response.content), is_shown)
+                self.assertEqual(manual_dataset["url"] in str(response.content), is_shown)
 
     def test_render_in_external_env(self):
         """Check calendar page renders in external env."""

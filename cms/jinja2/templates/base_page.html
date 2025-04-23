@@ -1,7 +1,12 @@
 {% extends "templates/base.html" %}
 {% from "components/back-to-top/_macro.njk" import onsBackToTop %}
 
-{% block meta %}
+{#- Untranslated pages will have aliases to the original page -#}
+{%- if page.alias_of and request.LANGUAGE_CODE != page.alias_of.locale.language_code -%}
+    {%- set localised_version_not_available = true -%}
+{%- endif -%}
+
+{% block social %}
     {% with current_site=wagtail_site() %}
         <meta name="twitter:card" content="summary" />
         <meta name="twitter:site" content="@{{ settings.core.SocialMediaSettings.twitter_handle }}" />
@@ -28,13 +33,32 @@
         <meta property="og:description" content="{{ page|social_text(current_site) }}" />
         <meta property="og:site_name" content="{{ settings.core.SocialMediaSettings.site_name }}" />
     {% endwith %}
-{% endblock meta %}
+{% endblock social %}
+
+{%- block bodyStart -%}
+    {%- if request.is_preview and request.preview_mode == "bundle-preview" -%}
+        {% include "templates/components/preview-bar/preview-bar.html" %}
+    {%- endif -%}
+    {{ block.super }}
+{%- endblock -%}
 
 {% block pageContent %}
+    {%- set announcement_text = _("This page is currently not available in English. It is displayed in its original language.") -%}
     {# Adds a full-width section for the header area before the main page content #}
     {# Changes the location of the <main> tag from the base template - ensures it surrounds the header area #}
     {# This change should be adopted by the design system soon #}
     <main id="main-content">
+        {% if localised_version_not_available %}
+            {% from "components/panel/_macro.njk" import onsPanel %}
+            {# fmt:off #}
+            {{-
+                onsPanel({
+                    "variant": "announcement",
+                    "body": announcement_text
+                })
+            -}}
+            {# fmt:on #}
+        {% endif %}
         {# This block should be overriden on individual page templates and include the breadcrumbs and page heading. This is default content while the build is in progress. #}
         {% block header_area %}
             <div class="ons-container">
