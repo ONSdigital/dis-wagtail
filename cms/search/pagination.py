@@ -17,7 +17,7 @@ class CustomLimitOffsetPagination(LimitOffsetPagination):
         """
         return Response(
             {
-                "count": len(data),  # number in this slice
+                "count": len(data),  # size of this slice
                 "items": data,  # results payload
                 "limit": self.limit,  # the limit that was applied
                 "offset": self.offset,  # starting index

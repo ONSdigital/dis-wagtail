@@ -90,7 +90,7 @@ class ResourceListViewPaginationTests(TestCase, ExternalAPITestMixin):
 
     def test_default_pagination_returns_first_slice(self):
         """With no limit/ offset specified we should get DEFAULT_LIMIT (or all if fewer)."""
-        response = self.call_view_as_external("/v1/resources/")
+        response = self.call_view_as_external(RESOURCE_ENDPOINT)
         self.assertEqual(response.status_code, 200)
 
         data = self.parse_json(response)
@@ -105,7 +105,7 @@ class ResourceListViewPaginationTests(TestCase, ExternalAPITestMixin):
 
     def test_second_slice_returns_remaining_items(self):
         """Requesting offset=<7> should return whatever is left after the first slice."""
-        response = self.call_view_as_external(f"/v1/resources/?offset={7}")
+        response = self.call_view_as_external(f"{RESOURCE_ENDPOINT}?offset={7}")
         self.assertEqual(response.status_code, 200)
 
         data = self.parse_json(response)
@@ -115,7 +115,7 @@ class ResourceListViewPaginationTests(TestCase, ExternalAPITestMixin):
         self.assertEqual(data["offset"], 7)
 
     def test_custom_limit_returns_requested_number(self):
-        response = self.call_view_as_external("/v1/resources/?limit=5")
+        response = self.call_view_as_external(f"{RESOURCE_ENDPOINT}?limit=5")
         self.assertEqual(response.status_code, 200)
 
         data = self.parse_json(response)
@@ -128,11 +128,11 @@ class ResourceListViewPaginationTests(TestCase, ExternalAPITestMixin):
         """When limit exceeds max_limit, results should be capped at max_limit.
         We add enough extra pages to go past MAX_LIMIT of 20.
         """
-        response = self.call_view_as_external(f"/v1/resources/?limit={30}")
+        response = self.call_view_as_external(f"{RESOURCE_ENDPOINT}?limit={30}")
         self.assertEqual(response.status_code, 200)
 
         data = self.parse_json(response)
         self.assertEqual(len(data["items"]), 10)
         self.assertEqual(data["count"], 10)
         self.assertEqual(data["limit"], 10)
-        self.assertEqual(data["total_count"], 13)
+        self.assertEqual(data["total_count"], self.total_resources)
