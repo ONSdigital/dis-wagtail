@@ -27,8 +27,8 @@ def set_page_status(context: Context, page_status: str):
 def enter_example_release_content(context: Context):
     context.page.get_by_placeholder("Page title*").fill("My Release")
 
-    context.page.get_by_label("Release date", exact=True).fill("2024-12-25")
-    context.page.get_by_label("Release date", exact=True).press("Enter")
+    context.page.get_by_role("textbox", name="Release date*").fill("2024-12-25")
+    context.page.get_by_role("textbox", name="Release date*").press("Enter")
 
     context.page.get_by_role("region", name="Summary*").get_by_role("textbox").fill("My example release page")
 
