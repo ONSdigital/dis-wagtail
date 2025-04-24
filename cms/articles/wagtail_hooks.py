@@ -27,7 +27,7 @@ def before_create_page(
 
 
 @hooks.register("before_delete_page")
-def before_delete_page(request: "HttpRequest", page: "Page") -> HttpResponseRedirect | None:  # pylint: disable=inconsistent-return-statements
+def before_delete_page(request: "HttpRequest", page: "Page") -> HttpResponseRedirect | None:
     if request.method == "POST":
         if page.specific_class == StatisticalArticlePage and page.specific.figures_used_by_ancestor:
             messages.warning(
@@ -35,12 +35,16 @@ def before_delete_page(request: "HttpRequest", page: "Page") -> HttpResponseRedi
                 "This page cannot be deleted because it contains headline figures that are referenced elsewhere.",
             )
             return redirect("wagtailadmin_pages:delete", page.pk)
-        if page.specific_class == ArticleSeriesPage and any(
-            child.specific.figures_used_by_ancestor for child in page.get_children().specific()
+        if (
+            page.specific_class == ArticleSeriesPage
+            and (latest := page.get_latest())
+            and latest.figures_used_by_ancestor
         ):
-            messages.warning(
-                request,
-                "This page cannot be deleted because one or more of its children "
-                + "contain headline figures that are referenced elsewhere.",
+            message = (
+                "This page cannot be deleted because one or more of its children contain headline figures"
+                " that are referenced elsewhere."
             )
+            messages.warning(request, message)
             return redirect("wagtailadmin_pages:delete", page.pk)
+
+    return None
