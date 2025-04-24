@@ -24,16 +24,16 @@ class TopicHeadlineFigureBlock extends window.wagtailStreamField.blocks.StructBl
   render(placeholder, prefix, initialState, initialError) {
     // initialize our StructBlock
     const block = super.render(placeholder, prefix, initialState, initialError);
-    const {figure, series} = initialState;
+    const {figure_id: figureId, series} = initialState;
 
     const figureTitle = document.createElement("DIV");
     block.container[0].appendChild(figureTitle);
 
-    const associatedFigure = series?.figures?.find((fig) => fig.figure_id === figure);
+    const associatedFigure = series?.figures?.find((fig) => fig.figure_id === figureId);
 
     // listen to changes to the series input and update the figure block value
     const seriesInput = document.getElementById(prefix + "-series");
-    const figureInput = document.getElementById(prefix + "-figure");
+    const figureInput = document.getElementById(prefix + "-figure_id");
 
     const renderTitleLabelInElement = (title) => {
       const label = document.createElement("B");
@@ -47,7 +47,7 @@ class TopicHeadlineFigureBlock extends window.wagtailStreamField.blocks.StructBl
       renderTitleLabelInElement(associatedFigure.title);
     }
 
-    const container = document.querySelector(`[data-contentpath="figure"]:has(#${prefix}-figure)`);
+    const container = document.querySelector(`[data-contentpath="figure_id"]:has(#${prefix}-figure_id)`);
     seriesInput.addEventListener("change", () => {
       figureInput.value = seriesInput.getAttribute("data-figure-id");
       renderTitleLabelInElement(seriesInput.getAttribute("data-figure-title"));

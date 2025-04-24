@@ -356,4 +356,6 @@ class StatisticalArticlePage(BundledPageMixin, RoutablePageMixin, BasePage):  # 
         """Returns a list of figure IDs used by the ancestor topic page."""
         series = self.get_parent()
         topic: TopicPage = series.get_parent().specific
-        return [figure.value["figure"] for figure in topic.headline_figures if figure.value["series"].id == series.id]
+        return [
+            figure.value["figure_id"] for figure in topic.headline_figures if figure.value["series"].id == series.id
+        ]

@@ -134,7 +134,7 @@ class LinkedSeriesChooserBlock(SeriesChooserBlock):
 
 class TopicHeadlineFigureBlock(StructBlock):
     series = LinkedSeriesChooserBlock()
-    figure = CharBlock()
+    figure_id = CharBlock()
 
 
 class TopicHeadlineFiguresStreamBlock(StreamBlock):
@@ -151,7 +151,7 @@ class TopicHeadlineFiguresStreamBlock(StreamBlock):
             if not latest_article:
                 continue
 
-            if figure := latest_article.get_headline_figure(item.value["figure"]):
+            if figure := latest_article.get_headline_figure(item.value["figure_id"]):
                 figure["url"] = latest_article.get_url(request=context.get("request"))
                 figure_data.append(figure)
 

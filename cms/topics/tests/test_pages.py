@@ -62,14 +62,14 @@ class ArticleSeriesPageTests(WagtailPageTestCase):
                     "figures",
                     {
                         "series": self.series,
-                        "figure": "figurexyz",
+                        "figure_id": "figurexyz",
                     },
                 ),
                 (
                     "figures",
                     {
                         "series": self.series,
-                        "figure": "figureabc",
+                        "figure_id": "figureabc",
                     },
                 ),
             ]
