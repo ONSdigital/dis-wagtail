@@ -50,7 +50,7 @@ def user_populates_the_statistical_article_page(context: Context):
 
 @step("the user updates the statistical article page content")
 def user_updates_the_statistical_article_page_content(context: Context):
-    context.page.get_by_placeholder("Page title*").fill("Updated summary")
+    context.page.get_by_placeholder("Page title*").fill("Updated article title")
 
 
 @step('the user clicks on "View superseded version"')
@@ -93,14 +93,9 @@ def the_statistical_article_page_is_displayed_with_the_populated_data(context: C
     expect(context.page.get_by_role("heading", name="Content")).to_be_visible()
 
 
-@then("the published statistical article page is displayed with the updated data")
-def the_statistical_article_page_is_displayed_with_the_updated_data(context: Context):
-    expect(context.page.get_by_text("Updated content")).to_be_visible()
-
-
 @then("the user can view the superseded statistical article page")
 def user_can_view_the_superseded_statistical_article_page(context: Context):
-    expect(context.page.get_by_role("heading", name="The article page")).to_be_visible()
+    expect(context.page.get_by_role("heading", name="Updated article title")).to_be_visible()
     expect(context.page.get_by_text("Content", exact=True)).to_be_visible()
 
 
