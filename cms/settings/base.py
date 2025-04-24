@@ -172,6 +172,7 @@ TEMPLATES = [
                 "cms.core.jinja2tags.CoreExtension",
             ],
             "policies": {
+                # https://jinja.palletsprojects.com/en/stable/api/#policies
                 "json.dumps_function": custom_json_dumps,
             },
         },
