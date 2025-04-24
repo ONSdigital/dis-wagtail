@@ -14,7 +14,7 @@ class BundlesUtilsTestCase(TestCase):
         self.assertListEqual(get_pages_in_active_bundles(), [])
 
         bundle = BundleFactory()
-        published_bundle = BundleFactory(released=True)
+        published_bundle = BundleFactory(published=True)
 
         page_in_active_bundle = StatisticalArticlePageFactory()
         page_in_published_bundle = StatisticalArticlePageFactory(parent=page_in_active_bundle.get_parent())
