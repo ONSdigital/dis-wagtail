@@ -3,8 +3,10 @@ import uuid
 from datetime import datetime
 
 from django.conf import settings
+from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
 from django.test import TestCase, override_settings
+from django.urls import reverse
 from django.utils import timezone
 from django.utils.formats import date_format
 from wagtail.test.utils import WagtailTestUtils
@@ -217,6 +219,7 @@ class StatisticalArticlePageRenderTestCase(WagtailTestUtils, TestCase):
         self.page.save_revision().publish()
         self.page_url = self.page.url
         self.formatted_date = date_format(self.page.release_date, settings.DATE_FORMAT)
+        self.user = get_user_model().objects.create(username="wagtailer", is_superuser=True)
 
     def test_display_title(self):
         """Check how the title is displayed on the front-end, with/without news headline."""
@@ -313,6 +316,54 @@ class StatisticalArticlePageRenderTestCase(WagtailTestUtils, TestCase):
         topic.save_revision().publish()
 
         self.assertEqual(self.page.figures_used_by_ancestor, ["figurexyz", "figurexyz"])
+
+    def test_cannot_be_deleted_if_ancestor_uses_headline_figures(self):
+        """Test that the page cannot be deleted if an ancestor uses the headline figures."""
+        self.client.force_login(self.user)
+        topic = self.page.get_parent().get_parent()
+        topic.headline_figures.extend(
+            [
+                (
+                    "figures",
+                    {
+                        "series": self.page.get_parent(),
+                        "figure": "figurexyz",
+                    },
+                ),
+                (
+                    "figures",
+                    {
+                        "series": self.page.get_parent(),
+                        "figure": "figurexyz",
+                    },
+                ),
+            ]
+        )
+        topic.save_revision().publish()
+
+        # Try deleting page
+        response = self.client.post(reverse("wagtailadmin_pages:delete", args=[self.page.id]))
+
+        self.assertEqual(response.status_code, 302)
+
+        response = self.client.post(reverse("wagtailadmin_pages:delete", args=[self.page.id]), follow=True)
+
+        self.assertContains(
+            response,
+            "This page cannot be deleted because it contains headline figures that are referenced elsewhere.",
+        )
+
+        # Try deleting parent page
+        response = self.client.post(reverse("wagtailadmin_pages:delete", args=[self.page.get_parent().id]))
+
+        self.assertEqual(response.status_code, 302)
+
+        response = self.client.post(reverse("wagtailadmin_pages:delete", args=[self.page.get_parent().id]), follow=True)
+
+        self.assertContains(
+            response,
+            "This page cannot be deleted because one or more of its children contain headline figures",
+        )
 
 
 class PreviousReleasesWithoutPaginationTestCase(TestCase):

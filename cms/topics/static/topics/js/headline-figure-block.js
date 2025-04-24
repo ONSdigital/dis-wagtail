@@ -29,7 +29,7 @@ class TopicHeadlineFigureBlock extends window.wagtailStreamField.blocks.StructBl
     const figureTitle = document.createElement("DIV");
     block.container[0].appendChild(figureTitle);
 
-    const associatedFigure = series?.figures.find((fig) => fig.figure_id === figure);
+    const associatedFigure = series?.figures?.find((fig) => fig.figure_id === figure);
 
     // listen to changes to the series input and update the figure block value
     const seriesInput = document.getElementById(prefix + "-series");
