@@ -123,21 +123,21 @@ def create_page(context: Context):
     enter_example_release_content(context)
 
 
-@when("the user inputs a AM datetime")
-def add_am_datetime(context: Context):
-    context.page.get_by_label("Release date", exact=True).fill("2025-3-1 10:00")
+@when("the user inputs a {meridiem_indicator} datetime")
+def add_datetime(context: Context, meridiem_indicator: str):
+    if meridiem_indicator == "am":
+        context.page.get_by_label("Release date", exact=True).fill("2025-3-1 10:00")
+    elif meridiem_indicator == "pm":
+        context.page.get_by_label("Release date", exact=True).fill("2025-3-1 17:00")
+    else:
+        raise ValueError(f"Unsupported MeridiemIndicator: {meridiem_indicator}")
 
 
-@then('the datetime is displayed with "am"')
-def display_am_datetime(context: Context):
-    expect(context.page.get_by_text("March 2025 10:00am")).to_be_visible()
-
-
-@when("the user inputs a PM datetime")
-def add_pm_datetime(context: Context):
-    context.page.get_by_label("Release date", exact=True).fill("2025-3-1 17:00")
-
-
-@then('the datetime is displayed with "pm"')
-def display_pm_datetime(context: Context):
-    expect(context.page.get_by_text("March 2025 5:00pm")).to_be_visible()
+@then('the datetime is displayed with "{meridiem_indicator}"')
+def display_datetime_with_meridiem(context: Context, meridiem_indicator: str):
+    if meridiem_indicator == "am":
+        expect(context.page.get_by_text("March 2025 10:00am")).to_be_visible()
+    elif meridiem_indicator == "pm":
+        expect(context.page.get_by_text("March 2025 5:00pm")).to_be_visible()
+    else:
+        raise ValueError(f"Unsupported MeridiemIndicator: {meridiem_indicator}")
