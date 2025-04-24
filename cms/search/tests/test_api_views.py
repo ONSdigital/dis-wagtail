@@ -105,7 +105,7 @@ class ResourceListViewPaginationTests(TestCase, ExternalAPITestMixin):
 
     def test_second_slice_returns_remaining_items(self):
         """Requesting offset=<7> should return whatever is left after the first slice."""
-        response = self.call_view_as_external(f"{RESOURCE_ENDPOINT}?offset={7}")
+        response = self.call_view_as_external(f"{RESOURCE_ENDPOINT}?offset=7")
         self.assertEqual(response.status_code, 200)
 
         data = self.parse_json(response)
@@ -128,7 +128,7 @@ class ResourceListViewPaginationTests(TestCase, ExternalAPITestMixin):
         """When limit exceeds max_limit, results should be capped at max_limit.
         We add enough extra pages to go past MAX_LIMIT of 20.
         """
-        response = self.call_view_as_external(f"{RESOURCE_ENDPOINT}?limit={30}")
+        response = self.call_view_as_external(f"{RESOURCE_ENDPOINT}?limit=30")
         self.assertEqual(response.status_code, 200)
 
         data = self.parse_json(response)
