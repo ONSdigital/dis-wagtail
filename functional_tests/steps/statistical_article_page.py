@@ -3,20 +3,28 @@ from behave.runner import Context
 from django.urls import reverse
 from playwright.sync_api import expect
 
-from cms.articles.tests.factories import ArticleSeriesPageFactory
+from cms.articles.tests.factories import ArticleSeriesPageFactory, StatisticalArticlePageFactory
 
 
 @given("an article series page exists")
-def the_topic_page_has_a_statistical_article_in_a_series(context: Context):
-    context.article_series = ArticleSeriesPageFactory(title="PSF")
+def an_article_series_exists(context: Context):
+    context.article_series_page = ArticleSeriesPageFactory(title="PSF")
+
+
+@given("a statistical article exists")
+def a_statistical_article_exists(context: Context):
+    an_article_series_exists(context)
+    context.statistical_article_page = StatisticalArticlePageFactory(parent=context.article_series_page)
 
 
 @when("the user goes to add a new statistical article page")
 def user_goes_to_add_new_article_page(context: Context):
-    if not getattr(context, "article_series", None):
-        the_topic_page_has_a_statistical_article_in_a_series(context)
+    if not getattr(context, "article_series_page", None):
+        an_article_series_exists(context)
 
-    add_url = reverse("wagtailadmin_pages:add", args=("articles", "statisticalarticlepage", context.article_series.pk))
+    add_url = reverse(
+        "wagtailadmin_pages:add", args=("articles", "statisticalarticlepage", context.article_series_page.pk)
+    )
     context.page.goto(f"{context.base_url}{add_url}")
 
 
@@ -42,7 +50,7 @@ def user_populates_the_statistical_article_page(context: Context):
 
 @step("the user updates the statistical article page content")
 def user_updates_the_statistical_article_page_content(context: Context):
-    context.page.get_by_role("region", name="Rich text *").get_by_role("textbox").fill("Updated content")
+    context.page.get_by_placeholder("Page title*").fill("Updated summary")
 
 
 @step('the user clicks on "View superseded version"')
