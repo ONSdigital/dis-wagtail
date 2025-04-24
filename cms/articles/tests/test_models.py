@@ -301,14 +301,14 @@ class StatisticalArticlePageRenderTestCase(WagtailTestUtils, TestCase):
                     "figures",
                     {
                         "series": self.page.get_parent(),
-                        "figure": "figurexyz",
+                        "figure_id": "figurexyz",
                     },
                 ),
                 (
                     "figures",
                     {
                         "series": self.page.get_parent(),
-                        "figure": "figurexyz",
+                        "figure_id": "figurexyz",
                     },
                 ),
             ]
@@ -327,14 +327,14 @@ class StatisticalArticlePageRenderTestCase(WagtailTestUtils, TestCase):
                     "figures",
                     {
                         "series": self.page.get_parent(),
-                        "figure": "figurexyz",
+                        "figure_id": "figurexyz",
                     },
                 ),
                 (
                     "figures",
                     {
                         "series": self.page.get_parent(),
-                        "figure": "figurexyz",
+                        "figure_id": "figurexyz",
                     },
                 ),
             ]

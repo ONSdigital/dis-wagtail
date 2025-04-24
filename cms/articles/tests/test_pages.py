@@ -362,14 +362,14 @@ class StatisticalArticlePageTests(WagtailPageTestCase):
                     "figures",
                     {
                         "series": series,
-                        "figure": "figurexyz",
+                        "figure_id": "figurexyz",
                     },
                 ),
                 (
                     "figures",
                     {
                         "series": series,
-                        "figure": "figurexyz",
+                        "figure_id": "figurexyz",
                     },
                 ),
             ]
