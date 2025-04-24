@@ -448,6 +448,12 @@ class BundlePageChooserViewsetTestCase(WagtailTestUtils, TestCase):
         self.assertNotContains(response, self.page_live.get_admin_display_title())
         self.assertNotContains(response, self.page_draft_in_bundle.get_admin_display_title())
 
+        # Test that the chooser includes the correct columns
+        self.assertContains(response, "Locale")
+        self.assertContains(response, "English")
+        self.assertContains(response, "Parent")
+        self.assertContains(response, self.page_draft.get_parent().get_admin_display_title())
+
     def test_choose_view__includes_page_in_inactive_bundle(self):
         self.bundle.status = BundleStatus.PUBLISHED
         self.bundle.save(update_fields=["status"])
