@@ -5,7 +5,7 @@
     <ul class="featured-article__metadata">
         <li class="featured-article__attribute ons-u-fs-s">
             <span class="ons-u-fw-b">{{ _("Released") }}:</span>
-            <time datetime="{{ article.release_date|ons_date("c") }}">{{ article.release_date|ons_date("DATE_FORMAT") }}</time>
+            <time datetime="{{ article.release_date|date("c") }}">{{ article.release_date|date("DATE_FORMAT") }}</time>
         </li>
         <li class="featured-article__attribute ons-u-fs-s">
             <span class="ons-u-fw-b">{{ _("Article") }}</span>
