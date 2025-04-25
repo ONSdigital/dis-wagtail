@@ -1,21 +1,51 @@
 {% extends "templates/pages/release_calendar/release_calendar_page.html" %}
 {% from "components/panel/_macro.njk" import onsPanel %}
 
-{% block release_meta %}
-    <div class="ons-container common-header__releases common-header__releases--single-row">
-        <div>
-            <span class="ons-u-fs-r--b common-header__releases-label">{{ _("Release date") }}:</span>
-            <span class="ons-u-nowrap">{{ page.release_date|date("DATETIME_FORMAT") }}</span>
-        </div>
-    </div>
-{% endblock %}
+{% block header_area %}
+    {%- set hero_topic = _("Release") -%}
+    {%- set release_date_label = _("Release date:") -%}
+    {%- set breadcrumbs_label = _("Breadcrumbs") -%}
 
-{% block release_note %}
-    <div class="ons-container">
-        {% call onsPanel() %}
-            <p>{{ _("This release is not yet published") }}</p>
-        {% endcall %}
-    </div>
+    {# fmt:off #}
+    {{
+        onsHero({
+            "topic": hero_topic,
+            "title": page.title,
+            "variants": 'grey',
+            "officialStatisticsBadge": page.is_accredited,
+            "wide": true,
+            "detailsColumns": 12,
+            "censusLogo": page.is_census,
+            "descriptionList": {
+                "descriptionListLabel": "",
+                "termCol": "6",
+                "descriptionCol": "6",
+                "itemsList": [
+                    {
+                        "term": release_date_label,
+                        "descriptions": [
+                            {
+                                "description": page.release_date|ons_date("DATETIME_FORMAT")
+                            }
+                        ]
+                    }
+                ]
+            },
+            "breadcrumbs": {
+                "ariaLabel": breadcrumbs_label,
+                "itemsList": breadcrumbs(page),
+            }
+        })
+    }}
+    {# fmt:on #}
+
+    {% block release_note %}
+        <div class="ons-container ons-u-mt-m">
+            {% call onsPanel() %}
+                <p>{{ _("This release is not yet published") }}</p>
+            {% endcall %}
+        </div>
+    {% endblock %}
 {% endblock %}
 
 {% block release_content %}
