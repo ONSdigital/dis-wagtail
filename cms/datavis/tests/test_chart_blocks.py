@@ -6,7 +6,7 @@ from wagtail.blocks.struct_block import StructValue
 from wagtail.test.utils import WagtailTestUtils
 
 from cms.datavis.blocks.base import BaseVisualisationBlock
-from cms.datavis.blocks.charts import LineChartBlock
+from cms.datavis.blocks.charts import BarColumnChartBlock, LineChartBlock
 from cms.datavis.tests.factories import TableDataFactory
 
 
@@ -194,3 +194,123 @@ class LineChartBlockTestCase(BaseChartBlockTestCase):
         config = self.get_component_config()
         for item in config["series"]:
             self.assertEqual(True, item["connectNulls"])
+
+
+class BarColumnChartBlockTestCase(BaseChartBlockTestCase):
+    block_type = BarColumnChartBlock
+
+    def setUp(self):
+        super().setUp()
+        self.raw_data["table"] = TableDataFactory(
+            table_data=[
+                ["", "Series 1", "Series 2"],
+                ["2005", "100", "50"],
+                ["2006", "120", "55"],
+                ["2007", "140", "60"],
+            ]
+        )
+
+    def test_generic_properties(self):
+        self._test_generic_properties()
+
+    def test_get_component_config(self):
+        self._test_get_component_config()
+
+    def test_selectable_chart_type(self):
+        with self.assertRaises(AttributeError):
+            self.block.highcharts_chart_type  # noqa: B018, pylint: disable=pointless-statement
+        for chart_type in ["bar", "column"]:
+            with self.subTest(chart_type=chart_type):
+                data = self.raw_data.copy()
+                data["select_chart_type"] = chart_type
+                value = self.get_value(data)
+                self.assertEqual(chart_type, value.block.get_highcharts_chart_type(value))
+
+    def test_validating_data(self):
+        """Test that the data we're using for these unit tests is good."""
+        value = self.get_value()
+        self.assertIsInstance(value, StructValue)
+        try:
+            self.block.clean(value)
+        except ValidationError as e:
+            self.fail(f"ValidationError raised: {e}")
+
+    def test_invalid_data(self):
+        """Validate that these tests can detect invalid data."""
+        invalid_data = self.raw_data.copy()
+        invalid_data["title"] = ""  # Required field
+        value = self.get_value(invalid_data)
+        with self.assertRaises(ValidationError, msg="Expected ValidationError for missing title"):
+            self.block.clean(value)
+
+    def test_get_single_series_data(self):
+        """Test that we identify one series in the data."""
+        data = self.raw_data.copy()
+        data["table"] = TableDataFactory(
+            table_data=[
+                ["", "Only one series"],
+                ["2005", "100"],
+                ["2006", "120"],
+                ["2007", "140"],
+            ]
+        )
+        config = self.get_component_config(data)
+        self.assertEqual(len(config["series"]), 1)
+        self.assertEqual(config["series"][0]["name"], "Only one series")
+        self.assertEqual(config["series"][0]["data"], [100, 120, 140])
+
+    def test_get_multiple_series_data(self):
+        """Test that we identify two separate series in the data."""
+        config = self.get_component_config()
+        self.assertEqual(len(config["series"]), 2)
+        self.assertEqual(config["series"][0]["name"], "Series 1")
+        self.assertEqual(config["series"][0]["data"], [100, 120, 140])
+        self.assertEqual(config["series"][1]["name"], "Series 2")
+        self.assertEqual(config["series"][1]["data"], [50, 55, 60])
+
+    def test_no_x_axis_title(self):
+        config = self.get_component_config()
+        self.assertNotIn("title", config["xAxis"])
+        # Test again, with title in the data, to prove this is not supported.
+        self.raw_data["x_axis"]["title"] = "Editable X-axis Title"
+        config = self.get_component_config()
+        self.assertNotIn("title", config["xAxis"])
+
+    def test_editable_y_axis_title(self):
+        self.raw_data["y_axis"]["title"] = "Editable Y-axis Title"
+        config = self.get_component_config()
+        self.assertEqual("Editable Y-axis Title", config["yAxis"]["title"])
+
+    def test_blank_y_axis_title(self):
+        """A blank value should be converted to None."""
+        self.raw_data["y_axis"]["title"] = ""
+        config = self.get_component_config()
+        self.assertEqual(None, config["yAxis"]["title"])
+
+    def test_show_data_labels(self):
+        for show_data_labels in [False, True]:
+            with self.subTest(show_data_labels=show_data_labels):
+                self.raw_data["show_data_labels"] = show_data_labels
+                config = self.get_component_config()
+                for item in config["series"]:
+                    self.assertEqual(show_data_labels, item["dataLabels"])
+
+    def test_no_show_markers_option(self):
+        """Test that this option is not present for line charts."""
+        with self.subTest("base case"):
+            config = self.get_component_config()
+            for item in config["series"]:
+                # Check that we're looking at the right object
+                self.assertIn("name", item)
+                self.assertIn("data", item)
+                self.assertNotIn("marker", item)
+
+        with self.subTest("errantly try to force show_markers to True"):
+            # Test that even if we try to pass it in the form cleaned data, it is not in the output.
+            self.raw_data["show_markers"] = True
+            config = self.get_component_config()
+            for item in config["series"]:
+                # Check that we're looking at the right object
+                self.assertIn("name", item)
+                self.assertIn("data", item)
+                self.assertNotIn("marker", item)
