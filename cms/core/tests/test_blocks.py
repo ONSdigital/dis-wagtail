@@ -610,7 +610,7 @@ class CorrectionBlockTestCase(TestCase):
         block = CorrectionBlock()
         rendered = block.render(self.correction_data, context={"request": None, "page": self.statistical_article})
 
-        self.assertIn("1 January 2025 1:59p.m.", rendered)
+        self.assertIn("1 January 2025 1:59pm", rendered)
         self.assertIn("Correction text", rendered)
         self.assertIn("View superseded version", rendered)
         self.assertIn("/previous/v1", rendered)

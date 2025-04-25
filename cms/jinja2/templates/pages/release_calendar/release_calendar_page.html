@@ -5,14 +5,14 @@
 
 {% block header_area %}
     {% set hero_topic = _("Release") %}
-    {% set breadcrumbs_aria_label = _("Breadcrumbs") %}
+    {% set breadcrumbs_label = _("Breadcrumbs") %}
 
     {% if page.release_date or page.release_text %}
-        {% set release_date_term = _("Release date:") %}
+        {% set release_date_label = _("Release date:") %}
         {# fmt:off #}
         {% set release_date_html =
             {
-                "term": release_date_term,
+                "term": release_date_label,
                 "descriptions": [
                     {
                         "description": page.release_date|date("DATE_FORMAT") or page.release_date_text
@@ -63,7 +63,7 @@
                 ]
             },
             "breadcrumbs": {
-                "ariaLabel": breadcrumbs_aria_label,
+                "ariaLabel": breadcrumbs_label,
                 "itemsList": breadcrumbs(page),
             }
         })

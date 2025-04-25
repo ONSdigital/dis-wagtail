@@ -30,10 +30,10 @@ class WagtailHooksTestCase(WagtailTestUtils, TestCase):
         cls.bundle_add_url = reverse("bundle:add")
         cls.dashboard_url = reverse("wagtailadmin_home")
 
-        cls.pending_bundle = BundleFactory(name="Pending Bundle", created_by=cls.bundle_viewer)
+        cls.draft_bundle = BundleFactory(name="Draft Bundle", created_by=cls.bundle_viewer)
         cls.in_review_bundle = BundleFactory(in_review=True, name="Bundle In review", created_by=cls.superuser)
         cls.approved_bundle = BundleFactory(name="Approved Bundle", approved=True, created_by=cls.publishing_officer)
-        cls.released_bundle = BundleFactory(released=True, name="Released Bundle")
+        cls.published_bundle = BundleFactory(published=True, name="Published Bundle")
 
         cls.statistical_article_page = StatisticalArticlePageFactory(title="November 2024", parent__title="PSF")
         cls.article_edit_url = reverse("wagtailadmin_pages:edit", args=[cls.statistical_article_page.id])
@@ -71,11 +71,11 @@ class WagtailHooksTestCase(WagtailTestUtils, TestCase):
         self.assertContains(response, self.bundle_index_url)
         self.assertContains(response, "View all bundles")
 
-        for bundle in [self.pending_bundle, self.in_review_bundle, self.approved_bundle]:
+        for bundle in [self.draft_bundle, self.in_review_bundle, self.approved_bundle]:
             self.assertContains(response, bundle.name)
             self.assertContains(response, bundle.created_by.get_full_name())
             self.assertContains(response, bundle.status.label)
-        self.assertNotContains(response, self.released_bundle.status.label)
+        self.assertNotContains(response, self.published_bundle.status.label)
 
     def test_bundle_to_preview_panel_is_shown(self):
         cases = [
@@ -119,8 +119,8 @@ class WagtailHooksTestCase(WagtailTestUtils, TestCase):
         self.assertContains(response, self.approved_bundle.name)
         self.assertNotContains(response, self.approved_bundle.status.label)
 
-        self.assertNotContains(response, self.pending_bundle.name)
-        self.assertNotContains(response, self.released_bundle.name)
+        self.assertNotContains(response, self.draft_bundle.name)
+        self.assertNotContains(response, self.published_bundle.name)
 
     def test_add_to_bundle_buttons(self):
         """Tests that the 'Add to Bundle' button appears in appropriate contexts."""
@@ -157,7 +157,7 @@ class WagtailHooksTestCase(WagtailTestUtils, TestCase):
             (reverse("wagtailadmin_pages:edit", args=[release_calendar_page.id]), "header"),
             (reverse("wagtailadmin_explore", args=[release_calendar_page.get_parent().id]), "listing"),
         ]
-        BundlePageFactory(parent=self.pending_bundle, page=self.statistical_article_page)
+        BundlePageFactory(parent=self.draft_bundle, page=self.statistical_article_page)
 
         self.client.force_login(self.publishing_officer)
 
