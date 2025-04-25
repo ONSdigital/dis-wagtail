@@ -142,7 +142,7 @@ class LineChartBlockTestCase(BaseChartBlockTestCase):
     def test_editable_x_axis_title(self):
         self.raw_data["x_axis"]["title"] = "Editable X-axis Title"
         config = self.get_component_config()
-        self.assertEqual("Editable X-axis Title", config["xAxis"]["title"]["text"])
+        self.assertEqual("Editable X-axis Title", config["xAxis"]["title"])
 
     def test_blank_x_axis_title(self):
         self.raw_data["x_axis"]["title"] = ""
@@ -154,13 +154,13 @@ class LineChartBlockTestCase(BaseChartBlockTestCase):
     def test_editable_y_axis_title(self):
         self.raw_data["y_axis"]["title"] = "Editable Y-axis Title"
         config = self.get_component_config()
-        self.assertEqual({"text": "Editable Y-axis Title"}, config["yAxis"]["title"])
+        self.assertEqual("Editable Y-axis Title", config["yAxis"]["title"])
 
     def test_blank_y_axis_title(self):
         """A blank value should be converted to None."""
         self.raw_data["y_axis"]["title"] = ""
         config = self.get_component_config()
-        self.assertEqual({"text": None}, config["yAxis"]["title"])
+        self.assertEqual(None, config["yAxis"]["title"])
 
     def test_no_show_data_labels_option(self):
         """Test that this option is not present for line charts."""
@@ -188,7 +188,7 @@ class LineChartBlockTestCase(BaseChartBlockTestCase):
                 self.raw_data["show_markers"] = show_markers
                 config = self.get_component_config()
                 for item in config["series"]:
-                    self.assertEqual({"enabled": show_markers}, item["marker"])
+                    self.assertEqual(show_markers, item["marker"])
 
     def test_connect_nulls(self):
         config = self.get_component_config()
