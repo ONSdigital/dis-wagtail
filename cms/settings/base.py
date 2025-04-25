@@ -13,6 +13,7 @@ from django.utils.translation import gettext_lazy as _
 from django_jinja.builtins import DEFAULT_EXTENSIONS
 
 from cms.core.elasticache import ElastiCacheIAMCredentialProvider
+from cms.core.jinja2 import custom_json_dumps
 
 env = os.environ.copy()
 
@@ -187,6 +188,10 @@ TEMPLATES = [
                 "cms.core.jinja2tags.CoreExtension",
                 "cms.navigation.jinja2tags.NavigationExtension",
             ],
+            "policies": {
+                # https://jinja.palletsprojects.com/en/stable/api/#policies
+                "json.dumps_function": custom_json_dumps,
+            },
         },
     },
     {

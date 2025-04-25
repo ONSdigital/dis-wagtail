@@ -7,6 +7,7 @@ from wagtail.contrib.routable_page.templatetags.wagtailroutablepage_tags import 
 from wagtailmath.templatetags.wagtailmath import mathjax
 
 from cms.core.templatetags.util_tags import (
+    extend,
     get_hreflangs,
     get_translation_urls,
     json_script,
@@ -35,6 +36,7 @@ class CoreExtension(Extension):  # pylint: disable=abstract-method
                 "routablepageurl": pass_context(routablepageurl),
                 "get_translation_urls": get_translation_urls,
                 "get_hreflangs": get_hreflangs,
+                "extend": extend,
             }
         )
 
