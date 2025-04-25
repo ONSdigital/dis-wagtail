@@ -10,9 +10,6 @@
 {%- set statistical_article_label = _("Statistical article") -%}
 {%- set release_date_label = _("Release date:") -%}
 {%- set next_release_label = _("Next release:") -%}
-{%- set edition_label = _("Edition:") -%}
-{%- set releases_label = _("Releases:") -%}
-{%- set latest_label = _("Latest") -%}
 {%- set breadcrumbs_label = _("Breadcrumbs") -%}
 
 {% block header_area %}
@@ -100,22 +97,6 @@
                         "descriptions": [
                             {
                                 "description": next_release_date_text
-                            }
-                        ]
-                    },
-                    {
-                        "term": edition_label,
-                        "descriptions": [
-                            {
-                                "description": latest_label
-                            }
-                        ]
-                    },
-                    {
-                        "term": releases_label,
-                        "descriptions": [
-                            {
-                                "description": release_html
                             }
                         ]
                     },
