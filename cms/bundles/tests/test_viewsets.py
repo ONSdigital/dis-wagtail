@@ -4,7 +4,7 @@ from unittest import mock
 from django.test import TestCase
 from django.urls import reverse
 from wagtail.admin.panels import get_edit_handler
-from wagtail.models import Page
+from wagtail.models import Locale, Page
 from wagtail.test.utils import WagtailTestUtils
 from wagtail.test.utils.form_data import inline_formset, nested_form_data
 
@@ -408,6 +408,9 @@ class BundlePageChooserViewsetTestCase(WagtailTestUtils, TestCase):
         cls.bundle = BundleFactory()
 
         cls.page_draft = StatisticalArticlePageFactory(live=False, title="Article draft")
+        StatisticalArticlePageFactory(
+            live=False, title="Article draft Welsh", locale=Locale.objects.get(language_code="cy")
+        )
         cls.page_draft.save_revision()
         cls.page_live = StatisticalArticlePageFactory(live=True, title="Live page")
         cls.page_live_plus_draft = StatisticalArticlePageFactory(live=True, title="Live page with draft")
@@ -451,6 +454,7 @@ class BundlePageChooserViewsetTestCase(WagtailTestUtils, TestCase):
         # Test that the chooser includes the correct columns
         self.assertContains(response, "Locale")
         self.assertContains(response, "English")
+        self.assertContains(response, "Welsh")
         self.assertContains(response, "Parent")
         self.assertContains(response, self.page_draft.get_parent().get_admin_display_title())
 
