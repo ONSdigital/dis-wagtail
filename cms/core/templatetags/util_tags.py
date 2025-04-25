@@ -47,3 +47,22 @@ def json_script(value: dict[str, Any], element_id: Optional[str] = None) -> "Saf
     tag (with an optional id).
     """
     return _json_script(value, element_id)
+
+
+def extend(value: list[Any], element: Any) -> None:
+    """Append an item to a list.
+
+    This could be achieved in Nunjucks with array.concat(item), and in Jinja2
+    with array.append(item), but not with any syntax that is available in both.
+
+    Use:
+        {% set _ = extend(series, seriesItem) %}
+
+    There is no actual return value, but the `set` tag should be used to avoid
+    printing to the template.
+    """
+    if not isinstance(value, list):
+        # This function is likely to be called from a template macro, so we
+        # can't rely on annotations and tooling for type safety.
+        raise TypeError("First argument must be a list.")
+    return value.append(element)

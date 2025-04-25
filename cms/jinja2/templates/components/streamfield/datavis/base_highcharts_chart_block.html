@@ -1,4 +1,4 @@
-{% from "templates/components/streamfield/datavis/_macro.njk" import onsChart %}
+{% from "components/chart/_macro.njk" import onsChart %}
 
 {# fmt:off #}
 {{
@@ -7,18 +7,15 @@
         "theme": value.theme,
         "title": value.title,
         "subtitle": value.subtitle,
-        "uuid": block_id,
+        "id": block_id,
         "caption": value.caption,
+        "legend": config.legend,
+        "yAxis": config.yAxis,
+        "xAxis": config.xAxis,
+        "series": config.series,
         "use_stacked_layout": value.use_stacked_layout,
-        "config": config,
         "annotations_values": annotations_values,
-        "download_title": "Figure 1 data",
-        "download_image": "xyz",
-        "download_image_size": "18KB",
-        "download_csv": "xyz",
-        "download_csv_size": "25KB",
-        "download_excel": "xyz",
-        "download_excel_size": "25KB",
+        "download": download,
     })
 }}
 {# fmt:on #}

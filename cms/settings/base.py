@@ -12,6 +12,8 @@ from django.utils.module_loading import import_string
 from django.utils.translation import gettext_lazy as _
 from django_jinja.builtins import DEFAULT_EXTENSIONS
 
+from cms.core.jinja2 import custom_json_dumps
+
 env = os.environ.copy()
 
 # Build paths inside the project like this: BASE_DIR / "something"
@@ -169,6 +171,10 @@ TEMPLATES = [
                 "wagtail.contrib.settings.jinja2tags.settings",
                 "cms.core.jinja2tags.CoreExtension",
             ],
+            "policies": {
+                # https://jinja.palletsprojects.com/en/stable/api/#policies
+                "json.dumps_function": custom_json_dumps,
+            },
         },
     },
     {
