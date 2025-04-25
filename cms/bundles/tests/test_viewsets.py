@@ -408,9 +408,6 @@ class BundlePageChooserViewsetTestCase(WagtailTestUtils, TestCase):
         cls.bundle = BundleFactory()
 
         cls.page_draft = StatisticalArticlePageFactory(live=False, title="Article draft")
-        cls.welsh_page_draft = StatisticalArticlePageFactory(
-            live=False, title="Article draft Welsh", locale=Locale.objects.get(language_code="cy")
-        )
         cls.page_draft.save_revision()
         cls.page_live = StatisticalArticlePageFactory(live=True, title="Live page")
         cls.page_live_plus_draft = StatisticalArticlePageFactory(live=True, title="Live page with draft")
@@ -441,13 +438,17 @@ class BundlePageChooserViewsetTestCase(WagtailTestUtils, TestCase):
         )
 
     def test_choose_view(self):
+        welsh_page_draft = StatisticalArticlePageFactory(
+            live=False, title="Article draft Welsh", locale=Locale.objects.get(language_code="cy")
+        )
+        welsh_page_draft.save_revision()
         response = self.client.get(self.chooser_url)
 
         self.assertEqual(response.status_code, 200)
         self.assertTemplateUsed(response, "wagtailadmin/generic/chooser/chooser.html")
 
         self.assertContains(response, self.page_draft.get_admin_display_title())
-        self.assertContains(response, self.welsh_page_draft.get_admin_display_title())
+        self.assertContains(response, welsh_page_draft.get_admin_display_title())
         self.assertContains(response, self.page_live_plus_draft.get_admin_display_title())
         self.assertNotContains(response, self.page_live.get_admin_display_title())
         self.assertNotContains(response, self.page_draft_in_bundle.get_admin_display_title())
