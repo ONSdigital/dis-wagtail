@@ -10,19 +10,21 @@
 {%- set statistical_article_label = _("Statistical article") -%}
 {%- set release_date_label = _("Release date:") -%}
 {%- set next_release_label = _("Next release:") -%}
-{%- set edition_label = _("Edition:") -%}
-{%- set releases_label = _("Releases:") -%}
-{%- set latest_label = _("Latest") -%}
 {%- set breadcrumbs_label = _("Breadcrumbs") -%}
 
 {% block header_area %}
+    {%- set hero_topic = _("Statistical article") -%}
+    {%- set release_date_term = _("Release date:") -%}
+    {%- set next_release_date_term = _("Next release:") -%}
+    {%- set breadcrumbs_aria_label = _("Breadcrumbs") -%}
     {% if page.contact_details %}
-        {% set contact_description_html -%}
+        {%- set contact_details_term = _("Contact:") -%}
+        {%- set contact_description_html -%}
             <a href="mailto:{{ page.contact_details.email }}">{{ page.contact_details.name }}</a>
-        {%- endset %}
+        {%- endset -%}
 
         {# fmt:off #}
-        {% set contact_details =
+        {%- set contact_details =
             {
                 "term": contact_label,
                 "descriptions": [
@@ -31,23 +33,32 @@
                     }
                 ]
             }
-        %}
+        -%}
         {# fmt:on #}
     {% else %}
-        {% set contact_details = "" %}
+        {%- set contact_details = "" -%}
     {% endif %}
 
     {% if page.is_latest %}
-        {% set release_html -%}
-            <a href="{{ routablepageurl(page.get_parent().specific, "previous_releases") }}">{{ _("View previous releases") }}</a>
-        {%- endset %}
+        {% if latest_version_url %}
+            {%- set infoPanelText = _("This version has been amended since publication") -%}
+            {%- set releases_text = _("View amended version") -%}
+            {%- set infoPanelType = 'ons-red' -%}
+            {%- set releases_url = latest_version_url -%}
+        {% else %}
+            {%- set infoPanelText = _("Latest release") -%}
+            {%- set releases_text = _("View previous releases") -%}
+            {%- set infoPanelType = 'ons-green' -%}
+            {%- set releases_url = routablepageurl(page.get_parent().specific, "previous_releases") -%}
+        {% endif %}
     {% else %}
-        {% set release_html -%}
-            <a href="{{ routablepageurl(page.get_parent().specific, "latest_release") }}">{{ _("View latest release") }}</a>
-        {%- endset %}
+        {%- set infoPanelText = _("Not the latest release") -%}
+        {%- set releases_text = _("View latest release") -%}
+        {%- set infoPanelType = 'ons-orange' -%}
+        {%- set releases_url = routablepageurl(page.get_parent().specific, "latest_release") -%}
     {% endif %}
 
-    {% set next_release_date_text = page.next_release_date|date("DATE_FORMAT") or _("To be announced") %}
+    {%- set next_release_date_text = page.next_release_date|date("DATE_FORMAT") or _("To be announced") -%}
 
     {# fmt:off #}
     {{
@@ -58,6 +69,14 @@
             "text": page.summary,
             "officialStatisticsBadge": page.is_accredited,
             "wide": true,
+            "informationPanel":{
+                "panelText": infoPanelText,
+                "panelType": infoPanelType,
+                "panelLink": {
+                    "text": releases_text,
+                    "url": releases_url
+                }
+            },
             "detailsColumns": 12,
             "censusLogo": page.is_census,
             "descriptionList": {
@@ -81,22 +100,6 @@
                             }
                         ]
                     },
-                    {
-                        "term": edition_label,
-                        "descriptions": [
-                            {
-                                "description": latest_label
-                            }
-                        ]
-                    },
-                    {
-                        "term": releases_label,
-                        "descriptions": [
-                            {
-                                "description": release_html
-                            }
-                        ]
-                    },
                     contact_details,
                 ]
             },
@@ -107,14 +110,6 @@
         })
     }}
     {# fmt:on #}
-
-    {% if latest_version_url %}
-        <div class="ons-container">
-            {% call onsPanel({"variant": 'warn', "classes": "ons-u-mt-s"}) %}
-                <p>{{ _("This has been superseded.") }} <a href="{{ latest_version_url }}">{{ _("View corrected version") }}</a></p>
-            {% endcall %}
-        </div>
-    {% endif %}
 
     {# TBD: to be replaced with corrections and notices DS compoennt #}
     {% if page.corrections or page.notices %}
