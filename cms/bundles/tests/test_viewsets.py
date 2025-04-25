@@ -408,7 +408,7 @@ class BundlePageChooserViewsetTestCase(WagtailTestUtils, TestCase):
         cls.bundle = BundleFactory()
 
         cls.page_draft = StatisticalArticlePageFactory(live=False, title="Article draft")
-        StatisticalArticlePageFactory(
+        cls.welsh_page_draft = StatisticalArticlePageFactory(
             live=False, title="Article draft Welsh", locale=Locale.objects.get(language_code="cy")
         )
         cls.page_draft.save_revision()
@@ -447,6 +447,7 @@ class BundlePageChooserViewsetTestCase(WagtailTestUtils, TestCase):
         self.assertTemplateUsed(response, "wagtailadmin/generic/chooser/chooser.html")
 
         self.assertContains(response, self.page_draft.get_admin_display_title())
+        self.assertContains(response, self.welsh_page_draft.get_admin_display_title())
         self.assertContains(response, self.page_live_plus_draft.get_admin_display_title())
         self.assertNotContains(response, self.page_live.get_admin_display_title())
         self.assertNotContains(response, self.page_draft_in_bundle.get_admin_display_title())
