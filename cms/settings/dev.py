@@ -82,6 +82,7 @@ MIGRATION_LINTER_OPTIONS = {
         "wagtaildocs",
         "wagtailredirects",
         "wagtailusers",
+        "datavis",  # TODO: remove after clean-up / migration regeneration
     ],
     "ignore_name": [
         "0002_alter_customdocument_file_size",
