@@ -171,7 +171,7 @@ def user_adds_a_notice(context: Context):
 @then("the published statistical article page has the added correction")
 def the_published_statistical_article_page_has_the_added_correction(context: Context):
     expect(context.page.get_by_role("heading", name="Corrections")).to_be_visible()
-    expect(context.page.get_by_text("13 March 2025 1:59p.m.")).to_be_hidden()
+    expect(context.page.get_by_text("13 March 2025 1:59pm")).to_be_hidden()
     expect(context.page.get_by_text("Correction text")).to_be_hidden()
 
 
@@ -179,10 +179,10 @@ def the_published_statistical_article_page_has_the_added_correction(context: Con
 def user_can_click_on_view_detail_to_expand_block(context: Context, block_type: str):
     if block_type == "correction":
         text = "Correction text"
-        date = "13 March 2025 1:59p.m."
+        date = "13 March 2025 1:59pm"
     else:
         text = "Notice text"
-        date = "15 March 2025 1:59p.m."
+        date = "15 March 2025 1:59pm"
 
     context.page.get_by_text("Show detail").click()
     expect(context.page.get_by_text(text)).to_be_visible()
@@ -206,10 +206,10 @@ def the_published_statistical_article_page_has_the_corrections_and_notices_block
 def user_can_click_on_show_detail_to_expand_corrections_and_notices_block(context: Context):
     context.page.get_by_text("Show detail").click()
     expect(context.page.get_by_text("Notice text")).to_be_visible()
-    expect(context.page.get_by_text("15 March 2025 1:59p.m.")).to_be_visible()
+    expect(context.page.get_by_text("15 March 2025 1:59pm")).to_be_visible()
 
     expect(context.page.get_by_text("Correction text")).to_be_visible()
-    expect(context.page.get_by_text("13 March 2025 1:59p.m.")).to_be_visible()
+    expect(context.page.get_by_text("13 March 2025 1:59pm")).to_be_visible()
     expect(context.page.get_by_role("link", name="View superseded version")).to_be_visible()
 
 
@@ -218,22 +218,22 @@ def user_can_click_on_hide_detail_to_collapse_corrections_and_notices_block(cont
     context.page.get_by_text("Close detail").click()
 
     expect(context.page.get_by_text("Notice text")).to_be_hidden()
-    expect(context.page.get_by_text("15 March 2025 1:59p.m.")).to_be_hidden()
+    expect(context.page.get_by_text("15 March 2025 1:59pm")).to_be_hidden()
 
     expect(context.page.get_by_text("Correction text")).to_be_hidden()
-    expect(context.page.get_by_text("13 March 2025 1:59p.m.")).to_be_hidden()
+    expect(context.page.get_by_text("13 March 2025 1:59pm")).to_be_hidden()
 
 
 @then("the published statistical article page has corrections in chronological order")
 def the_published_statistical_article_page_has_corrections_in_chronological_order(context: Context):
-    expect(context.page.locator("#corrections div:first-child").get_by_text("14 March 2025 1:59p.m.")).to_be_hidden()
-    expect(context.page.locator("#corrections div:nth-child(2)").get_by_text("13 March 2025 1:59p.m.")).to_be_hidden()
+    expect(context.page.locator("#corrections div:first-child").get_by_text("14 March 2025 1:59pm")).to_be_hidden()
+    expect(context.page.locator("#corrections div:nth-child(2)").get_by_text("13 March 2025 1:59pm")).to_be_hidden()
 
 
 @then("the published statistical article page has the added notice")
 def the_published_statistical_article_page_has_the_added_notice(context: Context):
     expect(context.page.get_by_role("heading", name="Notices")).to_be_visible()
-    expect(context.page.get_by_text("15 March 2025 1:59p.m.")).to_be_hidden()
+    expect(context.page.get_by_text("15 March 2025 1:59pm")).to_be_hidden()
     expect(context.page.get_by_text("Notice text")).to_be_hidden()
 
 
