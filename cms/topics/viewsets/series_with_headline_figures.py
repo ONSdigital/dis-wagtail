@@ -133,6 +133,10 @@ class SeriesWithHeadlineFiguresChooserMixin:
     def columns(self) -> list["Column"]:
         return [
             self.title_column,
+            HeadlineFigureColumn("figure_id", "figure_id", label="Figure ID", accessor="headline_figure"),
+            HeadlineFigureColumn("figure_title", "title", label="Figure title", accessor="headline_figure"),
+            HeadlineFigureColumn("figure", "figure", label="Figure", accessor="headline_figure"),
+            HeadlineFigureColumn("figure_text", "supporting_text", label="Supporting text", accessor="headline_figure"),
             Column("parent", label="Topic", accessor="get_parent"),
             DateColumn(
                 "updated",
@@ -141,10 +145,6 @@ class SeriesWithHeadlineFiguresChooserMixin:
                 accessor="latest_revision_created_at",
             ),
             PageStatusColumn("status", label="Status", width="12%"),
-            HeadlineFigureColumn("figure_id", "figure_id", label="Figure ID", accessor="headline_figure"),
-            HeadlineFigureColumn("figure_title", "title", label="Figure title", accessor="headline_figure"),
-            HeadlineFigureColumn("figure", "figure", label="Figure", accessor="headline_figure"),
-            HeadlineFigureColumn("figure_text", "supporting_text", label="Supporting text", accessor="headline_figure"),
         ]
 
 
@@ -196,9 +196,9 @@ class SeriesWithHeadlineFiguresPageChooserViewSet(ChooserViewSet):
     choose_results_view_class = SeriesWithHeadlineFiguresChooseResultsView
     chosen_view_class = SeriesWithHeadlineChosenView
     register_widget = False
-    choose_one_text = "Choose Article Series page"
-    choose_another_text = "Choose another Article Series page"
-    edit_item_text = "Edit Article Series page"
+    choose_one_text = "Choose Article Series page and headline figure"
+    choose_another_text = "Choose another Article Series page and headline figure"
+    edit_item_text = "Edit Article Series page and headline figure"
     preserve_url_parameters: ClassVar[list[str]] = ["multiple", "topic_page_id"]
 
 

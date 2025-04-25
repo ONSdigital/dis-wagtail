@@ -169,7 +169,7 @@ def user_clicks_to_add_headline_figures_to_the_topic_page(context: Context, *, b
     panel = page.locator("#panel-child-content-headline_figures-content")
     panel.get_by_role("button", name="Insert a block").nth(button_index).click()
     page.wait_for_timeout(100)
-    panel.get_by_role("button", name="Choose Article Series page").click()
+    panel.get_by_role("button", name="Choose Article Series page and headline figure").click()
     page.wait_for_timeout(100)  # Wait for modal to open
 
 
