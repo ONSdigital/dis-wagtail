@@ -13,7 +13,7 @@
                 "term": release_date_label,
                 "descriptions": [
                     {
-                        "description": page.release_date|date("DATE_FORMAT") or page.release_date_text
+                        "description": page.release_date|ons_date("DATE_FORMAT") or page.release_date_text
                     }
                 ]
             }

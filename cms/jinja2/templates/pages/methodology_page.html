@@ -38,7 +38,7 @@
                 "term": last_revised_label,
                 "descriptions": [
                     {
-                        "description": page.last_revised_date|date("DATE_FORMAT")
+                        "description": page.last_revised_date|ons_date("DATE_FORMAT")
                     }
                 ]
             }
@@ -66,7 +66,7 @@
                         "term": published_label,
                         "descriptions": [
                             {
-                                "description": page.publication_date|date("DATE_FORMAT")
+                                "description": page.publication_date|ons_date("DATE_FORMAT")
                             }
                         ]
                     },
@@ -125,7 +125,7 @@
                             <a href="{{ fullpageurl(page) }}">{{ page.title }}</a>
                         {% endset %}
                         {% set latest_date = page.last_revised_date if page.last_revised_date else page.publication_date %}
-                        {% trans trimmed latest_date_formatted = latest_date|date("DATE_FORMAT"), cite_link=cite_link %}
+                        {% trans trimmed latest_date_formatted = latest_date|ons_date("DATE_FORMAT"), cite_link=cite_link %}
                             Office for National Statistics (ONS), last revised {{ latest_date_formatted }}, ONS website, methodology, {{ cite_link }}
                         {% endtrans %}
                     </p>
