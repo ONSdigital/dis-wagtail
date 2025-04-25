@@ -2,25 +2,25 @@
 {% from "components/panel/_macro.njk" import onsPanel %}
 
 {% block header_area %}
-    {% set hero_topic = _("Release") %}
-    {% set breadcrumbs_label = _("Breadcrumbs") %}
+    {%- set hero_topic = _("Release") -%}
+    {%- set breadcrumbs_label = _("Breadcrumbs") -%}
 
     {% if page.release_date or page.release_text %}
-        {% set release_date_label = _("Provisional release date:") %}
+        {%- set release_date_label = _("Provisional release date:") -%}
         {# fmt:off #}
-        {% set release_date_html =
+        {%- set release_date_html =
             {
                 "term": release_date_label,
                 "descriptions": [
                     {
-                        "description": page.release_date|ons_date("DATE_FORMAT") or page.release_date_text
+                        "description": page.release_date|ons_date("DATETIME_FORMAT") or page.release_date_text
                     }
                 ]
             }
-        %}
+        -%}
         {# fmt:on #}
     {% else %}
-        {% set release_date_html = "" %}
+        {%- set release_date_html = "" -%}
     {% endif %}
 
     {# fmt:off #}

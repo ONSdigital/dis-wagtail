@@ -3,21 +3,21 @@
 {% from "components/hero/_macro.njk" import onsHero %}
 
 {% block header_area %}
-    {% set hero_topic = _("Theme") %}
-    {% set breadcrumbs_aria_label = _("Breadcrumbs") %}
+    {%- set hero_topic = _("Theme") -%}
+    {%- set breadcrumbs_aria_label = _("Breadcrumbs") -%}
     {# fmt:off #}
-        {{
-            onsHero({
-                "topic": hero_topic,
-                "title": page.title,
-                "variants": 'pale-blue',
-                "text": page.summary|richtext(),
-                "wide": true,
-                "breadcrumbs": {
-                    "ariaLabel": breadcrumbs_aria_label,
-                    "itemsList": breadcrumbs(page),
-                }
-            })
-        }}
+    {{
+        onsHero({
+            "topic": hero_topic,
+            "title": page.title,
+            "variants": 'pale-blue',
+            "text": page.summary|richtext(),
+            "wide": true,
+            "breadcrumbs": {
+                "ariaLabel": breadcrumbs_aria_label,
+                "itemsList": breadcrumbs(page),
+            }
+        })
+    }}
     {# fmt:on #}
 {% endblock %}

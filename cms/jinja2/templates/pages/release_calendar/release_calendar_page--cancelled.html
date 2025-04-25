@@ -3,14 +3,14 @@
 {% from "components/table-of-contents/_macro.njk" import onsTableOfContents %}
 
 {% block header_area %}
-    {% set hero_topic = _("Release") %}
-    {% set breadcrumbs_label = _("Breadcrumbs") %}
+    {%- set hero_topic = _("Release") -%}
+    {%- set breadcrumbs_label = _("Breadcrumbs") -%}
 
     {% if page.release_date or page.release_text %}
-        {% set release_date_label = _("Release date:") %}
-        {% set release_date_desc = _("Cancelled") %}
+        {%- set release_date_label = _("Release date:") -%}
+        {%- set release_date_desc = _("Cancelled") -%}
         {# fmt:off #}
-        {% set release_date_html =
+        {%- set release_date_html =
             {
                 "term": release_date_label,
                 "descriptions": [
@@ -19,10 +19,10 @@
                     }
                 ]
             }
-        %}
+        -%}
         {# fmt:on #}
     {% else %}
-        {% set release_date_html = "" %}
+        {%- set release_date_html = "" -%}
     {% endif %}
 
     {# fmt:off #}
