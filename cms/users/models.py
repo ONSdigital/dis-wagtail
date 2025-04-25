@@ -3,7 +3,7 @@ from django.db import models
 from django.utils.functional import cached_property
 
 
-class User(AbstractUser):  # type: ignore[django-manager-missing]
+class User(AbstractUser):
     """Barebones custom user model."""
 
     teams = models.ManyToManyField("teams.Team", related_name="users", blank=True)
