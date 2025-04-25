@@ -9,6 +9,7 @@ from wagtailmath.templatetags.wagtailmath import mathjax
 from cms.core.templatetags.util_tags import (
     get_hreflangs,
     get_translation_urls,
+    ons_date_format_filter,
     set_attributes_filter,
     social_image,
     social_text,
@@ -41,5 +42,6 @@ class CoreExtension(Extension):  # pylint: disable=abstract-method
                 "social_text": social_text,
                 "social_image": social_image,
                 "setAttributes": set_attributes_filter,
+                "ons_date": ons_date_format_filter,
             }
         )
