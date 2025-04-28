@@ -384,3 +384,15 @@ class StatisticalArticlePageTests(WagtailPageTestCase):
         ):
             # We've removed the figures while they are referenced by the topic
             self.page.clean()
+
+    def test_correct_template_used_for_edit_page(self):
+        """Test that the edit page uses the correct template."""
+        self.client.force_login(self.user)
+        edit_url = reverse("wagtailadmin_pages:edit", args=[self.page.id])
+        response = self.client.get(edit_url)
+        self.assertEqual(response.status_code, HTTPStatus.OK)
+        self.assertTemplateUsed(
+            response,
+            "wagtailadmin/shared/figures_used_by_ancestor_data.html",
+            "Template required by Headline Figures functionality was not used",
+        )
