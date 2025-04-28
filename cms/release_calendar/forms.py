@@ -37,13 +37,13 @@ class ReleaseCalendarPageAdminForm(WagtailAdminPageForm):
 
             self.validate_bundle_not_pending_publication(status)
 
-        # Input field is hidden with custom JS for non-provisional releases, set to None to avoid unexpected behavior
         if self.instance.status != ReleaseStatus.PROVISIONAL:
-            self.instance.release_date_text = None
+            # Input field is hidden with custom JS for non-provisional releases,
+            # set to None to avoid unexpected behavior
+            cleaned_data["release_date"] = None
 
         if (
-            self.instance.status != ReleaseStatus.PROVISIONAL
-            and self.instance.release_date
+            self.instance.release_date
             and self.instance.release_date != cleaned_data.get("release_date")
             and len(self.instance.changes_to_release_date) == len(cleaned_data.get("changes_to_release_date", []))
         ):
