@@ -255,7 +255,7 @@ class StatisticalArticlePage(BundledPageMixin, RoutablePageMixin, BasePage):  # 
                         }
                     )
 
-        # At this stage we can ovveride the figure ids to account for deleted ones
+        # At this stage we can override the figure ids to account for deleted ones
         self.update_headline_figures_figure_ids(figure_ids)
 
     def get_context(self, request: "HttpRequest", *args: Any, **kwargs: Any) -> dict:
