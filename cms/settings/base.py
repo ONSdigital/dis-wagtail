@@ -101,6 +101,7 @@ INSTALLED_APPS = [
     "wagtailmath",
     "wagtailfontawesomesvg",
     "wagtail_tinytableblock",
+    "rest_framework",
 ]
 
 if not IS_EXTERNAL_ENV:
@@ -921,3 +922,6 @@ SEARCH_INDEX_EXCLUDED_PAGE_TYPES = (
 # FIXME: remove before going live
 ENFORCE_EXCLUSIVE_TAXONOMY = env.get("ENFORCE_EXCLUSIVE_TAXONOMY", "true").lower() == "true"
 ALLOW_TEAM_MANAGEMENT = env.get("ALLOW_TEAM_MANAGEMENT", "false").lower() == "true"
+
+SEARCH_API_DEFAULT_PAGE_SIZE = int(os.getenv("SEARCH_API_DEFAULT_PAGE_SIZE", "20"))
+SEARCH_API_MAX_PAGE_SIZE = int(os.getenv("SEARCH_API_MAX_PAGE_SIZE", "500"))
