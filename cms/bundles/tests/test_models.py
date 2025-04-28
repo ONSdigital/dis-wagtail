@@ -9,7 +9,6 @@ from cms.release_calendar.tests.factories import ReleaseCalendarPageFactory
 from cms.teams.models import Team
 from cms.users.tests.factories import UserFactory
 from cms.workflows.tests.utils import mark_page_as_ready_to_publish
-from functional_tests.step_helpers.users import create_user
 
 
 class BundleModelTestCase(TestCase):
