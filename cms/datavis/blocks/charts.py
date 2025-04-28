@@ -73,6 +73,7 @@ class BarColumnChartBlock(BaseVisualisationBlock):
                     "and subtitle what the axis represents.",
                 ),
             ),
+            # TODO: Add min/max once support is added to the Design System
             # ("min", TextInputFloatBlock(label="Minimum", required=False)),
             # ("max", TextInputFloatBlock(label="Maximum", required=False)),
             ("tick_interval", TextInputFloatBlock(required=False)),
