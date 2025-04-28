@@ -2,6 +2,9 @@
 # uncomment to use memory cache rather than the Redis service (from docker compose)
 # CACHES["default"]["BACKEND"] = "django.core.cache.backends.locmem.LocMemCache"
 
+# Django Debug Toolbar
+SHOW_TOOLBAR = True
+
 # Override size of the pagination used on the previous_release page.
 PREVIOUS_RELEASES_PER_PAGE = 3
 

@@ -72,7 +72,7 @@ def get_model_by_name(model_name: str) -> type:
     raise LookupError(f"No model named '{model_name}' was found.")
 
 
-def build_page_uri(page):
+def build_page_uri(page: "Page") -> str:
     """Build the URI for a given page based on its URL path."""
     path = page.url_path.strip("/").split("/", 1)[-1]
     return f"/{path}" if not getattr(settings, "WAGTAIL_APPEND_SLASH", True) else f"/{path}/"
