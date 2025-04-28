@@ -8,6 +8,10 @@
     {%- set release_date_label = _("Release date:") -%}
     {%- set breadcrumbs_label = _("Breadcrumbs") -%}
 
+    {% if  page.next_release_date or page.next_release_date_text %}
+        {%- set next_release_date_label = _("Next release date:") -%}
+    {% endif %}
+
     {# fmt:off #}
     {{
         onsHero({
@@ -28,6 +32,14 @@
                         "descriptions": [
                             {
                                 "description": page.release_date|ons_date("DATETIME_FORMAT")
+                            }
+                        ]
+                    },
+                    {
+                        "term": next_release_date_label,
+                        "descriptions": [
+                            {
+                                "description": page.next_release_date_text or page.next_release_date|ons_date("DATETIME_FORMAT")
                             }
                         ]
                     }
