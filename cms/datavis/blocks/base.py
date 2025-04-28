@@ -117,7 +117,6 @@ class BaseVisualisationBlock(blocks.StructBlock):
         context: dict[str, Any] = super().get_context(value, parent_context)
 
         # Add template and visualisation context to support rendering
-        context["chart_type"] = self.get_highcharts_chart_type(value)
         context["config"] = self.get_component_config(value)
         context["annotations_values"] = self.get_annotations_config(value)
         context["download"] = self.get_download_config(value)
