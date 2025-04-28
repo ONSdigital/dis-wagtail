@@ -73,6 +73,7 @@ class BundleModelTestCase(TestCase):
         BundleTeam.objects.create(parent=self.bundle, team=inactive_team)
         self.assertListEqual(self.bundle.active_team_ids, [team.pk])
 
+
 class BundledPageMixinTestCase(TestCase):
     """Test BundledPageMixin properties and methods."""
 
