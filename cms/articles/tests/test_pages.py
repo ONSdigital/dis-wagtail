@@ -393,6 +393,6 @@ class StatisticalArticlePageTests(WagtailPageTestCase):
         self.assertEqual(response.status_code, HTTPStatus.OK)
         self.assertTemplateUsed(
             response,
-            "wagtailadmin/shared/figures_used_by_ancestor_data.html",
+            "wagtailadmin/panels/headline_figures/figures_used_by_ancestor_data.html",
             "Template required by Headline Figures functionality was not used",
         )

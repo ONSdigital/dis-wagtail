@@ -15,6 +15,7 @@ from wagtail.models import Page
 from wagtail.search import index
 
 from cms.articles.forms import StatisticalArticlePageAdminForm
+from cms.articles.panels import HeadlineFiguresDataPanel
 from cms.bundles.models import BundledPageMixin
 from cms.core.blocks import HeadlineFiguresBlock
 from cms.core.blocks.panels import CorrectionBlock, NoticeBlock
@@ -201,6 +202,7 @@ class StatisticalArticlePage(BundledPageMixin, RoutablePageMixin, BasePage):  # 
         ),
         FieldPanel("headline_figures", icon="data-analysis"),
         FieldPanel("content", icon="list-ul"),
+        HeadlineFiguresDataPanel(),
     ]
 
     corrections_and_notices_panels: ClassVar[list["Panel"]] = [
@@ -355,6 +357,8 @@ class StatisticalArticlePage(BundledPageMixin, RoutablePageMixin, BasePage):  # 
     def figures_used_by_ancestor(self) -> list[str]:
         """Returns a list of figure IDs used by the ancestor topic page."""
         series = self.get_parent()
+        if not series:
+            return []
         topic: TopicPage = series.get_parent().specific
         return [
             figure.value["figure_id"] for figure in topic.headline_figures if figure.value["series"].id == series.id
