@@ -52,6 +52,7 @@ class HighlightedChildPageChooseViewMixin:
         title_column.accessor = "get_admin_display_title"
         return [
             title_column,
+            Column("locale", label="Locale"),
             Column(
                 "release_date",
                 label="Release date",

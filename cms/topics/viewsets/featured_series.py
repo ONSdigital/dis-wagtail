@@ -29,6 +29,7 @@ class FeaturedSeriesPageChooseViewMixin:
         return [
             self.title_column,  # type: ignore[attr-defined]
             Column("parent", label="Topic", accessor="get_parent"),
+            Column("locale", label="Locale"),
             DateColumn(
                 "updated",
                 label="Updated",
