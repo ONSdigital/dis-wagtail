@@ -37,13 +37,13 @@
                 {% if page.release_date or page.release_date_text %}
                     <div>
                         <span class="ons-u-fs-r--b common-header__releases-label">{{ _("Release date") }}:</span>
-                        <span class="ons-u-nowrap">{{ page.release_date_text or page.release_date|date("DATETIME_FORMAT") }}</span>
+                        <span class="ons-u-nowrap">{{ page.release_date_text or page.release_date|ons_date("DATETIME_FORMAT") }}</span>
                     </div>
                 {% endif %}
                 {% if page.next_release_date or page.next_release_date_text %}
                     <div>
                         <span class="ons-u-fs-r--b common-header__releases-label">{{ _("Next release") }}:</span>
-                        <span class="ons-u-nowrap">{{ page.next_release_date_text or page.next_release_date|date("DATETIME_FORMAT")   }}</span>
+                        <span class="ons-u-nowrap">{{ page.next_release_date_text or page.next_release_date|ons_date("DATETIME_FORMAT")   }}</span>
                     </div>
                 {% endif %}
             </div>

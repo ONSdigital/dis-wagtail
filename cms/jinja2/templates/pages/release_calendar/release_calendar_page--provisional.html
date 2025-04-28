@@ -6,7 +6,7 @@
         <div class="ons-container common-header__releases common-header__releases--single-row">
             <div>
                 <span class="ons-u-fs-r--b common-header__releases-label">{{ _("Provisional release date") }}:</span>
-                <span class="ons-u-nowrap">{{ page.release_date_text or page.release_date|date("DATETIME_FORMAT") }}</span>
+                <span class="ons-u-nowrap">{{ page.release_date_text or page.release_date|ons_date("DATETIME_FORMAT") }}</span>
             </div>
         </div>
     {% endif %}

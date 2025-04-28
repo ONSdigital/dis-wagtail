@@ -1,8 +1,10 @@
 Feature: CMS users can draft, edit, and publish release pages
 
-    Scenario: A CMS user can author and publish release page
+    Background:
         Given a contact details snippet exists
         And a superuser logs into the admin site
+
+    Scenario: A CMS user can author and publish release page
         When the user navigates to the release calendar page
         And clicks "add child page" to create a new draft release page
         And the user sets the page status to "Published"
@@ -22,3 +24,16 @@ Feature: CMS users can draft, edit, and publish release pages
         And the page status is set to "Provisional" and the release date text field is visible
         And the user sets the page status to "Confirmed"
         Then the date text field is not visible
+
+    Scenario Outline: A CMS user inputs a datetime on a release calendar page and the correct period is displayed
+        When the user creates and populates a release calendar page
+        And the user inputs a <MeridiemIndicator> datetime
+        And the user clicks "Publish"
+        And the user clicks "View Live" on the publish confirmation banner
+        Then the datetime is displayed with "<MeridiemIndicator>"
+
+        Examples:
+            | MeridiemIndicator |
+            | am                |
+            | pm                |
+

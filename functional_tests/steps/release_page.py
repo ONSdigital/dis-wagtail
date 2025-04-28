@@ -125,3 +125,30 @@ def check_that_default_status_is_provisional_and_release_date_text_is_visible(co
 @then("the date text field is not visible")
 def check_date_text_field(context: Context):
     expect(context.page.get_by_text("Or, release date text")).not_to_be_visible()
+
+
+@when("the user creates and populates a release calendar page")
+def create_page(context: Context):
+    navigate_to_release_page(context)
+    click_add_child_page(context)
+    enter_example_release_content(context)
+
+
+@when("the user inputs a {meridiem_indicator} datetime")
+def add_datetime(context: Context, meridiem_indicator: str):
+    if meridiem_indicator == "am":
+        context.page.get_by_label("Release date", exact=True).fill("2025-3-1 10:00")
+    elif meridiem_indicator == "pm":
+        context.page.get_by_label("Release date", exact=True).fill("2025-3-1 17:00")
+    else:
+        raise ValueError(f"Unsupported MeridiemIndicator: {meridiem_indicator}")
+
+
+@then('the datetime is displayed with "{meridiem_indicator}"')
+def display_datetime_with_meridiem(context: Context, meridiem_indicator: str):
+    if meridiem_indicator == "am":
+        expect(context.page.get_by_text("March 2025 10:00am")).to_be_visible()
+    elif meridiem_indicator == "pm":
+        expect(context.page.get_by_text("March 2025 5:00pm")).to_be_visible()
+    else:
+        raise ValueError(f"Unsupported MeridiemIndicator: {meridiem_indicator}")
