@@ -25,6 +25,7 @@ class FutureReleaseCalendarMixin:
     def columns(self) -> list[Column]:
         return [
             self.title_column,  # type: ignore[attr-defined]
+            Column("locale"),
             Column("release_date"),
             Column("release_status", label="Status", accessor="get_status_display"),
             DateColumn(

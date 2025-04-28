@@ -1,5 +1,4 @@
 from behave import step  # pylint: disable=no-name-in-module
-
 from behave.runner import Context
 
 from cms.bundles.enums import BundleStatus
@@ -41,3 +40,28 @@ def a_bundle_with_name_item_name_has_been_created_by_username(context: Context, 
 def created_by_has_been_deleted(context: Context) -> None:
     context.bundle.created_by = None
     context.bundle.save(update_fields=["created_by"])
+
+
+@step("the user goes to the bundle creation page")
+def the_user_goes_to_the_bundle_creation_page(context: Context) -> None:
+    context.page.goto(context.base_url + "/admin/bundle/new/")
+
+
+@step("the user opens the release calendar page chooser")
+def the_user_selects_a_release_calendar(context: Context) -> None:
+    context.page.get_by_role("button", name="Choose Release Calendar page").click()
+    context.page.wait_for_timeout(250)  # Wait for the modal to open
+
+
+@step("the user opens the page chooser")
+def the_user_opens_page_chooser(context: Context) -> None:
+    context.page.get_by_role("button", name="Add page").click()
+    context.page.wait_for_timeout(100)
+    context.page.get_by_role("button", name="Choose a page").click()
+    context.page.wait_for_timeout(250)  # Wait for the modal to open
+
+
+@step("the locale column is displayed in the chooser")
+def the_locale_column_is_displayed(context: Context) -> None:
+    modal = context.page.locator(".modal-body")
+    modal.get_by_role("columnheader", name="Locale").is_visible()
