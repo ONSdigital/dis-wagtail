@@ -15,7 +15,7 @@ from wagtail.models import Page
 from wagtail.search import index
 
 from cms.articles.forms import StatisticalArticlePageAdminForm
-from cms.articles.panels import HeadlineFiguresDataPanel
+from cms.articles.panels import HeadlineFiguresFieldPanel
 from cms.bundles.models import BundledPageMixin
 from cms.core.blocks import HeadlineFiguresBlock
 from cms.core.blocks.panels import CorrectionBlock, NoticeBlock
@@ -200,9 +200,8 @@ class StatisticalArticlePage(BundledPageMixin, RoutablePageMixin, BasePage):  # 
             heading="Metadata",
             icon="cog",
         ),
-        FieldPanel("headline_figures", icon="data-analysis"),
+        HeadlineFiguresFieldPanel("headline_figures", icon="data-analysis"),
         FieldPanel("content", icon="list-ul"),
-        HeadlineFiguresDataPanel(),
     ]
 
     corrections_and_notices_panels: ClassVar[list["Panel"]] = [
