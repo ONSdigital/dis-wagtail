@@ -89,3 +89,10 @@ class TestFutureReleaseCalendarChooserViewSet(WagtailTestUtils, TestCase):
         self.assertContains(
             response, "There are no release calendar pages that are pending or not in an active bundle already."
         )
+
+    def test_choose__contains_locale_column(self):
+        """Tests that the chooser view contains the locale column."""
+        response = self.client.get(self.chooser_url)
+
+        self.assertContains(response, "Locale")
+        self.assertContains(response, "English")
