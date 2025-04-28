@@ -1,28 +1,26 @@
 {% extends "templates/base_page.html" %}
+{% from "components/hero/_macro.njk" import onsHero %}
 {% from "components/table-of-contents/_macro.njk" import onsTableOfContents %}
 {% from "components/document-list/_macro.njk" import onsDocumentList %}
 
 {% block header_area %}
-    <div class="topic-header">
-        <div class="topic-header__circles" aria-hidden="true">
-            <div class="topic-header__circle-one"></div>
-            <div class="topic-header__circle-two"></div>
-            <div class="topic-header__circle-three"></div>
-        </div>
-        <div class="ons-container">
-            {% include "templates/components/navigation/breadcrumbs.html" %}
-            <p class="topic-header__doc-type">{{ _("Topic") }}</p>
-
-            <div class="ons-grid">
-                <div class="ons-grid__col ons-col-8@m ">
-                    <h1 class="ons-u-fs-3xl common-header__heading">
-                        {{ page.title }}
-                    </h1>
-                    <div class="common-header__summary">{{ page.summary|richtext }}</div>
-                </div>
-            </div>
-        </div>
-    </div>
+    {%- set hero_topic = _("Topic") -%}
+    {%- set breadcrumbs_aria_label = _("Breadcrumbs") -%}
+    {# fmt:off #}
+    {{
+        onsHero({
+            "topic": hero_topic,
+            "title": page.title,
+            "variants": 'pale-blue',
+            "text": page.summary|richtext(),
+            "wide": true,
+            "breadcrumbs": {
+                "ariaLabel": breadcrumbs_aria_label,
+                "itemsList": breadcrumbs(page),
+            }
+        })
+    }}
+    {# fmt:on #}
 {% endblock %}
 
 {% block main %}

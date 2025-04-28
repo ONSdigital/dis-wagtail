@@ -4,6 +4,9 @@ from http import HTTPMethod
 from django.conf import settings
 from django.test import Client, SimpleTestCase, TestCase
 from django.urls import reverse
+from wagtail.test.utils import WagtailTestUtils
+
+from cms.home.models import HomePage
 
 
 class CSRFTestCase(TestCase):
@@ -54,3 +57,18 @@ class ReadinessProbeTestCase(SimpleTestCase):
                 self.assertEqual(response.status_code, 204)
                 self.assertEqual(response.content, b"")
                 self.assertEqual(response.templates, [])
+
+
+class AdminPageTreeTestCase(WagtailTestUtils, TestCase):
+    @classmethod
+    def setUpTestData(cls):
+        cls.superuser = cls.create_superuser(username="admin")
+
+    def test_locale_label(self):
+        """Check that the admin page tree is present on the page."""
+        self.client.force_login(self.superuser)
+        homepage = HomePage.objects.first()
+        response = self.client.get(f"/admin/pages/{homepage.id}/")
+        content = response.content.decode("utf-8")
+
+        self.assertInHTML('<span class="w-status w-status--label w-m-0">English</span>', content)
