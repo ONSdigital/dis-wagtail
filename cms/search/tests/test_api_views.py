@@ -10,6 +10,7 @@ from cms.methodology.tests.factories import MethodologyPageFactory
 from cms.release_calendar.models import ReleaseCalendarIndex
 from cms.release_calendar.tests.factories import ReleaseCalendarPageFactory
 from cms.search.tests.helpers import ExternalAPITestMixin, ResourceDictAssertions
+from cms.search.utils import build_page_uri
 from cms.standard_pages.tests.factories import IndexPageFactory, InformationPageFactory
 from cms.themes.tests.factories import ThemePageFactory
 from cms.topics.tests.factories import TopicPageFactory
@@ -43,7 +44,7 @@ class SearchResourcesViewTests(TestCase, ResourceDictAssertions, ExternalAPITest
     @staticmethod
     def get_page_dict(data, page):
         """Retrieve a specific page dict from the items by matching URI."""
-        return next((item for item in data["items"] if item.get("uri") == page.url_path.removeprefix("/home")), None)
+        return next((item for item in data["items"] if item.get("uri") == build_page_uri(page)), None)
 
     def test_resources_returns_200_and_lists_various_page_types(self):
         """Endpoint should return 200 and include all included_pages in the items."""
@@ -55,9 +56,7 @@ class SearchResourcesViewTests(TestCase, ResourceDictAssertions, ExternalAPITest
 
         for page in self.included_pages:
             matching = self.get_page_dict(data, page)
-            self.assertIsNotNone(
-                matching, f"Expected page with URI {page.url_path.removeprefix('/home')} to be present in the items"
-            )
+            self.assertIsNotNone(matching, f"Expected page with URI {build_page_uri(page)} to be present in the items")
             self.assert_base_fields(matching, page)
 
     def test_resources_excludes_non_indexable_pages(self):
@@ -71,7 +70,7 @@ class SearchResourcesViewTests(TestCase, ResourceDictAssertions, ExternalAPITest
         for page in self.excluded_pages:
             self.assertIsNone(
                 self.get_page_dict(data, page),
-                f"Expected page with URI {page.url_path.removeprefix('/home')} not to be present",
+                f"Expected page with URI {build_page_uri(page)} not to be present",
             )
 
     def test_resources_disabled_when_external_env_false(self):

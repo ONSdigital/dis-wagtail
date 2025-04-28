@@ -8,6 +8,8 @@ import json
 from django.test import SimpleTestCase, override_settings
 from wagtail.models import Page
 
+from cms.search.utils import build_page_uri
+
 EXPECTED_CONTENT_TYPES = {
     "ReleaseCalendarPage": "release",
     "StatisticalArticlePage": "bulletin",
@@ -34,7 +36,7 @@ class ResourceDictAssertions(SimpleTestCase):
         self.assertIn("topics", payload)
         self.assertIn("language", payload)
 
-        self.assertEqual(payload["uri"], page.url_path.removeprefix("/home"))
+        self.assertEqual(payload["uri"], build_page_uri(page))
         self.assertEqual(payload["title"], page.title)
         self.assertEqual(payload["summary"], page.summary)
 

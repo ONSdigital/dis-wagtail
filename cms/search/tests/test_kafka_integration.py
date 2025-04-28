@@ -7,6 +7,7 @@ from django.test import TestCase, override_settings
 from kafka import KafkaConsumer
 
 from cms.search.publishers import KafkaPublisher
+from cms.search.utils import build_page_uri
 from cms.standard_pages.tests.factories import InformationPageFactory
 
 
@@ -71,7 +72,7 @@ class KafkaIntegrationTests(TestCase):
         publish_result = self.publisher.publish_created_or_updated(page)
         self.assertIsNotNone(publish_result)  # We get some metadata from Kafka
 
-        msg_found = self._poll_for_message(self.consumer_created, page.url_path.removeprefix("/home"))
+        msg_found = self._poll_for_message(self.consumer_created, build_page_uri(page))
         self.assertTrue(msg_found, "No matching message found in 'search-content-updated' channel.")
 
     def test_publish_deleted_integration(self):

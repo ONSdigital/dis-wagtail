@@ -1,7 +1,9 @@
 from typing import TYPE_CHECKING
 
 from django.apps import apps
+from django.conf import settings
 from django.utils.encoding import force_str
+from wagtail.coreutils import get_locales_display_names
 from wagtail.rich_text import get_text_for_indexing
 
 from cms.release_calendar.enums import ReleaseStatus
@@ -15,13 +17,13 @@ def build_standard_resource_dict(page: "Page") -> dict:
     This covers the non-release case (and also forms the base of the release case).
     """
     return {
-        "uri": page.url_path.removeprefix("/home"),
+        "uri": build_page_uri(page),
         "content_type": page.search_index_content_type,
         "release_date": (page.release_date.isoformat() if getattr(page, "release_date", None) else None),
         "summary": get_text_for_indexing(force_str(page.summary)),
         "title": page.title,
         "topics": getattr(page, "topic_ids", []),
-        "language": force_str(page.locale.get_display_name()),
+        "language": force_str(get_locales_display_names().get(page.locale_id)),
     }
 
 
@@ -68,3 +70,9 @@ def get_model_by_name(model_name: str) -> type:
         if model.__name__ == model_name:
             return model
     raise LookupError(f"No model named '{model_name}' was found.")
+
+
+def build_page_uri(page):
+    """Build the URI for a given page based on its URL path."""
+    path = page.url_path.strip("/").split("/", 1)[-1]
+    return f"/{path}" if not getattr(settings, "WAGTAIL_APPEND_SLASH", True) else f"/{path}/"
