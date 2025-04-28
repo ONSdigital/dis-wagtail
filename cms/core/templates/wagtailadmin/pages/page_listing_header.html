@@ -3,7 +3,7 @@
 
 {% block breadcrumbs %}
     {{ block.super }}
-    {% if parent_page.url %}
+    {% if not parent_page.is_root %}
         <div class="w-mr-4">
             {% status parent_page.locale classname="w-status--label w-m-0" %}
         </div>
