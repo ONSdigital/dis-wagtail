@@ -1,5 +1,6 @@
 from typing import TYPE_CHECKING, Any, Optional, TypedDict
 
+from django.conf import settings
 from django.db.models import QuerySet
 from django.utils.formats import date_format
 from django.utils.translation import gettext_lazy as _
@@ -50,4 +51,6 @@ def get_client_ip(request: "HttpRequest") -> str | None:
 
     It's assumed this has been overridden by `django-xff`
     """
+    if settings.IS_EXTERNAL_ENV:
+        raise RuntimeError("Cannot get client IP in external environment.")
     return request.META.get("REMOTE_ADDR")

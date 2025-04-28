@@ -121,7 +121,6 @@ MIDDLEWARE = [
     # SecurityMiddleware.
     # http://whitenoise.evans.io/en/stable/#quickstart-for-django-apps
     "cms.core.whitenoise.CMSWhiteNoiseMiddleware",
-    "xff.middleware.XForwardedForMiddleware",
     "django.middleware.locale.LocaleMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
@@ -139,6 +138,7 @@ if not IS_EXTERNAL_ENV:
         "django.contrib.auth.middleware.AuthenticationMiddleware",
     )
     MIDDLEWARE.insert(common_middleware_index, "django.contrib.sessions.middleware.SessionMiddleware")
+    MIDDLEWARE.insert(common_middleware_index, "xff.middleware.XForwardedForMiddleware")
 
 ROOT_URLCONF = "cms.urls"
 
