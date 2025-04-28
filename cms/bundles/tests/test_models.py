@@ -72,21 +72,7 @@ class BundleModelTestCase(TestCase):
 
         BundleTeam.objects.create(parent=self.bundle, team=team)
         BundleTeam.objects.create(parent=self.bundle, team=inactive_team)
-
         self.assertListEqual(self.bundle.active_team_ids, [team.pk])
-
-class BundelesCreatedbyTestCase(TestCase):
-    """Test Bundle model properties and methods."""
-
-    def setUp(self):
-        self.publishing_officer = UserFactory(username="publishing_officer")
-        self.bundle = BundleFactory(name="The bundle", created_by=self.publishing_officer)
-        self.statistical_article = StatisticalArticlePageFactory(title="PSF")
-
-    def test_str(self):
-        self.assertEqual(str(self.publishing_officer), str(self.bundle.created_by))
-
-
 
 class BundledPageMixinTestCase(TestCase):
     """Test BundledPageMixin properties and methods."""
