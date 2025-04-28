@@ -57,7 +57,7 @@ class ReleaseCalendarPage(BasePage):  # type: ignore[django-manager-missing]
     release_date_text = models.CharField(
         max_length=50,
         blank=True,
-        help_text="Override release date provisional entries. Format: 'Month YYYY', or 'Month YYYY to Month YYYY'.",
+        help_text="Override release date for provisional entries. Format: 'Month YYYY', or 'Month YYYY to Month YYYY'.",
     )
     next_release_date = models.DateTimeField(blank=True, null=True)
     next_release_date_text = models.CharField(

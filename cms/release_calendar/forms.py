@@ -40,22 +40,22 @@ class ReleaseCalendarPageAdminForm(WagtailAdminPageForm):
         if self.instance.status != ReleaseStatus.PROVISIONAL:
             # Input field is hidden with custom JS for non-provisional releases,
             # set to None to avoid unexpected behavior
-            cleaned_data["release_date"] = None
+            cleaned_data["release_date_text"] = None
 
-        if (
-            self.instance.release_date
-            and self.instance.release_date != cleaned_data.get("release_date")
-            and len(self.instance.changes_to_release_date) == len(cleaned_data.get("changes_to_release_date", []))
-        ):
-            # A change in the release date requires updating changes_to_release_date
-            raise ValidationError(
-                {
-                    "changes_to_release_date": (
-                        "If a confirmed calendar entry needs to be rescheduled, "
-                        "the 'Changes to release date' field must be filled out."
-                    )
-                }
-            )
+            if (
+                self.instance.release_date
+                and self.instance.release_date != cleaned_data.get("release_date")
+                and len(self.instance.changes_to_release_date) == len(cleaned_data.get("changes_to_release_date", []))
+            ):
+                # A change in the release date requires updating changes_to_release_date
+                raise ValidationError(
+                    {
+                        "changes_to_release_date": (
+                            "If a confirmed calendar entry needs to be rescheduled, "
+                            "the 'Changes to release date' field must be filled out."
+                        )
+                    }
+                )
 
         if (
             cleaned_data.get("release_date")

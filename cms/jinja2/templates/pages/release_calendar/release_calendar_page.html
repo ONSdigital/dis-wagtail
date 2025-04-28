@@ -6,19 +6,20 @@
 {% block header_area %}
     {%- set hero_topic = _("Release") -%}
     {%- set release_date_label = _("Release date:") -%}
+    {%- set next_release_date_label = _("Next release date:") -%}
     {%- set breadcrumbs_label = _("Breadcrumbs") -%}
 
     {# fmt:off #}
     {% set release_date_details = [
         {
         "type": "release_date",
-        "label": _("Release date:"),
+        "label": release_date_label,
         "value": page.release_date,
         "text": page.release_date_text
         },
         {
         "type": "next_release_date",
-        "label": _("Next release date:"),
+        "label": next_release_date_label,
         "value": page.next_release_date,
         "text": page.next_release_date_text
         }
