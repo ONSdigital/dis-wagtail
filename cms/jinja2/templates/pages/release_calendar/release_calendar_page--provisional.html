@@ -5,23 +5,41 @@
     {%- set hero_topic = _("Release") -%}
     {%- set breadcrumbs_label = _("Breadcrumbs") -%}
 
-    {% if page.release_date or page.release_text %}
-        {%- set release_date_label = _("Provisional release date:") -%}
-        {# fmt:off #}
-        {%- set release_date_html =
-            {
-                "term": release_date_label,
+    {# fmt:off #}
+    {% set release_date_details = [
+        {
+        "type": "release_date",
+        "label": _("Release date:"),
+        "value": page.release_date,
+        "text": page.release_date_text
+        },
+        {
+        "type": "next_release_date",
+        "label": _("Next release date:"),
+        "value": page.next_release_date,
+        "text": page.next_release_date_text
+        }
+    ] %}
+    {# fmt:on #}
+
+    {% set release_dates_list = [] %}
+
+    {% for date in release_date_details %}
+        {% if date.value or date.text %}
+            {# fmt:off #}
+            {%- set date_dict = {
+                "term": date.label,
                 "descriptions": [
                     {
-                        "description": page.release_date_text or page.release_date|ons_date("DATETIME_FORMAT")
+                        "description": date.text or date.value|ons_date("DATETIME_FORMAT")
                     }
                 ]
-            }
-        -%}
-        {# fmt:on #}
-    {% else %}
-        {%- set release_date_html = "" -%}
-    {% endif %}
+            } -%}
+            {# fmt:on #}
+            {% do release_dates_list.append(date_dict) %}
+        {% endif %}
+    {% endfor %}
+
 
     {# fmt:off #}
     {{
@@ -37,9 +55,7 @@
                 "descriptionListLabel": "",
                 "termCol": "6",
                 "descriptionCol": "6",
-                "itemsList": [
-                    release_date_html
-                ]
+                "itemsList": release_dates_list
             },
             "breadcrumbs": {
                 "ariaLabel": breadcrumbs_label,

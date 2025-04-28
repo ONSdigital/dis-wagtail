@@ -8,9 +8,40 @@
     {%- set release_date_label = _("Release date:") -%}
     {%- set breadcrumbs_label = _("Breadcrumbs") -%}
 
-    {% if  page.next_release_date or page.next_release_date_text %}
-        {%- set next_release_date_label = _("Next release date:") -%}
-    {% endif %}
+    {# fmt:off #}
+    {% set release_date_details = [
+        {
+        "type": "release_date",
+        "label": _("Release date:"),
+        "value": page.release_date,
+        "text": page.release_date_text
+        },
+        {
+        "type": "next_release_date",
+        "label": _("Next release date:"),
+        "value": page.next_release_date,
+        "text": page.next_release_date_text
+        }
+    ] %}
+    {# fmt:on #}
+
+    {% set release_dates_list = [] %}
+
+    {% for date in release_date_details %}
+        {% if date.value or date.text %}
+            {# fmt:off #}
+            {%- set date_dict = {
+                "term": date.label,
+                "descriptions": [
+                    {
+                        "description": date.text or date.value|ons_date("DATETIME_FORMAT")
+                    }
+                ]
+            } -%}
+            {# fmt:on #}
+            {% do release_dates_list.append(date_dict) %}
+        {% endif %}
+    {% endfor %}
 
     {# fmt:off #}
     {{
@@ -26,24 +57,7 @@
                 "descriptionListLabel": "",
                 "termCol": "6",
                 "descriptionCol": "6",
-                "itemsList": [
-                    {
-                        "term": release_date_label,
-                        "descriptions": [
-                            {
-                                "description": page.release_date|ons_date("DATETIME_FORMAT")
-                            }
-                        ]
-                    },
-                    {
-                        "term": next_release_date_label,
-                        "descriptions": [
-                            {
-                                "description": page.next_release_date_text or page.next_release_date|ons_date("DATETIME_FORMAT")
-                            }
-                        ]
-                    }
-                ]
+                "itemsList": release_dates_list
             },
             "breadcrumbs": {
                 "ariaLabel": breadcrumbs_label,
