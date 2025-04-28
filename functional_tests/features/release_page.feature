@@ -22,4 +22,3 @@ Feature: CMS users can draft, edit, and publish release pages
         And the page status is set to "Provisional" and the release date text field is visible
         And the user sets the page status to "Confirmed"
         Then the date text field is not visible
-    

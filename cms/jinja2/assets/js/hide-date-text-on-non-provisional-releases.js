@@ -1,5 +1,5 @@
 function toggleDateTextVisibility() {
-  var statusField = document.getElementById('id_status');
+  const statusField = document.getElementById('id_status');
   const isProvisional = statusField.value.toLowerCase() === 'provisional';
 
   const dateTextInput = document.getElementById('id_release_date_text');
@@ -11,6 +11,6 @@ function toggleDateTextVisibility() {
 document.addEventListener('DOMContentLoaded', function () {
   toggleDateTextVisibility();
 
-  var statusField = document.getElementById('id_status');
-  statusField.addEventListener('change', toggleDateTextVisibility);
+  const statusField = document.getElementById('id_status');
+  statusField?.addEventListener('change', toggleDateTextVisibility);
 });
