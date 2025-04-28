@@ -32,6 +32,7 @@ class ResourceDictAssertions(SimpleTestCase):
         self.assertIn("summary", payload)
         self.assertIn("content_type", payload)
         self.assertIn("topics", payload)
+        self.assertIn("language", payload)
 
         self.assertEqual(payload["uri"], page.url_path.removeprefix("/home"))
         self.assertEqual(payload["title"], page.title)
@@ -40,6 +41,7 @@ class ResourceDictAssertions(SimpleTestCase):
         expected_ct = EXPECTED_CONTENT_TYPES[type(page).__name__]
         self.assertEqual(payload["content_type"], expected_ct)
         self.assertIsInstance(payload["topics"], list)
+        self.assertEqual(payload["language"], page.locale.get_display_name())
 
     def assert_release_fields_present(self, payload: dict) -> None:
         for key in ("release_date", "finalised", "cancelled", "published", "date_changes"):

@@ -2,6 +2,7 @@ from datetime import timedelta
 
 from django.test import TestCase
 from django.utils import timezone
+from wagtail.models import Locale
 
 from cms.articles.tests.factories import ArticleSeriesPageFactory, StatisticalArticlePageFactory
 from cms.methodology.tests.factories import MethodologyPageFactory
@@ -24,6 +25,16 @@ class ResourceBuildersTestCase(TestCase, ResourceDictAssertions):
             title="My Info Page",
             summary="My info page summary",
         )
+
+        welsh_locale, _ = Locale.objects.get_or_create(language_code="cy")
+        parent_welsh = IndexPageFactory(locale=welsh_locale, slug="custom-slug-0")
+        cls.info_page_welsh = InformationPageFactory(
+            parent=parent_welsh,
+            locale=welsh_locale,
+            title="My Info Page (Welsh)",
+            summary="My info page summary (Welsh)",
+        )
+
         cls.methodology_page = MethodologyPageFactory(
             title="Methodology Title",
             summary="Methodology summary",
@@ -88,6 +99,15 @@ class ResourceBuildersTestCase(TestCase, ResourceDictAssertions):
         self.assertIn("release_date", result)
 
         self.assertEqual(result["topics"], [self.topic_a.id, self.topic_b.id])
+
+    def test_standard_information_page_welsh(self):
+        """build_resource_dict for an InformationPage should have standard fields,
+        correct content_type, and the correct topics (content_type=static_page).
+        """
+        page = self.info_page_welsh
+        result = build_resource_dict(page)
+
+        self.assert_base_fields(result, page)
 
     def test_standard_methodology_page(self):
         """MethodologyPage is also a standard page (content_type=static_methodology)."""
