@@ -33,7 +33,7 @@ class ResourceDictAssertions(SimpleTestCase):
         self.assertIn("content_type", payload)
         self.assertIn("topics", payload)
 
-        self.assertEqual(payload["uri"], page.url_path)
+        self.assertEqual(payload["uri"], page.url_path.removeprefix("/home"))
         self.assertEqual(payload["title"], page.title)
         self.assertEqual(payload["summary"], page.summary)
 

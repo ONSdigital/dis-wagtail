@@ -71,7 +71,7 @@ class KafkaIntegrationTests(TestCase):
         publish_result = self.publisher.publish_created_or_updated(page)
         self.assertIsNotNone(publish_result)  # We get some metadata from Kafka
 
-        msg_found = self._poll_for_message(self.consumer_created, page.url_path)
+        msg_found = self._poll_for_message(self.consumer_created, page.url_path.removeprefix("/home"))
         self.assertTrue(msg_found, "No matching message found in 'search-content-updated' channel.")
 
     def test_publish_deleted_integration(self):

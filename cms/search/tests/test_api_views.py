@@ -43,7 +43,7 @@ class SearchResourcesViewTests(TestCase, ResourceDictAssertions, ExternalAPITest
     @staticmethod
     def get_page_dict(data, page):
         """Retrieve a specific page dict from the items by matching URI."""
-        return next((item for item in data["items"] if item.get("uri") == page.url_path), None)
+        return next((item for item in data["items"] if item.get("uri") == page.url_path.removeprefix("/home")), None)
 
     def test_resources_returns_200_and_lists_various_page_types(self):
         """Endpoint should return 200 and include all included_pages in the items."""
@@ -55,7 +55,9 @@ class SearchResourcesViewTests(TestCase, ResourceDictAssertions, ExternalAPITest
 
         for page in self.included_pages:
             matching = self.get_page_dict(data, page)
-            self.assertIsNotNone(matching, f"Expected page with URI {page.url_path} to be present in the items")
+            self.assertIsNotNone(
+                matching, f"Expected page with URI {page.url_path.removeprefix('/home')} to be present in the items"
+            )
             self.assert_base_fields(matching, page)
 
     def test_resources_excludes_non_indexable_pages(self):
@@ -68,7 +70,8 @@ class SearchResourcesViewTests(TestCase, ResourceDictAssertions, ExternalAPITest
         data = self.parse_json(response)
         for page in self.excluded_pages:
             self.assertIsNone(
-                self.get_page_dict(data, page), f"Expected page with URI {page.url_path} not to be present"
+                self.get_page_dict(data, page),
+                f"Expected page with URI {page.url_path.removeprefix('/home')} not to be present",
             )
 
     def test_resources_disabled_when_external_env_false(self):
