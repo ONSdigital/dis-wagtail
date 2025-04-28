@@ -53,6 +53,7 @@ class FeaturedSeriesPageChooserViewSetTest(WagtailTestUtils, TestCase):
         self.assertContains(response, "Topic")
         self.assertContains(response, "Updated")
         self.assertContains(response, "Status")
+        self.assertContains(response, "Locale")
 
     def test_chooser_search(self):
         """Test the AJAX results view."""
@@ -150,6 +151,21 @@ class HighlightedPageChooserViewSetTest(WagtailTestUtils, TestCase):
         self.assertTemplateUsed(response, "wagtailadmin/generic/chooser/chooser.html")
         self.assertNotContains(response, "Article 1")
         self.assertNotContains(response, "Article 2")
+
+    def test_article_choose_view_columns(self):
+        response = self.client.get(f"{self.article_chooser_url}?topic_page_id={self.topic_page.id}")
+
+        self.assertEqual(response.status_code, 200)
+
+        # Check column headers
+        self.assertContains(response, "Release date")
+        self.assertContains(response, "Status")
+        self.assertContains(response, "Locale")
+
+        # Check values
+        self.assertContains(response, "1 January 2024")
+        self.assertContains(response, "English")
+        self.assertContains(response, "live")
 
     def test_article_results_view_with_topic_filter(self):
         """Test the article AJAX results view with topic_page_id filter."""
