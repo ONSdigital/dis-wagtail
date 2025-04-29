@@ -30,7 +30,7 @@ class PageWithHeadlineFiguresAdminForm(DeduplicateTopicsAdminForm):
             # Grab the latest page in the series
             latest = self.parent_page.get_latest()
             if latest:
-                # The figures were inherited, so we need to also inherit the figure ids
+                # The figures were inherited via the init_new_page signal, so we need to also inherit the figure ids
                 self.instance.headline_figures_figure_ids = latest.headline_figures_figure_ids
 
         for figure in headline_figures[0].value:
