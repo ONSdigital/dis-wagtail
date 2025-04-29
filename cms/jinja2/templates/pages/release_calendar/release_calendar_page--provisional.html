@@ -7,7 +7,6 @@
     {%- set release_date_label = _("Release date:") -%}
     {%- set next_release_date_label = _("Next release date:") -%}
 
-
     {# fmt:off #}
     {%- set release_date_details = [
         {
@@ -48,12 +47,7 @@
                 "descriptionListLabel": "",
                 "termCol": "6",
                 "descriptionCol": "6",
-                "itemsList": [{
-                    "term": release_date_label,
-                    "descriptions": [{
-                        "description": page.release_date_text|page.release_date|ons_date("DATETIME_FORMAT")
-                    }]
-                }]
+                "itemsList": release_dates_list
             },
             "breadcrumbs": {
                 "ariaLabel": breadcrumbs_label,

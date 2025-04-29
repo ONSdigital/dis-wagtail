@@ -64,15 +64,15 @@
 {% block main %}
     <div class="ons-grid ons-js-toc-container ons-u-ml-no">
         <div class="ons-grid__col ons-grid__col--sticky@m ons-col-4@m ons-u-p-no">
-            {# fmt:off #}
-            {{-
-                onsTableOfContents({
-                    "title": 'Contents',
-                    "ariaLabel": 'Sections in this page',
-                    "itemsList": table_of_contents
-                })
-            }}
-            {# fmt:on #}
+        {# fmt:off #}
+        {{-
+            onsTableOfContents({
+                "title": 'Contents',
+                "ariaLabel": 'Sections in this page',
+                "itemsList": table_of_contents
+            })
+        }}
+        {# fmt:on #}
         </div>
         <div class="ons-grid__col ons-col-8@m ons-col-12@s ons-u-p-no@2xs@m">
             <section id="summary" class="spacing">
