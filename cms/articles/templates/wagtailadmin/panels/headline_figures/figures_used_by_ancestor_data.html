@@ -1,0 +1,5 @@
+{% include "wagtailadmin/panels/field_panel.html" %}
+{# We need to pass this data to our JavaScript, used in headline-figures-item-block.js #}
+{% if figures_used_by_ancestor %}
+    {{ figures_used_by_ancestor|json_script:"figures-used-by-ancestor" }}
+{% endif %}
