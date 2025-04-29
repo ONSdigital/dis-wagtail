@@ -2,6 +2,7 @@ from collections.abc import Iterable
 from typing import Any
 
 from django import forms
+from django.db.models import QuerySet
 from django.views import View
 from wagtail.admin.forms.choosers import BaseFilterForm
 from wagtail.admin.ui.tables import Column
@@ -9,6 +10,7 @@ from wagtail.admin.views.generic.chooser import (
     BaseChooseView,
     ChooseResultsViewMixin,
     ChooseViewMixin,
+    ChosenMultipleViewMixin,
     ChosenResponseMixin,
     ChosenViewMixin,
     CreationFormMixin,
@@ -90,6 +92,31 @@ class DatasetChosenView(ChosenViewMixin, ChosenResponseMixin, View):
         return dataset
 
 
+class DatasetChosenMultipleViewMixin(ChosenMultipleViewMixin):
+    def get_objects(self, pks: Any) -> QuerySet[Dataset]:
+        # TODO: update when we can fetch items in bulk from the dataset API or use the cached listing view?
+        # TODO: use an efficient bulk get_or_create (in short: Dateset.objects.filter with the
+        #   provided id/edition/version, then Dataset.objects.bulk_create() with the missing items
+        dataset_ids = []
+        for pk in pks:
+            item = ONSDataset.objects.get(pk=pk)  # pylint: disable=no-member
+            dataset, _ = Dataset.objects.get_or_create(
+                namespace=item.id,
+                edition=item.edition,
+                version=item.version,
+                defaults={
+                    "title": item.title,
+                    "description": item.description,
+                },
+            )
+            dataset_ids.append(dataset.pk)
+
+        return Dataset.objects.filter(pk__in=dataset_ids)
+
+
+class DatasetChosenMultipleView(DatasetChosenMultipleViewMixin, ChosenResponseMixin, View): ...
+
+
 class DatasetChooserViewSet(ChooserViewSet):
     model = Dataset
     icon = "tag"
@@ -98,6 +125,7 @@ class DatasetChooserViewSet(ChooserViewSet):
     choose_view_class = DatasetChooseView
     choose_results_view_class = DatasetChooseResultsView
     chosen_view_class = DatasetChosenView
+    chosen_multiple_view_class = DatasetChosenMultipleView
 
 
 dataset_chooser_viewset = DatasetChooserViewSet("dataset_chooser")
