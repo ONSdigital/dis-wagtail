@@ -5,44 +5,35 @@
 
 {% block header_area %}
     {%- set hero_topic = _("Release") -%}
+    {%- set breadcrumbs_label = _("Breadcrumbs") -%}
     {%- set release_date_label = _("Release date:") -%}
     {%- set next_release_date_label = _("Next release date:") -%}
-    {%- set breadcrumbs_label = _("Breadcrumbs") -%}
 
     {# fmt:off #}
-    {% set release_date_details = [
+    {%- set release_date_details = [
         {
-        "type": "release_date",
-        "label": release_date_label,
-        "value": page.release_date,
-        "text": page.release_date_text
+            "label": release_date_label,
+            "value": release_date_value
         },
         {
-        "type": "next_release_date",
-        "label": next_release_date_label,
-        "value": page.next_release_date,
-        "text": page.next_release_date_text
+            "label": next_release_date_label,
+            "value": page.next_release_date_value
         }
-    ] %}
+    ] -%}
     {# fmt:on #}
 
-    {% set release_dates_list = [] %}
+    {%- set release_dates_list = [] -%}
 
-    {% for date in release_date_details %}
-        {% if date.value or date.text %}
+    {%- for release_date_item in release_date_details -%}
+        {% if release_date_item.value %}
             {# fmt:off #}
-            {%- set date_dict = {
-                "term": date.label,
-                "descriptions": [
-                    {
-                        "description": date.text or date.value|ons_date("DATETIME_FORMAT")
-                    }
-                ]
-            } -%}
+            {%- do release_dates_list.append({
+                "term": release_date_item.label,
+                "descriptions": [{"description": release_date_item.value}]
+            }) -%}
             {# fmt:on #}
-            {% do release_dates_list.append(date_dict) %}
         {% endif %}
-    {% endfor %}
+    {%- endfor -%}
 
     {# fmt:off #}
     {{
@@ -66,6 +57,7 @@
             }
         })
     }}
+    {# fmt:on #}
     {% block release_note %}{% endblock %}
 {% endblock %}
 
@@ -81,78 +73,78 @@
                 })
             }}
             {# fmt:on #}
-    </div>
-    <div class="ons-grid__col ons-col-8@m ons-col-12@s ons-u-p-no@2xs@m">
-        <section id="summary" class="spacing">
-            <h2>{{ _("Summary") }}</h2>
-            {{ page.summary|richtext() }}
-        </section>
-
-        {% block release_content %}
-            {% include_block page.content %}
-
-            {% if page.datasets %}
-                {% include_block page.datasets %}
-            {% endif %}
-
-            {% with contact_details = page.contact_details%}
-                {% include "templates/components/contact_details/contact_details.html" %}
-            {% endwith %}
-
-            {% if page.changes_to_release_date %}
-                <section id="changes-to-release-date" class="spacing">
-                    <h2>{{ _("Changes to this release date") }}</h2>
-
-                    <ol class="ons-list ons-list--bare">
-                        {% include_block page.changes_to_release_date %}
-                    </ol>
-                </section>
-            {% endif %}
-        {% endblock release_content %}
-
-        {% if page.is_accredited or page.is_census %}
-            <section id="about-the-data" class="spacing">
-                <h2>{{ _("About the data") }}</h2>
-                <div class="accreditations">
-                    {% if page.is_census %}
-                        {% include "templates/components/census/census-information.html" %}
-                    {% endif %}
-                    {% if page.is_accredited %}
-                        {% include "templates/components/accredited/accredited-information.html" %}
-                    {% endif %}
-                </div>
-                {% if page.is_accredited %}
-                    <p>
-                        {% trans trimmed %}
-                            These are accredited official statistics. They have been independently reviewed by the Office for Statistics Regulation (OSR) and found to comply with the standards of trustworthiness, quality and value in the <a href="https://code.statisticsauthority.gov.uk/the-code/">Code of Practice for Statistics</a>. This broadly means that the statistics:
-                        {% endtrans %}
-                    </p>
-                    <ul class="ons-list">
-                        <li class="ons-list__item">{{ _("meet user needs") }}</li>
-                        <li class="ons-list__item">{{ _("are presented clearly and accessibly") }}</li>
-                        <li class="ons-list__item">{{ _("are produced using appropriate data and sound methods") }}</li>
-                        <li class="ons-list__item">{{ _("are managed impartially and objectively in the public interest") }}</li>
-                    </ul>
-                {% endif %}
+        </div>
+        <div class="ons-grid__col ons-col-8@m ons-col-12@s ons-u-p-no@2xs@m">
+            <section id="summary" class="spacing">
+                <h2>{{ _("Summary") }}</h2>
+                {{ page.summary|richtext() }}
             </section>
-        {% endif %}
 
-        {% block release_content_footer %}
-            {% if page.pre_release_access %}
-                <section id="pre-release-access-list" class="spacing">
-                    <h2>{{ _("Pre-release access list") }}</h2>
-                    {% include_block page.pre_release_access %}
+            {% block release_content %}
+                {% include_block page.content %}
+
+                {% if page.datasets %}
+                    {% include_block page.datasets %}
+                {% endif %}
+
+                {% with contact_details = page.contact_details%}
+                    {% include "templates/components/contact_details/contact_details.html" %}
+                {% endwith %}
+
+                {% if page.changes_to_release_date %}
+                    <section id="changes-to-release-date" class="spacing">
+                        <h2>{{ _("Changes to this release date") }}</h2>
+
+                        <ol class="ons-list ons-list--bare">
+                            {% include_block page.changes_to_release_date %}
+                        </ol>
+                    </section>
+                {% endif %}
+            {% endblock release_content %}
+
+            {% if page.is_accredited or page.is_census %}
+                <section id="about-the-data" class="spacing">
+                    <h2>{{ _("About the data") }}</h2>
+                    <div class="accreditations">
+                        {% if page.is_census %}
+                            {% include "templates/components/census/census-information.html" %}
+                        {% endif %}
+                        {% if page.is_accredited %}
+                            {% include "templates/components/accredited/accredited-information.html" %}
+                        {% endif %}
+                    </div>
+                    {% if page.is_accredited %}
+                        <p>
+                            {% trans trimmed %}
+                                These are accredited official statistics. They have been independently reviewed by the Office for Statistics Regulation (OSR) and found to comply with the standards of trustworthiness, quality and value in the <a href="https://code.statisticsauthority.gov.uk/the-code/">Code of Practice for Statistics</a>. This broadly means that the statistics:
+                            {% endtrans %}
+                        </p>
+                        <ul class="ons-list">
+                            <li class="ons-list__item">{{ _("meet user needs") }}</li>
+                            <li class="ons-list__item">{{ _("are presented clearly and accessibly") }}</li>
+                            <li class="ons-list__item">{{ _("are produced using appropriate data and sound methods") }}</li>
+                            <li class="ons-list__item">{{ _("are managed impartially and objectively in the public interest") }}</li>
+                        </ul>
+                    {% endif %}
                 </section>
             {% endif %}
 
-            {% if page.related_links %}
-                <section id="links" class="spacing">
-                    <h2>{{ _("You might also be interested in") }}</h2>
+            {% block release_content_footer %}
+                {% if page.pre_release_access %}
+                    <section id="pre-release-access-list" class="spacing">
+                        <h2>{{ _("Pre-release access list") }}</h2>
+                        {% include_block page.pre_release_access %}
+                    </section>
+                {% endif %}
 
-                    {% include_block page.related_links %}
-                </section>
-            {% endif %}
-        {% endblock %}
-    </div>
+                {% if page.related_links %}
+                    <section id="links" class="spacing">
+                        <h2>{{ _("You might also be interested in") }}</h2>
+
+                        {% include_block page.related_links %}
+                    </section>
+                {% endif %}
+            {% endblock %}
+        </div>
     </div>
 {% endblock %}

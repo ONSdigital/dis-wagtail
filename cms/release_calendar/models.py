@@ -10,6 +10,7 @@ from wagtail.fields import RichTextField
 from wagtail.models import Page
 from wagtail.search import index
 
+from cms.core.custom_date_format import ons_date_format
 from cms.core.fields import StreamField
 from cms.core.models import BasePage
 from cms.datasets.blocks import DatasetStoryBlock
@@ -175,6 +176,18 @@ class ReleaseCalendarPage(BasePage):  # type: ignore[django-manager-missing]
         context: dict = super().get_context(request, *args, **kwargs)
         context["table_of_contents"] = self.table_of_contents
         return context
+
+    @property
+    def release_date_value(self) -> str:
+        if self.release_date_text and self.status == ReleaseStatus.PROVISIONAL:
+            return self.release_date_text
+        return ons_date_format(self.release_date, "DATETIME_FORMAT")
+
+    @property
+    def next_release_date_value(self) -> str:
+        if self.next_release_date_text:
+            return self.next_release_date_text
+        return ons_date_format(self.next_release_date, "DATETIME_FORMAT")
 
     @cached_property
     def table_of_contents(self) -> list[dict[str, str | object]]:

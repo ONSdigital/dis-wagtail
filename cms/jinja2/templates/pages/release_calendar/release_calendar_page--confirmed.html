@@ -3,8 +3,35 @@
 
 {% block header_area %}
     {%- set hero_topic = _("Release") -%}
-    {%- set release_date_label = _("Release date:") -%}
     {%- set breadcrumbs_label = _("Breadcrumbs") -%}
+    {%- set release_date_label = _("Release date:") -%}
+    {%- set next_release_date_label = _("Next release date:") -%}
+
+    {# fmt:off #}
+    {%- set release_date_details = [
+        {
+            "label": release_date_label,
+            "value": release_date_value
+        },
+        {
+            "label": next_release_date_label,
+            "value": page.next_release_date_value
+        }
+    ] -%}
+    {# fmt:on #}
+
+    {%- set release_dates_list = [] -%}
+
+    {%- for release_date_item in release_date_details -%}
+        {% if release_date_item.value %}
+            {# fmt:off #}
+            {%- do release_dates_list.append({
+                "term": release_date_item.label,
+                "descriptions": [{"description": release_date_item.value}]
+            }) -%}
+            {# fmt:on #}
+        {% endif %}
+    {%- endfor -%}
 
     {# fmt:off #}
     {{
@@ -23,7 +50,7 @@
                 "itemsList": [{
                     "term": release_date_label,
                     "descriptions": [{
-                        "description": page.release_date|ons_date("DATETIME_FORMAT")
+                        "description": page.release_date
                     }]
                 }]
             },
