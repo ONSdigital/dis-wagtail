@@ -1,7 +1,6 @@
 import uuid
 from http import HTTPStatus
 
-from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
 from django.urls import reverse
 from wagtail.test.utils import WagtailPageTestCase
@@ -78,7 +77,7 @@ class StatisticalArticlePageTests(WagtailPageTestCase):
         ]
         cls.page.headline_figures_figure_ids = "figurexyz"
         cls.page.save_revision().publish()
-        cls.user = get_user_model().objects.create(username="wagtailer", is_superuser=True)
+        cls.user = cls.create_superuser("admin")
 
     def test_default_route(self):
         self.assertPageIsRoutable(self.page)

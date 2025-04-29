@@ -3,7 +3,6 @@ import uuid
 from datetime import datetime
 
 from django.conf import settings
-from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
 from django.test import TestCase, override_settings
 from django.urls import reverse
@@ -219,7 +218,7 @@ class StatisticalArticlePageRenderTestCase(WagtailTestUtils, TestCase):
         self.page.save_revision().publish()
         self.page_url = self.page.url
         self.formatted_date = date_format(self.page.release_date, settings.DATE_FORMAT)
-        self.user = get_user_model().objects.create(username="wagtailer", is_superuser=True)
+        self.user = self.create_superuser("admin")
 
     def test_display_title(self):
         """Check how the title is displayed on the front-end, with/without news headline."""
@@ -342,11 +341,12 @@ class StatisticalArticlePageRenderTestCase(WagtailTestUtils, TestCase):
         topic.save_revision().publish()
 
         # Try deleting page
-        response = self.client.post(reverse("wagtailadmin_pages:delete", args=[self.page.id]))
+        page_delete_url = reverse("wagtailadmin_pages:delete", args=[self.page.id])
+        response = self.client.post(page_delete_url)
 
-        self.assertEqual(response.status_code, 302)
+        self.assertRedirects(response, page_delete_url, 302)
 
-        response = self.client.post(reverse("wagtailadmin_pages:delete", args=[self.page.id]), follow=True)
+        response = self.client.post(page_delete_url, follow=True)
 
         self.assertContains(
             response,
@@ -354,11 +354,12 @@ class StatisticalArticlePageRenderTestCase(WagtailTestUtils, TestCase):
         )
 
         # Try deleting parent page
-        response = self.client.post(reverse("wagtailadmin_pages:delete", args=[self.page.get_parent().id]))
+        parent_page_delete_url = reverse("wagtailadmin_pages:delete", args=[self.page.get_parent().id])
+        response = self.client.post(parent_page_delete_url)
 
-        self.assertEqual(response.status_code, 302)
+        self.assertRedirects(response, parent_page_delete_url, 302)
 
-        response = self.client.post(reverse("wagtailadmin_pages:delete", args=[self.page.get_parent().id]), follow=True)
+        response = self.client.post(parent_page_delete_url, follow=True)
 
         self.assertContains(
             response,

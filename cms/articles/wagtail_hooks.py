@@ -34,6 +34,8 @@ def before_delete_page(request: "HttpRequest", page: "Page") -> HttpResponseRedi
                 request,
                 "This page cannot be deleted because it contains headline figures that are referenced elsewhere.",
             )
+            # Redirect to the delete page (the same page) to prevent delete action
+            # See: https://docs.wagtail.org/en/latest/reference/hooks.html#before-delete-page
             return redirect("wagtailadmin_pages:delete", page.pk)
         if (
             page.specific_class == ArticleSeriesPage
