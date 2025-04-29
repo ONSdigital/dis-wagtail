@@ -16,12 +16,16 @@ class ExclusiveTaxonomyFieldPanel(FieldPanel):
         def get_context_data(self, parent_context: "Optional[RenderContext]" = None) -> "Optional[RenderContext]":
             context = super().get_context_data(parent_context)
 
+            # If the instance is not saved yet, we don't translations to check against.
+            if not self.instance.pk:
+                return context
+
             if self.instance.locale != self.instance.get_root().locale and (
-                english_page := self.instance.get_translations()
+                default_locale_page := self.instance.get_translations()
                 .filter(locale__language_code=settings.LANGUAGE_CODE)
                 .only("id", "topic")
                 .first()
             ):
-                context["forced_topic"] = english_page.topic
-                context["english_page_id"] = english_page.id
+                context["forced_topic"] = default_locale_page.topic
+                context["default_locale_page_id"] = default_locale_page.id
             return context

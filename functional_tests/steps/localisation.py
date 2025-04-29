@@ -30,6 +30,7 @@ def user_creates_welsh_version_of_page(context: Context) -> None:
     context.page.locator("#w-slim-header-buttons").get_by_role("button", name="Actions", exact=True).click()
     context.page.get_by_role("link", name="Translate").click()
     context.page.locator("#id_locales_0").check()
+    context.page.locator("#id_include_subtree").check()
     context.page.get_by_role("button", name="Submit").click()
 
 

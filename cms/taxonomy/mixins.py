@@ -48,14 +48,14 @@ class ExclusiveTaxonomyMixin(models.Model):
             if qs.exists():
                 raise ValidationError({"topic": "This topic is already linked to another theme or topic page."})
 
-        # Check if the English version of the page has a different topic.
-        english_page_with_different_topic = (
+        # Check if the default locale version of the page has a different topic.
+        default_locale_page_with_different_topic = (
             self.get_translations()  # type: ignore[attr-defined]
             .filter(locale__language_code=settings.LANGUAGE_CODE)
             .exclude(topic_id=self.topic_id)
             .exists()
         )
-        if english_page_with_different_topic:
+        if default_locale_page_with_different_topic:
             raise ValidationError({"topic": "The topic needs to be the same as the English page."})
 
 
