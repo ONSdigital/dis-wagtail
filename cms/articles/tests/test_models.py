@@ -1,9 +1,11 @@
 import math
+import uuid
 from datetime import datetime
 
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.test import TestCase, override_settings
+from django.urls import reverse
 from django.utils import timezone
 from django.utils.formats import date_format
 from wagtail.test.utils import WagtailTestUtils
@@ -195,8 +197,28 @@ class StatisticalArticlePageRenderTestCase(WagtailTestUtils, TestCase):
             news_headline="Breaking News!",
             release_date=datetime(2024, 8, 15),
         )
+        self.page.headline_figures = [
+            {
+                "type": "figures",
+                "value": [
+                    {
+                        "id": uuid.uuid4(),
+                        "type": "item",
+                        "value": {
+                            "figure_id": "figurexyz",
+                            "title": "Figure title XYZ",
+                            "figure": "XYZ",
+                            "supporting_text": "Figure supporting text XYZ",
+                        },
+                    }
+                ],
+            }
+        ]
+        self.page.headline_figures_figure_ids = "figurexyz"
+        self.page.save_revision().publish()
         self.page_url = self.page.url
         self.formatted_date = date_format(self.page.release_date, settings.DATE_FORMAT)
+        self.user = self.create_superuser("admin")
 
     def test_display_title(self):
         """Check how the title is displayed on the front-end, with/without news headline."""
@@ -256,6 +278,93 @@ class StatisticalArticlePageRenderTestCase(WagtailTestUtils, TestCase):
         response = self.client.get(self.basic_page_url)
         expected = 'class="ons-pagination__link"'
         self.assertNotContains(response, expected)
+
+    def test_get_headline_figure(self):
+        """Test get_headline_figure returns the correct figure."""
+        # Test with a valid figure_id
+        figure = self.page.get_headline_figure("figurexyz")
+        self.assertEqual(figure["title"], "Figure title XYZ")
+        self.assertEqual(figure["figure"], "XYZ")
+        self.assertEqual(figure["supporting_text"], "Figure supporting text XYZ")
+
+        # Test with an invalid figure_id
+        figure = self.page.get_headline_figure("invalid_id")
+        self.assertEqual(figure, {})
+
+    def test_figures_used_by_ancestors(self):
+        """Test that the figures used by ancestors are returned correctly."""
+        topic = self.page.get_parent().get_parent()
+        topic.headline_figures.extend(
+            [
+                (
+                    "figures",
+                    {
+                        "series": self.page.get_parent(),
+                        "figure_id": "figurexyz",
+                    },
+                ),
+                (
+                    "figures",
+                    {
+                        "series": self.page.get_parent(),
+                        "figure_id": "figurexyz",
+                    },
+                ),
+            ]
+        )
+        topic.save_revision().publish()
+
+        self.assertEqual(self.page.figures_used_by_ancestor, ["figurexyz", "figurexyz"])
+
+    def test_cannot_be_deleted_if_ancestor_uses_headline_figures(self):
+        """Test that the page cannot be deleted if an ancestor uses the headline figures."""
+        self.client.force_login(self.user)
+        topic = self.page.get_parent().get_parent()
+        topic.headline_figures.extend(
+            [
+                (
+                    "figures",
+                    {
+                        "series": self.page.get_parent(),
+                        "figure_id": "figurexyz",
+                    },
+                ),
+                (
+                    "figures",
+                    {
+                        "series": self.page.get_parent(),
+                        "figure_id": "figurexyz",
+                    },
+                ),
+            ]
+        )
+        topic.save_revision().publish()
+
+        # Try deleting page
+        page_delete_url = reverse("wagtailadmin_pages:delete", args=[self.page.id])
+        response = self.client.post(page_delete_url)
+
+        self.assertRedirects(response, page_delete_url, 302)
+
+        response = self.client.post(page_delete_url, follow=True)
+
+        self.assertContains(
+            response,
+            "This page cannot be deleted because it contains headline figures that are referenced elsewhere.",
+        )
+
+        # Try deleting parent page
+        parent_page_delete_url = reverse("wagtailadmin_pages:delete", args=[self.page.get_parent().id])
+        response = self.client.post(parent_page_delete_url)
+
+        self.assertRedirects(response, parent_page_delete_url, 302)
+
+        response = self.client.post(parent_page_delete_url, follow=True)
+
+        self.assertContains(
+            response,
+            "This page cannot be deleted because one or more of its children contain headline figures",
+        )
 
 
 class PreviousReleasesWithoutPaginationTestCase(TestCase):

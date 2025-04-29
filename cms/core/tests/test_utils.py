@@ -1,10 +1,10 @@
 from datetime import datetime
 
-from django.test import TestCase
+from django.test import RequestFactory, SimpleTestCase, TestCase, override_settings
 from django.utils.formats import date_format
 
 from cms.core.models.base import BasePage
-from cms.core.utils import get_formatted_pages_list
+from cms.core.utils import get_client_ip, get_formatted_pages_list
 
 
 # DummyPage mimics the minimum attributes and methods of a Wagtail Page.
@@ -130,3 +130,21 @@ class GetFormattedPagesListTests(TestCase):
         self.assertEqual(len(result), 2)
         self.assertDictEqual(result[0], expected_page1)
         self.assertDictEqual(result[1], expected_page2)
+
+
+class ClientIPTestCase(SimpleTestCase):
+    def setUp(self) -> None:
+        super().setUp()
+
+        self.factory = RequestFactory()
+
+    def test_get_client_ip(self) -> None:
+        request = self.factory.get("/")
+        self.assertEqual(get_client_ip(request), "127.0.0.1")
+
+    @override_settings(IS_EXTERNAL_ENV=True)
+    def test_cannot_get_client_ip_in_external_env(self) -> None:
+        request = self.factory.get("/")
+
+        with self.assertRaisesMessage(RuntimeError, "Cannot get client IP in external environment."):
+            get_client_ip(request)

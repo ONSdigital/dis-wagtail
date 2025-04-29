@@ -42,5 +42,11 @@ def prepopulate_statistical_article(
         return
 
     # Prepopulate the new page with the latest page's data
+    page.summary = latest.summary
+    page.headline_figures = latest.headline_figures
+    page.contact_details = latest.contact_details
+    page.is_accredited = latest.is_accredited
+    page.is_census = latest.is_census
+    page.search_description = latest.search_description
     page.datasets = latest.datasets
     page.dataset_sorting = latest.dataset_sorting

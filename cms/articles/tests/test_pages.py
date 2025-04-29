@@ -1,5 +1,8 @@
+import uuid
 from http import HTTPStatus
 
+from django.core.exceptions import ValidationError
+from django.urls import reverse
 from wagtail.test.utils import WagtailPageTestCase
 
 from cms.articles.tests.factories import ArticleSeriesPageFactory, StatisticalArticlePageFactory
@@ -54,6 +57,27 @@ class StatisticalArticlePageTests(WagtailPageTestCase):
     @classmethod
     def setUpTestData(cls):
         cls.page = StatisticalArticlePageFactory()
+        # TODO: Fix the factory to generate headline_figures correctly
+        cls.page.headline_figures = [
+            {
+                "type": "figures",
+                "value": [
+                    {
+                        "id": uuid.uuid4(),
+                        "type": "item",
+                        "value": {
+                            "figure_id": "figurexyz",
+                            "title": "Figure title XYZ",
+                            "figure": "XYZ",
+                            "supporting_text": "Figure supporting text XYZ",
+                        },
+                    }
+                ],
+            }
+        ]
+        cls.page.headline_figures_figure_ids = "figurexyz"
+        cls.page.save_revision().publish()
+        cls.user = cls.create_superuser("admin")
 
     def test_default_route(self):
         self.assertPageIsRoutable(self.page)
@@ -308,4 +332,66 @@ class StatisticalArticlePageTests(WagtailPageTestCase):
         self.assertNotInHTML(
             '<dd class="ons-description-list__value ons-grid__col ons-col-6@xs@l">To be announced</dd>',
             content,
+        )
+
+    def test_prepopulated_content(self):
+        self.client.force_login(self.user)
+        parent_page = self.page.get_parent()
+        add_sibling_url = reverse("wagtailadmin_pages:add_subpage", args=[parent_page.id])
+
+        response = self.client.get(add_sibling_url, follow=True)
+        self.assertEqual(response.status_code, HTTPStatus.OK)
+
+        self.assertContains(
+            response, "This page has been prepopulated with the content from the latest page in the series."
+        )
+
+        self.assertContains(response, self.page.summary)
+        self.assertContains(response, self.page.contact_details)
+        self.assertContains(response, self.page.search_description)
+        self.assertContains(response, self.page.headline_figures[0].value[0]["title"])
+        self.assertContains(response, self.page.headline_figures[0].value[0]["supporting_text"])
+
+    def test_headline_figures_removal_validation(self):
+        series = self.page.get_parent()
+        topic = series.get_parent()
+        topic.headline_figures.extend(
+            [
+                (
+                    "figures",
+                    {
+                        "series": series,
+                        "figure_id": "figurexyz",
+                    },
+                ),
+                (
+                    "figures",
+                    {
+                        "series": series,
+                        "figure_id": "figurexyz",
+                    },
+                ),
+            ]
+        )
+
+        topic.save_revision().publish()
+
+        self.page.headline_figures = []
+
+        with self.assertRaisesRegex(
+            ValidationError, "Figure ID figurexyz cannot be removed as it is referenced in a topic page."
+        ):
+            # We've removed the figures while they are referenced by the topic
+            self.page.clean()
+
+    def test_correct_template_used_for_edit_page(self):
+        """Test that the edit page uses the correct template."""
+        self.client.force_login(self.user)
+        edit_url = reverse("wagtailadmin_pages:edit", args=[self.page.id])
+        response = self.client.get(edit_url)
+        self.assertEqual(response.status_code, HTTPStatus.OK)
+        self.assertTemplateUsed(
+            response,
+            "wagtailadmin/panels/headline_figures/figures_used_by_ancestor_data.html",
+            "Template required by Headline Figures functionality was not used",
         )
