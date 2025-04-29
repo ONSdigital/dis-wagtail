@@ -160,7 +160,7 @@ class TopicPageTestCase(TestCase):
         # Assign different topic
         translated_topic_page.topic = TopicFactory()
 
-        with self.assertRaises(ValidationError):
+        with self.assertRaisesRegex(ValidationError, "The topic needs to be the same as the English page."):
             translated_topic_page.save()
 
     def test_headline_figures_clean(self):
