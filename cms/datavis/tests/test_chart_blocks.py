@@ -46,7 +46,7 @@ class BaseChartBlockTestCase(SimpleTestCase, WagtailTestUtils):
                 "value_suffix": "",
                 "tooltip_suffix": "",
             },
-            "annotations": [{"type": "point", "value": {"label": "Peak", "x_position": "2", "y_position": "140"}}],
+            "annotations": [{"type": "point", "value": {"label": "Peak", "x_position": 2, "y_position": 140}}],
         }
 
     def get_value(self, raw_data: dict[str, Any] | None = None):
