@@ -6,15 +6,10 @@ from django.utils.functional import cached_property
 from wagtail import blocks
 from wagtail.blocks.struct_block import StructValue
 
+from cms.datavis.blocks.annotations import PointAnnotationBlock
 from cms.datavis.blocks.table import SimpleTableBlock
-from cms.datavis.blocks.utils import TextInputFloatBlock, TextInputIntegerBlock
+from cms.datavis.blocks.utils import TextInputFloatBlock
 from cms.datavis.constants import HighchartsTheme
-
-
-class PointAnnotationBlock(blocks.StructBlock):
-    label = blocks.CharBlock(required=True)
-    x_position = TextInputIntegerBlock(label="x-position", required=True)
-    y_position = TextInputFloatBlock(label="y-position", required=True)
 
 
 class BaseVisualisationBlock(blocks.StructBlock):
@@ -118,7 +113,6 @@ class BaseVisualisationBlock(blocks.StructBlock):
 
         # Add template and visualisation context to support rendering
         context["config"] = self.get_component_config(value)
-        context["annotations_values"] = self.get_annotations_config(value)
         context["download"] = self.get_download_config(value)
         return context
 
@@ -196,18 +190,7 @@ class BaseVisualisationBlock(blocks.StructBlock):
     def get_annotations_config(self, value: "StructValue") -> list[dict[str, Any]]:
         annotations_values: list[dict[str, Any]] = []
         for item in value.get("annotations", []):
-            # TODO: handle different annotation types
-            # match item.block_type:
-            #   case "point":
-            annotations_values.append(
-                {
-                    "text": item.value["label"],
-                    "point": {
-                        "x": item.value["x_position"],
-                        "y": item.value["y_position"],
-                    },
-                }
-            )
+            annotations_values.append(item.value.get_config())
         return annotations_values
 
     def get_series_data(
