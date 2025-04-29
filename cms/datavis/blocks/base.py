@@ -7,6 +7,7 @@ from wagtail import blocks
 from wagtail.blocks.struct_block import StructValue
 
 from cms.datavis.blocks.annotations import PointAnnotationBlock
+from cms.datavis.blocks.chart_options import AspectRatioBlock
 from cms.datavis.blocks.table import SimpleTableBlock
 from cms.datavis.blocks.utils import TextInputFloatBlock
 from cms.datavis.constants import HighchartsTheme
@@ -105,6 +106,37 @@ class BaseVisualisationBlock(blocks.StructBlock):
         required=False,
     )
 
+    options_key_map: ClassVar[dict[str, str]] = {
+        "desktop_aspect_ratio": "percentageHeightDesktop",
+        "mobile_aspect_ratio": "percentageHeightMobile",
+    }
+    options = blocks.StreamBlock(
+        [
+            (
+                "desktop_aspect_ratio",
+                AspectRatioBlock(
+                    required=False,
+                    help_text='Remove this option, or set "Default", to use the default aspect ratio for desktop.',
+                    widget=RadioSelect(),
+                ),
+            ),
+            (
+                "mobile_aspect_ratio",
+                AspectRatioBlock(
+                    required=False,
+                    help_text='Remove this option, or set "Default", to use the default aspect ratio for mobile.',
+                    widget=RadioSelect(),
+                ),
+            ),
+        ],
+        block_counts={
+            "desktop_aspect_ratio": {"max_num": 1},
+            "mobile_aspect_ratio": {"max_num": 1},
+        },
+        help_text="Additional settings for the chart",
+        required=False,
+    )
+
     class Meta:
         template = "templates/components/streamfield/datavis/base_highcharts_chart_block.html"
 
@@ -139,6 +171,7 @@ class BaseVisualisationBlock(blocks.StructBlock):
             "download": self.get_download_config(value),
         }
 
+        config.update(self.get_additional_options(value))
         return config
 
     def get_x_axis_config(
@@ -234,6 +267,14 @@ class BaseVisualisationBlock(blocks.StructBlock):
                 }
             series.append(item)
         return series
+
+    def get_additional_options(self, value: "StructValue") -> dict[str, Any]:
+        options = {}
+        for option in value.get("options", []):
+            key = self.options_key_map[option.block_type]
+            options[key] = option.value
+
+        return options
 
     def get_download_config(self, value: "StructValue") -> dict[str, Any]:
         return {
