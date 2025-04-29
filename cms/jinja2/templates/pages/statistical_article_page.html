@@ -5,49 +5,78 @@
 {% from "components/hero/_macro.njk" import onsHero %}
 {% from "components/table-of-contents/_macro.njk" import onsTableOfContents %}
 
+{#- We set variables for text so that it gets picked up by makemessages -#}
+{%- set contact_label = _("Contact:") -%}
+{%- set statistical_article_label = _("Statistical article") -%}
+{%- set release_date_label = _("Release date:") -%}
+{%- set next_release_label = _("Next release:") -%}
+{%- set breadcrumbs_label = _("Breadcrumbs") -%}
+
 {% block header_area %}
+    {%- set hero_topic = _("Statistical article") -%}
+    {%- set release_date_term = _("Release date:") -%}
+    {%- set next_release_date_term = _("Next release:") -%}
+    {%- set breadcrumbs_aria_label = _("Breadcrumbs") -%}
     {% if page.contact_details %}
-        {% set contact_description_html -%}
+        {%- set contact_details_term = _("Contact:") -%}
+        {%- set contact_description_html -%}
             <a href="mailto:{{ page.contact_details.email }}">{{ page.contact_details.name }}</a>
-        {%- endset %}
+        {%- endset -%}
 
         {# fmt:off #}
-        {% set contact_details =
+        {%- set contact_details =
             {
-                "term": "Contact:",
+                "term": contact_label,
                 "descriptions": [
                     {
                         "description": contact_description_html
                     }
                 ]
             }
-        %}
+        -%}
         {# fmt:on #}
     {% else %}
-        {% set contact_details = "" %}
+        {%- set contact_details = "" -%}
     {% endif %}
 
     {% if page.is_latest %}
-        {% set release_html -%}
-            <a href="{{ routablepageurl(page.get_parent().specific, "previous_releases") }}">{{ _("View previous releases") }}</a>
-        {%- endset %}
+        {% if latest_version_url %}
+            {%- set infoPanelText = _("This version has been amended since publication") -%}
+            {%- set releases_text = _("View amended version") -%}
+            {%- set infoPanelType = 'ons-red' -%}
+            {%- set releases_url = latest_version_url -%}
+        {% else %}
+            {%- set infoPanelText = _("Latest release") -%}
+            {%- set releases_text = _("View previous releases") -%}
+            {%- set infoPanelType = 'ons-green' -%}
+            {%- set releases_url = routablepageurl(page.get_parent().specific, "previous_releases") -%}
+        {% endif %}
     {% else %}
-        {% set release_html -%}
-            <a href="{{ routablepageurl(page.get_parent().specific, "latest_release") }}">{{ _("View latest release") }}</a>
-        {%- endset %}
+        {%- set infoPanelText = _("Not the latest release") -%}
+        {%- set releases_text = _("View latest release") -%}
+        {%- set infoPanelType = 'ons-orange' -%}
+        {%- set releases_url = routablepageurl(page.get_parent().specific, "latest_release") -%}
     {% endif %}
 
-    {% set next_release_date_text = page.next_release_date|date("DATE_FORMAT") or _("To be announced") %}
+    {%- set next_release_date_text = page.next_release_date|date("DATE_FORMAT") or _("To be announced") -%}
 
     {# fmt:off #}
     {{
         onsHero({
-            "topic": _("Statistical article"),
+            "topic": statistical_article_label,
             "title": page.display_title,
             "variants": 'grey',
             "text": page.summary,
             "officialStatisticsBadge": page.is_accredited,
             "wide": true,
+            "informationPanel":{
+                "panelText": infoPanelText,
+                "panelType": infoPanelType,
+                "panelLink": {
+                    "text": releases_text,
+                    "url": releases_url
+                }
+            },
             "detailsColumns": 12,
             "censusLogo": page.is_census,
             "descriptionList": {
@@ -56,7 +85,7 @@
                 "descriptionCol": "6",
                 "itemsList": [
                     {
-                        "term": _("Release date:"),
+                        "term": release_date_label,
                         "descriptions": [
                             {
                                 "description": page.release_date|date("DATE_FORMAT")
@@ -64,26 +93,10 @@
                         ]
                     },
                     {
-                        "term": _("Next release:"),
+                        "term": next_release_label,
                         "descriptions": [
                             {
                                 "description": next_release_date_text
-                            }
-                        ]
-                    },
-                    {
-                        "term": _("Edition:"),
-                        "descriptions": [
-                            {
-                                "description": _("Latest")
-                            }
-                        ]
-                    },
-                    {
-                        "term": _("Releases:"),
-                        "descriptions": [
-                            {
-                                "description": release_html
                             }
                         ]
                     },
@@ -91,20 +104,12 @@
                 ]
             },
             "breadcrumbs": {
-                "ariaLabel": _("Breadcrumbs"),
+                "ariaLabel": breadcrumbs_label,
                 "itemsList": breadcrumbs(page),
             }
         })
     }}
     {# fmt:on #}
-
-    {% if latest_version_url %}
-        <div class="ons-container">
-            {% call onsPanel({"variant": 'warn', "classes": "ons-u-mt-s"}) %}
-                <p>{{ _("This has been superseded.") }} <a href="{{ latest_version_url }}">{{ _("View corrected version") }}</a></p>
-            {% endcall %}
-        </div>
-    {% endif %}
 
     {# TBD: to be replaced with corrections and notices DS compoennt #}
     {% if page.corrections or page.notices %}

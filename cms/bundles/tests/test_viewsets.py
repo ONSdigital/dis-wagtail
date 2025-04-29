@@ -4,7 +4,7 @@ from unittest import mock
 from django.test import TestCase
 from django.urls import reverse
 from wagtail.admin.panels import get_edit_handler
-from wagtail.models import Page
+from wagtail.models import Locale, Page
 from wagtail.test.utils import WagtailTestUtils
 from wagtail.test.utils.form_data import inline_formset, nested_form_data
 
@@ -44,8 +44,8 @@ class BundleViewSetTestCaseBase(WagtailTestUtils, TestCase):
         cls.bundle_index_url = reverse("bundle:index")
         cls.bundle_add_url = reverse("bundle:add")
 
-        cls.released_bundle = BundleFactory(released=True, name="Release Bundle")
-        cls.released_bundle_edit_url = reverse("bundle:edit", args=[cls.released_bundle.id])
+        cls.published_bundle = BundleFactory(published=True, name="Publish Bundle")
+        cls.published_bundle_edit_url = reverse("bundle:edit", args=[cls.published_bundle.id])
 
         cls.approved_bundle = BundleFactory(approved=True, name="Approve Bundle")
         cls.approved_bundle_edit_url = reverse("bundle:edit", args=[cls.approved_bundle.id])
@@ -54,7 +54,7 @@ class BundleViewSetTestCaseBase(WagtailTestUtils, TestCase):
 
         preview_team = Team.objects.create(identifier="foo", name="Preview team")
         BundleTeam.objects.create(parent=cls.in_review_bundle, team=preview_team)
-        BundleTeam.objects.create(parent=cls.released_bundle, team=preview_team)
+        BundleTeam.objects.create(parent=cls.published_bundle, team=preview_team)
         cls.bundle_viewer.teams.add(preview_team)
 
         cls.another_in_review_bundle = BundleFactory(in_review=True, name="Another preview Bundle")
@@ -78,7 +78,7 @@ class BundleViewSetTestCase(BundleViewSetTestCaseBase):
             nested_form_data(
                 {
                     "name": "A New Bundle",
-                    "status": BundleStatus.PENDING,
+                    "status": BundleStatus.DRAFT,
                     "bundled_pages": inline_formset([{"page": self.statistical_article_page.id}]),
                     "teams": inline_formset([]),
                 }
@@ -95,7 +95,7 @@ class BundleViewSetTestCase(BundleViewSetTestCaseBase):
             nested_form_data(
                 {
                     "name": "A New Bundle",
-                    "status": BundleStatus.PENDING,
+                    "status": BundleStatus.DRAFT,
                     "bundled_pages": inline_formset([{"page": self.statistical_article_page.id}]),
                     "teams": inline_formset([]),
                 }
@@ -132,9 +132,9 @@ class BundleViewSetTestCase(BundleViewSetTestCaseBase):
         self.bundle.refresh_from_db()
         self.assertEqual(self.bundle.name, "Updated Bundle")
 
-    def test_bundle_edit_view__redirects_to_index_for_released_bundles(self):
+    def test_bundle_edit_view__redirects_to_index_for_published_bundles(self):
         """Released bundles should no longer be editable."""
-        response = self.client.get(self.released_bundle_edit_url)
+        response = self.client.get(self.published_bundle_edit_url)
         self.assertRedirects(response, self.bundle_index_url)
 
     def test_bundle_edit_view__updates_approved_fields_on_save_and_approve(self):
@@ -190,7 +190,7 @@ class BundleViewSetTestCase(BundleViewSetTestCaseBase):
             ),
         )
         self.bundle.refresh_from_db()
-        self.assertEqual(self.bundle.status, BundleStatus.PENDING)
+        self.assertEqual(self.bundle.status, BundleStatus.DRAFT)
 
     @mock.patch("cms.bundles.viewsets.bundle.notify_slack_of_status_change")
     def test_bundle_approval__happy_path(self, mock_notify_slack):
@@ -284,7 +284,7 @@ class BundleViewSetTestCase(BundleViewSetTestCaseBase):
             (self.in_review_bundle.pk, HTTPStatus.OK, False),
             (self.another_in_review_bundle.pk, HTTPStatus.FOUND, True),
             (self.approved_bundle.pk, HTTPStatus.FOUND, True),
-            (self.released_bundle.pk, HTTPStatus.FOUND, True),
+            (self.published_bundle.pk, HTTPStatus.FOUND, True),
         ]
         for bundle_id, status_code, check_message in scenarios:
             with self.subTest():
@@ -345,18 +345,18 @@ class BundleIndexViewTestCase(BundleViewSetTestCaseBase):
         response = self.client.get(self.bundle_index_url)
         self.assertContains(response, self.edit_url)
         self.assertContains(response, self.approved_bundle_edit_url)
-        self.assertNotContains(response, self.released_bundle_edit_url)
+        self.assertNotContains(response, self.published_bundle_edit_url)
 
-        self.assertContains(response, BundleStatus.PENDING.label, 2)  # status + status filter
-        self.assertContains(response, BundleStatus.RELEASED.label, 2)  # status + status filter
+        self.assertContains(response, BundleStatus.DRAFT.label, 2)  # status + status filter
+        self.assertContains(response, BundleStatus.PUBLISHED.label, 2)  # status + status filter
         self.assertContains(response, BundleStatus.APPROVED.label, 2)  # status + status filter
 
-        self.assertContains(response, self.released_bundle.name)
+        self.assertContains(response, self.published_bundle.name)
         self.assertContains(response, self.approved_bundle.name)
 
     def test_index_view_search(self):
-        response = self.client.get(f"{self.bundle_index_url}?q=release")
-        self.assertContains(response, self.released_bundle.name)
+        response = self.client.get(f"{self.bundle_index_url}?q=publish")
+        self.assertContains(response, self.published_bundle.name)
         self.assertNotContains(response, self.approved_bundle.name)
 
     def test_index_view__previewers__contains_only_relevant_bundles(self):
@@ -369,34 +369,34 @@ class BundleIndexViewTestCase(BundleViewSetTestCaseBase):
         response = self.client.get(self.bundle_index_url)
         # the title + label for inspect link + label for the dropdown button
         self.assertContains(response, self.in_review_bundle.name, 3)
-        self.assertNotContains(response, self.released_bundle.name)
+        self.assertNotContains(response, self.published_bundle.name)
         self.assertNotContains(response, self.approved_bundle.name)
         self.assertNotContains(response, self.another_in_review_bundle.name)
 
 
 class BundleChooserViewsetTestCase(BundleViewSetTestCaseBase):
     def test_chooser_viewset(self):
-        pending_bundle = BundleFactory(name="Pending")
+        draft_bundle = BundleFactory(name="Draft")
         response = self.client.get(bundle_chooser_viewset.widget_class().get_chooser_modal_url())
 
-        self.assertContains(response, pending_bundle.name)
-        self.assertNotContains(response, self.released_bundle.name)
+        self.assertContains(response, draft_bundle.name)
+        self.assertNotContains(response, self.published_bundle.name)
         self.assertNotContains(response, self.approved_bundle.name)
 
     def test_chooser_search(self):
-        pending_bundle = BundleFactory(name="Pending")
+        draft_bundle = BundleFactory(name="Draft")
         chooser_results_url = reverse(bundle_chooser_viewset.get_url_name("choose_results"))
 
         response = self.client.get(f"{chooser_results_url}?q=approve")
 
-        self.assertNotContains(response, pending_bundle.name)
-        self.assertNotContains(response, self.released_bundle.name)
+        self.assertNotContains(response, draft_bundle.name)
+        self.assertNotContains(response, self.published_bundle.name)
         self.assertNotContains(response, self.approved_bundle.name)
 
-        response = self.client.get(f"{chooser_results_url}?q=pending")
+        response = self.client.get(f"{chooser_results_url}?q=draft")
 
-        self.assertContains(response, pending_bundle.name)
-        self.assertNotContains(response, self.released_bundle.name)
+        self.assertContains(response, draft_bundle.name)
+        self.assertNotContains(response, self.published_bundle.name)
         self.assertNotContains(response, self.approved_bundle.name)
 
 
@@ -438,18 +438,30 @@ class BundlePageChooserViewsetTestCase(WagtailTestUtils, TestCase):
         )
 
     def test_choose_view(self):
+        welsh_page_draft = StatisticalArticlePageFactory(
+            live=False, title="Article draft Welsh", locale=Locale.objects.get(language_code="cy")
+        )
+        welsh_page_draft.save_revision()
         response = self.client.get(self.chooser_url)
 
         self.assertEqual(response.status_code, 200)
         self.assertTemplateUsed(response, "wagtailadmin/generic/chooser/chooser.html")
 
         self.assertContains(response, self.page_draft.get_admin_display_title())
+        self.assertContains(response, welsh_page_draft.get_admin_display_title())
         self.assertContains(response, self.page_live_plus_draft.get_admin_display_title())
         self.assertNotContains(response, self.page_live.get_admin_display_title())
         self.assertNotContains(response, self.page_draft_in_bundle.get_admin_display_title())
 
+        # Test that the chooser includes the correct columns
+        self.assertContains(response, "Locale")
+        self.assertContains(response, "English")
+        self.assertContains(response, "Welsh")
+        self.assertContains(response, "Parent")
+        self.assertContains(response, self.page_draft.get_parent().get_admin_display_title())
+
     def test_choose_view__includes_page_in_inactive_bundle(self):
-        self.bundle.status = BundleStatus.RELEASED
+        self.bundle.status = BundleStatus.PUBLISHED
         self.bundle.save(update_fields=["status"])
 
         response = self.client.get(self.chooser_url)
