@@ -141,6 +141,7 @@ if not IS_EXTERNAL_ENV:
         "django.contrib.auth.middleware.AuthenticationMiddleware",
     )
     MIDDLEWARE.insert(common_middleware_index, "django.contrib.sessions.middleware.SessionMiddleware")
+    MIDDLEWARE.insert(common_middleware_index, "xff.middleware.XForwardedForMiddleware")
 
 ROOT_URLCONF = "cms.urls"
 
@@ -523,6 +524,7 @@ LOGGING = {
             "level": "INFO",
             "propagate": False,
         },
+        "xff": {"handlers": ["console"], "level": "WARNING", "propagate": False},
         "gunicorn.access": {
             "handlers": ["gunicorn_access"],
             "level": "INFO",
@@ -667,6 +669,12 @@ CACHE_CONTROL_STALE_WHILE_REVALIDATE = int(env.get("CACHE_CONTROL_STALE_WHILE_RE
 # https://docs.djangoproject.com/en/stable/ref/settings/#use-x-forwarded-port
 USE_X_FORWARDED_PORT = env.get("USE_X_FORWARDED_PORT", "true").lower().strip() == "true"
 
+XFF_TRUSTED_PROXY_DEPTH = int(env.get("XFF_TRUSTED_PROXY_DEPTH", 1))
+XFF_EXEMPT_URLS = [r"^-/.*"]
+
+# Error if there are the wrong number of proxies
+XFF_STRICT = env.get("XFF_STRICT", "false").lower().strip() == "true"
+
 # Security configuration
 # This configuration is required to achieve good security rating.
 # You can test it using https://securityheaders.com/
@@ -793,6 +801,10 @@ if ENABLE_DJANGO_DEFENDER:
     DEFENDER_LOGIN_FAILURE_LIMIT_USERNAME = 5
     DEFENDER_COOLOFF_TIME = int(env.get("DJANGO_DEFENDER_COOLOFF_TIME", 600))  # default to 10 minutes
     DEFENDER_LOCKOUT_TEMPLATE = "pages/defender/lockout.html"
+
+    # Whilst we frequently are behind a reverse proxy, using `False` ensures Defender falls
+    # back to using `REMOTE_ADDR`, which is set correctly by `django-xff`.
+    DEFENDER_BEHIND_REVERSE_PROXY = False
 
 
 # Wagtail settings
