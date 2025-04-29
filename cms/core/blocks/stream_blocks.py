@@ -17,7 +17,7 @@ from cms.core.blocks import (
 )
 from cms.core.blocks.equation import EquationBlock
 from cms.core.blocks.section_blocks import SectionBlock
-from cms.datavis.blocks import BarChartBlock, ColumnChartBlock, LineChartBlock
+from cms.datavis.blocks import BarColumnChartBlock, LineChartBlock
 
 if TYPE_CHECKING:
     from wagtail.blocks import StreamValue
@@ -58,8 +58,7 @@ class CoreStoryBlock(StreamBlock):
     ons_embed = ONSEmbedBlock(group="DataVis", label="ONS General Embed")
 
     line_chart = LineChartBlock(group="DataVis", label="Line Chart")
-    bar_chart = BarChartBlock(group="DataVis", label="Bar Chart")
-    column_chart = ColumnChartBlock(group="DataVis", label="Column Chart")
+    bar_column_chart = BarColumnChartBlock(group="DataVis", label="Bar/Column Chart")
 
     class Meta:
         block_counts: ClassVar[dict[str, dict]] = {"related_links": {"max_num": 1}}

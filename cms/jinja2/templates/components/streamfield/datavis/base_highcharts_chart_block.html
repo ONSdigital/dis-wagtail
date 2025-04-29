@@ -3,7 +3,7 @@
 {# fmt:off #}
 {{
     onsChart({
-        "chartType": value.block.highcharts_chart_type,
+        "chartType": value.block.get_highcharts_chart_type(value),
         "theme": value.theme,
         "title": value.title,
         "subtitle": value.subtitle,
@@ -13,7 +13,7 @@
         "yAxis": config.yAxis,
         "xAxis": config.xAxis,
         "series": config.series,
-        "use_stacked_layout": value.use_stacked_layout,
+        "useStackedLayout": value.use_stacked_layout,
         "annotations_values": annotations_values,
         "download": download,
     })
