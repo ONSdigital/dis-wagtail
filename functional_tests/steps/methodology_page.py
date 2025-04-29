@@ -54,7 +54,9 @@ def the_methodology_page_is_displayed_with_the_populated_data(context: Context):
 def the_user_selects_statistical_articles_as_related_publications(context: Context):
     context.page.get_by_role("button", name="Add related publications").click()
     context.page.get_by_role("button", name="Choose a page (Statistical").click()
-    context.page.get_by_role("cell", name=f"{context.article_series.title}: {context.article.title}").click()
+    context.page.get_by_role(
+        "cell", name=f"{context.article_series_page.title}: {context.statistical_article_page.title}"
+    ).click()
 
 
 @then("the article is displayed correctly under the Related publication section")

@@ -20,7 +20,8 @@ Feature: CMS users can draft, edit, and publish topic pages
         And the user visits the topic page
         Then the user can see the newly created article in featured spot
 
-    Scenario: A CMS user can choose headline figures when editing a topic page
+    Scenario: A CMS user can choose headline figures when editing a topic
+        Given a superuser logs into the admin site
         When the user goes to add a new statistical article page
         And the user adds basic statistical article page content
         And the user adds headline figures
@@ -30,6 +31,7 @@ Feature: CMS users can draft, edit, and publish topic pages
         Then the headline figures are shown
 
     Scenario: A CMS user can add headline figures to a topic page
+        Given a superuser logs into the admin site
         When the user goes to add a new statistical article page
         And the user adds basic statistical article page content
         And the user adds headline figures
@@ -42,6 +44,7 @@ Feature: CMS users can draft, edit, and publish topic pages
         And the headline figures on the topic page link to the statistical page
 
     Scenario: A CMS user can reorder headline figures on a topic page
+        Given a superuser logs into the admin site
         When the user goes to add a new statistical article page
         And the user adds basic statistical article page content
         And the user adds headline figures
@@ -58,6 +61,7 @@ Feature: CMS users can draft, edit, and publish topic pages
         Then the published topic page has reordered headline figures
 
     Scenario: A CMS user can reorder headline figures on a Statistical Article Page without affecting the order of the figures on the topic page
+        Given a superuser logs into the admin site
         When the user goes to add a new statistical article page
         And the user adds basic statistical article page content
         And the user adds headline figures

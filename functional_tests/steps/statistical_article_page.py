@@ -1,3 +1,5 @@
+from datetime import timedelta
+
 from behave import given, step, then, when  # pylint: disable=no-name-in-module
 from behave.runner import Context
 from django.urls import reverse
@@ -8,13 +10,29 @@ from cms.articles.tests.factories import ArticleSeriesPageFactory, StatisticalAr
 
 @given("an article series page exists")
 def an_article_series_exists(context: Context):
-    context.article_series_page = ArticleSeriesPageFactory(title="PSF")
+    if topic_page := getattr(context, "topic_page", None):
+        context.article_series_page = ArticleSeriesPageFactory(title="PSF", parent=topic_page)
+    else:
+        context.article_series_page = ArticleSeriesPageFactory(title="PSF")
+        context.topic_page = context.article_series_page.get_parent()
 
 
 @given("a statistical article exists")
+@given("the user has created a statistical article in a series")
+@given("a statistical article page has been published under the topic page")
 def a_statistical_article_exists(context: Context):
     an_article_series_exists(context)
     context.statistical_article_page = StatisticalArticlePageFactory(parent=context.article_series_page)
+
+
+@when("the user creates a new statistical article in the series")
+def create_a_new_article_in_the_series(context: Context):
+    old_article_release_date = context.statistical_article_page.release_date
+    context.new_statistical_article_page = StatisticalArticlePageFactory(
+        title="January 2025",
+        release_date=old_article_release_date + timedelta(days=1),
+        parent=context.article_series_page,
+    )
 
 
 @when("the user goes to add a new statistical article page")
@@ -101,7 +119,7 @@ def user_can_view_the_superseded_statistical_article_page(context: Context):
 
 @step("the user returns to editing the statistical article page")
 def user_returns_to_editing_the_statistical_article_page(context: Context):
-    edit_url = reverse("wagtailadmin_pages:edit", args=(context.article_series.get_latest().id,))
+    edit_url = reverse("wagtailadmin_pages:edit", args=(context.article_series_page.get_latest().id,))
     context.page.goto(f"{context.base_url}{edit_url}")
 
 
