@@ -1,7 +1,6 @@
-from .charts import BarChartBlock, ColumnChartBlock, LineChartBlock
+from .charts import BarColumnChartBlock, LineChartBlock
 
 __all__ = [
-    "BarChartBlock",
-    "ColumnChartBlock",
+    "BarColumnChartBlock",
     "LineChartBlock",
 ]

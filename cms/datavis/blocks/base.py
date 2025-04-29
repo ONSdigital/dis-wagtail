@@ -1,5 +1,5 @@
 from collections.abc import Sequence
-from typing import Any, ClassVar, Optional
+from typing import Any, ClassVar, Optional, cast
 
 from django.forms.widgets import Media, RadioSelect
 from django.utils.functional import cached_property
@@ -21,18 +21,27 @@ class BaseVisualisationBlock(blocks.StructBlock):
     # Extra attributes for subclasses
     highcharts_chart_type: ClassVar[str]
     supports_stacked_layout: ClassVar[bool]
-    supports_x_axis_title: ClassVar[bool]
-    supports_y_axis_title: ClassVar[bool]
+    supports_x_axis_title: ClassVar[bool] = False
+    supports_y_axis_title: ClassVar[bool] = False
     supports_data_labels: ClassVar[bool]
     supports_markers: ClassVar[bool]
     extra_series_attributes: ClassVar[dict[str, Any]]
 
     # Editable fields
+    # Note that static blocks are intended to be overridden with real blocks or
+    # None in subclasses. They are included here in order to control the
+    # ordering, as StructBlock has no panel support.
+
     title = blocks.CharBlock()
     subtitle = blocks.CharBlock()
     caption = blocks.CharBlock(required=False)
 
     table = SimpleTableBlock(label="Data table")
+
+    # Override select_chart_type as a ChoiceBlock in subclasses which have
+    # options, or override as None, and set highcharts_chart_type as a string
+    # instead.
+    select_chart_type = blocks.StaticBlock()
 
     theme = blocks.ChoiceBlock(
         choices=HighchartsTheme.choices,
@@ -40,11 +49,7 @@ class BaseVisualisationBlock(blocks.StructBlock):
         widget=RadioSelect,
     )
     show_legend = blocks.BooleanBlock(default=True, required=False)
-    show_data_labels = blocks.BooleanBlock(
-        default=False,
-        required=False,
-        help_text="For cluster charts with 3 or more series, the data labels will be hidden.",
-    )
+    show_data_labels = blocks.StaticBlock()
     use_stacked_layout = blocks.BooleanBlock(default=False, required=False)
     show_markers = blocks.BooleanBlock(
         default=False,
@@ -117,14 +122,18 @@ class BaseVisualisationBlock(blocks.StructBlock):
         context["download"] = self.get_download_config(value)
         return context
 
+    def get_highcharts_chart_type(self, value: "StructValue") -> str:
+        """Chart type may be set by a field, or hardcoded in the subclass."""
+        if chart_type := value.get("select_chart_type"):
+            return cast(str, chart_type)
+        return self.highcharts_chart_type
+
     def get_component_config(self, value: "StructValue") -> dict[str, Any]:
         headers: list[str] = value["table"].headers
         rows: list[list[str | int | float]] = value["table"].rows
 
         return {
-            "legend": {
-                "enabled": value.get("show_legend", True),
-            },
+            "legend": value.get("show_legend", True),
             "xAxis": self.get_x_axis_config(value.get("x_axis"), rows),
             "yAxis": self.get_y_axis_config(value.get("y_axis")),
             "series": self.get_series_data(value, headers, rows),
@@ -136,7 +145,7 @@ class BaseVisualisationBlock(blocks.StructBlock):
         rows: Sequence[list[str | int | float]],
     ) -> dict[str, Any]:
         config: dict[str, Any] = {
-            "type": "linear",
+            "type": "category",
             "categories": [r[0] for r in rows],
         }
 
@@ -165,7 +174,7 @@ class BaseVisualisationBlock(blocks.StructBlock):
         }
 
         # Only add y-axis title if supported
-        if getattr(self, "supports_y_axis_title", False):
+        if self.supports_y_axis_title:
             # Highcharts y-axis title default value is "Values". Set to undefined to
             # disable. See https://api.highcharts.com/highcharts/yAxis.title.text
             title = attrs["title"] or None
@@ -219,9 +228,7 @@ class BaseVisualisationBlock(blocks.StructBlock):
                 "animation": False,
             }
             if self.supports_data_labels:
-                item["dataLabels"] = {
-                    "enabled": value.get("show_data_labels"),
-                }
+                item["dataLabels"] = value.get("show_data_labels")
 
             if getattr(self, "supports_markers", False):
                 item["marker"] = value.get("show_markers")
@@ -234,9 +241,6 @@ class BaseVisualisationBlock(blocks.StructBlock):
                 item["tooltip"] = {
                     "valueSuffix": tooltip_suffix,
                 }
-            if getattr(self, "supports_stacked_layout", False) and value["use_stacked_layout"]:
-                item["stacking"] = "normal"
-
             series.append(item)
         return series
 
