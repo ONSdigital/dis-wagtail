@@ -14,7 +14,7 @@
         "xAxis": config.xAxis,
         "series": config.series,
         "useStackedLayout": value.use_stacked_layout,
-        "annotations_values": annotations_values,
+        "annotations": value.block.get_annotations_config(value),
         "download": download,
     })
 }}
