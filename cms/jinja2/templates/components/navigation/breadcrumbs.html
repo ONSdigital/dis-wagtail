@@ -12,9 +12,6 @@
             {% endif %}
         {% endif %}
     {% endfor %}
-    {% if page.include_self_in_breadcrumbs %}
-        {% do breadcrumbs.append({"url": pageurl(page), "text": page.title}) %}
-    {% endif %}
     {# fmt:off #}
     {{
         onsBreadcrumbs({
