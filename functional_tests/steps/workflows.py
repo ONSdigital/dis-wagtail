@@ -1,14 +1,13 @@
 from typing import Literal
 
-from behave import given, then, when  # pylint: disable=no-name-in-module
+from behave import step, then  # pylint: disable=no-name-in-module
 from behave.runner import Context
 from playwright.sync_api import expect
 
 from cms.workflows.tests.utils import mark_page_as_ready_for_review, mark_page_as_ready_to_publish
 
 
-@given('the {page} page is "{workflow_stage}"')
-@when('the {page} page is "{workflow_stage}"')
+@step('the {page} page is "{workflow_stage}"')
 def the_given_page_is_in_workflow_stage(
     context: Context, page: str, workflow_stage: Literal["in preview", "ready to publish"]
 ) -> None:
@@ -22,8 +21,7 @@ def the_given_page_is_in_workflow_stage(
         mark_page_as_ready_to_publish(the_page)
 
 
-@given("the user is the last {page} page editor")
-@when("the user is the last {page} page editor")
+@step("the user is the last {page} page editor")
 def the_user_is_the_last_page_editor(context: Context, page: str) -> None:
     the_page_attr = page.lower().replace(" ", "_")
     if not the_page_attr.endswith("_page"):
