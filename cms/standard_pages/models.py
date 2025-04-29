@@ -2,7 +2,7 @@ from typing import TYPE_CHECKING, Any, ClassVar
 
 from django.conf import settings
 from django.db import models
-from wagtail.admin.panels import InlinePanel
+from wagtail.admin.panels import FieldPanel, InlinePanel
 from wagtail.fields import RichTextField
 from wagtail.search import index
 
@@ -10,6 +10,7 @@ from cms.core.blocks.related import RelatedContentBlock
 from cms.core.blocks.stream_blocks import CoreStoryBlock
 from cms.core.fields import StreamField
 from cms.core.models import BasePage
+from cms.core.models.date_placeholder import DatePlaceholder
 from cms.taxonomy.mixins import GenericTaxonomyMixin
 
 if TYPE_CHECKING:
@@ -32,7 +33,7 @@ class InformationPage(GenericTaxonomyMixin, BasePage):  # type: ignore[django-ma
     content_panels: ClassVar[list["Panel"]] = [
         *BasePage.content_panels,
         "summary",
-        "last_updated",
+        FieldPanel("last_updated", widget=DatePlaceholder.date_widget),
         "content",
         InlinePanel("page_related_pages", label="Related pages"),
     ]

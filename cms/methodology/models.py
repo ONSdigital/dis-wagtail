@@ -15,6 +15,7 @@ from wagtail.search import index
 from cms.core.blocks.stream_blocks import SectionStoryBlock
 from cms.core.fields import StreamField
 from cms.core.models import BasePage
+from cms.core.models.date_placeholder import DatePlaceholder
 from cms.core.query import order_by_pk_position
 from cms.taxonomy.mixins import GenericTaxonomyMixin
 
@@ -67,8 +68,8 @@ class MethodologyPage(GenericTaxonomyMixin, BasePage):  # type: ignore[django-ma
             [
                 FieldRowPanel(
                     [
-                        "publication_date",
-                        "last_revised_date",
+                        FieldPanel("publication_date", widget=DatePlaceholder.date_widget),
+                        FieldPanel("last_revised_date", widget=DatePlaceholder.date_widget),
                     ]
                 ),
                 "contact_details",
