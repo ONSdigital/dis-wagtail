@@ -111,9 +111,7 @@ class BaseVisualisationBlock(blocks.StructBlock):
     def get_context(self, value: "StructValue", parent_context: Optional[dict[str, Any]] = None) -> dict[str, Any]:
         context: dict[str, Any] = super().get_context(value, parent_context)
 
-        # Add template and visualisation context to support rendering
-        context["config"] = self.get_component_config(value)
-        context["download"] = self.get_download_config(value)
+        context["chart_config"] = self.get_component_config(value)
         return context
 
     def get_highcharts_chart_type(self, value: "StructValue") -> str:
@@ -126,12 +124,22 @@ class BaseVisualisationBlock(blocks.StructBlock):
         headers: list[str] = value["table"].headers
         rows: list[list[str | int | float]] = value["table"].rows
 
-        return {
+        config = {
+            "chartType": self.get_highcharts_chart_type(value),
+            "theme": value.get("theme"),
+            "title": value.get("title"),
+            "subtitle": value.get("subtitle"),
+            "caption": value.get("caption"),
             "legend": value.get("show_legend", True),
             "xAxis": self.get_x_axis_config(value.get("x_axis"), rows),
             "yAxis": self.get_y_axis_config(value.get("y_axis")),
             "series": self.get_series_data(value, headers, rows),
+            "useStackedLayout": value.get("use_stacked_layout"),
+            "annotations_values": self.get_annotations_config(value),
+            "download": self.get_download_config(value),
         }
+
+        return config
 
     def get_x_axis_config(
         self,
