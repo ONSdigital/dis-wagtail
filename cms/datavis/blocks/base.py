@@ -15,11 +15,6 @@ from cms.datavis.constants import HighchartsTheme
 class BaseVisualisationBlock(blocks.StructBlock):
     # Extra attributes for subclasses
     highcharts_chart_type: ClassVar[str]
-    supports_stacked_layout: ClassVar[bool]
-    supports_x_axis_title: ClassVar[bool] = False
-    supports_y_axis_title: ClassVar[bool] = False
-    supports_data_labels: ClassVar[bool]
-    supports_markers: ClassVar[bool]
     extra_series_attributes: ClassVar[dict[str, Any]]
 
     # Editable fields
@@ -146,7 +141,7 @@ class BaseVisualisationBlock(blocks.StructBlock):
         # Only add x-axis title if supported and provided, as the Highcharts
         # x-axis title default value is undefined. See
         # https://api.highcharts.com/highcharts/xAxis.title.text
-        if (title := attrs.get("title")) and getattr(self, "supports_x_axis_title", False):
+        if title := attrs.get("title"):
             config["title"] = title
 
         if (tick_interval := attrs.get("tick_interval")) is not None:
@@ -162,17 +157,13 @@ class BaseVisualisationBlock(blocks.StructBlock):
         self,
         attrs: "StructValue",
     ) -> dict[str, Any]:
-        config = {
-            # TODO: hard code y_reversed for horizontal bar charts
-            # "reversed": self.y_reversed,
-        }
+        config = {}
 
         # Only add y-axis title if supported
-        if self.supports_y_axis_title:
+        if (title := attrs.get("title")) is not None:
             # Highcharts y-axis title default value is "Values". Set to undefined to
             # disable. See https://api.highcharts.com/highcharts/yAxis.title.text
-            title = attrs["title"] or None
-            config["title"] = title
+            config["title"] = title or None
 
         if (tick_interval := attrs.get("tick_interval")) is not None:
             config["tickIntervalMobile"] = tick_interval
@@ -210,12 +201,11 @@ class BaseVisualisationBlock(blocks.StructBlock):
                 "data": data_points,
                 "animation": False,
             }
-            if self.supports_data_labels:
+            if value.get("show_data_labels") is not None:
                 item["dataLabels"] = value.get("show_data_labels")
 
-            if getattr(self, "supports_markers", False):
+            if value.get("show_markers") is not None:
                 item["marker"] = value.get("show_markers")
-
             # Allow subclasses to specify additional parameters for each series
             for key, val in getattr(self, "extra_series_attributes", {}).items():
                 item[key] = val
