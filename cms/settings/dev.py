@@ -39,17 +39,19 @@ SECURE_SSL_REDIRECT = False
 # For the same reason the HSTS header should not be sent.
 SECURE_HSTS_SECONDS = 0
 
+SHOW_TOOLBAR = True  # Override in local.py
+
 # Adds Django Debug Toolbar
-INSTALLED_APPS.append("debug_toolbar")
-MIDDLEWARE.insert(0, "debug_toolbar.middleware.DebugToolbarMiddleware")  # noqa: F405
-SHOW_TOOLBAR = True  # Override in `local.py`
-DEBUG_TOOLBAR_CONFIG = {
-    # The default debug_toolbar_middleware.show_toolbar function checks whether the
-    # request IP is in settings.INTERNAL_IPS. In Docker, the request IP can vary, so
-    # we set it in settings.local instead.
-    "SHOW_TOOLBAR_CALLBACK": lambda x: SHOW_TOOLBAR,
-    "SHOW_COLLAPSED": True,
-}
+if DEBUG:
+    INSTALLED_APPS.append("debug_toolbar")
+    MIDDLEWARE.insert(0, "debug_toolbar.middleware.DebugToolbarMiddleware")  # noqa: F405
+    DEBUG_TOOLBAR_CONFIG = {
+        # The default debug_toolbar_middleware.show_toolbar function checks whether the
+        # request IP is in settings.INTERNAL_IPS. In Docker, the request IP can vary, so
+        # we set it in settings.local instead.
+        "SHOW_TOOLBAR_CALLBACK": lambda x: SHOW_TOOLBAR,
+        "SHOW_COLLAPSED": True,
+    }
 
 # Database
 DATABASES = {
