@@ -110,6 +110,7 @@ class BaseVisualisationBlock(blocks.StructBlock):
     desktop_aspect_ratio = "desktop_aspect_ratio"
     mobile_aspect_ratio = "mobile_aspect_ratio"
     options_key_map: ClassVar[dict[str, str]] = {
+        # A dict to map our block types to the Design System macro options
         desktop_aspect_ratio: "percentageHeightDesktop",
         mobile_aspect_ratio: "percentageHeightMobile",
     }
