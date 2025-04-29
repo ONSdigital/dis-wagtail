@@ -8,11 +8,10 @@ from cms.datavis.blocks.utils import TextInputFloatBlock, TextInputIntegerBlock
 
 class PointAnnotationStructValue(StructValue):
     def get_config(self) -> dict[str, Any]:
-        # The SVG coordinate system measures from the top left. It makes more
-        # sense to users to measure from the bottom left, to match the chart
-        # coordinates.
         if label_offset_y := self.get("label_offset_y"):
-            label_offset_y = label_offset_y * -1
+            # The SVG coordinate system measures from the top left. It makes more sense
+            # to users to measure from the bottom left, to match the chart coordinates.
+            label_offset_y = -label_offset_y
         return {
             "text": self.get("label"),
             "point": {
