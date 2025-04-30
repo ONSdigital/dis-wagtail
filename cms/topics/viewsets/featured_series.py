@@ -6,6 +6,7 @@ from wagtail.admin.views.generic.chooser import ChooseResultsView, ChooseView
 from wagtail.admin.viewsets.chooser import ChooserViewSet
 
 from cms.articles.models import ArticleSeriesPage
+from cms.core.ui import LocaleColumn
 
 if TYPE_CHECKING:
     from wagtail.query import PageQuerySet
@@ -29,7 +30,7 @@ class FeaturedSeriesPageChooseViewMixin:
         return [
             self.title_column,  # type: ignore[attr-defined]
             Column("parent", label="Topic", accessor="get_parent"),
-            Column("locale", label="Locale"),
+            LocaleColumn(),
             DateColumn(
                 "updated",
                 label="Updated",

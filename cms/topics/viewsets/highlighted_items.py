@@ -7,6 +7,7 @@ from wagtail.admin.viewsets.chooser import ChooserViewSet
 from wagtail.coreutils import resolve_model_string
 
 from cms.articles.models import StatisticalArticlePage
+from cms.core.ui import LocaleColumn
 from cms.methodology.models import MethodologyPage
 
 if TYPE_CHECKING:
@@ -52,7 +53,7 @@ class HighlightedChildPageChooseViewMixin:
         title_column.accessor = "get_admin_display_title"
         return [
             title_column,
-            Column("locale", label="Locale"),
+            LocaleColumn(),
             Column(
                 "release_date",
                 label="Release date",
