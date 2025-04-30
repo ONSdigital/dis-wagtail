@@ -64,7 +64,7 @@ class ReleaseCalendarPage(BasePage):  # type: ignore[django-manager-missing]
     next_release_date_text = models.CharField(
         max_length=255,
         blank=True,
-        help_text="Override next release date. Formats: 'DD Month YYYY Time' or 'To be confirmed'.",
+        help_text="Formats: 'DD Month YYYY Time' or 'To be confirmed'.",
     )
 
     notice = RichTextField(
