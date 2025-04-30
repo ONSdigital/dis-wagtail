@@ -180,6 +180,24 @@ class ReleaseCalendarPageAdminFormTestCase(WagtailTestUtils, TestCase):
 
                 self.assertTrue(form.is_valid())
 
+    def test_form_clean__set_release_date_text_to_empty_string_for_non_provisional_releases(self):
+        """Checks that for non-provisional releases the provisional release date text is set to an empty string."""
+        data = self.raw_form_data()
+        data["release_date"] = timezone.now()
+        data["release_date_text"] = "November 2024"
+        data["changes_to_release_date"] = streamfield(
+            [("date_change_log", {"previous_date": timezone.now(), "reason_for_change": "The reason"})]
+        )
+
+        for status in [ReleaseStatus.CONFIRMED, ReleaseStatus.PUBLISHED]:
+            with self.subTest(status=status):
+                data["status"] = status
+                data = nested_form_data(data)
+                form = self.form_class(instance=self.page, data=data)
+
+                self.assertTrue(form.is_valid())
+                self.assertEqual(form.cleaned_data["release_date_text"], "")
+
     def test_form_clean__validates_either_next_release_date_or_text(self):
         """Checks that editors can enter either the next release date or the text, not both."""
         data = self.raw_form_data()
