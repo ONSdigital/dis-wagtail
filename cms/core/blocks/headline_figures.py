@@ -11,9 +11,9 @@ class HeadlineFiguresItemBlock(StructBlock):
     """Represents a headline figure."""
 
     figure_id = CharBlock(required=False)
-    title = CharBlock(label="Title", max_length=60, required=True)
-    figure = CharBlock(label="Figure", max_length=10, required=True)
-    supporting_text = CharBlock(label="Supporting text", max_length=100, required=True)
+    title = CharBlock(label="Title", required=True)
+    figure = CharBlock(label="Figure", required=True)
+    supporting_text = CharBlock(label="Supporting text", required=True)
 
     class Meta:
         # The help_text may be updated via JavaScript
@@ -24,7 +24,7 @@ class HeadlineFiguresBlock(ListBlock):
     """A list of headline figures."""
 
     def __init__(self, search_index: bool = True, **kwargs: Any) -> None:
-        kwargs.setdefault("max_num", 4)
+        kwargs.setdefault("max_num", 6)
         super().__init__(HeadlineFiguresItemBlock, search_index=search_index, **kwargs)
 
     class Meta:
