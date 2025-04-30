@@ -40,7 +40,7 @@ class ReleaseCalendarPageAdminForm(WagtailAdminPageForm):
         if status != ReleaseStatus.PROVISIONAL:
             # Input field is hidden with custom JS for non-provisional releases,
             # set to None to avoid unexpected behavior
-            cleaned_data["release_date_text"] = None
+            cleaned_data["release_date_text"] = ""
 
             if (
                 self.instance.release_date
