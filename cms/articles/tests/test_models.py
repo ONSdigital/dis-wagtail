@@ -177,6 +177,50 @@ class StatisticalArticlePageTestCase(WagtailTestUtils, TestCase):
 
         self.assertListEqual(info.exception.messages, ["The next release date must be after the release date."])
 
+    def test_clean_validates_a_min_of_two_headline_figures_are_added(self):
+        figure_one = {
+            "id": uuid.uuid4(),
+            "type": "item",
+            "value": {
+                "figure_id": "figurexyz",
+                "title": "Figure title XYZ",
+                "figure": "100 Million and more",
+                "supporting_text": "Reasons to add tests and use long test strings where possible",
+            },
+        }
+        self.page.headline_figures = [
+            {
+                "type": "figures",
+                "value": [figure_one],
+            }
+        ]
+        self.page.headline_figures_figure_ids = "figurexyz"
+
+        with self.assertRaisesRegex(ValidationError, "If you add headline figures, please add at least 2."):
+            # Should not validate with just one
+            self.page.clean()
+        # Should validate with two
+        self.page.headline_figures = [
+            {
+                "type": "figures",
+                "value": [
+                    figure_one,
+                    {
+                        "id": uuid.uuid4(),
+                        "type": "item",
+                        "value": {
+                            "figure_id": "figureabc",
+                            "title": "Another figure title for completeness",
+                            "figure": "100 Billion and many more",
+                            "supporting_text": "Figure supporting text ABC",
+                        },
+                    },
+                ],
+            }
+        ]
+        self.page.headline_figures_figure_ids = "figurexyz,figureabc"
+        self.page.clean()
+
 
 class StatisticalArticlePageRenderTestCase(WagtailTestUtils, TestCase):
     def setUp(self):
@@ -210,11 +254,21 @@ class StatisticalArticlePageRenderTestCase(WagtailTestUtils, TestCase):
                             "figure": "XYZ",
                             "supporting_text": "Figure supporting text XYZ",
                         },
-                    }
+                    },
+                    {
+                        "id": uuid.uuid4(),
+                        "type": "item",
+                        "value": {
+                            "figure_id": "figureabc",
+                            "title": "Figure title ABC",
+                            "figure": "ABC",
+                            "supporting_text": "Figure supporting text ABC",
+                        },
+                    },
                 ],
             }
         ]
-        self.page.headline_figures_figure_ids = "figurexyz"
+        self.page.headline_figures_figure_ids = "figurexyz,figureabc"
         self.page.save_revision().publish()
         self.page_url = self.page.url
         self.formatted_date = date_format(self.page.release_date, settings.DATE_FORMAT)
