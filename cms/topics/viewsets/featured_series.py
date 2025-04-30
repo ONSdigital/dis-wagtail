@@ -6,6 +6,7 @@ from wagtail.admin.views.generic.chooser import ChooseResultsView, ChooseView
 from wagtail.admin.viewsets.chooser import ChooserViewSet
 
 from cms.articles.models import ArticleSeriesPage
+from cms.core.forms import NoLocaleFilterInChoosersForm
 from cms.core.ui import LocaleColumn
 
 if TYPE_CHECKING:
@@ -21,6 +22,7 @@ __all__ = [
 
 class FeaturedSeriesPageChooseViewMixin:
     model_class: ArticleSeriesPage
+    filter_form_class = NoLocaleFilterInChoosersForm
 
     def get_object_list(self) -> "PageQuerySet[ArticleSeriesPage]":
         return ArticleSeriesPage.objects.all().order_by("path")

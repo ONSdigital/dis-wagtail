@@ -7,6 +7,7 @@ from wagtail.admin.viewsets.chooser import ChooserViewSet
 from wagtail.coreutils import resolve_model_string
 
 from cms.articles.models import StatisticalArticlePage
+from cms.core.forms import NoLocaleFilterInChoosersForm
 from cms.core.ui import LocaleColumn
 from cms.methodology.models import MethodologyPage
 
@@ -26,6 +27,8 @@ __all__ = [
 
 
 class HighlightedChildPageChooseViewMixin:
+    filter_form_class = NoLocaleFilterInChoosersForm
+
     def get_object_list(self) -> "PageQuerySet[Page]":
         model_class: StatisticalArticlePage | MethodologyPage = self.model_class  # type: ignore[attr-defined]
         pages: PageQuerySet[Page] = model_class.objects.all().defer_streamfields()
