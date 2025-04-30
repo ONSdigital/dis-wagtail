@@ -185,10 +185,10 @@ class ReleaseCalendarPage(BasePage):  # type: ignore[django-manager-missing]
 
     @property
     def next_release_date_value(self) -> str | None:
-        if self.next_release_date_text:
-            return self.next_release_date_text
         if self.next_release_date:
             return ons_date_format(self.next_release_date, "DATETIME_FORMAT")
+        if self.next_release_date_text:
+            return self.next_release_date_text
         return None
 
     @cached_property
