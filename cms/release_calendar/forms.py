@@ -65,9 +65,9 @@ class ReleaseCalendarPageAdminForm(WagtailAdminPageForm):
         ):
             raise ValidationError({"next_release_date": "The next release date must be after the release date."})
 
-        if cleaned_data.get("next_release_date") and cleaned_data.get("next_release_text"):
+        if cleaned_data.get("next_release_date") and cleaned_data.get("next_release_date_text"):
             error = "Please enter the next release date or the next release text, not both."
-            raise ValidationError({"next_release_date": error, "next_release_text": error})
+            raise ValidationError({"next_release_date": error, "next_release_date_text": error})
 
         # TODO: expand to validate for non-English locales when adding multi-language.
         release_date_text = cleaned_data.get("release_date_text")
