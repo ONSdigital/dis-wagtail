@@ -1,24 +1,48 @@
+from datetime import timedelta
+
 from behave import given, step, then, when  # pylint: disable=no-name-in-module
 from behave.runner import Context
 from django.urls import reverse
 from playwright.sync_api import expect
 
-from cms.articles.tests.factories import ArticleSeriesPageFactory
-from cms.topics.tests.factories import TopicPageFactory
+from cms.articles.tests.factories import ArticleSeriesPageFactory, StatisticalArticlePageFactory
 
 
 @given("an article series page exists")
-def the_topic_page_has_a_statistical_article_in_a_series(context: Context):
-    context.topic_page = TopicPageFactory(title="Test Topic")
-    context.article_series = ArticleSeriesPageFactory(title="PSF", parent=context.topic_page)
+def an_article_series_exists(context: Context):
+    if topic_page := getattr(context, "topic_page", None):
+        context.article_series_page = ArticleSeriesPageFactory(title="PSF", parent=topic_page)
+    else:
+        context.article_series_page = ArticleSeriesPageFactory(title="PSF")
+        context.topic_page = context.article_series_page.get_parent()
+
+
+@given("a statistical article exists")
+@given("the user has created a statistical article in a series")
+@given("a statistical article page has been published under the topic page")
+def a_statistical_article_exists(context: Context):
+    an_article_series_exists(context)
+    context.statistical_article_page = StatisticalArticlePageFactory(parent=context.article_series_page)
+
+
+@when("the user creates a new statistical article in the series")
+def create_a_new_article_in_the_series(context: Context):
+    old_article_release_date = context.statistical_article_page.release_date
+    context.new_statistical_article_page = StatisticalArticlePageFactory(
+        title="January 2025",
+        release_date=old_article_release_date + timedelta(days=1),
+        parent=context.article_series_page,
+    )
 
 
 @when("the user goes to add a new statistical article page")
 def user_goes_to_add_new_article_page(context: Context):
-    if not getattr(context, "article_series", None):
-        the_topic_page_has_a_statistical_article_in_a_series(context)
+    if not getattr(context, "article_series_page", None):
+        an_article_series_exists(context)
 
-    add_url = reverse("wagtailadmin_pages:add", args=("articles", "statisticalarticlepage", context.article_series.pk))
+    add_url = reverse(
+        "wagtailadmin_pages:add", args=("articles", "statisticalarticlepage", context.article_series_page.pk)
+    )
     context.page.goto(f"{context.base_url}{add_url}")
 
 
@@ -44,7 +68,7 @@ def user_populates_the_statistical_article_page(context: Context):
 
 @step("the user updates the statistical article page content")
 def user_updates_the_statistical_article_page_content(context: Context):
-    context.page.get_by_role("region", name="Rich text *").get_by_role("textbox").fill("Updated content")
+    context.page.get_by_placeholder("Page title*").fill("Updated article title")
 
 
 @step('the user clicks on "View superseded version"')
@@ -87,20 +111,15 @@ def the_statistical_article_page_is_displayed_with_the_populated_data(context: C
     expect(context.page.get_by_role("heading", name="Content")).to_be_visible()
 
 
-@then("the published statistical article page is displayed with the updated data")
-def the_statistical_article_page_is_displayed_with_the_updated_data(context: Context):
-    expect(context.page.get_by_text("Updated content")).to_be_visible()
-
-
 @then("the user can view the superseded statistical article page")
 def user_can_view_the_superseded_statistical_article_page(context: Context):
-    expect(context.page.get_by_role("heading", name="The article page")).to_be_visible()
+    expect(context.page.get_by_role("heading", name="Updated article title")).to_be_visible()
     expect(context.page.get_by_text("Content", exact=True)).to_be_visible()
 
 
 @step("the user returns to editing the statistical article page")
 def user_returns_to_editing_the_statistical_article_page(context: Context):
-    edit_url = reverse("wagtailadmin_pages:edit", args=(context.article_series.get_latest().id,))
+    edit_url = reverse("wagtailadmin_pages:edit", args=(context.article_series_page.get_latest().id,))
     context.page.goto(f"{context.base_url}{edit_url}")
 
 
@@ -150,43 +169,6 @@ def user_adds_headline_figures(context: Context):
     panel.get_by_label("Title*").nth(1).fill("Second headline figure")
     panel.get_by_label("Figure*").nth(1).fill("~321%")
     panel.get_by_label("Supporting text*").nth(1).fill("Second supporting text")
-
-
-@step("the user edits the ancestor topic")
-def user_edits_the_ancestor_topic(context: Context):
-    edit_url = reverse("wagtailadmin_pages:edit", args=(context.topic_page.id,))
-    context.page.goto(f"{context.base_url}{edit_url}")
-
-
-@step("the user views the topic page")
-def user_views_the_topic_page(context: Context):
-    context.page.goto(f"{context.base_url}{context.topic_page.url}")
-
-
-@step("the user clicks to add headline figures to the topic page")
-def user_clicks_to_add_headline_figures_to_the_topic_page(context: Context, *, button_index: int = 0):
-    page = context.page
-    panel = page.locator("#panel-child-content-headline_figures-content")
-    panel.get_by_role("button", name="Insert a block").nth(button_index).click()
-    page.wait_for_timeout(100)
-    panel.get_by_role("button", name="Choose Article Series page and headline figure").click()
-    page.wait_for_timeout(100)  # Wait for modal to open
-
-
-@step("the user adds two headline figures to the topic page")
-def user_adds_two_headline_figures_to_the_topic_page(context: Context):
-    page = context.page
-    user_clicks_to_add_headline_figures_to_the_topic_page(context)
-    page.locator(".modal-content").get_by_role("link", name="PSF").nth(0).click()
-    user_clicks_to_add_headline_figures_to_the_topic_page(context, button_index=1)
-    page.locator(".modal-content").get_by_role("link", name="PSF").nth(1).click()
-
-
-@step("the user reorders the headline figures on the topic page")
-def user_reorders_the_headline_figures_on_the_topic_page(context: Context):
-    page = context.page
-    panel = page.locator("#panel-child-content-headline_figures-content")
-    panel.get_by_role("button", name="Move up").nth(1).click()
 
 
 @step("the user reorders the headline figures on the Statistical Article Page")
@@ -276,32 +258,6 @@ def the_published_statistical_article_page_has_the_added_headline_figures(contex
     expect(page.get_by_text("~321%")).to_be_visible()
     expect(page.get_by_text("First supporting text")).to_be_visible()
     expect(page.get_by_text("Second supporting text")).to_be_visible()
-
-
-@then("the published topic page has the added headline figures in the correct order")
-def the_published_topic_page_has_the_added_headline_figures_in_the_correct_order(context: Context):
-    page = context.page
-    headline_block = page.locator(".headline-figures .ons-grid__col")
-    expect(headline_block.nth(0).get_by_text("First headline figure")).to_be_visible()
-    expect(headline_block.nth(1).get_by_text("Second headline figure")).to_be_visible()
-
-
-@then("the published topic page has reordered headline figures")
-def the_published_topic_page_has_reordered_headline_figures(context: Context):
-    page = context.page
-    headline_block = page.locator(".headline-figures .ons-grid__col")
-    expect(headline_block.nth(0).get_by_text("Second headline figure")).to_be_visible()
-    expect(headline_block.nth(1).get_by_text("First headline figure")).to_be_visible()
-
-
-@then("the headline figures on the topic page link to the statistical page")
-def the_headline_figures_on_the_topic_page_link_to_the_statistical_page(context: Context):
-    page = context.page
-    page.get_by_text("First headline figure").click()
-    expect(page.get_by_role("heading", name="The article page")).to_be_visible()
-    page.go_back()
-    page.get_by_text("Second headline figure").click()
-    expect(page.get_by_role("heading", name="The article page")).to_be_visible()
 
 
 @then('the user can click on "Show detail" to expand the corrections and notices block')

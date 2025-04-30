@@ -6,6 +6,11 @@ from playwright.sync_api import expect
 from cms.themes.tests.factories import ThemePageFactory
 
 
+@when("the user clicks the action button toggle")
+def user_clicks_action_menu_toggle(context: Context):
+    context.page.get_by_role("button", name="More actions").click()
+
+
 @when('the user clicks "Publish"')
 @when("publishes the page")
 def user_clicks_publish(context: Context) -> None:
