@@ -148,10 +148,10 @@ class TopicPageTestCase(TestCase):
             # Should not validate with just one
             self.topic_page.headline_figures.append(
                 (
-                    "figures",
+                    "figure",
                     {
                         "series": self.article_series,
-                        "figure": "figurexyz",
+                        "figure_id": "figurexyz",
                     },
                 ),
             )
@@ -159,11 +159,24 @@ class TopicPageTestCase(TestCase):
         # Should validate with two
         self.topic_page.headline_figures.append(
             (
-                "figures",
+                "figure",
                 {
                     "series": self.article_series,
-                    "figure": "figurexyz",
+                    "figure_id": "figureabc",
                 },
             ),
         )
         self.topic_page.clean()
+
+        # Should not validate with duplicates
+        with self.assertRaisesRegex(ValidationError, "Duplicate headline figures are not allowed."):
+            self.topic_page.headline_figures.append(
+                (
+                    "figure",
+                    {
+                        "series": self.article_series,
+                        "figure_id": "figureabc",
+                    },
+                ),
+            )
+            self.topic_page.clean()

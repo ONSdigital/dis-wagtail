@@ -59,14 +59,14 @@ class ArticleSeriesPageTests(WagtailPageTestCase):
         self.page.headline_figures.extend(
             [
                 (
-                    "figures",
+                    "figure",
                     {
                         "series": self.series,
                         "figure_id": "figurexyz",
                     },
                 ),
                 (
-                    "figures",
+                    "figure",
                     {
                         "series": self.series,
                         "figure_id": "figureabc",

@@ -136,32 +136,22 @@ class TopicHeadlineFigureBlock(StructBlock):
     series = LinkedSeriesChooserBlock()
     figure_id = CharBlock()
 
-
-class TopicHeadlineFiguresStreamBlock(StreamBlock):
-    figures = TopicHeadlineFigureBlock()
-
-    def get_context(self, value: "StreamValue", parent_context: dict | None = None) -> dict:
+    def get_context(self, value: "StructValue", parent_context: dict | None = None) -> dict:
         context: dict = super().get_context(value, parent_context=parent_context)
 
-        figure_data = []
-        for item in value:
-            series: ArticleSeriesPage = item.value["series"]
-            latest_article: StatisticalArticlePage | None = series.get_latest()
+        if series_page := value["series"]:
+            latest_article: StatisticalArticlePage | None = series_page.get_latest()
 
-            if not latest_article:
-                continue
-
-            if figure := latest_article.get_headline_figure(item.value["figure_id"]):
+            if latest_article and (figure := latest_article.get_headline_figure(value["figure_id"])):
                 figure["url"] = latest_article.get_url(request=context.get("request"))
-                figure_data.append(figure)
+                context["figure"] = figure
 
-        context["figure_data"] = figure_data
         return context
 
     class Meta:
         icon = "pick"
-        label = "Headline figures"
-        template = "templates/components/streamfield/topic_headline_figures_block.html"
+        label = "Headline figure"
+        template = "templates/components/streamfield/topic_headline_figure_block.html"
 
 
 class SeriesWithHeadlineChooserAdapter(StructBlockAdapter):
