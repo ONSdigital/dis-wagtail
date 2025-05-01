@@ -402,6 +402,8 @@ class StatisticalArticlePage(BundledPageMixin, RoutablePageMixin, BasePage):  # 
 
     @path("related-data/")
     def related_data(self, request: "HttpRequest") -> "TemplateResponse":
+        if not self.ordered_related_datasets:
+            raise Http404
         paginator = Paginator(self.ordered_related_datasets, per_page=settings.RELATED_DATASETS_PER_PAGE)
 
         try:

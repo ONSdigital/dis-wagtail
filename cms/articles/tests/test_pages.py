@@ -434,10 +434,7 @@ class StatisticalArticlePageTests(WagtailPageTestCase):
 
     def test_empty_related_data_page(self):
         response = self.client.get(self.page.url + "related-data/")
-        content = response.content.decode(encoding="utf-8")
-
-        self.assertIn(self.page.related_data_display_title, content)
-        self.assertIn("There is no data related to this article", content)
+        self.assertEqual(response.status_code, HTTPStatus.NOT_FOUND)
 
     def test_related_data_page_single_page(self):
         """Test that pagination is not shown when the content fits on a single page."""

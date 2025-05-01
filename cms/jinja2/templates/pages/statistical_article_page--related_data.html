@@ -28,25 +28,21 @@
 {% endblock %}
 
 {% block main %}
-    {% if paginated_datasets %}
 
-        {{ onsDocumentList({"documents": paginated_datasets}) }}
+    {{ onsDocumentList({"documents": paginated_datasets}) }}
 
-        {% block pagination %}
-            {% if paginated_datasets.paginator.num_pages > 1 %}
+    {% block pagination %}
+        {% if paginated_datasets.paginator.num_pages > 1 %}
 
-                {# fmt:off #}
-                {{
-                    onsPagination({
-                        "currentPageNumber": paginated_datasets.number,
-                        "pages": ons_pagination_url_list
-                    })
-                }}
-                {# fmt:on #}
-            {% endif %}
-        {% endblock %}
-    {% else %}
-        <h2>{{ _("There is no data related to this article") }}</h2>
-    {% endif %}
+            {# fmt:off #}
+            {{
+                onsPagination({
+                    "currentPageNumber": paginated_datasets.number,
+                    "pages": ons_pagination_url_list
+                })
+            }}
+            {# fmt:on #}
+        {% endif %}
+    {% endblock %}
 
 {% endblock %}
