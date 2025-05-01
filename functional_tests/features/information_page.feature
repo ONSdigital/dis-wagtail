@@ -35,4 +35,8 @@ Feature: A general use information page
 
     Scenario: The CMS user can see the date placeholder in the date field of the information page
         When the user creates an information page as a child of the home page
-        Then the date placeholder is displayed in the date field of the information page
+        Then the date placeholder "YYYY-MM-DD" is displayed in the "Last updated" textbox
+    
+    Scenario: The CMS user can see the date placeholder in the date field of the information page by label
+        When the user creates an information page as a child of the home page
+        Then by label, the date placeholder "YYYY-MM-DD" is displayed in the "Last updated" textbox

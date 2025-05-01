@@ -1,4 +1,4 @@
-from behave import then, when  # pylint: disable=no-name-in-module
+from behave import step, then, when  # pylint: disable=no-name-in-module
 from behave.runner import Context
 from django.conf import settings
 from playwright.sync_api import expect
@@ -145,15 +145,23 @@ def display_datetime_with_meridiem(context: Context, meridiem_indicator: str):
 
 @then("the datetime placeholder is displayed in the date field for the release page")
 def datetime_placeholder_release_page(context: Context):
-    # get_by_label works
-    # expect(context.page.get_by_label("Release date", exact=True)).to_have_attribute("placeholder", "YYYY-MM-DD HH:MM")
-    # expect(context.page.get_by_label("Next release date", exact=True)).to_have_attribute(
-    #     "placeholder", "YYYY-MM-DD HH:MM"
-    # )
     # Element not found using get_by_role
-    expect(context.page.get_by_role("textbox", name="Last Release date")).to_have_attribute(
+    expect(context.page.get_by_role("textbox", name="Release date")).to_have_attribute(
         "placeholder", "YYYY-MM-DD HH:MM"
     )
     expect(context.page.get_by_role("textbox", name="Next release date")).to_have_attribute(
         "placeholder", "YYYY-MM-DD HH:MM"
     )
+
+
+@then("the datetime placeholder is displayed in the date field for the release page by label")
+def label_datetime_placeholder_release_page(context: Context):
+    # Element not found using get_by_role
+    expect(context.page.get_by_label("Release date")).to_have_attribute("placeholder", "YYYY-MM-DD HH:MM")
+    expect(context.page.get_by_label("Next release date")).to_have_attribute("placeholder", "YYYY-MM-DD HH:MM")
+
+
+@step('by label, the date placeholder "{date_format}" is displayed in the "{textbox_text}" textbox')
+def date_placeholder(context: Context, textbox_text: str, date_format: str):
+    """Check date placeholder in the textbox."""
+    expect(context.page.get_by_label(textbox_text)).to_have_attribute("placeholder", date_format)

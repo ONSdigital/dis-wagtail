@@ -4,6 +4,28 @@ Feature: CMS users can draft, edit, and publish release pages
         Given a contact details snippet exists
         And a superuser logs into the admin site
 
+    Scenario: A CMS user can see datetime placeholders for the release page by label input
+        When the user navigates to the release calendar page
+        And clicks "add child page" to create a new draft release page
+        Then by label, the date placeholder "YYYY-MM-DD HH:MM" is displayed in the "Release date" textbox
+        And by label, the date placeholder "YYYY-MM-DD HH:MM" is displayed in the "Next release date" textbox
+    
+    Scenario: A CMS user can see datetime placeholders for the release page by label
+        When the user navigates to the release calendar page
+        And clicks "add child page" to create a new draft release page
+        Then the datetime placeholder is displayed in the date field for the release page by label
+
+    Scenario: A CMS user can see datetime placeholders for the release page by textbox
+        When the user navigates to the release calendar page
+        And clicks "add child page" to create a new draft release page
+        Then the date placeholder "YYYY-MM-DD HH:MM" is displayed in the "Release date" textbox
+        And the date placeholder "YYYY-MM-DD HH:MM" is displayed in the "Next release date" textbox
+
+    Scenario: A CMS user can see datetime placeholders for the release page
+        When the user navigates to the release calendar page
+        And clicks "add child page" to create a new draft release page
+        Then the datetime placeholder is displayed in the date field for the release page
+
     Scenario: A CMS user can author and publish release page
         When the user navigates to the release calendar page
         And clicks "add child page" to create a new draft release page
@@ -29,7 +51,3 @@ Feature: CMS users can draft, edit, and publish release pages
             | am                |
             | pm                |
     
-    Scenario: A CMS user can see datetime placeholders for the release page
-        When the user navigates to the release calendar page
-        And clicks "add child page" to create a new draft release page
-        Then the datetime placeholder is displayed in the date field for the release page

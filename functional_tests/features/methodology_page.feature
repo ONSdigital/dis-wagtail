@@ -68,4 +68,6 @@ Feature: A general use of Methodology Page
         Given a topic page exists under a theme page
         And a superuser logs into the admin site
         When the user creates a methodology page as a child of the existing topic page
-        Then the date placeholder is displayed in the date field of the methodology page
+        Then the date placeholder "YYYY-MM-DD" is displayed in the "Publication date" textbox
+        And the date placeholder "YYYY-MM-DD" is displayed in the "Last revised date" textbox
+        

@@ -16,5 +16,5 @@ Feature: CMS users can manage bundles
     
     Scenario: A content editor can see the date placeholder on the bundle page
         When the user goes to the bundle creation page
-        Then the date placeholder is displayed in the date field for bundles
+        Then the date placeholder "YYYY-MM-DD HH:MM" is displayed in the "Publication date" textbox
         
