@@ -297,14 +297,14 @@ class StatisticalArticlePageRenderTestCase(WagtailTestUtils, TestCase):
         topic.headline_figures.extend(
             [
                 (
-                    "figures",
+                    "figure",
                     {
                         "series": self.page.get_parent(),
                         "figure_id": "figurexyz",
                     },
                 ),
                 (
-                    "figures",
+                    "figure",
                     {
                         "series": self.page.get_parent(),
                         "figure_id": "figurexyz",
@@ -323,14 +323,14 @@ class StatisticalArticlePageRenderTestCase(WagtailTestUtils, TestCase):
         topic.headline_figures.extend(
             [
                 (
-                    "figures",
+                    "figure",
                     {
                         "series": self.page.get_parent(),
                         "figure_id": "figurexyz",
                     },
                 ),
                 (
-                    "figures",
+                    "figure",
                     {
                         "series": self.page.get_parent(),
                         "figure_id": "figurexyz",
