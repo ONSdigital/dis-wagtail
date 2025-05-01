@@ -28,3 +28,8 @@ Feature: CMS users can draft, edit, and publish release pages
             | MeridiemIndicator |
             | am                |
             | pm                |
+    
+    Scenario: A CMS user can see datetime placeholders for the release page
+        When the user navigates to the release calendar page
+        And clicks "add child page" to create a new draft release page
+        Then the datetime placeholder is displayed in the date field for the release page

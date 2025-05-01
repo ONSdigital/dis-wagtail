@@ -141,3 +141,19 @@ def display_datetime_with_meridiem(context: Context, meridiem_indicator: str):
         expect(context.page.get_by_text("March 2025 5:00pm")).to_be_visible()
     else:
         raise ValueError(f"Unsupported MeridiemIndicator: {meridiem_indicator}")
+
+
+@then("the datetime placeholder is displayed in the date field for the release page")
+def datetime_placeholder_release_page(context: Context):
+    # get_by_label works
+    # expect(context.page.get_by_label("Release date", exact=True)).to_have_attribute("placeholder", "YYYY-MM-DD HH:MM")
+    # expect(context.page.get_by_label("Next release date", exact=True)).to_have_attribute(
+    #     "placeholder", "YYYY-MM-DD HH:MM"
+    # )
+    # Element not found using get_by_role
+    expect(context.page.get_by_role("textbox", name="Last Release date")).to_have_attribute(
+        "placeholder", "YYYY-MM-DD HH:MM"
+    )
+    expect(context.page.get_by_role("textbox", name="Next release date")).to_have_attribute(
+        "placeholder", "YYYY-MM-DD HH:MM"
+    )

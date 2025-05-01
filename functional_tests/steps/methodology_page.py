@@ -134,3 +134,9 @@ def saved_draft_data_matches_populated_data(context: Context):
     context.page.get_by_role("button", name="Actions").click()
     context.page.get_by_role("link", name="Preview", exact=True).click()
     the_methodology_page_is_displayed_with_the_populated_data(context)
+
+
+@then("the date placeholder is displayed in the date field of the methodology page")
+def date_placeholder_methodology_page(context: Context):
+    expect(context.page.get_by_role("textbox", name="Publication date")).to_have_attribute("placeholder", "YYYY-MM-DD")
+    expect(context.page.get_by_role("textbox", name="Last revised date")).to_have_attribute("placeholder", "YYYY-MM-DD")

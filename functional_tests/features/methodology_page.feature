@@ -63,3 +63,9 @@ Feature: A general use of Methodology Page
         And the user navigates to the page history menu
         Then the saved draft version is visible
         And the preview of the methodology page matches the populated data
+
+    Scenario: A CMS user can see the date placeholder in the date field of the Methodology page
+        Given a topic page exists under a theme page
+        And a superuser logs into the admin site
+        When the user creates a methodology page as a child of the existing topic page
+        Then the date placeholder is displayed in the date field of the methodology page

@@ -13,3 +13,8 @@ Feature: CMS users can manage bundles
         When the user goes to the bundle creation page
         And the user opens the release calendar page chooser
         Then the locale column is displayed in the chooser
+    
+    Scenario: A content editor can see the date placeholder on the bundle page
+        When the user goes to the bundle creation page
+        Then the date placeholder is displayed in the date field for bundles
+        

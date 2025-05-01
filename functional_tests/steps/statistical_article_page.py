@@ -254,3 +254,12 @@ def user_cannot_delete_the_correction(context: Context):
     expect(
         page.locator("#panel-child-corrections_and_notices-corrections-content [data-streamfield-action='DELETE']")
     ).to_be_hidden()
+
+
+@then("the date placeholder is displayed in the date field for statistical article page")
+def date_placeholder_statistical_article_page(context: Context):
+    # get_by_role and label is not working
+    expect(context.page.get_by_role("textbox", name="Release date")).to_have_attribute("placeholder", "YYYY-MM-DD")
+    expect(context.page.get_by_role("textbox", name="Next release date")).to_have_attribute("placeholder", "YYYY-MM-DD")
+    # expect(context.page.get_by_label("Release date", exact=True)).to_have_attribute("placeholder", "YYYY-MM-DD")
+    # expect(context.page.get_by_label("Next release date", exact=True)).to_have_attribute("placeholder", "YYYY-MM-DD")

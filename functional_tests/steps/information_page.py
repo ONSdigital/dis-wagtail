@@ -55,3 +55,8 @@ def check_new_information_is_displayed_with_content(context: Context) -> None:
     expect(context.page.get_by_role("heading", name="Some example rich text content")).to_be_visible()
     expect(context.page.get_by_text("n∑i=0i2=(n2+n)(2n+1)")).to_be_visible()
     expect(context.page.get_by_role("navigation", name="Related content").get_by_role("listitem")).to_be_visible()
+
+
+@then("the date placeholder is displayed in the date field of the information page")
+def date_placeholder_information_page(context: Context):
+    expect(context.page.get_by_role("textbox", name="Last updated")).to_have_attribute("placeholder", "YYYY-MM-DD")

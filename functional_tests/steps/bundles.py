@@ -1,5 +1,6 @@
-from behave import step  # pylint: disable=no-name-in-module
+from behave import step, then  # pylint: disable=no-name-in-module
 from behave.runner import Context
+from playwright.sync_api import expect
 
 from cms.bundles.enums import BundleStatus
 from cms.bundles.models import BundleTeam
@@ -53,3 +54,10 @@ def the_user_opens_page_chooser(context: Context) -> None:
 def the_locale_column_is_displayed(context: Context) -> None:
     modal = context.page.locator(".modal-body")
     modal.get_by_role("columnheader", name="Locale").is_visible()
+
+
+@then("the date placeholder is displayed in the date field for bundles")
+def datetime_placeholder_bundles(context: Context):
+    expect(context.page.get_by_role("textbox", name="Publication date")).to_have_attribute(
+        "placeholder", "YYYY-MM-DD HH:MM"
+    )
