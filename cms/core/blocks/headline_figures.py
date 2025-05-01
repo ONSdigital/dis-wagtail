@@ -11,9 +11,9 @@ class HeadlineFiguresItemBlock(StructBlock):
     """Represents a headline figure."""
 
     figure_id = CharBlock(required=False)
-    title = CharBlock(label="Title", required=True)
-    figure = CharBlock(label="Figure", required=True)
-    supporting_text = CharBlock(label="Supporting text", required=True)
+    title = CharBlock(label="Title", required=True, max_length=255)
+    figure = CharBlock(label="Figure", required=True, max_length=255)
+    supporting_text = CharBlock(label="Supporting text", required=True, max_length=255)
 
     class Meta:
         # The help_text may be updated via JavaScript
