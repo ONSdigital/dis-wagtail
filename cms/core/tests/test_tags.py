@@ -3,7 +3,13 @@ from django.test import TestCase
 from cms.core.templatetags.util_tags import extend
 
 
-class AppendTagTest(TestCase):
+class ExtendFunctionTest(TestCase):
+    """Tests of the `extend()` function.
+
+    This isn't registered as a template tag, but made globally available to be used in
+    Python code within Jinja2.
+    """
+
     def test_append(self):
         """Test the original list is modified in place."""
         series = [{"name": "Series 1"}, {"name": "Series 2"}]
