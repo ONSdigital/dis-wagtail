@@ -210,11 +210,21 @@ class StatisticalArticlePageRenderTestCase(WagtailTestUtils, TestCase):
                             "figure": "XYZ",
                             "supporting_text": "Figure supporting text XYZ",
                         },
-                    }
+                    },
+                    {
+                        "id": uuid.uuid4(),
+                        "type": "item",
+                        "value": {
+                            "figure_id": "figureabc",
+                            "title": "Figure title ABC",
+                            "figure": "ABC",
+                            "supporting_text": "Figure supporting text ABC",
+                        },
+                    },
                 ],
             }
         ]
-        self.page.headline_figures_figure_ids = "figurexyz"
+        self.page.headline_figures_figure_ids = "figurexyz,figureabc"
         self.page.save_revision().publish()
         self.page_url = self.page.url
         self.formatted_date = date_format(self.page.release_date, settings.DATE_FORMAT)
@@ -307,14 +317,14 @@ class StatisticalArticlePageRenderTestCase(WagtailTestUtils, TestCase):
                     "figure",
                     {
                         "series": self.page.get_parent(),
-                        "figure_id": "figurexyz",
+                        "figure_id": "figureabc",
                     },
                 ),
             ]
         )
         topic.save_revision().publish()
 
-        self.assertEqual(self.page.figures_used_by_ancestor, ["figurexyz", "figurexyz"])
+        self.assertEqual(self.page.figures_used_by_ancestor, ["figurexyz", "figureabc"])
 
     def test_cannot_be_deleted_if_ancestor_uses_headline_figures(self):
         """Test that the page cannot be deleted if an ancestor uses the headline figures."""
@@ -333,7 +343,7 @@ class StatisticalArticlePageRenderTestCase(WagtailTestUtils, TestCase):
                     "figure",
                     {
                         "series": self.page.get_parent(),
-                        "figure_id": "figurexyz",
+                        "figure_id": "figureabc",
                     },
                 ),
             ]
