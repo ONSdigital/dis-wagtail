@@ -17,6 +17,7 @@ from wagtail.admin.viewsets.chooser import ChooserViewSet
 from wagtail.coreutils import resolve_model_string
 
 from cms.articles.models import ArticleSeriesPage
+from cms.core.forms import NoLocaleFilterInChoosersForm
 
 if TYPE_CHECKING:
     from django.core.paginator import Page as PaginatorPage
@@ -66,6 +67,7 @@ class HeadlineFigureColumn(Column):
 
 class SeriesWithHeadlineFiguresChooserMixin:
     model_class: ArticleSeriesPage
+    filter_form_class = NoLocaleFilterInChoosersForm
 
     def get_queryset(self) -> "PageQuerySet[ArticleSeriesPage]":
         topic_page_id = self.request.GET.get("topic_page_id")  # type: ignore[attr-defined]
