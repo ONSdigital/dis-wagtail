@@ -5,10 +5,12 @@
 {% from "components/pagination/_macro.njk" import onsPagination %}
 
 {% block header_area %}
+    {%- set hero_topic = _("Related data") -%}
+    {%- set breadcrumbs_aria_label = _("Breadcrumbs") -%}
     {# fmt:off #}
     {{
         onsHero({
-            "topic": _("Related data"),
+            "topic": hero_topic,
             "title": page.related_data_display_title,
             "variants": 'grey',
             "text": page.summary,
@@ -17,7 +19,7 @@
             "detailsColumns": 12,
             "censusLogo": page.is_census,
             "breadcrumbs": {
-                "ariaLabel": _("Breadcrumbs"),
+                "ariaLabel": breadcrumbs_aria_label,
                 "itemsList": breadcrumbs(page, include_self=True),
             }
         })
@@ -26,27 +28,25 @@
 {% endblock %}
 
 {% block main %}
+    {% if paginated_datasets %}
 
-    {# fmt:off #}
-    {{
-        onsDocumentList({
-        "documents": paginated_datasets
-        })
-    }}
-    {# fmt:on #}
+        {{ onsDocumentList({"documents": paginated_datasets}) }}
 
-    {% block pagination %}
-        {% if paginated_datasets.paginator.num_pages > 1 %}
+        {% block pagination %}
+            {% if paginated_datasets.paginator.num_pages > 1 %}
 
-            {# fmt:off #}
-            {{
-                onsPagination({
-                "currentPageNumber": paginated_datasets.number,
-                "pages": ons_pagination_url_list
-                })
-            }}
-            {# fmt:on #}
-        {% endif %}
-    {% endblock %}
+                {# fmt:off #}
+                {{
+                    onsPagination({
+                        "currentPageNumber": paginated_datasets.number,
+                        "pages": ons_pagination_url_list
+                    })
+                }}
+                {# fmt:on #}
+            {% endif %}
+        {% endblock %}
+    {% else %}
+        <h2>{{ _("There is no data related to this article") }}</h2>
+    {% endif %}
 
 {% endblock %}

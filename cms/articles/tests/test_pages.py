@@ -2,10 +2,14 @@ import uuid
 from http import HTTPStatus
 
 from django.core.exceptions import ValidationError
+from django.test import override_settings
 from django.urls import reverse
+from wagtail.blocks import StreamValue
 from wagtail.test.utils import WagtailPageTestCase
 
 from cms.articles.tests.factories import ArticleSeriesPageFactory, StatisticalArticlePageFactory
+from cms.datasets.blocks import DatasetStoryBlock
+from cms.datasets.models import Dataset
 
 
 class ArticleSeriesPageTests(WagtailPageTestCase):
@@ -395,3 +399,82 @@ class StatisticalArticlePageTests(WagtailPageTestCase):
             "wagtailadmin/panels/headline_figures/figures_used_by_ancestor_data.html",
             "Template required by Headline Figures functionality was not used",
         )
+
+    def test_related_data_route(self):
+        self.assertPageIsRoutable(self.page, "/related-data")
+
+    def test_related_data_page(self):
+        lookup_dataset = Dataset.objects.create(
+            namespace="LOOKUP",
+            edition="lookup_edition",
+            version="lookup_version",
+            title="test lookup",
+            description="lookup description",
+        )
+        manual_dataset = {"title": "test manual", "description": "manual description", "url": "https://example.com"}
+
+        self.page.datasets = StreamValue(
+            DatasetStoryBlock(),
+            stream_data=[
+                ("dataset_lookup", lookup_dataset),
+                ("manual_link", manual_dataset),
+            ],
+        )
+        self.page.save_revision().publish()
+        response = self.client.get(self.page.url + "related-data/")
+        content = response.content.decode(encoding="utf-8")
+
+        self.assertIn(self.page.related_data_display_title, content)
+        self.assertIn(lookup_dataset.title, content)
+        self.assertIn(lookup_dataset.description, content)
+        self.assertIn(lookup_dataset.website_url, content)
+        self.assertIn(manual_dataset["title"], content)
+        self.assertIn(manual_dataset["description"], content)
+        self.assertIn(manual_dataset["url"], content)
+
+    def test_empty_related_data_page(self):
+        response = self.client.get(self.page.url + "related-data/")
+        content = response.content.decode(encoding="utf-8")
+
+        self.assertIn(self.page.related_data_display_title, content)
+        self.assertIn("There is no data related to this article", content)
+
+    def test_related_data_page_single_page(self):
+        """Test that pagination is not shown when the content fits on a single page."""
+        manual_dataset = {"title": "test manual", "description": "manual description", "url": "https://example.com"}
+
+        self.page.datasets = StreamValue(
+            DatasetStoryBlock(),
+            stream_data=[
+                ("manual_link", manual_dataset),
+            ],
+        )
+        self.page.save_revision().publish()
+        response = self.client.get(self.page.url + "related-data/")
+        content = response.content.decode(encoding="utf-8")
+
+        self.assertNotIn('class="ons-pagination__item ons-pagination__item--previous"', content)
+        self.assertNotIn('class="ons-pagination__item ons-pagination__item--current"', content)
+        self.assertNotIn('class="ons-pagination__item ons-pagination__item--next"', content)
+
+    @override_settings(RELATED_DATASETS_PER_PAGE=1)
+    def test_related_data_page_with_pagination(self):
+        """Test that pagination is shown when there is more than one page."""
+        manual_datasets = [
+            {"title": "test1", "description": "test", "url": "https://example.com/1"},
+            {"title": "test2", "description": "test", "url": "https://example.com/2"},
+            {"title": "test3", "description": "test", "url": "https://example.com/3"},
+            {"title": "test4", "description": "test", "url": "https://example.com/4"},
+        ]
+        self.page.datasets = StreamValue(
+            DatasetStoryBlock(),
+            stream_data=[("manual_link", dataset) for dataset in manual_datasets],
+        )
+        self.page.save_revision().publish()
+        response = self.client.get(self.page.url + "related-data/?page=2")
+        content = response.content.decode(encoding="utf-8")
+
+        self.assertIn('class="ons-pagination__item ons-pagination__item--previous"', content)
+        self.assertIn('class="ons-pagination__item ons-pagination__item--current"', content)
+        self.assertIn('class="ons-pagination__item ons-pagination__item--next"', content)
+        self.assertIn('class="ons-pagination__position">Page 2 of 4', content)

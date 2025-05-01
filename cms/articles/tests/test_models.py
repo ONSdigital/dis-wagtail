@@ -8,10 +8,14 @@ from django.test import TestCase, override_settings
 from django.urls import reverse
 from django.utils import timezone
 from django.utils.formats import date_format
+from wagtail.blocks import StreamValue
 from wagtail.test.utils import WagtailTestUtils
 
+from cms.articles.enums import SortingChoices
 from cms.articles.tests.factories import ArticleSeriesPageFactory, StatisticalArticlePageFactory
 from cms.core.tests.factories import ContactDetailsFactory
+from cms.datasets.blocks import DatasetStoryBlock
+from cms.datasets.models import Dataset
 
 
 class ArticleSeriesTestCase(WagtailTestUtils, TestCase):
@@ -176,6 +180,46 @@ class StatisticalArticlePageTestCase(WagtailTestUtils, TestCase):
             self.page.clean()
 
         self.assertListEqual(info.exception.messages, ["The next release date must be after the release date."])
+
+    def test_related_datasets_sorting_alphabetic(self):
+        dataset_a = {"title": "a", "description": "a", "url": "https://example.com"}
+        dataset_b = Dataset.objects.create(namespace="b", edition="b", version="1", title="b", description="b")
+        dataset_c = Dataset.objects.create(namespace="c", edition="c", version="1", title="c", description="c")
+
+        self.page.datasets = StreamValue(
+            DatasetStoryBlock(),
+            stream_data=[
+                ("dataset_lookup", dataset_c),
+                ("dataset_lookup", dataset_b),
+                ("manual_link", dataset_a),
+            ],
+        )
+        self.page.dataset_sorting = SortingChoices.ALPHABETIC
+        ordered_datasets = self.page.ordered_related_datasets
+        ordered_dataset_titles = [d["title"]["text"] for d in ordered_datasets]
+        self.assertEqual(
+            ordered_dataset_titles,
+            sorted(ordered_dataset_titles),
+            "Expect the datasets to be sorted in title alphabetic order",
+        )
+
+    def test_related_datasets_sorting_as_shown(self):
+        dataset_a = {"title": "a", "description": "a", "url": "https://example.com"}
+        dataset_b = Dataset.objects.create(namespace="b", edition="b", version="1", title="b", description="b")
+        dataset_c = Dataset.objects.create(namespace="c", edition="c", version="1", title="c", description="c")
+
+        self.page.datasets = StreamValue(
+            DatasetStoryBlock(),
+            stream_data=[
+                ("dataset_lookup", dataset_c),
+                ("dataset_lookup", dataset_b),
+                ("manual_link", dataset_a),
+            ],
+        )
+        self.page.dataset_sorting = SortingChoices.AS_SHOWN
+        ordered_datasets = self.page.ordered_related_datasets
+        ordered_dataset_titles = [d["title"]["text"] for d in ordered_datasets]
+        self.assertEqual(ordered_dataset_titles, ["c", "b", "a"], "Expect the datasets to be in the given order")
 
 
 class StatisticalArticlePageRenderTestCase(WagtailTestUtils, TestCase):
@@ -366,6 +410,12 @@ class StatisticalArticlePageRenderTestCase(WagtailTestUtils, TestCase):
             "This page cannot be deleted because one or more of its children contain headline figures",
         )
 
+    @override_settings(IS_EXTERNAL_ENV=True)
+    def test_load_in_external_env(self):
+        """Test the page loads in external env."""
+        response = self.client.get(self.basic_page_url)
+        self.assertEqual(response.status_code, 200)
+
 
 class PreviousReleasesWithoutPaginationTestCase(TestCase):
     # PREVIOUS_RELEASES_PER_PAGE is default value 10
@@ -480,10 +530,3 @@ class PreviousReleasesWithPaginationPagesTestCase(TestCase):
         for page, data in scenarios.items():
             with self.subTest(page=page):  # Helps identify which page scenario fails
                 self.assert_pagination(page, data["expected_contains"], data["expected_not_contains"])
-
-
-@override_settings(IS_EXTERNAL_ENV=True)
-def test_load_in_external_env(self):
-    """Test the page loads in external env."""
-    response = self.client.get(self.basic_page_url)
-    self.assertEqual(response.status_code, 200)
