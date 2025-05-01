@@ -436,6 +436,31 @@ class StatisticalArticlePageTests(WagtailPageTestCase):
         response = self.client.get(self.page.url + "related-data/")
         self.assertEqual(response.status_code, HTTPStatus.NOT_FOUND)
 
+    def test_related_data_link_present(self):
+        """Test that the related data link and ToC is rendered when there is related data for the article."""
+        manual_dataset = {"title": "test manual", "description": "manual description", "url": "https://example.com"}
+
+        self.page.datasets = StreamValue(
+            DatasetStoryBlock(),
+            stream_data=[
+                ("manual_link", manual_dataset),
+            ],
+        )
+        self.page.save_revision().publish()
+        response = self.client.get(self.page.url)
+        content = response.content.decode(encoding="utf-8")
+
+        self.assertIn("Explore Data", content)
+        self.assertIn("View data used in this article", content)
+
+    def test_related_data_link_not_present(self):
+        """Test that the related data link is not rendered when there is no related data for the article."""
+        response = self.client.get(self.page.url)
+        content = response.content.decode(encoding="utf-8")
+
+        self.assertNotIn("Explore Data", content)
+        self.assertNotIn("View data used in this article", content)
+
     def test_related_data_page_single_page(self):
         """Test that pagination is not shown when the content fits on a single page."""
         manual_dataset = {"title": "test manual", "description": "manual description", "url": "https://example.com"}
