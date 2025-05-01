@@ -41,4 +41,3 @@ Feature: CMS users can draft, edit, and publish release pages
             | MeridiemIndicator |
             | am                |
             | pm                |
-

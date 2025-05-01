@@ -137,9 +137,9 @@ def create_page(context: Context):
 @when("the user inputs a {meridiem_indicator} datetime")
 def add_datetime(context: Context, meridiem_indicator: str):
     if meridiem_indicator == "am":
-        context.page.get_by_label("Release date", exact=True).fill("2025-3-1 10:00")
+        context.page.get_by_role("textbox", name="Release date*").fill("2025-3-1 10:00")
     elif meridiem_indicator == "pm":
-        context.page.get_by_label("Release date", exact=True).fill("2025-3-1 17:00")
+        context.page.get_by_role("textbox", name="Release date*").fill("2025-3-1 17:00")
     else:
         raise ValueError(f"Unsupported MeridiemIndicator: {meridiem_indicator}")
 
