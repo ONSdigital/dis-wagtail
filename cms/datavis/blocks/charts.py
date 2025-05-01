@@ -9,11 +9,6 @@ from cms.datavis.blocks.utils import TextInputFloatBlock, TextInputIntegerBlock
 
 class LineChartBlock(BaseVisualisationBlock):
     highcharts_chart_type = "line"
-    supports_stacked_layout = False
-    supports_x_axis_title = True
-    supports_y_axis_title = True
-    supports_data_labels = False
-    supports_markers = True
     extra_series_attributes: ClassVar = {
         "connectNulls": True,
     }
@@ -28,12 +23,6 @@ class LineChartBlock(BaseVisualisationBlock):
 
 
 class BarColumnChartBlock(BaseVisualisationBlock):
-    supports_stacked_layout = True
-    supports_x_axis_title = False  # NB displayed as vertical axis for bar chart
-    supports_y_axis_title = True
-    supports_data_labels = True
-    supports_markers = False
-
     # Remove unsupported features
     show_markers = None
 
