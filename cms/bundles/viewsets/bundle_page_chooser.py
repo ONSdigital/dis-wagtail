@@ -41,6 +41,7 @@ class PagesWithDraftsMixin:
         return [
             title_column,
             Column("parent", label="Parent", accessor="get_parent"),
+            Column("locale", label="Locale"),
             DateColumn(
                 "updated",
                 label="Updated",

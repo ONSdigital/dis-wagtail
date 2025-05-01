@@ -1,5 +1,6 @@
 from datetime import datetime
 
+from django.core.exceptions import ValidationError
 from django.test import TestCase, override_settings
 from django.utils.translation import gettext_lazy as _
 from wagtail.coreutils import get_dummy_request
@@ -141,3 +142,28 @@ class TopicPageTestCase(TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, self.article.display_title)
+
+    def test_headline_figures_clean(self):
+        with self.assertRaisesRegex(ValidationError, "If you add headline figures, please add at least 2."):
+            # Should not validate with just one
+            self.topic_page.headline_figures.append(
+                (
+                    "figures",
+                    {
+                        "series": self.article_series,
+                        "figure": "figurexyz",
+                    },
+                ),
+            )
+            self.topic_page.clean()
+        # Should validate with two
+        self.topic_page.headline_figures.append(
+            (
+                "figures",
+                {
+                    "series": self.article_series,
+                    "figure": "figurexyz",
+                },
+            ),
+        )
+        self.topic_page.clean()
