@@ -18,11 +18,14 @@ Feature: CMS users can draft, edit, and publish release pages
         And the user can see the breadcrumbs
 
     Scenario: Hiding of release date text field for non-provisional releases
-        Given a superuser logs into the admin site
         When the user navigates to the release calendar page
         And clicks "add child page" to create a new draft release page
         And the page status is set to "Provisional" and the release date text field is visible
         And the user sets the page status to "Confirmed"
+        Then the date text field is not visible
+        And the user sets the page status to "Published"
+        Then the date text field is not visible
+        And the user sets the page status to "Cancelled"
         Then the date text field is not visible
 
     Scenario Outline: A CMS user inputs a datetime on a release calendar page and the correct period is displayed

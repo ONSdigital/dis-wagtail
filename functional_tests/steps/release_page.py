@@ -1,4 +1,4 @@
-from behave import then, when  # pylint: disable=no-name-in-module
+from behave import step, then, when  # pylint: disable=no-name-in-module
 from behave.runner import Context
 from django.conf import settings
 from playwright.sync_api import expect
@@ -18,7 +18,7 @@ def click_add_child_page(context: Context):
     context.page.get_by_label("Add child page").click()
 
 
-@when('the user sets the page status to "{page_status}"')
+@step('the user sets the page status to "{page_status}"')
 def set_page_status(context: Context, page_status: str):
     context.page.get_by_label("Status*").select_option(page_status.upper())
 
