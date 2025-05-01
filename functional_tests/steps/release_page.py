@@ -13,7 +13,7 @@ def navigate_to_release_page(context: Context):
     context.page.get_by_role("link", name="Release calendar", exact=True).click()
 
 
-@when('clicks "add child page" to create a new draft release page')
+@when('clicks "Add child page" to create a new draft release page')
 def click_add_child_page(context: Context):
     context.page.get_by_label("Add child page").click()
 

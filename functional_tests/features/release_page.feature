@@ -6,7 +6,7 @@ Feature: CMS users can draft, edit, and publish release pages
 
     Scenario: A CMS user can author and publish release page
         When the user navigates to the release calendar page
-        And clicks "add child page" to create a new draft release page
+        And clicks "Add child page" to create a new draft release page
         And the user sets the page status to "Published"
         And enters some example content on the page
         And looks up and selects a dataset
@@ -17,16 +17,18 @@ Feature: CMS users can draft, edit, and publish release pages
         And the selected datasets are displayed on the page
         And the user can see the breadcrumbs
 
-    Scenario: Hiding of release date text field for non-provisional releases
+    Scenario Outline: Hiding of release date text field for non-provisional releases
         When the user navigates to the release calendar page
-        And clicks "add child page" to create a new draft release page
+        And clicks "Add child page" to create a new draft release page
         And the page status is set to "Provisional" and the release date text field is visible
-        And the user sets the page status to "Confirmed"
+        And the user sets the page status to "<PageStatus>"
         Then the date text field is not visible
-        And the user sets the page status to "Published"
-        Then the date text field is not visible
-        And the user sets the page status to "Cancelled"
-        Then the date text field is not visible
+
+        Examples:
+            | PageStatus   |
+            | Confirmed    |
+            | Published    |
+            | Cancelled    |
 
     Scenario Outline: A CMS user inputs a datetime on a release calendar page and the correct period is displayed
         When the user creates and populates a release calendar page
