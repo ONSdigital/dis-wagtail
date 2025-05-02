@@ -242,6 +242,10 @@ class StatisticalArticlePage(BundledPageMixin, RoutablePageMixin, BasePage):  # 
         if self.next_release_date and self.next_release_date <= self.release_date:
             raise ValidationError({"next_release_date": "The next release date must be after the release date."})
 
+        if self.headline_figures and len(self.headline_figures[0].value) == 1:  # pylint: disable=unsubscriptable-object
+            # Check if headline_figures has 1 item (we can't use min_num because we allow 0)
+            raise ValidationError({"headline_figures": "If you add headline figures, please add at least 2."})
+
         if self.headline_figures and len(self.headline_figures) > 0:
             figure_ids = [figure["figure_id"] for figure in self.headline_figures[0].value]  # pylint: disable=unsubscriptable-object
         else:

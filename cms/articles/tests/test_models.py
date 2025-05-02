@@ -10,6 +10,7 @@ from django.utils import timezone
 from django.utils.formats import date_format
 from wagtail.blocks import StreamValue
 from wagtail.test.utils import WagtailTestUtils
+from wagtail.test.utils.form_data import nested_form_data, rich_text, streamfield
 
 from cms.articles.enums import SortingChoices
 from cms.articles.tests.factories import ArticleSeriesPageFactory, StatisticalArticlePageFactory
@@ -181,6 +182,87 @@ class StatisticalArticlePageTestCase(WagtailTestUtils, TestCase):
 
         self.assertListEqual(info.exception.messages, ["The next release date must be after the release date."])
 
+    def test_clean_validates_a_min_of_two_headline_figures_are_needed(self):
+        figure_one = {
+            "id": uuid.uuid4(),
+            "type": "item",
+            "value": {
+                "figure_id": "figurexyz",
+                "title": "Figure title XYZ",
+                "figure": "100 Million and more",
+                "supporting_text": "Reasons to add tests and use long test strings where possible",
+            },
+        }
+        self.page.headline_figures = [
+            {
+                "type": "figures",
+                "value": [figure_one],
+            }
+        ]
+        self.page.headline_figures_figure_ids = "figurexyz"
+
+        with self.assertRaisesRegex(ValidationError, "If you add headline figures, please add at least 2."):
+            # Should not validate with just one
+            self.page.clean()
+        # Should validate with two
+        self.page.headline_figures = [
+            {
+                "type": "figures",
+                "value": [
+                    figure_one,
+                    {
+                        "id": uuid.uuid4(),
+                        "type": "item",
+                        "value": {
+                            "figure_id": "figureabc",
+                            "title": "Another figure title for completeness",
+                            "figure": "100 Billion and many more",
+                            "supporting_text": "Figure supporting text ABC",
+                        },
+                    },
+                ],
+            }
+        ]
+        self.page.headline_figures_figure_ids = "figurexyz,figureabc"
+        self.page.clean()
+
+    def test_clean_validates_a_max_of_six_headline_figures_can_be_added(self):
+        self.login()
+
+        figures = [
+            {
+                "type": "item",
+                "value": {
+                    "figure_id": f"figure_{i}",
+                    "title": "Figure title XYZ",
+                    "figure": "100 Million and more",
+                    "supporting_text": "Reasons to add tests and use long test strings where possible",
+                },
+                "deleted": "",
+                "order": str(i),
+            }
+            for i in range(7)
+        ]
+
+        data = nested_form_data(
+            {
+                "title": self.page.title,
+                "slug": self.page.slug,
+                "summary": rich_text(self.page.summary),
+                "main_points_summary": rich_text(self.page.main_points_summary),
+                "release_date": self.page.release_date,
+                "content": streamfield(
+                    [("section", {"title": "Test", "content": streamfield([("rich_text", rich_text("text"))])})]
+                ),
+                "corrections": streamfield([]),
+                "notices": streamfield([]),
+                "headline_figures": streamfield([("figures", figures)]),
+                "headline_figures-0-value-count": 7,  # a bit of a hack to get the right nested format
+            }
+        )
+        response = self.client.post(reverse("wagtailadmin_pages:edit", args=[self.page.pk]), data, follow=True)
+        self.assertContains(response, "The maximum number of items is 6")
+
     def test_related_datasets_sorting_alphabetic(self):
         dataset_a = {"title": "a", "description": "a", "url": "https://example.com"}
         dataset_b = Dataset.objects.create(namespace="b", edition="b", version="1", title="b", description="b")
@@ -254,11 +336,21 @@ class StatisticalArticlePageRenderTestCase(WagtailTestUtils, TestCase):
                             "figure": "XYZ",
                             "supporting_text": "Figure supporting text XYZ",
                         },
-                    }
+                    },
+                    {
+                        "id": uuid.uuid4(),
+                        "type": "item",
+                        "value": {
+                            "figure_id": "figureabc",
+                            "title": "Figure title ABC",
+                            "figure": "ABC",
+                            "supporting_text": "Figure supporting text ABC",
+                        },
+                    },
                 ],
             }
         ]
-        self.page.headline_figures_figure_ids = "figurexyz"
+        self.page.headline_figures_figure_ids = "figurexyz,figureabc"
         self.page.save_revision().publish()
         self.page_url = self.page.url
         self.formatted_date = date_format(self.page.release_date, settings.DATE_FORMAT)

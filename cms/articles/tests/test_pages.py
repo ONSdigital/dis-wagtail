@@ -75,11 +75,21 @@ class StatisticalArticlePageTests(WagtailPageTestCase):
                             "figure": "XYZ",
                             "supporting_text": "Figure supporting text XYZ",
                         },
-                    }
+                    },
+                    {
+                        "id": uuid.uuid4(),
+                        "type": "item",
+                        "value": {
+                            "figure_id": "figureabc",
+                            "title": "Figure title ABC",
+                            "figure": "ABC",
+                            "supporting_text": "Figure supporting text ABC",
+                        },
+                    },
                 ],
             }
         ]
-        cls.page.headline_figures_figure_ids = "figurexyz"
+        cls.page.headline_figures_figure_ids = "figurexyz,figureabc"
         cls.page.save_revision().publish()
         cls.user = cls.create_superuser("admin")
 
