@@ -1,12 +1,14 @@
 from collections.abc import Sequence
 from typing import Any, ClassVar, Optional, cast
 
+from django.core.exceptions import ValidationError
 from django.forms.widgets import Media, RadioSelect
 from django.utils.functional import cached_property
 from wagtail import blocks
 from wagtail.blocks.struct_block import StructValue
 
 from cms.datavis.blocks.annotations import PointAnnotationBlock
+from cms.datavis.blocks.chart_options import AspectRatioBlock
 from cms.datavis.blocks.table import SimpleTableBlock
 from cms.datavis.blocks.utils import TextInputFloatBlock
 from cms.datavis.constants import HighchartsTheme
@@ -100,15 +102,47 @@ class BaseVisualisationBlock(blocks.StructBlock):
         required=False,
     )
 
+    desktop_aspect_ratio = "desktop_aspect_ratio"
+    mobile_aspect_ratio = "mobile_aspect_ratio"
+    options_key_map: ClassVar[dict[str, str]] = {
+        # A dict to map our block types to the Design System macro options
+        desktop_aspect_ratio: "percentageHeightDesktop",
+        mobile_aspect_ratio: "percentageHeightMobile",
+    }
+    options = blocks.StreamBlock(
+        [
+            (
+                desktop_aspect_ratio,
+                AspectRatioBlock(
+                    required=False,
+                    help_text='Remove this option, or set "Default", to use the default aspect ratio for desktop.',
+                    widget=RadioSelect(),
+                ),
+            ),
+            (
+                mobile_aspect_ratio,
+                AspectRatioBlock(
+                    required=False,
+                    help_text='Remove this option, or set "Default", to use the default aspect ratio for mobile.',
+                    widget=RadioSelect(),
+                ),
+            ),
+        ],
+        block_counts={
+            desktop_aspect_ratio: {"max_num": 1},
+            mobile_aspect_ratio: {"max_num": 1},
+        },
+        help_text="Additional settings for the chart",
+        required=False,
+    )
+
     class Meta:
         template = "templates/components/streamfield/datavis/base_highcharts_chart_block.html"
 
     def get_context(self, value: "StructValue", parent_context: Optional[dict[str, Any]] = None) -> dict[str, Any]:
         context: dict[str, Any] = super().get_context(value, parent_context)
 
-        # Add template and visualisation context to support rendering
-        context["config"] = self.get_component_config(value)
-        context["download"] = self.get_download_config(value)
+        context["chart_config"] = self.get_component_config(value)
         return context
 
     def get_highcharts_chart_type(self, value: "StructValue") -> str:
@@ -121,12 +155,23 @@ class BaseVisualisationBlock(blocks.StructBlock):
         headers: list[str] = value["table"].headers
         rows: list[list[str | int | float]] = value["table"].rows
 
-        return {
+        config = {
+            "chartType": self.get_highcharts_chart_type(value),
+            "theme": value.get("theme"),
+            "title": value.get("title"),
+            "subtitle": value.get("subtitle"),
+            "caption": value.get("caption"),
             "legend": value.get("show_legend", True),
             "xAxis": self.get_x_axis_config(value.get("x_axis"), rows),
             "yAxis": self.get_y_axis_config(value.get("y_axis")),
             "series": self.get_series_data(value, headers, rows),
+            "useStackedLayout": value.get("use_stacked_layout"),
+            "annotations_values": self.get_annotations_config(value),
+            "download": self.get_download_config(value),
         }
+
+        config.update(self.get_additional_options(value))
+        return config
 
     def get_x_axis_config(
         self,
@@ -217,6 +262,14 @@ class BaseVisualisationBlock(blocks.StructBlock):
             series.append(item)
         return series
 
+    def get_additional_options(self, value: "StructValue") -> dict[str, Any]:
+        options = {}
+        for option in value.get("options", []):
+            key = self.options_key_map[option.block_type]
+            options[key] = option.value
+
+        return options
+
     def get_download_config(self, value: "StructValue") -> dict[str, Any]:
         return {
             "title": f"Download: {value['title'][:30]} ... ",  # TODO work on download metadata
@@ -235,6 +288,22 @@ class BaseVisualisationBlock(blocks.StructBlock):
                 },
             ],
         }
+
+    def clean(self, value: "StructValue") -> "StructValue":
+        result = super().clean(value)
+        aspect_ratio_keys = [self.desktop_aspect_ratio, self.mobile_aspect_ratio]
+
+        options_errors = {}
+        if self.get_highcharts_chart_type(result) == "bar":
+            for i, option in enumerate(result["options"]):
+                if option.block_type in aspect_ratio_keys:
+                    options_errors[i] = ValidationError("Bar charts do not support aspect ratio options.")
+
+        if options_errors:
+            raise blocks.StructBlockValidationError(
+                block_errors={"options": blocks.StreamBlockValidationError(block_errors=options_errors)}
+            )
+        return result
 
     @cached_property
     def media(self) -> Media:
