@@ -1,21 +1,4 @@
 {% from "components/chart/_macro.njk" import onsChart %}
 
-{# fmt:off #}
-{{
-    onsChart({
-        "chartType": value.block.get_highcharts_chart_type(value),
-        "theme": value.theme,
-        "title": value.title,
-        "subtitle": value.subtitle,
-        "id": block_id,
-        "caption": value.caption,
-        "legend": config.legend,
-        "yAxis": config.yAxis,
-        "xAxis": config.xAxis,
-        "series": config.series,
-        "useStackedLayout": value.use_stacked_layout,
-        "annotations": value.block.get_annotations_config(value),
-        "download": download,
-    })
-}}
-{# fmt:on #}
+{%- do chart_config.update(id=block_id) -%}
+{{ onsChart(chart_config) }}
