@@ -46,7 +46,7 @@ class BaseChartBlockTestCase(SimpleTestCase, WagtailTestUtils):
                 "value_suffix": "",
                 "tooltip_suffix": "",
             },
-            "annotations": [{"type": "point", "value": {"label": "Peak", "x_position": "2", "y_position": "140"}}],
+            "annotations": [{"type": "point", "value": {"label": "Peak", "x_position": 2, "y_position": 140}}],
         }
 
     def get_value(self, raw_data: dict[str, Any] | None = None):
@@ -314,3 +314,36 @@ class BarColumnChartBlockTestCase(BaseChartBlockTestCase):
                 self.assertIn("name", item)
                 self.assertIn("data", item)
                 self.assertNotIn("marker", item)
+
+    def test_bar_chart_aspect_ratio_options_not_allowed(self):
+        self.raw_data["select_chart_type"] = "bar"
+        for option in [
+            "desktop_aspect_ratio",
+            "mobile_aspect_ratio",
+        ]:
+            with self.subTest(option=option):
+                self.raw_data["options"] = [{"type": option, "value": 75}]
+                value = self.get_value()
+
+                with self.assertRaises(ValidationError) as cm:
+                    self.block.clean(value)
+
+                err = cm.exception
+                self.assertEqual(
+                    "Bar charts do not support aspect ratio options.",
+                    err.block_errors["options"].block_errors[0].message,
+                )
+
+    def test_column_chart_aspect_ratio_options_are_allowed(self):
+        self.raw_data["select_chart_type"] = "column"
+        for option in [
+            "desktop_aspect_ratio",
+            "mobile_aspect_ratio",
+        ]:
+            with self.subTest(option=option):
+                self.raw_data["options"] = [{"type": option, "value": 75}]
+                value = self.get_value()
+                try:
+                    self.block.clean(value)
+                except ValidationError:
+                    self.fail("Expected no ValidationError for column chart aspect ratio options")
