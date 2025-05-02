@@ -10,7 +10,7 @@ from cms.core.blocks.related import RelatedContentBlock
 from cms.core.blocks.stream_blocks import CoreStoryBlock
 from cms.core.fields import StreamField
 from cms.core.models import BasePage
-from cms.core.models.date_placeholder import DatePlaceholder
+from cms.core.widgets import date_widget
 from cms.taxonomy.mixins import GenericTaxonomyMixin
 
 if TYPE_CHECKING:
@@ -33,7 +33,7 @@ class InformationPage(GenericTaxonomyMixin, BasePage):  # type: ignore[django-ma
     content_panels: ClassVar[list["Panel"]] = [
         *BasePage.content_panels,
         "summary",
-        FieldPanel("last_updated", widget=DatePlaceholder.date_widget),
+        FieldPanel("last_updated", date_widget),
         "content",
         InlinePanel("page_related_pages", label="Related pages"),
     ]

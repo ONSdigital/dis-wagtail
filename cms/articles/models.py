@@ -22,7 +22,7 @@ from cms.core.blocks.panels import CorrectionBlock, NoticeBlock
 from cms.core.blocks.stream_blocks import SectionStoryBlock
 from cms.core.fields import StreamField
 from cms.core.models import BasePage
-from cms.core.models.date_placeholder import DatePlaceholder
+from cms.core.widgets import date_widget
 from cms.taxonomy.mixins import GenericTaxonomyMixin
 
 if TYPE_CHECKING:
@@ -182,12 +182,10 @@ class StatisticalArticlePage(BundledPageMixin, RoutablePageMixin, BasePage):  # 
             [
                 FieldRowPanel(
                     [
-                        FieldPanel(
-                            "release_date", widget=DatePlaceholder.date_widget, help_text="The actual release date"
-                        ),
+                        FieldPanel("release_date", date_widget, help_text="The actual release date"),
                         FieldPanel(
                             "next_release_date",
-                            widget=DatePlaceholder.date_widget,
+                            date_widget,
                             help_text="If no next date is chosen, 'To be announced' will be displayed.",
                         ),
                     ],
