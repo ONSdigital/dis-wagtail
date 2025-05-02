@@ -20,7 +20,7 @@ class ExclusiveTaxonomyFieldPanel(FieldPanel):
             if not self.instance.pk:
                 return context
 
-            if self.instance.locale != self.instance.get_root().locale and (
+            if self.instance.locale_id != self.instance.get_root().locale_id and (
                 default_locale_page := self.instance.get_translations()
                 .filter(locale__language_code=settings.LANGUAGE_CODE)
                 .only("id", "topic")
