@@ -3,21 +3,6 @@ Feature: Statistical Article Page components
     Background:
         Given a superuser logs into the admin site
 
-    Scenario: A CMS user can see date placeholders on a Statistical Article Page
-        When the user goes to add a new statistical article page
-        Then the date placeholder is displayed in the date field for statistical article page
-
-    Scenario: A CMS user can see date placeholders on a Statistical Article Page by Label
-        When the user goes to add a new statistical article page
-        Then by label, the date placeholder "YYYY-MM-DD" is displayed in the "Release date" textbox
-        And by label, the date placeholder "YYYY-MM-DD" is displayed in the "Next release date" textbox
-
-        
-    Scenario: A CMS user can see date placeholders on a Statistical Article Page by textbox
-        When the user goes to add a new statistical article page
-        Then the date placeholder "YYYY-MM-DD" is displayed in the "Release date" textbox
-        And the date placeholder "YYYY-MM-DD" is displayed in the "Next release date" textbox
-
 
     Scenario: A CMS user can create and publish a Statistical Article Page
         When the user goes to add a new statistical article page
@@ -122,3 +107,9 @@ Feature: Statistical Article Page components
         And the user clicks "Publish"
         And the user clicks "View Live" on the publish confirmation banner
         Then the published statistical article page has the added headline figures
+        
+    Scenario: A CMS user can see date placeholders on a Statistical Article Page by textbox
+        When the user goes to add a new statistical article page
+        Then the date placeholder "YYYY-MM-DD" is displayed in the "Release date*" textbox
+        And the date placeholder "YYYY-MM-DD" is displayed in the "Next release date" textbox
+
