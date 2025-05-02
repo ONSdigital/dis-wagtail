@@ -379,12 +379,12 @@ class StatisticalArticlePage(BundledPageMixin, RoutablePageMixin, BasePage):  # 
         ]
 
     @cached_property
-    def related_data_display_title(self):
+    def related_data_display_title(self) -> str:
         return f"{_('All data related to')} {self.title}"
 
     @cached_property
     def ordered_related_datasets(self) -> list[dict[str, Any]]:
-        dataset_documents = []
+        dataset_documents: list = []
         for dataset in self.datasets:  # pylint: disable=not-an-iterable
             if dataset.block_type == "manual_link":
                 dataset_document = {
@@ -430,7 +430,7 @@ class StatisticalArticlePage(BundledPageMixin, RoutablePageMixin, BasePage):  # 
     def preview_modes(self) -> list[tuple[str, str]]:
         return [("default", "Article Page"), ("related_data", "Related Data Page")]
 
-    def serve_preview(self, request, mode_name):
+    def serve_preview(self, request, mode_name) -> "TemplateResponse":
         if mode_name == "related_data":
             return self.related_data(request)
         return super().serve_preview(request, mode_name)
