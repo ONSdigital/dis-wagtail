@@ -356,3 +356,24 @@ def user_cannot_delete_the_correction(context: Context):
     expect(
         page.locator("#panel-child-corrections_and_notices-corrections-content [data-streamfield-action='DELETE']")
     ).to_be_hidden()
+
+
+@when("the user navigates to the related data editor tab")
+def user_navigates_to_related_data_tab(context: Context):
+    context.page.get_by_role("tab", name="Related data").click()
+    context.editor_tab = "related_data"
+
+
+@when('the user clicks "View data used in this article" on the article page')
+def user_clicks_view_data_used_in_article(context: Context):
+    context.page.get_by_role("link", name="View data used in this article").click()
+
+
+@then("the related data page for the article is shown")
+def check_related_data_page_content(context: Context):
+    page = context.page
+    expect(page.get_by_role("heading", name="All data related to The article page")).to_be_visible()
+    expect(page.get_by_role("link", name="Looked Up Dataset")).to_be_visible()
+    expect(page.get_by_text("Example dataset for functional testing")).to_be_visible()
+    expect(page.get_by_role("link", name="Manual Dataset")).to_be_visible()
+    expect(page.get_by_text("Manually entered test dataset")).to_be_visible()
