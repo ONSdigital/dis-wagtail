@@ -57,7 +57,7 @@ class ReadinessProbeTestCase(SimpleTestCase):
         # Send too many IPs
         x_forwarded_for = ",".join(["192.0.2.1"] * (settings.XFF_TRUSTED_PROXY_DEPTH + 1))
         response = self.client.get(self.url, headers={"X-Forwarded-For": x_forwarded_for})
-        self.assertEqual(response.status_code, 204)
+        self.assertEqual(response.status_code, 200)
 
 
 @override_settings(
@@ -119,7 +119,7 @@ class LivenessProbeTestCase(TestCase):
         # Send too many IPs
         x_forwarded_for = ",".join(["192.0.2.1"] * (settings.XFF_TRUSTED_PROXY_DEPTH + 1))
         response = self.client.get(self.url, headers={"X-Forwarded-For": x_forwarded_for})
-        self.assertEqual(response.status_code, 204)
+        self.assertEqual(response.status_code, 200)
 
 
 class AdminPageTreeTestCase(WagtailTestUtils, TestCase):
