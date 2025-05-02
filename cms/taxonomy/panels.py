@@ -16,7 +16,7 @@ class ExclusiveTaxonomyFieldPanel(FieldPanel):
         def get_context_data(self, parent_context: "Optional[RenderContext]" = None) -> "Optional[RenderContext]":
             context = super().get_context_data(parent_context)
 
-            # If the instance is not saved yet, we don't translations to check against.
+            # If the instance is not saved yet, we don't have any translations to check against.
             if not self.instance.pk:
                 return context
 
