@@ -803,8 +803,9 @@ if "WAGTAILADMIN_BASE_URL" in env:
     WAGTAILADMIN_BASE_URL = env["WAGTAILADMIN_BASE_URL"]
 
 # https://docs.wagtail.org/en/latest/reference/settings.html#wagtailadmin-login-url
-if "WAGTAILADMIN_LOGIN_URL" in env:
-    WAGTAILADMIN_LOGIN_URL = env["WAGTAILADMIN_LOGIN_URL"]
+# if "WAGTAILADMIN_LOGIN_URL" in env:
+#     WAGTAILADMIN_LOGIN_URL = env["WAGTAILADMIN_LOGIN_URL"]
+WAGTAILADMIN_LOGIN_URL = env.get("WAGTAILADMIN_LOGIN_URL", "/admin/login/")
 
 # Custom image model
 # https://docs.wagtail.io/en/stable/advanced_topics/images/custom_image_model.html
