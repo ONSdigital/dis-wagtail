@@ -36,6 +36,8 @@ wagtail-tinytableblock = "^0.3.4"
 queryish = "^0.2"
 python-json-logger = "^3.3.0"
 json-log-formatter = "^1.1.1"
+django-xff = "^1.5.0"
+djangorestframework = "^3.16.0"
 pyjwt = "^2.10.1"
 cryptography = "^44.0.2"
 

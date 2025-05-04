@@ -4,7 +4,10 @@ from wagtail.admin.mail import GroupApprovalTaskStateSubmissionEmailNotifier
 from wagtail.models import AbstractGroupApprovalTask
 
 if TYPE_CHECKING:
+    from django.db.models import Model
     from wagtail.models import TaskState
+
+    from cms.users.models import User
 
 
 class GroupReviewTask(AbstractGroupApprovalTask):
@@ -21,6 +24,17 @@ class GroupReviewTask(AbstractGroupApprovalTask):
 
 class ReadyToPublishGroupTask(AbstractGroupApprovalTask):
     """Placeholder task model to use in the Bundle approval logic."""
+
+    def locked_for_user(self, obj: "Model", user: "User") -> bool:
+        # TODO: update lock message (needs PR to core)
+        if user.is_superuser:
+            return False
+
+        if getattr(obj, "active_bundle", None) is not None:
+            return True
+
+        locked: bool = super().locked_for_user(obj, user)
+        return locked
 
     @classmethod
     def get_description(cls) -> str:

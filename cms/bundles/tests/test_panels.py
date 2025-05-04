@@ -22,7 +22,7 @@ class BundleNotePanelTestCase(WagtailTestUtils, TestCase):
     def setUpTestData(cls):
         cls.superuser = cls.create_superuser(username="admin")
         cls.page = StatisticalArticlePageFactory()
-        cls.bundle = BundleFactory(name="Test Bundle", status=BundleStatus.PENDING)
+        cls.bundle = BundleFactory(name="Test Bundle", status=BundleStatus.DRAFT)
         cls.panel = BundleNotePanel()
         cls.request = get_dummy_request()
         cls.request.user = cls.superuser
@@ -44,7 +44,7 @@ class BundleNotePanelTestCase(WagtailTestUtils, TestCase):
         edit_url = reverse("bundle:edit", args=[self.bundle.pk])
         self.assertTagInHTML(
             f"<p>This page is in the following bundle: "
-            f'<a href"{edit_url}">{self.bundle.name} (Status: {BundleStatus.PENDING.label})</p>',
+            f'<a href"{edit_url}">{self.bundle.name} (Status: {BundleStatus.DRAFT.label})</p>',
             content,
         )
 
@@ -54,7 +54,7 @@ class BundleNotePanelTestCase(WagtailTestUtils, TestCase):
 
         content = self.get_bound_panel(self.page).content
         self.assertTagInHTML(
-            f"<p>This page is in the following bundle: {self.bundle.name} (Status: {BundleStatus.PENDING.label})</p>",
+            f"<p>This page is in the following bundle: {self.bundle.name} (Status: {BundleStatus.DRAFT.label})</p>",
             content,
         )
 

@@ -5,6 +5,7 @@ from wagtail.admin.views.generic.chooser import ChooseResultsView, ChooseView
 from wagtail.admin.viewsets.chooser import ChooserViewSet
 
 from cms.bundles.enums import ACTIVE_BUNDLE_STATUSES
+from cms.core.ui import LocaleColumn
 from cms.release_calendar.enums import ReleaseStatus
 from cms.release_calendar.models import ReleaseCalendarPage
 
@@ -25,6 +26,7 @@ class FutureReleaseCalendarMixin:
     def columns(self) -> list[Column]:
         return [
             self.title_column,  # type: ignore[attr-defined]
+            LocaleColumn(),
             Column("release_date"),
             Column("release_status", label="Status", accessor="get_status_display"),
             DateColumn(
