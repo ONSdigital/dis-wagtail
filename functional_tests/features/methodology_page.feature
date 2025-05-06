@@ -70,4 +70,3 @@ Feature: A general use of Methodology Page
         When the user creates a methodology page as a child of the existing topic page
         Then the date placeholder "YYYY-MM-DD" is displayed in the "Publication date" textbox
         And the date placeholder "YYYY-MM-DD" is displayed in the "Last revised date" textbox
-        

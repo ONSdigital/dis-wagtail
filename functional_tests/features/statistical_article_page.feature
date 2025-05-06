@@ -3,7 +3,6 @@ Feature: Statistical Article Page components
     Background:
         Given a superuser logs into the admin site
 
-
     Scenario: A CMS user can create and publish a Statistical Article Page
         When the user goes to add a new statistical article page
         And the user adds basic statistical article page content
