@@ -29,10 +29,14 @@ class HeadlineFiguresItemBlock extends window.wagtailStreamField.blocks.StructBl
       container.parentElement.appendChild(figureIdLabel);
     }
 
+    const shortPrefix = prefix.substr(0, prefix.length - 5);
+    const parent = `[name="${shortPrefix}id"]+section`;
+    const copySelector = "[data-streamfield-action='DUPLICATE']";
+    const copyButton = document.querySelector(`${parent} ${copySelector}`);
+    copyButton.remove();
+
     if (isUsed) {
       // This figure is used by a topic, we need to prevent deletion
-      const shortPrefix = prefix.substr(0, prefix.length - 5);
-      const parent = `[name="${shortPrefix}id"]+section`;
       const helpText = document.querySelector(`${parent} .help`);
       const deleteSelector = "[data-streamfield-action='DELETE']";
       helpText.innerHTML =
