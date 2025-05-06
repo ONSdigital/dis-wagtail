@@ -1,5 +1,4 @@
 import math
-import uuid
 from datetime import datetime
 
 from django.conf import settings
@@ -180,7 +179,6 @@ class StatisticalArticlePageTestCase(WagtailTestUtils, TestCase):
 
     def test_clean_validates_a_min_of_two_headline_figures_are_needed(self):
         figure_one = {
-            "id": uuid.uuid4(),
             "type": "figure",
             "value": {
                 "figure_id": "figurexyz",
@@ -199,7 +197,6 @@ class StatisticalArticlePageTestCase(WagtailTestUtils, TestCase):
         self.page.headline_figures = [
             figure_one,
             {
-                "id": uuid.uuid4(),
                 "type": "figure",
                 "value": {
                     "figure_id": "figureabc",
@@ -268,7 +265,6 @@ class StatisticalArticlePageRenderTestCase(WagtailTestUtils, TestCase):
         )
         self.page.headline_figures = [
             {
-                "id": uuid.uuid4(),
                 "type": "figure",
                 "value": {
                     "figure_id": "figurexyz",
@@ -278,7 +274,6 @@ class StatisticalArticlePageRenderTestCase(WagtailTestUtils, TestCase):
                 },
             },
             {
-                "id": uuid.uuid4(),
                 "type": "figure",
                 "value": {
                     "figure_id": "figureabc",
