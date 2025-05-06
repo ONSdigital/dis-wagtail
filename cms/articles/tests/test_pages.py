@@ -60,30 +60,25 @@ class StatisticalArticlePageTests(WagtailPageTestCase):
         # TODO: Fix the factory to generate headline_figures correctly
         cls.page.headline_figures = [
             {
-                "type": "figures",
-                "value": [
-                    {
-                        "id": uuid.uuid4(),
-                        "type": "item",
-                        "value": {
-                            "figure_id": "figurexyz",
-                            "title": "Figure title XYZ",
-                            "figure": "XYZ",
-                            "supporting_text": "Figure supporting text XYZ",
-                        },
-                    },
-                    {
-                        "id": uuid.uuid4(),
-                        "type": "item",
-                        "value": {
-                            "figure_id": "figureabc",
-                            "title": "Figure title ABC",
-                            "figure": "ABC",
-                            "supporting_text": "Figure supporting text ABC",
-                        },
-                    },
-                ],
-            }
+                "id": uuid.uuid4(),
+                "type": "figure",
+                "value": {
+                    "figure_id": "figurexyz",
+                    "title": "Figure title XYZ",
+                    "figure": "XYZ",
+                    "supporting_text": "Figure supporting text XYZ",
+                },
+            },
+            {
+                "id": uuid.uuid4(),
+                "type": "figure",
+                "value": {
+                    "figure_id": "figureabc",
+                    "title": "Figure title ABC",
+                    "figure": "ABC",
+                    "supporting_text": "Figure supporting text ABC",
+                },
+            },
         ]
         cls.page.headline_figures_figure_ids = "figurexyz,figureabc"
         cls.page.save_revision().publish()
@@ -359,8 +354,8 @@ class StatisticalArticlePageTests(WagtailPageTestCase):
         self.assertContains(response, self.page.summary)
         self.assertContains(response, self.page.contact_details)
         self.assertContains(response, self.page.search_description)
-        self.assertContains(response, self.page.headline_figures[0].value[0]["title"])
-        self.assertContains(response, self.page.headline_figures[0].value[0]["supporting_text"])
+        self.assertContains(response, self.page.headline_figures[0].value["title"])
+        self.assertContains(response, self.page.headline_figures[0].value["supporting_text"])
 
     def test_headline_figures_removal_validation(self):
         series = self.page.get_parent()

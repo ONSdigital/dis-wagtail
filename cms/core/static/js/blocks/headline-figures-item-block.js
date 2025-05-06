@@ -39,12 +39,6 @@ class HeadlineFiguresItemBlock extends window.wagtailStreamField.blocks.StructBl
         '<b>This figure is currently referenced by a published page and cannot be deleted.</b>';
       const deleteButton = document.querySelector(`${parent} ${deleteSelector}`);
       deleteButton.remove();
-
-      // The main delete button can delete all of the items, it needs to be hidden as well
-      const mainDeleteButton = document.querySelector(
-        `[name="headline_figures-0-id"]+section ${deleteSelector}`,
-      );
-      mainDeleteButton.remove();
     }
 
     return block;

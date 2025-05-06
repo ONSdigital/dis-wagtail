@@ -181,7 +181,7 @@ class StatisticalArticlePageTestCase(WagtailTestUtils, TestCase):
     def test_clean_validates_a_min_of_two_headline_figures_are_needed(self):
         figure_one = {
             "id": uuid.uuid4(),
-            "type": "item",
+            "type": "figure",
             "value": {
                 "figure_id": "figurexyz",
                 "title": "Figure title XYZ",
@@ -189,12 +189,7 @@ class StatisticalArticlePageTestCase(WagtailTestUtils, TestCase):
                 "supporting_text": "Reasons to add tests and use long test strings where possible",
             },
         }
-        self.page.headline_figures = [
-            {
-                "type": "figures",
-                "value": [figure_one],
-            }
-        ]
+        self.page.headline_figures = [figure_one]
         self.page.headline_figures_figure_ids = "figurexyz"
 
         with self.assertRaisesRegex(ValidationError, "If you add headline figures, please add at least 2."):
@@ -202,22 +197,17 @@ class StatisticalArticlePageTestCase(WagtailTestUtils, TestCase):
             self.page.clean()
         # Should validate with two
         self.page.headline_figures = [
+            figure_one,
             {
-                "type": "figures",
-                "value": [
-                    figure_one,
-                    {
-                        "id": uuid.uuid4(),
-                        "type": "item",
-                        "value": {
-                            "figure_id": "figureabc",
-                            "title": "Another figure title for completeness",
-                            "figure": "100 Billion and many more",
-                            "supporting_text": "Figure supporting text ABC",
-                        },
-                    },
-                ],
-            }
+                "id": uuid.uuid4(),
+                "type": "figure",
+                "value": {
+                    "figure_id": "figureabc",
+                    "title": "Another figure title for completeness",
+                    "figure": "100 Billion and many more",
+                    "supporting_text": "Figure supporting text ABC",
+                },
+            },
         ]
         self.page.headline_figures_figure_ids = "figurexyz,figureabc"
         self.page.clean()
@@ -227,7 +217,7 @@ class StatisticalArticlePageTestCase(WagtailTestUtils, TestCase):
 
         figures = [
             {
-                "type": "item",
+                "type": "figure",
                 "value": {
                     "figure_id": f"figure_{i}",
                     "title": "Figure title XYZ",
@@ -252,8 +242,8 @@ class StatisticalArticlePageTestCase(WagtailTestUtils, TestCase):
                 ),
                 "corrections": streamfield([]),
                 "notices": streamfield([]),
-                "headline_figures": streamfield([("figures", figures)]),
-                "headline_figures-0-value-count": 7,  # a bit of a hack to get the right nested format
+                "headline_figures": figures,
+                "headline_figures-count": 7,  # a bit of a hack to get the right nested format
             }
         )
         response = self.client.post(reverse("wagtailadmin_pages:edit", args=[self.page.pk]), data, follow=True)
@@ -281,30 +271,25 @@ class StatisticalArticlePageRenderTestCase(WagtailTestUtils, TestCase):
         )
         self.page.headline_figures = [
             {
-                "type": "figures",
-                "value": [
-                    {
-                        "id": uuid.uuid4(),
-                        "type": "item",
-                        "value": {
-                            "figure_id": "figurexyz",
-                            "title": "Figure title XYZ",
-                            "figure": "XYZ",
-                            "supporting_text": "Figure supporting text XYZ",
-                        },
-                    },
-                    {
-                        "id": uuid.uuid4(),
-                        "type": "item",
-                        "value": {
-                            "figure_id": "figureabc",
-                            "title": "Figure title ABC",
-                            "figure": "ABC",
-                            "supporting_text": "Figure supporting text ABC",
-                        },
-                    },
-                ],
-            }
+                "id": uuid.uuid4(),
+                "type": "figure",
+                "value": {
+                    "figure_id": "figurexyz",
+                    "title": "Figure title XYZ",
+                    "figure": "XYZ",
+                    "supporting_text": "Figure supporting text XYZ",
+                },
+            },
+            {
+                "id": uuid.uuid4(),
+                "type": "figure",
+                "value": {
+                    "figure_id": "figureabc",
+                    "title": "Figure title ABC",
+                    "figure": "ABC",
+                    "supporting_text": "Figure supporting text ABC",
+                },
+            },
         ]
         self.page.headline_figures_figure_ids = "figurexyz,figureabc"
         self.page.save_revision().publish()

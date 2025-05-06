@@ -116,7 +116,7 @@ class LinkedSeriesChooserWidget(series_with_headline_figures_chooser_viewset.wid
             latest_article = instance.get_latest()
             if latest_article and latest_article.headline_figures.raw_data:
                 # Return all headline figures available in these series
-                data["figures"] = [dict(figure) for figure in latest_article.headline_figures[0].value]
+                data["figures"] = [dict(figure.value) for figure in latest_article.headline_figures]
         return data
 
 

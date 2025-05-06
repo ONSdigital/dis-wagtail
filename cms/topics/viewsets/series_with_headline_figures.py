@@ -93,9 +93,9 @@ class SeriesWithHeadlineFiguresChooserMixin:
         for series_page in objects:
             latest_article = series_page.get_latest()
             if latest_article and latest_article.headline_figures.raw_data:
-                for figure in latest_article.headline_figures[0].value:
+                for figure in latest_article.headline_figures:
                     page = copy.deepcopy(series_page)
-                    page.headline_figure = dict(figure)
+                    page.headline_figure = dict(figure.value)
                     filtered_series.append(page)
 
         return filtered_series
