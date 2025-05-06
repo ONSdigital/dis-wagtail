@@ -1,4 +1,3 @@
-import uuid
 from http import HTTPStatus
 
 from wagtail.test.utils import WagtailPageTestCase
@@ -16,7 +15,6 @@ class ArticleSeriesPageTests(WagtailPageTestCase):
         cls.statistical_article_page = StatisticalArticlePageFactory(parent=cls.series)
         cls.statistical_article_page.headline_figures = [
             {
-                "id": uuid.uuid4(),
                 "type": "figure",
                 "value": {
                     "figure_id": "figurexyz",
@@ -26,7 +24,6 @@ class ArticleSeriesPageTests(WagtailPageTestCase):
                 },
             },
             {
-                "id": uuid.uuid4(),
                 "type": "figure",
                 "value": {
                     "figure_id": "figureabc",
@@ -81,7 +78,6 @@ class ArticleSeriesPageTests(WagtailPageTestCase):
         # When the statistical article updates the figures, the topic page should reflect the changes.
         self.statistical_article_page.headline_figures = [
             {
-                "id": uuid.uuid4(),
                 "type": "figure",
                 "value": {
                     "figure_id": "figurexyz",
@@ -91,7 +87,6 @@ class ArticleSeriesPageTests(WagtailPageTestCase):
                 },
             },
             {
-                "id": uuid.uuid4(),
                 "type": "figure",
                 "value": {
                     "figure_id": "figureabc",

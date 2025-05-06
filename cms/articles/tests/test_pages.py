@@ -1,4 +1,3 @@
-import uuid
 from http import HTTPStatus
 
 from django.core.exceptions import ValidationError
@@ -60,7 +59,6 @@ class StatisticalArticlePageTests(WagtailPageTestCase):
         # TODO: Fix the factory to generate headline_figures correctly
         cls.page.headline_figures = [
             {
-                "id": uuid.uuid4(),
                 "type": "figure",
                 "value": {
                     "figure_id": "figurexyz",
@@ -70,7 +68,6 @@ class StatisticalArticlePageTests(WagtailPageTestCase):
                 },
             },
             {
-                "id": uuid.uuid4(),
                 "type": "figure",
                 "value": {
                     "figure_id": "figureabc",
