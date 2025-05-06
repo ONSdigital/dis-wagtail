@@ -36,10 +36,10 @@ def restructure_headline_figures_type(apps, schema_editor, processing_func):
 
     statistical_article_page_content_type = ContentType.objects.get_for_model(StatisticalArticlePage)
 
-    for topic_page in StatisticalArticlePage.objects.all():
-        if topic_page.headline_figures:
-            topic_page.headline_figures = processing_func(topic_page.headline_figures.raw_data)
-            topic_page.save(update_fields=["headline_figures"])
+    for article_page in StatisticalArticlePage.objects.all():
+        if article_page.headline_figures:
+            article_page.headline_figures = processing_func(article_page.headline_figures.raw_data)
+            article_page.save(update_fields=["headline_figures"])
 
     # Update the revisions
     revisions_to_update = Revision.objects.filter(content_type=statistical_article_page_content_type).iterator()
