@@ -9,6 +9,7 @@ from wagtail.snippets.views.snippets import IndexView as SnippetIndexView
 from wagtail.snippets.views.snippets import SnippetViewSet
 
 from cms.core.models import ContactDetails, GlossaryTerm
+from cms.core.ui import LocaleColumn
 
 
 class ContactDetailsIndex(SnippetIndexView):
@@ -20,7 +21,7 @@ class ContactDetailsChooseColumnsMixin:
     def columns(self) -> list[Column]:
         title_column = self.title_column  # type: ignore[attr-defined]
         title_column.label = "Name"
-        return [title_column, Column("locale"), Column("email"), Column("phone")]
+        return [title_column, LocaleColumn(), Column("email"), Column("phone")]
 
 
 class ContactDetailsChooseView(ContactDetailsChooseColumnsMixin, SnippetChooseView): ...
@@ -68,7 +69,7 @@ class GlossaryTermsChooseColumnsMixin:
     def columns(self) -> list[Column]:
         title_column = self.title_column  # type: ignore[attr-defined]
         title_column.label = "Name"
-        return [title_column, Column("locale"), UpdatedAtColumn(), UserColumn("updated_by")]
+        return [title_column, LocaleColumn(), UpdatedAtColumn(), UserColumn("updated_by")]
 
     def get_object_list(self) -> QuerySet[GlossaryTerm]:
         queryset = GlossaryTerm.objects.select_related(

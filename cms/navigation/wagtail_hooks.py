@@ -8,6 +8,8 @@ from wagtail.snippets.views.chooser import ChooseView as SnippetChooseView
 from wagtail.snippets.views.chooser import SnippetChooserViewSet
 from wagtail.snippets.views.snippets import SnippetViewSet
 
+from cms.core.ui import LocaleColumn
+
 from .models import FooterMenu, MainMenu
 
 if TYPE_CHECKING:
@@ -30,7 +32,7 @@ class SingleInstanceModelPermissionPolicy(ModelPermissionPolicy):
 class MenuChooseColumnsMixin:
     @property
     def columns(self) -> list[Column]:
-        return [self.title_column, Column("locale")]  # type: ignore[attr-defined]
+        return [self.title_column, LocaleColumn()]  # type: ignore[attr-defined]
 
 
 class MenuChooseView(MenuChooseColumnsMixin, SnippetChooseView): ...
