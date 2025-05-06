@@ -215,21 +215,6 @@ class StatisticalArticlePageTestCase(WagtailTestUtils, TestCase):
     def test_clean_validates_a_max_of_six_headline_figures_can_be_added(self):
         self.login()
 
-        figures = [
-            {
-                "type": "figure",
-                "value": {
-                    "figure_id": f"figure_{i}",
-                    "title": "Figure title XYZ",
-                    "figure": "100 Million and more",
-                    "supporting_text": "Reasons to add tests and use long test strings where possible",
-                },
-                "deleted": "",
-                "order": str(i),
-            }
-            for i in range(7)
-        ]
-
         data = nested_form_data(
             {
                 "title": self.page.title,
@@ -242,8 +227,20 @@ class StatisticalArticlePageTestCase(WagtailTestUtils, TestCase):
                 ),
                 "corrections": streamfield([]),
                 "notices": streamfield([]),
-                "headline_figures": figures,
-                "headline_figures-count": 7,  # a bit of a hack to get the right nested format
+                "headline_figures": streamfield(
+                    [
+                        (
+                            "figure",
+                            {
+                                "figure_id": f"figure_{i}",
+                                "title": "Figure title XYZ",
+                                "figure": "100 Million and more",
+                                "supporting_text": "Reasons to add tests and use long test strings where possible",
+                            },
+                        )
+                        for i in range(7)
+                    ]
+                ),
             }
         )
         response = self.client.post(reverse("wagtailadmin_pages:edit", args=[self.page.pk]), data, follow=True)
