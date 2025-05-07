@@ -19,6 +19,7 @@ services:
       STATIC_DIR: /app/static/
       STATIC_URL: /static/
       KAFKA_SERVER: broker:9092
+      WAGTAIL_CORE_ADMIN_LOGIN_ENABLED: true
     ports:
       - 3000:3000 # webpack
       - 8000:8000 # runserver
