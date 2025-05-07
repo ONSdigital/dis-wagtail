@@ -111,4 +111,3 @@ Feature: Statistical Article Page components
         When the user goes to add a new statistical article page
         Then the date placeholder "YYYY-MM-DD" is displayed in the "Release date*" textbox
         And the date placeholder "YYYY-MM-DD" is displayed in the "Next release date" textbox
-
