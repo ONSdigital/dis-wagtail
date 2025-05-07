@@ -8,6 +8,7 @@ from django.core.management.base import BaseCommand
 from django.db import transaction
 from django.urls import reverse
 from django.utils import timezone
+from django.utils.translation import gettext_lazy as _
 from wagtail.log_actions import log
 
 from cms.bundles.enums import BundleStatus
@@ -19,6 +20,16 @@ logger = logging.getLogger(__name__)
 
 if TYPE_CHECKING:
     from django.core.management.base import CommandParser
+    from wagtail.models import Page
+
+
+def serialize_page(page: "Page") -> dict[str, Any]:
+    """Serializes a page to a dictionary."""
+    return {
+        "id": uuid.uuid4(),
+        "type": "item",
+        "value": {"page": page.pk, "title": "", "description": "", "external_url": ""},
+    }
 
 
 class Command(BaseCommand):
@@ -38,17 +49,22 @@ class Command(BaseCommand):
     def _update_related_release_calendar_page(self, bundle: Bundle) -> None:
         """Updates the release calendar page related to the bundle with the pages in the bundle."""
         content = []
-        pages = []
+        article_pages = []
+        methodology_pages = []
         for page in bundle.get_bundled_pages():
-            pages.append(
-                {
-                    "id": uuid.uuid4(),
-                    "type": "item",
-                    "value": {"page": page.pk, "title": "", "description": "", "external_url": ""},
-                }
+            match page.specific_class.__name__:
+                case "StatisticalArticlePage":
+                    article_pages.append(serialize_page(page))
+                case "MethodologyPage":
+                    methodology_pages.append(serialize_page(page))
+
+        if article_pages:
+            content.append({"type": "release_content", "value": {"title": _("Publications"), "links": article_pages}})
+
+        if methodology_pages:
+            content.append(
+                {"type": "release_content", "value": {"title": _("Methodology"), "links": methodology_pages}}
             )
-        if pages:
-            content.append({"type": "release_content", "value": {"title": "Publications", "links": pages}})
 
         page = bundle.release_calendar_page
         page.content = content
