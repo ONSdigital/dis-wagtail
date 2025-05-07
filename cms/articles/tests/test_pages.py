@@ -7,6 +7,7 @@ from django.urls import reverse
 from wagtail.blocks import StreamValue
 from wagtail.test.utils import WagtailPageTestCase
 
+from cms.articles.enums import SortingChoices
 from cms.articles.tests.factories import ArticleSeriesPageFactory, StatisticalArticlePageFactory
 from cms.datasets.blocks import DatasetStoryBlock
 from cms.datasets.models import Dataset
@@ -510,3 +511,39 @@ class StatisticalArticlePageTests(WagtailPageTestCase):
         self.assertIn('class="ons-pagination__item ons-pagination__item--current"', content)
         self.assertIn('class="ons-pagination__item ons-pagination__item--next"', content)
         self.assertIn('class="ons-pagination__position">Page 2 of 4', content)
+
+    def test_prepopulated_datasets(self):
+        lookup_dataset = Dataset.objects.create(
+            namespace="LOOKUP",
+            edition="lookup_edition",
+            version="lookup_version",
+            title="test lookup",
+            description="lookup description",
+        )
+        manual_dataset = {"title": "test manual", "description": "manual description", "url": "https://example.com"}
+
+        self.page.datasets = StreamValue(
+            DatasetStoryBlock(),
+            stream_data=[
+                ("dataset_lookup", lookup_dataset),
+                ("manual_link", manual_dataset),
+            ],
+        )
+        self.page.dataset_sorting = SortingChoices.ALPHABETIC
+        self.page.save_revision().publish()
+
+        self.client.force_login(self.user)
+        parent_page = self.page.get_parent()
+        add_sibling_url = reverse("wagtailadmin_pages:add_subpage", args=[parent_page.id])
+
+        response = self.client.get(add_sibling_url, follow=True)
+        self.assertEqual(response.status_code, HTTPStatus.OK)
+
+        self.assertContains(
+            response, "This page has been prepopulated with the content from the latest page in the series."
+        )
+
+        new_page = response.context_data["form"].instance
+
+        self.assertEqual(new_page.datasets, self.page.datasets)
+        self.assertEqual(new_page.dataset_sorting, self.page.dataset_sorting)

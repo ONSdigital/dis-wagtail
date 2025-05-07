@@ -194,7 +194,7 @@
                 {% if request.is_preview %}
                     {% set related_data_url = url('wagtailadmin_pages:preview_on_edit', page.pk) ~ "?mode=related_data" %}
                 {% else %}
-                    {% set related_data_url = routablepageurl(page.specific, "related_data") %}
+                    {% set related_data_url = routablepageurl(page, "related_data") %}
                 {% endif %}
                 {% with title=_("Explore Data"), aria_label=_("Data related to this page"), related_data_text=_("View data used in this article") %}
                 {# fmt:off #}
