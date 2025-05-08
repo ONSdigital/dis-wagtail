@@ -10,7 +10,10 @@ from wagtail.admin.panels import FieldPanel, FieldRowPanel, InlinePanel, Multipl
 from wagtail.models import Orderable, Page
 from wagtail.search import index
 
+from cms.home.models import HomePage
+from cms.release_calendar.models import ReleaseCalendarPage
 from cms.release_calendar.viewsets import FutureReleaseCalendarChooserWidget
+from cms.topics.models import TopicPage
 from cms.workflows.utils import is_page_ready_to_preview, is_page_ready_to_publish
 
 from .enums import ACTIVE_BUNDLE_STATUSES, EDITABLE_BUNDLE_STATUSES, PREVIEWABLE_BUNDLE_STATUSES, BundleStatus
@@ -24,6 +27,8 @@ if TYPE_CHECKING:
     from wagtail.query import PageQuerySet
 
     from cms.teams.models import Team
+
+VIEWER_EXCLUDED_PAGE_TYPES = (HomePage, TopicPage, ReleaseCalendarPage)
 
 
 class BundlePage(Orderable):
@@ -178,7 +183,11 @@ class Bundle(index.Indexed, ClusterableModel, models.Model):  # type: ignore[dja
         return pages
 
     def get_pages_ready_for_review(self) -> list[Page]:
-        return [page for page in self.get_bundled_pages(specific=True) if is_page_ready_to_preview(page)]
+        return [
+            page
+            for page in self.get_bundled_pages(specific=True).not_type(VIEWER_EXCLUDED_PAGE_TYPES)
+            if is_page_ready_to_preview(page)
+        ]
 
     def get_teams_display(self) -> str:
         return ", ".join(
