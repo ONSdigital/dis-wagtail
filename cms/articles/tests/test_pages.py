@@ -395,3 +395,26 @@ class StatisticalArticlePageTests(WagtailPageTestCase):
             "wagtailadmin/panels/headline_figures/figures_used_by_ancestor_data.html",
             "Template required by Headline Figures functionality was not used",
         )
+
+    def test_date_placeholder(self):
+        """Test that the date input field displays date placeholder."""
+        self.client.force_login(self.user)
+
+        parent_page = self.page.get_parent()
+        add_sibling_url = reverse("wagtailadmin_pages:add_subpage", args=[parent_page.id])
+
+        response = self.client.get(add_sibling_url, follow=True)
+
+        content = response.content.decode(encoding="utf-8")
+
+        date_placeholder = "YYYY-MM-DD"
+
+        self.assertInHTML(
+            f'<input type="text" name="release_date" autocomplete="off" placeholder="{date_placeholder}" aria-describedby="panel-child-content-child-metadata-child-dates-child-release_date-helptext" required="" id="id_release_date">',  # noqa: E501
+            content,
+        )
+
+        self.assertInHTML(
+            f'<input type="text" name="next_release_date" autocomplete="off" placeholder="{date_placeholder}" aria-describedby="panel-child-content-child-metadata-child-dates-child-next_release_date-helptext" id="id_next_release_date">',  # noqa: E501
+            content,
+        )
