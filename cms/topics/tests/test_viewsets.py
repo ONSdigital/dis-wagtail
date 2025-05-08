@@ -2,6 +2,7 @@ from datetime import datetime
 
 from django.test import TestCase
 from django.urls import reverse
+from django.utils import timezone
 from wagtail.test.utils import WagtailTestUtils
 
 from cms.articles.tests.factories import ArticleSeriesPageFactory, StatisticalArticlePageFactory
@@ -12,6 +13,7 @@ from cms.topics.viewsets import (
     highlighted_article_page_chooser_viewset,
     highlighted_methodology_page_chooser_viewset,
 )
+from cms.topics.viewsets.series_with_headline_figures import series_with_headline_figures_chooser_viewset
 
 
 class FeaturedSeriesPageChooserViewSetTest(WagtailTestUtils, TestCase):
@@ -224,3 +226,156 @@ class HighlightedPageChooserViewSetTest(WagtailTestUtils, TestCase):
         )
         self.assertEqual(highlighted_methodology_page_chooser_viewset.edit_item_text, "Edit Methodology page")
         self.assertIn("topic_page_id", highlighted_methodology_page_chooser_viewset.preserve_url_parameters)
+
+
+class SeriesWithHeadlineFiguresChooserViewSetTest(WagtailTestUtils, TestCase):
+    @classmethod
+    def setUpTestData(cls):
+        cls.superuser = cls.create_superuser(username="admin")
+
+        # Create test pages
+        cls.topic_page = TopicPageFactory(title="PSF")
+        cls.series1 = ArticleSeriesPageFactory(parent=cls.topic_page, title="Series A")
+        cls.series2 = ArticleSeriesPageFactory(parent=cls.topic_page, title="Series B")
+
+        cls.series1_article = StatisticalArticlePageFactory(
+            parent=cls.series1,
+            title="Article 1",
+            release_date=datetime(2024, 1, 1),
+            headline_figures=[
+                {
+                    "type": "figure",
+                    "value": {
+                        "figure_id": "figurexyz",
+                        "title": "Foobar figure title",
+                        "figure": "999 million",
+                        "supporting_text": "Figure supporting text XYZ",
+                    },
+                },
+                {
+                    "type": "figure",
+                    "value": {
+                        "figure_id": "figureabc",
+                        "title": "Lorem ipsum figure title",
+                        "figure": "123 billion",
+                        "supporting_text": "Figure supporting text ABC",
+                    },
+                },
+            ],
+            headline_figures_figure_ids="figurexyz,figureabc",
+        )
+        cls.series2_article = StatisticalArticlePageFactory(
+            parent=cls.series2,
+            title="Article 2",
+            release_date=datetime(2024, 2, 1),
+            headline_figures=[
+                {
+                    "type": "figure",
+                    "value": {
+                        "figure_id": "foobar123",
+                        "title": "Another figure title for completeness",
+                        "figure": "100 Billion and many more",
+                        "supporting_text": "Figure supporting text 123",
+                    },
+                },
+                {
+                    "type": "figure",
+                    "value": {
+                        "figure_id": "foobar321",
+                        "title": "John Doe figure title",
+                        "figure": "100 Billion and many more",
+                        "supporting_text": "Figure supporting text 321",
+                    },
+                },
+            ],
+            headline_figures_figure_ids="foobar123,foobar321",
+        )
+
+        cls.chooser_url = series_with_headline_figures_chooser_viewset.widget_class().get_chooser_modal_url()
+        cls.chooser_results_url = reverse(series_with_headline_figures_chooser_viewset.get_url_name("choose_results"))
+
+    def setUp(self):
+        self.client.force_login(self.superuser)
+
+    def test_choose_view_with_topic_filter(self):
+        """Test the article chooser view with topic_page_id filter."""
+        response = self.client.get(f"{self.chooser_url}?topic_page_id={self.topic_page.id}")
+
+        self.assertEqual(response.status_code, 200)
+
+        self.assertTemplateUsed(response, "wagtailadmin/generic/chooser/chooser.html")
+
+        self.assertContains(response, "Foobar figure title")
+        self.assertContains(response, "999 million")
+        self.assertContains(response, "Figure supporting text XYZ")
+        self.assertContains(response, "Lorem ipsum figure title")
+        self.assertContains(response, "123 billion")
+        self.assertContains(response, "Figure supporting text ABC")
+        self.assertContains(response, "Another figure title for completeness")
+        self.assertContains(response, "John Doe figure title")
+        self.assertContains(response, "Figure supporting text 123")
+        self.assertContains(response, "Figure supporting text 321")
+
+        self.assertContains(response, "PSF")
+        self.assertContains(response, "Series A")
+        self.assertContains(response, "Series B")
+
+    def test_choose_view_displays_latest_figures_only(self):
+        """Test the article chooser view with topic_page_id filter."""
+        StatisticalArticlePageFactory(
+            parent=self.series1,
+            title="Newer Article",
+            headline_figures=[
+                {
+                    "type": "figure",
+                    "value": {
+                        "figure_id": "new_figure",
+                        "title": "New figure title",
+                        "figure": "1234 billion",
+                        "supporting_text": "Figure supporting text ABC",
+                    },
+                },
+                {
+                    "type": "figure",
+                    "value": {
+                        "figure_id": "new_figure_2",
+                        "title": "Another new figure title",
+                        "figure": "2999 quadrillion",
+                        "supporting_text": "Figure supporting text ABC",
+                    },
+                },
+            ],
+            headline_figures_figure_ids="new_figure,new_figure_2",
+        )
+
+        response = self.client.get(f"{self.chooser_url}?topic_page_id={self.topic_page.id}")
+
+        self.assertEqual(response.status_code, 200)
+
+        # Check series are shown
+        self.assertNotContains(response, "Foobar figure title")
+        self.assertNotContains(response, "Lorem ipsum figure title")
+        self.assertNotContains(response, "999 million")
+
+        self.assertContains(response, "New figure title")
+        self.assertContains(response, "Another new figure title")
+        self.assertContains(response, "1234 billion")
+        self.assertContains(response, "John Doe figure title")
+        self.assertContains(response, "2999 quadrillion")
+        self.assertContains(response, "Another figure title for completeness")
+        self.assertContains(response, "Figure supporting text 123")
+
+    def test_choose_view_updated_value(self):
+        """Test the article chooser view with topic_page_id filter."""
+        self.series1_article.latest_revision_created_at = datetime(2024, 1, 1, tzinfo=timezone.get_default_timezone())
+        self.series1_article.save()
+
+        self.series2_article.latest_revision_created_at = datetime(2025, 2, 1, tzinfo=timezone.get_default_timezone())
+        self.series2_article.save()
+
+        response = self.client.get(f"{self.chooser_url}?topic_page_id={self.topic_page.id}")
+
+        self.assertEqual(response.status_code, 200)
+
+        self.assertContains(response, "1 January 2024")
+        self.assertContains(response, "1 February 2025")

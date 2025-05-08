@@ -17,7 +17,7 @@ from wagtail.search import index
 from cms.articles.forms import StatisticalArticlePageAdminForm
 from cms.articles.panels import HeadlineFiguresFieldPanel
 from cms.bundles.models import BundledPageMixin
-from cms.core.blocks import HeadlineFiguresBlock
+from cms.core.blocks.headline_figures import HeadlineFiguresItemBlock
 from cms.core.blocks.panels import CorrectionBlock, NoticeBlock
 from cms.core.blocks.stream_blocks import SectionStoryBlock
 from cms.core.fields import StreamField
@@ -146,7 +146,7 @@ class StatisticalArticlePage(BundledPageMixin, RoutablePageMixin, BasePage):  # 
     )
 
     # Fields: content
-    headline_figures = StreamField([("figures", HeadlineFiguresBlock())], blank=True, max_num=1)
+    headline_figures = StreamField([("figure", HeadlineFiguresItemBlock())], blank=True, max_num=6)
     headline_figures_figure_ids = models.CharField(
         max_length=128,
         blank=True,
@@ -231,12 +231,12 @@ class StatisticalArticlePage(BundledPageMixin, RoutablePageMixin, BasePage):  # 
         if self.next_release_date and self.next_release_date <= self.release_date:
             raise ValidationError({"next_release_date": "The next release date must be after the release date."})
 
-        if self.headline_figures and len(self.headline_figures[0].value) == 1:  # pylint: disable=unsubscriptable-object
+        if self.headline_figures and len(self.headline_figures) == 1:  # pylint: disable=unsubscriptable-object
             # Check if headline_figures has 1 item (we can't use min_num because we allow 0)
             raise ValidationError({"headline_figures": "If you add headline figures, please add at least 2."})
 
         if self.headline_figures and len(self.headline_figures) > 0:
-            figure_ids = [figure["figure_id"] for figure in self.headline_figures[0].value]  # pylint: disable=unsubscriptable-object
+            figure_ids = [figure.value["figure_id"] for figure in self.headline_figures]  # pylint: disable=unsubscriptable-object,not-an-iterable
         else:
             figure_ids = []
 
@@ -276,9 +276,9 @@ class StatisticalArticlePage(BundledPageMixin, RoutablePageMixin, BasePage):  # 
         if not self.headline_figures:
             return {}
 
-        for figure in self.headline_figures[0].value:  # pylint: disable=unsubscriptable-object
-            if figure["figure_id"] == figure_id:
-                return dict(figure)
+        for figure in self.headline_figures:  # pylint: disable=unsubscriptable-object
+            if figure.value["figure_id"] == figure_id:
+                return dict(figure.value)
 
         return {}
 
