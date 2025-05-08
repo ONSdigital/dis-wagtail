@@ -87,8 +87,8 @@ class Dataset(models.Model):
 
     @property
     def url_path(self) -> str:
-        return f"datasets/{self.namespace}"
+        return f"/datasets/{self.namespace}"
 
     @property
     def website_url(self) -> str:
-        return f"{settings.ONS_WEBSITE_BASE_URL}/{self.url_path}"
+        return f"{settings.ONS_WEBSITE_BASE_URL}{self.url_path}"
