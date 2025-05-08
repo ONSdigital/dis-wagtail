@@ -62,6 +62,7 @@ class WorkflowTweaksTestCase(WagtailTestUtils, TestCase):
                 ),
                 "headline_figures": streamfield([]),
                 "datasets": streamfield([]),
+                "dataset_sorting": "AS_SHOWN",
                 "corrections": streamfield([]),
                 "notices": streamfield([]),
                 "action-workflow-action": "true",
