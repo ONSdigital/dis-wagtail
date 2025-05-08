@@ -160,8 +160,8 @@ class ResourceBuildersTestCase(TestCase, ResourceDictAssertions):
         self.assert_release_booleans(result, published=True)
 
     def test_release_page_release_date_vs_provisional_date(self):
-        """If release_date is set, we do NOT expect 'provisional_date' in the result
-        (it can be present only if release_date is None but release_date_text is set).
+        """If release_date is set, and release_date_text is None,
+        we do NOT expect 'provisional_date' in the result.
         """
         page = self.release_page_confirmed
         result = build_resource_dict(page)
@@ -169,14 +169,14 @@ class ResourceBuildersTestCase(TestCase, ResourceDictAssertions):
         self.assertIsNotNone(result["release_date"])
         self.assertNotIn("provisional_date", result)
 
-    def test_release_page_provisional_date_when_no_release_date(self):
-        """If release_date=None but release_date_text is set, we expect 'provisional_date'
-        and no 'release_date'.
+    def test_provisional_date_is_sent_if_present(self):
+        """On provisional release calendar pages if release_date_text is present it's sent as provisional_date
+        and release_date isn't sent.
         """
         page = ReleaseCalendarPageFactory(
             status=ReleaseStatus.PROVISIONAL,
-            release_date=None,
-            release_date_text="Provisional release date text",
+            release_date=timezone.now(),
+            release_date_text="August 2025",
         )
         result = build_resource_dict(page)
 
