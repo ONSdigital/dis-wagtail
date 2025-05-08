@@ -4,24 +4,7 @@
 {% block header_area %}
     {%- set hero_topic = _("Release") -%}
     {%- set breadcrumbs_label = _("Breadcrumbs") -%}
-
-    {% if page.release_date or page.release_text %}
-        {%- set release_date_label = _("Provisional release date:") -%}
-        {# fmt:off #}
-        {%- set release_date_html =
-            {
-                "term": release_date_label,
-                "descriptions": [
-                    {
-                        "description": page.release_date|ons_date("DATETIME_FORMAT") or page.release_date_text
-                    }
-                ]
-            }
-        -%}
-        {# fmt:on #}
-    {% else %}
-        {%- set release_date_html = "" -%}
-    {% endif %}
+    {%- set release_date_label = _("Release date:") -%}
 
     {# fmt:off #}
     {{
@@ -37,9 +20,10 @@
                 "descriptionListLabel": "",
                 "termCol": "6",
                 "descriptionCol": "6",
-                "itemsList": [
-                    release_date_html
-                ]
+                "itemsList": [{
+                    "term": release_date_label,
+                    "descriptions": [{"description":  page.release_date_value}]
+                }]
             },
             "breadcrumbs": {
                 "ariaLabel": breadcrumbs_label,

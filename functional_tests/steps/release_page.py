@@ -1,4 +1,4 @@
-from behave import step, then, when  # pylint: disable=no-name-in-module
+from behave import given, step, then, when  # pylint: disable=no-name-in-module
 from behave.runner import Context
 from django.conf import settings
 from playwright.sync_api import expect
@@ -6,29 +6,29 @@ from playwright.sync_api import expect
 from functional_tests.step_helpers.datasets import mock_datasets_responses
 
 
-@when("the user navigates to the release calendar page")
+@given("the user navigates to the release calendar page")
 def navigate_to_release_page(context: Context):
     context.page.get_by_role("button", name="Pages").click()
     context.page.get_by_role("link", name="View child pages of 'Home'").click()
     context.page.get_by_role("link", name="Release calendar", exact=True).click()
 
 
-@when('clicks "add child page" to create a new draft release page')
+@when('the user clicks "Add child page" to create a new draft release page')
 def click_add_child_page(context: Context):
     context.page.get_by_label("Add child page").click()
 
 
-@when('the user sets the page status to "{page_status}"')
+@step('the user sets the page status to "{page_status}"')
 def set_page_status(context: Context, page_status: str):
     context.page.get_by_label("Status*").select_option(page_status.upper())
 
 
-@when("enters some example content on the page")
+@when("the user enters some example content on the page")
 def enter_example_release_content(context: Context):
     context.page.get_by_placeholder("Page title*").fill("My Release")
 
-    context.page.get_by_label("Release date", exact=True).fill("2024-12-25")
-    context.page.get_by_label("Release date", exact=True).press("Enter")
+    context.page.get_by_role("textbox", name="Release date*").fill("2024-12-25")
+    context.page.get_by_role("textbox", name="Release date*").press("Enter")
 
     context.page.get_by_role("region", name="Summary*").get_by_role("textbox").fill("My example release page")
 
@@ -116,19 +116,23 @@ def check_selected_datasets_are_displayed(context: Context):
         expect(context.page.get_by_text(dataset["description"])).to_be_visible()
 
 
-@when("the user creates and populates a release calendar page")
-def create_page(context: Context):
-    navigate_to_release_page(context)
-    click_add_child_page(context)
-    enter_example_release_content(context)
+@then('the page status is set to "Provisional" and the release date text field is visible')
+def check_that_default_status_is_provisional_and_release_date_text_is_visible(context: Context):
+    expect(context.page.get_by_label("Status*")).to_have_value("PROVISIONAL")
+    expect(context.page.get_by_text("Or, release date text")).to_be_visible()
+
+
+@then("the date text field is not visible")
+def check_date_text_field(context: Context):
+    expect(context.page.get_by_text("Or, release date text")).not_to_be_visible()
 
 
 @when("the user inputs a {meridiem_indicator} datetime")
 def add_datetime(context: Context, meridiem_indicator: str):
     if meridiem_indicator == "am":
-        context.page.get_by_label("Release date", exact=True).fill("2025-3-1 10:00")
+        context.page.get_by_role("textbox", name="Release date*").fill("2025-3-1 10:00")
     elif meridiem_indicator == "pm":
-        context.page.get_by_label("Release date", exact=True).fill("2025-3-1 17:00")
+        context.page.get_by_role("textbox", name="Release date*").fill("2025-3-1 17:00")
     else:
         raise ValueError(f"Unsupported MeridiemIndicator: {meridiem_indicator}")
 
