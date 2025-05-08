@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, Any, ClassVar, Optional
+from typing import TYPE_CHECKING, Any, ClassVar, Optional, cast
 
 from django.conf import settings
 from django.core.exceptions import ValidationError
@@ -430,7 +430,7 @@ class StatisticalArticlePage(BundledPageMixin, RoutablePageMixin, BasePage):  # 
     def preview_modes(self) -> list[tuple[str, str]]:
         return [("default", "Article Page"), ("related_data", "Related Data Page")]
 
-    def serve_preview(self, request, mode_name) -> "TemplateResponse":
+    def serve_preview(self, request: "HttpRequest", mode_name: str) -> "TemplateResponse":
         if mode_name == "related_data":
-            return self.related_data(request)
-        return super().serve_preview(request, mode_name)
+            return cast("TemplateResponse", self.related_data(request))
+        return cast("TemplateResponse", super().serve_preview(request, mode_name))
