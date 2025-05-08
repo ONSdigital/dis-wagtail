@@ -242,60 +242,54 @@ class SeriesWithHeadlineFiguresChooserViewSetTest(WagtailTestUtils, TestCase):
             parent=cls.series1,
             title="Article 1",
             release_date=datetime(2024, 1, 1),
+            headline_figures=[
+                {
+                    "type": "figure",
+                    "value": {
+                        "figure_id": "figurexyz",
+                        "title": "Foobar figure title",
+                        "figure": "999 million",
+                        "supporting_text": "Figure supporting text XYZ",
+                    },
+                },
+                {
+                    "type": "figure",
+                    "value": {
+                        "figure_id": "figureabc",
+                        "title": "Lorem ipsum figure title",
+                        "figure": "123 billion",
+                        "supporting_text": "Figure supporting text ABC",
+                    },
+                },
+            ],
+            headline_figures_figure_ids="figurexyz,figureabc",
         )
         cls.series2_article = StatisticalArticlePageFactory(
             parent=cls.series2,
             title="Article 2",
             release_date=datetime(2024, 2, 1),
+            headline_figures=[
+                {
+                    "type": "figure",
+                    "value": {
+                        "figure_id": "foobar123",
+                        "title": "Another figure title for completeness",
+                        "figure": "100 Billion and many more",
+                        "supporting_text": "Figure supporting text 123",
+                    },
+                },
+                {
+                    "type": "figure",
+                    "value": {
+                        "figure_id": "foobar321",
+                        "title": "John Doe figure title",
+                        "figure": "100 Billion and many more",
+                        "supporting_text": "Figure supporting text 321",
+                    },
+                },
+            ],
+            headline_figures_figure_ids="foobar123,foobar321",
         )
-
-        cls.series1_article.headline_figures = [
-            {
-                "type": "figure",
-                "value": {
-                    "figure_id": "figurexyz",
-                    "title": "Foobar figure title",
-                    "figure": "999 million",
-                    "supporting_text": "Figure supporting text XYZ",
-                },
-            },
-            {
-                "type": "figure",
-                "value": {
-                    "figure_id": "figureabc",
-                    "title": "Lorem ipsum figure title",
-                    "figure": "123 billion",
-                    "supporting_text": "Figure supporting text ABC",
-                },
-            },
-        ]
-        cls.series1_article.headline_figures_figure_ids = "figurexyz,figureabc"
-
-        cls.series1_article.save()
-
-        cls.series2_article.headline_figures = [
-            {
-                "type": "figure",
-                "value": {
-                    "figure_id": "foobar123",
-                    "title": "Another figure title for completeness",
-                    "figure": "100 Billion and many more",
-                    "supporting_text": "Figure supporting text 123",
-                },
-            },
-            {
-                "type": "figure",
-                "value": {
-                    "figure_id": "foobar321",
-                    "title": "John Doe figure title",
-                    "figure": "100 Billion and many more",
-                    "supporting_text": "Figure supporting text 321",
-                },
-            },
-        ]
-        cls.series2_article.headline_figures_figure_ids = "foobar123,foobar321"
-
-        cls.series2_article.save()
 
         cls.chooser_url = series_with_headline_figures_chooser_viewset.widget_class().get_chooser_modal_url()
         cls.chooser_results_url = reverse(series_with_headline_figures_chooser_viewset.get_url_name("choose_results"))
@@ -328,33 +322,31 @@ class SeriesWithHeadlineFiguresChooserViewSetTest(WagtailTestUtils, TestCase):
 
     def test_choose_view_displays_latest_figures_only(self):
         """Test the article chooser view with topic_page_id filter."""
-        new_article = StatisticalArticlePageFactory(
+        StatisticalArticlePageFactory(
             parent=self.series1,
             title="Newer Article",
+            headline_figures=[
+                {
+                    "type": "figure",
+                    "value": {
+                        "figure_id": "new_figure",
+                        "title": "New figure title",
+                        "figure": "1234 billion",
+                        "supporting_text": "Figure supporting text ABC",
+                    },
+                },
+                {
+                    "type": "figure",
+                    "value": {
+                        "figure_id": "new_figure_2",
+                        "title": "Another new figure title",
+                        "figure": "2999 quadrillion",
+                        "supporting_text": "Figure supporting text ABC",
+                    },
+                },
+            ],
+            headline_figures_figure_ids="new_figure,new_figure_2",
         )
-
-        new_article.headline_figures = [
-            {
-                "type": "figure",
-                "value": {
-                    "figure_id": "new_figure",
-                    "title": "New figure title",
-                    "figure": "1234 billion",
-                    "supporting_text": "Figure supporting text ABC",
-                },
-            },
-            {
-                "type": "figure",
-                "value": {
-                    "figure_id": "new_figure_2",
-                    "title": "Another new figure title",
-                    "figure": "2999 quadrillion",
-                    "supporting_text": "Figure supporting text ABC",
-                },
-            },
-        ]
-        new_article.headline_figures_figure_ids = "new_figure,new_figure_2"
-        new_article.save()
 
         response = self.client.get(f"{self.chooser_url}?topic_page_id={self.topic_page.id}")
 
