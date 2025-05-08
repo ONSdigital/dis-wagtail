@@ -96,6 +96,7 @@ class SeriesWithHeadlineFiguresChooserMixin:
                 for figure in latest_article.headline_figures:
                     page = copy.deepcopy(series_page)
                     page.headline_figure = dict(figure.value)
+                    page.latest_article_revision_created_at = latest_article.latest_revision_created_at
                     filtered_series.append(page)
 
         return filtered_series
@@ -144,7 +145,7 @@ class SeriesWithHeadlineFiguresChooserMixin:
                 "updated",
                 label="Updated",
                 width="12%",
-                accessor="latest_revision_created_at",
+                accessor="latest_article_revision_created_at",
             ),
             PageStatusColumn("status", label="Status", width="12%"),
         ]
