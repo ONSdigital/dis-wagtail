@@ -3,8 +3,8 @@
 
 {% block header_area %}
     {%- set hero_topic = _("Release") -%}
-    {%- set release_date_label = _("Release date:") -%}
     {%- set breadcrumbs_label = _("Breadcrumbs") -%}
+    {%- set release_date_label = _("Release date:") -%}
 
     {# fmt:off #}
     {{
@@ -20,16 +20,10 @@
                 "descriptionListLabel": "",
                 "termCol": "6",
                 "descriptionCol": "6",
-                "itemsList": [
-                    {
-                        "term": release_date_label,
-                        "descriptions": [
-                            {
-                                "description": page.release_date|ons_date("DATETIME_FORMAT")
-                            }
-                        ]
-                    }
-                ]
+                "itemsList": [{
+                    "term": release_date_label,
+                    "descriptions": [{"description":  page.release_date_value}]
+                }]
             },
             "breadcrumbs": {
                 "ariaLabel": breadcrumbs_label,

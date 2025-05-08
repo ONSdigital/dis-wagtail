@@ -35,8 +35,11 @@ def build_release_specific_fields(page: "Page") -> dict:
         "published": page.status == ReleaseStatus.PUBLISHED,
         "date_changes": [],
     }
-    # If page.release_date_text is present, treat it as provisional_date
+
+    # If page.release_date_text is present, treat it as a provisional_date
+    # and do not add release_date to the payload.
     if page.release_date_text:
+        data["release_date"] = None
         data["provisional_date"] = page.release_date_text
 
     if getattr(page, "changes_to_release_date", None):

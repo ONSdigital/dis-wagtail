@@ -6,6 +6,7 @@ from django.utils import timezone
 from wagtail.blocks import StreamValue
 from wagtail.test.utils.wagtail_tests import WagtailTestUtils
 
+from cms.core.custom_date_format import ons_date_format
 from cms.core.models import ContactDetails
 from cms.datasets.blocks import DatasetStoryBlock
 from cms.datasets.models import Dataset
@@ -313,6 +314,56 @@ class ReleaseCalendarPageRenderTestCase(TestCase):
                 response = self.client.get(self.page.url)
 
                 self.assertEqual("The reason" in str(response.content), is_shown)
+
+    def test_release_date_text_overrides_release_datetime(self):
+        """Check that if both release date and release date text are present,
+        then release date text is used for provisional releases
+        and release date is used for all other statuses.
+        """
+        cases = [
+            (ReleaseStatus.PROVISIONAL, True),
+            (ReleaseStatus.CONFIRMED, False),
+            (ReleaseStatus.PUBLISHED, False),
+        ]
+
+        for status, expect_release_date_text in cases:
+            with self.subTest(status=status, has_release_date_text=expect_release_date_text):
+                self.page.status = status
+                self.page.release_date = timezone.now()
+                self.page.release_date_text = "January 2024"
+
+                self.assertEqual(expect_release_date_text, self.page.release_date_value == "January 2024")
+                self.assertEqual(
+                    not expect_release_date_text,
+                    self.page.release_date_value == ons_date_format(self.page.release_date, "DATETIME_FORMAT"),
+                )
+
+    def test_next_release_date_value_returns_next_release_date(self):
+        """Check that if next release date and next release date text are present,
+        then next release date is returned.
+        """
+        for status in [ReleaseStatus.PROVISIONAL, ReleaseStatus.CONFIRMED, ReleaseStatus.PUBLISHED]:
+            with self.subTest(status=status):
+                self.page.status = status
+
+                next_release_date = timezone.now()
+                self.page.next_release_date = next_release_date
+                self.page.next_release_date_text = "November 2024"
+
+                self.assertEqual(
+                    self.page.next_release_date_value, ons_date_format(next_release_date, "DATETIME_FORMAT")
+                )
+
+    def test_next_release_date_value_returns_next_release_date_text(self):
+        """Check that if only next release date text is present, then it is returned as next release date value."""
+        for status in [ReleaseStatus.PROVISIONAL, ReleaseStatus.CONFIRMED, ReleaseStatus.PUBLISHED]:
+            with self.subTest(status=status):
+                self.page.status = status
+
+                self.page.next_release_date = None
+                self.page.next_release_date_text = "November 2024"
+
+                self.assertEqual(self.page.next_release_date_value, "November 2024")
 
     def test_rendered__contact_details(self):
         """Check rendered content for contact details."""
