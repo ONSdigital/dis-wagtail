@@ -166,7 +166,7 @@ class BaseVisualisationBlock(blocks.StructBlock):
             "yAxis": self.get_y_axis_config(value.get("y_axis")),
             "series": self.get_series_data(value, headers, rows),
             "useStackedLayout": value.get("use_stacked_layout"),
-            "annotations_values": self.get_annotations_config(value),
+            "annotations": self.get_annotations_config(value),
             "download": self.get_download_config(value),
         }
 
