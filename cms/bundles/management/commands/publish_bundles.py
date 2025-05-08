@@ -8,7 +8,6 @@ from django.core.management.base import BaseCommand
 from django.db import transaction
 from django.urls import reverse
 from django.utils import timezone
-from django.utils.translation import gettext_lazy as _
 from wagtail.log_actions import log
 
 from cms.bundles.enums import BundleStatus
@@ -59,12 +58,10 @@ class Command(BaseCommand):
                     methodology_pages.append(serialize_page(page))
 
         if article_pages:
-            content.append({"type": "release_content", "value": {"title": _("Publications"), "links": article_pages}})
+            content.append({"type": "release_content", "value": {"title": "Publications", "links": article_pages}})
 
         if methodology_pages:
-            content.append(
-                {"type": "release_content", "value": {"title": _("Methodology"), "links": methodology_pages}}
-            )
+            content.append({"type": "release_content", "value": {"title": "Methodology", "links": methodology_pages}})
 
         page = bundle.release_calendar_page
         page.content = content
