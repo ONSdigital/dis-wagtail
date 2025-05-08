@@ -28,7 +28,7 @@ if TYPE_CHECKING:
 
     from cms.teams.models import Team
 
-VIEWER_EXCLUDED_PAGE_TYPES = (HomePage, TopicPage, ReleaseCalendarPage)
+PREVIEWER_EXCLUDED_PAGE_TYPES = (HomePage, TopicPage, ReleaseCalendarPage)
 
 
 class BundlePage(Orderable):
@@ -182,10 +182,10 @@ class Bundle(index.Indexed, ClusterableModel, models.Model):  # type: ignore[dja
             pages = pages.specific().defer_streamfields()
         return pages
 
-    def get_pages_ready_for_review(self) -> list[Page]:
+    def get_pages_for_previewers(self) -> list[Page]:
         return [
             page
-            for page in self.get_bundled_pages(specific=True).not_type(VIEWER_EXCLUDED_PAGE_TYPES)
+            for page in self.get_bundled_pages(specific=True).not_type(PREVIEWER_EXCLUDED_PAGE_TYPES)
             if is_page_ready_to_preview(page)
         ]
 
