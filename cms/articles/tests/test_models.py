@@ -254,6 +254,7 @@ class StatisticalArticlePageTestCase(WagtailTestUtils, TestCase):
                 "content": streamfield(
                     [("section", {"title": "Test", "content": streamfield([("rich_text", rich_text("text"))])})]
                 ),
+                "datasets": streamfield([]),
                 "corrections": streamfield([]),
                 "notices": streamfield([]),
                 "headline_figures": streamfield([("figures", figures)]),

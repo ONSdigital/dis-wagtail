@@ -61,6 +61,7 @@ class WorkflowTweaksTestCase(WagtailTestUtils, TestCase):
                     [("section", {"title": "Test", "content": streamfield([("rich_text", rich_text("text"))])})]
                 ),
                 "headline_figures": streamfield([]),
+                "datasets": streamfield([]),
                 "corrections": streamfield([]),
                 "notices": streamfield([]),
                 "action-workflow-action": "true",
