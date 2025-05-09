@@ -35,24 +35,27 @@ class TopicHeadlineFigureBlock extends window.wagtailStreamField.blocks.StructBl
     const seriesInput = document.getElementById(prefix + '-series');
     const figureInput = document.getElementById(prefix + '-figure_id');
 
-    const renderTitleLabelInElement = (title) => {
+    const renderTitleLabelInElement = (title, id) => {
       const label = document.createElement('B');
       label.innerText = 'Figure:';
       const titleSpan = document.createElement('SPAN');
+      const idValue = document.createElement('CODE');
       titleSpan.innerText = title;
-      figureTitle.replaceChildren(label, ' ', titleSpan);
+      idValue.innerText = id;
+      figureTitle.replaceChildren(label, ' ', titleSpan, ' ', idValue);
     };
 
     if (associatedFigure) {
-      renderTitleLabelInElement(associatedFigure.title);
+      renderTitleLabelInElement(associatedFigure.title, figureId);
     }
 
     const container = document.querySelector(
       `[data-contentpath="figure_id"]:has(#${prefix}-figure_id)`,
     );
     seriesInput.addEventListener('change', () => {
-      figureInput.value = seriesInput.getAttribute('data-figure-id');
-      renderTitleLabelInElement(seriesInput.getAttribute('data-figure-title'));
+      const newFigureId = seriesInput.getAttribute('data-figure-id');
+      figureInput.value = newFigureId;
+      renderTitleLabelInElement(seriesInput.getAttribute('data-figure-title'), newFigureId);
     });
 
     figureInput.type = 'hidden';
