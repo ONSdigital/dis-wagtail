@@ -57,12 +57,9 @@ def check_new_information_is_displayed_with_content(context: Context) -> None:
     expect(context.page.get_by_role("navigation", name="Related content").get_by_role("listitem")).to_be_visible()
 
 
-@then("the date placeholder is displayed in the date field of the information page")
-def date_placeholder_information_page(context: Context):
-    expect(context.page.get_by_role("textbox", name="Last updated")).to_have_attribute("placeholder", "YYYY-MM-DD")
-
-
 @step('the date placeholder "{date_format}" is displayed in the "{textbox_text}" textbox')
 def date_placeholder(context: Context, textbox_text: str, date_format: str):
     """Check date placeholder in the textbox."""
-    expect(context.page.get_by_role("textbox", name=textbox_text)).to_have_attribute("placeholder", date_format)
+    expect(context.page.get_by_role("textbox", name=textbox_text, exact=True)).to_have_attribute(
+        "placeholder", date_format
+    )
