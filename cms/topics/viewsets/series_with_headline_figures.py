@@ -17,6 +17,7 @@ from wagtail.admin.viewsets.chooser import ChooserViewSet
 from wagtail.coreutils import resolve_model_string
 
 from cms.articles.models import ArticleSeriesPage
+from cms.core.forms import NoLocaleFilterInChoosersForm
 
 if TYPE_CHECKING:
     from django.core.paginator import Page as PaginatorPage
@@ -66,6 +67,7 @@ class HeadlineFigureColumn(Column):
 
 class SeriesWithHeadlineFiguresChooserMixin:
     model_class: ArticleSeriesPage
+    filter_form_class = NoLocaleFilterInChoosersForm
 
     def get_queryset(self) -> "PageQuerySet[ArticleSeriesPage]":
         topic_page_id = self.request.GET.get("topic_page_id")  # type: ignore[attr-defined]
@@ -91,9 +93,10 @@ class SeriesWithHeadlineFiguresChooserMixin:
         for series_page in objects:
             latest_article = series_page.get_latest()
             if latest_article and latest_article.headline_figures.raw_data:
-                for figure in latest_article.headline_figures[0].value:
+                for figure in latest_article.headline_figures:
                     page = copy.deepcopy(series_page)
-                    page.headline_figure = dict(figure)
+                    page.headline_figure = dict(figure.value)
+                    page.latest_article_revision_created_at = latest_article.latest_revision_created_at
                     filtered_series.append(page)
 
         return filtered_series
@@ -142,7 +145,7 @@ class SeriesWithHeadlineFiguresChooserMixin:
                 "updated",
                 label="Updated",
                 width="12%",
-                accessor="latest_revision_created_at",
+                accessor="latest_article_revision_created_at",
             ),
             PageStatusColumn("status", label="Status", width="12%"),
         ]

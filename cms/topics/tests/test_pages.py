@@ -1,4 +1,3 @@
-import uuid
 from http import HTTPStatus
 
 from wagtail.test.utils import WagtailPageTestCase
@@ -16,30 +15,23 @@ class ArticleSeriesPageTests(WagtailPageTestCase):
         cls.statistical_article_page = StatisticalArticlePageFactory(parent=cls.series)
         cls.statistical_article_page.headline_figures = [
             {
-                "type": "figures",
-                "value": [
-                    {
-                        "id": uuid.uuid4(),
-                        "type": "item",
-                        "value": {
-                            "figure_id": "figurexyz",
-                            "title": "Figure title XYZ",
-                            "figure": "XYZ",
-                            "supporting_text": "Figure supporting text XYZ",
-                        },
-                    },
-                    {
-                        "id": uuid.uuid4(),
-                        "type": "item",
-                        "value": {
-                            "figure_id": "figureabc",
-                            "title": "Figure title ABC",
-                            "figure": "ABC",
-                            "supporting_text": "Figure supporting text ABC",
-                        },
-                    },
-                ],
-            }
+                "type": "figure",
+                "value": {
+                    "figure_id": "figurexyz",
+                    "title": "Figure title XYZ",
+                    "figure": "XYZ",
+                    "supporting_text": "Figure supporting text XYZ",
+                },
+            },
+            {
+                "type": "figure",
+                "value": {
+                    "figure_id": "figureabc",
+                    "title": "Figure title ABC",
+                    "figure": "ABC",
+                    "supporting_text": "Figure supporting text ABC",
+                },
+            },
         ]
         cls.statistical_article_page.headline_figures_figure_ids = "figurexyz,figureabc"
         cls.statistical_article_page.save_revision().publish()
@@ -59,14 +51,14 @@ class ArticleSeriesPageTests(WagtailPageTestCase):
         self.page.headline_figures.extend(
             [
                 (
-                    "figures",
+                    "figure",
                     {
                         "series": self.series,
                         "figure_id": "figurexyz",
                     },
                 ),
                 (
-                    "figures",
+                    "figure",
                     {
                         "series": self.series,
                         "figure_id": "figureabc",
@@ -86,30 +78,23 @@ class ArticleSeriesPageTests(WagtailPageTestCase):
         # When the statistical article updates the figures, the topic page should reflect the changes.
         self.statistical_article_page.headline_figures = [
             {
-                "type": "figures",
-                "value": [
-                    {
-                        "id": uuid.uuid4(),
-                        "type": "item",
-                        "value": {
-                            "figure_id": "figurexyz",
-                            "title": "New figure title updated XYZ",
-                            "figure": "XYZ",
-                            "supporting_text": "Figure supporting text XYZ",
-                        },
-                    },
-                    {
-                        "id": uuid.uuid4(),
-                        "type": "item",
-                        "value": {
-                            "figure_id": "figureabc",
-                            "title": "New figure title updated ABC",
-                            "figure": "ABC",
-                            "supporting_text": "Figure supporting text ABC",
-                        },
-                    },
-                ],
-            }
+                "type": "figure",
+                "value": {
+                    "figure_id": "figurexyz",
+                    "title": "New figure title updated XYZ",
+                    "figure": "XYZ",
+                    "supporting_text": "Figure supporting text XYZ",
+                },
+            },
+            {
+                "type": "figure",
+                "value": {
+                    "figure_id": "figureabc",
+                    "title": "New figure title updated ABC",
+                    "figure": "ABC",
+                    "supporting_text": "Figure supporting text ABC",
+                },
+            },
         ]
 
         self.statistical_article_page.save_revision().publish()

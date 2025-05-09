@@ -1,4 +1,5 @@
 from django.forms import ValidationError
+from wagtail.admin.forms.choosers import BaseFilterForm, SearchFilterMixin
 from wagtail.blocks.stream_block import StreamValue
 from wagtail.models import PageLogEntry
 
@@ -93,3 +94,7 @@ class PageWithCorrectionsAdminForm(DeduplicateTopicsAdminForm):
         sorted_corrections = sorted(corrections, key=lambda correction: correction.value["when"], reverse=True)
 
         return StreamValue(corrections.stream_block, sorted_corrections)
+
+
+class NoLocaleFilterInChoosersForm(SearchFilterMixin, BaseFilterForm):
+    """A chooser filter form that deliberately excludes the locale filter."""

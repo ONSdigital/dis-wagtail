@@ -37,26 +37,26 @@ class ReleaseCalendarPageAdminForm(WagtailAdminPageForm):
 
             self.validate_bundle_not_pending_publication(status)
 
-        if status in [ReleaseStatus.CONFIRMED, ReleaseStatus.PUBLISHED]:
-            if not cleaned_data.get("release_date"):
-                raise ValidationError(
-                    {"release_date": "The release date field is required when the release is confirmed"}
-                )
+        if status != ReleaseStatus.PROVISIONAL:
+            # Input field is hidden with custom JS for non-provisional releases,
+            # set to None to avoid unexpected behavior
+            cleaned_data["release_date_text"] = ""
 
-            if (
-                self.instance.release_date
-                and self.instance.release_date != cleaned_data.get("release_date")
-                and len(self.instance.changes_to_release_date) == len(cleaned_data.get("changes_to_release_date", []))
-            ):
-                # A change in the release date requires updating changes_to_release_date
-                raise ValidationError(
-                    {
-                        "changes_to_release_date": (
-                            "If a confirmed calendar entry needs to be rescheduled, "
-                            "the 'Changes to release date' field must be filled out."
-                        )
-                    }
-                )
+        if (
+            status in [ReleaseStatus.CONFIRMED, ReleaseStatus.PUBLISHED]
+            and self.instance.release_date
+            and self.instance.release_date != cleaned_data.get("release_date")
+            and len(self.instance.changes_to_release_date) == len(cleaned_data.get("changes_to_release_date", []))
+        ):
+            # A change in the release date requires updating changes_to_release_date
+            raise ValidationError(
+                {
+                    "changes_to_release_date": (
+                        "If a confirmed calendar entry needs to be rescheduled, "
+                        "the 'Changes to release date' field must be filled out."
+                    )
+                }
+            )
 
         if (
             cleaned_data.get("release_date")
@@ -65,16 +65,12 @@ class ReleaseCalendarPageAdminForm(WagtailAdminPageForm):
         ):
             raise ValidationError({"next_release_date": "The next release date must be after the release date."})
 
-        release_date_text = cleaned_data.get("release_date_text")
-        if cleaned_data.get("release_date") and release_date_text:
-            error = "Please enter the release date or the release date text, not both."
-            raise ValidationError({"release_date": error, "release_date_text": error})
-
-        if cleaned_data.get("next_release_date") and cleaned_data.get("next_release_text"):
+        if cleaned_data.get("next_release_date") and cleaned_data.get("next_release_date_text"):
             error = "Please enter the next release date or the next release text, not both."
-            raise ValidationError({"next_release_date": error, "next_release_text": error})
+            raise ValidationError({"next_release_date": error, "next_release_date_text": error})
 
         # TODO: expand to validate for non-English locales when adding multi-language.
+        release_date_text = cleaned_data.get("release_date_text")
         if release_date_text and self.instance.locale_id == Locale.get_default().pk:
             self.validate_english_release_date_text_format(release_date_text)
 

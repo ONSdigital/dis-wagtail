@@ -8,6 +8,7 @@ from wagtail.admin.widgets import BaseChooser
 from wagtail.models import Page
 
 from cms.bundles.utils import get_bundleable_page_types, get_pages_in_active_bundles
+from cms.core.ui import LocaleColumn
 
 if TYPE_CHECKING:
     from wagtail.query import PageQuerySet
@@ -41,7 +42,7 @@ class PagesWithDraftsMixin:
         return [
             title_column,
             Column("parent", label="Parent", accessor="get_parent"),
-            Column("locale", label="Locale"),
+            LocaleColumn(),
             DateColumn(
                 "updated",
                 label="Updated",
