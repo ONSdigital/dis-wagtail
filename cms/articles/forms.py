@@ -33,11 +33,11 @@ class PageWithHeadlineFiguresAdminForm(DeduplicateTopicsAdminForm):
                 # The figures were inherited via the init_new_page signal, so we need to also inherit the figure ids
                 self.instance.headline_figures_figure_ids = latest.headline_figures_figure_ids
 
-        for figure in headline_figures[0].value:
-            if not figure["figure_id"]:
-                figure["figure_id"] = token_urlsafe(6)
+        for figure in headline_figures:
+            if not figure.value["figure_id"]:
+                figure.value["figure_id"] = token_urlsafe(6)
                 # Add the generated ID to our list of IDs for validation
-                self.instance.add_headline_figures_figure_id(figure["figure_id"])
+                self.instance.add_headline_figures_figure_id(figure.value["figure_id"])
 
         return headline_figures
 
