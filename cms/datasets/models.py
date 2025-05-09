@@ -87,6 +87,9 @@ class Dataset(models.Model):
 
     @property
     def url_path(self) -> str:
+        """The path to the dataset landing page.
+        Note that this may also direct to the latest version if the landing page doesn't exist.
+        """
         return f"/datasets/{self.namespace}"
 
     @property
