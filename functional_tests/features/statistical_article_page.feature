@@ -111,3 +111,14 @@ Feature: Statistical Article Page components
         When the user goes to add a new statistical article page
         Then the date placeholder "YYYY-MM-DD" is displayed in the "Release date*" textbox
         And the date placeholder "YYYY-MM-DD" is displayed in the "Next release date" textbox
+
+    Scenario: The related data page is linked and accessible when there are datasets related to a statistical article
+        When the user goes to add a new statistical article page
+        And the user adds basic statistical article page content
+        And the user navigates to the related data editor tab
+        And looks up and selects a dataset
+        And manually enters a dataset link
+        And the user clicks "Publish"
+        And the user clicks "View Live" on the publish confirmation banner
+        And the user clicks "View data used in this article" on the article page
+        Then the related data page for the article is shown
