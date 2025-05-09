@@ -540,6 +540,13 @@ class StatisticalArticlePageTests(WagtailPageTestCase):
         self.assertEqual(new_page.datasets, self.page.datasets)
         self.assertEqual(new_page.dataset_sorting, self.page.dataset_sorting)
 
+
+class DatePlaceholderTests(WagtailPageTestCase):
+    @classmethod
+    def setUpTestData(cls):
+        cls.page = StatisticalArticlePageFactory()
+        cls.user = cls.create_superuser("admin")
+
     def test_date_placeholder(self):
         """Test that the date input field displays date placeholder."""
         self.client.force_login(self.user)
