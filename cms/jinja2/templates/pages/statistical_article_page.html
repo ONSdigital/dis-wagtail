@@ -170,7 +170,14 @@
     {% endif %}
 
     {% if page.headline_figures %}
-        {% include_block page.headline_figures %}
+        <div class="ons-container headline-figures">
+            <h2 class="headline-figures__heading ons-u-fs-m">{{ _("Headline facts and figures") }}</h2>
+            <div class="ons-grid ons-grid-flex-gap ons-grid-flex-gap--24 headline-figures__grid">
+                {% for figure in page.headline_figures %}
+                    {% include_block figure %}
+                {% endfor %}
+            </div>
+        </div>
     {% endif %}
 
 {% endblock %}
