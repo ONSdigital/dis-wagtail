@@ -100,6 +100,6 @@ class Migration(migrations.Migration):
             options={
                 "abstract": False,
             },
-            bases=(cms.bundles.models.BundledPageMixin, "wagtailcore.page", models.Model),
+            bases=(cms.bundles.mixins.BundledPageMixin, "wagtailcore.page", models.Model),
         ),
     ]

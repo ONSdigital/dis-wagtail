@@ -10,6 +10,7 @@ from wagtail.fields import RichTextField
 from wagtail.models import Page
 from wagtail.search import index
 
+from cms.bundles.mixins import BundledPageMixin
 from cms.core.custom_date_format import ons_date_format
 from cms.core.fields import StreamField
 from cms.core.models import BasePage
@@ -41,7 +42,7 @@ class ReleaseCalendarIndex(BasePage):  # type: ignore[django-manager-missing]
     max_count_per_parent = 1
 
 
-class ReleaseCalendarPage(BasePage):  # type: ignore[django-manager-missing]
+class ReleaseCalendarPage(BundledPageMixin, BasePage):  # type: ignore[django-manager-missing]
     """The calendar release page model."""
 
     base_form_class = ReleaseCalendarPageAdminForm
@@ -149,6 +150,7 @@ class ReleaseCalendarPage(BasePage):  # type: ignore[django-manager-missing]
         FieldPanel("changes_to_release_date", icon="comment"),
         FieldPanel("pre_release_access", icon="key"),
         FieldPanel("related_links", icon="link"),
+        *BundledPageMixin.panels,
     ]
 
     search_fields: ClassVar[list[index.BaseField]] = [

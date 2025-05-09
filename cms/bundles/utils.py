@@ -9,7 +9,7 @@ from cms.bundles.enums import ACTIVE_BUNDLE_STATUSES
 @cache
 def get_bundleable_page_types() -> list[type[Page]]:
     # using this rather than inline import to placate pyright complaining about cyclic imports
-    module = __import__("cms.bundles.models", fromlist=["BundledPageMixin"])
+    module = __import__("cms.bundles.mixins", fromlist=["BundledPageMixin"])
     bundle_page_mixin_class = module.BundledPageMixin
 
     return [model for model in get_page_models() if issubclass(model, bundle_page_mixin_class)]

@@ -7,7 +7,7 @@ from django.utils.html import format_html
 from wagtail import hooks
 from wagtail.admin import messages
 
-from cms.bundles.models import BundledPageMixin
+from cms.bundles.mixins import BundledPageMixin
 
 if TYPE_CHECKING:
     from django.http import HttpRequest, HttpResponse

@@ -10,7 +10,8 @@ from wagtail.log_actions import LogFormatter
 from wagtail.permission_policies import ModelPermissionPolicy
 
 from . import admin_urls
-from .models import Bundle, BundledPageMixin
+from .mixins import BundledPageMixin
+from .models import Bundle
 from .viewsets.bundle import bundle_viewset
 from .viewsets.bundle_chooser import bundle_chooser_viewset
 from .viewsets.bundle_page_chooser import bundle_page_chooser_viewset

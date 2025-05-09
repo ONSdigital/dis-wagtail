@@ -6,6 +6,7 @@ from wagtail.admin.panels import InlinePanel
 from wagtail.fields import RichTextField
 from wagtail.search import index
 
+from cms.bundles.mixins import BundledPageMixin
 from cms.core.blocks.related import RelatedContentBlock
 from cms.core.blocks.stream_blocks import CoreStoryBlock
 from cms.core.fields import StreamField
@@ -17,7 +18,7 @@ if TYPE_CHECKING:
     from wagtail.admin.panels import Panel
 
 
-class InformationPage(GenericTaxonomyMixin, BasePage):  # type: ignore[django-manager-missing]
+class InformationPage(BundledPageMixin, GenericTaxonomyMixin, BasePage):  # type: ignore[django-manager-missing]
     """A generic information page model."""
 
     template = "templates/pages/information_page.html"
@@ -35,6 +36,7 @@ class InformationPage(GenericTaxonomyMixin, BasePage):  # type: ignore[django-ma
         "last_updated",
         "content",
         InlinePanel("page_related_pages", label="Related pages"),
+        *BundledPageMixin.panels,
     ]
 
     search_fields: ClassVar[list[index.BaseField]] = [
@@ -44,7 +46,7 @@ class InformationPage(GenericTaxonomyMixin, BasePage):  # type: ignore[django-ma
     ]
 
 
-class IndexPage(BasePage):  # type: ignore[django-manager-missing]
+class IndexPage(BundledPageMixin, BasePage):  # type: ignore[django-manager-missing]
     template = "templates/pages/index_page.html"
 
     parent_page_types: ClassVar[list[str]] = ["home.HomePage", "IndexPage"]
@@ -67,6 +69,7 @@ class IndexPage(BasePage):  # type: ignore[django-manager-missing]
         "featured_items",
         "content",
         "related_links",
+        *BundledPageMixin.panels,
     ]
 
     search_fields: ClassVar[list[index.SearchField | index.AutocompleteField]] = [

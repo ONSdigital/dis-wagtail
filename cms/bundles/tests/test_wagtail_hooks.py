@@ -2,7 +2,7 @@ from django.test import TestCase
 from django.urls import reverse
 from wagtail.test.utils.wagtail_tests import WagtailTestUtils
 
-from cms.articles.tests.factories import StatisticalArticlePageFactory
+from cms.articles.tests.factories import ArticleSeriesPageFactory, StatisticalArticlePageFactory
 from cms.bundles.models import Bundle, BundleTeam
 from cms.bundles.tests.factories import BundleFactory, BundlePageFactory
 from cms.bundles.tests.utils import (
@@ -10,7 +10,6 @@ from cms.bundles.tests.utils import (
     create_bundle_viewer,
 )
 from cms.bundles.wagtail_hooks import BundlesInReviewPanel, LatestBundlesPanel
-from cms.release_calendar.tests.factories import ReleaseCalendarPageFactory
 from cms.teams.models import Team
 from cms.users.tests.factories import UserFactory
 
@@ -152,17 +151,24 @@ class WagtailHooksTestCase(WagtailTestUtils, TestCase):
 
     def test_add_to_bundle_buttons__doesnt_show_for_pages_in_bundle(self):
         """Checks that the button doesn't appear for pages already in a bundle."""
-        release_calendar_page = ReleaseCalendarPageFactory()
+        article_series_page = ArticleSeriesPageFactory()
         contexts = [
-            (reverse("wagtailadmin_pages:edit", args=[release_calendar_page.id]), "header"),
-            (reverse("wagtailadmin_explore", args=[release_calendar_page.get_parent().id]), "listing"),
+            (
+                reverse("wagtailadmin_pages:edit", args=[article_series_page.id]),
+                reverse("bundles:add_to_bundle", args=[article_series_page.id]),
+                "header",
+            ),
+            (
+                reverse("wagtailadmin_explore", args=[article_series_page.get_parent().id]),
+                reverse("bundles:add_to_bundle", args=[article_series_page.id]),
+                "listing",
+            ),
         ]
         BundlePageFactory(parent=self.draft_bundle, page=self.statistical_article_page)
 
         self.client.force_login(self.publishing_officer)
 
-        for url, context in contexts:
+        for url, add_to_bundle_url, context in contexts:
             with self.subTest(msg=f"Non-bundleable page - {context}"):
                 response = self.client.get(url)
-                self.assertNotContains(response, "Add to Bundle")
-                self.assertNotContains(response, self.add_to_bundle_url)
+                self.assertNotContains(response, add_to_bundle_url)

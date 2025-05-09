@@ -69,6 +69,8 @@ class BundleAdminForm(WagtailAdminModelForm):
                 page = page.specific
                 if page.in_active_bundle and page.active_bundle != self.instance:
                     raise ValidationError(f"'{page}' is already in an active bundle ({page.active_bundle})")
+                if self.cleaned_data.get("release_calendar_page") == page:
+                    raise ValidationError(f"'{page}' is already set as the Release Calendar page for this bundle.")
 
     def _validate_bundled_pages_status(self) -> None:
         has_pages = False

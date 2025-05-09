@@ -245,7 +245,7 @@ class BundleInspectView(InspectView):
         )
 
     def get_pages_for_previewer(self) -> "SafeString":
-        pages = self.object.get_pages_ready_for_review()
+        pages = self.object.get_pages_for_previewers()
 
         data = (
             (
