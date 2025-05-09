@@ -24,11 +24,17 @@ class ReleaseCalendarPageTests(WagtailPageTestCase):
         datetime_placeholder = "YYYY-MM-DD HH:MM"
 
         self.assertInHTML(
-            f'<input type="text" name="next_release_date" autocomplete="off" placeholder="{datetime_placeholder}" id="id_next_release_date">',  # noqa: E501
+            (
+                '<input type="text" name="next_release_date" autocomplete="off"'
+                f'placeholder="{datetime_placeholder}" id="id_next_release_date">'
+            ),
             content,
         )
 
         self.assertInHTML(
-            f'<input type="text" name="next_release_date" autocomplete="off" placeholder="{datetime_placeholder}" id="id_next_release_date">',  # noqa: E501
+            (
+                '<input type="text" name="next_release_date" autocomplete="off" '
+                f'placeholder="{datetime_placeholder}" id="id_next_release_date">'
+            ),
             content,
         )

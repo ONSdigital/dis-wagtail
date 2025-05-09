@@ -25,6 +25,9 @@ class DatePlaceholderTestCase(WagtailPageTestCase):
         date_placeholder = "YYYY-MM-DD"
 
         self.assertInHTML(
-            f'<input type="text" name="last_updated" autocomplete="off" placeholder="{date_placeholder}" id="id_last_updated">',  # noqa: E501
+            (
+                '<input type="text" name="last_updated" autocomplete="off"'
+                f'placeholder="{date_placeholder}" id="id_last_updated">'
+            ),
             content,
         )

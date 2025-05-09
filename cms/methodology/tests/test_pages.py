@@ -23,13 +23,19 @@ class MethodologyPageTest(WagtailPageTestCase):
         content = response.content.decode(encoding="utf-8")
 
         date_placeholder = "YYYY-MM-DD"
-        # check html
+
         self.assertInHTML(
-            f'<input type="text" name="publication_date" autocomplete="off" placeholder="{date_placeholder}" required="" id="id_publication_date">',  # noqa: E501
+            (
+                '<input type="text" name="publication_date" autocomplete="off"'
+                f'placeholder="{date_placeholder}" required="" id="id_publication_date">'
+            ),
             content,
         )
 
         self.assertInHTML(
-            f'<input type="text" name="last_revised_date" autocomplete="off" placeholder="{date_placeholder}" id="id_last_revised_date">',  # noqa: E501
+            (
+                '<input type="text" name="last_revised_date" autocomplete="off"'
+                f'placeholder="{date_placeholder}" id="id_last_revised_date">'
+            ),
             content,
         )

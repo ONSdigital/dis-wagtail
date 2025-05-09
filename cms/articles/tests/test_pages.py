@@ -420,11 +420,19 @@ class StatisticalArticlePageTests(WagtailPageTestCase):
         date_placeholder = "YYYY-MM-DD"
 
         self.assertInHTML(
-            f'<input type="text" name="release_date" autocomplete="off" placeholder="{date_placeholder}" aria-describedby="panel-child-content-child-metadata-child-dates-child-release_date-helptext" required="" id="id_release_date">',  # noqa: E501
+            (
+                f'<input type="text" name="release_date" autocomplete="off" placeholder="{date_placeholder}"'
+                'aria-describedby="panel-child-content-child-metadata-child-dates-child-release_date-helptext"'
+                'required="" id="id_release_date">'
+            ),
             content,
         )
 
         self.assertInHTML(
-            f'<input type="text" name="next_release_date" autocomplete="off" placeholder="{date_placeholder}" aria-describedby="panel-child-content-child-metadata-child-dates-child-next_release_date-helptext" id="id_next_release_date">',  # noqa: E501
+            (
+                f'<input type="text" name="next_release_date" autocomplete="off" placeholder="{date_placeholder}"'
+                ' aria-describedby="panel-child-content-child-metadata-child-dates-child-next_release_date-helptext"'
+                'id="id_next_release_date">'
+            ),
             content,
         )

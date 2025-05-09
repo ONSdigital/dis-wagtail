@@ -14,9 +14,7 @@ class BundlesPageTest(WagtailPageTestCase):
         """Test that the date input field displays date placeholder."""
         self.client.force_login(self.user)
 
-        # add_bundles_url = self.client.get("/admin/bundle/new/")
         add_bundles_url = reverse("wagtailadmin_pages:add", args=["bundle", "new"])
-        print("URL:", add_bundles_url)
 
         response = self.client.get(add_bundles_url, follow=True)
 
@@ -25,10 +23,16 @@ class BundlesPageTest(WagtailPageTestCase):
         datetime_placeholder = "YYYY-MM-DD HH:MM"
 
         self.assertInHTML(
-            f'<input type="text" name="publication_date" autocomplete="off" placeholder="{datetime_placeholder}" id="id_publication_date">',  # noqa: E501
+            (
+                '<input type="text" name="publication_date" autocomplete="off"'
+                f'placeholder="{datetime_placeholder}" id="id_publication_date">'
+            ),
             content,
         )
         self.assertInHTML(
-            f'<input type="text" name="last_revised_date" autocomplete="off" placeholder="{datetime_placeholder}" id="id_last_revised_date">',  # noqa: E501
+            (
+                '<input type="text" name="last_revised_date" autocomplete="off"'
+                f' placeholder="{datetime_placeholder}" id="id_last_revised_date">'
+            ),
             content,
         )
