@@ -161,7 +161,7 @@ def user_adds_headline_figures(context: Context):
     panel = page.locator("#panel-child-content-headline_figures-content")
     panel.get_by_role("button", name="Insert a block").click()
     page.wait_for_timeout(100)
-    panel.get_by_role("button", name="Add", exact=True).nth(0).click()
+    panel.get_by_role("button", name="Insert a block").nth(1).click()
     page.wait_for_timeout(100)
     panel.get_by_label("Title*").nth(0).fill("First headline figure")
     panel.get_by_label("Figure*").nth(0).fill("~123%")
@@ -175,7 +175,7 @@ def user_adds_headline_figures(context: Context):
 def user_reorders_the_headline_figures_on_the_statistical_article_page(context: Context):
     page = context.page
     panel = page.locator("#panel-child-content-headline_figures-content")
-    panel.get_by_role("button", name="Move up").nth(2).click()
+    panel.get_by_role("button", name="Move up").nth(1).click()
 
 
 @step("the user adds another correction using the add button at the bottom")

@@ -1,5 +1,4 @@
 import math
-import uuid
 from datetime import datetime
 
 from django.conf import settings
@@ -184,8 +183,7 @@ class StatisticalArticlePageTestCase(WagtailTestUtils, TestCase):
 
     def test_clean_validates_a_min_of_two_headline_figures_are_needed(self):
         figure_one = {
-            "id": uuid.uuid4(),
-            "type": "item",
+            "type": "figure",
             "value": {
                 "figure_id": "figurexyz",
                 "title": "Figure title XYZ",
@@ -193,12 +191,7 @@ class StatisticalArticlePageTestCase(WagtailTestUtils, TestCase):
                 "supporting_text": "Reasons to add tests and use long test strings where possible",
             },
         }
-        self.page.headline_figures = [
-            {
-                "type": "figures",
-                "value": [figure_one],
-            }
-        ]
+        self.page.headline_figures = [figure_one]
         self.page.headline_figures_figure_ids = "figurexyz"
 
         with self.assertRaisesRegex(ValidationError, "If you add headline figures, please add at least 2."):
@@ -206,43 +199,22 @@ class StatisticalArticlePageTestCase(WagtailTestUtils, TestCase):
             self.page.clean()
         # Should validate with two
         self.page.headline_figures = [
+            figure_one,
             {
-                "type": "figures",
-                "value": [
-                    figure_one,
-                    {
-                        "id": uuid.uuid4(),
-                        "type": "item",
-                        "value": {
-                            "figure_id": "figureabc",
-                            "title": "Another figure title for completeness",
-                            "figure": "100 Billion and many more",
-                            "supporting_text": "Figure supporting text ABC",
-                        },
-                    },
-                ],
-            }
+                "type": "figure",
+                "value": {
+                    "figure_id": "figureabc",
+                    "title": "Another figure title for completeness",
+                    "figure": "100 Billion and many more",
+                    "supporting_text": "Figure supporting text ABC",
+                },
+            },
         ]
         self.page.headline_figures_figure_ids = "figurexyz,figureabc"
         self.page.clean()
 
     def test_clean_validates_a_max_of_six_headline_figures_can_be_added(self):
         self.login()
-
-        figures = [
-            {
-                "type": "item",
-                "value": {
-                    "figure_id": f"figure_{i}",
-                    "title": "Figure title XYZ",
-                    "figure": "100 Million and more",
-                    "supporting_text": "Reasons to add tests and use long test strings where possible",
-                },
-                "deleted": "",
-                "order": str(i),
-            }
-            for i in range(7)
-        ]
 
         data = nested_form_data(
             {
@@ -258,8 +230,20 @@ class StatisticalArticlePageTestCase(WagtailTestUtils, TestCase):
                 "dataset_sorting": "AS_SHOWN",
                 "corrections": streamfield([]),
                 "notices": streamfield([]),
-                "headline_figures": streamfield([("figures", figures)]),
-                "headline_figures-0-value-count": 7,  # a bit of a hack to get the right nested format
+                "headline_figures": streamfield(
+                    [
+                        (
+                            "figure",
+                            {
+                                "figure_id": f"figure_{i}",
+                                "title": "Figure title XYZ",
+                                "figure": "100 Million and more",
+                                "supporting_text": "Reasons to add tests and use long test strings where possible",
+                            },
+                        )
+                        for i in range(7)
+                    ]
+                ),
             }
         )
         response = self.client.post(reverse("wagtailadmin_pages:edit", args=[self.page.pk]), data, follow=True)
@@ -327,30 +311,23 @@ class StatisticalArticlePageRenderTestCase(WagtailTestUtils, TestCase):
         )
         self.page.headline_figures = [
             {
-                "type": "figures",
-                "value": [
-                    {
-                        "id": uuid.uuid4(),
-                        "type": "item",
-                        "value": {
-                            "figure_id": "figurexyz",
-                            "title": "Figure title XYZ",
-                            "figure": "XYZ",
-                            "supporting_text": "Figure supporting text XYZ",
-                        },
-                    },
-                    {
-                        "id": uuid.uuid4(),
-                        "type": "item",
-                        "value": {
-                            "figure_id": "figureabc",
-                            "title": "Figure title ABC",
-                            "figure": "ABC",
-                            "supporting_text": "Figure supporting text ABC",
-                        },
-                    },
-                ],
-            }
+                "type": "figure",
+                "value": {
+                    "figure_id": "figurexyz",
+                    "title": "Figure title XYZ",
+                    "figure": "XYZ",
+                    "supporting_text": "Figure supporting text XYZ",
+                },
+            },
+            {
+                "type": "figure",
+                "value": {
+                    "figure_id": "figureabc",
+                    "title": "Figure title ABC",
+                    "figure": "ABC",
+                    "supporting_text": "Figure supporting text ABC",
+                },
+            },
         ]
         self.page.headline_figures_figure_ids = "figurexyz,figureabc"
         self.page.save_revision().publish()
@@ -435,24 +412,24 @@ class StatisticalArticlePageRenderTestCase(WagtailTestUtils, TestCase):
         topic.headline_figures.extend(
             [
                 (
-                    "figures",
+                    "figure",
                     {
                         "series": self.page.get_parent(),
                         "figure_id": "figurexyz",
                     },
                 ),
                 (
-                    "figures",
+                    "figure",
                     {
                         "series": self.page.get_parent(),
-                        "figure_id": "figurexyz",
+                        "figure_id": "figureabc",
                     },
                 ),
             ]
         )
         topic.save_revision().publish()
 
-        self.assertEqual(self.page.figures_used_by_ancestor, ["figurexyz", "figurexyz"])
+        self.assertEqual(self.page.figures_used_by_ancestor, ["figurexyz", "figureabc"])
 
     def test_cannot_be_deleted_if_ancestor_uses_headline_figures(self):
         """Test that the page cannot be deleted if an ancestor uses the headline figures."""
@@ -461,17 +438,17 @@ class StatisticalArticlePageRenderTestCase(WagtailTestUtils, TestCase):
         topic.headline_figures.extend(
             [
                 (
-                    "figures",
+                    "figure",
                     {
                         "series": self.page.get_parent(),
                         "figure_id": "figurexyz",
                     },
                 ),
                 (
-                    "figures",
+                    "figure",
                     {
                         "series": self.page.get_parent(),
-                        "figure_id": "figurexyz",
+                        "figure_id": "figureabc",
                     },
                 ),
             ]
