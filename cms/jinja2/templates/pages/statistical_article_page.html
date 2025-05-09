@@ -174,7 +174,7 @@
             <h2 class="headline-figures__heading ons-u-fs-m">{{ _("Headline facts and figures") }}</h2>
             <div class="ons-grid ons-grid-flex-gap ons-grid-flex-gap--24 headline-figures__grid">
                 {% for figure in page.headline_figures %}
-                    <div class="ons-grid__col">{% include_block figure %}</div>
+                    <div class="ons-grid__col ons-grid__col--flex-col ons-grid__col--stretch">{% include_block figure %}</div>
                 {% endfor %}
             </div>
         </div>
