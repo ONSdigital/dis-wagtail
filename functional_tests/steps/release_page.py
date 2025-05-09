@@ -93,3 +93,9 @@ def display_datetime_with_meridiem(context: Context, meridiem_indicator: str):
         expect(context.page.get_by_text("March 2025 5:00pm")).to_be_visible()
     else:
         raise ValueError(f"Unsupported MeridiemIndicator: {meridiem_indicator}")
+
+
+@step('by label, the date placeholder "{date_format}" is displayed in the "{textbox_text}" textbox')
+def date_placeholder(context: Context, textbox_text: str, date_format: str):
+    """Check date placeholder in the textbox."""
+    expect(context.page.get_by_label(textbox_text)).to_have_attribute("placeholder", date_format)

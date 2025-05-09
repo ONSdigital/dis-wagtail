@@ -539,3 +539,41 @@ class StatisticalArticlePageTests(WagtailPageTestCase):
 
         self.assertEqual(new_page.datasets, self.page.datasets)
         self.assertEqual(new_page.dataset_sorting, self.page.dataset_sorting)
+
+
+class DatePlaceholderTests(WagtailPageTestCase):
+    @classmethod
+    def setUpTestData(cls):
+        cls.page = StatisticalArticlePageFactory()
+        cls.user = cls.create_superuser("admin")
+
+    def test_date_placeholder(self):
+        """Test that the date input field displays date placeholder."""
+        self.client.force_login(self.user)
+
+        parent_page = self.page.get_parent()
+        add_sibling_url = reverse("wagtailadmin_pages:add_subpage", args=[parent_page.id])
+
+        response = self.client.get(add_sibling_url, follow=True)
+
+        content = response.content.decode(encoding="utf-8")
+
+        date_placeholder = "YYYY-MM-DD"
+
+        self.assertInHTML(
+            (
+                f'<input type="text" name="release_date" autocomplete="off" placeholder="{date_placeholder}"'
+                'aria-describedby="panel-child-content-child-metadata-child-dates-child-release_date-helptext"'
+                'required="" id="id_release_date">'
+            ),
+            content,
+        )
+
+        self.assertInHTML(
+            (
+                f'<input type="text" name="next_release_date" autocomplete="off" placeholder="{date_placeholder}"'
+                ' aria-describedby="panel-child-content-child-metadata-child-dates-child-next_release_date-helptext"'
+                'id="id_next_release_date">'
+            ),
+            content,
+        )
