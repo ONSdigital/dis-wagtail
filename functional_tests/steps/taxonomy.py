@@ -1,4 +1,4 @@
-from behave import given, then  # pylint: disable=no-name-in-module
+from behave import given, step, then  # pylint: disable=no-name-in-module
 from behave.runner import Context
 from playwright.sync_api import expect
 
@@ -35,6 +35,11 @@ def user_cannot_select_existing_topic(context: Context) -> None:
     expect(context.page.get_by_role("link", name=context.existing_topic.title)).not_to_be_visible()
 
 
+@step("the user goes to the Taxonomy tab")
+def user_goes_to_taxonomy_tab(context: Context) -> None:
+    context.page.get_by_role("tab", name="Taxonomy").click()
+
+
 @then("the user can link the page to the existing topic in the taxonomy editor tab")
 def user_can_link_existing_topic(context: Context) -> None:
     context.page.get_by_role("tab", name="Taxonomy").click()
@@ -49,3 +54,10 @@ def user_can_link_both_existing_topics(context: Context) -> None:
     context.page.get_by_text(context.existing_topic.title).click()
     context.page.get_by_text(context.existing_topic_2.title).click()
     context.page.get_by_role("button", name="Confirm selection").click()
+
+
+@then("the user is informed that the selected topic is copied from the English version")
+def user_is_informed_topic_copied(context: Context) -> None:
+    expect(
+        context.page.get_by_text("This page will use the topic selected in the English version of the page")
+    ).to_be_visible()

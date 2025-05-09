@@ -48,3 +48,5 @@ def prepopulate_statistical_article(
     page.is_accredited = latest.is_accredited
     page.is_census = latest.is_census
     page.search_description = latest.search_description
+    page.datasets = latest.datasets
+    page.dataset_sorting = latest.dataset_sorting

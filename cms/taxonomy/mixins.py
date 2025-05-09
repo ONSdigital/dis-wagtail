@@ -3,9 +3,10 @@ from typing import ClassVar
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.db import models
-from wagtail.admin.panels import FieldPanel, MultipleChooserPanel, Panel
+from wagtail.admin.panels import MultipleChooserPanel, Panel
 
 from cms.taxonomy.models import Topic
+from cms.taxonomy.panels import ExclusiveTaxonomyFieldPanel
 from cms.taxonomy.viewsets import ExclusiveTopicChooserWidget
 
 
@@ -17,7 +18,7 @@ class ExclusiveTaxonomyMixin(models.Model):
     topic = models.ForeignKey(Topic, on_delete=models.SET_NULL, related_name="related_%(class)s", null=True)
 
     taxonomy_panels: ClassVar[list["Panel"]] = [
-        FieldPanel("topic", widget=ExclusiveTopicChooserWidget),
+        ExclusiveTaxonomyFieldPanel("topic", widget=ExclusiveTopicChooserWidget),
     ]
 
     class Meta:
@@ -46,6 +47,16 @@ class ExclusiveTaxonomyMixin(models.Model):
 
             if qs.exists():
                 raise ValidationError({"topic": "This topic is already linked to another theme or topic page."})
+
+        # Check if the default locale version of the page has a different topic.
+        default_locale_page_with_different_topic = (
+            self.get_translations()  # type: ignore[attr-defined]
+            .filter(locale__language_code=settings.LANGUAGE_CODE)
+            .exclude(topic_id=self.topic_id)
+            .exists()
+        )
+        if default_locale_page_with_different_topic:
+            raise ValidationError({"topic": "The topic needs to be the same as the English page."})
 
 
 class GenericTaxonomyMixin(models.Model):

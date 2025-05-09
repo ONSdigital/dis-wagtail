@@ -18,10 +18,7 @@ class TestDatasetStoryBlock(TestCase):
 
     def test_validation_fails_on_duplicate_datasets(self):
         block = DatasetStoryBlock()
-        dataset_duplicate_url = (
-            f"https://example.com/datasets/{self.lookup_dataset.namespace}/editions"
-            f"/{self.lookup_dataset.edition}/versions/{self.lookup_dataset.version}"
-        )
+        dataset_duplicate_url = f"https://example.com/datasets/{self.lookup_dataset.namespace}"
         stream_data_cases = [
             [
                 ("dataset_lookup", self.lookup_dataset.id),
