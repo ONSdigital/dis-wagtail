@@ -20,7 +20,7 @@ from cms.core.query import order_by_pk_position
 from cms.core.utils import get_formatted_pages_list
 from cms.methodology.models import MethodologyPage
 from cms.taxonomy.mixins import ExclusiveTaxonomyMixin
-from cms.topics.blocks import ExploreMoreStoryBlock, TopicHeadlineFiguresStreamBlock
+from cms.topics.blocks import ExploreMoreStoryBlock, TopicHeadlineFigureBlock
 from cms.topics.forms import TopicPageAdminForm
 from cms.topics.viewsets import (
     FeaturedSeriesPageChooserWidget,
@@ -87,7 +87,7 @@ class TopicPage(BundledPageMixin, ExclusiveTaxonomyMixin, BasePage):  # type: ig
     explore_more = StreamField(ExploreMoreStoryBlock(), blank=True)
 
     headline_figures = StreamField(
-        TopicHeadlineFiguresStreamBlock(),
+        [("figure", TopicHeadlineFigureBlock())],
         blank=True,
         max_num=6,
         help_text="Optional. If populating, it needs at least two headline figures.",
@@ -240,5 +240,10 @@ class TopicPage(BundledPageMixin, ExclusiveTaxonomyMixin, BasePage):  # type: ig
         super().clean()
 
         # Check if headline_figures has 1 item (we can't use min_num because we allow 0)
-        if self.headline_figures and len(self.headline_figures) == 1:
-            raise ValidationError({"headline_figures": "If you add headline figures, please add at least 2."})
+        if self.headline_figures:
+            if len(self.headline_figures) == 1:
+                raise ValidationError({"headline_figures": "If you add headline figures, please add at least 2."})
+
+            figure_ids = [figure.value["figure_id"] for figure in self.headline_figures]  # pylint: disable=not-an-iterable
+            if len(figure_ids) != len(set(figure_ids)):
+                raise ValidationError({"headline_figures": "Duplicate headline figures are not allowed."})
