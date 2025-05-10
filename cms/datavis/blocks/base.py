@@ -152,8 +152,7 @@ class BaseVisualisationBlock(blocks.StructBlock):
         return self.highcharts_chart_type
 
     def get_component_config(self, value: "StructValue") -> dict[str, Any]:
-        headers: list[str] = value["table"].headers
-        rows: list[list[str | int | float]] = value["table"].rows
+        rows, series = self.get_series_data(value)
 
         config = {
             "chartType": self.get_highcharts_chart_type(value),
@@ -164,7 +163,7 @@ class BaseVisualisationBlock(blocks.StructBlock):
             "legend": value.get("show_legend", True),
             "xAxis": self.get_x_axis_config(value.get("x_axis"), rows),
             "yAxis": self.get_y_axis_config(value.get("y_axis")),
-            "series": self.get_series_data(value, headers, rows),
+            "series": series,
             "useStackedLayout": value.get("use_stacked_layout"),
             "annotations": self.get_annotations_config(value),
             "download": self.get_download_config(value),
@@ -232,9 +231,9 @@ class BaseVisualisationBlock(blocks.StructBlock):
     def get_series_data(
         self,
         value: "StructValue",
-        headers: Sequence[str],
-        rows: Sequence[list[str | int | float]],
-    ) -> list[dict[str, Any]]:
+    ) -> tuple[list[list[str | int | float]], list[dict[str, Any]]]:
+        headers: list[str] = value["table"].headers
+        rows: list[list[str | int | float]] = value["table"].rows
         series = []
 
         for i, column in enumerate(headers[1:], start=1):
@@ -260,7 +259,7 @@ class BaseVisualisationBlock(blocks.StructBlock):
                     "valueSuffix": tooltip_suffix,
                 }
             series.append(item)
-        return series
+        return rows, series
 
     def get_additional_options(self, value: "StructValue") -> dict[str, Any]:
         options = {}
