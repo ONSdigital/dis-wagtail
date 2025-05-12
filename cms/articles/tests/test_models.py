@@ -406,6 +406,16 @@ class StatisticalArticlePageRenderTestCase(WagtailTestUtils, TestCase):
         figure = self.page.get_headline_figure("invalid_id")
         self.assertEqual(figure, {})
 
+    def test_headline_figures_shown(self):
+        """Test that the headline figures are shown in the template."""
+        response = self.client.get(self.page_url)
+        self.assertContains(response, "Figure title XYZ")
+        self.assertContains(response, "Figure title ABC")
+        self.assertContains(response, "XYZ")
+        self.assertContains(response, "ABC")
+        self.assertContains(response, "Figure supporting text XYZ")
+        self.assertContains(response, "Figure supporting text ABC")
+
     def test_figures_used_by_ancestors(self):
         """Test that the figures used by ancestors are returned correctly."""
         topic = self.page.get_parent().get_parent()

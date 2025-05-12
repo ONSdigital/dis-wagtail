@@ -1,0 +1,13 @@
+{% load wagtailadmin_tags %}
+
+{% if forced_topic %}
+    <div class="help-block help-info">
+        {% icon name='help' %}
+        This page will use the topic selected in the
+        <a href="{% url 'wagtailadmin_pages:edit' default_locale_page_id %}#tab-taxonomy">English version</a> of the page:
+        <b>{{ forced_topic }}</b>
+    </div>
+    <input type="hidden" name="topic" value="{{ forced_topic.id }}" id="id_topic" aria-hidden="true" />
+{% else %}
+    {% include "wagtailadmin/panels/field_panel.html" %}
+{% endif %}
