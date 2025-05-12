@@ -96,6 +96,6 @@ def display_datetime_with_meridiem(context: Context, meridiem_indicator: str):
 
 
 @step('the date placeholder, "{time}", is displayed in the date input textboxes')
-def date_placeholder_by_role(context: Context, time: str):
+def date_placeholder_is_displayed_in_release_page_date_input_fields(context: Context, time: str):
     expect(context.page.locator("#id_release_date")).to_have_attribute("placeholder", time)
     expect(context.page.locator("#id_next_release_date")).to_have_attribute("placeholder", time)

@@ -58,6 +58,6 @@ def check_new_information_is_displayed_with_content(context: Context) -> None:
 
 
 @step('the date placeholder "{date_format}" is displayed in the "{textbox_text}" textbox')
-def date_placeholder(context: Context, textbox_text: str, date_format: str):
+def date_placeholder_is_displayed_in_date_input_field(context: Context, textbox_text: str, date_format: str):
     """Check date placeholder in the textbox."""
     expect(context.page.get_by_role("textbox", name=textbox_text)).to_have_attribute("placeholder", date_format)
