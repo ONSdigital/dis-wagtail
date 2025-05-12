@@ -10,6 +10,7 @@ from wagtail.admin.panels import FieldPanel, FieldRowPanel, InlinePanel, Multipl
 from wagtail.models import Orderable, Page
 from wagtail.search import index
 
+from cms.core.widgets import datetime_widget
 from cms.release_calendar.viewsets import FutureReleaseCalendarChooserWidget
 from cms.workflows.utils import is_page_ready_to_preview, is_page_ready_to_publish
 
@@ -120,7 +121,7 @@ class Bundle(index.Indexed, ClusterableModel, models.Model):  # type: ignore[dja
                     heading="Release Calendar page",
                     widget=FutureReleaseCalendarChooserWidget,
                 ),
-                FieldPanel("publication_date", heading="or Publication date"),
+                FieldPanel("publication_date", datetime_widget, heading="or Publication date"),
             ],
             heading="Scheduling",
             icon="calendar",
