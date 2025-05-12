@@ -5,11 +5,10 @@ Feature: CMS users can draft, edit, and publish release pages
         And a superuser logs into the admin site
         And the user navigates to the release calendar page
 
-    Scenario: A CMS user can see datetime placeholders for the release page
+     Scenario: A CMS user can see datetime placeholders for the release page by textbox
         When the user clicks "Add child page" to create a new draft release page
-        Then the date placeholder "YYYY-MM-DD HH:MM" is displayed in the "Release date" textbox
-        And the date placeholder "YYYY-MM-DD HH:MM" is displayed in the "Next release date" textbox
-    
+        Then the date placeholder, "YYYY-MM-DD HH:MM", is displayed in the date input textboxes
+
     Scenario: A CMS user can author and publish release page
         When the user clicks "Add child page" to create a new draft release page
         And the user sets the page status to "Published"
