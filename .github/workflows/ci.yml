@@ -184,16 +184,14 @@ jobs:
 
   repository_checks:
     runs-on: ubuntu-latest
-    permissions: {}
     steps:
       - uses: actions/checkout@v4
-      - name: Ensure .dockerignore matches .gitignore
-        uses: LouisBrunner/diff-action@v2.0.0
+      - name: Set up Python
+        uses: actions/setup-python@v5
         with:
-          old: .gitignore
-          new: .dockerignore
-          mode: strict
-          tolerance: same
+          python-version-file: .python-version
+      - name: Ensure .dockerignore (mostly) matches .gitignore
+        run: ./.github/check_docker_ignore.py
 
   functional-tests:
     runs-on: ubuntu-latest
