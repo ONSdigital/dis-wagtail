@@ -8,9 +8,10 @@ from typing import Any, cast
 
 import dj_database_url
 from django.core.exceptions import ImproperlyConfigured
-from django.utils.module_loading import import_string
 from django.utils.translation import gettext_lazy as _
 from django_jinja.builtins import DEFAULT_EXTENSIONS
+
+from cms.core.elasticache import ElastiCacheIAMCredentialProvider
 
 env = os.environ.copy()
 
@@ -83,10 +84,12 @@ INSTALLED_APPS = [
     "wagtail.images",
     "wagtail.search",
     "wagtail.admin",
+    "wagtail.locales",
     "wagtail.contrib.settings",
     "wagtail.contrib.redirects",
     "wagtail.contrib.legacy.richtext",
     "wagtail.contrib.table_block",
+    "wagtail.contrib.simple_translation",
     "wagtail",
     "modelcluster",
     "taggit",
@@ -99,6 +102,7 @@ INSTALLED_APPS = [
     "wagtailmath",
     "wagtailfontawesomesvg",
     "wagtail_tinytableblock",
+    "rest_framework",
 ]
 
 if not IS_EXTERNAL_ENV:
@@ -138,6 +142,7 @@ if not IS_EXTERNAL_ENV:
         "django.contrib.auth.middleware.AuthenticationMiddleware",
     )
     MIDDLEWARE.insert(common_middleware_index, "django.contrib.sessions.middleware.SessionMiddleware")
+    MIDDLEWARE.insert(common_middleware_index, "xff.middleware.XForwardedForMiddleware")
 
 ROOT_URLCONF = "cms.urls"
 
@@ -198,7 +203,10 @@ WSGI_APPLICATION = "cms.wsgi.application"
 
 # Database
 
-db_conn_max_age = int(env.get("PG_CONN_MAX_AGE", 870))  # Just under 15 minutes, to match password expiry
+# None allows connections to be reused for longer, since opening them is expensive.
+# CONN_HEALTH_CHECK ensures they're still healthy before attempting to use them.
+db_conn_max_age = int(env["PG_CONN_MAX_AGE"]) if "PG_CONN_MAX_AGE" in env else None
+db_read_conn_max_age = int(env["PG_READ_CONN_MAX_AGE"]) if "PG_READ_CONN_MAX_AGE" in env else None
 
 if "PG_DB_ADDR" in env:
     # Use IAM authentication to connect to the Database
@@ -212,7 +220,8 @@ if "PG_DB_ADDR" in env:
                 "HOST": env["PG_DB_ADDR"],
                 "PORT": env["PG_DB_PORT"],
                 "CONN_MAX_AGE": db_conn_max_age,
-                "OPTIONS": {"use_iam_auth": True, "sslmode": "require"},
+                "CONN_HEALTH_CHECK": True,
+                "OPTIONS": {"use_iam_auth": True, "sslmode": "require", "region_name": env["AWS_REGION"]},
             },
         )
     }
@@ -222,16 +231,19 @@ if "PG_DB_ADDR" in env:
         DATABASES["read_replica"] = {
             **deepcopy(DATABASES["default"]),
             "HOST": env["PG_DB_READ_ADDR"],
+            "CONN_MAX_AGE": db_read_conn_max_age,
         }
 
 else:
     DATABASES = {
-        "default": dj_database_url.config(conn_max_age=db_conn_max_age, default="postgres:///ons"),
+        "default": dj_database_url.config(
+            conn_max_age=db_conn_max_age, conn_health_checks=True, default="postgres:///ons"
+        ),
     }
 
     if "READ_REPLICA_DATABASE_URL" in env:
         DATABASES["read_replica"] = dj_database_url.config(
-            env="READ_REPLICA_DATABASE_URL", conn_max_age=db_conn_max_age
+            env="READ_REPLICA_DATABASE_URL", conn_max_age=db_read_conn_max_age
         )
 
 if "read_replica" not in DATABASES:
@@ -290,10 +302,10 @@ elif elasticache_addr := env.get("ELASTICACHE_ADDR"):
         "OPTIONS": {
             **redis_options,
             "CONNECTION_POOL_KWARGS": {
-                "credential_provider": import_string("cms.core.cache.ElastiCacheIAMCredentialProvider")(
+                "credential_provider": ElastiCacheIAMCredentialProvider(
                     user=env["ELASTICACHE_USER_NAME"],
                     cluster_name=env["ELASTICACHE_CLUSTER_NAME"],
-                    region=env["ELASTICACHE_CLUSTER_REGION"],
+                    region=env["AWS_REGION"],
                 )
             },
         },
@@ -331,7 +343,7 @@ TIME_ZONE = "Europe/London"
 USE_TZ = True
 
 USE_I18N = True
-WAGTAIL_I18N_ENABLED = False
+WAGTAIL_I18N_ENABLED = True
 
 LANGUAGE_CODE = "en-gb"
 WAGTAIL_CONTENT_LANGUAGES = LANGUAGES = [
@@ -520,6 +532,7 @@ LOGGING = {
             "level": "INFO",
             "propagate": False,
         },
+        "xff": {"handlers": ["console"], "level": "WARNING", "propagate": False},
         "gunicorn.access": {
             "handlers": ["gunicorn_access"],
             "level": "INFO",
@@ -664,6 +677,12 @@ CACHE_CONTROL_STALE_WHILE_REVALIDATE = int(env.get("CACHE_CONTROL_STALE_WHILE_RE
 # https://docs.djangoproject.com/en/stable/ref/settings/#use-x-forwarded-port
 USE_X_FORWARDED_PORT = env.get("USE_X_FORWARDED_PORT", "true").lower().strip() == "true"
 
+XFF_TRUSTED_PROXY_DEPTH = int(env.get("XFF_TRUSTED_PROXY_DEPTH", 1))
+XFF_EXEMPT_URLS = [r"^-/.*"]
+
+# Error if there are the wrong number of proxies
+XFF_STRICT = env.get("XFF_STRICT", "false").lower().strip() == "true"
+
 # Security configuration
 # This configuration is required to achieve good security rating.
 # You can test it using https://securityheaders.com/
@@ -684,7 +703,7 @@ CSRF_FAILURE_VIEW = "cms.core.views.csrf_failure"
 
 # Force HTTPS redirect (enabled by default!)
 # https://docs.djangoproject.com/en/stable/ref/settings/#secure-ssl-redirect
-SECURE_SSL_REDIRECT = True
+SECURE_SSL_REDIRECT = env.get("SECURE_SSL_REDIRECT", "true").lower().strip() == "true"
 
 
 # This will allow the cache to swallow the fact that the website is behind TLS
@@ -791,6 +810,10 @@ if ENABLE_DJANGO_DEFENDER:
     DEFENDER_COOLOFF_TIME = int(env.get("DJANGO_DEFENDER_COOLOFF_TIME", 600))  # default to 10 minutes
     DEFENDER_LOCKOUT_TEMPLATE = "pages/defender/lockout.html"
 
+    # Whilst we frequently are behind a reverse proxy, using `False` ensures Defender falls
+    # back to using `REMOTE_ADDR`, which is set correctly by `django-xff`.
+    DEFENDER_BEHIND_REVERSE_PROXY = False
+
 
 # Wagtail settings
 
@@ -844,6 +867,7 @@ WAGTAIL_PASSWORD_REQUIRED_TEMPLATE = "templates/pages/wagtail/password_required.
 # Default size of the pagination used on the front-end.
 DEFAULT_PER_PAGE = 20
 PREVIOUS_RELEASES_PER_PAGE = int(env.get("PREVIOUS_RELEASES_PER_PAGE", 10))
+RELATED_DATASETS_PER_PAGE = int(env.get("RELATED_DATASETS_PER_PAGE", DEFAULT_PER_PAGE))
 
 # Google Tag Manager ID from env
 GOOGLE_TAG_MANAGER_CONTAINER_ID = env.get("GOOGLE_TAG_MANAGER_CONTAINER_ID", "")
@@ -898,6 +922,8 @@ SLACK_NOTIFICATIONS_WEBHOOK_URL = env.get("SLACK_NOTIFICATIONS_WEBHOOK_URL")
 ONS_API_BASE_URL = env.get("ONS_API_BASE_URL", "https://api.beta.ons.gov.uk/v1")
 ONS_WEBSITE_BASE_URL = env.get("ONS_WEBSITE_BASE_URL", "https://www.ons.gov.uk")
 
+WAGTAILSIMPLETRANSLATION_SYNC_PAGE_TREE = True
+
 # Configuration for the External Search service
 SEARCH_INDEX_PUBLISHER_BACKEND = os.getenv("SEARCH_INDEX_PUBLISHER_BACKEND")
 KAFKA_SERVER = os.getenv("KAFKA_SERVER")
@@ -917,3 +943,6 @@ SEARCH_INDEX_EXCLUDED_PAGE_TYPES = (
 # FIXME: remove before going live
 ENFORCE_EXCLUSIVE_TAXONOMY = env.get("ENFORCE_EXCLUSIVE_TAXONOMY", "true").lower() == "true"
 ALLOW_TEAM_MANAGEMENT = env.get("ALLOW_TEAM_MANAGEMENT", "false").lower() == "true"
+
+SEARCH_API_DEFAULT_PAGE_SIZE = int(os.getenv("SEARCH_API_DEFAULT_PAGE_SIZE", "20"))
+SEARCH_API_MAX_PAGE_SIZE = int(os.getenv("SEARCH_API_MAX_PAGE_SIZE", "500"))

@@ -6,6 +6,11 @@ from playwright.sync_api import expect
 from cms.themes.tests.factories import ThemePageFactory
 
 
+@when("the user clicks the action button toggle")
+def user_clicks_action_menu_toggle(context: Context):
+    context.page.get_by_role("button", name="More actions").click()
+
+
 @when('the user clicks "Publish"')
 @when("publishes the page")
 def user_clicks_publish(context: Context) -> None:
@@ -43,7 +48,7 @@ def the_user_edits_a_page(context: Context, page: str) -> None:
 @when("the user tries to create a new theme page")
 def user_tries_to_create_new_theme_page(context: Context) -> None:
     context.page.get_by_role("button", name="Pages").click()
-    context.page.get_by_role("link", name="Home", exact=True).click()
+    context.page.get_by_role("link", name="Home English", exact=True).click()
     context.page.get_by_role("link", name="Add child page").click()
     context.page.get_by_role("link", name="Theme page . A theme page,").click()
 
@@ -52,7 +57,7 @@ def user_tries_to_create_new_theme_page(context: Context) -> None:
 def user_tries_to_create_new_topic_page(context: Context) -> None:
     topic_theme = ThemePageFactory()
     context.page.get_by_role("button", name="Pages").click()
-    context.page.get_by_role("link", name="Home", exact=True).click()
+    context.page.get_by_role("link", name="Home English", exact=True).click()
     context.page.get_by_role("link", name=f"Add a child page to '{topic_theme.title}'").click()
     context.page.get_by_role("link", name="Topic page . A specific topic").click()
 
@@ -60,7 +65,7 @@ def user_tries_to_create_new_topic_page(context: Context) -> None:
 @when("the user tries to create a new information page")
 def user_tries_to_create_new_information_page(context: Context) -> None:
     context.page.get_by_role("button", name="Pages").click()
-    context.page.get_by_role("link", name="Home", exact=True).click()
+    context.page.get_by_role("link", name="Home English", exact=True).click()
     context.page.get_by_role("link", name="Add child page").click()
     context.page.get_by_role("link", name="Information page", exact=True).click()
 
@@ -82,6 +87,10 @@ def the_user_can_successfully_publish_the_page(context: Context):
 def publish_page(context: Context) -> None:
     context.page.get_by_role("button", name="More actions").click()
     context.page.get_by_role("button", name="Publish").click()
+
+
+def publish_snippet(context: Context) -> None:  # Create an alias so it reads better
+    publish_page(context)
 
 
 @when("the user navigates to the page history menu")
@@ -156,7 +165,7 @@ def the_user_can_lock_and_unlock_a_page(context: Context):
 @step("the user can bulk delete the Theme page and its children")
 def the_user_can_bulk_delete_a_theme_page_and_its_children(context: Context):
     context.page.get_by_role("button", name="Pages").click()
-    context.page.get_by_role("link", name="Home", exact=True).click()
+    context.page.get_by_role("link", name="Home English", exact=True).click()
     context.page.get_by_role("button", name=f"More options for '{context.theme_page.title}'").click()
     context.page.get_by_role("link", name=f"Delete page '{context.theme_page.title}'").click()
     expect(context.page.get_by_role("link", name="This theme page is referenced")).to_be_visible()

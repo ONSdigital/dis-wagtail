@@ -3,9 +3,10 @@ from typing import ClassVar
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.db import models
-from wagtail.admin.panels import FieldPanel, MultipleChooserPanel, Panel
+from wagtail.admin.panels import MultipleChooserPanel, Panel
 
 from cms.taxonomy.models import Topic
+from cms.taxonomy.panels import ExclusiveTaxonomyFieldPanel
 from cms.taxonomy.viewsets import ExclusiveTopicChooserWidget
 
 
@@ -17,7 +18,7 @@ class ExclusiveTaxonomyMixin(models.Model):
     topic = models.ForeignKey(Topic, on_delete=models.SET_NULL, related_name="related_%(class)s", null=True)
 
     taxonomy_panels: ClassVar[list["Panel"]] = [
-        FieldPanel("topic", widget=ExclusiveTopicChooserWidget),
+        ExclusiveTaxonomyFieldPanel("topic", widget=ExclusiveTopicChooserWidget),
     ]
 
     class Meta:
@@ -35,9 +36,10 @@ class ExclusiveTaxonomyMixin(models.Model):
         for exclusive_sub_page_type in ExclusiveTaxonomyMixin.__subclasses__():
             # Check if other pages are exclusively linked to this topic.
             # Translations of the same page are allowed, but other pages aren't.
-            # TODO for multilingual support, this will need to exclude different language versions of the same page by
-            # excluding matching translation_keys
-            qs = exclusive_sub_page_type.objects.filter(topic=self.topic_id)  # type: ignore[attr-defined]
+            qs = exclusive_sub_page_type.objects.filter(  # type: ignore[attr-defined]
+                topic=self.topic_id,
+                locale=self.locale_id,  # type: ignore[attr-defined]
+            )
             if not self._state.adding:
                 # On edit, ensure we exclude the page being edited.
                 # On add, we only need to check if any other pages with this topic exist
@@ -45,6 +47,16 @@ class ExclusiveTaxonomyMixin(models.Model):
 
             if qs.exists():
                 raise ValidationError({"topic": "This topic is already linked to another theme or topic page."})
+
+        # Check if the default locale version of the page has a different topic.
+        default_locale_page_with_different_topic = (
+            self.get_translations()  # type: ignore[attr-defined]
+            .filter(locale__language_code=settings.LANGUAGE_CODE)
+            .exclude(topic_id=self.topic_id)
+            .exists()
+        )
+        if default_locale_page_with_different_topic:
+            raise ValidationError({"topic": "The topic needs to be the same as the English page."})
 
 
 class GenericTaxonomyMixin(models.Model):

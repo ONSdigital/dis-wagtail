@@ -1,6 +1,7 @@
 from typing import TYPE_CHECKING, Any, ClassVar
 
 from django.conf import settings
+from django.core.exceptions import ValidationError
 from django.db import models
 from django.db.models import OuterRef, Subquery
 from django.utils.functional import cached_property
@@ -18,7 +19,7 @@ from cms.core.query import order_by_pk_position
 from cms.core.utils import get_formatted_pages_list
 from cms.methodology.models import MethodologyPage
 from cms.taxonomy.mixins import ExclusiveTaxonomyMixin
-from cms.topics.blocks import ExploreMoreStoryBlock
+from cms.topics.blocks import ExploreMoreStoryBlock, TopicHeadlineFigureBlock
 from cms.topics.forms import TopicPageAdminForm
 from cms.topics.viewsets import (
     FeaturedSeriesPageChooserWidget,
@@ -84,9 +85,17 @@ class TopicPage(ExclusiveTaxonomyMixin, BasePage):  # type: ignore[django-manage
     )
     explore_more = StreamField(ExploreMoreStoryBlock(), blank=True)
 
+    headline_figures = StreamField(
+        [("figure", TopicHeadlineFigureBlock())],
+        blank=True,
+        max_num=6,
+        help_text="Optional. If populating, it needs at least two headline figures.",
+    )
+
     content_panels: ClassVar[list["Panel"]] = [
         *BasePage.content_panels,
         "summary",
+        FieldPanel("headline_figures"),
         FieldPanel(
             "featured_series",
             heading="Featured",
@@ -224,3 +233,15 @@ class TopicPage(ExclusiveTaxonomyMixin, BasePage):  # type: ignore[django-manage
         if self.explore_more:
             items += [{"url": "#explore-more", "text": _("Explore more")}]
         return items
+
+    def clean(self) -> None:
+        super().clean()
+
+        # Check if headline_figures has 1 item (we can't use min_num because we allow 0)
+        if self.headline_figures:
+            if len(self.headline_figures) == 1:
+                raise ValidationError({"headline_figures": "If you add headline figures, please add at least 2."})
+
+            figure_ids = [figure.value["figure_id"] for figure in self.headline_figures]  # pylint: disable=not-an-iterable
+            if len(figure_ids) != len(set(figure_ids)):
+                raise ValidationError({"headline_figures": "Duplicate headline figures are not allowed."})

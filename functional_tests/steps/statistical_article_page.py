@@ -1,22 +1,48 @@
+from datetime import timedelta
+
 from behave import given, step, then, when  # pylint: disable=no-name-in-module
 from behave.runner import Context
 from django.urls import reverse
 from playwright.sync_api import expect
 
-from cms.articles.tests.factories import ArticleSeriesPageFactory
+from cms.articles.tests.factories import ArticleSeriesPageFactory, StatisticalArticlePageFactory
 
 
 @given("an article series page exists")
-def the_topic_page_has_a_statistical_article_in_a_series(context: Context):
-    context.article_series = ArticleSeriesPageFactory(title="PSF")
+def an_article_series_exists(context: Context):
+    if topic_page := getattr(context, "topic_page", None):
+        context.article_series_page = ArticleSeriesPageFactory(title="PSF", parent=topic_page)
+    else:
+        context.article_series_page = ArticleSeriesPageFactory(title="PSF")
+        context.topic_page = context.article_series_page.get_parent()
+
+
+@given("a statistical article exists")
+@given("the user has created a statistical article in a series")
+@given("a statistical article page has been published under the topic page")
+def a_statistical_article_exists(context: Context):
+    an_article_series_exists(context)
+    context.statistical_article_page = StatisticalArticlePageFactory(parent=context.article_series_page)
+
+
+@when("the user creates a new statistical article in the series")
+def create_a_new_article_in_the_series(context: Context):
+    old_article_release_date = context.statistical_article_page.release_date
+    context.new_statistical_article_page = StatisticalArticlePageFactory(
+        title="January 2025",
+        release_date=old_article_release_date + timedelta(days=1),
+        parent=context.article_series_page,
+    )
 
 
 @when("the user goes to add a new statistical article page")
 def user_goes_to_add_new_article_page(context: Context):
-    if not getattr(context, "article_series", None):
-        the_topic_page_has_a_statistical_article_in_a_series(context)
+    if not getattr(context, "article_series_page", None):
+        an_article_series_exists(context)
 
-    add_url = reverse("wagtailadmin_pages:add", args=("articles", "statisticalarticlepage", context.article_series.pk))
+    add_url = reverse(
+        "wagtailadmin_pages:add", args=("articles", "statisticalarticlepage", context.article_series_page.pk)
+    )
     context.page.goto(f"{context.base_url}{add_url}")
 
 
@@ -42,7 +68,7 @@ def user_populates_the_statistical_article_page(context: Context):
 
 @step("the user updates the statistical article page content")
 def user_updates_the_statistical_article_page_content(context: Context):
-    context.page.get_by_role("region", name="Rich text *").get_by_role("textbox").fill("Updated content")
+    context.page.get_by_placeholder("Page title*").fill("Updated article title")
 
 
 @step('the user clicks on "View superseded version"')
@@ -85,20 +111,16 @@ def the_statistical_article_page_is_displayed_with_the_populated_data(context: C
     expect(context.page.get_by_role("heading", name="Content")).to_be_visible()
 
 
-@then("the published statistical article page is displayed with the updated data")
-def the_statistical_article_page_is_displayed_with_the_updated_data(context: Context):
-    expect(context.page.get_by_text("Updated content")).to_be_visible()
-
-
 @then("the user can view the superseded statistical article page")
 def user_can_view_the_superseded_statistical_article_page(context: Context):
-    expect(context.page.get_by_role("heading", name="The article page")).to_be_visible()
+    expect(context.page.get_by_role("heading", name="Updated article title")).to_be_visible()
     expect(context.page.get_by_text("Content", exact=True)).to_be_visible()
 
 
 @step("the user returns to editing the statistical article page")
 def user_returns_to_editing_the_statistical_article_page(context: Context):
-    context.page.get_by_role("link", name="PSF: The article page", exact=True).click()
+    edit_url = reverse("wagtailadmin_pages:edit", args=(context.article_series_page.get_latest().id,))
+    context.page.goto(f"{context.base_url}{edit_url}")
 
 
 @then("the published statistical article page has the added table")
@@ -131,6 +153,29 @@ def user_adds_a_correction(context: Context):
     page.get_by_label("When*").fill("2025-03-13 13:59")
     page.locator('[data-contentpath="text"] [role="textbox"]').fill("Correction text")
     page.wait_for_timeout(500)
+
+
+@step("the user adds headline figures")
+def user_adds_headline_figures(context: Context):
+    page = context.page
+    panel = page.locator("#panel-child-content-headline_figures-content")
+    panel.get_by_role("button", name="Insert a block").click()
+    page.wait_for_timeout(100)
+    panel.get_by_role("button", name="Insert a block").nth(1).click()
+    page.wait_for_timeout(100)
+    panel.get_by_label("Title*").nth(0).fill("First headline figure")
+    panel.get_by_label("Figure*").nth(0).fill("~123%")
+    panel.get_by_label("Supporting text*").nth(0).fill("First supporting text")
+    panel.get_by_label("Title*").nth(1).fill("Second headline figure")
+    panel.get_by_label("Figure*").nth(1).fill("~321%")
+    panel.get_by_label("Supporting text*").nth(1).fill("Second supporting text")
+
+
+@step("the user reorders the headline figures on the Statistical Article Page")
+def user_reorders_the_headline_figures_on_the_statistical_article_page(context: Context):
+    page = context.page
+    panel = page.locator("#panel-child-content-headline_figures-content")
+    panel.get_by_role("button", name="Move up").nth(1).click()
 
 
 @step("the user adds another correction using the add button at the bottom")
@@ -171,7 +216,7 @@ def user_adds_a_notice(context: Context):
 @then("the published statistical article page has the added correction")
 def the_published_statistical_article_page_has_the_added_correction(context: Context):
     expect(context.page.get_by_role("heading", name="Corrections")).to_be_visible()
-    expect(context.page.get_by_text("13 March 2025 1:59p.m.")).to_be_hidden()
+    expect(context.page.get_by_text("13 March 2025 1:59pm")).to_be_hidden()
     expect(context.page.get_by_text("Correction text")).to_be_hidden()
 
 
@@ -179,10 +224,10 @@ def the_published_statistical_article_page_has_the_added_correction(context: Con
 def user_can_click_on_view_detail_to_expand_block(context: Context, block_type: str):
     if block_type == "correction":
         text = "Correction text"
-        date = "13 March 2025 1:59p.m."
+        date = "13 March 2025 1:59pm"
     else:
         text = "Notice text"
-        date = "15 March 2025 1:59p.m."
+        date = "15 March 2025 1:59pm"
 
     context.page.get_by_text("Show detail").click()
     expect(context.page.get_by_text(text)).to_be_visible()
@@ -202,14 +247,27 @@ def the_published_statistical_article_page_has_the_corrections_and_notices_block
     expect(context.page.get_by_role("heading", name="Corrections and notices")).to_be_visible()
 
 
+@then("the published statistical article page has the added headline figures")
+@then("the published topic page has the added headline figures")
+@then("the headline figures are shown")
+def the_published_statistical_article_page_has_the_added_headline_figures(context: Context):
+    page = context.page
+    expect(page.get_by_text("First headline figure")).to_be_visible()
+    expect(page.get_by_text("~123%")).to_be_visible()
+    expect(page.get_by_text("Second headline figure")).to_be_visible()
+    expect(page.get_by_text("~321%")).to_be_visible()
+    expect(page.get_by_text("First supporting text")).to_be_visible()
+    expect(page.get_by_text("Second supporting text")).to_be_visible()
+
+
 @then('the user can click on "Show detail" to expand the corrections and notices block')
 def user_can_click_on_show_detail_to_expand_corrections_and_notices_block(context: Context):
     context.page.get_by_text("Show detail").click()
     expect(context.page.get_by_text("Notice text")).to_be_visible()
-    expect(context.page.get_by_text("15 March 2025 1:59p.m.")).to_be_visible()
+    expect(context.page.get_by_text("15 March 2025 1:59pm")).to_be_visible()
 
     expect(context.page.get_by_text("Correction text")).to_be_visible()
-    expect(context.page.get_by_text("13 March 2025 1:59p.m.")).to_be_visible()
+    expect(context.page.get_by_text("13 March 2025 1:59pm")).to_be_visible()
     expect(context.page.get_by_role("link", name="View superseded version")).to_be_visible()
 
 
@@ -218,22 +276,22 @@ def user_can_click_on_hide_detail_to_collapse_corrections_and_notices_block(cont
     context.page.get_by_text("Close detail").click()
 
     expect(context.page.get_by_text("Notice text")).to_be_hidden()
-    expect(context.page.get_by_text("15 March 2025 1:59p.m.")).to_be_hidden()
+    expect(context.page.get_by_text("15 March 2025 1:59pm")).to_be_hidden()
 
     expect(context.page.get_by_text("Correction text")).to_be_hidden()
-    expect(context.page.get_by_text("13 March 2025 1:59p.m.")).to_be_hidden()
+    expect(context.page.get_by_text("13 March 2025 1:59pm")).to_be_hidden()
 
 
 @then("the published statistical article page has corrections in chronological order")
 def the_published_statistical_article_page_has_corrections_in_chronological_order(context: Context):
-    expect(context.page.locator("#corrections div:first-child").get_by_text("14 March 2025 1:59p.m.")).to_be_hidden()
-    expect(context.page.locator("#corrections div:nth-child(2)").get_by_text("13 March 2025 1:59p.m.")).to_be_hidden()
+    expect(context.page.locator("#corrections div:first-child").get_by_text("14 March 2025 1:59pm")).to_be_hidden()
+    expect(context.page.locator("#corrections div:nth-child(2)").get_by_text("13 March 2025 1:59pm")).to_be_hidden()
 
 
 @then("the published statistical article page has the added notice")
 def the_published_statistical_article_page_has_the_added_notice(context: Context):
     expect(context.page.get_by_role("heading", name="Notices")).to_be_visible()
-    expect(context.page.get_by_text("15 March 2025 1:59p.m.")).to_be_hidden()
+    expect(context.page.get_by_text("15 March 2025 1:59pm")).to_be_hidden()
     expect(context.page.get_by_text("Notice text")).to_be_hidden()
 
 
@@ -254,3 +312,24 @@ def user_cannot_delete_the_correction(context: Context):
     expect(
         page.locator("#panel-child-corrections_and_notices-corrections-content [data-streamfield-action='DELETE']")
     ).to_be_hidden()
+
+
+@when("the user navigates to the related data editor tab")
+def user_navigates_to_related_data_tab(context: Context):
+    context.page.get_by_role("tab", name="Related data").click()
+    context.editor_tab = "related_data"
+
+
+@when('the user clicks "View data used in this article" on the article page')
+def user_clicks_view_data_used_in_article(context: Context):
+    context.page.get_by_role("link", name="View data used in this article").click()
+
+
+@then("the related data page for the article is shown")
+def check_related_data_page_content(context: Context):
+    page = context.page
+    expect(page.get_by_role("heading", name="All data related to The article page")).to_be_visible()
+    expect(page.get_by_role("link", name="Looked Up Dataset")).to_be_visible()
+    expect(page.get_by_text("Example dataset for functional testing")).to_be_visible()
+    expect(page.get_by_role("link", name="Manual Dataset")).to_be_visible()
+    expect(page.get_by_text("Manually entered test dataset")).to_be_visible()

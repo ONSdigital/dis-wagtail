@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, Any, ClassVar, Optional
+from typing import TYPE_CHECKING, Any, ClassVar, Optional, cast
 
 from django.conf import settings
 from django.core.exceptions import ValidationError
@@ -14,13 +14,17 @@ from wagtail.fields import RichTextField
 from wagtail.models import Page
 from wagtail.search import index
 
+from cms.articles.enums import SortingChoices
+from cms.articles.forms import StatisticalArticlePageAdminForm
+from cms.articles.panels import HeadlineFiguresFieldPanel
 from cms.bundles.models import BundledPageMixin
-from cms.core.blocks import HeadlineFiguresBlock
+from cms.core.blocks.headline_figures import HeadlineFiguresItemBlock
 from cms.core.blocks.panels import CorrectionBlock, NoticeBlock
 from cms.core.blocks.stream_blocks import SectionStoryBlock
 from cms.core.fields import StreamField
-from cms.core.forms import PageWithCorrectionsAdminForm
 from cms.core.models import BasePage
+from cms.core.widgets import date_widget
+from cms.datasets.blocks import DatasetStoryBlock
 from cms.taxonomy.mixins import GenericTaxonomyMixin
 
 if TYPE_CHECKING:
@@ -28,6 +32,10 @@ if TYPE_CHECKING:
     from django.http.response import HttpResponseRedirect
     from django.template.response import TemplateResponse
     from wagtail.admin.panels import Panel
+
+    from cms.topics.models import TopicPage
+
+FIGURE_ID_SEPARATOR = ","
 
 
 class ArticleSeriesPage(RoutablePageMixin, GenericTaxonomyMixin, BasePage):  # type: ignore[django-manager-missing]
@@ -97,7 +105,7 @@ class StatisticalArticlePage(BundledPageMixin, RoutablePageMixin, BasePage):  # 
     Previously known as statistical bulletin, statistical analysis article, analysis page.
     """
 
-    base_form_class = PageWithCorrectionsAdminForm
+    base_form_class = StatisticalArticlePageAdminForm
 
     parent_page_types: ClassVar[list[str]] = ["ArticleSeriesPage"]
     subpage_types: ClassVar[list[str]] = []
@@ -141,13 +149,21 @@ class StatisticalArticlePage(BundledPageMixin, RoutablePageMixin, BasePage):  # 
     )
 
     # Fields: content
-    headline_figures = StreamField([("figures", HeadlineFiguresBlock())], blank=True, max_num=1)
+    headline_figures = StreamField([("figure", HeadlineFiguresItemBlock())], blank=True, max_num=6)
+    headline_figures_figure_ids = models.CharField(
+        max_length=128,
+        blank=True,
+        editable=False,
+    )
     content = StreamField(SectionStoryBlock())
 
     show_cite_this_page = models.BooleanField(default=True)
 
     corrections = StreamField([("correction", CorrectionBlock())], blank=True, null=True)
     notices = StreamField([("notice", NoticeBlock())], blank=True, null=True)
+
+    dataset_sorting = models.CharField(choices=SortingChoices.choices, default=SortingChoices.AS_SHOWN, max_length=32)
+    datasets = StreamField(DatasetStoryBlock(), blank=True, default=list)
 
     content_panels: ClassVar[list["Panel"]] = [
         *BundledPageMixin.panels,
@@ -171,9 +187,10 @@ class StatisticalArticlePage(BundledPageMixin, RoutablePageMixin, BasePage):  # 
             [
                 FieldRowPanel(
                     [
-                        FieldPanel("release_date", help_text="The actual release date"),
+                        FieldPanel("release_date", date_widget, help_text="The actual release date"),
                         FieldPanel(
                             "next_release_date",
+                            date_widget,
                             help_text="If no next date is chosen, 'To be announced' will be displayed.",
                         ),
                     ],
@@ -190,7 +207,7 @@ class StatisticalArticlePage(BundledPageMixin, RoutablePageMixin, BasePage):  # 
             heading="Metadata",
             icon="cog",
         ),
-        FieldPanel("headline_figures", icon="data-analysis"),
+        HeadlineFiguresFieldPanel("headline_figures", icon="data-analysis"),
         FieldPanel("content", icon="list-ul"),
     ]
 
@@ -199,8 +216,14 @@ class StatisticalArticlePage(BundledPageMixin, RoutablePageMixin, BasePage):  # 
         FieldPanel("notices", icon="info-circle"),
     ]
 
+    related_data_panels: ClassVar[list["Panel"]] = [
+        "dataset_sorting",
+        FieldPanel("datasets", icon="table"),
+    ]
+
     additional_panel_tabs: ClassVar[list[tuple[list["Panel"], str]]] = [
-        (corrections_and_notices_panels, "Corrections and notices")
+        (related_data_panels, "Related data"),
+        (corrections_and_notices_panels, "Corrections and notices"),
     ]
 
     search_fields: ClassVar[list[index.BaseField]] = [
@@ -221,6 +244,37 @@ class StatisticalArticlePage(BundledPageMixin, RoutablePageMixin, BasePage):  # 
         if self.next_release_date and self.next_release_date <= self.release_date:
             raise ValidationError({"next_release_date": "The next release date must be after the release date."})
 
+        if self.headline_figures and len(self.headline_figures) == 1:  # pylint: disable=unsubscriptable-object
+            # Check if headline_figures has 1 item (we can't use min_num because we allow 0)
+            raise ValidationError({"headline_figures": "If you add headline figures, please add at least 2."})
+
+        if self.headline_figures and len(self.headline_figures) > 0:
+            figure_ids = [figure.value["figure_id"] for figure in self.headline_figures]  # pylint: disable=unsubscriptable-object,not-an-iterable
+        else:
+            figure_ids = []
+
+        figure_ids_set = set(figure_ids)
+        existing_figure_ids_set = set(self.headline_figures_figure_ids_list)
+
+        # Check if the provided figure IDs have been registered by our custom form
+        if any(item not in existing_figure_ids_set for item in figure_ids_set):
+            # This means someone tampered with the figure ID
+            raise ValidationError({"headline_figures": "Invalid figure ID(s) provided."})
+
+        if self.pk and self.is_latest:
+            for headline_figure in self.figures_used_by_ancestor:
+                if headline_figure not in figure_ids:
+                    raise ValidationError(
+                        {
+                            "headline_figures": f"Figure ID {
+                                headline_figure
+                            } cannot be removed as it is referenced in a topic page.",
+                        }
+                    )
+
+        # At this stage we can override the figure ids to account for deleted ones
+        self.update_headline_figures_figure_ids(figure_ids)
+
     def get_context(self, request: "HttpRequest", *args: Any, **kwargs: Any) -> dict:
         """Additional context for the template."""
         context: dict = super().get_context(request, *args, **kwargs)
@@ -230,6 +284,34 @@ class StatisticalArticlePage(BundledPageMixin, RoutablePageMixin, BasePage):  # 
     def get_admin_display_title(self) -> str:
         """Changes the admin display title to include the parent title."""
         return f"{self.get_parent().title}: {self.draft_title or self.title}"
+
+    def get_headline_figure(self, figure_id: str) -> dict[str, str]:
+        if not self.headline_figures:
+            return {}
+
+        for figure in self.headline_figures:  # pylint: disable=unsubscriptable-object
+            if figure.value["figure_id"] == figure_id:
+                return dict(figure.value)
+
+        return {}
+
+    @property
+    def headline_figures_figure_ids_list(self) -> list[str]:
+        """Returns a list of figure IDs from the headline figures."""
+        if self.headline_figures_figure_ids:
+            return self.headline_figures_figure_ids.split(FIGURE_ID_SEPARATOR)
+        return []
+
+    def add_headline_figures_figure_id(self, figure_id: str) -> None:
+        """Adds a figure ID to the list of headline figures."""
+        if figure_id not in self.headline_figures_figure_ids_list:
+            id_list = self.headline_figures_figure_ids_list
+            id_list.append(figure_id)
+            self.headline_figures_figure_ids = FIGURE_ID_SEPARATOR.join(id_list)
+
+    def update_headline_figures_figure_ids(self, figure_ids: list[str]) -> None:
+        """Updates the list of headline figures."""
+        self.headline_figures_figure_ids = FIGURE_ID_SEPARATOR.join(figure_ids)
 
     @property
     def display_title(self) -> str:
@@ -286,3 +368,71 @@ class StatisticalArticlePage(BundledPageMixin, RoutablePageMixin, BasePage):  # 
     def topic_ids(self) -> list[str]:
         """Returns a list of topic IDs associated with the parent article series page."""
         return list(self.get_parent().specific_deferred.topics.values_list("topic_id", flat=True))
+
+    @property
+    def figures_used_by_ancestor(self) -> list[str]:
+        """Returns a list of figure IDs used by the ancestor topic page."""
+        series = self.get_parent()
+        if not series:
+            return []
+        topic: TopicPage = series.get_parent().specific
+        return [
+            figure.value["figure_id"] for figure in topic.headline_figures if figure.value["series"].id == series.id
+        ]
+
+    @cached_property
+    def related_data_display_title(self) -> str:
+        return f"{_('All data related to')} {self.title}"
+
+    @cached_property
+    def ordered_related_datasets(self) -> list[dict[str, Any]]:
+        dataset_documents: list = []
+        for dataset in self.datasets:  # pylint: disable=not-an-iterable
+            if dataset.block_type == "manual_link":
+                dataset_document = {
+                    "title": {"text": dataset.value["title"], "url": dataset.value["url"]},
+                    "metadata": {"object": {"text": "Dataset"}},
+                    "description": f"<p>{dataset.value['description']}</p>",
+                }
+            else:
+                dataset_document = {
+                    "title": {"text": dataset.value.title, "url": dataset.value.website_url},
+                    "metadata": {"object": {"text": "Dataset"}},
+                    "description": f"<p>{dataset.value.description}</p>",
+                }
+            dataset_documents.append(dataset_document)
+
+        if self.dataset_sorting == SortingChoices.ALPHABETIC:
+            dataset_documents = sorted(dataset_documents, key=lambda d: d["title"]["text"])
+        return dataset_documents
+
+    @path("related-data/")
+    def related_data(self, request: "HttpRequest") -> "TemplateResponse":
+        if not self.ordered_related_datasets:
+            raise Http404
+        paginator = Paginator(self.ordered_related_datasets, per_page=settings.RELATED_DATASETS_PER_PAGE)
+
+        try:
+            paginated_datasets = paginator.page(request.GET.get("page", 1))
+            ons_pagination_url_list = [{"url": f"?page={n}"} for n in paginator.page_range]
+        except (EmptyPage, PageNotAnInteger) as e:
+            raise Http404 from e
+
+        response: TemplateResponse = self.render(
+            request,
+            context_overrides={
+                "paginated_datasets": paginated_datasets,
+                "ons_pagination_url_list": ons_pagination_url_list,
+            },
+            template="templates/pages/statistical_article_page--related_data.html",
+        )
+        return response
+
+    @property
+    def preview_modes(self) -> list[tuple[str, str]]:
+        return [("default", "Article Page"), ("related_data", "Related Data Page")]
+
+    def serve_preview(self, request: "HttpRequest", mode_name: str) -> "TemplateResponse":
+        if mode_name == "related_data":
+            return cast("TemplateResponse", self.related_data(request))
+        return cast("TemplateResponse", super().serve_preview(request, mode_name))

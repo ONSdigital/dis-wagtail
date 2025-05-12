@@ -1,69 +1,78 @@
 {% extends "templates/base_page.html" %}
 
+{% from "components/hero/_macro.njk" import onsHero %}
 {% from "components/table-of-contents/_macro.njk" import onsTableOfContents %}
 
 {% block header_area %}
-    <div class="common-header release-header">
-        <div class="ons-container">
-            {% include "templates/components/navigation/breadcrumbs.html" %}
-            <p class="article-header__doc-type ons-u-fs-l">{{ _("Release") }}</p>
+    {%- set hero_topic = _("Release") -%}
+    {%- set breadcrumbs_label = _("Breadcrumbs") -%}
+    {%- set release_date_label = _("Release date:") -%}
+    {%- set next_release_date_label = _("Next release date:") -%}
 
-            <div class="ons-grid ons-grid-flex-gap ons-grid-flex-gap--40">
-                <div class="ons-grid__col ons-col-10@m ">
-                    <h1 class="ons-u-fs-3xl common-header__heading">
-                        {{ page.title }}
-                    </h1>
-                </div>
-                <div class="ons-grid__col ons-col-2@m common-header__kitemark">
-                    {% if page.is_accredited %}
-                        {% with accredited_logo_classes="common-header__accreditation-logo" %}
-                            {% include "templates/components/accredited/accredited-logo.html" %}
-                        {% endwith %}
-                    {% endif %}
-                </div>
-            </div>
-        </div>
+    {# fmt:off #}
+    {%- set release_date_details = [
+        {
+            "label": release_date_label,
+            "value": page.release_date_value
+        },
+        {
+            "label": next_release_date_label,
+            "value": page.next_release_date_value
+        }
+    ] -%}
+    {# fmt:on #}
 
-        {% if page.is_census %}
-            <div class="ons-container">
-                {% with census_logo_classes="ons-u-mt-2xs ons-u-mb-s ons-u-mt-s@m census-logo" %}
-                    {% include "templates/components/census/census-logo.html" %}
-                {% endwith %}
-            </div>
+    {%- set release_dates_list = [] -%}
+
+    {%- for release_date_item in release_date_details -%}
+        {% if release_date_item.value %}
+            {# fmt:off #}
+            {%- do release_dates_list.append({
+                "term": release_date_item.label,
+                "descriptions": [{"description": release_date_item.value}]
+            }) -%}
+            {# fmt:on #}
         {% endif %}
+    {%- endfor -%}
 
-        {% block release_meta %}
-            <div class="ons-container common-header__releases common-header__releases--single-row">
-                {% if page.release_date or page.release_text %}
-                    <div>
-                        <span class="ons-u-fs-r--b common-header__releases-label">{{ _("Release date") }}:</span>
-                        <span class="ons-u-nowrap">{{ page.release_date|date("DATETIME_FORMAT") or page.release_date_text }}</span>
-                    </div>
-                {% endif %}
-                {% if page.next_release_date or page.next_release_text %}
-                    <div>
-                        <span class="ons-u-fs-r--b common-header__releases-label">{{ _("Next release") }}:</span>
-                        <span class="ons-u-nowrap">{{ page.next_release_date|date("DATETIME_FORMAT") or page.next_release_text }}</span>
-                    </div>
-                {% endif %}
-            </div>
-        {% endblock %}
-    </div>
+    {# fmt:off #}
+    {{
+        onsHero({
+            "topic": hero_topic,
+            "title": page.title,
+            "variants": 'grey',
+            "officialStatisticsBadge": page.is_accredited,
+            "wide": true,
+            "detailsColumns": 12,
+            "censusLogo": page.is_census,
+            "descriptionList": {
+                "descriptionListLabel": "",
+                "termCol": "6",
+                "descriptionCol": "6",
+                "itemsList": release_dates_list
+            },
+            "breadcrumbs": {
+                "ariaLabel": breadcrumbs_label,
+                "itemsList": breadcrumbs(page),
+            }
+        })
+    }}
+    {# fmt:on #}
     {% block release_note %}{% endblock %}
 {% endblock %}
 
 {% block main %}
     <div class="ons-grid ons-js-toc-container ons-u-ml-no">
         <div class="ons-grid__col ons-grid__col--sticky@m ons-col-4@m ons-u-p-no">
-            {# fmt:off #}
-            {{-
-                onsTableOfContents({
-                    "title": 'Contents',
-                    "ariaLabel": 'Sections in this page',
-                    "itemsList": table_of_contents
-                })
-            }}
-            {# fmt:on #}
+        {# fmt:off #}
+        {{-
+            onsTableOfContents({
+                "title": 'Contents',
+                "ariaLabel": 'Sections in this page',
+                "itemsList": table_of_contents
+            })
+        }}
+        {# fmt:on #}
         </div>
         <div class="ons-grid__col ons-col-8@m ons-col-12@s ons-u-p-no@2xs@m">
             <section id="summary" class="spacing">
