@@ -1,4 +1,7 @@
+import time
+
 import django
+import psycopg2
 from behave import fixture
 from behave.runner import Context
 from django.conf import settings
@@ -71,7 +74,18 @@ def django_test_case(context: Context) -> None:
     close_old_connections()
 
     context.test_case.tearDown()
-    restore_snapshot(find_snapshot(context.clean_snapshot_name))
+
+    # Try to restore the snapshot, which will reset the database to a clean state
+    try:
+        restore_snapshot(find_snapshot(context.clean_snapshot_name))
+    except psycopg2.OperationalError:
+        # Try to close connections again, in case the restore fails due to open connections
+        close_old_connections()
+        # Wait in case there are some race conditions with the database connections
+        time.sleep(1)
+        # Retry the restore, if it fails again, the exception will be raised
+        restore_snapshot(find_snapshot(context.clean_snapshot_name))
+
     context.test_case_class.tearDownClass()
     del context.test_case_class
     del context.test_case

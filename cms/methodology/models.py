@@ -17,6 +17,7 @@ from cms.core.blocks.stream_blocks import SectionStoryBlock
 from cms.core.fields import StreamField
 from cms.core.models import BasePage
 from cms.core.query import order_by_pk_position
+from cms.core.widgets import date_widget
 from cms.taxonomy.mixins import GenericTaxonomyMixin
 
 if TYPE_CHECKING:
@@ -65,7 +66,16 @@ class MethodologyPage(BundledPageMixin, GenericTaxonomyMixin, BasePage):  # type
         *BasePage.content_panels,
         "summary",
         MultiFieldPanel(
-            [FieldRowPanel(["publication_date", "last_revised_date"]), "contact_details", "show_cite_this_page"],
+            [
+                FieldRowPanel(
+                    [
+                        FieldPanel("publication_date", date_widget),
+                        FieldPanel("last_revised_date", date_widget),
+                    ]
+                ),
+                "contact_details",
+                "show_cite_this_page",
+            ],
             heading="Metadata",
             icon="cog",
         ),
