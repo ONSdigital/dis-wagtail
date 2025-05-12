@@ -6,6 +6,7 @@ from cms.bundles.models import BundleTeam
 from cms.bundles.tests.factories import BundleFactory
 from cms.teams.models import Team
 from functional_tests.step_helpers.users import create_user
+from playwright.sync_api import expect
 
 
 @step("a bundle has been created")
@@ -81,3 +82,47 @@ def the_user_can_see_the_bundle_details(context: Context) -> None:
     context.page.get_by_role("link", name="Bundles", exact=True).click()
     context.page.get_by_role("button", name=f"More options for '{context.bundle.name}'").click()
     context.page.get_by_role("link", name=f"Inspect '{context.bundle.name}'").click()
+
+
+
+# @when("the user clicks the {menu_item} menu item")
+# def user_navigates_to_snippets_admin_page(context: Context, menu_item: str) -> None:
+#     role = "button" if menu_item in ("Reports", "Pages", "Settings") else "link"
+#     context.page.get_by_role(role, name=menu_item, exact=True).click()
+#
+#
+# @then("the user can inspect bundle details")
+# def the_user_can_see_the_bundle_details(context: Context) -> None:
+#     context.page.get_by_role("link", name="Bundles", exact=True).click()
+#     context.page.get_by_role("button", name=f"More options for '{context.bundle.name}'").click()
+#     context.page.get_by_role("link", name=f"Inspect '{context.bundle.name}'").click()
+
+
+@step("the user can see the {menu_item} menu item with creator")
+def the_user_can_see_bundles_menu_item(context: Context, menu_item: str) -> None:
+    expect(context.page.get_by_role("link", name=menu_item, exact=True)).to_be_visible()
+    expect(context.page.get_by_role("row", name=context.user_data["full_name"]).get_by_role("cell").nth(5)).not_to_be_empty()
+    #
+    # print ("-"*10, type(context.bundle.created_by), context.bundle.created_by)
+    # print ("-"*10, context.bundle.name)
+    # print ("-"*10, context.page.get_by_role("row", name=context.user_data["full_name"]).get_by_role("cell").nth(5))
+
+
+
+@step("the user can inspect Bundle details with creator")
+def the_user_can_see_the_bundle_details_with_creator(context: Context) -> None:
+    context.page.get_by_role("link", name="Bundles", exact=True).click()
+    context.page.get_by_role("button", name=f"More options for '{context.bundle.name}'").click()
+    context.page.get_by_role("link", name=f"Inspect '{context.bundle.name}'").click()
+    expect(context.page.get_by_text("Created by")).to_be_visible()
+
+
+
+@then("the user can see the Bundles menu item without creator")
+def step_impl(context):
+    raise NotImplementedError(u'STEP: Then the user can see the Bundles menu item without creator')
+
+
+@step("the user can inspect Bundle details without creator")
+def step_impl(context):
+    raise NotImplementedError(u'STEP: And the user can inspect Bundle details without creator')

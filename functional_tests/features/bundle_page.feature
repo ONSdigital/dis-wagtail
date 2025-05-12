@@ -9,10 +9,10 @@ Feature: Publishing Officer can draft, edit, and publish bundles
         And the user can add Bundles created by user
         And is ready for review
         And has a preview team
-        And the user can see the Bundles menu item
-        And the user can inspect Bundle details
-        Then Bundle has the creator removed
-        And the user can see the Bundles menu item
-        And the user can inspect Bundle details
+        Then the user can see the Bundles menu item with creator
+        And the user can inspect Bundle details with creator
+#        When Bundle has the creator removed
+#        Then the user can see the Bundles menu item without creator
+#        And the user can inspect Bundle details without creator
 
 
