@@ -383,8 +383,10 @@ class ColumnChartWithLineTestCase(BaseChartBlockTestCase):
             {"type": "series_as_line_overlay", "value": 1}  # NB 1-indexed
         ]
         self.block.clean(self.get_value())
-        # The first series is the line overlay
         _, series = self.get_value().block.get_series_data(self.get_value())
+        # There are two series
+        self.assertEqual(2, len(series))
+        # The first series is the line overlay
         self.assertEqual("line", series[0]["type"])
         # The second series remains a column
         with self.assertRaises(KeyError):
@@ -399,9 +401,11 @@ class ColumnChartWithLineTestCase(BaseChartBlockTestCase):
             self.block.clean(self.get_value())
 
         self.assertEqual(
-            "Horizontal bar charts do not support line overlays.",
-            cm.exception.block_errors["series_customisation"].block_errors[0].message,
+            BarColumnChartBlock.ERROR_HORIZONTAL_BAR_NO_LINE,
+            cm.exception.block_errors["series_customisation"].block_errors[0].code,
         )
+        # This is the only error
+        self.assertEqual(1, len(cm.exception.block_errors))
 
     def test_error_is_raised_if_series_number_is_out_of_range(self):
         self.raw_data["select_chart_type"] = "column"
@@ -413,9 +417,11 @@ class ColumnChartWithLineTestCase(BaseChartBlockTestCase):
                 with self.assertRaises(blocks.StructBlockValidationError) as cm:
                     self.block.clean(self.get_value())
                 self.assertEqual(
-                    "Series number out of range.",
-                    cm.exception.block_errors["series_customisation"].block_errors[0].message,
+                    BarColumnChartBlock.ERROR_SERIES_OUT_OF_RANGE,
+                    cm.exception.block_errors["series_customisation"].block_errors[0].code,
                 )
+                # This is the only error
+                self.assertEqual(1, len(cm.exception.block_errors))
 
     def test_error_is_raised_if_series_number_is_duplicated(self):
         self.raw_data["select_chart_type"] = "column"
@@ -427,8 +433,11 @@ class ColumnChartWithLineTestCase(BaseChartBlockTestCase):
             self.block.clean(self.get_value())
 
         self.assertEqual(
-            "Duplicate series number.", cm.exception.block_errors["series_customisation"].block_errors[1].message
+            BarColumnChartBlock.ERROR_DUPLICATE_SERIES,
+            cm.exception.block_errors["series_customisation"].block_errors[1].code,
         )
+        # This is the only error
+        self.assertEqual(1, len(cm.exception.block_errors))
 
     def test_error_is_raised_if_all_series_are_selected_for_line_overlay(self):
         self.raw_data["select_chart_type"] = "column"
@@ -441,10 +450,15 @@ class ColumnChartWithLineTestCase(BaseChartBlockTestCase):
             ]
         )
         self.raw_data["series_customisation"] = [{"type": "series_as_line_overlay", "value": 1}]
+        _, series = self.get_value().block.get_series_data(self.get_value())
+        # There is one series
+        self.assertEqual(1, len(series))
         with self.assertRaises(blocks.StructBlockValidationError) as cm:
             self.block.clean(self.get_value())
 
         self.assertEqual(
-            "There must be at least one column remaining. To draw lines only, use a Line Chart.",
-            cm.exception.block_errors["series_customisation"].message,
+            BarColumnChartBlock.ERROR_ALL_SERIES_SELECTED,
+            cm.exception.block_errors["series_customisation"].code,
         )
+        # This is the only error
+        self.assertEqual(1, len(cm.exception.block_errors))

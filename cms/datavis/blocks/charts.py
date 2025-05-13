@@ -29,6 +29,12 @@ class LineChartBlock(BaseVisualisationBlock):
 
 
 class BarColumnChartBlock(BaseVisualisationBlock):
+    # Error codes
+    ERROR_DUPLICATE_SERIES = "duplicate_series_number"
+    ERROR_HORIZONTAL_BAR_NO_LINE = "horizontal_bar_no_line_overlay"
+    ERROR_SERIES_OUT_OF_RANGE = "series_number_out_of_range"
+    ERROR_ALL_SERIES_SELECTED = "all_series_selected"
+
     # Remove unsupported features
     show_markers = None
 
@@ -111,22 +117,27 @@ class BarColumnChartBlock(BaseVisualisationBlock):
         for i, block in enumerate(value.get("series_customisation", [])):
             if block.block_type == self.SERIES_AS_LINE_OVERLAY_BLOCK:
                 if block.value in seen_series_numbers:
-                    sub_block_errors[i] = ValidationError("Duplicate series number.")
+                    sub_block_errors[i] = ValidationError("Duplicate series number.", code=self.ERROR_DUPLICATE_SERIES)
                 seen_series_numbers.add(block.value)
 
                 if value.get("select_chart_type") == self.ChartTypeChoices.BAR:
-                    sub_block_errors[i] = ValidationError("Horizontal bar charts do not support line overlays.")
+                    sub_block_errors[i] = ValidationError(
+                        "Horizontal bar charts do not support line overlays.", code=self.ERROR_HORIZONTAL_BAR_NO_LINE
+                    )
 
                 # Raise an error if the series number is not in the range of the number of series
                 if block.value < 1 or block.value > len(series):
-                    sub_block_errors[i] = ValidationError("Series number out of range.")
+                    sub_block_errors[i] = ValidationError(
+                        "Series number out of range.", code=self.ERROR_SERIES_OUT_OF_RANGE
+                    )
 
         # Raise an error if there is only one data series
         if len(series) == len(seen_series_numbers):
             raise blocks.StructBlockValidationError(
                 block_errors={
                     "series_customisation": ValidationError(
-                        "There must be at least one column remaining. To draw lines only, use a Line Chart."
+                        "There must be at least one column remaining. To draw lines only, use a Line Chart.",
+                        code=self.ERROR_ALL_SERIES_SELECTED,
                     )
                 }
             )
