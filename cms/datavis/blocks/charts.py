@@ -131,8 +131,8 @@ class BarColumnChartBlock(BaseVisualisationBlock):
                         "Series number out of range.", code=self.ERROR_SERIES_OUT_OF_RANGE
                     )
 
-        # Raise an error if there is only one data series
-        if len(series) == len(seen_series_numbers):
+        # Raise an error if all series are selected for line overlay
+        if all(series_number in seen_series_numbers for series_number in range(1, len(series) + 1)):
             raise blocks.StructBlockValidationError(
                 block_errors={
                     "series_customisation": ValidationError(

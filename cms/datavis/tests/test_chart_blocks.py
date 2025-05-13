@@ -462,3 +462,22 @@ class ColumnChartWithLineTestCase(BaseChartBlockTestCase):
         )
         # This is the only error
         self.assertEqual(1, len(cm.exception.block_errors))
+
+    def test_all_series_selected_not_raised_for_number_out_of_range(self):
+        self.raw_data["select_chart_type"] = "column"
+        self.raw_data["series_customisation"] = [
+            {"type": "series_as_line_overlay", "value": 1},
+            {"type": "series_as_line_overlay", "value": 3},
+        ]
+        _, series = self.get_value().block.get_series_data(self.get_value())
+        # There are two series
+        self.assertEqual(2, len(series))
+        with self.assertRaises(blocks.StructBlockValidationError) as cm:
+            self.block.clean(self.get_value())
+
+        self.assertNotEqual(
+            BarColumnChartBlock.ERROR_ALL_SERIES_SELECTED,
+            cm.exception.block_errors["series_customisation"].code,
+        )
+        # This is the only error
+        self.assertEqual(1, len(cm.exception.block_errors))
