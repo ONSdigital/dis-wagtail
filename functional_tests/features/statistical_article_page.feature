@@ -106,6 +106,11 @@ Feature: Statistical Article Page components
         And the user clicks "Publish"
         And the user clicks "View Live" on the publish confirmation banner
         Then the published statistical article page has the added headline figures
+        
+    Scenario: A CMS user can see date placeholders on a Statistical Article Page by textbox
+        When the user goes to add a new statistical article page
+        Then the date placeholder "YYYY-MM-DD" is displayed in the "Release date*" textbox
+        And the date placeholder "YYYY-MM-DD" is displayed in the "Next release date" textbox
 
     Scenario: The related data page is linked and accessible when there are datasets related to a statistical article
         When the user goes to add a new statistical article page
