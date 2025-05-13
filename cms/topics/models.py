@@ -94,6 +94,7 @@ class TopicPage(BundledPageMixin, ExclusiveTaxonomyMixin, BasePage):  # type: ig
     )
 
     content_panels: ClassVar[list["Panel"]] = [
+        *BundledPageMixin.panels,
         *BasePage.content_panels,
         "summary",
         FieldPanel("headline_figures"),
@@ -121,7 +122,6 @@ class TopicPage(BundledPageMixin, ExclusiveTaxonomyMixin, BasePage):  # type: ig
             max_num=MAX_ITEMS_PER_SECTION,
         ),
         FieldPanel("explore_more", heading="Explore more"),
-        *BundledPageMixin.panels,
     ]
 
     search_fields: ClassVar[list[index.BaseField]] = [*BasePage.search_fields, index.SearchField("summary")]

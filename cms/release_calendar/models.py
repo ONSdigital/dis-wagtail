@@ -112,6 +112,7 @@ class ReleaseCalendarPage(BundledPageMixin, BasePage):  # type: ignore[django-ma
     related_links = StreamField(ReleaseCalendarRelatedLinksStoryBlock(), blank=True)
 
     content_panels: ClassVar[list[FieldPanel]] = [
+        *BundledPageMixin.panels,
         MultiFieldPanel(
             [
                 *Page.content_panels,
@@ -151,7 +152,6 @@ class ReleaseCalendarPage(BundledPageMixin, BasePage):  # type: ignore[django-ma
         FieldPanel("changes_to_release_date", icon="comment"),
         FieldPanel("pre_release_access", icon="key"),
         FieldPanel("related_links", icon="link"),
-        *BundledPageMixin.panels,
     ]
 
     search_fields: ClassVar[list[index.BaseField]] = [

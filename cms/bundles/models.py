@@ -12,7 +12,6 @@ from wagtail.search import index
 
 from cms.core.widgets import datetime_widget
 from cms.home.models import HomePage
-from cms.release_calendar.models import ReleaseCalendarPage
 from cms.release_calendar.viewsets import FutureReleaseCalendarChooserWidget
 from cms.topics.models import TopicPage
 from cms.workflows.utils import is_page_ready_to_preview, is_page_ready_to_publish
@@ -29,7 +28,7 @@ if TYPE_CHECKING:
 
     from cms.teams.models import Team
 
-PREVIEWER_EXCLUDED_PAGE_TYPES = (HomePage, TopicPage, ReleaseCalendarPage)
+PREVIEWER_EXCLUDED_PAGE_TYPES = (HomePage, TopicPage)
 
 
 class BundlePage(Orderable):

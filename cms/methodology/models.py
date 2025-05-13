@@ -63,6 +63,7 @@ class MethodologyPage(BundledPageMixin, GenericTaxonomyMixin, BasePage):  # type
     show_cite_this_page = models.BooleanField(default=True)
 
     content_panels: ClassVar[list["Panel"]] = [
+        *BundledPageMixin.panels,
         *BasePage.content_panels,
         "summary",
         MultiFieldPanel(
@@ -81,7 +82,6 @@ class MethodologyPage(BundledPageMixin, GenericTaxonomyMixin, BasePage):  # type
         ),
         FieldPanel("content", icon="list-ul"),
         InlinePanel("related_pages", label="Related publications"),
-        *BundledPageMixin.panels,
     ]
 
     search_fields: ClassVar[list[index.BaseField]] = [

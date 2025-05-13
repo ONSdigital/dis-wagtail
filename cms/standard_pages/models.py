@@ -32,12 +32,12 @@ class InformationPage(BundledPageMixin, GenericTaxonomyMixin, BasePage):  # type
     content = StreamField(CoreStoryBlock())
 
     content_panels: ClassVar[list["Panel"]] = [
+        *BundledPageMixin.panels,
         *BasePage.content_panels,
         "summary",
         FieldPanel("last_updated", date_widget),
         "content",
         InlinePanel("page_related_pages", label="Related pages"),
-        *BundledPageMixin.panels,
     ]
 
     search_fields: ClassVar[list[index.BaseField]] = [
@@ -65,12 +65,12 @@ class IndexPage(BundledPageMixin, BasePage):  # type: ignore[django-manager-miss
     related_links = StreamField([("related_link", RelatedContentBlock())], blank=True)
 
     content_panels: ClassVar[list["Panel"]] = [
+        *BundledPageMixin.panels,
         *BasePage.content_panels,
         "summary",
         "featured_items",
         "content",
         "related_links",
-        *BundledPageMixin.panels,
     ]
 
     search_fields: ClassVar[list[index.SearchField | index.AutocompleteField]] = [
