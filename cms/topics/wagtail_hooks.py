@@ -1,5 +1,6 @@
 from typing import TYPE_CHECKING
 
+from django.conf import settings
 from django.shortcuts import redirect
 from wagtail import hooks
 from wagtail.admin import messages
@@ -48,6 +49,8 @@ def register_series_with_headline_figures_chooser_viewset() -> "SeriesWithHeadli
 
 @hooks.register("before_copy_page")
 def before_create_page(request: "HttpRequest", page: "Page") -> "HttpResponseRedirect | None":
+    if not settings.ENFORCE_EXCLUSIVE_TAXONOMY:
+        return None
     if isinstance(page.specific, TopicPage | ThemePage):
         messages.warning(
             request,
