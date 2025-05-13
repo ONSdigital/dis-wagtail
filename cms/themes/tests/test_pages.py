@@ -6,7 +6,7 @@ from wagtail.test.utils import WagtailPageTestCase
 from cms.topics.tests.factories import ThemePageFactory
 
 
-class TopicPageTests(WagtailPageTestCase):
+class ThemePageTests(WagtailPageTestCase):
     @classmethod
     def setUpTestData(cls):
         cls.page = ThemePageFactory()
