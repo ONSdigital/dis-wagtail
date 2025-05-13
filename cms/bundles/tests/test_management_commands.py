@@ -28,7 +28,7 @@ class PublishBundlesCommandTestCase(TestCase):
         self.statistical_article = StatisticalArticlePageFactory(title="The Statistical Article", live=False)
         self.statistical_article.save_revision(approved_go_live_at=self.publication_date)
 
-        self.methodology_article = MethodologyPageFactory(title="The Methodology Article", live=False)
+        self.methodology_article = MethodologyPageFactory(title="The Methodology Article")
         self.methodology_article.save_revision()
 
         self.bundle = BundleFactory(approved=True, name="Test Bundle", publication_date=self.publication_date)
