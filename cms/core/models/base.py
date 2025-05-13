@@ -1,6 +1,7 @@
-from typing import TYPE_CHECKING, ClassVar, Optional, Self, cast
+from typing import TYPE_CHECKING, Any, ClassVar, Optional, Self, cast
 
 from django.conf import settings
+from django.db import transaction
 from django.utils.decorators import method_decorator
 from django.utils.functional import cached_property
 from wagtail.admin.panels import ObjectList, TabbedInterface
@@ -131,6 +132,24 @@ class BasePage(ListingFieldsMixin, SocialFieldsMixin, Page):  # type: ignore[dja
             return bool(streamvalue.stream_block.has_ons_embed(streamvalue))
 
         return False
+
+    def publish(self, *args: Any, **kwargs: Any) -> Any:
+        """Ensure pages are published inside a transaction.
+
+        This is a work-around for https://code.djangoproject.com/ticket/36389, by forcing
+        all queries to use the default database connection.
+        """
+        with transaction.atomic():
+            return super().publish(*args, **kwargs)
+
+    def unpublish(self, *args: Any, **kwargs: Any) -> Any:
+        """Ensure pages are unpublished inside a transaction.
+
+        This is a work-around for https://code.djangoproject.com/ticket/36389, by forcing
+        all queries to use the default database connection.
+        """
+        with transaction.atomic():
+            return super().unpublish(*args, **kwargs)
 
 
 class BaseSiteSetting(WagtailBaseSiteSetting):
