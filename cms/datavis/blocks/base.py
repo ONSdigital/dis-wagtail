@@ -1,4 +1,5 @@
 from collections.abc import Sequence
+from contextlib import suppress
 from typing import Any, ClassVar, Optional, cast
 
 from django.core.exceptions import ValidationError
@@ -136,6 +137,8 @@ class BaseVisualisationBlock(blocks.StructBlock):
         required=False,
     )
 
+    series_customisation = blocks.StaticBlock()
+
     class Meta:
         template = "templates/components/streamfield/datavis/base_highcharts_chart_block.html"
 
@@ -236,9 +239,9 @@ class BaseVisualisationBlock(blocks.StructBlock):
         rows: list[list[str | int | float]] = value["table"].rows
         series = []
 
-        for i, column in enumerate(headers[1:], start=1):
+        for series_number, column in enumerate(headers[1:], start=1):
             # Extract data points, handling None/empty values
-            data_points = [r[i] if r[i] != "" else None for r in rows]
+            data_points = [r[series_number] if r[series_number] != "" else None for r in rows]
 
             item = {
                 "name": column,
@@ -251,9 +254,8 @@ class BaseVisualisationBlock(blocks.StructBlock):
             if value.get("show_markers") is not None:
                 item["marker"] = value.get("show_markers")
             # Allow subclasses to specify additional parameters for each series
-            for key, val in getattr(self, "extra_series_attributes", {}).items():
+            for key, val in self.get_extra_series_attributes(value, series_number).items():
                 item[key] = val
-
             if tooltip_suffix := value["y_axis"].get("tooltip_suffix"):
                 item["tooltip"] = {
                     "valueSuffix": tooltip_suffix,
@@ -261,7 +263,18 @@ class BaseVisualisationBlock(blocks.StructBlock):
             series.append(item)
         return rows, series
 
+    def get_extra_series_attributes(self, value: "StructValue", series_number: int) -> dict[str, Any]:
+        """Get additional parameters for a specific series."""
+        # Start with the default parameters for this chart type
+        extra_series_attributes = getattr(self, "extra_series_attributes", {})
+        with suppress(AttributeError):
+            # Check for per-series customisation
+            extra_series_attributes.update(self.get_series_customisation(value, series_number))
+
+        return extra_series_attributes
+
     def get_additional_options(self, value: "StructValue") -> dict[str, Any]:
+        """Get additional global options for the chart."""
         options = {}
         for option in value.get("options", []):
             key = self.options_key_map[option.block_type]
