@@ -407,6 +407,21 @@ class ColumnChartWithLineTestCase(BaseChartBlockTestCase):
         # This is the only error
         self.assertEqual(1, len(cm.exception.block_errors))
 
+    def test_horizontal_bar_no_line_error_not_clobbered(self):
+        # We don't want particular details about the series number input to hide
+        # the fact that this should not be allowed on a bar chart at all.
+        self.raw_data["select_chart_type"] = "bar"
+        self.raw_data["series_customisation"] = [{"type": "series_as_line_overlay", "value": 10}]  # Out of range
+        with self.assertRaises(blocks.StructBlockValidationError) as cm:
+            self.block.clean(self.get_value())
+
+        self.assertEqual(
+            BarColumnChartBlock.ERROR_HORIZONTAL_BAR_NO_LINE,
+            cm.exception.block_errors["series_customisation"].block_errors[0].code,
+        )
+        # This is the only error
+        self.assertEqual(1, len(cm.exception.block_errors))
+
     def test_error_is_raised_if_series_number_is_out_of_range(self):
         self.raw_data["select_chart_type"] = "column"
         for series_number in [0, 3]:

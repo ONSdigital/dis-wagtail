@@ -116,20 +116,20 @@ class BarColumnChartBlock(BaseVisualisationBlock):
         seen_series_numbers = set()
         for i, block in enumerate(value.get("series_customisation", [])):
             if block.block_type == self.SERIES_AS_LINE_OVERLAY_BLOCK:
-                if block.value in seen_series_numbers:
-                    sub_block_errors[i] = ValidationError("Duplicate series number.", code=self.ERROR_DUPLICATE_SERIES)
-                seen_series_numbers.add(block.value)
-
                 if value.get("select_chart_type") == self.ChartTypeChoices.BAR:
                     sub_block_errors[i] = ValidationError(
                         "Horizontal bar charts do not support line overlays.", code=self.ERROR_HORIZONTAL_BAR_NO_LINE
                     )
 
                 # Raise an error if the series number is not in the range of the number of series
-                if block.value < 1 or block.value > len(series):
+                elif block.value < 1 or block.value > len(series):
                     sub_block_errors[i] = ValidationError(
                         "Series number out of range.", code=self.ERROR_SERIES_OUT_OF_RANGE
                     )
+
+                elif block.value in seen_series_numbers:
+                    sub_block_errors[i] = ValidationError("Duplicate series number.", code=self.ERROR_DUPLICATE_SERIES)
+                seen_series_numbers.add(block.value)
 
         # Raise an error if all series are selected for line overlay
         if all(series_number in seen_series_numbers for series_number in range(1, len(series) + 1)):
