@@ -139,7 +139,7 @@ jobs:
       - name: Install dependencies
         run: |
           make install-dev
-          sudo apt-get install -y gettext
+          sudo apt-get install -y gettext texlive-latex-extra texlive-fonts-recommended cm-super
 
       - uses: actions/download-artifact@v4
         with:
@@ -214,7 +214,7 @@ jobs:
       - name: Install dependencies
         run: |
           make install-dev
-          sudo apt-get install -y gettext
+          sudo apt-get install -y gettext texlive-latex-extra texlive-fonts-recommended cm-super
 
       - name: Playwright Install
         run: poetry run python -m playwright install --with-deps ${{ matrix.browser }}
