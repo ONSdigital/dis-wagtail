@@ -1,16 +1,18 @@
 from http import HTTPStatus
 
+from django.urls import reverse
 from wagtail.test.utils import WagtailPageTestCase
 
 from cms.articles.tests.factories import ArticleSeriesPageFactory, StatisticalArticlePageFactory
 from cms.topics.tests.factories import TopicPageFactory
 
 
-class ArticleSeriesPageTests(WagtailPageTestCase):
+class TopicPageTests(WagtailPageTestCase):
     @classmethod
     def setUpTestData(cls):
         cls.page = TopicPageFactory()
         cls.series = ArticleSeriesPageFactory(parent=cls.page)
+        cls.superuser = cls.create_superuser(username="admin")
 
         cls.statistical_article_page = StatisticalArticlePageFactory(parent=cls.series)
         cls.statistical_article_page.headline_figures = [
@@ -103,3 +105,34 @@ class ArticleSeriesPageTests(WagtailPageTestCase):
         response = self.client.get(self.page.url)
         self.assertContains(response, "New figure title updated XYZ")
         self.assertContains(response, "New figure title updated ABC")
+
+    def test_copy_is_not_allowed(self):
+        """Test that copying a TopicPage raises a warning."""
+        self.client.force_login(self.superuser)
+        response = self.client.get(
+            reverse("wagtailadmin_pages:copy", args=[self.page.id]),
+        )
+        self.assertEqual(response.status_code, HTTPStatus.FOUND)
+        response = self.client.get(
+            reverse("wagtailadmin_pages:copy", args=[self.page.id]),
+            follow=True,
+        )
+        self.assertEqual(response.status_code, HTTPStatus.OK)
+        self.assertContains(
+            response,
+            "Topic and theme pages cannot be duplicated as selected taxonomy needs to be unique for each page.",
+        )
+
+        response = self.client.post(
+            reverse("wagtailadmin_pages:copy", args=[self.page.id]),
+        )
+        self.assertEqual(response.status_code, HTTPStatus.FOUND)
+        response = self.client.post(
+            reverse("wagtailadmin_pages:copy", args=[self.page.id]),
+            follow=True,
+        )
+        self.assertEqual(response.status_code, HTTPStatus.OK)
+        self.assertContains(
+            response,
+            "Topic and theme pages cannot be duplicated as selected taxonomy needs to be unique for each page.",
+        )
