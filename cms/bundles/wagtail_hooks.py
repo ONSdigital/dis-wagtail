@@ -3,8 +3,6 @@ from typing import TYPE_CHECKING, Any, Union
 
 from django.db.models import QuerySet
 from django.urls import include, path
-from django.utils.timezone import now
-from django.utils.translation import gettext_lazy as _
 from wagtail import hooks
 from wagtail.admin.ui.components import Component
 from wagtail.admin.widgets import PageListingButton
@@ -13,9 +11,13 @@ from wagtail.permission_policies import ModelPermissionPolicy
 
 from . import admin_urls
 from .models import Bundle, BundledPageMixin
-from .viewsets import bundle_chooser_viewset, bundle_viewset
+from .viewsets.bundle import bundle_viewset
+from .viewsets.bundle_chooser import bundle_chooser_viewset
+from .viewsets.bundle_page_chooser import bundle_page_chooser_viewset
 
 if TYPE_CHECKING:
+    from typing import Optional
+
     from django.http import HttpRequest
     from django.urls import URLPattern
     from django.urls.resolvers import URLResolver
@@ -32,15 +34,15 @@ def register_viewset() -> list:
 
     @see https://docs.wagtail.org/en/stable/reference/hooks.html#register-admin-viewset
     """
-    return [bundle_viewset, bundle_chooser_viewset]
+    return [bundle_viewset, bundle_chooser_viewset, bundle_page_chooser_viewset]
 
 
 class PageAddToBundleButton(PageListingButton):
     """Defines the 'Add to Bundle' button to use in different contexts in the admin."""
 
-    label = _("Add to Bundle")
+    label = "Add to Bundle"
     icon_name = "boxes-stacked"
-    aria_label_format = _("Add '%(title)s' to a bundle")
+    aria_label_format = "Add '%(title)s' to a bundle"
     url_name = "bundles:add_to_bundle"
 
     @property
@@ -94,31 +96,6 @@ def register_admin_urls() -> list[Union["URLPattern", "URLResolver"]]:
     return [path("bundles/", include(admin_urls))]
 
 
-@hooks.register("before_edit_page")
-def preset_golive_date(request: "HttpRequest", page: "Page") -> None:
-    """Implements the before_edit_page to preset the golive date on pages in active bundles.
-
-    @see https://docs.wagtail.org/en/stable/reference/hooks.html#before-edit-page.
-    """
-    if not isinstance(page, BundledPageMixin):
-        return
-
-    if not page.in_active_bundle:
-        return
-
-    scheduled_date = page.active_bundle.scheduled_publication_date  # type: ignore[union-attr]
-    # note: ignoring union-attr because we already check that the page is in an active bundle.
-    if not scheduled_date:
-        return
-
-    # note: ignoring
-    # - attr-defined because mypy thinks page is only a BundledPageMixin class, rather than Page and BundledPageMixin.
-    # - union-attr because active_bundle can be none, but we check for that above
-    if now() < scheduled_date and scheduled_date != page.go_live_at:  # type: ignore[attr-defined]
-        # pre-set the scheduled publishing time
-        page.go_live_at = scheduled_date  # type: ignore[attr-defined]
-
-
 class LatestBundlesPanel(Component):
     """The admin dashboard panel for showing the latest bundles."""
 
@@ -134,7 +111,7 @@ class LatestBundlesPanel(Component):
     def is_shown(self) -> bool:
         """Determine if the panel is shown based on whether the user can modify it."""
         has_permission: bool = self.permission_policy.user_has_any_permission(
-            self.request.user, {"add", "change", "delete", "view"}
+            self.request.user, {"add", "change", "delete"}
         )
         return has_permission
 
@@ -142,15 +119,61 @@ class LatestBundlesPanel(Component):
         """Returns the latest 10 bundles if the panel is shown."""
         queryset: QuerySet[Bundle] = Bundle.objects.none()
         if self.is_shown:
-            queryset = Bundle.objects.active().select_related("created_by")[:10]
+            queryset = Bundle.objects.active().select_related("created_by", "created_by__wagtail_userprofile")[:10]
 
         return queryset
 
-    def get_context_data(self, parent_context: "RenderContext") -> "RenderContext":
+    def get_context_data(self, parent_context: "Optional[RenderContext]" = None) -> "Optional[RenderContext]":
         """Adds the request, the latest bundles and whether the panel is shown to the panel context."""
         context = super().get_context_data(parent_context)
         context["request"] = self.request
         context["bundles"] = self.get_latest_bundles()
+        context["is_shown"] = self.is_shown
+        return context
+
+
+class BundlesInReviewPanel(Component):
+    name = "bundles_in_review"
+    order = 150
+    template_name = "bundles/wagtailadmin/panels/bundles_in_review.html"
+
+    def __init__(self, request: "HttpRequest") -> None:
+        self.request = request
+        self.permission_policy = ModelPermissionPolicy(Bundle)
+
+    @cached_property
+    def is_shown(self) -> bool:
+        """Only show to users that can view, but not manage bundles."""
+        if self.request.user.is_superuser:
+            return True
+
+        has_view_permission = self.permission_policy.user_has_permission(self.request.user, "view")
+        if not has_view_permission:
+            return False
+
+        has_manage_permissions: bool = self.permission_policy.user_has_any_permission(
+            self.request.user, {"add", "change", "delete"}
+        )
+        return not has_manage_permissions
+
+    def get_bundles(self) -> QuerySet[Bundle]:
+        """Returns the latest 10 bundles if the panel is shown."""
+        queryset: QuerySet[Bundle] = Bundle.objects.none()
+        if self.is_shown:
+            queryset = (
+                Bundle.objects.previewable()
+                .filter(teams__team__in=self.request.user.active_team_ids)  # type: ignore[union-attr]
+                .select_related("created_by", "created_by__wagtail_userprofile")
+                .distinct()
+            )
+
+        return queryset
+
+    def get_context_data(self, parent_context: "Optional[RenderContext]" = None) -> "Optional[RenderContext]":
+        """Adds the request, the latest bundles and whether the panel is shown to the panel context."""
+        context = super().get_context_data(parent_context)
+        context["request"] = self.request
+        context["bundles"] = self.get_bundles()
         context["is_shown"] = self.is_shown
         return context
 
@@ -162,6 +185,7 @@ def add_latest_bundles_panel(request: "HttpRequest", panels: list[Component]) ->
     @see https://docs.wagtail.org/en/stable/reference/hooks.html#construct-homepage-panels
     """
     panels.append(LatestBundlesPanel(request))
+    panels.append(BundlesInReviewPanel(request))
 
 
 @hooks.register("register_log_actions")
@@ -176,24 +200,50 @@ def register_bundle_log_actions(actions: "LogActionRegistry") -> None:
     class ChangeBundleStatus(LogFormatter):  # pylint: disable=unused-variable
         """LogFormatter class for the bundle status change actions."""
 
-        label = _("Change bundle status")
+        label = "Change bundle status"
 
         def format_message(self, log_entry: "ModelLogEntry") -> Any:
             """Returns the formatted log message."""
             try:
-                return _(f"Changed the bundle status from '{log_entry.data["old"]}' to '{log_entry.data["new"]}'")
+                return f"Changed the bundle status from '{log_entry.data['old']}' to '{log_entry.data['new']}'"
             except KeyError:
-                return _("Changed the bundle status")
+                return "Changed the bundle status"
 
     @actions.register_action("bundles.approve")
     class ApproveBundle(LogFormatter):  # pylint: disable=unused-variable
         """LogFormatter class for the bundle approval actions."""
 
-        label = _("Approve bundle")
+        label = "Approve bundle"
 
         def format_message(self, log_entry: "ModelLogEntry") -> Any:
             """Returns the formatted log message."""
             try:
-                return _(f"Approved the bundle. (Old status: '{log_entry.data["old"]}')")
+                return f"Approved the bundle. (Old status: '{log_entry.data['old']}')"
             except KeyError:
-                return _("Approved the bundle")
+                return "Approved the bundle"
+
+    @actions.register_action("bundles.preview")
+    class PreviewBundle(LogFormatter):  # pylint: disable=unused-variable
+        """LogFormatter class for the bundle item preview actions."""
+
+        label = "Preview bundle item"
+
+        def format_message(self, log_entry: "ModelLogEntry") -> Any:
+            """Returns the formatted log message."""
+            try:
+                return f"Previewed {log_entry.data['type']} '{log_entry.data['title']}'."
+            except KeyError:
+                return "Previewed an item."
+
+    @actions.register_action("bundles.preview.attempt")
+    class PreviewBundleAttempt(LogFormatter):  # pylint: disable=unused-variable
+        """LogFormatter class for the bundle item preview attempt actions."""
+
+        label = "Attempt bundle item preview"
+
+        def format_message(self, log_entry: "ModelLogEntry") -> Any:
+            """Returns the formatted log message."""
+            try:
+                return f"Attempted preview of {log_entry.data['type']} '{log_entry.data['title']}'."
+            except KeyError:
+                return "Attempted to preview an item."

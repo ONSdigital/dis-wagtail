@@ -25,7 +25,7 @@ def create_index_page(apps, schema_editor):
         first_published_at=now,
         last_published_at=now,
         slug="releases",
-        path="%s00%02d" % (home_page.path, home_page.numchild + 1),
+        path=f"{home_page.path}00{home_page.numchild + 1:02d}",
         content_type=index_content_type,
         depth=home_page.depth + 1,
         url_path=f"{home_page.url_path}releases/",

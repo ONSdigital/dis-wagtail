@@ -1,20 +1,20 @@
-from typing import TYPE_CHECKING, Any, ClassVar, Optional, Self
+from typing import TYPE_CHECKING, ClassVar, Optional, Self
 
 from django.db import models
 from django.db.models import F, QuerySet
 from django.db.models.functions import Coalesce
 from django.utils.functional import cached_property
-from django.utils.timezone import now
-from django.utils.translation import gettext_lazy as _
 from modelcluster.fields import ParentalKey
 from modelcluster.models import ClusterableModel
-from wagtail.admin.panels import FieldPanel, FieldRowPanel, InlinePanel
+from wagtail.admin.panels import FieldPanel, FieldRowPanel, InlinePanel, MultipleChooserPanel
 from wagtail.models import Orderable, Page
 from wagtail.search import index
 
+from cms.core.widgets import datetime_widget
 from cms.release_calendar.viewsets import FutureReleaseCalendarChooserWidget
+from cms.workflows.utils import is_page_ready_to_preview, is_page_ready_to_publish
 
-from .enums import ACTIVE_BUNDLE_STATUSES, EDITABLE_BUNDLE_STATUSES, BundleStatus
+from .enums import ACTIVE_BUNDLE_STATUSES, EDITABLE_BUNDLE_STATUSES, PREVIEWABLE_BUNDLE_STATUSES, BundleStatus
 from .forms import BundleAdminForm
 from .panels import BundleNotePanel, PageChooserWithStatusPanel
 
@@ -22,6 +22,9 @@ if TYPE_CHECKING:
     import datetime
 
     from wagtail.admin.panels import Panel
+    from wagtail.query import PageQuerySet
+
+    from cms.teams.models import Team
 
 
 class BundlePage(Orderable):
@@ -31,11 +34,19 @@ class BundlePage(Orderable):
     )
 
     panels: ClassVar[list["Panel"]] = [
-        PageChooserWithStatusPanel("page", ["articles.StatisticalArticlePage"]),
+        PageChooserWithStatusPanel("page"),
     ]
 
     def __str__(self) -> str:
         return f"BundlePage: page {self.page_id} in bundle {self.parent_id}"
+
+
+class BundleTeam(Orderable):
+    parent = ParentalKey("Bundle", on_delete=models.CASCADE, related_name="teams")
+    team: "models.ForeignKey[Team]" = models.ForeignKey("teams.Team", on_delete=models.CASCADE)
+
+    def __str__(self) -> str:
+        return f"BundleTeam: {self.pk} bundle {self.parent_id} team: {self.team_id}"
 
 
 class BundlesQuerySet(QuerySet):
@@ -46,6 +57,9 @@ class BundlesQuerySet(QuerySet):
     def editable(self) -> Self:
         """Provides a pre-filtered queryset for editable bundles. Usage: Bundle.objects.editable()."""
         return self.filter(status__in=EDITABLE_BUNDLE_STATUSES)
+
+    def previewable(self) -> Self:
+        return self.filter(status__in=PREVIEWABLE_BUNDLE_STATUSES)
 
 
 # note: mypy doesn't cope with dynamic base classes and fails with:
@@ -94,7 +108,7 @@ class Bundle(index.Indexed, ClusterableModel, models.Model):  # type: ignore[dja
         on_delete=models.SET_NULL,
         related_name="bundles",
     )
-    status = models.CharField(choices=BundleStatus.choices, default=BundleStatus.PENDING, max_length=32)
+    status = models.CharField(choices=BundleStatus.choices, default=BundleStatus.DRAFT, max_length=32)
 
     objects = BundleManager()
 
@@ -107,13 +121,16 @@ class Bundle(index.Indexed, ClusterableModel, models.Model):  # type: ignore[dja
                     heading="Release Calendar page",
                     widget=FutureReleaseCalendarChooserWidget,
                 ),
-                FieldPanel("publication_date", heading="or Publication date"),
+                FieldPanel("publication_date", datetime_widget, heading="or Publication date"),
             ],
-            heading=_("Scheduling"),
+            heading="Scheduling",
             icon="calendar",
         ),
-        FieldPanel("status"),
-        InlinePanel("bundled_pages", heading=_("Bundled pages"), icon="doc-empty", label=_("Page")),
+        "status",
+        InlinePanel("bundled_pages", heading="Bundled pages", icon="doc-empty", label="Page"),
+        MultipleChooserPanel(
+            "teams", heading="Preview teams", icon="user", label="Preview team", chooser_field_name="team"
+        ),
         # these are handled by the form
         FieldPanel("approved_by", classname="hidden w-hidden"),
         FieldPanel("approved_at", classname="hidden w-hidden"),
@@ -122,6 +139,7 @@ class Bundle(index.Indexed, ClusterableModel, models.Model):  # type: ignore[dja
     search_fields: ClassVar[list[index.BaseField]] = [
         index.SearchField("name"),
         index.AutocompleteField("name"),
+        index.FilterField("status"),
     ]
 
     def __str__(self) -> str:
@@ -135,39 +153,38 @@ class Bundle(index.Indexed, ClusterableModel, models.Model):  # type: ignore[dja
             date = self.release_calendar_page.release_date  # type: ignore[union-attr]
         return date
 
+    @cached_property
+    def active_team_ids(self) -> list[int]:
+        return list(self.teams.filter(team__is_active=True).values_list("team__pk", flat=True))
+
     @property
     def can_be_approved(self) -> bool:
-        """Determines whether the bundle can be approved (i.e. is not already approved or released).
+        """Determines whether the bundle can be approved.
 
-        Note: strictly speaking, the bundle should be in "in review" in order for it to be approved.
+        That is, the bundle is in review and all the bundled pages are ready to publish.
         """
-        return self.status in [BundleStatus.PENDING, BundleStatus.IN_REVIEW]
+        if self.status != BundleStatus.IN_REVIEW:
+            return False
 
-    def get_bundled_pages(self) -> QuerySet[Page]:
-        pages: QuerySet[Page] = Page.objects.filter(pk__in=self.bundled_pages.values_list("page__pk", flat=True))
+        return all(is_page_ready_to_publish(page) for page in self.get_bundled_pages())
+
+    @property
+    def is_ready_to_be_published(self) -> bool:
+        return self.status == BundleStatus.APPROVED
+
+    def get_bundled_pages(self, specific: bool = False) -> "PageQuerySet[Page]":
+        pages = Page.objects.filter(pk__in=self.bundled_pages.values_list("page__pk", flat=True))
+        if specific:
+            pages = pages.specific().defer_streamfields()
         return pages
 
-    def save(self, **kwargs: Any) -> None:  # type: ignore[override]
-        """Adds additional behaviour on bundle saving.
+    def get_pages_ready_for_review(self) -> list[Page]:
+        return [page for page in self.get_bundled_pages(specific=True) if is_page_ready_to_preview(page)]
 
-        For non-released bundles, we update the publication date for related pages if needed.
-        """
-        super().save(**kwargs)
-
-        if self.status == BundleStatus.RELEASED:
-            return
-
-        if self.scheduled_publication_date and self.scheduled_publication_date >= now():
-            # Schedule publishing for related pages.
-            # ignoring [attr-defined] because Wagtail is not fully typed and mypy is confused.
-            for bundled_page in self.get_bundled_pages().defer_streamfields().specific():  # type: ignore[attr-defined]
-                if bundled_page.go_live_at == self.scheduled_publication_date:
-                    continue
-
-                # note: this could use a custom log action for history
-                bundled_page.go_live_at = self.scheduled_publication_date
-                revision = bundled_page.save_revision()
-                revision.publish()
+    def get_teams_display(self) -> str:
+        return ", ".join(
+            list(self.teams.values_list("team__name", flat=True)) or ["-"],
+        )
 
 
 class BundledPageMixin:

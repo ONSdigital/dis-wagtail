@@ -16,8 +16,12 @@ from cms.core.blocks.stream_blocks import SectionStoryBlock
 from cms.core.fields import StreamField
 from cms.core.models import BasePage
 from cms.core.query import order_by_pk_position
+from cms.core.widgets import date_widget
+from cms.taxonomy.mixins import GenericTaxonomyMixin
 
 if TYPE_CHECKING:
+    import datetime
+
     from wagtail.admin.panels import Panel
     from wagtail.query import PageQuerySet
 
@@ -35,10 +39,11 @@ class MethodologyRelatedPage(Orderable):
     panels: ClassVar[list[FieldPanel]] = [PageChooserPanel("page", page_type=["articles.StatisticalArticlePage"])]
 
 
-class MethodologyPage(BasePage):  # type: ignore[django-manager-missing]
+class MethodologyPage(GenericTaxonomyMixin, BasePage):  # type: ignore[django-manager-missing]
     parent_page_types: ClassVar[list[str]] = ["topics.TopicPage"]
-
+    search_index_content_type: ClassVar[str] = "static_methodology"
     template = "templates/pages/methodology_page.html"
+    label = _("Methodology")  # type: ignore[assignment]
 
     summary = RichTextField(features=settings.RICH_TEXT_BASIC)
     publication_date = models.DateField()
@@ -58,21 +63,19 @@ class MethodologyPage(BasePage):  # type: ignore[django-manager-missing]
 
     content_panels: ClassVar[list["Panel"]] = [
         *BasePage.content_panels,
-        FieldPanel("summary"),
+        "summary",
         MultiFieldPanel(
             [
                 FieldRowPanel(
                     [
-                        FieldPanel(
-                            "publication_date",
-                        ),
-                        FieldPanel("last_revised_date"),
+                        FieldPanel("publication_date", date_widget),
+                        FieldPanel("last_revised_date", date_widget),
                     ]
                 ),
-                FieldPanel("contact_details"),
-                FieldPanel("show_cite_this_page"),
+                "contact_details",
+                "show_cite_this_page",
             ],
-            heading=_("Metadata"),
+            heading="Metadata",
             icon="cog",
         ),
         FieldPanel("content", icon="list-ul"),
@@ -90,7 +93,7 @@ class MethodologyPage(BasePage):  # type: ignore[django-manager-missing]
         super().clean()
 
         if self.last_revised_date and self.last_revised_date <= self.publication_date:
-            raise ValidationError({"last_revised_date": _("The last revised date must be after the published date.")})
+            raise ValidationError({"last_revised_date": "The last revised date must be after the published date."})
 
     def get_context(self, request: HttpRequest, *args: Any, **kwargs: Any) -> dict:
         """Additional context for the template."""
@@ -99,10 +102,14 @@ class MethodologyPage(BasePage):  # type: ignore[django-manager-missing]
         context["related_publications"] = self.get_formatted_related_publications_list(request=request)
         return context
 
+    @property
+    def release_date(self) -> "datetime.date":
+        return self.publication_date
+
     @cached_property
     def related_publications(self) -> "PageQuerySet":
-        """Return a `PageQuerySet` of items related to this page via the
-        `PageRelatedPage` through model, and are suitable for display.
+        """Return a `PageQuerySet` of the StatisticalArticlePage page model via the
+        `MethodologyRelatedPage` through model, which is suitable for display.
         The result is ordered to match that specified by editors using
         the 'page_related_pages' `InlinePanel`.
         """
@@ -116,7 +123,7 @@ class MethodologyPage(BasePage):  # type: ignore[django-manager-missing]
         )
 
     def get_formatted_related_publications_list(self, request: HttpRequest | None = None) -> list[dict[str, str]]:
-        """Returns a formatted list of related publications for use with the Design System list component."""
+        """Returns a formatted list of related internal pages for use with the Design System list component."""
         items = []
         for page in self.related_publications:
             items.append(

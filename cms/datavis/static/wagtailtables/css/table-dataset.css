@@ -1,8 +1,11 @@
+/* stylelint-disable-next-line selector-class-pattern */
 .jexcel_content {
-  box-shadow: none !important;
+    /* stylelint-disable-next-line declaration-no-important */
+    box-shadow: none !important;
 }
 
+/* stylelint-disable-next-line selector-class-pattern */
 .jexcel_container {
-  width: 100%;
-  overflow: scroll;
+    width: 100%;
+    overflow: scroll;
 }

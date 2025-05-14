@@ -8,8 +8,10 @@ venv
 .coverage
 media
 static
+!cms/**/static/
 node_modules
-jinja2
+*.min.js
+*.min.css
 
 ## this line and any new rules added below will be removed when a new project is created
 docs/deployment.md

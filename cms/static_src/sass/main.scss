@@ -7,11 +7,11 @@ Don't add css code directly to this file, add it to the relevant component file 
 @use 'components/button-nav';
 @use 'components/census-logo';
 @use 'components/common-header';
-@use 'components/corrections';
+@use 'components/corrections-and-notices';
 @use 'components/document-list-block';
 @use 'components/chart-embed';
 @use 'components/contact-details';
-@use 'components/featured-chart';
+@use 'components/featured-article';
 @use 'components/headline-figures';
 @use 'components/navigation';
 @use 'components/panel';

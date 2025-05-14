@@ -1,29 +1,93 @@
 {% extends "templates/base_page.html" %}
+{% from "components/hero/_macro.njk" import onsHero %}
+{% from "components/table-of-contents/_macro.njk" import onsTableOfContents %}
+{% from "components/document-list/_macro.njk" import onsDocumentList %}
 
 {% block header_area %}
-    <div class="topic-header">
-        <div class="topic-header__circles" aria-hidden="true">
-            <div class="topic-header__circle-one"></div>
-            <div class="topic-header__circle-two"></div>
-            <div class="topic-header__circle-three"></div>
-        </div>
-        <div class="ons-container">
-            {% include "templates/components/navigation/breadcrumbs.html" %}
-            <p class="topic-header__doc-type">{{ _("Topic") }}</p>
-
-            <div class="ons-grid">
-                <div class="ons-grid__col ons-col-8@m ">
-                    <h1 class="ons-u-fs-3xl common-header__heading">
-                        {{ page.title }}
-                    </h1>
-                    <div class="common-header__summary">{{ page.summary|richtext }}</div>
-                </div>
-            </div>
-        </div>
-    </div>
+    {%- set hero_topic = _("Topic") -%}
+    {%- set breadcrumbs_aria_label = _("Breadcrumbs") -%}
+    {# fmt:off #}
+    {{
+        onsHero({
+            "topic": hero_topic,
+            "title": page.title,
+            "variants": 'pale-blue',
+            "text": page.summary|richtext(),
+            "wide": true,
+            "breadcrumbs": {
+                "ariaLabel": breadcrumbs_aria_label,
+                "itemsList": breadcrumbs(page),
+            }
+        })
+    }}
+    {# fmt:on #}
 
     {% if page.headline_figures %}
-        {% include_block page.headline_figures %}
+        <div class="ons-container headline-figures">
+            <h2 class="headline-figures__heading ons-u-fs-m">{{ _("Headline facts and figures") }}</h2>
+            <div class="ons-grid ons-grid-flex-gap ons-grid-flex-gap--24 headline-figures__grid">
+                {% for figure in page.headline_figures %}
+                    <div class="ons-grid__col ons-grid__col--flex-col ons-grid__col--stretch">{% include_block figure %}</div>
+                {% endfor %}
+            </div>
+        </div>
     {% endif %}
+{% endblock %}
 
+{% block main %}
+    <div class="ons-grid ons-grid-flex-gap ons-grid-flex-gap--32 ons-js-toc-container">
+        <div class="ons-grid__col ons-grid__col--sticky@m ons-col-4@m">
+            {% with toc_title=_("Contents"), toc_aria_label=_("Sections in this page") %}
+
+                {# TODO: Add 'view all related publications & data' to related links once available #}
+                {# fmt:off #}
+                {{-
+                    onsTableOfContents({
+                        "title": toc_title,
+                        "ariaLabel": toc_aria_label,
+                        "lists": [
+                            {
+                                "itemsList": table_of_contents
+                            }
+                        ]
+                    })
+                -}}
+                {# fmt:on #}
+            {% endwith %}
+        </div>
+
+        <div class="ons-grid__col ons-col-8@m">
+            {% if featured_item %}
+                <section id="featured" class="spacing">
+                    <h2>{{ _("Featured") }}</h2>
+
+                    {% with article=featured_item %}
+                        {% include "templates/components/featured/featured-article.html" %}
+                    {% endwith %}
+                </section>
+            {% endif %}
+
+            {% if formatted_articles %}
+                <section id="related-articles" class="spacing">
+                    <h2>{{ _("Related articles") }}</h2>
+                    {{ onsDocumentList({"documents": formatted_articles}) }}
+                </section>
+            {% endif %}
+
+            {% if formatted_methodologies %}
+                <section id="related-methods" class="spacing">
+                    <h2>{{ _("Methods and quality information") }}</h2>
+                    {{ onsDocumentList({"documents": formatted_methodologies}) }}
+                </section>
+            {% endif %}
+
+            {% if page.explore_more %}
+                <section id="explore-more">
+                    <h2>{{ _("Explore more") }}</h2>
+
+                    {% include_block page.explore_more %}
+                </section>
+            {% endif %}
+        </div>
+    </div>
 {% endblock %}

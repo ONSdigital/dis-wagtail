@@ -52,6 +52,4 @@ class SystemMessagesSettings(BaseSiteSetting):
         default="<p>You may be trying to find a page that doesn&rsquo;t exist or has been moved.</p>",
     )
 
-    panels: ClassVar[list[FieldPanel]] = [
-        MultiFieldPanel([FieldPanel("title_404"), FieldPanel("body_404")], "404 page")
-    ]
+    panels: ClassVar[list[FieldPanel]] = [MultiFieldPanel(["title_404", "body_404"], "404 page")]

@@ -8,10 +8,10 @@ from typing import Any, cast
 
 import dj_database_url
 from django.core.exceptions import ImproperlyConfigured
-from django.utils.module_loading import import_string
 from django.utils.translation import gettext_lazy as _
 from django_jinja.builtins import DEFAULT_EXTENSIONS
 
+from cms.core.elasticache import ElastiCacheIAMCredentialProvider
 from cms.core.jinja2 import custom_json_dumps
 
 env = os.environ.copy()
@@ -61,18 +61,23 @@ INSTALLED_APPS = [
     "cms.articles",
     "cms.bundles",
     "cms.core",
+    "cms.datasets",
     "cms.datavis",
     "cms.documents",
     "cms.home",
     "cms.images",
     "cms.private_media",
     "cms.release_calendar",
+    "cms.teams",
     "cms.themes",
     "cms.topics",
     "cms.users",
     "cms.standard_pages",
     "cms.methodology",
     "cms.navigation",
+    "cms.taxonomy",
+    "cms.search",
+    "cms.workflows",
     "wagtail.embeds",
     "wagtail.sites",
     "wagtail.users",
@@ -81,10 +86,12 @@ INSTALLED_APPS = [
     "wagtail.images",
     "wagtail.search",
     "wagtail.admin",
+    "wagtail.locales",
     "wagtail.contrib.settings",
     "wagtail.contrib.redirects",
     "wagtail.contrib.legacy.richtext",
     "wagtail.contrib.table_block",
+    "wagtail.contrib.simple_translation",
     "wagtail",
     "modelcluster",
     "taggit",
@@ -93,11 +100,12 @@ INSTALLED_APPS = [
     "django.contrib.contenttypes",
     "whitenoise.runserver_nostatic",  # Must be before `django.contrib.staticfiles`
     "django.contrib.staticfiles",
-    "django.contrib.sitemaps",
     "django_jinja",
     "wagtailmath",
     "wagtailtables",
     "wagtailfontawesomesvg",
+    "wagtail_tinytableblock",
+    "rest_framework",
 ]
 
 if not IS_EXTERNAL_ENV:
@@ -132,8 +140,12 @@ MIDDLEWARE = [
 if not IS_EXTERNAL_ENV:
     common_middleware_index = MIDDLEWARE.index("django.middleware.common.CommonMiddleware")
     MIDDLEWARE.insert(common_middleware_index, "django.contrib.messages.middleware.MessageMiddleware")
-    MIDDLEWARE.insert(common_middleware_index, "django.contrib.auth.middleware.AuthenticationMiddleware")
+    MIDDLEWARE.insert(
+        common_middleware_index,
+        "django.contrib.auth.middleware.AuthenticationMiddleware",
+    )
     MIDDLEWARE.insert(common_middleware_index, "django.contrib.sessions.middleware.SessionMiddleware")
+    MIDDLEWARE.insert(common_middleware_index, "xff.middleware.XForwardedForMiddleware")
 
 ROOT_URLCONF = "cms.urls"
 
@@ -148,7 +160,10 @@ context_processors = [
 
 if not IS_EXTERNAL_ENV:
     context_processors.extend(
-        ["django.contrib.messages.context_processors.messages", "django.contrib.auth.context_processors.auth"]
+        [
+            "django.contrib.messages.context_processors.messages",
+            "django.contrib.auth.context_processors.auth",
+        ]
     )
 
 TEMPLATES = [
@@ -170,6 +185,7 @@ TEMPLATES = [
                 "wagtail.images.jinja2tags.images",
                 "wagtail.contrib.settings.jinja2tags.settings",
                 "cms.core.jinja2tags.CoreExtension",
+                "cms.navigation.jinja2tags.NavigationExtension",
             ],
             "policies": {
                 # https://jinja.palletsprojects.com/en/stable/api/#policies
@@ -194,7 +210,10 @@ WSGI_APPLICATION = "cms.wsgi.application"
 
 # Database
 
-db_conn_max_age = int(env.get("PG_CONN_MAX_AGE", 870))  # Just under 15 minutes, to match password expiry
+# None allows connections to be reused for longer, since opening them is expensive.
+# CONN_HEALTH_CHECK ensures they're still healthy before attempting to use them.
+db_conn_max_age = int(env["PG_CONN_MAX_AGE"]) if "PG_CONN_MAX_AGE" in env else None
+db_read_conn_max_age = int(env["PG_READ_CONN_MAX_AGE"]) if "PG_READ_CONN_MAX_AGE" in env else None
 
 if "PG_DB_ADDR" in env:
     # Use IAM authentication to connect to the Database
@@ -208,29 +227,39 @@ if "PG_DB_ADDR" in env:
                 "HOST": env["PG_DB_ADDR"],
                 "PORT": env["PG_DB_PORT"],
                 "CONN_MAX_AGE": db_conn_max_age,
-                "OPTIONS": {"use_iam_auth": True, "sslmode": "require"},
+                "CONN_HEALTH_CHECK": True,
+                "OPTIONS": {"use_iam_auth": True, "sslmode": "require", "region_name": env["AWS_REGION"]},
             },
         )
     }
 
     # Additionally configure a read-replica
     if "PG_DB_READ_ADDR" in env:
-        DATABASES["read_replica"] = {**deepcopy(DATABASES["default"]), "HOST": env["PG_DB_READ_ADDR"]}
+        DATABASES["read_replica"] = {
+            **deepcopy(DATABASES["default"]),
+            "HOST": env["PG_DB_READ_ADDR"],
+            "CONN_MAX_AGE": db_read_conn_max_age,
+        }
 
 else:
     DATABASES = {
-        "default": dj_database_url.config(conn_max_age=db_conn_max_age, default="postgres:///ons"),
+        "default": dj_database_url.config(
+            conn_max_age=db_conn_max_age, conn_health_checks=True, default="postgres:///ons"
+        ),
     }
 
     if "READ_REPLICA_DATABASE_URL" in env:
         DATABASES["read_replica"] = dj_database_url.config(
-            env="READ_REPLICA_DATABASE_URL", conn_max_age=db_conn_max_age
+            env="READ_REPLICA_DATABASE_URL", conn_max_age=db_read_conn_max_age
         )
 
 if "read_replica" not in DATABASES:
     DATABASES["read_replica"] = deepcopy(DATABASES["default"])
 
-DATABASE_ROUTERS = ["cms.core.db_router.ExternalEnvRouter", "cms.core.db_router.ReadReplicaRouter"]
+DATABASE_ROUTERS = [
+    "cms.core.db_router.ExternalEnvRouter",
+    "cms.core.db_router.ReadReplicaRouter",
+]
 
 # Server-side cache settings. Do not confuse with front-end cache.
 # https://docs.djangoproject.com/en/stable/topics/cache/
@@ -242,7 +271,12 @@ DATABASE_ROUTERS = ["cms.core.db_router.ExternalEnvRouter", "cms.core.db_router.
 #
 # Do not use the same Redis instance for other things like Celery!
 
-CACHES: dict = {"memory": {"BACKEND": "django.core.cache.backends.locmem.LocMemCache", "LOCATION": "memory"}}
+CACHES: dict = {
+    "memory": {
+        "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
+        "LOCATION": "memory",
+    }
+}
 
 redis_options = {
     "IGNORE_EXCEPTIONS": True,
@@ -275,10 +309,10 @@ elif elasticache_addr := env.get("ELASTICACHE_ADDR"):
         "OPTIONS": {
             **redis_options,
             "CONNECTION_POOL_KWARGS": {
-                "credential_provider": import_string("cms.core.cache.ElastiCacheIAMCredentialProvider")(
+                "credential_provider": ElastiCacheIAMCredentialProvider(
                     user=env["ELASTICACHE_USER_NAME"],
                     cluster_name=env["ELASTICACHE_CLUSTER_NAME"],
-                    region=env["ELASTICACHE_CLUSTER_REGION"],
+                    region=env["AWS_REGION"],
                 )
             },
         },
@@ -292,9 +326,7 @@ else:
 # Search
 # https://docs.wagtail.io/en/latest/topics/search/backends.html
 
-# TODO: revert to using "wagtail.search.backends.database" when
-# https://github.com/wagtail/wagtail/pull/12508 is fixed and released.
-WAGTAILSEARCH_BACKENDS = {"default": {"BACKEND": "cms.core.wagtail_search.ONSPostgresSearchBackend"}}
+WAGTAILSEARCH_BACKENDS = {"default": {"BACKEND": "wagtail.search.backends.database"}}
 
 
 # Password validation
@@ -318,7 +350,7 @@ TIME_ZONE = "Europe/London"
 USE_TZ = True
 
 USE_I18N = True
-WAGTAIL_I18N_ENABLED = False
+WAGTAIL_I18N_ENABLED = True
 
 LANGUAGE_CODE = "en-gb"
 WAGTAIL_CONTENT_LANGUAGES = LANGUAGES = [
@@ -328,6 +360,12 @@ WAGTAIL_CONTENT_LANGUAGES = LANGUAGES = [
 ]
 
 LOCALE_PATHS = [PROJECT_DIR / "locale"]
+
+# User groups
+PUBLISHING_ADMINS_GROUP_NAME = "Publishing Admins"
+PUBLISHING_OFFICERS_GROUP_NAME = "Publishing Officers"
+VIEWERS_GROUP_NAME = "Viewers"
+
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/stable/howto/static-files/
@@ -458,10 +496,23 @@ LOGGING = {
         "console": {
             "level": "INFO",
             "class": "logging.StreamHandler",
-            "formatter": "verbose",
+            "formatter": "json",
+        },
+        "gunicorn_access": {
+            "level": "INFO",
+            "class": "logging.StreamHandler",
+            "formatter": "gunicorn_json",
         },
     },
-    "formatters": {"verbose": {"format": "[%(asctime)s][%(process)d][%(levelname)s][%(name)s] %(message)s"}},
+    "formatters": {
+        "verbose": {"format": "[%(asctime)s][%(process)d][%(levelname)s][%(name)s] %(message)s"},
+        "json": {
+            "()": "cms.core.logs.JSONFormatter",
+        },
+        "gunicorn_json": {
+            "()": "cms.core.logs.GunicornJsonFormatter",
+        },
+    },
     "loggers": {
         "cms": {
             "handlers": ["console"],
@@ -485,6 +536,12 @@ LOGGING = {
         },
         "apscheduler": {
             "handlers": ["console"],
+            "level": "INFO",
+            "propagate": False,
+        },
+        "xff": {"handlers": ["console"], "level": "WARNING", "propagate": False},
+        "gunicorn.access": {
+            "handlers": ["gunicorn_access"],
             "level": "INFO",
             "propagate": False,
         },
@@ -627,6 +684,12 @@ CACHE_CONTROL_STALE_WHILE_REVALIDATE = int(env.get("CACHE_CONTROL_STALE_WHILE_RE
 # https://docs.djangoproject.com/en/stable/ref/settings/#use-x-forwarded-port
 USE_X_FORWARDED_PORT = env.get("USE_X_FORWARDED_PORT", "true").lower().strip() == "true"
 
+XFF_TRUSTED_PROXY_DEPTH = int(env.get("XFF_TRUSTED_PROXY_DEPTH", 1))
+XFF_EXEMPT_URLS = [r"^-/.*"]
+
+# Error if there are the wrong number of proxies
+XFF_STRICT = env.get("XFF_STRICT", "false").lower().strip() == "true"
+
 # Security configuration
 # This configuration is required to achieve good security rating.
 # You can test it using https://securityheaders.com/
@@ -635,7 +698,7 @@ USE_X_FORWARDED_PORT = env.get("USE_X_FORWARDED_PORT", "true").lower().strip() =
 # The Django default for the maximum number of GET or POST parameters is 1000. For
 # especially large Wagtail pages with many fields, we need to override this. See
 # https://docs.djangoproject.com/en/3.2/ref/settings/#data-upload-max-number-fields
-DATA_UPLOAD_MAX_NUMBER_FIELDS = int(env.get("DATA_UPLOAD_MAX_NUMBER_FIELDS", 1000))
+DATA_UPLOAD_MAX_NUMBER_FIELDS = int(env.get("DATA_UPLOAD_MAX_NUMBER_FIELDS", 10_000))
 
 # Enabling this doesn't have any benefits but will make it harder to make
 # requests from javascript because the csrf cookie won't be easily accessible.
@@ -647,7 +710,7 @@ CSRF_FAILURE_VIEW = "cms.core.views.csrf_failure"
 
 # Force HTTPS redirect (enabled by default!)
 # https://docs.djangoproject.com/en/stable/ref/settings/#secure-ssl-redirect
-SECURE_SSL_REDIRECT = True
+SECURE_SSL_REDIRECT = env.get("SECURE_SSL_REDIRECT", "true").lower().strip() == "true"
 
 
 # This will allow the cache to swallow the fact that the website is behind TLS
@@ -754,13 +817,18 @@ if ENABLE_DJANGO_DEFENDER:
     DEFENDER_COOLOFF_TIME = int(env.get("DJANGO_DEFENDER_COOLOFF_TIME", 600))  # default to 10 minutes
     DEFENDER_LOCKOUT_TEMPLATE = "pages/defender/lockout.html"
 
+    # Whilst we frequently are behind a reverse proxy, using `False` ensures Defender falls
+    # back to using `REMOTE_ADDR`, which is set correctly by `django-xff`.
+    DEFENDER_BEHIND_REVERSE_PROXY = False
+
+
 # Wagtail settings
 
 
 # This name is displayed in the Wagtail admin.
 WAGTAIL_SITE_NAME = "Office for National Statistics"
 
-# Base URL to use when formatting ahsolute URLs within the Wagtail admin in
+# Base URL to use when formatting absolute URLs within the Wagtail admin in
 # contexts without a request, e.g. in notification emails. Don't include '/admin'
 # or a trailing slash.
 if "WAGTAILADMIN_BASE_URL" in env:
@@ -805,6 +873,8 @@ WAGTAIL_PASSWORD_REQUIRED_TEMPLATE = "templates/pages/wagtail/password_required.
 
 # Default size of the pagination used on the front-end.
 DEFAULT_PER_PAGE = 20
+PREVIOUS_RELEASES_PER_PAGE = int(env.get("PREVIOUS_RELEASES_PER_PAGE", 10))
+RELATED_DATASETS_PER_PAGE = int(env.get("RELATED_DATASETS_PER_PAGE", DEFAULT_PER_PAGE))
 
 # Google Tag Manager ID from env
 GOOGLE_TAG_MANAGER_CONTAINER_ID = env.get("GOOGLE_TAG_MANAGER_CONTAINER_ID", "")
@@ -855,3 +925,31 @@ MANAGE_COOKIE_SETTINGS_URL = env.get("MANAGE_COOKIE_SETTINGS_URL", "https://www.
 
 
 SLACK_NOTIFICATIONS_WEBHOOK_URL = env.get("SLACK_NOTIFICATIONS_WEBHOOK_URL")
+
+ONS_API_BASE_URL = env.get("ONS_API_BASE_URL", "https://api.beta.ons.gov.uk/v1")
+ONS_WEBSITE_BASE_URL = env.get("ONS_WEBSITE_BASE_URL", "https://www.ons.gov.uk")
+
+WAGTAILSIMPLETRANSLATION_SYNC_PAGE_TREE = True
+
+# Configuration for the External Search service
+SEARCH_INDEX_PUBLISHER_BACKEND = os.getenv("SEARCH_INDEX_PUBLISHER_BACKEND")
+KAFKA_SERVER = os.getenv("KAFKA_SERVER")
+KAFKA_CHANNEL_CREATED_OR_UPDATED = os.getenv("KAFKA_CHANNEL_CREATED_OR_UPDATED")
+KAFKA_CHANNEL_DELETED = os.getenv("KAFKA_CHANNEL_DELETED")
+KAFKA_API_VERSION = tuple(map(int, os.getenv("KAFKA_API_VERSION", "3,5,1").split(",")))
+
+SEARCH_INDEX_EXCLUDED_PAGE_TYPES = (
+    "HomePage",
+    "ArticleSeriesPage",
+    "ReleaseCalendarIndex",
+    "ThemePage",
+    "TopicPage",
+    "Page",
+)
+
+# FIXME: remove before going live
+ENFORCE_EXCLUSIVE_TAXONOMY = env.get("ENFORCE_EXCLUSIVE_TAXONOMY", "true").lower() == "true"
+ALLOW_TEAM_MANAGEMENT = env.get("ALLOW_TEAM_MANAGEMENT", "false").lower() == "true"
+
+SEARCH_API_DEFAULT_PAGE_SIZE = int(os.getenv("SEARCH_API_DEFAULT_PAGE_SIZE", "20"))
+SEARCH_API_MAX_PAGE_SIZE = int(os.getenv("SEARCH_API_MAX_PAGE_SIZE", "500"))

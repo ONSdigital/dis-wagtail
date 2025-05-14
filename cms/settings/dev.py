@@ -1,6 +1,9 @@
 import copy
+import os
 
 from .base import *  # noqa: F403  # pylint: disable=wildcard-import,unused-wildcard-import
+
+env = os.environ.copy()
 
 # Debugging to be enabled locally only
 DEBUG = True
@@ -14,17 +17,16 @@ ALLOWED_HOSTS = ["*"]
 # Allow requests from the local IPs to see more debug information.
 INTERNAL_IPS = ("127.0.0.1", "10.0.2.2")
 
-
 # This is only to test Wagtail emails.
 WAGTAILADMIN_BASE_URL = "http://localhost:8000"
-
 
 # Display sent emails in the console while developing locally.
 EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
 
-
 # Disable password validators when developing locally.
 AUTH_PASSWORD_VALIDATORS = []
+
+ONS_API_BASE_URL = env.get("ONS_API_BASE_URL", "https://api.beta.ons.gov.uk/v1")
 
 
 # Enable Wagtail's style guide in Wagtail's settings menu.
@@ -37,18 +39,19 @@ SECURE_SSL_REDIRECT = False
 # For the same reason the HSTS header should not be sent.
 SECURE_HSTS_SECONDS = 0
 
+SHOW_TOOLBAR = True  # Override in local.py
 
 # Adds Django Debug Toolbar
-INSTALLED_APPS.append("debug_toolbar")
-MIDDLEWARE.insert(0, "debug_toolbar.middleware.DebugToolbarMiddleware")  # noqa: F405
-SHOW_TOOLBAR = True  # Override in `local.py`
-DEBUG_TOOLBAR_CONFIG = {
-    # The default debug_toolbar_middleware.show_toolbar function checks whether the
-    # request IP is in settings.INTERNAL_IPS. In Docker, the request IP can vary, so
-    # we set it in settings.local instead.
-    "SHOW_TOOLBAR_CALLBACK": lambda x: SHOW_TOOLBAR,
-    "SHOW_COLLAPSED": True,
-}
+if DEBUG:
+    INSTALLED_APPS.append("debug_toolbar")
+    MIDDLEWARE.insert(0, "debug_toolbar.middleware.DebugToolbarMiddleware")  # noqa: F405
+    DEBUG_TOOLBAR_CONFIG = {
+        # The default debug_toolbar_middleware.show_toolbar function checks whether the
+        # request IP is in settings.INTERNAL_IPS. In Docker, the request IP can vary, so
+        # we set it in settings.local instead.
+        "SHOW_TOOLBAR_CALLBACK": lambda x: SHOW_TOOLBAR,
+        "SHOW_COLLAPSED": True,
+    }
 
 # Database
 DATABASES = {
@@ -57,10 +60,16 @@ DATABASES = {
 DATABASES["read_replica"] = copy.deepcopy(DATABASES["default"])
 
 # Redis
-REDIS_URL = "redis://localhost:6379"
+REDIS_URL = env.get("REDIS_URL", "redis://localhost:6379")
+CACHES["default"] = {  # noqa: F405
+    "BACKEND": "django_redis.cache.RedisCache",
+    "LOCATION": REDIS_URL,
+    "OPTIONS": {**redis_options},  # noqa: F405
+}
 
 # Django Defender
 ENABLE_DJANGO_DEFENDER = False
+
 
 # Import settings from local.py file if it exists. Please use it to keep
 # settings that are not meant to be checked into Git and never check it in.
@@ -91,5 +100,13 @@ MIGRATION_LINTER_OPTIONS = {
         "0002_customimage_description",
         "0003_customimage__privacy_and_more",
         "0003_customdocument__privacy_and_more",
+        "0002_articleseriespage_listing_image_and_more",  # Ignoring NOT NULL constraint on columns
+        "0003_releasecalendarpage_datasets",
+        "0004_topicpage_headline_figures",
+        "0003_footermenu_locale_footermenu_translation_key_and_more",  # Ignoring NOT NULL constraint on columns
+        "0007_remove_glossaryterm_core_glossary_term_name_unique_and_more",  # Ignoring NOT NULL constraint
+        "0004_make_release_date_mandatory_and_rename_next_release_text",  # Ignoring NOT NULL and RENAMING constraints
+        "0004_statisticalarticlepage_headline_figures_figure_ids",
+        "0006_statisticalarticlepage_dataset_sorting_and_more",  # Ignoring NOT NULL constraint
     ],
 }

@@ -67,24 +67,38 @@ class Command(BaseCommand):
         # only provide a URL if we can generate a full one
         inspect_url = self.base_url + reverse("bundle:inspect", args=(bundle.pk,)) if self.base_url else None
 
-        logger.info("Publishing bundle=%d", bundle.id)
+        logger.info(
+            "Publishing Bundle",
+            extra={
+                "bundle_id": bundle.id,
+                "event": "publishing_bundle",
+            },
+        )
         start_time = time.time()
         notify_slack_of_publication_start(bundle, url=inspect_url)
-        for page in bundle.get_bundled_pages():
-            if (revision := page.scheduled_revision) is None:
-                continue
-            # just run publish for the revision -- since the approved go
-            # live datetime is before now it will make the object live
-            revision.publish(log_action="wagtail.publish.scheduled")
+        for page in bundle.get_bundled_pages().specific(defer=True).select_related("latest_revision"):
+            if workflow_state := page.current_workflow_state:
+                # finish the workflow
+                workflow_state.current_task_state.approve()
+            else:
+                # just run publish
+                page.latest_revision.publish(log_action="wagtail.publish.scheduled")
 
         # update the related release calendar and publish
         if bundle.release_calendar_page_id:
             self._update_related_release_calendar_page(bundle)
 
-        bundle.status = BundleStatus.RELEASED
+        bundle.status = BundleStatus.PUBLISHED
         bundle.save()
         publish_duration = time.time() - start_time
-        logger.info("Published bundle=%d duration=%.3fms", bundle.id, publish_duration * 1000)
+        logger.info(
+            "Published bundle",
+            extra={
+                "bundle_id": bundle.id,
+                "duration": round(publish_duration * 1000, 3),
+                "event": "published_bundle",
+            },
+        )
 
         notify_slack_of_publish_end(bundle, publish_duration, url=inspect_url)
 
@@ -109,7 +123,7 @@ class Command(BaseCommand):
                         f"{page.get_admin_display_title()} ({page.__class__.__name__})"
                         for page in bundle.get_bundled_pages().specific()
                     ]
-                    self.stdout.write(f'  Pages: {"\n\t ".join(bundled_pages)}')
+                    self.stdout.write(f"  Pages: {'\n\t '.join(bundled_pages)}")
 
             else:
                 self.stdout.write("No bundles to go live.")
@@ -118,4 +132,4 @@ class Command(BaseCommand):
                 try:
                     self.handle_bundle(bundle)
                 except Exception:  # pylint: disable=broad-exception-caught
-                    logger.exception("Publish failed bundle=%d", bundle.id)
+                    logger.exception("Publish failed", extra={"bundle_id": bundle.id, "event": "publish_failed"})

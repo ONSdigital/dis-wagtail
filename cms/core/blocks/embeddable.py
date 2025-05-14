@@ -5,7 +5,6 @@ from urllib.parse import urlparse
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.template.defaultfilters import filesizeformat
-from django.utils.translation import gettext as _
 from wagtail import blocks
 from wagtail.blocks import StructBlockValidationError
 from wagtail.documents.blocks import DocumentChooserBlock
@@ -80,7 +79,7 @@ class DocumentsBlock(blocks.StreamBlock):
 class ONSEmbedBlock(blocks.StructBlock):
     """An embed block for only pages starting with ONS_EMBED_PREFIX."""
 
-    url = blocks.URLBlock(help_text=f"Must start with <code>{ settings.ONS_EMBED_PREFIX }</code> to your URL.")
+    url = blocks.URLBlock(help_text=f"Must start with <code>{settings.ONS_EMBED_PREFIX}</code> to your URL.")
     title = blocks.CharBlock(default="Interactive chart")
 
     def clean(self, value: "StructValue") -> "StructValue":
@@ -88,9 +87,7 @@ class ONSEmbedBlock(blocks.StructBlock):
         errors = {}
 
         if not value["url"].startswith(settings.ONS_EMBED_PREFIX):
-            errors["url"] = ValidationError(
-                _("The URL must start with %(prefix)s") % {"prefix": settings.ONS_EMBED_PREFIX}
-            )
+            errors["url"] = ValidationError(f"The URL must start with {settings.ONS_EMBED_PREFIX}")
 
         if errors:
             raise StructBlockValidationError(block_errors=errors)
@@ -106,16 +103,16 @@ class VideoEmbedBlock(blocks.StructBlock):
     """A video embed block."""
 
     link_url = blocks.URLBlock(
-        help_text=_(
+        help_text=(
             "The URL to the video hosted on YouTube or Vimeo, for example, "
             "https://www.youtube.com/watch?v={ video ID } or https://vimeo.com/video/{ video ID }. "
             "Used to link to the video when cookies are not enabled."
         )
     )
-    image = ImageChooserBlock(help_text=_("The video cover image, used when cookies are not enabled."))
-    title = blocks.CharBlock(help_text=_("The descriptive title for the video used by screen readers."))
+    image = ImageChooserBlock(help_text="The video cover image, used when cookies are not enabled.")
+    title = blocks.CharBlock(help_text="The descriptive title for the video used by screen readers.")
     link_text = blocks.CharBlock(
-        help_text=_("The text to be shown when cookies are not enabled e.g. 'Watch the {title} on Youtube'.")
+        help_text="The text to be shown when cookies are not enabled e.g. 'Watch the {title} on Youtube'."
     )
 
     def get_embed_url(self, link_url: str) -> str:
@@ -177,7 +174,7 @@ class VideoEmbedBlock(blocks.StructBlock):
             return super().clean(value)
 
         if not any(re.match(pattern, value["link_url"]) for pattern in other_patterns):
-            errors["link_url"] = ValidationError(_("The link URL must use a valid Vimeo or YouTube video URL"))
+            errors["link_url"] = ValidationError("The link URL must use a valid Vimeo or YouTube video URL")
 
         if errors:
             raise StructBlockValidationError(block_errors=errors)
