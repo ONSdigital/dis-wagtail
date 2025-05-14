@@ -2,7 +2,6 @@ from collections.abc import Sequence
 from contextlib import suppress
 from typing import Any, ClassVar, Optional, cast
 
-from django.core.exceptions import ValidationError
 from django.forms.widgets import Media, RadioSelect
 from django.utils.functional import cached_property
 from wagtail import blocks
@@ -300,22 +299,6 @@ class BaseVisualisationBlock(blocks.StructBlock):
                 },
             ],
         }
-
-    def clean(self, value: "StructValue") -> "StructValue":
-        result = super().clean(value)
-        aspect_ratio_keys = [self.DESKTOP_ASPECT_RATIO, self.MOBILE_ASPECT_RATIO]
-
-        options_errors = {}
-        if self.get_highcharts_chart_type(result) == "bar":
-            for i, option in enumerate(result["options"]):
-                if option.block_type in aspect_ratio_keys:
-                    options_errors[i] = ValidationError("Bar charts do not support aspect ratio options.")
-
-        if options_errors:
-            raise blocks.StructBlockValidationError(
-                block_errors={"options": blocks.StreamBlockValidationError(block_errors=options_errors)}
-            )
-        return result
 
     @cached_property
     def media(self) -> Media:

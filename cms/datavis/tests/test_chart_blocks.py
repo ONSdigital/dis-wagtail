@@ -332,8 +332,8 @@ class BarColumnChartBlockTestCase(BaseChartBlockTestCase):
 
                 err = cm.exception
                 self.assertEqual(
-                    "Bar charts do not support aspect ratio options.",
-                    err.block_errors["options"].block_errors[0].message,
+                    BarColumnChartBlock.ERROR_BAR_CHART_NO_ASPECT_RATIO,
+                    err.block_errors["options"].block_errors[0].code,
                 )
 
     def test_column_chart_aspect_ratio_options_are_allowed(self):
