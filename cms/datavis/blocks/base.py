@@ -103,17 +103,17 @@ class BaseVisualisationBlock(blocks.StructBlock):
         required=False,
     )
 
-    desktop_aspect_ratio = "desktop_aspect_ratio"
-    mobile_aspect_ratio = "mobile_aspect_ratio"
+    DESKTOP_ASPECT_RATIO = "desktop_aspect_ratio"
+    MOBILE_ASPECT_RATIO = "mobile_aspect_ratio"
     options_key_map: ClassVar[dict[str, str]] = {
         # A dict to map our block types to the Design System macro options
-        desktop_aspect_ratio: "percentageHeightDesktop",
-        mobile_aspect_ratio: "percentageHeightMobile",
+        DESKTOP_ASPECT_RATIO: "percentageHeightDesktop",
+        MOBILE_ASPECT_RATIO: "percentageHeightMobile",
     }
     options = blocks.StreamBlock(
         [
             (
-                desktop_aspect_ratio,
+                DESKTOP_ASPECT_RATIO,
                 AspectRatioBlock(
                     required=False,
                     help_text='Remove this option, or set "Default", to use the default aspect ratio for desktop.',
@@ -121,7 +121,7 @@ class BaseVisualisationBlock(blocks.StructBlock):
                 ),
             ),
             (
-                mobile_aspect_ratio,
+                MOBILE_ASPECT_RATIO,
                 AspectRatioBlock(
                     required=False,
                     help_text='Remove this option, or set "Default", to use the default aspect ratio for mobile.',
@@ -130,8 +130,8 @@ class BaseVisualisationBlock(blocks.StructBlock):
             ),
         ],
         block_counts={
-            desktop_aspect_ratio: {"max_num": 1},
-            mobile_aspect_ratio: {"max_num": 1},
+            DESKTOP_ASPECT_RATIO: {"max_num": 1},
+            MOBILE_ASPECT_RATIO: {"max_num": 1},
         },
         help_text="Additional settings for the chart",
         required=False,
@@ -303,7 +303,7 @@ class BaseVisualisationBlock(blocks.StructBlock):
 
     def clean(self, value: "StructValue") -> "StructValue":
         result = super().clean(value)
-        aspect_ratio_keys = [self.desktop_aspect_ratio, self.mobile_aspect_ratio]
+        aspect_ratio_keys = [self.DESKTOP_ASPECT_RATIO, self.MOBILE_ASPECT_RATIO]
 
         options_errors = {}
         if self.get_highcharts_chart_type(result) == "bar":
