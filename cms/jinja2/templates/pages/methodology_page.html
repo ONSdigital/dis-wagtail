@@ -10,6 +10,7 @@
 {%- set breadcrumbs_label = _("Breadcrumbs") -%}
 
 {% block header_area %}
+    {# fmt:off #}
     {% set publication_item = {
         "term": published_label,
         "descriptions": [
@@ -40,6 +41,7 @@
             }
         ]
     } or None %}
+    {# fmt:on #}
 
     {# filter out any optional items which haven't been set #}
     {% set itemsList = [

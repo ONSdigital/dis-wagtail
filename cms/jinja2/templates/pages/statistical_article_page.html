@@ -37,6 +37,7 @@
         {%- set releases_url = routablepageurl(page.get_parent().specific, "latest_release") -%}
     {% endif %}
 
+    {# fmt:off #}
     {% set release_item = page.release_date and {
         "term": release_date_label,
         "descriptions": [
@@ -54,11 +55,13 @@
             }
         ]
     } or None %}
+    {# fmt:on #}
 
     {% set contact_description_html -%}
         <a href="mailto:{{ page.contact_details.email }}">{{ page.contact_details.name }}</a>
     {%- endset %}
 
+    {# fmt:off #}
     {% set contact_item = page.contact_details and {
         "term": _("Contact:"),
         "descriptions": [
@@ -67,6 +70,7 @@
             }
         ]
     } or None %}
+    {# fmt:on #}
 
     {# filter out any optional items which haven't been set #}
     {% set itemsList = [
