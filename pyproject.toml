@@ -38,6 +38,7 @@ python-json-logger = "^3.3.0"
 json-log-formatter = "^1.1.1"
 django-xff = "^1.5.0"
 djangorestframework = "^3.16.0"
+matplotlib = "^3.10.3"
 
 [tool.poetry.group.dev.dependencies]
 # :TODO: Remove pylint when ruff supports all pylint rules

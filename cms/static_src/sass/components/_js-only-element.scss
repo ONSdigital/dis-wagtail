@@ -1,0 +1,9 @@
+@use 'config' as *;
+
+.js-only-element {
+    display: none;
+}
+
+.ons-js-enabled .js-only-element {
+    display: block;
+}
