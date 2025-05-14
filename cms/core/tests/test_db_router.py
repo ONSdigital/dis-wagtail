@@ -1,3 +1,4 @@
+from django.apps import apps
 from django.contrib.contenttypes.models import ContentType
 from django.db import DEFAULT_DB_ALIAS, router, transaction
 from django.test import TestCase, override_settings
@@ -102,8 +103,12 @@ class DBRouterTestCase(TransactionTestCase):
         """Checks that revisions (a model used as the target for a GenericRelation)
         always uses the default connection.
         """
-        self.assertEqual(router.db_for_read(Revision), DEFAULT_DB_ALIAS)
         self.assertEqual(router.db_for_write(Revision), DEFAULT_DB_ALIAS)
+        self.assertEqual(router.db_for_read(Revision), DEFAULT_DB_ALIAS)
+
+        # In the external env, no writes will be done, so the replica is safe.
+        with override_settings(IS_EXTERNAL_ENV=True):
+            self.assertEqual(router.db_for_read(Revision), READ_REPLICA_DB_ALIAS)
 
 
 @override_settings(IS_EXTERNAL_ENV=True)
@@ -133,8 +138,11 @@ class ExternalEnvRouterTestCase(TestCase):
 
     def test_uses_correct_connection(self):
         """Test that the correct connection is used."""
-        self.assertEqual(router.db_for_read(CustomImage), DEFAULT_DB_ALIAS)  # TestCase runs in a transaction
-        self.assertEqual(router.db_for_write(CustomImage), ExternalEnvRouter.FAKE_BACKEND)
+        self.assertEqual(router.db_for_read(Rendition), DEFAULT_DB_ALIAS)  # TestCase runs in a transaction
 
-    def test_cannot_write_to_revision(self):
-        self.assertEqual(router.db_for_write(Revision), ExternalEnvRouter.FAKE_BACKEND)
+        for model in apps.get_models():
+            with self.subTest(model=model):
+                if model in ExternalEnvRouter.WRITE_ALLOWED_MODELS:
+                    self.assertEqual(router.db_for_write(model), DEFAULT_DB_ALIAS)
+                else:
+                    self.assertEqual(router.db_for_write(model), ExternalEnvRouter.FAKE_BACKEND)

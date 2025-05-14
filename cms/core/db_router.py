@@ -39,7 +39,7 @@ class ReadReplicaRouter:  # pylint: disable=unused-argument,protected-access
         """Determine which database should be used for read queries."""
         # Models which are targetted by a GenericRelation must use the write connection.
         # @see https://code.djangoproject.com/ticket/36389
-        if model in self.generic_target_models:
+        if not settings.IS_EXTERNAL_ENV and model in self.generic_target_models:
             return DEFAULT_DB_ALIAS
 
         # If the write database is in a (uncommitted) transaction,
