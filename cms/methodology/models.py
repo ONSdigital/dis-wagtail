@@ -14,6 +14,7 @@ from wagtail.search import index
 
 from cms.core.blocks.stream_blocks import SectionStoryBlock
 from cms.core.fields import StreamField
+from cms.core.forms import PageWithEquationsAdminForm
 from cms.core.models import BasePage
 from cms.core.query import order_by_pk_position
 from cms.core.widgets import date_widget
@@ -40,6 +41,8 @@ class MethodologyRelatedPage(Orderable):
 
 
 class MethodologyPage(GenericTaxonomyMixin, BasePage):  # type: ignore[django-manager-missing]
+    base_form_class = PageWithEquationsAdminForm
+
     parent_page_types: ClassVar[list[str]] = ["topics.TopicPage"]
     search_index_content_type: ClassVar[str] = "static_methodology"
     template = "templates/pages/methodology_page.html"

@@ -1,12 +1,10 @@
 from secrets import token_urlsafe
 from typing import Any
 
-from django.forms import ValidationError
 from wagtail.blocks.stream_block import StreamValue
 from wagtail.models import Page
 
-from cms.articles.utils import FORMULA_INDICATOR, latex_formula_to_svg
-from cms.core.forms import PageWithCorrectionsAdminForm
+from cms.core.forms import PageWithCorrectionsAdminForm, PageWithEquationsAdminForm
 from cms.taxonomy.forms import DeduplicateTopicsAdminForm
 
 
@@ -42,30 +40,6 @@ class PageWithHeadlineFiguresAdminForm(DeduplicateTopicsAdminForm):
                 self.instance.add_headline_figures_figure_id(figure.value["figure_id"])
 
         return headline_figures
-
-
-class PageWithEquationsAdminForm(DeduplicateTopicsAdminForm):
-    def clean_content(self) -> StreamValue:
-        content: StreamValue = self.cleaned_data["content"]
-        if not content:
-            return content
-
-        for section in content:
-            for block in section.value["content"]:
-                if block.block_type == "equation":
-                    equation = block.value["equation"]
-                    # Remove $$ from the start and end of the equation
-                    if equation.startswith(FORMULA_INDICATOR) and equation.endswith(FORMULA_INDICATOR):
-                        equation = equation[2:-2]
-                    try:
-                        block.value["svg"] = latex_formula_to_svg(equation)
-                    except RuntimeError:
-                        self.add_error(
-                            "content",
-                            ValidationError("The equation is not valid LaTeX. Please check the syntax and try again."),
-                        )
-
-        return content
 
 
 class StatisticalArticlePageAdminForm(
