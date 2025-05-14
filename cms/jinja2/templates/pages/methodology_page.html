@@ -44,12 +44,14 @@
     {# fmt:on #}
 
     {# filter out any optional items which haven't been set #}
+    {# fmt:off #}
     {% set itemsList = [
         publication_item,
         last_revised_item,
         contact_item
     ] | selectattr('term') | list %}
-
+    {# fmt:on #}
+    
     {# fmt:off #}
     {{
         onsHero({

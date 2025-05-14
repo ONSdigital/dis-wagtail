@@ -73,11 +73,13 @@
     {# fmt:on #}
 
     {# filter out any optional items which haven't been set #}
+    {# fmt:off #}
     {% set itemsList = [
         release_item,
         next_release_item,
         contact_item
     ] | selectattr('term') | list %}
+    {# fmt:on #}
 
     {# fmt:off #}
     {{
