@@ -43,8 +43,6 @@ class ExternalReadOnlyConnectionTestCase(TestCase):
 
 
 class ReadOnlyConnectionTestCase(TransactionTestCase):
-    databases = "__all__"
-
     def test_read_replica_connection_is_read_only(self):
         UserFactory.create()
 
