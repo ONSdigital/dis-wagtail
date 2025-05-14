@@ -13,7 +13,7 @@ from wagtail.search import index
 from cms.core.custom_date_format import ons_date_format
 from cms.core.fields import StreamField
 from cms.core.models import BasePage
-from cms.core.widgets import datetime_widget
+from cms.core.widgets import ONSAdminDateTimeInput
 from cms.datasets.blocks import DatasetStoryBlock
 
 from .blocks import (
@@ -118,14 +118,14 @@ class ReleaseCalendarPage(BasePage):  # type: ignore[django-manager-missing]
                 ReleaseCalendarBundleNotePanel(heading="Note", classname="bundle-note"),
                 FieldRowPanel(
                     [
-                        FieldPanel("release_date", datetime_widget),
+                        FieldPanel("release_date", widget=ONSAdminDateTimeInput()),
                         FieldPanel("release_date_text", heading="Or, release date text"),
                     ],
                     heading="",
                 ),
                 FieldRowPanel(
                     [
-                        FieldPanel("next_release_date", datetime_widget),
+                        FieldPanel("next_release_date", widget=ONSAdminDateTimeInput()),
                         FieldPanel("next_release_date_text", heading="Or, next release date text"),
                     ],
                     heading="",
