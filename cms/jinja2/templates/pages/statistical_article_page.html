@@ -185,6 +185,33 @@
 {% block main %}
     <div class="ons-grid ons-grid-flex-gap ons-grid-flex-gap--32 ons-js-toc-container">
         <div class="ons-grid__col ons-grid__col--sticky@m ons-col-4@m">
+            {% if page.datasets %}
+                {% if request.is_preview %}
+                    {% set related_data_url = url('wagtailadmin_pages:preview_on_edit', page.pk) ~ "?mode=related_data" %}
+                {% else %}
+                    {% set related_data_url = routablepageurl(page, "related_data") %}
+                {% endif %}
+                {% set related_links_title=_("Explore Data") %}
+
+                {% set related_data_text=_("View data used in this article") %}
+
+                {# fmt:off #}
+                    {%- set related_links =
+                        {
+                            "title": related_links_title,
+                            "itemsList": [
+                                {
+                                    "url": related_data_url, 
+                                    "text": related_data_text
+                                }
+                            ]
+                        }
+                    -%}
+                {# fmt:on #}
+            {% else %}
+                {% set related_links = "" %}
+            {% endif %}
+
             {% with toc_title=_("Contents"), toc_aria_label=_("Sections in this page") %}
                 {# fmt:off #}
                 {{-
@@ -192,6 +219,7 @@
                         "title": toc_title,
                         "ariaLabel": toc_aria_label,
                         "itemsList": table_of_contents,
+                        "relatedLinks": related_links,
                         "button": {
                             "text": _("Save or print this page")
                         }
@@ -199,25 +227,6 @@
                 }}
                 {# fmt:on #}
             {% endwith %}
-
-            {% if page.datasets %}
-                {% if request.is_preview %}
-                    {% set related_data_url = url('wagtailadmin_pages:preview_on_edit', page.pk) ~ "?mode=related_data" %}
-                {% else %}
-                    {% set related_data_url = routablepageurl(page, "related_data") %}
-                {% endif %}
-                {% with title=_("Explore Data"), aria_label=_("Data related to this page"), related_data_text=_("View data used in this article") %}
-                {# fmt:off #}
-                {{-
-                    onsTableOfContents({
-                        "title": title,
-                        "ariaLabel": aria_label,
-                        "itemsList": [{"url": related_data_url, "text": related_data_text}]
-                    })
-                }}
-                {# fmt:on #}
-                {% endwith %}
-            {% endif %}
         </div>
 
         <div class="ons-grid__col ons-col-8@m">
