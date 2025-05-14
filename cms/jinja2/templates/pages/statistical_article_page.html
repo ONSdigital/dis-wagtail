@@ -17,27 +17,6 @@
     {%- set release_date_term = _("Release date:") -%}
     {%- set next_release_date_term = _("Next release:") -%}
     {%- set breadcrumbs_aria_label = _("Breadcrumbs") -%}
-    {% if page.contact_details %}
-        {%- set contact_details_term = _("Contact:") -%}
-        {%- set contact_description_html -%}
-            <a href="mailto:{{ page.contact_details.email }}">{{ page.contact_details.name }}</a>
-        {%- endset -%}
-
-        {# fmt:off #}
-        {%- set contact_details =
-            {
-                "term": contact_label,
-                "descriptions": [
-                    {
-                        "description": contact_description_html
-                    }
-                ]
-            }
-        -%}
-        {# fmt:on #}
-    {% else %}
-        {%- set contact_details = "" -%}
-    {% endif %}
 
     {% if page.is_latest %}
         {% if latest_version_url %}
@@ -58,7 +37,43 @@
         {%- set releases_url = routablepageurl(page.get_parent().specific, "latest_release") -%}
     {% endif %}
 
-    {%- set next_release_date_text = page.next_release_date|date("DATE_FORMAT") or _("To be announced") -%}
+    {% set release_item = page.release_date and {
+        "term": release_date_label,
+        "descriptions": [
+            {
+                "description": page.release_date|date("DATE_FORMAT")
+            }
+        ]
+    } or None %}
+
+    {% set next_release_item = page.next_release_date and {
+        "term": next_release_label,
+        "descriptions": [
+            {
+                "description": page.next_release_date|date("DATE_FORMAT") or _("To be announced")
+            }
+        ]
+    } or None %}
+
+    {% set contact_description_html -%}
+        <a href="mailto:{{ page.contact_details.email }}">{{ page.contact_details.name }}</a>
+    {%- endset %}
+
+    {% set contact_item = page.contact_details and {
+        "term": _("Contact:"),
+        "descriptions": [
+            {
+                "description": contact_description_html
+            }
+        ]
+    } or None %}
+
+    {# filter out any optional items which haven't been set #}
+    {% set itemsList = [
+        release_item,
+        next_release_item,
+        contact_item
+    ] | selectattr('term') | list %}
 
     {# fmt:off #}
     {{
@@ -83,25 +98,7 @@
                 "descriptionListLabel": "",
                 "termCol": "6",
                 "descriptionCol": "6",
-                "itemsList": [
-                    {
-                        "term": release_date_label,
-                        "descriptions": [
-                            {
-                                "description": page.release_date|date("DATE_FORMAT")
-                            }
-                        ]
-                    },
-                    {
-                        "term": next_release_label,
-                        "descriptions": [
-                            {
-                                "description": next_release_date_text
-                            }
-                        ]
-                    },
-                    contact_details,
-                ]
+                "itemsList": itemsList,
             },
             "breadcrumbs": {
                 "ariaLabel": breadcrumbs_label,

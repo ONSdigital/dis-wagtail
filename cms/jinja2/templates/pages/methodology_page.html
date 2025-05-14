@@ -10,43 +10,43 @@
 {%- set breadcrumbs_label = _("Breadcrumbs") -%}
 
 {% block header_area %}
-    {% if page.contact_details %}
-        {% set contact_description_html -%}
-            <a href="mailto:{{ page.contact_details.email }}">{{ page.contact_details.name }}</a>
-        {%- endset %}
-
-        {# fmt:off #}
-        {% set contact_details =
+    {% set publication_item = {
+        "term": published_label,
+        "descriptions": [
             {
-                "term": "Contact:",
-                "descriptions": [
-                    {
-                        "description": contact_description_html
-                    }
-                ]
+                "description": page.publication_date|date("DATE_FORMAT")
             }
-        %}
-        {# fmt:on #}
-    {% else %}
-        {% set contact_details = "" %}
-    {% endif %}
+        ]
+    } %}
 
-    {% if page.last_revised_date %}
-        {# fmt:off #}
-        {% set last_revised =
+    {% set last_revised_item = page.last_revised_date and {
+        "term": last_revised_label,
+        "descriptions": [
             {
-                "term": last_revised_label,
-                "descriptions": [
-                    {
-                        "description": page.last_revised_date|date("DATE_FORMAT")
-                    }
-                ]
+                "description": page.last_revised_date|date("DATE_FORMAT")
             }
-        %}
-        {# fmt:on #}
-    {% else %}
-        {% set last_revised = "" %}
-    {% endif %}
+        ]
+    } or None %}
+
+    {% set contact_description_html -%}
+        <a href="mailto:{{ page.contact_details.email }}">{{ page.contact_details.name }}</a>
+    {%- endset %}
+
+    {% set contact_item = page.contact_details and {
+        "term": _("Contact:"),
+        "descriptions": [
+            {
+                "description": contact_description_html
+            }
+        ]
+    } or None %}
+
+    {# filter out any optional items which haven't been set #}
+    {% set itemsList = [
+        publication_item,
+        last_revised_item,
+        contact_item
+    ] | selectattr('term') | list %}
 
     {# fmt:off #}
     {{
@@ -61,18 +61,7 @@
                 "descriptionListLabel": "",
                 "termCol": "6",
                 "descriptionCol": "6",
-                "itemsList": [
-                    {
-                        "term": published_label,
-                        "descriptions": [
-                            {
-                                "description": page.publication_date|date("DATE_FORMAT")
-                            }
-                        ]
-                    },
-                    last_revised,
-                    contact_details,
-                ]
+                "itemsList": itemsList
             },
             "breadcrumbs": {
                 "ariaLabel": breadcrumbs_label,
