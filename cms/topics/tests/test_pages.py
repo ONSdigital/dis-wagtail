@@ -49,6 +49,9 @@ class TopicPageTests(WagtailPageTestCase):
         self.assertEqual(response.status_code, HTTPStatus.OK)
         self.assertContains(response, self.page.title)
 
+        self.assertContains(response, "Contents")
+        self.assertContains(response, "Sections in this page")
+
     def test_topic_page_displays_headline_figures(self):
         self.page.headline_figures.extend(
             [
