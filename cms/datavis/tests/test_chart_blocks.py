@@ -1,7 +1,9 @@
 from typing import Any, ClassVar
+from unittest import mock
 
 from django.core.exceptions import ValidationError
 from django.test import SimpleTestCase
+from wagtail import blocks
 from wagtail.blocks.struct_block import StructValue
 from wagtail.test.utils import WagtailTestUtils
 
@@ -130,7 +132,7 @@ class LineChartBlockTestCase(BaseChartBlockTestCase):
         with self.assertRaises(ValidationError, msg="Expected ValidationError for missing title"):
             self.block.clean(value)
 
-    def test_get_series_data(self):
+    def test_series_data(self):
         """Test that we identify two separate series in the data."""
         config = self.get_component_config()
         self.assertEqual(len(config["series"]), 2)
@@ -347,3 +349,150 @@ class BarColumnChartBlockTestCase(BaseChartBlockTestCase):
                     self.block.clean(value)
                 except ValidationError:
                     self.fail("Expected no ValidationError for column chart aspect ratio options")
+
+
+class ColumnChartWithLineTestCase(BaseChartBlockTestCase):
+    block_type = BarColumnChartBlock
+
+    def setUp(self):
+        super().setUp()
+        self.raw_data["table"] = TableDataFactory(
+            table_data=[
+                ["", "Series 1", "Series 2"],
+                ["2005", "100", "50"],
+                ["2006", "120", "55"],
+                ["2007", "140", "60"],
+            ]
+        )
+
+    def test_get_series_customisation_is_one_indexed(self):
+        with mock.patch.object(self.block, "get_series_customisation") as mock_get_series_customisation:
+            mock_get_series_customisation.return_value = {}
+
+            self.block.clean(self.get_value())
+            mock_get_series_customisation.assert_has_calls(
+                [
+                    mock.call(mock.ANY, 1),
+                    mock.call(mock.ANY, 2),
+                ]
+            )
+
+    def test_column_chart_with_one_line_overlay(self):
+        self.raw_data["select_chart_type"] = "column"
+        self.raw_data["series_customisation"] = [
+            {"type": "series_as_line_overlay", "value": 1}  # NB 1-indexed
+        ]
+        self.block.clean(self.get_value())
+        _, series = self.get_value().block.get_series_data(self.get_value())
+        # There are two series
+        self.assertEqual(2, len(series))
+        # The first series is the line overlay
+        self.assertEqual("line", series[0]["type"])
+        # The second series remains a column
+        with self.assertRaises(KeyError):
+            # The only supported value for type is "line", when it is omitted we
+            # know this is a column.
+            series[1]["type"]  # pylint: disable=pointless-statement
+
+    def test_bar_chart_with_line_overlay_is_not_allowed(self):
+        self.raw_data["select_chart_type"] = "bar"
+        self.raw_data["series_customisation"] = [{"type": "series_as_line_overlay", "value": 1}]
+        with self.assertRaises(blocks.StructBlockValidationError) as cm:
+            self.block.clean(self.get_value())
+
+        self.assertEqual(
+            BarColumnChartBlock.ERROR_HORIZONTAL_BAR_NO_LINE,
+            cm.exception.block_errors["series_customisation"].block_errors[0].code,
+        )
+        # This is the only error
+        self.assertEqual(1, len(cm.exception.block_errors))
+
+    def test_horizontal_bar_no_line_error_not_clobbered(self):
+        # We don't want particular details about the series number input to hide
+        # the fact that this should not be allowed on a bar chart at all.
+        self.raw_data["select_chart_type"] = "bar"
+        self.raw_data["series_customisation"] = [{"type": "series_as_line_overlay", "value": 10}]  # Out of range
+        with self.assertRaises(blocks.StructBlockValidationError) as cm:
+            self.block.clean(self.get_value())
+
+        self.assertEqual(
+            BarColumnChartBlock.ERROR_HORIZONTAL_BAR_NO_LINE,
+            cm.exception.block_errors["series_customisation"].block_errors[0].code,
+        )
+        # This is the only error
+        self.assertEqual(1, len(cm.exception.block_errors))
+
+    def test_error_is_raised_if_series_number_is_out_of_range(self):
+        self.raw_data["select_chart_type"] = "column"
+        for series_number in [0, 3]:
+            with self.subTest(series_number=series_number):
+                self.raw_data["series_customisation"] = [
+                    {"type": "series_as_line_overlay", "value": series_number},
+                ]
+                with self.assertRaises(blocks.StructBlockValidationError) as cm:
+                    self.block.clean(self.get_value())
+                self.assertEqual(
+                    BarColumnChartBlock.ERROR_SERIES_OUT_OF_RANGE,
+                    cm.exception.block_errors["series_customisation"].block_errors[0].code,
+                )
+                # This is the only error
+                self.assertEqual(1, len(cm.exception.block_errors))
+
+    def test_error_is_raised_if_series_number_is_duplicated(self):
+        self.raw_data["select_chart_type"] = "column"
+        self.raw_data["series_customisation"] = [
+            {"type": "series_as_line_overlay", "value": 1},
+            {"type": "series_as_line_overlay", "value": 1},
+        ]
+        with self.assertRaises(blocks.StructBlockValidationError) as cm:
+            self.block.clean(self.get_value())
+
+        self.assertEqual(
+            BarColumnChartBlock.ERROR_DUPLICATE_SERIES,
+            cm.exception.block_errors["series_customisation"].block_errors[1].code,
+        )
+        # This is the only error
+        self.assertEqual(1, len(cm.exception.block_errors))
+
+    def test_error_is_raised_if_all_series_are_selected_for_line_overlay(self):
+        self.raw_data["select_chart_type"] = "column"
+        self.raw_data["table"] = TableDataFactory(
+            table_data=[
+                ["", "Only one series"],
+                ["2005", "100"],
+                ["2006", "120"],
+                ["2007", "140"],
+            ]
+        )
+        self.raw_data["series_customisation"] = [{"type": "series_as_line_overlay", "value": 1}]
+        _, series = self.get_value().block.get_series_data(self.get_value())
+        # There is one series
+        self.assertEqual(1, len(series))
+        with self.assertRaises(blocks.StructBlockValidationError) as cm:
+            self.block.clean(self.get_value())
+
+        self.assertEqual(
+            BarColumnChartBlock.ERROR_ALL_SERIES_SELECTED,
+            cm.exception.block_errors["series_customisation"].code,
+        )
+        # This is the only error
+        self.assertEqual(1, len(cm.exception.block_errors))
+
+    def test_all_series_selected_not_raised_for_number_out_of_range(self):
+        self.raw_data["select_chart_type"] = "column"
+        self.raw_data["series_customisation"] = [
+            {"type": "series_as_line_overlay", "value": 1},
+            {"type": "series_as_line_overlay", "value": 3},
+        ]
+        _, series = self.get_value().block.get_series_data(self.get_value())
+        # There are two series
+        self.assertEqual(2, len(series))
+        with self.assertRaises(blocks.StructBlockValidationError) as cm:
+            self.block.clean(self.get_value())
+
+        self.assertNotEqual(
+            BarColumnChartBlock.ERROR_ALL_SERIES_SELECTED,
+            cm.exception.block_errors["series_customisation"].code,
+        )
+        # This is the only error
+        self.assertEqual(1, len(cm.exception.block_errors))
