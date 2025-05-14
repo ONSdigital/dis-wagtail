@@ -9,7 +9,7 @@ logger = logging.getLogger(__name__)
 
 class BaseNotifier(ABC):
     @abstractmethod
-    def send_notification(bundle: Bundle, teams: Team, message: str) -> None:
+    def send_notification(self, bundle: Bundle, teams: Team, message: str) -> None:
         """Each child class defines how to actually send
         the message (e.g., Email, logging, etc.).
         """
@@ -18,18 +18,18 @@ class BaseNotifier(ABC):
         """Helper method to send a notification to all teams associated with the bundle."""
         return self.send_notification(
             bundle=bundle,
-            teams=bundle.teams.all(),
+            teams=Team.objects.filter(pk__in=bundle.active_team_ids),
             message=message,
         )
 
 
 class LogNotifier(BaseNotifier):
-    def send_notification(self, preview_teams: Team, bundle: Bundle, message: str) -> None:
-        for team in preview_teams:
+    def send_notification(self, bundle: Bundle, teams: list[Team], message: str) -> None:
+        for team in teams:
             for user in team.users.all():
                 if user.is_active:
                     logger.info(
-                        "Bundle status changed to 'in review'",
+                        message,
                         extra={
                             "bundle_id": bundle.id,
                             "event": "bundle_status_changed_to_in_review",
@@ -39,4 +39,5 @@ class LogNotifier(BaseNotifier):
                     )
 
 
-class AWS_SES_Notifier(BaseNotifier): ...
+class AWS_SES_Notifier(BaseNotifier):  # pylint: disable=invalid-name
+    def send_notification(self, bundle: Bundle, teams: Team, message: str) -> None: ...
