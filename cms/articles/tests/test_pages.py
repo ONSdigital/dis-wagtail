@@ -98,6 +98,11 @@ class StatisticalArticlePageTests(WagtailPageTestCase):
         self.assertContains(response, self.page.title)
         self.assertContains(response, self.page.summary)
 
+        self.assertContains(response, "Save or print this page")
+        self.assertContains(response, "Sections in this page")
+        self.assertContains(response, "Contents")
+        self.assertContains(response, "Cite this article")
+
     def test_localised_version_of_page_works(self):
         response = self.client.get("/cy" + self.page.url)
         self.assertEqual(response.status_code, HTTPStatus.OK)

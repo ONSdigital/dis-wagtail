@@ -87,14 +87,27 @@
     <div class="ons-grid ons-grid-flex-gap ons-grid-flex-gap--32 ons-js-toc-container">
         <div class="ons-grid__col ons-grid__col--sticky@m ons-col-4@m">
             {% with toc_title=_("Contents"), toc_aria_label=_("Sections in this page") %}
+
+                {% if related_publications %}
+                    {% set related_publications_title = _("Related publications") %}
+                    {% set related_publications_list = related_publications %}
+                {% endif %}
+
                 {# fmt:off #}
                 {{-
                     onsTableOfContents({
                         "title": toc_title,
                         "ariaLabel": toc_aria_label,
-                        "itemsList": table_of_contents
+                        "itemsList": table_of_contents,
+                        "relatedLinks": {
+                            "title": related_publications_title,
+                            "itemsList": related_publications_list
+                        },
+                        "button": {
+                            "text": _("Save or print this page")
+                        }
                     })
-                }}
+                -}}
                 {# fmt:on #}
             {% endwith %}
         </div>
@@ -109,13 +122,6 @@
             {% endif %}
 
             {% include_block page.content %}
-
-            {% if related_publications %}
-                <section id="related-publications" class="spacing">
-                    <h2 class="ons-u-fs-l">{{ _("Related publications") }}</h2>
-                    {{- onsList({"itemsList": related_publications}) -}}
-                </section>
-            {% endif %}
 
             {% if page.show_cite_this_page %}
                 <section id="cite-this-page" class="spacing">
@@ -133,7 +139,7 @@
             {% endif %}
 
             {% if page.contact_details %}
-                {% with contact_details = page.contact_details%}
+                {% with contact_details = page.contact_details %}
                     {% include "templates/components/contact_details/contact_details.html" %}
                 {% endwith %}
             {% endif %}
