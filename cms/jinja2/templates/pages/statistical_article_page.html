@@ -38,23 +38,35 @@
     {% endif %}
 
     {# fmt:off #}
-    {% set release_item = page.release_date and {
-        "term": release_date_label,
-        "descriptions": [
-            {
-                "description": page.release_date|date("DATE_FORMAT")
+    {% if page.release_date %}
+        {% set release_item = {
+                "term": release_date_label,
+                "descriptions": [
+                    {
+                        "description": page.release_date|date("DATE_FORMAT")
+                    }
+                ]
             }
-        ]
-    } or None %}
+        %}
+    {% else %}
+        {% set release_item = None %}
+    {% endif %}
+    {# fmt:on #}
 
-    {% set next_release_item = page.next_release_date and {
-        "term": next_release_label,
-        "descriptions": [
-            {
-                "description": page.next_release_date|date("DATE_FORMAT") or _("To be announced")
+    {# fmt:off #}
+    {% if page.next_release_date %}
+        {% set next_release_item = {
+                "term": next_release_label,
+                "descriptions": [
+                    {
+                        "description": page.next_release_date|date("DATE_FORMAT") or _("To be announced")
+                    }
+                ]
             }
-        ]
-    } or None %}
+        %}
+    {% else %}
+        {% set next_release_item = None %}
+    {% endif %}
     {# fmt:on #}
 
     {% set contact_description_html -%}
@@ -62,23 +74,19 @@
     {%- endset %}
 
     {# fmt:off #}
-    {% set contact_item = page.contact_details and {
-        "term": _("Contact:"),
-        "descriptions": [
-            {
-                "description": contact_description_html
+    {% if page.contact_details %}
+        {% set contact_item = {
+                "term": _("Contact:"),
+                "descriptions": [
+                    {
+                        "description": contact_description_html
+                    }
+                ]
             }
-        ]
-    } or None %}
-    {# fmt:on #}
-
-    {# filter out any optional items which haven't been set #}
-    {# fmt:off #}
-    {% set itemsList = [
-        release_item,
-        next_release_item,
-        contact_item
-    ] | selectattr('term') | list %}
+        %}
+    {% else %}
+        {% set contact_item = None %}
+    {% endif %}
     {# fmt:on #}
 
     {# fmt:off #}
@@ -104,7 +112,7 @@
                 "descriptionListLabel": "",
                 "termCol": "6",
                 "descriptionCol": "6",
-                "itemsList": itemsList,
+                "itemsList": [release_item, next_release_item, contact_item] | selectattr('term') | list,
             },
             "breadcrumbs": {
                 "ariaLabel": breadcrumbs_label,
@@ -194,9 +202,9 @@
                 {% else %}
                     {% set related_data_url = routablepageurl(page, "related_data") %}
                 {% endif %}
-                {% set related_links_title=_("Explore Data") %}
 
-                    {% set related_data_text=_("View data used in this article") %}
+                {% set related_links_title=_("Explore Data") %}
+                {% set related_data_text=_("View data used in this article") %}
 
                 {# fmt:off #}
                     {%- set related_links =
@@ -212,7 +220,7 @@
                     -%}
                 {# fmt:on #}
                     {% else %}
-                        {% set related_links = "" %}
+                        {% set related_links = None %}
                     {% endif %}
 
                     {% with toc_title=_("Contents"), toc_aria_label=_("Sections in this page") %}

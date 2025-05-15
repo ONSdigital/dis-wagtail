@@ -19,39 +19,44 @@
             }
         ]
     } %}
+    {# fmt:on #}
 
-    {% set last_revised_item = page.last_revised_date and {
-        "term": last_revised_label,
-        "descriptions": [
-            {
-                "description": page.last_revised_date|date("DATE_FORMAT")
+    {# fmt:off #}
+    {% if page.last_revised_date %}
+        {% set last_revised_item = {
+                "term": last_revised_label,
+                "descriptions": [
+                    {
+                        "description": page.last_revised_date|date("DATE_FORMAT")
+                    }
+                ]
             }
-        ]
-    } or None %}
+        %}
+    {% else %}
+        {% set last_revised_item = None %}
+    {% endif %}
+    {# fmt:on #}
 
     {% set contact_description_html -%}
         <a href="mailto:{{ page.contact_details.email }}">{{ page.contact_details.name }}</a>
     {%- endset %}
 
-    {% set contact_item = page.contact_details and {
-        "term": _("Contact:"),
-        "descriptions": [
-            {
-                "description": contact_description_html
+    {# fmt:off #}
+    {% if page.contact_details %}
+        {% set contact_item = {
+                "term": _("Contact:"),
+                "descriptions": [
+                    {
+                        "description": contact_description_html
+                    }
+                ]
             }
-        ]
-    } or None %}
+        %}
+    {% else %}
+        {% set contact_item = None %}
+    {% endif %}
     {# fmt:on #}
 
-    {# filter out any optional items which haven't been set #}
-    {# fmt:off #}
-    {% set itemsList = [
-        publication_item,
-        last_revised_item,
-        contact_item
-    ] | selectattr('term') | list %}
-    {# fmt:on #}
-    
     {# fmt:off #}
     {{
         onsHero({
@@ -65,7 +70,7 @@
                 "descriptionListLabel": "",
                 "termCol": "6",
                 "descriptionCol": "6",
-                "itemsList": itemsList
+                "itemsList": [publication_item, last_revised_item, contact_item] | selectattr('term') | list,
             },
             "breadcrumbs": {
                 "ariaLabel": breadcrumbs_label,
