@@ -10,7 +10,7 @@ class ONSAdminDateTimeInput(AdminDateTimeInput):
     def __init__(
         self,
         attrs: dict | None = None,
-        format: str | None = None,
+        date_format: str | None = None,
         time_format: str | None = None,
         js_overlay_parent_selector: str = "body",
     ):
@@ -19,7 +19,10 @@ class ONSAdminDateTimeInput(AdminDateTimeInput):
         attrs.setdefault("placeholder", "YYYY-MM-DD HH:MM")
 
         super().__init__(
-            attrs=attrs, format=format, time_format=time_format, js_overlay_parent_selector=js_overlay_parent_selector
+            attrs=attrs,
+            format=date_format,
+            time_format=time_format,
+            js_overlay_parent_selector=js_overlay_parent_selector,
         )
 
     def get_config(self):

@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, Any, ClassVar, Optional
+from typing import TYPE_CHECKING, Any, ClassVar, Optional, cast
 
 from django.conf import settings
 from django.db import models
@@ -10,7 +10,7 @@ from wagtail.fields import RichTextField
 from wagtail.models import Page
 from wagtail.search import index
 
-from cms.core.custom_date_format import ons_date_format
+from cms.core.custom_date_format import ons_date_format, ons_default_datetime
 from cms.core.fields import StreamField
 from cms.core.models import BasePage
 from cms.core.widgets import ONSAdminDateTimeInput
@@ -28,6 +28,7 @@ from .panels import ReleaseCalendarBundleNotePanel
 
 if TYPE_CHECKING:
     from django.http import HttpRequest
+    from django.template.response import TemplateResponse
 
     from cms.bundles.models import Bundle
 
@@ -55,7 +56,7 @@ class ReleaseCalendarPage(BasePage):  # type: ignore[django-manager-missing]
     status = models.CharField(choices=ReleaseStatus.choices, default=ReleaseStatus.PROVISIONAL, max_length=32)
     summary = RichTextField(features=settings.RICH_TEXT_BASIC)
 
-    release_date = models.DateTimeField(blank=False, null=False)
+    release_date = models.DateTimeField(blank=False, null=False, default=ons_default_datetime)  # to add default?
     release_date_text = models.CharField(
         max_length=50,
         blank=True,
@@ -231,3 +232,17 @@ class ReleaseCalendarPage(BasePage):  # type: ignore[django-manager-missing]
             return None
         bundle: Optional[Bundle] = self.bundles.active().first()  # pylint: disable=no-member
         return bundle
+
+    @property
+    def preview_modes(self) -> list[tuple[str, str]]:
+        return ReleaseStatus.choices
+
+    def get_preview_template(self, request, mode_name: str) -> "TemplateResponse":
+        templates = {
+            "PROVISIONAL": "templates/pages/release_calendar/release_calendar_page--provisional.html",
+            "CONFIRMED": "templates/pages/release_calendar/release_calendar_page--confirmed.html",
+            "CANCELLED": "templates/pages/release_calendar/release_calendar_page--cancelled.html",
+            "PUBLISHED": "templates/pages/release_calendar/release_calendar_page.html",
+        }
+        # returns template in templates[""]
+        return cast("TemplateResponse", templates.get(mode_name, templates["PROVISIONAL"]))

@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import date, datetime, time
 
 from django.utils.dateformat import DateFormat
 from django.utils.formats import get_format
@@ -21,3 +21,7 @@ class ONSDateFormat(DateFormat):
 
 def ons_date_format(value: datetime, format_string: str) -> str:
     return ONSDateFormat(value).format(get_format(format_string))
+
+
+def ons_default_datetime():
+    return datetime.combine(date.today(), time(9, 30))
