@@ -16,7 +16,6 @@ from cms.bundles.tests.utils import grant_all_bundle_permissions, make_bundle_vi
 from cms.bundles.viewsets.bundle_chooser import bundle_chooser_viewset
 from cms.bundles.viewsets.bundle_page_chooser import PagesWithDraftsForBundleChooserWidget, bundle_page_chooser_viewset
 from cms.methodology.tests.factories import MethodologyPageFactory
-from cms.release_calendar.tests.factories import ReleaseCalendarPageFactory
 from cms.release_calendar.viewsets import FutureReleaseCalendarChooserWidget
 from cms.teams.models import Team
 from cms.topics.tests.factories import TopicPageFactory
@@ -324,16 +323,13 @@ class BundleViewSetTestCase(BundleViewSetTestCaseBase):
     def test_inspect_view__previewers__contains_only_relevant_pages(self):
         methodology_article = MethodologyPageFactory(title="The Test Methodology Article", live=False)
         statistical_article = StatisticalArticlePageFactory(title="The Test Statistical Article", live=False)
-        release_calendar_page = ReleaseCalendarPageFactory(title="The Test Release Calendar Page", live=False)
         topic_page = TopicPageFactory(title="The Test Topic Page", live=False)
 
         BundlePageFactory(parent=self.in_review_bundle, page=methodology_article)
-        BundlePageFactory(parent=self.in_review_bundle, page=release_calendar_page)
         BundlePageFactory(parent=self.in_review_bundle, page=topic_page)
         BundlePageFactory(parent=self.in_review_bundle, page=statistical_article)
 
         mark_page_as_ready_for_review(methodology_article, self.publishing_officer)
-        mark_page_as_ready_for_review(release_calendar_page, self.publishing_officer)
         mark_page_as_ready_for_review(topic_page, self.publishing_officer)
         mark_page_as_ready_for_review(statistical_article, self.publishing_officer)
 
@@ -343,7 +339,6 @@ class BundleViewSetTestCase(BundleViewSetTestCaseBase):
 
         self.assertContains(response, "The Test Methodology Article")
         self.assertContains(response, "The Test Statistical Article")
-        self.assertNotContains(response, "The Test Release Calendar Page")
         self.assertNotContains(response, "The Test Topic Page")
 
         # superuser should see all pages
@@ -352,7 +347,6 @@ class BundleViewSetTestCase(BundleViewSetTestCaseBase):
         response = self.client.get(reverse("bundle:inspect", args=[self.in_review_bundle.pk]))
         self.assertContains(response, "The Test Methodology Article")
         self.assertContains(response, "The Test Statistical Article")
-        self.assertContains(response, "The Test Release Calendar Page")
         self.assertContains(response, "The Test Topic Page")
 
 
