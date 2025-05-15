@@ -55,17 +55,27 @@
 
     {# fmt:off #}
     {% if page.next_release_date %}
+        {% set next_release_date = page.next_release_date|date("DATE_FORMAT") %}
         {% set next_release_item = {
                 "term": next_release_label,
                 "descriptions": [
                     {
-                        "description": page.next_release_date|date("DATE_FORMAT") or _("To be announced")
+                        "description": next_release_date
                     }
                 ]
             }
         %}
     {% else %}
-        {% set next_release_item = None %}
+        {% set next_release_date_text = _("To be announced") %}
+        {% set next_release_item = {
+                "term": next_release_label,
+                "descriptions": [
+                    {
+                        "description": next_release_date_text
+                    }
+                ]
+            }
+        %}
     {% endif %}
     {# fmt:on #}
 
