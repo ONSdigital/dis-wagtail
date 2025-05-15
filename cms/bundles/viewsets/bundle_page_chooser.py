@@ -29,7 +29,7 @@ class PagesWithDraftsMixinFilterForm(LocaleFilterMixin, SearchFilterMixin, BaseF
 
     def filter(self, objects: "PageQuerySet") -> "PageQuerySet":
         selected_page_type = self.cleaned_data.get("page_type")
-        if selected_page_type and selected_page_type in self._page_type_map:
+        if selected_page_type:
             objects = objects.type(self._page_type_map[selected_page_type])
         return super().filter(objects)
 

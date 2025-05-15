@@ -522,7 +522,7 @@ class BundlePageChooserViewsetTestCase(WagtailTestUtils, TestCase):
         self.assertNotContains(response, self.page_live.get_admin_display_title())
         self.assertNotContains(response, self.page_draft_in_bundle.get_admin_display_title())
 
-    def test_chooser_filter(self):
+    def test_chooser_filter(self):  # pylint: disable=too-many-statements # noqa
         methodology_page_draft = MethodologyPageFactory(live=False, title="Bundle test methodology page")
         methodology_page_draft.save_revision()
         information_page_draft = InformationPageFactory(live=False, title="Bundle test information page")
@@ -573,6 +573,17 @@ class BundlePageChooserViewsetTestCase(WagtailTestUtils, TestCase):
         self.assertNotContains(response, self.page_live.get_admin_display_title())
 
         response = self.client.get(f"{self.chooser_results_url}?page_type=")
+        self.assertEqual(response.status_code, 200)
+
+        self.assertContains(response, self.page_draft.get_admin_display_title())
+        self.assertContains(response, self.page_live_plus_draft.get_admin_display_title())
+        self.assertContains(response, methodology_page_draft.get_admin_display_title())
+        self.assertContains(response, information_page_draft.get_admin_display_title())
+        self.assertContains(response, topic_page_draft.get_admin_display_title())
+        self.assertNotContains(response, self.page_live.get_admin_display_title())
+
+        # "foo" (or any unknown type) will be forced to "" in the filter form
+        response = self.client.get(f"{self.chooser_results_url}?page_type=foo")
         self.assertEqual(response.status_code, 200)
 
         self.assertContains(response, self.page_draft.get_admin_display_title())
