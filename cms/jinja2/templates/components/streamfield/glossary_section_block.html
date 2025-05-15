@@ -5,7 +5,7 @@
 {%- set hide_all_label = _("Hide all") -%}
 
 {# fmt:off #}
-{{
+{{-
     onsAccordion({
         "id": "accordion-" ~ block_id,
         "allButton": {
@@ -14,6 +14,6 @@
         },
         "itemsList": formatted_glossary_terms,
     })
-}}
-{# fmt:on#}
+-}}
+{# fmt:on #}
 
