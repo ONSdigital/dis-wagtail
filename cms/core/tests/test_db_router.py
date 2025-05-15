@@ -100,7 +100,7 @@ class DBRouterTestCase(TransactionTestCase):
         self.assertFalse(User.objects.using(READ_REPLICA_DB_ALIAS).filter(id=user.id).exists())
 
     def test_revision_uses_default(self):
-        """Checks that revisions (a model used as the target for a GenericRelation)
+        """Checks that revisions (a model used in a GenericRelation)
         always uses the default connection.
         """
         self.assertEqual(router.db_for_write(Revision), DEFAULT_DB_ALIAS)

@@ -27,7 +27,7 @@ class ReadReplicaRouter:  # pylint: disable=unused-argument,protected-access
         if READ_REPLICA_DB_ALIAS not in settings.DATABASES:  # pragma: no cover
             raise ImproperlyConfigured("Read replica is not configured.")
 
-        # Collect targets of GenericRelation to work around Django bug
+        # Collect models used in a GenericRelation to work around Django bug
         # @see db_for_read
         self.generic_target_models: set[type[Model]] = set()
         for model in apps.get_models():
@@ -37,7 +37,7 @@ class ReadReplicaRouter:  # pylint: disable=unused-argument,protected-access
 
     def db_for_read(self, model: type[Model], **hints: Any) -> Optional[str]:
         """Determine which database should be used for read queries."""
-        # Models which are targetted by a GenericRelation must use the write connection.
+        # Models used in a GenericRelation must use the write connection.
         # @see https://code.djangoproject.com/ticket/36389
         if not settings.IS_EXTERNAL_ENV and model in self.generic_target_models:
             return DEFAULT_DB_ALIAS
