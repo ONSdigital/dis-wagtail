@@ -12,7 +12,8 @@ from wagtail.models import Page
 from wagtail.permission_policies import ModelPermissionPolicy
 
 from cms.bundles.admin_forms import AddToBundleForm
-from cms.bundles.models import Bundle, BundledPageMixin, BundlePage
+from cms.bundles.mixins import BundledPageMixin
+from cms.bundles.models import Bundle, BundlePage
 
 if TYPE_CHECKING:
     from django.http import HttpRequest, HttpResponseBase, HttpResponseRedirect

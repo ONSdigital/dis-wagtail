@@ -12,6 +12,7 @@ from cms.articles.tests.factories import StatisticalArticlePageFactory
 from cms.bundles.enums import BundleStatus
 from cms.bundles.tests.factories import BundleFactory, BundlePageFactory
 from cms.home.models import HomePage
+from cms.methodology.tests.factories import MethodologyPageFactory
 from cms.release_calendar.enums import ReleaseStatus
 from cms.release_calendar.tests.factories import ReleaseCalendarPageFactory
 from cms.workflows.models import ReadyToPublishGroupTask
@@ -26,6 +27,9 @@ class PublishBundlesCommandTestCase(TestCase):
         self.publication_date = timezone.now() - timedelta(minutes=1)
         self.statistical_article = StatisticalArticlePageFactory(title="The Statistical Article", live=False)
         self.statistical_article.save_revision(approved_go_live_at=self.publication_date)
+
+        self.methodology_article = MethodologyPageFactory(title="The Methodology Article")
+        self.methodology_article.save_revision()
 
         self.bundle = BundleFactory(approved=True, name="Test Bundle", publication_date=self.publication_date)
 
@@ -141,6 +145,7 @@ class PublishBundlesCommandTestCase(TestCase):
         """Test publishing a bundle with an associated release calendar page."""
         release_page = ReleaseCalendarPageFactory(release_date=self.publication_date)
         BundlePageFactory(parent=self.bundle, page=self.statistical_article)
+        BundlePageFactory(parent=self.bundle, page=self.methodology_article)
         self.bundle.publication_date = None
         self.bundle.release_calendar_page = release_page
         self.bundle.save(update_fields=["publication_date", "release_calendar_page"])
@@ -155,6 +160,11 @@ class PublishBundlesCommandTestCase(TestCase):
         self.assertEqual(content["title"], "Publications")
         self.assertEqual(len(content["links"]), 1)
         self.assertEqual(content["links"][0]["page"].pk, self.statistical_article.pk)
+
+        content = release_page.content[1].value
+        self.assertEqual(content["title"], "Methodology")
+        self.assertEqual(len(content["links"]), 1)
+        self.assertEqual(content["links"][0]["page"].pk, self.methodology_article.pk)
 
     @override_settings(SLACK_NOTIFICATIONS_WEBHOOK_URL="https://slack.ons.gov.uk")
     @patch("cms.bundles.management.commands.publish_bundles.logger")
