@@ -1,8 +1,12 @@
 from typing import TYPE_CHECKING, ClassVar
 
 from django.conf import settings
+from django.forms import Media
+from django.utils.functional import cached_property
 from django.utils.text import slugify
 from wagtail import blocks
+from wagtail.blocks.struct_block import StructBlockAdapter
+from wagtail.telepath import register
 
 from cms.core.blocks import BasicTableBlock, LinkBlock, RelatedContentBlock
 
@@ -29,9 +33,23 @@ class ReleaseDateChangeBlock(blocks.StructBlock):
 
     previous_date = blocks.DateTimeBlock()
     reason_for_change = blocks.TextBlock()
+    frozen = blocks.BooleanBlock(required=False, default=False)
 
     class Meta:
         template = "templates/components/streamfield/release_date_change_block.html"
+        help_text = "Warning: Once a date change log is published, it cannot be deleted."
+
+
+class ReleaseDateChangeBlockAdapter(StructBlockAdapter):
+    js_constructor = "cms.release_calendar.blocks.ReleaseDateChangeBlock"
+
+    @cached_property
+    def media(self) -> Media:
+        structblock_media = super().media
+        return Media(js=[*structblock_media._js, "js/blocks/release-date-change-block.js"], css=structblock_media._css)  # pylint: disable=protected-access
+
+
+register(ReleaseDateChangeBlockAdapter(), ReleaseDateChangeBlock)
 
 
 class ReleaseCalendarStoryBlock(blocks.StreamBlock):
