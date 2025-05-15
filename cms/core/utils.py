@@ -1,12 +1,15 @@
 import io
+from threading import Lock
 from typing import TYPE_CHECKING, Any, Optional, TypedDict
 
 import matplotlib as mpl
-import matplotlib.pyplot as plt
 from django.conf import settings
 from django.db.models import QuerySet
 from django.utils.formats import date_format
 from django.utils.translation import gettext_lazy as _
+from matplotlib.figure import Figure
+
+matplotlib_lock = Lock()
 
 FORMULA_INDICATOR = "$$"
 
@@ -75,17 +78,17 @@ def latex_formula_to_svg(latex: str, *, fontsize: int = 18, transparent: bool = 
     Returns:
         str: A string containing the SVG representation of the LaTeX expression.
     """
-    fig = plt.figure()
-    svg_buffer = io.StringIO()
-    try:
-        fig.text(0, 0, rf"${latex}$", fontsize=fontsize)
-        fig.savefig(svg_buffer, format="svg", bbox_inches="tight", transparent=transparent)
-        svg_string = svg_buffer.getvalue()
-    finally:
-        plt.close(fig)
-        svg_buffer.close()
+    with matplotlib_lock:
+        fig = Figure()
+        svg_buffer = io.StringIO()
+        try:
+            fig.text(0, 0, rf"${latex}$", fontsize=fontsize)
+            fig.savefig(svg_buffer, format="svg", bbox_inches="tight", transparent=transparent)
+            svg_string = svg_buffer.getvalue()
+        finally:
+            svg_buffer.close()
 
-    # Remove first 3 lines of the SVG string
-    svg_string = "\n".join(svg_string.split("\n")[3:])
+        # Remove first 3 lines of the SVG string
+        svg_string = "\n".join(svg_string.split("\n")[3:])
 
     return svg_string
