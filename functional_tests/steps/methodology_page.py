@@ -28,6 +28,7 @@ def user_populates_the_methodology_page(context: Context):
     ).click()
     context.page.get_by_text("Rich text").click()
     context.page.get_by_role("region", name="Rich text *").get_by_role("textbox").fill("Content")
+    context.page.wait_for_timeout(500)  # ensure that the rich text block picked up the content
 
 
 @when("adds Glossary Terms to the page content")
