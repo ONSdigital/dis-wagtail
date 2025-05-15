@@ -1,11 +1,13 @@
-# tests/test_utils.py
 import base64
 import importlib
 import json
+import uuid
+from contextlib import suppress
 from datetime import UTC, datetime, timedelta
 from unittest import mock
 
 import jwt
+import requests
 from django.test import SimpleTestCase, override_settings
 
 from cms.auth import utils  # pylint: disable=import-error
@@ -16,24 +18,104 @@ class ValidateJWTTests(SimpleTestCase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
-        cls.pair = generate_rsa_keypair()
+        cls.good_pair = generate_rsa_keypair()
+        cls.bad_pair = generate_rsa_keypair()
 
-    def _patch_jwks(self):
-        """Return a context-manager that patches cms.auth.utils.get_jwks()
-        to hand back a dict of {kid: base64-encoded DER}.
+    def _patch_jwks(self, pair=None):
+        """Patch utils.get_jwks() so only `pair`'s public key is returned."""
+        pair = pair or self.good_pair
+        b64_der = base64.b64encode(pair.public_der).decode()
 
-        Patched here instead of requests.get() so we don't worry about the
-        internal memory_cache or the request URL.
-        """
-        b64_der = base64.b64encode(self.pair.public_der).decode()
-
-        # clear the memoised cache so each test gets a fresh value
-        try:
+        with suppress(AttributeError):
             utils.get_jwks.cache_clear()  # functools.lru_cache
-        except AttributeError:
-            utils.get_jwks.invalidate()  # if you are using django-cache-utils
 
-        return mock.patch("cms.auth.utils.get_jwks", return_value={self.pair.kid: b64_der})
+        return mock.patch("cms.auth.utils.get_jwks", return_value={pair.kid: b64_der})
+
+    @override_settings(
+        AWS_COGNITO_USER_POOL_ID="test-pool",
+        AWS_COGNITO_APP_CLIENT_ID="expected",
+    )
+    def test_id_token_happy_path(self):
+        importlib.reload(utils)
+        uid = str(uuid.uuid4())
+        token = build_jwt(
+            self.good_pair,
+            token_use="id",
+            **{
+                "aud": "expected",
+                "cognito:username": uid,
+                "email": "x@y.com",
+                "sub": uid,
+            },
+        )
+        with self._patch_jwks():
+            claims = utils.validate_jwt(token, token_type="id")
+
+        self.assertIsNotNone(claims)
+        self.assertEqual(claims["aud"], "expected")
+        self.assertEqual(claims["token_use"], "id")
+
+    def test_audience_mismatch_returns_none(self):
+        token = build_jwt(
+            self.good_pair,
+            token_use="id",
+            **{
+                "aud": "wrong",
+                "cognito:username": "u1",
+                "email": "x@y.com",
+            },
+        )
+        with self._patch_jwks():
+            self.assertIsNone(utils.validate_jwt(token, token_type="id"))
+
+    def test_invalid_signature_returns_none(self):
+        # sign with bad key but JWKS only has good key
+        bad_token = build_jwt(
+            self.bad_pair,
+            token_use="access",
+            username="u1",
+            client_id="expected",
+            sub="u1",
+        )
+        with self._patch_jwks(pair=self.good_pair):  # wrong key in JWKS
+            self.assertIsNone(utils.validate_jwt(bad_token, token_type="access"))
+
+    def test_wrong_token_use_claim_returns_none(self):
+        # access token but claim says id
+        token = build_jwt(
+            self.good_pair,
+            token_use="id",  # incorrect for access validation
+            **{
+                "aud": "expected",
+                "cognito:username": "u1",
+                "email": "x@y.com",
+            },
+        )
+        with self._patch_jwks():
+            self.assertIsNone(utils.validate_jwt(token, token_type="access"))
+
+    def test_missing_kid_in_jwks_returns_none(self):
+        token = build_jwt(
+            self.good_pair,
+            token_use="access",
+            username="u1",
+            client_id="expected",
+            sub="u1",
+        )
+        # JWKS dict is empty
+        with mock.patch("cms.auth.utils.get_jwks", return_value={}):
+            self.assertIsNone(utils.validate_jwt(token, token_type="access"))
+
+    def test_jwks_fetch_network_error_returns_none(self):
+        token = build_jwt(
+            self.good_pair,
+            token_use="access",
+            username="u1",
+            client_id="expected",
+            sub="u1",
+        )
+        with mock.patch("cms.auth.utils.get_jwks", side_effect=requests.ConnectionError):
+            self.assertIsNone(utils.validate_jwt(token, token_type="access"))
 
     @override_settings(
         AWS_COGNITO_USER_POOL_ID="test-pool",
@@ -42,7 +124,7 @@ class ValidateJWTTests(SimpleTestCase):
     def test_valid_access_token(self):
         importlib.reload(utils)
         token = build_jwt(
-            self.pair,
+            self.good_pair,
             token_use="access",
             username="u1",
             client_id="expected",
@@ -79,24 +161,24 @@ class ValidateJWTTests(SimpleTestCase):
                 "username": "x",
                 "client_id": "expected",
             },
-            self.pair.private,
+            self.good_pair.private,
             algorithm="RS256",
-            headers={"kid": self.pair.kid},
+            headers={"kid": self.good_pair.kid},
         )
         with self._patch_jwks():
             self.assertIsNone(utils.validate_jwt(expired, token_type="access"))
 
 
+@override_settings(
+    AUTH_TOKEN_REFRESH_URL="/refresh/",
+    WAGTAILADMIN_HOME_PATH="/admin/",
+    CSRF_COOKIE_NAME="csrftoken",
+    CSRF_HEADER_NAME="HTTP_X_CSRFTOKEN",
+    LOGOUT_REDIRECT_URL="/logged-out/",
+    SESSION_RENEWAL_OFFSET_SECONDS=30,
+    ID_TOKEN_COOKIE_NAME="id",
+)
 class GetAuthConfigTests(SimpleTestCase):
-    @override_settings(
-        AUTH_TOKEN_REFRESH_URL="/refresh/",
-        WAGTAILADMIN_HOME_PATH="/admin/",
-        CSRF_COOKIE_NAME="csrftoken",
-        CSRF_HEADER_NAME="HTTP_X_CSRFTOKEN",
-        LOGOUT_REDIRECT_URL="/logged-out/",
-        SESSION_RENEWAL_OFFSET_SECONDS=30,
-        ID_TOKEN_COOKIE_NAME="id",
-    )
     def test_json_config_contains_expected_keys(self):
         config_json = utils.get_auth_config()
         data = json.loads(config_json)
@@ -110,6 +192,16 @@ class GetAuthConfigTests(SimpleTestCase):
             "idTokenCookieName",
         }
         self.assertEqual(expected_keys, set(data.keys()))
+
+    def test_values_exact(self):
+        data = json.loads(utils.get_auth_config())
+        self.assertEqual(data["authTokenRefreshUrl"], "/refresh/")
+        self.assertEqual(data["wagtailAdminHomePath"], "/admin/")
+        self.assertEqual(data["csrfCookieName"], "csrftoken")
+        self.assertEqual(data["csrfHeaderName"], "X-CSRFTOKEN")  # header rewritten
+        self.assertEqual(data["logoutRedirectUrl"], "/logged-out/")
+        self.assertEqual(data["sessionRenewalOffsetSeconds"], 30)
+        self.assertEqual(data["idTokenCookieName"], "id")
 
 
 class JWKSCacheTests(SimpleTestCase):

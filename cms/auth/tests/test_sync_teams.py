@@ -1,4 +1,3 @@
-# tests/management/test_sync_teams.py
 from unittest import mock
 
 from django.core.management import call_command
