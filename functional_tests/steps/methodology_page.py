@@ -27,8 +27,10 @@ def user_populates_the_methodology_page(context: Context):
         "button", name="Insert a block"
     ).click()
     context.page.get_by_text("Rich text").click()
-    context.page.wait_for_timeout(500)  # ensure that the rich text box is ready
     context.page.get_by_role("region", name="Rich text *").get_by_role("textbox").fill("Content")
+
+    # Scroll to the bottom of the page to ensure that the "Save as draft" button is not overlapped
+    context.page.get_by_text("Related publications", exact=True).nth(1).scroll_into_view_if_needed()
 
 
 @when("adds Glossary Terms to the page content")
