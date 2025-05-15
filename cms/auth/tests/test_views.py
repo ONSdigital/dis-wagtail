@@ -1,15 +1,15 @@
 from unittest import mock
 
 from django.contrib import messages
-from django.contrib.auth import get_user_model
 from django.contrib.messages.storage.fallback import FallbackStorage
 from django.contrib.sessions.middleware import SessionMiddleware
 from django.middleware import csrf
+from django.middleware.csrf import CsrfViewMiddleware
 from django.test import Client, RequestFactory, TestCase, override_settings
 from django.urls import reverse
 from wagtail.test.utils import WagtailTestUtils
 
-from cms.auth.views import ONSLogoutView
+from cms.auth.views import ONSLogoutView, extend_session
 
 
 class ONSLogoutViewTests(TestCase, WagtailTestUtils):
@@ -49,52 +49,95 @@ class ONSLogoutViewTests(TestCase, WagtailTestUtils):
 
         res = ONSLogoutView.as_view()(req)
 
-        # cookies present in response but expired (deletion marker)
+        # cookies present in response but expired deletion marker
         for name in ("access", "id"):
             morsel = res.cookies.get(name)
             self.assertIsNotNone(morsel)
             self.assertEqual(morsel.value, "")
             self.assertEqual(int(morsel["max-age"]), 0)
 
-        # storage was used (iterator exhausted) during the view
+        # storage was used iterator exhausted during the view
         self.assertTrue(storage.used)
 
     @override_settings(AWS_COGNITO_LOGIN_ENABLED=False, LOGOUT_REDIRECT_URL="/")
     def test_cookies_not_deleted_when_flag_off(self):
         url = reverse("wagtailadmin_logout")
-        response = self.client.post(url)  # self.client is already logged in
+        response = self.client.post(url)
         self.assertEqual(response.status_code, 302)
         self.assertIsNone(response.cookies.get("access"))
         self.assertIsNone(response.cookies.get("id"))
 
 
-@override_settings(ROOT_URLCONF="cms.urls")  # make sure project URLs are loaded
-class ExtendSessionTests(TestCase):
+@override_settings(ROOT_URLCONF="cms.urls")
+class ExtendSessionTests(WagtailTestUtils, TestCase):
     def setUp(self):
         self.client = Client(enforce_csrf_checks=True)
-        # user login
-        self.user = get_user_model().objects.create(username="u1")
-        self.client.force_login(self.user)
+        self.superuser = self.create_superuser(username="admin")
+        self.client.force_login(self.superuser)
+
+    def _make_request(self):
+        """Build a POST /extend-session/ request that passes CSRF and auth
+        without depending on urlconf import order.
+        """
+        rf = RequestFactory()
+        token = csrf._get_new_csrf_string()  # pylint: disable=protected-access
+        request = rf.post(
+            "/admin/extend-session/",
+            HTTP_X_CSRFTOKEN=token,
+        )
+        # attach session
+        SessionMiddleware(lambda r: None).process_request(request)
+        request.session.save()
+
+        # attach CSRF cookie
+        request.COOKIES["csrftoken"] = token
+        CsrfViewMiddleware(lambda r: None).process_view(request, extend_session, (), {})
+
+        # authenticated super-user
+        request.user = self.superuser
+        return request, token
 
     def test_post_extends_session(self):
-        # canonical URL will be "/<admin-prefix>/extend-session/"
+        request, _ = self._make_request()
+
+        response = extend_session(request)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertJSONEqual(
+            response.content,
+            {"status": "success", "message": "Session extended."},
+        )
+        # the session expiry should now be non-zero
+        self.assertTrue(request.session.get_expiry_age() > 0)
+
+    def test_get_not_allowed(self):
+        rf = RequestFactory()
+        request = rf.get("/admin/extend-session/")
+
+        # attach a live session
+        SessionMiddleware(lambda r: None).process_request(request)
+        request.session.save()
+
+        # authenticated super-user
+        request.user = self.superuser
+
+        # call the view directly
+        response = extend_session(request)
+
+        self.assertEqual(response.status_code, 405)
+
+    def test_post_as_anonymous_redirects_to_login(self):
+        """Anonymous POST should be bounced by @login_required and
+        redirected to the Wagtail login page (302).
+        """
+        self.client.logout()  # make the client anonymous
         url = reverse("extend_session")
 
-        # create a brand-new token and add it to the cookie jar
         token = csrf._get_new_csrf_string()  # pylint: disable=protected-access
         self.client.cookies["csrftoken"] = token
 
-        # POST and follow redirects
-        res = self.client.post(url, follow=True, HTTP_X_CSRFTOKEN=token)
+        res = self.client.post(url, HTTP_X_CSRFTOKEN=token, follow=False)
 
-        # final response is the JSON payload from extend_session
-        self.assertEqual(res.status_code, 200)
-        self.assertJSONEqual(res.content, {"status": "success", "message": "Session extended."})
-
-        # session expiry refreshed
-        self.assertTrue(self.client.session.get_expiry_age() > 0)
-
-    def test_get_not_allowed(self):
-        url = reverse("extend_session")
-        res = self.client.get(url)
-        self.assertEqual(res.status_code, 405)
+        # login_required returns 302 to LOGIN_URL / WAGTAILADMIN_LOGIN_URL
+        self.assertEqual(res.status_code, 302)
+        self.assertIn("/login", res.url)
