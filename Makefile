@@ -70,7 +70,7 @@ test:  ## Run the tests and check coverage.
 
 .PHONY: mypy
 mypy:  ## Run mypy.
-	poetry run mypy cms
+	poetry run mypy cms/ .github/*.py
 
 .PHONY: install
 install:  ## Install the dependencies excluding dev.
