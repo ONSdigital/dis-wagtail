@@ -43,7 +43,7 @@ class ONSAuthMiddlewareTests(TestCase):
             mock.patch.object(
                 self.middleware,
                 "_handle_cognito_disabled",
-                wraps=self.middleware._handle_cognito_disabled,  # keep original behaviour
+                wraps=self.middleware._handle_cognito_disabled,  # pylint: disable=protected-access  # keep original behaviour
             ) as m_disabled,
             mock.patch("cms.auth.middleware.logout") as m_logout,
         ):
@@ -76,7 +76,7 @@ class ONSAuthMiddlewareTests(TestCase):
             mock.patch.object(
                 self.middleware,
                 "_handle_unauthenticated_user",
-                wraps=self.middleware._handle_unauthenticated_user,
+                wraps=self.middleware._handle_unauthenticated_user,  # pylint: disable=protected-access
             ) as m_unauth,
             mock.patch("cms.auth.middleware.logout") as m_logout,
         ):
@@ -234,8 +234,8 @@ class ONSAuthMiddlewareTests(TestCase):
         ):
             self.middleware.process_request(req)
 
-        User = get_user_model()
-        assert User.objects.filter(user_id=uid).exists()
+        user = get_user_model()
+        assert user.objects.filter(user_id=uid).exists()
         assert req.session[JWT_SESSION_ID_KEY] == "jajb"
 
     # Token rotation (new jti) -> re-authenticate and update session key

@@ -44,13 +44,14 @@ class SyncTeamsCommandTests(TestCase):
 
     def _call_command(self, *, dry_run=False):
         argv = ["--dry-run"] if dry_run else []
-        management.call_command("sync_teams", *argv, stdout=open("/dev/null", "w"))
+        with open("/dev/null", "w", encoding="utf-8") as stdout:
+            management.call_command("sync_teams", *argv, stdout=stdout)
 
     def _mock_api(self, groups):
         """Patch requests.get so /groups returns supplied list."""
         resp_json = {"groups": groups}
 
-        def fake_get(url, timeout):
+        def fake_get(url):
             self.assertIn("/groups", url)
             return mock.Mock(status_code=200, json=lambda: resp_json, raise_for_status=lambda: None)
 
@@ -122,9 +123,8 @@ class SyncTeamsCommandTests(TestCase):
         def boom(*_, **__):
             raise requests.ConnectionError("no network")
 
-        with mock.patch("cms.teams.management.commands.sync_teams.requests.get", boom):
-            with self.assertRaises(CommandError):
-                self._call_command()
+        with mock.patch("cms.teams.management.commands.sync_teams.requests.get", boom), self.assertRaises(CommandError):
+            self._call_command()
 
     def test_invalid_json_raises_command_error(self):
         bad_resp = mock.Mock(
@@ -133,11 +133,12 @@ class SyncTeamsCommandTests(TestCase):
             json=lambda: (_ for _ in ()).throw(ValueError("bad json")),  # iterator trick to raise
         )
 
-        with mock.patch("cms.teams.management.commands.sync_teams.requests.get", return_value=bad_resp):
-            with self.assertRaises(CommandError):
-                self._call_command()
+        with (
+            mock.patch("cms.teams.management.commands.sync_teams.requests.get", return_value=bad_resp),
+            self.assertRaises(CommandError),
+        ):
+            self._call_command()
 
     def test_missing_base_url_setting_raises(self):
-        with override_settings(IDENTITY_API_BASE_URL=None):
-            with self.assertRaises(CommandError):
-                self._call_command()
+        with override_settings(IDENTITY_API_BASE_URL=None), self.assertRaises(CommandError):
+            self._call_command()

@@ -37,7 +37,7 @@ class WagtailHookDisabledTests(SimpleTestCase):
         super().setUpClass()
 
         # wipe any hooks registered by earlier tests
-        hooks._hooks = defaultdict(list)
+        hooks._hooks = defaultdict(list)  # pylint: disable=protected-access
 
         reload(wagtail_hooks)
 
