@@ -2,10 +2,16 @@ import factory
 import wagtail_factories
 from wagtail import blocks
 from wagtail.rich_text import RichText
-from wagtail_factories.blocks import BlockFactory, PageChooserBlockFactory, StructBlockFactory
+from wagtail_factories.blocks import (
+    BlockFactory,
+    PageChooserBlockFactory,
+    StructBlockFactory,
+)
 
-from cms.core.blocks.base import LinkBlock
+from cms.core.blocks.related import LinkBlock, RelatedContentBlock
+from cms.core.blocks.section_blocks import SectionBlock, SectionContentBlock
 from cms.core.models import ContactDetails
+from cms.core.models.snippets import GlossaryTerm
 
 
 class DateTimeBlockFactory(BlockFactory):
@@ -54,11 +60,21 @@ class ContactDetailsFactory(factory.django.DjangoModelFactory):
     email = factory.Faker("email")
 
 
-# Section Block Factories
+class GlossaryTermFactory(factory.django.DjangoModelFactory):
+    """Factory for GlossaryTerm."""
+
+    class Meta:
+        model = GlossaryTerm
+
+    name = factory.Faker("text", max_nb_chars=20)
+    definition = factory.Faker("text", max_nb_chars=100)
 
 
-class SectionContentBlockFactory(wagtail_factories.StructBlockFactory):
+class SectionContentBlockFactory(StructBlockFactory):
     """Factory for Section content block."""
+
+    class Meta:
+        model = SectionContentBlock
 
     title = factory.Faker("text", max_nb_chars=50)
     content = wagtail_factories.StreamFieldFactory(
@@ -68,8 +84,11 @@ class SectionContentBlockFactory(wagtail_factories.StructBlockFactory):
     )
 
 
-class SectionBlockFactory(wagtail_factories.StructBlockFactory):
+class SectionBlockFactory(StructBlockFactory):
     """Factory for Section StructBlock."""
+
+    class Meta:
+        model = SectionBlock
 
     title = factory.Faker("text", max_nb_chars=50)
     content = factory.SubFactory(SectionContentBlockFactory)
@@ -87,3 +106,10 @@ class LinkBlockFactory(StructBlockFactory):
 
     class Params:
         with_page = factory.Trait(page=factory.SubFactory(PageChooserBlockFactory), external_url=None)
+
+
+class RelatedContentBlockFactory(LinkBlockFactory):
+    class Meta:
+        model = RelatedContentBlock
+
+    description = factory.Faker("text", max_nb_chars=20)

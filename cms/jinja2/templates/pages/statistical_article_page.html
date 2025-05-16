@@ -1,115 +1,256 @@
 {% extends "templates/base_page.html" %}
 
+{% from "components/details/_macro.njk" import onsDetails %}
 {% from "components/panel/_macro.njk" import onsPanel %}
+{% from "components/hero/_macro.njk" import onsHero %}
 {% from "components/table-of-contents/_macro.njk" import onsTableOfContents %}
 
+{#- We set variables for text so that it gets picked up by makemessages -#}
+{%- set contact_label = _("Contact:") -%}
+{%- set statistical_article_label = _("Statistical article") -%}
+{%- set release_date_label = _("Release date:") -%}
+{%- set next_release_label = _("Next release:") -%}
+{%- set breadcrumbs_label = _("Breadcrumbs") -%}
+
 {% block header_area %}
-    <div class="common-header article-header {% if page.updates %}article-header--flush{% endif %}">
-        <div class="ons-container">
-            {% include "templates/components/navigation/breadcrumbs.html" %}
-            <p class="article-header__doc-type ons-u-fs-l">{{ _("Statistical article") }}</p>
+    {%- set hero_topic = _("Statistical article") -%}
+    {%- set release_date_term = _("Release date:") -%}
+    {%- set next_release_date_term = _("Next release:") -%}
+    {%- set breadcrumbs_aria_label = _("Breadcrumbs") -%}
+    {% if page.contact_details %}
+        {%- set contact_details_term = _("Contact:") -%}
+        {%- set contact_description_html -%}
+            <a href="mailto:{{ page.contact_details.email }}">{{ page.contact_details.name }}</a>
+        {%- endset -%}
 
-            <div class="ons-grid ons-grid-flex-gap ons-grid-flex-gap--40">
-                <div class="ons-grid__col ons-col-10@m ">
-                    <h1 class="ons-u-fs-3xl common-header__heading">
-                        {{ page.display_title }}
-                    </h1>
+        {# fmt:off #}
+        {%- set contact_details =
+            {
+                "term": contact_label,
+                "descriptions": [
+                    {
+                        "description": contact_description_html
+                    }
+                ]
+            }
+        -%}
+        {# fmt:on #}
+    {% else %}
+        {%- set contact_details = "" -%}
+    {% endif %}
 
-                    <div class="common-header__summary">{{ page.summary|richtext() }}</div>
-                </div>
-                <div class="ons-grid__col ons-col-2@m common-header__kitemark">
-                    {% if page.is_accredited %}
-                        {% include "templates/components/accredited/accredited-logo.html" %}
-                    {% endif %}
-                </div>
-            </div>
-        </div>
+    {% if page.is_latest %}
+        {% if latest_version_url %}
+            {%- set infoPanelText = _("This version has been amended since publication") -%}
+            {%- set releases_text = _("View amended version") -%}
+            {%- set infoPanelType = 'ons-red' -%}
+            {%- set releases_url = latest_version_url -%}
+        {% else %}
+            {%- set infoPanelText = _("Latest release") -%}
+            {%- set releases_text = _("View previous releases") -%}
+            {%- set infoPanelType = 'ons-green' -%}
+            {%- set releases_url = routablepageurl(page.get_parent().specific, "previous_releases") -%}
+        {% endif %}
+    {% else %}
+        {%- set infoPanelText = _("Not the latest release") -%}
+        {%- set releases_text = _("View latest release") -%}
+        {%- set infoPanelType = 'ons-orange' -%}
+        {%- set releases_url = routablepageurl(page.get_parent().specific, "latest_release") -%}
+    {% endif %}
 
-        {% block release_meta %}
-            {% if page.is_census %}
-                <div class="ons-container">
-                    {% include "templates/components/census/census-logo.html" %}
-                </div>
-            {% endif %}
-            <div class="ons-container common-header__releases">
-                <div>
-                    <span class="ons-u-fs-r--b common-header__releases-label">{{ _("Release date") }}:</span>
-                    <span class="ons-u-nowrap">{{ page.release_date|date("DATE_FORMAT") }}</span>
-                </div>
-                <div>
-                    <span class="ons-u-fs-r--b common-header__releases-label">{{ _("Next release") }}:</span>
-                    <span class="ons-u-nowrap">{{ page.next_release_date|date("DATE_FORMAT") or _("To be announced") }}</span>
-                </div>
-                <div>
-                    <span class="ons-u-fs-r--b common-header__releases-label">{{ _("Edition") }}:</span>
-                    <span class="ons-u-nowrap">{{ _("Latest") }}</span>
-                </div>
-                <div>
-                    <span class="ons-u-fs-r--b common-header__releases-label">{{ _("Releases") }}:</span>
-                    {% if page.is_latest %}
-                        <a href="{{ routablepageurl(page.get_parent().specific, "previous_releases") }}">{{ _("View previous releases") }}</a>
-                    {% else %}
-                        <a href="{{ routablepageurl(page.get_parent().specific, "latest_release") }}">{{ _("View latest release") }}</a>
-                    {% endif %}
-                </div>
-                {% if page.contact_details %}
-                    <div>
-                        <span class="ons-u-fs-r--b common-header__releases-label">{{ _("Contact") }}:</span>
-                        <a href="mailto:{{ page.contact_details.email }}">{{ page.contact_details.name }}</a>
+    {%- set next_release_date_text = page.next_release_date|date("DATE_FORMAT") or _("To be announced") -%}
+
+    {# fmt:off #}
+    {{
+        onsHero({
+            "topic": statistical_article_label,
+            "title": page.display_title,
+            "variants": 'grey',
+            "text": page.summary,
+            "officialStatisticsBadge": page.is_accredited,
+            "wide": true,
+            "informationPanel":{
+                "panelText": infoPanelText,
+                "panelType": infoPanelType,
+                "panelLink": {
+                    "text": releases_text,
+                    "url": releases_url
+                }
+            },
+            "detailsColumns": 12,
+            "censusLogo": page.is_census,
+            "descriptionList": {
+                "descriptionListLabel": "",
+                "termCol": "6",
+                "descriptionCol": "6",
+                "itemsList": [
+                    {
+                        "term": release_date_label,
+                        "descriptions": [
+                            {
+                                "description": page.release_date|date("DATE_FORMAT")
+                            }
+                        ]
+                    },
+                    {
+                        "term": next_release_label,
+                        "descriptions": [
+                            {
+                                "description": next_release_date_text
+                            }
+                        ]
+                    },
+                    contact_details,
+                ]
+            },
+            "breadcrumbs": {
+                "ariaLabel": breadcrumbs_label,
+                "itemsList": breadcrumbs(page),
+            }
+        })
+    }}
+    {# fmt:on #}
+
+    {# TBD: to be replaced with corrections and notices DS compoennt #}
+    {% if page.corrections or page.notices %}
+        {% if page.corrections and page.notices %}
+            {% set corrections_and_notices_title = _("Corrections and notices") %}
+        {% elif page.notices %}
+            {% set corrections_and_notices_title = _("Notices") %}
+        {% else %}
+            {% set corrections_and_notices_title = _("Corrections") %}
+        {% endif %}
+        <details class="ons-corrections-notices ons-u-mb-l" open>
+            <summary class="ons-corrections-notices__banner ons-u-pt-s ons-u-pb-s">
+                <div class="ons-container ons-corrections-notices__banner-contents">
+                    <span class="ons-corrections-notices__info-icon ons-u-mr-2xs" aria-hidden="true">i</span>
+                    <div class="ons-corrections-notices__banner-body">
+                        <h3 class="ons-corrections-notices__banner-title ons-u-mb-2xs">{{ corrections_and_notices_title }}</h3>
+                        <div class="ons-corrections-notices__banner-detail-reveal">
+                            <span class="ons-corrections-notices__banner-detail-text">{{ _("Show detail") }}</span>
+                            <span class="ons-corrections-notices__banner-detail-icon">
+                                {% from "components/icon/_macro.njk" import onsIcon %}
+                                {# fmt:off #}
+                                {{
+                                    onsIcon({
+                                        "iconType": "chevron"
+                                    })
+                                }}
+                                {# fmt:on #}
+                            </span>
+                        </div>
+                        <div class="ons-corrections-notices__banner-detail-hide">
+                            <span class="ons-corrections-notices__banner-detail-text">{{ _("Close detail") }}</span>
+                            <span class="ons-corrections-notices__banner-detail-icon">
+                                {% from "components/icon/_macro.njk" import onsIcon %}
+                                {# fmt:off #}
+                                {{
+                                    onsIcon({
+                                        "iconType": "chevron"
+                                    })
+                                }}
+                                {# fmt:on #}
+                            </span>
+                        </div>
                     </div>
+                </div>
+            </summary>
+
+            <div class="ons-container ons-corrections-notices__content ons-u-pt-xl ons-u-pb-3xl">
+                {% if page.corrections %}
+                    {% for correction in page.corrections %}
+                        {% include_block correction %}
+                    {% endfor %}
+                {% endif %}
+                {% if page.notices %}
+                    {{ page.notices }}
                 {% endif %}
             </div>
-        {% endblock %}
-    </div>
-
-    {% if page.updates %}
-        {% include_block page.updates %}
+        </details>
     {% endif %}
 
     {% if page.headline_figures %}
-        {% include_block page.headline_figures %}
+        <div class="ons-container headline-figures">
+            <h2 class="headline-figures__heading ons-u-fs-m">{{ _("Headline facts and figures") }}</h2>
+            <div class="ons-grid ons-grid-flex-gap ons-grid-flex-gap--24 headline-figures__grid">
+                {% for figure in page.headline_figures %}
+                    <div class="ons-grid__col ons-grid__col--flex-col ons-grid__col--stretch">{% include_block figure %}</div>
+                {% endfor %}
+            </div>
+        </div>
     {% endif %}
 
 {% endblock %}
 
 {% block main %}
-    <div class="ons-grid ons-grid-flex-gap ons-grid-flex-gap--32">
+    <div class="ons-grid ons-grid-flex-gap ons-grid-flex-gap--32 ons-js-toc-container">
         <div class="ons-grid__col ons-grid__col--sticky@m ons-col-4@m">
-            {% with toc_title=_("Contents"), toc_aria_label=_("Sections in this page") %}
+            {% if page.datasets %}
+                {% if request.is_preview %}
+                    {% set related_data_url = url('wagtailadmin_pages:preview_on_edit', page.pk) ~ "?mode=related_data" %}
+                {% else %}
+                    {% set related_data_url = routablepageurl(page, "related_data") %}
+                {% endif %}
+                {% set related_links_title=_("Explore Data") %}
+
+                    {% set related_data_text=_("View data used in this article") %}
+
+                {# fmt:off #}
+                    {%- set related_links =
+                        {
+                            "title": related_links_title,
+                            "itemsList": [
+                                {
+                                    "url": related_data_url,
+                                    "text": related_data_text
+                                }
+                            ]
+                        }
+                    -%}
+                {# fmt:on #}
+                    {% else %}
+                        {% set related_links = "" %}
+                    {% endif %}
+
+                    {% with toc_title=_("Contents"), toc_aria_label=_("Sections in this page") %}
                 {# fmt:off #}
                 {{-
                     onsTableOfContents({
                         "title": toc_title,
                         "ariaLabel": toc_aria_label,
-                        "itemsList": table_of_contents
+                        "itemsList": table_of_contents,
+                        "relatedLinks": related_links,
+                        "button": {
+                            "text": _("Save or print this page")
+                        }
                     })
                 }}
                 {# fmt:on #}
-            {% endwith %}
-        </div>
+                    {% endwith %}
+                    </div>
 
-        <div class="ons-grid__col ons-col-8@m">
-            {% include_block page.content %}
+                    <div class="ons-grid__col ons-col-8@m">
+                        {% include_block page.content %}
 
-            {% if page.show_cite_this_page %}
-                <section id="cite-this-page" class="spacing">
-                    <h2 class="ons-u-fs-l">{{ _("Cite this analysis") }}</h2>
-                    <p>
-                        {%- set cite_link -%}
-                            <a href="{{ fullpageurl(page) }}">{{ page.display_title }}</a>
-                        {% endset %}
-                        {% trans trimmed release_date=page.release_date|date("DATE_FORMAT"), cite_link=cite_link %}
-                            Office for National Statistics (ONS), released {{ release_date }}, ONS website, statistical article, {{ cite_link }}
-                        {% endtrans %}
-                    </p>
-                </section>
-            {% endif %}
+                        {% if page.show_cite_this_page %}
+                            <section id="cite-this-page" class="spacing">
+                                <h2 class="ons-u-fs-l">{{ _("Cite this analysis") }}</h2>
+                                <p>
+                                    {%- set cite_link -%}
+                                        <a href="{{ fullpageurl(page) }}">{{ page.display_title }}</a>
+                                    {% endset %}
+                                    {% trans trimmed release_date=page.release_date|date("DATE_FORMAT"), cite_link=cite_link %}
+                                        Office for National Statistics (ONS), released {{ release_date }}, ONS website, statistical article, {{ cite_link }}
+                                    {% endtrans %}
+                                </p>
+                            </section>
+                        {% endif %}
 
-            {% if page.contact_details %}
-                {% with contact_details = page.contact_details%}
-                    {% include "templates/components/contact_details/contact_details.html" %}
-                {% endwith %}
-            {% endif %}
-        </div>
-    </div>
-{% endblock %}
+                        {% if page.contact_details %}
+                            {% with contact_details = page.contact_details%}
+                                {% include "templates/components/contact_details/contact_details.html" %}
+                            {% endwith %}
+                        {% endif %}
+                    </div>
+                    </div>
+                {% endblock %}

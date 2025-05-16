@@ -107,7 +107,8 @@ Follow these steps to set up and run the project using Docker.
 
 2. **Migrations and Superuser Creation**
 
-    If this is your first time setting up the project, you’ll need to run migrations to set up the database schema and create an administrative user.
+    If this is your first time setting up the project, you’ll need to run migrations to set up the database schema, load the topics dev fixture, and create an
+    administrative user.
 
     ```bash
     # ssh into the web container
@@ -116,11 +117,24 @@ Follow these steps to set up and run the project using Docker.
     # Run database migrations
     make migrate
 
+    # Load the topics dev fixture
+    make load-topics
+
     # Create a superuser for accessing the admin interface
     make createsuperuser
     ```
 
-3. **Start Django Inside the Container**
+3. **Compile translations**
+
+In order to see pages in different languages, you'll need to compile the translations. This is done by running:
+
+    ```bash
+    make compilemessages
+    ```
+
+    This will create the necessary `.mo` files for the translations.
+
+4. **Start Django Inside the Container**
 
     Once the containers are running, you need to manually start Django from within the web container.
     This allows for running both the Django server and any additional background services (e.g., schedulers).
@@ -167,6 +181,7 @@ In order to run it:
     - loading design system templates,
     - collecting the static files,
     - generating and applying database migrations,
+    - loading the topics dev fixture
     - creating a superuser with:
         - username: `admin`
         - password: `changeme` # pragma: allowlist secret
@@ -337,6 +352,11 @@ To lint the django migration files:
 make lint-migrations
 ```
 
+##### Ignoring Migrations
+
+If you need to bypass migration linting on certain files, add the migration name (the file name minus the `.py`) to the list of ignored migrations in the
+`MIGRATION_LINTER_OPTIONS` setting in the [dev settings file](cms/settings/dev.py), with a comment explaining why the file is ignored.
+
 #### Format
 
 To auto-format the Python code, and correct fixable linting issues, run:
@@ -438,6 +458,30 @@ make makemigrations
 # Apply migrations. Needed if new migrations have been generated (either by you, or via upstream code)
 make migrate
 ```
+
+### Translations
+
+Translations are managed using .po files, which are compiled into .mo files for use in the application.
+The .po files are located in the `cms/locale` directory.
+
+If you add new text to the application, you will need to update the .po files to include the new text.
+You can do this by running the following command:
+
+```bash
+make makemessages
+```
+
+This will scan the codebase for new text and update the .po files accordingly.
+
+Once you have updated the .po files, you will need to compile them into .mo files for use in the application.
+
+You can do this by running the following command:
+
+```bash
+make compilemessages
+```
+
+This will compile the .po files into .mo files, which are used by Django to display the translated text.
 
 ## Contributing
 

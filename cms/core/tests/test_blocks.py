@@ -1,17 +1,25 @@
+from datetime import datetime
+
 from django.conf import settings
 from django.test import TestCase
 from wagtail.blocks import StreamBlockValidationError, StructBlockValidationError
 from wagtail.rich_text import RichText
+from wagtail.test.utils.wagtail_tests import WagtailTestUtils
 
+from cms.articles.tests.factories import ArticleSeriesPageFactory, StatisticalArticlePageFactory
 from cms.core.blocks import (
     BasicTableBlock,
     DocumentBlock,
     DocumentsBlock,
     HeadingBlock,
     ONSEmbedBlock,
+    ONSTableBlock,
     RelatedContentBlock,
     RelatedLinksBlock,
 )
+from cms.core.blocks.glossary_terms import GlossaryTermsBlock
+from cms.core.blocks.panels import CorrectionBlock, NoticeBlock
+from cms.core.tests.factories import GlossaryTermFactory
 from cms.core.tests.utils import get_test_document
 from cms.home.models import HomePage
 
@@ -245,7 +253,7 @@ class CoreBlocksTestCase(TestCase):
             block.to_table_of_contents_items(block.to_python([])), [{"url": "#related-links", "text": "Related links"}]
         )
 
-    def test_basictableblock_get_context(self):
+    def test_basictableblock__get_context(self):
         """Tests the BasicTableBlock context has DS-compatible options."""
         block = BasicTableBlock()
         value = {
@@ -281,3 +289,328 @@ class CoreBlocksTestCase(TestCase):
                 "trs": [{"tds": [{"value": "one"}, {"value": "two"}]}],
             },
         )
+
+
+class GlossaryTermBlockTestCase(TestCase):
+    """Test for Glossary Term block."""
+
+    def test_glossary_term_block_clean_method_removes_duplicates(self):
+        """Test that the clean method of the GlossaryTermsBlock removes duplicated instances of glossary terms."""
+        term = GlossaryTermFactory()
+        another_term = GlossaryTermFactory()
+        block = GlossaryTermsBlock()
+
+        value = block.to_python([term.pk, term.pk, another_term.pk])
+        clean_value = block.clean(value)
+
+        self.assertEqual(len(clean_value), 2)
+        self.assertEqual(clean_value[0].pk, term.pk)
+        self.assertEqual(clean_value[1].pk, another_term.pk)
+
+    def test_glossary_term_block__get_context(self):
+        """Test that get_context returns correctly formatted data to be used by the ONS Accordion component."""
+        term = GlossaryTermFactory()
+        block = GlossaryTermsBlock()
+
+        value = block.to_python([term.pk])
+        context = block.get_context(value)
+
+        self.assertListEqual(
+            context["formatted_glossary_terms"],
+            [
+                {
+                    "title": term.name,
+                    "content": f'<div class="rich-text">{term.definition}</div>',
+                }
+            ],
+        )
+
+
+class ONSTableBlockTestCase(WagtailTestUtils, TestCase):
+    @classmethod
+    def setUpTestData(cls):
+        cls.simple_table_data = {
+            "headers": [[{"value": "header cell", "type": "th"}]],
+            "rows": [[{"value": "row cell", "type": "td"}]],
+        }
+        cls.full_data = {
+            "title": "The table",
+            "caption": "The caption",
+            "source": "https://ons.gov.uk",
+            "footnotes": "footnotes",
+            "data": cls.simple_table_data,
+        }
+        cls.data_with_empty_table = {
+            "title": "The table",
+            "caption": "The caption",
+            "source": "https://ons.gov.uk",
+            "footnotes": "footnotes",
+            "data": {
+                "headers": [],
+                "rows": [],
+            },
+        }
+
+        cls.block = ONSTableBlock()
+
+    def test_get_context(self):
+        context = self.block.get_context(self.full_data)
+        self.assertDictEqual(
+            context["options"],
+            {
+                "caption": "The caption",
+                "headers": [[{"value": "header cell", "type": "th"}]],
+                "trs": [{"tds": [{"value": "row cell", "type": "td"}]}],
+            },
+        )
+        self.assertEqual(context["title"], "The table")
+        self.assertEqual(context["source"], "https://ons.gov.uk")
+        self.assertEqual(context["footnotes"], "footnotes")
+
+    def test_get_context__with_empty_table(self):
+        context = self.block.get_context(self.data_with_empty_table)
+        self.assertNotIn("title", context)
+        self.assertNotIn("caption", context)
+        self.assertNotIn("options", context)
+        self.assertNotIn("source", context)
+        self.assertNotIn("footnotes", context)
+
+    def test_render_block__full(self):
+        rendered = self.block.render(self.full_data)
+        self.assertIn(self.full_data["title"], rendered)
+        self.assertIn(self.full_data["caption"], rendered)
+        self.assertIn("Footnotes", rendered)
+        self.assertIn(self.full_data["footnotes"], rendered)
+        self.assertIn("<table ", rendered)
+        self.assertIn("header cell", rendered)
+        self.assertIn("row cell", rendered)
+
+    def test_render_block__no_table(self):
+        rendered = self.block.render(self.data_with_empty_table)
+        self.assertNotIn(self.full_data["title"], rendered)
+        self.assertNotIn(self.full_data["caption"], rendered)
+        self.assertNotIn("Footnotes", rendered)
+        self.assertNotIn("<table ", rendered)
+        self.assertNotIn("header cell", rendered)
+        self.assertNotIn("row cell", rendered)
+
+    def test_render_block__optional_elements(self):
+        base_value = {"data": self.simple_table_data}
+
+        data = {
+            "title": "The table",
+            "caption": "The caption",
+            "source": "https://ons.gov.uk",
+            "footnotes": "footnotes",
+        }
+
+        cases = [
+            # field with value, fields not rendered
+            ("title", ["caption", "source", "footnotes"]),
+            ("caption", ["title", "source", "footnotes"]),
+            ("source", ["title", "caption", "footnotes"]),
+            ("footnotes", ["title", "caption", "source"]),
+        ]
+
+        for field_name, not_present in cases:
+            with self.subTest(field_name=field_name):
+                field_value = data[field_name]
+                rendered = self.block.render({**base_value, **{field_name: field_value}})
+
+                self.assertIn("header cell", rendered)
+                self.assertIn("row cell", rendered)
+                self.assertIn(field_value, rendered)
+
+                for field in not_present:
+                    self.assertNotIn(data[field], rendered)
+
+    def test_render_block__alignment_and_width(self):
+        table_data = {
+            "headers": [[{"value": "header cell", "type": "th", "width": "20px", "align": "center"}]],
+            "rows": [[{"value": "row cell", "type": "td", "width": "50%", "align": "right"}]],
+        }
+
+        rendered = self.block.render({"data": table_data})
+
+        self.assertTagInHTML(
+            '<th scope="col" class="ons-table__header ons-u-ta-center" width="20px">'
+            '<span class="ons-table__header-text">header cell</span></th>',
+            rendered,
+        )
+        self.assertTagInHTML('<td class="ons-table__cell ons-u-ta-right">row cell</td>', rendered)
+        self.assertIn("header cell", rendered)
+        self.assertIn("row cell", rendered)
+
+    def test_render_block__ds_component_markup(self):
+        table = {
+            "headers": [],
+            "rows": [[{"value": "row cell", "type": "td"}]],
+        }
+        rendered = self.block.render({"data": table})
+
+        expected = """
+        <table class="ons-table">
+            <tbody class="ons-table__body">
+                <tr class="ons-table__row">
+                    <td class="ons-table__cell">row cell</td>
+                </tr>
+            </tbody>
+        </table>
+        """
+        self.assertInHTML(expected, rendered)
+
+        table = {
+            "headers": [[{"value": "header cell", "type": "th"}]],
+            "rows": [],
+        }
+        rendered = self.block.render({"data": table})
+
+        expected = """
+        <table class="ons-table">
+            <thead class="ons-table__head">
+                <tr class="ons-table__row">
+                    <th scope="col" class="ons-table__header">
+                        <span class="ons-table__header-text">header cell</span>
+                    </th>
+                </tr>
+            </thead>
+            <tbody class="ons-table__body"></tbody>
+        </table>
+        """
+        self.assertInHTML(expected, rendered)
+
+        table = {
+            "headers": [
+                [
+                    {"value": "Combined header", "type": "th", "colspan": 2},
+                    {"value": "Regular header", "type": "th"},
+                    {"value": "Two row header", "type": "th", "rowspan": 2},
+                ],
+                [
+                    {"value": "Sub-header 1", "type": "th"},
+                    {"value": "Sub-header 2", "type": "th"},
+                    {"value": "Sub-header 3", "type": "th"},
+                ],
+            ],
+            "rows": [
+                [
+                    {"value": "Col header 1", "type": "th", "scope": "row"},
+                    {"value": "Two rows and cols cell", "type": "td", "rowspan": 2, "colspan": 2},
+                    {"value": "Col cell 1", "type": "td"},
+                ],
+                [
+                    {"value": "Col header 2", "type": "th", "scope": "row"},
+                    {"value": "Col cell 2", "type": "td", "rowspan": 2},
+                ],
+                [
+                    {"value": "Col header 3", "type": "th", "scope": "row"},
+                    {"value": "Col cell 3", "type": "td", "colspan": 3},
+                ],
+            ],
+        }
+        rendered = self.block.render({"data": table})
+
+        expected = """
+        <table class="ons-table">
+            <thead class="ons-table__head">
+                <tr class="ons-table__row">
+                    <th scope="col" class="ons-table__header" colspan="2">
+                        <span class="ons-table__header-text">Combined header</span>
+                    </th>
+                    <th scope="col" class="ons-table__header">
+                        <span class="ons-table__header-text">Regular header</span>
+                    </th>
+                    <th scope="col" class="ons-table__header" rowspan="2">
+                        <span class="ons-table__header-text">Two row header</span>
+                    </th>
+                </tr>
+                <tr class="ons-table__row">
+                    <th scope="col" class="ons-table__header">
+                        <span class="ons-table__header-text">Sub-header 1</span>
+                    </th>
+                    <th scope="col" class="ons-table__header">
+                        <span class="ons-table__header-text">Sub-header 2</span>
+                    </th>
+                    <th scope="col" class="ons-table__header">
+                        <span class="ons-table__header-text">Sub-header 3</span>
+                    </th>
+                </tr>
+            </thead>
+            <tbody class="ons-table__body">
+                <tr class="ons-table__row">
+                    <th class="ons-table__cell" scope="row">Col header 1</th>
+                    <td class="ons-table__cell" colspan="2" rowspan="2">Two rows and cols cell</td>
+                    <td class="ons-table__cell">Col cell 1</td>
+                </tr>
+                <tr class="ons-table__row">
+                    <th class="ons-table__cell" scope="row">Col header 2</th>
+                    <td class="ons-table__cell" rowspan="2">Col cell 2</td>
+                </tr>
+                <tr class="ons-table__row">
+                    <th class="ons-table__cell" scope="row">Col header 3</th>
+                    <td class="ons-table__cell" colspan="3">Col cell 3</td>
+                </tr>
+            </tbody>
+        </table>
+        """
+        self.assertInHTML(expected, rendered)
+
+    def test__align_to_ons_classname(self):
+        scenarios = {"right": "ons-u-ta-right", "left": "ons-u-ta-left", "center": "ons-u-ta-center", "foo": ""}
+        for alignment, classname in scenarios.items():
+            self.assertEqual(
+                self.block._align_to_ons_classname(alignment),  # pylint: disable=protected-access
+                classname,
+            )
+
+    def test__prepare_cells(self):
+        scenarios = [
+            (
+                [{"value": "header cell", "type": "th", "width": "20px", "align": "center"}],
+                [{"value": "header cell", "type": "th", "width": "20px", "thClasses": "ons-u-ta-center"}],
+            ),
+            (
+                [{"value": "row cell", "type": "td", "width": "50%", "align": "right"}],
+                [{"value": "row cell", "type": "td", "width": "50%", "tdClasses": "ons-u-ta-right"}],
+            ),
+        ]
+        for cells, expected in scenarios:
+            self.assertListEqual(self.block._prepare_cells(cells), expected)  # pylint: disable=protected-access
+
+
+class NoticeBlockTestCase(TestCase):
+    @classmethod
+    def setUpTestData(cls):
+        cls.notice_data = {
+            "when": datetime(2025, 1, 1),
+            "text": "Notice text",
+        }
+
+    def test_render_block(self):
+        block = NoticeBlock()
+        rendered = block.render(self.notice_data)
+
+        self.assertIn("1 January 2025", rendered)
+        self.assertIn("Notice text", rendered)
+
+
+class CorrectionBlockTestCase(TestCase):
+    @classmethod
+    def setUpTestData(cls):
+        cls.correction_data = {
+            "when": datetime(2025, 1, 1, 13, 59, 00),
+            "text": "Correction text",
+            "previous_version": 1,
+            "version_id": 1,
+        }
+        cls.series = ArticleSeriesPageFactory()
+        cls.statistical_article = StatisticalArticlePageFactory(parent=cls.series)
+
+    def test_render_block(self):
+        block = CorrectionBlock()
+        rendered = block.render(self.correction_data, context={"request": None, "page": self.statistical_article})
+
+        self.assertIn("1 January 2025 1:59pm", rendered)
+        self.assertIn("Correction text", rendered)
+        self.assertIn("View superseded version", rendered)
+        self.assertIn("/previous/v1", rendered)

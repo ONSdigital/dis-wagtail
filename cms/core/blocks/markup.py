@@ -1,10 +1,11 @@
 from typing import TYPE_CHECKING, Any, Union
 
+from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.utils.text import slugify
-from django.utils.translation import gettext as _
 from wagtail import blocks
 from wagtail.contrib.table_block.blocks import TableBlock as WagtailTableBlock
+from wagtail_tinytableblock.blocks import TinyTableBlock
 
 if TYPE_CHECKING:
     from django.utils.safestring import SafeString
@@ -52,7 +53,7 @@ class BasicTableBlock(WagtailTableBlock):
 
     class Meta:
         icon = "table"
-        template = "templates/components/streamfield/table_block.html"
+        template = "templates/components/streamfield/basic_table_block.html"
         label = "Basic table"
 
     def _get_header(self, value: dict) -> list[dict[str, str]]:
@@ -78,12 +79,12 @@ class BasicTableBlock(WagtailTableBlock):
     def clean(self, value: dict) -> dict:
         """Validate that a header was chosen, and the cells are not empty."""
         if not value or not value.get("table_header_choice"):
-            raise ValidationError(_("Select an option for Table headers"))
+            raise ValidationError("Select an option for Table headers")
 
         data = value.get("data", [])
         all_cells_empty = all(not cell for row in data for cell in row)
         if all_cells_empty:
-            raise ValidationError(_("The table cannot be empty"))
+            raise ValidationError("The table cannot be empty")
 
         cleaned_value: dict = super().clean(value)
         return cleaned_value
@@ -105,3 +106,63 @@ class BasicTableBlock(WagtailTableBlock):
         """The Wagtail core TableBlock has a very custom `render` method. We don't want that."""
         rendered: str | SafeString = super(blocks.FieldBlock, self).render(value, context)
         return rendered
+
+
+class ONSTableBlock(TinyTableBlock):
+    """The ONS table block."""
+
+    source = blocks.CharBlock(label="Source", required=False)
+    footnotes = blocks.RichTextBlock(label="Footnotes", features=settings.RICH_TEXT_BASIC, required=False)
+
+    def __init__(
+        self, *, local_blocks: list[blocks.Block] | None = None, search_index: bool = True, **kwargs: Any
+    ) -> None:
+        super().__init__(local_blocks=local_blocks, search_index=search_index, **kwargs)
+        # relabeled to match the publishing team's terminology
+        self.child_blocks["caption"].label = "Sub-heading"
+
+    def _align_to_ons_classname(self, alignment: str) -> str:
+        match alignment:
+            case "right":
+                return "ons-u-ta-right"
+            case "left":
+                return "ons-u-ta-left"
+            case "center":
+                return "ons-u-ta-center"
+            case _:
+                return ""
+
+    def _prepare_cells(self, row: list[dict[str, str | int]]) -> list[dict[str, str | int]]:
+        # Note: while this makes use of list mutability, returning a value to placate mypy
+        for cell in row:
+            if alignment := cell.get("align"):
+                classname_key = "thClasses" if cell["type"] == "th" else "tdClasses"
+                cell[classname_key] = self._align_to_ons_classname(str(alignment))
+                del cell["align"]
+
+        return row
+
+    def get_context(self, value: dict, parent_context: dict | None = None) -> dict:
+        """Insert the DS-ready options in the template context."""
+        context: dict = super().get_context(value, parent_context=parent_context)
+
+        data = value.get("data", {})
+
+        if not data.get("rows") and not data.get("headers"):
+            return context
+
+        return {
+            "title": value.get("title"),
+            "options": {
+                "caption": value.get("caption"),
+                "headers": [self._prepare_cells(header_row) for header_row in data.get("headers", [])],
+                "trs": [{"tds": self._prepare_cells(row)} for row in data.get("rows", [])],
+            },
+            "source": value.get("source"),
+            "footnotes": value.get("footnotes"),
+            **context,
+        }
+
+    class Meta:
+        icon = "table"
+        template = "templates/components/streamfield/table_block.html"

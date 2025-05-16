@@ -1,5 +1,4 @@
 from django.db import models
-from django.utils.translation import gettext_lazy as _
 
 
 class ReleaseStatus(models.TextChoices):
@@ -7,13 +6,14 @@ class ReleaseStatus(models.TextChoices):
     Note that both Provisional and Confirmed fall under "Upcoming" on the Release Calendar listing.
     """
 
-    PROVISIONAL = "PROVISIONAL", _("Provisional")
-    CONFIRMED = "CONFIRMED", _("Confirmed")
-    CANCELLED = "CANCELLED", _("Cancelled")
-    PUBLISHED = "PUBLISHED", _("Published")
+    PROVISIONAL = "PROVISIONAL", "Provisional"
+    CONFIRMED = "CONFIRMED", "Confirmed"
+    CANCELLED = "CANCELLED", "Cancelled"
+    PUBLISHED = "PUBLISHED", "Published"
 
 
 NON_PROVISIONAL_STATUSES = [ReleaseStatus.CONFIRMED, ReleaseStatus.PUBLISHED, ReleaseStatus.CANCELLED]
 NON_PROVISIONAL_STATUS_CHOICES = [
-    (ReleaseStatus[choice].value, ReleaseStatus[choice].label) for choice in NON_PROVISIONAL_STATUSES
+    (ReleaseStatus[choice].value, ReleaseStatus[choice].label)  # type: ignore[misc]
+    for choice in NON_PROVISIONAL_STATUSES
 ]

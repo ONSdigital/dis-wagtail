@@ -2,12 +2,12 @@ from typing import TYPE_CHECKING, Union
 
 from django.apps import apps
 from django.conf import settings
+from django.conf.urls.i18n import i18n_patterns
 from django.urls import include, path, re_path
 from django.views.decorators.cache import never_cache
 from django.views.decorators.vary import vary_on_headers
 from django.views.generic import TemplateView
 from wagtail import urls as wagtail_urls
-from wagtail.contrib.sitemaps.views import sitemap
 from wagtail.documents.views.serve import authenticate_with_password
 from wagtail.utils.urlpatterns import decorate_urlpatterns
 
@@ -19,7 +19,10 @@ if TYPE_CHECKING:
     from django.urls import URLPattern, URLResolver
 
 # Internal URLs are not intended for public use.
-internal_urlpatterns = [path("readiness/", core_views.ready, name="readiness")]
+internal_urlpatterns = [
+    path("readiness/", core_views.ready, name="readiness"),
+    path("liveness/", core_views.liveness, name="liveness"),
+]
 
 # Private URLs are not meant to be cached.
 private_urlpatterns = [
@@ -83,9 +86,13 @@ if settings.DEBUG:
         debug_urlpatterns = [path("__debug__/", include(debug_toolbar.urls)), *debug_urlpatterns]
 
 # Public URLs that are meant to be cached.
-urlpatterns = [
-    path("sitemap.xml", sitemap),
-]
+urlpatterns: list[Union["URLResolver", "URLPattern"]] = []
+
+if settings.IS_EXTERNAL_ENV:
+    urlpatterns += [
+        path("", include("cms.search.urls")),
+    ]
+
 # Set public URLs to use the "default" cache settings.
 urlpatterns = decorate_urlpatterns(urlpatterns, get_default_cache_control_decorator())
 
@@ -116,10 +123,11 @@ urlpatterns = (
             private_media_views.ImageServeView.as_view(),
             name="wagtailimages_serve",
         ),
-        # Add Wagtail URLs at the end.
-        # Wagtail cache-control is set on the page models' serve methods
-        path("", include(wagtail_urls)),
     ]
+    + i18n_patterns(
+        path("", include(wagtail_urls)),
+        prefix_default_language=False,
+    )
 )
 
 # Error handlers

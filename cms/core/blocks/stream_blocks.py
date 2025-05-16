@@ -5,13 +5,16 @@ from wagtail.images.blocks import ImageChooserBlock
 from wagtailmath.blocks import MathBlock
 
 from cms.core.blocks import (
+    AnnouncementPanelBlock,
     DocumentsBlock,
     HeadingBlock,
+    InformationPanelBlock,
     ONSEmbedBlock,
-    PanelBlock,
+    ONSTableBlock,
     QuoteBlock,
     RelatedLinksBlock,
     VideoEmbedBlock,
+    WarningPanelBlock,
 )
 from cms.core.blocks.section_blocks import SectionBlock
 from cms.datavis.blocks import BarColumnChartBlock, LineChartBlock
@@ -43,11 +46,14 @@ class CoreStoryBlock(StreamBlock):
     heading = HeadingBlock()
     rich_text = RichTextBlock()
     quote = QuoteBlock()
-    panel = PanelBlock()
+    warning_panel = WarningPanelBlock()
+    information_panel = InformationPanelBlock()
+    announcement_panel = AnnouncementPanelBlock()
     video_embed = VideoEmbedBlock(group="Media")
     image = ImageChooserBlock(group="Media")
     documents = DocumentsBlock(group="Media")
     related_links = RelatedLinksBlock()
+    table = ONSTableBlock(group="DataVis", allow_links=True)
     equation = MathBlock(group="DataVis", icon="decimal")
     ons_embed = ONSEmbedBlock(group="DataVis", label="ONS General Embed")
 

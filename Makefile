@@ -91,6 +91,10 @@ megalint:  ## Run the mega-linter.
 load-design-system-templates:  ## Load the design system templates
 	./scripts/load-design-system-templates.sh $(DESIGN_SYSTEM_VERSION)
 
+.PHONY: load-topics
+load-topics:  ## Load our fixture of taxonomy topics
+	poetry run python ./manage.py loaddata cms/taxonomy/fixtures/topics.json
+
 # Docker and docker compose make commands
 
 .PHONY: compose-build
@@ -162,7 +166,7 @@ runserver: ## Run the Django application locally
 	poetry run python ./manage.py runserver 0:8000
 
 .PHONY: dev-init
-dev-init: load-design-system-templates collectstatic makemigrations migrate createsuperuser ## Run the pre-run setup scripts
+dev-init: load-design-system-templates collectstatic makemigrations migrate load-topics createsuperuser  ## Run the pre-run setup scripts
 
 .PHONY: functional-tests-up
 functional-tests-up:  ## Start the functional tests docker compose dependencies
@@ -188,6 +192,14 @@ functional-tests: functional-tests-up functional-tests-run functional-tests-down
 .PHONY: playwright-install
 playwright-install:  ## Install Playwright dependencies
 	poetry run playwright install --with-deps
+
+.PHONY: makemessages
+makemessages:  ## We currently just require Welsh (cy), change to -a for all languages
+	poetry run python ./manage.py makemessages --locale cy --ignore "node_modules/*" --ignore ".venv"
+
+.PHONY: compilemessages
+compilemessages:
+	poetry run python ./manage.py compilemessages
 
 # Aliases
 .PHONY: start

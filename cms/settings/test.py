@@ -1,4 +1,5 @@
 import copy
+import os
 
 from .base import *  # noqa: F403  # pylint: disable=wildcard-import,unused-wildcard-import
 
@@ -59,6 +60,21 @@ CACHES["default"] = {  # noqa: F405
     "BACKEND": "django.core.cache.backends.dummy.DummyCache",
 }
 
+# Enqueue background tasks on commit for tests
+# https://docs.wagtail.org/en/latest/releases/6.4.html#background-tasks-run-at-end-of-current-transaction
+TASKS = {
+    "default": {
+        "BACKEND": "django_tasks.backends.immediate.ImmediateBackend",
+        "ENQUEUE_ON_COMMIT": False,
+    }
+}
 
 # Silence Slack notifications by default
 SLACK_NOTIFICATIONS_WEBHOOK_URL = None
+
+ONS_API_BASE_URL = "https://dummy_base_api"
+ONS_WEBSITE_DATASET_BASE_URL = "https://dummy_datasets/datasets"
+KAFKA_SERVER = os.getenv("KAFKA_SERVER", "localhost:9094")
+
+# Ignore proxy count in tests
+XFF_STRICT = False

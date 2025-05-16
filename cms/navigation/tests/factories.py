@@ -2,18 +2,18 @@ import factory
 from wagtail_factories import ListBlockFactory, PageChooserBlockFactory, StreamFieldFactory, StructBlockFactory
 
 from cms.core.tests.factories import LinkBlockFactory
-from cms.navigation.blocks import SectionBlock, ThemeLinkBlock, TopicLinkBlock
-from cms.navigation.models import ColumnBlock, MainMenu, NavigationSettings
+from cms.navigation.blocks import LinksColumn, MainMenuSectionBlock, ThemeLinkBlock, TopicLinkBlock
+from cms.navigation.models import FooterMenu, MainMenu, MainMenuColumnBlock, NavigationSettings
 from cms.themes.tests.factories import ThemePageFactory
 from cms.topics.tests.factories import TopicPageFactory
 
 
 class ThemePageChooserFactory(PageChooserBlockFactory):
-    page = factory.SubFactory(ThemePageFactory)
+    page = factory.LazyFunction(lambda: ThemePageFactory().id)
 
 
 class TopicPageChooserFactory(PageChooserBlockFactory):
-    page = factory.SubFactory(TopicPageFactory)
+    page = factory.LazyFunction(lambda: TopicPageFactory().id)
 
 
 class ThemeLinkBlockFactory(LinkBlockFactory):
@@ -34,19 +34,27 @@ class HighlightsBlockFactory(LinkBlockFactory):
     description = factory.Faker("text", max_nb_chars=50)
 
 
-class SectionBlockFactory(StructBlockFactory):
+class MainMenuSectionBlockFactory(StructBlockFactory):
     class Meta:
-        model = SectionBlock
+        model = MainMenuSectionBlock
 
     section_link = factory.SubFactory(ThemeLinkBlockFactory)
     links = ListBlockFactory(TopicLinkBlockFactory)
 
 
-class ColumnBlockFactory(StructBlockFactory):
+class MainMenuColumnBlockFactory(StructBlockFactory):
     class Meta:
-        model = ColumnBlock
+        model = MainMenuColumnBlock
 
-    sections = ListBlockFactory(SectionBlockFactory)
+    sections = ListBlockFactory(MainMenuSectionBlockFactory)
+
+
+class LinksColumnFactory(StructBlockFactory):
+    class Meta:
+        model = LinksColumn
+
+    title = factory.Faker("text", max_nb_chars=20)
+    links = ListBlockFactory(LinkBlockFactory)
 
 
 class MainMenuFactory(factory.django.DjangoModelFactory):
@@ -56,7 +64,18 @@ class MainMenuFactory(factory.django.DjangoModelFactory):
     highlights = StreamFieldFactory({"highlight": HighlightsBlockFactory})
     columns = StreamFieldFactory(
         {
-            "column": ColumnBlockFactory,
+            "column": MainMenuColumnBlockFactory,
+        }
+    )
+
+
+class FooterMenuFactory(factory.django.DjangoModelFactory):
+    class Meta:
+        model = FooterMenu
+
+    columns = StreamFieldFactory(
+        {
+            "column": LinksColumnFactory,
         }
     )
 
@@ -66,3 +85,4 @@ class NavigationSettingsFactory(factory.django.DjangoModelFactory):
         model = NavigationSettings
 
     main_menu = factory.SubFactory(MainMenuFactory)
+    footer_menu = factory.SubFactory(FooterMenuFactory)
