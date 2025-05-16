@@ -2,7 +2,6 @@ from collections.abc import Sequence
 from contextlib import suppress
 from typing import Any, ClassVar, Optional, cast
 
-from django.core.exceptions import ValidationError
 from django.forms.widgets import Media, RadioSelect
 from django.utils.functional import cached_property
 from wagtail import blocks
@@ -103,17 +102,17 @@ class BaseVisualisationBlock(blocks.StructBlock):
         required=False,
     )
 
-    desktop_aspect_ratio = "desktop_aspect_ratio"
-    mobile_aspect_ratio = "mobile_aspect_ratio"
+    DESKTOP_ASPECT_RATIO = "desktop_aspect_ratio"
+    MOBILE_ASPECT_RATIO = "mobile_aspect_ratio"
     options_key_map: ClassVar[dict[str, str]] = {
         # A dict to map our block types to the Design System macro options
-        desktop_aspect_ratio: "percentageHeightDesktop",
-        mobile_aspect_ratio: "percentageHeightMobile",
+        DESKTOP_ASPECT_RATIO: "percentageHeightDesktop",
+        MOBILE_ASPECT_RATIO: "percentageHeightMobile",
     }
     options = blocks.StreamBlock(
         [
             (
-                desktop_aspect_ratio,
+                DESKTOP_ASPECT_RATIO,
                 AspectRatioBlock(
                     required=False,
                     help_text='Remove this option, or set "Default", to use the default aspect ratio for desktop.',
@@ -121,7 +120,7 @@ class BaseVisualisationBlock(blocks.StructBlock):
                 ),
             ),
             (
-                mobile_aspect_ratio,
+                MOBILE_ASPECT_RATIO,
                 AspectRatioBlock(
                     required=False,
                     help_text='Remove this option, or set "Default", to use the default aspect ratio for mobile.',
@@ -130,8 +129,8 @@ class BaseVisualisationBlock(blocks.StructBlock):
             ),
         ],
         block_counts={
-            desktop_aspect_ratio: {"max_num": 1},
-            mobile_aspect_ratio: {"max_num": 1},
+            DESKTOP_ASPECT_RATIO: {"max_num": 1},
+            MOBILE_ASPECT_RATIO: {"max_num": 1},
         },
         help_text="Additional settings for the chart",
         required=False,
@@ -300,22 +299,6 @@ class BaseVisualisationBlock(blocks.StructBlock):
                 },
             ],
         }
-
-    def clean(self, value: "StructValue") -> "StructValue":
-        result = super().clean(value)
-        aspect_ratio_keys = [self.desktop_aspect_ratio, self.mobile_aspect_ratio]
-
-        options_errors = {}
-        if self.get_highcharts_chart_type(result) == "bar":
-            for i, option in enumerate(result["options"]):
-                if option.block_type in aspect_ratio_keys:
-                    options_errors[i] = ValidationError("Bar charts do not support aspect ratio options.")
-
-        if options_errors:
-            raise blocks.StructBlockValidationError(
-                block_errors={"options": blocks.StreamBlockValidationError(block_errors=options_errors)}
-            )
-        return result
 
     @cached_property
     def media(self) -> Media:
