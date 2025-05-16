@@ -7,8 +7,6 @@ venv
 .mypy_cache
 .coverage
 media
-static
-!cms/**/static/
 node_modules
 *.min.js
 *.min.css
