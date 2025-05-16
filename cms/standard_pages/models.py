@@ -6,6 +6,7 @@ from wagtail.admin.panels import FieldPanel, InlinePanel
 from wagtail.fields import RichTextField
 from wagtail.search import index
 
+from cms.bundles.mixins import BundledPageMixin
 from cms.core.blocks.related import RelatedContentBlock
 from cms.core.blocks.stream_blocks import CoreStoryBlock
 from cms.core.fields import StreamField
@@ -19,7 +20,8 @@ if TYPE_CHECKING:
     from wagtail.admin.panels import Panel
 
 
-class InformationPage(VisualisationsPageMixin, GenericTaxonomyMixin, BasePage):  # type: ignore[django-manager-missing]
+# pylint: disable=line-too-long
+class InformationPage(VisualisationsPageMixin, BundledPageMixin, GenericTaxonomyMixin, BasePage):  # type: ignore[django-manager-missing]
     """A generic information page model."""
 
     template = "templates/pages/information_page.html"
@@ -32,6 +34,7 @@ class InformationPage(VisualisationsPageMixin, GenericTaxonomyMixin, BasePage): 
     content = StreamField(CoreStoryBlock())
 
     content_panels: ClassVar[list["Panel"]] = [
+        *BundledPageMixin.panels,
         *BasePage.content_panels,
         "summary",
         FieldPanel("last_updated", date_widget),
@@ -46,7 +49,7 @@ class InformationPage(VisualisationsPageMixin, GenericTaxonomyMixin, BasePage): 
     ]
 
 
-class IndexPage(BasePage):  # type: ignore[django-manager-missing]
+class IndexPage(BundledPageMixin, BasePage):  # type: ignore[django-manager-missing]
     template = "templates/pages/index_page.html"
 
     parent_page_types: ClassVar[list[str]] = ["home.HomePage", "IndexPage"]
@@ -64,6 +67,7 @@ class IndexPage(BasePage):  # type: ignore[django-manager-missing]
     related_links = StreamField([("related_link", RelatedContentBlock())], blank=True)
 
     content_panels: ClassVar[list["Panel"]] = [
+        *BundledPageMixin.panels,
         *BasePage.content_panels,
         "summary",
         "featured_items",

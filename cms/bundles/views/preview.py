@@ -38,7 +38,7 @@ class PreviewBundleView(TemplateView):
         if user_can_manage_bundles(self.request.user):
             pages_in_bundle = bundle.get_bundled_pages(specific=True)
         else:
-            pages_in_bundle = bundle.get_pages_ready_for_review()
+            pages_in_bundle = bundle.get_pages_for_previewers()
 
         if page not in pages_in_bundle:
             raise Http404
