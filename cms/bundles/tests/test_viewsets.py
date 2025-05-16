@@ -15,8 +15,11 @@ from cms.bundles.tests.factories import BundleFactory, BundlePageFactory
 from cms.bundles.tests.utils import grant_all_bundle_permissions, make_bundle_viewer
 from cms.bundles.viewsets.bundle_chooser import bundle_chooser_viewset
 from cms.bundles.viewsets.bundle_page_chooser import PagesWithDraftsForBundleChooserWidget, bundle_page_chooser_viewset
+from cms.methodology.tests.factories import MethodologyPageFactory
 from cms.release_calendar.viewsets import FutureReleaseCalendarChooserWidget
+from cms.standard_pages.tests.factories import InformationPageFactory
 from cms.teams.models import Team
+from cms.topics.tests.factories import TopicPageFactory
 from cms.users.tests.factories import GroupFactory, UserFactory
 from cms.workflows.tests.utils import (
     mark_page_as_ready_for_review,
@@ -295,7 +298,7 @@ class BundleViewSetTestCase(BundleViewSetTestCaseBase):
                         response.context["message"], "Sorry, you do not have permission to access this area."
                     )
 
-    def test_inspect_view__managers__contains_all_fiewls(self):
+    def test_inspect_view__managers__contains_all_fields(self):
         response = self.client.get(reverse("bundle:inspect", args=[self.in_review_bundle.pk]))
 
         self.assertContains(response, "Name")
@@ -317,6 +320,35 @@ class BundleViewSetTestCase(BundleViewSetTestCaseBase):
         self.assertContains(response, "Scheduled publication")
         self.assertNotContains(response, "Approval status")
         self.assertNotContains(response, "Status")
+
+    def test_inspect_view__previewers__contains_only_relevant_pages(self):
+        methodology_article = MethodologyPageFactory(title="The Test Methodology Article", live=False)
+        statistical_article = StatisticalArticlePageFactory(title="The Test Statistical Article", live=False)
+        topic_page = TopicPageFactory(title="The Test Topic Page", live=False)
+
+        BundlePageFactory(parent=self.in_review_bundle, page=methodology_article)
+        BundlePageFactory(parent=self.in_review_bundle, page=topic_page)
+        BundlePageFactory(parent=self.in_review_bundle, page=statistical_article)
+
+        mark_page_as_ready_for_review(methodology_article, self.publishing_officer)
+        mark_page_as_ready_for_review(topic_page, self.publishing_officer)
+        mark_page_as_ready_for_review(statistical_article, self.publishing_officer)
+
+        # bundle viewer should only see the methodology article
+        self.client.force_login(self.bundle_viewer)
+        response = self.client.get(reverse("bundle:inspect", args=[self.in_review_bundle.pk]))
+
+        self.assertContains(response, "The Test Methodology Article")
+        self.assertContains(response, "The Test Statistical Article")
+        self.assertNotContains(response, "The Test Topic Page")
+
+        # superuser should see all pages
+        self.client.force_login(self.superuser)
+
+        response = self.client.get(reverse("bundle:inspect", args=[self.in_review_bundle.pk]))
+        self.assertContains(response, "The Test Methodology Article")
+        self.assertContains(response, "The Test Statistical Article")
+        self.assertContains(response, "The Test Topic Page")
 
 
 class BundleIndexViewTestCase(BundleViewSetTestCaseBase):
@@ -489,6 +521,77 @@ class BundlePageChooserViewsetTestCase(WagtailTestUtils, TestCase):
         self.assertContains(response, self.page_draft.get_admin_display_title())
         self.assertNotContains(response, self.page_live.get_admin_display_title())
         self.assertNotContains(response, self.page_draft_in_bundle.get_admin_display_title())
+
+    def test_chooser_filter(self):  # pylint: disable=too-many-statements # noqa
+        methodology_page_draft = MethodologyPageFactory(live=False, title="Bundle test methodology page")
+        methodology_page_draft.save_revision()
+        information_page_draft = InformationPageFactory(live=False, title="Bundle test information page")
+        information_page_draft.save_revision()
+        topic_page_draft = TopicPageFactory(live=False, title="Bundle test topic page")
+        topic_page_draft.save_revision()
+
+        # Test different page type permutations
+        response = self.client.get(f"{self.chooser_results_url}?page_type=MethodologyPage")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, "bundles/bundle_page_chooser_results.html")
+
+        self.assertContains(response, methodology_page_draft.get_admin_display_title())
+        self.assertNotContains(response, information_page_draft.get_admin_display_title())
+        self.assertNotContains(response, self.page_draft.get_admin_display_title())
+        self.assertNotContains(response, self.page_draft_in_bundle.get_admin_display_title())
+        self.assertNotContains(response, information_page_draft.get_admin_display_title())
+        self.assertNotContains(response, topic_page_draft.get_admin_display_title())
+
+        response = self.client.get(f"{self.chooser_results_url}?page_type=InformationPage")
+        self.assertEqual(response.status_code, 200)
+
+        self.assertContains(response, information_page_draft.get_admin_display_title())
+        self.assertNotContains(response, methodology_page_draft.get_admin_display_title())
+        self.assertNotContains(response, self.page_draft.get_admin_display_title())
+        self.assertNotContains(response, self.page_draft_in_bundle.get_admin_display_title())
+        self.assertNotContains(response, topic_page_draft.get_admin_display_title())
+
+        response = self.client.get(f"{self.chooser_results_url}?page_type=StatisticalArticlePage")
+        self.assertEqual(response.status_code, 200)
+
+        self.assertContains(response, self.page_draft.get_admin_display_title())
+        self.assertNotContains(response, self.page_live.get_admin_display_title())
+        self.assertNotContains(response, self.page_draft_in_bundle.get_admin_display_title())
+        self.assertNotContains(response, methodology_page_draft.get_admin_display_title())
+        self.assertNotContains(response, information_page_draft.get_admin_display_title())
+        self.assertNotContains(response, topic_page_draft.get_admin_display_title())
+
+        response = self.client.get(f"{self.chooser_results_url}?page_type=TopicPage")
+        self.assertEqual(response.status_code, 200)
+
+        self.assertContains(response, topic_page_draft.get_admin_display_title())
+        self.assertNotContains(response, methodology_page_draft.get_admin_display_title())
+        self.assertNotContains(response, information_page_draft.get_admin_display_title())
+        self.assertNotContains(response, self.page_draft.get_admin_display_title())
+        self.assertNotContains(response, self.page_draft_in_bundle.get_admin_display_title())
+        self.assertNotContains(response, self.page_live.get_admin_display_title())
+
+        response = self.client.get(f"{self.chooser_results_url}?page_type=")
+        self.assertEqual(response.status_code, 200)
+
+        self.assertContains(response, self.page_draft.get_admin_display_title())
+        self.assertContains(response, self.page_live_plus_draft.get_admin_display_title())
+        self.assertContains(response, methodology_page_draft.get_admin_display_title())
+        self.assertContains(response, information_page_draft.get_admin_display_title())
+        self.assertContains(response, topic_page_draft.get_admin_display_title())
+        self.assertNotContains(response, self.page_live.get_admin_display_title())
+
+        # "foo" (or any unknown type) will be forced to "" in the filter form
+        response = self.client.get(f"{self.chooser_results_url}?page_type=foo")
+        self.assertEqual(response.status_code, 200)
+
+        self.assertContains(response, self.page_draft.get_admin_display_title())
+        self.assertContains(response, self.page_live_plus_draft.get_admin_display_title())
+        self.assertContains(response, methodology_page_draft.get_admin_display_title())
+        self.assertContains(response, information_page_draft.get_admin_display_title())
+        self.assertContains(response, topic_page_draft.get_admin_display_title())
+        self.assertNotContains(response, self.page_live.get_admin_display_title())
 
     def test_featured_series_viewset_configuration(self):
         self.assertFalse(bundle_page_chooser_viewset.register_widget)

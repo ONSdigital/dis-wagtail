@@ -11,12 +11,14 @@ from wagtail.models import Orderable, Page
 from wagtail.search import index
 
 from cms.core.widgets import datetime_widget
+from cms.home.models import HomePage
 from cms.release_calendar.viewsets import FutureReleaseCalendarChooserWidget
+from cms.topics.models import TopicPage
 from cms.workflows.utils import is_page_ready_to_preview, is_page_ready_to_publish
 
 from .enums import ACTIVE_BUNDLE_STATUSES, EDITABLE_BUNDLE_STATUSES, PREVIEWABLE_BUNDLE_STATUSES, BundleStatus
 from .forms import BundleAdminForm
-from .panels import BundleNotePanel, PageChooserWithStatusPanel
+from .panels import PageChooserWithStatusPanel
 
 if TYPE_CHECKING:
     import datetime
@@ -25,6 +27,8 @@ if TYPE_CHECKING:
     from wagtail.query import PageQuerySet
 
     from cms.teams.models import Team
+
+PREVIEWER_EXCLUDED_PAGE_TYPES = (HomePage, TopicPage)
 
 
 class BundlePage(Orderable):
@@ -178,42 +182,14 @@ class Bundle(index.Indexed, ClusterableModel, models.Model):  # type: ignore[dja
             pages = pages.specific().defer_streamfields()
         return pages
 
-    def get_pages_ready_for_review(self) -> list[Page]:
-        return [page for page in self.get_bundled_pages(specific=True) if is_page_ready_to_preview(page)]
+    def get_pages_for_previewers(self) -> list[Page]:
+        return [
+            page
+            for page in self.get_bundled_pages(specific=True).not_type(PREVIEWER_EXCLUDED_PAGE_TYPES)
+            if is_page_ready_to_preview(page)
+        ]
 
     def get_teams_display(self) -> str:
         return ", ".join(
             list(self.teams.values_list("team__name", flat=True)) or ["-"],
         )
-
-
-class BundledPageMixin:
-    """A helper page mixin for bundled content.
-
-    Add it to Page classes that should be in bundles.
-    """
-
-    panels: ClassVar[list["Panel"]] = [BundleNotePanel(heading="Bundle", icon="boxes-stacked")]
-
-    @cached_property
-    def bundles(self) -> QuerySet[Bundle]:
-        """Return all bundles this instance belongs to."""
-        queryset: QuerySet[Bundle] = Bundle.objects.none()
-        if self.pk:  # type: ignore[attr-defined]
-            queryset = Bundle.objects.filter(
-                pk__in=self.bundlepage_set.all().values_list("parent", flat=True)  # type: ignore[attr-defined]
-            )
-        return queryset
-
-    @cached_property
-    def active_bundles(self) -> QuerySet[Bundle]:
-        """Returns the active bundles this instance belongs to. In theory, it should be only one."""
-        return self.bundles.filter(status__in=ACTIVE_BUNDLE_STATUSES)
-
-    @cached_property
-    def active_bundle(self) -> Bundle | None:
-        return self.active_bundles.first()
-
-    @cached_property
-    def in_active_bundle(self) -> bool:
-        return self.active_bundle is not None

@@ -29,6 +29,9 @@ def user_populates_the_methodology_page(context: Context):
     context.page.get_by_text("Rich text").click()
     context.page.get_by_role("region", name="Rich text *").get_by_role("textbox").fill("Content")
 
+    # Scroll to the bottom of the page to ensure that the "Save as draft" button is not overlapped
+    context.page.get_by_text("Related publications", exact=True).nth(1).scroll_into_view_if_needed()
+
 
 @when("adds Glossary Terms to the page content")
 def user_adds_glossary_terms(context: Context):

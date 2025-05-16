@@ -1,5 +1,7 @@
-from typing import TYPE_CHECKING, ClassVar
+from typing import TYPE_CHECKING, Any, ClassVar
 
+from django import forms
+from wagtail.admin.forms.choosers import BaseFilterForm, LocaleFilterMixin, SearchFilterMixin
 from wagtail.admin.ui.tables import Column, DateColumn
 from wagtail.admin.ui.tables.pages import PageStatusColumn
 from wagtail.admin.views.generic.chooser import ChooseResultsView, ChooseView
@@ -14,8 +16,27 @@ if TYPE_CHECKING:
     from wagtail.query import PageQuerySet
 
 
+class PagesWithDraftsMixinFilterForm(LocaleFilterMixin, SearchFilterMixin, BaseFilterForm):
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        super().__init__(*args, **kwargs)
+        self._page_type_map = {model.__name__: model for model in get_bundleable_page_types()}
+        choices = [(model_name, model.get_verbose_name()) for model_name, model in self._page_type_map.items()]
+        self.fields["page_type"] = forms.ChoiceField(
+            choices=[("", "All"), *choices],
+            required=False,
+            widget=forms.Select(attrs={"data-chooser-modal-search-filter": True}),
+        )
+
+    def filter(self, objects: "PageQuerySet") -> "PageQuerySet":
+        selected_page_type = self.cleaned_data.get("page_type")
+        if selected_page_type:
+            objects = objects.type(self._page_type_map[selected_page_type])
+        return super().filter(objects)
+
+
 class PagesWithDraftsMixin:
     results_template_name = "bundles/bundle_page_chooser_results.html"
+    filter_form_class = PagesWithDraftsMixinFilterForm
 
     def get_object_list(self) -> "PageQuerySet":
         """Limits the pages that can be chosen for a bundle.

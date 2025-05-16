@@ -14,5 +14,6 @@ class ReleaseStatus(models.TextChoices):
 
 NON_PROVISIONAL_STATUSES = [ReleaseStatus.CONFIRMED, ReleaseStatus.PUBLISHED, ReleaseStatus.CANCELLED]
 NON_PROVISIONAL_STATUS_CHOICES = [
-    (ReleaseStatus[choice].value, ReleaseStatus[choice].label) for choice in NON_PROVISIONAL_STATUSES
+    (ReleaseStatus[choice].value, ReleaseStatus[choice].label)  # type: ignore[misc]
+    for choice in NON_PROVISIONAL_STATUSES
 ]
