@@ -10,8 +10,10 @@ from wagtail.fields import RichTextField
 from wagtail.models import Page
 from wagtail.search import index
 
+from cms.core.custom_date_format import ons_date_format
 from cms.core.fields import StreamField
 from cms.core.models import BasePage
+from cms.core.widgets import datetime_widget
 from cms.datasets.blocks import DatasetStoryBlock
 
 from .blocks import (
@@ -53,15 +55,17 @@ class ReleaseCalendarPage(BasePage):  # type: ignore[django-manager-missing]
     status = models.CharField(choices=ReleaseStatus.choices, default=ReleaseStatus.PROVISIONAL, max_length=32)
     summary = RichTextField(features=settings.RICH_TEXT_BASIC)
 
-    release_date = models.DateTimeField(
-        blank=True, null=True, help_text="Required once the release has been confirmed."
-    )
+    release_date = models.DateTimeField(blank=False, null=False)
     release_date_text = models.CharField(
-        max_length=50, blank=True, help_text="Format: 'Month YYYY', or 'Month YYYY to Month YYYY'."
+        max_length=50,
+        blank=True,
+        help_text="Override release date for provisional entries. Format: 'Month YYYY', or 'Month YYYY to Month YYYY'.",
     )
     next_release_date = models.DateTimeField(blank=True, null=True)
-    next_release_text = models.CharField(
-        max_length=255, blank=True, help_text="Formats: 'DD Month YYYY Time' or 'To be confirmed'."
+    next_release_date_text = models.CharField(
+        max_length=255,
+        blank=True,
+        help_text="Format: 'DD Month YYYY Time' or 'To be confirmed'.",
     )
 
     notice = RichTextField(
@@ -114,15 +118,15 @@ class ReleaseCalendarPage(BasePage):  # type: ignore[django-manager-missing]
                 ReleaseCalendarBundleNotePanel(heading="Note", classname="bundle-note"),
                 FieldRowPanel(
                     [
-                        "release_date",
+                        FieldPanel("release_date", datetime_widget),
                         FieldPanel("release_date_text", heading="Or, release date text"),
                     ],
                     heading="",
                 ),
                 FieldRowPanel(
                     [
-                        "next_release_date",
-                        FieldPanel("next_release_text", heading="Or, next release text"),
+                        FieldPanel("next_release_date", datetime_widget),
+                        FieldPanel("next_release_date_text", heading="Or, next release date text"),
                     ],
                     heading="",
                 ),
@@ -173,6 +177,20 @@ class ReleaseCalendarPage(BasePage):  # type: ignore[django-manager-missing]
         context: dict = super().get_context(request, *args, **kwargs)
         context["table_of_contents"] = self.table_of_contents
         return context
+
+    @property
+    def release_date_value(self) -> str:
+        if self.release_date_text and self.status == ReleaseStatus.PROVISIONAL:
+            return self.release_date_text
+        return ons_date_format(self.release_date, "DATETIME_FORMAT")
+
+    @property
+    def next_release_date_value(self) -> str | None:
+        if self.next_release_date:
+            return ons_date_format(self.next_release_date, "DATETIME_FORMAT")
+        if self.next_release_date_text:
+            return self.next_release_date_text
+        return None
 
     @cached_property
     def table_of_contents(self) -> list[dict[str, str | object]]:

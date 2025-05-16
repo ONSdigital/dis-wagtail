@@ -1,0 +1,18 @@
+{% from "components/card/_macro.njk" import onsCard %}
+
+{# fmt:off #}
+    {{
+        onsCard({
+            "variant": 'feature',
+            "title": {
+                "id": value.figure_id + "-card",
+                "text": value.title,
+            },
+            "body":{
+                "id": value.figure_id + "-text",
+                "figure": value.figure,
+                "text": value.supporting_text
+            }
+        })
+    }}
+{# fmt:on #}

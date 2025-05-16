@@ -104,6 +104,8 @@ MIGRATION_LINTER_OPTIONS = {
         "0004_topicpage_headline_figures",
         "0003_footermenu_locale_footermenu_translation_key_and_more",  # Ignoring NOT NULL constraint on columns
         "0007_remove_glossaryterm_core_glossary_term_name_unique_and_more",  # Ignoring NOT NULL constraint
+        "0004_make_release_date_mandatory_and_rename_next_release_text",  # Ignoring NOT NULL and RENAMING constraints
         "0004_statisticalarticlepage_headline_figures_figure_ids",
+        "0006_statisticalarticlepage_dataset_sorting_and_more",  # Ignoring NOT NULL constraint
     ],
 }

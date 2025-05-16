@@ -7,7 +7,7 @@ from django.core.cache import caches
 from django.test import SimpleTestCase
 from moto import mock_aws
 
-from cms.core.cache import ElastiCacheIAMCredentialProvider
+from cms.core.elasticache import ElastiCacheIAMCredentialProvider
 
 
 @mock_aws
