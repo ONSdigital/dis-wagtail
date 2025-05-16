@@ -49,7 +49,7 @@ class PrivateMediaMixin(models.Model):
         if isinstance(self._privacy, Privacy):
             return self._privacy
         for item in Privacy:
-            if item.value == self._privacy:
+            if item.value == self._privacy:  # type: ignore[misc]
                 return item
         raise ValueError(f"Invalid privacy value: {self._privacy}")
 
@@ -59,7 +59,7 @@ class PrivateMediaMixin(models.Model):
         privacy_last_changed timestamp if the privacy has changed.
         """
         if self.privacy is not value:
-            self._privacy = value.value
+            self._privacy = value.value  # type: ignore[misc]
             self.privacy_last_changed = timezone.now()
 
     @property
