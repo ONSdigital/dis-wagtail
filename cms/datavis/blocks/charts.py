@@ -34,6 +34,7 @@ class BarColumnChartBlock(BaseVisualisationBlock):
     ERROR_HORIZONTAL_BAR_NO_LINE = "horizontal_bar_no_line_overlay"
     ERROR_SERIES_OUT_OF_RANGE = "series_number_out_of_range"
     ERROR_ALL_SERIES_SELECTED = "all_series_selected"
+    ERROR_BAR_CHART_NO_ASPECT_RATIO = "bar_chart_no_aspect_ratio"
 
     # Remove unsupported features
     show_markers = None
@@ -109,42 +110,66 @@ class BarColumnChartBlock(BaseVisualisationBlock):
 
     def clean(self, value: "StructValue") -> "StructValue":
         value = super().clean(value)
+        value = self.clean_series_customisation(value)
+        value = self.clean_options(value)
+        return value
 
+    def clean_series_customisation(self, value: "StructValue") -> "StructValue":
         _, series = self.get_series_data(value)
-        sub_block_errors = {}
 
+        errors = {}
+        stream_block_errors = {}
         seen_series_numbers = set()
         for i, block in enumerate(value.get("series_customisation", [])):
             if block.block_type == self.SERIES_AS_LINE_OVERLAY_BLOCK:
                 if value.get("select_chart_type") == self.ChartTypeChoices.BAR:
-                    sub_block_errors[i] = ValidationError(
+                    stream_block_errors[i] = ValidationError(
                         "Horizontal bar charts do not support line overlays.", code=self.ERROR_HORIZONTAL_BAR_NO_LINE
                     )
 
                 # Raise an error if the series number is not in the range of the number of series
                 elif block.value < 1 or block.value > len(series):
-                    sub_block_errors[i] = ValidationError(
+                    stream_block_errors[i] = ValidationError(
                         "Series number out of range.", code=self.ERROR_SERIES_OUT_OF_RANGE
                     )
 
                 elif block.value in seen_series_numbers:
-                    sub_block_errors[i] = ValidationError("Duplicate series number.", code=self.ERROR_DUPLICATE_SERIES)
+                    stream_block_errors[i] = ValidationError(
+                        "Duplicate series number.", code=self.ERROR_DUPLICATE_SERIES
+                    )
                 seen_series_numbers.add(block.value)
 
-        # Raise an error if all series are selected for line overlay
         if all(series_number in seen_series_numbers for series_number in range(1, len(series) + 1)):
-            raise blocks.StructBlockValidationError(
-                block_errors={
-                    "series_customisation": ValidationError(
-                        "There must be at least one column remaining. To draw lines only, use a Line Chart.",
-                        code=self.ERROR_ALL_SERIES_SELECTED,
-                    )
-                }
+            # Raise an error if all series are selected for line overlay. Ignore
+            # the individual sub-block errors.
+            errors["series_customisation"] = ValidationError(
+                "There must be at least one column remaining. To draw lines only, use a Line Chart.",
+                code=self.ERROR_ALL_SERIES_SELECTED,
             )
+        elif stream_block_errors:
+            errors["series_customisation"] = blocks.StreamBlockValidationError(block_errors=stream_block_errors)
 
-        if sub_block_errors:
-            raise blocks.StructBlockValidationError(
-                block_errors={"series_customisation": blocks.StreamBlockValidationError(block_errors=sub_block_errors)}
-            )
+        if errors:
+            raise blocks.StructBlockValidationError(block_errors=errors)
+
+        return value
+
+    def clean_options(self, value: "StructValue") -> "StructValue":
+        aspect_ratio_keys = [self.DESKTOP_ASPECT_RATIO, self.MOBILE_ASPECT_RATIO]
+
+        errors = {}
+        options_errors = {}
+        if self.get_highcharts_chart_type(value) == self.ChartTypeChoices.BAR:
+            for i, option in enumerate(value["options"]):
+                if option.block_type in aspect_ratio_keys:
+                    options_errors[i] = ValidationError(
+                        "Bar charts do not support aspect ratio options.", code=self.ERROR_BAR_CHART_NO_ASPECT_RATIO
+                    )
+
+        if options_errors:
+            errors["options"] = blocks.StreamBlockValidationError(block_errors=options_errors)
+
+        if errors:
+            raise blocks.StructBlockValidationError(block_errors=errors)
 
         return value
