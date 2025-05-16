@@ -170,7 +170,14 @@
     {% endif %}
 
     {% if page.headline_figures %}
-        {% include_block page.headline_figures %}
+        <div class="ons-container headline-figures">
+            <h2 class="headline-figures__heading ons-u-fs-m">{{ _("Headline facts and figures") }}</h2>
+            <div class="ons-grid ons-grid-flex-gap ons-grid-flex-gap--24 headline-figures__grid">
+                {% for figure in page.headline_figures %}
+                    <div class="ons-grid__col ons-grid__col--flex-col ons-grid__col--stretch">{% include_block figure %}</div>
+                {% endfor %}
+            </div>
+        </div>
     {% endif %}
 
 {% endblock %}
@@ -178,41 +185,72 @@
 {% block main %}
     <div class="ons-grid ons-grid-flex-gap ons-grid-flex-gap--32 ons-js-toc-container">
         <div class="ons-grid__col ons-grid__col--sticky@m ons-col-4@m">
-            {% with toc_title=_("Contents"), toc_aria_label=_("Sections in this page") %}
+            {% if page.datasets %}
+                {% if request.is_preview %}
+                    {% set related_data_url = url('wagtailadmin_pages:preview_on_edit', page.pk) ~ "?mode=related_data" %}
+                {% else %}
+                    {% set related_data_url = routablepageurl(page, "related_data") %}
+                {% endif %}
+                {% set related_links_title=_("Explore Data") %}
+
+                    {% set related_data_text=_("View data used in this article") %}
+
+                {# fmt:off #}
+                    {%- set related_links =
+                        {
+                            "title": related_links_title,
+                            "itemsList": [
+                                {
+                                    "url": related_data_url,
+                                    "text": related_data_text
+                                }
+                            ]
+                        }
+                    -%}
+                {# fmt:on #}
+                    {% else %}
+                        {% set related_links = "" %}
+                    {% endif %}
+
+                    {% with toc_title=_("Contents"), toc_aria_label=_("Sections in this page") %}
                 {# fmt:off #}
                 {{-
                     onsTableOfContents({
                         "title": toc_title,
                         "ariaLabel": toc_aria_label,
-                        "itemsList": table_of_contents
+                        "itemsList": table_of_contents,
+                        "relatedLinks": related_links,
+                        "button": {
+                            "text": _("Save or print this page")
+                        }
                     })
                 }}
                 {# fmt:on #}
-            {% endwith %}
-        </div>
+                    {% endwith %}
+                    </div>
 
-        <div class="ons-grid__col ons-col-8@m">
-            {% include_block page.content %}
+                    <div class="ons-grid__col ons-col-8@m">
+                        {% include_block page.content %}
 
-            {% if page.show_cite_this_page %}
-                <section id="cite-this-page" class="spacing">
-                    <h2 class="ons-u-fs-l">{{ _("Cite this analysis") }}</h2>
-                    <p>
-                        {%- set cite_link -%}
-                            <a href="{{ fullpageurl(page) }}">{{ page.display_title }}</a>
-                        {% endset %}
-                        {% trans trimmed release_date=page.release_date|date("DATE_FORMAT"), cite_link=cite_link %}
-                            Office for National Statistics (ONS), released {{ release_date }}, ONS website, statistical article, {{ cite_link }}
-                        {% endtrans %}
-                    </p>
-                </section>
-            {% endif %}
+                        {% if page.show_cite_this_page %}
+                            <section id="cite-this-page" class="spacing">
+                                <h2 class="ons-u-fs-l">{{ _("Cite this analysis") }}</h2>
+                                <p>
+                                    {%- set cite_link -%}
+                                        <a href="{{ fullpageurl(page) }}">{{ page.display_title }}</a>
+                                    {% endset %}
+                                    {% trans trimmed release_date=page.release_date|date("DATE_FORMAT"), cite_link=cite_link %}
+                                        Office for National Statistics (ONS), released {{ release_date }}, ONS website, statistical article, {{ cite_link }}
+                                    {% endtrans %}
+                                </p>
+                            </section>
+                        {% endif %}
 
-            {% if page.contact_details %}
-                {% with contact_details = page.contact_details%}
-                    {% include "templates/components/contact_details/contact_details.html" %}
-                {% endwith %}
-            {% endif %}
-        </div>
-    </div>
-{% endblock %}
+                        {% if page.contact_details %}
+                            {% with contact_details = page.contact_details%}
+                                {% include "templates/components/contact_details/contact_details.html" %}
+                            {% endwith %}
+                        {% endif %}
+                    </div>
+                    </div>
+                {% endblock %}

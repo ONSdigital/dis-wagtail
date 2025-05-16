@@ -1,10 +1,15 @@
+from django.apps import apps
 from django.contrib.contenttypes.models import ContentType
 from django.db import DEFAULT_DB_ALIAS, router, transaction
-from wagtail.models import Page
+from django.test import TestCase, override_settings
+from django.utils.connection import ConnectionDoesNotExist
+from wagtail.models import Page, Revision
+from wagtail_factories import ImageFactory
 
-from cms.core.db_router import READ_REPLICA_DB_ALIAS
+from cms.core.db_router import READ_REPLICA_DB_ALIAS, ExternalEnvRouter
 from cms.core.tests import TransactionTestCase
 from cms.home.models import HomePage
+from cms.images.models import CustomImage, Rendition
 from cms.users.models import User
 
 
@@ -14,6 +19,7 @@ class DBRouterTestCase(TransactionTestCase):
     def setUp(self):
         # Warm the content-type cache
         ContentType.objects.get_for_models(HomePage)
+        ContentType.objects.get_for_models(Page)
 
     def test_uses_replica_for_read(self):
         """Check the read replica is used for reads."""
@@ -92,3 +98,51 @@ class DBRouterTestCase(TransactionTestCase):
 
         self.assertFalse(User.objects.using(DEFAULT_DB_ALIAS).filter(id=user.id).exists())
         self.assertFalse(User.objects.using(READ_REPLICA_DB_ALIAS).filter(id=user.id).exists())
+
+    def test_revision_uses_default(self):
+        """Checks that revisions (a model used in a GenericRelation)
+        always uses the default connection.
+        """
+        self.assertEqual(router.db_for_write(Revision), DEFAULT_DB_ALIAS)
+        self.assertEqual(router.db_for_read(Revision), DEFAULT_DB_ALIAS)
+
+        # In the external env, no writes will be done, so the replica is safe.
+        with override_settings(IS_EXTERNAL_ENV=True):
+            self.assertEqual(router.db_for_read(Revision), READ_REPLICA_DB_ALIAS)
+
+
+@override_settings(IS_EXTERNAL_ENV=True)
+class ExternalEnvRouterTestCase(TestCase):
+    def test_cannot_write_to_disallowed_table(self):
+        """Test that disallowed models cannot be written to in external env."""
+        self.assertFalse(CustomImage.objects.exists())
+
+        with self.assertRaises(ConnectionDoesNotExist):
+            ImageFactory.create()
+
+        self.assertFalse(CustomImage.objects.exists())
+
+    def test_can_write_to_allowed_table(self):
+        """Test that allowed models can be written to in external env."""
+        self.assertEqual(Rendition.objects.count(), 0)
+
+        with override_settings(IS_EXTERNAL_ENV=False):
+            image = ImageFactory.create()
+
+        rendition = image.get_rendition("width-100")
+
+        # Confirm instance exists in DB
+        rendition.refresh_from_db()
+
+        self.assertEqual(Rendition.objects.count(), 1)
+
+    def test_uses_correct_connection(self):
+        """Test that the correct connection is used."""
+        self.assertEqual(router.db_for_read(Rendition), DEFAULT_DB_ALIAS)  # TestCase runs in a transaction
+
+        for model in apps.get_models():
+            with self.subTest(model=model):
+                if model in ExternalEnvRouter.WRITE_ALLOWED_MODELS:
+                    self.assertEqual(router.db_for_write(model), DEFAULT_DB_ALIAS)
+                else:
+                    self.assertEqual(router.db_for_write(model), ExternalEnvRouter.FAKE_BACKEND)

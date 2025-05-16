@@ -3,7 +3,8 @@ from typing import TYPE_CHECKING, Any
 from django import forms
 from django.core.exceptions import ValidationError
 
-from .models import Bundle, BundledPageMixin
+from .mixins import BundledPageMixin
+from .models import Bundle
 from .viewsets.bundle_chooser import BundleChooserWidget
 
 if TYPE_CHECKING:

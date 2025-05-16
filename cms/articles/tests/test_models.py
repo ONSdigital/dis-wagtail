@@ -1,5 +1,4 @@
 import math
-import uuid
 from datetime import datetime
 
 from django.conf import settings
@@ -8,11 +7,15 @@ from django.test import TestCase, override_settings
 from django.urls import reverse
 from django.utils import timezone
 from django.utils.formats import date_format
+from wagtail.blocks import StreamValue
 from wagtail.test.utils import WagtailTestUtils
 from wagtail.test.utils.form_data import nested_form_data, rich_text, streamfield
 
+from cms.articles.enums import SortingChoices
 from cms.articles.tests.factories import ArticleSeriesPageFactory, StatisticalArticlePageFactory
 from cms.core.tests.factories import ContactDetailsFactory
+from cms.datasets.blocks import DatasetStoryBlock
+from cms.datasets.models import Dataset
 
 
 class ArticleSeriesTestCase(WagtailTestUtils, TestCase):
@@ -180,8 +183,7 @@ class StatisticalArticlePageTestCase(WagtailTestUtils, TestCase):
 
     def test_clean_validates_a_min_of_two_headline_figures_are_needed(self):
         figure_one = {
-            "id": uuid.uuid4(),
-            "type": "item",
+            "type": "figure",
             "value": {
                 "figure_id": "figurexyz",
                 "title": "Figure title XYZ",
@@ -189,12 +191,7 @@ class StatisticalArticlePageTestCase(WagtailTestUtils, TestCase):
                 "supporting_text": "Reasons to add tests and use long test strings where possible",
             },
         }
-        self.page.headline_figures = [
-            {
-                "type": "figures",
-                "value": [figure_one],
-            }
-        ]
+        self.page.headline_figures = [figure_one]
         self.page.headline_figures_figure_ids = "figurexyz"
 
         with self.assertRaisesRegex(ValidationError, "If you add headline figures, please add at least 2."):
@@ -202,43 +199,22 @@ class StatisticalArticlePageTestCase(WagtailTestUtils, TestCase):
             self.page.clean()
         # Should validate with two
         self.page.headline_figures = [
+            figure_one,
             {
-                "type": "figures",
-                "value": [
-                    figure_one,
-                    {
-                        "id": uuid.uuid4(),
-                        "type": "item",
-                        "value": {
-                            "figure_id": "figureabc",
-                            "title": "Another figure title for completeness",
-                            "figure": "100 Billion and many more",
-                            "supporting_text": "Figure supporting text ABC",
-                        },
-                    },
-                ],
-            }
+                "type": "figure",
+                "value": {
+                    "figure_id": "figureabc",
+                    "title": "Another figure title for completeness",
+                    "figure": "100 Billion and many more",
+                    "supporting_text": "Figure supporting text ABC",
+                },
+            },
         ]
         self.page.headline_figures_figure_ids = "figurexyz,figureabc"
         self.page.clean()
 
     def test_clean_validates_a_max_of_six_headline_figures_can_be_added(self):
         self.login()
-
-        figures = [
-            {
-                "type": "item",
-                "value": {
-                    "figure_id": f"figure_{i}",
-                    "title": "Figure title XYZ",
-                    "figure": "100 Million and more",
-                    "supporting_text": "Reasons to add tests and use long test strings where possible",
-                },
-                "deleted": "",
-                "order": str(i),
-            }
-            for i in range(7)
-        ]
 
         data = nested_form_data(
             {
@@ -250,14 +226,68 @@ class StatisticalArticlePageTestCase(WagtailTestUtils, TestCase):
                 "content": streamfield(
                     [("section", {"title": "Test", "content": streamfield([("rich_text", rich_text("text"))])})]
                 ),
+                "datasets": streamfield([]),
+                "dataset_sorting": "AS_SHOWN",
                 "corrections": streamfield([]),
                 "notices": streamfield([]),
-                "headline_figures": streamfield([("figures", figures)]),
-                "headline_figures-0-value-count": 7,  # a bit of a hack to get the right nested format
+                "headline_figures": streamfield(
+                    [
+                        (
+                            "figure",
+                            {
+                                "figure_id": f"figure_{i}",
+                                "title": "Figure title XYZ",
+                                "figure": "100 Million and more",
+                                "supporting_text": "Reasons to add tests and use long test strings where possible",
+                            },
+                        )
+                        for i in range(7)
+                    ]
+                ),
             }
         )
         response = self.client.post(reverse("wagtailadmin_pages:edit", args=[self.page.pk]), data, follow=True)
         self.assertContains(response, "The maximum number of items is 6")
+
+    def test_related_datasets_sorting_alphabetic(self):
+        dataset_a = {"title": "a", "description": "a", "url": "https://example.com"}
+        dataset_b = Dataset.objects.create(namespace="b", edition="b", version="1", title="b", description="b")
+        dataset_c = Dataset.objects.create(namespace="c", edition="c", version="1", title="c", description="c")
+
+        self.page.datasets = StreamValue(
+            DatasetStoryBlock(),
+            stream_data=[
+                ("dataset_lookup", dataset_c),
+                ("dataset_lookup", dataset_b),
+                ("manual_link", dataset_a),
+            ],
+        )
+        self.page.dataset_sorting = SortingChoices.ALPHABETIC
+        ordered_datasets = self.page.ordered_related_datasets
+        ordered_dataset_titles = [d["title"]["text"] for d in ordered_datasets]
+        self.assertEqual(
+            ordered_dataset_titles,
+            sorted(ordered_dataset_titles),
+            "Expect the datasets to be sorted in title alphabetic order",
+        )
+
+    def test_related_datasets_sorting_as_shown(self):
+        dataset_a = {"title": "a", "description": "a", "url": "https://example.com"}
+        dataset_b = Dataset.objects.create(namespace="b", edition="b", version="1", title="b", description="b")
+        dataset_c = Dataset.objects.create(namespace="c", edition="c", version="1", title="c", description="c")
+
+        self.page.datasets = StreamValue(
+            DatasetStoryBlock(),
+            stream_data=[
+                ("dataset_lookup", dataset_c),
+                ("dataset_lookup", dataset_b),
+                ("manual_link", dataset_a),
+            ],
+        )
+        self.page.dataset_sorting = SortingChoices.AS_SHOWN
+        ordered_datasets = self.page.ordered_related_datasets
+        ordered_dataset_titles = [d["title"]["text"] for d in ordered_datasets]
+        self.assertEqual(ordered_dataset_titles, ["c", "b", "a"], "Expect the datasets to be in the given order")
 
 
 class StatisticalArticlePageRenderTestCase(WagtailTestUtils, TestCase):
@@ -281,30 +311,23 @@ class StatisticalArticlePageRenderTestCase(WagtailTestUtils, TestCase):
         )
         self.page.headline_figures = [
             {
-                "type": "figures",
-                "value": [
-                    {
-                        "id": uuid.uuid4(),
-                        "type": "item",
-                        "value": {
-                            "figure_id": "figurexyz",
-                            "title": "Figure title XYZ",
-                            "figure": "XYZ",
-                            "supporting_text": "Figure supporting text XYZ",
-                        },
-                    },
-                    {
-                        "id": uuid.uuid4(),
-                        "type": "item",
-                        "value": {
-                            "figure_id": "figureabc",
-                            "title": "Figure title ABC",
-                            "figure": "ABC",
-                            "supporting_text": "Figure supporting text ABC",
-                        },
-                    },
-                ],
-            }
+                "type": "figure",
+                "value": {
+                    "figure_id": "figurexyz",
+                    "title": "Figure title XYZ",
+                    "figure": "XYZ",
+                    "supporting_text": "Figure supporting text XYZ",
+                },
+            },
+            {
+                "type": "figure",
+                "value": {
+                    "figure_id": "figureabc",
+                    "title": "Figure title ABC",
+                    "figure": "ABC",
+                    "supporting_text": "Figure supporting text ABC",
+                },
+            },
         ]
         self.page.headline_figures_figure_ids = "figurexyz,figureabc"
         self.page.save_revision().publish()
@@ -383,30 +406,40 @@ class StatisticalArticlePageRenderTestCase(WagtailTestUtils, TestCase):
         figure = self.page.get_headline_figure("invalid_id")
         self.assertEqual(figure, {})
 
+    def test_headline_figures_shown(self):
+        """Test that the headline figures are shown in the template."""
+        response = self.client.get(self.page_url)
+        self.assertContains(response, "Figure title XYZ")
+        self.assertContains(response, "Figure title ABC")
+        self.assertContains(response, "XYZ")
+        self.assertContains(response, "ABC")
+        self.assertContains(response, "Figure supporting text XYZ")
+        self.assertContains(response, "Figure supporting text ABC")
+
     def test_figures_used_by_ancestors(self):
         """Test that the figures used by ancestors are returned correctly."""
         topic = self.page.get_parent().get_parent()
         topic.headline_figures.extend(
             [
                 (
-                    "figures",
+                    "figure",
                     {
                         "series": self.page.get_parent(),
                         "figure_id": "figurexyz",
                     },
                 ),
                 (
-                    "figures",
+                    "figure",
                     {
                         "series": self.page.get_parent(),
-                        "figure_id": "figurexyz",
+                        "figure_id": "figureabc",
                     },
                 ),
             ]
         )
         topic.save_revision().publish()
 
-        self.assertEqual(self.page.figures_used_by_ancestor, ["figurexyz", "figurexyz"])
+        self.assertEqual(self.page.figures_used_by_ancestor, ["figurexyz", "figureabc"])
 
     def test_cannot_be_deleted_if_ancestor_uses_headline_figures(self):
         """Test that the page cannot be deleted if an ancestor uses the headline figures."""
@@ -415,17 +448,17 @@ class StatisticalArticlePageRenderTestCase(WagtailTestUtils, TestCase):
         topic.headline_figures.extend(
             [
                 (
-                    "figures",
+                    "figure",
                     {
                         "series": self.page.get_parent(),
                         "figure_id": "figurexyz",
                     },
                 ),
                 (
-                    "figures",
+                    "figure",
                     {
                         "series": self.page.get_parent(),
-                        "figure_id": "figurexyz",
+                        "figure_id": "figureabc",
                     },
                 ),
             ]
@@ -457,6 +490,12 @@ class StatisticalArticlePageRenderTestCase(WagtailTestUtils, TestCase):
             response,
             "This page cannot be deleted because one or more of its children contain headline figures",
         )
+
+    @override_settings(IS_EXTERNAL_ENV=True)
+    def test_load_in_external_env(self):
+        """Test the page loads in external env."""
+        response = self.client.get(self.basic_page_url)
+        self.assertEqual(response.status_code, 200)
 
 
 class PreviousReleasesWithoutPaginationTestCase(TestCase):
@@ -572,10 +611,3 @@ class PreviousReleasesWithPaginationPagesTestCase(TestCase):
         for page, data in scenarios.items():
             with self.subTest(page=page):  # Helps identify which page scenario fails
                 self.assert_pagination(page, data["expected_contains"], data["expected_not_contains"])
-
-
-@override_settings(IS_EXTERNAL_ENV=True)
-def test_load_in_external_env(self):
-    """Test the page loads in external env."""
-    response = self.client.get(self.basic_page_url)
-    self.assertEqual(response.status_code, 200)

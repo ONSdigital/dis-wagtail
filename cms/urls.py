@@ -15,7 +15,10 @@ from cms.core.cache import get_default_cache_control_decorator
 from cms.private_media import views as private_media_views
 
 # Internal URLs are not intended for public use.
-internal_urlpatterns = [path("readiness/", core_views.ready, name="readiness")]
+internal_urlpatterns = [
+    path("readiness/", core_views.ready, name="readiness"),
+    path("liveness/", core_views.liveness, name="liveness"),
+]
 
 # Private URLs are not meant to be cached.
 private_urlpatterns = [

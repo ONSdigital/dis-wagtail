@@ -1,4 +1,3 @@
-import copy
 import os
 
 from .base import *  # noqa: F403  # pylint: disable=wildcard-import,unused-wildcard-import
@@ -53,11 +52,9 @@ if DEBUG:
         "SHOW_COLLAPSED": True,
     }
 
-# Database
-DATABASES = {
-    "default": dj_database_url.config(default="postgres://ons:ons@localhost:5432/ons"),  # noqa: F405
-}
-DATABASES["read_replica"] = copy.deepcopy(DATABASES["default"])
+# Force database connections to be read-only for the replica
+if "postgres" in DATABASES["read_replica"]["ENGINE"]:  # noqa: F405
+    DATABASES["read_replica"]["ENGINE"] = "cms.core.database_backends.postgres_readonly"  # noqa: F405
 
 # Redis
 REDIS_URL = env.get("REDIS_URL", "redis://localhost:6379")
@@ -118,6 +115,8 @@ MIGRATION_LINTER_OPTIONS = {
         "0004_topicpage_headline_figures",
         "0003_footermenu_locale_footermenu_translation_key_and_more",  # Ignoring NOT NULL constraint on columns
         "0007_remove_glossaryterm_core_glossary_term_name_unique_and_more",  # Ignoring NOT NULL constraint
+        "0004_make_release_date_mandatory_and_rename_next_release_text",  # Ignoring NOT NULL and RENAMING constraints
         "0004_statisticalarticlepage_headline_figures_figure_ids",
+        "0006_statisticalarticlepage_dataset_sorting_and_more",  # Ignoring NOT NULL constraint
     ],
 }

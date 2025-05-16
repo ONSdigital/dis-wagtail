@@ -5,7 +5,7 @@ from django.core.management.base import BaseCommand
 from django.utils import timezone
 from wagtail.models import DraftStateMixin, Page, Revision
 
-from cms.bundles.models import BundledPageMixin
+from cms.bundles.mixins import BundledPageMixin
 
 if TYPE_CHECKING:
     from django.core.management.base import CommandParser

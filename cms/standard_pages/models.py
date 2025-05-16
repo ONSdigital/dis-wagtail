@@ -2,14 +2,16 @@ from typing import TYPE_CHECKING, Any, ClassVar
 
 from django.conf import settings
 from django.db import models
-from wagtail.admin.panels import InlinePanel
+from wagtail.admin.panels import FieldPanel, InlinePanel
 from wagtail.fields import RichTextField
 from wagtail.search import index
 
+from cms.bundles.mixins import BundledPageMixin
 from cms.core.blocks.related import RelatedContentBlock
 from cms.core.blocks.stream_blocks import CoreStoryBlock
 from cms.core.fields import StreamField
 from cms.core.models import BasePage
+from cms.core.widgets import date_widget
 from cms.taxonomy.mixins import GenericTaxonomyMixin
 
 if TYPE_CHECKING:
@@ -17,7 +19,7 @@ if TYPE_CHECKING:
     from wagtail.admin.panels import Panel
 
 
-class InformationPage(GenericTaxonomyMixin, BasePage):  # type: ignore[django-manager-missing]
+class InformationPage(BundledPageMixin, GenericTaxonomyMixin, BasePage):  # type: ignore[django-manager-missing]
     """A generic information page model."""
 
     template = "templates/pages/information_page.html"
@@ -30,9 +32,10 @@ class InformationPage(GenericTaxonomyMixin, BasePage):  # type: ignore[django-ma
     content = StreamField(CoreStoryBlock())
 
     content_panels: ClassVar[list["Panel"]] = [
+        *BundledPageMixin.panels,
         *BasePage.content_panels,
         "summary",
-        "last_updated",
+        FieldPanel("last_updated", date_widget),
         "content",
         InlinePanel("page_related_pages", label="Related pages"),
     ]
@@ -44,7 +47,7 @@ class InformationPage(GenericTaxonomyMixin, BasePage):  # type: ignore[django-ma
     ]
 
 
-class IndexPage(BasePage):  # type: ignore[django-manager-missing]
+class IndexPage(BundledPageMixin, BasePage):  # type: ignore[django-manager-missing]
     template = "templates/pages/index_page.html"
 
     parent_page_types: ClassVar[list[str]] = ["home.HomePage", "IndexPage"]
@@ -62,6 +65,7 @@ class IndexPage(BasePage):  # type: ignore[django-manager-missing]
     related_links = StreamField([("related_link", RelatedContentBlock())], blank=True)
 
     content_panels: ClassVar[list["Panel"]] = [
+        *BundledPageMixin.panels,
         *BasePage.content_panels,
         "summary",
         "featured_items",
