@@ -1,8 +1,10 @@
 from django.forms import ValidationError
+from wagtail.admin.forms import WagtailAdminPageForm
 from wagtail.admin.forms.choosers import BaseFilterForm, SearchFilterMixin
 from wagtail.blocks.stream_block import StreamValue
 from wagtail.models import PageLogEntry
 
+from cms.core.utils import FORMULA_INDICATOR, latex_formula_to_svg
 from cms.taxonomy.forms import DeduplicateTopicsAdminForm
 
 
@@ -98,3 +100,33 @@ class PageWithCorrectionsAdminForm(DeduplicateTopicsAdminForm):
 
 class NoLocaleFilterInChoosersForm(SearchFilterMixin, BaseFilterForm):
     """A chooser filter form that deliberately excludes the locale filter."""
+
+
+class PageWithEquationsAdminForm(WagtailAdminPageForm):
+    def _process_content_block(self, block: StreamValue) -> None:
+        if block.block_type == "equation":
+            equation = block.value["equation"]
+            # Remove $$ from the start and end of the equation
+            if equation.startswith(FORMULA_INDICATOR) and equation.endswith(FORMULA_INDICATOR):
+                equation = equation[2:-2]
+            try:
+                block.value["svg"] = latex_formula_to_svg(equation)
+            except RuntimeError:
+                self.add_error(
+                    "content",
+                    ValidationError("The equation is not valid LaTeX. Please check the syntax and try again."),
+                )
+
+    def clean_content(self) -> StreamValue:
+        content: StreamValue = self.cleaned_data["content"]
+        if not content:
+            return content
+
+        for block in content:
+            if block.block_type == "section":
+                for sub_block in block.value["content"]:
+                    self._process_content_block(sub_block)
+            else:
+                self._process_content_block(block)
+
+        return content

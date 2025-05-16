@@ -50,6 +50,9 @@ RUN apt --quiet --yes update \
         jq \
         unzip \
         gettext \
+        texlive-latex-extra \
+        texlive-fonts-recommended \
+        cm-super \
     && apt --quiet --yes autoremove
 
 
