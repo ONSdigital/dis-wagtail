@@ -8,6 +8,8 @@ from slack_sdk.webhook import WebhookClient
 from cms.bundles.models import Bundle
 
 if TYPE_CHECKING:
+    from django.utils.functional import _StrOrPromise
+
     from cms.users.models import User
 
 
@@ -15,7 +17,7 @@ logger = logging.getLogger("cms.bundles")
 
 
 def notify_slack_of_status_change(
-    bundle: Bundle, old_status: str, user: Optional["User"] = None, url: str | None = None
+    bundle: Bundle, old_status: "_StrOrPromise", user: Optional["User"] = None, url: str | None = None
 ) -> None:
     """Sends a Slack notification for Bundle status changes."""
     if (webhook_url := settings.SLACK_NOTIFICATIONS_WEBHOOK_URL) is None:
