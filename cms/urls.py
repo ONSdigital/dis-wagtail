@@ -21,13 +21,12 @@ if TYPE_CHECKING:
 # Internal URLs are not intended for public use.
 internal_urlpatterns = [
     path("readiness/", core_views.ready, name="readiness"),
-    path("liveness/", core_views.liveness, name="liveness"),
 ]
 
 # Private URLs are not meant to be cached.
 private_urlpatterns = [
     path("-/", include((internal_urlpatterns, "internal"))),
-    path("health", core_views.health),
+    path("health", core_views.health, name="health"),
     path(
         "documents/authenticate_with_password/<int:restriction_id>/",
         authenticate_with_password,

@@ -8,7 +8,7 @@ import redis.exceptions
 from django.conf import settings
 from django.core.cache import caches
 from django.db import DatabaseError, connections
-from django.http import HttpResponse, HttpResponseServerError, JsonResponse
+from django.http import HttpResponse, JsonResponse
 from django.shortcuts import render
 from django.utils import timezone
 from django.views import defaults
@@ -59,38 +59,13 @@ def ready(request: "HttpRequest") -> HttpResponse:
     return HttpResponse(status=200)
 
 
-@require_GET
-def liveness(request: "HttpRequest") -> HttpResponse:
-    """Liveness probe endpoint.
-
-    If this fails, the container will be restarted.
-    """
-    for connection in connections.all():
-        try:
-            with connection.cursor() as cursor:
-                cursor.execute(DB_HEALTHCHECK_QUERY)
-                result = cursor.fetchone()
-
-            if result != (1,):
-                return HttpResponseServerError(content=f"'{connection.alias}' database returned unexpected value.")
-        except DatabaseError:
-            return HttpResponseServerError(content=f"'{connection.alias}' database connection errored unexpectedly.")
-
-    if isinstance(caches["default"], RedisCache):
-        try:
-            get_redis_connection().ping()
-        except redis.exceptions.ConnectionError:
-            return HttpResponseServerError(content="Failed to connect to cache.")
-
-    return HttpResponse(status=200)
-
-
 @never_cache
+@require_GET
 def health(request: "HttpRequest") -> HttpResponse:
     now = timezone.now().replace(microsecond=0)
     data = {
         "version": {
-            "build_time": settings.BUILD_TIME,
+            "build_time": settings.BUILD_TIME.isoformat() if settings.BUILD_TIME else None,
             "git_commit": settings.GIT_COMMIT,
             "language": "python",
             "language_version": platform.python_version(),
@@ -106,7 +81,7 @@ def health(request: "HttpRequest") -> HttpResponse:
         message = "Database is ok"
         try:
             with connection.cursor() as cursor:
-                cursor.execute("SELECT 1")
+                cursor.execute(DB_HEALTHCHECK_QUERY)
                 result = cursor.fetchone()
 
             if result != (1,):
@@ -139,7 +114,7 @@ def health(request: "HttpRequest") -> HttpResponse:
 
         checks.append(
             {
-                "name": "Cache",
+                "name": "cache",
                 "status": "CRITICAL" if failed else "OK",
                 "status_code": 500 if failed else 200,
                 "message": message,
@@ -151,7 +126,7 @@ def health(request: "HttpRequest") -> HttpResponse:
 
     checks_failed = any(check["status"] != "OK" for check in checks)
 
-    data["status"] = "CRITICAL" if failed else "OK"
+    data["status"] = "CRITICAL" if checks_failed else "OK"
     data["checks"] = checks
 
     return JsonResponse(data, status=500 if checks_failed else 200)

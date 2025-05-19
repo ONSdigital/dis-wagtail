@@ -679,7 +679,7 @@ CACHE_CONTROL_STALE_WHILE_REVALIDATE = int(env.get("CACHE_CONTROL_STALE_WHILE_RE
 USE_X_FORWARDED_PORT = env.get("USE_X_FORWARDED_PORT", "true").lower().strip() == "true"
 
 XFF_TRUSTED_PROXY_DEPTH = int(env.get("XFF_TRUSTED_PROXY_DEPTH", 1))
-XFF_EXEMPT_URLS = [r"^-/.*"]
+XFF_EXEMPT_URLS = [r"^-/.*", r"health"]
 
 # Error if there are the wrong number of proxies
 XFF_STRICT = env.get("XFF_STRICT", "false").lower().strip() == "true"

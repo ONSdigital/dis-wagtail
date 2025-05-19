@@ -1,6 +1,9 @@
 import logging
+import platform
+from datetime import UTC, datetime
 from unittest import mock
 
+import time_machine
 from django.conf import settings
 from django.test import Client, SimpleTestCase, TestCase, override_settings
 from django.urls import reverse
@@ -69,35 +72,87 @@ class ReadinessProbeTestCase(SimpleTestCase):
                 "CONNECTION_POOL_KWARGS": {"connection_class": FakeConnection},
             },
         }
-    }
+    },
+    BUILD_TIME=datetime(2000, 1, 1).astimezone(UTC),
+    GIT_COMMIT="commit",
+    TAG="1.2.3",
+    START_TIME=datetime(2000, 1, 1).astimezone(UTC),
 )
-class LivenessProbeTestCase(TestCase):
-    """Tests for the liveness probe endpoint."""
+@time_machine.travel(datetime(2000, 1, 2))
+class HealthProbeTestCase(TestCase):
+    """Tests for the health endpoint."""
 
     databases = "__all__"
 
-    url = reverse("internal:liveness")
+    url = reverse("health")
 
     def test_success(self):
         response = self.client.get(self.url)
 
         self.assertEqual(response.status_code, 200, response.content)
-        self.assertEqual(response.content, b"")
         self.assertEqual(response.templates, [])
+
+        data = response.json()
+
+        self.assertEqual(
+            data["version"],
+            {
+                "build_time": "2000-01-01T00:00:00+00:00",
+                "git_commit": "commit",
+                "language": "python",
+                "language_version": platform.python_version(),
+                "version": "1.2.3",
+            },
+        )
+
+        self.assertEqual(data["uptime"], 86400000)
+        self.assertEqual(data["start_time"], "2000-01-01T00:00:00+00:00")
+
+        self.assertEqual(data["status"], "OK")
+
+        for check in data["checks"]:
+            self.assertEqual(check["status"], "OK")
+            self.assertEqual(check["status_code"], 200)
+            self.assertTrue(check["message"].endswith("is ok"), check["message"])
+            self.assertEqual(check["last_checked"], "2000-01-02T00:00:00+00:00")
+            self.assertIsNone(check["last_failure"])
+            self.assertEqual(check["last_success"], "2000-01-02T00:00:00+00:00")
 
     @mock.patch("cms.core.views.DB_HEALTHCHECK_QUERY", "SELECT 0")
     def test_closed_database_fails(self):
         response = self.client.get(self.url)
 
         self.assertEqual(response.status_code, 500)
-        self.assertEqual(response.content, b"'default' database returned unexpected value.")
+
+        database_checks = [check for check in response.json()["checks"] if "database" in check["name"]]
+
+        self.assertEqual(len(database_checks), 2)
+
+        for check in database_checks:
+            self.assertEqual(check["status"], "CRITICAL")
+            self.assertEqual(check["status_code"], 500)
+            self.assertEqual(check["message"], "Backend returned unexpected result")
+            self.assertEqual(check["last_checked"], "2000-01-02T00:00:00+00:00")
+            self.assertIsNone(check["last_success"])
+            self.assertEqual(check["last_failure"], "2000-01-02T00:00:00+00:00")
 
     @mock.patch("cms.core.views.DB_HEALTHCHECK_QUERY", "INVALID QUERY")
     def test_unexpected_database_error(self):
         response = self.client.get(self.url)
 
         self.assertEqual(response.status_code, 500)
-        self.assertEqual(response.content, b"'default' database connection errored unexpectedly.")
+
+        database_checks = [check for check in response.json()["checks"] if "database" in check["name"]]
+
+        self.assertEqual(len(database_checks), 2)
+
+        for check in database_checks:
+            self.assertEqual(check["status"], "CRITICAL")
+            self.assertEqual(check["status_code"], 500)
+            self.assertEqual(check["message"], "Backend failed")
+            self.assertEqual(check["last_checked"], "2000-01-02T00:00:00+00:00")
+            self.assertIsNone(check["last_success"])
+            self.assertEqual(check["last_failure"], "2000-01-02T00:00:00+00:00")
 
     @override_settings(
         CACHES={
@@ -112,7 +167,17 @@ class LivenessProbeTestCase(TestCase):
         response = self.client.get(self.url)
 
         self.assertEqual(response.status_code, 500)
-        self.assertEqual(response.content, b"Failed to connect to cache.")
+
+        cache_check = next(check for check in response.json()["checks"] if check["name"] == "cache")
+
+        self.assertIsNotNone(cache_check)
+
+        self.assertEqual(cache_check["status"], "CRITICAL")
+        self.assertEqual(cache_check["status_code"], 500)
+        self.assertEqual(cache_check["message"], "Ping failed")
+        self.assertEqual(cache_check["last_checked"], "2000-01-02T00:00:00+00:00")
+        self.assertIsNone(cache_check["last_success"])
+        self.assertEqual(cache_check["last_failure"], "2000-01-02T00:00:00+00:00")
 
     @override_settings(XFF_STRICT=True)
     def test_xff_exempt(self):
