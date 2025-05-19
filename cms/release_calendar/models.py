@@ -57,7 +57,7 @@ class ReleaseCalendarPage(BundledPageMixin, BasePage):  # type: ignore[django-ma
     status = models.CharField(choices=ReleaseStatus.choices, default=ReleaseStatus.PROVISIONAL, max_length=32)
     summary = RichTextField(features=settings.RICH_TEXT_BASIC)
 
-    release_date = models.DateTimeField(blank=False, null=False, default=ons_default_datetime)  # to add default?
+    release_date = models.DateTimeField(blank=False, null=False, default=ons_default_datetime)
     release_date_text = models.CharField(
         max_length=50,
         blank=True,
@@ -121,7 +121,7 @@ class ReleaseCalendarPage(BundledPageMixin, BasePage):  # type: ignore[django-ma
                 ReleaseCalendarBundleNotePanel(heading="Note", classname="bundle-note"),
                 FieldRowPanel(
                     [
-                        FieldPanel("release_date", widget=ONSAdminDateTimeInput()),
+                        FieldPanel("release_date"),
                         FieldPanel("release_date_text", heading="Or, release date text"),
                     ],
                     heading="",
@@ -129,7 +129,10 @@ class ReleaseCalendarPage(BundledPageMixin, BasePage):  # type: ignore[django-ma
                 FieldRowPanel(
                     [
                         FieldPanel("next_release_date", widget=ONSAdminDateTimeInput()),
-                        FieldPanel("next_release_date_text", heading="Or, next release date text"),
+                        FieldPanel(
+                            "next_release_date_text",
+                            heading="Or, next release date text",
+                        ),
                     ],
                     heading="",
                 ),
@@ -140,7 +143,11 @@ class ReleaseCalendarPage(BundledPageMixin, BasePage):  # type: ignore[django-ma
         ),
         "summary",
         FieldPanel("content", icon="list-ul"),
-        FieldPanel("datasets", help_text="Select the datasets that this release relates to.", icon="doc-full"),
+        FieldPanel(
+            "datasets",
+            help_text="Select the datasets that this release relates to.",
+            icon="doc-full",
+        ),
         FieldPanel("contact_details", icon="group"),
         MultiFieldPanel(
             [
@@ -208,7 +215,12 @@ class ReleaseCalendarPage(BundledPageMixin, BasePage):  # type: ignore[django-ma
                 items += [{"url": "#datasets", "text": _("Data")}]
 
         if self.status in NON_PROVISIONAL_STATUSES and self.changes_to_release_date:
-            items += [{"url": "#changes-to-release-date", "text": _("Changes to this release date")}]
+            items += [
+                {
+                    "url": "#changes-to-release-date",
+                    "text": _("Changes to this release date"),
+                }
+            ]
 
         if self.status == ReleaseStatus.PUBLISHED and self.contact_details_id:
             text = _("Contact details")
@@ -246,5 +258,5 @@ class ReleaseCalendarPage(BundledPageMixin, BasePage):  # type: ignore[django-ma
             "CANCELLED": "templates/pages/release_calendar/release_calendar_page--cancelled.html",
             "PUBLISHED": "templates/pages/release_calendar/release_calendar_page.html",
         }
-        # returns template in templates[""]
+
         return cast("TemplateResponse", templates.get(mode_name, templates["PROVISIONAL"]))
