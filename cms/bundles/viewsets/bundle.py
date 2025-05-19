@@ -167,9 +167,19 @@ class BundleInspectView(InspectView):
     def get_fields(self) -> list[str]:
         """Returns the list of fields to include in the inspect view."""
         if self.can_manage:
-            return ["name", "status", "created_at", "created_by", "approved", "scheduled_publication", "teams", "pages"]
+            return [
+                "name",
+                "status",
+                "created_at",
+                "created_by",
+                "approved",
+                "scheduled_publication",
+                "teams",
+                "pages",
+                "bundled_datasets",
+            ]
 
-        return ["name", "created_at", "created_by", "scheduled_publication", "pages"]
+        return ["name", "created_at", "created_by", "scheduled_publication", "pages", "bundled_datasets"]
 
     def get_field_label(self, field_name: str, field: "Field") -> str:
         match field_name:
@@ -179,6 +189,8 @@ class BundleInspectView(InspectView):
                 return "Scheduled publication"
             case "pages":
                 return "Pages"
+            case "bundled_datasets":
+                return "Datasets"
             case _:
                 return super().get_field_label(field_name, field)  # type: ignore[no-any-return]
 
@@ -287,6 +299,22 @@ class BundleInspectView(InspectView):
     def get_teams_display_value(self) -> str:
         value: str = self.object.get_teams_display()
         return value
+
+    def get_bundled_datasets_display_value(self) -> str:
+        """Returns formatted markup for datasets linked to the Bundle."""
+        if self.object.bundled_datasets.exists():
+            return format_html(
+                "<ol>{}</ol>",
+                format_html_join(
+                    "\n",
+                    '<li><a href="{}" target="_blank" rel="noopener">{}</a></li>',
+                    (
+                        (bundled_dataset.dataset.website_url, bundled_dataset.dataset)
+                        for bundled_dataset in self.object.bundled_datasets.all()
+                    ),
+                ),
+            )
+        return "No datasets in bundle"
 
 
 class BundleIndexView(IndexView):
