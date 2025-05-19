@@ -8,6 +8,7 @@
 {%- set last_revised_label = _("Last revised:") -%}
 {%- set published_label = _("Published:") -%}
 {%- set breadcrumbs_label = _("Breadcrumbs") -%}
+{%- set contact_label = _("Contact:") -%}
 
 {% block header_area %}
     {# fmt:off #}
@@ -44,7 +45,7 @@
     {# fmt:off #}
     {% if page.contact_details %}
         {% set contact_item = {
-                "term": _("Contact:"),
+                "term": contact_label,
                 "descriptions": [
                     {
                         "description": contact_description_html

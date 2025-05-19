@@ -11,6 +11,7 @@
 {%- set release_date_label = _("Release date:") -%}
 {%- set next_release_label = _("Next release:") -%}
 {%- set breadcrumbs_label = _("Breadcrumbs") -%}
+{%- set contact_label = _("Contact:") -%}
 
 {% block header_area %}
     {%- set hero_topic = _("Statistical article") -%}
@@ -86,7 +87,7 @@
     {# fmt:off #}
     {% if page.contact_details %}
         {% set contact_item = {
-                "term": _("Contact:"),
+                "term": contact_label,
                 "descriptions": [
                     {
                         "description": contact_description_html
