@@ -74,8 +74,7 @@ class BundleAdminFormTestCase(TestCase):
             "status": BundleStatus.IN_REVIEW,
             "bundled_pages": inline_formset([{"page": self.page.id}]),
             "teams": inline_formset([]),
-            "bundled_datasets-TOTAL_FORMS": 0,
-            "bundled_datasets-INITIAL_FORMS": 0,
+            "bundled_datasets": inline_formset([]),
         }
 
     def test_form_init__status_choices(self):

@@ -84,8 +84,7 @@ class BundleViewSetTestCase(BundleViewSetTestCaseBase):
                     "status": BundleStatus.DRAFT,
                     "bundled_pages": inline_formset([{"page": self.statistical_article_page.id}]),
                     "teams": inline_formset([]),
-                    "bundled_datasets-TOTAL_FORMS": "0",
-                    "bundled_datasets-INITIAL_FORMS": "0",
+                    "bundled_datasets": inline_formset([]),
                 }
             ),
         )
@@ -103,8 +102,7 @@ class BundleViewSetTestCase(BundleViewSetTestCaseBase):
                     "status": BundleStatus.DRAFT,
                     "bundled_pages": inline_formset([{"page": self.statistical_article_page.id}]),
                     "teams": inline_formset([]),
-                    "bundled_datasets-TOTAL_FORMS": "0",
-                    "bundled_datasets-INITIAL_FORMS": "0",
+                    "bundled_datasets": inline_formset([]),
                 }
             ),
         )
@@ -131,8 +129,7 @@ class BundleViewSetTestCase(BundleViewSetTestCaseBase):
                     "status": self.bundle.status,
                     "bundled_pages": inline_formset([{"page": self.statistical_article_page.id}]),
                     "teams": inline_formset([]),
-                    "bundled_datasets-TOTAL_FORMS": "0",
-                    "bundled_datasets-INITIAL_FORMS": "0",
+                    "bundled_datasets": inline_formset([]),
                 }
             ),
         )
@@ -159,8 +156,7 @@ class BundleViewSetTestCase(BundleViewSetTestCaseBase):
                     "bundled_pages": inline_formset([{"page": self.statistical_article_page.id}]),
                     "teams": inline_formset([]),
                     "action-save-and-approve": "save-and-approve",
-                    "bundled_datasets-TOTAL_FORMS": "0",
-                    "bundled_datasets-INITIAL_FORMS": "0",
+                    "bundled_datasets": inline_formset([]),
                 }
             ),
         )
@@ -218,8 +214,7 @@ class BundleViewSetTestCase(BundleViewSetTestCaseBase):
                     "status": BundleStatus.APPROVED,
                     "bundled_pages": inline_formset([{"page": self.statistical_article_page.id}]),
                     "teams": inline_formset([]),
-                    "bundled_datasets-TOTAL_FORMS": "0",
-                    "bundled_datasets-INITIAL_FORMS": "0",
+                    "bundled_datasets": inline_formset([]),
                 }
             ),
         )
