@@ -31,27 +31,30 @@
     <div class="ons-grid">
         <div class="ons-grid__col ons-col-8@m">
             {# TODO: BE to allow us to loop through pages within documentList macro #}
+            
             {% for page in pages %}
+            {# fmt:off #}
                 {{ onsDocumentList({"documents": [
-                {
-                "title": {
-                "text": page.title,
-                "url": pageurl(page)
-                },
-                "metadata": {
-                "object": {
-                "text": 'Dataset'
-                },
-                "date": {
-                "prefix": 'Released',
-                "showPrefix": true,
-                "iso": page.release_date,
-                "short": page.release_date|date("DATE_FORMAT")
-                },
-                }
-                },
+                    {
+                        "title": {
+                            "text": page.title,
+                            "url": pageurl(page)
+                        },
+                        "metadata": {
+                            "object": {
+                            "text": 'Dataset'
+                        },
+                        "date": {
+                            "prefix": 'Released',
+                            "showPrefix": true,
+                            "iso": page.release_date,
+                            "short": page.release_date|date("DATE_FORMAT")
+                        },
+                        }
+                    },
                 ]
                 }) }}
+            {# fmt:on #}
             {% else %}
                 <p>{{ _("There are currently no releases") }}</p>
             {% endfor %}
@@ -68,6 +71,7 @@
                         })
                     }}
                 {% endif %}
+                {# fmt:on #}
             {% endblock %}
         </div>
     </div>
