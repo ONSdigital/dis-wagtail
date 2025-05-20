@@ -32,7 +32,9 @@ class ONSAuthMiddleware(AuthenticationMiddleware):
         """
         super().process_request(request)
 
+        # If Cognito is off, we only want normal Django auth.
         if not settings.AWS_COGNITO_LOGIN_ENABLED:
+            # Ensures service users with unusable passwords are logged out.
             self._handle_cognito_disabled(request)
             return
 
@@ -52,6 +54,9 @@ class ONSAuthMiddleware(AuthenticationMiddleware):
             return
 
         # Token and session integrity checks.
+        # Same Cognito app-client id (client_id vs aud).
+        # Same Cognito username in both tokens.
+        # Same username as the currently-authenticated Django user (if any).
         is_valid = self._validate_token_session_consistency(
             request=request, access_payload=access_payload, id_payload=id_payload
         )
@@ -66,6 +71,7 @@ class ONSAuthMiddleware(AuthenticationMiddleware):
             return
 
         # Update the session with token identifiers.
+        # Store new jti combo so next request can bail early.
         request.session[JWT_SESSION_ID_KEY] = jwt_session_key
 
         # Authenticate and log in the user.
@@ -89,6 +95,7 @@ class ONSAuthMiddleware(AuthenticationMiddleware):
             return False
 
         # If a user is already authenticated, validate that the session user matches the token user.
+        # Prevents token swapping where an attacker sets cookies for a different user.
         if request.user.is_authenticated and str(request.user.user_id) != id_username:
             logger.error(
                 "Authenticated user does not match token user. Logging out user.",
