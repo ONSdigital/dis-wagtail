@@ -63,8 +63,14 @@ class Command(BaseCommand):
         if methodology_pages:
             content.append({"type": "release_content", "value": {"title": "Methodology", "links": methodology_pages}})
 
+        datasets = [
+            {"type": "dataset_lookup", "id": uuid.uuid4(), "value": dataset["id"]}
+            for dataset in bundle.bundled_datasets.all().values("id")
+        ]
+
         page = bundle.release_calendar_page
         page.content = content
+        page.datasets = datasets
         page.status = ReleaseStatus.PUBLISHED
         revision = page.save_revision(log_action=True)
         revision.publish()
