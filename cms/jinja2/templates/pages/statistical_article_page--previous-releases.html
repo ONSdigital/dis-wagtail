@@ -1,28 +1,74 @@
 {% extends "templates/base_page.html" %}
 
+{% from "components/document-list/_macro.njk" import onsDocumentList %}
+{% from "components/hero/_macro.njk" import onsHero %}
+{% from "components/pagination/_macro.njk" import onsPagination %}
+
+{% block header_area %}
+    {%- set hero_topic = _("Previous Releases") -%}
+    {%- set hero_title = _("Previous Releases") -%} {# TODO: Needs to be updated to use related Statistical Article title #}
+    {%- set breadcrumbs_aria_label = _("Breadcrumbs") -%}
+
+    {# fmt:off #}
+    {{
+        onsHero({
+            "topic": hero_topic,
+            "title": hero_title,
+            "variants": 'grey',
+            "text": page.summary,
+            "wide": true,
+            "detailsColumns": 12,
+            "breadcrumbs": {
+                "ariaLabel": breadcrumbs_aria_label,
+                "itemsList": breadcrumbs(page, include_self=True),
+            }
+        })
+    }}
+    {# fmt:on #}
+{% endblock %}
+
 {% block main %}
-    <h1>{{ _("Previous Releases") }}</h1>
-    <ul>
-        {% for page in pages %}
-            <li><a href="{{ pageurl(page) }}">{{ page.title }}</a> - {{ page.release_date }}</li>
-        {% else %}
-            <p>{{ _("There are currently no releases") }}</p>
-        {% endfor %}
-    </ul>
+    <div class="ons-grid">
+        <div class="ons-grid__col ons-col-8@m">
+            {# TODO: BE to allow us to loop through pages within documentList macro #}
+            {% for page in pages %}
+                {{ onsDocumentList({"documents": [
+                {
+                "title": {
+                "text": page.title,
+                "url": pageurl(page)
+                },
+                "metadata": {
+                "object": {
+                "text": 'Dataset'
+                },
+                "date": {
+                "prefix": 'Released',
+                "showPrefix": true,
+                "iso": page.release_date,
+                "short": page.release_date|date("DATE_FORMAT")
+                },
+                }
+                },
+                ]
+                }) }}
+            {% else %}
+                <p>{{ _("There are currently no releases") }}</p>
+            {% endfor %}
 
-    {% block pagination %}
-        {% from "components/pagination/_macro.njk" import onsPagination %}
-        {% if pages.paginator.num_pages > 1 %}
+            {% block pagination %}
+                {% from "components/pagination/_macro.njk" import onsPagination %}
+                {% if pages.paginator.num_pages > 1 %}
 
-{# fmt:off #}
-            {{
-            onsPagination({
-            "currentPageNumber": pages.number ,
-            "pages": ons_pagination_url_list
-            })
-            }}
-        {# fmt:on #}
-        {% endif %}
-    {% endblock %}
-
+                {# fmt:off #}
+                    {{
+                        onsPagination({
+                            "currentPageNumber": pages.number,
+                            "pages": ons_pagination_url_list
+                        })
+                    }}
+                {% endif %}
+            {% endblock %}
+        </div>
+    </div>
 {% endblock %}
