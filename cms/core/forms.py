@@ -1,3 +1,5 @@
+import logging
+
 from django.forms import ValidationError
 from wagtail.admin.forms import WagtailAdminPageForm
 from wagtail.admin.forms.choosers import BaseFilterForm, SearchFilterMixin
@@ -6,6 +8,8 @@ from wagtail.models import PageLogEntry
 
 from cms.core.utils import FORMULA_INDICATOR, latex_formula_to_svg
 from cms.taxonomy.forms import DeduplicateTopicsAdminForm
+
+logger = logging.getLogger(__name__)
 
 
 class PageWithCorrectionsAdminForm(DeduplicateTopicsAdminForm):
@@ -111,7 +115,15 @@ class PageWithEquationsAdminForm(WagtailAdminPageForm):
                 equation = equation[2:-2]
             try:
                 block.value["svg"] = latex_formula_to_svg(equation)
-            except RuntimeError:
+            except RuntimeError as error:
+                # Log the error for debugging purposes
+                logger.warning(
+                    "Could not process LaTeX equation: %s",
+                    error,
+                    extra={
+                        "equation": equation,
+                    },
+                )
                 self.add_error(
                     "content",
                     ValidationError("The equation is not valid LaTeX. Please check the syntax and try again."),
