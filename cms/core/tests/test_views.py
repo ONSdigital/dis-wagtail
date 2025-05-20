@@ -54,6 +54,66 @@ class ReadinessProbeTestCase(SimpleTestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.content, b"")
         self.assertEqual(response.templates, [])
+        self.assertEqual(response.headers["Cache-Control"], "max-age=0, no-cache, no-store, must-revalidate, private")
+
+    @override_settings(XFF_STRICT=True)
+    def test_xff_exempt(self):
+        # Send too many IPs
+        x_forwarded_for = ",".join(["192.0.2.1"] * (settings.XFF_TRUSTED_PROXY_DEPTH + 1))
+        response = self.client.get(self.url, headers={"X-Forwarded-For": x_forwarded_for})
+        self.assertEqual(response.status_code, 200)
+
+
+@override_settings(
+    CACHES={
+        "default": {
+            "BACKEND": "django_redis.cache.RedisCache",
+            "LOCATION": "redis://",
+            "OPTIONS": {
+                "CONNECTION_POOL_KWARGS": {"connection_class": FakeConnection},
+            },
+        }
+    },
+)
+class LivenessProbeTestCase(TestCase):
+    """Tests for the liveness probe."""
+
+    databases = "__all__"
+
+    url = reverse("internal:liveness")
+
+    def test_success(self):
+        response = self.client.get(self.url)
+
+        self.assertEqual(response.status_code, 200, response.content)
+        self.assertEqual(response.headers["Cache-Control"], "max-age=0, no-cache, no-store, must-revalidate, private")
+
+    @mock.patch("cms.core.views.DB_HEALTHCHECK_QUERY", "SELECT 0")
+    def test_closed_database_fails(self):
+        response = self.client.get(self.url)
+
+        self.assertEqual(response.status_code, 500)
+        self.assertEqual(response.content, b"Database default returned unexpected result")
+
+    @mock.patch("cms.core.views.DB_HEALTHCHECK_QUERY", "INVALID QUERY")
+    def test_unexpected_database_error(self):
+        response = self.client.get(self.url)
+        self.assertEqual(response.status_code, 500)
+        self.assertEqual(response.content, b"Database default reported an error")
+
+    @override_settings(
+        CACHES={
+            "default": {
+                "BACKEND": "django_redis.cache.RedisCache",
+                "LOCATION": "redis:///does-not-exist",
+                "OPTIONS": {},
+            }
+        }
+    )
+    def test_broken_redis_connection(self):
+        response = self.client.get(self.url)
+        self.assertEqual(response.status_code, 500)
+        self.assertEqual(response.content, b"Unable to ping Redis")
 
     @override_settings(XFF_STRICT=True)
     def test_xff_exempt(self):
@@ -91,6 +151,7 @@ class HealthProbeTestCase(TestCase):
 
         self.assertEqual(response.status_code, 200, response.content)
         self.assertEqual(response.templates, [])
+        self.assertEqual(response.headers["Cache-Control"], "max-age=0, no-cache, no-store, must-revalidate, private")
 
         data = response.json()
 
@@ -109,6 +170,8 @@ class HealthProbeTestCase(TestCase):
         self.assertEqual(data["start_time"], "2000-01-01T00:00:00+00:00")
 
         self.assertEqual(data["status"], "OK")
+
+        self.assertEqual(len(data["checks"]), 3)
 
         for check in data["checks"]:
             self.assertEqual(check["status"], "OK")

@@ -8,7 +8,7 @@ import redis.exceptions
 from django.conf import settings
 from django.core.cache import caches
 from django.db import DatabaseError, connections
-from django.http import HttpResponse, JsonResponse
+from django.http import HttpResponse, HttpResponseServerError, JsonResponse
 from django.shortcuts import render
 from django.utils import timezone
 from django.views import defaults
@@ -50,12 +50,44 @@ def csrf_failure(
     return render(request, template_name, status=HTTPStatus.FORBIDDEN)
 
 
+@never_cache
 @require_GET
 def ready(request: "HttpRequest") -> HttpResponse:
     """Readiness probe endpoint.
 
     If this fails, requests will not be routed to the container.
     """
+    return HttpResponse(status=200)
+
+
+@never_cache
+@require_GET
+def liveness(request: "HttpRequest") -> HttpResponse:
+    """Liveness probe endpoint.
+
+    If this fails, the container will be restarted.
+
+    Unlike the health endpoint, this probe returns at the first sign of issue.
+    """
+    for connection in connections.all():
+        try:
+            with connection.cursor() as cursor:
+                cursor.execute(DB_HEALTHCHECK_QUERY)
+                result = cursor.fetchone()
+
+            if result != (1,):
+                return HttpResponseServerError(f"Database {connection.alias} returned unexpected result")
+        except Exception:  # pylint: disable=broad-exception-caught
+            logger.exception("Database %s reported an error", connection.alias)
+            return HttpResponseServerError(f"Database {connection.alias} reported an error")
+
+    if isinstance(caches["default"], RedisCache):
+        try:
+            get_redis_connection().ping()
+        except Exception:  # pylint: disable=broad-exception-caught
+            logger.exception("Unable to ping Redis")
+            return HttpResponseServerError("Unable to ping Redis")
+
     return HttpResponse(status=200)
 
 
@@ -71,7 +103,7 @@ def health(request: "HttpRequest") -> HttpResponse:
             "language_version": platform.python_version(),
             "version": settings.TAG,
         },
-        "uptime": int((now - settings.START_TIME).total_seconds() * 1000),
+        "uptime": round((now - settings.START_TIME).total_seconds() * 1000),
         "start_time": settings.START_TIME.isoformat(),
     }
     checks = []
@@ -87,9 +119,13 @@ def health(request: "HttpRequest") -> HttpResponse:
             if result != (1,):
                 failed = True
                 message = "Backend returned unexpected result"
-        except DatabaseError:
+        except Exception as e:  # pylint: disable=broad-exception-caught
             failed = True
-            message = "Backend failed"
+            if isinstance(e, DatabaseError):
+                message = "Backend failed"
+            else:
+                logger.exception("Unexpected error connection to backend %s", connection.alias)
+                message = "Unexpected error"
 
         checks.append(
             {
@@ -108,9 +144,13 @@ def health(request: "HttpRequest") -> HttpResponse:
         message = "Cache is ok"
         try:
             get_redis_connection().ping()
-        except redis.exceptions.ConnectionError:
+        except Exception as e:  # pylint: disable=broad-exception-caught
             failed = True
-            message = "Ping failed"
+            if isinstance(e, redis.exceptions.ConnectionError):
+                message = "Ping failed"
+            else:
+                logger.exception("Unexpected error connection to Redis")
+                message = "Unexpected error"
 
         checks.append(
             {
