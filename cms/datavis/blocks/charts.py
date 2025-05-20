@@ -7,13 +7,16 @@ from wagtail import blocks
 
 from cms.datavis.blocks.base import BaseVisualisationBlock
 from cms.datavis.blocks.utils import TextInputFloatBlock, TextInputIntegerBlock
+from cms.datavis.constants import HighChartsChartType, XAxisType
 
 if TYPE_CHECKING:
     from wagtail.blocks.struct_block import StructValue
 
 
 class LineChartBlock(BaseVisualisationBlock):
-    highcharts_chart_type = "line"
+    highcharts_chart_type = HighChartsChartType.LINE
+    x_axis_type = XAxisType.CATEGORY
+
     extra_series_attributes: ClassVar = {
         "connectNulls": True,
     }
@@ -29,6 +32,8 @@ class LineChartBlock(BaseVisualisationBlock):
 
 
 class BarColumnChartBlock(BaseVisualisationBlock):
+    x_axis_type = XAxisType.CATEGORY
+
     # Error codes
     ERROR_DUPLICATE_SERIES = "duplicate_series_number"
     ERROR_HORIZONTAL_BAR_NO_LINE = "horizontal_bar_no_line_overlay"
