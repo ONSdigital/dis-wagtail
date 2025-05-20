@@ -106,7 +106,7 @@ Feature: Statistical Article Page components
         And the user clicks "Publish"
         And the user clicks "View Live" on the publish confirmation banner
         Then the published statistical article page has the added headline figures
-        
+
     Scenario: A CMS user can see date placeholders on a Statistical Article Page by textbox
         When the user goes to add a new statistical article page
         Then the date placeholder "YYYY-MM-DD" is displayed in the "Release date*" textbox
@@ -122,3 +122,12 @@ Feature: Statistical Article Page components
         And the user clicks "View Live" on the publish confirmation banner
         And the user clicks "View data used in this article" on the article page
         Then the related data page for the article is shown
+
+    @no_javascript
+    Scenario: The fallback equation is visible to non-JS users
+        Given a statistical article page with equations exists
+        Then the user can see the equation fallback
+
+    Scenario: The fallback equation is not visible to non-JS users
+        Given a statistical article page with equations exists
+        Then the user cannot see the equation fallback
