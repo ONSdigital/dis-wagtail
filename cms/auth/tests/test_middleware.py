@@ -140,7 +140,7 @@ class ONSAuthMiddlewareTests(TestCase):
     )
     def test_session_key_skips_authenticate(self):
         req = self._request()
-        req.session = {JWT_SESSION_ID_KEY: "jajb"}  # up-to-date
+        req.session[JWT_SESSION_ID_KEY] = "jajb"
         req.COOKIES = {"access": "tokA", "id": "tokID"}
 
         payload_access = {
@@ -235,8 +235,8 @@ class ONSAuthMiddlewareTests(TestCase):
             self.middleware.process_request(req)
 
         user = get_user_model()
-        assert user.objects.filter(user_id=uid).exists()
-        assert req.session[JWT_SESSION_ID_KEY] == "jajb"
+        self.assertTrue(user.objects.filter(user_id=uid).exists())
+        self.assertEqual(req.session[JWT_SESSION_ID_KEY], "jajb")
 
     # Token rotation (new jti) -> re-authenticate and update session key
     @override_settings(
