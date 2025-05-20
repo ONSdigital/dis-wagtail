@@ -63,7 +63,7 @@ Werkzeug = "~3.0.6"
 playwright = "^1.48.0"
 behave = "^1.2.6"
 
-setuptools = "^75.2.0"
+setuptools = "^78.1.1"
 honcho = "^2.0.0"
 detect-secrets = "^1.5.0"
 moto = {extras = ["iam","s3"], version = "^5.0.22"}
