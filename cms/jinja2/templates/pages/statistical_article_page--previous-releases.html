@@ -30,34 +30,37 @@
 {% block main %}
     <div class="ons-grid">
         <div class="ons-grid__col ons-col-8@m">
-            {# TODO: BE to allow us to loop through pages within documentList macro #}
-            
-            {% for page in pages %}
-            {# fmt:off #}
-                {{ onsDocumentList({"documents": [
-                    {
+            {%- set releases = namespace(previous_release_pages=[]) -%}
+            {%- set page_meta_text = _("Dataset") -%}
+            {%- set page_date_prefix = _("Released") -%}
+
+            {% if pages %}
+                {% for page in pages %}
+                    {# fmt:off #}
+                    {%- set releases.previous_release_pages = releases.previous_release_pages + [ {
                         "title": {
                             "text": page.title,
                             "url": pageurl(page)
                         },
                         "metadata": {
                             "object": {
-                            "text": 'Dataset'
-                        },
-                        "date": {
-                            "prefix": 'Released',
-                            "showPrefix": true,
-                            "iso": page.release_date,
-                            "short": page.release_date|date("DATE_FORMAT")
-                        },
+                                "text": page_meta_text,
+                            },
+                            "date": {
+                                "prefix": page_date_prefix,
+                                "showPrefix": true,
+                                "iso": page.release_date,
+                                "short": page.release_date | date("DATE_FORMAT")
+                            },
                         }
-                    },
-                ]
-                }) }}
-            {# fmt:on #}
+                    } ] -%}
+                    {# fmt:on #}
+                {% endfor %}
+
+                {{ onsDocumentList({ "documents": releases.previous_release_pages }) }}
             {% else %}
                 <p>{{ _("There are currently no releases") }}</p>
-            {% endfor %}
+            {% endif %}
 
             {% block pagination %}
                 {% from "components/pagination/_macro.njk" import onsPagination %}
