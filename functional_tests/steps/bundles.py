@@ -60,8 +60,8 @@ def the_locale_column_is_displayed(context: Context) -> None:
 def the_user_selects_multiple_datasets(context: Context) -> None:
     mock_dataset_a = {
         "id": "example1",
-        "description": "First example dataset for functional testing",
-        "title": "Quarterly personal well-being estimates",
+        "description": "Example dataset for functional testing",
+        "title": "Looked Up Dataset",
         "version": "1",
         "links": {
             "latest_version": {
@@ -99,7 +99,7 @@ def the_user_selects_multiple_datasets(context: Context) -> None:
 
     with mock_datasets_responses(datasets=[mock_dataset_a, mock_dataset_b, mock_dataset_c]):
         context.page.get_by_role("button", name="Add dataset").click()
-        context.page.get_by_text("Quarterly personal well-being estimates").click()
+        context.page.get_by_text("Looked up dataset").click()
         context.page.get_by_text("Personal well-being estimates by local authority").click()
         context.page.get_by_text("Deaths registered weekly in England and Wales by region").click()
         context.page.get_by_role("button", name="Confirm selection").click()
@@ -108,9 +108,7 @@ def the_user_selects_multiple_datasets(context: Context) -> None:
 @then('the selected datasets are displayed in the "Data API datasets" section')
 def the_selected_datasets_are_displayed(context: Context) -> None:
     context.page.get_by_role("heading", name="Dataset 1").is_visible()
-    context.page.get_by_text(
-        "Quarterly personal well-being estimates (Edition: Example Dataset 1, Ver: 1)"
-    ).is_visible()
+    context.page.get_by_text("Looked up dataset (Edition: Example Dataset 1, Ver: 1)").is_visible()
     context.page.get_by_role("heading", name="Dataset 2").is_visible()
     context.page.get_by_text(
         "Personal well-being estimates by local authority (Edition: Example Dataset 2, Ver: 1)"
