@@ -12,6 +12,9 @@ from cms.taxonomy.forms import DeduplicateTopicsAdminForm
 logger = logging.getLogger(__name__)
 
 
+LATEX_VALIDATION_ERROR = "The equation is not valid LaTeX. Please check the syntax and try again."
+
+
 class PageWithCorrectionsAdminForm(DeduplicateTopicsAdminForm):
     def clean_corrections(self) -> StreamValue:  # noqa: C901
         corrections: StreamValue = self.cleaned_data["corrections"]
@@ -110,9 +113,10 @@ class PageWithEquationsAdminForm(WagtailAdminPageForm):
     def _process_content_block(self, block: StreamValue) -> None:
         if block.block_type == "equation":
             equation = block.value["equation"]
-            # Remove $$ from the start and end of the equation
-            if equation.startswith(FORMULA_INDICATOR) and equation.endswith(FORMULA_INDICATOR):
-                equation = equation[2:-2]
+            if not equation.startswith(FORMULA_INDICATOR) and not equation.endswith(FORMULA_INDICATOR):
+                self.add_error("content", ValidationError(LATEX_VALIDATION_ERROR))
+                return
+            equation = equation[2:-2]
             try:
                 block.value["svg"] = latex_formula_to_svg(equation)
             except RuntimeError as error:
@@ -124,10 +128,7 @@ class PageWithEquationsAdminForm(WagtailAdminPageForm):
                         "equation": equation,
                     },
                 )
-                self.add_error(
-                    "content",
-                    ValidationError("The equation is not valid LaTeX. Please check the syntax and try again."),
-                )
+                self.add_error("content", LATEX_VALIDATION_ERROR)
 
     def clean_content(self) -> StreamValue:
         content: StreamValue = self.cleaned_data["content"]
