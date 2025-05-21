@@ -6,7 +6,6 @@ from wagtail.models import Page
 from wagtail.signals import page_published
 
 from cms.articles.models import StatisticalArticlePage
-from cms.release_calendar.models import ReleaseCalendarPage
 
 if TYPE_CHECKING:
     from wagtail.admin.views.pages.create import CreateView
@@ -24,20 +23,6 @@ def on_statistical_article_page_published(
         correction.value["frozen"] = True
 
     instance.save(update_fields=["corrections"])
-
-
-@receiver(page_published, sender=ReleaseCalendarPage)
-def on_release_calendar_page_published(
-    sender: ReleaseCalendarPage,  # pylint: disable=unused-argument
-    instance: ReleaseCalendarPage,
-    **kwargs: dict,
-) -> None:
-    """Signal handler for when a ReleaseCalendarPage is published."""
-    # Go through the updates streamfield and set frozen to true for all date change logs
-    for changes in instance.changes_to_release_date:
-        changes.value["frozen"] = True
-
-    instance.save(update_fields=["changes_to_release_date"])
 
 
 @receiver(init_new_page)
