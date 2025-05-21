@@ -138,7 +138,7 @@ class LivenessProbeTestCase(TestCase):
     TAG="1.2.3",
     START_TIME=datetime(2000, 1, 1).astimezone(UTC),
 )
-@time_machine.travel(datetime(2000, 1, 2))
+@time_machine.travel(datetime(2000, 1, 2), tick=False)
 class HealthProbeTestCase(TestCase):
     """Tests for the health endpoint."""
 
