@@ -13,8 +13,15 @@ matplotlib_lock = Lock()
 
 FORMULA_INDICATOR = "$$"
 
-# Use LaTeX to render text in matplotlib
-mpl.rcParams.update({"text.usetex": True})
+mpl.rcParams.update(
+    {
+        # Use LaTeX to render text in matplotlib
+        "text.usetex": True,
+        # Load the amsmath package for LaTeX
+        "text.latex.preamble": r"\usepackage{amsmath}",
+    }
+)
+
 
 if TYPE_CHECKING:
     from django.http import HttpRequest
