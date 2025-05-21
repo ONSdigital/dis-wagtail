@@ -42,7 +42,7 @@ class CoreBlocksTestCase(TestCase):
         self.assertDictEqual(
             value.as_macro_data(),
             {
-                "thumbnail": True,
+                "thumbnail": False,
                 "title": {
                     "text": "The block document",
                     "url": self.document.url,
@@ -78,7 +78,7 @@ class CoreBlocksTestCase(TestCase):
             context["macro_data"],
             [
                 {
-                    "thumbnail": True,
+                    "thumbnail": False,
                     "title": {
                         "text": "The block document",
                         "url": self.document.url,

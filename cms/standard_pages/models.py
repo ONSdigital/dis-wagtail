@@ -8,7 +8,7 @@ from wagtail.search import index
 
 from cms.bundles.mixins import BundledPageMixin
 from cms.core.blocks.related import RelatedContentBlock
-from cms.core.blocks.stream_blocks import CoreStoryBlock
+from cms.core.blocks.stream_blocks import SectionStoryBlock
 from cms.core.fields import StreamField
 from cms.core.models import BasePage
 from cms.core.widgets import date_widget
@@ -29,7 +29,7 @@ class InformationPage(BundledPageMixin, GenericTaxonomyMixin, BasePage):  # type
 
     summary = RichTextField(features=settings.RICH_TEXT_BASIC)
     last_updated = models.DateField(blank=True, null=True)
-    content = StreamField(CoreStoryBlock())
+    content = StreamField(SectionStoryBlock())
 
     content_panels: ClassVar[list["Panel"]] = [
         *BundledPageMixin.panels,
