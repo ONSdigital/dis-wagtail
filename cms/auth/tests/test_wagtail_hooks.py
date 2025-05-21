@@ -1,3 +1,5 @@
+import json
+import re
 from collections import defaultdict
 from importlib import reload
 from unittest import mock
@@ -28,6 +30,27 @@ class WagtailHookEnabledTests(SimpleTestCase):
 
         self.assertIn("window.authConfig", html)
         self.assertIn("/static/js/auth.js", html)
+
+    # Rendered JSON payload is exactly what get_auth_config() returns
+    def test_rendered_auth_config_matches_helper_output(self):
+        expected_json = wagtail_hooks.get_auth_config()
+        with mock.patch(
+            "cms.auth.wagtail_hooks.static",
+            lambda path: f"/static/{path}",
+        ):
+            html = "".join(fn() for fn in hooks.get_hooks("insert_global_admin_js"))
+
+        # Extract the JSON inside  window.authConfig = {...};
+        match = re.search(r"window\.authConfig\s*=\s*(\{.*?\});", html, re.S)
+        self.assertIsNotNone(match, "authConfig script not found in HTML")
+
+        rendered_json = match.group(1)
+        # normalise whitespace before comparing
+        self.assertEqual(
+            json.loads(rendered_json),
+            json.loads(expected_json),
+            msg="Hook rendered JSON that differs from get_auth_config() result",
+        )
 
 
 @override_settings(AWS_COGNITO_LOGIN_ENABLED=False)

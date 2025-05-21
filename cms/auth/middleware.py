@@ -54,9 +54,9 @@ class ONSAuthMiddleware(AuthenticationMiddleware):
             return
 
         # Token and session integrity checks.
-        # Same Cognito app-client id (client_id vs aud).
+        # Same Cognito app-client id client_id vs aud.
         # Same Cognito username in both tokens.
-        # Same username as the currently-authenticated Django user (if any).
+        # Same username as the currently-authenticated Django user if any.
         is_valid = self._validate_token_session_consistency(
             request=request, access_payload=access_payload, id_payload=id_payload
         )
