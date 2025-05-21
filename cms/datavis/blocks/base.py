@@ -2,8 +2,7 @@ from collections.abc import Sequence
 from contextlib import suppress
 from typing import Any, ClassVar, Optional, cast
 
-from django.forms.widgets import Media, RadioSelect
-from django.utils.functional import cached_property
+from django.forms.widgets import RadioSelect
 from wagtail import blocks
 from wagtail.blocks.struct_block import StructValue
 
@@ -299,16 +298,3 @@ class BaseVisualisationBlock(blocks.StructBlock):
                 },
             ],
         }
-
-    @cached_property
-    def media(self) -> Media:
-        return Media(
-            js=[
-                "https://code.highcharts.com/highcharts.js",
-                "https://code.highcharts.com/modules/data.js",
-                "https://code.highcharts.com/modules/exporting.js",
-                "https://code.highcharts.com/modules/export-data.js",
-                "https://code.highcharts.com/modules/accessibility.js",
-                "https://code.highcharts.com/modules/annotations.js",
-            ]
-        )
