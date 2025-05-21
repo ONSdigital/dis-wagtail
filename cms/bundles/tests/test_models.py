@@ -71,7 +71,6 @@ class BundleModelTestCase(TestCase):
 
         BundleTeam.objects.create(parent=self.bundle, team=team)
         BundleTeam.objects.create(parent=self.bundle, team=inactive_team)
-
         self.assertListEqual(self.bundle.active_team_ids, [team.pk])
 
 
