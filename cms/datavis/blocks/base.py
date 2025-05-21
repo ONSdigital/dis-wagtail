@@ -7,7 +7,7 @@ from django.utils.functional import cached_property
 from wagtail import blocks
 from wagtail.blocks.struct_block import StructValue
 
-from cms.datavis.blocks.annotations import PointAnnotationBlock
+from cms.datavis.blocks.annotations import CategoryPointAnnotationBlock
 from cms.datavis.blocks.chart_options import AspectRatioBlock
 from cms.datavis.blocks.table import SimpleTableBlock
 from cms.datavis.blocks.utils import TextInputFloatBlock
@@ -94,11 +94,8 @@ class BaseVisualisationBlock(blocks.StructBlock):
 
     annotations = blocks.StreamBlock(
         [
-            ("point", PointAnnotationBlock()),
-            # TODO: future implementation will have different block types, and
-            # possibly split Point too to cater for continuous vs discrete data
-            # ("line", LineAnnotationBlock()),
-            # ("area", AreaAnnotationBlock()),
+            ("point", CategoryPointAnnotationBlock()),
+            # TODO: future implementation will have extra block types
         ],
         required=False,
     )
