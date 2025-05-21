@@ -95,6 +95,18 @@ def liveness(request: "HttpRequest") -> HttpResponse:
 @require_GET
 def health(request: "HttpRequest") -> HttpResponse:
     now = timezone.now().replace(microsecond=0)
+
+    def build_check(name: str, message: str, failed: bool) -> dict:
+        return {
+            "name": name,
+            "status": "CRITICAL" if failed else "OK",
+            "status_code": 500 if failed else 200,
+            "message": message,
+            "last_checked": now.isoformat(),
+            "last_success": now.isoformat() if not failed else None,
+            "last_failure": now.isoformat() if failed else None,
+        }
+
     data = {
         "version": {
             "build_time": settings.BUILD_TIME.isoformat() if settings.BUILD_TIME else None,
@@ -127,17 +139,7 @@ def health(request: "HttpRequest") -> HttpResponse:
                 logger.exception("Unexpected error connection to backend %s", connection.alias)
                 message = "Unexpected error"
 
-        checks.append(
-            {
-                "name": f"{connection.alias} database",
-                "status": "CRITICAL" if failed else "OK",
-                "status_code": 500 if failed else 200,
-                "message": message,
-                "last_checked": now.isoformat(),
-                "last_success": now.isoformat() if not failed else None,
-                "last_failure": now.isoformat() if failed else None,
-            }
-        )
+        checks.append(build_check(f"{connection.alias} database", message, failed))
 
     if isinstance(caches["default"], RedisCache):
         failed = False
@@ -152,17 +154,7 @@ def health(request: "HttpRequest") -> HttpResponse:
                 logger.exception("Unexpected error connection to Redis")
                 message = "Unexpected error"
 
-        checks.append(
-            {
-                "name": "cache",
-                "status": "CRITICAL" if failed else "OK",
-                "status_code": 500 if failed else 200,
-                "message": message,
-                "last_checked": now.isoformat(),
-                "last_success": now.isoformat() if not failed else None,
-                "last_failure": now.isoformat() if failed else None,
-            }
-        )
+        checks.append(build_check("cache", message, failed))
 
     checks_failed = any(check["status"] != "OK" for check in checks)
 
