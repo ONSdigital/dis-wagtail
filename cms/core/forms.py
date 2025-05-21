@@ -112,11 +112,13 @@ class NoLocaleFilterInChoosersForm(SearchFilterMixin, BaseFilterForm):
 class PageWithEquationsAdminForm(WagtailAdminPageForm):
     def _process_content_block(self, block: StreamValue) -> None:
         if block.block_type == "equation":
-            equation = block.value["equation"]
-            if not equation.startswith(FORMULA_INDICATOR) and not equation.endswith(FORMULA_INDICATOR):
-                self.add_error("content", ValidationError(LATEX_VALIDATION_ERROR))
-                return
-            equation = equation[2:-2]
+            equation = block.value["equation"].replace("\n", "").strip()
+            if equation.startswith(FORMULA_INDICATOR):
+                if not equation.endswith(FORMULA_INDICATOR):
+                    # Not worth trying to parse the equation if it doesn't end with the indicator
+                    self.add_error("content", ValidationError(LATEX_VALIDATION_ERROR))
+                    return
+                equation = equation[2:-2]
             try:
                 block.value["svg"] = latex_formula_to_svg(equation)
             except RuntimeError as error:
