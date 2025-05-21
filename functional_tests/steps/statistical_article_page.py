@@ -25,6 +25,32 @@ def a_statistical_article_exists(context: Context):
     context.statistical_article_page = StatisticalArticlePageFactory(parent=context.article_series_page)
 
 
+@given("a statistical article page with equations exists")
+def a_statistical_article_page_with_equations_exists(context: Context):
+    an_article_series_exists(context)
+    content = [
+        {
+            "type": "section",
+            "value": {
+                "heading": "Statistical article",
+                "content": [
+                    {
+                        "type": "equation",
+                        "value": {
+                            "equation": "$$y = mx + b$$",
+                            "svg": "<svg id='svgfallback'></svg>",
+                        },
+                    }
+                ],
+            },
+        }
+    ]
+    context.statistical_article_page = StatisticalArticlePageFactory(
+        parent=context.article_series_page, title="Statistical article with equations", content=content
+    )
+    context.statistical_article_page.save()
+
+
 @when("the user creates a new statistical article in the series")
 def create_a_new_article_in_the_series(context: Context):
     old_article_release_date = context.statistical_article_page.release_date

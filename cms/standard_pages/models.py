@@ -10,6 +10,7 @@ from cms.bundles.mixins import BundledPageMixin
 from cms.core.blocks.related import RelatedContentBlock
 from cms.core.blocks.stream_blocks import CoreStoryBlock
 from cms.core.fields import StreamField
+from cms.core.forms import PageWithEquationsAdminForm
 from cms.core.models import BasePage
 from cms.core.widgets import date_widget
 from cms.taxonomy.mixins import GenericTaxonomyMixin
@@ -21,6 +22,8 @@ if TYPE_CHECKING:
 
 class InformationPage(BundledPageMixin, GenericTaxonomyMixin, BasePage):  # type: ignore[django-manager-missing]
     """A generic information page model."""
+
+    base_form_class = PageWithEquationsAdminForm
 
     template = "templates/pages/information_page.html"
 
