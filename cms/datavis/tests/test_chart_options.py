@@ -6,7 +6,7 @@ from wagtail.blocks.struct_block import StructValue
 
 from cms.datavis.blocks.chart_options import AspectRatioBlock
 from cms.datavis.blocks.charts import LineChartBlock
-from cms.datavis.tests.test_chart_blocks import BaseChartBlockTestCase
+from cms.datavis.tests.test_chart_blocks_base import BaseChartBlockTestCase
 
 
 class AspectRatioTestCase(SimpleTestCase):
