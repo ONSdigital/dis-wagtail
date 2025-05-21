@@ -34,6 +34,7 @@ class ReleaseDateChangeBlock(blocks.StructBlock):
     previous_date = blocks.DateTimeBlock()
     reason_for_change = blocks.TextBlock()
     frozen = blocks.BooleanBlock(required=False, default=False)
+    version_id = blocks.IntegerBlock(required=False)
 
     class Meta:
         template = "templates/components/streamfield/release_date_change_block.html"
@@ -78,7 +79,10 @@ class ReleaseCalendarPreReleaseAccessStoryBlock(blocks.StreamBlock):
 
     class Meta:
         template = "templates/components/streamfield/stream_block.html"
-        block_counts: ClassVar[dict[str, dict[str, int]]] = {"description": {"max_num": 1}, "table": {"max_num": 1}}
+        block_counts: ClassVar[dict[str, dict[str, int]]] = {
+            "description": {"max_num": 1},
+            "table": {"max_num": 1},
+        }
 
 
 class ReleaseCalendarRelatedLinksStoryBlock(blocks.StreamBlock):

@@ -5,7 +5,8 @@ from django.core.exceptions import ValidationError
 from django.urls import reverse
 from django.utils.html import format_html
 from wagtail.admin.forms import WagtailAdminPageForm
-from wagtail.models import Locale
+from wagtail.blocks.stream_block import StreamValue
+from wagtail.models import Locale, PageLogEntry
 
 from cms.bundles.permissions import user_can_manage_bundles
 
@@ -119,3 +120,87 @@ class ReleaseCalendarPageAdminForm(WagtailAdminPageForm):
             bundle_str,
         )
         raise ValidationError({"status": message})
+
+    def clean_changes_to_release_date(self) -> StreamValue:  # noqa: C901
+        changes_to_release_date: StreamValue = self.cleaned_data["changes_to_release_date"]
+
+        if self.instance.pk is None:
+            if changes_to_release_date:
+                self.add_error(
+                    "changes_to_release_date",
+                    ValidationError(
+                        "You cannot create change to release date for a page that has not been published yet"
+                    ),
+                )
+            return changes_to_release_date
+
+        old_frozen_versions = [
+            change.value["version_id"] for change in self.instance.changes_to_release_date if change.value["frozen"]
+        ]
+        new_frozen_versions = [
+            change.value["version_id"] for change in changes_to_release_date if change.value["frozen"]
+        ]
+
+        latest_frozen_date = max(
+            (change.value["previous_date"] for change in changes_to_release_date if change.value["frozen"]),
+            default=None,
+        )
+
+        if old_frozen_versions != new_frozen_versions:
+            self.add_error(
+                "changes_to_release_date",
+                ValidationError(
+                    "You cannot remove a change to release date that has already been published. "
+                    "Please refresh the page and try again."
+                ),
+            )
+
+        latest_published_revision_id = (
+            PageLogEntry.objects.filter(page=self.instance, action="wagtail.publish")
+            .order_by("-timestamp")
+            .values_list("revision_id", flat=True)
+            .first()
+        )
+
+        if changes_to_release_date and not latest_published_revision_id:
+            self.add_error(
+                "changes_to_release_date",
+                ValidationError(
+                    "You cannot create a change to release date for a page that has not been published yet"
+                ),
+            )
+
+        new_change = None
+        latest_change_version = 0
+
+        for change in changes_to_release_date:
+            if not change.value["frozen"]:
+                if new_change:
+                    self.add_error(
+                        "changes_to_release_date",
+                        ValidationError("Only one new change to release date can be published at a time"),
+                    )
+                    break
+                new_change = change
+                if latest_frozen_date and new_change.value["previous_date"] < latest_frozen_date:
+                    self.add_error(
+                        "changes_to_release_date",
+                        ValidationError(
+                            "You cannot create a change to release date with a date earlier than the latest change"
+                        ),
+                    )
+            latest_change_version = max(latest_change_version, change.value["version_id"] or 0)
+
+        if new_change:
+            if not new_change.value["version_id"]:
+                new_change.value["version_id"] = latest_change_version + 1
+            if not new_change.value["version_id"]:
+                new_change.value["version_id"] = latest_published_revision_id
+
+        sorted_changes = sorted(
+            changes_to_release_date,
+            key=lambda change: change.value["previous_date"],
+            reverse=True,
+        )
+
+        return StreamValue(changes_to_release_date.stream_block, sorted_changes)

@@ -24,6 +24,9 @@ class ReleaseDateChangeBlockDefinition extends window.wagtailStreamField.blocks
     const frozenCheckbox = getFieldContainer('frozen');
     frozenCheckbox.style.display = 'none';
 
+    const versionId = getFieldContainer('version_id');
+    versionId.style.display = 'none';
+
     return block;
   }
 }
