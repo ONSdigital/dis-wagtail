@@ -249,6 +249,63 @@ class StatisticalArticlePageTestCase(WagtailTestUtils, TestCase):
         response = self.client.post(reverse("wagtailadmin_pages:edit", args=[self.page.pk]), data, follow=True)
         self.assertContains(response, "The maximum number of items is 6")
 
+    def test_clean_validates_correct_equations(self):
+        self.login()
+
+        latex_formula = (
+            r"\begin{bmatrix}"
+            r"{a_{11}}&{a_{12}}&{\cdots}&{a_{1n}}\\"
+            r"{a_{21}}&{a_{22}}&{\cdots}&{a_{2n}}\\"
+            r"{\vdots}&{\vdots}&{\ddots}&{\vdots}\\"
+            r"{a_{m1}}&{a_{m2}}&{\cdots}&{a_{mn}}\\"
+            r"\end{bmatrix}"
+        )
+
+        latex_formula_cases = (
+            r"\begin{cases}"
+            r"a_1x+b_1y+c_1z=d_1\\"
+            r"a_2x+b_2y+c_2z=d_2\\"
+            r"a_3x+b_3y+c_3z=d_3\\"
+            r"\end{cases}"
+        )
+
+        data = nested_form_data(
+            {
+                "title": self.page.title,
+                "slug": self.page.slug,
+                "summary": rich_text(self.page.summary),
+                "main_points_summary": rich_text(self.page.main_points_summary),
+                "release_date": self.page.release_date,
+                "content": streamfield(
+                    [
+                        (
+                            "section",
+                            {"title": "Test", "content": streamfield([("equation", {"equation": latex_formula})])},
+                        )
+                    ]
+                ),
+                "datasets": streamfield([]),
+                "dataset_sorting": "AS_SHOWN",
+                "corrections": streamfield([]),
+                "notices": streamfield([]),
+                "headline_figures": streamfield([]),
+            }
+        )
+        response = self.client.post(reverse("wagtailadmin_pages:edit", args=[self.page.pk]), data, follow=True)
+        self.assertNotContains(response, "The equation is not valid LaTeX. Please check the syntax and try again.")
+
+        data["content-0-value-content-0-value-equation"] = latex_formula_cases
+        response = self.client.post(reverse("wagtailadmin_pages:edit", args=[self.page.pk]), data, follow=True)
+        self.assertNotContains(response, "The equation is not valid LaTeX. Please check the syntax and try again.")
+
+        data["content-0-value-content-0-value-equation"] = "$$a+b=c$$"
+        response = self.client.post(reverse("wagtailadmin_pages:edit", args=[self.page.pk]), data, follow=True)
+        self.assertNotContains(response, "The equation is not valid LaTeX. Please check the syntax and try again.")
+
+        data["content-0-value-content-0-value-equation"] = "$$test"  # Invalid LaTeX
+        response = self.client.post(reverse("wagtailadmin_pages:edit", args=[self.page.pk]), data, follow=True)
+        self.assertContains(response, "The equation is not valid LaTeX. Please check the syntax and try again.")
+
     def test_related_datasets_sorting_alphabetic(self):
         dataset_a = {"title": "a", "description": "a", "url": "https://example.com"}
         dataset_b = Dataset.objects.create(namespace="b", edition="b", version="1", title="b", description="b")
