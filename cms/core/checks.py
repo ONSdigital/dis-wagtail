@@ -9,7 +9,7 @@ from wagtail.contrib.settings.models import (
 from wagtail.contrib.settings.models import (
     BaseSiteSetting as WagtailBaseSiteSetting,
 )
-from wagtail.models import Page
+from wagtail.models import get_page_models
 
 from cms.core.blocks.stream_blocks import CoreStoryBlock, SectionStoryBlock
 from cms.core.fields import StreamField
@@ -37,9 +37,7 @@ def check_wagtail_settings(*args: Any, **kwargs: Any) -> Iterator[CheckMessage]:
 
 @register(Tags.models)
 def check_wagtail_pages(*args: Any, **kwargs: Any) -> Iterator[CheckMessage]:
-    for model in apps.get_models():
-        if not issubclass(model, Page):
-            continue
+    for model in get_page_models():
         for field in model._meta.get_fields():
             if (
                 isinstance(field, StreamField)
