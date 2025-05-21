@@ -168,6 +168,113 @@ class ValidateJWTTests(SimpleTestCase):
         with self._patch_jwks():
             self.assertIsNone(utils.validate_jwt(expired, token_type="access"))
 
+    # Issuer mismatch -> validate_jwt() must return None
+    @override_settings(
+        AWS_COGNITO_USER_POOL_ID="test-pool",
+        AWS_COGNITO_APP_CLIENT_ID="expected",
+    )
+    def test_issuer_mismatch_returns_none(self):
+        importlib.reload(utils)
+        bad_iss = "https://evil.example.com/123"  # wrong issuer
+        token = build_jwt(
+            self.good_pair,
+            token_use="id",
+            iss=bad_iss,
+            aud="expected",
+            **{
+                "cognito:username": "u1",
+                "email": "x@y.com",
+                "sub": "u1",
+            },
+        )
+        with self._patch_jwks():
+            self.assertIsNone(utils.validate_jwt(token, token_type="id"))
+
+    # Wrong algorithm (HS256) -> returns None
+    def test_wrong_algorithm_returns_none(self):
+        # Use HS256, but still include a kid so header passes first check
+        token = jwt.encode(
+            {
+                "token_use": "access",
+                "username": "u1",
+                "client_id": "expected",
+                "sub": "u1",
+            },
+            "secret",
+            algorithm="HS256",
+            headers={"kid": self.good_pair.kid},
+        )
+
+        # JWKS contains an RSA key so alg mismatch hits jwt.InvalidAlgorithmError
+        with self._patch_jwks():
+            self.assertIsNone(utils.validate_jwt(token, token_type="access"))
+
+    # Missing required claim username ->  returns None
+    def test_missing_required_claim_returns_none(self):
+        token = build_jwt(
+            self.good_pair,
+            token_use="access",
+            # username intentionally omitted
+            client_id="expected",
+            sub="u1",
+        )
+        with self._patch_jwks():
+            self.assertIsNone(utils.validate_jwt(token, token_type="access"))
+
+    # Bearer -prefixed token string still validates
+    @override_settings(
+        AWS_COGNITO_USER_POOL_ID="test-pool",
+        AWS_COGNITO_APP_CLIENT_ID="expected",
+    )
+    def test_bearer_prefix_trimming_succeeds(self):
+        importlib.reload(utils)
+        token = build_jwt(
+            self.good_pair,
+            token_use="access",
+            username="u1",
+            client_id="expected",
+            sub="u1",
+        )
+        with self._patch_jwks():
+            claims = utils.validate_jwt(f"Bearer {token}", token_type="access")
+        self.assertIsNotNone(claims)
+        self.assertEqual(claims["username"], "u1")
+
+    # JWKS JSON decode error -> returns None
+    @override_settings(
+        AWS_COGNITO_USER_POOL_ID="test-pool",
+        AWS_COGNITO_APP_CLIENT_ID="expected",
+    )
+    def test_jwks_json_decode_error_returns_none(self):
+        importlib.reload(utils)
+        token = build_jwt(
+            self.good_pair,
+            token_use="access",
+            username="u1",
+            client_id="expected",
+            sub="u1",
+        )
+
+        json_error = json.JSONDecodeError("Expecting value", doc="", pos=0)
+        with mock.patch("cms.auth.utils.get_jwks", side_effect=json_error):
+            self.assertIsNone(utils.validate_jwt(token, token_type="access"))
+
+    # Generic exception inside utils._parse_der_public_key -> returns None
+    def test_generic_exception_returns_none(self):
+        token = build_jwt(
+            self.good_pair,
+            token_use="access",
+            username="u1",
+            client_id="expected",
+            sub="u1",
+        )
+
+        with (
+            self._patch_jwks(),  # JWKS is fine
+            mock.patch("cms.auth.utils._parse_der_public_key", side_effect=ValueError("boom")),
+        ):
+            self.assertIsNone(utils.validate_jwt(token, token_type="access"))
+
 
 @override_settings(
     AUTH_TOKEN_REFRESH_URL="/refresh/",
