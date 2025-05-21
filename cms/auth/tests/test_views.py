@@ -32,6 +32,17 @@ class ONSLogoutViewTests(TestCase, WagtailTestUtils):
         req._messages = storage  # pylint: disable=protected-access
         return storage
 
+    @override_settings(AWS_COGNITO_LOGIN_ENABLED=False, LOGOUT_REDIRECT_URL="/")
+    def test_logout_redirects_to_configured_url_when_flag_off(self):
+        """When Cognito is disabled the view should behave exactly like Wagtail's
+        stock LogoutView and redirect to settings.LOGOUT_REDIRECT_URL.
+        """
+        url = reverse("wagtailadmin_logout")
+        response = self.client.post(url, follow=False)
+
+        # 302 redirect to "/"
+        self.assertRedirects(response, "/", fetch_redirect_response=False)
+
     @override_settings(
         AWS_COGNITO_LOGIN_ENABLED=True,
         ACCESS_TOKEN_COOKIE_NAME="access",
@@ -141,3 +152,26 @@ class ExtendSessionTests(WagtailTestUtils, TestCase):
         # login_required returns 302 to LOGIN_URL / WAGTAILADMIN_LOGIN_URL
         self.assertEqual(res.status_code, 302)
         self.assertIn("/login", res.url)
+
+    def test_session_modified_flag_set(self):
+        """Besides bumping expiry, the view must actually mark the session as
+        modified so Django will re-save it.
+        """
+        request, _ = self._make_request()
+        extend_session(request)  # ignore response here
+        self.assertTrue(request.session.modified)
+
+    def test_csrf_failure_returns_403(self):
+        """If the CSRF check fails, Django should abort with 403 long before the
+        view code runs.  We simulate that by sending a POST with a cookie but
+        no matching X-CSRFTOKEN header.
+        """
+        url = reverse("extend_session")
+
+        # still logged-in from setUp; give the browser a CSRF cookie
+        bad_token = csrf._get_new_csrf_string()  # pylint: disable=protected-access
+        self.client.cookies["csrftoken"] = bad_token  # header intentionally omitted
+
+        res = self.client.post(url, follow=False)
+
+        self.assertEqual(res.status_code, 403)
