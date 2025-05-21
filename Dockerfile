@@ -34,6 +34,10 @@ FROM python:3.12-slim AS base
 
 WORKDIR /app
 
+# Install the correct version of the Postgres client
+# library (Debian's bundled version is normally too old)
+ARG POSTGRES_VERSION=16
+
 # Install common OS-level dependencies
 # TODO: when moving to ONS infrastructure, replace RUN with:
 # RUN --mount=type=cache,target=/var/lib/apt/lists,sharing=locked \
@@ -53,6 +57,11 @@ RUN apt --quiet --yes update \
         texlive-latex-extra \
         texlive-fonts-recommended \
         cm-super \
+        postgresql-common \
+    # Install the Postgres repo
+    && /usr/share/postgresql-common/pgdg/apt.postgresql.org.sh -y \
+    # Install the Postgres client (matching production version)
+    && apt --quiet --yes install --no-install-recommends postgresql-client-${POSTGRES_VERSION} \
     && apt --quiet --yes autoremove
 
 
@@ -215,10 +224,8 @@ CMD ["gunicorn"]
 FROM base AS dev
 
 # Switch to the root user and Install extra OS-level dependencies for
-# development, including Node.js and the correct version of the Postgres client
-# library (Debian's bundled version is normally too old)
+# development, including Node.js
 USER root
-ARG POSTGRES_VERSION=16
 # TODO: when moving to ONS infrastructure, replace RUN with
 # RUN --mount=type=cache,target=/var/lib/apt/lists,sharing=locked \
 #     --mount=type=cache,target=/var/cache/apt,sharing=locked \
@@ -234,13 +241,7 @@ RUN <<EOF
         gnupg \
         less \
         openssh-client \
-        postgresql-common \
         sudo
-    # Install the Postgres repo
-    /usr/share/postgresql-common/pgdg/apt.postgresql.org.sh -y
-    # Intall the Postgres client (make sure the version matches the one in production)
-    apt --quiet --yes install \
-        postgresql-client-${POSTGRES_VERSION}
     # Download and import the Nodesource GPG key
     mkdir -p /etc/apt/keyrings
     curl -fsSL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key | gpg --dearmor -o /etc/apt/keyrings/nodesource.gpg
