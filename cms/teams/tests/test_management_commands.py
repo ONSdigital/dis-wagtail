@@ -51,7 +51,7 @@ class SyncTeamsCommandTests(TestCase):
         """Patch requests.get so /groups returns supplied list."""
         resp_json = {"groups": groups}
 
-        def fake_get(url):
+        def fake_get(url, *args, **kwargs):
             self.assertIn("/groups", url)
             return mock.Mock(status_code=200, json=lambda: resp_json, raise_for_status=lambda: None)
 
@@ -142,3 +142,56 @@ class SyncTeamsCommandTests(TestCase):
     def test_missing_base_url_setting_raises(self):
         with override_settings(IDENTITY_API_BASE_URL=None), self.assertRaises(CommandError):
             self._call_command()
+
+    # HTTP 5xx raise_for_status fires up as CommandError
+    def test_http_error_raises_command_error(self):
+        bad_resp = mock.Mock(
+            status_code=500,
+            raise_for_status=mock.Mock(side_effect=requests.HTTPError("boom")),
+        )
+        with (
+            mock.patch("cms.teams.management.commands.sync_teams.requests.get", return_value=bad_resp),
+            self.assertRaises(CommandError),
+        ):
+            self._call_command()
+
+    # A previously inactive team should be re-activated when present in the remote payload.
+    def test_inactive_team_reactivated(self):
+        team = Team.objects.create(
+            identifier="react",
+            name="Reactivate Me",
+            precedence=1,
+            created_at=NOW,
+            updated_at=NOW,
+            is_active=False,
+        )
+
+        with self._mock_api([api_group(gid="react", name="Reactivate Me", precedence=2)]):
+            self._call_command()
+
+        team.refresh_from_db()
+        self.assertTrue(team.is_active)
+
+    # When the remote payload is identical, save() must not be called.
+    def test_no_change_skips_save(self):
+        team = Team.objects.create(
+            identifier="same",
+            name="Same",
+            precedence=1,
+            created_at=NOW,
+            updated_at=NOW,
+            is_active=True,
+        )
+
+        identical_payload = [api_group(gid="same", name="Same", precedence=1)]
+
+        with (
+            self._mock_api(identical_payload),
+            mock.patch.object(team, "save", wraps=team.save) as m_save,
+        ):
+            self._call_command()
+
+        self.assertFalse(
+            m_save.called,
+            "Team.save() should not be called when nothing changed",
+        )
