@@ -29,7 +29,8 @@ def user_adds_info_page_contents(context: Context) -> None:
 
     context.page.get_by_role("button", name="Insert a block").nth(2).click()
     context.page.get_by_text("Equation").click()
-    context.page.locator("#content-1-value").fill("$$\\sum_{i=0}^n i^2 = \\frac{(n^2+n)(2n+1)}{6}$$")
+    context.page.locator('[data-controller="wagtailmathjax"]').fill("$$\\sum_{i=0}^n i^2 = \\frac{(n^2+n)(2n+1)}{6}$$")
+    context.page.wait_for_timeout(50000)
 
     context.page.get_by_role("button", name="Add related pages").click()
     context.page.get_by_role("button", name="Choose a page").click()

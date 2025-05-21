@@ -38,6 +38,7 @@ python-json-logger = "^3.3.0"
 json-log-formatter = "^1.1.1"
 django-xff = "^1.5.0"
 djangorestframework = "^3.16.0"
+matplotlib = "^3.10.3"
 pyjwt = "^2.10.1"
 cryptography = "^44.0.2"
 
@@ -62,7 +63,8 @@ tblib = "^3.0.0"
 Werkzeug = "~3.0.6"
 playwright = "^1.48.0"
 behave = "^1.2.6"
-setuptools = "^75.2.0"
+
+setuptools = "^78.1.1"
 honcho = "^2.0.0"
 detect-secrets = "^1.5.0"
 moto = {extras = ["iam","s3"], version = "^5.0.22"}
