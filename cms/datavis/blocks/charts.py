@@ -1,3 +1,5 @@
+import json
+from collections import defaultdict
 from typing import TYPE_CHECKING, Any, ClassVar
 
 from django.core.exceptions import ValidationError
@@ -5,7 +7,9 @@ from django.db.models import TextChoices
 from django.forms import widgets
 from wagtail import blocks
 
+from cms.datavis.blocks.annotations import CoordinatePointAnnotationBlock
 from cms.datavis.blocks.base import BaseVisualisationBlock
+from cms.datavis.blocks.table import SimpleTableBlock, TableDataType
 from cms.datavis.blocks.utils import TextInputFloatBlock, TextInputIntegerBlock
 from cms.datavis.constants import HighChartsChartType, XAxisType
 
@@ -178,3 +182,57 @@ class BarColumnChartBlock(BaseVisualisationBlock):
             raise blocks.StructBlockValidationError(block_errors=errors)
 
         return value
+
+
+class ScatterPlotBlock(BaseVisualisationBlock):
+    highcharts_chart_type = HighChartsChartType.SCATTER
+    x_axis_type = XAxisType.LINEAR
+
+    # Remove unsupported features
+    select_chart_type = None
+    use_stacked_layout = None
+    show_data_labels = None
+    series_customisation = None
+    show_markers = None
+
+    TABLE_DEFAULT_DATA: TableDataType = (
+        ["X", "Y", "Group"],
+        ["", "", ""],
+        ["", "", ""],
+    )
+    table = SimpleTableBlock(
+        label="Data",
+        help_text=(
+            "Data is interpreted as three columns: x-value, y-value, group label. "
+            "Column headings in row 1 are ignored. Other columns are ignored."
+        ),
+        default={"table_data": json.dumps({"data": TABLE_DEFAULT_DATA})},
+    )
+
+    annotations = blocks.StreamBlock(
+        # Use coordinate-based annotations for scatter plots
+        [
+            ("point", CoordinatePointAnnotationBlock()),
+        ],
+        required=False,
+    )
+
+    class Meta:
+        icon = "chart-line"
+
+    def get_series_data(self, value: "StructValue") -> tuple[list[list[str | int | float]], list[dict[str, Any]]]:
+        rows: list[list[str | int | float]] = value["table"].rows
+        groups = defaultdict(list)
+
+        for x, y, group_name, *_ in rows:
+            groups[group_name].append((x, y))
+
+        series = []
+        for group_name, data_points in groups.items():
+            item = {
+                "name": group_name,
+                "data": data_points,
+                "marker": True,
+            }
+            series.append(item)
+        return rows, series
