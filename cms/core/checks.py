@@ -42,7 +42,7 @@ def check_wagtail_pages(*args: Any, **kwargs: Any) -> Iterator[CheckMessage]:
             if (
                 isinstance(field, StreamField)
                 and isinstance(field.block_types_arg, SectionStoryBlock | CoreStoryBlock)
-                and not issubclass(model.base_form_class, PageWithEquationsAdminForm)  # type: ignore[attr-defined]
+                and not issubclass(model.base_form_class, PageWithEquationsAdminForm)
             ):
                 yield Error(
                     f"Page model {model.__name__} does not use the correct base form class.",
