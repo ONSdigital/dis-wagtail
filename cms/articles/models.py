@@ -358,13 +358,13 @@ class StatisticalArticlePage(BundledPageMixin, RoutablePageMixin, BasePage):  # 
         # NB: Little validation is done on previous_version, as it's assumed handled on save
         revision = get_object_or_404(self.revisions, pk=correction.value["previous_version"])
 
-        revision_object = revision.as_object()
+        revision_page = revision.as_object()
 
         response: TemplateResponse = self.render(
             request,
             context_overrides={
-                "page": revision_object,
-                "table_of_contents": revision_object.table_of_contents,
+                "page": revision_page,
+                "table_of_contents": revision_page.table_of_contents,
                 "latest_version_url": self.get_url(request),
             },
         )
