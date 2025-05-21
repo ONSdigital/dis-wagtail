@@ -181,6 +181,20 @@ class LatexFormulaTestCase(TestCase):
         self.assertTrue(result.startswith("<svg"))
         self.assertNotIn("fill: #ffffff", result)
 
+    def test_latex_formula_to_svg_with_advanced_mathematical_symbols(self):
+        latex_formula = (
+            r"\begin{bmatrix}"
+            r"{a_{11}}&{a_{12}}&{\cdots}&{a_{1n}}\\"
+            r"{a_{21}}&{a_{22}}&{\cdots}&{a_{2n}}\\"
+            r"{\vdots}&{\vdots}&{\ddots}&{\vdots}\\"
+            r"{a_{m1}}&{a_{m2}}&{\cdots}&{a_{mn}}\\"
+            r"\end{bmatrix}"
+        )
+        result = latex_formula_to_svg(latex_formula)
+        self.assertTrue(result.startswith("<svg"))
+        self.assertIn("</g>", result)
+        self.assertTrue(result.endswith("</svg>\n"))
+
     def test_latex_formula_to_svg_empty_formula(self):
         """Test the conversion of an empty LaTeX formula to SVG."""
         # Test with an empty LaTeX formula
