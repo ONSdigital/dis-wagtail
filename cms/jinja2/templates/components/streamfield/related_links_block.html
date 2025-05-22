@@ -1,29 +1,7 @@
 {% from "components/document-list/_macro.njk" import onsDocumentList %}
-{%- set items = namespace(related_links=[]) -%}
-
-{% for item in value %}
-    {# fmt:off #}
-        {% if item.link %}
-            {%- set item_link_url = item.link.url -%}
-            {%- set item_link_text = item.link.text -%}
-        {% endif %}
-
-        {% if item.description %}
-            {%- set item_description = item.description -%}
-        {% endif %}
-
-        {%- set items.related_links = items.related_links + [ {
-            "title": {
-                "text": item_link_text,
-                "url": item_link_url
-            },
-            "description": item_description
-        } ] -%}
-    {# fmt:on #}
-{% endfor %}
 
 <section id="{{ slug }}">
     <h2>{{ heading }}</h2>
 
-    {{ onsDocumentList({ "documents": items.related_links }) }}
+    {{ onsDocumentList({ "documents": related_links }) }}
 </section>
