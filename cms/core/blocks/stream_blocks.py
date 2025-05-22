@@ -17,7 +17,7 @@ from cms.core.blocks import (
     WarningPanelBlock,
 )
 from cms.core.blocks.section_blocks import SectionBlock
-from cms.datavis.blocks import BarColumnChartBlock, LineChartBlock
+from cms.datavis.blocks import BarColumnChartBlock, LineChartBlock, ScatterPlotBlock
 
 if TYPE_CHECKING:
     from wagtail.blocks import StreamValue
@@ -59,6 +59,7 @@ class CoreStoryBlock(StreamBlock):
 
     line_chart = LineChartBlock(group="DataVis", label="Line Chart")
     bar_column_chart = BarColumnChartBlock(group="DataVis", label="Bar/Column Chart")
+    scatter_plot = ScatterPlotBlock(group="DataVis", label="Scatter Plot")
 
     class Meta:
         block_counts: ClassVar[dict[str, dict]] = {"related_links": {"max_num": 1}}
