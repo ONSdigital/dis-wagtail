@@ -54,9 +54,9 @@ RUN apt --quiet --yes update \
         jq \
         unzip \
         gettext \
-        texlive-latex-extra \
         cm-super \
         postgresql-common \
+    && apt --quiet --yes install --no-install-recommends textlive-latex-extra \
     # Install the Postgres repo
     && /usr/share/postgresql-common/pgdg/apt.postgresql.org.sh -y \
     # Install the Postgres client (matching production version)
