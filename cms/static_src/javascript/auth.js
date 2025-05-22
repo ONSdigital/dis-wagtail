@@ -2,7 +2,22 @@
 
 import SessionManagement from 'dis-authorisation-client-js';
 
-window.authConfig = window.authConfig || {};
+/** ----------------------------------------------------------------
+ *  Grab the JSON produced by:
+ *      {{ AUTH_CONFIG | json_script('auth-config') }}
+ *  in the Jinja template (or the Python hook).
+ * ----------------------------------------------------------------*/
+
+let authConfig = {};
+const configEl = document.getElementById('auth-config');
+
+if (configEl) {
+  try {
+    authConfig = JSON.parse(configEl.textContent);
+  } catch (e) {
+    console.error('[WAGTAIL] Failed to parse <script id="auth-config">:', e);
+  }
+}
 
 const {
   wagtailAdminHomePath,
@@ -11,7 +26,8 @@ const {
   sessionRenewalOffsetSeconds,
   authTokenRefreshUrl,
   idTokenCookieName,
-} = window.authConfig;
+} = authConfig;
+
 const { origin } = window.location;
 const logoutURL = `${origin}/${wagtailAdminHomePath}logout/`;
 const extendSessionURL = `${origin}/${wagtailAdminHomePath}extend-session/`;

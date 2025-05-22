@@ -1,6 +1,5 @@
 from django.conf import settings
-from django.utils.html import format_html
-from django.utils.safestring import SafeString, mark_safe
+from django.utils.html import format_html, json_script
 from django_jinja.builtins.filters import static
 from wagtail import hooks
 
@@ -13,17 +12,16 @@ def register_global_admin_auth_js_hook() -> None:
         return
 
     @hooks.register("insert_global_admin_js")
-    def global_admin_auth_js() -> SafeString:
-        """Register the auth.js script in the Wagtail admin to handle refresh logic."""
+    def global_admin_auth_js() -> str:
+        """Insert a safe JSON payload and defer-loaded bundle into the Wagtail admin."""
+        # Safely embed the auth configuration as a JSON data-island.
+        config_tag: str = json_script(get_auth_config(), element_id="auth-config")
+
+        # Add the Auth bundle; defer prevents render-blocking.
         return format_html(
-            """
-            <script>
-                window.authConfig = {config};
-            </script>
-            <script src="{auth_js_path}"></script>
-            """,
-            config=mark_safe(get_auth_config()),  # noqa: S308
-            auth_js_path=static("js/auth.js"),
+            '{}<script src="{}" defer></script>',
+            config_tag,
+            static("js/auth.js"),
         )
 
 
