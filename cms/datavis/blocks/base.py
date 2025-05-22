@@ -6,16 +6,17 @@ from django.forms.widgets import RadioSelect
 from wagtail import blocks
 from wagtail.blocks.struct_block import StructValue
 
-from cms.datavis.blocks.annotations import PointAnnotationBlock
+from cms.datavis.blocks.annotations import CategoryPointAnnotationBlock
 from cms.datavis.blocks.chart_options import AspectRatioBlock
 from cms.datavis.blocks.table import SimpleTableBlock
 from cms.datavis.blocks.utils import TextInputFloatBlock
-from cms.datavis.constants import HighchartsTheme
+from cms.datavis.constants import AxisType, HighChartsChartType, HighchartsTheme
 
 
 class BaseVisualisationBlock(blocks.StructBlock):
     # Extra attributes for subclasses
-    highcharts_chart_type: ClassVar[str]
+    highcharts_chart_type: ClassVar[HighChartsChartType]
+    x_axis_type: ClassVar[AxisType]
     extra_series_attributes: ClassVar[dict[str, Any]]
 
     # Editable fields
@@ -30,8 +31,8 @@ class BaseVisualisationBlock(blocks.StructBlock):
     table = SimpleTableBlock(label="Data table")
 
     # Override select_chart_type as a ChoiceBlock in subclasses which have
-    # options, or override as None, and set highcharts_chart_type as a string
-    # instead.
+    # options, or override as None, and set highcharts_chart_type as a
+    # HighChartsChartType enum instead.
     select_chart_type = blocks.StaticBlock()
 
     theme = blocks.ChoiceBlock(
@@ -92,11 +93,8 @@ class BaseVisualisationBlock(blocks.StructBlock):
 
     annotations = blocks.StreamBlock(
         [
-            ("point", PointAnnotationBlock()),
-            # TODO: future implementation will have different block types, and
-            # possibly split Point too to cater for continuous vs discrete data
-            # ("line", LineAnnotationBlock()),
-            # ("area", AreaAnnotationBlock()),
+            ("point", CategoryPointAnnotationBlock()),
+            # TODO: future implementation will have extra block types
         ],
         required=False,
     )
@@ -150,7 +148,7 @@ class BaseVisualisationBlock(blocks.StructBlock):
         """Chart type may be set by a field, or hardcoded in the subclass."""
         if chart_type := value.get("select_chart_type"):
             return cast(str, chart_type)
-        return self.highcharts_chart_type
+        return self.highcharts_chart_type.value
 
     def get_component_config(self, value: "StructValue") -> dict[str, Any]:
         rows, series = self.get_series_data(value)
@@ -179,9 +177,11 @@ class BaseVisualisationBlock(blocks.StructBlock):
         rows: Sequence[list[str | int | float]],
     ) -> dict[str, Any]:
         config: dict[str, Any] = {
-            "type": "category",
-            "categories": [r[0] for r in rows],
+            "type": self.x_axis_type.value,
         }
+
+        if self.x_axis_type == AxisType.CATEGORY:
+            config["categories"] = [r[0] for r in rows]
 
         # Only add x-axis title if supported and provided, as the Highcharts
         # x-axis title default value is undefined. See
