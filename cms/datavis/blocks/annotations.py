@@ -1,4 +1,4 @@
-from typing import Any
+from typing import Any, cast
 
 from wagtail import blocks
 from wagtail.blocks.struct_block import StructValue
@@ -15,16 +15,35 @@ class PointAnnotationStructValue(StructValue):
         return {
             "text": self.get("label"),
             "point": {
-                # The Design System component expects 0-based indices.
-                "x": self.get("x_position") - 1,
+                "x": self.get_x_position(),
                 "y": self.get("y_position"),
             },
             "labelOffsetX": self.get("label_offset_x"),
             "labelOffsetY": label_offset_y,
         }
 
+    def get_x_position(self) -> float:
+        raise NotImplementedError("Subclasses must implement get_x_position()")
 
-class PointAnnotationBlock(blocks.StructBlock):
+
+class BasePointAnnotationBlock(blocks.StructBlock):
+    label = blocks.CharBlock(required=True)
+    x_position = blocks.StaticBlock()
+    y_position = blocks.StaticBlock()
+    label_offsets = blocks.StaticBlock(admin_text="Offsets are measured in pixels")
+    label_offset_x = TextInputIntegerBlock(label="Offset X", required=False)
+    label_offset_y = TextInputIntegerBlock(label="Offset Y", required=False)
+
+
+class CategoryPointAnnotationStructValue(PointAnnotationStructValue):
+    def get_x_position(self) -> int:
+        # The Design System component expects 0-based indices.
+        return cast(int, self.get("x_position")) - 1
+
+
+class CategoryPointAnnotationBlock(BasePointAnnotationBlock):
+    """Point annotation for when the x-axis is discrete/categorical."""
+
     label = blocks.CharBlock(required=True)
 
     x_position = TextInputIntegerBlock(
@@ -37,9 +56,22 @@ class PointAnnotationBlock(blocks.StructBlock):
         help_text="The label will point to this location on the value axis.",
     )
 
-    label_offsets = blocks.StaticBlock(admin_text="Offsets are measured in pixels")
-    label_offset_x = TextInputIntegerBlock(label="Offset X", required=False)
-    label_offset_y = TextInputIntegerBlock(label="Offset Y", required=False)
+    class Meta:
+        value_class = CategoryPointAnnotationStructValue
+
+
+class CoordinatePointAnnotationStructValue(PointAnnotationStructValue):
+    def get_x_position(self) -> float:
+        return cast(float, self.get("x_position"))
+
+
+class CoordinatePointAnnotationBlock(BasePointAnnotationBlock):
+    """Point annotation for when the x-axis is continuous/linear."""
+
+    label = blocks.CharBlock(required=True)
+
+    x_position = TextInputFloatBlock(label="X", required=True)
+    y_position = TextInputFloatBlock(label="Y", required=True)
 
     class Meta:
-        value_class = PointAnnotationStructValue
+        value_class = CoordinatePointAnnotationStructValue

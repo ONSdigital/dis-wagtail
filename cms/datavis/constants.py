@@ -1,3 +1,5 @@
+from enum import Enum
+
 from django.db.models import TextChoices
 from django.utils.translation import gettext_lazy as _
 
@@ -18,3 +20,15 @@ class MarkerStyle(TextChoices):
 class HighchartsTheme(TextChoices):
     PRIMARY = "primary", "Primary"
     ALTERNATE = "alternate", "Alternate"
+
+
+class HighChartsChartType(Enum):
+    LINE = "line"
+    BAR = "bar"
+    COLUMN = "column"
+    SCATTER = "scatter"
+
+
+class AxisType(Enum):
+    CATEGORY = "category"
+    LINEAR = "linear"
