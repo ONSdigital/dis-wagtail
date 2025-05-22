@@ -29,6 +29,6 @@ class HighChartsChartType(Enum):
     SCATTER = "scatter"
 
 
-class XAxisType(Enum):
+class AxisType(Enum):
     CATEGORY = "category"
     LINEAR = "linear"

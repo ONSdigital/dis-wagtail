@@ -11,13 +11,13 @@ from cms.datavis.blocks.annotations import CategoryPointAnnotationBlock
 from cms.datavis.blocks.chart_options import AspectRatioBlock
 from cms.datavis.blocks.table import SimpleTableBlock
 from cms.datavis.blocks.utils import TextInputFloatBlock
-from cms.datavis.constants import HighChartsChartType, HighchartsTheme, XAxisType
+from cms.datavis.constants import AxisType, HighChartsChartType, HighchartsTheme
 
 
 class BaseVisualisationBlock(blocks.StructBlock):
     # Extra attributes for subclasses
     highcharts_chart_type: ClassVar[HighChartsChartType]
-    x_axis_type: ClassVar[XAxisType]
+    x_axis_type: ClassVar[AxisType]
     extra_series_attributes: ClassVar[dict[str, Any]]
 
     # Editable fields
@@ -181,7 +181,7 @@ class BaseVisualisationBlock(blocks.StructBlock):
             "type": self.x_axis_type.value,
         }
 
-        if self.x_axis_type == XAxisType.CATEGORY:
+        if self.x_axis_type == AxisType.CATEGORY:
             config["categories"] = [r[0] for r in rows]
 
         # Only add x-axis title if supported and provided, as the Highcharts

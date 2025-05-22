@@ -11,7 +11,7 @@ from cms.datavis.blocks.annotations import CoordinatePointAnnotationBlock
 from cms.datavis.blocks.base import BaseVisualisationBlock
 from cms.datavis.blocks.table import SimpleTableBlock, TableDataType
 from cms.datavis.blocks.utils import TextInputFloatBlock, TextInputIntegerBlock
-from cms.datavis.constants import HighChartsChartType, XAxisType
+from cms.datavis.constants import AxisType, HighChartsChartType
 
 if TYPE_CHECKING:
     from wagtail.blocks.struct_block import StructValue
@@ -19,7 +19,7 @@ if TYPE_CHECKING:
 
 class LineChartBlock(BaseVisualisationBlock):
     highcharts_chart_type = HighChartsChartType.LINE
-    x_axis_type = XAxisType.CATEGORY
+    x_axis_type = AxisType.CATEGORY
 
     extra_series_attributes: ClassVar = {
         "connectNulls": True,
@@ -36,7 +36,7 @@ class LineChartBlock(BaseVisualisationBlock):
 
 
 class BarColumnChartBlock(BaseVisualisationBlock):
-    x_axis_type = XAxisType.CATEGORY
+    x_axis_type = AxisType.CATEGORY
 
     # Error codes
     ERROR_DUPLICATE_SERIES = "duplicate_series_number"
@@ -186,7 +186,7 @@ class BarColumnChartBlock(BaseVisualisationBlock):
 
 class ScatterPlotBlock(BaseVisualisationBlock):
     highcharts_chart_type = HighChartsChartType.SCATTER
-    x_axis_type = XAxisType.LINEAR
+    x_axis_type = AxisType.LINEAR
 
     # Remove unsupported features
     select_chart_type = None
