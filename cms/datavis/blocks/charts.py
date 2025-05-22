@@ -227,12 +227,12 @@ class ScatterPlotBlock(BaseVisualisationBlock):
         for x, y, group_name, *_ in rows:
             groups[group_name].append((x, y))
 
-        series = []
-        for group_name, data_points in groups.items():
-            item = {
+        series = [
+            {
                 "name": group_name,
                 "data": data_points,
                 "marker": True,
             }
-            series.append(item)
+            for group_name, data_points in groups.items()
+        ]
         return rows, series
