@@ -2,6 +2,7 @@ from collections.abc import Iterable
 from typing import Any
 
 from django import forms
+from django.db.models import Q, QuerySet
 from django.views import View
 from wagtail.admin.forms.choosers import BaseFilterForm
 from wagtail.admin.ui.tables import Column
@@ -9,6 +10,7 @@ from wagtail.admin.views.generic.chooser import (
     BaseChooseView,
     ChooseResultsViewMixin,
     ChooseViewMixin,
+    ChosenMultipleViewMixin,
     ChosenResponseMixin,
     ChosenViewMixin,
     CreationFormMixin,
@@ -90,6 +92,53 @@ class DatasetChosenView(ChosenViewMixin, ChosenResponseMixin, View):
         return dataset
 
 
+class DatasetChosenMultipleViewMixin(ChosenMultipleViewMixin):
+    def get_objects(self, pks: list[Any]) -> QuerySet[Dataset]:
+        if not pks:
+            return Dataset.objects.none()
+
+        api_data_for_datasets: list[ONSDataset] = []
+
+        # List of tuples (namespace, edition, version) for querying existing datasets
+        lookup_criteria: list[tuple[str, str, str]] = []
+
+        # TODO: update when we can fetch items in bulk from the dataset API or use the cached listing view?
+        for pk in pks:
+            item_from_api = ONSDataset.objects.get(pk=pk)  # pylint: disable=no-member
+
+            api_data_for_datasets.append(item_from_api)
+            lookup_criteria.append((item_from_api.id, item_from_api.edition, item_from_api.version))
+
+        existing_query = Q()
+        for namespace, edition, version in lookup_criteria:
+            existing_query |= Q(namespace=namespace, edition=edition, version=version)
+
+        existing_datasets_map: dict[tuple[str, str, str], Dataset] = {
+            (ds.namespace, ds.edition, ds.version): ds for ds in Dataset.objects.filter(existing_query)
+        }
+
+        datasets_to_create_instances: list[Dataset] = []
+        for data in api_data_for_datasets:
+            key = (data.id, data.edition, data.version)
+            if key not in existing_datasets_map:
+                datasets_to_create_instances.append(
+                    Dataset(
+                        namespace=data.id,
+                        edition=data.edition,
+                        version=data.version,
+                        title=data.title,
+                        description=data.description,
+                    )
+                )
+
+        if datasets_to_create_instances:
+            Dataset.objects.bulk_create(datasets_to_create_instances)
+        return Dataset.objects.filter(existing_query)
+
+
+class DatasetChosenMultipleView(DatasetChosenMultipleViewMixin, ChosenResponseMixin, View): ...
+
+
 class DatasetChooserViewSet(ChooserViewSet):
     model = Dataset
     icon = "tag"
@@ -98,6 +147,7 @@ class DatasetChooserViewSet(ChooserViewSet):
     choose_view_class = DatasetChooseView
     choose_results_view_class = DatasetChooseResultsView
     chosen_view_class = DatasetChosenView
+    chosen_multiple_view_class = DatasetChosenMultipleView
 
 
 dataset_chooser_viewset = DatasetChooserViewSet("dataset_chooser")

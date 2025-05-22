@@ -2,7 +2,7 @@ import factory
 from django.utils import timezone
 
 from cms.bundles.enums import BundleStatus
-from cms.bundles.models import Bundle, BundlePage
+from cms.bundles.models import Bundle, BundleDataset, BundlePage
 from cms.users.tests.factories import UserFactory
 
 
@@ -72,4 +72,15 @@ class BundlePageFactory(factory.django.DjangoModelFactory):
 
     parent = factory.SubFactory(BundleFactory)
     page = factory.SubFactory("cms.articles.tests.factories.StatisticalArticlePageFactory")
+    sort_order = factory.Sequence(lambda n: n)
+
+
+class BundleDatasetFactory(factory.django.DjangoModelFactory):
+    """Factory for BundleDataset model."""
+
+    class Meta:
+        model = BundleDataset
+
+    parent = factory.SubFactory(BundleFactory)
+    dataset = factory.SubFactory("cms.datasets.tests.factories.DatasetFactory")
     sort_order = factory.Sequence(lambda n: n)
