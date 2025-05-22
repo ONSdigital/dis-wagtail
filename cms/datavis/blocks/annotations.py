@@ -1,4 +1,4 @@
-from typing import Any
+from typing import Any, cast
 
 from wagtail import blocks
 from wagtail.blocks.struct_block import StructValue
@@ -38,7 +38,7 @@ class BasePointAnnotationBlock(blocks.StructBlock):
 class CategoryPointAnnotationStructValue(PointAnnotationStructValue):
     def get_x_position(self) -> int:
         # The Design System component expects 0-based indices.
-        return self.get("x_position") - 1
+        return cast(int, self.get("x_position")) - 1
 
 
 class CategoryPointAnnotationBlock(BasePointAnnotationBlock):
@@ -62,7 +62,7 @@ class CategoryPointAnnotationBlock(BasePointAnnotationBlock):
 
 class CoordinatePointAnnotationStructValue(PointAnnotationStructValue):
     def get_x_position(self) -> float:
-        return self.get("x_position")
+        return cast(float, self.get("x_position"))
 
 
 class CoordinatePointAnnotationBlock(BasePointAnnotationBlock):
