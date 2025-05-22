@@ -4,9 +4,13 @@
 {% from "components/hero/_macro.njk" import onsHero %}
 {% from "components/pagination/_macro.njk" import onsPagination %}
 
+{%- set page_title -%}
+    {% trans trimmed title=page.title %}Previous releases for {{ title }}{% endtrans %}
+{%- endset -%}
+
 {% block header_area %}
     {%- set hero_topic = _("Previous Releases") -%}
-    {%- set hero_title = _("Previous Releases") -%} {# TODO: Needs to be updated to use related Statistical Article title #}
+    {%- set hero_title = page.title ~ " " ~ _("Statistical articles") -%}
     {%- set breadcrumbs_aria_label = _("Breadcrumbs") -%}
 
     {# fmt:off #}
@@ -31,7 +35,7 @@
     <div class="ons-grid">
         <div class="ons-grid__col ons-col-8@m">
             {%- set releases = namespace(previous_release_pages=[]) -%}
-            {%- set page_meta_text = _("Dataset") -%}
+            {%- set page_meta_text = _("Article") -%}
             {%- set page_date_prefix = _("Released") -%}
 
             {% if pages %}
@@ -39,7 +43,7 @@
                     {# fmt:off #}
                     {%- set releases.previous_release_pages = releases.previous_release_pages + [ {
                         "title": {
-                            "text": page.title,
+                            "text": page.get_admin_display_title(),
                             "url": pageurl(page)
                         },
                         "metadata": {
@@ -50,7 +54,7 @@
                                 "prefix": page_date_prefix,
                                 "showPrefix": true,
                                 "iso": page.release_date,
-                                "short": page.release_date | date("DATE_FORMAT")
+                                "short": page.release_date | ons_date("DATE_FORMAT")
                             },
                         }
                     } ] -%}

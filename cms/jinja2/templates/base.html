@@ -3,10 +3,6 @@
 {% from "component_overrides/header/_macro.njk" import onsHeaderNew %}
 {% from "components/footer/_macro.njk" import onsFooter %}
 
-{% set page_title %}
-    {% if current_site and page.pk == current_site.root_page.pk and current_site.site_name %}{{ current_site.site_name }} | {% endif %}{% block title %}{% if page.seo_title %}{{ page.seo_title }}{% else %}{{ page.title}}{% endif %}{% endblock %}{% block title_suffix %}{% if current_site and page.pk != current_site.root_page.pk and current_site.site_name %} | {{ current_site.site_name }}{% endif %}{% endblock %}
-{% endset %}
-
 {# fmt:off #}
 {% set languages=get_translation_urls() %}
 {% set hreflangs=get_hreflangs() %}
@@ -17,11 +13,12 @@
     {% set body_class = '' %}
 {% endif %}
 
-{%- set page_title -%}
+{%- set page_title_default -%}
     {%- with current_site=wagtail_site() -%}
         {% if current_site and page.pk == current_site.root_page.pk and current_site.site_name %}{{ current_site.site_name }} - {% endif %}{% if page.seo_title %}{{ page.seo_title }}{% else %}{{ page.display_title | default(page.title) }}{% endif %}{% if current_site and page.pk != current_site.root_page.pk and current_site.site_name %} - {{ current_site.site_name }}{% endif %}
     {%- endwith -%}
 {%- endset -%}
+{%- set page_title = page_title | default(page_title_default) -%}
 
 {% set navigation_settings = settings.navigation.NavigationSettings %}
 {% set main_menu = main_menu | default(navigation_settings.main_menu.localized) %}
