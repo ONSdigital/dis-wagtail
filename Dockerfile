@@ -54,6 +54,9 @@ RUN apt --quiet --yes update \
         jq \
         unzip \
         gettext \
+        texlive-latex-extra \
+        texlive-fonts-recommended \
+        cm-super \
         postgresql-common \
     # Install the Postgres repo
     && /usr/share/postgresql-common/pgdg/apt.postgresql.org.sh -y \
