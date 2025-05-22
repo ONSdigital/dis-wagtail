@@ -56,7 +56,7 @@ class RelatedLinksBlock(ListBlock):
             related_links.append(link_data)
 
         context["related_links"] = related_links
-        
+
         return context
 
     class Meta:
