@@ -50,13 +50,16 @@
             {% include_block page.content %}
 
             {% if page.related_pages %}
+                {%- set related_content_aria_label = _('Related content') -%}
+                {%- set related_content_title = _('Related content') -%}
+
                 {# fmt:off #}
                 {{-
                     onsRelatedContent({
-                        "ariaLabel": _('Related content'),
+                        "ariaLabel": related_content_aria_label,
                         "rows": [{
                             "id": 'related-content',
-                            "title": _('Related content'),
+                            "title": related_content_title,
                             "itemsList": page.related_pages
                         }]
                     })
