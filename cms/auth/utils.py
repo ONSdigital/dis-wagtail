@@ -2,12 +2,12 @@ import base64
 import json
 import logging
 from collections.abc import Iterable
-from typing import Optional
+from typing import Any, Optional, cast
 
 import requests
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import serialization
-from cryptography.hazmat.primitives.asymmetric.types import PublicKeyTypes
+from cryptography.hazmat.primitives.asymmetric.rsa import RSAPublicKey
 from django.conf import settings
 from jwt import InvalidTokenError, get_unverified_header
 from jwt import decode as jwt_decode
@@ -23,22 +23,23 @@ EXPECTED_AUDIENCE = settings.AWS_COGNITO_APP_CLIENT_ID
 ALGORITHMS = ["RS256"]
 
 
-def _parse_der_public_key(b64_der_key: str) -> PublicKeyTypes:
+def _parse_der_public_key(b64_der_key: str) -> RSAPublicKey:
     """Parses a Base64 encoded DER public key and returns the public key object."""
     try:
         der = base64.b64decode(b64_der_key)
-        return serialization.load_der_public_key(der, backend=default_backend())
+        key = serialization.load_der_public_key(der, backend=default_backend())
+        return cast(RSAPublicKey, key)
     except Exception:
         logger.exception("Failed to parse DER public key")
         raise
 
 
 @memory_cache(60 * 30)
-def get_jwks() -> dict:
+def get_jwks() -> dict[str, str]:
     """Retrieves and caches JSON Web Key Sets (JWKS) for token verification."""
     response = requests.get(JWKS_URL, timeout=5)
     response.raise_for_status()
-    return response.json()
+    return cast(dict[str, str], response.json())
 
 
 def validate_jwt(token: str, token_type: str) -> dict | None:
@@ -62,7 +63,7 @@ def validate_jwt(token: str, token_type: str) -> dict | None:
     return None
 
 
-def _validate_jwt(token: str, *, extra_fields: Iterable, token_type: str) -> Optional[dict]:
+def _validate_jwt(token: str, *, extra_fields: Iterable[str], token_type: str) -> Optional[dict[str, Any]]:
     header = get_unverified_header(token)
     kid = header.get("kid")
     if not kid:
@@ -75,23 +76,27 @@ def _validate_jwt(token: str, *, extra_fields: Iterable, token_type: str) -> Opt
         logger.error("Public key not found for kid", extra={"kid": kid})
         return None
 
-    claims = jwt_decode(
-        token,
-        key=_parse_der_public_key(public_key_b64),
-        algorithms=ALGORITHMS,
-        issuer=EXPECTED_ISSUER,
-        audience=EXPECTED_AUDIENCE if token_type == "id" else None,  # noqa: S105  aud is not present in access token
-        options={
-            "verify_signature": True,
-            "verify_exp": True,
-            "verify_iat": True,
-            "verify_aud": token_type == "id",  # noqa: S105  aud is not present in access token
-            "verify_iss": True,
-            "verify_sub": True,
-            "verify_jti": True,
-            "verify_nbf": False,  # AWS Cognito does not utilise 'nbf'
-            "require": ["token_use", *extra_fields],
-        },
+    claims: dict[str, Any] = cast(
+        dict[str, Any],
+        jwt_decode(
+            token,
+            key=_parse_der_public_key(public_key_b64),
+            algorithms=ALGORITHMS,
+            issuer=EXPECTED_ISSUER,
+            # aud is not present in access token
+            audience=EXPECTED_AUDIENCE if token_type == "id" else None,  # noqa: S105
+            options={
+                "verify_signature": True,
+                "verify_exp": True,
+                "verify_iat": True,
+                "verify_aud": token_type == "id",  # noqa: S105  aud is not present in access token
+                "verify_iss": True,
+                "verify_sub": True,
+                "verify_jti": True,
+                "verify_nbf": False,  # AWS Cognito does not utilise 'nbf'
+                "require": ["token_use", *extra_fields],
+            },
+        ),
     )
 
     if claims["token_use"] != token_type:

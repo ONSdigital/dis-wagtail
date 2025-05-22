@@ -7,7 +7,7 @@ from wagtail import hooks
 from cms.auth.utils import get_auth_config
 
 
-def register_global_admin_auth_js_hook():
+def register_global_admin_auth_js_hook() -> None:
     """Conditionally register the global admin Auth JS hook based on an whether Cognito login is enabled."""
     if not settings.AWS_COGNITO_LOGIN_ENABLED:
         return

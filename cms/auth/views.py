@@ -1,5 +1,5 @@
 import logging
-from typing import Any
+from typing import Any, Protocol, cast
 
 from django.conf import settings
 from django.contrib import messages
@@ -10,6 +10,10 @@ from django.views.decorators.csrf import csrf_protect
 from wagtail.admin.views.account import LogoutView
 
 logger = logging.getLogger(__name__)
+
+
+class _HasUserId(Protocol):
+    user_id: str  # the single attribute we need for logging
 
 
 class ONSLogoutView(LogoutView):
@@ -43,7 +47,7 @@ def extend_session(request: HttpRequest) -> JsonResponse:
     """Extends the session by marking it as modified, which resets its expiry timer."""
     if request.method == "POST":
         request.session.modified = True  # Flag session as modified to update expiry
-        logger.info("Session extended successfully for user", extra={"user_id": request.user.user_id})
+        logger.info("Session extended successfully for user", extra={"user_id": cast(_HasUserId, request.user).user_id})
         return JsonResponse({"status": "success", "message": "Session extended."})
 
     return JsonResponse({"status": "error", "message": "Invalid request method."}, status=405)

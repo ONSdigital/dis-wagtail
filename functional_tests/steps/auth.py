@@ -41,7 +41,7 @@ def init_auth_js(context):
     context._requests: list[Request] = []
 
     def _rec(route: Route, request: Request):
-        context._requests.append(request)
+        context._requests.append(request)  # pylint: disable=protected-access
         route.continue_()
 
     context.browser_context.route("**/*", _rec)
@@ -49,17 +49,19 @@ def init_auth_js(context):
 
 # Keep alive
 @when("the passive renewal timer fires")
-def wait_passive_interval(context):
+def wait_passive_interval():
     time.sleep(AUTH_CONFIG["sessionRenewalOffsetSeconds"] + 0.5)
 
 
 @then('the browser must have made a POST request to "/admin/extend-session/"')
 def assert_extend_called(context):
     url_suffix = "/admin/extend-session/"
-    matches = [r for r in context._requests if r.url.endswith(url_suffix) and r.method == "POST"]
-    assert matches, f"extend-session not called; captured {[r.url for r in context._requests]}"
+    matches = [r for r in context._requests if r.url.endswith(url_suffix) and r.method == "POST"]  # pylint: disable=protected-access
+    if not matches:
+        raise AssertionError(f"extend-session not called; captured {[r.url for r in context._requests]}")  # pylint: disable=protected-access
     hdr = AUTH_CONFIG["csrfHeaderName"]
-    assert matches[0].headers[hdr] == "fakecsrftoken"
+    if matches[0].headers[hdr] != "fakecsrftoken":
+        raise AssertionError(f'Expected CSRF token "fakecsrftoken", got "{matches[0].headers[hdr]}"')
 
 
 # Preview pane
@@ -85,10 +87,12 @@ def open_preview_iframe(context):
 def iframe_not_initialised(context):
     frame = context.preview_frame
     initialised = frame.evaluate("() => Boolean(window.SessionManagement?.__INITIALISED__)")
-    assert initialised is False, "auth.js unexpectedly initialised inside preview iframe"
+    if initialised is not False:
+        raise AssertionError("auth.js unexpectedly initialised inside preview iframe")
 
 
 @then("no network traffic occurs from the iframe")
 def iframe_no_traffic(context):
     # allow the initial HTML fetch only
-    assert len(context.iframe_requests) == 0, f"unexpected traffic: {[r.url for r in context.iframe_requests]}"
+    if len(context.iframe_requests) != 0:
+        raise AssertionError(f"unexpected traffic: {[r.url for r in context.iframe_requests]}")
