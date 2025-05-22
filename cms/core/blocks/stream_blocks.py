@@ -58,6 +58,7 @@ class CoreStoryBlock(StreamBlock):
 
     class Meta:
         block_counts: ClassVar[dict[str, dict]] = {"related_links": {"max_num": 1}}
+        template = "templates/components/streamfield/stream_block.html"
 
     def has_equations(self, value: "StreamValue") -> bool:
         """Checks if there are any equation blocks."""
