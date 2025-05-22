@@ -45,9 +45,7 @@ class RelatedLinksBlock(ListBlock):
             if not text:
                 continue
 
-            link_data = {
-                "title": {"text": text, "url": url}
-            }
+            link_data = {"title": {"text": text, "url": url}}
 
             description = item.get("description")
             if description:
