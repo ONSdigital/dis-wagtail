@@ -27,6 +27,7 @@ class HighChartsChartType(Enum):
     BAR = "bar"
     COLUMN = "column"
     SCATTER = "scatter"
+    AREA = "area"
 
 
 class AxisType(Enum):

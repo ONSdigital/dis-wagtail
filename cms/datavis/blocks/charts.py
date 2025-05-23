@@ -236,3 +236,42 @@ class ScatterPlotBlock(BaseVisualisationBlock):
             for group_name, data_points in groups.items()
         ]
         return rows, series
+
+
+class AreaChartBlock(BaseVisualisationBlock):
+    highcharts_chart_type = HighChartsChartType.AREA
+    x_axis_type = AxisType.CATEGORY
+
+    # Error codes
+    ERROR_EMPTY_CELLS = "empty_cells"
+
+    # Remove unsupported features
+    select_chart_type = None
+    show_markers = None
+    series_customisation = None
+    show_data_labels = None
+    use_stacked_layout = None
+
+    class Meta:
+        icon = "chart-area"
+
+    def clean(self, value: "StructValue") -> "StructValue":
+        value = super().clean(value)
+        value = self.clean_table_data(value)
+        return value
+
+    def clean_table_data(self, value: "StructValue") -> "StructValue":
+        rows = value["table"].rows
+
+        if any(cell == "" for row in rows[1:] for cell in row):
+            raise blocks.StructBlockValidationError(
+                {
+                    "table": ValidationError(
+                        "Empty cells in data. Area chart with missing values is not supported. "
+                        "Enter data, or delete empty rows or columns.",
+                        code=self.ERROR_EMPTY_CELLS,
+                    )
+                }
+            )
+
+        return value
