@@ -106,3 +106,8 @@ MIGRATION_LINTER_OPTIONS = {
         "0006_statisticalarticlepage_dataset_sorting_and_more",  # Ignoring NOT NULL constraint
     ],
 }
+
+# Blank out build information during local development
+BUILD_TIME = None
+GIT_COMMIT = None
+TAG = "dev"

@@ -10,6 +10,7 @@ ECR_PROFILE_NAME ?= dp-ci
 ECR_AWS_ACCOUNT_ID := $(shell aws sts get-caller-identity --query "Account" --output text --profile $(ECR_PROFILE_NAME))
 AWS_REGION ?= eu-west-2
 ECR_REGISTRY := $(ECR_AWS_ACCOUNT_ID).dkr.ecr.$(AWS_REGION).amazonaws.com
+BUILD_ARGS := --build-arg="GIT_COMMIT=$(shell git rev-parse HEAD)" --build-arg="BUILD_TIME=$(shell date +%s)" --build-arg="TAG=$(TAG)"
 
 .PHONY: create_ecr_repo
 create_ecr_repo:
@@ -37,16 +38,11 @@ check_ecr:
 	fi
 	@echo "✅ Tag '$(TAG)' is available for use."
 
-.PHONY: build_ecr_local
-build_ecr_local:
-	docker build -t $(ECR_REPO):$(TAG) --target=web -f $(DOCKERFILE) ../
-	docker tag $(ECR_REPO):$(TAG) $(ECR_REPO):latest
-
 .PHONY: build_ecr_remote
 build_ecr_remote:
 	@$(MAKE) create_ecr_repo
 	@$(MAKE) check_ecr
-	docker build -t $(ECR_REGISTRY)/$(ECR_REPO):$(TAG) --target=web -f $(DOCKERFILE) ../
+	docker build -t $(ECR_REGISTRY)/$(ECR_REPO):$(TAG) --target=web -f $(DOCKERFILE) $(BUILD_ARGS) ../
 	docker tag $(ECR_REGISTRY)/$(ECR_REPO):$(TAG) $(ECR_REGISTRY)/$(ECR_REPO):latest
 
 .PHONY: push_ecr
