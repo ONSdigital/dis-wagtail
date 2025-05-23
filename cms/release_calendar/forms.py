@@ -135,14 +135,22 @@ class ReleaseCalendarPageAdminForm(WagtailAdminPageForm):
             return changes_to_release_date
 
         old_frozen_versions = [
-            change.value["version_id"] for change in self.instance.changes_to_release_date if change.value["frozen"]
+            date_change_log.value["version_id"]
+            for date_change_log in self.instance.changes_to_release_date
+            if date_change_log.value["frozen"]
         ]
         new_frozen_versions = [
-            change.value["version_id"] for change in changes_to_release_date if change.value["frozen"]
+            date_change_log.value["version_id"]
+            for date_change_log in changes_to_release_date
+            if date_change_log.value["frozen"]
         ]
 
         latest_frozen_date = max(
-            (change.value["previous_date"] for change in changes_to_release_date if change.value["frozen"]),
+            (
+                date_change_log.value["previous_date"]
+                for date_change_log in changes_to_release_date
+                if date_change_log.value["frozen"]
+            ),
             default=None,
         )
 
@@ -170,32 +178,34 @@ class ReleaseCalendarPageAdminForm(WagtailAdminPageForm):
                 ),
             )
 
-        new_change = None
-        latest_change_version = 0
+        new_date_change_log = None
+        latest_date_change_log_version = 0
 
-        for change in changes_to_release_date:
-            if not change.value["frozen"]:
-                if new_change:
+        for date_change_log in changes_to_release_date:
+            if not date_change_log.value["frozen"]:
+                if new_date_change_log:
                     self.add_error(
                         "changes_to_release_date",
                         ValidationError("Only one new change to release date can be published at a time"),
                     )
                     break
-                new_change = change
-                if latest_frozen_date and new_change.value["previous_date"] < latest_frozen_date:
+                new_date_change_log = date_change_log
+                if latest_frozen_date and date_change_log.value["previous_date"] < latest_frozen_date:
                     self.add_error(
                         "changes_to_release_date",
                         ValidationError(
                             "You cannot create a change to release date with a date earlier than the latest change"
                         ),
                     )
-            latest_change_version = max(latest_change_version, change.value["version_id"] or 0)
+            latest_date_change_log_version = max(
+                latest_date_change_log_version, date_change_log.value["version_id"] or 0
+            )
 
-        if new_change:
-            if not new_change.value["version_id"]:
-                new_change.value["version_id"] = latest_change_version + 1
-            if not new_change.value["version_id"]:
-                new_change.value["version_id"] = latest_published_revision_id
+        if new_date_change_log:
+            if not new_date_change_log.value["version_id"]:
+                new_date_change_log.value["version_id"] = latest_date_change_log_version + 1
+            if not new_date_change_log.value["version_id"]:
+                new_date_change_log.value["version_id"] = latest_published_revision_id
 
         sorted_changes = sorted(
             changes_to_release_date,
