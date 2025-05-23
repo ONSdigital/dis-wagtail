@@ -109,6 +109,7 @@ class Bundle(index.Indexed, ClusterableModel, models.Model):  # type: ignore[dja
         related_name="bundles",
     )
     status = models.CharField(choices=BundleStatus.choices, default=BundleStatus.DRAFT, max_length=32)
+    preview_notification_sent = models.BooleanField(default=False, editable=False)
 
     objects = BundleManager()
 

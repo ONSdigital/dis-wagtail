@@ -75,7 +75,6 @@ INSTALLED_APPS = [
     "cms.navigation",
     "cms.taxonomy",
     "cms.search",
-    "cms.notifications",
     "cms.workflows",
     "wagtail.embeds",
     "wagtail.sites",
@@ -547,6 +546,26 @@ LOGGING = {
 # We use SMTP to send emails. We typically use transactional email services
 # that let us use SMTP.
 # https://docs.djangoproject.com/en/2.1/topics/email/
+
+# Tests automatically use EMAIL_BACKEND = "django.core.mail.backends.locmem.EmailBackend"
+EMAIL_BACKEND = env.get("EMAIL_BACKEND", "django.core.mail.backends.console.EmailBackend")
+FROM_EMAIL = env.get("FROM_EMAIL", "example@mail.com")
+
+# EMAIL_BACKEND = 'django_ses.SESBackend'
+
+if EMAIL_BACKEND == "django_ses.SESBackend":
+    # These are optional if you are using AWS IAM Roles https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles.html
+    AWS_ACCESS_KEY_ID = env.get("YOUR-ACCESS-KEY-ID", "DUMMY-ACCESS-KEY-ID")
+    AWS_SECRET_ACCESS_KEY = env.get("YOUR-SECRET-ACCESS-KEY", "DUMMY-SECRET-ACCESS-KEY")  # pragma: allowlist secret
+
+    # https://docs.aws.amazon.com/cli/v1/userguide/cli-configure-files.html
+    # AWS_SESSION_PROFILE = 'YOUR-PROFILE-NAME' TODO: is this needed
+
+    AWS_SES_REGION_NAME = env["AWS_REGION"]
+    AWS_SES_REGION_ENDPOINT = env["AWS_SES_ENDPOINT"]
+
+    # https://aws.amazon.com/blogs/messaging-and-targeting/upgrade-your-email-tech-stack-with-amazon-sesv2-api/
+    USE_SES_V2 = True
 
 # https://docs.djangoproject.com/en/stable/ref/settings/#email-host
 if "EMAIL_HOST" in env:
