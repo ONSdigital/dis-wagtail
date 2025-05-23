@@ -275,12 +275,6 @@ class StatisticalArticlePage(BundledPageMixin, RoutablePageMixin, BasePage):  # 
         # At this stage we can override the figure ids to account for deleted ones
         self.update_headline_figures_figure_ids(figure_ids)
 
-    def get_context(self, request: "HttpRequest", *args: Any, **kwargs: Any) -> dict:
-        """Additional context for the template."""
-        context: dict = super().get_context(request, *args, **kwargs)
-        context["table_of_contents"] = self.table_of_contents
-        return context
-
     def get_admin_display_title(self) -> str:
         """Changes the admin display title to include the parent title."""
         return f"{self.get_parent().title}: {self.draft_title or self.title}"
@@ -359,7 +353,11 @@ class StatisticalArticlePage(BundledPageMixin, RoutablePageMixin, BasePage):  # 
         revision = get_object_or_404(self.revisions, pk=correction.value["previous_version"])
 
         response: TemplateResponse = self.render(
-            request, context_overrides={"page": revision.as_object(), "latest_version_url": self.get_url(request)}
+            request,
+            context_overrides={
+                "page": revision.as_object(),
+                "latest_version_url": self.get_url(request),
+            },
         )
 
         return response
