@@ -124,7 +124,7 @@ def footer_menu_columns(
 
         links_list = []
         for link_struct in column_value.get("links", []):
-            link_data = _extract_item(link_struct, context.get("request"))
+            link_data = _extract_item(link_struct, request=context.get("request"), text_key="text")
             if link_data:
                 links_list.append(link_data)
 
