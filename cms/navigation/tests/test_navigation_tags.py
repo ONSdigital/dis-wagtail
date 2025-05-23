@@ -53,7 +53,7 @@ class MainMenuTemplateTagTests(TestCase):
         self.assertEqual(len(highlights), 3)
 
         for highlight in highlights:
-            self.assertIn("text", highlight)
+            self.assertIn("heading", highlight)
             self.assertIn("description", highlight)
             self.assertIn("url", highlight)
 
@@ -63,12 +63,13 @@ class MainMenuTemplateTagTests(TestCase):
 
         expected_columns = [
             {
-                "column": column_index,
-                "linksList": [
+                "groups": [
                     {
-                        "text": section["section_link"]["title"],
+                        "heading": section["section_link"]["title"],
                         "url": section["section_link"]["external_url"],
-                        "children": [{"text": link["title"], "url": link["external_url"]} for link in section["links"]],
+                        "groupItems": [
+                            {"text": link["title"], "url": link["external_url"]} for link in section["links"]
+                        ],
                     }
                     for section in column.value["sections"]
                 ],
