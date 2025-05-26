@@ -1,6 +1,7 @@
 import os
 
 from .base import *  # noqa: F403  # pylint: disable=wildcard-import,unused-wildcard-import
+from .base import MIDDLEWARE
 
 # #############
 # General
@@ -74,3 +75,17 @@ KAFKA_SERVER = os.getenv("KAFKA_SERVER", "localhost:9094")
 
 # Ignore proxy count in tests
 XFF_STRICT = False
+
+# turn on the real Wagtail login form
+WAGTAIL_CORE_ADMIN_LOGIN_ENABLED = True
+
+# strip out our custom ONSAuthMiddleware
+MIDDLEWARE = [mw for mw in MIDDLEWARE if mw != "cms.auth.middleware.ONSAuthMiddleware"]
+
+# ensure Django's AuthenticationMiddleware is present (just after SessionMiddleware)
+if "django.contrib.auth.middleware.AuthenticationMiddleware" not in MIDDLEWARE:
+    idx = MIDDLEWARE.index("django.contrib.sessions.middleware.SessionMiddleware")
+    MIDDLEWARE.insert(
+        idx + 1,
+        "django.contrib.auth.middleware.AuthenticationMiddleware",
+    )
