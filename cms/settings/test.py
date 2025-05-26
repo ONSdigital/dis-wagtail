@@ -1,7 +1,7 @@
 import os
 
 from .base import *  # noqa: F403  # pylint: disable=wildcard-import,unused-wildcard-import
-from .base import MIDDLEWARE
+from .base import MIDDLEWARE  # Explicitly import MIDDLEWARE to avoid undefined errors
 
 # #############
 # General

@@ -40,8 +40,8 @@ function getCookieByName(name) {
   }
   const cookie = cookies
     .split(';')
-    .map((c) => c.trim())
-    .map((c) => c.split('='))
+    .map((cookieStr) => cookieStr.trim())
+    .map((cookieStr) => cookieStr.split('='))
     .find((pair) => pair[0] === name);
   return cookie ? cookie[1] : null;
 }

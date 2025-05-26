@@ -28,8 +28,11 @@ class WagtailHookEnabledTests(SimpleTestCase):
         ):
             html = "".join(fn() for fn in snippets)
 
-        self.assertIn("window.authConfig", html)
-        self.assertIn("/static/js/auth.js", html)
+        # Should have the data-island <script id="auth-config">
+        self.assertIn('<script id="auth-config"', html, 'Expected a <script id="auth-config"> data-island')
+
+        # Should still load the auth bundle
+        self.assertIn("/static/js/auth.js", html, "Expected the auth.js bundle to be included via static()")
 
     # Rendered JSON payload is exactly what get_auth_config() returns
     def test_rendered_auth_config_matches_helper_output(self):
@@ -40,15 +43,26 @@ class WagtailHookEnabledTests(SimpleTestCase):
         ):
             html = "".join(fn() for fn in hooks.get_hooks("insert_global_admin_js"))
 
-        # Extract the JSON inside  window.authConfig = {...};
-        match = re.search(r"window\.authConfig\s*=\s*(\{.*?\});", html, re.S)
-        self.assertIsNotNone(match, "authConfig script not found in HTML")
+        # Extract the JSON out of the <script id="auth-config">…</script> data-island
+        pattern = r'<script[^>]+id=["\']auth-config["\'][^>]*>(?P<json>.*?)</script>'
+        match = re.search(pattern, html, re.S)
+        self.assertIsNotNone(match, "auth-config data-island not found in HTML")
 
-        rendered_json = match.group(1)
-        # normalise whitespace before comparing
+        # Raw inner text
+        rendered_json = match.group("json").strip()
+
+        # First decode: might be a dict (if get_auth_config ever returns one) or a str
+        obj = json.loads(rendered_json)
+        # If double-encoded, unwrap again
+        if isinstance(obj, str):
+            obj = json.loads(obj)
+
+        # Load expected into a dict if it's still a string
+        expected_obj = json.loads(expected_json) if isinstance(expected_json, str) else expected_json
+
         self.assertEqual(
-            json.loads(rendered_json),
-            json.loads(expected_json),
+            obj,
+            expected_obj,
             msg="Hook rendered JSON that differs from get_auth_config() result",
         )
 
