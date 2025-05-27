@@ -132,8 +132,14 @@ def assert_auth_js_loaded(context):
 
 @then("auth.js should not be initialised in the iframe")
 def iframe_not_initialised(context):
-    # Using stored frame reference if available, or locate by id
-    frame = getattr(context, "preview_frame", None) or context.page.frame_locator("#w-preview-iframe").frame()
+    # Wait for the <iframe> element to appear
+    iframe_el = context.page.wait_for_selector("#w-preview-iframe", timeout=5_000)
+    # Grab the Playwright Frame from that element
+    frame = iframe_el.content_frame()
+    if not frame:
+        raise AssertionError("Preview iframe not found on the page")
+
+    # Evaluate inside the iframe
     initialised = frame.evaluate("() => Boolean(window.SessionManagement?.__INITIALISED__)")
     if initialised:
         raise AssertionError("auth.js unexpectedly initialised inside preview iframe")

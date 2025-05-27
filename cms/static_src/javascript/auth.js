@@ -143,7 +143,7 @@ if (window.self === window.top && getCookieByName(idTokenCookieName)) {
 
   // These will be fetched from localStorage which is set by the auth service before redirect.
   // If they do not exist, then the session is invalid and the user will be logged out.
-  // Only clear if *neither* value is set, i.e. brand-new tab with no prior expiry info:
+  // Only clear if neither value is set, i.e. brand-new tab with no prior expiry info:
   if (
     !localStorage.getItem('session_expiry_time') &&
     !localStorage.getItem('refresh_expiry_time')
