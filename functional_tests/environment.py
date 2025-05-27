@@ -6,6 +6,7 @@ from behave import use_fixture
 from behave.model import Scenario
 from behave.model_core import Status
 from behave.runner import Context
+from django.test.utils import override_settings
 from playwright.sync_api import sync_playwright
 
 from functional_tests.behave_fixtures import django_test_case, django_test_runner
@@ -100,6 +101,11 @@ def before_scenario(context: Context, scenario: Scenario):
     # Register our django test case fixture so every scenario is wrapped in a Django test case
     use_fixture(django_test_case, context=context)
 
+    if "cognito_enabled" in scenario.tags:
+        # turn the hook on just for this scenario
+        context.aws_override = override_settings(AWS_COGNITO_LOGIN_ENABLED=True)
+        context.aws_override.enable()
+
     if "no_javascript" in scenario.tags:
         # If the scenario is tagged with no_javascript, use the no_javascript_context
         context.playwright_context = context.no_javascript_context
@@ -118,6 +124,9 @@ def after_scenario(context: Context, scenario: Scenario):
     """Runs after each scenario.
     Write out a Playwright trace if the scenario failed and trace recording is enabled, then close the playwright page.
     """
+    if hasattr(context, "aws_override"):
+        context.aws_override.disable()
+
     if context.playwright_context and scenario.status == Status.failed:
         # If the scenario failed, write the trace chunk out to a file, which will be prefixed with the scenario name
         context.playwright_context.tracing.stop_chunk(

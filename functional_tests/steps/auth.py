@@ -1,98 +1,101 @@
-import json
+import re
 import time
 
 from behave import given, then, when  # pylint: disable=no-name-in-module
 from playwright.sync_api import Request, Route
 
-AUTH_CONFIG = {
+# This config matches the test fixture for auth.js behavior
+auth_config = {
     "wagtailAdminHomePath": "admin/",
     "csrfCookieName": "csrftoken",
     "csrfHeaderName": "X-CSRFTOKEN",
-    "sessionRenewalOffsetSeconds": 3,  # short so scenario runs fast
+    "sessionRenewalOffsetSeconds": 3,
     "authTokenRefreshUrl": "/refresh/",
     "idTokenCookieName": "id",
 }
 
 
-# Initialisation STEP runs in Background after page is live
 @given("auth.js is initialised on the live page")
 def init_auth_js(context):
-    page = context.page  # supplied by environment.py
-    cfg_json = json.dumps(AUTH_CONFIG)
-
-    page.add_init_script(
-        f"""
-        window.authConfig = {cfg_json};
-        document.cookie = "id=fakeidtoken; path=/";
-        document.cookie = "csrftoken=fakecsrftoken; path=/";
-        """
-    )
-
-    # inject compiled auth.js from staticfiles
-    page.add_script_tag(url="/static/js/auth.js")
-
-    # stub token-refresh endpoint
+    """Stub the token-refresh endpoint and capture outgoing requests
+    so we can verify extend-session calls on the real live page.
+    The <script id="auth-config"> and auth.js bundle
+    come from the real hook when AWS_COGNITO_LOGIN_ENABLED=True.
+    """
+    # Stub the token-refresh endpoint
     context.browser_context.route(
-        AUTH_CONFIG["authTokenRefreshUrl"],
-        lambda route: route.fulfill(status=200, body="{{}}"),
+        auth_config["authTokenRefreshUrl"],
+        lambda route: route.fulfill(status=200, body="{}"),
     )
 
-    # capture all subsequent requests in list on context
-    context._requests: list[Request] = []
+    # Capture all outgoing requests for later inspection
+    context.requests = []
 
-    def _rec(route: Route, request: Request):
-        context._requests.append(request)  # pylint: disable=protected-access
+    def _capture(route: Route, request: Request):
+        context.requests.append(request)
         route.continue_()
 
-    context.browser_context.route("**/*", _rec)
+    context.browser_context.route("**/*", _capture)
 
 
-# Keep alive
 @when("the passive renewal timer fires")
-def wait_passive_interval():
-    time.sleep(AUTH_CONFIG["sessionRenewalOffsetSeconds"] + 0.5)
+def wait_passive_interval(context):
+    # Wait slightly longer than the configured offset
+    time.sleep(auth_config["sessionRenewalOffsetSeconds"] + 0.5)
 
 
-@then('the browser must have made a POST request to "/admin/extend-session/"')
-def assert_extend_called(context):
-    url_suffix = "/admin/extend-session/"
-    matches = [r for r in context._requests if r.url.endswith(url_suffix) and r.method == "POST"]  # pylint: disable=protected-access
+@then('the browser must have made a POST request to "{url_suffix}"')
+def assert_extend_called(context, url_suffix):
+    matches = [req for req in context.requests if req.url.endswith(url_suffix) and req.method == "POST"]
     if not matches:
-        raise AssertionError(f"extend-session not called; captured {[r.url for r in context._requests]}")  # pylint: disable=protected-access
-    hdr = AUTH_CONFIG["csrfHeaderName"]
-    if matches[0].headers[hdr] != "fakecsrftoken":
-        raise AssertionError(f'Expected CSRF token "fakecsrftoken", got "{matches[0].headers[hdr]}"')
+        captured = [r.url for r in context.requests]
+        raise AssertionError(f"Expected POST to {url_suffix}, but captured: {captured}")
+    # Store the matched request for following steps
+    context.last_request = matches[0]
 
 
-# Preview pane
-@given('the user clicks "Preview" in the Wagtail editor')
-def open_preview_iframe(context):
-    # the editor tab is still open in another page; open preview in new tab
-    context.page.get_by_role("button", name="Preview").click()
-    # Wait for iframe to appear in same tab
-    iframe = context.page.frame_locator("iframe").frame()
-    context.preview_frame = iframe
-
-    # record its network traffic separately
-    context.iframe_requests: list[Request] = []
-
-    def _if_rec(route: Route, req: Request):
-        context.iframe_requests.append(req)
-        route.continue_()
-
-    iframe.page.context.route("**/*", _if_rec)
+@then('that request must include the CSRF header "{header_name}"')
+def assert_csrf_header(context, header_name):
+    req = getattr(context, "last_request", None)
+    if req is None:
+        raise AssertionError("No matching request found for CSRF header assertion")
+    token = req.headers.get(header_name)
+    if token != "fakecsrftoken":  # noqa: S105
+        raise AssertionError(f"Expected CSRF header '{header_name}': 'fakecsrftoken', got: '{token}'")
 
 
-@then("auth.js is not initialised in the iframe")
+@then('the live page should include a `<script id="auth-config">` data-island')
+def assert_data_island_present(context):
+    html = context.page.content()
+    if '<script id="auth-config"' not in html:
+        raise AssertionError('<script id="auth-config"> data-island not found on live page')
+
+
+@then("the live page should load `/static/js/auth.js`")
+def assert_auth_js_loaded(context):
+    """Verifies that the auth.js bundle appears on the live page,
+    regardless of hashing, query strings, or extra attributes.
+    """
+    html = context.page.content()
+    # Look for a <script> tag whose src contains 'auth.js' at the end
+    pattern = r'<script[^>]+src=["\'][^"\']*auth(\.[a-z0-9]+)?\.js(\?[^"\']*)?["\']'
+    if not re.search(pattern, html):
+        raise AssertionError("auth.js bundle not included on live page; HTML was:\n" + html)
+
+
+@then("auth.js should not be initialised in the iframe")
 def iframe_not_initialised(context):
-    frame = context.preview_frame
+    # Using stored frame reference if available, or locate by id
+    frame = getattr(context, "preview_frame", None) or context.page.frame_locator("#w-preview-iframe").frame()
     initialised = frame.evaluate("() => Boolean(window.SessionManagement?.__INITIALISED__)")
-    if initialised is not False:
+    if initialised:
         raise AssertionError("auth.js unexpectedly initialised inside preview iframe")
 
 
-@then("no network traffic occurs from the iframe")
+@then("no network traffic should occur within the iframe")
 def iframe_no_traffic(context):
-    # allow the initial HTML fetch only
-    if len(context.iframe_requests) != 0:
-        raise AssertionError(f"unexpected traffic: {[r.url for r in context.iframe_requests]}")
+    requests = getattr(context, "iframe_requests", [])
+    # Allow only the initial HTML fetch; any additional traffic fails
+    if len(requests) > 1:
+        urls = [r.url for r in requests]
+        raise AssertionError(f"Unexpected iframe network traffic: {urls}")

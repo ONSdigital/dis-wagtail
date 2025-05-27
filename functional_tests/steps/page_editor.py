@@ -11,14 +11,14 @@ def user_clicks_action_menu_toggle(context: Context):
     context.page.get_by_role("button", name="More actions").click()
 
 
-@when('the user clicks "Publish"')
+@step('the user clicks "Publish"')
 @when("publishes the page")
 def user_clicks_publish(context: Context) -> None:
     context.page.get_by_role("button", name="More actions").click()
     context.page.get_by_role("button", name="Publish").click()
 
 
-@when('the user clicks "View Live" on the publish confirmation banner')
+@step('the user clicks "View Live" on the publish confirmation banner')
 def user_clicks_view_live_on_publish_confirmation_banner(context: Context) -> None:
     context.page.get_by_role("link", name="View live").click()
 
