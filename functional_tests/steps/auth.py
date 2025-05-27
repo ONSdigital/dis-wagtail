@@ -39,7 +39,7 @@ def init_auth_js(context):
 
 
 @when("the passive renewal timer fires")
-def wait_passive_interval(context):
+def wait_passive_interval():
     # Wait slightly longer than the configured offset
     time.sleep(auth_config["sessionRenewalOffsetSeconds"] + 0.5)
 
