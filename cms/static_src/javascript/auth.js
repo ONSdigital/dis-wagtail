@@ -143,5 +143,16 @@ if (window.self === window.top && getCookieByName(idTokenCookieName)) {
 
   // These will be fetched from localStorage which is set by the auth service before redirect.
   // If they do not exist, then the session is invalid and the user will be logged out.
-  SessionManagement.setSessionExpiryTime(null, null);
+  /**
+   * A brand-new tab has no expiry values, so we clear them.
+   * If Cognito (or the Playwright test) has already written
+   * `session_expiry_time` & `refresh_expiry_time` we must **keep** them,
+   * otherwise the passive-renewal timer never starts.
+   */
+  if (
+    !localStorage.getItem('session_expiry_time') ||
+    !localStorage.getItem('refresh_expiry_time')
+  ) {
+    SessionManagement.setSessionExpiryTime(null, null);
+  }
 }

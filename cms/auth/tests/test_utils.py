@@ -287,8 +287,7 @@ class ValidateJWTTests(SimpleTestCase):
 )
 class GetAuthConfigTests(SimpleTestCase):
     def test_json_config_contains_expected_keys(self):
-        config_json = utils.get_auth_config()
-        data = json.loads(config_json)
+        data = utils.get_auth_config()
         expected_keys = {
             "authTokenRefreshUrl",
             "wagtailAdminHomePath",
@@ -301,7 +300,7 @@ class GetAuthConfigTests(SimpleTestCase):
         self.assertEqual(expected_keys, set(data.keys()))
 
     def test_values_exact(self):
-        data = json.loads(utils.get_auth_config())
+        data = utils.get_auth_config()
         self.assertEqual(data["authTokenRefreshUrl"], "/refresh/")
         self.assertEqual(data["wagtailAdminHomePath"], "/admin/")
         self.assertEqual(data["csrfCookieName"], "csrftoken")

@@ -112,7 +112,7 @@ def get_auth_config() -> str:
     # Django will convert the header to "HTTP_X_CSRFTOKEN" when it is received
     # @see: https://docs.djangoproject.com/en/5.1/ref/settings/#csrf-header-name
     csrf_header_name = settings.CSRF_HEADER_NAME.replace("HTTP_", "").replace("_", "-")
-    config = {
+    return {
         "authTokenRefreshUrl": settings.AUTH_TOKEN_REFRESH_URL,
         "wagtailAdminHomePath": settings.WAGTAILADMIN_HOME_PATH,
         "csrfCookieName": settings.CSRF_COOKIE_NAME,
@@ -121,4 +121,3 @@ def get_auth_config() -> str:
         "sessionRenewalOffsetSeconds": settings.SESSION_RENEWAL_OFFSET_SECONDS,
         "idTokenCookieName": settings.ID_TOKEN_COOKIE_NAME,
     }
-    return json.dumps(config)

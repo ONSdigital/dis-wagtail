@@ -1,54 +1,93 @@
+import json
 import re
 import time
 
 from behave import given, then, when  # pylint: disable=no-name-in-module
 from playwright.sync_api import Request, Route
 
-# This config matches the test fixture for auth.js behavior
+# This config matches the test fixture for auth.js behaviour
 auth_config = {
-    "wagtailAdminHomePath": "admin/",
     "csrfCookieName": "csrftoken",
     "csrfHeaderName": "X-CSRFTOKEN",
     "sessionRenewalOffsetSeconds": 3,
-    "authTokenRefreshUrl": "/refresh/",
-    "idTokenCookieName": "id",
 }
 
 
 @given("auth.js is initialised on the live page")
 def init_auth_js(context):
-    """Stub the token-refresh endpoint and capture outgoing requests
-    so we can verify extend-session calls on the real live page.
-    The <script id="auth-config"> and auth.js bundle
-    come from the real hook when AWS_COGNITO_LOGIN_ENABLED=True.
-    """
-    # Stub the token-refresh endpoint
-    context.browser_context.route(
-        auth_config["authTokenRefreshUrl"],
-        lambda route: route.fulfill(status=200, body="{}"),
+    offset_s = auth_config["sessionRenewalOffsetSeconds"]
+    jwt_ttl = offset_s + 1  # seconds until JWT expiry
+
+    # 1) Inject into the page before any resources load:
+    context.page.add_init_script(f"""
+        // — polyfill Buffer for JWT decoding —
+        window.Buffer = {{
+            from: (str, enc) => ({{ toString: () => atob(str) }})
+        }};
+
+        // — Set id-token cookie —
+        document.cookie = "id=fakeidtoken; path=/";
+
+        // — Build a minimal JWT that expires in {jwt_ttl}s —
+        (function () {{
+            const exp = Math.floor(Date.now() / 1000) + {jwt_ttl};
+            const header  = btoa(JSON.stringify({{ alg: "none" }}));
+            const payload = btoa(JSON.stringify({{ exp }}));
+            document.cookie = `access_token=${{header}}.${{payload}}.; path=/`;
+        }})();
+
+        // — CSRF cookie for fetchWithCsrf() —
+        document.cookie = "csrftoken=fakecsrftoken; path=/";
+
+        /* --------------------------------------------------------------
+        Continuously emit a user-activity event so the passive-renewal
+        timer starts after the library attaches its listeners.
+        We dispatch a 'mousemove' every 100 ms and stop after 6 s.
+        -------------------------------------------------------------- */
+        const _activityInterval = setInterval(() => {{
+            window.dispatchEvent(new Event('mousemove'));
+        }}, 100);
+
+        setTimeout(() => clearInterval(_activityInterval), 6000);
+    """)
+
+    # 2) Stub the passive-renew endpoint
+    expiry_ms = int(time.time() * 1000) + 60_000
+    context.page.route(
+        "**/refresh/",
+        lambda route: route.fulfill(
+            status=200,
+            headers={"Content-Type": "application/json"},
+            body=json.dumps(
+                {
+                    "session_expiry_time": expiry_ms,
+                    "refresh_expiry_time": expiry_ms,
+                }
+            ),
+        ),
     )
 
-    # Capture all outgoing requests for later inspection
-    context.requests = []
+    # 3) Capture every outgoing request for assertions
+    context._requests = []  # pylint: disable=protected-access
 
     def _capture(route: Route, request: Request):
-        context.requests.append(request)
+        context._requests.append(request)  # pylint: disable=protected-access
         route.continue_()
 
-    context.browser_context.route("**/*", _capture)
+    context.page.route("**/*", _capture)
 
 
 @when("the passive renewal timer fires")
-def wait_passive_interval():
+def wait_passive_interval(context):  # pylint: disable=unused-argument
     # Wait slightly longer than the configured offset
-    time.sleep(auth_config["sessionRenewalOffsetSeconds"] + 0.5)
+    time.sleep(auth_config["sessionRenewalOffsetSeconds"] + 2)
 
 
 @then('the browser must have made a POST request to "{url_suffix}"')
 def assert_extend_called(context, url_suffix):
-    matches = [req for req in context.requests if req.url.endswith(url_suffix) and req.method == "POST"]
+    matches = [req for req in context._requests if req.url.endswith(url_suffix) and req.method == "POST"]  # pylint: disable=protected-access
     if not matches:
-        captured = [r.url for r in context.requests]
+        captured = [r.url for r in context._requests]  # pylint: disable=protected-access
         raise AssertionError(f"Expected POST to {url_suffix}, but captured: {captured}")
     # Store the matched request for following steps
     context.last_request = matches[0]

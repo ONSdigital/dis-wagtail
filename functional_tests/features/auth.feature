@@ -13,9 +13,11 @@ Feature: auth.js integration on a InformationPage
         Then the live page should include a `<script id="auth-config">` data-island
         And the live page should load `/static/js/auth.js`
 
+    @smoke
     @cognito_enabled
     Scenario: auth.js renews the Wagtail session via passive timer
         When the user clicks "Publish"
+        And the user clicks "View Live" on the publish confirmation banner
         And the passive renewal timer fires
         Then the browser must have made a POST request to "/admin/extend-session/"
         And that request must include the CSRF header "X-CSRFTOKEN"

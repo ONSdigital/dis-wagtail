@@ -103,8 +103,14 @@ def before_scenario(context: Context, scenario: Scenario):
 
     if "cognito_enabled" in scenario.tags:
         # turn the hook on just for this scenario
-        context.aws_override = override_settings(AWS_COGNITO_LOGIN_ENABLED=True)
-        context.aws_override.enable()
+        # Use a short timer, match our test, and have a non-null refresh URL
+        context._aws_override = override_settings(  # pylint: disable=protected-access
+            AWS_COGNITO_LOGIN_ENABLED=True,
+            AUTH_TOKEN_REFRESH_URL="/refresh/",  # noqa: S106
+            SESSION_RENEWAL_OFFSET_SECONDS=3,  # default expiry in seconds
+            ID_TOKEN_COOKIE_NAME="id",  # noqa: S106 so your test's `id` cookie is picked up
+        )
+        context._aws_override.enable()  # pylint: disable=protected-access
 
     if "no_javascript" in scenario.tags:
         # If the scenario is tagged with no_javascript, use the no_javascript_context
@@ -115,6 +121,8 @@ def before_scenario(context: Context, scenario: Scenario):
 
     context.page = context.playwright_context.new_page()
 
+    context.page.on("console", lambda msg: print(f"[PAGE][{msg.type}] {msg.text}"))
+
     if context.playwright_trace:
         # Start a new tracing chunk to capture each scenario separately
         context.playwright_context.tracing.start_chunk(name=scenario.name, title=scenario.name)
@@ -124,8 +132,8 @@ def after_scenario(context: Context, scenario: Scenario):
     """Runs after each scenario.
     Write out a Playwright trace if the scenario failed and trace recording is enabled, then close the playwright page.
     """
-    if hasattr(context, "aws_override"):
-        context.aws_override.disable()
+    if hasattr(context, "_aws_override"):
+        context._aws_override.disable()  # pylint: disable=protected-access
 
     if context.playwright_context and scenario.status == Status.failed:
         # If the scenario failed, write the trace chunk out to a file, which will be prefixed with the scenario name
