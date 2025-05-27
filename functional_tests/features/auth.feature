@@ -13,7 +13,7 @@ Feature: auth.js integration on a InformationPage
         Then the live page should include a `<script id="auth-config">` data-island
         And the live page should load `/static/js/auth.js`
 
-    @smoke
+
     @cognito_enabled
     Scenario: auth.js renews the Wagtail session via passive timer
         When the user clicks "Publish"

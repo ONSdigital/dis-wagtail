@@ -18,7 +18,7 @@ def init_auth_js(context):
     offset_s = auth_config["sessionRenewalOffsetSeconds"]
     jwt_ttl = offset_s + 1  # seconds until JWT expiry
 
-    # 1) Inject into the page before any resources load:
+    # Inject into the page before any resources load:
     context.page.add_init_script(f"""
         // — polyfill Buffer for JWT decoding —
         window.Buffer = {{
@@ -38,24 +38,24 @@ def init_auth_js(context):
 
         // — CSRF cookie for fetchWithCsrf() —
         document.cookie = "csrftoken=fakecsrftoken; path=/";
-
-        /* --------------------------------------------------------------
-        Continuously emit a user-activity event so the passive-renewal
-        timer starts after the library attaches its listeners.
-        We dispatch a 'mousemove' every 100 ms and stop after 6 s.
-        -------------------------------------------------------------- */
-        const _activityInterval = setInterval(() => {{
-            window.dispatchEvent(new Event('mousemove'));
-        }}, 100);
-
-        setTimeout(() => clearInterval(_activityInterval), 6000);
     """)
 
-    # 2) Stub the passive-renew endpoint
+    # Capture every outgoing request for assertions (low priority)
+    context._requests = []  # pylint: disable=protected-access
+
+    def _capture(route: Route, request: Request):
+        context._requests.append(request)  # pylint: disable=protected-access # record everything that actually goes out
+        route.continue_()
+
+    context.page.route("**/*", _capture)
+
+    # Stub the passive-renew endpoint after capture so it runs first
     expiry_ms = int(time.time() * 1000) + 60_000
-    context.page.route(
-        "**/refresh/",
-        lambda route: route.fulfill(
+
+    def _fake_refresh(route: Route, request: Request):
+        # record the fake-refresh request as well
+        context._requests.append(request)  # pylint: disable=protected-access
+        route.fulfill(
             status=200,
             headers={"Content-Type": "application/json"},
             body=json.dumps(
@@ -64,23 +64,26 @@ def init_auth_js(context):
                     "refresh_expiry_time": expiry_ms,
                 }
             ),
-        ),
-    )
+        )
 
-    # 3) Capture every outgoing request for assertions
-    context._requests = []  # pylint: disable=protected-access
-
-    def _capture(route: Route, request: Request):
-        context._requests.append(request)  # pylint: disable=protected-access
-        route.continue_()
-
-    context.page.route("**/*", _capture)
+    context.page.route("**/refresh/", _fake_refresh)
 
 
 @when("the passive renewal timer fires")
-def wait_passive_interval(context):  # pylint: disable=unused-argument
-    # Wait slightly longer than the configured offset
-    time.sleep(auth_config["sessionRenewalOffsetSeconds"] + 2)
+def wait_passive_interval(context):
+    offset = auth_config["sessionRenewalOffsetSeconds"] * 1000  # ms
+
+    # Simulate some real user movement so the passive-renewal timer starts.
+    for _ in range(10):
+        # move between two points
+        context.page.mouse.move(100, 100)
+        context.page.wait_for_timeout(100)  # 100 ms pause
+        context.page.mouse.move(200, 200)
+        context.page.wait_for_timeout(100)
+
+    # Now wait long enough for the passive timer to fire
+    # give 500 ms cushion
+    context.page.wait_for_timeout(offset + 500)
 
 
 @then('the browser must have made a POST request to "{url_suffix}"')
@@ -98,28 +101,33 @@ def assert_csrf_header(context, header_name):
     req = getattr(context, "last_request", None)
     if req is None:
         raise AssertionError("No matching request found for CSRF header assertion")
-    token = req.headers.get(header_name)
+    # Playwright lower-cases all header names:
+    token = req.headers.get(header_name) or req.headers.get(header_name.lower())
     if token != "fakecsrftoken":  # noqa: S105
         raise AssertionError(f"Expected CSRF header '{header_name}': 'fakecsrftoken', got: '{token}'")
 
 
 @then('the live page should include a `<script id="auth-config">` data-island')
 def assert_data_island_present(context):
-    html = context.page.content()
-    if '<script id="auth-config"' not in html:
-        raise AssertionError('<script id="auth-config"> data-island not found on live page')
+    page = context.page
+    # wait for network to settle (so all scripts are injected)
+    page.wait_for_load_state("networkidle")
+
+    html = page.content()
+    if not re.search(r'<script[^>]+id=["\']auth-config["\']', html):
+        raise AssertionError(f'<script id="auth-config"> data-island not found on live page\n\nFull HTML was:\n{html}')
 
 
 @then("the live page should load `/static/js/auth.js`")
 def assert_auth_js_loaded(context):
-    """Verifies that the auth.js bundle appears on the live page,
-    regardless of hashing, query strings, or extra attributes.
-    """
-    html = context.page.content()
-    # Look for a <script> tag whose src contains 'auth.js' at the end
+    page = context.page
+    page.wait_for_load_state("networkidle")
+
+    html = page.content()
+    # match any <script> whose src ends with auth.js (with optional hash/query)
     pattern = r'<script[^>]+src=["\'][^"\']*auth(\.[a-z0-9]+)?\.js(\?[^"\']*)?["\']'
     if not re.search(pattern, html):
-        raise AssertionError("auth.js bundle not included on live page; HTML was:\n" + html)
+        raise AssertionError(f"auth.js bundle not included on live page\n\nFull HTML was:\n{html}")
 
 
 @then("auth.js should not be initialised in the iframe")

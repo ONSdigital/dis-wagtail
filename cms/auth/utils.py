@@ -106,8 +106,8 @@ def _validate_jwt(token: str, *, extra_fields: Iterable[str], token_type: str) -
     return claims
 
 
-def get_auth_config() -> str:
-    """Returns a JSON string containing authentication configuration details."""
+def get_auth_config() -> dict[str, str | int | None]:
+    """Returns a dictionary containing authentication configuration details."""
     # Default value for csrf_header_name is "HTTP_X_CSRFTOKEN", the header needs to be set as "X-CSRFToken"
     # Django will convert the header to "HTTP_X_CSRFTOKEN" when it is received
     # @see: https://docs.djangoproject.com/en/5.1/ref/settings/#csrf-header-name
