@@ -47,6 +47,18 @@ class BundlePage(Orderable):
         return f"BundlePage: page {self.page_id} in bundle {self.parent_id}"
 
 
+class BundleDataset(Orderable):
+    parent = ParentalKey("Bundle", related_name="bundled_datasets", on_delete=models.CASCADE)
+    dataset = models.ForeignKey(  # type: ignore[var-annotated]
+        "datasets.Dataset", blank=True, null=True, on_delete=models.SET_NULL
+    )
+
+    panels: ClassVar[list["Panel"]] = ["dataset"]
+
+    def __str__(self) -> str:
+        return f"BundleDataset: dataset {self.dataset_id} in bundle {self.parent_id}"
+
+
 class BundleTeam(Orderable):
     parent = ParentalKey("Bundle", on_delete=models.CASCADE, related_name="teams")
     team: "models.ForeignKey[Team]" = models.ForeignKey("teams.Team", on_delete=models.CASCADE)
@@ -135,6 +147,9 @@ class Bundle(index.Indexed, ClusterableModel, models.Model):  # type: ignore[dja
         ),
         "status",
         InlinePanel("bundled_pages", heading="Bundled pages", icon="doc-empty", label="Page"),
+        MultipleChooserPanel(
+            "bundled_datasets", heading="Data API datasets", label="Dataset", chooser_field_name="dataset"
+        ),
         MultipleChooserPanel(
             "teams", heading="Preview teams", icon="user", label="Preview team", chooser_field_name="team"
         ),

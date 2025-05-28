@@ -24,6 +24,9 @@ from cms.bundles.slack_notifications import (
     notify_slack_of_status_change,
 )
 
+from cms.bundles.permissions import user_can_manage_bundles, user_can_preview_bundle
+from cms.datasets.models import Dataset
+
 if TYPE_CHECKING:
     from django.db.models.fields import Field
     from django.http import HttpResponseBase
@@ -167,9 +170,19 @@ class BundleInspectView(InspectView):
     def get_fields(self) -> list[str]:
         """Returns the list of fields to include in the inspect view."""
         if self.can_manage:
-            return ["name", "status", "created_at", "created_by", "approved", "scheduled_publication", "teams", "pages"]
+            return [
+                "name",
+                "status",
+                "created_at",
+                "created_by",
+                "approved",
+                "scheduled_publication",
+                "teams",
+                "pages",
+                "bundled_datasets",
+            ]
 
-        return ["name", "created_at", "created_by", "scheduled_publication", "pages"]
+        return ["name", "created_at", "created_by", "scheduled_publication", "pages", "bundled_datasets"]
 
     def get_field_label(self, field_name: str, field: "Field") -> str:
         match field_name:
@@ -179,6 +192,8 @@ class BundleInspectView(InspectView):
                 return "Scheduled publication"
             case "pages":
                 return "Pages"
+            case "bundled_datasets":
+                return "Datasets"
             case _:
                 return super().get_field_label(field_name, field)  # type: ignore[no-any-return]
 
@@ -287,6 +302,20 @@ class BundleInspectView(InspectView):
     def get_teams_display_value(self) -> str:
         value: str = self.object.get_teams_display()
         return value
+
+    def get_bundled_datasets_display_value(self) -> str:
+        """Returns formatted markup for datasets linked to the Bundle."""
+        if self.object.bundled_datasets.exists():
+            datasets = Dataset.objects.filter(pk__in=self.object.bundled_datasets.values_list("dataset__pk", flat=True))
+            return format_html(
+                "<ol>{}</ol>",
+                format_html_join(
+                    "\n",
+                    '<li><a href="{}" target="_blank" rel="noopener">{}</a></li>',
+                    ((bundled_dataset.website_url, bundled_dataset) for bundled_dataset in datasets),
+                ),
+            )
+        return "No datasets in bundle"
 
 
 class BundleIndexView(IndexView):
