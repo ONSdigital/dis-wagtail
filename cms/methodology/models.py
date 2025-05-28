@@ -12,8 +12,10 @@ from wagtail.fields import RichTextField
 from wagtail.models import Orderable, Page
 from wagtail.search import index
 
+from cms.bundles.mixins import BundledPageMixin
 from cms.core.blocks.stream_blocks import SectionStoryBlock
 from cms.core.fields import StreamField
+from cms.core.forms import PageWithEquationsAdminForm
 from cms.core.models import BasePage
 from cms.core.query import order_by_pk_position
 from cms.core.widgets import date_widget
@@ -39,7 +41,8 @@ class MethodologyRelatedPage(Orderable):
     panels: ClassVar[list[FieldPanel]] = [PageChooserPanel("page", page_type=["articles.StatisticalArticlePage"])]
 
 
-class MethodologyPage(GenericTaxonomyMixin, BasePage):  # type: ignore[django-manager-missing]
+class MethodologyPage(BundledPageMixin, GenericTaxonomyMixin, BasePage):  # type: ignore[django-manager-missing]
+    base_form_class = PageWithEquationsAdminForm
     parent_page_types: ClassVar[list[str]] = ["topics.TopicPage"]
     search_index_content_type: ClassVar[str] = "static_methodology"
     template = "templates/pages/methodology_page.html"
@@ -62,6 +65,7 @@ class MethodologyPage(GenericTaxonomyMixin, BasePage):  # type: ignore[django-ma
     show_cite_this_page = models.BooleanField(default=True)
 
     content_panels: ClassVar[list["Panel"]] = [
+        *BundledPageMixin.panels,
         *BasePage.content_panels,
         "summary",
         MultiFieldPanel(

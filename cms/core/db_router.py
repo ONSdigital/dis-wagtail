@@ -1,6 +1,8 @@
 from typing import Any, Optional
 
+from django.apps import apps
 from django.conf import settings
+from django.contrib.contenttypes.fields import GenericRelation
 from django.core.exceptions import ImproperlyConfigured
 from django.db import DEFAULT_DB_ALIAS, transaction
 from django.db.models import Model
@@ -25,8 +27,21 @@ class ReadReplicaRouter:  # pylint: disable=unused-argument,protected-access
         if READ_REPLICA_DB_ALIAS not in settings.DATABASES:  # pragma: no cover
             raise ImproperlyConfigured("Read replica is not configured.")
 
+        # Collect models used in a GenericRelation to work around Django bug
+        # @see db_for_read
+        self.generic_target_models: set[type[Model]] = set()
+        for model in apps.get_models():
+            for field in model._meta.get_fields():
+                if isinstance(field, GenericRelation) and field.related_model != "self":
+                    self.generic_target_models.add(field.related_model)
+
     def db_for_read(self, model: type[Model], **hints: Any) -> Optional[str]:
         """Determine which database should be used for read queries."""
+        # Models used in a GenericRelation must use the write connection.
+        # @see https://code.djangoproject.com/ticket/36389
+        if not settings.IS_EXTERNAL_ENV and model in self.generic_target_models:
+            return DEFAULT_DB_ALIAS
+
         # If the write database is in a (uncommitted) transaction,
         # a subsequent SELECT (or other read query) may return inconsistent data.
         # In this case, use the write connection for reads, with the aim of

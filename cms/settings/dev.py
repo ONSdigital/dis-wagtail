@@ -1,4 +1,3 @@
-import copy
 import os
 
 from .base import *  # noqa: F403  # pylint: disable=wildcard-import,unused-wildcard-import
@@ -53,11 +52,9 @@ if DEBUG:
         "SHOW_COLLAPSED": True,
     }
 
-# Database
-DATABASES = {
-    "default": dj_database_url.config(default="postgres://ons:ons@localhost:5432/ons"),  # noqa: F405
-}
-DATABASES["read_replica"] = copy.deepcopy(DATABASES["default"])
+# Force database connections to be read-only for the replica
+if "postgres" in DATABASES["read_replica"]["ENGINE"]:  # noqa: F405
+    DATABASES["read_replica"]["ENGINE"] = "cms.core.database_backends.postgres_readonly"  # noqa: F405
 
 # Redis
 REDIS_URL = env.get("REDIS_URL", "redis://localhost:6379")

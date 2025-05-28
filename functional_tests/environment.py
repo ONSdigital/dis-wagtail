@@ -6,7 +6,7 @@ from behave import use_fixture
 from behave.model import Scenario
 from behave.model_core import Status
 from behave.runner import Context
-from playwright.sync_api import BrowserContext, Page, Playwright, sync_playwright
+from playwright.sync_api import sync_playwright
 
 from functional_tests.behave_fixtures import django_test_case, django_test_runner
 from functional_tests.step_helpers.utilities import str_to_bool
@@ -31,7 +31,7 @@ def before_all(context: Context):
     # Register our django test runner so the entire test run is wrapped in a django test runner
     use_fixture(django_test_runner, context=context)
 
-    context.playwright: Playwright = sync_playwright().start()
+    context.playwright = sync_playwright().start()
     context.playwright_trace = str_to_bool(os.getenv("PLAYWRIGHT_TRACE", "True"))
     context.playwright_traces_dir = Path(os.getenv("PLAYWRIGHT_TRACES_DIR", str(Path.cwd().joinpath("tmp_traces"))))
 
@@ -39,8 +39,14 @@ def before_all(context: Context):
 
     if context.playwright_trace:
         context.playwright_traces_dir.mkdir(exist_ok=True)
-        # Start the main trace for this browser context, we will record individual scenario traces in chunks
+        # Start the main trace for both browser contexts, we will record individual scenario traces in chunks
         context.browser_context.tracing.start(screenshots=True, snapshots=True, sources=True)
+        context.no_javascript_context.tracing.start(
+            screenshots=True,
+            snapshots=True,
+            sources=True,
+            title="JavaScript disabled",
+        )
 
 
 def configure_and_launch_playwright_browser(context: Context) -> None:
@@ -65,8 +71,12 @@ def configure_and_launch_playwright_browser(context: Context) -> None:
         case _:
             raise ValueError(f'Unknown browser set: {browser_type}, must be one of ["chromium", "firefox", "webkit"]')
 
-    context.browser_context: BrowserContext = context.browser.new_context()
+    context.browser_context = context.browser.new_context()
     context.browser_context.set_default_timeout(default_browser_timeout)
+
+    context.no_javascript_context = context.browser.new_context(
+        java_script_enabled=False,
+    )
 
 
 def after_all(context: Context):
@@ -75,8 +85,10 @@ def after_all(context: Context):
     """
     if context.playwright_trace:
         context.browser_context.tracing.stop()
+        context.no_javascript_context.tracing.stop()
 
     context.browser_context.close()
+    context.no_javascript_context.close()
     context.browser.close()
     context.playwright.stop()
 
@@ -88,25 +100,32 @@ def before_scenario(context: Context, scenario: Scenario):
     # Register our django test case fixture so every scenario is wrapped in a Django test case
     use_fixture(django_test_case, context=context)
 
-    context.page: Page = context.browser_context.new_page()
+    if "no_javascript" in scenario.tags:
+        # If the scenario is tagged with no_javascript, use the no_javascript_context
+        context.playwright_context = context.no_javascript_context
+    else:
+        # Otherwise use the default context
+        context.playwright_context = context.browser_context
+
+    context.page = context.playwright_context.new_page()
 
     if context.playwright_trace:
         # Start a new tracing chunk to capture each scenario separately
-        context.browser_context.tracing.start_chunk(name=scenario.name, title=scenario.name)
+        context.playwright_context.tracing.start_chunk(name=scenario.name, title=scenario.name)
 
 
 def after_scenario(context: Context, scenario: Scenario):
     """Runs after each scenario.
     Write out a Playwright trace if the scenario failed and trace recording is enabled, then close the playwright page.
     """
-    if context.playwright_trace and scenario.status == Status.failed:
+    if context.playwright_context and scenario.status == Status.failed:
         # If the scenario failed, write the trace chunk out to a file, which will be prefixed with the scenario name
-        context.browser_context.tracing.stop_chunk(
+        context.playwright_context.tracing.stop_chunk(
             path=context.playwright_traces_dir.joinpath(f"{scenario.name.replace(' ', '_')}_failure_trace.zip")
         )
 
     elif context.playwright_trace:
         # Else end the trace chunk without saving to a file
-        context.browser_context.tracing.stop_chunk()
+        context.playwright_context.tracing.stop_chunk()
 
     context.page.close()

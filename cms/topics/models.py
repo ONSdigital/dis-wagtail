@@ -13,6 +13,7 @@ from wagtail.models import Orderable, Page
 from wagtail.search import index
 
 from cms.articles.models import ArticleSeriesPage, StatisticalArticlePage
+from cms.bundles.mixins import BundledPageMixin
 from cms.core.fields import StreamField
 from cms.core.models import BasePage
 from cms.core.query import order_by_pk_position
@@ -65,7 +66,7 @@ class TopicPageRelatedMethodology(Orderable):
     ]
 
 
-class TopicPage(ExclusiveTaxonomyMixin, BasePage):  # type: ignore[django-manager-missing]
+class TopicPage(BundledPageMixin, ExclusiveTaxonomyMixin, BasePage):  # type: ignore[django-manager-missing]
     """The Topic page model."""
 
     base_form_class = TopicPageAdminForm
@@ -93,6 +94,7 @@ class TopicPage(ExclusiveTaxonomyMixin, BasePage):  # type: ignore[django-manage
     )
 
     content_panels: ClassVar[list["Panel"]] = [
+        *BundledPageMixin.panels,
         *BasePage.content_panels,
         "summary",
         FieldPanel("headline_figures"),
