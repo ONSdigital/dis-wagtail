@@ -10,7 +10,8 @@ from wagtail.models import ModelLogEntry, PageLogEntry
 
 from cms.articles.tests.factories import StatisticalArticlePageFactory
 from cms.bundles.enums import BundleStatus
-from cms.bundles.tests.factories import BundleFactory, BundlePageFactory
+from cms.bundles.tests.factories import BundleDatasetFactory, BundleFactory, BundlePageFactory
+from cms.datasets.tests.factories import DatasetFactory
 from cms.home.models import HomePage
 from cms.methodology.tests.factories import MethodologyPageFactory
 from cms.release_calendar.enums import ReleaseStatus
@@ -146,6 +147,14 @@ class PublishBundlesCommandTestCase(TestCase):
         release_page = ReleaseCalendarPageFactory(release_date=self.publication_date)
         BundlePageFactory(parent=self.bundle, page=self.statistical_article)
         BundlePageFactory(parent=self.bundle, page=self.methodology_article)
+        # Create a dummy dataset so that the following BundleDataset instances don't have
+        # the same IDs as the datasets created by the BundleDatasetFactory.
+        DatasetFactory()
+        bundle_dataset_a = BundleDatasetFactory(parent=self.bundle)
+        bundle_dataset_b = BundleDatasetFactory(parent=self.bundle)
+        bundle_dataset_c = BundleDatasetFactory(parent=self.bundle)
+        self.assertEqual(len(release_page.datasets), 0)
+
         self.bundle.publication_date = None
         self.bundle.release_calendar_page = release_page
         self.bundle.save(update_fields=["publication_date", "release_calendar_page"])
@@ -165,6 +174,14 @@ class PublishBundlesCommandTestCase(TestCase):
         self.assertEqual(content["title"], "Methodology")
         self.assertEqual(len(content["links"]), 1)
         self.assertEqual(content["links"][0]["page"].pk, self.methodology_article.pk)
+
+        self.assertEqual(len(release_page.datasets), 3)
+        self.assertEqual(release_page.datasets[0].block_type, "dataset_lookup")
+        self.assertEqual(release_page.datasets[1].block_type, "dataset_lookup")
+        self.assertEqual(release_page.datasets[2].block_type, "dataset_lookup")
+        self.assertEqual(release_page.datasets[0].value, bundle_dataset_a.dataset)
+        self.assertEqual(release_page.datasets[1].value, bundle_dataset_b.dataset)
+        self.assertEqual(release_page.datasets[2].value, bundle_dataset_c.dataset)
 
     @override_settings(SLACK_NOTIFICATIONS_WEBHOOK_URL="https://slack.ons.gov.uk")
     @patch("cms.bundles.management.commands.publish_bundles.logger")

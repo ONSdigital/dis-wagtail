@@ -13,6 +13,7 @@ from cms.bundles.enums import ACTIVE_BUNDLE_STATUS_CHOICES, BundleStatus
 from cms.bundles.models import Bundle
 from cms.bundles.tests.factories import BundleFactory, BundlePageFactory
 from cms.bundles.viewsets.bundle_chooser import BundleChooserWidget
+from cms.datasets.tests.factories import DatasetFactory
 from cms.release_calendar.tests.factories import ReleaseCalendarPageFactory
 from cms.users.tests.factories import UserFactory
 from cms.workflows.tests.utils import mark_page_as_ready_to_publish
@@ -74,6 +75,7 @@ class BundleAdminFormTestCase(TestCase):
             "status": BundleStatus.IN_REVIEW,
             "bundled_pages": inline_formset([{"page": self.page.id}]),
             "teams": inline_formset([]),
+            "bundled_datasets": inline_formset([]),
         }
 
     def test_form_init__status_choices(self):
@@ -229,3 +231,18 @@ class BundleAdminFormTestCase(TestCase):
 
         self.assertFalse(form.is_valid())
         self.assertFormError(form, None, "Cannot approve the bundle without any pages")
+
+    def test_clean_validates_the_bundle_has_datasets(self):
+        DatasetFactory(id=123)
+        raw_data = self.raw_form_data()
+        raw_data["bundled_datasets"] = inline_formset([{"dataset": 123}])
+        form = self.form_class(instance=self.bundle, data=nested_form_data(raw_data))
+
+        self.assertTrue(form.is_valid())
+
+    def test_clean_validates_the_bundle_has_valid_datasets(self):
+        raw_data = self.raw_form_data()
+        raw_data["bundled_datasets"] = inline_formset([{"dataset": 9999}])  # Invalid dataset ID
+        form = self.form_class(instance=self.bundle, data=nested_form_data(raw_data))
+
+        self.assertFalse(form.is_valid())
