@@ -1,4 +1,4 @@
-from behave import step  # pylint: disable=no-name-in-module
+from behave import step, then  # pylint: disable=no-name-in-module
 from behave.runner import Context
 
 from cms.bundles.enums import BundleStatus
@@ -53,3 +53,17 @@ def the_user_opens_page_chooser(context: Context) -> None:
 def the_locale_column_is_displayed(context: Context) -> None:
     modal = context.page.locator(".modal-body")
     modal.get_by_role("columnheader", name="Locale").is_visible()
+
+
+@then('the selected datasets are displayed in the "Data API datasets" section')
+def the_selected_datasets_are_displayed(context: Context) -> None:
+    context.page.get_by_role("heading", name="Dataset 1").is_visible()
+    context.page.get_by_text("Looked up dataset (Edition: Example Dataset 1, Ver: 1)").is_visible()
+    context.page.get_by_role("heading", name="Dataset 2").is_visible()
+    context.page.get_by_text(
+        "Personal well-being estimates by local authority (Edition: Example Dataset 2, Ver: 1)"
+    ).is_visible()
+    context.page.get_by_role("heading", name="Dataset 3").is_visible()
+    context.page.get_by_text(
+        "Deaths registered weekly in England and Wales by region (Edition: Example Dataset 3, Ver: 1)"
+    ).is_visible()
