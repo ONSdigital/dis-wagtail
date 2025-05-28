@@ -1,7 +1,9 @@
 from django.urls import reverse
+from django.utils import timezone
 from wagtail.test.utils import WagtailPageTestCase
 
 from cms.core.custom_date_format import ons_default_datetime
+from cms.release_calendar.enums import ReleaseStatus
 from cms.release_calendar.tests.factories import ReleaseCalendarPageFactory
 
 
@@ -52,3 +54,107 @@ class ReleaseCalendarPageTests(WagtailPageTestCase):
             ),
             content,
         )
+
+    def test_unpublished_changes_to_release_dates(self):
+        """Test changes to release date can not be published to an unpublished release page."""
+        # Add date_change_log to an un published page
+        date_change_log = {
+            "previous_date": timezone.now(),
+            "reason_for_change": "Reason",
+        }
+        self.page.changes_to_release_date = [("date_change_log", date_change_log)]
+        self.page.save_revision().publish()
+        response = self.client.get(self.page.url)
+
+        # should fail another way?? maybe with status code
+        self.assertNotContains(response, "Reason")
+
+    def test_published_changes_to_release_date(self):
+        """Test a change to release date can be published for a published page."""
+        # First publish
+        self.page.status = ReleaseStatus.PUBLISHED
+        self.page.save_revision().publish()
+
+        # Add date change log
+        date_change_log = {
+            "previous_date": timezone.now(),
+            "reason_for_change": "Reason",
+            "frozen": True,
+            "version_id": 1,
+        }
+        self.page.changes_to_release_date = [("date_change_log", date_change_log)]
+        # Publish with change log
+        self.page.save_revision().publish()
+
+        response = self.client.get(self.page.url)
+        # contains this...
+        self.assertContains(response, "Reason")
+
+    def test_multiple_date_change_logs(self):
+        """Test for multiple changes to release date change."""
+        # First publish
+        self.page.status = ReleaseStatus.PUBLISHED
+        self.page.save_revision().publish()
+
+        # Add date change log
+        date_change_log = {
+            "previous_date": "2025-05-01",
+            "reason_for_change": "Reason",
+            "frozen": True,
+            "version_id": 1,
+        }
+        self.page.changes_to_release_date = [("date_change_log", date_change_log)]
+        # Second Publish with change log
+        self.page.save_revision().publish()
+
+        response = self.client.get(self.page.url)
+        # contains this...
+        self.assertContains(response, "Reason")
+
+        # Add next date change log
+        date_change_log_2 = {
+            "previous_date": "2025-05-02",
+            "reason_for_change": "Reason 2",
+            "frozen": True,
+            "version_id": 2,
+        }
+        self.page.changes_to_release_date = [("date_change_log", date_change_log_2)]
+        self.page.save_revision().publish()
+
+        response = self.client.get(self.page.url)
+        self.assertContains(response, "Reason")
+        self.assertContains(response, "Reason 2")
+
+        # Add next date change log
+        date_change_log_3 = {
+            "previous_date": "2025-05-03",
+            "reason_for_change": "Reason 3",
+            "frozen": True,
+            "version_id": 3,
+        }
+        self.page.changes_to_release_date = [("date_change_log", date_change_log_3)]
+        self.page.save_revision().publish()
+
+        response = self.client.get(self.page.url)
+        self.assertContains(response, "Reason")
+        self.assertContains(response, "Reason 2")
+        self.assertContains(response, "Reason 3")
+
+    def test_preview_modes(self):
+        """Test preview modes."""
+        cases = ["PROVISIONAL", "CONFIRMED", "CANCELLED", "PUBLISHED"]
+        post_data = {
+            "title": self.page.title,
+            "summary": self.page.summary,
+            "release_date": self.page.release_date,
+        }
+
+        for case in cases:
+            self.assertPageIsPreviewable(
+                self.page,
+                mode=case,
+                post_data=post_data,
+            )
+        # AssertionError: Failed to load preview for ReleaseCalendarPage
+        # "Responsibility trip economy realize." with mode="PROVISIONAL":
+        # Expecting value: line 1 column 1 (char 0) - some type of malformed JSON error
