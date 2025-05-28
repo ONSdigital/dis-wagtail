@@ -30,7 +30,7 @@ def user_adds_info_page_contents(context: Context) -> None:
     context.page.get_by_role("button", name="Insert a block").nth(2).click()
     context.page.get_by_text("Equation").click()
     context.page.locator('[data-controller="wagtailmathjax"]').fill("$$\\sum_{i=0}^n i^2 = \\frac{(n^2+n)(2n+1)}{6}$$")
-    context.page.wait_for_timeout(50000)
+    context.page.wait_for_timeout(5000)
 
     context.page.get_by_role("button", name="Add related pages").click()
     context.page.get_by_role("button", name="Choose a page").click()
@@ -53,8 +53,8 @@ def check_new_information_is_displayed_with_content(context: Context) -> None:
     page = context.page
     expect(page.get_by_role("heading", name="Test Info Page")).to_be_visible()
     expect(page.get_by_text("My test information page")).to_be_visible()
-    expect(page.get_by_role("term", name="Last Updated")).to_be_visible()
-    expect(page.get_by_role("definition", name="01 January 2024")).to_be_visible()
+    expect(page.get_by_text("term", name="Last updated")).to_be_visible()
+    expect(page.get_by_text("definition", name="01 January 2024")).to_be_visible()
     expect(page.get_by_role("heading", name="Some example rich text content")).to_be_visible()
     expect(page.get_by_text("n∑i=0i2=(n2+n)(2n+1)")).to_be_visible()
     expect(page.get_by_role("navigation", name="Related content").get_by_role("listitem")).to_be_visible()
