@@ -37,8 +37,8 @@ class TestNotifications(TestCase):
         another_previewer = UserFactory()
         another_previewer.teams.set([self.preview_team])
 
-        bt = BundleTeam(parent=bundle, team=self.preview_team)
-        bt.save()
+        bundle_team = BundleTeam(parent=bundle, team=self.preview_team)
+        bundle_team.save()
 
         self.assertEqual(len(mail.outbox), 1)
         self.assertIn(self.previewer.email, mail.outbox[0].to)
@@ -134,8 +134,8 @@ class TestNotifications(TestCase):
         previewer = UserFactory()
         previewer.teams.set([preview_team])
 
-        bt = BundleTeam(parent=bundle, team=preview_team)
-        bt.save()
+        bundle_team = BundleTeam(parent=bundle, team=preview_team)
+        bundle_team.save()
 
         bundle.status = BundleStatus.IN_REVIEW
         bundle.save()
