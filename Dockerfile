@@ -56,10 +56,11 @@ RUN apt --quiet --yes update \
         gettext \
         cm-super \
         postgresql-common \
+        texlive-latex-extra \
     # Install the Postgres repo
     && /usr/share/postgresql-common/pgdg/apt.postgresql.org.sh -y \
     # Install the Postgres client (matching production version)
-    && apt --quiet --yes install --no-install-recommends postgresql-client-${POSTGRES_VERSION} texlive-latex-extra \
+    && apt --quiet --yes install --no-install-recommends postgresql-client-${POSTGRES_VERSION} \
     && apt --quiet --yes autoremove
 
 
