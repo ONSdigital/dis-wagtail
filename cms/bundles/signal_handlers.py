@@ -14,7 +14,7 @@ from cms.bundles.models import Bundle, BundleTeam
 
 @receiver(post_save, sender=BundleTeam)
 def handle_bundle_team_post_save(instance: BundleTeam, created: bool, **kwargs: Any) -> None:
-    """Handle when a preview team is assigned to a bundle."""
+    """Handle when a preview team is assigned to a bundle in review."""
     if created and instance.parent.status == BundleStatus.IN_REVIEW:
         send_team_added_to_bundle_in_review_email(bundle_team=instance)
 
@@ -23,8 +23,11 @@ def handle_bundle_team_post_save(instance: BundleTeam, created: bool, **kwargs: 
 def handle_bundle_in_preview(instance: Bundle, **kwargs: Any) -> None:
     """Handle when a bundle is set to In Preview."""
     if instance.status == BundleStatus.IN_REVIEW and not instance.preview_notification_sent:
-        for bundle_team in instance.teams.get_object_list():  # type: ignore[attr-defined]
-            send_bundle_status_changed_to_in_review_email(bundle=bundle_team.parent)
+        active_bundle_teams = [
+            bundle_team for bundle_team in instance.teams.get_object_list() if bundle_team.team.is_active
+        ]
+        for bundle_team in active_bundle_teams:
+            send_bundle_status_changed_to_in_review_email(bundle_team=bundle_team)
 
         instance.preview_notification_sent = True
         instance.save()
@@ -34,5 +37,8 @@ def handle_bundle_in_preview(instance: Bundle, **kwargs: Any) -> None:
 def handle_bundle_publication(instance: Bundle, **kwargs: Any) -> None:
     """Handle when a bundle is published."""
     if instance.status == BundleStatus.PUBLISHED:
-        for bundle_team in instance.teams.get_object_list():  # type: ignore[attr-defined]
+        active_bundle_teams = [
+            bundle_team for bundle_team in instance.teams.get_object_list() if bundle_team.team.is_active
+        ]
+        for bundle_team in active_bundle_teams:  # type: ignore[attr-defined]
             send_bundle_published_email(bundle_team=bundle_team)
