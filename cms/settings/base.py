@@ -1,5 +1,6 @@
 """Django settings for ons project."""
 
+import datetime
 import os
 import sys
 from copy import deepcopy
@@ -694,7 +695,7 @@ CACHE_CONTROL_STALE_WHILE_REVALIDATE = int(env.get("CACHE_CONTROL_STALE_WHILE_RE
 USE_X_FORWARDED_PORT = env.get("USE_X_FORWARDED_PORT", "true").lower().strip() == "true"
 
 XFF_TRUSTED_PROXY_DEPTH = int(env.get("XFF_TRUSTED_PROXY_DEPTH", 1))
-XFF_EXEMPT_URLS = [r"^-/.*"]
+XFF_EXEMPT_URLS = [r"^-/.*", r"health"]
 
 # Error if there are the wrong number of proxies
 XFF_STRICT = env.get("XFF_STRICT", "false").lower().strip() == "true"
@@ -932,6 +933,11 @@ ONS_EMBED_PREFIX = env.get("ONS_EMBED_PREFIX", "https://www.ons.gov.uk/visualisa
 ONS_COOKIE_BANNER_SERVICE_NAME = env.get("ONS_COOKIE_BANNER_SERVICE_NAME", "www.ons.gov.uk")
 MANAGE_COOKIE_SETTINGS_URL = env.get("MANAGE_COOKIE_SETTINGS_URL", "https://www.ons.gov.uk/cookies")
 
+# Project information
+BUILD_TIME = datetime.datetime.fromtimestamp(int(env["BUILD_TIME"])) if env.get("BUILD_TIME") else None
+GIT_COMMIT = env.get("GIT_COMMIT") or None
+TAG = env.get("TAG") or None
+START_TIME = datetime.datetime.now(tz=datetime.UTC)
 
 SLACK_NOTIFICATIONS_WEBHOOK_URL = env.get("SLACK_NOTIFICATIONS_WEBHOOK_URL")
 
