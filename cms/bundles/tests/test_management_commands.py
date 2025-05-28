@@ -11,6 +11,7 @@ from wagtail.models import ModelLogEntry, PageLogEntry
 from cms.articles.tests.factories import StatisticalArticlePageFactory
 from cms.bundles.enums import BundleStatus
 from cms.bundles.tests.factories import BundleDatasetFactory, BundleFactory, BundlePageFactory
+from cms.datasets.tests.factories import DatasetFactory
 from cms.home.models import HomePage
 from cms.methodology.tests.factories import MethodologyPageFactory
 from cms.release_calendar.enums import ReleaseStatus
@@ -146,7 +147,9 @@ class PublishBundlesCommandTestCase(TestCase):
         release_page = ReleaseCalendarPageFactory(release_date=self.publication_date)
         BundlePageFactory(parent=self.bundle, page=self.statistical_article)
         BundlePageFactory(parent=self.bundle, page=self.methodology_article)
-
+        # Create a dummy dataset so that the following BundleDataset instances don't have
+        # the same IDs as the datasets created by the BundleDatasetFactory.
+        DatasetFactory()
         bundle_dataset_a = BundleDatasetFactory(parent=self.bundle)
         bundle_dataset_b = BundleDatasetFactory(parent=self.bundle)
         bundle_dataset_c = BundleDatasetFactory(parent=self.bundle)

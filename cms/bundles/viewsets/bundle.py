@@ -23,6 +23,7 @@ from cms.bundles.notifications import (
     notify_slack_of_status_change,
 )
 from cms.bundles.permissions import user_can_manage_bundles, user_can_preview_bundle
+from cms.datasets.models import Dataset
 
 if TYPE_CHECKING:
     from django.db.models.fields import Field
@@ -303,15 +304,13 @@ class BundleInspectView(InspectView):
     def get_bundled_datasets_display_value(self) -> str:
         """Returns formatted markup for datasets linked to the Bundle."""
         if self.object.bundled_datasets.exists():
+            datasets = Dataset.objects.filter(pk__in=self.object.bundled_datasets.values_list("dataset__pk", flat=True))
             return format_html(
                 "<ol>{}</ol>",
                 format_html_join(
                     "\n",
                     '<li><a href="{}" target="_blank" rel="noopener">{}</a></li>',
-                    (
-                        (bundled_dataset.dataset.website_url, bundled_dataset.dataset)
-                        for bundled_dataset in self.object.bundled_datasets.all()
-                    ),
+                    ((bundled_dataset.website_url, bundled_dataset) for bundled_dataset in datasets),
                 ),
             )
         return "No datasets in bundle"

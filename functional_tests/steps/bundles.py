@@ -5,7 +5,6 @@ from cms.bundles.enums import BundleStatus
 from cms.bundles.models import BundleTeam
 from cms.bundles.tests.factories import BundleFactory
 from cms.teams.models import Team
-from functional_tests.step_helpers.datasets import mock_datasets_responses
 
 
 @step("a bundle has been created")
@@ -54,55 +53,6 @@ def the_user_opens_page_chooser(context: Context) -> None:
 def the_locale_column_is_displayed(context: Context) -> None:
     modal = context.page.locator(".modal-body")
     modal.get_by_role("columnheader", name="Locale").is_visible()
-
-
-@step("the user selects multiple datasets")
-def the_user_selects_multiple_datasets(context: Context) -> None:
-    mock_dataset_a = {
-        "id": "example1",
-        "description": "Example dataset for functional testing",
-        "title": "Looked Up Dataset",
-        "version": "1",
-        "links": {
-            "latest_version": {
-                "href": "/datasets/example1/editions/example-dataset-1/versions/1",
-                "id": "example1",
-            },
-        },
-    }
-
-    mock_dataset_b = {
-        "id": "example2",
-        "description": "Second example dataset for functional testing",
-        "title": "Personal well-being estimates by local authority",
-        "version": "1",
-        "links": {
-            "latest_version": {
-                "href": "/datasets/example2/editions/example-dataset-2/versions/1",
-                "id": "example2",
-            },
-        },
-    }
-
-    mock_dataset_c = {
-        "id": "example3",
-        "description": "Third example dataset for functional testing",
-        "title": "Deaths registered weekly in England and Wales by region",
-        "version": "1",
-        "links": {
-            "latest_version": {
-                "href": "/datasets/example3/editions/example-dataset-3/versions/1",
-                "id": "example3",
-            },
-        },
-    }
-
-    with mock_datasets_responses(datasets=[mock_dataset_a, mock_dataset_b, mock_dataset_c]):
-        context.page.get_by_role("button", name="Add dataset").click()
-        context.page.get_by_text("Looked up dataset").click()
-        context.page.get_by_text("Personal well-being estimates by local authority").click()
-        context.page.get_by_text("Deaths registered weekly in England and Wales by region").click()
-        context.page.get_by_role("button", name="Confirm selection").click()
 
 
 @then('the selected datasets are displayed in the "Data API datasets" section')

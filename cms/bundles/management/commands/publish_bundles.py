@@ -64,8 +64,8 @@ class Command(BaseCommand):
             content.append({"type": "release_content", "value": {"title": "Methodology", "links": methodology_pages}})
 
         datasets = [
-            {"type": "dataset_lookup", "id": uuid.uuid4(), "value": dataset["id"]}
-            for dataset in bundle.bundled_datasets.all().values("id")
+            {"type": "dataset_lookup", "id": uuid.uuid4(), "value": dataset["dataset"]}
+            for dataset in bundle.bundled_datasets.all().values("dataset")
         ]
 
         page = bundle.release_calendar_page
