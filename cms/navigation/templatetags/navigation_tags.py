@@ -98,14 +98,14 @@ def main_menu_columns(context: jinja2.runtime.Context, main_menu: Optional["Main
 
     items: list[ColumnData] = []
     for column in main_menu.columns:
-        column_data: ColumnData = {"groups": []}
+        groups: list[NavigationItem] = []
 
         for section in column.value["sections"]:
             if section_data := extract_section_data(section, context.get("request")):
-                column_data["groups"].append(section_data)
+                groups.append(section_data)
 
-        if column_data["groups"]:
-            items.append(column_data)
+        if groups:
+            items.append({"groups": groups})
 
     return items
 
