@@ -237,7 +237,9 @@ if "PG_DB_ADDR" in env:
 else:
     DATABASES = {
         "default": dj_database_url.config(
-            conn_max_age=db_conn_max_age, conn_health_checks=True, default="postgres://ons:ons@localhost:5432/ons"
+            conn_max_age=db_conn_max_age,
+            conn_health_checks=True,
+            default="postgres://ons:ons@localhost:5432/ons",  # pragma: allowlist secret
         ),
     }
 
@@ -547,19 +549,13 @@ LOGGING = {
 # that let us use SMTP.
 # https://docs.djangoproject.com/en/2.1/topics/email/
 
-# Tests automatically use EMAIL_BACKEND = "django.core.mail.backends.locmem.EmailBackend"
 EMAIL_BACKEND = env.get("EMAIL_BACKEND", "django.core.mail.backends.console.EmailBackend")
 FROM_EMAIL = env.get("FROM_EMAIL", "example@mail.com")
-
-# EMAIL_BACKEND = 'django_ses.SESBackend'
 
 if EMAIL_BACKEND == "django_ses.SESBackend":
     # These are optional if you are using AWS IAM Roles https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles.html
     AWS_ACCESS_KEY_ID = env.get("YOUR-ACCESS-KEY-ID", "DUMMY-ACCESS-KEY-ID")
     AWS_SECRET_ACCESS_KEY = env.get("YOUR-SECRET-ACCESS-KEY", "DUMMY-SECRET-ACCESS-KEY")  # pragma: allowlist secret
-
-    # https://docs.aws.amazon.com/cli/v1/userguide/cli-configure-files.html
-    # AWS_SESSION_PROFILE = 'YOUR-PROFILE-NAME' TODO: is this needed
 
     AWS_SES_REGION_NAME = env["AWS_REGION"]
     AWS_SES_REGION_ENDPOINT = env["AWS_SES_ENDPOINT"]
