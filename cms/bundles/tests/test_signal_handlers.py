@@ -29,6 +29,9 @@ class TestNotifications(TestCase):
         mail.outbox = []
 
     def test_bundle_in_preview_notification_is_sent_once(self):
+        """Test that when a bundle is created and is in preview and has a preview team,
+        then a notification is sent to the preview team.
+        """
         bundle = BundleFactory(in_review=True, name="Preview Bundle")
 
         another_previewer = UserFactory()
@@ -54,6 +57,7 @@ class TestNotifications(TestCase):
         self.assertEqual(len(mail.outbox), 1)
         self.assertIn(self.previewer.email, mail.outbox[0].to)
         self.assertIn(f'Your team "{self.preview_team.name}" was added to a bundle In review', mail.outbox[0].subject)
+        self.assertIn(bundle.inspect_url, mail.outbox[0].body)
 
     def test_readding_team_to_bundle_triggers_notification(self):
         bundle = BundleFactory(in_review=True, name="Preview Bundle")
@@ -70,6 +74,7 @@ class TestNotifications(TestCase):
         self.assertListEqual(bundle.teams.get_object_list(), [])
         bundle_team = BundleTeam.objects.create(parent=bundle, team=self.preview_team)
         self.assertEqual(len(mail.outbox), 1)
+        self.assertIn(bundle.inspect_url, mail.outbox[0].body)
 
     def test_email_is_sent_when_bundle_is_published_with_management_command(self):
         """Test that when a bundle is published manually (with a management command), an email is sent."""
@@ -86,6 +91,7 @@ class TestNotifications(TestCase):
 
         self.assertEqual(len(mail.outbox), 1)
         self.assertIn(f'Bundle "{bundle.name}" has been published', mail.outbox[0].subject)
+        self.assertIn(bundle.inspect_url, mail.outbox[0].body)
 
     def test_email_is_sent_when_bundle_is_published_via_manual_publication(self):
         """Test that when a bundle is published manually (via the admin), an email is sent."""
@@ -115,6 +121,7 @@ class TestNotifications(TestCase):
 
         self.assertEqual(len(mail.outbox), 1)
         self.assertIn(f'Bundle "{bundle.name}" has been published', mail.outbox[0].subject)
+        self.assertIn(bundle.inspect_url, mail.outbox[0].body)
 
         bundle.refresh_from_db()
         self.assertEqual(bundle.status, BundleStatus.PUBLISHED)
@@ -137,6 +144,7 @@ class TestNotifications(TestCase):
         self.assertEqual(len(mail.outbox), 1)
         self.assertIn(previewer.email, mail.outbox[0].to)
         self.assertIn(f'Bundle "{bundle.name}" status changed to In Review', mail.outbox[0].subject)
+        self.assertIn(bundle.inspect_url, mail.outbox[0].body)
 
         # Clear the outbox and change the status to "Draft" and then back to "In Preview"
         mail.outbox = []
