@@ -178,8 +178,8 @@ class BarColumnChartBlockTestCase(BaseChartBlockTestCase):
         self.block.clean(self.get_value())
         x_axis_config = self.get_value().block.get_component_config(self.get_value())["xAxis"]
         for key in ["tickIntervalMobile", "tickIntervalDesktop"]:
-            with self.subTest(key=key), self.assertRaises(KeyError):
-                x_axis_config[key]  # pylint: disable=pointless-statement
+            with self.subTest(key=key):
+                self.assertNotIn(key, x_axis_config)
 
 
 class ColumnChartWithLineTestCase(BaseChartBlockTestCase):

@@ -128,8 +128,7 @@ class LineChartBlockTestCase(BaseChartBlockTestCase):
         ]:
             with self.subTest(axis=axis, key=key):
                 axis_config = self.get_value().block.get_component_config(self.get_value())[axis]
-                with self.assertRaises(KeyError):
-                    axis_config[key]  # pylint: disable=pointless-statement
+                self.assertNotIn(key, axis_config)
 
     def test_tick_interval(self):
         self.raw_data["x_axis"]["tick_interval_mobile"] = 1
