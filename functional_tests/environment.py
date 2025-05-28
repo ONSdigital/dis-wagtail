@@ -132,9 +132,6 @@ def after_scenario(context: Context, scenario: Scenario):
     """Runs after each scenario.
     Write out a Playwright trace if the scenario failed and trace recording is enabled, then close the playwright page.
     """
-    if hasattr(context, "_aws_override"):
-        context._aws_override.disable()  # pylint: disable=protected-access
-
     if context.playwright_context and scenario.status == Status.failed:
         # If the scenario failed, write the trace chunk out to a file, which will be prefixed with the scenario name
         context.playwright_context.tracing.stop_chunk(
