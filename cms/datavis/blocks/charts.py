@@ -257,8 +257,7 @@ class AreaChartBlock(BaseVisualisationBlock):
 
     def clean(self, value: "StructValue") -> "StructValue":
         value = super().clean(value)
-        value = self.clean_table_data(value)
-        return value
+        return self.clean_table_data(value)
 
     def clean_table_data(self, value: "StructValue") -> "StructValue":
         rows = value["table"].rows
