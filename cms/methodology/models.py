@@ -139,12 +139,7 @@ class MethodologyPage(BundledPageMixin, GenericTaxonomyMixin, BasePage):  # type
             for page in self.related_publications
         ]
 
-        if items:
-            return {
-                "title": _("Related publications"),
-                "itemsList": items,
-            }
-        return {}
+        return {"title": _("Related publications"), "itemsList": items} if items else {}
 
     @cached_property
     def table_of_contents(self) -> list[dict[str, str | object]]:
