@@ -88,9 +88,12 @@ class MethodologyPageTestCase(WagtailTestUtils, TestCase):
     def test_get_formatted_related_publications_list(self):
         related = MethodologyRelatedPageFactory(parent=self.page, page__title="The Article Series 1")
 
-        self.assertListEqual(
+        self.assertEqual(
             self.page.get_formatted_related_publications_list(),
-            [{"title": related.page.display_title, "url": related.page.url}],
+            {
+                "title": "Related publications",
+                "itemsList": [{"title": related.page.display_title, "url": related.page.url}],
+            }
         )
 
     @override_settings(IS_EXTERNAL_ENV=True)
