@@ -20,6 +20,15 @@ Feature: CMS users can draft, edit, and publish topic pages
         And the user visits the topic page
         Then the user can see the newly created article in featured spot
 
+    Scenario: The translated version of the topic page uses the same taxonomy
+        Given a superuser logs into the admin site
+        And a topic page exists under a theme page
+        And the user creates a Welsh version of the home page
+        When the user edits the topic page
+        And the user switches to the Welsh locale
+        And the user goes to the Taxonomy tab
+        Then the user is informed that the selected topic is copied from the English version
+
     Scenario: A CMS user can choose headline figures when editing a topic
         Given a superuser logs into the admin site
         When the user goes to add a new statistical article page

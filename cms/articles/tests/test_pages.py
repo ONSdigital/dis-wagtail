@@ -1,11 +1,15 @@
-import uuid
 from http import HTTPStatus
 
 from django.core.exceptions import ValidationError
+from django.test import override_settings
 from django.urls import reverse
+from wagtail.blocks import StreamValue
 from wagtail.test.utils import WagtailPageTestCase
 
+from cms.articles.enums import SortingChoices
 from cms.articles.tests.factories import ArticleSeriesPageFactory, StatisticalArticlePageFactory
+from cms.datasets.blocks import DatasetStoryBlock
+from cms.datasets.models import Dataset
 
 
 class ArticleSeriesPageTests(WagtailPageTestCase):
@@ -53,37 +57,30 @@ class ArticleSeriesPageTests(WagtailPageTestCase):
         self.assertContains(response, second_article.title)
 
 
-class StatisticalArticlePageTests(WagtailPageTestCase):
+class StatisticalArticlePageTests(WagtailPageTestCase):  # pylint: disable=too-many-public-methods
     @classmethod
     def setUpTestData(cls):
         cls.page = StatisticalArticlePageFactory()
         # TODO: Fix the factory to generate headline_figures correctly
         cls.page.headline_figures = [
             {
-                "type": "figures",
-                "value": [
-                    {
-                        "id": uuid.uuid4(),
-                        "type": "item",
-                        "value": {
-                            "figure_id": "figurexyz",
-                            "title": "Figure title XYZ",
-                            "figure": "XYZ",
-                            "supporting_text": "Figure supporting text XYZ",
-                        },
-                    },
-                    {
-                        "id": uuid.uuid4(),
-                        "type": "item",
-                        "value": {
-                            "figure_id": "figureabc",
-                            "title": "Figure title ABC",
-                            "figure": "ABC",
-                            "supporting_text": "Figure supporting text ABC",
-                        },
-                    },
-                ],
-            }
+                "type": "figure",
+                "value": {
+                    "figure_id": "figurexyz",
+                    "title": "Figure title XYZ",
+                    "figure": "XYZ",
+                    "supporting_text": "Figure supporting text XYZ",
+                },
+            },
+            {
+                "type": "figure",
+                "value": {
+                    "figure_id": "figureabc",
+                    "title": "Figure title ABC",
+                    "figure": "ABC",
+                    "supporting_text": "Figure supporting text ABC",
+                },
+            },
         ]
         cls.page.headline_figures_figure_ids = "figurexyz,figureabc"
         cls.page.save_revision().publish()
@@ -100,6 +97,11 @@ class StatisticalArticlePageTests(WagtailPageTestCase):
         self.assertEqual(response.status_code, HTTPStatus.OK)
         self.assertContains(response, self.page.title)
         self.assertContains(response, self.page.summary)
+
+        self.assertContains(response, "Save or print this page")
+        self.assertContains(response, "Sections in this page")
+        self.assertContains(response, "Contents")
+        self.assertContains(response, "Cite this article")
 
     def test_localised_version_of_page_works(self):
         response = self.client.get("/cy" + self.page.url)
@@ -273,6 +275,78 @@ class StatisticalArticlePageTests(WagtailPageTestCase):
         self.assertContains(v2_response, "First correction text")
         self.assertNotContains(v2_response, "Second correction text")
 
+    def test_correction_toc_rendering(self):
+        self.page.content = [
+            {
+                "type": "section",
+                "value": {"title": "Precorrection title", "content": [{"type": "rich_text", "value": "text"}]},
+            }
+        ]
+        self.page.save_revision().publish()
+
+        response = self.client.get(self.page.url)
+
+        self.assertContains(response, "Precorrection title")
+
+        page_content = response.content.decode(encoding="utf-8")
+
+        self.assertInHTML(
+            '<a class="ons-list__link" href="#precorrection-title">Precorrection title</a>',
+            page_content,
+        )
+
+        original_revision_id = self.page.get_latest_revision().id
+
+        first_correction = {
+            "version_id": 1,
+            "previous_version": original_revision_id,
+            "when": "2025-01-11",
+            "frozen": True,
+            "text": "Foobar correction text",
+        }
+
+        self.page.corrections = [
+            (
+                "correction",
+                first_correction,
+            )
+        ]
+
+        self.page.content = [
+            {
+                "type": "section",
+                "value": {"title": "Postcorrection title", "content": [{"type": "rich_text", "value": "text"}]},
+            }
+        ]
+
+        self.page.save_revision().publish()
+
+        response = self.client.get(self.page.url)
+
+        self.assertContains(response, "Postcorrection title")
+        self.assertNotContains(response, "Precorrection title")
+
+        page_content = response.content.decode(encoding="utf-8")
+
+        self.assertInHTML(
+            '<a class="ons-list__link" href="#postcorrection-title">Postcorrection title</a>',
+            page_content,
+        )
+
+        v1_response = self.client.get(self.page.url + "previous/v1/")
+
+        page_content = v1_response.content.decode(encoding="utf-8")
+
+        self.assertInHTML(
+            '<a class="ons-list__link" href="#precorrection-title">Precorrection title</a>',
+            page_content,
+        )
+
+        self.assertNotInHTML(
+            '<a class="ons-list__link" href="#postcorrection-title">Postcorrection title</a>',
+            page_content,
+        )
+
     def test_hero_rendering(self):
         response = self.client.get(self.page.url)
 
@@ -359,8 +433,8 @@ class StatisticalArticlePageTests(WagtailPageTestCase):
         self.assertContains(response, self.page.summary)
         self.assertContains(response, self.page.contact_details)
         self.assertContains(response, self.page.search_description)
-        self.assertContains(response, self.page.headline_figures[0].value[0]["title"])
-        self.assertContains(response, self.page.headline_figures[0].value[0]["supporting_text"])
+        self.assertContains(response, self.page.headline_figures[0].value["title"])
+        self.assertContains(response, self.page.headline_figures[0].value["supporting_text"])
 
     def test_headline_figures_removal_validation(self):
         series = self.page.get_parent()
@@ -368,17 +442,17 @@ class StatisticalArticlePageTests(WagtailPageTestCase):
         topic.headline_figures.extend(
             [
                 (
-                    "figures",
+                    "figure",
                     {
                         "series": series,
                         "figure_id": "figurexyz",
                     },
                 ),
                 (
-                    "figures",
+                    "figure",
                     {
                         "series": series,
-                        "figure_id": "figurexyz",
+                        "figure_id": "figureabc",
                     },
                 ),
             ]
@@ -404,4 +478,179 @@ class StatisticalArticlePageTests(WagtailPageTestCase):
             response,
             "wagtailadmin/panels/headline_figures/figures_used_by_ancestor_data.html",
             "Template required by Headline Figures functionality was not used",
+        )
+
+    def test_related_data_route(self):
+        self.assertPageIsRoutable(self.page, "/related-data")
+
+    def test_related_data_page(self):
+        lookup_dataset = Dataset.objects.create(
+            namespace="LOOKUP",
+            edition="lookup_edition",
+            version="lookup_version",
+            title="test lookup",
+            description="lookup description",
+        )
+        manual_dataset = {"title": "test manual", "description": "manual description", "url": "https://example.com"}
+
+        self.page.datasets = StreamValue(
+            DatasetStoryBlock(),
+            stream_data=[
+                ("dataset_lookup", lookup_dataset),
+                ("manual_link", manual_dataset),
+            ],
+        )
+        self.page.save_revision().publish()
+        response = self.client.get(self.page.url + "related-data/")
+        content = response.content.decode(encoding="utf-8")
+
+        self.assertIn(self.page.related_data_display_title, content)
+        self.assertIn(lookup_dataset.title, content)
+        self.assertIn(lookup_dataset.description, content)
+        self.assertIn(lookup_dataset.website_url, content)
+        self.assertIn(manual_dataset["title"], content)
+        self.assertIn(manual_dataset["description"], content)
+        self.assertIn(manual_dataset["url"], content)
+
+    def test_empty_related_data_page(self):
+        response = self.client.get(self.page.url + "related-data/")
+        self.assertEqual(response.status_code, HTTPStatus.NOT_FOUND)
+
+    def test_related_data_link_present(self):
+        """Test that the related data link and ToC is rendered when there is related data for the article."""
+        manual_dataset = {"title": "test manual", "description": "manual description", "url": "https://example.com"}
+
+        self.page.datasets = StreamValue(
+            DatasetStoryBlock(),
+            stream_data=[
+                ("manual_link", manual_dataset),
+            ],
+        )
+        self.page.save_revision().publish()
+        response = self.client.get(self.page.url)
+        content = response.content.decode(encoding="utf-8")
+
+        self.assertIn("Explore Data", content)
+        self.assertIn("View data used in this article", content)
+
+    def test_related_data_link_not_present(self):
+        """Test that the related data link is not rendered when there is no related data for the article."""
+        response = self.client.get(self.page.url)
+        content = response.content.decode(encoding="utf-8")
+
+        self.assertNotIn("Explore Data", content)
+        self.assertNotIn("View data used in this article", content)
+
+    def test_related_data_page_single_page(self):
+        """Test that pagination is not shown when the content fits on a single page."""
+        manual_dataset = {"title": "test manual", "description": "manual description", "url": "https://example.com"}
+
+        self.page.datasets = StreamValue(
+            DatasetStoryBlock(),
+            stream_data=[
+                ("manual_link", manual_dataset),
+            ],
+        )
+        self.page.save_revision().publish()
+        response = self.client.get(self.page.url + "related-data/")
+        content = response.content.decode(encoding="utf-8")
+
+        self.assertNotIn('class="ons-pagination__item ons-pagination__item--previous"', content)
+        self.assertNotIn('class="ons-pagination__item ons-pagination__item--current"', content)
+        self.assertNotIn('class="ons-pagination__item ons-pagination__item--next"', content)
+
+    @override_settings(RELATED_DATASETS_PER_PAGE=1)
+    def test_related_data_page_with_pagination(self):
+        """Test that pagination is shown when there is more than one page."""
+        manual_datasets = [
+            {"title": "test1", "description": "test", "url": "https://example.com/1"},
+            {"title": "test2", "description": "test", "url": "https://example.com/2"},
+            {"title": "test3", "description": "test", "url": "https://example.com/3"},
+            {"title": "test4", "description": "test", "url": "https://example.com/4"},
+        ]
+        self.page.datasets = StreamValue(
+            DatasetStoryBlock(),
+            stream_data=[("manual_link", dataset) for dataset in manual_datasets],
+        )
+        self.page.save_revision().publish()
+        response = self.client.get(self.page.url + "related-data/?page=2")
+        content = response.content.decode(encoding="utf-8")
+
+        self.assertIn('class="ons-pagination__item ons-pagination__item--previous"', content)
+        self.assertIn('class="ons-pagination__item ons-pagination__item--current"', content)
+        self.assertIn('class="ons-pagination__item ons-pagination__item--next"', content)
+        self.assertIn('class="ons-pagination__position">Page 2 of 4', content)
+
+    def test_prepopulated_datasets(self):
+        lookup_dataset = Dataset.objects.create(
+            namespace="LOOKUP",
+            edition="lookup_edition",
+            version="lookup_version",
+            title="test lookup",
+            description="lookup description",
+        )
+        manual_dataset = {"title": "test manual", "description": "manual description", "url": "https://example.com"}
+
+        self.page.datasets = StreamValue(
+            DatasetStoryBlock(),
+            stream_data=[
+                ("dataset_lookup", lookup_dataset),
+                ("manual_link", manual_dataset),
+            ],
+        )
+        self.page.dataset_sorting = SortingChoices.ALPHABETIC
+        self.page.save_revision().publish()
+
+        self.client.force_login(self.user)
+        parent_page = self.page.get_parent()
+        add_sibling_url = reverse("wagtailadmin_pages:add_subpage", args=[parent_page.id])
+
+        response = self.client.get(add_sibling_url, follow=True)
+        self.assertEqual(response.status_code, HTTPStatus.OK)
+
+        self.assertContains(
+            response, "This page has been prepopulated with the content from the latest page in the series."
+        )
+
+        new_page = response.context_data["form"].instance
+
+        self.assertEqual(new_page.datasets, self.page.datasets)
+        self.assertEqual(new_page.dataset_sorting, self.page.dataset_sorting)
+
+
+class DatePlaceholderTests(WagtailPageTestCase):
+    @classmethod
+    def setUpTestData(cls):
+        cls.page = StatisticalArticlePageFactory()
+        cls.user = cls.create_superuser("admin")
+
+    def test_date_placeholder(self):
+        """Test that the date input field displays date placeholder."""
+        self.client.force_login(self.user)
+
+        parent_page = self.page.get_parent()
+        add_sibling_url = reverse("wagtailadmin_pages:add_subpage", args=[parent_page.id])
+
+        response = self.client.get(add_sibling_url, follow=True)
+
+        content = response.content.decode(encoding="utf-8")
+
+        date_placeholder = "YYYY-MM-DD"
+
+        self.assertInHTML(
+            (
+                f'<input type="text" name="release_date" autocomplete="off" placeholder="{date_placeholder}"'
+                'aria-describedby="panel-child-content-child-metadata-child-dates-child-release_date-helptext"'
+                'required="" id="id_release_date">'
+            ),
+            content,
+        )
+
+        self.assertInHTML(
+            (
+                f'<input type="text" name="next_release_date" autocomplete="off" placeholder="{date_placeholder}"'
+                ' aria-describedby="panel-child-content-child-metadata-child-dates-child-next_release_date-helptext"'
+                'id="id_next_release_date">'
+            ),
+            content,
         )

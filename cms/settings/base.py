@@ -1,5 +1,6 @@
 """Django settings for ons project."""
 
+import datetime
 import os
 import sys
 from copy import deepcopy
@@ -8,9 +9,10 @@ from typing import Any, cast
 
 import dj_database_url
 from django.core.exceptions import ImproperlyConfigured
-from django.utils.module_loading import import_string
 from django.utils.translation import gettext_lazy as _
 from django_jinja.builtins import DEFAULT_EXTENSIONS
+
+from cms.core.elasticache import ElastiCacheIAMCredentialProvider
 
 env = os.environ.copy()
 
@@ -202,7 +204,10 @@ WSGI_APPLICATION = "cms.wsgi.application"
 
 # Database
 
-db_conn_max_age = int(env.get("PG_CONN_MAX_AGE", 870))  # Just under 15 minutes, to match password expiry
+# None allows connections to be reused for longer, since opening them is expensive.
+# CONN_HEALTH_CHECK ensures they're still healthy before attempting to use them.
+db_conn_max_age = int(env["PG_CONN_MAX_AGE"]) if "PG_CONN_MAX_AGE" in env else None
+db_read_conn_max_age = int(env["PG_READ_CONN_MAX_AGE"]) if "PG_READ_CONN_MAX_AGE" in env else None
 
 if "PG_DB_ADDR" in env:
     # Use IAM authentication to connect to the Database
@@ -216,7 +221,8 @@ if "PG_DB_ADDR" in env:
                 "HOST": env["PG_DB_ADDR"],
                 "PORT": env["PG_DB_PORT"],
                 "CONN_MAX_AGE": db_conn_max_age,
-                "OPTIONS": {"use_iam_auth": True, "sslmode": "require"},
+                "CONN_HEALTH_CHECK": True,
+                "OPTIONS": {"use_iam_auth": True, "sslmode": "require", "region_name": env["AWS_REGION"]},
             },
         )
     }
@@ -226,16 +232,19 @@ if "PG_DB_ADDR" in env:
         DATABASES["read_replica"] = {
             **deepcopy(DATABASES["default"]),
             "HOST": env["PG_DB_READ_ADDR"],
+            "CONN_MAX_AGE": db_read_conn_max_age,
         }
 
 else:
     DATABASES = {
-        "default": dj_database_url.config(conn_max_age=db_conn_max_age, default="postgres:///ons"),
+        "default": dj_database_url.config(
+            conn_max_age=db_conn_max_age, conn_health_checks=True, default="postgres://ons:ons@localhost:5432/ons"
+        ),
     }
 
     if "READ_REPLICA_DATABASE_URL" in env:
         DATABASES["read_replica"] = dj_database_url.config(
-            env="READ_REPLICA_DATABASE_URL", conn_max_age=db_conn_max_age
+            env="READ_REPLICA_DATABASE_URL", conn_max_age=db_read_conn_max_age
         )
 
 if "read_replica" not in DATABASES:
@@ -294,10 +303,10 @@ elif elasticache_addr := env.get("ELASTICACHE_ADDR"):
         "OPTIONS": {
             **redis_options,
             "CONNECTION_POOL_KWARGS": {
-                "credential_provider": import_string("cms.core.cache.ElastiCacheIAMCredentialProvider")(
+                "credential_provider": ElastiCacheIAMCredentialProvider(
                     user=env["ELASTICACHE_USER_NAME"],
                     cluster_name=env["ELASTICACHE_CLUSTER_NAME"],
-                    region=env["ELASTICACHE_CLUSTER_REGION"],
+                    region=env["AWS_REGION"],
                 )
             },
         },
@@ -670,7 +679,7 @@ CACHE_CONTROL_STALE_WHILE_REVALIDATE = int(env.get("CACHE_CONTROL_STALE_WHILE_RE
 USE_X_FORWARDED_PORT = env.get("USE_X_FORWARDED_PORT", "true").lower().strip() == "true"
 
 XFF_TRUSTED_PROXY_DEPTH = int(env.get("XFF_TRUSTED_PROXY_DEPTH", 1))
-XFF_EXEMPT_URLS = [r"^-/.*"]
+XFF_EXEMPT_URLS = [r"^-/.*", r"health"]
 
 # Error if there are the wrong number of proxies
 XFF_STRICT = env.get("XFF_STRICT", "false").lower().strip() == "true"
@@ -695,7 +704,7 @@ CSRF_FAILURE_VIEW = "cms.core.views.csrf_failure"
 
 # Force HTTPS redirect (enabled by default!)
 # https://docs.djangoproject.com/en/stable/ref/settings/#secure-ssl-redirect
-SECURE_SSL_REDIRECT = True
+SECURE_SSL_REDIRECT = env.get("SECURE_SSL_REDIRECT", "true").lower().strip() == "true"
 
 
 # This will allow the cache to swallow the fact that the website is behind TLS
@@ -859,6 +868,7 @@ WAGTAIL_PASSWORD_REQUIRED_TEMPLATE = "templates/pages/wagtail/password_required.
 # Default size of the pagination used on the front-end.
 DEFAULT_PER_PAGE = 20
 PREVIOUS_RELEASES_PER_PAGE = int(env.get("PREVIOUS_RELEASES_PER_PAGE", 10))
+RELATED_DATASETS_PER_PAGE = int(env.get("RELATED_DATASETS_PER_PAGE", DEFAULT_PER_PAGE))
 
 # Google Tag Manager ID from env
 GOOGLE_TAG_MANAGER_CONTAINER_ID = env.get("GOOGLE_TAG_MANAGER_CONTAINER_ID", "")
@@ -907,6 +917,11 @@ ONS_EMBED_PREFIX = env.get("ONS_EMBED_PREFIX", "https://www.ons.gov.uk/visualisa
 ONS_COOKIE_BANNER_SERVICE_NAME = env.get("ONS_COOKIE_BANNER_SERVICE_NAME", "www.ons.gov.uk")
 MANAGE_COOKIE_SETTINGS_URL = env.get("MANAGE_COOKIE_SETTINGS_URL", "https://www.ons.gov.uk/cookies")
 
+# Project information
+BUILD_TIME = datetime.datetime.fromtimestamp(int(env["BUILD_TIME"])) if env.get("BUILD_TIME") else None
+GIT_COMMIT = env.get("GIT_COMMIT") or None
+TAG = env.get("TAG") or None
+START_TIME = datetime.datetime.now(tz=datetime.UTC)
 
 SLACK_NOTIFICATIONS_WEBHOOK_URL = env.get("SLACK_NOTIFICATIONS_WEBHOOK_URL")
 

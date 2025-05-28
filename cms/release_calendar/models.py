@@ -10,9 +10,11 @@ from wagtail.fields import RichTextField
 from wagtail.models import Page
 from wagtail.search import index
 
+from cms.bundles.mixins import BundledPageMixin
 from cms.core.custom_date_format import ons_date_format
 from cms.core.fields import StreamField
 from cms.core.models import BasePage
+from cms.core.widgets import datetime_widget
 from cms.datasets.blocks import DatasetStoryBlock
 
 from .blocks import (
@@ -41,7 +43,7 @@ class ReleaseCalendarIndex(BasePage):  # type: ignore[django-manager-missing]
     max_count_per_parent = 1
 
 
-class ReleaseCalendarPage(BasePage):  # type: ignore[django-manager-missing]
+class ReleaseCalendarPage(BundledPageMixin, BasePage):  # type: ignore[django-manager-missing]
     """The calendar release page model."""
 
     base_form_class = ReleaseCalendarPageAdminForm
@@ -110,6 +112,7 @@ class ReleaseCalendarPage(BasePage):  # type: ignore[django-manager-missing]
     related_links = StreamField(ReleaseCalendarRelatedLinksStoryBlock(), blank=True)
 
     content_panels: ClassVar[list[FieldPanel]] = [
+        *BundledPageMixin.panels,
         MultiFieldPanel(
             [
                 *Page.content_panels,
@@ -117,14 +120,14 @@ class ReleaseCalendarPage(BasePage):  # type: ignore[django-manager-missing]
                 ReleaseCalendarBundleNotePanel(heading="Note", classname="bundle-note"),
                 FieldRowPanel(
                     [
-                        "release_date",
+                        FieldPanel("release_date", datetime_widget),
                         FieldPanel("release_date_text", heading="Or, release date text"),
                     ],
                     heading="",
                 ),
                 FieldRowPanel(
                     [
-                        "next_release_date",
+                        FieldPanel("next_release_date", datetime_widget),
                         FieldPanel("next_release_date_text", heading="Or, next release date text"),
                     ],
                     heading="",

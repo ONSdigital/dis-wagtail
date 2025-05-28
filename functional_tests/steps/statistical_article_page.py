@@ -25,6 +25,32 @@ def a_statistical_article_exists(context: Context):
     context.statistical_article_page = StatisticalArticlePageFactory(parent=context.article_series_page)
 
 
+@given("a statistical article page with equations exists")
+def a_statistical_article_page_with_equations_exists(context: Context):
+    an_article_series_exists(context)
+    content = [
+        {
+            "type": "section",
+            "value": {
+                "heading": "Statistical article",
+                "content": [
+                    {
+                        "type": "equation",
+                        "value": {
+                            "equation": "$$y = mx + b$$",
+                            "svg": "<svg id='svgfallback'></svg>",
+                        },
+                    }
+                ],
+            },
+        }
+    ]
+    context.statistical_article_page = StatisticalArticlePageFactory(
+        parent=context.article_series_page, title="Statistical article with equations", content=content
+    )
+    context.statistical_article_page.save()
+
+
 @when("the user creates a new statistical article in the series")
 def create_a_new_article_in_the_series(context: Context):
     old_article_release_date = context.statistical_article_page.release_date
@@ -161,7 +187,7 @@ def user_adds_headline_figures(context: Context):
     panel = page.locator("#panel-child-content-headline_figures-content")
     panel.get_by_role("button", name="Insert a block").click()
     page.wait_for_timeout(100)
-    panel.get_by_role("button", name="Add", exact=True).nth(0).click()
+    panel.get_by_role("button", name="Insert a block").nth(1).click()
     page.wait_for_timeout(100)
     panel.get_by_label("Title*").nth(0).fill("First headline figure")
     panel.get_by_label("Figure*").nth(0).fill("~123%")
@@ -175,7 +201,7 @@ def user_adds_headline_figures(context: Context):
 def user_reorders_the_headline_figures_on_the_statistical_article_page(context: Context):
     page = context.page
     panel = page.locator("#panel-child-content-headline_figures-content")
-    panel.get_by_role("button", name="Move up").nth(2).click()
+    panel.get_by_role("button", name="Move up").nth(1).click()
 
 
 @step("the user adds another correction using the add button at the bottom")
@@ -312,3 +338,24 @@ def user_cannot_delete_the_correction(context: Context):
     expect(
         page.locator("#panel-child-corrections_and_notices-corrections-content [data-streamfield-action='DELETE']")
     ).to_be_hidden()
+
+
+@when("the user navigates to the related data editor tab")
+def user_navigates_to_related_data_tab(context: Context):
+    context.page.get_by_role("tab", name="Related data").click()
+    context.editor_tab = "related_data"
+
+
+@when('the user clicks "View data used in this article" on the article page')
+def user_clicks_view_data_used_in_article(context: Context):
+    context.page.get_by_role("link", name="View data used in this article").click()
+
+
+@then("the related data page for the article is shown")
+def check_related_data_page_content(context: Context):
+    page = context.page
+    expect(page.get_by_role("heading", name="All data related to The article page")).to_be_visible()
+    expect(page.get_by_role("link", name="Looked Up Dataset")).to_be_visible()
+    expect(page.get_by_text("Example dataset for functional testing")).to_be_visible()
+    expect(page.get_by_role("link", name="Manual Dataset")).to_be_visible()
+    expect(page.get_by_text("Manually entered test dataset")).to_be_visible()

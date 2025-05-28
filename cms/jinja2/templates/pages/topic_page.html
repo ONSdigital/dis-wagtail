@@ -23,7 +23,14 @@
     {# fmt:on #}
 
     {% if page.headline_figures %}
-        {% include_block page.headline_figures %}
+        <div class="ons-container headline-figures">
+            <h2 class="headline-figures__heading ons-u-fs-m">{{ _("Headline facts and figures") }}</h2>
+            <div class="ons-grid ons-grid-flex-gap ons-grid-flex-gap--24 headline-figures__grid">
+                {% for figure in page.headline_figures %}
+                    <div class="ons-grid__col ons-grid__col--flex-col ons-grid__col--stretch">{% include_block figure %}</div>
+                {% endfor %}
+            </div>
+        </div>
     {% endif %}
 {% endblock %}
 
@@ -31,15 +38,21 @@
     <div class="ons-grid ons-grid-flex-gap ons-grid-flex-gap--32 ons-js-toc-container">
         <div class="ons-grid__col ons-grid__col--sticky@m ons-col-4@m">
             {% with toc_title=_("Contents"), toc_aria_label=_("Sections in this page") %}
-            {# fmt:off #}
-            {{-
-                onsTableOfContents({
-                    "title": toc_title,
-                    "ariaLabel": toc_aria_label,
-                    "itemsList": table_of_contents
-                })
-            }}
-            {# fmt:on #}
+
+                {# TODO: Add 'view all related publications & data' to related links once available #}
+                {# fmt:off #}
+                {{-
+                    onsTableOfContents({
+                        "title": toc_title,
+                        "ariaLabel": toc_aria_label,
+                        "lists": [
+                            {
+                                "itemsList": table_of_contents
+                            }
+                        ]
+                    })
+                -}}
+                {# fmt:on #}
             {% endwith %}
         </div>
 
