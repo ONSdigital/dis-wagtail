@@ -25,8 +25,8 @@ def handle_bundle_in_preview(instance: Bundle, **kwargs: Any) -> None:
     if instance.status == BundleStatus.IN_REVIEW and not instance.preview_notification_sent:
         active_bundle_teams = [
             bundle_team
-            for bundle_team in instance.teams.get_object_list()
-            if bundle_team.team.is_active  # type: ignore[attr-defined]
+            for bundle_team in instance.teams.get_object_list()  # type: ignore[attr-defined]
+            if bundle_team.team.is_active
         ]
         for bundle_team in active_bundle_teams:
             send_bundle_status_changed_to_in_review_email(bundle_team=bundle_team)
@@ -41,8 +41,8 @@ def handle_bundle_publication(instance: Bundle, **kwargs: Any) -> None:
     if instance.status == BundleStatus.PUBLISHED:
         active_bundle_teams = [
             bundle_team
-            for bundle_team in instance.teams.get_object_list()
-            if bundle_team.team.is_active  # type: ignore[attr-defined]
+            for bundle_team in instance.teams.get_object_list()  # type: ignore[attr-defined]
+            if bundle_team.team.is_active
         ]
         for bundle_team in active_bundle_teams:
             send_bundle_published_email(bundle_team=bundle_team)
