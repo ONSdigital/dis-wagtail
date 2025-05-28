@@ -101,19 +101,6 @@ def before_scenario(context: Context, scenario: Scenario):
     # Register our django test case fixture so every scenario is wrapped in a Django test case
     use_fixture(django_test_case, context=context)
 
-    if "cognito_enabled" in scenario.tags:
-        # turn the hook on just for this scenario
-        # Use a short timer, match our test, and have a non-null refresh URL
-        context._aws_override = override_settings(  # pylint: disable=protected-access
-            AWS_COGNITO_LOGIN_ENABLED=True,
-            AUTH_TOKEN_REFRESH_URL="/refresh/",  # noqa: S106
-            SESSION_RENEWAL_OFFSET_SECONDS=3,  # default expiry in seconds
-            ID_TOKEN_COOKIE_NAME="id",  # noqa: S106 so your test's `id` cookie is picked up
-        )
-        context._aws_override.enable()  # pylint: disable=protected-access
-    else:
-        context._aws_override.disable()  # pylint: disable=protected-access
-
     if "no_javascript" in scenario.tags:
         # If the scenario is tagged with no_javascript, use the no_javascript_context
         context.playwright_context = context.no_javascript_context
@@ -147,3 +134,22 @@ def after_scenario(context: Context, scenario: Scenario):
         context.playwright_context.tracing.stop_chunk()
 
     context.page.close()
+
+
+def before_tag(context: Context, tag: str):
+    if tag == "cognito_enabled":
+        # only called for scenarios that have @cognito_enabled
+        context.aws_override = override_settings(
+            AWS_COGNITO_LOGIN_ENABLED=True,
+            AUTH_TOKEN_REFRESH_URL="/refresh/",  # noqa: S106
+            SESSION_RENEWAL_OFFSET_SECONDS=3,
+            ID_TOKEN_COOKIE_NAME="id",  # noqa: S106
+        )
+        context.aws_override.enable()
+
+
+def after_tag(context: Context, tag: str):
+    if tag == "cognito_enabled" and hasattr(context, "aws_override"):
+        # disable it as soon as that scenario is done
+        context.aws_override.disable()
+        del context.aws_override
