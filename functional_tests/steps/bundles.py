@@ -1,5 +1,5 @@
 
-from behave import step, then# pylint: disable=no-name-in-module
+from behave import step, then  # pylint: disable=no-name-in-module
 from behave.runner import Context
 from playwright.sync_api import expect
 
@@ -8,7 +8,6 @@ from cms.bundles.models import BundleTeam
 from cms.bundles.tests.factories import BundleFactory
 from cms.teams.models import Team
 from cms.users.models import User
-
 
 
 @step("a bundle has been created")
