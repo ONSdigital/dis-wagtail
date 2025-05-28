@@ -65,8 +65,12 @@ class BaseVisualisationBlock(blocks.StructBlock):
             ("min", TextInputFloatBlock(label="Minimum", required=False)),
             ("max", TextInputFloatBlock(label="Maximum", required=False)),
             (
-                "tick_interval",
-                TextInputFloatBlock(label="Tick interval", required=False),
+                "tick_interval_mobile",
+                TextInputFloatBlock(label="Tick interval (mobile)", required=False),
+            ),
+            (
+                "tick_interval_desktop",
+                TextInputFloatBlock(label="Tick interval (desktop)", required=False),
             ),
         ]
     )
@@ -84,10 +88,10 @@ class BaseVisualisationBlock(blocks.StructBlock):
             ),
             ("min", TextInputFloatBlock(label="Minimum", required=False)),
             ("max", TextInputFloatBlock(label="Maximum", required=False)),
-            ("tick_interval", TextInputFloatBlock(required=False)),
-            # TODO: implement non-stripping charblock
-            ("value_suffix", blocks.CharBlock(required=False)),
-            ("tooltip_suffix", blocks.CharBlock(required=False)),
+            ("tick_interval_mobile", TextInputFloatBlock(label="Tick interval (mobile)", required=False)),
+            ("tick_interval_desktop", TextInputFloatBlock(label="Tick interval (desktop)", required=False)),
+            ("value_suffix", blocks.CharBlock(required=False)),  # TODO: implement non-stripping charblock for affixes
+            ("tooltip_suffix", blocks.CharBlock(required=False)),  # TODO: implement non-stripping charblock for affixes
         ]
     )
 
@@ -189,9 +193,10 @@ class BaseVisualisationBlock(blocks.StructBlock):
         if title := attrs.get("title"):
             config["title"] = title
 
-        if (tick_interval := attrs.get("tick_interval")) is not None:
-            config["tickIntervalMobile"] = tick_interval
-            config["tickIntervalDesktop"] = tick_interval
+        if (tick_interval_mobile := attrs.get("tick_interval_mobile")) is not None:
+            config["tickIntervalMobile"] = tick_interval_mobile
+        if (tick_interval_desktop := attrs.get("tick_interval_desktop")) is not None:
+            config["tickIntervalDesktop"] = tick_interval_desktop
         if (min_value := attrs.get("min")) is not None:
             config["min"] = min_value
         if (max_value := attrs.get("max")) is not None:
@@ -210,9 +215,10 @@ class BaseVisualisationBlock(blocks.StructBlock):
             # disable. See https://api.highcharts.com/highcharts/yAxis.title.text
             config["title"] = title or None
 
-        if (tick_interval := attrs.get("tick_interval")) is not None:
-            config["tickIntervalMobile"] = tick_interval
-            config["tickIntervalDesktop"] = tick_interval
+        if (tick_interval_mobile := attrs.get("tick_interval_mobile")) is not None:
+            config["tickIntervalMobile"] = tick_interval_mobile
+        if (tick_interval_desktop := attrs.get("tick_interval_desktop")) is not None:
+            config["tickIntervalDesktop"] = tick_interval_desktop
         if (value_suffix := attrs.get("value_suffix")) is not None:
             config["labels"] = {
                 "format": "{value} " + value_suffix,
