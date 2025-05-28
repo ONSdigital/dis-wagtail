@@ -18,7 +18,7 @@ from cms.core.blocks import (
 from cms.core.blocks.equation import EquationBlock
 from cms.core.blocks.glossary_terms import GlossaryTermsBlock
 from cms.core.blocks.markup import ONSTableBlock
-from cms.datavis.blocks import BarColumnChartBlock, LineChartBlock, ScatterPlotBlock
+from cms.datavis.blocks import AreaChartBlock, BarColumnChartBlock, LineChartBlock, ScatterPlotBlock
 
 if TYPE_CHECKING:
     from wagtail.blocks import StructValue
@@ -44,6 +44,7 @@ class SectionContentBlock(StreamBlock):
     line_chart = LineChartBlock(group="DataVis", label="Line Chart")
     bar_column_chart = BarColumnChartBlock(group="DataVis", label="Bar/Column Chart")
     scatter_plot = ScatterPlotBlock(group="DataVis", label="Scatter Plot")
+    area_chart = AreaChartBlock(group="DataVis", label="Area Chart")
 
     class Meta:
         template = "templates/components/streamfield/stream_block.html"
