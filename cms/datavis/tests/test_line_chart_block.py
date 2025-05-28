@@ -144,3 +144,17 @@ class LineChartBlockTestCase(BaseChartBlockTestCase):
         ]:
             with self.subTest(axis=axis, key=key):
                 self.assertEqual(expected, self.get_value().block.get_component_config(self.get_value())[axis][key])
+
+    def test_setting_only_one_tick_interval(self):
+        self.raw_data["x_axis"]["tick_interval_mobile"] = 5
+        self.raw_data["y_axis"]["tick_interval_desktop"] = 10
+        self.block.clean(self.get_value())
+        config = self.get_value().block.get_component_config(self.get_value())
+        for axis, set_key, expected, unset_key in [
+            ("xAxis", "tickIntervalMobile", 5, "tickIntervalDesktop"),
+            ("yAxis", "tickIntervalDesktop", 10, "tickIntervalMobile"),
+        ]:
+            with self.subTest(axis=axis, key=set_key, condition="configured"):
+                self.assertEqual(expected, config[axis][set_key])
+            with self.subTest(axis=axis, key=unset_key, condition="not configured"):
+                self.assertNotIn(unset_key, config[axis])
