@@ -53,8 +53,8 @@ def check_new_information_is_displayed_with_content(context: Context) -> None:
     page = context.page
     expect(page.get_by_role("heading", name="Test Info Page")).to_be_visible()
     expect(page.get_by_text("My test information page")).to_be_visible()
-    expect(page.get_by_text("term", name="Last updated")).to_be_visible()
-    expect(page.get_by_text("definition", name="01 January 2024")).to_be_visible()
+    expect(page.get_by_text("Last updated")).to_be_visible()
+    expect(page.get_by_text("01 January 2024")).to_be_visible()
     expect(page.get_by_role("heading", name="Some example rich text content")).to_be_visible()
     expect(page.get_by_text("n∑i=0i2=(n2+n)(2n+1)")).to_be_visible()
     expect(page.get_by_role("navigation", name="Related content").get_by_role("listitem")).to_be_visible()
