@@ -68,8 +68,12 @@ class BarColumnChartBlock(BaseVisualisationBlock):
     x_axis = blocks.StructBlock(
         [
             (
-                "tick_interval",
-                TextInputIntegerBlock(label="Tick interval", required=False),
+                # Temporarily remove options. Title needs to be added back, so
+                # there's no point removing this field entirely.
+                "note",
+                blocks.StaticBlock(
+                    admin_text="(Temporary change) No options currently available for the category axis.",
+                ),
             ),
         ],
         label="Category axis",
@@ -88,7 +92,8 @@ class BarColumnChartBlock(BaseVisualisationBlock):
             # TODO: Add min/max once support is added to the Design System
             # ("min", TextInputFloatBlock(label="Minimum", required=False)),
             # ("max", TextInputFloatBlock(label="Maximum", required=False)),
-            ("tick_interval", TextInputFloatBlock(required=False)),
+            ("tick_interval_mobile", TextInputFloatBlock(label="Tick interval (mobile)", required=False)),
+            ("tick_interval_desktop", TextInputFloatBlock(label="Tick interval (desktop)", required=False)),
         ],
         label="Value axis",
     )

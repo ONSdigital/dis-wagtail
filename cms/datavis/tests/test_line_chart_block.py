@@ -113,3 +113,35 @@ class LineChartBlockTestCase(BaseChartBlockTestCase):
         config = self.get_component_config()
         for item in config["series"]:
             self.assertEqual(True, item["connectNulls"])
+
+    def test_tick_interval_defaults(self):
+        self.raw_data["x_axis"]["tick_interval_mobile"] = None
+        self.raw_data["x_axis"]["tick_interval_desktop"] = None
+        self.raw_data["y_axis"]["tick_interval_mobile"] = None
+        self.raw_data["y_axis"]["tick_interval_desktop"] = None
+        self.block.clean(self.get_value())
+        for axis, key in [
+            ("xAxis", "tickIntervalMobile"),
+            ("xAxis", "tickIntervalDesktop"),
+            ("yAxis", "tickIntervalMobile"),
+            ("yAxis", "tickIntervalDesktop"),
+        ]:
+            with self.subTest(axis=axis, key=key):
+                axis_config = self.get_value().block.get_component_config(self.get_value())[axis]
+                with self.assertRaises(KeyError):
+                    axis_config[key]  # pylint: disable=pointless-statement
+
+    def test_tick_interval(self):
+        self.raw_data["x_axis"]["tick_interval_mobile"] = 1
+        self.raw_data["x_axis"]["tick_interval_desktop"] = 2
+        self.raw_data["y_axis"]["tick_interval_mobile"] = 3
+        self.raw_data["y_axis"]["tick_interval_desktop"] = 4
+        self.block.clean(self.get_value())
+        for axis, key, expected in [
+            ("xAxis", "tickIntervalMobile", 1),
+            ("xAxis", "tickIntervalDesktop", 2),
+            ("yAxis", "tickIntervalMobile", 3),
+            ("yAxis", "tickIntervalDesktop", 4),
+        ]:
+            with self.subTest(axis=axis, key=key):
+                self.assertEqual(expected, self.get_value().block.get_component_config(self.get_value())[axis][key])

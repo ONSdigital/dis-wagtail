@@ -161,6 +161,26 @@ class BarColumnChartBlockTestCase(BaseChartBlockTestCase):
                 except ValidationError:
                     self.fail("Expected no ValidationError for column chart aspect ratio options")
 
+    def test_value_axis_tick_interval(self):
+        self.raw_data["y_axis"]["tick_interval_mobile"] = 3
+        self.raw_data["y_axis"]["tick_interval_desktop"] = 4
+        self.block.clean(self.get_value())
+        for key, expected in [
+            ("tickIntervalMobile", 3),
+            ("tickIntervalDesktop", 4),
+        ]:
+            with self.subTest(key=key):
+                self.assertEqual(expected, self.get_value().block.get_component_config(self.get_value())["yAxis"][key])
+
+    def test_category_axis_has_no_tick_interval(self):
+        self.raw_data["x_axis"]["tick_interval_mobile"] = 5
+        self.raw_data["x_axis"]["tick_interval_desktop"] = 6
+        self.block.clean(self.get_value())
+        x_axis_config = self.get_value().block.get_component_config(self.get_value())["xAxis"]
+        for key in ["tickIntervalMobile", "tickIntervalDesktop"]:
+            with self.subTest(key=key), self.assertRaises(KeyError):
+                x_axis_config[key]  # pylint: disable=pointless-statement
+
 
 class ColumnChartWithLineTestCase(BaseChartBlockTestCase):
     block_type = BarColumnChartBlock
