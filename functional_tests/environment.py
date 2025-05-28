@@ -111,6 +111,8 @@ def before_scenario(context: Context, scenario: Scenario):
             ID_TOKEN_COOKIE_NAME="id",  # noqa: S106 so your test's `id` cookie is picked up
         )
         context._aws_override.enable()  # pylint: disable=protected-access
+    else:
+        context._aws_override.disable()  # pylint: disable=protected-access
 
     if "no_javascript" in scenario.tags:
         # If the scenario is tagged with no_javascript, use the no_javascript_context
@@ -121,6 +123,8 @@ def before_scenario(context: Context, scenario: Scenario):
 
     context.page = context.playwright_context.new_page()
 
+    # Set the page to the context so it can be used in steps and it can help with debugging auth.js errors
+    # and dis-authorisation-client-js library errors
     context.page.on("console", lambda msg: print(f"[PAGE][{msg.type}] {msg.text}"))
 
     if context.playwright_trace:
