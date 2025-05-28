@@ -50,12 +50,14 @@ def user_returns_to_editing_the_statistical_article_page(context: Context):
 @then("the new information page with the added content is displayed")
 @then("the published information page is displayed with English content")
 def check_new_information_is_displayed_with_content(context: Context) -> None:
-    expect(context.page.get_by_role("heading", name="Test Info Page")).to_be_visible()
-    expect(context.page.get_by_text("My test information page")).to_be_visible()
-    expect(context.page.get_by_role("heading", name="Last Updated: 2024-01-01")).to_be_visible()
-    expect(context.page.get_by_role("heading", name="Some example rich text content")).to_be_visible()
-    expect(context.page.get_by_text("n∑i=0i2=(n2+n)(2n+1)")).to_be_visible()
-    expect(context.page.get_by_role("navigation", name="Related content").get_by_role("listitem")).to_be_visible()
+    page = context.page
+    expect(page.get_by_role("heading", name="Test Info Page")).to_be_visible()
+    expect(page.get_by_text("My test information page")).to_be_visible()
+    expect(page.get_by_role("term", name="Last Updated")).to_be_visible()
+    expect(page.get_by_role("definition", name="01 January 2024")).to_be_visible()
+    expect(page.get_by_role("heading", name="Some example rich text content")).to_be_visible()
+    expect(page.get_by_text("n∑i=0i2=(n2+n)(2n+1)")).to_be_visible()
+    expect(page.get_by_role("navigation", name="Related content").get_by_role("listitem")).to_be_visible()
 
 
 @step('the date placeholder "{date_format}" is displayed in the "{textbox_text}" textbox')
