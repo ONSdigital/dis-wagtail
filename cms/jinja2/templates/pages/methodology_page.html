@@ -88,8 +88,16 @@
             {% with toc_title=_("Contents"), toc_aria_label=_("Sections in this page") %}
 
                 {% if related_publications %}
-                    {% set related_publications_title = _("Related publications") %}
-                    {% set related_publications_list = related_publications %}
+                    {# fmt:off #}
+                        {% set related_publications_title = _("Related publications") %}
+                        {% set related_publications_item = {
+                                "title": related_publications_title,
+                                "itemsList": related_publications
+                            }
+                        %}
+                    {# fmt:on #}
+                {% else %}
+                    {% set related_publications_item = None %}
                 {% endif %}
 
                 {# fmt:off #}
@@ -98,10 +106,7 @@
                         "title": toc_title,
                         "ariaLabel": toc_aria_label,
                         "itemsList": table_of_contents,
-                        "relatedLinks": {
-                            "title": related_publications_title,
-                            "itemsList": related_publications_list
-                        },
+                        "relatedLinks": [related_publications_item] | selectattr('title') | list,
                         "button": {
                             "text": _("Save or print this page")
                         }
