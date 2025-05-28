@@ -93,7 +93,7 @@ class MethodologyPageTestCase(WagtailTestUtils, TestCase):
             {
                 "title": "Related publications",
                 "itemsList": [{"title": related.page.display_title, "url": related.page.url}],
-            }
+            },
         )
 
     @override_settings(IS_EXTERNAL_ENV=True)

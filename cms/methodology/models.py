@@ -23,8 +23,8 @@ from cms.taxonomy.mixins import GenericTaxonomyMixin
 
 if TYPE_CHECKING:
     import datetime
-    from django_stubs_ext import StrPromise
 
+    from django_stubs_ext import StrPromise
     from wagtail.admin.panels import Panel
     from wagtail.query import PageQuerySet
 
@@ -127,7 +127,9 @@ class MethodologyPage(BundledPageMixin, GenericTaxonomyMixin, BasePage):  # type
             exclude_non_matches=True,
         )
 
-    def get_formatted_related_publications_list(self, request: HttpRequest | None = None) -> dict[str, Union[str, "StrPromise", list[dict[str, str]]]]:
+    def get_formatted_related_publications_list(
+        self, request: HttpRequest | None = None
+    ) -> dict[str, Union[str, "StrPromise", list[dict[str, str]]]]:
         """Returns a formatted list of related internal pages for use with the Design System list component."""
         items = [
             {
