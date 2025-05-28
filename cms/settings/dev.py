@@ -121,3 +121,8 @@ MIGRATION_LINTER_OPTIONS = {
         "0005_user_remove_uuid_null",  # Ignoring NOT NULL constraint
     ],
 }
+
+# Blank out build information during local development
+BUILD_TIME = None
+GIT_COMMIT = None
+TAG = "dev"
