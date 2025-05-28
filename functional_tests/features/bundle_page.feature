@@ -1,18 +1,30 @@
 Feature: Publishing Officer can draft, edit, and publish bundles
 
+    Scenario: A Publishing Officer adds a bundle and the added by is populated with the creator
+        Given a Publishing Officer logs into the admin site
+        When a bundle has been created with name "Test 1" and creator "UserName"
+        Then the user can see the Bundles menu item
+        And the bundle menu shows bundle with name "Test 1" and creator "UserName"
 
-    Scenario: A Publishing Officer can add Bundles with Publishing Officer as the creator.  The bundle can be seen and accessed.
-    Once the creator is removed from the bundle then the bundle can still be seen and accessed
-
+    Scenario: A Publishing Officer adds a bundle and the inspect page for the bundle shows the created by as populated
         Given a Publishing Officer logs into the admin site
         And the user can see the Bundles menu item
-        And the user can add Bundles created by user
-        And is ready for review
-        And has a preview team
-        Then the user can see the Bundles menu item with creator
-        And the user can inspect Bundle details with creator
-#        When Bundle has the creator removed
-#        Then the user can see the Bundles menu item without creator
-#        And the user can inspect Bundle details without creator
+        And a bundle has been created with name "Test 1" and creator "UserName"
+        And the user can see the Bundles menu item
+        When the user goes to the bundle inspect page with name "Test 1"
+        Then the user can inspect Bundle details with name "Test 1" and creator "UserName"
 
+    Scenario: A Publishing Admin can see the Bundles Menu and that a bundle with creator removed
+        Given a Publishing Officer logs into the admin site
+        When a bundle has been created with name "Test 1" and creator "UserName"
+        And the bundle has creator removed
+        Then the user can see the Bundles menu item
+        And the bundle menu shows bundle with name "Test 1" and no creator
+
+    Scenario: A Publishing Admin can see the Bundle Inspect and that the bundle with creator removed
+        Given a Publishing Officer logs into the admin site
+        And a bundle has been created with name "Test 1" and creator "UserName"
+        And the bundle has creator removed
+        When the user can see the Bundles menu item
+        Then the bundle menu shows bundle with name "Test 1" and no creator
 

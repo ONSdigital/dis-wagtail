@@ -1,11 +1,13 @@
+import datetime
+
 from behave import step  # pylint: disable=no-name-in-module
 from behave.runner import Context
+from cms.users.models import User
 
 from cms.bundles.enums import BundleStatus
 from cms.bundles.models import BundleTeam
 from cms.bundles.tests.factories import BundleFactory
 from cms.teams.models import Team
-from functional_tests.step_helpers.users import create_user
 from playwright.sync_api import expect
 
 
@@ -56,73 +58,47 @@ def the_locale_column_is_displayed(context: Context) -> None:
     modal = context.page.locator(".modal-body")
     modal.get_by_role("columnheader", name="Locale").is_visible()
 
-
-@step("the user can add Bundles created by user")
-def a_bundle_with_name_item_name_has_been_created_by_username(context: Context) -> None:
-    context.bundle = BundleFactory(created_by=context.user_data["user"])
-
-
-@step("Bundle has the creator removed")
-def created_by_has_been_deleted(context: Context) -> None:
-    context.bundle.created_by = None
-    context.bundle.save(update_fields=["created_by"])
-
-
-@step('a "{user_type}" logs into the admin site with username "{username}"')
-def user_logs_in_with_username(context: Context, user_type: str, username: str) -> None:
-    context.user_data = create_user(user_type)
-    context.page.goto(f"{context.base_url}/admin/login/")
-    context.page.get_by_placeholder("Enter your username").fill(context.user_data[username])
-    context.page.get_by_placeholder("Enter password").fill(context.user_data["password"])
-    context.page.get_by_role("button", name="Sign in").click()
-
-
-@step("the user can inspect Bundle details")
-def the_user_can_see_the_bundle_details(context: Context) -> None:
-    context.page.get_by_role("link", name="Bundles", exact=True).click()
-    context.page.get_by_role("button", name=f"More options for '{context.bundle.name}'").click()
-    context.page.get_by_role("link", name=f"Inspect '{context.bundle.name}'").click()
-
-
-
-# @when("the user clicks the {menu_item} menu item")
-# def user_navigates_to_snippets_admin_page(context: Context, menu_item: str) -> None:
-#     role = "button" if menu_item in ("Reports", "Pages", "Settings") else "link"
-#     context.page.get_by_role(role, name=menu_item, exact=True).click()
-#
-#
-# @then("the user can inspect bundle details")
-# def the_user_can_see_the_bundle_details(context: Context) -> None:
-#     context.page.get_by_role("link", name="Bundles", exact=True).click()
-#     context.page.get_by_role("button", name=f"More options for '{context.bundle.name}'").click()
-#     context.page.get_by_role("link", name=f"Inspect '{context.bundle.name}'").click()
-
-
-@step("the user can see the {menu_item} menu item with creator")
-def the_user_can_see_bundles_menu_item(context: Context, menu_item: str) -> None:
-    expect(context.page.get_by_role("link", name=menu_item, exact=True)).to_be_visible()
-    expect(context.page.get_by_role("row", name=context.user_data["full_name"]).get_by_role("cell").nth(5)).not_to_be_empty()
-    #
-    # print ("-"*10, type(context.bundle.created_by), context.bundle.created_by)
-    # print ("-"*10, context.bundle.name)
-    # print ("-"*10, context.page.get_by_role("row", name=context.user_data["full_name"]).get_by_role("cell").nth(5))
-
-
-
-@step("the user can inspect Bundle details with creator")
-def the_user_can_see_the_bundle_details_with_creator(context: Context) -> None:
-    context.page.get_by_role("link", name="Bundles", exact=True).click()
-    context.page.get_by_role("button", name=f"More options for '{context.bundle.name}'").click()
-    context.page.get_by_role("link", name=f"Inspect '{context.bundle.name}'").click()
+@step('the user can inspect Bundle details with name "{bundle_name}" and creator "{creator}"')
+def the_user_can_see_the_bundle_details_with_creator(context: Context, bundle_name: str, creator: str) -> None:
     expect(context.page.get_by_text("Created by")).to_be_visible()
+    expect(context.page.get_by_text(creator)).to_be_visible()
 
+@step('a bundle has been created with name "{bundle_name}" and creator "{creator}"')
+def a_bundle_has_been_created(context: Context, bundle_name: str, creator: str) -> None:
+    context.user = User.objects.create_user(username=creator,email= "email@example.com",password= "password",first_name= "first_Name",last_name= "Last_Name")
+    context.bundle = BundleFactory(name = bundle_name, created_by = context.user )
 
+@step('the bundle menu shows bundle with name "{bundle_name}" and creator "{creator}"')
+def bundle_menu_show(context: Context, bundle_name: str, creator: str) -> None:
+    context.page.goto(context.base_url + "/admin/bundle/")
+    if hasattr(context, 'user'):
+        fullname = context.user.get_full_name()
+    else:
+        fullname = context.user_data["full_name"]
+    expect(context.page.get_by_role("table")).to_contain_text(bundle_name)
+    expect(context.page.get_by_role("table")).to_contain_text(fullname)
 
-@then("the user can see the Bundles menu item without creator")
-def step_impl(context):
-    raise NotImplementedError(u'STEP: Then the user can see the Bundles menu item without creator')
+@step('the user goes to the bundle inspect page with name "{bundle_name}"')
+def go_to_bundle_inspect(context: Context, bundle_name: str) -> None:
+    context.page.goto(context.base_url + "/admin/bundle/inspect/1/")
 
+@step('the bundle has creator removed')
+def delete_bundle_creator(context: Context) -> None:
+        context.bundle.created_by = None
+        context.bundle.save(update_fields=["created_by"])
 
-@step("the user can inspect Bundle details without creator")
-def step_impl(context):
-    raise NotImplementedError(u'STEP: And the user can inspect Bundle details without creator')
+@step('the bundle menu shows bundle with name "{bundle_name}" and no creator')
+def bundle_menu_show(context: Context, bundle_name: str) -> None:
+    if hasattr(context, 'user'):
+        fullname = context.user.get_full_name()
+    else:
+        fullname = context.user_data["full_name"]
+
+    context.page.goto(context.base_url + "/admin/bundle/")
+    expect(context.page.get_by_role("table")).to_contain_text(bundle_name)
+    expect(context.page.get_by_role("table")).not_to_contain_text(fullname)
+
+@step('the user can inspect Bundle details with name "{bundle_name}" and creator has no entry')
+def bundle_inspect_show(context: Context, bundle_name: str) -> None:
+    expect(context.page.get_by_text("Created by")).to_be_visible()
+    expect(context.page.get_by_text(context.user.get_username())).not_to_be_visible();
