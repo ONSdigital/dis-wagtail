@@ -23,8 +23,6 @@ from cms.bundles.slack_notifications import (
     notify_slack_of_publish_end,
     notify_slack_of_status_change,
 )
-
-from cms.bundles.permissions import user_can_manage_bundles, user_can_preview_bundle
 from cms.datasets.models import Dataset
 
 if TYPE_CHECKING:
