@@ -66,3 +66,41 @@ class PreviewBundleView(TemplateView):
         )
 
         return TemplateResponse(request, page.get_template(request), context)
+
+
+class PreviewBundleReleaseCalendarView(TemplateView):
+    http_method_names: Sequence[str] = ["get"]
+
+    def get(self, request: "HttpRequest", *args: Any, **kwargs: Any) -> TemplateResponse:
+        print("PreviewBundleReleaseCalendarView.get called")
+        bundle_id = kwargs["bundle_id"]
+        bundle = get_object_or_404(Bundle, id=bundle_id)
+
+        release_calendar_page = bundle.release_calendar_page
+
+        if not release_calendar_page:
+            raise Http404
+
+        log_data_entry = {
+            "type": "calendar",
+            "id": release_calendar_page.id,
+            "title": getattr(release_calendar_page, "display_title", release_calendar_page.title),
+        }
+
+        if not user_can_preview_bundle(request.user, bundle):
+            log(
+                action="bundles.preview.attempt",
+                instance=bundle,
+                data=log_data_entry,
+            )
+            raise PermissionDenied
+
+        context = release_calendar_page.get_context(request)
+
+        log(
+            action="bundles.preview",
+            instance=bundle,
+            data=log_data_entry,
+        )
+
+        return TemplateResponse(request, release_calendar_page.get_template(request), context)
