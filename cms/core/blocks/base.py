@@ -38,16 +38,16 @@ class LinkBlockStructValue(StructValue):
 
         return value
 
-    def get_related_link(self, context: dict | None = None) -> dict[str, dict[str, str]] | None:
+    def get_related_link(self, context: dict | None = None) -> dict[str, dict[str, str] | str] | None:
         """Returns the required structure for the related link DS component.
 
         Ref: https://service-manual.ons.gov.uk/design-system/components/document-list
         """
         if link := self.get_link(context=context):
-            related_link = {
+            related_link: dict[str, dict[str, str] | str] = {
                 "title": {"text": link["text"], "url": link["url"]},
             }
-            if description := link.get("description"):
+            if description := link.get("description", ""):
                 related_link["description"] = description
 
             return related_link
