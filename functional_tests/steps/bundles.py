@@ -72,12 +72,10 @@ def the_selected_datasets_are_displayed(context: Context) -> None:
 
 
 # bundle create amend
-@step('a bundle has been created with name "{bundle_name}" and creator "{creator}"')
-def a_bundle_has_been_created_with_user(context: Context, bundle_name: str, creator: str) -> None:
-    context.user = UserFactory.create(
-        username=creator, email="email@example.com", first_name="First_Name", last_name="Last_Name"
-    )
-    context.bundle = BundleFactory(name=bundle_name, created_by=context.user)
+@step('a bundle has been created with name "{bundle_name}" and creator')
+def a_bundle_has_been_created_with_user(context: Context, bundle_name: str) -> None:
+    context.bundle_creator = UserFactory()
+    context.bundle = BundleFactory(name=bundle_name, created_by=context.bundle_creator)
 
 
 @step("the bundle has creator removed")
@@ -100,32 +98,24 @@ def go_to_bundle_menu(context: Context) -> None:
 # bundle Menu
 @step('the bundle menu shows bundle with name "{bundle_name}" and created by is not empty')
 def bundle_menu_contains_value(context: Context, bundle_name: str) -> None:
-    fullname = context.user_data["full_name"]
-    if hasattr(context, "user"):
-        fullname = context.user.get_full_name()
-
     expect(context.page.get_by_role("table")).to_contain_text(bundle_name)
-    expect(context.page.get_by_role("table")).to_contain_text(fullname)
+    expect(context.page.get_by_role("table")).to_contain_text(context.bundle_creator.get_full_name())
 
 
 @step('the bundle menu shows bundle with name "{bundle_name}" and created by is empty')
 def bundle_menu_does_not_contain_value(context: Context, bundle_name: str) -> None:
-    fullname = context.user_data["full_name"]
-    if hasattr(context, "user"):
-        fullname = context.user.get_full_name()
-
     expect(context.page.get_by_role("table")).to_contain_text(bundle_name)
-    expect(context.page.get_by_role("table")).not_to_contain_text(fullname)
+    expect(context.page.get_by_role("table")).not_to_contain_text(context.bundle_creator.get_full_name())
 
 
 # bundle Inspect
 @step("the user can inspect Bundle details and creator")
 def the_user_can_see_the_bundle_details_with_creator(context: Context) -> None:
     expect(context.page.get_by_text("Created by")).to_be_visible()
-    expect(context.page.get_by_text(context.user.get_username())).to_be_visible()
+    expect(context.page.get_by_text(context.bundle_creator.get_username())).to_be_visible()
 
 
 @step("the user can inspect Bundle details and creator has no entry")
 def bundle_inspect_show(context: Context) -> None:
     expect(context.page.get_by_text("Created by")).to_be_visible()
-    expect(context.page.get_by_text(context.user.get_username())).not_to_be_visible()
+    expect(context.page.get_by_text(context.bundle_creator.get_username())).not_to_be_visible()
