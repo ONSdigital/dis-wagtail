@@ -63,17 +63,20 @@ def the_selected_datasets_are_displayed(context: Context) -> None:
     context.page.get_by_text("Looked up dataset (Edition: Example Dataset 1, Ver: 1)").is_visible()
     context.page.get_by_role("heading", name="Dataset 2").is_visible()
     context.page.get_by_text(
-        "Personal well-being estimates by local authority (Edition: Example Dataset 2, Ver: 1)").is_visible()
+        "Personal well-being estimates by local authority (Edition: Example Dataset 2, Ver: 1)"
+    ).is_visible()
     context.page.get_by_role("heading", name="Dataset 3").is_visible()
     context.page.get_by_text(
-        "Deaths registered weekly in England and Wales by region (Edition: Example Dataset 3, Ver: 1)").is_visible()
+        "Deaths registered weekly in England and Wales by region (Edition: Example Dataset 3, Ver: 1)"
+    ).is_visible()
 
 
 # bundle create amend
 @step('a bundle has been created with name "{bundle_name}" and creator "{creator}"')
 def a_bundle_has_been_created_with_user(context: Context, bundle_name: str, creator: str) -> None:
-    context.user = UserFactory.create(username=creator, email="email@example.com", first_name="First_Name",
-                                      last_name="Last_Name")
+    context.user = UserFactory.create(
+        username=creator, email="email@example.com", first_name="First_Name", last_name="Last_Name"
+    )
     context.bundle = BundleFactory(name=bundle_name, created_by=context.user)
 
 
