@@ -202,6 +202,11 @@ TEMPLATES = [
 WSGI_APPLICATION = "cms.wsgi.application"
 
 
+# AWS IAM Credentials
+if "AWS_REGION" in env:
+    AWS_ACCESS_KEY_ID = env["AWS_ACCESS_KEY_ID"]
+    AWS_SECRET_ACCESS_KEY = env["AWS_SECRET_ACCESS_KEY"]
+
 # Database
 
 # None allows connections to be reused for longer, since opening them is expensive.
@@ -554,10 +559,6 @@ EMAIL_BACKEND = env.get("EMAIL_BACKEND", "django.core.mail.backends.console.Emai
 FROM_EMAIL = env.get("FROM_EMAIL", "example@mail.com")
 
 if EMAIL_BACKEND == "django_ses.SESBackend":
-    # These are optional if you are using AWS IAM Roles https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles.html
-    AWS_ACCESS_KEY_ID = env.get("YOUR-ACCESS-KEY-ID", "DUMMY-ACCESS-KEY-ID")
-    AWS_SECRET_ACCESS_KEY = env.get("YOUR-SECRET-ACCESS-KEY", "DUMMY-SECRET-ACCESS-KEY")  # pragma: allowlist secret
-
     AWS_SES_REGION_NAME = env["AWS_REGION"]
     AWS_SES_REGION_ENDPOINT = env["AWS_SES_ENDPOINT"]
 

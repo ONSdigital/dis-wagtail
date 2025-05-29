@@ -1,7 +1,9 @@
+import os
 from collections.abc import Iterator
 from typing import Any
 
 from django.apps import apps
+from django.conf import settings
 from django.core.checks import CheckMessage, Error, Tags, register
 from wagtail.contrib.settings.models import (
     BaseGenericSetting as WagtailBaseGenericSetting,
@@ -50,3 +52,27 @@ def check_wagtail_pages(*args: Any, **kwargs: Any) -> Iterator[CheckMessage]:
                     " or a subclass of that class.",
                     obj=model,
                 )
+
+
+@register()
+def check_ses_email_backend_settings(*args: Any, **kwargs: Any) -> list[Error]:
+    """Check that required IAM credentials are present when running in AWS."""
+    errors: list[Error] = []
+
+    env = os.environ.copy()
+
+    if "AWS_REGION" not in env:
+        return errors
+
+    aws_credentials_settings = ["AWS_ACCESS_KEY_ID", "AWS_SECRET_ACCESS_KEY"]
+
+    for setting in aws_credentials_settings:
+        value = getattr(settings, setting, None)
+        if not value:
+            errors.append(
+                Error(
+                    f"{setting} is missing or empty.",
+                )
+            )
+
+    return errors
