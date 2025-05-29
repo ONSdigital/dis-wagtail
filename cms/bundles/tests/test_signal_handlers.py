@@ -78,6 +78,8 @@ class TestNotifications(TestCase):
 
     def test_email_is_sent_when_bundle_is_published_with_management_command(self):
         """Test that when a bundle is published manually (with a management command), an email is sent."""
+        # NB: Scheduled bundles are published using the management command.
+
         bundle = BundleFactory(approved=True, name="Approved Bundle")
         bundle.publication_date = timezone.now() - timedelta(days=1)
         bundle.save()
@@ -88,6 +90,9 @@ class TestNotifications(TestCase):
         mail.outbox = []
 
         call_command("publish_bundles")
+
+        bundle.refresh_from_db()
+        self.assertEqual(bundle.status, BundleStatus.PUBLISHED)
 
         self.assertEqual(len(mail.outbox), 1)
         self.assertIn(f'Bundle "{bundle.name}" has been published', mail.outbox[0].subject)
@@ -118,6 +123,9 @@ class TestNotifications(TestCase):
         )
 
         self.assertRedirects(response, reverse("bundle:index"))
+
+        bundle.refresh_from_db()
+        self.assertEqual(bundle.status, BundleStatus.PUBLISHED)
 
         self.assertEqual(len(mail.outbox), 1)
         self.assertIn(f'Bundle "{bundle.name}" has been published', mail.outbox[0].subject)
