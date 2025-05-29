@@ -1,3 +1,4 @@
+import traceback
 from datetime import datetime
 from logging import LogRecord
 from typing import Any
@@ -13,6 +14,18 @@ class JSONFormatter(json_log_formatter.JSONFormatter):
         self, message: str, extra: dict[str, str | int | float], record: LogRecord
     ) -> dict[str, str | int | float]:
         record_data: dict = super().json_record(message, extra, record)
+
+        if record.exc_info:
+            record_data["errors"] = [
+                {
+                    "message": repr(record.exc_info[1]),
+                    "stack_trace": [
+                        {"file": summary.filename, "function": summary.name, "line": summary.line}
+                        for summary in traceback.extract_tb(record.exc_info[2])
+                    ],
+                }
+            ]
+            del record_data["exc_info"]
 
         del record_data["time"]
 
