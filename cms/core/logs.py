@@ -16,6 +16,8 @@ class JSONFormatter(json_log_formatter.JSONFormatter):
 
         del record_data["time"]
 
+        record_data.pop("request", None)
+
         record_data["created_at"] = datetime.fromtimestamp(record.created)
         record_data["namespace"] = record.name
 
