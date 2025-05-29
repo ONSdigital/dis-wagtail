@@ -580,23 +580,15 @@ class PreviousReleasesWithoutPaginationTestCase(TestCase):
 
     def test_page_content(self):
         response = self.client.get(self.previous_releases_url)
-        mock_response = response.content.decode("utf-8").split("\n")
-        allowed_to_print = False
-        release_count = 0
-        for m in mock_response:
-            if " </ul>" in m:
-                allowed_to_print = False
-            if "<ul>" in m:
-                allowed_to_print = True
-            if allowed_to_print and "<li><a href=" in m:
-                release_count += 1
-        self.assertEqual(release_count, self.total_batch)
-        self.assertLessEqual(release_count, settings.PREVIOUS_RELEASES_PER_PAGE)
+        for article in self.articles:
+            with self.subTest(article=article):
+                self.assertContains(response, article.get_admin_display_title())
+                self.assertContains(response, article.url)
+        self.assertContains(response, 'class="ons-document-list__item"', count=self.total_batch)
 
     def test_pagination_is_not_shown(self):
         response = self.client.get(self.previous_releases_url)
-        expected = 'class="ons-pagination__link"'
-        self.assertNotContains(response, expected)
+        self.assertNotContains(response, 'class="ons-pagination__link"')
 
 
 @override_settings(PREVIOUS_RELEASES_PER_PAGE=3)
