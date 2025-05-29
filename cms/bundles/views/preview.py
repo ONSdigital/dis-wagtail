@@ -1,5 +1,5 @@
 from collections.abc import Sequence
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, cast
 
 from django.core.exceptions import PermissionDenied
 from django.http import Http404
@@ -12,6 +12,12 @@ from wagtail.models import Page
 
 from cms.bundles.models import Bundle
 from cms.bundles.permissions import user_can_manage_bundles, user_can_preview_bundle
+from cms.bundles.utils import (
+    serialize_bundle_content_for_release_calendar_page,
+    serialize_datasets_for_release_calendar_page,
+)
+from cms.core.fields import StreamField
+from cms.release_calendar.enums import ReleaseStatus
 
 if TYPE_CHECKING:
     from django.http import HttpRequest
@@ -72,7 +78,6 @@ class PreviewBundleReleaseCalendarView(TemplateView):
     http_method_names: Sequence[str] = ["get"]
 
     def get(self, request: "HttpRequest", *args: Any, **kwargs: Any) -> TemplateResponse:
-        print("PreviewBundleReleaseCalendarView.get called")
         bundle_id = kwargs["bundle_id"]
         bundle = get_object_or_404(Bundle, id=bundle_id)
 
@@ -94,6 +99,13 @@ class PreviewBundleReleaseCalendarView(TemplateView):
                 data=log_data_entry,
             )
             raise PermissionDenied
+
+        # Make adjustments to page for preview
+        release_calendar_page.status = ReleaseStatus.PUBLISHED
+        release_calendar_page.content = cast(
+            StreamField, serialize_bundle_content_for_release_calendar_page(bundle, self.request.user)
+        )
+        release_calendar_page.datasets = cast(StreamField, serialize_datasets_for_release_calendar_page(bundle))
 
         context = release_calendar_page.get_context(request)
 
