@@ -31,29 +31,7 @@ class RelatedLinksBlock(ListBlock):
         context["heading"] = self.heading
         context["slug"] = self.slug
 
-        related_links = []
-
-        for item in value:
-            url = item.get("external_url")
-            if not url and item.get("page"):
-                url = item["page"].url
-
-            if not url:
-                continue
-
-            text = item.get("title")
-            if not text:
-                continue
-
-            link_data = {"title": {"text": text, "url": url}}
-
-            description = item.get("description")
-            if description:
-                link_data["description"] = description
-
-            related_links.append(link_data)
-
-        context["related_links"] = related_links
+        context["related_links"] = [item.get_related_link(context=context) for item in value]
 
         return context
 
