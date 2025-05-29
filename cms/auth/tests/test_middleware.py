@@ -107,8 +107,8 @@ class ONSAuthMiddlewareTests(TestCase):
     # Unauthenticated request w/ no cookies -> helper returns early, no logout
     @override_settings(
         AWS_COGNITO_LOGIN_ENABLED=True,
-        ACCESS_TOKEN_COOKIE_NAME="a",
-        ID_TOKEN_COOKIE_NAME="i",
+        ACCESS_TOKEN_COOKIE_NAME="access",
+        ID_TOKEN_COOKIE_NAME="id",
     )
     def test_unauthenticated_user_no_cookies_no_logout(self):
         req = self._request()
@@ -146,13 +146,13 @@ class ONSAuthMiddlewareTests(TestCase):
     @override_settings(
         AWS_COGNITO_LOGIN_ENABLED=True,
         AWS_COGNITO_APP_CLIENT_ID="expected",
-        ACCESS_TOKEN_COOKIE_NAME="a",
-        ID_TOKEN_COOKIE_NAME="i",
+        ACCESS_TOKEN_COOKIE_NAME="access",
+        ID_TOKEN_COOKIE_NAME="id",
     )
     def test_validate_client_ids_success_authenticate_called(self):
         req = self._request()
         req.user = mock.Mock(is_authenticated=False)
-        req.COOKIES = {"a": "tokA", "i": "tokI"}
+        req.COOKIES = {"access": "tokA", "id": "tokI"}
 
         payload_access = {
             "client_id": "expected",
@@ -196,19 +196,19 @@ class ONSAuthMiddlewareTests(TestCase):
     @override_settings(
         AWS_COGNITO_LOGIN_ENABLED=True,
         AWS_COGNITO_APP_CLIENT_ID="expected",
-        ACCESS_TOKEN_COOKIE_NAME="a",
-        ID_TOKEN_COOKIE_NAME="i",
+        ACCESS_TOKEN_COOKIE_NAME="access",
+        ID_TOKEN_COOKIE_NAME="id",
     )
     def test_session_without_jwt_key_triggers_authenticate_and_saves_key(self):
         req = self._request()
         req.user = mock.Mock(is_authenticated=True, user_id="u1")
-        req.COOKIES = {"a": "tokA", "i": "tokI"}
+        req.COOKIES = {"access": "tokA", "id": "tokI"}
 
-        p_access = {"client_id": "expected", "username": "u1", "jti": "ja", "token_use": "access"}
-        p_id = {"aud": "expected", "cognito:username": "u1", "jti": "jb", "email": "e", "token_use": "id"}
+        payload_access = {"client_id": "expected", "username": "u1", "jti": "ja", "token_use": "access"}
+        payload_id = {"aud": "expected", "cognito:username": "u1", "jti": "jb", "email": "e", "token_use": "id"}
 
         with (
-            mock.patch("cms.auth.middleware.validate_jwt", side_effect=[p_access, p_id]),
+            mock.patch("cms.auth.middleware.validate_jwt", side_effect=[payload_access, payload_id]),
             mock.patch.object(ONSAuthMiddleware, "_authenticate_user") as m_auth,
         ):
             self.middleware.process_request(req)
@@ -291,7 +291,7 @@ class ONSAuthMiddlewareTests(TestCase):
         req.user = mock.Mock(is_authenticated=False)
         req.session = {}
         req.COOKIES = {"access": "tokA", "id": "tokID"}
-        payload = {"client_id": "expected", "username": "u1", "jti": "ja", "token_use": "access"}
+        payload_access = {"client_id": "expected", "username": "u1", "jti": "ja", "token_use": "access"}
         payload_id = {
             "aud": "expected",
             "cognito:username": "u1",
@@ -302,7 +302,7 @@ class ONSAuthMiddlewareTests(TestCase):
         }
 
         with (
-            mock.patch("cms.auth.middleware.validate_jwt", side_effect=[payload, payload_id]),
+            mock.patch("cms.auth.middleware.validate_jwt", side_effect=[payload_access, payload_id]),
             mock.patch.object(ONSAuthMiddleware, "_authenticate_user") as m_auth,
         ):
             self.middleware.process_request(req)
@@ -462,16 +462,16 @@ class ONSAuthMiddlewareTests(TestCase):
     @override_settings(
         AWS_COGNITO_LOGIN_ENABLED=True,
         AWS_COGNITO_APP_CLIENT_ID="expected",
-        ACCESS_TOKEN_COOKIE_NAME="a",
-        ID_TOKEN_COOKIE_NAME="i",
+        ACCESS_TOKEN_COOKIE_NAME="access",
+        ID_TOKEN_COOKIE_NAME="id",
     )
     def test_existing_user_update_details_called(self):
         req = self._request()
         req.user = mock.Mock(is_authenticated=False)
-        req.COOKIES = {"a": "tokA", "i": "tokI"}
+        req.COOKIES = {"access": "tokA", "id": "tokI"}
 
-        p_access = {"client_id": "expected", "username": "user99", "jti": "ja", "token_use": "access"}
-        p_id = {
+        payload_access = {"client_id": "expected", "username": "user99", "jti": "ja", "token_use": "access"}
+        payload_id = {
             "aud": "expected",
             "cognito:username": "user99",
             "jti": "jb",
@@ -488,7 +488,7 @@ class ONSAuthMiddlewareTests(TestCase):
         )
 
         with (
-            mock.patch("cms.auth.middleware.validate_jwt", side_effect=[p_access, p_id]),
+            mock.patch("cms.auth.middleware.validate_jwt", side_effect=[payload_access, payload_id]),
             mock.patch("cms.auth.middleware.User.objects.get_or_create", return_value=(existing_user, False)),
             mock.patch("cms.auth.middleware.login"),  # login() not called
         ):
@@ -505,16 +505,16 @@ class ONSAuthMiddlewareTests(TestCase):
     @override_settings(
         AWS_COGNITO_LOGIN_ENABLED=True,
         AWS_COGNITO_APP_CLIENT_ID="expected",
-        ACCESS_TOKEN_COOKIE_NAME="a",
-        ID_TOKEN_COOKIE_NAME="i",
+        ACCESS_TOKEN_COOKIE_NAME="access",
+        ID_TOKEN_COOKIE_NAME="id",
     )
     def test_authenticate_user_assigns_groups_and_calls_login(self):
         req = self._request()
         req.user = mock.Mock(is_authenticated=False)
-        req.COOKIES = {"a": "tokA", "i": "tokI"}
+        req.COOKIES = {"access": "tokA", "id": "tokI"}
 
-        p_access = {"client_id": "expected", "username": "g-tester", "jti": "ja", "token_use": "access"}
-        p_id = {
+        payload_access = {"client_id": "expected", "username": "g-tester", "jti": "ja", "token_use": "access"}
+        payload_id = {
             "aud": "expected",
             "cognito:username": "g-tester",
             "jti": "jb",
@@ -530,7 +530,7 @@ class ONSAuthMiddlewareTests(TestCase):
         )
 
         with (
-            mock.patch("cms.auth.middleware.validate_jwt", side_effect=[p_access, p_id]),
+            mock.patch("cms.auth.middleware.validate_jwt", side_effect=[payload_access, payload_id]),
             mock.patch("cms.auth.middleware.User.objects.get_or_create", return_value=(user_obj, True)),
             mock.patch("cms.auth.middleware.login") as m_login,
         ):

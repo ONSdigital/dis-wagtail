@@ -22,7 +22,7 @@ class ValidateJWTTests(SimpleTestCase):
         cls.bad_pair = generate_rsa_keypair()
 
     def _patch_jwks(self, pair=None):
-        """Patch utils.get_jwks() so only `pair`'s public key is returned."""
+        """Patch utils.get_jwks() so only pair's public key is returned."""
         pair = pair or self.good_pair
         b64_der = base64.b64encode(pair.public_der).decode()
 
@@ -205,7 +205,7 @@ class ValidateJWTTests(SimpleTestCase):
             headers={"kid": self.good_pair.kid},
         )
 
-        # JWKS contains an RSA key so alg mismatch hits jwt.InvalidAlgorithmError
+        # JWKS contains an RSA key so alg mismatch
         with self._patch_jwks():
             self.assertIsNone(utils.validate_jwt(token, token_type="access"))
 

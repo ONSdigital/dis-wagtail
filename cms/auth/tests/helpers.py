@@ -43,22 +43,6 @@ def build_jwt(pair: RSAKeyPair, *, token_use: str, **extra) -> str:
     )
 
 
-def fake_user(**attrs):
-    """Return a minimal stub matching the custom user attrs used in code."""
-    user = types.SimpleNamespace(
-        user_id=attrs.get("user_id", "123"),
-        email=attrs.get("email", "test@example.com"),
-        first_name=attrs.get("first_name", ""),
-        last_name=attrs.get("last_name", ""),
-        is_authenticated=attrs.get("is_authenticated", True),
-        has_usable_password=lambda: attrs.get("usable_pw", True),
-        assign_groups_and_teams=lambda groups: None,
-        update_details=lambda **_: None,
-    )
-
-    return user
-
-
 class DummyResponse:
     """Tiny helper for mocking requests.get()."""
 
