@@ -66,7 +66,7 @@ class ONSDataset(APIModel):
         return title
 
 
-class Dataset(models.Model):
+class Dataset(models.Model):  # type: ignore[django-manager-missing]
     namespace = models.CharField(max_length=255)
     title = models.CharField(max_length=255)
     description = models.TextField()

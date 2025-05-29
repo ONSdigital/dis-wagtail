@@ -99,7 +99,7 @@ load-topics:  ## Load our fixture of taxonomy topics
 
 .PHONY: compose-build
 compose-build: load-design-system-templates  ## Build the main application's Docker container
-	docker compose build
+	docker compose build --build-arg="GIT_COMMIT=$(shell git rev-parse HEAD)" --build-arg="BUILD_TIME=$(shell date +%s)"
 
 .PHONY: compose-pull
 compose-pull: ## Pull Docker containers
