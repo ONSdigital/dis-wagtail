@@ -266,3 +266,39 @@ class ReleaseCalendarPageAdminFormTestCase(WagtailTestUtils, TestCase):
             "Please unschedule the bundle and unlink the release calendar page before making the cancellation."
         )
         self.assertFormError(form, "status", message)
+
+    def test_form_clean__validates_cannot_add_to_unpublished_page(self):
+        example_data = {
+            "title": self.page.title,
+            "slug": self.page.slug,
+            "release_date": timezone.now(),
+            "summary": rich_text(self.page.summary),
+            "content": streamfield([]),
+            "changes_to_release_date": streamfield(
+                [
+                    (
+                        "date_change_log",
+                        {
+                            "previous_date": timezone.now(),
+                            "reason_for_change": "Test reason",
+                            "frozen": True,
+                            "version_id": 1,
+                        },
+                    )
+                ]
+            ),
+            "pre_release_access": streamfield([]),
+            "status": ReleaseStatus.PROVISIONAL,
+            "notice": '{"entityMap": {},"blocks": []}',
+            "related_links": streamfield([]),
+            "datasets": streamfield([]),
+        }
+
+        form = self.form_class(instance=self.page, data=example_data)
+
+        # Validation should fail
+        self.assertFalse(form.is_valid())
+        self.assertIn(
+            "You cannot create change to release date for a page that has not been published yet",
+            str(form.errors),
+        )

@@ -66,7 +66,7 @@ class ReleaseCalendarPageTests(WagtailPageTestCase):
         self.page.save_revision().publish()
         response = self.client.get(self.page.url)
 
-        # should fail another way?? maybe with status code
+        # check change log not added
         self.assertNotContains(response, "Reason")
 
     def test_published_changes_to_release_date(self):
@@ -87,7 +87,7 @@ class ReleaseCalendarPageTests(WagtailPageTestCase):
         self.page.save_revision().publish()
 
         response = self.client.get(self.page.url)
-        # contains this...
+        # contains change log
         self.assertContains(response, "Reason")
 
     def test_multiple_date_change_logs(self):
@@ -95,21 +95,23 @@ class ReleaseCalendarPageTests(WagtailPageTestCase):
         # First publish
         self.page.status = ReleaseStatus.PUBLISHED
         self.page.save_revision().publish()
+        logs = self.page.changes_to_release_date
 
         # Add date change log
         date_change_log = {
             "previous_date": "2025-05-01",
-            "reason_for_change": "Reason",
+            "reason_for_change": "Reason 1",
             "frozen": True,
             "version_id": 1,
         }
-        self.page.changes_to_release_date = [("date_change_log", date_change_log)]
+        logs.append(("date_change_log", date_change_log))
+
         # Second Publish with change log
         self.page.save_revision().publish()
 
         response = self.client.get(self.page.url)
         # contains this...
-        self.assertContains(response, "Reason")
+        self.assertContains(response, "Reason 1")
 
         # Add next date change log
         date_change_log_2 = {
@@ -118,11 +120,12 @@ class ReleaseCalendarPageTests(WagtailPageTestCase):
             "frozen": True,
             "version_id": 2,
         }
-        self.page.changes_to_release_date = [("date_change_log", date_change_log_2)]
+        logs.append(("date_change_log", date_change_log_2))
+
         self.page.save_revision().publish()
 
         response = self.client.get(self.page.url)
-        self.assertContains(response, "Reason")
+        self.assertContains(response, "Reason 1")
         self.assertContains(response, "Reason 2")
 
         # Add next date change log
@@ -132,11 +135,11 @@ class ReleaseCalendarPageTests(WagtailPageTestCase):
             "frozen": True,
             "version_id": 3,
         }
-        self.page.changes_to_release_date = [("date_change_log", date_change_log_3)]
+        logs.append(("date_change_log", date_change_log_3))
         self.page.save_revision().publish()
 
         response = self.client.get(self.page.url)
-        self.assertContains(response, "Reason")
+        self.assertContains(response, "Reason 1")
         self.assertContains(response, "Reason 2")
         self.assertContains(response, "Reason 3")
 
@@ -148,13 +151,9 @@ class ReleaseCalendarPageTests(WagtailPageTestCase):
             "summary": self.page.summary,
             "release_date": self.page.release_date,
         }
-
         for case in cases:
             self.assertPageIsPreviewable(
                 self.page,
                 mode=case,
                 post_data=post_data,
             )
-        # AssertionError: Failed to load preview for ReleaseCalendarPage
-        # "Responsibility trip economy realize." with mode="PROVISIONAL":
-        # Expecting value: line 1 column 1 (char 0) - some type of malformed JSON error
