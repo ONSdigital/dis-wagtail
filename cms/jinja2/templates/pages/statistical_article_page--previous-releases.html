@@ -8,13 +8,13 @@
     {% trans trimmed title=page.title %}Previous releases for {{ title }}{% endtrans %}
 {%- endset -%}
 
-{% block header_area %}
+{%- block header_area %}
     {%- set hero_topic = _("Previous Releases") -%}
     {%- set hero_title = page.title ~ " " ~ _("Statistical articles") -%}
     {%- set breadcrumbs_aria_label = _("Breadcrumbs") -%}
 
     {# fmt:off #}
-    {{
+    {{-
         onsHero({
             "topic": hero_topic,
             "title": hero_title,
@@ -27,9 +27,9 @@
                 "itemsList": breadcrumbs(page, include_self=True),
             }
         })
-    }}
+    -}}
     {# fmt:on #}
-{% endblock %}
+{% endblock -%}
 
 {% block main %}
     <div class="ons-grid">
@@ -38,12 +38,12 @@
             {%- set releases = namespace(previous_release_pages=[]) -%}
             {%- set page_date_prefix = _("Released") -%}
 
-            {% if pages %}
-                {% for page in pages %}
-                    {% if page.is_latest %}
+            {%- if pages %}
+                {%- for page in pages %}
+                    {% if loop.first %}
                         {%- set page_meta_text = _("Latest release") -%}
                     {% else %}
-                        {%- set page_meta_text = _("Article") -%}
+                        {%- set page_meta_text = None -%}
                     {% endif %}
 
                     {# fmt:off #}
@@ -66,26 +66,23 @@
                         }
                     } ] -%}
                     {# fmt:on #}
-                {% endfor %}
+                {% endfor -%}
 
                 {{ onsDocumentList({ "documents": releases.previous_release_pages }) }}
             {% else %}
                 <p>{{ _("There are currently no releases") }}</p>
-            {% endif %}
+            {% endif -%}
 
-            {% block pagination %}
-                {% if pages.paginator.num_pages > 1 %}
-
-                {# fmt:off #}
-                    {{
-                        onsPagination({
-                            "currentPageNumber": pages.number,
-                            "pages": ons_pagination_url_list
-                        })
-                    }}
-                {# fmt:on #}
-                {% endif %}
-            {% endblock %}
+            {%- block pagination %}
+                {%- if pages.paginator.num_pages > 1 %}
+                    {{-
+                    onsPagination({
+                    "currentPageNumber": pages.number,
+                    "pages": ons_pagination_url_list
+                    })
+                    -}}
+                {% endif -%}
+            {% endblock -%}
         </div>
     </div>
 {% endblock %}

@@ -585,6 +585,7 @@ class PreviousReleasesWithoutPaginationTestCase(TestCase):
                 self.assertContains(response, article.get_admin_display_title())
                 self.assertContains(response, article.url)
         self.assertContains(response, 'class="ons-document-list__item"', count=self.total_batch)
+        self.assertContains(response, "Latest release", count=1)
 
     def test_pagination_is_not_shown(self):
         response = self.client.get(self.previous_releases_url)
