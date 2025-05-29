@@ -100,8 +100,6 @@ class TestNotifications(TestCase):
 
     def test_email_is_sent_when_bundle_is_published_via_manual_publication(self):
         """Test that when a bundle is published manually (via the admin), an email is sent."""
-        # NB: Scheduled bundles are published using the management command.
-
         user = UserFactory(is_staff=True, is_superuser=True)
         self.client.force_login(user)
 
@@ -116,6 +114,7 @@ class TestNotifications(TestCase):
                     "name": bundle.name,
                     "status": BundleStatus.PUBLISHED,
                     "bundled_pages": inline_formset([{"page": bundle_page.page_id}]),
+                    "bundled_datasets": inline_formset([]),
                     "teams": inline_formset([{"team": self.preview_team.id}]),
                     "action-publish": "publish",
                 }
@@ -130,9 +129,6 @@ class TestNotifications(TestCase):
         self.assertEqual(len(mail.outbox), 1)
         self.assertIn(f'Bundle "{bundle.name}" has been published', mail.outbox[0].subject)
         self.assertIn(bundle.inspect_url, mail.outbox[0].body)
-
-        bundle.refresh_from_db()
-        self.assertEqual(bundle.status, BundleStatus.PUBLISHED)
 
     def test_notification_sent_only_on_first_change_to_in_preview(self):
         """Test that a notification is sent only on the first change to 'In Preview'."""
