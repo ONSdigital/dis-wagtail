@@ -80,8 +80,7 @@ def a_bundle_has_been_created_with_user(context: Context, bundle_name: str) -> N
 
 @step("the bundle has creator removed")
 def delete_bundle_creator(context: Context) -> None:
-    context.bundle.created_by = None
-    context.bundle.save(update_fields=["created_by"])
+    context.bundle_creator.delete()
 
 
 # bundle goto
