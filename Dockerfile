@@ -54,10 +54,9 @@ RUN apt --quiet --yes update \
         jq \
         unzip \
         gettext \
-        texlive-latex-extra \
-        texlive-fonts-recommended \
         cm-super \
         postgresql-common \
+        texlive-latex-extra \
     # Install the Postgres repo
     && /usr/share/postgresql-common/pgdg/apt.postgresql.org.sh -y \
     # Install the Postgres client (matching production version)
@@ -174,13 +173,23 @@ RUN npm run build:prod
 
 FROM base AS web
 
+ARG GIT_COMMIT=""
+ARG BUILD_TIME=""
+ARG TAG=""
+
 # Set production environment variables
 ENV \
     # Django settings module
     DJANGO_SETTINGS_MODULE=cms.settings.production \
     # Default port and number of workers for gunicorn to spawn
     PORT=8000 \
-    WEB_CONCURRENCY=2
+    WEB_CONCURRENCY=2 \
+    # Commit SHA from building the project
+    GIT_COMMIT=${GIT_COMMIT} \
+    # Time the container was built
+    BUILD_TIME=${BUILD_TIME} \
+    # Container tag
+    TAG=${TAG}
 
 # Copy in built static files and the application code. Run collectstatic so
 # whitenoise can serve static files for us.
@@ -230,6 +239,12 @@ USER root
 # RUN --mount=type=cache,target=/var/lib/apt/lists,sharing=locked \
 #     --mount=type=cache,target=/var/cache/apt,sharing=locked \
 #     <<EOF
+
+ARG GIT_COMMIT=""
+ARG BUILD_TIME=""
+ARG TAG=""
+
+ENV GIT_COMMIT=${GIT_COMMIT} BUILD_TIME=${BUILD_TIME} TAG=${TAG}
 
 # Set default shell with pipefail option
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
