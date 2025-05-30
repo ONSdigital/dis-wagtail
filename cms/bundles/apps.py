@@ -6,3 +6,6 @@ class BundlesAppConfig(AppConfig):
 
     default_auto_field = "django.db.models.AutoField"
     name = "cms.bundles"
+
+    def ready(self) -> None:
+        import cms.bundles.signal_handlers  # noqa # pylint: disable=unused-import, import-outside-toplevel

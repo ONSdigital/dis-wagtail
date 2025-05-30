@@ -202,6 +202,11 @@ TEMPLATES = [
 WSGI_APPLICATION = "cms.wsgi.application"
 
 
+# AWS IAM Credentials
+if "AWS_REGION" in env:
+    AWS_ACCESS_KEY_ID = env["AWS_ACCESS_KEY_ID"]
+    AWS_SECRET_ACCESS_KEY = env["AWS_SECRET_ACCESS_KEY"]
+
 # Database
 
 # None allows connections to be reused for longer, since opening them is expensive.
@@ -238,7 +243,9 @@ if "PG_DB_ADDR" in env:
 else:
     DATABASES = {
         "default": dj_database_url.config(
-            conn_max_age=db_conn_max_age, conn_health_checks=True, default="postgres://ons:ons@localhost:5432/ons"
+            conn_max_age=db_conn_max_age,
+            conn_health_checks=True,
+            default="postgres://ons:ons@localhost:5432/ons",  # pragma: allowlist secret
         ),
     }
 
@@ -547,6 +554,16 @@ LOGGING = {
 # We use SMTP to send emails. We typically use transactional email services
 # that let us use SMTP.
 # https://docs.djangoproject.com/en/2.1/topics/email/
+
+EMAIL_BACKEND = env.get("EMAIL_BACKEND", "django.core.mail.backends.console.EmailBackend")
+FROM_EMAIL = env.get("FROM_EMAIL", "example@mail.com")
+
+if EMAIL_BACKEND == "django_ses.SESBackend":
+    AWS_SES_REGION_NAME = env["AWS_REGION"]
+    AWS_SES_REGION_ENDPOINT = env["AWS_SES_ENDPOINT"]
+
+    # https://aws.amazon.com/blogs/messaging-and-targeting/upgrade-your-email-tech-stack-with-amazon-sesv2-api/
+    USE_SES_V2 = True
 
 # https://docs.djangoproject.com/en/stable/ref/settings/#email-host
 if "EMAIL_HOST" in env:
