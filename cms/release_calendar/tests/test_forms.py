@@ -166,6 +166,7 @@ class ReleaseCalendarPageAdminFormTestCase(WagtailTestUtils, TestCase):
 
     def test_form_clean__validates_release_date_when_confirmed__happy_path(self):
         """Checks that there are no errors when good data is submitted."""
+        self.page.save_revision().publish()
         data = self.raw_form_data()
         data["notice"] = rich_text("")
         data["release_date"] = timezone.now()
@@ -177,11 +178,11 @@ class ReleaseCalendarPageAdminFormTestCase(WagtailTestUtils, TestCase):
                 data["status"] = status
                 data = nested_form_data(data)
                 form = self.form_class(instance=self.page, data=data)
-
                 self.assertTrue(form.is_valid())
 
     def test_form_clean__set_release_date_text_to_empty_string_for_non_provisional_releases(self):
         """Checks that for non-provisional releases the provisional release date text is set to an empty string."""
+        self.page.save_revision().publish()
         data = self.raw_form_data()
         data["status"] = ReleaseStatus.PROVISIONAL
         data["release_date"] = timezone.now()
@@ -204,6 +205,167 @@ class ReleaseCalendarPageAdminFormTestCase(WagtailTestUtils, TestCase):
 
                 self.assertTrue(form.is_valid())
                 self.assertEqual(form.cleaned_data["release_date_text"], "")
+
+    def test_form_clean__fails_release_date_changes_added_to_unpublished_page(self):
+        """Checks that date change log cannot be published to an unpublished page."""
+        data = self.raw_form_data()
+        data["status"] = ReleaseStatus.PROVISIONAL
+        data["release_date"] = timezone.now()
+        data["release_date_text"] = "November 2024"
+        data["changes_to_release_date"] = streamfield(
+            [("date_change_log", {"previous_date": timezone.now(), "reason_for_change": "The reason"})]
+        )
+        self.page.save_revision()
+        data = nested_form_data(data)
+        form = self.form_class(instance=self.page, data=data)
+
+        self.assertFalse(form.is_valid())
+        message = "You cannot create a change to release date for a page that has not been published yet."
+        self.assertFormError(form, "changes_to_release_date", message)
+
+    def test_form_clean__fails_changes_to_release_date_frozen(self):
+        """Tests that a date change log cannot be changed after it is published."""
+        logs = self.page.changes_to_release_date
+        date_change_log = {
+            "previous_date": "2025-05-01",
+            "reason_for_change": "Reason 1",
+            "frozen": True,
+            "version_id": 1,
+        }
+        logs.append(("date_change_log", date_change_log))
+
+        self.page.save_revision().publish()
+
+        data = self.raw_form_data()
+        data["changes_to_release_date"] = streamfield(
+            [("date_change_log", {"previous_date": timezone.now(), "reason_for_change": "The reason"})]
+        )
+
+        data = nested_form_data(data)
+        form = self.form_class(instance=self.page, data=data)
+        self.assertFalse(form.is_valid())
+        message = "You cannot remove a change to release date that has already been published."
+        self.assertFormError(form, "changes_to_release_date", message)
+
+    def test_form_clean__add_changes_to_release_date(self):
+        """Tests that a change to release date can be added for a published page."""
+        self.page.save_revision().publish()
+
+        data = self.raw_form_data()
+        data["changes_to_release_date"] = streamfield(
+            [
+                ("date_change_log", {"previous_date": timezone.now(), "reason_for_change": "The reason"}),
+            ]
+        )
+
+        data = nested_form_data(data)
+        form = self.form_class(instance=self.page, data=data)
+        self.assertTrue(form.is_valid())
+
+    def tests_form_clean__published_changes_to_release_date_cannot_be_deleted(self):
+        """Tests that a published change to release date cannot be deleted."""
+        logs = self.page.changes_to_release_date
+        date_change_log = {
+            "previous_date": "2025-05-01",
+            "reason_for_change": "Reason 1",
+            "frozen": True,
+            "version_id": 1,
+        }
+        logs.append(("date_change_log", date_change_log))
+
+        self.page.save()
+        self.page.save_revision().publish()
+        data = self.raw_form_data()
+        data["changes_to_release_date"] = streamfield([])
+        data = nested_form_data(data)
+        form = self.form_class(instance=self.page, data=data)
+        message = "You cannot remove a change to release date that has already been published."
+        self.assertFalse(form.is_valid())
+        self.assertFormError(form, "changes_to_release_date", message)
+
+    def test_form_validation_fails_with_multiple_new_release_date_changes(self):
+        """Ensure form rejects when more than one unfrozen release date change input."""
+        logs = self.page.changes_to_release_date
+        date_change_log_1 = {
+            "previous_date": "2025-05-01",
+            "reason_for_change": "Reason 1",
+            "frozen": False,
+            "version_id": 1,
+        }
+        date_change_log_2 = {
+            "previous_date": "2025-05-01",
+            "reason_for_change": "Reason 1",
+            "frozen": False,
+            "version_id": 2,
+        }
+        logs.append(("date_change_log", date_change_log_1))
+        logs.append(("date_change_log", date_change_log_2))
+        self.page.save_revision().publish()
+
+        data = self.raw_form_data()
+        data["changes_to_release_date"] = streamfield(
+            [
+                ("date_change_log", date_change_log_1),
+                ("date_change_log", date_change_log_2),
+            ]
+        )
+        data = nested_form_data(data)
+        form = self.form_class(instance=self.page, data=data)
+        self.assertFalse(form.is_valid())
+        message = "Only one new change to release date can be published at a time"
+        self.assertFormError(form, "changes_to_release_date", message)
+
+    def tests_form_clean__validates_date_of_new_date_change_log(self):
+        """Tests that the date of the latest date change log is not older than the latest published date change log."""
+        logs = self.page.changes_to_release_date
+        date_change_log = {
+            "previous_date": "2025-05-29",
+            "reason_for_change": "Reason 1",
+            "frozen": True,
+            "version_id": 1,
+        }
+        logs.append(("date_change_log", date_change_log))
+        self.page.save_revision().publish()
+
+        data = self.raw_form_data()
+        data["changes_to_release_date"] = streamfield(
+            [
+                ("date_change_log", date_change_log),
+                (
+                    "date_change_log",
+                    {
+                        "previous_date": "2025-05-20",
+                        "reason_for_change": "Older date",
+                    },
+                ),
+            ]
+        )
+        data = nested_form_data(data)
+        form = self.form_class(instance=self.page, data=data)
+        self.assertFalse(form.is_valid())
+        message = "You cannot create a change to release date with a date earlier than the latest change"
+        self.assertFormError(form, "changes_to_release_date", message)
+
+    def test_form_clean__validate_date_change_log_version_id(self):
+        """Tests date change log version id is incremented."""
+        self.page.save_revision().publish()
+
+        data = self.raw_form_data()
+        data["changes_to_release_date"] = streamfield(
+            [
+                (
+                    "date_change_log",
+                    {
+                        "previous_date": "2025-05-30",
+                        "reason_for_change": "Reason",
+                    },
+                )
+            ]
+        )
+        data = nested_form_data(data)
+        form = self.form_class(instance=self.page, data=data)
+        self.assertTrue(form.is_valid())
+        self.assertEqual(form.cleaned_data["changes_to_release_date"][0].value["version_id"], 1)
 
     def test_form_clean__validates_either_next_release_date_or_text(self):
         """Checks that editors can enter either the next release date or the text, not both."""
@@ -266,39 +428,3 @@ class ReleaseCalendarPageAdminFormTestCase(WagtailTestUtils, TestCase):
             "Please unschedule the bundle and unlink the release calendar page before making the cancellation."
         )
         self.assertFormError(form, "status", message)
-
-    def test_form_clean__validates_cannot_add_to_unpublished_page(self):
-        example_data = {
-            "title": self.page.title,
-            "slug": self.page.slug,
-            "release_date": timezone.now(),
-            "summary": rich_text(self.page.summary),
-            "content": streamfield([]),
-            "changes_to_release_date": streamfield(
-                [
-                    (
-                        "date_change_log",
-                        {
-                            "previous_date": timezone.now(),
-                            "reason_for_change": "Test reason",
-                            "frozen": True,
-                            "version_id": 1,
-                        },
-                    )
-                ]
-            ),
-            "pre_release_access": streamfield([]),
-            "status": ReleaseStatus.PROVISIONAL,
-            "notice": '{"entityMap": {},"blocks": []}',
-            "related_links": streamfield([]),
-            "datasets": streamfield([]),
-        }
-
-        form = self.form_class(instance=self.page, data=example_data)
-
-        # Validation should fail
-        self.assertFalse(form.is_valid())
-        self.assertIn(
-            "You cannot create change to release date for a page that has not been published yet",
-            str(form.errors),
-        )

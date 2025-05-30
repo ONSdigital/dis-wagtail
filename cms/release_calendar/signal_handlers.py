@@ -10,9 +10,8 @@ def on_release_calendar_page_published(
     instance: ReleaseCalendarPage,
     **kwargs: dict,
 ) -> None:
-    """Signal handler for when a ReleaseCalendarPage is published."""
-    # Go through the updates streamfield and set frozen to true for all date change logs
-    for changes in instance.changes_to_release_date:
-        changes.value["frozen"] = True
+    """Signal handler to update log to frozen when a ReleaseCalendarPage is published."""
+    for date_change_log in instance.changes_to_release_date:
+        date_change_log.value["frozen"] = True
 
     instance.save(update_fields=["changes_to_release_date"])

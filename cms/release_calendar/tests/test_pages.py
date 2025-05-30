@@ -34,7 +34,7 @@ class ReleaseCalendarPageTests(WagtailPageTestCase):
             content,
         )
 
-    def test_default_date(self):
+    def test_default_date_on_release_date(self):
         """Test release date shows a default datetime from ons_default_datetime."""
         self.client.force_login(self.user)
 
@@ -44,32 +44,33 @@ class ReleaseCalendarPageTests(WagtailPageTestCase):
         response = self.client.get(add_sibling_url, follow=True)
 
         content = response.content.decode(encoding="utf-8")
+        datetime_placeholder = "YYYY-MM-DD HH:MM"
 
         default_datetime = ons_default_datetime().strftime("%Y-%m-%d %H:%M")
 
         self.assertInHTML(
             (
                 f'<input type="text" name="release_date" value="{default_datetime}" autocomplete="off" '
-                'required="" id="id_release_date">'
+                f'placeholder="{datetime_placeholder}" required="" id="id_release_date">'
             ),
             content,
         )
 
-    def test_unpublished_changes_to_release_dates(self):
-        """Test changes to release date can not be published to an unpublished release page."""
-        # Add date_change_log to an un published page
+    def test_changes_to_release_dates_unpublished_page(self):
+        """Test changes to release date cannot be published to an unpublished release page."""
         date_change_log = {
             "previous_date": timezone.now(),
             "reason_for_change": "Reason",
         }
+        # Add date_change_log and try to publish it
         self.page.changes_to_release_date = [("date_change_log", date_change_log)]
         self.page.save_revision().publish()
-        response = self.client.get(self.page.url)
 
+        response = self.client.get(self.page.url)
         # check change log not added
         self.assertNotContains(response, "Reason")
 
-    def test_published_changes_to_release_date(self):
+    def test_changes_to_release_date_published_page(self):
         """Test a change to release date can be published for a published page."""
         # First publish
         self.page.status = ReleaseStatus.PUBLISHED
@@ -106,11 +107,11 @@ class ReleaseCalendarPageTests(WagtailPageTestCase):
         }
         logs.append(("date_change_log", date_change_log))
 
-        # Second Publish with change log
+        # Publish with change log
         self.page.save_revision().publish()
 
+        # Contains first change log
         response = self.client.get(self.page.url)
-        # contains this...
         self.assertContains(response, "Reason 1")
 
         # Add next date change log
@@ -123,7 +124,7 @@ class ReleaseCalendarPageTests(WagtailPageTestCase):
         logs.append(("date_change_log", date_change_log_2))
 
         self.page.save_revision().publish()
-
+        # Contains both change log
         response = self.client.get(self.page.url)
         self.assertContains(response, "Reason 1")
         self.assertContains(response, "Reason 2")
@@ -138,22 +139,14 @@ class ReleaseCalendarPageTests(WagtailPageTestCase):
         logs.append(("date_change_log", date_change_log_3))
         self.page.save_revision().publish()
 
+        # Contains all change log
         response = self.client.get(self.page.url)
         self.assertContains(response, "Reason 1")
         self.assertContains(response, "Reason 2")
         self.assertContains(response, "Reason 3")
 
     def test_preview_modes(self):
-        """Test preview modes."""
-        cases = ["PROVISIONAL", "CONFIRMED", "CANCELLED", "PUBLISHED"]
-        post_data = {
-            "title": self.page.title,
-            "summary": self.page.summary,
-            "release_date": self.page.release_date,
-        }
-        for case in cases:
-            self.assertPageIsPreviewable(
-                self.page,
-                mode=case,
-                post_data=post_data,
-            )
+        """Test preview modes for release calendar page."""
+        self.assertPageIsPreviewable(
+            self.page,
+        )

@@ -121,19 +121,24 @@ class ReleaseCalendarPageAdminForm(WagtailAdminPageForm):
         )
         raise ValidationError({"status": message})
 
-    def clean_changes_to_release_date(self) -> StreamValue:  # noqa: C901
-        changes_to_release_date: StreamValue = self.cleaned_data["changes_to_release_date"]
+    def clean_changes_to_release_date(self) -> StreamValue:
+        changes_to_release_date: StreamValue = self.cleaned_data.get("changes_to_release_date")
 
         if self.instance.pk is None:
             if changes_to_release_date:
-                self.add_error(
-                    "changes_to_release_date",
-                    ValidationError(
-                        "You cannot create change to release date for a page that has not been published yet"
-                    ),
+                raise ValidationError(
+                    "You cannot create a change to release date for a page that has not been published yet."
                 )
             return changes_to_release_date
 
+        published_page = PageLogEntry.objects.filter(page=self.instance, action="wagtail.publish").exists()
+        if changes_to_release_date and not published_page:
+            self.add_error(
+                "changes_to_release_date",
+                ValidationError(
+                    "You cannot create a change to release date for a page that has not been published yet."
+                ),
+            )
         old_frozen_versions = [
             date_change_log.value["version_id"]
             for date_change_log in self.instance.changes_to_release_date
@@ -145,6 +150,9 @@ class ReleaseCalendarPageAdminForm(WagtailAdminPageForm):
             if date_change_log.value["frozen"]
         ]
 
+        if old_frozen_versions != new_frozen_versions:
+            raise ValidationError("You cannot remove a change to release date that has already been published.")
+
         latest_frozen_date = max(
             (
                 date_change_log.value["previous_date"]
@@ -154,58 +162,24 @@ class ReleaseCalendarPageAdminForm(WagtailAdminPageForm):
             default=None,
         )
 
-        if old_frozen_versions != new_frozen_versions:
-            self.add_error(
-                "changes_to_release_date",
-                ValidationError(
-                    "You cannot remove a change to release date that has already been published. "
-                    "Please refresh the page and try again."
-                ),
-            )
-
-        latest_published_revision_id = (
-            PageLogEntry.objects.filter(page=self.instance, action="wagtail.publish")
-            .order_by("-timestamp")
-            .values_list("revision_id", flat=True)
-            .first()
-        )
-
-        if changes_to_release_date and not latest_published_revision_id:
-            self.add_error(
-                "changes_to_release_date",
-                ValidationError(
-                    "You cannot create a change to release date for a page that has not been published yet"
-                ),
-            )
-
         new_date_change_log = None
         latest_date_change_log_version = 0
 
         for date_change_log in changes_to_release_date:
             if not date_change_log.value["frozen"]:
                 if new_date_change_log:
-                    self.add_error(
-                        "changes_to_release_date",
-                        ValidationError("Only one new change to release date can be published at a time"),
-                    )
-                    break
+                    raise ValidationError("Only one new change to release date can be published at a time")
                 new_date_change_log = date_change_log
                 if latest_frozen_date and date_change_log.value["previous_date"] < latest_frozen_date:
-                    self.add_error(
-                        "changes_to_release_date",
-                        ValidationError(
-                            "You cannot create a change to release date with a date earlier than the latest change"
-                        ),
+                    raise ValidationError(
+                        "You cannot create a change to release date with a date earlier than the latest change"
                     )
-            latest_date_change_log_version = max(
-                latest_date_change_log_version, date_change_log.value["version_id"] or 0
-            )
+                latest_date_change_log_version = max(
+                    latest_date_change_log_version, date_change_log.value["version_id"] or 0
+                )
 
-        if new_date_change_log:
-            if not new_date_change_log.value["version_id"]:
-                new_date_change_log.value["version_id"] = latest_date_change_log_version + 1
-            if not new_date_change_log.value["version_id"]:
-                new_date_change_log.value["version_id"] = latest_published_revision_id
+        if new_date_change_log and not new_date_change_log.value["version_id"]:
+            new_date_change_log.value["version_id"] = latest_date_change_log_version + 1
 
         sorted_changes = sorted(
             changes_to_release_date,
