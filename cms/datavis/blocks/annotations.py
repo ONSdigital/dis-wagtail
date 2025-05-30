@@ -1,10 +1,11 @@
 from typing import Any, ClassVar
 
+from django.core.exceptions import ValidationError
 from wagtail import blocks
 from wagtail.blocks.struct_block import StructValue
 
 from cms.datavis.blocks.utils import TextInputFloatBlock, TextInputIntegerBlock
-from cms.datavis.constants import AxisType
+from cms.datavis.constants import AxisChoices, AxisType, BarColumnAxisChoices
 
 
 class AnnotationStructValue(StructValue):
@@ -58,6 +59,9 @@ class BasePointAnnotationBlock(blocks.StructBlock):
     label_offset_x = TextInputIntegerBlock(label="Offset X", default=0)
     label_offset_y = TextInputIntegerBlock(label="Offset Y", default=0)
 
+    class Meta:
+        icon = "crosshairs"
+
 
 class PointAnnotationCategoricalStructValue(PointAnnotationStructValue):
     X_AXIS_TYPE = AxisType.CATEGORICAL
@@ -96,3 +100,137 @@ class PointAnnotationLinearBlock(BasePointAnnotationBlock):
 
     class Meta:
         value_class = PointAnnotationLinearStructValue
+
+
+class RangeAnnotationStructValue(AnnotationStructValue):
+    def get_config(self) -> dict[str, Any]:
+        config = super().get_config()
+        label_inside = self.get("label_inside")
+
+        config.update(
+            {
+                "axis": self.get("axis"),
+                "labelInside": label_inside,
+            }
+        )
+
+        if self.get("axis") == AxisChoices.X:
+            # X-axis can be categorical or linear
+            config.update(
+                {
+                    "range": {
+                        "axisValue1": self.get_x_position(self.get("start_position")),
+                        "axisValue2": self.get_x_position(self.get("end_position")),
+                    }
+                }
+            )
+        else:
+            # Y-axis is always linear
+            config.update(
+                {
+                    "range": {
+                        "axisValue1": self.get("start_position"),
+                        "axisValue2": self.get("end_position"),
+                    }
+                }
+            )
+
+        # Only apply custom label positioning if permitted
+        if label_inside is False:
+            config.update(self.get_label_offsets())
+            config["labelWidth"] = self.get("label_width")
+
+        return config
+
+
+class BaseRangeAnnotationBlock(blocks.StructBlock):
+    label = blocks.CharBlock(required=True)
+
+    axis = blocks.ChoiceBlock(choices=AxisChoices.choices, default=AxisChoices.X)
+    start_position = TextInputFloatBlock(label="Start position")
+    end_position = TextInputFloatBlock(label="End position")
+
+    label_inside = blocks.BooleanBlock(
+        default=True, required=False, help_text="Adapt label width to fit the shaded area."
+    )
+
+    custom_label_positioning = blocks.StaticBlock(admin_text="Measurements are in pixels.")
+    label_offset_x = TextInputIntegerBlock(label="Offset X", required=False)
+    label_offset_y = TextInputIntegerBlock(label="Offset Y", required=False)
+    label_width = TextInputIntegerBlock(label="Label width", required=False)
+
+    ERROR_ORDERING = "error_ordering"
+    ERROR_LABEL_INSIDE_CUSTOM_POSITIONING = "error_label_inside_custom_positioning"
+
+    class Meta:
+        value_class = RangeAnnotationStructValue
+
+    def clean(self, value: dict[str, Any]) -> dict[str, Any]:
+        cleaned_data: dict[str, Any] = super().clean(value)
+        errors: dict[str, ValidationError] = {}
+
+        if cleaned_data["start_position"] >= cleaned_data["end_position"]:
+            errors["start_position"] = ValidationError(
+                "Start position must be less than end position", code=self.ERROR_ORDERING
+            )
+
+        if cleaned_data["label_inside"]:
+            for key in ["label_offset_x", "label_offset_y", "label_width"]:
+                if cleaned_data[key] is not None:
+                    label = self.child_blocks[key].label
+                    errors[key] = ValidationError(
+                        f"{label} cannot be set if 'label inside' is checked.",
+                        code=self.ERROR_LABEL_INSIDE_CUSTOM_POSITIONING,
+                    )
+
+        if errors:
+            raise blocks.StructBlockValidationError(block_errors=errors)
+        return cleaned_data
+
+
+class RangeAnnotationCategoricalStructValue(RangeAnnotationStructValue):
+    X_AXIS_TYPE = AxisType.CATEGORICAL
+
+
+class RangeAnnotationCategoricalBlock(BaseRangeAnnotationBlock):
+    """For line and area charts where the x-axis is categorical."""
+
+    ERROR_X_AXIS_MUST_BE_INTEGER = "error_x_axis_must_be_integer"
+
+    class Meta:
+        value_class = RangeAnnotationCategoricalStructValue
+
+    def clean(self, value: dict[str, Any]) -> dict[str, Any]:
+        cleaned_data: dict[str, Any] = super().clean(value)
+        errors: dict[str, ValidationError] = {}
+
+        # Require integers for the x-axis
+        if cleaned_data["axis"] == AxisChoices.X:
+            for position in ["start_position", "end_position"]:
+                if not cleaned_data[position].is_integer():
+                    errors[position] = ValidationError("Enter a whole number", code=self.ERROR_X_AXIS_MUST_BE_INTEGER)
+                else:
+                    cleaned_data[position] = int(cleaned_data[position])
+
+        if errors:
+            raise blocks.StructBlockValidationError(block_errors=errors)
+
+        return cleaned_data
+
+
+class RangeAnnotationBarColumnBlock(RangeAnnotationCategoricalBlock):
+    """As categorical, but with different axis labels."""
+
+    axis = blocks.ChoiceBlock(choices=BarColumnAxisChoices.choices, default=BarColumnAxisChoices.CATEGORY)
+
+    class Meta:
+        value_class = RangeAnnotationCategoricalStructValue
+
+
+class RangeAnnotationLinearStructValue(RangeAnnotationStructValue):
+    X_AXIS_TYPE = AxisType.LINEAR
+
+
+class RangeAnnotationLinearBlock(BaseRangeAnnotationBlock):
+    class Meta:
+        value_class = RangeAnnotationLinearStructValue

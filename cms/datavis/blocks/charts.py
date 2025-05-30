@@ -8,7 +8,11 @@ from django.forms import widgets
 from wagtail import blocks
 
 from cms.datavis.blocks.annotations import (
+    PointAnnotationCategoricalBlock,
     PointAnnotationLinearBlock,
+    RangeAnnotationBarColumnBlock,
+    RangeAnnotationCategoricalBlock,
+    RangeAnnotationLinearBlock,
 )
 from cms.datavis.blocks.base import BaseVisualisationBlock
 from cms.datavis.blocks.table import SimpleTableBlock, TableDataType
@@ -33,6 +37,14 @@ class LineChartBlock(BaseVisualisationBlock):
     show_data_labels = None
     series_customisation = None
 
+    annotations = blocks.StreamBlock(
+        [
+            ("point", PointAnnotationCategoricalBlock()),
+            ("range", RangeAnnotationCategoricalBlock()),
+        ],
+        required=False,
+    )
+
     class Meta:
         icon = "chart-line"
 
@@ -49,6 +61,14 @@ class BarColumnChartBlock(BaseVisualisationBlock):
 
     # Remove unsupported features
     show_markers = None
+
+    annotations = blocks.StreamBlock(
+        [
+            ("point", PointAnnotationCategoricalBlock()),
+            ("range", RangeAnnotationBarColumnBlock()),
+        ],
+        required=False,
+    )
 
     class ChartTypeChoices(TextChoices):
         BAR = "bar", "Bar"
@@ -220,6 +240,7 @@ class ScatterPlotBlock(BaseVisualisationBlock):
         # Use coordinate-based annotations for scatter plots
         [
             ("point", PointAnnotationLinearBlock()),
+            ("range", RangeAnnotationLinearBlock()),
         ],
         required=False,
     )
@@ -258,6 +279,14 @@ class AreaChartBlock(BaseVisualisationBlock):
     series_customisation = None
     show_data_labels = None
     use_stacked_layout = None
+
+    annotations = blocks.StreamBlock(
+        [
+            ("point", PointAnnotationCategoricalBlock()),
+            ("range", RangeAnnotationCategoricalBlock()),
+        ],
+        required=False,
+    )
 
     class Meta:
         icon = "chart-area"

@@ -33,3 +33,15 @@ class HighChartsChartType(Enum):
 class AxisType(Enum):
     CATEGORICAL = "categorical"
     LINEAR = "linear"
+
+
+class AxisChoices(TextChoices):
+    X = "x", "X"
+    Y = "y", "Y"
+
+
+class BarColumnAxisChoices(TextChoices):
+    """Variant for Bar/Column charts where the category label is always called X by Highcharts."""
+
+    CATEGORY = "x", "Category axis"
+    VALUE = "y", "Value axis"

@@ -6,7 +6,6 @@ from django.forms.widgets import RadioSelect
 from wagtail import blocks
 from wagtail.blocks.struct_block import StructValue
 
-from cms.datavis.blocks.annotations import PointAnnotationCategoricalBlock
 from cms.datavis.blocks.chart_options import AspectRatioBlock
 from cms.datavis.blocks.table import SimpleTableBlock
 from cms.datavis.blocks.utils import TextInputFloatBlock
@@ -95,14 +94,6 @@ class BaseVisualisationBlock(blocks.StructBlock):
         ]
     )
 
-    annotations = blocks.StreamBlock(
-        [
-            ("point", PointAnnotationCategoricalBlock()),
-            # TODO: future implementation will have extra block types
-        ],
-        required=False,
-    )
-
     DESKTOP_ASPECT_RATIO = "desktop_aspect_ratio"
     MOBILE_ASPECT_RATIO = "mobile_aspect_ratio"
     options_key_map: ClassVar[dict[str, str]] = {
@@ -168,9 +159,14 @@ class BaseVisualisationBlock(blocks.StructBlock):
             "yAxis": self.get_y_axis_config(value.get("y_axis")),
             "series": series,
             "useStackedLayout": value.get("use_stacked_layout"),
-            "annotations": self.get_annotations_config(value),
             "download": self.get_download_config(value),
         }
+
+        point_annotations, range_annotations = self.get_annotations_config(value)
+        if point_annotations:
+            config["annotations"] = point_annotations
+        if range_annotations:
+            config["rangeAnnotations"] = range_annotations
 
         config.update(self.get_additional_options(value))
         return config
@@ -229,11 +225,21 @@ class BaseVisualisationBlock(blocks.StructBlock):
             config["max"] = max_value
         return config
 
-    def get_annotations_config(self, value: "StructValue") -> list[dict[str, Any]]:
+    def get_annotations_config(self, value: "StructValue") -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
         annotations_values: list[dict[str, Any]] = []
+        range_annotations_values: list[dict[str, Any]] = []
+
         for item in value.get("annotations", []):
-            annotations_values.append(item.value.get_config())
-        return annotations_values
+            config = item.value.get_config()
+            match item.block_type:
+                case "point":
+                    annotations_values.append(config)
+                case "range":
+                    range_annotations_values.append(config)
+                case _:
+                    raise ValueError(f"Unknown annotation type: {item.block_type}")
+
+        return annotations_values, range_annotations_values
 
     def get_series_data(
         self,
