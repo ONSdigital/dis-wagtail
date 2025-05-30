@@ -7,14 +7,17 @@ This is the first phase towards ONS-wide Single Sign-On.
 
 ## Environment variables
 
-| Var                                | Notes                                                                          |
-|------------------------------------|--------------------------------------------------------------------------------|
-| `WAGTAIL_CORE_ADMIN_LOGIN_ENABLED` | Set to "true" to allow logins with Wagtail accounts                            |
-| `AWS_COGNITO_LOGIN_ENABLED`        | Set to "true" to enable the integration                                        |
-| `AUTH_TOKEN_REFRESH_URL`           | The Auth service endpoint for refreshing tokens                                |
-| `IDENTITY_API_BASE_URL`            | Used to fetch teams data.                                                      |
-| `AWS_COGNITO_USER_POOL_ID`         | The Cognito user pool ID. Needs to match the Florence one for the environment. |
-| `AWS_COGNITO_APP_CLIENT_ID`        | The Cognito app client ID.                                                     |
+| Var                                | Notes                                                                                                                                                                                              |
+|------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `WAGTAIL_CORE_ADMIN_LOGIN_ENABLED` | Set to "true" to allow logins with Wagtail accounts                                                                                                                                                |
+| `AWS_COGNITO_LOGIN_ENABLED`        | Set to "true" to enable the integration                                                                                                                                                            |
+| `AUTH_TOKEN_REFRESH_URL`           | The Auth service endpoint for refreshing tokens                                                                                                                                                    |
+| `AWS_COGNITO_USER_POOL_ID`         | The Cognito user pool ID. Needs to match the Florence one for the environment.                                                                                                                     |
+| `AWS_COGNITO_APP_CLIENT_ID`        | The Cognito app client ID.                                                                                                                                                                         |
+| `IDENTITY_API_BASE_URL`            | Used to fetch teams data.                                                                                                                                                                          |
+| `SESSION_RENEWAL_OFFSET_SECONDS`   | The time offsets for session renewal. Defaults to 300 (5 minutes). Used by auth.js to pass to the [dis-authorisation-client-js](https://github.com/ONSdigital/dis-authorisation-client-js) library |
+
+TODO: add details about the middleware, auth.js, ONSLogoutView and the team sync management command.
 
 ## Local testing
 
