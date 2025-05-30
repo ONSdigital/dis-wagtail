@@ -81,6 +81,13 @@
                 </section>
             {% endif %}
 
+            {% if page.formatted_datasets %}
+                <section id="related-methods" class="spacing">
+                    <h2>{{ _("Data") }}</h2>
+                    {{ onsDocumentList({"documents": page.formatted_datasets}) }}
+                </section>
+            {% endif %}
+
             {% if page.explore_more %}
                 <section id="explore-more">
                     <h2>{{ _("Explore more") }}</h2>

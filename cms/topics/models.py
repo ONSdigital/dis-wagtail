@@ -18,6 +18,7 @@ from cms.core.fields import StreamField
 from cms.core.models import BasePage
 from cms.core.query import order_by_pk_position
 from cms.core.utils import get_formatted_pages_list
+from cms.datasets.blocks import DatasetStoryBlock
 from cms.methodology.models import MethodologyPage
 from cms.taxonomy.mixins import ExclusiveTaxonomyMixin
 from cms.topics.blocks import ExploreMoreStoryBlock, TopicHeadlineFigureBlock
@@ -93,6 +94,8 @@ class TopicPage(BundledPageMixin, ExclusiveTaxonomyMixin, BasePage):  # type: ig
         help_text="Optional. If populating, it needs at least two headline figures.",
     )
 
+    datasets = StreamField(DatasetStoryBlock(), blank=True, default=list, max_num=MAX_ITEMS_PER_SECTION)
+
     content_panels: ClassVar[list["Panel"]] = [
         *BundledPageMixin.panels,
         *BasePage.content_panels,
@@ -111,6 +114,12 @@ class TopicPage(BundledPageMixin, ExclusiveTaxonomyMixin, BasePage):  # type: ig
                 "The 'Related articles' section will be topped up automatically."
             ),
             max_num=MAX_ITEMS_PER_SECTION,
+        ),
+        FieldPanel(
+            "datasets",
+            heading="Datasets",
+            help_text=f"Select up to {MAX_ITEMS_PER_SECTION} datasets related to this topic.",
+            icon="doc-full",
         ),
         InlinePanel(
             "related_methodologies",
@@ -221,6 +230,26 @@ class TopicPage(BundledPageMixin, ExclusiveTaxonomyMixin, BasePage):  # type: ig
             .order_by("-last_revised_date")[: MAX_ITEMS_PER_SECTION - num_highlighted_pages]
         )
         return highlighted_pages + pages
+
+    @cached_property
+    def formatted_datasets(self) -> list[dict[str, Any]]:
+        dataset_documents: list = []
+        for dataset in self.datasets:  # pylint: disable=not-an-iterable
+            if dataset.block_type == "manual_link":
+                dataset_document = {
+                    "title": {"text": dataset.value["title"], "url": dataset.value["url"]},
+                    "metadata": {"object": {"text": "Dataset"}},
+                    "description": f"<p>{dataset.value['description']}</p>",
+                }
+            else:
+                dataset_document = {
+                    "title": {"text": dataset.value.title, "url": dataset.value.website_url},
+                    "metadata": {"object": {"text": "Dataset"}},
+                    "description": f"<p>{dataset.value.description}</p>",
+                }
+            dataset_documents.append(dataset_document)
+
+        return dataset_documents
 
     @cached_property
     def table_of_contents(self) -> list[dict[str, str | object]]:
