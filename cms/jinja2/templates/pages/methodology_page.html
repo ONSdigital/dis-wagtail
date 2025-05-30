@@ -86,22 +86,13 @@
     <div class="ons-grid ons-grid-flex-gap ons-grid-flex-gap--32 ons-js-toc-container">
         <div class="ons-grid__col ons-grid__col--sticky@m ons-col-4@m">
             {% with toc_title=_("Contents"), toc_aria_label=_("Sections in this page") %}
-
-                {% if related_publications %}
-                    {% set related_publications_title = _("Related publications") %}
-                    {% set related_publications_list = related_publications %}
-                {% endif %}
-
                 {# fmt:off #}
                 {{-
                     onsTableOfContents({
                         "title": toc_title,
                         "ariaLabel": toc_aria_label,
                         "itemsList": table_of_contents,
-                        "relatedLinks": {
-                            "title": related_publications_title,
-                            "itemsList": related_publications_list
-                        },
+                        "relatedLinks": related_publications,
                         "button": {
                             "text": _("Save or print this page")
                         }
