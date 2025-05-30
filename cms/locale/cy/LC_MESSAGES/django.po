@@ -156,7 +156,7 @@ msgid "We’re sorry! Our server is acting up right now. Please try again soon."
 msgstr ""
 
 #: cms/jinja2/templates/pages/information_page.html:8
-msgid "Last Updated"
+msgid "Last updated"
 msgstr ""
 
 #: cms/jinja2/templates/pages/login_page.html:10
