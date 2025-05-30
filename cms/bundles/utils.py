@@ -87,6 +87,8 @@ def serialize_bundle_content_for_release_calendar_page(
         if user_can_manage_bundles(previewing_user):
             previewable_pages = all_bundled_pages
         else:
+            # NB: Currently previewers can see all possible pages which get displayed
+            # in the release calendar, but this could be restricted in the future.
             previewable_pages = bundle.get_pages_for_previewers()
     for page in all_bundled_pages:
         if previewing_user:
