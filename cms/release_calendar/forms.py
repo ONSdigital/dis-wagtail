@@ -28,9 +28,9 @@ class ReleaseCalendarPageAdminForm(WagtailAdminPageForm):
             self.fields["status"].choices = [
                 choice for choice in self.fields["status"].choices if choice[0] != ReleaseStatus.PUBLISHED
             ]
-
-        if self.instance.status == ReleaseStatus.PUBLISHED:
+        else:
             self.fields["release_date"].disabled = True
+            self.fields["status"].disabled = True
 
     def clean(self) -> dict:
         """Validate the submitted release calendar data."""
