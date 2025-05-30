@@ -7,7 +7,9 @@ from django.db.models import TextChoices
 from django.forms import widgets
 from wagtail import blocks
 
-from cms.datavis.blocks.annotations import CoordinatePointAnnotationBlock
+from cms.datavis.blocks.annotations import (
+    PointAnnotationLinearBlock,
+)
 from cms.datavis.blocks.base import BaseVisualisationBlock
 from cms.datavis.blocks.table import SimpleTableBlock, TableDataType
 from cms.datavis.blocks.utils import TextInputFloatBlock, TextInputIntegerBlock
@@ -19,7 +21,7 @@ if TYPE_CHECKING:
 
 class LineChartBlock(BaseVisualisationBlock):
     highcharts_chart_type = HighChartsChartType.LINE
-    x_axis_type = AxisType.CATEGORY
+    x_axis_type = AxisType.CATEGORICAL
 
     extra_series_attributes: ClassVar = {
         "connectNulls": True,
@@ -36,7 +38,7 @@ class LineChartBlock(BaseVisualisationBlock):
 
 
 class BarColumnChartBlock(BaseVisualisationBlock):
-    x_axis_type = AxisType.CATEGORY
+    x_axis_type = AxisType.CATEGORICAL
 
     # Error codes
     ERROR_DUPLICATE_SERIES = "duplicate_series_number"
@@ -217,7 +219,7 @@ class ScatterPlotBlock(BaseVisualisationBlock):
     annotations = blocks.StreamBlock(
         # Use coordinate-based annotations for scatter plots
         [
-            ("point", CoordinatePointAnnotationBlock()),
+            ("point", PointAnnotationLinearBlock()),
         ],
         required=False,
     )
@@ -245,7 +247,7 @@ class ScatterPlotBlock(BaseVisualisationBlock):
 
 class AreaChartBlock(BaseVisualisationBlock):
     highcharts_chart_type = HighChartsChartType.AREA
-    x_axis_type = AxisType.CATEGORY
+    x_axis_type = AxisType.CATEGORICAL
 
     # Error codes
     ERROR_EMPTY_CELLS = "empty_cells"

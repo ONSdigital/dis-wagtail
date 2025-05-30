@@ -6,7 +6,7 @@ from django.forms.widgets import RadioSelect
 from wagtail import blocks
 from wagtail.blocks.struct_block import StructValue
 
-from cms.datavis.blocks.annotations import CategoryPointAnnotationBlock
+from cms.datavis.blocks.annotations import PointAnnotationCategoricalBlock
 from cms.datavis.blocks.chart_options import AspectRatioBlock
 from cms.datavis.blocks.table import SimpleTableBlock
 from cms.datavis.blocks.utils import TextInputFloatBlock
@@ -97,7 +97,7 @@ class BaseVisualisationBlock(blocks.StructBlock):
 
     annotations = blocks.StreamBlock(
         [
-            ("point", CategoryPointAnnotationBlock()),
+            ("point", PointAnnotationCategoricalBlock()),
             # TODO: future implementation will have extra block types
         ],
         required=False,
@@ -184,7 +184,7 @@ class BaseVisualisationBlock(blocks.StructBlock):
             "type": self.x_axis_type.value,
         }
 
-        if self.x_axis_type == AxisType.CATEGORY:
+        if self.x_axis_type == AxisType.CATEGORICAL:
             config["categories"] = [r[0] for r in rows]
 
         # Only add x-axis title if supported and provided, as the Highcharts

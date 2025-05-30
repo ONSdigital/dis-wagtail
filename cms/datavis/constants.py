@@ -31,5 +31,5 @@ class HighChartsChartType(Enum):
 
 
 class AxisType(Enum):
-    CATEGORY = "category"
+    CATEGORICAL = "categorical"
     LINEAR = "linear"
