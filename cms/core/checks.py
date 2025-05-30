@@ -55,7 +55,7 @@ def check_wagtail_pages(*args: Any, **kwargs: Any) -> Iterator[CheckMessage]:
 
 
 @register()
-def check_ses_email_backend_settings(*args: Any, **kwargs: Any) -> list[Error]:
+def check_aws_iam_credentials(*args: Any, **kwargs: Any) -> list[Error]:
     """Check that required IAM credentials are present when running in AWS."""
     errors: list[Error] = []
 
