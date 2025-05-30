@@ -38,6 +38,8 @@ class AnnotationStructValue(StructValue):
                 return int(x_position - 1)
             case AxisType.LINEAR:
                 return x_position
+            case _:
+                raise NotImplementedError(f"Method .get_x_position() does not support axis type {self.X_AXIS_TYPE}")
 
 
 class PointAnnotationStructValue(AnnotationStructValue):
