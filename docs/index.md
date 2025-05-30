@@ -28,4 +28,6 @@ List here any external services this project uses. Preferably link to a separate
 
 - [Authentication service](integrations/auth.md)
 - [Dataset API](integrations/dataset_api.md)
+- [Logging](integrations/logging.md)
+- [Notifications](integrations/notifications.md)
 - [Search service](integrations/search_service.md)

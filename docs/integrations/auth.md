@@ -1,6 +1,9 @@
 # Authentication
 
-via Florence / Authentication service
+The Wagtail CMS integrates with the existing Authentication service which is powered by AWS Cognito
+and interfaced via Florence (the old CMS) while both systems are in use.
+
+This is the first phase towards ONS-wide Single Sign-On.
 
 ## Environment variables
 
@@ -17,13 +20,12 @@ via Florence / Authentication service
 
 - [How to Integrate with existing Auth](https://confluence.ons.gov.uk/display/DIS/How+to+integrate+with+auth)
 - [AWS Cognito Documentation](https://docs.aws.amazon.com/cognito/latest/developerguide/cognito-user-pools.html)
-- JWT: https://jwt.io/
+- [JWT](https://jwt.io/)
 
-<!-- prettier-ignore -->
-!!! note
-    1. When running the auth stub locally, you’ll need to access Wagtail through the proxy (stub url) provided by the stub. This is necessary due to how authentication works, specifically, browser security restrictions prevent cross-origin access to local storage, which the stub relies on. If you try to access Wagtail using the usual route (e.g. localhost:8000) while also logging in via the stub, you’ll be logged out automatically.
-    2. If you restart the stub, once Wagtail is already running, you must restart Wagtail as the JWK signing keys in Wagtail cache will not be in sync with the newly generated keys from the stub.
-    3. FYI, Cognito groups control both roles and preview teams. https://github.com/ONSdigital/dis-authentication-stub/blob/feature/fallback-to-wagtail/static/json/users.json#L7C5-L7C47 here, anything that is prefixed as `role-` are represented as Django User Groups and everything is a Preview Team (they are actually UUID in API response). The groups can be found in:
+> [!NOTE]
+> 1. When running the auth stub locally, you’ll need to access Wagtail through the proxy (stub url) provided by the stub. This is necessary due to how authentication works, specifically, browser security restrictions prevent cross-origin access to local storage, which the stub relies on. If you try to access Wagtail using the usual route (e.g. localhost:8000) while also logging in via the stub, you’ll be logged out automatically.
+> 2. If you restart the stub, once Wagtail is already running, you must restart Wagtail as the JWK signing keys in Wagtail cache will not be in sync with the newly generated keys from the stub.
+> 3. FYI, Cognito groups control both roles and preview teams. https://github.com/ONSdigital/dis-authentication-stub/blob/feature/fallback-to-wagtail/static/json/users.json#L7C5-L7C47 here, anything that is prefixed as `role-` are represented as Django User Groups and everything is a Preview Team (they are actually UUID in API response).
 
 ### Set up the authentication stub to mock Florence login flow.
 
