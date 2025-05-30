@@ -64,7 +64,18 @@ def serialize_preview_page(page: "Page", bundle_id: int, is_previewable: bool) -
 def serialize_bundle_content_for_release_calendar_page(
     bundle: "Bundle", previewing_user: "User | AnonymousUser | None" = None
 ) -> list[dict[str, Any]]:
-    """Serializes the content of a bundle for a release calendar page."""
+    """Serializes the content of a bundle for a release calendar page.
+
+    If a previewing user is provided, the pages will be serialized with additional information
+    such as the workflow state and linked to the preview URL.
+
+    Args:
+        bundle (Bundle): The bundle to serialize.
+        previewing_user (User | AnonymousUser | None): The user previewing the bundle, if any.
+
+    Returns:
+        list[dict[str, Any]]: A list of dictionaries representing the serialized content of the bundle.
+    """
     content = []
     article_pages = []
     methodology_pages = []
