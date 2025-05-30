@@ -16,6 +16,7 @@ from cms.bundles.tests.utils import grant_all_bundle_permissions, make_bundle_vi
 from cms.bundles.viewsets.bundle_chooser import bundle_chooser_viewset
 from cms.bundles.viewsets.bundle_page_chooser import PagesWithDraftsForBundleChooserWidget, bundle_page_chooser_viewset
 from cms.methodology.tests.factories import MethodologyPageFactory
+from cms.release_calendar.tests.factories import ReleaseCalendarPageFactory
 from cms.release_calendar.viewsets import FutureReleaseCalendarChooserWidget
 from cms.standard_pages.tests.factories import InformationPageFactory
 from cms.teams.models import Team
@@ -311,6 +312,7 @@ class BundleViewSetTestCase(BundleViewSetTestCaseBase):
         self.assertContains(response, "Created at")
         self.assertContains(response, "Created by")
         self.assertContains(response, "Scheduled publication")
+        self.assertContains(response, "Associated release calendar")
         self.assertContains(response, "Approval status")
         self.assertContains(response, "Status")
 
@@ -323,6 +325,7 @@ class BundleViewSetTestCase(BundleViewSetTestCaseBase):
         self.assertContains(response, "Created at")
         self.assertContains(response, "Created by")
         self.assertContains(response, "Scheduled publication")
+        self.assertContains(response, "Associated release calendar")
         self.assertNotContains(response, "Approval status")
         self.assertNotContains(response, "Status")
 
@@ -378,6 +381,24 @@ class BundleViewSetTestCase(BundleViewSetTestCaseBase):
         self.assertContains(response, bundle_dataset_b.dataset.version)
         self.assertContains(response, bundle_dataset_b.dataset.edition)
         self.assertContains(response, f'href="{bundle_dataset_b.dataset.website_url}"')
+
+    def test_inspect_view__contains_release_calendar_page(self):
+        """Checks that the inspect view displays the release calendar page."""
+        release_calendar_page = ReleaseCalendarPageFactory(title="Foobar Release Calendar Page")
+        self.bundle.release_calendar_page = release_calendar_page
+        self.bundle.save()
+
+        response = self.client.get(reverse("bundle:inspect", args=[self.bundle.pk]))
+
+        self.assertContains(response, "Foobar Release Calendar Page")
+        self.assertContains(response, reverse("bundles:preview_release_calendar", args=[self.bundle.id]))
+
+        release_calendar_page.delete()
+
+        response = self.client.get(reverse("bundle:inspect", args=[self.bundle.pk]))
+
+        content = response.content.decode("utf-8")
+        self.assertInHTML("<dt>Associated release calendar page</dt><dd>N/A</dd>", content)
 
 
 class BundleIndexViewTestCase(BundleViewSetTestCaseBase):
