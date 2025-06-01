@@ -117,7 +117,6 @@ def get_auth_config() -> dict[str, Any]:
         "wagtailAdminHomePath": settings.WAGTAILADMIN_HOME_PATH,
         "csrfCookieName": settings.CSRF_COOKIE_NAME,
         "csrfHeaderName": csrf_header_name,
-        "logoutRedirectUrl": settings.LOGOUT_REDIRECT_URL,
         "sessionRenewalOffsetSeconds": settings.SESSION_RENEWAL_OFFSET_SECONDS,
         "idTokenCookieName": settings.ID_TOKEN_COOKIE_NAME,
     }

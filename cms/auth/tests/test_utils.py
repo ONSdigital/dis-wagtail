@@ -281,7 +281,6 @@ class ValidateJWTTests(SimpleTestCase):
     WAGTAILADMIN_HOME_PATH="/admin/",
     CSRF_COOKIE_NAME="csrftoken",
     CSRF_HEADER_NAME="HTTP_X_CSRFTOKEN",
-    LOGOUT_REDIRECT_URL="/logged-out/",
     SESSION_RENEWAL_OFFSET_SECONDS=30,
     ID_TOKEN_COOKIE_NAME="id",
 )
@@ -293,7 +292,6 @@ class GetAuthConfigTests(SimpleTestCase):
             "wagtailAdminHomePath",
             "csrfCookieName",
             "csrfHeaderName",
-            "logoutRedirectUrl",
             "sessionRenewalOffsetSeconds",
             "idTokenCookieName",
         }
@@ -305,7 +303,6 @@ class GetAuthConfigTests(SimpleTestCase):
         self.assertEqual(data["wagtailAdminHomePath"], "/admin/")
         self.assertEqual(data["csrfCookieName"], "csrftoken")
         self.assertEqual(data["csrfHeaderName"], "X-CSRFTOKEN")  # header rewritten
-        self.assertEqual(data["logoutRedirectUrl"], "/logged-out/")
         self.assertEqual(data["sessionRenewalOffsetSeconds"], 30)
         self.assertEqual(data["idTokenCookieName"], "id")
 
