@@ -31,7 +31,7 @@ class DocumentBlockStructValue(blocks.StructValue):
     def as_macro_data(self) -> dict[str, str | bool | dict]:
         """Return the value as a macro data dict."""
         return {
-            "thumbnail": True,
+            "thumbnail": False,
             "title": {
                 "text": self["title"] or self["document"].title,
                 "url": self["document"].url,
