@@ -199,7 +199,7 @@ TEMPLATES = [
 
 WSGI_APPLICATION = "cms.wsgi.application"
 
-AWS_REGION = env["AWS_REGION"]
+AWS_REGION = env.get("AWS_REGION", "eu-west-2")  # Default to London region
 
 # Database
 
