@@ -202,11 +202,6 @@ TEMPLATES = [
 WSGI_APPLICATION = "cms.wsgi.application"
 
 
-# AWS IAM Credentials
-if "AWS_REGION" in env:
-    AWS_ACCESS_KEY_ID = env["AWS_ACCESS_KEY_ID"]
-    AWS_SECRET_ACCESS_KEY = env["AWS_SECRET_ACCESS_KEY"]
-
 # Database
 
 # None allows connections to be reused for longer, since opening them is expensive.
