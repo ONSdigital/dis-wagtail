@@ -1,6 +1,7 @@
 from django.test import TestCase
 from django.urls import reverse
 from django.utils import timezone
+from wagtail.models import Locale
 from wagtail.test.utils import WagtailTestUtils
 from wagtail.test.utils.form_data import nested_form_data, rich_text, streamfield
 
@@ -96,7 +97,7 @@ class ReleaseCalendarPageAdminFormTestCase(WagtailTestUtils, TestCase):
 
                 self.assertEqual(form.is_valid(), True)
 
-    def test_form_clean__validates_release_date_text(self):
+    def test_form_clean__validates_release_date_text_in_english(self):
         """Validates that the release date text format."""
         data = self.form_data
         cases = [
@@ -117,7 +118,40 @@ class ReleaseCalendarPageAdminFormTestCase(WagtailTestUtils, TestCase):
                     self.assertFormError(
                         form,
                         "release_date_text",
-                        ["The release date text must be in the 'Month YYYY' or 'Month YYYY to Month YYYY' format."],
+                        [
+                            "The release date text must be in the 'Month YYYY' or 'Month YYYY to Month YYYY'"
+                            " format in the correct locale."
+                        ],
+                    )
+
+    def test_form_clean__validates_release_date_text_in_welsh(self):
+        """Validates that the release date text format."""
+        data = self.form_data
+        welsh_locale, _ = Locale.objects.get_or_create(language_code="cy")
+
+        self.page.locale = welsh_locale
+        cases = [
+            ("Tachwedd 2024", True),
+            ("Tach 2024", False),
+            ("Tachwedd 24", False),
+            ("Tachwedd 2024 i Rhagfyr 2024", True),
+            ("Tachwedd 2024 i anfeidroldeb", False),
+            ("Tachwedd 2024 i Rhagfyr 2024 i Ionawr 2025", False),
+        ]
+        for text, is_valid in cases:
+            with self.subTest(text=text, is_valid=is_valid):
+                data["release_date_text"] = text
+                form = self.form_class(instance=self.page, data=data)
+
+                self.assertEqual(form.is_valid(), is_valid, f"Failed for text: {text}")
+                if not is_valid:
+                    self.assertFormError(
+                        form,
+                        "release_date_text",
+                        [
+                            "The release date text must be in the 'Month YYYY' or 'Month YYYY to Month YYYY'"
+                            " format in the correct locale."
+                        ],
                     )
 
     def test_form_clean__validates_release_date_text_start_end_dates(self):
