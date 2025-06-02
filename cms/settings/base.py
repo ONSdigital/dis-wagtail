@@ -199,6 +199,7 @@ TEMPLATES = [
 
 WSGI_APPLICATION = "cms.wsgi.application"
 
+AWS_REGION = env["AWS_REGION"]
 
 # Database
 
@@ -220,7 +221,7 @@ if "PG_DB_ADDR" in env:
                 "PORT": env["PG_DB_PORT"],
                 "CONN_MAX_AGE": db_conn_max_age,
                 "CONN_HEALTH_CHECK": True,
-                "OPTIONS": {"use_iam_auth": True, "sslmode": "require", "region_name": env["AWS_REGION"]},
+                "OPTIONS": {"use_iam_auth": True, "sslmode": "require", "region_name": AWS_REGION},
             },
         )
     }
@@ -304,7 +305,7 @@ elif elasticache_addr := env.get("ELASTICACHE_ADDR"):
                 "credential_provider": ElastiCacheIAMCredentialProvider(
                     user=env["ELASTICACHE_USER_NAME"],
                     cluster_name=env["ELASTICACHE_CLUSTER_NAME"],
-                    region=env["AWS_REGION"],
+                    region=AWS_REGION,
                 )
             },
         },

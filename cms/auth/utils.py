@@ -18,7 +18,7 @@ from cms.core.cache import memory_cache
 logger = logging.getLogger(__name__)
 
 JWKS_URL = f"{settings.IDENTITY_API_BASE_URL}/jwt-keys"
-EXPECTED_ISSUER = f"https://cognito-idp.eu-west-2.amazonaws.com/{settings.AWS_COGNITO_USER_POOL_ID}"
+EXPECTED_ISSUER = f"https://cognito-idp.{settings.AWS_REGION}.amazonaws.com/{settings.AWS_COGNITO_USER_POOL_ID}"
 EXPECTED_AUDIENCE = settings.AWS_COGNITO_APP_CLIENT_ID
 ALGORITHMS = ["RS256"]
 
