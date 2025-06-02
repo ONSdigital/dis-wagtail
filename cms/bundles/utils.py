@@ -34,6 +34,25 @@ def get_pages_in_active_bundles() -> list[int]:
     )
 
 
+def _create_content_dict_for_pages(pages: list[tuple[dict[str, Any], str]]) -> list[dict[str, Any]]:
+    """Helper function to create content dictionary for article and methodology pages."""
+    article_pages: list[dict[str, Any]] = []
+    methodology_pages: list[dict[str, Any]] = []
+    content: list[dict[str, Any]] = []
+
+    for serialized_page, page_type in pages:
+        match page_type:
+            case "StatisticalArticlePage":
+                article_pages.append(serialized_page)
+            case "MethodologyPage":
+                methodology_pages.append(serialized_page)
+    if article_pages:
+        content.append({"type": "release_content", "value": {"title": "Publications", "links": article_pages}})
+    if methodology_pages:
+        content.append({"type": "release_content", "value": {"title": "Methodology", "links": methodology_pages}})
+    return content
+
+
 def serialize_page(page: "Page") -> dict[str, Any]:
     """Serializes a page to a dictionary."""
     return {
@@ -61,53 +80,46 @@ def serialize_preview_page(page: "Page", bundle_id: int, is_previewable: bool) -
     }
 
 
-def serialize_bundle_content_for_release_calendar_page(
-    bundle: "Bundle", previewing_user: "User | AnonymousUser | None" = None
+def serialize_bundle_content_for_published_release_calendar_page(bundle: "Bundle") -> list[dict[str, Any]]:
+    """Serializes the content of a bundle for a published release calendar page."""
+    all_bundled_pages = bundle.get_bundled_pages()
+    # Create a list of tuples with serialized pages and their specific class names
+    all_pages = [(serialize_page(page), page.specific_class.__name__) for page in all_bundled_pages]
+
+    return _create_content_dict_for_pages(all_pages)
+
+
+def serialize_bundle_content_for_preview_release_calendar_page(
+    bundle: "Bundle", previewing_user: "User | AnonymousUser"
 ) -> list[dict[str, Any]]:
     """Serializes the content of a bundle for a release calendar page.
 
-    If a previewing user is provided, the pages will be serialized with additional information
-    such as the workflow state and linked to the preview URL.
+    The pages will be serialized with additional information such as the workflow
+    state and linked to the preview URL.
 
     Args:
         bundle (Bundle): The bundle to serialize.
-        previewing_user (User | AnonymousUser | None): The user previewing the bundle, if any.
+        previewing_user (User | AnonymousUser): The user previewing the bundle.
 
     Returns:
         list[dict[str, Any]]: A list of dictionaries representing the serialized content of the bundle.
     """
-    content = []
-    article_pages = []
-    methodology_pages = []
+    all_pages = []
     previewable_pages = []
 
     all_bundled_pages = bundle.get_bundled_pages()
 
-    if previewing_user:
-        if user_can_manage_bundles(previewing_user):
-            previewable_pages = all_bundled_pages
-        else:
-            # NB: Currently previewers can see all possible pages which get displayed
-            # in the release calendar, but this could be restricted in the future.
-            previewable_pages = bundle.get_pages_for_previewers()
+    if user_can_manage_bundles(previewing_user):
+        previewable_pages = all_bundled_pages
+    else:
+        # NB: Currently previewers can see all possible pages which get displayed
+        # in the release calendar, but this could be restricted in the future.
+        previewable_pages = bundle.get_pages_for_previewers()
     for page in all_bundled_pages:
-        if previewing_user:
-            serialized_page = serialize_preview_page(page, bundle.pk, page in previewable_pages)
-        else:
-            serialized_page = serialize_page(page)
-        match page.specific_class.__name__:
-            case "StatisticalArticlePage":
-                article_pages.append(serialized_page)
-            case "MethodologyPage":
-                methodology_pages.append(serialized_page)
+        serialized_page = serialize_preview_page(page, bundle.pk, page in previewable_pages)
+        all_pages.append((serialized_page, page.specific_class.__name__))
 
-    if article_pages:
-        content.append({"type": "release_content", "value": {"title": "Publications", "links": article_pages}})
-
-    if methodology_pages:
-        content.append({"type": "release_content", "value": {"title": "Methodology", "links": methodology_pages}})
-
-    return content
+    return _create_content_dict_for_pages(all_pages)
 
 
 def serialize_datasets_for_release_calendar_page(bundle: "Bundle") -> list[dict[str, Any]]:

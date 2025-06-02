@@ -13,7 +13,7 @@ from wagtail.models import Page
 from cms.bundles.models import Bundle
 from cms.bundles.permissions import user_can_manage_bundles, user_can_preview_bundle
 from cms.bundles.utils import (
-    serialize_bundle_content_for_release_calendar_page,
+    serialize_bundle_content_for_preview_release_calendar_page,
     serialize_datasets_for_release_calendar_page,
 )
 from cms.core.fields import StreamField
@@ -103,7 +103,7 @@ class PreviewBundleReleaseCalendarView(TemplateView):
         # Make adjustments to page for preview
         release_calendar_page.status = ReleaseStatus.PUBLISHED
         release_calendar_page.content = cast(
-            StreamField, serialize_bundle_content_for_release_calendar_page(bundle, self.request.user)
+            StreamField, serialize_bundle_content_for_preview_release_calendar_page(bundle, self.request.user)
         )
         release_calendar_page.datasets = cast(StreamField, serialize_datasets_for_release_calendar_page(bundle))
 

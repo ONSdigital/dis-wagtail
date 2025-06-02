@@ -13,7 +13,7 @@ from cms.bundles.enums import BundleStatus
 from cms.bundles.models import Bundle
 from cms.bundles.notifications import notify_slack_of_publication_start, notify_slack_of_publish_end
 from cms.bundles.utils import (
-    serialize_bundle_content_for_release_calendar_page,
+    serialize_bundle_content_for_published_release_calendar_page,
     serialize_datasets_for_release_calendar_page,
 )
 from cms.core.fields import StreamField
@@ -41,7 +41,7 @@ class Command(BaseCommand):
 
     def _update_related_release_calendar_page(self, bundle: Bundle) -> None:
         """Updates the release calendar page related to the bundle with the pages in the bundle."""
-        content = serialize_bundle_content_for_release_calendar_page(bundle)
+        content = serialize_bundle_content_for_published_release_calendar_page(bundle)
         datasets = serialize_datasets_for_release_calendar_page(bundle)
 
         page = bundle.release_calendar_page
