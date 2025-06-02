@@ -3,13 +3,13 @@ from typing import Any
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 
-from cms.bundles.email_notifications import (
+from cms.bundles.enums import BundleStatus
+from cms.bundles.models import Bundle, BundleTeam
+from cms.bundles.notifications.email import (
     send_bundle_published_email,
     send_bundle_status_changed_to_in_review_email,
     send_team_added_to_bundle_in_review_email,
 )
-from cms.bundles.enums import BundleStatus
-from cms.bundles.models import Bundle, BundleTeam
 
 
 @receiver(post_save, sender=BundleTeam)

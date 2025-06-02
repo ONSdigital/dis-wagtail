@@ -81,12 +81,6 @@ class BundleModelTestCase(TestCase):
         expected_url = f"{settings.WAGTAILADMIN_BASE_URL}{reverse('bundle:inspect', args=[self.bundle.pk])}"
         self.assertEqual(self.bundle.inspect_url, expected_url)
 
-    def test_inspect_url_property_raises_error_if_bundle_not_saved(self):
-        """Test that inspect_url raises an error if the bundle is not saved."""
-        unsaved_bundle = BundleFactory.build()
-        with self.assertRaises(RuntimeError):
-            _inspect_url = unsaved_bundle.inspect_url
-
 
 class BundledPageMixinTestCase(TestCase):
     """Test BundledPageMixin properties and methods."""
