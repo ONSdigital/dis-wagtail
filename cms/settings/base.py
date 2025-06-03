@@ -544,7 +544,7 @@ LOGGING = {
 # https://docs.djangoproject.com/en/stable/topics/email/
 
 # Use fixed strings in case import paths move
-match env.get("EMAIL_BACKEND_NAME"):
+match env.get("EMAIL_BACKEND_NAME").upper():
     case "SES":
         EMAIL_BACKEND = "django_ses.SESBackend"
         AWS_SES_REGION_NAME = env["AWS_REGION"]
