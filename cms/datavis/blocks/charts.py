@@ -7,7 +7,13 @@ from django.db.models import TextChoices
 from django.forms import widgets
 from wagtail import blocks
 
-from cms.datavis.blocks.annotations import CoordinatePointAnnotationBlock
+from cms.datavis.blocks.annotations import (
+    PointAnnotationCategoricalBlock,
+    PointAnnotationLinearBlock,
+    RangeAnnotationBarColumnBlock,
+    RangeAnnotationCategoricalBlock,
+    RangeAnnotationLinearBlock,
+)
 from cms.datavis.blocks.base import BaseVisualisationBlock
 from cms.datavis.blocks.table import SimpleTableBlock, TableDataType
 from cms.datavis.blocks.utils import TextInputFloatBlock, TextInputIntegerBlock
@@ -19,7 +25,7 @@ if TYPE_CHECKING:
 
 class LineChartBlock(BaseVisualisationBlock):
     highcharts_chart_type = HighChartsChartType.LINE
-    x_axis_type = AxisType.CATEGORY
+    x_axis_type = AxisType.CATEGORICAL
 
     extra_series_attributes: ClassVar = {
         "connectNulls": True,
@@ -31,12 +37,20 @@ class LineChartBlock(BaseVisualisationBlock):
     show_data_labels = None
     series_customisation = None
 
+    annotations = blocks.StreamBlock(
+        [
+            ("point", PointAnnotationCategoricalBlock()),
+            ("range", RangeAnnotationCategoricalBlock()),
+        ],
+        required=False,
+    )
+
     class Meta:
         icon = "chart-line"
 
 
 class BarColumnChartBlock(BaseVisualisationBlock):
-    x_axis_type = AxisType.CATEGORY
+    x_axis_type = AxisType.CATEGORICAL
 
     # Error codes
     ERROR_DUPLICATE_SERIES = "duplicate_series_number"
@@ -47,6 +61,14 @@ class BarColumnChartBlock(BaseVisualisationBlock):
 
     # Remove unsupported features
     show_markers = None
+
+    annotations = blocks.StreamBlock(
+        [
+            ("point", PointAnnotationCategoricalBlock()),
+            ("range", RangeAnnotationBarColumnBlock()),
+        ],
+        required=False,
+    )
 
     class ChartTypeChoices(TextChoices):
         BAR = "bar", "Bar"
@@ -217,7 +239,8 @@ class ScatterPlotBlock(BaseVisualisationBlock):
     annotations = blocks.StreamBlock(
         # Use coordinate-based annotations for scatter plots
         [
-            ("point", CoordinatePointAnnotationBlock()),
+            ("point", PointAnnotationLinearBlock()),
+            ("range", RangeAnnotationLinearBlock()),
         ],
         required=False,
     )
@@ -245,7 +268,7 @@ class ScatterPlotBlock(BaseVisualisationBlock):
 
 class AreaChartBlock(BaseVisualisationBlock):
     highcharts_chart_type = HighChartsChartType.AREA
-    x_axis_type = AxisType.CATEGORY
+    x_axis_type = AxisType.CATEGORICAL
 
     # Error codes
     ERROR_EMPTY_CELLS = "empty_cells"
@@ -256,6 +279,14 @@ class AreaChartBlock(BaseVisualisationBlock):
     series_customisation = None
     show_data_labels = None
     use_stacked_layout = None
+
+    annotations = blocks.StreamBlock(
+        [
+            ("point", PointAnnotationCategoricalBlock()),
+            ("range", RangeAnnotationCategoricalBlock()),
+        ],
+        required=False,
+    )
 
     class Meta:
         icon = "chart-area"
