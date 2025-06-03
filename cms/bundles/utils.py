@@ -128,3 +128,36 @@ def serialize_datasets_for_release_calendar_page(bundle: "Bundle") -> list[dict[
         {"type": "dataset_lookup", "id": uuid.uuid4(), "value": dataset["dataset"]}
         for dataset in bundle.bundled_datasets.all().values("dataset")
     ]
+
+
+def get_preview_items_for_bundle(bundle: "Bundle", page_id: int, pages_in_bundle: list[Page]) -> list[dict[str, Any]]:
+    """Generates a list of preview items for the bundle.
+
+    Args:
+        bundle (Bundle): The bundle for which to generate preview items.
+        page_id (int): The ID of the page being currently previewed.
+        pages_in_bundle (list[Page]): The list of pages in the bundle to be used for generating preview items.
+
+    Returns:
+        list[dict[str, Any]]: A list of dictionaries representing the preview items.
+    """
+    preview_items = [
+        {
+            "text": getattr(item, "display_title", item.title),
+            "value": reverse("bundles:preview", args=[bundle.id, item.pk]),
+            "selected": item.pk == page_id,
+        }
+        for item in pages_in_bundle
+    ]
+
+    if release_calendar_page := bundle.release_calendar_page:
+        preview_items.insert(
+            0,
+            {
+                "text": getattr(release_calendar_page, "display_title", release_calendar_page.title),
+                "value": reverse("bundles:preview_release_calendar", args=[bundle.id]),
+                "selected": False,
+            },
+        )
+
+    return preview_items

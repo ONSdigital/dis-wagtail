@@ -358,6 +358,27 @@ class PreviewBundleReleaseCalendarViewTestCase(WagtailTestUtils, TestCase):
 
         self.assertContains(response, f"{statistical_article.title} (Ready to publish)")
 
+    def test_preview_release_calendar_page_has_preview_bar(self):
+        self.client.force_login(self.publishing_officer)
+        statistical_article = StatisticalArticlePageFactory()
+
+        BundlePageFactory(parent=self.bundle, page=statistical_article)
+
+        response = self.client.get(self.preview_url)
+        self.assertEqual(response.status_code, HTTPStatus.OK)
+
+        content = response.content.decode("utf-8")
+        release_calendar_url = reverse("bundles:preview_release_calendar", args=[self.bundle.pk])
+        self.assertInHTML(
+            f'<option value="{release_calendar_url}">{self.release_calendar_page.title}</option>',
+            content,
+        )
+
+        statistical_article_url = reverse("bundles:preview", args=[self.bundle.pk, statistical_article.pk])
+        self.assertInHTML(
+            f'<option value="{statistical_article_url}">{statistical_article.display_title}</option>', content
+        )
+
     def test_preview_release_calendar_page_uses_correct_page_preview_url(self):
         self.client.force_login(self.publishing_officer)
         statistical_article = StatisticalArticlePageFactory()

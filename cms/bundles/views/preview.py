@@ -13,6 +13,7 @@ from wagtail.models import Page
 from cms.bundles.models import Bundle
 from cms.bundles.permissions import user_can_manage_bundles, user_can_preview_bundle
 from cms.bundles.utils import (
+    get_preview_items_for_bundle,
     serialize_bundle_content_for_preview_release_calendar_page,
     serialize_datasets_for_release_calendar_page,
 )
@@ -56,14 +57,7 @@ class PreviewBundleView(TemplateView):
 
         context = page.get_context(request)
         context["bundle_inspect_url"] = reverse("bundle:inspect", args=[bundle_id])
-        context["preview_items"] = [
-            {
-                "text": getattr(item, "display_title", item.title),
-                "value": reverse("bundles:preview", args=[bundle_id, item.pk]),
-                "selected": item.pk == page_id,
-            }
-            for item in pages_in_bundle
-        ]
+        context["preview_items"] = get_preview_items_for_bundle(bundle, page_id, pages_in_bundle)
 
         log(
             action="bundles.preview",
@@ -114,5 +108,16 @@ class PreviewBundleReleaseCalendarView(TemplateView):
             instance=bundle,
             data=log_data_entry,
         )
+
+        if user_can_manage_bundles(self.request.user):
+            pages_in_bundle = bundle.get_bundled_pages(specific=True)
+        else:
+            pages_in_bundle = bundle.get_pages_for_previewers()
+
+        request.is_dummy = True  # type: ignore[attr-defined]
+        request.is_preview = True  # type: ignore[attr-defined]
+        request.preview_mode = "bundle-preview"  # type: ignore[attr-defined]
+
+        context["preview_items"] = get_preview_items_for_bundle(bundle, release_calendar_page.id, pages_in_bundle)
 
         return TemplateResponse(request, release_calendar_page.get_template(request), context)

@@ -41,15 +41,16 @@ class Command(BaseCommand):
 
     def _update_related_release_calendar_page(self, bundle: Bundle) -> None:
         """Updates the release calendar page related to the bundle with the pages in the bundle."""
-        content = serialize_bundle_content_for_published_release_calendar_page(bundle)
-        datasets = serialize_datasets_for_release_calendar_page(bundle)
-
         page = bundle.release_calendar_page
-        page.content = cast(StreamField, content)
-        page.datasets = cast(StreamField, datasets)
-        page.status = ReleaseStatus.PUBLISHED
-        revision = page.save_revision(log_action=True)
-        revision.publish()
+        if page:  # To satisfy mypy, ensure page is not None
+            content = serialize_bundle_content_for_published_release_calendar_page(bundle)
+            datasets = serialize_datasets_for_release_calendar_page(bundle)
+
+            page.content = cast(StreamField, content)
+            page.datasets = cast(StreamField, datasets)
+            page.status = ReleaseStatus.PUBLISHED
+            revision = page.save_revision(log_action=True)
+            revision.publish()
 
     # TODO: revisit after discussion.
     @transaction.atomic
