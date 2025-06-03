@@ -1,3 +1,4 @@
+import json
 import logging
 import traceback
 from datetime import datetime
@@ -5,6 +6,7 @@ from typing import Any
 
 import json_log_formatter
 from django.conf import settings
+from django.core.serializers.json import DjangoJSONEncoder
 from django.http import HttpRequest
 
 SEVERITY_MAPPING = {
@@ -12,6 +14,8 @@ SEVERITY_MAPPING = {
     logging.ERROR: 1,
     logging.CRITICAL: 0,
 }
+
+logger = logging.getLogger(__name__)
 
 
 class JSONFormatter(json_log_formatter.JSONFormatter):
@@ -37,7 +41,7 @@ class JSONFormatter(json_log_formatter.JSONFormatter):
         if record.exc_info:
             record_data["errors"] = [
                 {
-                    "message": repr(record.exc_info[1]),
+                    "message": traceback.format_exception_only(record.exc_info[1])[0].strip(),
                     "stack_trace": [
                         {"file": summary.filename, "function": summary.name, "line": summary.line}
                         for summary in traceback.extract_tb(record.exc_info[2])
@@ -46,6 +50,21 @@ class JSONFormatter(json_log_formatter.JSONFormatter):
             ]
 
         return record_data
+
+    def to_json(self, record: dict) -> str:
+        """Converts the record dict to a JSON string.
+
+        If encoding fails, log a message with context.
+        """
+        try:
+            return json.dumps(record, cls=DjangoJSONEncoder)
+        except (TypeError, ValueError):
+            # NB: Care must be taken that this message is JSON serializable, to avoid recursion issues.
+            logger.exception(
+                "Unable to serialize log message to JSON. Dropping message",
+                extra={"original_message": str(record)},
+            )
+            return ""
 
 
 class GunicornJsonFormatter(JSONFormatter):

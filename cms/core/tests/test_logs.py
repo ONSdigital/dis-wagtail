@@ -3,6 +3,7 @@ import logging
 import os
 from datetime import timedelta
 from types import SimpleNamespace
+from unittest.mock import ANY
 
 import time_machine
 from django.test import RequestFactory, SimpleTestCase, TestCase
@@ -19,7 +20,11 @@ class JSONFormatterTestCase(TestCase):
     databases = "__all__"
 
     def format_log(self, record: logging.LogRecord) -> dict:
-        return json.loads(JSONFormatter().format(record))
+        formatted_log = JSONFormatter().format(record)
+        try:
+            return json.loads(formatted_log)
+        except json.decoder.JSONDecodeError:
+            return formatted_log
 
     def test_formats_message(self):
         with self.assertLogs(__name__) as logs:
@@ -53,7 +58,7 @@ class JSONFormatterTestCase(TestCase):
                 "data": {},
                 "errors": [
                     {
-                        "message": "ValueError('Something went wrong')",
+                        "message": "ValueError: Something went wrong",
                         "stack_trace": [
                             {
                                 "file": os.path.abspath(__file__),
@@ -81,6 +86,33 @@ class JSONFormatterTestCase(TestCase):
                 "data": {"status_code": 404},
             },
         )
+
+    def test_serialization_error(self):
+        with self.assertLogs(__name__) as source_logs:
+            logger.info("Complex data", extra={"data": logger})
+
+        with self.assertLogs("cms.core.logs") as logs:
+            original_message = self.format_log(source_logs.records[0])
+
+        self.assertEqual(original_message, "")
+
+        formatted = self.format_log(logs.records[0])
+
+        self.assertEqual(
+            formatted,
+            {
+                "created_at": "2025-01-01T00:00:00",
+                "namespace": "cms.core.logs",
+                "severity": 1,
+                "event": "Unable to serialize log message to JSON. Dropping message",
+                "data": {"original_message": ANY},
+                "errors": [ANY],
+            },
+        )
+
+        self.assertEqual(formatted["errors"][0]["message"], "TypeError: Object of type Logger is not JSON serializable")
+        self.assertIn("Complex data", formatted["data"]["original_message"])
+        self.assertIn(repr(logger), formatted["data"]["original_message"])
 
 
 @time_machine.travel("2025-01-01", tick=False)
@@ -123,7 +155,7 @@ class GunicornJSONFormatterTestCase(SimpleTestCase):
                 "path": "/",
                 "query": "",
                 "status_code": 200,
-                "ended_at": "2025-01-01 00:00:00+00:00",
+                "ended_at": "2025-01-01T00:00:00Z",
                 "duration": 1000000000,
                 "response_content_length": 1024,
             },
