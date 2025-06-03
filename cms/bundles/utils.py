@@ -67,7 +67,7 @@ def serialize_preview_page(page: "Page", bundle_id: int, is_previewable: bool) -
     if workflow_state := specific_page.current_workflow_state:
         state = workflow_state.current_task_state.task.name
     else:
-        state = "not in a workflow"
+        state = "Draft"
     return {
         "id": uuid.uuid4(),
         "type": "item",

@@ -249,11 +249,7 @@ class BundleInspectView(InspectView):
                 reverse("wagtailadmin_pages:edit", args=[page.pk]),
                 page.get_admin_display_title(),
                 page.get_verbose_name(),
-                (
-                    page.current_workflow_state.current_task_state.task.name
-                    if page.current_workflow_state
-                    else "not in a workflow"
-                ),
+                (page.current_workflow_state.current_task_state.task.name if page.current_workflow_state else "Draft"),
                 reverse(
                     "bundles:preview",
                     args=(

@@ -171,7 +171,7 @@ class BundleViewSetTestCase(BundleViewSetTestCaseBase):
         page_title = self.statistical_article_page.get_admin_display_title()
 
         response = self.client.get(self.edit_url)
-        self.assertContains(response, f"{page_title} (not in a workflow)")
+        self.assertContains(response, f"{page_title} (Draft)")
 
         workflow_state = mark_page_as_ready_for_review(self.statistical_article_page, self.publishing_officer)
         response = self.client.get(self.edit_url)

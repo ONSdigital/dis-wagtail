@@ -344,7 +344,7 @@ class PreviewBundleReleaseCalendarViewTestCase(WagtailTestUtils, TestCase):
         response = self.client.get(self.preview_url)
 
         self.assertEqual(response.status_code, HTTPStatus.OK)
-        self.assertContains(response, f"{statistical_article.title} (not in a workflow)")
+        self.assertContains(response, f"{statistical_article.title} (Draft)")
 
         workflow_state = mark_page_as_ready_for_review(statistical_article, self.publishing_officer)
 
