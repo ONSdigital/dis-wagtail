@@ -33,7 +33,7 @@ class JSONFormatter(json_log_formatter.JSONFormatter):
         record_data = {
             "created_at": datetime.fromtimestamp(record.created),
             "namespace": record.name,
-            "severity": SEVERITY_MAPPING.get(record.levelno, 3),
+            "severity": SEVERITY_MAPPING.get(record.levelno, 3),  # Default to INFO
             "event": message,
             "data": extra,
         }
