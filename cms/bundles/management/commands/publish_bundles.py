@@ -45,12 +45,11 @@ class Command(BaseCommand):
         datasets = serialize_datasets_for_release_calendar_page(bundle)
 
         page = bundle.release_calendar_page
-        if page:
-            page.content = cast(StreamField, content)
-            page.datasets = cast(StreamField, datasets)
-            page.status = ReleaseStatus.PUBLISHED
-            revision = page.save_revision(log_action=True)
-            revision.publish()
+        page.content = cast(StreamField, content)
+        page.datasets = cast(StreamField, datasets)
+        page.status = ReleaseStatus.PUBLISHED
+        revision = page.save_revision(log_action=True)
+        revision.publish()
 
     # TODO: revisit after discussion.
     @transaction.atomic
