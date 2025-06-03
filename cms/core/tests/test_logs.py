@@ -5,7 +5,7 @@ from datetime import timedelta
 from types import SimpleNamespace
 
 import time_machine
-from django.test import RequestFactory, SimpleTestCase
+from django.test import RequestFactory, SimpleTestCase, TestCase
 from gunicorn.config import Config
 from gunicorn.glogging import Logger
 
@@ -15,7 +15,9 @@ logger = logging.getLogger(__name__)
 
 
 @time_machine.travel("2025-01-01", tick=False)
-class JSONFormatterTestCase(SimpleTestCase):
+class JSONFormatterTestCase(TestCase):
+    databases = "__all__"
+
     def format_log(self, record: logging.LogRecord) -> dict:
         return json.loads(JSONFormatter().format(record))
 
@@ -23,12 +25,16 @@ class JSONFormatterTestCase(SimpleTestCase):
         with self.assertLogs(__name__) as logs:
             logger.info("The message")
 
-        formatted = self.format_log(logs.records[0])
-
-        self.assertEqual(formatted["created_at"], "2025-01-01T00:00:00")
-        self.assertEqual(formatted["namespace"], __name__)
-        self.assertEqual(formatted["event"], "The message")
-        self.assertEqual(formatted["severity"], 3)
+        self.assertEqual(
+            self.format_log(logs.records[0]),
+            {
+                "created_at": "2025-01-01T00:00:00",
+                "namespace": __name__,
+                "severity": 3,
+                "event": "The message",
+                "data": {},
+            },
+        )
 
     def test_formats_error(self):
         with self.assertLogs(__name__) as logs:
@@ -37,26 +43,43 @@ class JSONFormatterTestCase(SimpleTestCase):
             except Exception:  # pylint: disable=broad-exception-caught
                 logger.exception("The error message")
 
-        formatted = self.format_log(logs.records[0])
-
-        self.assertEqual(formatted["created_at"], "2025-01-01T00:00:00")
-        self.assertEqual(formatted["namespace"], __name__)
-        self.assertEqual(formatted["event"], "The error message")
-        self.assertEqual(formatted["severity"], 1)
         self.assertEqual(
-            formatted["errors"],
-            [
-                {
-                    "message": "ValueError('Something went wrong')",
-                    "stack_trace": [
-                        {
-                            "file": os.path.abspath(__file__),
-                            "function": "test_formats_error",
-                            "line": 'raise ValueError("Something went wrong")',
-                        }
-                    ],
-                }
-            ],
+            self.format_log(logs.records[0]),
+            {
+                "created_at": "2025-01-01T00:00:00",
+                "namespace": __name__,
+                "severity": 1,
+                "event": "The error message",
+                "data": {},
+                "errors": [
+                    {
+                        "message": "ValueError('Something went wrong')",
+                        "stack_trace": [
+                            {
+                                "file": os.path.abspath(__file__),
+                                "function": "test_formats_error",
+                                "line": 'raise ValueError("Something went wrong")',
+                            }
+                        ],
+                    }
+                ],
+            },
+        )
+
+    def test_formats_request_error(self):
+        with self.assertLogs("django.request") as logs:
+            response = self.client.get("/does-not-exist/")
+            self.assertEqual(response.status_code, 404)
+
+        self.assertEqual(
+            self.format_log(logs.records[0]),
+            {
+                "created_at": "2025-01-01T00:00:00",
+                "namespace": "django.request",
+                "severity": 2,
+                "event": "Not Found: /does-not-exist/",
+                "data": {"status_code": 404},
+            },
         )
 
 

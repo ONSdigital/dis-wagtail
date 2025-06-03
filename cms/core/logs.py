@@ -5,6 +5,7 @@ from typing import Any
 
 import json_log_formatter
 from django.conf import settings
+from django.http import HttpRequest
 
 SEVERITY_MAPPING = {
     logging.WARNING: 2,
@@ -20,6 +21,11 @@ class JSONFormatter(json_log_formatter.JSONFormatter):
     """
 
     def json_record(self, message: str, extra: dict[str, Any], record: logging.LogRecord) -> dict[str, Any]:
+        extra = extra.copy()
+
+        if isinstance(extra.get("request"), HttpRequest):
+            extra.pop("request", None)
+
         record_data = {
             "created_at": datetime.fromtimestamp(record.created),
             "namespace": record.name,
