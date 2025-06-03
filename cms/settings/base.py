@@ -550,15 +550,6 @@ LOGGING = {
 # that let us use SMTP.
 # https://docs.djangoproject.com/en/2.1/topics/email/
 
-EMAIL_BACKEND = env.get("EMAIL_BACKEND", "django.core.mail.backends.console.EmailBackend")
-FROM_EMAIL = env.get("FROM_EMAIL", "example@mail.com")
-
-if EMAIL_BACKEND == "django_ses.SESBackend":
-    AWS_SES_REGION_NAME = env["AWS_REGION"]
-    AWS_SES_REGION_ENDPOINT = env["AWS_SES_ENDPOINT"]
-
-    # https://aws.amazon.com/blogs/messaging-and-targeting/upgrade-your-email-tech-stack-with-amazon-sesv2-api/
-    USE_SES_V2 = True
 
 # https://docs.djangoproject.com/en/stable/ref/settings/#email-host
 if "EMAIL_HOST" in env:

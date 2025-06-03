@@ -1,7 +1,6 @@
 import logging
 
-from django.conf import settings
-from django.core.mail import send_mail
+from wagtail.admin.mail import send_mail
 
 from cms.bundles.models import BundleTeam
 
@@ -15,7 +14,6 @@ def _send_bundle_email(bundle_team: BundleTeam, subject: str, message: str) -> N
     send_mail(
         subject=subject,
         message=message,
-        from_email=settings.FROM_EMAIL,
         recipient_list=active_user_emails,
     )
     logger.info(

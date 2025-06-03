@@ -22,6 +22,9 @@ WAGTAILADMIN_BASE_URL = "http://localhost:8000"
 # Display sent emails in the console while developing locally.
 EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
 
+# Sender address for email notifications
+DEFAULT_FROM_EMAIL = "cms@example.com"
+
 # Disable password validators when developing locally.
 AUTH_PASSWORD_VALIDATORS = []
 
