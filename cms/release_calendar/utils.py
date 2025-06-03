@@ -39,6 +39,7 @@ DATE_MONTHS = {
 def parse_month_year(text: str, locale_code: str) -> date | None:
     """Parses a month and year string into a date object."""
     parts = text.split(" ", maxsplit=1)
+    # PLR2004: https://docs.astral.sh/ruff/rules/magic-value-comparison/
     if len(parts) != 2:  # noqa: PLR2004
         return None
 
