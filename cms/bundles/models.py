@@ -196,9 +196,6 @@ class Bundle(index.Indexed, ClusterableModel, models.Model):  # type: ignore[dja
 
     @property
     def inspect_url(self) -> str:
-        if not self.pk:
-            raise RuntimeError("Bundle must be saved before accessing inspect_url.")
-
         base_url = settings.WAGTAILADMIN_BASE_URL
         return f"{base_url}{reverse('bundle:inspect', args=[self.pk])}"
 
