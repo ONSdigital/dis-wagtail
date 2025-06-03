@@ -43,7 +43,17 @@
 {%- endblock -%}
 
 {% block pageContent %}
-    {%- set announcement_text = _("This page is currently not available in English. It is displayed in its original language.") -%}
+    {# Set as variables so that makemessages picks it up #}
+    {%- set english_label = _("in English") -%}
+    {%- set welsh_label = _("in Welsh") -%}
+    {%- set language_labels = {
+    "en": english_label,
+    "cy": welsh_label
+    } -%}
+
+    {%- set announcement_text -%}
+        {% trans trimmed in_language=language_labels[request.LANGUAGE_CODE] %}This page is currently not available {{in_language}}. It is displayed in its original language.{% endtrans %}
+    {%- endset -%}
     {# Adds a full-width section for the header area before the main page content #}
     {# Changes the location of the <main> tag from the base template - ensures it surrounds the header area #}
     {# This change should be adopted by the design system soon #}
