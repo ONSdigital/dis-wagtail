@@ -426,9 +426,6 @@ MEDIA_URL = env.get("MEDIA_URL", "/media/")
 #
 # Three required environment variables are:
 #  * AWS_STORAGE_BUCKET_NAME
-#  * AWS_ACCESS_KEY_ID
-#  * AWS_SECRET_ACCESS_KEY
-# The last two are picked up by boto3:
 # https://boto3.amazonaws.com/v1/documentation/api/latest/guide/configuration.html#environment-variables
 if "AWS_STORAGE_BUCKET_NAME" in env:
     # Add django-storages to the installed apps
@@ -544,32 +541,43 @@ LOGGING = {
 
 
 # Email settings
-# We use SMTP to send emails. We typically use transactional email services
-# that let us use SMTP.
-# https://docs.djangoproject.com/en/2.1/topics/email/
+# https://docs.djangoproject.com/en/stable/topics/email/
 
-# https://docs.djangoproject.com/en/stable/ref/settings/#email-host
-if "EMAIL_HOST" in env:
-    EMAIL_HOST = env["EMAIL_HOST"]
+# Use fixed strings in case import paths move
+match env.get("EMAIL_BACKEND_NAME"):
+    case "SES":
+        EMAIL_BACKEND = "django_ses.SESBackend"
+        AWS_SES_REGION_NAME = env["AWS_REGION"]
+        USE_SES_V2 = True
 
-# https://docs.djangoproject.com/en/stable/ref/settings/#email-port
-# Use a default port of 587, as Heroku & other services now block the Django default of 25
-try:
-    EMAIL_PORT = int(env.get("EMAIL_PORT", 587))
-except ValueError:
-    raise ImproperlyConfigured("The setting EMAIL_PORT should be an integer, e.g. 587") from None
+    case "SMTP":
+        EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
+        # https://docs.djangoproject.com/en/stable/ref/settings/#email-host
+        if "EMAIL_HOST" in env:
+            EMAIL_HOST = env["EMAIL_HOST"]
 
-# https://docs.djangoproject.com/en/stable/ref/settings/#email-host-user
-if "EMAIL_HOST_USER" in env:
-    EMAIL_HOST_USER = env["EMAIL_HOST_USER"]
+        # https://docs.djangoproject.com/en/stable/ref/settings/#email-port
+        # Use a default port of 587, as Heroku & other services now block the Django default of 25
+        try:
+            EMAIL_PORT = int(env.get("EMAIL_PORT", 587))
+        except ValueError:
+            raise ImproperlyConfigured("The setting EMAIL_PORT should be an integer, e.g. 587") from None
 
-# https://docs.djangoproject.com/en/stable/ref/settings/#email-host-password
-if "EMAIL_HOST_PASSWORD" in env:
-    EMAIL_HOST_PASSWORD = env["EMAIL_HOST_PASSWORD"]
+        # https://docs.djangoproject.com/en/stable/ref/settings/#email-host-user
+        if "EMAIL_HOST_USER" in env:
+            EMAIL_HOST_USER = env["EMAIL_HOST_USER"]
 
-# https://docs.djangoproject.com/en/stable/ref/settings/#email-use-tls
-# We always want to use TLS
-EMAIL_USE_TLS = True
+        # https://docs.djangoproject.com/en/stable/ref/settings/#email-host-password
+        if "EMAIL_HOST_PASSWORD" in env:
+            EMAIL_HOST_PASSWORD = env["EMAIL_HOST_PASSWORD"]
+
+        # https://docs.djangoproject.com/en/stable/ref/settings/#email-use-tls
+        # We always want to use TLS
+        EMAIL_USE_TLS = True
+
+    case _:
+        EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
+
 
 # https://docs.djangoproject.com/en/stable/ref/settings/#email-subject-prefix
 if "EMAIL_SUBJECT_PREFIX" in env:

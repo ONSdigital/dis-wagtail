@@ -899,6 +899,25 @@ redis = ">=3,<4.0.0 || >4.0.0,<4.0.1 || >4.0.1"
 hiredis = ["redis[hiredis] (>=3,!=4.0.0,!=4.0.1)"]
 
 [[package]]
+name = "django-ses"
+version = "4.4.0"
+description = "A Django email backend for Amazon's Simple Email Service (SES)"
+optional = false
+python-versions = "<4.0,>=3.8"
+files = [
+    {file = "django_ses-4.4.0-py3-none-any.whl", hash = "sha256:1d310c34b307a380f3c9a2091e6e7fc2cf19650f229d1df044b19e140fb77b63"},
+    {file = "django_ses-4.4.0.tar.gz", hash = "sha256:8cf9213f84de0315dd03b0ddc0e126d39c79847af5ba27000adcac3314f4bfae"},
+]
+
+[package.dependencies]
+boto3 = ">=1.0.0"
+django = ">=3.2"
+
+[package.extras]
+bounce = ["cryptography (>=36.0.2)", "requests (>=2.32.1)"]
+events = ["cryptography (>=36.0.2)", "requests (>=2.32.1)"]
+
+[[package]]
 name = "django-storages"
 version = "1.14.6"
 description = "Support for many storage backends in Django"
@@ -3258,4 +3277,4 @@ files = [
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.12"
-content-hash = "0affda2c9189a8c049ea4c06a6c7f9715f5c001256f7038bbc592e522712b31b"
+content-hash = "c78f7ef587aaa6300df8e24b564575487340c25e349913b8082644d83b44297c"
