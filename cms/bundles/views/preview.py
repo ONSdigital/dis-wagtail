@@ -118,6 +118,7 @@ class PreviewBundleReleaseCalendarView(TemplateView):
         request.is_preview = True  # type: ignore[attr-defined]
         request.preview_mode = "bundle-preview"  # type: ignore[attr-defined]
 
+        context["bundle_inspect_url"] = reverse("bundle:inspect", args=[bundle_id])
         context["preview_items"] = get_preview_items_for_bundle(bundle, release_calendar_page.id, pages_in_bundle)
 
         return TemplateResponse(request, release_calendar_page.get_template(request), context)
