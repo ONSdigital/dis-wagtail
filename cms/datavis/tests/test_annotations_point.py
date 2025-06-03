@@ -1,30 +1,12 @@
-from typing import Any, ClassVar
-
-from django.test import SimpleTestCase
-from wagtail import blocks
-
-from cms.datavis.blocks.annotations import CategoryPointAnnotationBlock, CoordinatePointAnnotationBlock
-
-
-class BaseAnnotationTestCase(SimpleTestCase):
-    block_type: ClassVar[type[blocks.StructBlock]]
-    raw_data: dict[str, Any]
-
-    @classmethod
-    def setUpClass(cls):
-        super().setUpClass()
-        cls.block = cls.block_type()
-
-    def get_value(self, raw_data: dict[str, Any] | None = None):
-        return self.block.to_python(raw_data)
-
-    def get_config(self, raw_data: dict[str, Any] | None = None):
-        value = self.get_value(raw_data)
-        return value.get_config()
+from cms.datavis.blocks.annotations import (
+    PointAnnotationCategoricalBlock,
+    PointAnnotationLinearBlock,
+)
+from cms.datavis.tests.test_annotations_base import BaseAnnotationTestCase
 
 
 class CategoryPointAnnotationTestCase(BaseAnnotationTestCase):
-    block_type = CategoryPointAnnotationBlock
+    block_type = PointAnnotationCategoricalBlock
 
     def test_basic(self):
         config = self.get_config(
@@ -48,13 +30,15 @@ class CategoryPointAnnotationTestCase(BaseAnnotationTestCase):
                 "label": "Eggnog",
                 "x_position": 2,
                 "y_position": 140,
+                "label_offset_x": 0,
+                "label_offset_y": 0,
             }
         )
         self.assertEqual("Eggnog", config["text"])
         self.assertEqual(1, config["point"]["x"])
         self.assertEqual(140, config["point"]["y"])
-        self.assertEqual(None, config["labelOffsetX"])
-        self.assertEqual(None, config["labelOffsetY"])
+        self.assertEqual(0, config["labelOffsetX"])
+        self.assertEqual(0, config["labelOffsetY"])
 
     def test_float_y_position(self):
         config = self.get_config(
@@ -62,6 +46,8 @@ class CategoryPointAnnotationTestCase(BaseAnnotationTestCase):
                 "label": "Radiators",
                 "x_position": 2,
                 "y_position": 8.5,
+                "label_offset_x": 0,
+                "label_offset_y": 0,
             }
         )
         self.assertEqual("Radiators", config["text"])
@@ -69,8 +55,8 @@ class CategoryPointAnnotationTestCase(BaseAnnotationTestCase):
         self.assertEqual(8.5, config["point"]["y"])
 
 
-class CoordinatePointAnnotationTestCase(BaseAnnotationTestCase):
-    block_type = CoordinatePointAnnotationBlock
+class LinearPointAnnotationTestCase(BaseAnnotationTestCase):
+    block_type = PointAnnotationLinearBlock
 
     def test_basic(self):
         config = self.get_config(
@@ -94,13 +80,15 @@ class CoordinatePointAnnotationTestCase(BaseAnnotationTestCase):
                 "label": "The Tower of Pisa",
                 "x_position": 5.5,
                 "y_position": 140,
+                "label_offset_x": 0,
+                "label_offset_y": 0,
             }
         )
         self.assertEqual("The Tower of Pisa", config["text"])
         self.assertEqual(5.5, config["point"]["x"])
         self.assertEqual(140, config["point"]["y"])
-        self.assertEqual(None, config["labelOffsetX"])
-        self.assertEqual(None, config["labelOffsetY"])
+        self.assertEqual(0, config["labelOffsetX"])
+        self.assertEqual(0, config["labelOffsetY"])
 
     def test_float_y_position(self):
         config = self.get_config(
@@ -108,6 +96,8 @@ class CoordinatePointAnnotationTestCase(BaseAnnotationTestCase):
                 "label": "A mountain of cabbages",
                 "x_position": 5.5,
                 "y_position": 8.5,
+                "label_offset_x": 0,
+                "label_offset_y": 0,
             }
         )
         self.assertEqual(8.5, config["point"]["y"])
@@ -118,6 +108,8 @@ class CoordinatePointAnnotationTestCase(BaseAnnotationTestCase):
                 "label": "Things that go urgh",
                 "x_position": -5.5,
                 "y_position": 140,
+                "label_offset_x": 0,
+                "label_offset_y": 0,
             }
         )
         self.assertEqual(-5.5, config["point"]["x"])
