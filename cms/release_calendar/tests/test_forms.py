@@ -120,7 +120,7 @@ class ReleaseCalendarPageAdminFormTestCase(WagtailTestUtils, TestCase):
                         "release_date_text",
                         [
                             "The release date text must be in the 'Month YYYY' or 'Month YYYY to Month YYYY'"
-                            " format in the correct locale."
+                            " format in English."
                         ],
                     )
 
@@ -150,7 +150,7 @@ class ReleaseCalendarPageAdminFormTestCase(WagtailTestUtils, TestCase):
                         "release_date_text",
                         [
                             "The release date text must be in the 'Month YYYY' or 'Month YYYY to Month YYYY'"
-                            " format in the correct locale."
+                            " format in Welsh."
                         ],
                     )
 

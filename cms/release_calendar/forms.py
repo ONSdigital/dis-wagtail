@@ -93,11 +93,12 @@ class ReleaseCalendarPageAdminForm(WagtailAdminPageForm):
         dates = [parse_month_year(part, locale_code) for part in parts]
 
         if any(date is None for date in dates) or len(dates) > MAX_DATE_PARTS:
+            language = self.instance.locale.get_display_name()
             raise ValidationError(
                 {
                     "release_date_text": (
                         "The release date text must be in the 'Month YYYY' or 'Month YYYY to Month YYYY' format"
-                        " in the correct locale."
+                        f" in {language}."
                     )
                 }
             )
