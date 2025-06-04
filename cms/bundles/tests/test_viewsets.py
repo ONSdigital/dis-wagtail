@@ -11,7 +11,7 @@ from wagtail.test.utils.form_data import inline_formset, nested_form_data
 from cms.articles.tests.factories import StatisticalArticlePageFactory
 from cms.bundles.enums import BundleStatus
 from cms.bundles.models import Bundle, BundleTeam
-from cms.bundles.tests.factories import BundleFactory, BundlePageFactory
+from cms.bundles.tests.factories import BundleDatasetFactory, BundleFactory, BundlePageFactory
 from cms.bundles.tests.utils import grant_all_bundle_permissions, make_bundle_viewer
 from cms.bundles.viewsets.bundle_chooser import bundle_chooser_viewset
 from cms.bundles.viewsets.bundle_page_chooser import PagesWithDraftsForBundleChooserWidget, bundle_page_chooser_viewset
@@ -84,6 +84,7 @@ class BundleViewSetTestCase(BundleViewSetTestCaseBase):
                     "status": BundleStatus.DRAFT,
                     "bundled_pages": inline_formset([{"page": self.statistical_article_page.id}]),
                     "teams": inline_formset([]),
+                    "bundled_datasets": inline_formset([]),
                 }
             ),
         )
@@ -101,6 +102,7 @@ class BundleViewSetTestCase(BundleViewSetTestCaseBase):
                     "status": BundleStatus.DRAFT,
                     "bundled_pages": inline_formset([{"page": self.statistical_article_page.id}]),
                     "teams": inline_formset([]),
+                    "bundled_datasets": inline_formset([]),
                 }
             ),
         )
@@ -127,6 +129,7 @@ class BundleViewSetTestCase(BundleViewSetTestCaseBase):
                     "status": self.bundle.status,
                     "bundled_pages": inline_formset([{"page": self.statistical_article_page.id}]),
                     "teams": inline_formset([]),
+                    "bundled_datasets": inline_formset([]),
                 }
             ),
         )
@@ -153,6 +156,7 @@ class BundleViewSetTestCase(BundleViewSetTestCaseBase):
                     "bundled_pages": inline_formset([{"page": self.statistical_article_page.id}]),
                     "teams": inline_formset([]),
                     "action-save-and-approve": "save-and-approve",
+                    "bundled_datasets": inline_formset([]),
                 }
             ),
         )
@@ -210,6 +214,7 @@ class BundleViewSetTestCase(BundleViewSetTestCaseBase):
                     "status": BundleStatus.APPROVED,
                     "bundled_pages": inline_formset([{"page": self.statistical_article_page.id}]),
                     "teams": inline_formset([]),
+                    "bundled_datasets": inline_formset([]),
                 }
             ),
         )
@@ -349,6 +354,30 @@ class BundleViewSetTestCase(BundleViewSetTestCaseBase):
         self.assertContains(response, "The Test Methodology Article")
         self.assertContains(response, "The Test Statistical Article")
         self.assertContains(response, "The Test Topic Page")
+
+    def test_inspect_view__displays_message_when_no_datasets(self):
+        """Checks that the inspect view displays datasets."""
+        response = self.client.get(reverse("bundle:inspect", args=[self.bundle.pk]))
+
+        self.assertContains(response, "No datasets in bundle")
+
+    def test_inspect_view__contains_datasets(self):
+        """Checks that the inspect view displays datasets."""
+        bundle_dataset_a = BundleDatasetFactory(parent=self.bundle)
+        bundle_dataset_b = BundleDatasetFactory(parent=self.bundle)
+
+        response = self.client.get(reverse("bundle:inspect", args=[self.bundle.pk]))
+
+        self.assertNotContains(response, "No datasets in bundle")
+
+        self.assertContains(response, bundle_dataset_a.dataset.title)
+        self.assertContains(response, bundle_dataset_a.dataset.version)
+        self.assertContains(response, bundle_dataset_a.dataset.edition)
+        self.assertContains(response, f'href="{bundle_dataset_a.dataset.website_url}"')
+        self.assertContains(response, bundle_dataset_b.dataset.title)
+        self.assertContains(response, bundle_dataset_b.dataset.version)
+        self.assertContains(response, bundle_dataset_b.dataset.edition)
+        self.assertContains(response, f'href="{bundle_dataset_b.dataset.website_url}"')
 
 
 class BundleIndexViewTestCase(BundleViewSetTestCaseBase):

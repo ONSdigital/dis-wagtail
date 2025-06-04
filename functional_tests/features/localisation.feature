@@ -44,7 +44,7 @@ Feature: Users can create localised content in the CMS
         And the user clicks "View Live" on the publish confirmation banner
         Then the published information page is displayed with English content
         And the user switches the page language to Welsh
-        Then the published information page is displayed with English content
+        Then the published information page is displayed with English content and Welsh livery
         And the page furniture is displayed in Welsh
 
     Scenario: The user sees a message explaining the content is not translated when viewing a non-translated page
