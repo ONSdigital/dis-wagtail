@@ -11,33 +11,13 @@
 {%- set release_date_label = _("Release date:") -%}
 {%- set next_release_label = _("Next release:") -%}
 {%- set breadcrumbs_label = _("Breadcrumbs") -%}
+{%- set contact_label = _("Contact:") -%}
 
 {% block header_area %}
     {%- set hero_topic = _("Statistical article") -%}
     {%- set release_date_term = _("Release date:") -%}
     {%- set next_release_date_term = _("Next release:") -%}
     {%- set breadcrumbs_aria_label = _("Breadcrumbs") -%}
-    {% if page.contact_details %}
-        {%- set contact_details_term = _("Contact:") -%}
-        {%- set contact_description_html -%}
-            <a href="mailto:{{ page.contact_details.email }}">{{ page.contact_details.name }}</a>
-        {%- endset -%}
-
-        {# fmt:off #}
-        {%- set contact_details =
-            {
-                "term": contact_label,
-                "descriptions": [
-                    {
-                        "description": contact_description_html
-                    }
-                ]
-            }
-        -%}
-        {# fmt:on #}
-    {% else %}
-        {%- set contact_details = "" -%}
-    {% endif %}
 
     {% if page.is_latest %}
         {% if latest_version_url %}
@@ -58,7 +38,67 @@
         {%- set releases_url = routablepageurl(page.get_parent().specific, "latest_release") -%}
     {% endif %}
 
-    {%- set next_release_date_text = page.next_release_date|date("DATE_FORMAT") or _("To be announced") -%}
+    {# fmt:off #}
+    {% if page.release_date %}
+        {% set release_item = {
+                "term": release_date_label,
+                "descriptions": [
+                    {
+                        "description": page.release_date|date("DATE_FORMAT")
+                    }
+                ]
+            }
+        %}
+    {% else %}
+        {% set release_item = None %}
+    {% endif %}
+    {# fmt:on #}
+
+    {# fmt:off #}
+    {% if page.next_release_date %}
+        {% set next_release_date = page.next_release_date|date("DATE_FORMAT") %}
+        {% set next_release_item = {
+                "term": next_release_label,
+                "descriptions": [
+                    {
+                        "description": next_release_date
+                    }
+                ]
+            }
+        %}
+    {% else %}
+        {% set next_release_date_text = _("To be announced") %}
+        {% set next_release_item = {
+                "term": next_release_label,
+                "descriptions": [
+                    {
+                        "description": next_release_date_text
+                    }
+                ]
+            }
+        %}
+    {% endif %}
+    {# fmt:on #}
+
+    {% set contact_description_html -%}
+        <a href="mailto:{{ page.contact_details.email }}">{{ page.contact_details.name }}</a>
+    {%- endset %}
+
+    {# fmt:off #}
+    {% if page.contact_details %}
+        {% set contact_item = {
+                "term": contact_label,
+                "descriptions": [
+                    {
+                        "description": contact_description_html
+                    }
+                ]
+            }
+        %}
+    {% else %}
+        {% set contact_item = None %}
+    {% endif %}
+    {# fmt:on #}
 
     {# fmt:off #}
     {{
@@ -83,25 +123,7 @@
                 "descriptionListLabel": "",
                 "termCol": "6",
                 "descriptionCol": "6",
-                "itemsList": [
-                    {
-                        "term": release_date_label,
-                        "descriptions": [
-                            {
-                                "description": page.release_date|date("DATE_FORMAT")
-                            }
-                        ]
-                    },
-                    {
-                        "term": next_release_label,
-                        "descriptions": [
-                            {
-                                "description": next_release_date_text
-                            }
-                        ]
-                    },
-                    contact_details,
-                ]
+                "itemsList": [release_item, next_release_item, contact_item] | selectattr('term') | list,
             },
             "breadcrumbs": {
                 "ariaLabel": breadcrumbs_label,
@@ -186,13 +208,13 @@
     <div class="ons-grid ons-grid-flex-gap ons-grid-flex-gap--32 ons-js-toc-container">
         <div class="ons-grid__col ons-grid__col--sticky@m ons-col-4@m">
             {% if page.datasets %}
-                {% if request.is_preview %}
+                {% if request.is_preview and page.pk %}
                     {% set related_data_url = url('wagtailadmin_pages:preview_on_edit', page.pk) ~ "?mode=related_data" %}
                 {% else %}
                     {% set related_data_url = routablepageurl(page, "related_data") %}
                 {% endif %}
-                {% set related_links_title=_("Explore Data") %}
 
+                {% set related_links_title=_("Explore Data") %}
                     {% set related_data_text=_("View data used in this article") %}
 
                 {# fmt:off #}
@@ -209,7 +231,7 @@
                     -%}
                 {# fmt:on #}
                     {% else %}
-                        {% set related_links = "" %}
+                        {% set related_links = None %}
                     {% endif %}
 
                     {% with toc_title=_("Contents"), toc_aria_label=_("Sections in this page") %}
@@ -218,7 +240,7 @@
                     onsTableOfContents({
                         "title": toc_title,
                         "ariaLabel": toc_aria_label,
-                        "itemsList": table_of_contents,
+                        "itemsList": page.table_of_contents,
                         "relatedLinks": related_links,
                         "button": {
                             "text": _("Save or print this page")

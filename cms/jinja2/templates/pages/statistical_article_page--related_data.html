@@ -14,10 +14,8 @@
             "title": page.related_data_display_title,
             "variants": 'grey',
             "text": page.summary,
-            "officialStatisticsBadge": page.is_accredited,
             "wide": true,
             "detailsColumns": 12,
-            "censusLogo": page.is_census,
             "breadcrumbs": {
                 "ariaLabel": breadcrumbs_aria_label,
                 "itemsList": breadcrumbs(page, include_self=True),
@@ -28,21 +26,23 @@
 {% endblock %}
 
 {% block main %}
+    <div class="ons-grid">
+        <div class="ons-grid__col ons-col-8@m">
+            {{ onsDocumentList({"documents": paginated_datasets}) }}
 
-    {{ onsDocumentList({"documents": paginated_datasets}) }}
+            {% block pagination %}
+                {% if paginated_datasets.paginator.num_pages > 1 %}
 
-    {% block pagination %}
-        {% if paginated_datasets.paginator.num_pages > 1 %}
-
-            {# fmt:off #}
-            {{
-                onsPagination({
-                    "currentPageNumber": paginated_datasets.number,
-                    "pages": ons_pagination_url_list
-                })
-            }}
-            {# fmt:on #}
-        {% endif %}
-    {% endblock %}
-
+                    {# fmt:off #}
+                    {{
+                        onsPagination({
+                            "currentPageNumber": paginated_datasets.number,
+                            "pages": ons_pagination_url_list
+                        })
+                    }}
+                    {# fmt:on #}
+                {% endif %}
+            {% endblock %}
+        </div>
+    </div>
 {% endblock %}

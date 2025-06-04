@@ -2,7 +2,6 @@ from typing import TYPE_CHECKING, ClassVar
 
 from wagtail.blocks import RichTextBlock, StreamBlock
 from wagtail.images.blocks import ImageChooserBlock
-from wagtailmath.blocks import MathBlock
 
 from cms.core.blocks import (
     AnnouncementPanelBlock,
@@ -16,6 +15,7 @@ from cms.core.blocks import (
     VideoEmbedBlock,
     WarningPanelBlock,
 )
+from cms.core.blocks.equation import EquationBlock
 from cms.core.blocks.section_blocks import SectionBlock
 from cms.datavis.blocks import BarColumnChartBlock, LineChartBlock
 
@@ -54,7 +54,7 @@ class CoreStoryBlock(StreamBlock):
     documents = DocumentsBlock(group="Media")
     related_links = RelatedLinksBlock()
     table = ONSTableBlock(group="DataVis", allow_links=True)
-    equation = MathBlock(group="DataVis", icon="decimal")
+    equation = EquationBlock(group="DataVis", icon="decimal")
     ons_embed = ONSEmbedBlock(group="DataVis", label="ONS General Embed")
 
     line_chart = LineChartBlock(group="DataVis", label="Line Chart")

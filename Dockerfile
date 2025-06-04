@@ -34,6 +34,10 @@ FROM python:3.12-slim AS base
 
 WORKDIR /app
 
+# Install the correct version of the Postgres client
+# library (Debian's bundled version is normally too old)
+ARG POSTGRES_VERSION=16
+
 # Install common OS-level dependencies
 # TODO: when moving to ONS infrastructure, replace RUN with:
 # RUN --mount=type=cache,target=/var/lib/apt/lists,sharing=locked \
@@ -50,6 +54,13 @@ RUN apt --quiet --yes update \
         jq \
         unzip \
         gettext \
+        cm-super \
+        postgresql-common \
+        texlive-latex-extra \
+    # Install the Postgres repo
+    && /usr/share/postgresql-common/pgdg/apt.postgresql.org.sh -y \
+    # Install the Postgres client (matching production version)
+    && apt --quiet --yes install --no-install-recommends postgresql-client-${POSTGRES_VERSION} \
     && apt --quiet --yes autoremove
 
 
@@ -162,13 +173,23 @@ RUN npm run build:prod
 
 FROM base AS web
 
+ARG GIT_COMMIT=""
+ARG BUILD_TIME=""
+ARG TAG=""
+
 # Set production environment variables
 ENV \
     # Django settings module
     DJANGO_SETTINGS_MODULE=cms.settings.production \
     # Default port and number of workers for gunicorn to spawn
     PORT=8000 \
-    WEB_CONCURRENCY=2
+    WEB_CONCURRENCY=2 \
+    # Commit SHA from building the project
+    GIT_COMMIT=${GIT_COMMIT} \
+    # Time the container was built
+    BUILD_TIME=${BUILD_TIME} \
+    # Container tag
+    TAG=${TAG}
 
 # Copy in built static files and the application code. Run collectstatic so
 # whitenoise can serve static files for us.
@@ -212,14 +233,18 @@ CMD ["gunicorn"]
 FROM base AS dev
 
 # Switch to the root user and Install extra OS-level dependencies for
-# development, including Node.js and the correct version of the Postgres client
-# library (Debian's bundled version is normally too old)
+# development, including Node.js
 USER root
-ARG POSTGRES_VERSION=16
 # TODO: when moving to ONS infrastructure, replace RUN with
 # RUN --mount=type=cache,target=/var/lib/apt/lists,sharing=locked \
 #     --mount=type=cache,target=/var/cache/apt,sharing=locked \
 #     <<EOF
+
+ARG GIT_COMMIT=""
+ARG BUILD_TIME=""
+ARG TAG=""
+
+ENV GIT_COMMIT=${GIT_COMMIT} BUILD_TIME=${BUILD_TIME} TAG=${TAG}
 
 # Set default shell with pipefail option
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
@@ -231,13 +256,7 @@ RUN <<EOF
         gnupg \
         less \
         openssh-client \
-        postgresql-common \
         sudo
-    # Install the Postgres repo
-    /usr/share/postgresql-common/pgdg/apt.postgresql.org.sh -y
-    # Intall the Postgres client (make sure the version matches the one in production)
-    apt --quiet --yes install \
-        postgresql-client-${POSTGRES_VERSION}
     # Download and import the Nodesource GPG key
     mkdir -p /etc/apt/keyrings
     curl -fsSL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key | gpg --dearmor -o /etc/apt/keyrings/nodesource.gpg

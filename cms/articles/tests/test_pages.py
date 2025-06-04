@@ -57,7 +57,7 @@ class ArticleSeriesPageTests(WagtailPageTestCase):
         self.assertContains(response, second_article.title)
 
 
-class StatisticalArticlePageTests(WagtailPageTestCase):
+class StatisticalArticlePageTests(WagtailPageTestCase):  # pylint: disable=too-many-public-methods
     @classmethod
     def setUpTestData(cls):
         cls.page = StatisticalArticlePageFactory()
@@ -274,6 +274,78 @@ class StatisticalArticlePageTests(WagtailPageTestCase):
         self.assertContains(v2_response, "Corrections")
         self.assertContains(v2_response, "First correction text")
         self.assertNotContains(v2_response, "Second correction text")
+
+    def test_correction_toc_rendering(self):
+        self.page.content = [
+            {
+                "type": "section",
+                "value": {"title": "Precorrection title", "content": [{"type": "rich_text", "value": "text"}]},
+            }
+        ]
+        self.page.save_revision().publish()
+
+        response = self.client.get(self.page.url)
+
+        self.assertContains(response, "Precorrection title")
+
+        page_content = response.content.decode(encoding="utf-8")
+
+        self.assertInHTML(
+            '<a class="ons-list__link" href="#precorrection-title">Precorrection title</a>',
+            page_content,
+        )
+
+        original_revision_id = self.page.get_latest_revision().id
+
+        first_correction = {
+            "version_id": 1,
+            "previous_version": original_revision_id,
+            "when": "2025-01-11",
+            "frozen": True,
+            "text": "Foobar correction text",
+        }
+
+        self.page.corrections = [
+            (
+                "correction",
+                first_correction,
+            )
+        ]
+
+        self.page.content = [
+            {
+                "type": "section",
+                "value": {"title": "Postcorrection title", "content": [{"type": "rich_text", "value": "text"}]},
+            }
+        ]
+
+        self.page.save_revision().publish()
+
+        response = self.client.get(self.page.url)
+
+        self.assertContains(response, "Postcorrection title")
+        self.assertNotContains(response, "Precorrection title")
+
+        page_content = response.content.decode(encoding="utf-8")
+
+        self.assertInHTML(
+            '<a class="ons-list__link" href="#postcorrection-title">Postcorrection title</a>',
+            page_content,
+        )
+
+        v1_response = self.client.get(self.page.url + "previous/v1/")
+
+        page_content = v1_response.content.decode(encoding="utf-8")
+
+        self.assertInHTML(
+            '<a class="ons-list__link" href="#precorrection-title">Precorrection title</a>',
+            page_content,
+        )
+
+        self.assertNotInHTML(
+            '<a class="ons-list__link" href="#postcorrection-title">Postcorrection title</a>',
+            page_content,
+        )
 
     def test_hero_rendering(self):
         response = self.client.get(self.page.url)

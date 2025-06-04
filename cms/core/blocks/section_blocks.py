@@ -3,7 +3,6 @@ from typing import TYPE_CHECKING, ClassVar
 from django.utils.text import slugify
 from wagtail.blocks import RichTextBlock, StreamBlock, StructBlock
 from wagtail.images.blocks import ImageChooserBlock
-from wagtailmath.blocks import MathBlock
 
 from cms.core.blocks import (
     AnnouncementPanelBlock,
@@ -16,6 +15,7 @@ from cms.core.blocks import (
     VideoEmbedBlock,
     WarningPanelBlock,
 )
+from cms.core.blocks.equation import EquationBlock
 from cms.core.blocks.glossary_terms import GlossaryTermsBlock
 from cms.core.blocks.markup import ONSTableBlock
 from cms.datavis.blocks import AreaChartBlock, BarColumnChartBlock, LineChartBlock, ScatterPlotBlock
@@ -36,7 +36,7 @@ class SectionContentBlock(StreamBlock):
     documents = DocumentsBlock(group="Media")
     video_embed = VideoEmbedBlock(group="Media")
     table = ONSTableBlock(group="DataVis", allow_links=True)
-    equation = MathBlock(group="DataVis", icon="decimal")
+    equation = EquationBlock(group="DataVis", icon="decimal")
     ons_embed = ONSEmbedBlock(group="DataVis", label="ONS General Embed")
     related_links = RelatedLinksBlock(icon="link")
     definitions = GlossaryTermsBlock()

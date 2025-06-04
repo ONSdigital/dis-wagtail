@@ -141,7 +141,7 @@ jobs:
       - name: Install dependencies
         run: |
           make install-dev
-          sudo apt-get install -y gettext
+          sudo apt-get install -y --no-install-recommends gettext cm-super texlive-latex-extra
 
       - uses: actions/download-artifact@v4
         with:
@@ -184,6 +184,17 @@ jobs:
       - name: Build Docker Image
         run: docker build --target web -t ons .
 
+  repository_checks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version-file: .python-version
+      - name: Ensure .dockerignore (mostly) matches .gitignore
+        run: ./.github/check_docker_ignore.py
+
   functional-tests:
     runs-on: ubuntu-latest
     strategy:
@@ -216,7 +227,7 @@ jobs:
       - name: Install dependencies
         run: |
           make install-dev
-          sudo apt-get install -y gettext
+          sudo apt-get install -y --no-install-recommends gettext cm-super texlive-latex-extra
 
       - name: Playwright Install
         run: poetry run python -m playwright install --with-deps ${{ matrix.browser }}

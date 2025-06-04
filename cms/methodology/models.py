@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, Any, ClassVar
+from typing import TYPE_CHECKING, Any, ClassVar, Union
 
 from django.conf import settings
 from django.core.exceptions import ValidationError
@@ -15,6 +15,7 @@ from wagtail.search import index
 from cms.bundles.mixins import BundledPageMixin
 from cms.core.blocks.stream_blocks import SectionStoryBlock
 from cms.core.fields import StreamField
+from cms.core.forms import PageWithEquationsAdminForm
 from cms.core.models import BasePage
 from cms.core.query import order_by_pk_position
 from cms.core.widgets import date_widget
@@ -23,6 +24,7 @@ from cms.taxonomy.mixins import GenericTaxonomyMixin
 if TYPE_CHECKING:
     import datetime
 
+    from django_stubs_ext import StrPromise
     from wagtail.admin.panels import Panel
     from wagtail.query import PageQuerySet
 
@@ -41,6 +43,7 @@ class MethodologyRelatedPage(Orderable):
 
 
 class MethodologyPage(BundledPageMixin, GenericTaxonomyMixin, BasePage):  # type: ignore[django-manager-missing]
+    base_form_class = PageWithEquationsAdminForm
     parent_page_types: ClassVar[list[str]] = ["topics.TopicPage"]
     search_index_content_type: ClassVar[str] = "static_methodology"
     template = "templates/pages/methodology_page.html"
@@ -124,17 +127,19 @@ class MethodologyPage(BundledPageMixin, GenericTaxonomyMixin, BasePage):  # type
             exclude_non_matches=True,
         )
 
-    def get_formatted_related_publications_list(self, request: HttpRequest | None = None) -> list[dict[str, str]]:
+    def get_formatted_related_publications_list(
+        self, request: HttpRequest | None = None
+    ) -> dict[str, Union[str, "StrPromise", list[dict[str, str]]]]:
         """Returns a formatted list of related internal pages for use with the Design System list component."""
-        items = []
-        for page in self.related_publications:
-            items.append(
-                {
-                    "title": getattr(page, "display_title", page.title),
-                    "url": page.get_url(request=request),
-                }
-            )
-        return items
+        items = [
+            {
+                "title": getattr(page, "display_title", page.title),
+                "url": page.get_url(request=request),
+            }
+            for page in self.related_publications
+        ]
+
+        return {"title": _("Related publications"), "itemsList": items} if items else {}
 
     @cached_property
     def table_of_contents(self) -> list[dict[str, str | object]]:
