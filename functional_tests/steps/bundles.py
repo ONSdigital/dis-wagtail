@@ -1,11 +1,14 @@
 from behave import step, then  # pylint: disable=no-name-in-module
 from behave.runner import Context
 from django.urls import reverse
+from playwright.sync_api import expect
+from django.urls import reverse
 
 from cms.bundles.enums import BundleStatus
 from cms.bundles.models import BundleTeam
 from cms.bundles.tests.factories import BundleFactory
 from cms.teams.models import Team
+from cms.users.tests.factories import UserFactory
 
 
 @step("a bundle has been created")
@@ -68,6 +71,57 @@ def the_selected_datasets_are_displayed(context: Context) -> None:
     context.page.get_by_text(
         "Deaths registered weekly in England and Wales by region (Edition: Example Dataset 3, Ver: 1)"
     ).is_visible()
+
+
+# bundle create amend
+@step("a bundle has been created with a creator")
+def a_bundle_has_been_created_with_user(context: Context) -> None:
+    context.bundle_creator = UserFactory()
+    context.bundle = BundleFactory(created_by=context.bundle_creator)
+
+
+@step("the bundle has creator removed")
+def delete_bundle_creator(context: Context) -> None:
+    context.bundle_creator.delete()
+
+
+# bundle goto
+@step("the user goes to the bundle inspect page")
+def go_to_bundle_inspect(context: Context) -> None:
+    context.page.goto(context.base_url + reverse("bundle:inspect", args=[context.bundle.pk]))
+
+
+@step("the user goes to the bundle menu page")
+def go_to_bundle_menu(context: Context) -> None:
+    context.page.goto(context.base_url + reverse("bundle:index"))
+
+
+# bundle Menu
+@step("the bundle menu shows bundle and Added by is not empty")
+def bundle_menu_contains_value(
+    context: Context,
+) -> None:
+    expect(context.page.get_by_role("table")).to_contain_text(context.bundle.name)
+    expect(context.page.get_by_role("table")).to_contain_text(context.bundle_creator.get_full_name())
+
+
+@step("the bundle menu shows bundle and Added by is empty")
+def bundle_menu_does_not_contain_value(context: Context) -> None:
+    expect(context.page.get_by_role("table")).to_contain_text(context.bundle.name)
+    expect(context.page.get_by_role("table")).not_to_contain_text(context.bundle_creator.get_full_name())
+
+
+# bundle Inspect
+@step("the user can inspect Bundle details and Created by is not empty")
+def the_user_can_see_the_bundle_details_with_creator(context: Context) -> None:
+    expect(context.page.get_by_text("Created by")).to_be_visible()
+    expect(context.page.get_by_text(context.bundle_creator.get_username())).to_be_visible()
+
+
+@step("the user can inspect Bundle details and Created by is empty")
+def bundle_inspect_show(context: Context) -> None:
+    expect(context.page.get_by_text("Created by")).to_be_visible()
+    expect(context.page.get_by_text(context.bundle_creator.get_username())).not_to_be_visible()
 
 
 @step("the user goes to the Preview teams page")
