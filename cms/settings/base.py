@@ -201,6 +201,8 @@ TEMPLATES = [
 
 WSGI_APPLICATION = "cms.wsgi.application"
 
+AWS_REGION = env.get("AWS_REGION")
+
 
 # Database
 
@@ -222,7 +224,7 @@ if "PG_DB_ADDR" in env:
                 "PORT": env["PG_DB_PORT"],
                 "CONN_MAX_AGE": db_conn_max_age,
                 "CONN_HEALTH_CHECK": True,
-                "OPTIONS": {"use_iam_auth": True, "sslmode": "require", "region_name": env["AWS_REGION"]},
+                "OPTIONS": {"use_iam_auth": True, "sslmode": "require", "region_name": AWS_REGION},
             },
         )
     }
@@ -297,6 +299,9 @@ if redis_url := env.get("REDIS_TLS_URL", env.get("REDIS_URL")):
 elif elasticache_addr := env.get("ELASTICACHE_ADDR"):
     port = env["ELASTICACHE_PORT"]
 
+    if AWS_REGION is None:
+        raise ImproperlyConfigured("AWS_REGION must be defined to use Elasticache.")
+
     CACHES["default"] = {
         "BACKEND": "django_redis.cache.RedisCache",
         "LOCATION": f"rediss://{elasticache_addr}:{port}",
@@ -306,7 +311,7 @@ elif elasticache_addr := env.get("ELASTICACHE_ADDR"):
                 "credential_provider": ElastiCacheIAMCredentialProvider(
                     user=env["ELASTICACHE_USER_NAME"],
                     cluster_name=env["ELASTICACHE_CLUSTER_NAME"],
-                    region=env["AWS_REGION"],
+                    region=AWS_REGION,
                 )
             },
         },
@@ -933,6 +938,7 @@ WAGTAILSIMPLETRANSLATION_SYNC_PAGE_TREE = True
 # Configuration for the External Search service
 SEARCH_INDEX_PUBLISHER_BACKEND = os.getenv("SEARCH_INDEX_PUBLISHER_BACKEND")
 KAFKA_SERVERS = os.getenv("KAFKA_SERVERS", "").split(",")
+KAFKA_USE_IAM_AUTH = os.getenv("KAFKA_USE_IAM_AUTH", "false").lower() == "true"
 KAFKA_CHANNEL_CREATED_OR_UPDATED = os.getenv("KAFKA_CHANNEL_CREATED_OR_UPDATED")
 KAFKA_CHANNEL_DELETED = os.getenv("KAFKA_CHANNEL_DELETED")
 KAFKA_API_VERSION = tuple(map(int, os.getenv("KAFKA_API_VERSION", "3,5,1").split(",")))
