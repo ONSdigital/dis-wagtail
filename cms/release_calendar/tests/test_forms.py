@@ -206,6 +206,20 @@ class ReleaseCalendarPageAdminFormTestCase(WagtailTestUtils, TestCase):
                 self.assertTrue(form.is_valid())
                 self.assertEqual(form.cleaned_data["release_date_text"], "")
 
+    def test_form_clean__fails_release_date_changes_when_instance_is_none(self):
+        """Tests when pk is none, adding date change log will fail when published."""
+        data = self.raw_form_data()
+        data["changes_to_release_date"] = streamfield(
+            [("date_change_log", {"previous_date": timezone.now(), "reason_for_change": "The reason"})]
+        )
+        data = nested_form_data(data)
+        form = self.form_class(data=data)
+        form.instance.pk = None
+        self.page.save_revision().publish()
+        self.assertFalse(form.is_valid())
+        message = "You cannot create a change to release date for a page that has not been published yet."
+        self.assertFormError(form, "changes_to_release_date", message)
+
     def test_form_clean__fails_release_date_changes_added_to_unpublished_page(self):
         """Checks that date change log cannot be published to an unpublished page."""
         data = self.raw_form_data()

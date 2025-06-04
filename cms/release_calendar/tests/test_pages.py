@@ -56,94 +56,33 @@ class ReleaseCalendarPageTests(WagtailPageTestCase):
             content,
         )
 
-    def test_changes_to_release_dates_unpublished_page(self):
-        """Test changes to release date cannot be published to an unpublished release page."""
+    def test_changes_to_release_dates_provisional_page(self):
+        """Test changes to release date cannot be displayed on a provisional page."""
+        self.page.status = ReleaseStatus.PROVISIONAL
         date_change_log = {
             "previous_date": timezone.now(),
             "reason_for_change": "Reason",
         }
-        # Add date_change_log and try to publish it
         self.page.changes_to_release_date = [("date_change_log", date_change_log)]
         self.page.save_revision().publish()
 
         response = self.client.get(self.page.url)
-        # check change log not added
         self.assertNotContains(response, "Reason")
 
-    def test_changes_to_release_date_published_page(self):
-        """Test a change to release date can be published for a published page."""
-        # First publish
-        self.page.status = ReleaseStatus.PUBLISHED
-        self.page.save_revision().publish()
+    def test_changes_to_release_date_non_provisional_page(self):
+        """Test a change to release date is visible in different a non-provisional status."""
+        cases = [ReleaseStatus.CONFIRMED, ReleaseStatus.PUBLISHED, ReleaseStatus.CANCELLED]
+        for case in cases:
+            self.page.status = case
+            date_change_log = {
+                "previous_date": timezone.now(),
+                "reason_for_change": "Reason",
+            }
+            self.page.changes_to_release_date = [("date_change_log", date_change_log)]
+            self.page.save_revision().publish()
 
-        # Add date change log
-        date_change_log = {
-            "previous_date": timezone.now(),
-            "reason_for_change": "Reason",
-            "frozen": True,
-            "version_id": 1,
-        }
-        self.page.changes_to_release_date = [("date_change_log", date_change_log)]
-        # Publish with change log
-        self.page.save_revision().publish()
-
-        response = self.client.get(self.page.url)
-        # contains change log
-        self.assertContains(response, "Reason")
-
-    def test_multiple_date_change_logs(self):
-        """Test for multiple changes to release date change."""
-        # First publish
-        self.page.status = ReleaseStatus.PUBLISHED
-        self.page.save_revision().publish()
-        logs = self.page.changes_to_release_date
-
-        # Add date change log
-        date_change_log = {
-            "previous_date": "2025-05-01",
-            "reason_for_change": "Reason 1",
-            "frozen": True,
-            "version_id": 1,
-        }
-        logs.append(("date_change_log", date_change_log))
-
-        # Publish with change log
-        self.page.save_revision().publish()
-
-        # Contains first change log
-        response = self.client.get(self.page.url)
-        self.assertContains(response, "Reason 1")
-
-        # Add next date change log
-        date_change_log_2 = {
-            "previous_date": "2025-05-02",
-            "reason_for_change": "Reason 2",
-            "frozen": True,
-            "version_id": 2,
-        }
-        logs.append(("date_change_log", date_change_log_2))
-
-        self.page.save_revision().publish()
-        # Contains both change log
-        response = self.client.get(self.page.url)
-        self.assertContains(response, "Reason 1")
-        self.assertContains(response, "Reason 2")
-
-        # Add next date change log
-        date_change_log_3 = {
-            "previous_date": "2025-05-03",
-            "reason_for_change": "Reason 3",
-            "frozen": True,
-            "version_id": 3,
-        }
-        logs.append(("date_change_log", date_change_log_3))
-        self.page.save_revision().publish()
-
-        # Contains all change log
-        response = self.client.get(self.page.url)
-        self.assertContains(response, "Reason 1")
-        self.assertContains(response, "Reason 2")
-        self.assertContains(response, "Reason 3")
+            response = self.client.get(self.page.url)
+            self.assertContains(response, "Reason")
 
     def test_preview_modes(self):
         """Test preview modes for release calendar page."""
