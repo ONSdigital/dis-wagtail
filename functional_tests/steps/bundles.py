@@ -1,5 +1,6 @@
 from behave import step, then  # pylint: disable=no-name-in-module
 from behave.runner import Context
+from django.urls import reverse
 
 from cms.bundles.enums import BundleStatus
 from cms.bundles.models import BundleTeam
@@ -67,3 +68,8 @@ def the_selected_datasets_are_displayed(context: Context) -> None:
     context.page.get_by_text(
         "Deaths registered weekly in England and Wales by region (Edition: Example Dataset 3, Ver: 1)"
     ).is_visible()
+
+
+@step("the user goes to the Preview teams page")
+def go_to_preview_page(context):
+    context.page.goto(context.base_url + reverse("team:index"))
