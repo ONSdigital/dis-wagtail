@@ -82,7 +82,7 @@ class KafkaPublisher(BasePublisher):
     def __init__(self) -> None:
         # Read Kafka configs settings
         self.producer = KafkaProducer(
-            bootstrap_servers=[settings.KAFKA_SERVER],
+            bootstrap_servers=settings.KAFKA_SERVERS,
             api_version=settings.KAFKA_API_VERSION,
             value_serializer=lambda v: json.dumps(v).encode("utf-8"),
             retries=5,

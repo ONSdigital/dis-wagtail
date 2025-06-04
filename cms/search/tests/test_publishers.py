@@ -82,7 +82,7 @@ class BasePublisherTests(TestCase, WagtailTestUtils, ResourceDictAssertions):
 
 
 @override_settings(
-    KAFKA_SERVER="localhost:9092",
+    KAFKA_SERVERS="localhost:9092",
     KAFKA_CHANNEL_CREATED_OR_UPDATED="search-content-updated",
     KAFKA_CHANNEL_DELETED="search-content-deleted",
 )
