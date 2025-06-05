@@ -34,6 +34,7 @@ class ValidateJWTTests(SimpleTestCase):
     @override_settings(
         AWS_COGNITO_USER_POOL_ID="test-pool",
         AWS_COGNITO_APP_CLIENT_ID="expected",
+        AWS_REGION="eu-west-2",
     )
     def test_id_token_happy_path(self):
         importlib.reload(utils)
@@ -120,6 +121,7 @@ class ValidateJWTTests(SimpleTestCase):
     @override_settings(
         AWS_COGNITO_USER_POOL_ID="test-pool",
         AWS_COGNITO_APP_CLIENT_ID="expected",
+        AWS_REGION="eu-west-2",
     )
     def test_valid_access_token(self):
         importlib.reload(utils)
@@ -225,6 +227,7 @@ class ValidateJWTTests(SimpleTestCase):
     @override_settings(
         AWS_COGNITO_USER_POOL_ID="test-pool",
         AWS_COGNITO_APP_CLIENT_ID="expected",
+        AWS_REGION="eu-west-2",
     )
     def test_bearer_prefix_trimming_succeeds(self):
         importlib.reload(utils)
