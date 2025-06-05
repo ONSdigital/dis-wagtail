@@ -138,18 +138,10 @@ const sessionConfig = {
 
 // Initialise SessionManagement only if the user is logged in via Cognito (indicated by the presence of an id_token cookie).
 // Don't load if it's in an iframe (e.g. the Wagtail admin interface preview).
-document.addEventListener('DOMContentLoaded', () => {
-  if (window.self === window.top && getCookieByName(idTokenCookieName)) {
-    SessionManagement.init(sessionConfig);
+if (window.self === window.top && getCookieByName(idTokenCookieName)) {
+  SessionManagement.init(sessionConfig);
 
-    // These will be fetched from localStorage which is set by the auth service before redirect.
-    // If they do not exist, then the session is invalid and the user will be logged out.
-    // Only clear if neither value is set, i.e. brand-new tab with no prior expiry info:
-    if (
-      !localStorage.getItem('session_expiry_time') &&
-      !localStorage.getItem('refresh_expiry_time')
-    ) {
-      SessionManagement.setSessionExpiryTime(null, null);
-    }
-  }
-});
+  // These will be fetched from localStorage which is set by the auth service before redirect.
+  // If they do not exist, then the session is invalid and the user will be logged out.
+  SessionManagement.setSessionExpiryTime(null, null);
+}
