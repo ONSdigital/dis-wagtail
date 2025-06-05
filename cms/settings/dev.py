@@ -78,6 +78,7 @@ AUTH_TOKEN_REFRESH_URL = env.get("AUTH_TOKEN_REFRESH_URL", f"{AUTH_STUB_URL}/tok
 if AWS_COGNITO_LOGIN_ENABLED:  # noqa: F405
     WAGTAILADMIN_LOGIN_URL = env.get("WAGTAILADMIN_LOGIN_URL", f"{AUTH_STUB_URL}/florence/login")
     LOGOUT_REDIRECT_URL = env.get("LOGOUT_REDIRECT_URL", f"{AUTH_STUB_URL}/florence/logout")
+    AWS_REGION = "eu-west-2"
 
 # Set auth stub as a trusted origin
 CSRF_TRUSTED_ORIGINS = env.get("CSRF_TRUSTED_ORIGINS", AUTH_STUB_URL).split(",")
