@@ -4,7 +4,7 @@ The CMS integrates with the Search Service by sending messages to the Kafka brok
 and 'search-content-deleted' (deleted) events, aligning with the `StandardPayload` / `ReleasePayload` / `content-deleted` schema definitions.
 
 - [dp-search-data-extractor spec](https://github.com/ONSdigital/dp-search-data-extractor/blob/develop/specification.yml#L53)
-- [dp-search-data-importer spec]()https://github.com/ONSdigital/dp-search-data-importer/blob/30fb507e90f2cf1974ec0ca43bb0466307e2f112/specification.yml#L186
+- [dp-search-data-importer spec](https://github.com/ONSdigital/dp-search-data-importer/blob/30fb507e90f2cf1974ec0ca43bb0466307e2f112/specification.yml#L186)
 - [Search metadata contract](https://github.com/ONSdigital/dis-search-upstream-stub/blob/main/docs/contract/resource_metadata.yml)
 - [Search upstream service endpoints spec](https://github.com/ONSdigital/dis-search-upstream-stub/blob/main/specification.yml)
 
