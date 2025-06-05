@@ -164,12 +164,12 @@ class TopicPageTests(WagtailPageTestCase):
 
         response = self.client.get(self.page.url)
 
-        self.assertIn("<h2>Data</h2>", str(response.content))
+        self.assertContains(response, "<h2>Data</h2>")
 
-        self.assertIn(lookup_dataset.title, str(response.content))
-        self.assertIn(lookup_dataset.description, str(response.content))
-        self.assertIn(lookup_dataset.website_url, str(response.content))
+        self.assertContains(response, lookup_dataset.title)
+        self.assertContains(response, lookup_dataset.description)
+        self.assertContains(response, lookup_dataset.website_url)
 
-        self.assertIn(manual_dataset["title"], str(response.content))
-        self.assertIn(manual_dataset["description"], str(response.content))
-        self.assertIn(manual_dataset["url"], str(response.content))
+        self.assertContains(response, manual_dataset["title"])
+        self.assertContains(response, manual_dataset["description"])
+        self.assertContains(response, manual_dataset["url"])
