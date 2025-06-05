@@ -1,27 +1,71 @@
 {% extends "templates/base_page.html" %}
+
+{% from "components/hero/_macro.njk" import onsHero %}
 {% from "components/related-content/_macro.njk" import onsRelatedContent %}
 
-{% block main %}
-    <p>{{ page.summary|richtext }}</p>
-
+{# fmt:off #}
     {% if page.last_updated %}
-        <h5>{{ _("Last Updated") }}: {{ page.last_updated }}</h5>
+        {%- set last_updated_label = _("Last updated") -%}
+        {%- set last_updated_item = {
+                "term": last_updated_label,
+                "descriptions": [
+                    {
+                        "description": page.last_updated|ons_date("DATE_FORMAT")
+                    }
+                ]
+            }
+        -%}
+    {% else %}
+        {%- set last_updated_item = None -%}
     {% endif %}
+{# fmt:on #}
 
-    {% include_block page.content %}
+{% block header_area %}
+    {# fmt:off #}
+    {{
+        onsHero({
+            "title": page.title,
+            "variants": 'grey',
+            "text": page.summary|richtext(),
+            "wide": true,
+            "detailsColumns": 12,
+            "descriptionList": {
+                "descriptionListLabel": "",
+                "termCol": "6",
+                "descriptionCol": "6",
+                "itemsList": [last_updated_item] | selectattr('term') | list,
+            },
+            "breadcrumbs": {
+                "ariaLabel": breadcrumbs_label,
+                "itemsList": breadcrumbs(page),
+            }
+        })
+    }}
+    {# fmt:on #}
+{% endblock %}
 
-    {% if page.related_pages %}
-        {# fmt:off #}
-        {{-
-            onsRelatedContent({
-                "ariaLabel": _('Related content'),
-                "rows": [{
-                    "id": 'related-content',
-                    "title": _('Related content'),
-                    "itemsList": page.related_pages
-                }]
-            })
-        -}}
-        {# fmt:on #}
-    {% endif %}
+{% block main %}
+    <div class="ons-grid">
+        <div class="ons-grid__col ons-col-8@m">
+            {% include_block page.content %}
+
+            {% if page.related_pages %}
+                {%- set related_content_aria_label = _('Related content') -%}
+                {%- set related_content_title = _('Related content') -%}
+
+                {# fmt:off #}
+                {{-
+                    onsRelatedContent({
+                        "ariaLabel": related_content_aria_label,
+                        "rows": [{
+                            "id": 'related-content',
+                            "title": related_content_title,
+                            "itemsList": page.related_pages
+                        }]
+                    })
+                -}}
+                {# fmt:on #}
+            {% endif %}
+        </div>
+    </div>
 {% endblock %}
