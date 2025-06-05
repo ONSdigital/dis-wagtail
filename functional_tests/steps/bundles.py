@@ -1,14 +1,19 @@
-from behave import step, then  # pylint: disable=no-name-in-module
+from django.utils import timezone
+from datetime import timedelta
+
+from behave import given, step, then  # pylint: disable=no-name-in-module
 from behave.runner import Context
-from django.urls import reverse
 from playwright.sync_api import expect
 from django.urls import reverse
 
+from cms.articles.tests.factories import StatisticalArticlePageFactory, ArticleSeriesPageFactory
 from cms.bundles.enums import BundleStatus
 from cms.bundles.models import BundleTeam
 from cms.bundles.tests.factories import BundleFactory
+from cms.release_calendar.tests.factories import ReleaseCalendarPageFactory
 from cms.teams.models import Team
 from cms.users.tests.factories import UserFactory
+from functional_tests.steps.statistical_article_page import an_article_series_exists
 
 
 @step("a bundle has been created")
@@ -125,5 +130,49 @@ def bundle_inspect_show(context: Context) -> None:
 
 
 @step("the user goes to the Preview teams page")
-def go_to_preview_page(context):
+def go_to_preview_page(context: Context) -> None:
     context.page.goto(context.base_url + reverse("team:index"))
+
+
+@given('num_preview_teams')
+def multiple_preview_teams_create(context: Context, no_preview_teams: str) -> None:
+    context.teams = []
+    if no_preview_teams.isdigit():
+        for preview_team_index in range(int(no_preview_teams)):
+            context.teams.append(Team.objects.create(identifier="preview-team-" + str(preview_team_index),
+                                                     name="Preview_Team_" +  str(preview_team_index)))
+
+
+@step("there are {no_release_calendar} release calendar pages")
+def multiple_release_calendar(context: Context, no_release_calendar: str) -> None:
+    context.release_calendar_pages = []
+    if no_release_calendar.isdigit():
+        for release_calendar_index in range(int(no_release_calendar)):
+            nowish = timezone.now() + timedelta(minutes=5*(release_calendar_index + 1))
+            context.release_calendar_pages.append(
+                ReleaseCalendarPageFactory(release_date=nowish,
+                                           title="Release Calendar Page" +  str(release_calendar_index)))
+
+
+@step("there are {no_statistical_analysis} Statistical Analysis pages")
+def multiple_statistical_analysis(context: Context, no_statistical_analysis: str) -> None:
+    context.statistical_article_pages = []
+    if no_statistical_analysis.isdigit():
+        for statistical_analysis_index in range(int(no_statistical_analysis)):
+            context.statistical_article_pages.append(StatisticalArticlePageFactory(
+                parent=ArticleSeriesPageFactory(title="PSF" +  str(statistical_analysis_index))))
+
+
+@then("the user can not add Bundles")
+def the_user_can_add_bundles(context: Context) -> None:
+    expect(context.page.get_by_role("link", name="Add bundle")).not_to_be_visible()
+
+
+@step("the user completes the Bundle details")
+def add_bundle_details(context: Context) -> None:
+    context.page.get_by_role("link", name="Add bundle").click()
+    context.page.get_by_role("textbox", name="Name*").fill("Test 10")
+    context.page.get_by_role("button", name="Create").click()
+
+
+
