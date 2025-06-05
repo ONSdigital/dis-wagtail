@@ -151,6 +151,7 @@ class BaseVisualisationBlock(blocks.StructBlock):
         config = {
             "chartType": self.get_highcharts_chart_type(value),
             "theme": value.get("theme"),
+            "headingLevel": 3,
             "title": value.get("title"),
             "subtitle": value.get("subtitle"),
             "caption": value.get("caption"),
