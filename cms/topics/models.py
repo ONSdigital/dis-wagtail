@@ -243,6 +243,8 @@ class TopicPage(BundledPageMixin, ExclusiveTaxonomyMixin, BasePage):  # type: ig
             items += [{"url": "#related-methods", "text": _("Methods and quality information")}]
         if self.explore_more:
             items += [{"url": "#explore-more", "text": _("Explore more")}]
+        if self.dataset_document_list:
+            items += [{"url": "#data", "text": _("Data")}]
         return items
 
     @cached_property
