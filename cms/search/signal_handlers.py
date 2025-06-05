@@ -1,3 +1,6 @@
+from functools import cache
+
+from django.conf import settings
 from django.db.models.signals import post_delete
 from django.dispatch import receiver
 from wagtail.models import Page
@@ -5,9 +8,16 @@ from wagtail.signals import page_published, page_unpublished
 
 from cms.settings.base import SEARCH_INDEX_EXCLUDED_PAGE_TYPES
 
-from . import get_publisher
+from .publishers import KafkaPublisher, LogPublisher
 
-publisher = get_publisher()
+
+@cache
+def get_publisher() -> KafkaPublisher | LogPublisher:
+    """Return the configured publisher backend."""
+    backend = settings.SEARCH_INDEX_PUBLISHER_BACKEND
+    if backend == "kafka":
+        return KafkaPublisher()
+    return LogPublisher()
 
 
 @receiver(page_published)
@@ -16,7 +26,7 @@ def on_page_published(sender: "Page", instance: "Page", **kwargs: dict) -> None:
     instance is the published Page object.
     """
     if instance.specific_class.__name__ not in SEARCH_INDEX_EXCLUDED_PAGE_TYPES:
-        publisher.publish_created_or_updated(instance)
+        get_publisher().publish_created_or_updated(instance)
 
 
 @receiver(page_unpublished)
@@ -25,7 +35,7 @@ def on_page_unpublished(sender: "Page", instance: "Page", **kwargs: dict) -> Non
     instance is the unpublished Page object.
     """
     if instance.specific_class.__name__ not in SEARCH_INDEX_EXCLUDED_PAGE_TYPES:
-        publisher.publish_deleted(instance)
+        get_publisher().publish_deleted(instance)
 
 
 @receiver(post_delete, sender=Page)
@@ -35,4 +45,4 @@ def on_page_deleted(sender: "Page", instance: "Page", **kwargs: dict) -> None:  
     """
     # Only proceed if `sender` is a subclass of Wagtail Page and the page is published
     if instance.live and instance.specific_class.__name__ not in SEARCH_INDEX_EXCLUDED_PAGE_TYPES:
-        publisher.publish_deleted(instance)
+        get_publisher().publish_deleted(instance)

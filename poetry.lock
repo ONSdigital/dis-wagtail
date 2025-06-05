@@ -75,6 +75,25 @@ files = [
 ]
 
 [[package]]
+name = "aws-msk-iam-sasl-signer-python"
+version = "1.0.2"
+description = "Amazon MSK Library in Python for SASL/OAUTHBEARER Auth"
+optional = false
+python-versions = ">=3.8"
+files = [
+    {file = "aws_msk_iam_sasl_signer_python-1.0.2-py2.py3-none-any.whl", hash = "sha256:310eb2db9ca0ff55ed06a24212739b87533e7f1cf6f34e43aabbd97a3b21290e"},
+    {file = "aws_msk_iam_sasl_signer_python-1.0.2.tar.gz", hash = "sha256:3432d88a7c6db4887ceb1130ebaed0113bfda48b79ea811537add5f1d25fa13f"},
+]
+
+[package.dependencies]
+boto3 = ">=1.26.125"
+botocore = ">=1.29.125"
+Click = ">=7.0"
+
+[package.extras]
+test = ["coverage (==7.2.5)", "mock (==5.0.2)", "pytest (==7.3.1)", "pytest-cov (==4.0.0)"]
+
+[[package]]
 name = "beautifulsoup4"
 version = "4.13.4"
 description = "Screen-scraping library"
@@ -3258,4 +3277,4 @@ files = [
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.12"
-content-hash = "0affda2c9189a8c049ea4c06a6c7f9715f5c001256f7038bbc592e522712b31b"
+content-hash = "cf3cd1ad20c5e0962efae36d2136673fadb1be2199a03d4bcfa762e34cadab58"
