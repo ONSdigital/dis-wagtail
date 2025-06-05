@@ -1,3 +1,4 @@
+# pylint: disable=too-many-lines
 """Django settings for ons project."""
 
 import datetime
