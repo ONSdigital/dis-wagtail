@@ -81,10 +81,10 @@
                 </section>
             {% endif %}
 
-            {% if page.formatted_datasets %}
+            {% if page.dataset_document_list %}
                 <section id="related-methods" class="spacing">
                     <h2>{{ _("Data") }}</h2>
-                    {{ onsDocumentList({"documents": page.formatted_datasets}) }}
+                    {{ onsDocumentList({"documents": page.dataset_document_list}) }}
                 </section>
             {% endif %}
 

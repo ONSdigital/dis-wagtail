@@ -320,7 +320,7 @@ class StatisticalArticlePageTestCase(WagtailTestUtils, TestCase):
             ],
         )
         self.page.dataset_sorting = SortingChoices.ALPHABETIC
-        ordered_datasets = self.page.ordered_related_datasets
+        ordered_datasets = self.page.dataset_document_list
         ordered_dataset_titles = [d["title"]["text"] for d in ordered_datasets]
         self.assertEqual(
             ordered_dataset_titles,
@@ -342,7 +342,7 @@ class StatisticalArticlePageTestCase(WagtailTestUtils, TestCase):
             ],
         )
         self.page.dataset_sorting = SortingChoices.AS_SHOWN
-        ordered_datasets = self.page.ordered_related_datasets
+        ordered_datasets = self.page.dataset_document_list
         ordered_dataset_titles = [d["title"]["text"] for d in ordered_datasets]
         self.assertEqual(ordered_dataset_titles, ["c", "b", "a"], "Expect the datasets to be in the given order")
 

@@ -19,6 +19,7 @@ from cms.core.models import BasePage
 from cms.core.query import order_by_pk_position
 from cms.core.utils import get_formatted_pages_list
 from cms.datasets.blocks import DatasetStoryBlock
+from cms.datasets.utils import format_datasets_as_document_list
 from cms.methodology.models import MethodologyPage
 from cms.taxonomy.mixins import ExclusiveTaxonomyMixin
 from cms.topics.blocks import ExploreMoreStoryBlock, TopicHeadlineFigureBlock
@@ -32,7 +33,6 @@ from cms.topics.viewsets import (
 if TYPE_CHECKING:
     from django.http import HttpRequest
     from wagtail.admin.panels import Panel
-
 
 MAX_ITEMS_PER_SECTION = 3
 
@@ -232,27 +232,7 @@ class TopicPage(BundledPageMixin, ExclusiveTaxonomyMixin, BasePage):  # type: ig
         return highlighted_pages + pages
 
     @cached_property
-    def formatted_datasets(self) -> list[dict[str, Any]]:
-        dataset_documents: list = []
-        for dataset in self.datasets:  # pylint: disable=not-an-iterable
-            if dataset.block_type == "manual_link":
-                dataset_document = {
-                    "title": {"text": dataset.value["title"], "url": dataset.value["url"]},
-                    "metadata": {"object": {"text": "Dataset"}},
-                    "description": f"<p>{dataset.value['description']}</p>",
-                }
-            else:
-                dataset_document = {
-                    "title": {"text": dataset.value.title, "url": dataset.value.website_url},
-                    "metadata": {"object": {"text": "Dataset"}},
-                    "description": f"<p>{dataset.value.description}</p>",
-                }
-            dataset_documents.append(dataset_document)
-
-        return dataset_documents
-
-    @cached_property
-    def table_of_contents(self) -> list[dict[str, str | object]]:
+    def table_of_contents(self) -> list[dict[str, Any]]:
         """Table of contents formatted to Design System specs."""
         items = []
         if self.latest_article_in_featured_series:
@@ -264,6 +244,10 @@ class TopicPage(BundledPageMixin, ExclusiveTaxonomyMixin, BasePage):  # type: ig
         if self.explore_more:
             items += [{"url": "#explore-more", "text": _("Explore more")}]
         return items
+
+    @cached_property
+    def dataset_document_list(self) -> list[dict[str, Any]]:
+        return format_datasets_as_document_list(self.datasets)
 
     def clean(self) -> None:
         super().clean()
