@@ -21,4 +21,4 @@ simultaneous release at the scheduled time.
 
 - [Bundle API spec](https://github.com/ONSdigital/dis-bundle-api/blob/develop/swagger.yaml) (you can use https://generator.swagger.io/ to view it rendered)
 - [Data API Tech proposal](https://confluence.ons.gov.uk/display/DIS/Bundles+%28Data+API%29+-+Technical+Executive+Proposal)
-- [Dateset Publishing Requirements](https://confluence.ons.gov.uk/pages/viewpage.action?spaceKey=NWP&title=Dataset+Publishing+Requirements)
+- [Dateset Publishing Requirements](https://confluence.ons.gov.uk/display/DIGPUB/Dataset+Publishing+Requirements)

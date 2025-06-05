@@ -16,6 +16,21 @@ used by the search service for reindexing.
 | Var                                | Notes                                                                 |
 | ---------------------------------- | --------------------------------------------------------------------- |
 | `SEARCH_INDEX_PUBLISHER_BACKEND`   | Set to `kafka` to enable send data to the Search service Kafka broker |
+| `KAFKA_SERVERS`                    | A comma-separated list of Kafka broker URLs.                          |
 | `KAFKA_CHANNEL_CREATED_OR_UPDATED` | `search-content-updated` as per spec                                  |
 | `KAFKA_CHANNEL_DELETED`            | `search-content-deleted` as per spec                                  |
 | `KAFKA_API_VERSION`                | Defaults to "3,5,1"                                                   |
+| `KAFKA_USE_IAM_AUTH`               | Defaults to `false`. Set to `true` to enable IAM authentication.      |
+
+## Developer notes
+
+We use [kafka-python](https://pypi.org/project/kafka-python/) to send data to Kafka, and
+[aws-msk-iam-sasl-signer-python](https://pypi.org/project/aws-msk-iam-sasl-signer-python/) to authenticate using IAM.
+
+The implementation is in [`cms/search`](https://github.com/ONSdigital/dis-wagtail/tree/main/cms/search). The publisher
+classes are defined in [`cms/search/publishers.py`](https://github.com/ONSdigital/dis-wagtail/blob/main/cms/search/publishers.py).
+
+Messages are sent via [Django signal handlers](https://docs.djangoproject.com/en/5.2/topics/signals/#listening-to-signals) in [`cms/search/signal_handlers.py`](https://github.com/ONSdigital/dis-wagtail/blob/main/cms/search/signal_handlers.py),
+specifically, on page publish, unpublish and delete.
+
+The Resource API endpoint is powered by <abbr title="Django Rest Framework">[DRF](https://www.django-rest-framework.org/)</abbr> and can be found in [`cms/search/views.py`](https://github.com/ONSdigital/dis-wagtail/blob/main/cms/search/views.py)
