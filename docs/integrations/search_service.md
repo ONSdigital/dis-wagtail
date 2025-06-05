@@ -14,7 +14,7 @@ used by the search service for reindexing.
 ## Environment variables
 
 | Var                                | Notes                                                                 |
-| ---------------------------------- |-----------------------------------------------------------------------|
+| ---------------------------------- | --------------------------------------------------------------------- |
 | `SEARCH_INDEX_PUBLISHER_BACKEND`   | Set to `kafka` to enable send data to the Search service Kafka broker |
 | `KAFKA_SERVERS`                    | A comma-separated list of Kafka broker URLs.                          |
 | `KAFKA_CHANNEL_CREATED_OR_UPDATED` | Defaults to `search-content-updated` as per spec                      |
