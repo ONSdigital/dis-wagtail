@@ -232,7 +232,7 @@ class TopicPage(BundledPageMixin, ExclusiveTaxonomyMixin, BasePage):  # type: ig
         return highlighted_pages + pages
 
     @cached_property
-    def table_of_contents(self) -> list[dict[str, Any]]:
+    def table_of_contents(self) -> list[dict[str, str | object]]:
         """Table of contents formatted to Design System specs."""
         items = []
         if self.latest_article_in_featured_series:
