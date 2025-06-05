@@ -8,14 +8,14 @@ from django.db import migrations
 
 def generate_uuids(apps, schema_editor):
     User = apps.get_model("users", "User")
-    for user in User.objects.filter(user_id__isnull=True):
-        user.user_id = uuid.uuid4()
-        user.save(update_fields=["user_id"])
+    for user in User.objects.filter(external_user_id__isnull=True):
+        user.external_user_id = uuid.uuid4()
+        user.save(update_fields=["external_user_id"])
 
 
 class Migration(migrations.Migration):
     dependencies = [
-        ("users", "0003_user_add_user_id"),
+        ("users", "0003_user_add_external_user_id"),
     ]
 
     operations = [

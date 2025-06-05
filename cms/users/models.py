@@ -13,7 +13,7 @@ class User(AbstractUser):
     """Barebones custom user model."""
 
     # Unique identifier for user lookup, as emails (used as usernames) may change.
-    user_id = models.UUIDField(unique=True, default=uuid.uuid4, editable=False)
+    external_user_id = models.UUIDField(unique=True, default=uuid.uuid4, editable=False)
     teams = models.ManyToManyField("teams.Team", related_name="users", blank=True)
 
     def assign_groups_and_teams(self, /, groups_ids: Iterable[str]) -> None:

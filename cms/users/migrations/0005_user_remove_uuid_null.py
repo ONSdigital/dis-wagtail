@@ -8,13 +8,13 @@ from django.db import migrations, models
 
 class Migration(migrations.Migration):
     dependencies = [
-        ("users", "0004_user_populate_user_id"),
+        ("users", "0004_user_populate_external_user_id"),
     ]
 
     operations = [
         migrations.AlterField(
             model_name="user",
-            name="user_id",
+            name="external_user_id",
             field=models.UUIDField(default=uuid.uuid4, editable=False, unique=True),
         ),
     ]

@@ -346,7 +346,7 @@ class ONSAuthMiddlewareTests(TestCase):
             self.middleware.process_request(req)
 
         user = get_user_model()
-        self.assertTrue(user.objects.filter(user_id=uid).exists())
+        self.assertTrue(user.objects.filter(external_user_id=uid).exists())
         self.assertEqual(req.session[JWT_SESSION_ID_KEY], "jajb")
 
     # Token rotation (new jti) -> re-authenticate and update session key

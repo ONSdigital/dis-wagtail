@@ -96,10 +96,10 @@ class ONSAuthMiddleware(AuthenticationMiddleware):
 
         # If a user is already authenticated, validate that the session user matches the token user.
         # Prevents token swapping where an attacker sets cookies for a different user.
-        if request.user.is_authenticated and str(request.user.user_id) != id_username:
+        if request.user.is_authenticated and str(request.user.external_user_id) != id_username:
             logger.error(
                 "Authenticated user does not match token user. Logging out user.",
-                extra={"user_id": request.user.user_id, "token_user_id": id_username},
+                extra={"external_user_id": request.user.external_user_id, "token_user_id": id_username},
             )
             return False
 
@@ -132,7 +132,7 @@ class ONSAuthMiddleware(AuthenticationMiddleware):
         if request.user.is_authenticated and not request.user.has_usable_password():
             logger.info(
                 "AWS Cognito is disabled; logging out user without a usable password",
-                extra={"user_id": request.user.user_id},
+                extra={"external_user_id": request.user.external_user_id},
             )
             logout(request)
 
@@ -144,8 +144,9 @@ class ONSAuthMiddleware(AuthenticationMiddleware):
 
         if not settings.WAGTAIL_CORE_ADMIN_LOGIN_ENABLED or not request.user.has_usable_password():
             logger.info(
-                "Terminating session due to missing JWT tokens or insufficient login configuration (user_id: %s).",
-                request.user.user_id,
+                "Terminating session due to missing JWT tokens or insufficient login "
+                "configuration (external_user_id: %s).",
+                request.user.external_user_id,
             )
             logout(request)
 
@@ -155,13 +156,13 @@ class ONSAuthMiddleware(AuthenticationMiddleware):
 
         Retrieves or creates the user, updates details, assigns appropriate groups, and logs the user in.
         """
-        user_id = id_payload["cognito:username"]
+        external_user_id = id_payload["cognito:username"]
         email = id_payload["email"]
         first_name = id_payload.get("given_name", "")
         last_name = id_payload.get("family_name", "")
 
         user, created = User.objects.get_or_create(
-            user_id=user_id,
+            external_user_id=external_user_id,
             defaults={"email": email, "username": email},
         )
 

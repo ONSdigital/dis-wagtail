@@ -13,7 +13,7 @@ class Migration(migrations.Migration):
     operations = [
         migrations.AddField(
             model_name="user",
-            name="user_id",
+            name="external_user_id",
             field=models.UUIDField(editable=False, null=True),
         ),
     ]
