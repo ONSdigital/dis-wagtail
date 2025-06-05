@@ -16,7 +16,7 @@ class KafkaSettingsCheckTests(TestCase):
     # Remove any existing KAFKA_* settings if present
     @override_settings(
         SEARCH_INDEX_PUBLISHER_BACKEND="kafka",
-        KAFKA_SERVER=None,
+        KAFKA_SERVERS=None,
         KAFKA_CHANNEL_CREATED_OR_UPDATED=None,
         KAFKA_CHANNEL_DELETED=None,
     )
@@ -29,13 +29,13 @@ class KafkaSettingsCheckTests(TestCase):
         # Expect 3 missing-settings errors: E001, E002, and E003
         self.assertEqual(len(errors), 3)
         error_ids = [error.id for error in errors]
-        self.assertIn("search.E001", error_ids)  # Missing KAFKA_SERVER
+        self.assertIn("search.E001", error_ids)  # Missing KAFKA_SERVERS
         self.assertIn("search.E002", error_ids)  # Missing KAFKA_CHANNEL_CREATED_OR_UPDATED
         self.assertIn("search.E003", error_ids)  # Missing KAFKA_CHANNEL_DELETED
 
     @override_settings(
         SEARCH_INDEX_PUBLISHER_BACKEND="kafka",
-        KAFKA_SERVER="",
+        KAFKA_SERVERS="",
         KAFKA_CHANNEL_CREATED_OR_UPDATED="some-topic",
         KAFKA_CHANNEL_DELETED="some-other-topic",
     )
@@ -46,12 +46,12 @@ class KafkaSettingsCheckTests(TestCase):
         errors = check_kafka_settings(app_configs=None)
         self.assertEqual(len(errors), 1)
         self.assertEqual(errors[0].id, "search.E001")
-        self.assertIn("KAFKA_SERVER is missing or empty.", errors[0].msg)
-        self.assertIn("Set KAFKA_SERVER to e.g. 'localhost:9092'.", errors[0].hint)
+        self.assertIn("KAFKA_SERVERS is missing or empty.", errors[0].msg)
+        self.assertIn("Set KAFKA_SERVERS to e.g. 'localhost:9092'.", errors[0].hint)
 
     @override_settings(
         SEARCH_INDEX_PUBLISHER_BACKEND="kafka",
-        KAFKA_SERVER="localhost:9092",
+        KAFKA_SERVERS="localhost:9092",
         KAFKA_CHANNEL_CREATED_OR_UPDATED="my-topic",
         KAFKA_CHANNEL_DELETED="delete-topic",
     )
