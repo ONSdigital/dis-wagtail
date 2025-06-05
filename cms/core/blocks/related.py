@@ -31,6 +31,8 @@ class RelatedLinksBlock(ListBlock):
         context["heading"] = self.heading
         context["slug"] = self.slug
 
+        context["related_links"] = [item.get_related_link(context=context) for item in value]
+
         return context
 
     class Meta:
