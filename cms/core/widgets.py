@@ -1,3 +1,5 @@
+from typing import Any
+
 from wagtail.admin import widgets
 from wagtail.admin.widgets.datetime import AdminDateTimeInput, AdminDateTimeInputAdapter
 from wagtail.telepath import register
@@ -25,7 +27,7 @@ class ONSAdminDateTimeInput(AdminDateTimeInput):
             js_overlay_parent_selector=js_overlay_parent_selector,
         )
 
-    def get_config(self):
+    def get_config(self) -> Any:
         config = super().get_config()
         # Change step to (30 minutes)
         config.update({"step": 30})

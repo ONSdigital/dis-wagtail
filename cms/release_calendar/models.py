@@ -5,6 +5,7 @@ from django.db import models
 from django.utils.functional import cached_property
 from django.utils.text import slugify
 from django.utils.translation import gettext_lazy as _
+from django_stubs_ext import StrPromise
 from wagtail.admin.panels import FieldPanel, FieldRowPanel, MultiFieldPanel
 from wagtail.fields import RichTextField
 from wagtail.models import Page
@@ -248,10 +249,11 @@ class ReleaseCalendarPage(BundledPageMixin, BasePage):  # type: ignore[django-ma
         return bundle
 
     @property
-    def preview_modes(self) -> list[tuple[str, str]]:
+    def preview_modes(self) -> list[tuple[str, str | StrPromise]]:
         return ReleaseStatus.choices
+        # return [("default", "Article Page"), ("related_data", "Related Data Page")]
 
-    def get_preview_template(self, request, mode_name: str) -> "TemplateResponse":
+    def get_preview_template(self, request: None, mode_name: str) -> "TemplateResponse":
         templates = {
             "PROVISIONAL": "templates/pages/release_calendar/release_calendar_page--provisional.html",
             "CONFIRMED": "templates/pages/release_calendar/release_calendar_page--confirmed.html",
