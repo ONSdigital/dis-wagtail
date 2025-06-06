@@ -26,26 +26,14 @@ def _send_bundle_email(bundle_team: BundleTeam, subject: str, message: str) -> N
     )
 
 
-def send_team_added_to_bundle_in_review_email(bundle_team: BundleTeam) -> None:
-    """Send email notification to the team members when a team is assigned to a bundle in review."""
+def send_bundle_ready_for_review_email(bundle_team: BundleTeam) -> None:
+    """Send email notification to the team members when a bundle is ready for review."""
     bundle = bundle_team.parent
     team = bundle_team.team
-    subject = f'Your team "{team.name}" was added to a bundle In review'  # type: ignore[attr-defined]
-    message = (
-        f"The preview team {team.name} you are a member of "  # type: ignore[attr-defined]
-        f"was assigned to the bundle {bundle.name} which is In Review. URL: {bundle.inspect_url}"
-    )
-    _send_bundle_email(bundle_team, subject, message)
-
-
-def send_bundle_status_changed_to_in_review_email(bundle_team: BundleTeam) -> None:
-    """Send email notification to the team members when a bundle status changes to In Review."""
-    bundle = bundle_team.parent
-    team = bundle_team.team
-    subject = f'Bundle "{bundle.name}" status changed to In Review'
+    subject = f'Bundle "{bundle.name}" is ready for review'
     message = (
         f'You are a reviewer in the team "{team.name}" '  # type: ignore[attr-defined]
-        f'Bundle "{bundle.name}" status changed to In Review URL: {bundle.inspect_url}'
+        f'Bundle "{bundle.name}" is now ready for review. URL: {bundle.inspect_url}'
     )
     _send_bundle_email(bundle_team, subject, message)
 
@@ -57,6 +45,6 @@ def send_bundle_published_email(bundle_team: BundleTeam) -> None:
     subject = f'Bundle "{bundle.name}" has been published'
     message = (
         f'You are a reviewer in the team "{team.name}" '  # type: ignore[attr-defined]
-        f'Bundle "{bundle.name}" status changed to Published URL: {bundle.inspect_url}'
+        f'Bundle "{bundle.name}" status changed to Published. URL: {bundle.inspect_url}'
     )
     _send_bundle_email(bundle_team, subject, message)

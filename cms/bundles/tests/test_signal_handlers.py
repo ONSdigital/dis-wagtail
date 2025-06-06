@@ -43,7 +43,8 @@ class TestNotifications(TestCase):
         self.assertEqual(len(mail.outbox), 1)
         self.assertIn(self.previewer.email, mail.outbox[0].to)
         self.assertIn(another_previewer.email, mail.outbox[0].to)
-        self.assertIn(f'Your team "{self.preview_team.name}" was added to a bundle In review', mail.outbox[0].subject)
+
+        self.assertIn(f'Bundle "{bundle.name}" is ready for review', mail.outbox[0].subject)
 
     def test_bundle_in_preview_gets_a_team_assigned_then_a_notification_is_sent(self):
         """Test that when a bundle exists and is in preview, when a new team is assigned,
@@ -56,7 +57,7 @@ class TestNotifications(TestCase):
 
         self.assertEqual(len(mail.outbox), 1)
         self.assertIn(self.previewer.email, mail.outbox[0].to)
-        self.assertIn(f'Your team "{self.preview_team.name}" was added to a bundle In review', mail.outbox[0].subject)
+        self.assertIn(f'Bundle "{bundle.name}" is ready for review', mail.outbox[0].subject)
         self.assertIn(bundle.inspect_url, mail.outbox[0].body)
 
     def test_readding_team_to_bundle_triggers_notification(self):
@@ -66,7 +67,7 @@ class TestNotifications(TestCase):
 
         self.assertEqual(len(mail.outbox), 1)
         self.assertIn(self.previewer.email, mail.outbox[0].to)
-        self.assertIn(f'Your team "{self.preview_team.name}" was added to a bundle In review', mail.outbox[0].subject)
+        self.assertIn(f'Bundle "{bundle.name}" is ready for review', mail.outbox[0].subject)
 
         # Now remove and assign the team again, and expect a new email
         mail.outbox = []
@@ -147,7 +148,7 @@ class TestNotifications(TestCase):
         # Ensure the notification is sent on the first change to In Preview
         self.assertEqual(len(mail.outbox), 1)
         self.assertIn(previewer.email, mail.outbox[0].to)
-        self.assertIn(f'Bundle "{bundle.name}" status changed to In Review', mail.outbox[0].subject)
+        self.assertIn(f'Bundle "{bundle.name}" is ready for review', mail.outbox[0].subject)
         self.assertIn(bundle.inspect_url, mail.outbox[0].body)
 
         # Clear the outbox and change the status to "Draft" and then back to "In Preview"

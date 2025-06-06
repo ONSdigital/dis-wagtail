@@ -5,18 +5,14 @@ from django.dispatch import receiver
 
 from cms.bundles.enums import BundleStatus
 from cms.bundles.models import Bundle, BundleTeam
-from cms.bundles.notifications.email import (
-    send_bundle_published_email,
-    send_bundle_status_changed_to_in_review_email,
-    send_team_added_to_bundle_in_review_email,
-)
+from cms.bundles.notifications.email import send_bundle_published_email, send_bundle_ready_for_review_email
 
 
 @receiver(post_save, sender=BundleTeam)
 def handle_bundle_team_post_save(instance: BundleTeam, created: bool, **kwargs: Any) -> None:
     """Handle when a preview team is assigned to a bundle in review."""
     if created and instance.parent.status == BundleStatus.IN_REVIEW:
-        send_team_added_to_bundle_in_review_email(bundle_team=instance)
+        send_bundle_ready_for_review_email(bundle_team=instance)
 
 
 @receiver(post_save, sender=Bundle)
@@ -29,7 +25,7 @@ def handle_bundle_in_preview(instance: Bundle, **kwargs: Any) -> None:
             if bundle_team.team.is_active
         ]
         for bundle_team in active_bundle_teams:
-            send_bundle_status_changed_to_in_review_email(bundle_team=bundle_team)
+            send_bundle_ready_for_review_email(bundle_team=bundle_team)
 
         instance.preview_notification_sent = True
         instance.save()
