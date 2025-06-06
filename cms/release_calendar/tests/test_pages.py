@@ -1,6 +1,9 @@
 from django.urls import reverse
+from django.utils import timezone
 from wagtail.test.utils import WagtailPageTestCase
 
+from cms.core.custom_date_format import ons_default_datetime
+from cms.release_calendar.enums import ReleaseStatus
 from cms.release_calendar.tests.factories import ReleaseCalendarPageFactory
 
 
@@ -25,16 +28,64 @@ class ReleaseCalendarPageTests(WagtailPageTestCase):
 
         self.assertInHTML(
             (
-                '<input type="text" name="next_release_date" autocomplete="off"'
+                '<input type="text" name="next_release_date" autocomplete="off" '
                 f'placeholder="{datetime_placeholder}" id="id_next_release_date">'
             ),
             content,
         )
 
+    def test_default_date_on_release_date(self):
+        """Test release date shows a default datetime from ons_default_datetime."""
+        self.client.force_login(self.user)
+
+        parent_page = self.page.get_parent()
+        add_sibling_url = reverse("wagtailadmin_pages:add_subpage", args=[parent_page.id])
+
+        response = self.client.get(add_sibling_url, follow=True)
+
+        content = response.content.decode(encoding="utf-8")
+        datetime_placeholder = "YYYY-MM-DD HH:MM"
+
+        default_datetime = ons_default_datetime().strftime("%Y-%m-%d %H:%M")
+
         self.assertInHTML(
             (
-                '<input type="text" name="next_release_date" autocomplete="off" '
-                f'placeholder="{datetime_placeholder}" id="id_next_release_date">'
+                f'<input type="text" name="release_date" value="{default_datetime}" autocomplete="off" '
+                f'placeholder="{datetime_placeholder}" required="" id="id_release_date">'
             ),
             content,
+        )
+
+    def test_changes_to_release_dates_provisional_page(self):
+        """Test changes to release date cannot be displayed on a provisional page."""
+        self.page.status = ReleaseStatus.PROVISIONAL
+        date_change_log = {
+            "previous_date": timezone.now(),
+            "reason_for_change": "Reason",
+        }
+        self.page.changes_to_release_date = [("date_change_log", date_change_log)]
+        self.page.save_revision().publish()
+
+        response = self.client.get(self.page.url)
+        self.assertNotContains(response, "Reason")
+
+    def test_changes_to_release_date_non_provisional_page(self):
+        """Test a change to release date is visible in different a non-provisional status."""
+        cases = [ReleaseStatus.CONFIRMED, ReleaseStatus.PUBLISHED, ReleaseStatus.CANCELLED]
+        for case in cases:
+            self.page.status = case
+            date_change_log = {
+                "previous_date": timezone.now(),
+                "reason_for_change": "Reason",
+            }
+            self.page.changes_to_release_date = [("date_change_log", date_change_log)]
+            self.page.save_revision().publish()
+
+            response = self.client.get(self.page.url)
+            self.assertContains(response, "Reason")
+
+    def test_preview_modes(self):
+        """Test preview modes for release calendar page."""
+        self.assertPageIsPreviewable(
+            self.page,
         )
