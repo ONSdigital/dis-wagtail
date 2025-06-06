@@ -11,6 +11,9 @@ from cms.datavis.blocks.table import SimpleTableBlock
 from cms.datavis.blocks.utils import TextInputFloatBlock
 from cms.datavis.constants import AxisType, HighChartsChartType, HighchartsTheme
 
+AnnotationsList = list[dict[str, Any]]
+AnnotationsReturn = tuple[AnnotationsList, AnnotationsList, AnnotationsList]
+
 
 class BaseVisualisationBlock(blocks.StructBlock):
     # Extra attributes for subclasses
@@ -163,11 +166,13 @@ class BaseVisualisationBlock(blocks.StructBlock):
             "download": self.get_download_config(value),
         }
 
-        point_annotations, range_annotations = self.get_annotations_config(value)
+        point_annotations, range_annotations, line_annotations = self.get_annotations_config(value)
         if point_annotations:
             config["annotations"] = point_annotations
         if range_annotations:
             config["rangeAnnotations"] = range_annotations
+        if line_annotations:
+            config["referenceLineAnnotations"] = line_annotations
 
         config.update(self.get_additional_options(value))
         return config
@@ -226,9 +231,10 @@ class BaseVisualisationBlock(blocks.StructBlock):
             config["max"] = max_value
         return config
 
-    def get_annotations_config(self, value: "StructValue") -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
-        annotations_values: list[dict[str, Any]] = []
-        range_annotations_values: list[dict[str, Any]] = []
+    def get_annotations_config(self, value: "StructValue") -> AnnotationsReturn:
+        annotations_values: AnnotationsList = []
+        range_annotations_values: AnnotationsList = []
+        line_annotations_values: AnnotationsList = []
 
         for item in value.get("annotations", []):
             config = item.value.get_config()
@@ -237,10 +243,12 @@ class BaseVisualisationBlock(blocks.StructBlock):
                     annotations_values.append(config)
                 case "range":
                     range_annotations_values.append(config)
+                case "reference_line":
+                    line_annotations_values.append(config)
                 case _:
                     raise ValueError(f"Unknown annotation type: {item.block_type}")
 
-        return annotations_values, range_annotations_values
+        return annotations_values, range_annotations_values, line_annotations_values
 
     def get_series_data(
         self,
