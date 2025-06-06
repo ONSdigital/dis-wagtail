@@ -17,7 +17,7 @@ from wagtail.log_actions import log
 
 from cms.bundles.enums import BundleStatus
 from cms.bundles.models import Bundle
-from cms.bundles.notifications import (
+from cms.bundles.notifications.slack import (
     notify_slack_of_publication_start,
     notify_slack_of_publish_end,
     notify_slack_of_status_change,

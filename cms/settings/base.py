@@ -240,7 +240,9 @@ if "PG_DB_ADDR" in env:
 else:
     DATABASES = {
         "default": dj_database_url.config(
-            conn_max_age=db_conn_max_age, conn_health_checks=True, default="postgres://ons:ons@localhost:5432/ons"
+            conn_max_age=db_conn_max_age,
+            conn_health_checks=True,
+            default="postgres://ons:ons@localhost:5432/ons",  # pragma: allowlist secret
         ),
     }
 
