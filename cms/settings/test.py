@@ -79,10 +79,46 @@ XFF_STRICT = False
 # turn on the real Wagtail login form
 WAGTAIL_CORE_ADMIN_LOGIN_ENABLED = True
 
-# strip out our custom ONSAuthMiddleware
+
+# We remove ONSAuthMiddleware and re-insert
+# Django's built-in AuthenticationMiddleware so that both unit tests and Playwright-based UI tests
+# behave correctly.
+#
+# 1. Unit tests:
+#    - AWS_COGNITO_LOGIN_ENABLED=False causes ONSAuthMiddleware.process_request() to call
+#      _handle_cognito_disabled(request):
+#        • It calls super().process_request(request) first, so request.user is populated from the session.
+#        • Then, because Cognito is disabled, it checks: request.user.is_authenticated and
+#          not request.user.has_usable_password(). Factory-created test users often have no usable
+#          password, so ONSAuthMiddleware immediately logs them out.
+#    - If we leave ONSAuthMiddleware in place, a call to self.client.force_login(self.user) will be
+#      undone on the very next request, making request.user AnonymousUser and causing every protected
+#      view (edit/delete/chooser, etc.) to redirect to /admin/login/ (HTTP 302).
+#    - ONSAuthMiddleware inherits from AuthenticationMiddleware. If we remove it without
+#      adding back django.contrib.auth.middleware.AuthenticationMiddleware, nothing will ever populate
+#      request.user from the session, so force_login() has no effect at all.
+#
+# 2. Playwright UI tests (auth.js integration):
+#    - Under @cognito_enabled, environment.py sets AWS_COGNITO_LOGIN_ENABLED=True for those scenarios.
+#    - ONSAuthMiddleware then tries to find and validate real JWT cookies on each request. Our UI tests
+#      inject a fake JWT and CSRF token into the browser, expecting auth.js to handle passive-renew flows.
+#      But ONSAuthMiddleware sees the fake/ unsigned token as invalid, calls logout(request)/ redirects
+#      to /admin/login/, and breaks the test before auth.js can inject <script id="auth-config"> or call
+#      /admin/extend-session/.
+#    - By stripping out ONSAuthMiddleware entirely, we keep AWS_COGNITO_LOGIN_ENABLED=True so that template
+#      and view logic still believe Cognito is on (rendering data-islands, binding passive-renew). But
+#      there's no real JWT validation to block us, so our fake token goes unnoticed.
+#    - We must also re-insert AuthenticationMiddleware so that Playwright's login steps (which set a Django
+#      session) produce a valid request.user on subsequent requests.
+#
+# Removing ONSAuthMiddleware and re-adding the built-in AuthenticationMiddleware ensures:
+#  • Unit tests do not log out factory-created users without a password, and force_login() works as intended.
+#  • Playwright UI tests can inject fake JWTs without being rejected, while views still render Cognito-enabled
+#    code paths (data-island, passive-renew, etc.), and request.user stays logged in via the session cookie.
+
+# Remove ONSAuthMiddleware so that neither unit tests nor UI tests get logged out or redirected by JWT logic.
 MIDDLEWARE = [mw for mw in MIDDLEWARE if mw != "cms.auth.middleware.ONSAuthMiddleware"]
 
-# ensure Django's AuthenticationMiddleware is present (just after SessionMiddleware)
 if "django.contrib.auth.middleware.AuthenticationMiddleware" not in MIDDLEWARE:
     idx = MIDDLEWARE.index("django.contrib.sessions.middleware.SessionMiddleware")
     MIDDLEWARE.insert(
