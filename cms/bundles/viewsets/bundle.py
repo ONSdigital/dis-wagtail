@@ -175,12 +175,21 @@ class BundleInspectView(InspectView):
                 "created_by",
                 "approved",
                 "scheduled_publication",
+                "release_calendar_page",
                 "teams",
                 "pages",
                 "bundled_datasets",
             ]
 
-        return ["name", "created_at", "created_by", "scheduled_publication", "pages", "bundled_datasets"]
+        return [
+            "name",
+            "created_at",
+            "created_by",
+            "scheduled_publication",
+            "release_calendar_page",
+            "pages",
+            "bundled_datasets",
+        ]
 
     def get_field_label(self, field_name: str, field: "Field") -> str:
         match field_name:
@@ -192,6 +201,8 @@ class BundleInspectView(InspectView):
                 return "Pages"
             case "bundled_datasets":
                 return "Datasets"
+            case "release_calendar_page":
+                return "Associated release calendar page"
             case _:
                 return super().get_field_label(field_name, field)  # type: ignore[no-any-return]
 
@@ -220,6 +231,16 @@ class BundleInspectView(InspectView):
             return date_format(self.object.scheduled_publication_date, settings.DATETIME_FORMAT)
         return "No scheduled publication"
 
+    def get_release_calendar_page_display_value(self) -> str:
+        """Returns the release calendar page link if it exists."""
+        if self.object.release_calendar_page:
+            return format_html(
+                '<a href="{}" target="_blank" rel="noopener">{}</a>',
+                reverse("bundles:preview_release_calendar", args=[self.object.pk]),
+                self.object.release_calendar_page.get_admin_display_title(),
+            )
+        return "N/A"
+
     def get_pages_for_manager(self) -> "SafeString":
         pages = self.object.get_bundled_pages().specific()
 
@@ -228,11 +249,7 @@ class BundleInspectView(InspectView):
                 reverse("wagtailadmin_pages:edit", args=[page.pk]),
                 page.get_admin_display_title(),
                 page.get_verbose_name(),
-                (
-                    page.current_workflow_state.current_task_state.task.name
-                    if page.current_workflow_state
-                    else "not in a workflow"
-                ),
+                (page.current_workflow_state.current_task_state.task.name if page.current_workflow_state else "Draft"),
                 reverse(
                     "bundles:preview",
                     args=(
