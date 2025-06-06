@@ -1,4 +1,4 @@
-from typing import Any, ClassVar
+from typing import Any, ClassVar, cast
 
 from django.core.exceptions import ValidationError
 from wagtail import blocks
@@ -21,14 +21,18 @@ class AnnotationStructValue(StructValue):
             "text": self.get("label"),
         }
 
-    def get_label_offsets(self) -> dict[str, int]:
-        if label_offset_y := self.get("label_offset_y"):
+    def get_label_offset_y(self) -> int | None:
+        label_offset_y = cast(int | None, self.get("label_offset_y"))
+        if label_offset_y is not None:
             # The SVG coordinate system measures from the top left. It makes more sense
             # to users to measure from the bottom left, to match the chart coordinates.
             label_offset_y = -label_offset_y
+        return label_offset_y
+
+    def get_label_offsets(self) -> dict[str, int | None]:
         return {
             "labelOffsetX": self.get("label_offset_x"),
-            "labelOffsetY": label_offset_y,
+            "labelOffsetY": self.get_label_offset_y(),
         }
 
     def get_x_position(self, x_position: int | float) -> int | float:
@@ -62,7 +66,7 @@ class BasePointAnnotationBlock(blocks.StructBlock):
     label_offset_y = TextInputIntegerBlock(label="Offset Y", default=0)
 
     class Meta:
-        icon = "crosshairs"
+        icon = "location-crosshairs"
 
 
 class PointAnnotationCategoricalStructValue(PointAnnotationStructValue):
@@ -165,7 +169,7 @@ class BaseRangeAnnotationBlock(blocks.StructBlock):
     ERROR_LABEL_INSIDE_CUSTOM_POSITIONING = "error_label_inside_custom_positioning"
 
     class Meta:
-        value_class = RangeAnnotationStructValue
+        icon = "square"
 
     def clean(self, value: dict[str, Any]) -> dict[str, Any]:
         cleaned_data: dict[str, Any] = super().clean(value)
@@ -236,3 +240,88 @@ class RangeAnnotationLinearStructValue(RangeAnnotationStructValue):
 class RangeAnnotationLinearBlock(BaseRangeAnnotationBlock):
     class Meta:
         value_class = RangeAnnotationLinearStructValue
+
+
+class LineAnnotationStructValue(AnnotationStructValue):
+    def get_config(self) -> dict[str, Any]:
+        config = super().get_config()
+
+        config.update(
+            {
+                "axis": self.get("axis"),
+                "labelWidth": self.get("label_width"),
+            }
+        )
+
+        if self.get("axis") == AxisChoices.X:
+            # X-axis can be categorical or linear
+            config.update({"value": self.get_x_position(self.get("value"))})
+        else:
+            # Y-axis is always linear
+            config.update({"value": self.get("value")})
+
+        # Only apply custom label positioning if set:
+        for key in ["label_offset_x", "label_offset_y"]:
+            if self.get(key) is not None:
+                config.update(self.get_label_offsets())
+
+        return config
+
+
+class BaseLineAnnotationBlock(blocks.StructBlock):
+    label = blocks.CharBlock(required=True)
+    axis = blocks.ChoiceBlock(choices=AxisChoices.choices, default=AxisChoices.X)
+    value = TextInputFloatBlock(label="Value", required=True)
+
+    label_width = TextInputIntegerBlock(label="Label width", default=150, required=True)
+    label_offsets = blocks.StaticBlock(admin_text="Offsets are measured in pixels")
+    label_offset_x = TextInputIntegerBlock(label="Offset X", required=False)
+    label_offset_y = TextInputIntegerBlock(label="Offset Y", required=False)
+
+    class Meta:
+        icon = "minus"
+
+
+class LineAnnotationCategoricalStructValue(LineAnnotationStructValue):
+    X_AXIS_TYPE = AxisType.CATEGORICAL
+
+
+class LineAnnotationCategoricalBlock(BaseLineAnnotationBlock):
+    ERROR_X_AXIS_MUST_BE_INTEGER = "error_x_axis_must_be_integer"
+
+    class Meta:
+        value_class = LineAnnotationCategoricalStructValue
+
+    def clean(self, value: dict[str, Any]) -> dict[str, Any]:
+        cleaned_data: dict[str, Any] = super().clean(value)
+
+        errors: dict[str, ValidationError] = {}
+        # Require integers for the x-axis
+        if cleaned_data["axis"] == AxisChoices.X:
+            if not cleaned_data["value"].is_integer():
+                errors["value"] = ValidationError("Enter a whole number", code=self.ERROR_X_AXIS_MUST_BE_INTEGER)
+            else:
+                cleaned_data["value"] = int(cleaned_data["value"])
+
+        if errors:
+            raise blocks.StructBlockValidationError(block_errors=errors)
+
+        return cleaned_data
+
+
+class LineAnnotationBarColumnBlock(BaseLineAnnotationBlock):
+    """As categorical, but with different axis labels."""
+
+    axis = blocks.ChoiceBlock(choices=BarColumnAxisChoices.choices, default=BarColumnAxisChoices.CATEGORY)
+
+    class Meta:
+        value_class = LineAnnotationCategoricalStructValue
+
+
+class LineAnnotationLinearStructValue(LineAnnotationStructValue):
+    X_AXIS_TYPE = AxisType.LINEAR
+
+
+class LineAnnotationLinearBlock(BaseLineAnnotationBlock):
+    class Meta:
+        value_class = LineAnnotationLinearStructValue
