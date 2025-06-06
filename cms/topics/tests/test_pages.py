@@ -165,6 +165,7 @@ class TopicPageTests(WagtailPageTestCase):
         response = self.client.get(self.page.url)
 
         self.assertContains(response, "<h2>Data</h2>")
+        self.assertContains(response, '<section id="data"')
 
         self.assertContains(response, lookup_dataset.title)
         self.assertContains(response, lookup_dataset.description)
