@@ -63,7 +63,7 @@
         {% block header_area %}
             <div class="ons-container">
                 {% include "templates/components/navigation/breadcrumbs.html" %}
-                <h1 class="ons-u-fs-3xl common-header__heading">
+                <h1 class="ons-u-fs-3xl">
                     {{ page.title }}
                 </h1>
             </div>
@@ -72,7 +72,7 @@
             <div class="ons-grid">
                 <div class="ons-grid__col ons-col-{{ pageColNumber }}@m {{ pageColClasses }}">
                     {# This is the main tag in the base template in the design system #}
-                    <div class="ons-page__main {{ mainColClasses }}">
+                    <div class="ons-page__main ons-u-mb-5xl {{ mainColClasses }}">
                         {% block main %}{% endblock %}
                         {{ onsBackToTop() }}{# used in small viewports #}
                     </div>
