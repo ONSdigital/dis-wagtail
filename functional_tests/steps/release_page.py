@@ -2,6 +2,9 @@ from behave import given, step, then, when  # pylint: disable=no-name-in-module
 from behave.runner import Context
 from playwright.sync_api import expect
 
+from cms.core.custom_date_format import ons_default_datetime
+from functional_tests.steps.page_editor import user_clicks_publish
+
 
 @given("the user navigates to the release calendar page")
 def navigate_to_release_page(context: Context):
@@ -99,3 +102,65 @@ def display_datetime_with_meridiem(context: Context, meridiem_indicator: str):
 def date_placeholder_is_displayed_in_release_page_date_input_fields(context: Context, time: str):
     expect(context.page.locator("#id_release_date")).to_have_attribute("placeholder", time)
     expect(context.page.locator("#id_next_release_date")).to_have_attribute("placeholder", time)
+
+
+@then("the a default release date time is today's date and 9:30 AM")
+def default_release_date_time_is_displayed(context: Context):
+    default_datetime = ons_default_datetime().strftime("%Y-%m-%d %H:%M")
+    expect(context.page.locator("#id_release_date")).to_have_value(default_datetime)
+
+
+@then("the time selection options are in 30 minute intervals")
+def thirty_minute_interval_for_time_selection(context: Context):
+    time_picker = context.page.locator(".xdsoft_timepicker")
+    hours = [f"{h:02}" for h in range(24)]
+    # Release date date picker
+    context.page.get_by_role("textbox", name="Release date*").click()
+    for hour in hours:
+        expect(time_picker.get_by_text(f"{hour}:00").nth(2)).to_be_visible()
+        expect(time_picker.get_by_text(f"{hour}:30").first).to_be_visible()
+
+    # Next Release date picker -- not found atm..
+    context.page.get_by_role("textbox", name="Next release date").click()
+    for hour in hours:
+        expect(time_picker.get_by_text(f"{hour}:00").nth(3)).to_be_visible()
+        expect(time_picker.get_by_text(f"{hour}:30").nth(2)).to_be_visible()
+
+
+@given("a release calendar page has been published")
+def release_page_has_been_published(context: Context):
+    # readme - read on using func
+    set_page_status(context, "PUBLISHED")
+    enter_example_release_content(context)
+    user_clicks_publish(context)
+
+
+@when("user navigates to edit page")
+def user_edits_published_page(context: Context):
+    context.page.get_by_role("link", name="My Release", exact=True).click()
+    context.page.get_by_role("button", name="Pages").click()
+    context.page.get_by_role("link", name="View child pages of 'Home'").first.click()
+    context.page.get_by_role("link", name="View child pages of 'Release").click()
+    context.page.get_by_role("link", name="Edit 'My Release'").click()
+
+
+@when("user adds date_change_log")
+def user_adds_date_change_log(context: Context):
+    context.page.locator("#panel-child-content-changes_to_release_date-content").get_by_role(
+        "button", name="Insert a block"
+    ).click()
+    context.page.get_by_role("region", name="Date change log", exact=True).get_by_label("Previous date*").fill(
+        "2025-05-28 11:00"
+    )
+    context.page.get_by_role("region", name="Date change log", exact=True).get_by_label("Reason for change*").fill(
+        "Reason for change"
+    )
+
+
+@then("the release page displays the change in release date")
+def release_date_change__is_displayed(context: Context):
+    expect(context.page.get_by_role("heading", name="Previous date"))
+    expect(context.page.get_by_role("heading", name="Reason for change"))
+
+    expect(context.page.get_by_text("May 2025 11:00am")).to_be_visible()
+    expect(context.page.get_by_text("Reason for change")).to_be_visible()
