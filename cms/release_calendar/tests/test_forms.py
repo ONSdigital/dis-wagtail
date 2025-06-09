@@ -164,6 +164,83 @@ class ReleaseCalendarPageAdminFormTestCase(WagtailTestUtils, TestCase):
         self.assertFalse(form.is_valid())
         self.assertFormError(form, "release_date_text", ["The end month must be after the start month."])
 
+    def test_form_clean__validates_next_release_date_text_in_english(self):
+        """Validates that the next release date text format."""
+        data = self.form_data
+        data["release_date"] = "2024-01-01T00:00:00Z"
+        cases = [
+            ("12 November 2024 12:00pm", True),
+            ("Nov 2024", False),
+            ("November 24", False),
+            ("To be confirmed", True),
+            ("Lorem ipsum", False),
+        ]
+        for text, is_valid in cases:
+            with self.subTest(text=text, is_valid=is_valid):
+                data["next_release_date_text"] = text
+                form = self.form_class(instance=self.page, data=data)
+
+                self.assertEqual(form.is_valid(), is_valid)
+                if not is_valid:
+                    self.assertFormError(
+                        form,
+                        "next_release_date_text",
+                        [
+                            'The next release date text must be in the "DD Month YYYY Time" or say '
+                            '"To be confirmed" in English.'
+                        ],
+                    )
+
+    def test_form_clean__validates_next_release_date_text_in_welsh(self):
+        """Validates that the next release date text format."""
+        data = self.form_data
+        welsh_locale, _ = Locale.objects.get_or_create(language_code="cy")
+
+        self.page.locale = welsh_locale
+        data["release_date"] = "2024-01-01T00:00:00Z"
+        cases = [
+            ("12 Tachwedd 2024 12:00pm", True),
+            ("Tach 2024", False),
+            ("Tachwedd 24", False),
+            ("I'w gadarnhau", True),
+            ("Lorem ipsum", False),
+        ]
+        for text, is_valid in cases:
+            with self.subTest(text=text, is_valid=is_valid):
+                data["next_release_date_text"] = text
+                form = self.form_class(instance=self.page, data=data)
+
+                self.assertEqual(form.is_valid(), is_valid)
+                if not is_valid:
+                    self.assertFormError(
+                        form,
+                        "next_release_date_text",
+                        [
+                            'The next release date text must be in the "DD Month YYYY Time" or say '
+                            '"I\'w gadarnhau" in Welsh.'
+                        ],
+                    )
+
+    def test_form_clean__validates_next_release_date_text_is_after(self):
+        data = self.form_data
+        data["release_date"] = "2024-01-01T00:00:00Z"
+        data["next_release_date_text"] = "12 November 2023 12:00pm"
+
+        form = self.form_class(instance=self.page, data=data)
+
+        self.assertFalse(form.is_valid())
+
+        self.assertFormError(
+            form,
+            "next_release_date_text",
+            ["The next release date must be after the release date."],
+        )
+
+        data["next_release_date_text"] = "12 November 2024 12:00pm"  # It is later now
+        form = self.form_class(instance=self.page, data=data)
+
+        self.assertTrue(form.is_valid())
+
     def test_form_clean__can_add_release_date_when_confirming(self):
         """Checks that we can set a new release date when the release is confirmed, if previously it was empty."""
         self.page.release_date = None

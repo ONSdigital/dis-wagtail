@@ -70,7 +70,6 @@ def parse_day_month_year_time(text: str, locale_code: str) -> datetime | None:
 
     try:
         month_index = DATE_MONTHS[locale_code].index(month) + 1
-        print(f"{year}-{month_index}-{day} {time}+0000")
         return datetime.strptime(f"{year}-{month_index}-{day} {time}+0000", "%Y-%m-%d %I:%M%p%z")
     except ValueError:
         return None
