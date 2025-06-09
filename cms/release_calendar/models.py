@@ -231,5 +231,5 @@ class ReleaseCalendarPage(BundledPageMixin, BasePage):  # type: ignore[django-ma
     def active_bundle(self) -> Optional["Bundle"]:
         if not self.pk:
             return None
-        bundle: Optional[Bundle] = self.bundles.active().first()  # pylint: disable=no-member
+        bundle: Bundle | None = self.bundles.active().first()  # pylint: disable=no-member
         return bundle
