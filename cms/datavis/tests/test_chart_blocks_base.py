@@ -65,8 +65,9 @@ class BaseChartBlockTestCase(SimpleTestCase, WagtailTestUtils):
             ("title", "Test Chart"),
             ("subtitle", "Test Subtitle"),
             ("caption", "Test Caption"),
-            ("theme", self.raw_data["theme"]),
         ]
+        if "theme" in self.block.child_blocks:
+            pairs.append(("theme", self.raw_data["theme"]))
         for key, expected in pairs:
             with self.subTest(key=key):
                 self.assertEqual(expected, value[key])
