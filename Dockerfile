@@ -84,7 +84,7 @@ RUN groupadd --gid $GID $USERNAME \
     && chown -R $UID:$GID /app $VIRTUAL_ENV
 
 # Install Poetry in its own virtual environment
-ARG POETRY_VERSION=1.8.4
+ARG POETRY_VERSION=1.8.5
 ARG POETRY_HOME=/opt/poetry
 # TODO: when moving to ONS infrastructure, replace RUN with
 # RUN --mount=type=cache,target=/root/.cache/pip <<EOF
