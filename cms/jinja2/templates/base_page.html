@@ -43,6 +43,9 @@
 {%- endblock -%}
 
 {% block pageContent %}
+    {#- "Welsh" in Welsh is Cymraeg, but when we say "in Welsh" the noun uses soft mutation and becomes Gymraeg and the
+    resulting phrase reads "yn y Gymraeg". Therefore we can't just translate the name of the language, so we use the
+    "in Language" form here. -#}
     {#- Set as variables so that makemessages picks it up -#}
     {%- set english_label = _("in English") -%}
     {%- set welsh_label = _("in Welsh") -%}
