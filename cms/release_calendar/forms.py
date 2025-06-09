@@ -9,7 +9,7 @@ from wagtail.models import Locale
 from cms.bundles.permissions import user_can_manage_bundles
 
 from .enums import NON_PROVISIONAL_STATUS_CHOICES, ReleaseStatus
-from .utils import parse_month_year
+from .utils import get_translated_string, parse_day_month_year_time, parse_month_year
 
 DATE_SEPERATOR = {
     "en": " to ",
@@ -32,7 +32,7 @@ class ReleaseCalendarPageAdminForm(WagtailAdminPageForm):
         if self.instance.status == ReleaseStatus.PUBLISHED:
             self.fields["release_date"].disabled = True
 
-    def clean(self) -> dict:
+    def clean(self) -> dict:  # noqa: C901
         """Validate the submitted release calendar data."""
         cleaned_data: dict = super().clean()
 
@@ -78,6 +78,32 @@ class ReleaseCalendarPageAdminForm(WagtailAdminPageForm):
 
         if release_date_text := cleaned_data.get("release_date_text"):
             self.validate_release_date_text_format(release_date_text, self.instance.locale)
+
+        if next_release_date_text := cleaned_data.get("next_release_date_text"):
+            locale_code = "en" if self.instance.locale.language_code == "en-gb" else self.instance.locale.language_code
+
+            parsed_date = parse_day_month_year_time(next_release_date_text, locale_code)
+
+            if (
+                parsed_date is not None
+                and cleaned_data.get("release_date")
+                and parsed_date <= cleaned_data["release_date"]
+            ):
+                raise ValidationError(
+                    {"next_release_date_text": "The next release date must be after the release date."}
+                )
+
+            to_be_confirmed_text = get_translated_string("To be confirmed", self.instance.locale.language_code)
+
+            if parsed_date is None and to_be_confirmed_text != next_release_date_text:
+                raise ValidationError(
+                    {
+                        "next_release_date_text": (
+                            'The next release date text must be in the "DD Month YYYY Time" or say '
+                            f'"{to_be_confirmed_text}" in {self.instance.locale.get_display_name()}.'
+                        )
+                    }
+                )
 
         return cleaned_data
 

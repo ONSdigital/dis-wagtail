@@ -422,3 +422,6 @@ msgstr ""
 #: cms/settings/base.py:343
 msgid "Ukrainian"
 msgstr ""
+
+msgid "To be confirmed"
+msgstr "I'w gadarnhau"
