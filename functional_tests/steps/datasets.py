@@ -1,6 +1,7 @@
-from behave import step, when  # pylint: disable=no-name-in-module
+from behave import step, then, when  # pylint: disable=no-name-in-module
 from behave.runner import Context
 from django.conf import settings
+from playwright.sync_api import expect
 
 from functional_tests.step_helpers.datasets import mock_datasets_responses
 
@@ -107,3 +108,13 @@ def the_user_selects_multiple_datasets(context: Context) -> None:
 
 def get_datasets_panel_locator(editor_tab: str = "content") -> str:
     return f"#panel-child-{editor_tab}-datasets-content"
+
+
+@then("the selected datasets are displayed on the page")
+@then("the selected dataset is displayed on the page")
+def check_selected_datasets_are_displayed(context: Context):
+    expect(context.page.get_by_role("heading", name="Data", exact=True)).to_be_visible()
+
+    for dataset in context.selected_datasets:
+        expect(context.page.get_by_role("link", name=dataset["title"])).to_be_visible()
+        expect(context.page.get_by_text(dataset["description"])).to_be_visible()
