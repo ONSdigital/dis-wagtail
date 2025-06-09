@@ -1,5 +1,4 @@
 import time
-from functools import cached_property
 from typing import TYPE_CHECKING, Any, ClassVar
 
 from django.conf import settings
@@ -9,6 +8,7 @@ from django.shortcuts import redirect
 from django.urls import reverse
 from django.utils import timezone
 from django.utils.formats import date_format
+from django.utils.functional import cached_property
 from django.utils.html import format_html, format_html_join
 from wagtail.admin.ui.tables import Column, DateColumn, UpdatedAtColumn, UserColumn
 from wagtail.admin.views.generic import CreateView, EditView, IndexView, InspectView

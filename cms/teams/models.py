@@ -1,7 +1,7 @@
-from functools import cached_property
 from typing import ClassVar
 
 from django.db import models
+from django.utils.functional import cached_property
 from wagtail.admin.utils import get_user_display_name
 from wagtail.search import index
 
