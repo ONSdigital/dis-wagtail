@@ -4,7 +4,7 @@ from typing import TYPE_CHECKING, Any, ClassVar, Optional
 
 from django.contrib.admin.utils import quote, unquote
 from django.core.exceptions import ObjectDoesNotExist
-from django.core.paginator import InvalidPage, Paginator
+from django.core.paginator import InvalidPage
 from django.db.models import Model
 from django.http import Http404
 from django.urls import reverse
@@ -111,9 +111,9 @@ class SeriesWithHeadlineFiguresChooserMixin:
         objects = self.filter_object_list(objects)  # type: ignore[attr-defined]
         objects = self.get_object_list(objects=objects)
 
-        paginator = Paginator(objects, per_page=self.per_page)  # type: ignore[attr-defined]
+        self.paginator = self.paginator_class(objects, per_page=self.per_page)  # type: ignore[attr-defined]
         try:
-            return paginator.page(request.GET.get("p", 1))
+            return self.paginator.page(request.GET.get("p", 1))
         except InvalidPage as e:
             raise Http404 from e
 

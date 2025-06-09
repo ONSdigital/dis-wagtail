@@ -188,7 +188,9 @@ class StatisticalArticlePage(BundledPageMixin, RoutablePageMixin, BasePage):  # 
             [
                 FieldRowPanel(
                     [
-                        FieldPanel("release_date", date_widget, help_text="The actual release date"),
+                        FieldPanel(
+                            "release_date", date_widget, help_text="The actual release date", required_on_save=True
+                        ),
                         FieldPanel(
                             "next_release_date",
                             date_widget,
