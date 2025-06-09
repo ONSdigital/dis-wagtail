@@ -1,0 +1,48 @@
+{% extends "templates/base_page.html" %}
+
+{% from "components/document-list/_macro.njk" import onsDocumentList %}
+{% from "components/hero/_macro.njk" import onsHero %}
+{% from "components/pagination/_macro.njk" import onsPagination %}
+
+{% block header_area %}
+    {%- set hero_topic = _("Related data") -%}
+    {%- set breadcrumbs_aria_label = _("Breadcrumbs") -%}
+    {# fmt:off #}
+    {{
+        onsHero({
+            "topic": hero_topic,
+            "title": page.related_data_display_title,
+            "variants": 'grey',
+            "text": page.summary,
+            "wide": true,
+            "detailsColumns": 12,
+            "breadcrumbs": {
+                "ariaLabel": breadcrumbs_aria_label,
+                "itemsList": breadcrumbs(page, include_self=True),
+            }
+        })
+    }}
+    {# fmt:on #}
+{% endblock %}
+
+{% block main %}
+    <div class="ons-grid">
+        <div class="ons-grid__col ons-col-8@m">
+            {{ onsDocumentList({"documents": paginated_datasets}) }}
+
+            {% block pagination %}
+                {% if paginated_datasets.paginator.num_pages > 1 %}
+
+                    {# fmt:off #}
+                    {{
+                        onsPagination({
+                            "currentPageNumber": paginated_datasets.number,
+                            "pages": ons_pagination_url_list
+                        })
+                    }}
+                    {# fmt:on #}
+                {% endif %}
+            {% endblock %}
+        </div>
+    </div>
+{% endblock %}

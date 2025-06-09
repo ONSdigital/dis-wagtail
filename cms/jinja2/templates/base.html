@@ -1,11 +1,7 @@
 {% extends "layout/_template.njk" %}
 {% from "components/cookies-banner/_macro.njk" import onsCookiesBanner %}
-{% from "component_overrides/header/_macro.njk" import onsHeaderNew %}
+{% from "components/header/_macro.njk" import onsHeader %}
 {% from "components/footer/_macro.njk" import onsFooter %}
-
-{% set page_title %}
-    {% if current_site and page.pk == current_site.root_page.pk and current_site.site_name %}{{ current_site.site_name }} | {% endif %}{% block title %}{% if page.seo_title %}{{ page.seo_title }}{% else %}{{ page.title}}{% endif %}{% endblock %}{% block title_suffix %}{% if current_site and page.pk != current_site.root_page.pk and current_site.site_name %} | {{ current_site.site_name }}{% endif %}{% endblock %}
-{% endset %}
 
 {# fmt:off #}
 {% set languages=get_translation_urls() %}
@@ -17,11 +13,12 @@
     {% set body_class = '' %}
 {% endif %}
 
-{%- set page_title -%}
+{%- set page_title_default -%}
     {%- with current_site=wagtail_site() -%}
         {% if current_site and page.pk == current_site.root_page.pk and current_site.site_name %}{{ current_site.site_name }} - {% endif %}{% if page.seo_title %}{{ page.seo_title }}{% else %}{{ page.display_title | default(page.title) }}{% endif %}{% if current_site and page.pk != current_site.root_page.pk and current_site.site_name %} - {{ current_site.site_name }}{% endif %}
     {%- endwith -%}
 {%- endset -%}
+{%- set page_title = page_title | default(page_title_default) -%}
 
 {% set navigation_settings = settings.navigation.NavigationSettings %}
 {% set main_menu = main_menu | default(navigation_settings.main_menu.localized) %}
@@ -44,6 +41,7 @@
     "bodyClasses": body_class,
     "title": page_title,
     "header": {
+        "variants": "basic",
         "phase": {
             "badge": badge_label,
             "html": badge_html
@@ -52,7 +50,7 @@
             "languages": languages
         },
         "mastheadLogoUrl": "/",
-        "navLinks": {
+        "menuLinks": {
             "id": "nav-links-external",
             "ariaLabel": menu_label,
             "ariaListLabel": menu_label,
@@ -60,8 +58,8 @@
                 "text":menu_label,
                 "ariaLabel": menu_toggle_aria_label
             },
-            "keyLinksList": main_menu_highlights(main_menu),
-            "itemsList": main_menu_columns(main_menu)
+            "keyLinks": main_menu_highlights(main_menu),
+            "columns": main_menu_columns(main_menu)
         }
     },
     "footer": {
@@ -121,29 +119,31 @@
 {% endblock %}
 
 {% block header %}
+{# fmt:off #}
     {{
-    onsHeaderNew({
-    "wide": pageConfig.wide,
-    "fullWidth": pageConfig.fullWidth,
-    "language": pageConfig.header.language,
-    "button": pageConfig.header.signoutButton,
-    "toggleNavigationButton": pageConfig.header.toggleNavigationButton,
-    "navigation": pageConfig.header.navigation,
-    "siteSearchAutosuggest": pageConfig.header.siteSearchAutosuggest,
-    "browserBanner": pageConfig.header.browserBanner,
-    "phase": pageConfig.header.phase,
-    "navLinks": pageConfig.header.navLinks,
-    "variants": pageConfig.header.variants,
-    "classes": pageConfig.header.classes,
-    "mastheadLogo": pageConfig.header.mastheadLogo,
-    "mastheadLogoUrl": pageConfig.header.mastheadLogoUrl,
-    "titleUrl": pageConfig.header.titleUrl,
-    "title": pageConfig.header.title | default(pageConfig.title),
-    "description": pageConfig.header.description,
-    "titleAsH1": pageConfig.header.titleAsH1,
-    "titleLogo": pageConfig.header.titleLogo
-    })
+        onsHeader({
+            "wide": pageConfig.wide,
+            "fullWidth": pageConfig.fullWidth,
+            "language": pageConfig.header.language,
+            "button": pageConfig.header.signoutButton,
+            "toggleNavigationButton": pageConfig.header.toggleNavigationButton,
+            "navigation": pageConfig.header.navigation,
+            "siteSearchAutosuggest": pageConfig.header.siteSearchAutosuggest,
+            "browserBanner": pageConfig.header.browserBanner,
+            "phase": pageConfig.header.phase,
+            "menuLinks": pageConfig.header.menuLinks,
+            "variants": pageConfig.header.variants,
+            "classes": pageConfig.header.classes,
+            "mastheadLogo": pageConfig.header.mastheadLogo,
+            "mastheadLogoUrl": pageConfig.header.mastheadLogoUrl,
+            "titleUrl": pageConfig.header.titleUrl,
+            "title": pageConfig.header.title | default(pageConfig.title),
+            "description": pageConfig.header.description,
+            "titleAsH1": pageConfig.header.titleAsH1,
+            "titleLogo": pageConfig.header.titleLogo
+        })
     }}
+{# fmt:on #}
 {% endblock %}
 
 {% block scripts %}

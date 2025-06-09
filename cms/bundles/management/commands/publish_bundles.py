@@ -19,6 +19,16 @@ logger = logging.getLogger(__name__)
 
 if TYPE_CHECKING:
     from django.core.management.base import CommandParser
+    from wagtail.models import Page
+
+
+def serialize_page(page: "Page") -> dict[str, Any]:
+    """Serializes a page to a dictionary."""
+    return {
+        "id": uuid.uuid4(),
+        "type": "item",
+        "value": {"page": page.pk, "title": "", "description": "", "external_url": ""},
+    }
 
 
 class Command(BaseCommand):
@@ -38,20 +48,29 @@ class Command(BaseCommand):
     def _update_related_release_calendar_page(self, bundle: Bundle) -> None:
         """Updates the release calendar page related to the bundle with the pages in the bundle."""
         content = []
-        pages = []
+        article_pages = []
+        methodology_pages = []
         for page in bundle.get_bundled_pages():
-            pages.append(
-                {
-                    "id": uuid.uuid4(),
-                    "type": "item",
-                    "value": {"page": page.pk, "title": "", "description": "", "external_url": ""},
-                }
-            )
-        if pages:
-            content.append({"type": "release_content", "value": {"title": "Publications", "links": pages}})
+            match page.specific_class.__name__:
+                case "StatisticalArticlePage":
+                    article_pages.append(serialize_page(page))
+                case "MethodologyPage":
+                    methodology_pages.append(serialize_page(page))
+
+        if article_pages:
+            content.append({"type": "release_content", "value": {"title": "Publications", "links": article_pages}})
+
+        if methodology_pages:
+            content.append({"type": "release_content", "value": {"title": "Methodology", "links": methodology_pages}})
+
+        datasets = [
+            {"type": "dataset_lookup", "id": uuid.uuid4(), "value": dataset["dataset"]}
+            for dataset in bundle.bundled_datasets.all().values("dataset")
+        ]
 
         page = bundle.release_calendar_page
         page.content = content
+        page.datasets = datasets
         page.status = ReleaseStatus.PUBLISHED
         revision = page.save_revision(log_action=True)
         revision.publish()

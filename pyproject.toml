@@ -36,6 +36,11 @@ wagtail-tinytableblock = "^0.3.4"
 queryish = "^0.2"
 python-json-logger = "^3.3.0"
 json-log-formatter = "^1.1.1"
+django-xff = "^1.5.0"
+djangorestframework = "^3.16.0"
+matplotlib = "^3.10.3"
+django-ses = "^4.4.0"
+aws-msk-iam-sasl-signer-python = "^1.0.2"
 
 [tool.poetry.group.dev.dependencies]
 # :TODO: Remove pylint when ruff supports all pylint rules
@@ -60,11 +65,13 @@ Werkzeug = "~3.0.6"
 playwright = "^1.48.0"
 behave = "^1.2.6"
 
-setuptools = "^75.2.0"
+setuptools = "^78.1.1"
 honcho = "^2.0.0"
 detect-secrets = "^1.5.0"
 moto = {extras = ["iam","s3"], version = "^5.0.22"}
 django-migration-linter = "^5.1.0"
+fakeredis = "^2.28.1"
+time-machine = "^2.16.0"
 
 [tool.ruff]
 target-version = "py312"

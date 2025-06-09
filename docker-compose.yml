@@ -4,6 +4,10 @@ services:
     build:
       context: .
       target: dev
+      args:
+        - GIT_COMMIT=
+        - BUILD_TIME=
+        - TAG=
     env_file:
       - path: .env
         required: false
@@ -18,7 +22,7 @@ services:
       WAGTAILADMIN_BASE_URL: 'http://localhost:8000'
       STATIC_DIR: /app/static/
       STATIC_URL: /static/
-      KAFKA_SERVER: broker:9092
+      KAFKA_SERVERS: broker:9092
     ports:
       - 3000:3000 # webpack
       - 8000:8000 # runserver

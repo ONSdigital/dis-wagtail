@@ -39,6 +39,7 @@ class ContactDetails(TranslatableMixin, index.Indexed, models.Model):
         index.SearchField("email"),
         index.AutocompleteField("email"),
         index.SearchField("phone"),
+        index.FilterField("locale"),
     ]
 
     class Meta(TranslatableMixin.Meta):
@@ -94,6 +95,7 @@ class GlossaryTerm(TranslatableMixin, PreviewableMixin, RevisionMixin, index.Ind
         index.AutocompleteField("name"),
         index.SearchField("definition"),
         index.AutocompleteField("definition"),
+        index.FilterField("locale"),
     ]
 
     class Meta:

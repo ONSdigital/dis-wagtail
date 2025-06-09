@@ -7,12 +7,13 @@ from django.utils import timezone
 from wagtail.admin.panels import get_edit_handler
 from wagtail.test.utils.form_data import inline_formset, nested_form_data
 
-from cms.articles.tests.factories import StatisticalArticlePageFactory
+from cms.articles.tests.factories import ArticleSeriesPageFactory, StatisticalArticlePageFactory
 from cms.bundles.admin_forms import AddToBundleForm
 from cms.bundles.enums import ACTIVE_BUNDLE_STATUS_CHOICES, BundleStatus
 from cms.bundles.models import Bundle
 from cms.bundles.tests.factories import BundleFactory, BundlePageFactory
 from cms.bundles.viewsets.bundle_chooser import BundleChooserWidget
+from cms.datasets.tests.factories import DatasetFactory
 from cms.release_calendar.tests.factories import ReleaseCalendarPageFactory
 from cms.users.tests.factories import UserFactory
 from cms.workflows.tests.utils import mark_page_as_ready_to_publish
@@ -47,7 +48,7 @@ class AddToBundleFormTestCase(TestCase):
 
     def test_form_clean__validates_page_is_bundleable(self):
         """Checks the given page inherits from BundlePageMixin."""
-        form = AddToBundleForm(page_to_add=ReleaseCalendarPageFactory(), data={"bundle": self.bundle.pk})
+        form = AddToBundleForm(page_to_add=ArticleSeriesPageFactory(), data={"bundle": self.bundle.pk})
         self.assertFalse(form.is_valid())
         self.assertFormError(form, None, ["Pages of this type cannot be added."])
 
@@ -74,6 +75,7 @@ class BundleAdminFormTestCase(TestCase):
             "status": BundleStatus.IN_REVIEW,
             "bundled_pages": inline_formset([{"page": self.page.id}]),
             "teams": inline_formset([]),
+            "bundled_datasets": inline_formset([]),
         }
 
     def test_form_init__status_choices(self):
@@ -133,6 +135,20 @@ class BundleAdminFormTestCase(TestCase):
         form = self.form_class(instance=self.bundle, data=nested_form_data(raw_data))
         self.assertFalse(form.is_valid())
         self.assertFormError(form, None, ["'The Statistical Article' is already in an active bundle (Another Bundle)"])
+
+    def test_clean__validates_release_calendar_page_not_already_used(self):
+        """Should validate that the page is not in the active bundle."""
+        nowish = timezone.now() + timedelta(minutes=5)
+        release_calendar_page = ReleaseCalendarPageFactory(release_date=nowish, title="Release Calendar Page")
+        raw_data = self.raw_form_data()
+        raw_data["release_calendar_page"] = release_calendar_page.id
+        raw_data["bundled_pages"] = inline_formset([{"page": release_calendar_page.id}])
+
+        form = self.form_class(instance=self.bundle, data=nested_form_data(raw_data))
+        self.assertFalse(form.is_valid())
+        self.assertFormError(
+            form, None, ["'Release Calendar Page' is already set as the Release Calendar page for this bundle."]
+        )
 
     def test_clean__sets_approved_by_and_approved_at(self):
         raw_data = self.raw_form_data()
@@ -215,3 +231,18 @@ class BundleAdminFormTestCase(TestCase):
 
         self.assertFalse(form.is_valid())
         self.assertFormError(form, None, "Cannot approve the bundle without any pages")
+
+    def test_clean_validates_the_bundle_has_datasets(self):
+        DatasetFactory(id=123)
+        raw_data = self.raw_form_data()
+        raw_data["bundled_datasets"] = inline_formset([{"dataset": 123}])
+        form = self.form_class(instance=self.bundle, data=nested_form_data(raw_data))
+
+        self.assertTrue(form.is_valid())
+
+    def test_clean_validates_the_bundle_has_valid_datasets(self):
+        raw_data = self.raw_form_data()
+        raw_data["bundled_datasets"] = inline_formset([{"dataset": 9999}])  # Invalid dataset ID
+        form = self.form_class(instance=self.bundle, data=nested_form_data(raw_data))
+
+        self.assertFalse(form.is_valid())

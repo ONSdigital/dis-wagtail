@@ -1,12 +1,17 @@
 from datetime import datetime
 
+from django.core.exceptions import ValidationError
 from django.test import TestCase, override_settings
 from django.utils.translation import gettext_lazy as _
+from wagtail.blocks import StreamValue
 from wagtail.coreutils import get_dummy_request
+from wagtail.models import Locale
 
 from cms.articles.tests.factories import ArticleSeriesPageFactory, StatisticalArticlePageFactory
+from cms.datasets.blocks import DatasetStoryBlock
 from cms.home.models import HomePage
 from cms.methodology.tests.factories import MethodologyPageFactory
+from cms.taxonomy.tests.factories import TopicFactory
 from cms.topics.tests.factories import (
     TopicPageFactory,
     TopicPageRelatedArticleFactory,
@@ -104,12 +109,17 @@ class TopicPageTestCase(TestCase):
         )
 
     def test_table_of_contents_includes_all_sections(self):
+        manual_dataset = {"title": "test manual", "description": "manual description", "url": "https://example.com"}
+
+        self.topic_page.datasets = StreamValue(DatasetStoryBlock(), stream_data=[("manual_link", manual_dataset)])
+
         self.assertListEqual(
             self.topic_page.table_of_contents,
             [
                 {"url": "#featured", "text": "Featured"},
                 {"url": "#related-articles", "text": "Related articles"},
                 {"url": "#related-methods", "text": "Methods and quality information"},
+                {"url": "#data", "text": "Data"},
             ],
         )
 
@@ -117,6 +127,11 @@ class TopicPageTestCase(TestCase):
         self.topic_page.featured_series = None
 
         self.assertNotIn({"url": "#featured", "text": "Featured"}, self.topic_page.table_of_contents)
+
+    def test_table_of_contents_without_datasets(self):
+        self.topic_page.datasets = None
+
+        self.assertNotIn({"url": "#data", "text": "Data"}, self.topic_page.table_of_contents)
 
     def test_table_of_contents_includes_explore_more(self):
         self.topic_page.explore_more = [("external_link", {"url": "https://example.com"})]
@@ -141,3 +156,59 @@ class TopicPageTestCase(TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, self.article.display_title)
+
+    def test_translated_model_taxonomy_enforcement(self):
+        # Create a translations of self.topic_page
+        welsh_locale = Locale.objects.get(language_code="cy")
+
+        # This should not raise a ValidationError
+        translated_topic_page = TopicPageFactory(
+            title="Test Topic",
+            locale=welsh_locale,
+            translation_key=self.topic_page.translation_key,
+            topic=self.topic_page.topic,
+        )
+
+        # Assign different topic
+        translated_topic_page.topic = TopicFactory()
+
+        with self.assertRaisesRegex(ValidationError, "The topic needs to be the same as the English page."):
+            translated_topic_page.save()
+
+    def test_headline_figures_clean(self):
+        with self.assertRaisesRegex(ValidationError, "If you add headline figures, please add at least 2."):
+            # Should not validate with just one
+            self.topic_page.headline_figures.append(
+                (
+                    "figure",
+                    {
+                        "series": self.article_series,
+                        "figure_id": "figurexyz",
+                    },
+                ),
+            )
+            self.topic_page.clean()
+        # Should validate with two
+        self.topic_page.headline_figures.append(
+            (
+                "figure",
+                {
+                    "series": self.article_series,
+                    "figure_id": "figureabc",
+                },
+            ),
+        )
+        self.topic_page.clean()
+
+        # Should not validate with duplicates
+        with self.assertRaisesRegex(ValidationError, "Duplicate headline figures are not allowed."):
+            self.topic_page.headline_figures.append(
+                (
+                    "figure",
+                    {
+                        "series": self.article_series,
+                        "figure_id": "figureabc",
+                    },
+                ),
+            )
+            self.topic_page.clean()

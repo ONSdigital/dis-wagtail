@@ -2,7 +2,6 @@ from typing import TYPE_CHECKING, ClassVar
 
 from wagtail.blocks import RichTextBlock, StreamBlock
 from wagtail.images.blocks import ImageChooserBlock
-from wagtailmath.blocks import MathBlock
 
 from cms.core.blocks import (
     AnnouncementPanelBlock,
@@ -16,6 +15,7 @@ from cms.core.blocks import (
     VideoEmbedBlock,
     WarningPanelBlock,
 )
+from cms.core.blocks.equation import EquationBlock
 from cms.core.blocks.section_blocks import SectionBlock
 
 if TYPE_CHECKING:
@@ -53,11 +53,12 @@ class CoreStoryBlock(StreamBlock):
     documents = DocumentsBlock(group="Media")
     related_links = RelatedLinksBlock()
     table = ONSTableBlock(group="DataVis", allow_links=True)
-    equation = MathBlock(group="DataVis", icon="decimal")
+    equation = EquationBlock(group="DataVis", icon="decimal")
     ons_embed = ONSEmbedBlock(group="DataVis", label="ONS General Embed")
 
     class Meta:
         block_counts: ClassVar[dict[str, dict]] = {"related_links": {"max_num": 1}}
+        template = "templates/components/streamfield/stream_block.html"
 
     def has_equations(self, value: "StreamValue") -> bool:
         """Checks if there are any equation blocks."""

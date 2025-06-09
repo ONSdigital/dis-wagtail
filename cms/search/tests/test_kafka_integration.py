@@ -7,6 +7,7 @@ from django.test import TestCase, override_settings
 from kafka import KafkaConsumer
 
 from cms.search.publishers import KafkaPublisher
+from cms.search.utils import build_page_uri
 from cms.standard_pages.tests.factories import InformationPageFactory
 
 
@@ -25,7 +26,7 @@ class KafkaIntegrationTests(TestCase):
         # so we can verify messages that come in.
         cls.consumer_created = KafkaConsumer(
             "search-content-updated",
-            bootstrap_servers=[settings.KAFKA_SERVER],
+            bootstrap_servers=settings.KAFKA_SERVERS,
             auto_offset_reset="earliest",
             enable_auto_commit=True,
             group_id="test-group-created-updated",
@@ -33,7 +34,7 @@ class KafkaIntegrationTests(TestCase):
 
         cls.consumer_deleted = KafkaConsumer(
             "search-content-deleted",
-            bootstrap_servers=[settings.KAFKA_SERVER],
+            bootstrap_servers=settings.KAFKA_SERVERS,
             auto_offset_reset="earliest",
             enable_auto_commit=True,
             group_id="test-group-deleted",
@@ -71,7 +72,7 @@ class KafkaIntegrationTests(TestCase):
         publish_result = self.publisher.publish_created_or_updated(page)
         self.assertIsNotNone(publish_result)  # We get some metadata from Kafka
 
-        msg_found = self._poll_for_message(self.consumer_created, page.url_path)
+        msg_found = self._poll_for_message(self.consumer_created, build_page_uri(page))
         self.assertTrue(msg_found, "No matching message found in 'search-content-updated' channel.")
 
     def test_publish_deleted_integration(self):

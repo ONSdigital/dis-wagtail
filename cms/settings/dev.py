@@ -1,4 +1,3 @@
-import copy
 import os
 
 from .base import *  # noqa: F403  # pylint: disable=wildcard-import,unused-wildcard-import
@@ -39,23 +38,23 @@ SECURE_SSL_REDIRECT = False
 # For the same reason the HSTS header should not be sent.
 SECURE_HSTS_SECONDS = 0
 
-# Adds Django Debug Toolbar
-INSTALLED_APPS.append("debug_toolbar")
-MIDDLEWARE.insert(0, "debug_toolbar.middleware.DebugToolbarMiddleware")  # noqa: F405
-SHOW_TOOLBAR = True  # Override in `local.py`
-DEBUG_TOOLBAR_CONFIG = {
-    # The default debug_toolbar_middleware.show_toolbar function checks whether the
-    # request IP is in settings.INTERNAL_IPS. In Docker, the request IP can vary, so
-    # we set it in settings.local instead.
-    "SHOW_TOOLBAR_CALLBACK": lambda x: SHOW_TOOLBAR,
-    "SHOW_COLLAPSED": True,
-}
+SHOW_TOOLBAR = True  # Override in local.py
 
-# Database
-DATABASES = {
-    "default": dj_database_url.config(default="postgres://ons:ons@localhost:5432/ons"),  # noqa: F405
-}
-DATABASES["read_replica"] = copy.deepcopy(DATABASES["default"])
+# Adds Django Debug Toolbar
+if DEBUG:
+    INSTALLED_APPS.append("debug_toolbar")
+    MIDDLEWARE.insert(0, "debug_toolbar.middleware.DebugToolbarMiddleware")  # noqa: F405
+    DEBUG_TOOLBAR_CONFIG = {
+        # The default debug_toolbar_middleware.show_toolbar function checks whether the
+        # request IP is in settings.INTERNAL_IPS. In Docker, the request IP can vary, so
+        # we set it in settings.local instead.
+        "SHOW_TOOLBAR_CALLBACK": lambda x: SHOW_TOOLBAR,
+        "SHOW_COLLAPSED": True,
+    }
+
+# Force database connections to be read-only for the replica
+if "postgres" in DATABASES["read_replica"]["ENGINE"]:  # noqa: F405
+    DATABASES["read_replica"]["ENGINE"] = "cms.core.database_backends.postgres_readonly"  # noqa: F405
 
 # Redis
 REDIS_URL = env.get("REDIS_URL", "redis://localhost:6379")
@@ -99,7 +98,17 @@ MIGRATION_LINTER_OPTIONS = {
         "0003_customdocument__privacy_and_more",
         "0002_articleseriespage_listing_image_and_more",  # Ignoring NOT NULL constraint on columns
         "0003_releasecalendarpage_datasets",
+        "0004_topicpage_headline_figures",
         "0003_footermenu_locale_footermenu_translation_key_and_more",  # Ignoring NOT NULL constraint on columns
         "0007_remove_glossaryterm_core_glossary_term_name_unique_and_more",  # Ignoring NOT NULL constraint
+        "0004_make_release_date_mandatory_and_rename_next_release_text",  # Ignoring NOT NULL and RENAMING constraints
+        "0004_statisticalarticlepage_headline_figures_figure_ids",
+        "0006_statisticalarticlepage_dataset_sorting_and_more",  # Ignoring NOT NULL constraint
+        "0006_topicpage_datasets",  # Ignoring NOT NULL constraint
     ],
 }
+
+# Blank out build information during local development
+BUILD_TIME = None
+GIT_COMMIT = None
+TAG = "dev"

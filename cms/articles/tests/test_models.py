@@ -4,12 +4,18 @@ from datetime import datetime
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.test import TestCase, override_settings
+from django.urls import reverse
 from django.utils import timezone
 from django.utils.formats import date_format
+from wagtail.blocks import StreamValue
 from wagtail.test.utils import WagtailTestUtils
+from wagtail.test.utils.form_data import nested_form_data, rich_text, streamfield
 
+from cms.articles.enums import SortingChoices
 from cms.articles.tests.factories import ArticleSeriesPageFactory, StatisticalArticlePageFactory
 from cms.core.tests.factories import ContactDetailsFactory
+from cms.datasets.blocks import DatasetStoryBlock
+from cms.datasets.models import Dataset
 
 
 class ArticleSeriesTestCase(WagtailTestUtils, TestCase):
@@ -175,6 +181,171 @@ class StatisticalArticlePageTestCase(WagtailTestUtils, TestCase):
 
         self.assertListEqual(info.exception.messages, ["The next release date must be after the release date."])
 
+    def test_clean_validates_a_min_of_two_headline_figures_are_needed(self):
+        figure_one = {
+            "type": "figure",
+            "value": {
+                "figure_id": "figurexyz",
+                "title": "Figure title XYZ",
+                "figure": "100 Million and more",
+                "supporting_text": "Reasons to add tests and use long test strings where possible",
+            },
+        }
+        self.page.headline_figures = [figure_one]
+        self.page.headline_figures_figure_ids = "figurexyz"
+
+        with self.assertRaisesRegex(ValidationError, "If you add headline figures, please add at least 2."):
+            # Should not validate with just one
+            self.page.clean()
+        # Should validate with two
+        self.page.headline_figures = [
+            figure_one,
+            {
+                "type": "figure",
+                "value": {
+                    "figure_id": "figureabc",
+                    "title": "Another figure title for completeness",
+                    "figure": "100 Billion and many more",
+                    "supporting_text": "Figure supporting text ABC",
+                },
+            },
+        ]
+        self.page.headline_figures_figure_ids = "figurexyz,figureabc"
+        self.page.clean()
+
+    def test_clean_validates_a_max_of_six_headline_figures_can_be_added(self):
+        self.login()
+
+        data = nested_form_data(
+            {
+                "title": self.page.title,
+                "slug": self.page.slug,
+                "summary": rich_text(self.page.summary),
+                "main_points_summary": rich_text(self.page.main_points_summary),
+                "release_date": self.page.release_date,
+                "content": streamfield(
+                    [("section", {"title": "Test", "content": streamfield([("rich_text", rich_text("text"))])})]
+                ),
+                "datasets": streamfield([]),
+                "dataset_sorting": "AS_SHOWN",
+                "corrections": streamfield([]),
+                "notices": streamfield([]),
+                "headline_figures": streamfield(
+                    [
+                        (
+                            "figure",
+                            {
+                                "figure_id": f"figure_{i}",
+                                "title": "Figure title XYZ",
+                                "figure": "100 Million and more",
+                                "supporting_text": "Reasons to add tests and use long test strings where possible",
+                            },
+                        )
+                        for i in range(7)
+                    ]
+                ),
+            }
+        )
+        response = self.client.post(reverse("wagtailadmin_pages:edit", args=[self.page.pk]), data, follow=True)
+        self.assertContains(response, "The maximum number of items is 6")
+
+    def test_clean_validates_correct_equations(self):
+        self.login()
+
+        latex_formula = (
+            r"\begin{bmatrix}"
+            r"{a_{11}}&{a_{12}}&{\cdots}&{a_{1n}}\\"
+            r"{a_{21}}&{a_{22}}&{\cdots}&{a_{2n}}\\"
+            r"{\vdots}&{\vdots}&{\ddots}&{\vdots}\\"
+            r"{a_{m1}}&{a_{m2}}&{\cdots}&{a_{mn}}\\"
+            r"\end{bmatrix}"
+        )
+
+        latex_formula_cases = (
+            r"\begin{cases}"
+            r"a_1x+b_1y+c_1z=d_1\\"
+            r"a_2x+b_2y+c_2z=d_2\\"
+            r"a_3x+b_3y+c_3z=d_3\\"
+            r"\end{cases}"
+        )
+
+        data = nested_form_data(
+            {
+                "title": self.page.title,
+                "slug": self.page.slug,
+                "summary": rich_text(self.page.summary),
+                "main_points_summary": rich_text(self.page.main_points_summary),
+                "release_date": self.page.release_date,
+                "content": streamfield(
+                    [
+                        (
+                            "section",
+                            {"title": "Test", "content": streamfield([("equation", {"equation": latex_formula})])},
+                        )
+                    ]
+                ),
+                "datasets": streamfield([]),
+                "dataset_sorting": "AS_SHOWN",
+                "corrections": streamfield([]),
+                "notices": streamfield([]),
+                "headline_figures": streamfield([]),
+            }
+        )
+        response = self.client.post(reverse("wagtailadmin_pages:edit", args=[self.page.pk]), data, follow=True)
+        self.assertNotContains(response, "The equation is not valid LaTeX. Please check the syntax and try again.")
+
+        data["content-0-value-content-0-value-equation"] = latex_formula_cases
+        response = self.client.post(reverse("wagtailadmin_pages:edit", args=[self.page.pk]), data, follow=True)
+        self.assertNotContains(response, "The equation is not valid LaTeX. Please check the syntax and try again.")
+
+        data["content-0-value-content-0-value-equation"] = "$$a+b=c$$"
+        response = self.client.post(reverse("wagtailadmin_pages:edit", args=[self.page.pk]), data, follow=True)
+        self.assertNotContains(response, "The equation is not valid LaTeX. Please check the syntax and try again.")
+
+        data["content-0-value-content-0-value-equation"] = "$$test"  # Invalid LaTeX
+        response = self.client.post(reverse("wagtailadmin_pages:edit", args=[self.page.pk]), data, follow=True)
+        self.assertContains(response, "The equation is not valid LaTeX. Please check the syntax and try again.")
+
+    def test_related_datasets_sorting_alphabetic(self):
+        dataset_a = {"title": "a", "description": "a", "url": "https://example.com"}
+        dataset_b = Dataset.objects.create(namespace="b", edition="b", version="1", title="b", description="b")
+        dataset_c = Dataset.objects.create(namespace="c", edition="c", version="1", title="c", description="c")
+
+        self.page.datasets = StreamValue(
+            DatasetStoryBlock(),
+            stream_data=[
+                ("dataset_lookup", dataset_c),
+                ("dataset_lookup", dataset_b),
+                ("manual_link", dataset_a),
+            ],
+        )
+        self.page.dataset_sorting = SortingChoices.ALPHABETIC
+        ordered_datasets = self.page.dataset_document_list
+        ordered_dataset_titles = [d["title"]["text"] for d in ordered_datasets]
+        self.assertEqual(
+            ordered_dataset_titles,
+            sorted(ordered_dataset_titles),
+            "Expect the datasets to be sorted in title alphabetic order",
+        )
+
+    def test_related_datasets_sorting_as_shown(self):
+        dataset_a = {"title": "a", "description": "a", "url": "https://example.com"}
+        dataset_b = Dataset.objects.create(namespace="b", edition="b", version="1", title="b", description="b")
+        dataset_c = Dataset.objects.create(namespace="c", edition="c", version="1", title="c", description="c")
+
+        self.page.datasets = StreamValue(
+            DatasetStoryBlock(),
+            stream_data=[
+                ("dataset_lookup", dataset_c),
+                ("dataset_lookup", dataset_b),
+                ("manual_link", dataset_a),
+            ],
+        )
+        self.page.dataset_sorting = SortingChoices.AS_SHOWN
+        ordered_datasets = self.page.dataset_document_list
+        ordered_dataset_titles = [d["title"]["text"] for d in ordered_datasets]
+        self.assertEqual(ordered_dataset_titles, ["c", "b", "a"], "Expect the datasets to be in the given order")
+
 
 class StatisticalArticlePageRenderTestCase(WagtailTestUtils, TestCase):
     def setUp(self):
@@ -195,8 +366,31 @@ class StatisticalArticlePageRenderTestCase(WagtailTestUtils, TestCase):
             news_headline="Breaking News!",
             release_date=datetime(2024, 8, 15),
         )
+        self.page.headline_figures = [
+            {
+                "type": "figure",
+                "value": {
+                    "figure_id": "figurexyz",
+                    "title": "Figure title XYZ",
+                    "figure": "XYZ",
+                    "supporting_text": "Figure supporting text XYZ",
+                },
+            },
+            {
+                "type": "figure",
+                "value": {
+                    "figure_id": "figureabc",
+                    "title": "Figure title ABC",
+                    "figure": "ABC",
+                    "supporting_text": "Figure supporting text ABC",
+                },
+            },
+        ]
+        self.page.headline_figures_figure_ids = "figurexyz,figureabc"
+        self.page.save_revision().publish()
         self.page_url = self.page.url
         self.formatted_date = date_format(self.page.release_date, settings.DATE_FORMAT)
+        self.user = self.create_superuser("admin")
 
     def test_display_title(self):
         """Check how the title is displayed on the front-end, with/without news headline."""
@@ -257,6 +451,109 @@ class StatisticalArticlePageRenderTestCase(WagtailTestUtils, TestCase):
         expected = 'class="ons-pagination__link"'
         self.assertNotContains(response, expected)
 
+    def test_get_headline_figure(self):
+        """Test get_headline_figure returns the correct figure."""
+        # Test with a valid figure_id
+        figure = self.page.get_headline_figure("figurexyz")
+        self.assertEqual(figure["title"], "Figure title XYZ")
+        self.assertEqual(figure["figure"], "XYZ")
+        self.assertEqual(figure["supporting_text"], "Figure supporting text XYZ")
+
+        # Test with an invalid figure_id
+        figure = self.page.get_headline_figure("invalid_id")
+        self.assertEqual(figure, {})
+
+    def test_headline_figures_shown(self):
+        """Test that the headline figures are shown in the template."""
+        response = self.client.get(self.page_url)
+        self.assertContains(response, "Figure title XYZ")
+        self.assertContains(response, "Figure title ABC")
+        self.assertContains(response, "XYZ")
+        self.assertContains(response, "ABC")
+        self.assertContains(response, "Figure supporting text XYZ")
+        self.assertContains(response, "Figure supporting text ABC")
+
+    def test_figures_used_by_ancestors(self):
+        """Test that the figures used by ancestors are returned correctly."""
+        topic = self.page.get_parent().get_parent()
+        topic.headline_figures.extend(
+            [
+                (
+                    "figure",
+                    {
+                        "series": self.page.get_parent(),
+                        "figure_id": "figurexyz",
+                    },
+                ),
+                (
+                    "figure",
+                    {
+                        "series": self.page.get_parent(),
+                        "figure_id": "figureabc",
+                    },
+                ),
+            ]
+        )
+        topic.save_revision().publish()
+
+        self.assertEqual(self.page.figures_used_by_ancestor, ["figurexyz", "figureabc"])
+
+    def test_cannot_be_deleted_if_ancestor_uses_headline_figures(self):
+        """Test that the page cannot be deleted if an ancestor uses the headline figures."""
+        self.client.force_login(self.user)
+        topic = self.page.get_parent().get_parent()
+        topic.headline_figures.extend(
+            [
+                (
+                    "figure",
+                    {
+                        "series": self.page.get_parent(),
+                        "figure_id": "figurexyz",
+                    },
+                ),
+                (
+                    "figure",
+                    {
+                        "series": self.page.get_parent(),
+                        "figure_id": "figureabc",
+                    },
+                ),
+            ]
+        )
+        topic.save_revision().publish()
+
+        # Try deleting page
+        page_delete_url = reverse("wagtailadmin_pages:delete", args=[self.page.id])
+        response = self.client.post(page_delete_url)
+
+        self.assertRedirects(response, page_delete_url, 302)
+
+        response = self.client.post(page_delete_url, follow=True)
+
+        self.assertContains(
+            response,
+            "This page cannot be deleted because it contains headline figures that are referenced elsewhere.",
+        )
+
+        # Try deleting parent page
+        parent_page_delete_url = reverse("wagtailadmin_pages:delete", args=[self.page.get_parent().id])
+        response = self.client.post(parent_page_delete_url)
+
+        self.assertRedirects(response, parent_page_delete_url, 302)
+
+        response = self.client.post(parent_page_delete_url, follow=True)
+
+        self.assertContains(
+            response,
+            "This page cannot be deleted because one or more of its children contain headline figures",
+        )
+
+    @override_settings(IS_EXTERNAL_ENV=True)
+    def test_load_in_external_env(self):
+        """Test the page loads in external env."""
+        response = self.client.get(self.basic_page_url)
+        self.assertEqual(response.status_code, 200)
+
 
 class PreviousReleasesWithoutPaginationTestCase(TestCase):
     # PREVIOUS_RELEASES_PER_PAGE is default value 10
@@ -283,23 +580,16 @@ class PreviousReleasesWithoutPaginationTestCase(TestCase):
 
     def test_page_content(self):
         response = self.client.get(self.previous_releases_url)
-        mock_response = response.content.decode("utf-8").split("\n")
-        allowed_to_print = False
-        release_count = 0
-        for m in mock_response:
-            if " </ul>" in m:
-                allowed_to_print = False
-            if "<ul>" in m:
-                allowed_to_print = True
-            if allowed_to_print and "<li><a href=" in m:
-                release_count += 1
-        self.assertEqual(release_count, self.total_batch)
-        self.assertLessEqual(release_count, settings.PREVIOUS_RELEASES_PER_PAGE)
+        for article in self.articles:
+            with self.subTest(article=article):
+                self.assertContains(response, article.get_admin_display_title())
+                self.assertContains(response, article.url)
+        self.assertContains(response, 'class="ons-document-list__item"', count=self.total_batch)
+        self.assertContains(response, "Latest release", count=1)
 
     def test_pagination_is_not_shown(self):
         response = self.client.get(self.previous_releases_url)
-        expected = 'class="ons-pagination__link"'
-        self.assertNotContains(response, expected)
+        self.assertNotContains(response, 'class="ons-pagination__link"')
 
 
 @override_settings(PREVIOUS_RELEASES_PER_PAGE=3)
@@ -371,10 +661,3 @@ class PreviousReleasesWithPaginationPagesTestCase(TestCase):
         for page, data in scenarios.items():
             with self.subTest(page=page):  # Helps identify which page scenario fails
                 self.assert_pagination(page, data["expected_contains"], data["expected_not_contains"])
-
-
-@override_settings(IS_EXTERNAL_ENV=True)
-def test_load_in_external_env(self):
-    """Test the page loads in external env."""
-    response = self.client.get(self.basic_page_url)
-    self.assertEqual(response.status_code, 200)

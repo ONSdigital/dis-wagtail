@@ -42,7 +42,7 @@ class CoreBlocksTestCase(TestCase):
         self.assertDictEqual(
             value.as_macro_data(),
             {
-                "thumbnail": True,
+                "thumbnail": False,
                 "title": {
                     "text": "The block document",
                     "url": self.document.url,
@@ -78,7 +78,7 @@ class CoreBlocksTestCase(TestCase):
             context["macro_data"],
             [
                 {
-                    "thumbnail": True,
+                    "thumbnail": False,
                     "title": {
                         "text": "The block document",
                         "url": self.document.url,
@@ -237,14 +237,80 @@ class CoreBlocksTestCase(TestCase):
             },
         )
 
+    def test_relatedcontentblock_clean__link_value_get_related_link(self):
+        """Checks the RelatedContentValue link value."""
+        block = RelatedContentBlock()
+
+        value = block.to_python({})
+        self.assertIsNone(value.get_related_link())
+
+        value = block.to_python(
+            {
+                "external_url": "https://ons.gov.uk",
+                "title": "Example",
+                "description": "A link",
+            }
+        )
+
+        self.assertDictEqual(
+            value.get_related_link(),
+            {
+                "title": {"url": "https://ons.gov.uk", "text": "Example"},
+                "description": "A link",
+            },
+        )
+
+        value = block.to_python(
+            {
+                "page": self.home_page.pk,
+                "title": "Example",
+                "description": "A link",
+            }
+        )
+
+        self.assertDictEqual(
+            value.get_related_link(),
+            {
+                "title": {"url": self.home_page.url, "text": "Example"},
+                "description": "A link",
+            },
+        )
+
+        value = block.to_python(
+            {
+                "page": self.home_page.pk,
+            }
+        )
+
+        self.assertDictEqual(
+            value.get_related_link(),
+            {
+                "title": {"url": self.home_page.url, "text": self.home_page.title},
+            },
+        )
+
     def test_relatedlinksblock__get_context(self):
         """Check that RelatedLinksBlock heading and slug are in the context."""
         block = RelatedLinksBlock()
-        value = block.to_python([])
+        value = block.to_python(
+            [
+                {
+                    "external_url": "https://ons.gov.uk",
+                    "title": "Example",
+                    "description": "A link",
+                }
+            ]
+        )
 
         context = block.get_context(value)
         self.assertEqual(context["heading"], "Related links")
         self.assertEqual(context["slug"], "related-links")
+        self.assertEqual(
+            context["related_links"],
+            [
+                {"title": {"url": "https://ons.gov.uk", "text": "Example"}, "description": "A link"},
+            ],
+        )
 
     def test_relatedlinksblock__toc(self):
         """Check the RelatedLinksBlock TOC."""
@@ -610,7 +676,7 @@ class CorrectionBlockTestCase(TestCase):
         block = CorrectionBlock()
         rendered = block.render(self.correction_data, context={"request": None, "page": self.statistical_article})
 
-        self.assertIn("1 January 2025 1:59p.m.", rendered)
+        self.assertIn("1 January 2025 1:59pm", rendered)
         self.assertIn("Correction text", rendered)
         self.assertIn("View superseded version", rendered)
         self.assertIn("/previous/v1", rendered)

@@ -1,4 +1,3 @@
-import copy
 import os
 
 from .base import *  # noqa: F403  # pylint: disable=wildcard-import,unused-wildcard-import
@@ -44,16 +43,13 @@ PASSWORD_HASHERS = ["django.contrib.auth.hashers.MD5PasswordHasher"]
 DEFENDER_DISABLE_USERNAME_LOCKOUT = True
 DEFENDER_DISABLE_IP_LOCKOUT = True
 
-# Database
-DATABASES = {
-    "default": dj_database_url.config(default="postgres://ons:ons@localhost:5432/ons"),  # noqa: F405
-}
-DATABASES["read_replica"] = copy.deepcopy(DATABASES["default"])
-
 # Read replica should mirror the default database during tests.
 # https://docs.djangoproject.com/en/stable/topics/testing/advanced/#tests-and-multiple-databases
-DATABASES["read_replica"].setdefault("TEST", {"MIRROR": "default"})
+DATABASES["read_replica"].setdefault("TEST", {"MIRROR": "default"})  # noqa: F405
 
+# Force database connections to be read-only for the replica
+if "postgres" in DATABASES["read_replica"]["ENGINE"]:  # noqa: F405
+    DATABASES["read_replica"]["ENGINE"] = "cms.core.database_backends.postgres_readonly"  # noqa: F405
 
 # Disable caches in tests
 CACHES["default"] = {  # noqa: F405
@@ -74,4 +70,7 @@ SLACK_NOTIFICATIONS_WEBHOOK_URL = None
 
 ONS_API_BASE_URL = "https://dummy_base_api"
 ONS_WEBSITE_DATASET_BASE_URL = "https://dummy_datasets/datasets"
-KAFKA_SERVER = os.getenv("KAFKA_SERVER", "localhost:9094")
+KAFKA_SERVERS = os.getenv("KAFKA_SERVERS", "localhost:9094").split(",")
+
+# Ignore proxy count in tests
+XFF_STRICT = False

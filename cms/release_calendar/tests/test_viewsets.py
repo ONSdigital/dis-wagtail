@@ -17,10 +17,19 @@ class TestFutureReleaseCalendarChooserViewSet(WagtailTestUtils, TestCase):
         cls.superuser = cls.create_superuser(username="admin")
         cls.chooser_url = release_calendar_chooser_viewset.widget_class().get_chooser_modal_url()
 
-        cls.provisional = ReleaseCalendarPageFactory(title="Preliminary", status=ReleaseStatus.PROVISIONAL)
-        cls.confirmed = ReleaseCalendarPageFactory(title="Acknowledged", status=ReleaseStatus.CONFIRMED)
-        cls.cancelled = ReleaseCalendarPageFactory(title="Cancelled", status=ReleaseStatus.CANCELLED)
-        cls.published = ReleaseCalendarPageFactory(title="Published", status=ReleaseStatus.PUBLISHED)
+        tomorrow = timezone.now() + timedelta(days=1)
+        cls.provisional = ReleaseCalendarPageFactory(
+            title="Preliminary", status=ReleaseStatus.PROVISIONAL, release_date=tomorrow
+        )
+        cls.confirmed = ReleaseCalendarPageFactory(
+            title="Acknowledged", status=ReleaseStatus.CONFIRMED, release_date=tomorrow
+        )
+        cls.cancelled = ReleaseCalendarPageFactory(
+            title="Cancelled", status=ReleaseStatus.CANCELLED, release_date=tomorrow
+        )
+        cls.published = ReleaseCalendarPageFactory(
+            title="Published", status=ReleaseStatus.PUBLISHED, release_date=tomorrow
+        )
 
         cls.past = ReleaseCalendarPageFactory(
             title="Preliminary, but in the past",
@@ -80,3 +89,10 @@ class TestFutureReleaseCalendarChooserViewSet(WagtailTestUtils, TestCase):
         self.assertContains(
             response, "There are no release calendar pages that are pending or not in an active bundle already."
         )
+
+    def test_choose__contains_locale_column(self):
+        """Tests that the chooser view contains the locale column."""
+        response = self.client.get(self.chooser_url)
+
+        self.assertContains(response, "Locale")
+        self.assertContains(response, "English")

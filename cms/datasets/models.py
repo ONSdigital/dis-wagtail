@@ -66,7 +66,7 @@ class ONSDataset(APIModel):
         return title
 
 
-class Dataset(models.Model):
+class Dataset(models.Model):  # type: ignore[django-manager-missing]
     namespace = models.CharField(max_length=255)
     title = models.CharField(max_length=255)
     description = models.TextField()
@@ -87,8 +87,11 @@ class Dataset(models.Model):
 
     @property
     def url_path(self) -> str:
-        return f"/datasets/{self.namespace}/editions/{self.edition}/versions/{self.version}"
+        """The path to the dataset landing page.
+        Note that this may also direct to the latest version if the landing page doesn't exist.
+        """
+        return f"/datasets/{self.namespace}"
 
     @property
     def website_url(self) -> str:
-        return f"{settings.ONS_WEBSITE_BASE_URL}/{self.url_path}"
+        return f"{settings.ONS_WEBSITE_BASE_URL}{self.url_path}"

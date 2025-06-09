@@ -1,6 +1,7 @@
 from typing import TYPE_CHECKING, Any, ClassVar
 
 from django.conf import settings
+from django.core.exceptions import ValidationError
 from django.db import models
 from django.db.models import OuterRef, Subquery
 from django.utils.functional import cached_property
@@ -12,13 +13,16 @@ from wagtail.models import Orderable, Page
 from wagtail.search import index
 
 from cms.articles.models import ArticleSeriesPage, StatisticalArticlePage
+from cms.bundles.mixins import BundledPageMixin
 from cms.core.fields import StreamField
 from cms.core.models import BasePage
 from cms.core.query import order_by_pk_position
 from cms.core.utils import get_formatted_pages_list
+from cms.datasets.blocks import DatasetStoryBlock
+from cms.datasets.utils import format_datasets_as_document_list
 from cms.methodology.models import MethodologyPage
 from cms.taxonomy.mixins import ExclusiveTaxonomyMixin
-from cms.topics.blocks import ExploreMoreStoryBlock
+from cms.topics.blocks import ExploreMoreStoryBlock, TopicHeadlineFigureBlock
 from cms.topics.forms import TopicPageAdminForm
 from cms.topics.viewsets import (
     FeaturedSeriesPageChooserWidget,
@@ -29,7 +33,6 @@ from cms.topics.viewsets import (
 if TYPE_CHECKING:
     from django.http import HttpRequest
     from wagtail.admin.panels import Panel
-
 
 MAX_ITEMS_PER_SECTION = 3
 
@@ -64,7 +67,7 @@ class TopicPageRelatedMethodology(Orderable):
     ]
 
 
-class TopicPage(ExclusiveTaxonomyMixin, BasePage):  # type: ignore[django-manager-missing]
+class TopicPage(BundledPageMixin, ExclusiveTaxonomyMixin, BasePage):  # type: ignore[django-manager-missing]
     """The Topic page model."""
 
     base_form_class = TopicPageAdminForm
@@ -84,9 +87,20 @@ class TopicPage(ExclusiveTaxonomyMixin, BasePage):  # type: ignore[django-manage
     )
     explore_more = StreamField(ExploreMoreStoryBlock(), blank=True)
 
+    headline_figures = StreamField(
+        [("figure", TopicHeadlineFigureBlock())],
+        blank=True,
+        max_num=6,
+        help_text="Optional. If populating, it needs at least two headline figures.",
+    )
+
+    datasets = StreamField(DatasetStoryBlock(), blank=True, default=list, max_num=MAX_ITEMS_PER_SECTION)
+
     content_panels: ClassVar[list["Panel"]] = [
+        *BundledPageMixin.panels,
         *BasePage.content_panels,
         "summary",
+        FieldPanel("headline_figures"),
         FieldPanel(
             "featured_series",
             heading="Featured",
@@ -100,6 +114,12 @@ class TopicPage(ExclusiveTaxonomyMixin, BasePage):  # type: ignore[django-manage
                 "The 'Related articles' section will be topped up automatically."
             ),
             max_num=MAX_ITEMS_PER_SECTION,
+        ),
+        FieldPanel(
+            "datasets",
+            heading="Datasets",
+            help_text=f"Select up to {MAX_ITEMS_PER_SECTION} datasets related to this topic.",
+            icon="doc-full",
         ),
         InlinePanel(
             "related_methodologies",
@@ -223,4 +243,22 @@ class TopicPage(ExclusiveTaxonomyMixin, BasePage):  # type: ignore[django-manage
             items += [{"url": "#related-methods", "text": _("Methods and quality information")}]
         if self.explore_more:
             items += [{"url": "#explore-more", "text": _("Explore more")}]
+        if self.dataset_document_list:
+            items += [{"url": "#data", "text": _("Data")}]
         return items
+
+    @cached_property
+    def dataset_document_list(self) -> list[dict[str, Any]]:
+        return format_datasets_as_document_list(self.datasets)
+
+    def clean(self) -> None:
+        super().clean()
+
+        # Check if headline_figures has 1 item (we can't use min_num because we allow 0)
+        if self.headline_figures:
+            if len(self.headline_figures) == 1:
+                raise ValidationError({"headline_figures": "If you add headline figures, please add at least 2."})
+
+            figure_ids = [figure.value["figure_id"] for figure in self.headline_figures]  # pylint: disable=not-an-iterable
+            if len(figure_ids) != len(set(figure_ids)):
+                raise ValidationError({"headline_figures": "Duplicate headline figures are not allowed."})

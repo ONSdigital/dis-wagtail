@@ -29,6 +29,9 @@ def user_populates_the_methodology_page(context: Context):
     context.page.get_by_text("Rich text").click()
     context.page.get_by_role("region", name="Rich text *").get_by_role("textbox").fill("Content")
 
+    # Scroll to the bottom of the page to ensure that the "Save as draft" button is not overlapped
+    context.page.get_by_text("Related publications", exact=True).nth(1).scroll_into_view_if_needed()
+
 
 @when("adds Glossary Terms to the page content")
 def user_adds_glossary_terms(context: Context):
@@ -54,7 +57,9 @@ def the_methodology_page_is_displayed_with_the_populated_data(context: Context):
 def the_user_selects_statistical_articles_as_related_publications(context: Context):
     context.page.get_by_role("button", name="Add related publications").click()
     context.page.get_by_role("button", name="Choose a page (Statistical").click()
-    context.page.get_by_role("cell", name=f"{context.article_series.title}: {context.article.title}").click()
+    context.page.get_by_role(
+        "cell", name=f"{context.article_series_page.title}: {context.statistical_article_page.title}"
+    ).click()
 
 
 @then("the article is displayed correctly under the Related publication section")

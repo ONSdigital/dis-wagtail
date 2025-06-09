@@ -1,12 +1,14 @@
 from typing import TYPE_CHECKING, ClassVar
 
-from wagtail.admin.ui.tables import Column, DateColumn
+from wagtail.admin.ui.tables import Column
 from wagtail.admin.ui.tables.pages import PageStatusColumn
 from wagtail.admin.views.generic.chooser import ChooseResultsView, ChooseView
 from wagtail.admin.viewsets.chooser import ChooserViewSet
 from wagtail.coreutils import resolve_model_string
 
-from cms.articles.models import ArticleSeriesPage, StatisticalArticlePage
+from cms.articles.models import StatisticalArticlePage
+from cms.core.forms import NoLocaleFilterInChoosersForm
+from cms.core.ui import LocaleColumn
 from cms.methodology.models import MethodologyPage
 
 if TYPE_CHECKING:
@@ -14,44 +16,19 @@ if TYPE_CHECKING:
     from wagtail.query import PageQuerySet
 
 
-class FeaturedSeriesPageChooseViewMixin:
-    model_class: ArticleSeriesPage
-
-    def get_object_list(self) -> "PageQuerySet[ArticleSeriesPage]":
-        return ArticleSeriesPage.objects.all().order_by("path")
-
-    @property
-    def columns(self) -> list["Column"]:
-        return [
-            self.title_column,  # type: ignore[attr-defined]
-            Column("parent", label="Topic", accessor="get_parent"),
-            DateColumn(
-                "updated",
-                label="Updated",
-                width="12%",
-                accessor="latest_revision_created_at",
-            ),
-            PageStatusColumn("status", label="Status", width="12%"),
-        ]
-
-
-class FeaturedSeriesPageChooseView(FeaturedSeriesPageChooseViewMixin, ChooseView): ...
-
-
-class FeaturedSeriesPageChooseResultsView(FeaturedSeriesPageChooseViewMixin, ChooseResultsView): ...
-
-
-class FeaturedSeriesPageChooserViewSet(ChooserViewSet):
-    model = ArticleSeriesPage
-    choose_view_class = FeaturedSeriesPageChooseView
-    choose_results_view_class = FeaturedSeriesPageChooseResultsView
-    register_widget = False
-    choose_one_text = "Choose Article Series page"
-    choose_another_text = "Choose another Article Series page"
-    edit_item_text = "Edit Article Series page"
+__all__ = [
+    "HighlightedArticlePageChooserViewSet",
+    "HighlightedArticlePageChooserWidget",
+    "HighlightedMethodologyPageChooserViewSet",
+    "HighlightedMethodologyPageChooserWidget",
+    "highlighted_article_page_chooser_viewset",
+    "highlighted_methodology_page_chooser_viewset",
+]
 
 
 class HighlightedChildPageChooseViewMixin:
+    filter_form_class = NoLocaleFilterInChoosersForm
+
     def get_object_list(self) -> "PageQuerySet[Page]":
         model_class: StatisticalArticlePage | MethodologyPage = self.model_class  # type: ignore[attr-defined]
         pages: PageQuerySet[Page] = model_class.objects.all().defer_streamfields()
@@ -79,6 +56,7 @@ class HighlightedChildPageChooseViewMixin:
         title_column.accessor = "get_admin_display_title"
         return [
             title_column,
+            LocaleColumn(),
             Column(
                 "release_date",
                 label="Release date",
@@ -116,9 +94,6 @@ class HighlightedMethodologyPageChooserViewSet(BaseHighlightedChildrenViewSet):
     choose_another_text = "Choose another Methodology page"
     edit_item_text = "Edit Methodology page"
 
-
-featured_series_page_chooser_viewset = FeaturedSeriesPageChooserViewSet("topic_featured_series_page_chooser")
-FeaturedSeriesPageChooserWidget = featured_series_page_chooser_viewset.widget_class
 
 highlighted_article_page_chooser_viewset = HighlightedArticlePageChooserViewSet(
     "topic_highlighted_article_page_chooser"

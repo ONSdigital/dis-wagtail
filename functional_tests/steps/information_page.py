@@ -29,7 +29,8 @@ def user_adds_info_page_contents(context: Context) -> None:
 
     context.page.get_by_role("button", name="Insert a block").nth(2).click()
     context.page.get_by_text("Equation").click()
-    context.page.locator("#content-1-value").fill("$$\\sum_{i=0}^n i^2 = \\frac{(n^2+n)(2n+1)}{6}$$")
+    context.page.locator('[data-controller="wagtailmathjax"]').fill("$$\\sum_{i=0}^n i^2 = \\frac{(n^2+n)(2n+1)}{6}$$")
+    context.page.wait_for_timeout(5000)
 
     context.page.get_by_role("button", name="Add related pages").click()
     context.page.get_by_role("button", name="Choose a page").click()
@@ -46,12 +47,37 @@ def user_returns_to_editing_the_statistical_article_page(context: Context):
     context.page.get_by_role("link", name="Test Info Page", exact=True).click()
 
 
+def check_information_page_content(context: Context, default_language=True) -> None:
+    page = context.page
+    expect(page.get_by_role("heading", name="Test Info Page")).to_be_visible()
+    expect(page.get_by_text("My test information page")).to_be_visible()
+    expect(page.get_by_text("Last updated")).to_be_visible()
+    if default_language:
+        expect(context.page.get_by_text("1 January 2024")).to_be_visible()
+    else:
+        expect(context.page.get_by_text("1 Ionawr 2024")).to_be_visible()
+
+    expect(page.get_by_role("heading", name="Some example rich text content")).to_be_visible()
+    expect(page.get_by_text("n∑i=0i2=(n2+n)(2n+1)")).to_be_visible()
+    expect(page.get_by_role("navigation", name="Related content").get_by_role("listitem")).to_be_visible()
+
+
 @then("the new information page with the added content is displayed")
-@then("the published information page is displayed with English content")
 def check_new_information_is_displayed_with_content(context: Context) -> None:
-    expect(context.page.get_by_role("heading", name="Test Info Page")).to_be_visible()
-    expect(context.page.get_by_text("My test information page")).to_be_visible()
-    expect(context.page.get_by_role("heading", name="Last Updated: 2024-01-01")).to_be_visible()
-    expect(context.page.get_by_role("heading", name="Some example rich text content")).to_be_visible()
-    expect(context.page.get_by_text("n∑i=0i2=(n2+n)(2n+1)")).to_be_visible()
-    expect(context.page.get_by_role("navigation", name="Related content").get_by_role("listitem")).to_be_visible()
+    check_information_page_content(context)
+
+
+@then("the published information page is displayed with English content")
+def check_new_information_is_displayed_with_english_content(context: Context):
+    check_information_page_content(context, default_language=True)
+
+
+@then("the published information page is displayed with English content and Welsh livery")
+def check_new_information_is_displayed_with_english_content_and_welsh_livery(context: Context):
+    check_information_page_content(context, default_language=False)
+
+
+@step('the date placeholder "{date_format}" is displayed in the "{textbox_text}" textbox')
+def date_placeholder_is_displayed_in_date_input_field(context: Context, textbox_text: str, date_format: str):
+    """Check date placeholder in the textbox."""
+    expect(context.page.get_by_role("textbox", name=textbox_text)).to_have_attribute("placeholder", date_format)

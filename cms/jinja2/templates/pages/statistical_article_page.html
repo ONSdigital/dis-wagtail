@@ -10,20 +10,83 @@
 {%- set statistical_article_label = _("Statistical article") -%}
 {%- set release_date_label = _("Release date:") -%}
 {%- set next_release_label = _("Next release:") -%}
-{%- set edition_label = _("Edition:") -%}
-{%- set releases_label = _("Releases:") -%}
-{%- set latest_label = _("Latest") -%}
 {%- set breadcrumbs_label = _("Breadcrumbs") -%}
+{%- set contact_label = _("Contact:") -%}
 
 {% block header_area %}
-    {% if page.contact_details %}
-        {% set contact_description_html -%}
-            <a href="mailto:{{ page.contact_details.email }}">{{ page.contact_details.name }}</a>
-        {%- endset %}
+    {%- set hero_topic = _("Statistical article") -%}
+    {%- set release_date_term = _("Release date:") -%}
+    {%- set next_release_date_term = _("Next release:") -%}
+    {%- set breadcrumbs_aria_label = _("Breadcrumbs") -%}
 
-        {# fmt:off #}
-        {% set contact_details =
-            {
+    {% if page.is_latest %}
+        {% if latest_version_url %}
+            {%- set infoPanelText = _("This version has been amended since publication") -%}
+            {%- set releases_text = _("View amended version") -%}
+            {%- set infoPanelType = 'ons-red' -%}
+            {%- set releases_url = latest_version_url -%}
+        {% else %}
+            {%- set infoPanelText = _("Latest release") -%}
+            {%- set releases_text = _("View previous releases") -%}
+            {%- set infoPanelType = 'ons-green' -%}
+            {%- set releases_url = routablepageurl(page.get_parent().specific, "previous_releases") -%}
+        {% endif %}
+    {% else %}
+        {%- set infoPanelText = _("Not the latest release") -%}
+        {%- set releases_text = _("View latest release") -%}
+        {%- set infoPanelType = 'ons-orange' -%}
+        {%- set releases_url = routablepageurl(page.get_parent().specific, "latest_release") -%}
+    {% endif %}
+
+    {# fmt:off #}
+    {% if page.release_date %}
+        {% set release_item = {
+                "term": release_date_label,
+                "descriptions": [
+                    {
+                        "description": page.release_date|date("DATE_FORMAT")
+                    }
+                ]
+            }
+        %}
+    {% else %}
+        {% set release_item = None %}
+    {% endif %}
+    {# fmt:on #}
+
+    {# fmt:off #}
+    {% if page.next_release_date %}
+        {% set next_release_date = page.next_release_date|date("DATE_FORMAT") %}
+        {% set next_release_item = {
+                "term": next_release_label,
+                "descriptions": [
+                    {
+                        "description": next_release_date
+                    }
+                ]
+            }
+        %}
+    {% else %}
+        {% set next_release_date_text = _("To be announced") %}
+        {% set next_release_item = {
+                "term": next_release_label,
+                "descriptions": [
+                    {
+                        "description": next_release_date_text
+                    }
+                ]
+            }
+        %}
+    {% endif %}
+    {# fmt:on #}
+
+    {% set contact_description_html -%}
+        <a href="mailto:{{ page.contact_details.email }}">{{ page.contact_details.name }}</a>
+    {%- endset %}
+
+    {# fmt:off #}
+    {% if page.contact_details %}
+        {% set contact_item = {
                 "term": contact_label,
                 "descriptions": [
                     {
@@ -32,22 +95,10 @@
                 ]
             }
         %}
-        {# fmt:on #}
     {% else %}
-        {% set contact_details = "" %}
+        {% set contact_item = None %}
     {% endif %}
-
-    {% if page.is_latest %}
-        {% set release_html -%}
-            <a href="{{ routablepageurl(page.get_parent().specific, "previous_releases") }}">{{ _("View previous releases") }}</a>
-        {%- endset %}
-    {% else %}
-        {% set release_html -%}
-            <a href="{{ routablepageurl(page.get_parent().specific, "latest_release") }}">{{ _("View latest release") }}</a>
-        {%- endset %}
-    {% endif %}
-
-    {% set next_release_date_text = page.next_release_date|date("DATE_FORMAT") or _("To be announced") %}
+    {# fmt:on #}
 
     {# fmt:off #}
     {{
@@ -58,47 +109,21 @@
             "text": page.summary,
             "officialStatisticsBadge": page.is_accredited,
             "wide": true,
+            "informationPanel":{
+                "panelText": infoPanelText,
+                "panelType": infoPanelType,
+                "panelLink": {
+                    "text": releases_text,
+                    "url": releases_url
+                }
+            },
             "detailsColumns": 12,
             "censusLogo": page.is_census,
             "descriptionList": {
                 "descriptionListLabel": "",
                 "termCol": "6",
                 "descriptionCol": "6",
-                "itemsList": [
-                    {
-                        "term": release_date_label,
-                        "descriptions": [
-                            {
-                                "description": page.release_date|date("DATE_FORMAT")
-                            }
-                        ]
-                    },
-                    {
-                        "term": next_release_label,
-                        "descriptions": [
-                            {
-                                "description": next_release_date_text
-                            }
-                        ]
-                    },
-                    {
-                        "term": edition_label,
-                        "descriptions": [
-                            {
-                                "description": latest_label
-                            }
-                        ]
-                    },
-                    {
-                        "term": releases_label,
-                        "descriptions": [
-                            {
-                                "description": release_html
-                            }
-                        ]
-                    },
-                    contact_details,
-                ]
+                "itemsList": [release_item, next_release_item, contact_item] | selectattr('term') | list,
             },
             "breadcrumbs": {
                 "ariaLabel": breadcrumbs_label,
@@ -107,14 +132,6 @@
         })
     }}
     {# fmt:on #}
-
-    {% if latest_version_url %}
-        <div class="ons-container">
-            {% call onsPanel({"variant": 'warn', "classes": "ons-u-mt-s"}) %}
-                <p>{{ _("This has been superseded.") }} <a href="{{ latest_version_url }}">{{ _("View corrected version") }}</a></p>
-            {% endcall %}
-        </div>
-    {% endif %}
 
     {# TBD: to be replaced with corrections and notices DS compoennt #}
     {% if page.corrections or page.notices %}
@@ -175,7 +192,14 @@
     {% endif %}
 
     {% if page.headline_figures %}
-        {% include_block page.headline_figures %}
+        <div class="ons-container headline-figures">
+            <h2 class="headline-figures__heading ons-u-fs-m">{{ _("Headline facts and figures") }}</h2>
+            <div class="ons-grid ons-grid-flex-gap ons-grid-flex-gap--24 headline-figures__grid">
+                {% for figure in page.headline_figures %}
+                    <div class="ons-grid__col ons-grid__col--flex-col ons-grid__col--stretch">{% include_block figure %}</div>
+                {% endfor %}
+            </div>
+        </div>
     {% endif %}
 
 {% endblock %}
@@ -183,41 +207,72 @@
 {% block main %}
     <div class="ons-grid ons-grid-flex-gap ons-grid-flex-gap--32 ons-js-toc-container">
         <div class="ons-grid__col ons-grid__col--sticky@m ons-col-4@m">
-            {% with toc_title=_("Contents"), toc_aria_label=_("Sections in this page") %}
+            {% if page.datasets %}
+                {% if request.is_preview and page.pk %}
+                    {% set related_data_url = url('wagtailadmin_pages:preview_on_edit', page.pk) ~ "?mode=related_data" %}
+                {% else %}
+                    {% set related_data_url = routablepageurl(page, "related_data") %}
+                {% endif %}
+
+                {% set related_links_title=_("Explore Data") %}
+                    {% set related_data_text=_("View data used in this article") %}
+
+                {# fmt:off #}
+                    {%- set related_links =
+                        {
+                            "title": related_links_title,
+                            "itemsList": [
+                                {
+                                    "url": related_data_url,
+                                    "text": related_data_text
+                                }
+                            ]
+                        }
+                    -%}
+                {# fmt:on #}
+                    {% else %}
+                        {% set related_links = None %}
+                    {% endif %}
+
+                    {% with toc_title=_("Contents"), toc_aria_label=_("Sections in this page") %}
                 {# fmt:off #}
                 {{-
                     onsTableOfContents({
                         "title": toc_title,
                         "ariaLabel": toc_aria_label,
-                        "itemsList": table_of_contents
+                        "itemsList": page.table_of_contents,
+                        "relatedLinks": related_links,
+                        "button": {
+                            "text": _("Save or print this page")
+                        }
                     })
                 }}
                 {# fmt:on #}
-            {% endwith %}
-        </div>
+                    {% endwith %}
+                    </div>
 
-        <div class="ons-grid__col ons-col-8@m">
-            {% include_block page.content %}
+                    <div class="ons-grid__col ons-col-8@m">
+                        {% include_block page.content %}
 
-            {% if page.show_cite_this_page %}
-                <section id="cite-this-page" class="spacing">
-                    <h2 class="ons-u-fs-l">{{ _("Cite this analysis") }}</h2>
-                    <p>
-                        {%- set cite_link -%}
-                            <a href="{{ fullpageurl(page) }}">{{ page.display_title }}</a>
-                        {% endset %}
-                        {% trans trimmed release_date=page.release_date|date("DATE_FORMAT"), cite_link=cite_link %}
-                            Office for National Statistics (ONS), released {{ release_date }}, ONS website, statistical article, {{ cite_link }}
-                        {% endtrans %}
-                    </p>
-                </section>
-            {% endif %}
+                        {% if page.show_cite_this_page %}
+                            <section id="cite-this-page" class="spacing">
+                                <h2 class="ons-u-fs-l">{{ _("Cite this analysis") }}</h2>
+                                <p>
+                                    {%- set cite_link -%}
+                                        <a href="{{ fullpageurl(page) }}">{{ page.display_title }}</a>
+                                    {% endset %}
+                                    {% trans trimmed release_date=page.release_date|date("DATE_FORMAT"), cite_link=cite_link %}
+                                        Office for National Statistics (ONS), released {{ release_date }}, ONS website, statistical article, {{ cite_link }}
+                                    {% endtrans %}
+                                </p>
+                            </section>
+                        {% endif %}
 
-            {% if page.contact_details %}
-                {% with contact_details = page.contact_details%}
-                    {% include "templates/components/contact_details/contact_details.html" %}
-                {% endwith %}
-            {% endif %}
-        </div>
-    </div>
-{% endblock %}
+                        {% if page.contact_details %}
+                            {% with contact_details = page.contact_details%}
+                                {% include "templates/components/contact_details/contact_details.html" %}
+                            {% endwith %}
+                        {% endif %}
+                    </div>
+                    </div>
+                {% endblock %}

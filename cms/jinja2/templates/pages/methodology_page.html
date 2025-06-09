@@ -8,33 +8,23 @@
 {%- set last_revised_label = _("Last revised:") -%}
 {%- set published_label = _("Published:") -%}
 {%- set breadcrumbs_label = _("Breadcrumbs") -%}
+{%- set contact_label = _("Contact:") -%}
 
 {% block header_area %}
-    {% if page.contact_details %}
-        {% set contact_description_html -%}
-            <a href="mailto:{{ page.contact_details.email }}">{{ page.contact_details.name }}</a>
-        {%- endset %}
-
-        {# fmt:off #}
-        {% set contact_details =
+    {# fmt:off #}
+    {% set publication_item = {
+        "term": published_label,
+        "descriptions": [
             {
-                "term": "Contact:",
-                "descriptions": [
-                    {
-                        "description": contact_description_html
-                    }
-                ]
+                "description": page.publication_date|date("DATE_FORMAT")
             }
-        %}
-        {# fmt:on #}
-    {% else %}
-        {% set contact_details = "" %}
-    {% endif %}
+        ]
+    } %}
+    {# fmt:on #}
 
+    {# fmt:off #}
     {% if page.last_revised_date %}
-        {# fmt:off #}
-        {% set last_revised =
-            {
+        {% set last_revised_item = {
                 "term": last_revised_label,
                 "descriptions": [
                     {
@@ -43,10 +33,30 @@
                 ]
             }
         %}
-        {# fmt:on #}
     {% else %}
-        {% set last_revised = "" %}
+        {% set last_revised_item = None %}
     {% endif %}
+    {# fmt:on #}
+
+    {% set contact_description_html -%}
+        <a href="mailto:{{ page.contact_details.email }}">{{ page.contact_details.name }}</a>
+    {%- endset %}
+
+    {# fmt:off #}
+    {% if page.contact_details %}
+        {% set contact_item = {
+                "term": contact_label,
+                "descriptions": [
+                    {
+                        "description": contact_description_html
+                    }
+                ]
+            }
+        %}
+    {% else %}
+        {% set contact_item = None %}
+    {% endif %}
+    {# fmt:on #}
 
     {# fmt:off #}
     {{
@@ -61,18 +71,7 @@
                 "descriptionListLabel": "",
                 "termCol": "6",
                 "descriptionCol": "6",
-                "itemsList": [
-                    {
-                        "term": published_label,
-                        "descriptions": [
-                            {
-                                "description": page.publication_date|date("DATE_FORMAT")
-                            }
-                        ]
-                    },
-                    last_revised,
-                    contact_details,
-                ]
+                "itemsList": [publication_item, last_revised_item, contact_item] | selectattr('term') | list,
             },
             "breadcrumbs": {
                 "ariaLabel": breadcrumbs_label,
@@ -92,9 +91,13 @@
                     onsTableOfContents({
                         "title": toc_title,
                         "ariaLabel": toc_aria_label,
-                        "itemsList": table_of_contents
+                        "itemsList": table_of_contents,
+                        "relatedLinks": related_publications,
+                        "button": {
+                            "text": _("Save or print this page")
+                        }
                     })
-                }}
+                -}}
                 {# fmt:on #}
             {% endwith %}
         </div>
@@ -109,13 +112,6 @@
             {% endif %}
 
             {% include_block page.content %}
-
-            {% if related_publications %}
-                <section id="related-publications" class="spacing">
-                    <h2 class="ons-u-fs-l">{{ _("Related publications") }}</h2>
-                    {{- onsList({"itemsList": related_publications}) -}}
-                </section>
-            {% endif %}
 
             {% if page.show_cite_this_page %}
                 <section id="cite-this-page" class="spacing">
@@ -133,7 +129,7 @@
             {% endif %}
 
             {% if page.contact_details %}
-                {% with contact_details = page.contact_details%}
+                {% with contact_details = page.contact_details %}
                     {% include "templates/components/contact_details/contact_details.html" %}
                 {% endwith %}
             {% endif %}

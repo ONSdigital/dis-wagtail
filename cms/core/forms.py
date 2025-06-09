@@ -1,8 +1,18 @@
+import logging
+
 from django.forms import ValidationError
+from wagtail.admin.forms import WagtailAdminPageForm
+from wagtail.admin.forms.choosers import BaseFilterForm, SearchFilterMixin
 from wagtail.blocks.stream_block import StreamValue
 from wagtail.models import PageLogEntry
 
+from cms.core.utils import FORMULA_INDICATOR, latex_formula_to_svg
 from cms.taxonomy.forms import DeduplicateTopicsAdminForm
+
+logger = logging.getLogger(__name__)
+
+
+LATEX_VALIDATION_ERROR = "The equation is not valid LaTeX. Please check the syntax and try again."
 
 
 class PageWithCorrectionsAdminForm(DeduplicateTopicsAdminForm):
@@ -93,3 +103,45 @@ class PageWithCorrectionsAdminForm(DeduplicateTopicsAdminForm):
         sorted_corrections = sorted(corrections, key=lambda correction: correction.value["when"], reverse=True)
 
         return StreamValue(corrections.stream_block, sorted_corrections)
+
+
+class NoLocaleFilterInChoosersForm(SearchFilterMixin, BaseFilterForm):
+    """A chooser filter form that deliberately excludes the locale filter."""
+
+
+class PageWithEquationsAdminForm(WagtailAdminPageForm):
+    def _process_content_block(self, block: StreamValue) -> None:
+        if block.block_type == "equation":
+            equation = block.value["equation"].replace("\n", "").strip()
+            if equation.startswith(FORMULA_INDICATOR):
+                if not equation.endswith(FORMULA_INDICATOR):
+                    # Not worth trying to parse the equation if it doesn't end with the indicator
+                    self.add_error("content", ValidationError(LATEX_VALIDATION_ERROR))
+                    return
+                equation = equation[2:-2]
+            try:
+                block.value["svg"] = latex_formula_to_svg(equation)
+            except RuntimeError as error:
+                # Log the error for debugging purposes
+                logger.warning(
+                    "Could not process LaTeX equation: %s",
+                    error,
+                    extra={
+                        "equation": equation,
+                    },
+                )
+                self.add_error("content", LATEX_VALIDATION_ERROR)
+
+    def clean_content(self) -> StreamValue:
+        content: StreamValue = self.cleaned_data["content"]
+        if not content:
+            return content
+
+        for block in content:
+            if block.block_type == "section":
+                for sub_block in block.value["content"]:
+                    self._process_content_block(sub_block)
+            else:
+                self._process_content_block(block)
+
+        return content

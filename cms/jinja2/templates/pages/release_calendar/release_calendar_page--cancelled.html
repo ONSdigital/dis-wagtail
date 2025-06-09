@@ -2,21 +2,46 @@
 {% from "components/panel/_macro.njk" import onsPanel %}
 {% from "components/table-of-contents/_macro.njk" import onsTableOfContents %}
 
-{% block release_meta %}
-    {% if page.release_date or page.release_text %}
-        <div class="ons-container common-header__releases common-header__releases--single-row">
-            <div>
-                <span class="ons-u-fs-r--b">{{ _("Release date") }}:</span>
-                <span class="ons-u-nowrap">{{ _("Cancelled") }}</span>
-            </div>
-        </div>
-    {% endif %}
-{% endblock %}
+{% block header_area %}
+    {%- set hero_topic = _("Release") -%}
+    {%- set breadcrumbs_label = _("Breadcrumbs") -%}
+    {%- set release_date_label = _("Release date:") -%}
+    {%- set release_date_description = _("Cancelled") -%}
 
-{% block release_note %}
-    <div class="ons-container">
-        {{ onsPanel({"body": page.notice }) }}
-    </div>
+    {# fmt:off #}
+    {{
+        onsHero({
+            "topic": hero_topic,
+            "title": page.title,
+            "variants": 'grey',
+            "officialStatisticsBadge": page.is_accredited,
+            "wide": true,
+            "detailsColumns": 12,
+            "censusLogo": page.is_census,
+            "descriptionList": {
+                "descriptionListLabel": "",
+                "termCol": "6",
+                "descriptionCol": "6",
+                "itemsList": [{
+                    "term": release_date_label,
+                    "descriptions": [{
+                            "description": release_date_description
+                    }]
+                }]
+            },
+            "breadcrumbs": {
+                "ariaLabel": breadcrumbs_label,
+                "itemsList": breadcrumbs(page),
+            }
+        })
+    }}
+    {# fmt:on #}
+
+    {% block release_note %}
+        <div class="ons-container ons-u-mt-m">
+            {{ onsPanel({"body": page.notice }) }}
+        </div>
+    {% endblock %}
 {% endblock %}
 
 {% block release_content %}
