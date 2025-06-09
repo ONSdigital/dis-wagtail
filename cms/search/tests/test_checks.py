@@ -17,8 +17,6 @@ class KafkaSettingsCheckTests(TestCase):
     @override_settings(
         SEARCH_INDEX_PUBLISHER_BACKEND="kafka",
         KAFKA_SERVERS=None,
-        KAFKA_CHANNEL_CREATED_OR_UPDATED=None,
-        KAFKA_CHANNEL_DELETED=None,
     )
     def test_missing_kafka_settings(self):
         """If SEARCH_INDEX_PUBLISHER_BACKEND='kafka' but required Kafka settings are missing,
@@ -27,17 +25,13 @@ class KafkaSettingsCheckTests(TestCase):
         errors = check_kafka_settings(app_configs=None)
 
         # Expect 3 missing-settings errors: E001, E002, and E003
-        self.assertEqual(len(errors), 3)
+        self.assertEqual(len(errors), 1)
         error_ids = [error.id for error in errors]
         self.assertIn("search.E001", error_ids)  # Missing KAFKA_SERVERS
-        self.assertIn("search.E002", error_ids)  # Missing KAFKA_CHANNEL_CREATED_OR_UPDATED
-        self.assertIn("search.E003", error_ids)  # Missing KAFKA_CHANNEL_DELETED
 
     @override_settings(
         SEARCH_INDEX_PUBLISHER_BACKEND="kafka",
         KAFKA_SERVERS="",
-        KAFKA_CHANNEL_CREATED_OR_UPDATED="some-topic",
-        KAFKA_CHANNEL_DELETED="some-other-topic",
     )
     def test_empty_kafka_server_setting(self):
         """If a required Kafka setting is defined but empty, we should get an error
@@ -52,8 +46,6 @@ class KafkaSettingsCheckTests(TestCase):
     @override_settings(
         SEARCH_INDEX_PUBLISHER_BACKEND="kafka",
         KAFKA_SERVERS="localhost:9092",
-        KAFKA_CHANNEL_CREATED_OR_UPDATED="my-topic",
-        KAFKA_CHANNEL_DELETED="delete-topic",
     )
     def test_no_errors_if_all_kafka_settings_present(self):
         """If SEARCH_INDEX_PUBLISHER_BACKEND='kafka' and all required settings are properly defined,
