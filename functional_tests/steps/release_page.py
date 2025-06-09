@@ -3,7 +3,6 @@ from behave.runner import Context
 from playwright.sync_api import expect
 
 from cms.core.custom_date_format import ons_default_datetime
-from functional_tests.steps.page_editor import user_clicks_publish
 
 
 @given("the user navigates to the release calendar page")
@@ -120,19 +119,12 @@ def thirty_minute_interval_for_time_selection(context: Context):
         expect(time_picker.get_by_text(f"{hour}:00").nth(2)).to_be_visible()
         expect(time_picker.get_by_text(f"{hour}:30").first).to_be_visible()
 
-    # Next Release date picker -- not found atm..
-    context.page.get_by_role("textbox", name="Next release date").click()
+    # Next Release date picker -- picker not found atm...
+    # name="next_release_date" id="id_next_release_date"
+    context.page.get_by_role("textbox", name="Next release date", exact=True).click()
     for hour in hours:
         expect(time_picker.get_by_text(f"{hour}:00").nth(3)).to_be_visible()
         expect(time_picker.get_by_text(f"{hour}:30").nth(2)).to_be_visible()
-
-
-@given("a release calendar page has been published")
-def release_page_has_been_published(context: Context):
-    # readme - read on using func
-    set_page_status(context, "PUBLISHED")
-    enter_example_release_content(context)
-    user_clicks_publish(context)
 
 
 @when("user navigates to edit page")
@@ -153,14 +145,14 @@ def user_adds_date_change_log(context: Context):
         "2025-05-28 11:00"
     )
     context.page.get_by_role("region", name="Date change log", exact=True).get_by_label("Reason for change*").fill(
-        "Reason for change"
+        "This is the reason."
     )
 
 
 @then("the release page displays the change in release date")
 def release_date_change__is_displayed(context: Context):
-    expect(context.page.get_by_role("heading", name="Previous date"))
-    expect(context.page.get_by_role("heading", name="Reason for change"))
-
+    expect(context.page.get_by_role("heading", name="Changes to this release date")).to_be_visible()
+    expect(context.page.get_by_role("heading", name="Previous date")).to_be_visible()
     expect(context.page.get_by_text("May 2025 11:00am")).to_be_visible()
-    expect(context.page.get_by_text("Reason for change")).to_be_visible()
+    expect(context.page.get_by_role("heading", name="Reason for change")).to_be_visible()
+    expect(context.page.get_by_text("This is the reason.")).to_be_visible()

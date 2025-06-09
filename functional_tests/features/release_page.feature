@@ -26,19 +26,22 @@ Feature: CMS users can draft, edit, and publish release pages
     And the selected datasets are displayed on the page
     And the user can see the breadcrumbs
 
-  Scenario: A CMS user can add changes to release dates once the page is published
+  Scenario Outline: A CMS user can add changes to release dates once the page is published
     When the user clicks "Add child page" to create a new draft release page
+    And the user sets the page status to "<PageStatusd>"
     And the user enters some example content on the page
     And the user clicks "Publish"
     When user navigates to edit page
     And user adds date_change_log
+    And the user clicks "Publish"
+    And the user clicks "View Live" on the publish confirmation banner
     Then the release page displays the change in release date
 
-  Scenario: A CMS user can add changes to release dates
-    And a release calendar page has been published
-    When user navigates to edit page
-    And user adds date_change_log
-    Then the release page displays the change in release date
+    Examples:
+      | PageStatusd |
+      | Confirmed   |
+      | Published   |
+      | Cancelled   |
 
   Scenario: Release date text field is visible for provisional releases
     When the user clicks "Add child page" to create a new draft release page
