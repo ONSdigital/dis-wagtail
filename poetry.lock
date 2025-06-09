@@ -679,18 +679,18 @@ profile = ["gprof2dot (>=2022.7.29)"]
 
 [[package]]
 name = "dj-database-url"
-version = "2.3.0"
+version = "3.0.0"
 description = "Use Database URLs in your Django Application."
 optional = false
 python-versions = "*"
 files = [
-    {file = "dj_database_url-2.3.0-py3-none-any.whl", hash = "sha256:bb0d414ba0ac5cd62773ec7f86f8cc378a9dbb00a80884c2fc08cc570452521e"},
-    {file = "dj_database_url-2.3.0.tar.gz", hash = "sha256:ae52e8e634186b57e5a45e445da5dc407a819c2ceed8a53d1fac004cc5288787"},
+    {file = "dj_database_url-3.0.0-py3-none-any.whl", hash = "sha256:cbb84b2e3f372460b1e43692bf9fdc0c32e78930ee101db470cba56105fca1e5"},
+    {file = "dj_database_url-3.0.0.tar.gz", hash = "sha256:749a7a42d88d6c741c1d2f4ab24c2ae0d5cd12f00f2d1d55ff9f5fadabe8a2c3"},
 ]
 
 [package.dependencies]
 Django = ">=4.2"
-typing_extensions = ">=3.10.0.0"
+typing_extensions = ">=4.0.0"
 
 [[package]]
 name = "django"
@@ -714,20 +714,20 @@ bcrypt = ["bcrypt"]
 
 [[package]]
 name = "django-basic-auth-ip-whitelist"
-version = "0.6.0"
+version = "0.8.0"
 description = "Hide your Django site behind basic authentication mechanism with IP whitelisting support."
 optional = false
-python-versions = ">=3.4"
+python-versions = ">=3.9"
 files = [
-    {file = "django_basic_auth_ip_whitelist-0.6.0-py3-none-any.whl", hash = "sha256:f866c1822861ab6612efb9adec03b12279a82314783aa721c843acfbea04b0b7"},
-    {file = "django_basic_auth_ip_whitelist-0.6.0.tar.gz", hash = "sha256:51fbef4d483cfccb15d0c38605fd149fd307314ad8a9308580a6b693b94b3329"},
+    {file = "django_basic_auth_ip_whitelist-0.8.0-py3-none-any.whl", hash = "sha256:e4e46c2c59b4dde3a318d8812b6640b4a714bc2d1a0647854dead7743f1202ee"},
+    {file = "django_basic_auth_ip_whitelist-0.8.0.tar.gz", hash = "sha256:edcff4ad789c9cf0c335c12366d5356f1f07d44172c2ecbfa5cb8ec914ea8252"},
 ]
 
 [package.dependencies]
-Django = ">=1.8,<6"
+Django = ">=4.2"
 
 [package.extras]
-lint = ["black (==24.4.2)", "flake8 (==7.0.0)", "isort (==5.13.2)"]
+lint = ["ruff (==0.9.6)"]
 
 [[package]]
 name = "django-cache-memoize"
@@ -763,13 +763,13 @@ tests = ["jinja2 (>=2.9.6)", "pytest", "pytest-cov", "pytest-django", "pytest-ru
 
 [[package]]
 name = "django-debug-toolbar"
-version = "4.4.6"
+version = "5.2.0"
 description = "A configurable set of panels that display various debug information about the current request/response."
 optional = false
-python-versions = ">=3.8"
+python-versions = ">=3.9"
 files = [
-    {file = "django_debug_toolbar-4.4.6-py3-none-any.whl", hash = "sha256:3beb671c9ec44ffb817fad2780667f172bd1c067dbcabad6268ce39a81335f45"},
-    {file = "django_debug_toolbar-4.4.6.tar.gz", hash = "sha256:36e421cb908c2f0675e07f9f41e3d1d8618dc386392ec82d23bcfcd5d29c7044"},
+    {file = "django_debug_toolbar-5.2.0-py3-none-any.whl", hash = "sha256:15627f4c2836a9099d795e271e38e8cf5204ccd79d5dbcd748f8a6c284dcd195"},
+    {file = "django_debug_toolbar-5.2.0.tar.gz", hash = "sha256:9e7f0145e1a1b7d78fcc3b53798686170a5b472d9cf085d88121ff823e900821"},
 ]
 
 [package.dependencies]
@@ -793,17 +793,17 @@ redis = "*"
 
 [[package]]
 name = "django-extensions"
-version = "3.2.3"
+version = "4.1"
 description = "Extensions for Django"
 optional = false
-python-versions = ">=3.6"
+python-versions = ">=3.9"
 files = [
-    {file = "django-extensions-3.2.3.tar.gz", hash = "sha256:44d27919d04e23b3f40231c4ab7af4e61ce832ef46d610cc650d53e68328410a"},
-    {file = "django_extensions-3.2.3-py3-none-any.whl", hash = "sha256:9600b7562f79a92cbf1fde6403c04fee314608fefbb595502e34383ae8203401"},
+    {file = "django_extensions-4.1-py3-none-any.whl", hash = "sha256:0699a7af28f2523bf8db309a80278519362cd4b6e1fd0a8cd4bf063e1e023336"},
+    {file = "django_extensions-4.1.tar.gz", hash = "sha256:7b70a4d28e9b840f44694e3f7feb54f55d495f8b3fa6c5c0e5e12bcb2aa3cdeb"},
 ]
 
 [package.dependencies]
-Django = ">=3.2"
+django = ">=4.2"
 
 [[package]]
 name = "django-filter"
@@ -1083,12 +1083,12 @@ django = ">=4.2"
 
 [[package]]
 name = "djhtml"
-version = "3.0.7"
+version = "3.0.8"
 description = "Django/Jinja template indenter"
 optional = false
 python-versions = "*"
 files = [
-    {file = "djhtml-3.0.7.tar.gz", hash = "sha256:558c905b092a0c8afcbed27dea2f50aa6eb853a658b309e4e0f2bb378bdf6178"},
+    {file = "djhtml-3.0.8.tar.gz", hash = "sha256:ec3b4cf25f0959474c7793da1becba654ca9587689ce143955bcbc2638eeabce"},
 ]
 
 [package.extras]
@@ -2322,20 +2322,20 @@ files = [
 
 [[package]]
 name = "pudb"
-version = "2024.1.3"
+version = "2025.1"
 description = "A full-screen, console-based Python debugger"
 optional = false
 python-versions = "~=3.8"
 files = [
-    {file = "pudb-2024.1.3-py3-none-any.whl", hash = "sha256:b1c64447fcee5848d0376231672b97ca8580ca6d3297c82cba6b0ba5bd5ee640"},
-    {file = "pudb-2024.1.3.tar.gz", hash = "sha256:264f239e0538e52e83d3d020143100b3171cae17227674bb1b9f8b075f34849c"},
+    {file = "pudb-2025.1-py3-none-any.whl", hash = "sha256:f642d42e6054c992b43c463742650aa879fe290d7d7ffdeb21f7d00dc4587a21"},
+    {file = "pudb-2025.1.tar.gz", hash = "sha256:a528b29c69ce8b182a337872c5f046071f6d68d3415c6d7bf53bd27c264f58d0"},
 ]
 
 [package.dependencies]
 jedi = ">=0.18,<1"
 packaging = ">=20.0"
 pygments = ">=2.7.4"
-urwid = ">=2.4"
+urwid = {version = ">=2.4", markers = "python_version >= \"3.9\""}
 urwid-readline = "*"
 
 [package.extras]
@@ -2650,29 +2650,29 @@ jupyter = ["ipywidgets (>=7.5.1,<8.0.0)"]
 
 [[package]]
 name = "ruff"
-version = "0.9.5"
+version = "0.11.13"
 description = "An extremely fast Python linter and code formatter, written in Rust."
 optional = false
 python-versions = ">=3.7"
 files = [
-    {file = "ruff-0.9.5-py3-none-linux_armv6l.whl", hash = "sha256:d466d2abc05f39018d53f681fa1c0ffe9570e6d73cde1b65d23bb557c846f442"},
-    {file = "ruff-0.9.5-py3-none-macosx_10_12_x86_64.whl", hash = "sha256:38840dbcef63948657fa7605ca363194d2fe8c26ce8f9ae12eee7f098c85ac8a"},
-    {file = "ruff-0.9.5-py3-none-macosx_11_0_arm64.whl", hash = "sha256:d56ba06da53536b575fbd2b56517f6f95774ff7be0f62c80b9e67430391eeb36"},
-    {file = "ruff-0.9.5-py3-none-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:4f7cb2a01da08244c50b20ccfaeb5972e4228c3c3a1989d3ece2bc4b1f996001"},
-    {file = "ruff-0.9.5-py3-none-manylinux_2_17_armv7l.manylinux2014_armv7l.whl", hash = "sha256:96d5c76358419bc63a671caac70c18732d4fd0341646ecd01641ddda5c39ca0b"},
-    {file = "ruff-0.9.5-py3-none-manylinux_2_17_i686.manylinux2014_i686.whl", hash = "sha256:deb8304636ed394211f3a6d46c0e7d9535b016f53adaa8340139859b2359a070"},
-    {file = "ruff-0.9.5-py3-none-manylinux_2_17_ppc64.manylinux2014_ppc64.whl", hash = "sha256:df455000bf59e62b3e8c7ba5ed88a4a2bc64896f900f311dc23ff2dc38156440"},
-    {file = "ruff-0.9.5-py3-none-manylinux_2_17_ppc64le.manylinux2014_ppc64le.whl", hash = "sha256:de92170dfa50c32a2b8206a647949590e752aca8100a0f6b8cefa02ae29dce80"},
-    {file = "ruff-0.9.5-py3-none-manylinux_2_17_s390x.manylinux2014_s390x.whl", hash = "sha256:3d28532d73b1f3f627ba88e1456f50748b37f3a345d2be76e4c653bec6c3e393"},
-    {file = "ruff-0.9.5-py3-none-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:2c746d7d1df64f31d90503ece5cc34d7007c06751a7a3bbeee10e5f2463d52d2"},
-    {file = "ruff-0.9.5-py3-none-musllinux_1_2_aarch64.whl", hash = "sha256:11417521d6f2d121fda376f0d2169fb529976c544d653d1d6044f4c5562516ee"},
-    {file = "ruff-0.9.5-py3-none-musllinux_1_2_armv7l.whl", hash = "sha256:5b9d71c3879eb32de700f2f6fac3d46566f644a91d3130119a6378f9312a38e1"},
-    {file = "ruff-0.9.5-py3-none-musllinux_1_2_i686.whl", hash = "sha256:2e36c61145e70febcb78483903c43444c6b9d40f6d2f800b5552fec6e4a7bb9a"},
-    {file = "ruff-0.9.5-py3-none-musllinux_1_2_x86_64.whl", hash = "sha256:2f71d09aeba026c922aa7aa19a08d7bd27c867aedb2f74285a2639644c1c12f5"},
-    {file = "ruff-0.9.5-py3-none-win32.whl", hash = "sha256:134f958d52aa6fdec3b294b8ebe2320a950d10c041473c4316d2e7d7c2544723"},
-    {file = "ruff-0.9.5-py3-none-win_amd64.whl", hash = "sha256:78cc6067f6d80b6745b67498fb84e87d32c6fc34992b52bffefbdae3442967d6"},
-    {file = "ruff-0.9.5-py3-none-win_arm64.whl", hash = "sha256:18a29f1a005bddb229e580795627d297dfa99f16b30c7039e73278cf6b5f9fa9"},
-    {file = "ruff-0.9.5.tar.gz", hash = "sha256:11aecd7a633932875ab3cb05a484c99970b9d52606ce9ea912b690b02653d56c"},
+    {file = "ruff-0.11.13-py3-none-linux_armv6l.whl", hash = "sha256:4bdfbf1240533f40042ec00c9e09a3aade6f8c10b6414cf11b519488d2635d46"},
+    {file = "ruff-0.11.13-py3-none-macosx_10_12_x86_64.whl", hash = "sha256:aef9c9ed1b5ca28bb15c7eac83b8670cf3b20b478195bd49c8d756ba0a36cf48"},
+    {file = "ruff-0.11.13-py3-none-macosx_11_0_arm64.whl", hash = "sha256:53b15a9dfdce029c842e9a5aebc3855e9ab7771395979ff85b7c1dedb53ddc2b"},
+    {file = "ruff-0.11.13-py3-none-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:ab153241400789138d13f362c43f7edecc0edfffce2afa6a68434000ecd8f69a"},
+    {file = "ruff-0.11.13-py3-none-manylinux_2_17_armv7l.manylinux2014_armv7l.whl", hash = "sha256:6c51f93029d54a910d3d24f7dd0bb909e31b6cd989a5e4ac513f4eb41629f0dc"},
+    {file = "ruff-0.11.13-py3-none-manylinux_2_17_i686.manylinux2014_i686.whl", hash = "sha256:1808b3ed53e1a777c2ef733aca9051dc9bf7c99b26ece15cb59a0320fbdbd629"},
+    {file = "ruff-0.11.13-py3-none-manylinux_2_17_ppc64.manylinux2014_ppc64.whl", hash = "sha256:d28ce58b5ecf0f43c1b71edffabe6ed7f245d5336b17805803312ec9bc665933"},
+    {file = "ruff-0.11.13-py3-none-manylinux_2_17_ppc64le.manylinux2014_ppc64le.whl", hash = "sha256:55e4bc3a77842da33c16d55b32c6cac1ec5fb0fbec9c8c513bdce76c4f922165"},
+    {file = "ruff-0.11.13-py3-none-manylinux_2_17_s390x.manylinux2014_s390x.whl", hash = "sha256:633bf2c6f35678c56ec73189ba6fa19ff1c5e4807a78bf60ef487b9dd272cc71"},
+    {file = "ruff-0.11.13-py3-none-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:4ffbc82d70424b275b089166310448051afdc6e914fdab90e08df66c43bb5ca9"},
+    {file = "ruff-0.11.13-py3-none-musllinux_1_2_aarch64.whl", hash = "sha256:4a9ddd3ec62a9a89578c85842b836e4ac832d4a2e0bfaad3b02243f930ceafcc"},
+    {file = "ruff-0.11.13-py3-none-musllinux_1_2_armv7l.whl", hash = "sha256:d237a496e0778d719efb05058c64d28b757c77824e04ffe8796c7436e26712b7"},
+    {file = "ruff-0.11.13-py3-none-musllinux_1_2_i686.whl", hash = "sha256:26816a218ca6ef02142343fd24c70f7cd8c5aa6c203bca284407adf675984432"},
+    {file = "ruff-0.11.13-py3-none-musllinux_1_2_x86_64.whl", hash = "sha256:51c3f95abd9331dc5b87c47ac7f376db5616041173826dfd556cfe3d4977f492"},
+    {file = "ruff-0.11.13-py3-none-win32.whl", hash = "sha256:96c27935418e4e8e77a26bb05962817f28b8ef3843a6c6cc49d8783b5507f250"},
+    {file = "ruff-0.11.13-py3-none-win_amd64.whl", hash = "sha256:29c3189895a8a6a657b7af4e97d330c8a3afd2c9c8f46c81e2fc5a31866517e3"},
+    {file = "ruff-0.11.13-py3-none-win_arm64.whl", hash = "sha256:b4385285e9179d608ff1d2fb9922062663c658605819a6876d8beef0c30b7f3b"},
+    {file = "ruff-0.11.13.tar.gz", hash = "sha256:26fa247dc68d1d4e72c179e08889a25ac0c7ba4d78aecfc835d49cbfd60bf514"},
 ]
 
 [[package]]
@@ -2694,13 +2694,13 @@ crt = ["botocore[crt] (>=1.37.4,<2.0a.0)"]
 
 [[package]]
 name = "sentry-sdk"
-version = "2.17.0"
+version = "2.29.1"
 description = "Python client for Sentry (https://sentry.io)"
 optional = false
 python-versions = ">=3.6"
 files = [
-    {file = "sentry_sdk-2.17.0-py2.py3-none-any.whl", hash = "sha256:625955884b862cc58748920f9e21efdfb8e0d4f98cca4ab0d3918576d5b606ad"},
-    {file = "sentry_sdk-2.17.0.tar.gz", hash = "sha256:dd0a05352b78ffeacced73a94e86f38b32e2eae15fff5f30ca5abb568a72eacf"},
+    {file = "sentry_sdk-2.29.1-py2.py3-none-any.whl", hash = "sha256:90862fe0616ded4572da6c9dadb363121a1ae49a49e21c418f0634e9d10b4c19"},
+    {file = "sentry_sdk-2.29.1.tar.gz", hash = "sha256:8d4a0206b95fa5fe85e5e7517ed662e3888374bdc342c00e435e10e6d831aa6d"},
 ]
 
 [package.dependencies]
@@ -2726,14 +2726,16 @@ grpcio = ["grpcio (>=1.21.1)", "protobuf (>=3.8.0)"]
 http2 = ["httpcore[http2] (==1.*)"]
 httpx = ["httpx (>=0.16.0)"]
 huey = ["huey (>=2)"]
-huggingface-hub = ["huggingface-hub (>=0.22)"]
+huggingface-hub = ["huggingface_hub (>=0.22)"]
 langchain = ["langchain (>=0.0.210)"]
+launchdarkly = ["launchdarkly-server-sdk (>=9.8.0)"]
 litestar = ["litestar (>=2.0.0)"]
 loguru = ["loguru (>=0.5)"]
 openai = ["openai (>=1.0.0)", "tiktoken (>=0.3.0)"]
+openfeature = ["openfeature-sdk (>=0.7.1)"]
 opentelemetry = ["opentelemetry-distro (>=0.35b0)"]
 opentelemetry-experimental = ["opentelemetry-distro"]
-pure-eval = ["asttokens", "executing", "pure-eval"]
+pure-eval = ["asttokens", "executing", "pure_eval"]
 pymongo = ["pymongo (>=3.1)"]
 pyspark = ["pyspark (>=2.4.4)"]
 quart = ["blinker (>=1.1)", "quart (>=0.16.1)"]
@@ -2742,7 +2744,9 @@ sanic = ["sanic (>=0.8)"]
 sqlalchemy = ["sqlalchemy (>=1.2)"]
 starlette = ["starlette (>=0.19.1)"]
 starlite = ["starlite (>=1.48)"]
+statsig = ["statsig (>=0.55.3)"]
 tornado = ["tornado (>=6)"]
+unleash = ["UnleashClient (>=6.0.1)"]
 
 [[package]]
 name = "setuptools"
@@ -3229,13 +3233,13 @@ files = [
 
 [[package]]
 name = "werkzeug"
-version = "3.0.6"
+version = "3.1.3"
 description = "The comprehensive WSGI web application library."
 optional = false
-python-versions = ">=3.8"
+python-versions = ">=3.9"
 files = [
-    {file = "werkzeug-3.0.6-py3-none-any.whl", hash = "sha256:1bc0c2310d2fbb07b1dd1105eba2f7af72f322e1e455f2f93c993bee8c8a5f17"},
-    {file = "werkzeug-3.0.6.tar.gz", hash = "sha256:a8dd59d4de28ca70471a34cba79bed5f7ef2e036a76b3ab0835474246eb41f8d"},
+    {file = "werkzeug-3.1.3-py3-none-any.whl", hash = "sha256:54b78bf3716d19a65be4fceccc0d1d7b89e608834989dfae50ea87564639213e"},
+    {file = "werkzeug-3.1.3.tar.gz", hash = "sha256:60723ce945c19328679790e3282cc758aa4a6040e4bb330f53d30fa546d44746"},
 ]
 
 [package.dependencies]
@@ -3246,13 +3250,13 @@ watchdog = ["watchdog (>=2.3)"]
 
 [[package]]
 name = "whitenoise"
-version = "6.8.2"
+version = "6.9.0"
 description = "Radically simplified static file serving for WSGI applications"
 optional = false
 python-versions = ">=3.9"
 files = [
-    {file = "whitenoise-6.8.2-py3-none-any.whl", hash = "sha256:df12dce147a043d1956d81d288c6f0044147c6d2ab9726e5772ac50fb45d2280"},
-    {file = "whitenoise-6.8.2.tar.gz", hash = "sha256:486bd7267a375fa9650b136daaec156ac572971acc8bf99add90817a530dd1d4"},
+    {file = "whitenoise-6.9.0-py3-none-any.whl", hash = "sha256:c8a489049b7ee9889617bb4c274a153f3d979e8f51d2efd0f5b403caf41c57df"},
+    {file = "whitenoise-6.9.0.tar.gz", hash = "sha256:8c4a7c9d384694990c26f3047e118c691557481d624f069b7f7752a2f735d609"},
 ]
 
 [package.extras]
@@ -3295,4 +3299,4 @@ files = [
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.13"
-content-hash = "5d7d62003d8aca2f54d52d311374b2a56319d8dfe786a7e19348586ddad522c3"
+content-hash = "1a5d946361c255cacc723ece2f385f0251dbef3ae462a3d0b0381261dd144dbc"
