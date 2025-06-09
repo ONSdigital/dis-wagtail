@@ -133,8 +133,14 @@ def bundle_inspect_show(context: Context) -> None:
 def go_to_preview_page(context: Context) -> None:
     context.page.goto(context.base_url + reverse("team:index"))
 
+@given("there are {no_bundles} bundles")
+def multiple_preview_teams_create(context: Context, no_bundles: str) -> None:
+    context.bundles = []
+    if no_bundles.isdigit():
+        for bundle_index in range(int(no_bundles)):
+            context.bundles.append(BundleFactory())
 
-@given('num_preview_teams')
+@given("there are {no_preview_teams} Preview teams and viewer is a member of these teams")
 def multiple_preview_teams_create(context: Context, no_preview_teams: str) -> None:
     context.teams = []
     if no_preview_teams.isdigit():
@@ -168,11 +174,27 @@ def the_user_can_add_bundles(context: Context) -> None:
     expect(context.page.get_by_role("link", name="Add bundle")).not_to_be_visible()
 
 
-@step("the user completes the Bundle details")
-def add_bundle_details(context: Context) -> None:
+@step("the user completes the Bundle details {bundle_details}")
+def add_bundle_details(context: Context, bundle_details: str ) -> None:
+    print(bundle_details)
     context.page.get_by_role("link", name="Add bundle").click()
     context.page.get_by_role("textbox", name="Name*").fill("Test 10")
     context.page.get_by_role("button", name="Create").click()
+
+
+@step("the user can search for unknown bundle name {bundle_details}")
+def step_impl(context: Context, bundle_details: str ) -> None:
+    context.page.get_by_role("textbox", name="Search term").click()
+    context.page.get_by_role("textbox", name="Search term").fill(bundle_details)
+    expect(context.page.get_by_text("No bundles match your query.")).to_be_visible()
+
+@step("the user can search for known bundle name {bundle_details}")
+def step_impl(context: Context, bundle_details: str ) -> None:
+    print(context.bundles[0].name)
+    context.page.get_by_role("textbox", name="Search term").click()
+    context.page.get_by_role("textbox", name="Search term").fill(context.bundles[0].name)
+    expect(context.page.get_by_text("No bundles match your query.")).not_to_be_visible()
+    expect(context.page.get_by_role("link", name=context.bundles[0].name)).to_be_visible()
 
 
 
