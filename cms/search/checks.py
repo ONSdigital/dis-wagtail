@@ -17,7 +17,7 @@ def check_kafka_settings(app_configs: Optional[Iterable[AppConfig]], **kwargs: A
         return errors
 
     kafka_settings: list[tuple[str, str, str]] = [
-        ("KAFKA_SERVER", "localhost:9092", "search.E001"),
+        ("KAFKA_SERVERS", "localhost:9092", "search.E001"),
         (
             "KAFKA_CHANNEL_CREATED_OR_UPDATED",
             "the Kafka topic you use for content updates",

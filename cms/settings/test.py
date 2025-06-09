@@ -70,7 +70,7 @@ SLACK_NOTIFICATIONS_WEBHOOK_URL = None
 
 ONS_API_BASE_URL = "https://dummy_base_api"
 ONS_WEBSITE_DATASET_BASE_URL = "https://dummy_datasets/datasets"
-KAFKA_SERVER = os.getenv("KAFKA_SERVER", "localhost:9094")
+KAFKA_SERVERS = os.getenv("KAFKA_SERVERS", "localhost:9094").split(",")
 
 # Ignore proxy count in tests
 XFF_STRICT = False

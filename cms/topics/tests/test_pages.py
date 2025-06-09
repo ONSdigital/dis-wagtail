@@ -1,9 +1,12 @@
 from http import HTTPStatus
 
 from django.urls import reverse
+from wagtail.blocks import StreamValue
 from wagtail.test.utils import WagtailPageTestCase
 
 from cms.articles.tests.factories import ArticleSeriesPageFactory, StatisticalArticlePageFactory
+from cms.datasets.blocks import DatasetStoryBlock
+from cms.datasets.models import Dataset
 from cms.topics.tests.factories import TopicPageFactory
 
 
@@ -139,3 +142,35 @@ class TopicPageTests(WagtailPageTestCase):
             response,
             "Topic and theme pages cannot be duplicated as selected taxonomy needs to be unique for each page.",
         )
+
+    def test_topic_page_displays_datasets(self):
+        lookup_dataset = Dataset.objects.create(
+            namespace="LOOKUP",
+            edition="lookup_edition",
+            version="lookup_version",
+            title="test lookup",
+            description="lookup description",
+        )
+        manual_dataset = {"title": "test manual", "description": "manual description", "url": "https://example.com"}
+
+        self.page.datasets = StreamValue(
+            DatasetStoryBlock(),
+            stream_data=[
+                ("dataset_lookup", lookup_dataset),
+                ("manual_link", manual_dataset),
+            ],
+        )
+        self.page.save_revision().publish()
+
+        response = self.client.get(self.page.url)
+
+        self.assertContains(response, "<h2>Data</h2>")
+        self.assertContains(response, '<section id="data"')
+
+        self.assertContains(response, lookup_dataset.title)
+        self.assertContains(response, lookup_dataset.description)
+        self.assertContains(response, lookup_dataset.website_url)
+
+        self.assertContains(response, manual_dataset["title"])
+        self.assertContains(response, manual_dataset["description"])
+        self.assertContains(response, manual_dataset["url"])

@@ -3,10 +3,12 @@ from datetime import datetime
 from django.core.exceptions import ValidationError
 from django.test import TestCase, override_settings
 from django.utils.translation import gettext_lazy as _
+from wagtail.blocks import StreamValue
 from wagtail.coreutils import get_dummy_request
 from wagtail.models import Locale
 
 from cms.articles.tests.factories import ArticleSeriesPageFactory, StatisticalArticlePageFactory
+from cms.datasets.blocks import DatasetStoryBlock
 from cms.home.models import HomePage
 from cms.methodology.tests.factories import MethodologyPageFactory
 from cms.taxonomy.tests.factories import TopicFactory
@@ -107,12 +109,17 @@ class TopicPageTestCase(TestCase):
         )
 
     def test_table_of_contents_includes_all_sections(self):
+        manual_dataset = {"title": "test manual", "description": "manual description", "url": "https://example.com"}
+
+        self.topic_page.datasets = StreamValue(DatasetStoryBlock(), stream_data=[("manual_link", manual_dataset)])
+
         self.assertListEqual(
             self.topic_page.table_of_contents,
             [
                 {"url": "#featured", "text": "Featured"},
                 {"url": "#related-articles", "text": "Related articles"},
                 {"url": "#related-methods", "text": "Methods and quality information"},
+                {"url": "#data", "text": "Data"},
             ],
         )
 
@@ -120,6 +127,11 @@ class TopicPageTestCase(TestCase):
         self.topic_page.featured_series = None
 
         self.assertNotIn({"url": "#featured", "text": "Featured"}, self.topic_page.table_of_contents)
+
+    def test_table_of_contents_without_datasets(self):
+        self.topic_page.datasets = None
+
+        self.assertNotIn({"url": "#data", "text": "Data"}, self.topic_page.table_of_contents)
 
     def test_table_of_contents_includes_explore_more(self):
         self.topic_page.explore_more = [("external_link", {"url": "https://example.com"})]
