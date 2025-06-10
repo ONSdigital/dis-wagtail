@@ -75,7 +75,7 @@ def parse_day_month_year_time(text: str, locale_code: str) -> datetime | None:
         return None
 
 
-def get_translated_string(string_to_translate: str, language_code: str = "en") -> str:
+def get_translated_string(string_to_translate: str, language_code: str) -> str:
     """Translates a string to a specific language.
 
     Args:

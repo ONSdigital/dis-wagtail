@@ -21,11 +21,28 @@ Feature: CMS users can draft, edit, and publish release pages
         And the selected datasets are displayed on the page
         And the user can see the breadcrumbs
 
-    Scenario: Release date text field is visible for provisional releases 
+    Scenario: Release date text field is visible for provisional releases
         When the user clicks "Add child page" to create a new draft release page
         Then the page status is set to "Provisional" and the release date text field is visible
 
-    Scenario Outline: Release date text field is hidden for provisional releases 
+    Scenario: Release date text field is added
+        When the user clicks "Add child page" to create a new draft release page
+        And the user enters some example content on the page
+        And the user adds a release date text
+        And the user clicks "Publish"
+        And the user clicks "View Live" on the publish confirmation banner
+        Then the release date text is displayed
+
+    Scenario: Next release date text is added
+        When the user clicks "Add child page" to create a new draft release page
+        And the user enters some example content on the page
+        And the user adds a next release date text
+        And the user sets the page status to "Published"
+        And the user clicks "Publish"
+        And the user clicks "View Live" on the publish confirmation banner
+        Then the next release date text is displayed
+
+    Scenario Outline: Release date text field is hidden for provisional releases
         When the user clicks "Add child page" to create a new draft release page
         And the user sets the page status to "<PageStatus>"
         Then the date text field is not visible
@@ -48,4 +65,4 @@ Feature: CMS users can draft, edit, and publish release pages
             | MeridiemIndicator |
             | am                |
             | pm                |
-    
+
