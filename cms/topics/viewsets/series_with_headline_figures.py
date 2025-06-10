@@ -113,7 +113,8 @@ class SeriesWithHeadlineFiguresChooserMixin:
 
         self.paginator = self.paginator_class(objects, per_page=self.per_page)  # type: ignore[attr-defined]
         try:
-            return self.paginator.page(request.GET.get("p", 1))
+            paginated: PaginatorPage[ArticleSeriesPage] = self.paginator.page(request.GET.get("p", 1))
+            return paginated
         except InvalidPage as e:
             raise Http404 from e
 

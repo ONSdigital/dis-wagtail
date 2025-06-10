@@ -238,15 +238,16 @@ if "PG_DB_ADDR" in env:
         }
 
 else:
+    # note: dj_database_url.config() expects an int, while dj_database_url.DBConfig accepts None
     DATABASES = {
         "default": dj_database_url.config(
-            conn_max_age=db_conn_max_age, conn_health_checks=True, default="postgres://ons:ons@localhost:5432/ons"
+            conn_max_age=db_conn_max_age or 0, conn_health_checks=True, default="postgres://ons:ons@localhost:5432/ons"
         ),
     }
 
     if "READ_REPLICA_DATABASE_URL" in env:
         DATABASES["read_replica"] = dj_database_url.config(
-            env="READ_REPLICA_DATABASE_URL", conn_max_age=db_read_conn_max_age
+            env="READ_REPLICA_DATABASE_URL", conn_max_age=db_read_conn_max_age or 0
         )
 
 if "read_replica" not in DATABASES:
