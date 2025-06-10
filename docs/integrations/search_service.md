@@ -18,8 +18,6 @@ used by the search service for reindexing.
 | ---------------------------------- | --------------------------------------------------------------------- |
 | `SEARCH_INDEX_PUBLISHER_BACKEND`   | Set to `kafka` to enable send data to the Search service Kafka broker |
 | `KAFKA_SERVERS`                    | A comma-separated list of Kafka broker URLs.                          |
-| `KAFKA_CHANNEL_CREATED_OR_UPDATED` | Defaults to `search-content-updated` as per spec                      |
-| `KAFKA_CHANNEL_DELETED`            | Defaults to `search-content-deleted` as per spec                      |
 | `KAFKA_API_VERSION`                | Defaults to "3,5,1"                                                   |
 | `KAFKA_USE_IAM_AUTH`               | Defaults to `false`. Set to `true` to enable IAM authentication.      |
 
