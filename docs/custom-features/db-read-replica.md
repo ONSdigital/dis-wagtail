@@ -6,4 +6,5 @@ To ensure a consistent view of the database, the write instance is always used i
 
 Generally, a developer shouldn't need worry about this configuration, or explicitly handle it - it is handled automatically by a database router (`cms.core.db_router.ReadReplicaRouter`).
 
-For performance-critical areas, some of Django's built-in queries should be avoided. For example, Django's `get_or_create` will always use the read connection. It may be better to do multiple explicit queries (eg `.get` then `.create`).
+> [!WARNING]
+> For performance-critical areas, some of Django's built-in queries should be avoided: `get_or_create`, `update_or_create`. These methods result in queries which always use the primary database instance. Instead, it may be better to multiple explicit queries (eg `.get` then `.create`) so that the optimal connection is used.
