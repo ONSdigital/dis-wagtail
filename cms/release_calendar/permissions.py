@@ -8,6 +8,4 @@ if TYPE_CHECKING:
 
 def user_can_remove_notice(user: "User | AnonymousUser") -> bool:
     """Check if the user can remove notice from a Release Calendar Page."""
-    from cms.release_calendar.models import ReleaseCalendarPage  # pylint: disable=import-outside-toplevel
-
-    return user.has_perm(f"{ReleaseCalendarPage._meta.app_label}.remove_notice")
+    return user.has_perm("release_calendar.remove_notice")
