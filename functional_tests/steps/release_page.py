@@ -55,15 +55,6 @@ def check_provisional_release_page_content(context: Context):
     expect(context.page.get_by_text("Accredited Official Statistics", exact=True)).to_be_visible()
 
 
-@then("the selected datasets are displayed on the page")
-def check_selected_datasets_are_displayed(context: Context):
-    expect(context.page.get_by_role("heading", name="Data", exact=True)).to_be_visible()
-
-    for dataset in context.selected_datasets:
-        expect(context.page.get_by_role("link", name=dataset["title"])).to_be_visible()
-        expect(context.page.get_by_text(dataset["description"])).to_be_visible()
-
-
 @then('the page status is set to "Provisional" and the release date text field is visible')
 def check_that_default_status_is_provisional_and_release_date_text_is_visible(context: Context):
     expect(context.page.get_by_label("Status*")).to_have_value("PROVISIONAL")
