@@ -8,8 +8,9 @@ from wagtail.admin.forms import WagtailAdminPageForm
 from wagtail.models import Locale
 
 from cms.bundles.permissions import user_can_manage_bundles
+from cms.release_calendar.permissions import user_can_remove_notice
 
-from .enums import NON_PROVISIONAL_STATUS_CHOICES, ReleaseStatus
+from .enums import LOCKED_STATUS_STATUSES, NON_PROVISIONAL_STATUS_CHOICES, ReleaseStatus
 
 
 class ReleaseCalendarPageAdminForm(WagtailAdminPageForm):
@@ -30,12 +31,25 @@ class ReleaseCalendarPageAdminForm(WagtailAdminPageForm):
         cleaned_data: dict = super().clean()
 
         status = cleaned_data.get("status")
+        notice = cleaned_data.get("notice")
+
+        if self.instance.status in LOCKED_STATUS_STATUSES and self.instance.status != status:
+            raise ValidationError(
+                {
+                    "status": (
+                        f"This release calendar page cannot change its status from {self.instance.status} to {status}."
+                    )
+                }
+            )
 
         if status == ReleaseStatus.CANCELLED:
-            if not cleaned_data.get("notice"):
+            if not notice:
                 raise ValidationError({"notice": "The notice field is required when the release is cancelled"})
 
             self.validate_bundle_not_pending_publication(status)
+
+        if self.instance.notice and not notice and not user_can_remove_notice(self.for_user):
+            raise ValidationError({"notice": "You cannot remove the notice from a release calendar page."})
 
         if status != ReleaseStatus.PROVISIONAL:
             # Input field is hidden with custom JS for non-provisional releases,
