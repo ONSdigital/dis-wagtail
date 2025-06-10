@@ -306,6 +306,8 @@ class BarColumnConfidenceIntervalChartBlock(BaseVisualisationBlock):
             case BarColumnConfidenceIntervalChartTypeChoices.BAR:
                 config["isChartInverted"] = True
             case BarColumnConfidenceIntervalChartTypeChoices.COLUMN:
+                # A box plot in Highcharts is a single series; therefore we use
+                # custom component parameters to set the legend labels.
                 config["estimateLineLabel"] = value.get("estimate_line_label")
                 config["uncertaintyRangeLabel"] = value.get("uncertainty_range_label")
             case _:
@@ -392,9 +394,8 @@ class BarColumnConfidenceIntervalChartBlock(BaseVisualisationBlock):
                 code=self.ERROR_INSUFFICIENT_COLUMNS,
             )
 
-        else:
-            # We can only validate the range values if we have 4 columns.
-            # Validate that range values are either both present or both absent
+        else:  # Only perform row-level validation if we have the expected number of columns.
+            # Validate that range values are either both present or both absent.
             for row in value["table"].rows:
                 if any((isinstance(cell, str) and cell.strip()) for cell in row[1:4]):
                     errors["table"] = ValidationError(
