@@ -261,9 +261,8 @@ class LineAnnotationStructValue(AnnotationStructValue):
             config.update({"value": self.get("value")})
 
         # Only apply custom label positioning if set:
-        for key in ["label_offset_x", "label_offset_y"]:
-            if self.get(key) is not None:
-                config.update(self.get_label_offsets())
+        if any(self.get(key) is not None for key in ["label_offset_x", "label_offset_y"]):
+            config.update(self.get_label_offsets())
 
         return config
 
