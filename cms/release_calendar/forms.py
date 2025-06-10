@@ -99,7 +99,7 @@ class ReleaseCalendarPageAdminForm(WagtailAdminPageForm):
                 raise ValidationError(
                     {
                         "next_release_date_text": (
-                            'The next release date text must be in the "DD Month YYYY Time" or say '
+                            'The next release date text must be in the "DD Month YYYY Time" format or say '
                             f'"{to_be_confirmed_text}" in {self.instance.locale.get_display_name()}.'
                         )
                     }

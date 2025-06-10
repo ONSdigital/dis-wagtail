@@ -186,7 +186,7 @@ class ReleaseCalendarPageAdminFormTestCase(WagtailTestUtils, TestCase):
                         form,
                         "next_release_date_text",
                         [
-                            'The next release date text must be in the "DD Month YYYY Time" or say '
+                            'The next release date text must be in the "DD Month YYYY Time" format or say '
                             '"To be confirmed" in English.'
                         ],
                     )
@@ -216,7 +216,7 @@ class ReleaseCalendarPageAdminFormTestCase(WagtailTestUtils, TestCase):
                         form,
                         "next_release_date_text",
                         [
-                            'The next release date text must be in the "DD Month YYYY Time" or say '
+                            'The next release date text must be in the "DD Month YYYY Time" format or say '
                             '"I\'w gadarnhau" in Welsh.'
                         ],
                     )
