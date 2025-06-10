@@ -22,4 +22,4 @@ The URLs and apps required for the Wagtail admin are disabled. This includes the
 
 Only a subset of media stored in S3 are accessible to the external env. Notably the `images/*` prefix needed for Wagtail's rendition generation.
 
-Certain static files are inaccessible in the external environment. This is configured using `cms.core.whitenoise.CMSWhiteNoiseMiddleware`.
+Certain static files (for example those related to the Wagtail admin) are inaccessible in the external environment. This is configured using `cms.core.whitenoise.CMSWhiteNoiseMiddleware`.
