@@ -757,28 +757,36 @@ SECURE_REFERRER_POLICY = env.get("SECURE_REFERRER_POLICY", "no-referrer-when-dow
 # Content Security policy settings
 # Most modern browsers don't honor the X-XSS-Protection HTTP header.
 # You can use Content-Security-Policy without allowing 'unsafe-inline' scripts instead.
-# http://django-csp.readthedocs.io/en/latest/configuration.html
+# https://django-csp.readthedocs.io/en/latest/configuration.html
 if "CSP_DEFAULT_SRC" in env:
     MIDDLEWARE.append("csp.middleware.CSPMiddleware")
 
     # The “special” source values of 'self', 'unsafe-inline', 'unsafe-eval', and 'none' must be quoted!
     # e.g.: CSP_DEFAULT_SRC = "'self'" Without quotes they will not work as intended.
-
     CSP_DEFAULT_SRC = env.get("CSP_DEFAULT_SRC", "").split(",")
+    CSP_DIRECTIVES = {
+        "default-src": CSP_DEFAULT_SRC,
+    }
+
     if "CSP_SCRIPT_SRC" in env:
-        CSP_SCRIPT_SRC = env.get("CSP_SCRIPT_SRC", "").split(",")
+        CSP_DIRECTIVES["script-src"] = env.get("CSP_SCRIPT_SRC", "").split(",")
     if "CSP_STYLE_SRC" in env:
-        CSP_STYLE_SRC = env.get("CSP_STYLE_SRC", "").split(",")
+        CSP_DIRECTIVES["style-src"] = env.get("CSP_STYLE_SRC", "").split(",")
     if "CSP_IMG_SRC" in env:
-        CSP_IMG_SRC = env.get("CSP_IMG_SRC", "").split(",")
+        CSP_DIRECTIVES["img-src"] = env.get("CSP_IMG_SRC", "").split(",")
     if "CSP_CONNECT_SRC" in env:
-        CSP_CONNECT_SRC = env.get("CSP_CONNECT_SRC", "").split(",")
+        CSP_DIRECTIVES["connect-src"] = env.get("CSP_CONNECT_SRC", "").split(",")
     if "CSP_FONT_SRC" in env:
-        CSP_FONT_SRC = env.get("CSP_FONT_SRC", "").split(",")
+        CSP_DIRECTIVES["font-src"] = env.get("CSP_FONT_SRC", "").split(",")
     if "CSP_BASE_URI" in env:
-        CSP_BASE_URI = env.get("CSP_BASE_URI", "").split(",")
+        CSP_DIRECTIVES["base-uri"] = env.get("CSP_BASE_URI", "").split(",")
     if "CSP_OBJECT_SRC" in env:
-        CSP_OBJECT_SRC = env.get("CSP_OBJECT_SRC", "").split(",")
+        CSP_DIRECTIVES["object-src"] = env.get("CSP_OBJECT_SRC", "").split(",")
+
+    if env.get("CSP_REPORT_ONLY", "false").lower() == "true":
+        CONTENT_SECURITY_POLICY_REPORT_ONLY = {"DIRECTIVES": CSP_DIRECTIVES}
+    else:
+        CONTENT_SECURITY_POLICY = {"DIRECTIVES": CSP_DIRECTIVES}
 
 
 # Basic authentication settings
