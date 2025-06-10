@@ -1,4 +1,4 @@
-# External Environment
+# Deployment Environments
 
 In the interest of security, the application is deployed to 2 separate environments: The "internal" and "external" environments.
 
