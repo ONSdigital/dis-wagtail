@@ -302,23 +302,27 @@ class BarColumnConfidenceIntervalChartBlock(BaseVisualisationBlock):
 
     def get_component_config(self, value: "StructValue") -> dict[str, Any]:
         config = super().get_component_config(value)
-        if value["select_chart_type"] == BarColumnConfidenceIntervalChartTypeChoices.BAR:
-            config["isChartInverted"] = True
-        if value["select_chart_type"] == BarColumnConfidenceIntervalChartTypeChoices.COLUMN:
-            config["estimateLineLabel"] = value.get("estimate_line_label")
-            config["uncertaintyRangeLabel"] = value.get("uncertainty_range_label")
+        match value["select_chart_type"]:
+            case BarColumnConfidenceIntervalChartTypeChoices.BAR:
+                config["isChartInverted"] = True
+            case BarColumnConfidenceIntervalChartTypeChoices.COLUMN:
+                config["estimateLineLabel"] = value.get("estimate_line_label")
+                config["uncertaintyRangeLabel"] = value.get("uncertainty_range_label")
+            case _:
+                raise ValueError(f"Unknown chart type: {value['select_chart_type']}")
         return config
 
     def get_series_data(
         self,
         value: "StructValue",
     ) -> tuple[list[list[str | int | float]], list[dict[str, Any]]]:
-        if value["select_chart_type"] == BarColumnConfidenceIntervalChartTypeChoices.BAR:
-            series = self.get_series_data_bar(value)
-        elif value["select_chart_type"] == BarColumnConfidenceIntervalChartTypeChoices.COLUMN:
-            series = self.get_series_data_column(value)
-        else:
-            raise ValueError(f"Unknown chart type: {value['select_chart_type']}")
+        match value["select_chart_type"]:
+            case BarColumnConfidenceIntervalChartTypeChoices.BAR:
+                series = self.get_series_data_bar(value)
+            case BarColumnConfidenceIntervalChartTypeChoices.COLUMN:
+                series = self.get_series_data_column(value)
+            case _:
+                raise ValueError(f"Unknown chart type: {value['select_chart_type']}")
         return value["table"].rows, series
 
     def get_series_data_bar(self, value: "StructValue") -> list[dict[str, Any]]:
