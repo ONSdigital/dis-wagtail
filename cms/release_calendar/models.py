@@ -251,7 +251,6 @@ class ReleaseCalendarPage(BundledPageMixin, BasePage):  # type: ignore[django-ma
     @property
     def preview_modes(self) -> list[tuple[str, str | StrPromise]]:
         return ReleaseStatus.choices
-        # return [("default", "Article Page"), ("related_data", "Related Data Page")]
 
     def get_preview_template(self, request: None, mode_name: str) -> "TemplateResponse":
         templates = {

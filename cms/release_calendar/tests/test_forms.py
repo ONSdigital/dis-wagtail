@@ -206,6 +206,32 @@ class ReleaseCalendarPageAdminFormTestCase(WagtailTestUtils, TestCase):
                 self.assertTrue(form.is_valid())
                 self.assertEqual(form.cleaned_data["release_date_text"], "")
 
+    def test_form_clean__validates_either_next_release_date_or_text(self):
+        """Checks that editors can enter either the next release date or the text, not both."""
+        data = self.raw_form_data()
+        data["notice"] = rich_text("")
+        data["next_release_date"] = timezone.now()
+        data["next_release_date_text"] = "November 2024"
+        data = nested_form_data(data)
+        form = self.form_class(instance=self.page, data=data)
+
+        self.assertFalse(form.is_valid())
+        message = ["Please enter the next release date or the next release text, not both."]
+        self.assertFormError(form, "next_release_date", message)
+        self.assertFormError(form, "next_release_date_text", message)
+
+    def test_form_clean__validates_next_release_date_is_after_release_date(self):
+        """Checks that editors enter a release that that is after the release date."""
+        data = self.raw_form_data()
+        data["notice"] = rich_text("")
+        data["release_date"] = data["next_release_date"] = timezone.now()
+        data = nested_form_data(data)
+        form = self.form_class(instance=self.page, data=data)
+
+        self.assertFalse(form.is_valid())
+        message = ["The next release date must be after the release date."]
+        self.assertFormError(form, "next_release_date", message)
+
     def test_form_clean__fails_release_date_changes_when_instance_is_none(self):
         """Tests when pk is none, adding date change log will fail when published."""
         data = self.raw_form_data()
@@ -213,15 +239,15 @@ class ReleaseCalendarPageAdminFormTestCase(WagtailTestUtils, TestCase):
             [("date_change_log", {"previous_date": timezone.now(), "reason_for_change": "The reason"})]
         )
         data = nested_form_data(data)
-        form = self.form_class(data=data)
-        form.instance.pk = None
+        form = self.form_class(instance=None, data=data)
+        # form.instance.pk = None
         self.page.save_revision().publish()
         self.assertFalse(form.is_valid())
         message = "You cannot create a change to release date for a page that has not been published yet."
         self.assertFormError(form, "changes_to_release_date", message)
 
     def test_form_clean__fails_release_date_changes_added_to_unpublished_page(self):
-        """Checks that date change log cannot be published to an unpublished page."""
+        """Tests date change log cannot be published to an unpublished page."""
         data = self.raw_form_data()
         data["status"] = ReleaseStatus.PROVISIONAL
         data["release_date"] = timezone.now()
@@ -238,7 +264,7 @@ class ReleaseCalendarPageAdminFormTestCase(WagtailTestUtils, TestCase):
         self.assertFormError(form, "changes_to_release_date", message)
 
     def test_form_clean__fails_changes_to_release_date_frozen(self):
-        """Tests that a date change log cannot be changed after it is published."""
+        """Tests date change log cannot be changed after it is published."""
         logs = self.page.changes_to_release_date
         date_change_log = {
             "previous_date": "2025-05-01",
@@ -262,7 +288,7 @@ class ReleaseCalendarPageAdminFormTestCase(WagtailTestUtils, TestCase):
         self.assertFormError(form, "changes_to_release_date", message)
 
     def test_form_clean__add_changes_to_release_date(self):
-        """Tests that a change to release date can be added for a published page."""
+        """Tests a date change log can be added for a published page."""
         self.page.save_revision().publish()
 
         data = self.raw_form_data()
@@ -380,32 +406,6 @@ class ReleaseCalendarPageAdminFormTestCase(WagtailTestUtils, TestCase):
         form = self.form_class(instance=self.page, data=data)
         self.assertTrue(form.is_valid())
         self.assertEqual(form.cleaned_data["changes_to_release_date"][0].value["version_id"], 1)
-
-    def test_form_clean__validates_either_next_release_date_or_text(self):
-        """Checks that editors can enter either the next release date or the text, not both."""
-        data = self.raw_form_data()
-        data["notice"] = rich_text("")
-        data["next_release_date"] = timezone.now()
-        data["next_release_date_text"] = "November 2024"
-        data = nested_form_data(data)
-        form = self.form_class(instance=self.page, data=data)
-
-        self.assertFalse(form.is_valid())
-        message = ["Please enter the next release date or the next release text, not both."]
-        self.assertFormError(form, "next_release_date", message)
-        self.assertFormError(form, "next_release_date_text", message)
-
-    def test_form_clean__validates_next_release_date_is_after_release_date(self):
-        """Checks that editors enter a release that that is after the release date."""
-        data = self.raw_form_data()
-        data["notice"] = rich_text("")
-        data["release_date"] = data["next_release_date"] = timezone.now()
-        data = nested_form_data(data)
-        form = self.form_class(instance=self.page, data=data)
-
-        self.assertFalse(form.is_valid())
-        message = ["The next release date must be after the release date."]
-        self.assertFormError(form, "next_release_date", message)
 
     def test_form_clean__validates_cannot_cancel_if_in_bundle_ready_to_be_published(self):
         bundle = BundleFactory(release_calendar_page=self.page, approved=True)

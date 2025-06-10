@@ -7,8 +7,9 @@ from wagtail.telepath import register
 date_widget = widgets.AdminDateInput(attrs={"placeholder": "YYYY-MM-DD"})
 
 
-# Change release date time step to 30 minutes
 class ONSAdminDateTimeInput(AdminDateTimeInput):
+    """Updates DateTime input with a placeholder and changes time selection intervals to 30 minutes."""
+
     def __init__(
         self,
         attrs: dict | None = None,
@@ -29,7 +30,6 @@ class ONSAdminDateTimeInput(AdminDateTimeInput):
 
     def get_config(self) -> Any:
         config = super().get_config()
-        # Change step to (30 minutes)
         config.update({"step": 30})
 
         return config
