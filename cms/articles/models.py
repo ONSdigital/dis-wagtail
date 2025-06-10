@@ -183,7 +183,7 @@ class StatisticalArticlePage(BundledPageMixin, RoutablePageMixin, BasePage):  # 
             ],
             heading="Title",
         ),
-        "summary",
+        FieldPanel("summary", required_on_save=True),
         MultiFieldPanel(
             [
                 FieldRowPanel(
@@ -205,13 +205,13 @@ class StatisticalArticlePage(BundledPageMixin, RoutablePageMixin, BasePage):  # 
                 ),
                 "contact_details",
                 "show_cite_this_page",
-                "main_points_summary",
+                FieldPanel("main_points_summary", required_on_save=True),
             ],
             heading="Metadata",
             icon="cog",
         ),
         HeadlineFiguresFieldPanel("headline_figures", icon="data-analysis"),
-        FieldPanel("content", icon="list-ul"),
+        FieldPanel("content", icon="list-ul", required_on_save=True),
     ]
 
     corrections_and_notices_panels: ClassVar[list["Panel"]] = [

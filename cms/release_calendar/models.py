@@ -138,7 +138,7 @@ class ReleaseCalendarPage(BundledPageMixin, BasePage):  # type: ignore[django-ma
             icon="cog",
         ),
         FieldPanel("summary", required_on_save=True),
-        FieldPanel("content", icon="list-ul"),
+        FieldPanel("content", icon="list-ul", required_on_save=True),
         FieldPanel("datasets", help_text="Select the datasets that this release relates to.", icon="doc-full"),
         FieldPanel("contact_details", icon="group"),
         MultiFieldPanel(
