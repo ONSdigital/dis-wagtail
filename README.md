@@ -40,7 +40,7 @@ The Wagtail CMS for managing and publishing content for the Office for National 
 
 <!-- markdown-link-check-enable -->
 
-For further developer documentation see [docs](docs/index.md)
+For further developer documentation see [docs](docs/README.md)
 
 ## Getting Started
 
