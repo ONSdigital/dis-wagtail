@@ -103,7 +103,7 @@ def date_placeholder_is_displayed_in_release_page_date_input_fields(context: Con
     expect(context.page.locator("#id_next_release_date")).to_have_attribute("placeholder", time)
 
 
-@then("the a default release date time is today's date and 9:30 AM")
+@then("the default release date time is today's date and 9:30 AM")
 def default_release_date_time_is_displayed(context: Context):
     default_datetime = ons_default_datetime().strftime("%Y-%m-%d %H:%M")
     expect(context.page.locator("#id_release_date")).to_have_value(default_datetime)
@@ -113,18 +113,16 @@ def default_release_date_time_is_displayed(context: Context):
 def thirty_minute_interval_for_time_selection(context: Context):
     time_picker = context.page.locator(".xdsoft_timepicker")
     hours = [f"{h:02}" for h in range(24)]
-    # Release date date picker
+
     context.page.get_by_role("textbox", name="Release date*").click()
     for hour in hours:
         expect(time_picker.get_by_text(f"{hour}:00").nth(2)).to_be_visible()
         expect(time_picker.get_by_text(f"{hour}:30").first).to_be_visible()
 
-    # Next Release date picker -- picker not found atm...
-    # name="next_release_date" id="id_next_release_date"
     context.page.get_by_role("textbox", name="Next release date", exact=True).click()
     for hour in hours:
         expect(time_picker.get_by_text(f"{hour}:00").nth(3)).to_be_visible()
-        expect(time_picker.get_by_text(f"{hour}:30").nth(2)).to_be_visible()
+        expect(time_picker.get_by_text(f"{hour}:30").nth(1)).to_be_visible()
 
 
 @when("user navigates to edit page")
@@ -156,3 +154,15 @@ def release_date_change__is_displayed(context: Context):
     expect(context.page.get_by_text("May 2025 11:00am")).to_be_visible()
     expect(context.page.get_by_role("heading", name="Reason for change")).to_be_visible()
     expect(context.page.get_by_text("This is the reason.")).to_be_visible()
+
+
+@when("user adds notice")
+def add_notice(context: Context):
+    context.page.locator("#panel-child-content-metadata-content div").filter(
+        has_text="Notice Used for data change"
+    ).get_by_role("textbox").fill("This is a notice.")
+
+
+@then("the notice is displayed")
+def notice_displayed(context: Context):
+    expect(context.page.get_by_text("This is a notice.")).to_be_visible()
