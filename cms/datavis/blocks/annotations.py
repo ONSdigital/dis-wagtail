@@ -268,6 +268,8 @@ class LineAnnotationStructValue(AnnotationStructValue):
 
 
 class BaseLineAnnotationBlock(blocks.StructBlock):
+    """Known as "Reference Line" in the Design System."""
+
     label = blocks.CharBlock(required=True)
     axis = blocks.ChoiceBlock(choices=AxisChoices.choices, default=AxisChoices.X)
     value = TextInputFloatBlock(label="Value", required=True)
