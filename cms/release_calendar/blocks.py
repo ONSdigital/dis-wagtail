@@ -4,6 +4,7 @@ from django.conf import settings
 from django.forms import Media
 from django.utils.functional import cached_property
 from django.utils.text import slugify
+from django.utils.translation import gettext_lazy as _
 from wagtail import blocks
 from wagtail.blocks.struct_block import StructBlockAdapter
 from wagtail.telepath import register
@@ -17,7 +18,7 @@ if TYPE_CHECKING:
 class ContentSectionBlock(blocks.StructBlock):
     """A content section with list of links."""
 
-    title = blocks.CharBlock()
+    title = blocks.CharBlock(label=_("Section title"))
     links = blocks.ListBlock(RelatedContentBlock())
 
     class Meta:
