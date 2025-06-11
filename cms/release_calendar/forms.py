@@ -32,7 +32,7 @@ class ReleaseCalendarPageAdminForm(WagtailAdminPageForm):
         if self.instance.status == ReleaseStatus.PUBLISHED:
             self.fields["release_date"].disabled = True
 
-    def clean(self) -> dict:  # noqa: C901
+    def clean(self) -> dict:
         """Validate the submitted release calendar data."""
         cleaned_data: dict = super().clean()
 
@@ -82,28 +82,7 @@ class ReleaseCalendarPageAdminForm(WagtailAdminPageForm):
         if next_release_date_text := cleaned_data.get("next_release_date_text"):
             locale_code = "en" if self.instance.locale.language_code == "en-gb" else self.instance.locale.language_code
 
-            parsed_date = parse_day_month_year_time(next_release_date_text, locale_code)
-
-            if (
-                parsed_date is not None
-                and cleaned_data.get("release_date")
-                and parsed_date <= cleaned_data["release_date"]
-            ):
-                raise ValidationError(
-                    {"next_release_date_text": "The next release date must be after the release date."}
-                )
-
-            to_be_confirmed_text = get_translated_string("To be confirmed", self.instance.locale.language_code)
-
-            if parsed_date is None and to_be_confirmed_text != next_release_date_text:
-                raise ValidationError(
-                    {
-                        "next_release_date_text": (
-                            'The next release date text must be in the "DD Month YYYY Time" format or say '
-                            f'"{to_be_confirmed_text}" in {self.instance.locale.get_display_name()}.'
-                        )
-                    }
-                )
+            self.validate_release_next_date_text_format(next_release_date_text, locale_code, cleaned_data)
 
         return cleaned_data
 
@@ -130,6 +109,26 @@ class ReleaseCalendarPageAdminForm(WagtailAdminPageForm):
             )
         if len(dates) == MAX_DATE_PARTS and dates[0] >= dates[1]:  # type: ignore # Dates guaranteed to not be None
             raise ValidationError({"release_date_text": "The end month must be after the start month."})
+
+    def validate_release_next_date_text_format(
+        self, next_release_date_text: str, locale: str, cleaned_data: dict
+    ) -> None:
+        parsed_date = parse_day_month_year_time(next_release_date_text, locale)
+
+        if parsed_date is not None and cleaned_data.get("release_date") and parsed_date <= cleaned_data["release_date"]:
+            raise ValidationError({"next_release_date_text": "The next release date must be after the release date."})
+
+        to_be_confirmed_text = get_translated_string("To be confirmed", self.instance.locale.language_code)
+
+        if parsed_date is None and to_be_confirmed_text != next_release_date_text:
+            raise ValidationError(
+                {
+                    "next_release_date_text": (
+                        'The next release date text must be in the "DD Month YYYY Time" format or say '
+                        f'"{to_be_confirmed_text}" in {self.instance.locale.get_display_name()}.'
+                    )
+                }
+            )
 
     def validate_bundle_not_pending_publication(self, status: str) -> None:
         if self.instance.status == status:
