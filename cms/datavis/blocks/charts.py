@@ -245,7 +245,7 @@ class BarColumnConfidenceIntervalChartBlock(BaseVisualisationBlock):
         [
             ("point", PointAnnotationCategoricalBlock()),
             ("range", RangeAnnotationBarColumnBlock()),
-            # TODO: add reference line annotation when https://github.com/ONSdigital/dis-wagtail/pull/232 is merged
+            ("reference_line", LineAnnotationBarColumnBlock()),
         ],
         required=False,
     )
