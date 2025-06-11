@@ -18,16 +18,6 @@ def check_kafka_settings(app_configs: Optional[Iterable[AppConfig]], **kwargs: A
 
     kafka_settings: list[tuple[str, str, str]] = [
         ("KAFKA_SERVERS", "localhost:9092", "search.E001"),
-        (
-            "KAFKA_CHANNEL_CREATED_OR_UPDATED",
-            "the Kafka topic you use for content updates",
-            "search.E002",
-        ),
-        (
-            "KAFKA_CHANNEL_DELETED",
-            "the Kafka topic you use for content deletions",
-            "search.E003",
-        ),
     ]
 
     for setting, hint_value, missing_id in kafka_settings:
