@@ -62,6 +62,7 @@ class BundleDataset(Orderable):
 class BundleTeam(Orderable):
     parent = ParentalKey("Bundle", on_delete=models.CASCADE, related_name="teams")
     team: "models.ForeignKey[Team]" = models.ForeignKey("teams.Team", on_delete=models.CASCADE)
+    preview_notification_sent = models.BooleanField(default=False, editable=False)  # type: ignore[var-annotated]
 
     def __str__(self) -> str:
         return f"BundleTeam: {self.pk} bundle {self.parent_id} team: {self.team_id}"
@@ -127,7 +128,6 @@ class Bundle(index.Indexed, ClusterableModel, models.Model):  # type: ignore[dja
         related_name="bundles",
     )
     status = models.CharField(choices=BundleStatus.choices, default=BundleStatus.DRAFT, max_length=32)
-    preview_notification_sent = models.BooleanField(default=False, editable=False)
 
     objects = BundleManager()
 

@@ -26,7 +26,7 @@ def _send_bundle_email(bundle_team: BundleTeam, subject: str, message: str) -> N
     )
 
 
-def send_bundle_ready_for_review_email(bundle_team: BundleTeam) -> None:
+def send_bundle_in_review_email(bundle_team: BundleTeam) -> None:
     """Send email notification to the team members when a bundle is ready for review."""
     bundle = bundle_team.parent
     team = bundle_team.team
@@ -36,6 +36,8 @@ def send_bundle_ready_for_review_email(bundle_team: BundleTeam) -> None:
         f'Bundle "{bundle.name}" is now ready for review. URL: {bundle.inspect_url}'
     )
     _send_bundle_email(bundle_team, subject, message)
+    bundle_team.preview_notification_sent = True
+    bundle_team.save(update_fields=["preview_notification_sent"])
 
 
 def send_bundle_published_email(bundle_team: BundleTeam) -> None:
