@@ -11,9 +11,6 @@ from cms.bundles.notifications.email import send_bundle_in_review_email, send_bu
 @receiver(post_save, sender=BundleTeam)
 def handle_bundle_team_post_save(instance: BundleTeam, created: bool, **kwargs: Any) -> None:
     """Handle when a preview team is assigned to a bundle in review."""
-    if kwargs.get("update_fields") == {"preview_notification_sent"}:
-        return  # Return early if only the preview_notification_sent field is updated
-
     if created and instance.parent.status == BundleStatus.IN_REVIEW:
         send_bundle_in_review_email(bundle_team=instance)
 

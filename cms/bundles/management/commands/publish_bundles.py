@@ -83,7 +83,7 @@ class Command(BaseCommand):
         - updates the release calendar entry
         """
         # only provide a URL if we can generate a full one
-        inspect_url = self.base_url + bundle.inspect_url if self.base_url else None
+        inspect_url = bundle.inspect_url if self.base_url else None
 
         logger.info(
             "Publishing Bundle",
