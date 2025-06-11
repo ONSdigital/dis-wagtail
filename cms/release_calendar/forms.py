@@ -22,8 +22,15 @@ class ReleaseCalendarPageAdminForm(WagtailAdminPageForm):
             # Once a release calendar page is confirmed, it cannot go back to provisional
             self.fields["status"].choices = NON_PROVISIONAL_STATUS_CHOICES
 
-        if self.instance.status == ReleaseStatus.PUBLISHED:
+        # Remove ReleaseStatus.PUBLISHED from the status choices.
+        # Release Calendar pages should only ever move to the PUBLISHED status via a bundle.
+        if self.instance.status != ReleaseStatus.PUBLISHED:
+            self.fields["status"].choices = [
+                choice for choice in self.fields["status"].choices if choice[0] != ReleaseStatus.PUBLISHED
+            ]
+        else:
             self.fields["release_date"].disabled = True
+            self.fields["status"].disabled = True
 
     def clean(self) -> dict:
         """Validate the submitted release calendar data."""
