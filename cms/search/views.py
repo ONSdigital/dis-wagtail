@@ -15,9 +15,7 @@ if TYPE_CHECKING:
 
 
 class ResourceListView(APIView):
-    """Provides the list of indexable Wagtail resources for external use.
-    Only available if IS_EXTERNAL_ENV is True.
-    """
+    """Provides the list of indexable Wagtail resources."""
 
     pagination_class = CustomLimitOffsetPagination
 

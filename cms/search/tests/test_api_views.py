@@ -48,7 +48,7 @@ class SearchResourcesViewTests(TestCase, ResourceDictAssertions, ExternalAPITest
 
     def test_resources_returns_200_and_lists_various_page_types(self):
         """Endpoint should return 200 and include all included_pages in the items."""
-        response = self.call_view_as_external(RESOURCE_ENDPOINT)
+        response = self.client.get(RESOURCE_ENDPOINT)
         self.assertEqual(response.status_code, 200, f"Expected 200 OK from {RESOURCE_ENDPOINT}")
 
         data = self.parse_json(response)
@@ -63,7 +63,7 @@ class SearchResourcesViewTests(TestCase, ResourceDictAssertions, ExternalAPITest
         """Non-indexable pages (ArticleSeries, Home, ReleaseCalendarIndex, Theme, Topic)
         should not appear in items.
         """
-        response = self.call_view_as_external(RESOURCE_ENDPOINT)
+        response = self.client.get(RESOURCE_ENDPOINT)
         self.assertEqual(response.status_code, 200)
 
         data = self.parse_json(response)
@@ -73,10 +73,10 @@ class SearchResourcesViewTests(TestCase, ResourceDictAssertions, ExternalAPITest
                 f"Expected page with URI {build_page_uri(page)} not to be present",
             )
 
-    def test_resources_disabled_when_external_env_false(self):
-        """Endpoint should return 404 when IS_EXTERNAL_ENV=False."""
-        response = self.client.get(RESOURCE_ENDPOINT)
-        self.assertEqual(response.status_code, 404)
+    def test_resources_available_in_external_env(self):
+        """Endpoint should return 200 when IS_EXTERNAL_ENV=True."""
+        response = self.call_view_as_external(RESOURCE_ENDPOINT)
+        self.assertEqual(response.status_code, 200)
 
 
 @override_settings(IS_EXTERNAL_ENV=False)
@@ -92,7 +92,7 @@ class ResourceListViewPaginationTests(TestCase, ExternalAPITestMixin):
 
     def test_default_pagination_returns_first_slice(self):
         """With no limit/ offset specified we should get DEFAULT_LIMIT (or all if fewer)."""
-        response = self.call_view_as_external(RESOURCE_ENDPOINT)
+        response = self.client.get(RESOURCE_ENDPOINT)
         self.assertEqual(response.status_code, 200)
 
         data = self.parse_json(response)
@@ -107,7 +107,7 @@ class ResourceListViewPaginationTests(TestCase, ExternalAPITestMixin):
 
     def test_second_slice_returns_remaining_items(self):
         """Requesting offset=<7> should return whatever is left after the first slice."""
-        response = self.call_view_as_external(f"{RESOURCE_ENDPOINT}?offset=7")
+        response = self.client.get(f"{RESOURCE_ENDPOINT}?offset=7")
         self.assertEqual(response.status_code, 200)
 
         data = self.parse_json(response)
@@ -117,7 +117,7 @@ class ResourceListViewPaginationTests(TestCase, ExternalAPITestMixin):
         self.assertEqual(data["offset"], 7)
 
     def test_custom_limit_returns_requested_number(self):
-        response = self.call_view_as_external(f"{RESOURCE_ENDPOINT}?limit=5")
+        response = self.client.get(f"{RESOURCE_ENDPOINT}?limit=5")
         self.assertEqual(response.status_code, 200)
 
         data = self.parse_json(response)
@@ -130,7 +130,7 @@ class ResourceListViewPaginationTests(TestCase, ExternalAPITestMixin):
         """When limit exceeds max_limit, results should be capped at max_limit.
         We add enough extra pages to go past MAX_LIMIT of 20.
         """
-        response = self.call_view_as_external(f"{RESOURCE_ENDPOINT}?limit=30")
+        response = self.client.get(f"{RESOURCE_ENDPOINT}?limit=30")
         self.assertEqual(response.status_code, 200)
 
         data = self.parse_json(response)
