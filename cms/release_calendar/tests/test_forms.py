@@ -1,3 +1,5 @@
+import datetime
+
 from django.test import TestCase
 from django.urls import reverse
 from django.utils import timezone
@@ -42,11 +44,14 @@ class ReleaseCalendarPageAdminFormTestCase(WagtailTestUtils, TestCase):
 
     def test_form_init__status_choices(self):
         """Checks that when the release entry is non-provisional, the provisional state is not a choice."""
+        provisional_choices = [choice for choice in ReleaseStatus.choices if choice[0] != ReleaseStatus.PUBLISHED]
+        non_provisional_choices = [
+            choice for choice in NON_PROVISIONAL_STATUS_CHOICES if choice[0] != ReleaseStatus.PUBLISHED
+        ]
         cases = [
-            (ReleaseStatus.PROVISIONAL, ReleaseStatus.choices),
-            (ReleaseStatus.CONFIRMED, NON_PROVISIONAL_STATUS_CHOICES),
-            (ReleaseStatus.CANCELLED, NON_PROVISIONAL_STATUS_CHOICES),
-            (ReleaseStatus.PUBLISHED, NON_PROVISIONAL_STATUS_CHOICES),
+            (ReleaseStatus.PROVISIONAL, provisional_choices),
+            (ReleaseStatus.CONFIRMED, non_provisional_choices),
+            (ReleaseStatus.CANCELLED, non_provisional_choices),
         ]
         for status, choices in cases:
             with self.subTest(status=status, choices=choices):
@@ -54,6 +59,12 @@ class ReleaseCalendarPageAdminFormTestCase(WagtailTestUtils, TestCase):
                 form = self.form_class(instance=self.page)
 
                 self.assertEqual(form.fields["status"].choices, choices)
+
+    def test_form_init__status_choices__published(self):
+        """Checks that the status choices do not include PUBLISHED."""
+        form = self.form_class(instance=self.page)
+
+        self.assertNotIn(ReleaseStatus.PUBLISHED, [choice[0] for choice in form.fields["status"].choices])
 
     def test_form_init__release_date_disabled(self):
         """Checks that the release_date field is disabled when the status is published."""
@@ -76,6 +87,18 @@ class ReleaseCalendarPageAdminFormTestCase(WagtailTestUtils, TestCase):
 
         self.assertTrue(form.is_valid())
 
+    def test_form_clean__accepts_published_if_already_published(self):
+        """Checks that the form accepts a published status if the page is already published."""
+        self.page.status = ReleaseStatus.PUBLISHED
+        data = self.form_data
+        data["release_date"] = self.page.release_date = datetime.datetime(2025, 1, 2, 3, 4, 5, 0, tzinfo=datetime.UTC)
+        data["status"] = ReleaseStatus.PUBLISHED
+        form = self.form_class(instance=self.page, data=data)
+
+        # Print any form errors for debugging
+        self.assertTrue(form.is_valid())
+        self.assertEqual(form.cleaned_data["status"], ReleaseStatus.PUBLISHED)
+
     def test_form_clean__validates_notice(self):
         """Checks that there is a notice if cancelling."""
         data = self.form_data
@@ -90,6 +113,8 @@ class ReleaseCalendarPageAdminFormTestCase(WagtailTestUtils, TestCase):
         data = self.form_data
 
         for status in ReleaseStatus:
+            if status == ReleaseStatus.PUBLISHED:
+                continue
             with self.subTest(status=status):
                 data["status"] = status
                 data["notice"] = rich_text("")
@@ -258,22 +283,19 @@ class ReleaseCalendarPageAdminFormTestCase(WagtailTestUtils, TestCase):
         self.page.status = ReleaseStatus.CONFIRMED
         data = self.form_data
         data["notice"] = rich_text("")
+        data["status"] = ReleaseStatus.CONFIRMED
+        data["release_date"] = timezone.now()
+        form = self.form_class(instance=self.page, data=data)
 
-        for status in [ReleaseStatus.CONFIRMED, ReleaseStatus.PUBLISHED]:
-            with self.subTest(status=status):
-                data["status"] = status
-                data["release_date"] = timezone.now()
-                form = self.form_class(instance=self.page, data=data)
-
-                self.assertFalse(form.is_valid())
-                self.assertFormError(
-                    form,
-                    "changes_to_release_date",
-                    [
-                        "If a confirmed calendar entry needs to be rescheduled, "
-                        "the 'Changes to release date' field must be filled out."
-                    ],
-                )
+        self.assertFalse(form.is_valid())
+        self.assertFormError(
+            form,
+            "changes_to_release_date",
+            [
+                "If a confirmed calendar entry needs to be rescheduled, "
+                "the 'Changes to release date' field must be filled out."
+            ],
+        )
 
     def test_form_clean__validates_release_date_when_confirmed__happy_path(self):
         """Checks that there are no errors when good data is submitted."""
@@ -283,13 +305,11 @@ class ReleaseCalendarPageAdminFormTestCase(WagtailTestUtils, TestCase):
         data["changes_to_release_date"] = streamfield(
             [("date_change_log", {"previous_date": timezone.now(), "reason_for_change": "The reason"})]
         )
-        for status in [ReleaseStatus.CONFIRMED, ReleaseStatus.PUBLISHED]:
-            with self.subTest(status=status):
-                data["status"] = status
-                data = nested_form_data(data)
-                form = self.form_class(instance=self.page, data=data)
+        data["status"] = ReleaseStatus.CONFIRMED
+        data = nested_form_data(data)
+        form = self.form_class(instance=self.page, data=data)
 
-                self.assertTrue(form.is_valid())
+        self.assertTrue(form.is_valid())
 
     def test_form_clean__set_release_date_text_to_empty_string_for_non_provisional_releases(self):
         """Checks that for non-provisional releases the provisional release date text is set to an empty string."""
@@ -307,14 +327,12 @@ class ReleaseCalendarPageAdminFormTestCase(WagtailTestUtils, TestCase):
         self.assertTrue(form.is_valid())
         self.assertEqual(form.cleaned_data["release_date_text"], "November 2024")
 
-        for status in [ReleaseStatus.CONFIRMED, ReleaseStatus.PUBLISHED]:
-            with self.subTest(status=status):
-                data["status"] = status
-                data = nested_form_data(data)
-                form = self.form_class(instance=self.page, data=data)
+        data["status"] = ReleaseStatus.CONFIRMED
+        data = nested_form_data(data)
+        form = self.form_class(instance=self.page, data=data)
 
-                self.assertTrue(form.is_valid())
-                self.assertEqual(form.cleaned_data["release_date_text"], "")
+        self.assertTrue(form.is_valid())
+        self.assertEqual(form.cleaned_data["release_date_text"], "")
 
     def test_form_clean__validates_either_next_release_date_or_text(self):
         """Checks that editors can enter either the next release date or the text, not both."""
