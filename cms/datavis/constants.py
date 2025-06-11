@@ -31,3 +31,17 @@ class BarColumnAxisChoices(TextChoices):
 
     CATEGORY = "x", "Category axis"
     VALUE = "y", "Value axis"
+
+
+class BarColumnChartTypeChoices(TextChoices):
+    """Chart type choices for bar/column charts."""
+
+    BAR = "bar", "Bar"
+    COLUMN = "column", "Column"
+
+
+class BarColumnConfidenceIntervalChartTypeChoices(TextChoices):
+    """Chart type choices for bar/column charts with confidence intervals."""
+
+    BAR = "columnrange", "Bar"
+    COLUMN = "boxplot", "Column"

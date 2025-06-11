@@ -1,3 +1,4 @@
+from typing import cast
 from unittest import mock
 
 from django.core.exceptions import ValidationError
@@ -5,6 +6,7 @@ from wagtail import blocks
 from wagtail.blocks.struct_block import StructValue
 
 from cms.datavis.blocks.charts import BarColumnChartBlock
+from cms.datavis.constants import BarColumnChartTypeChoices
 from cms.datavis.tests.factories import TableDataFactory
 from cms.datavis.tests.test_chart_blocks_base import BaseChartBlockTestCase
 
@@ -32,12 +34,16 @@ class BarColumnChartBlockTestCase(BaseChartBlockTestCase):
     def test_selectable_chart_type(self):
         with self.assertRaises(AttributeError):
             self.block.highcharts_chart_type  # noqa: B018, pylint: disable=pointless-statement
-        for chart_type in ["bar", "column"]:
+        for chart_type in BarColumnChartTypeChoices.values:
             with self.subTest(chart_type=chart_type):
                 data = self.raw_data.copy()
                 data["select_chart_type"] = chart_type
                 value = self.get_value(data)
                 self.assertEqual(chart_type, value.block.get_highcharts_chart_type(value))
+                try:
+                    self.block.clean(value)
+                except ValidationError as e:
+                    self.fail(f"ValidationError raised: {e}")
 
     def test_validating_data(self):
         """Test that the data we're using for these unit tests is good."""
@@ -129,7 +135,7 @@ class BarColumnChartBlockTestCase(BaseChartBlockTestCase):
                 self.assertNotIn("marker", item)
 
     def test_bar_chart_aspect_ratio_options_not_allowed(self):
-        self.raw_data["select_chart_type"] = "bar"
+        self.raw_data["select_chart_type"] = BarColumnChartTypeChoices.BAR
         for option in [
             "desktop_aspect_ratio",
             "mobile_aspect_ratio",
@@ -141,14 +147,14 @@ class BarColumnChartBlockTestCase(BaseChartBlockTestCase):
                 with self.assertRaises(ValidationError) as cm:
                     self.block.clean(value)
 
-                err = cm.exception
+                err = cast(blocks.StructBlockValidationError, cm.exception)
                 self.assertEqual(
                     BarColumnChartBlock.ERROR_BAR_CHART_NO_ASPECT_RATIO,
                     err.block_errors["options"].block_errors[0].code,
                 )
 
     def test_column_chart_aspect_ratio_options_are_allowed(self):
-        self.raw_data["select_chart_type"] = "column"
+        self.raw_data["select_chart_type"] = BarColumnChartTypeChoices.COLUMN
         for option in [
             "desktop_aspect_ratio",
             "mobile_aspect_ratio",
