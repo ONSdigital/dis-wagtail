@@ -1,8 +1,13 @@
 from typing import TYPE_CHECKING, ClassVar
 
 from django.conf import settings
+from django.forms import Media
+from django.utils.functional import cached_property
 from django.utils.text import slugify
+from django.utils.translation import gettext_lazy as _
 from wagtail import blocks
+from wagtail.blocks.struct_block import StructBlockAdapter
+from wagtail.telepath import register
 
 from cms.core.blocks import BasicTableBlock, LinkBlock, RelatedContentBlock
 
@@ -13,7 +18,7 @@ if TYPE_CHECKING:
 class ContentSectionBlock(blocks.StructBlock):
     """A content section with list of links."""
 
-    title = blocks.CharBlock()
+    title = blocks.CharBlock(label=_("Section title"))
     links = blocks.ListBlock(RelatedContentBlock())
 
     class Meta:
@@ -29,9 +34,24 @@ class ReleaseDateChangeBlock(blocks.StructBlock):
 
     previous_date = blocks.DateTimeBlock()
     reason_for_change = blocks.TextBlock()
+    frozen = blocks.BooleanBlock(required=False, default=False)
+    version_id = blocks.IntegerBlock(required=False)
 
     class Meta:
         template = "templates/components/streamfield/release_date_change_block.html"
+        help_text = "Warning: Once a date change log is published, it cannot be deleted."
+
+
+class ReleaseDateChangeBlockAdapter(StructBlockAdapter):
+    js_constructor = "cms.release_calendar.blocks.ReleaseDateChangeBlock"
+
+    @cached_property
+    def media(self) -> Media:
+        structblock_media = super().media
+        return Media(js=[*structblock_media._js, "js/blocks/release-date-change-block.js"], css=structblock_media._css)  # pylint: disable=protected-access
+
+
+register(ReleaseDateChangeBlockAdapter(), ReleaseDateChangeBlock)
 
 
 class ReleaseCalendarStoryBlock(blocks.StreamBlock):
@@ -60,7 +80,10 @@ class ReleaseCalendarPreReleaseAccessStoryBlock(blocks.StreamBlock):
 
     class Meta:
         template = "templates/components/streamfield/stream_block.html"
-        block_counts: ClassVar[dict[str, dict[str, int]]] = {"description": {"max_num": 1}, "table": {"max_num": 1}}
+        block_counts: ClassVar[dict[str, dict[str, int]]] = {
+            "description": {"max_num": 1},
+            "table": {"max_num": 1},
+        }
 
 
 class ReleaseCalendarRelatedLinksStoryBlock(blocks.StreamBlock):
