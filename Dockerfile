@@ -206,7 +206,7 @@ COPY --chown=$UID:$GID . .
 RUN make load-design-system-templates
 
 COPY --chown=$UID:$GID --from=frontend-build --link /build/cms/static_compiled ./cms/static_compiled
-RUN django-admin collectstatic --noinput --clear && django-admin compilemessages --use-fuzzy
+RUN django-admin collectstatic --noinput --clear && django-admin compilemessages
 
 # Run Gunicorn using the config in gunicorn.conf.py (the default location for
 # the config file). To change gunicorn settings without needing to make code

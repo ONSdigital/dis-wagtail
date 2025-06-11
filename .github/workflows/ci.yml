@@ -150,8 +150,6 @@ jobs:
         run: make load-design-system-templates
       - name: collectstatic
         run: poetry run ./manage.py collectstatic --verbosity 0 --noinput --clear
-      - name: compilemessages
-        run: poetry run ./manage.py compilemessages --verbosity 0 --use-fuzzy
       - name: System checks
         run: poetry run ./manage.py check
       - name: Check for missing migrations

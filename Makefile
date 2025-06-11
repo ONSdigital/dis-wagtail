@@ -199,7 +199,7 @@ makemessages:  ## We currently just require Welsh (cy), change to -a for all lan
 
 .PHONY: compilemessages
 compilemessages:
-	poetry run python ./manage.py compilemessages --use-fuzzy
+	poetry run python ./manage.py compilemessages
 
 # Aliases
 .PHONY: start
