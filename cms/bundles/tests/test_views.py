@@ -392,3 +392,41 @@ class PreviewBundleReleaseCalendarViewTestCase(WagtailTestUtils, TestCase):
         self.assertEqual(response.status_code, HTTPStatus.OK)
         self.assertContains(response, reverse("bundles:preview", args=[self.bundle.pk, statistical_article.pk]))
         self.assertContains(response, reverse("bundles:preview", args=[self.bundle.pk, methodology_article.pk]))
+
+    def test_preview_release_calendar_page_shows_preview_bar(self):
+        self.client.force_login(self.publishing_officer)
+        statistical_article = StatisticalArticlePageFactory()
+        methodology_article = StatisticalArticlePageFactory()
+
+        BundlePageFactory(parent=self.bundle, page=statistical_article)
+        BundlePageFactory(parent=self.bundle, page=methodology_article)
+
+        response = self.client.get(self.preview_url)
+
+        self.assertEqual(response.status_code, HTTPStatus.OK)
+
+        # Check for presence of bundle_inspect_url
+        self.assertContains(response, reverse("bundle:inspect", args=[self.bundle.pk]))
+
+        content = response.content.decode("utf-8")
+
+        # Check if preview bar is present and contains the correct options
+        self.assertInHTML(
+            '<label class="ons-label" for="preview-items">Preview items</label>',
+            content,
+        )
+        self.assertInHTML(
+            f'<option value="{reverse("bundles:preview_release_calendar", args=[self.bundle.pk])}">'
+            f"{self.release_calendar_page.title}</option>",
+            content,
+        )
+        self.assertInHTML(
+            f'<option value="{reverse("bundles:preview", args=[self.bundle.pk, statistical_article.pk])}">'
+            f"{statistical_article.display_title}</option>",
+            content,
+        )
+        self.assertInHTML(
+            f'<option value="{reverse("bundles:preview", args=[self.bundle.pk, methodology_article.pk])}">'
+            f"{methodology_article.display_title}</option>",
+            content,
+        )
