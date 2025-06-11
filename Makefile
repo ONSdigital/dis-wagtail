@@ -166,7 +166,7 @@ runserver: ## Run the Django application locally
 	poetry run python ./manage.py runserver 0:8000
 
 .PHONY: dev-init
-dev-init: load-design-system-templates collectstatic makemigrations migrate load-topics createsuperuser  ## Run the pre-run setup scripts
+dev-init: load-design-system-templates collectstatic compilemessages makemigrations migrate load-topics createsuperuser  ## Run the pre-run setup scripts
 
 .PHONY: functional-tests-up
 functional-tests-up:  ## Start the functional tests docker compose dependencies
@@ -199,7 +199,7 @@ makemessages:  ## We currently just require Welsh (cy), change to -a for all lan
 
 .PHONY: compilemessages
 compilemessages:
-	poetry run python ./manage.py compilemessages
+	poetry run python ./manage.py compilemessages --use-fuzzy
 
 # Aliases
 .PHONY: start
