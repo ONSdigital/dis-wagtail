@@ -8,6 +8,9 @@ from django.forms import widgets
 from wagtail import blocks
 
 from cms.datavis.blocks.annotations import (
+    LineAnnotationBarColumnBlock,
+    LineAnnotationCategoricalBlock,
+    LineAnnotationLinearBlock,
     PointAnnotationCategoricalBlock,
     PointAnnotationLinearBlock,
     RangeAnnotationBarColumnBlock,
@@ -41,6 +44,7 @@ class LineChartBlock(BaseVisualisationBlock):
         [
             ("point", PointAnnotationCategoricalBlock()),
             ("range", RangeAnnotationCategoricalBlock()),
+            ("reference_line", LineAnnotationCategoricalBlock()),
         ],
         required=False,
     )
@@ -66,6 +70,7 @@ class BarColumnChartBlock(BaseVisualisationBlock):
         [
             ("point", PointAnnotationCategoricalBlock()),
             ("range", RangeAnnotationBarColumnBlock()),
+            ("reference_line", LineAnnotationBarColumnBlock()),
         ],
         required=False,
     )
@@ -241,6 +246,7 @@ class ScatterPlotBlock(BaseVisualisationBlock):
         [
             ("point", PointAnnotationLinearBlock()),
             ("range", RangeAnnotationLinearBlock()),
+            ("reference_line", LineAnnotationLinearBlock()),
         ],
         required=False,
     )
@@ -284,6 +290,7 @@ class AreaChartBlock(BaseVisualisationBlock):
         [
             ("point", PointAnnotationCategoricalBlock()),
             ("range", RangeAnnotationCategoricalBlock()),
+            ("reference_line", LineAnnotationCategoricalBlock()),
         ],
         required=False,
     )
