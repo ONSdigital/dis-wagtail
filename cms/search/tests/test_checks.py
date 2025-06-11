@@ -24,7 +24,6 @@ class KafkaSettingsCheckTests(TestCase):
         """
         errors = check_kafka_settings(app_configs=None)
 
-        # Expect 3 missing-settings errors: E001, E002, and E003
         self.assertEqual(len(errors), 1)
         error_ids = [error.id for error in errors]
         self.assertIn("search.E001", error_ids)  # Missing KAFKA_SERVERS
