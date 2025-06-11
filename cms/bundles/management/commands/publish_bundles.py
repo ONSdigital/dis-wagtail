@@ -6,7 +6,6 @@ from typing import TYPE_CHECKING, Any
 from django.conf import settings
 from django.core.management.base import BaseCommand
 from django.db import transaction
-from django.urls import reverse
 from django.utils import timezone
 from wagtail.log_actions import log
 
@@ -84,7 +83,7 @@ class Command(BaseCommand):
         - updates the release calendar entry
         """
         # only provide a URL if we can generate a full one
-        inspect_url = self.base_url + reverse("bundle:inspect", args=(bundle.pk,)) if self.base_url else None
+        inspect_url = self.base_url + bundle.inspect_url if self.base_url else None
 
         logger.info(
             "Publishing Bundle",

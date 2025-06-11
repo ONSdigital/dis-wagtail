@@ -196,6 +196,10 @@ class Bundle(index.Indexed, ClusterableModel, models.Model):  # type: ignore[dja
 
     @property
     def inspect_url(self) -> str:
+        """Returns the URL for bundle inspect view, or an empty string if the bundle is not saved yet."""
+        if not self.pk:
+            return ""
+
         base_url = settings.WAGTAILADMIN_BASE_URL
         return f"{base_url}{reverse('bundle:inspect', args=[self.pk])}"
 

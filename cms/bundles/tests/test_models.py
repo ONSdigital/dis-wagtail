@@ -80,6 +80,11 @@ class BundleModelTestCase(TestCase):
         expected_url = f"{settings.WAGTAILADMIN_BASE_URL}{reverse('bundle:inspect', args=[self.bundle.pk])}"
         self.assertEqual(self.bundle.inspect_url, expected_url)
 
+    def test_inspect_url_property_returns_empty_string_for_unsaved_bundles(self):
+        """Test that inspect_url returns an empty string for unsaved bundles."""
+        unsaved_bundle = BundleFactory.build()
+        self.assertEqual(unsaved_bundle.inspect_url, "")
+
 
 class BundledPageMixinTestCase(TestCase):
     """Test BundledPageMixin properties and methods."""
