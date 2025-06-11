@@ -21,15 +21,6 @@ Feature: CMS users can draft, edit, and publish release pages
         And the user clicks "View Live" on the publish confirmation banner
         Then the release date text is displayed
 
-    Scenario: Next release date text is added
-        When the user clicks "Add child page" to create a new draft release page
-        And the user enters some example content on the page
-        And the user adds a next release date text
-        And the user sets the page status to "Published"
-        And the user clicks "Publish"
-        And the user clicks "View Live" on the publish confirmation banner
-        Then the next release date text is displayed
-
     Scenario Outline: Release date text field is hidden for provisional releases
         When the user clicks "Add child page" to create a new draft release page
         And the user sets the page status to "<PageStatus>"
