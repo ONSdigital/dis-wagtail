@@ -26,21 +26,16 @@ class ReleaseCalendarPageAdminForm(WagtailAdminPageForm):
         if self.instance.status == ReleaseStatus.PUBLISHED:
             self.fields["release_date"].disabled = True
 
+        if self.instance.status in LOCKED_STATUS_STATUSES:
+            # If the status is locked, disable the status field
+            self.fields["status"].disabled = True
+
     def clean(self) -> dict:
         """Validate the submitted release calendar data."""
         cleaned_data: dict = super().clean()
 
         status = cleaned_data.get("status")
         notice = cleaned_data.get("notice")
-
-        if self.instance.status in LOCKED_STATUS_STATUSES and self.instance.status != status:
-            raise ValidationError(
-                {
-                    "status": (
-                        f"This release calendar page cannot change its status from {self.instance.status} to {status}."
-                    )
-                }
-            )
 
         if status == ReleaseStatus.CANCELLED:
             if not notice:

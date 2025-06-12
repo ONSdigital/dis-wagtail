@@ -216,12 +216,10 @@ class ReleaseCalendarPageAdminFormTestCase(WagtailTestUtils, TestCase):
                 self.page.status = status
                 data["status"] = ReleaseStatus.CONFIRMED
                 form = self.form_class(instance=self.page, data=data)
-
-                self.assertFalse(form.is_valid())
-                message = (
-                    f"This release calendar page cannot change its status from {status} to {ReleaseStatus.CONFIRMED}."
-                )
-                self.assertFormError(form, "status", message)
+                # Trigger the form validation.
+                form.is_valid()
+                # Check that the status cannot be changed from a locked status.
+                self.assertEqual(form.cleaned_data["status"], status)
 
     def test_form_clean__validates_release_date_when_confirmed__happy_path(self):
         """Checks that there are no errors when good data is submitted."""
