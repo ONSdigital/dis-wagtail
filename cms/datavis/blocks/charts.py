@@ -91,6 +91,7 @@ class BarColumnChartBlock(BaseVisualisationBlock):
         required=False,
         help_text="Bar charts only. For cluster charts with 3 or more series, the data labels will be hidden.",
     )
+    use_stacked_layout = blocks.BooleanBlock(default=False, required=False)
     # NB X_axis is labelled "Category axis" for bar/column charts
     x_axis = blocks.StructBlock(
         [

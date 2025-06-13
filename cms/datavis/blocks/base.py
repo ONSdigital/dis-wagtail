@@ -44,7 +44,7 @@ class BaseVisualisationBlock(blocks.StructBlock):
     )
     show_legend = blocks.BooleanBlock(default=True, required=False)
     show_data_labels = blocks.StaticBlock()
-    use_stacked_layout = blocks.BooleanBlock(default=False, required=False)
+    use_stacked_layout = blocks.StaticBlock()
     show_markers = blocks.BooleanBlock(
         default=False,
         required=False,
