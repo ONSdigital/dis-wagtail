@@ -258,29 +258,33 @@ class BaseVisualisationBlock(blocks.StructBlock):
         rows: list[list[str | int | float]] = value["table"].rows
         series = []
 
-        for series_number, column in enumerate(headers[1:], start=1):
-            # Extract data points, handling None/empty values
-            data_points = [r[series_number] if r[series_number] != "" else None for r in rows]
-
-            item = {
-                "name": column,
-                "data": data_points,
-                "animation": False,
-            }
-            if value.get("show_data_labels") is not None:
-                item["dataLabels"] = value.get("show_data_labels")
-
-            if value.get("show_markers") is not None:
-                item["marker"] = value.get("show_markers")
-            # Allow subclasses to specify additional parameters for each series
-            for key, val in self.get_extra_series_attributes(value, series_number).items():
-                item[key] = val
-            if tooltip_suffix := value["y_axis"].get("tooltip_suffix"):
-                item["tooltip"] = {
-                    "valueSuffix": tooltip_suffix,
-                }
-            series.append(item)
+        for series_number, series_name in enumerate(headers[1:], start=1):
+            series.append(self.get_series_item(value, series_number, series_name, rows))
         return rows, series
+
+    def get_series_item(
+        self, value: "StructValue", series_number: int, series_name: str, rows: list[list[str | int | float]]
+    ) -> dict[str, Any]:
+        """Get the configuration for a single series."""
+        # Extract data points, handling None/empty values
+        data_points = [r[series_number] if r[series_number] != "" else None for r in rows]
+
+        item = {
+            "name": series_name,
+            "data": data_points,
+            "animation": False,
+        }
+
+        if value.get("show_markers") is not None:
+            item["marker"] = value.get("show_markers")
+        # Allow subclasses to specify additional parameters for each series
+        for key, val in self.get_extra_series_attributes(value, series_number).items():
+            item[key] = val
+        if tooltip_suffix := value["y_axis"].get("tooltip_suffix"):
+            item["tooltip"] = {
+                "valueSuffix": tooltip_suffix,
+            }
+        return item
 
     def get_extra_series_attributes(self, value: "StructValue", series_number: int) -> dict[str, Any]:
         """Get additional parameters for a specific series."""
