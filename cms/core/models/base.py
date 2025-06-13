@@ -1,12 +1,15 @@
-from typing import TYPE_CHECKING, ClassVar, Optional, Self, cast
+from typing import TYPE_CHECKING, Any, ClassVar, Optional, Self, cast
 
 from django.conf import settings
 from django.utils.decorators import method_decorator
 from django.utils.functional import cached_property
+from django.utils.translation import gettext_lazy as _
 from wagtail.admin.panels import ObjectList, TabbedInterface
 from wagtail.models import Page
 from wagtail.query import PageQuerySet
 from wagtail.utils.decorators import cached_classmethod
+from wagtailschemaorg.models import PageLDMixin
+from wagtailschemaorg.utils import extend
 
 from cms.core.cache import get_default_cache_control_decorator
 from cms.core.query import order_by_pk_position
@@ -16,6 +19,7 @@ from .mixins import ListingFieldsMixin, SocialFieldsMixin
 
 if TYPE_CHECKING:
     from django.db import models
+    from django.http import HttpRequest
     from wagtail.admin.panels import FieldPanel
     from wagtail.contrib.settings.models import (
         BaseGenericSetting as _WagtailBaseGenericSetting,
@@ -43,7 +47,7 @@ __all__ = ["BasePage", "BaseSiteSetting"]
 
 # Apply default cache headers on this page model's serve method.
 @method_decorator(get_default_cache_control_decorator(), name="serve")
-class BasePage(ListingFieldsMixin, SocialFieldsMixin, Page):  # type: ignore[django-manager-missing]
+class BasePage(PageLDMixin, ListingFieldsMixin, SocialFieldsMixin, Page):  # type: ignore[django-manager-missing]
     """Base page class with listing and social fields additions as well as cache decorators."""
 
     base_form_class = DeduplicateTopicsAdminForm
@@ -131,6 +135,52 @@ class BasePage(ListingFieldsMixin, SocialFieldsMixin, Page):  # type: ignore[dja
             return bool(streamvalue.stream_block.has_ons_embed(streamvalue))
 
         return False
+
+    def breadcrumbs(self, request: Optional["HttpRequest"] = None) -> list[dict[str, object]]:
+        """Returns the breadcrumbs as a list of dictionaries for the page.
+        Optionally include the page itself in the breadcrumbs by passing include_self=True.
+        """
+        # TODO make request non-optional once wagtailschemaorg supports passing through the request.
+        breadcrumbs_list = []
+        homepage_depth = 2
+        for ancestor_page in self.get_ancestors().specific().defer_streamfields():
+            if ancestor_page.is_root():
+                continue
+            if ancestor_page.depth <= homepage_depth:
+                breadcrumbs_list.append({"url": "/", "text": _("Home")})
+            elif not getattr(ancestor_page, "exclude_from_breadcrumbs", False):
+                breadcrumbs_list.append({"url": ancestor_page.get_url(request=request), "text": ancestor_page.title})
+        if request and (request.routable_resolver_match.view_name != "index_route"):  # type: ignore[attr-defined]
+            # e.g. if the request is for a routable page, not the page index route then we should include a
+            # breadcrumb for the index route (e.g. related data page underneath the article page)
+            # TODO verify if this is valid general behaviour or if we need do this for only specific routes
+            breadcrumbs_list.append({"url": self.get_url(request=request), "text": self.title})
+        return breadcrumbs_list
+
+    @cached_property
+    def breadcrumbs_no_request(self) -> list[dict[str, object]]:
+        """Cached property to reduce the performance impact from calls without the request."""
+        # TODO remove this once wagtailschemaorg supports passing through the request.
+        return self.breadcrumbs()
+
+    def breadcrumbs_as_jsonld(self) -> dict[str, str | int]:
+        """Returns the list as a dictionary in the format required for JSON LD entity."""
+        breadcrumbs_jsonld: dict[str, str | int] = {"@type": "BreadcrumbList"}
+        for i, breadcrumb in enumerate(self.breadcrumbs_no_request):
+            breadcrumbs_jsonld.update(
+                {
+                    f"itemListElement[{i}].@type": "ListItem",
+                    f"itemListElement[{i}].position": i,
+                    f"itemListElement[{i}].name": str(breadcrumb["text"]),
+                    f"itemListElement[{i}].item": str(breadcrumb["url"]),
+                }
+            )
+        return breadcrumbs_jsonld
+
+    def ld_entity(self) -> dict[str, Any]:
+        """Add page breadcrumbs to the JSON LD properties."""
+        breadcrumbs = self.breadcrumbs_as_jsonld()
+        return cast(dict[str, Any], extend(super().ld_entity(), breadcrumbs))
 
 
 class BaseSiteSetting(WagtailBaseSiteSetting):

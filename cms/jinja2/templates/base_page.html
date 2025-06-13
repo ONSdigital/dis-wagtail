@@ -6,6 +6,12 @@
     {%- set localised_version_not_available = true -%}
 {%- endif -%}
 
+{# Render all JSON LD properties from the page object #}
+{% block meta %}
+    {{ super() }}
+    {{ ld.for_object(page) }}
+{% endblock meta %}
+
 {% block social %}
     {% with current_site=wagtail_site() %}
         <meta name="twitter:card" content="summary" />

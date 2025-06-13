@@ -18,7 +18,7 @@
             "detailsColumns": 12,
             "breadcrumbs": {
                 "ariaLabel": breadcrumbs_aria_label,
-                "itemsList": breadcrumbs(page, include_self=True),
+                "itemsList": page.breadcrumbs(request=request),
             }
         })
     }}
