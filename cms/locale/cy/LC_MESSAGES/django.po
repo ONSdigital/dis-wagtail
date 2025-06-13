@@ -479,3 +479,6 @@ msgstr ""
 #~| msgid "Release date"
 #~ msgid "Releases:"
 #~ msgstr "Dyddiad y datganiad"
+
+msgid "To be confirmed"
+msgstr "I'w gadarnhau"
