@@ -9,5 +9,4 @@ class CoreConfig(AppConfig):
     label = "core"
 
     def ready(self) -> None:
-        # TODO: remove when upgrading to Wagtail 7.0
-        import cms.core.monkey_patches  # noqa pylint: disable=unused-import,import-outside-toplevel
+        from . import checks  # noqa pylint: disable=import-outside-toplevel,unused-import
