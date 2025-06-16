@@ -103,9 +103,7 @@ def go_to_bundle_menu(context: Context) -> None:
 
 # bundle Menu
 @step("the bundle menu shows bundle and Added by is not empty")
-def bundle_menu_contains_value(
-    context: Context,
-) -> None:
+def bundle_menu_contains_value( context: Context) -> None:
     expect(context.page.get_by_role("table")).to_contain_text(context.bundle.name)
     expect(context.page.get_by_role("table")).to_contain_text(context.bundle_creator.get_full_name())
 
@@ -174,11 +172,11 @@ def the_user_can_add_bundles(context: Context) -> None:
     expect(context.page.get_by_role("link", name="Add bundle")).not_to_be_visible()
 
 
-@step("the user completes the Bundle details {bundle_details}")
+@step("the user can create a bundle {bundle_details}")
 def add_bundle_details(context: Context, bundle_details: str ) -> None:
     print(bundle_details)
     context.page.get_by_role("link", name="Add bundle").click()
-    context.page.get_by_role("textbox", name="Name*").fill("Test 10")
+    context.page.get_by_role("textbox", name="Name*").fill(bundle_details)
     context.page.get_by_role("button", name="Create").click()
 
 
@@ -190,11 +188,18 @@ def step_impl(context: Context, bundle_details: str ) -> None:
 
 @step("the user can search for known bundle name {bundle_details}")
 def step_impl(context: Context, bundle_details: str ) -> None:
-    print(context.bundles[0].name)
     context.page.get_by_role("textbox", name="Search term").click()
-    context.page.get_by_role("textbox", name="Search term").fill(context.bundles[0].name)
+    context.page.get_by_role("textbox", name="Search term").fill(bundle_details)
     expect(context.page.get_by_text("No bundles match your query.")).not_to_be_visible()
     expect(context.page.get_by_role("link", name=context.bundles[0].name)).to_be_visible()
 
 
 
+@step("the user can search for known bundle")
+def step_impl(context):
+    print(context.bundles[0])
+
+
+@step("the user edits the bundle")
+def step_impl(context):
+    raise NotImplementedError(u'STEP: And the user edits the bundle')

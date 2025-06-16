@@ -4,13 +4,32 @@ Feature: UI Bundle Happy Paths
         Given there are 3 Preview teams and viewer is a member of these teams
         And there are 3 release calendar pages
         And there are 3 Statistical Analysis pages
-        And there are 1 bundles
+        And there are 3 bundles
         When a Publishing Admin logs into the admin site
         And the user can see the Bundles menu item
         And the user clicks the Bundles menu item
-        And the user can search for known bundle name Test_01
-        Then the user can add Bundles
-        And the user completes the Bundle details Test_01
+        Then the user can search for unknown bundle name Test_01
+        And the user can create a bundle  Test_01
+
+    Scenario: A Publishing Admin edits bundle Test_01
+        Given there are 3 Preview teams and viewer is a member of these teams
+        And there are 3 release calendar pages
+        And there are 3 Statistical Analysis pages
+        And there are 3 bundles
+        When a Publishing Admin logs into the admin site
+        And the user can see the Bundles menu item
+        And the user clicks the Bundles menu item
+        Then the user can search for unknown bundle name Test_01
+        And the user can search for known bundle
+        And the user edits the bundle
+
+
+
+
+
+
+
+
 #
 #    Scenario: A Publishing Officer Should see the Bundles Menu and add bundle
 #        When a Publishing Officer logs into the admin site
