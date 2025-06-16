@@ -238,5 +238,7 @@ class ReleaseCalendarPage(BundledPageMixin, BasePage):  # type: ignore[django-ma
     def live_status(self) -> Optional[ReleaseStatus]:
         if not self.pk:
             return None
+        # We just want one field, so we don't use live_revision
+        # to avoid loading the whole revision object.
         live_page = ReleaseCalendarPage.objects.filter(pk=self.pk).live().only("status").first()
         return live_page.status if live_page else None
