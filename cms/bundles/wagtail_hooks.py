@@ -1,8 +1,8 @@
-from functools import cached_property
 from typing import TYPE_CHECKING, Any, Union
 
 from django.db.models import QuerySet
 from django.urls import include, path
+from django.utils.functional import cached_property
 from wagtail import hooks
 from wagtail.admin.ui.components import Component
 from wagtail.admin.widgets import PageListingButton

@@ -68,7 +68,7 @@ class MethodologyPage(BundledPageMixin, GenericTaxonomyMixin, BasePage):  # type
     content_panels: ClassVar[list["Panel"]] = [
         *BundledPageMixin.panels,
         *BasePage.content_panels,
-        "summary",
+        FieldPanel("summary", required_on_save=True),
         MultiFieldPanel(
             [
                 FieldRowPanel(
@@ -83,7 +83,7 @@ class MethodologyPage(BundledPageMixin, GenericTaxonomyMixin, BasePage):  # type
             heading="Metadata",
             icon="cog",
         ),
-        FieldPanel("content", icon="list-ul"),
+        FieldPanel("content", icon="list-ul", required_on_save=True),
         InlinePanel("related_pages", label="Related publications"),
     ]
 
