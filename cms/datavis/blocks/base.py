@@ -266,7 +266,6 @@ class BaseVisualisationBlock(blocks.StructBlock):
         self, value: "StructValue", series_number: int, series_name: str, rows: list[list[str | int | float]]
     ) -> dict[str, Any]:
         """Get the configuration for a single series."""
-        # Extract data points, handling None/empty values
         data_points = [r[series_number] or None for r in rows]
 
         item = {
