@@ -52,7 +52,7 @@ class CustomAdminPageChooser(PagesWithDraftsForBundleChooserWidget):
         if workflow_state := instance.current_workflow_state:
             return f"{title} ({workflow_state.current_task_state.task.name})"
 
-        return f"{title} (not in a workflow)"
+        return f"{title} (Draft)"
 
 
 class PageChooserWithStatusPanel(FieldPanel):

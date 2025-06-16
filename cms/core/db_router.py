@@ -1,4 +1,4 @@
-from typing import Any, Optional
+from typing import Any
 
 from django.apps import apps
 from django.conf import settings
@@ -35,7 +35,7 @@ class ReadReplicaRouter:  # pylint: disable=unused-argument,protected-access
                 if isinstance(field, GenericRelation) and field.related_model != "self":
                     self.generic_target_models.add(field.related_model)
 
-    def db_for_read(self, model: type[Model], **hints: Any) -> Optional[str]:
+    def db_for_read(self, model: type[Model], **hints: Any) -> str | None:
         """Determine which database should be used for read queries."""
         # Models used in a GenericRelation must use the write connection.
         # @see https://code.djangoproject.com/ticket/36389
@@ -52,12 +52,12 @@ class ReadReplicaRouter:  # pylint: disable=unused-argument,protected-access
 
         return READ_REPLICA_DB_ALIAS
 
-    def db_for_write(self, model: type[Model], **hints: Any) -> Optional[str]:
+    def db_for_write(self, model: type[Model], **hints: Any) -> str | None:
         """Determine which database should be used for write queries."""
         # The default MUST be used
         return DEFAULT_DB_ALIAS
 
-    def allow_relation(self, obj1: Model, obj2: Model, **hints: Any) -> Optional[bool]:
+    def allow_relation(self, obj1: Model, obj2: Model, **hints: Any) -> bool | None:
         """Determine whether a relation is allowed between two models."""
         # If both instances are in the same database (or its replica), allow relations
         if obj1._state.db in self.REPLICA_DBS and obj2._state.db in self.REPLICA_DBS:
@@ -66,7 +66,7 @@ class ReadReplicaRouter:  # pylint: disable=unused-argument,protected-access
         # No preference
         return None
 
-    def allow_migrate(self, db: str, app_label: str, model_name: Optional[str] = None, **hints: Any) -> Optional[bool]:
+    def allow_migrate(self, db: str, app_label: str, model_name: str | None = None, **hints: Any) -> bool | None:
         """Determine whether migrations be run for the app on the database."""
         # Don't allow migrations to run against the replica (they would fail anyway)
         if db == READ_REPLICA_DB_ALIAS:
@@ -86,7 +86,7 @@ class ExternalEnvRouter:  # pylint: disable=unused-argument,protected-access
 
     FAKE_BACKEND = "not_allowed_in_external_env"
 
-    def db_for_write(self, model: type[Model], **hints: Any) -> Optional[str]:
+    def db_for_write(self, model: type[Model], **hints: Any) -> str | None:
         """Determine which database should be used for write queries."""
         if settings.IS_EXTERNAL_ENV and model not in self.WRITE_ALLOWED_MODELS:
             # Return a fake (non-existent) backend so Django can still resolve the backend, it just can't
@@ -96,7 +96,7 @@ class ExternalEnvRouter:  # pylint: disable=unused-argument,protected-access
         # No preference
         return None
 
-    def allow_relation(self, obj1: Model, obj2: Model, **hints: Any) -> Optional[bool]:
+    def allow_relation(self, obj1: Model, obj2: Model, **hints: Any) -> bool | None:
         """Determine whether a relation is allowed between two models."""
         # If any models have a fake backend, assume they can be related to placate Django.
         if self.FAKE_BACKEND in [obj1._state.db, obj2._state.db]:
@@ -105,7 +105,7 @@ class ExternalEnvRouter:  # pylint: disable=unused-argument,protected-access
         # No preference
         return None
 
-    def allow_migrate(self, db: str, app_label: str, model_name: Optional[str] = None, **hints: Any) -> Optional[bool]:
+    def allow_migrate(self, db: str, app_label: str, model_name: str | None = None, **hints: Any) -> bool | None:
         """Determine whether migrations be run for the app on the database."""
         # Don't allow migrations to run against the fake database (they would fail anyway)
         if db == self.FAKE_BACKEND:

@@ -17,7 +17,6 @@ class TopicPageAdminForm(WagtailAdminPageForm):
         cleaned_data: dict[str, Any] = super().clean()
 
         # remove topic_page_id before save
-        if "topic_page_id" in cleaned_data:
-            del cleaned_data["topic_page_id"]
+        cleaned_data.pop("topic_page_id", None)
 
         return cleaned_data

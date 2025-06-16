@@ -99,7 +99,7 @@ class TopicPage(BundledPageMixin, ExclusiveTaxonomyMixin, BasePage):  # type: ig
     content_panels: ClassVar[list["Panel"]] = [
         *BundledPageMixin.panels,
         *BasePage.content_panels,
-        "summary",
+        FieldPanel("summary", required_on_save=True),
         FieldPanel("headline_figures"),
         FieldPanel(
             "featured_series",

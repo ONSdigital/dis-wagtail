@@ -1,13 +1,12 @@
 from typing import TYPE_CHECKING
 
-from wagtail.admin.ui.tables import Column, DateColumn
+from wagtail.admin.ui.tables import Column, DateColumn, LocaleColumn
 from wagtail.admin.ui.tables.pages import PageStatusColumn
 from wagtail.admin.views.generic.chooser import ChooseResultsView, ChooseView
 from wagtail.admin.viewsets.chooser import ChooserViewSet
 
 from cms.articles.models import ArticleSeriesPage
 from cms.core.forms import NoLocaleFilterInChoosersForm
-from cms.core.ui import LocaleColumn
 
 if TYPE_CHECKING:
     from wagtail.query import PageQuerySet

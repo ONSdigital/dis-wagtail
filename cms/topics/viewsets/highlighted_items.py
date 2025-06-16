@@ -1,6 +1,6 @@
 from typing import TYPE_CHECKING, ClassVar
 
-from wagtail.admin.ui.tables import Column
+from wagtail.admin.ui.tables import Column, LocaleColumn
 from wagtail.admin.ui.tables.pages import PageStatusColumn
 from wagtail.admin.views.generic.chooser import ChooseResultsView, ChooseView
 from wagtail.admin.viewsets.chooser import ChooserViewSet
@@ -8,7 +8,6 @@ from wagtail.coreutils import resolve_model_string
 
 from cms.articles.models import StatisticalArticlePage
 from cms.core.forms import NoLocaleFilterInChoosersForm
-from cms.core.ui import LocaleColumn
 from cms.methodology.models import MethodologyPage
 
 if TYPE_CHECKING:

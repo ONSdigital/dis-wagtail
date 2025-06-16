@@ -37,9 +37,9 @@ class InformationPage(BundledPageMixin, GenericTaxonomyMixin, BasePage):  # type
     content_panels: ClassVar[list["Panel"]] = [
         *BundledPageMixin.panels,
         *BasePage.content_panels,
-        "summary",
+        FieldPanel("summary", required_on_save=True),
         FieldPanel("last_updated", date_widget),
-        "content",
+        FieldPanel("content", required_on_save=True),
         InlinePanel("page_related_pages", label="Related pages"),
     ]
 
@@ -70,7 +70,7 @@ class IndexPage(BundledPageMixin, BasePage):  # type: ignore[django-manager-miss
     content_panels: ClassVar[list["Panel"]] = [
         *BundledPageMixin.panels,
         *BasePage.content_panels,
-        "summary",
+        FieldPanel("summary", required_on_save=True),
         "featured_items",
         "content",
         "related_links",

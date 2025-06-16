@@ -3,7 +3,7 @@ import logging
 import time
 
 from django.conf import settings
-from django.test import TestCase, override_settings
+from django.test import TestCase
 from kafka import KafkaConsumer
 
 from cms.search.publishers import KafkaPublisher
@@ -11,10 +11,6 @@ from cms.search.utils import build_page_uri
 from cms.standard_pages.tests.factories import InformationPageFactory
 
 
-@override_settings(
-    KAFKA_CHANNEL_CREATED_OR_UPDATED="search-content-updated",
-    KAFKA_CHANNEL_DELETED="search-content-deleted",
-)
 class KafkaIntegrationTests(TestCase):
     """These tests will attempt to connect to a real Kafka instance at localhost:9092."""
 

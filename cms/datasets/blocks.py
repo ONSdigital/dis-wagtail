@@ -41,7 +41,7 @@ class DatasetStoryBlock(StreamBlock):
     class Meta:
         template = "templates/components/streamfield/datasets_block.html"
 
-    def clean(self, value: StreamValue) -> StreamValue:
+    def clean(self, value: StreamValue, ignore_required_constraints: bool = False) -> StreamValue:
         cleaned_value = super().clean(value)
 
         # Validate there are no duplicate datasets, including between manual and looked up datasets referencing the same

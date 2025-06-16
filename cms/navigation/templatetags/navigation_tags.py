@@ -78,9 +78,7 @@ def main_menu_columns(context: jinja2.runtime.Context, main_menu: Optional["Main
     if not main_menu:
         return []
 
-    def extract_section_data(
-        section: "StructValue", request: Optional["HttpRequest"] = None
-    ) -> Optional[NavigationItem]:
+    def extract_section_data(section: "StructValue", request: Optional["HttpRequest"] = None) -> NavigationItem | None:
         section_data = _extract_item(
             section["section_link"], request=request, include_description=False, text_key="heading"
         )

@@ -1,7 +1,7 @@
 from typing import ClassVar
 
 from django.db.models import F, QuerySet
-from wagtail.admin.ui.tables import Column, UpdatedAtColumn, UserColumn
+from wagtail.admin.ui.tables import Column, LocaleColumn, UpdatedAtColumn, UserColumn
 from wagtail.snippets.views.chooser import ChooseResultsView as SnippetChooseResultsView
 from wagtail.snippets.views.chooser import ChooseView as SnippetChooseView
 from wagtail.snippets.views.chooser import SnippetChooserViewSet
@@ -9,7 +9,6 @@ from wagtail.snippets.views.snippets import IndexView as SnippetIndexView
 from wagtail.snippets.views.snippets import SnippetViewSet
 
 from cms.core.models import ContactDetails, GlossaryTerm
-from cms.core.ui import LocaleColumn
 
 
 class ContactDetailsIndex(SnippetIndexView):
