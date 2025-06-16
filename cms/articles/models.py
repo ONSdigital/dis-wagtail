@@ -13,6 +13,7 @@ from wagtail.contrib.routable_page.models import RoutablePageMixin, path
 from wagtail.fields import RichTextField
 from wagtail.models import Page
 from wagtail.search import index
+from wagtailschemaorg.utils import extend
 
 from cms.articles.enums import SortingChoices
 from cms.articles.forms import StatisticalArticlePageAdminForm
@@ -420,3 +421,28 @@ class StatisticalArticlePage(BundledPageMixin, RoutablePageMixin, BasePage):  # 
         if mode_name == "related_data":
             return cast("TemplateResponse", self.related_data(request))
         return cast("TemplateResponse", super().serve_preview(request, mode_name))
+
+    def ld_entity(self) -> dict[str, object]:
+        """Add article schema properties to JSON LD."""
+        properties = {
+            "@type": "Article",
+            "url": self.get_url(),  # TODO pass request to this one wagtailschemaorg supports it
+            "headline": self.listing_title or self.title,
+            "description": self.listing_summary or self.summary,
+            "author": {
+                "@type": "Person",
+                "name": "Demographic Outputs and Transformation Expertise",  # TODO use contact details or org name?
+            },
+            "publisher": {
+                "@type": "Organization",
+                "name": "Office for National Statistics",  # TODO make this a setting or constant?
+                "url": settings.ONS_WEBSITE_BASE_URL,  # TODO make this a setting or constant?
+            },
+            "license": "https://www.nationalarchives.gov.uk/doc/open-government-licence/version/3/",
+            "datePublished": self.release_date.isoformat(),
+            "mainEntityOfPage": {
+                "@type": "WebPage",
+                "@id": self.get_url(),
+            },
+        }
+        return cast(dict[str, object], extend(super().ld_entity(), properties))

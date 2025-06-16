@@ -136,7 +136,7 @@ class BasePage(PageLDMixin, ListingFieldsMixin, SocialFieldsMixin, Page):  # typ
 
         return False
 
-    def breadcrumbs(self, request: Optional["HttpRequest"] = None) -> list[dict[str, object]]:
+    def get_breadcrumbs(self, request: Optional["HttpRequest"] = None) -> list[dict[str, object]]:
         """Returns the breadcrumbs as a list of dictionaries for the page.
         Optionally include the page itself in the breadcrumbs by passing include_self=True.
         """
@@ -161,23 +161,27 @@ class BasePage(PageLDMixin, ListingFieldsMixin, SocialFieldsMixin, Page):  # typ
     def breadcrumbs_no_request(self) -> list[dict[str, object]]:
         """Cached property to reduce the performance impact from calls without the request."""
         # TODO remove this once wagtailschemaorg supports passing through the request.
-        return self.breadcrumbs()
+        return self.get_breadcrumbs()
 
-    def breadcrumbs_as_jsonld(self) -> dict[str, str | int]:
+    def breadcrumbs_as_jsonld(self) -> dict[str, object]:
         """Returns the list as a dictionary in the format required for JSON LD entity."""
-        breadcrumbs_jsonld: dict[str, str | int] = {"@type": "BreadcrumbList"}
+        breadcrumbs_jsonld: dict[str, object] = {"@type": "BreadcrumbList"}
+        item_list = []
         for i, breadcrumb in enumerate(self.breadcrumbs_no_request):
-            breadcrumbs_jsonld.update(
+            item_list.append(
                 {
-                    f"itemListElement[{i}].@type": "ListItem",
-                    f"itemListElement[{i}].position": i,
-                    f"itemListElement[{i}].name": str(breadcrumb["text"]),
-                    f"itemListElement[{i}].item": str(breadcrumb["url"]),
+                    "@type": "ListItem",
+                    "position": i,
+                    "item": {
+                        "name": str(breadcrumb["text"]),
+                        "@id": str(breadcrumb["url"]),
+                    },
                 }
             )
+            breadcrumbs_jsonld["itemListElement"] = item_list
         return breadcrumbs_jsonld
 
-    def ld_entity(self) -> dict[str, Any]:
+    def ld_entity(self) -> dict[str, object]:
         """Add page breadcrumbs to the JSON LD properties."""
         breadcrumbs = self.breadcrumbs_as_jsonld()
         return cast(dict[str, Any], extend(super().ld_entity(), breadcrumbs))
