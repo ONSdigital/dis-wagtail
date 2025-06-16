@@ -236,12 +236,36 @@ class ReleaseCalendarPageAdminFormTestCase(WagtailTestUtils, TestCase):
         for status in LOCKED_STATUS_STATUSES:
             with self.subTest(status=status):
                 self.page.status = status
+                self.page.save_revision().publish()
                 data["status"] = ReleaseStatus.CONFIRMED
                 form = self.form_class(instance=self.page, data=data)
                 # Trigger the form validation.
                 form.is_valid()
                 # Check that the status cannot be changed from a locked status.
                 self.assertEqual(form.cleaned_data["status"], status)
+
+    def test_form_clean__allows_leaving_locked_statuses_when_in_draft(self):
+        """Checks that the form prevents changing the status from a locked status."""
+        data = self.form_data
+        self.page.notice = "Lorem ipsum"
+        self.page.status = ReleaseStatus.CANCELLED
+        self.page.save_revision()
+        data["notice"] = rich_text("Lorem ipsum")
+        data["status"] = ReleaseStatus.CONFIRMED
+        form = self.form_class(instance=self.page, data=data)
+        # Trigger the form validation.
+        form.is_valid()
+        # Check that the status can be changed back to confirmed from a locked status in draft.
+        self.assertEqual(form.cleaned_data["status"], ReleaseStatus.CONFIRMED)
+
+        # Now publish cancellation.
+        self.page.status = ReleaseStatus.CANCELLED
+        self.page.save_revision().publish()
+
+        form = self.form_class(instance=self.page, data=data)
+        form.is_valid()
+        # Check that the status cannot be changed from a locked status.
+        self.assertEqual(form.cleaned_data["status"], ReleaseStatus.CANCELLED)
 
     def test_form_clean__validates_release_date_when_confirmed__happy_path(self):
         """Checks that there are no errors when good data is submitted."""

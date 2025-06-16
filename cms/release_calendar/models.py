@@ -233,3 +233,10 @@ class ReleaseCalendarPage(BundledPageMixin, BasePage):  # type: ignore[django-ma
             return None
         bundle: Bundle | None = self.bundles.active().first()  # pylint: disable=no-member
         return bundle
+
+    @property
+    def live_status(self) -> Optional[ReleaseStatus]:
+        if not self.pk:
+            return None
+        live_page = ReleaseCalendarPage.objects.filter(pk=self.pk).live().only("status").first()
+        return live_page.status if live_page else None

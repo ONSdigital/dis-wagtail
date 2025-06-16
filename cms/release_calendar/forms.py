@@ -33,7 +33,7 @@ class ReleaseCalendarPageAdminForm(WagtailAdminPageForm):
             self.fields["release_date"].disabled = True
             self.fields["status"].disabled = True
 
-        if self.instance.status in LOCKED_STATUS_STATUSES:
+        if self.instance.live_status in LOCKED_STATUS_STATUSES:
             # If the status is locked, disable the status field
             self.fields["status"].disabled = True
 
