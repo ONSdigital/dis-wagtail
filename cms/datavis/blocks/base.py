@@ -267,7 +267,7 @@ class BaseVisualisationBlock(blocks.StructBlock):
     ) -> dict[str, Any]:
         """Get the configuration for a single series."""
         # Extract data points, handling None/empty values
-        data_points = [r[series_number] if r[series_number] != "" else None for r in rows]
+        data_points = [r[series_number] or None for r in rows]
 
         item = {
             "name": series_name,
