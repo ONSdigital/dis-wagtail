@@ -31,42 +31,30 @@ class BasePublisher(ABC):
     contract: https://github.com/ONSdigital/dis-search-upstream-stub/blob/main/docs/contract/resource_metadata.yml
     """
 
+    CREATED_OR_UPDATED_CHANNEL = "search-content-updated"
+    DELETED_CHANNEL = "search-content-deleted"
+
     def publish_created_or_updated(self, page: "Page") -> None:
         """Build the message for the created/updated event.
         Delegate sending to the subclass's _publish().
         """
-        channel = self.created_or_updated_channel
-        message = build_resource_dict(page)
-        return self._publish(channel, message)
+        return self._publish(self.CREATED_OR_UPDATED_CHANNEL, build_resource_dict(page))
 
     def publish_deleted(self, page: "Page") -> None:
         """Build the message for the deleted event.
         Delegate sending to the subclass's _publish().
         """
-        channel = self.deleted_channel
-        message = {
-            "uri": page.url_path,
-        }
-        return self._publish(channel, message)
+        return self._publish(
+            self.DELETED_CHANNEL,
+            {
+                "uri": page.url_path,
+            },
+        )
 
     @abstractmethod
     def _publish(self, channel: str | None, message: dict) -> None:
         """Each child class defines how to actually send/publish
         the message (e.g., Kafka, logging, etc.).
-        """
-
-    @property
-    @abstractmethod
-    def created_or_updated_channel(self) -> str | None:
-        """Provide the channel (or other necessary routing key) for created/updated.
-        This can be a no-op or empty string for some implementations.
-        """
-
-    @property
-    @abstractmethod
-    def deleted_channel(self) -> str | None:
-        """Provide the channel (or other necessary routing key) for deleted messages.
-        This can be a no-op or empty string for some implementations.
         """
 
 
@@ -112,14 +100,6 @@ class KafkaPublisher(BasePublisher):
             **auth_config,
         )
 
-    @property
-    def created_or_updated_channel(self) -> str | None:
-        return settings.KAFKA_CHANNEL_CREATED_OR_UPDATED
-
-    @property
-    def deleted_channel(self) -> str | None:
-        return settings.KAFKA_CHANNEL_DELETED
-
     def _publish(self, channel: str | None, message: dict) -> "RecordMetadata":
         """Send the message to Kafka."""
         logger.info("KafkaPublisher: Publishing to channel=%s, message=%s", channel, message)
@@ -132,14 +112,6 @@ class KafkaPublisher(BasePublisher):
 
 class LogPublisher(BasePublisher):
     """Publishes 'messages' by simply logging them (no real message bus)."""
-
-    @property
-    def created_or_updated_channel(self) -> str:
-        return "log-created-or-updated"
-
-    @property
-    def deleted_channel(self) -> str:
-        return "log-deleted"
 
     def _publish(self, channel: str | None, message: dict) -> None:
         """Log the message."""

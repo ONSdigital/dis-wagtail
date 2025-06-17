@@ -105,7 +105,7 @@ class BundleAdminFormTestCase(TestCase):
         """Checks that all but the status field are disabled once approved to prevent further editing."""
         self.bundle.status = BundleStatus.APPROVED
         form = self.form_class(instance=self.bundle)
-        fields = {field: True for field in form.fields}
+        fields = dict.fromkeys(form.fields, True)
         fields["status"] = False
 
         for field, expected in fields.items():

@@ -17,8 +17,6 @@ The Wagtail CMS for managing and publishing content for the Office for National 
 
 [//]: # ':TODO: Enable link checking once https://github.com/tcort/markdown-link-check/issues/250 is resolved.'
 
-<!-- markdown-link-check-disable -->
-
 - [Getting Started](#getting-started)
     - [Pre-requisites](#pre-requisites)
     - [Setup](#setup)
@@ -37,8 +35,6 @@ The Wagtail CMS for managing and publishing content for the Office for National 
     - [Django Migrations](#django-migrations)
 - [Contributing](#contributing)
 - [License](#license)
-
-<!-- markdown-link-check-enable -->
 
 For further developer documentation see [docs](docs/README.md)
 
