@@ -213,7 +213,7 @@ class BundleAdminFormTestCase(TestCase):
             form, "release_calendar_page", ["The release date on the release calendar page cannot be in the past."]
         )
 
-    def test_clean_validates_release_date_is_future(self):
+    def test_clean_validates_release_date_is_in_future(self):
         data = self.form_data
         data["publication_date"] = timezone.now() - timedelta(hours=2)
         data["status"] = BundleStatus.APPROVED
@@ -246,3 +246,33 @@ class BundleAdminFormTestCase(TestCase):
         form = self.form_class(instance=self.bundle, data=nested_form_data(raw_data))
 
         self.assertFalse(form.is_valid())
+
+    def test_clean__preserves_past_release_calendar_page_when_unscheduling(self):
+        release_calendar_page = ReleaseCalendarPageFactory(release_date=timezone.now() - timedelta(minutes=5))
+        self.bundle.release_calendar_page = release_calendar_page
+        self.bundle.status = BundleStatus.APPROVED
+
+        self.bundle.save(update_fields=["status", "release_calendar_page"])
+
+        data = self.form_data
+        # Not adding the release_calendar_page field in the data as is disabled when editing a bundle in
+        # "Ready to publish", which means no data is sent
+        data["status"] = BundleStatus.DRAFT.value
+        form = self.form_class(instance=self.bundle, data=data)
+
+        self.assertTrue(form.is_valid())
+        self.assertEqual(form.cleaned_data["release_calendar_page"], self.bundle.release_calendar_page)
+
+    def test_clean__preserves_past_publication_when_unscheduling(self):
+        self.bundle.publication_date = timezone.now() - timedelta(minutes=5)
+        self.bundle.status = BundleStatus.APPROVED
+        self.bundle.save(update_fields=["status", "publication_date"])
+
+        data = self.form_data
+        # Not adding the publication_date field in the data as is disabled when editing a bundle in
+        # "Ready to publish", which means no data is sent
+        data["status"] = BundleStatus.DRAFT.value
+        form = self.form_class(instance=self.bundle, data=data)
+
+        self.assertTrue(form.is_valid())
+        self.assertEqual(form.cleaned_data["publication_date"], self.bundle.publication_date)

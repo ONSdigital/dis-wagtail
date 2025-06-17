@@ -29,8 +29,15 @@ class BundleAdminForm(WagtailAdminModelForm):
         if self.instance.status in EDITABLE_BUNDLE_STATUSES:
             self.fields["status"].choices = ACTIVE_BUNDLE_STATUS_CHOICES
         elif self.instance.status == BundleStatus.APPROVED.value:
+            fields_to_exclude_from_being_disabled = ["status"]
+            if "data" in kwargs and kwargs["data"].get("status") == BundleStatus.DRAFT.value:
+                if self.instance.release_calendar_page_id:
+                    fields_to_exclude_from_being_disabled.append("release_calendar_page")
+                elif self.instance.publication_date:
+                    fields_to_exclude_from_being_disabled.append("publication_date")
+
             for field_name in self.fields:
-                if field_name != "status":
+                if field_name not in fields_to_exclude_from_being_disabled:
                     self.fields[field_name].disabled = True
 
         # fully hide and disable the approved_at/by fields to prevent form tampering
@@ -142,5 +149,11 @@ class BundleAdminForm(WagtailAdminModelForm):
                 # the bundle was approved, and is now unapproved.
                 cleaned_data["approved_at"] = None
                 cleaned_data["approved_by"] = None
+
+                # we went from "ready to publish" to a lower status, preserve the linked RC or publication date
+                if self.instance.release_calendar_page:
+                    cleaned_data["release_calendar_page"] = self.instance.release_calendar_page
+                elif self.instance.publication_date:
+                    cleaned_data["publication_date"] = self.instance.publication_date
 
         return cleaned_data
