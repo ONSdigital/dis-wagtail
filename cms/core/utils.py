@@ -1,4 +1,5 @@
 import io
+from datetime import date, datetime
 from threading import Lock
 from typing import TYPE_CHECKING, Any, Optional, TypedDict
 
@@ -7,6 +8,7 @@ from django.conf import settings
 from django.db.models import QuerySet
 from django.utils.formats import date_format
 from django.utils.translation import gettext_lazy as _
+from django_stubs_ext import StrOrPromise
 from matplotlib.figure import Figure
 
 matplotlib_lock = Lock()
@@ -54,14 +56,19 @@ def get_formatted_pages_list(
             "description": getattr(page, "listing_summary", "") or getattr(page, "summary", ""),
         }
         if release_date := page.release_date:
-            datum["metadata"]["date"] = {
-                "prefix": _("Released"),
-                "showPrefix": True,
-                "iso": date_format(release_date, "c"),
-                "short": date_format(release_date, "DATE_FORMAT"),
-            }
+            datum["metadata"]["date"] = get_document_metadata_date(release_date, _("Released"))
         data.append(datum)
     return data
+
+
+def get_document_metadata_date(value: date | datetime | str, prefix: StrOrPromise) -> dict[str, Any]:
+    """Returns a dictionary with formatted date information for the document metadata."""
+    return {
+        "prefix": prefix,
+        "showPrefix": True,
+        "iso": date_format(value, "c"),
+        "short": date_format(value, "DATE_FORMAT"),
+    }
 
 
 def get_client_ip(request: "HttpRequest") -> str | None:

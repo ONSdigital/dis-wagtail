@@ -1,7 +1,10 @@
 {% from "components/document-list/_macro.njk" import onsDocumentList %}
 
-<section id="{{ slug }}">
-    <h2>{{ heading }}</h2>
-
+{% if slug %}
+    <section id="{{ slug }}">
+        <h2>{{ heading }}</h2>
+        {{ onsDocumentList({ "documents": related_links }) }}
+    </section>
+{% else %}
     {{ onsDocumentList({ "documents": related_links }) }}
-</section>
+{% endif %}

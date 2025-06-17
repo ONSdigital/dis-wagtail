@@ -1,6 +1,10 @@
+from datetime import datetime
+from typing import Any
+
 from django.core.exceptions import ValidationError
 from django.forms.utils import ErrorList
 from django.utils.functional import cached_property
+from django.utils.translation import gettext_lazy as _
 from wagtail.blocks import (
     CharBlock,
     PageChooserBlock,
@@ -10,11 +14,13 @@ from wagtail.blocks import (
     URLBlock,
 )
 
+from cms.core.utils import get_document_metadata_date
+
 
 class LinkBlockStructValue(StructValue):
     """Custom StructValue for link blocks."""
 
-    def get_link(self, context: dict | None = None) -> dict[str, str] | None:
+    def get_link(self, context: dict | None = None) -> dict[str, str | dict[str, Any]] | None:
         """A convenience property that returns the block value in a consistent way,
         regardless of the chosen values (be it a Wagtail page or external link).
         """
@@ -36,19 +42,27 @@ class LinkBlockStructValue(StructValue):
             if has_description:
                 value["description"] = desc or getattr(page.specific_deferred, "summary", "")
 
+        release_date: datetime = self.get("release_date")
+
+        if release_date and value:
+            value["metadata"] = {"date": get_document_metadata_date(release_date, _("Released"))}
+
         return value
 
-    def get_related_link(self, context: dict | None = None) -> dict[str, dict[str, str] | str] | None:
+    def get_related_link(self, context: dict | None = None) -> dict[str, str | dict[str, str | dict[str, Any]]] | None:
         """Returns the required structure for the related link DS component.
 
         Ref: https://service-manual.ons.gov.uk/design-system/components/document-list
         """
         if link := self.get_link(context=context):
-            related_link: dict[str, dict[str, str] | str] = {
+            related_link: dict[str, str | dict[str, str | dict[str, Any]]] = {
                 "title": {"text": link["text"], "url": link["url"]},
             }
             if description := link.get("description", ""):
                 related_link["description"] = description
+
+            if metadata := link.get("metadata"):
+                related_link["metadata"] = metadata
 
             return related_link
         return None
