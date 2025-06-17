@@ -114,6 +114,10 @@ if settings.IS_EXTERNAL_ENV:
     urlpatterns += [
         path("", include("cms.search.urls")),
     ]
+else:
+    private_urlpatterns += [
+        path("", include("cms.search.urls")),
+    ]
 
 # Set public URLs to use the "default" cache settings.
 urlpatterns = decorate_urlpatterns(urlpatterns, get_default_cache_control_decorator())

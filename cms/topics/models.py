@@ -18,6 +18,8 @@ from cms.core.fields import StreamField
 from cms.core.models import BasePage
 from cms.core.query import order_by_pk_position
 from cms.core.utils import get_formatted_pages_list
+from cms.datasets.blocks import DatasetStoryBlock
+from cms.datasets.utils import format_datasets_as_document_list
 from cms.methodology.models import MethodologyPage
 from cms.taxonomy.mixins import ExclusiveTaxonomyMixin
 from cms.topics.blocks import ExploreMoreStoryBlock, TopicHeadlineFigureBlock
@@ -31,7 +33,6 @@ from cms.topics.viewsets import (
 if TYPE_CHECKING:
     from django.http import HttpRequest
     from wagtail.admin.panels import Panel
-
 
 MAX_ITEMS_PER_SECTION = 3
 
@@ -93,10 +94,12 @@ class TopicPage(BundledPageMixin, ExclusiveTaxonomyMixin, BasePage):  # type: ig
         help_text="Optional. If populating, it needs at least two headline figures.",
     )
 
+    datasets = StreamField(DatasetStoryBlock(), blank=True, default=list, max_num=MAX_ITEMS_PER_SECTION)
+
     content_panels: ClassVar[list["Panel"]] = [
         *BundledPageMixin.panels,
         *BasePage.content_panels,
-        "summary",
+        FieldPanel("summary", required_on_save=True),
         FieldPanel("headline_figures"),
         FieldPanel(
             "featured_series",
@@ -111,6 +114,12 @@ class TopicPage(BundledPageMixin, ExclusiveTaxonomyMixin, BasePage):  # type: ig
                 "The 'Related articles' section will be topped up automatically."
             ),
             max_num=MAX_ITEMS_PER_SECTION,
+        ),
+        FieldPanel(
+            "datasets",
+            heading="Datasets",
+            help_text=f"Select up to {MAX_ITEMS_PER_SECTION} datasets related to this topic.",
+            icon="doc-full",
         ),
         InlinePanel(
             "related_methodologies",
@@ -234,7 +243,13 @@ class TopicPage(BundledPageMixin, ExclusiveTaxonomyMixin, BasePage):  # type: ig
             items += [{"url": "#related-methods", "text": _("Methods and quality information")}]
         if self.explore_more:
             items += [{"url": "#explore-more", "text": _("Explore more")}]
+        if self.dataset_document_list:
+            items += [{"url": "#data", "text": _("Data")}]
         return items
+
+    @cached_property
+    def dataset_document_list(self) -> list[dict[str, Any]]:
+        return format_datasets_as_document_list(self.datasets)
 
     def clean(self) -> None:
         super().clean()

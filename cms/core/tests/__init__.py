@@ -19,9 +19,10 @@ class TransactionTestCase(_TransactionTestCase):
     # The site depends on instances created during migrations, so rollback must be serialized.
     serialized_rollback = True
 
-    def _fixture_setup(self):
+    @classmethod
+    def _fixture_setup(cls):
         """Set up fixtures for test cases."""
-        if self.serialized_rollback and (
+        if cls.serialized_rollback and (
             fixtures := getattr(connections[DEFAULT_DB_ALIAS], "_test_serialized_contents", None)
         ):
             # Parse the fixture directly rather than serializing it into models for performance reasons.

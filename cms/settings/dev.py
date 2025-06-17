@@ -120,6 +120,7 @@ MIGRATION_LINTER_OPTIONS = {
         "0004_statisticalarticlepage_headline_figures_figure_ids",
         "0006_statisticalarticlepage_dataset_sorting_and_more",  # Ignoring NOT NULL constraint
         "0005_user_remove_uuid_null",  # Ignoring NOT NULL constraint
+        "0006_topicpage_datasets",  # Ignoring NOT NULL constraint
     ],
 }
 
