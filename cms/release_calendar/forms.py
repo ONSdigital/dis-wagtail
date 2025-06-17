@@ -1,4 +1,3 @@
-from datetime import datetime
 from typing import Any
 
 from django.core.exceptions import ValidationError
@@ -11,6 +10,14 @@ from cms.bundles.permissions import user_can_manage_bundles
 from cms.release_calendar.permissions import user_can_remove_notice
 
 from .enums import LOCKED_STATUS_STATUSES, NON_PROVISIONAL_STATUS_CHOICES, ReleaseStatus
+from .utils import get_translated_string, parse_day_month_year_time, parse_month_year
+
+DATE_SEPERATOR = {
+    "en": " to ",
+    "cy": " i ",
+}
+
+MAX_DATE_PARTS = 2
 
 
 class ReleaseCalendarPageAdminForm(WagtailAdminPageForm):
@@ -85,32 +92,59 @@ class ReleaseCalendarPageAdminForm(WagtailAdminPageForm):
             error = "Please enter the next release date or the next release text, not both."
             raise ValidationError({"next_release_date": error, "next_release_date_text": error})
 
-        # TODO: expand to validate for non-English locales when adding multi-language.
-        release_date_text = cleaned_data.get("release_date_text")
-        if release_date_text and self.instance.locale_id == Locale.get_default().pk:
-            self.validate_english_release_date_text_format(release_date_text)
+        if release_date_text := cleaned_data.get("release_date_text"):
+            self.validate_release_date_text_format(release_date_text, self.instance.locale)
+
+        if next_release_date_text := cleaned_data.get("next_release_date_text"):
+            locale_code = "en" if self.instance.locale.language_code == "en-gb" else self.instance.locale.language_code
+
+            self.validate_release_next_date_text_format(next_release_date_text, locale_code, cleaned_data)
 
         return cleaned_data
 
-    def validate_english_release_date_text_format(self, text: str) -> None:
-        """Validates that the release_date_text follows the Month YYYY, or Month YYYY to Month YYYY format."""
-        parts = text.split(" to ", maxsplit=1)
+    def validate_release_date_text_format(self, text: str, locale: Locale) -> None:
+        """Validates that the release_date_text follows the locale-specific format."""
+        # Normalize the locale code to a standard format
+        locale_code = "en" if locale.language_code == "en-gb" else locale.language_code
 
-        try:
-            date_from = datetime.strptime(parts[0], "%B %Y")
-            if len(parts) > 1:
-                date_to = datetime.strptime(parts[1], "%B %Y")
-                if date_from >= date_to:
-                    raise ValidationError({"release_date_text": "The end month must be after the start month."})
+        if locale_code not in DATE_SEPERATOR:
+            raise NotImplementedError(f"Release date text validation not implemented for locale '{locale_code}'.")
 
-        except ValueError:
+        parts = text.split(DATE_SEPERATOR[locale_code], maxsplit=1)
+        dates = [parse_month_year(part, locale_code) for part in parts]
+
+        if any(date is None for date in dates) or len(dates) > MAX_DATE_PARTS:
+            language = self.instance.locale.get_display_name()
             raise ValidationError(
                 {
                     "release_date_text": (
-                        "The release date text must be in the 'Month YYYY' or 'Month YYYY to Month YYYY' format."
+                        "The release date text must be in the 'Month YYYY' or 'Month YYYY to Month YYYY' format"
+                        f" in {language}."
                     )
                 }
-            ) from None
+            )
+        if len(dates) == MAX_DATE_PARTS and dates[0] >= dates[1]:  # type: ignore # Dates guaranteed to not be None
+            raise ValidationError({"release_date_text": "The end month must be after the start month."})
+
+    def validate_release_next_date_text_format(
+        self, next_release_date_text: str, locale: str, cleaned_data: dict
+    ) -> None:
+        parsed_date = parse_day_month_year_time(next_release_date_text, locale)
+
+        if parsed_date is not None and cleaned_data.get("release_date") and parsed_date <= cleaned_data["release_date"]:
+            raise ValidationError({"next_release_date_text": "The next release date must be after the release date."})
+
+        to_be_confirmed_text = get_translated_string("To be confirmed", self.instance.locale.language_code)
+
+        if parsed_date is None and to_be_confirmed_text != next_release_date_text:
+            raise ValidationError(
+                {
+                    "next_release_date_text": (
+                        'The next release date text must be in the "DD Month YYYY Time" format or say '
+                        f'"{to_be_confirmed_text}" in {self.instance.locale.get_display_name()}.'
+                    )
+                }
+            )
 
     def validate_bundle_not_pending_publication(self, status: str) -> None:
         if self.instance.status == status:
