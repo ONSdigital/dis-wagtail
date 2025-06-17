@@ -90,3 +90,24 @@ def display_datetime_with_meridiem(context: Context, meridiem_indicator: str):
 def date_placeholder_is_displayed_in_release_page_date_input_fields(context: Context, time: str):
     expect(context.page.locator("#id_release_date")).to_have_attribute("placeholder", time)
     expect(context.page.locator("#id_next_release_date")).to_have_attribute("placeholder", time)
+
+
+@step("the user adds a release date text")
+def add_release_date_with_text(context: Context):
+    context.page.get_by_label("Or, release date text").fill("March 2025 to August 2025")
+
+
+@then("the release date text is displayed")
+def release_date_text_is_displayed(context: Context):
+    expect(context.page.get_by_text("March 2025 to August 2025")).to_be_visible()
+
+
+@step("the user adds a next release date text")
+def add_next_release_date_with_text(context: Context):
+    context.page.get_by_label("Or, next release date text").fill("To be confirmed")
+
+
+@then("the next release date text is displayed")
+def next_release_date_text_is_displayed(context: Context):
+    expect(context.page.get_by_text("Next release date:")).to_be_visible()
+    expect(context.page.get_by_text("To be confirmed")).to_be_visible()

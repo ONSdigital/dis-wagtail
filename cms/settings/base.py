@@ -240,15 +240,16 @@ if "PG_DB_ADDR" in env:
         }
 
 else:
+    # note: dj_database_url.config() expects an int, while dj_database_url.DBConfig accepts None
     DATABASES = {
         "default": dj_database_url.config(
-            conn_max_age=db_conn_max_age, conn_health_checks=True, default="postgres://ons:ons@localhost:5432/ons"
+            conn_max_age=db_conn_max_age or 0, conn_health_checks=True, default="postgres://ons:ons@localhost:5432/ons"
         ),
     }
 
     if "READ_REPLICA_DATABASE_URL" in env:
         DATABASES["read_replica"] = dj_database_url.config(
-            env="READ_REPLICA_DATABASE_URL", conn_max_age=db_read_conn_max_age
+            env="READ_REPLICA_DATABASE_URL", conn_max_age=db_read_conn_max_age or 0
         )
 
 if "read_replica" not in DATABASES:
@@ -758,28 +759,36 @@ SECURE_REFERRER_POLICY = env.get("SECURE_REFERRER_POLICY", "no-referrer-when-dow
 # Content Security policy settings
 # Most modern browsers don't honor the X-XSS-Protection HTTP header.
 # You can use Content-Security-Policy without allowing 'unsafe-inline' scripts instead.
-# http://django-csp.readthedocs.io/en/latest/configuration.html
+# https://django-csp.readthedocs.io/en/latest/configuration.html
 if "CSP_DEFAULT_SRC" in env:
     MIDDLEWARE.append("csp.middleware.CSPMiddleware")
 
     # The “special” source values of 'self', 'unsafe-inline', 'unsafe-eval', and 'none' must be quoted!
     # e.g.: CSP_DEFAULT_SRC = "'self'" Without quotes they will not work as intended.
-
     CSP_DEFAULT_SRC = env.get("CSP_DEFAULT_SRC", "").split(",")
+    CSP_DIRECTIVES = {
+        "default-src": CSP_DEFAULT_SRC,
+    }
+
     if "CSP_SCRIPT_SRC" in env:
-        CSP_SCRIPT_SRC = env.get("CSP_SCRIPT_SRC", "").split(",")
+        CSP_DIRECTIVES["script-src"] = env.get("CSP_SCRIPT_SRC", "").split(",")
     if "CSP_STYLE_SRC" in env:
-        CSP_STYLE_SRC = env.get("CSP_STYLE_SRC", "").split(",")
+        CSP_DIRECTIVES["style-src"] = env.get("CSP_STYLE_SRC", "").split(",")
     if "CSP_IMG_SRC" in env:
-        CSP_IMG_SRC = env.get("CSP_IMG_SRC", "").split(",")
+        CSP_DIRECTIVES["img-src"] = env.get("CSP_IMG_SRC", "").split(",")
     if "CSP_CONNECT_SRC" in env:
-        CSP_CONNECT_SRC = env.get("CSP_CONNECT_SRC", "").split(",")
+        CSP_DIRECTIVES["connect-src"] = env.get("CSP_CONNECT_SRC", "").split(",")
     if "CSP_FONT_SRC" in env:
-        CSP_FONT_SRC = env.get("CSP_FONT_SRC", "").split(",")
+        CSP_DIRECTIVES["font-src"] = env.get("CSP_FONT_SRC", "").split(",")
     if "CSP_BASE_URI" in env:
-        CSP_BASE_URI = env.get("CSP_BASE_URI", "").split(",")
+        CSP_DIRECTIVES["base-uri"] = env.get("CSP_BASE_URI", "").split(",")
     if "CSP_OBJECT_SRC" in env:
-        CSP_OBJECT_SRC = env.get("CSP_OBJECT_SRC", "").split(",")
+        CSP_DIRECTIVES["object-src"] = env.get("CSP_OBJECT_SRC", "").split(",")
+
+    if env.get("CSP_REPORT_ONLY", "false").lower() == "true":
+        CONTENT_SECURITY_POLICY_REPORT_ONLY = {"DIRECTIVES": CSP_DIRECTIVES}
+    else:
+        CONTENT_SECURITY_POLICY = {"DIRECTIVES": CSP_DIRECTIVES}
 
 
 # Basic authentication settings
@@ -954,8 +963,6 @@ WAGTAILSIMPLETRANSLATION_SYNC_PAGE_TREE = True
 SEARCH_INDEX_PUBLISHER_BACKEND = os.getenv("SEARCH_INDEX_PUBLISHER_BACKEND")
 KAFKA_SERVERS = os.getenv("KAFKA_SERVERS", "").split(",")
 KAFKA_USE_IAM_AUTH = os.getenv("KAFKA_USE_IAM_AUTH", "false").lower() == "true"
-KAFKA_CHANNEL_CREATED_OR_UPDATED = os.getenv("KAFKA_CHANNEL_CREATED_OR_UPDATED", "search-content-updated")
-KAFKA_CHANNEL_DELETED = os.getenv("KAFKA_CHANNEL_DELETED", "search-content-deleted")
 KAFKA_API_VERSION = tuple(map(int, os.getenv("KAFKA_API_VERSION", "3,5,1").split(",")))
 
 SEARCH_INDEX_EXCLUDED_PAGE_TYPES = (

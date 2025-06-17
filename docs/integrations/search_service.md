@@ -9,19 +9,17 @@ and 'search-content-deleted' (deleted) events, aligning with the `StandardPayloa
 - [Search metadata contract](https://github.com/ONSdigital/dis-search-upstream-stub/blob/main/docs/contract/resource_metadata.yml)
 - [Search upstream service endpoints spec](https://github.com/ONSdigital/dis-search-upstream-stub/blob/main/specification.yml)
 
-The CMS also provides a paginated Resource API endpoint with all published pages at `/v1/resources/` in the public facing instance. This is
+The CMS also provides a paginated Resource API endpoint with all published pages at `/v1/resources/`. This is
 used by the search service for reindexing.
 
 ## Environment variables
 
-| Var                                | Notes                                                                 |
-| ---------------------------------- | --------------------------------------------------------------------- |
-| `SEARCH_INDEX_PUBLISHER_BACKEND`   | Set to `kafka` to enable send data to the Search service Kafka broker |
-| `KAFKA_SERVERS`                    | A comma-separated list of Kafka broker URLs.                          |
-| `KAFKA_CHANNEL_CREATED_OR_UPDATED` | Defaults to `search-content-updated` as per spec                      |
-| `KAFKA_CHANNEL_DELETED`            | Defaults to `search-content-deleted` as per spec                      |
-| `KAFKA_API_VERSION`                | Defaults to "3,5,1"                                                   |
-| `KAFKA_USE_IAM_AUTH`               | Defaults to `false`. Set to `true` to enable IAM authentication.      |
+| Var                              | Notes                                                                 |
+| -------------------------------- | --------------------------------------------------------------------- |
+| `SEARCH_INDEX_PUBLISHER_BACKEND` | Set to `kafka` to enable send data to the Search service Kafka broker |
+| `KAFKA_SERVERS`                  | A comma-separated list of Kafka broker URLs.                          |
+| `KAFKA_API_VERSION`              | Defaults to "3,5,1"                                                   |
+| `KAFKA_USE_IAM_AUTH`             | Defaults to `false`. Set to `true` to enable IAM authentication.      |
 
 ## Developer notes
 
