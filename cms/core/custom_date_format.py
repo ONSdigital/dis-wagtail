@@ -24,4 +24,5 @@ def ons_date_format(value: datetime, format_string: str) -> str:
 
 
 def ons_default_datetime() -> datetime:
+    """Returns today's date at 9:30am."""
     return datetime.combine(date.today(), time(9, 30))

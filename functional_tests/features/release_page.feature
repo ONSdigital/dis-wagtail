@@ -5,6 +5,35 @@ Feature: CMS users can draft, edit, and publish release pages
     And a superuser logs into the admin site
     And the user navigates to the release calendar page
 
+  Scenario: A CMS user can use preview mode to view pages at different status
+    When the user clicks "Add child page" to create a new draft release page
+    And the user enters some example content on the page
+    And the user sets the page status to "Cancelled"
+    And user adds notice
+    And user adds date_change_log
+    And the user clicks the "Save Draft" button
+    And the user clicks the "Preview" button
+    And the user changes preview mode to "Cancelled"
+    And the user opens the preview in a new tab
+    Then the release page displays the change in release date
+    And the notice is displayed
+
+  Scenario Outline: Testing preview modes
+    When the user clicks "Add child page" to create a new draft release page
+    And the user enters some example content on the page
+    And the user clicks the "Save Draft" button
+    And the user clicks the "Preview" button
+    And the user changes preview mode to "<PageStatus>"
+    And the user opens the preview in a new tab
+    Then the "<PageStatus>" page is displayed
+
+    Examples:
+      | PageStatus  |
+      | Provisional |
+      | Confirmed   |
+      | Published   |
+      | Cancelled   |
+
   Scenario: Upon creation of a release page, several datetime features are available to users
     When the user clicks "Add child page" to create a new draft release page
     Then the default release date time is today's date and 9:30 AM
@@ -16,36 +45,27 @@ Feature: CMS users can draft, edit, and publish release pages
     And the user enters some example content on the page
     And looks up and selects a dataset
     And manually enters a dataset link
-    And the user clicks "Publish"
-    And user navigates to edit page
     And the user sets the page status to "Published"
+    And user adds date_change_log
     And the user clicks "Publish"
     And the user clicks "View Live" on the publish confirmation banner
     Then the new published release page with the example content is displayed
     And the selected datasets are displayed on the page
     And the user can see the breadcrumbs
+    And the release page displays the change in release date
 
   Scenario Outline: A CMS user can add changes to release dates once the page is published
     When the user clicks "Add child page" to create a new draft release page
     And the user enters some example content on the page
-    And the user clicks "Publish"
-    When user navigates to edit page
-    And the user sets the page status to "<PageStatus>"
+    And the user sets the page status to "Confirmed"
     And user adds date_change_log
     And the user clicks "Publish"
     And the user clicks "View Live" on the publish confirmation banner
     Then the release page displays the change in release date
 
-    Examples:
-      | PageStatus |
-      | Confirmed  |
-      | Published  |
-
-  Scenario Outline: A CMS user can add changes to release dates once the page is published and status is Cancelled
+  Scenario: A CMS user can add changes to release dates once the page is published and status is Cancelled
     When the user clicks "Add child page" to create a new draft release page
     And the user enters some example content on the page
-    And the user clicks "Publish"
-    When user navigates to edit page
     And the user sets the page status to "Cancelled"
     And user adds notice
     And user adds date_change_log

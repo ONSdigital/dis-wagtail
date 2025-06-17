@@ -24,37 +24,37 @@ def set_page_status(context: Context, page_status: str):
 
 @when("the user enters some example content on the page")
 def enter_example_release_content(context: Context):
-    context.page.get_by_placeholder("Page title*").fill("My Release")
+    page = context.page
+    page.get_by_placeholder("Page title*").fill("My Release")
 
-    context.page.get_by_role("textbox", name="Release date*").fill("2024-12-25")
-    context.page.get_by_role("textbox", name="Release date*").press("Enter")
+    page.get_by_role("textbox", name="Release date*").fill("2024-12-25")
+    page.get_by_role("textbox", name="Release date*").press("Enter")
 
-    context.page.get_by_role("region", name="Summary*").get_by_role("textbox").fill("My example release page")
+    page.get_by_role("region", name="Summary*").get_by_role("textbox").fill("My example release page")
 
-    context.page.locator("#panel-child-content-content-content").get_by_role("button", name="Insert a block").click()
-    context.page.get_by_role("region", name="Release content").get_by_label("Title*").fill("My Example Content Link")
+    page.locator("#panel-child-content-content-content").get_by_role("button", name="Insert a block").click()
+    page.get_by_role("region", name="Release content").get_by_label("Title*").fill("My Example Content Link")
 
-    context.page.get_by_role("button", name="Choose a page").click()
-    context.page.get_by_label("Explore").click()
-    context.page.get_by_role("link", name="Release calendar").click()
+    page.get_by_role("button", name="Choose a page").click()
+    page.get_by_label("Explore").click()
+    page.get_by_role("link", name="Release calendar").click()
 
-    context.page.get_by_role("button", name="Choose contact details").click()
-    context.page.get_by_role("link", name=context.contact_details_snippet.name).click()
+    page.get_by_role("button", name="Choose contact details").click()
+    page.get_by_role("link", name=context.contact_details_snippet.name).click()
 
-    context.page.get_by_label("Accredited Official Statistics").check()
+    page.get_by_label("Accredited Official Statistics").check()
 
 
 @then("the new published release page with the example content is displayed")
 def check_provisional_release_page_content(context: Context):
-    expect(context.page.get_by_role("heading", name="My Release")).to_be_visible()
-    expect(context.page.get_by_role("heading", name="My Example Content Link")).to_be_visible()
-    expect(
-        context.page.locator("#my-example-content-link").get_by_role("link", name="Release calendar")
-    ).to_be_visible()
-    expect(context.page.get_by_role("heading", name="Contact details")).to_be_visible()
-    expect(context.page.get_by_text(context.contact_details_snippet.name)).to_be_visible()
-    expect(context.page.get_by_role("link", name=context.contact_details_snippet.email)).to_be_visible()
-    expect(context.page.get_by_text("Accredited Official Statistics", exact=True)).to_be_visible()
+    page = context.page
+    expect(page.get_by_role("heading", name="My Release")).to_be_visible()
+    expect(page.get_by_role("heading", name="My Example Content Link")).to_be_visible()
+    expect(page.locator("#my-example-content-link").get_by_role("link", name="Release calendar")).to_be_visible()
+    expect(page.get_by_role("heading", name="Contact details")).to_be_visible()
+    expect(page.get_by_text(context.contact_details_snippet.name)).to_be_visible()
+    expect(page.get_by_role("link", name=context.contact_details_snippet.email)).to_be_visible()
+    expect(page.get_by_text("Accredited Official Statistics", exact=True)).to_be_visible()
 
 
 @then('the page status is set to "Provisional" and the release date text field is visible')
@@ -118,11 +118,12 @@ def thirty_minute_interval_for_time_selection(context: Context):
 
 @when("user navigates to edit page")
 def user_edits_published_page(context: Context):
-    context.page.get_by_role("link", name="My Release", exact=True).click()
-    context.page.get_by_role("button", name="Pages").click()
-    context.page.get_by_role("link", name="View child pages of 'Home'").first.click()
-    context.page.get_by_role("link", name="View child pages of 'Release").click()
-    context.page.get_by_role("link", name="Edit 'My Release'").click()
+    page = context.page
+    page.get_by_role("link", name="My Release", exact=True).click()
+    page.get_by_role("button", name="Pages").click()
+    page.get_by_role("link", name="View child pages of 'Home'").first.click()
+    page.get_by_role("link", name="View child pages of 'Release").click()
+    page.get_by_role("link", name="Edit 'My Release'").click()
 
 
 @when("user adds date_change_log")
@@ -140,11 +141,12 @@ def user_adds_date_change_log(context: Context):
 
 @then("the release page displays the change in release date")
 def release_date_change__is_displayed(context: Context):
-    expect(context.page.get_by_role("heading", name="Changes to this release date")).to_be_visible()
-    expect(context.page.get_by_role("heading", name="Previous date")).to_be_visible()
-    expect(context.page.get_by_text("May 2025 11:00am")).to_be_visible()
-    expect(context.page.get_by_role("heading", name="Reason for change")).to_be_visible()
-    expect(context.page.get_by_text("This is the reason.")).to_be_visible()
+    page = context.page
+    expect(page.get_by_role("heading", name="Changes to this release date")).to_be_visible()
+    expect(page.get_by_role("heading", name="Previous date")).to_be_visible()
+    expect(page.get_by_text("May 2025 11:00am")).to_be_visible()
+    expect(page.get_by_role("heading", name="Reason for change")).to_be_visible()
+    expect(page.get_by_text("This is the reason.")).to_be_visible()
 
 
 @when("user adds notice")
@@ -157,3 +159,29 @@ def add_notice(context: Context):
 @then("the notice is displayed")
 def notice_displayed(context: Context):
     expect(context.page.get_by_text("This is a notice.")).to_be_visible()
+
+
+@when('the user changes preview mode to "{page_status}"')
+def user_changes_preview_mode(context: Context, page_status: str):
+    context.page.get_by_label("Preview mode").select_option(page_status.upper())
+
+
+@then('the "Provisional" page is displayed')
+def display_provisional_page(context: Context):
+    expect(context.page.get_by_text("This release is not yet")).to_be_visible()
+
+
+@then('the "Confirmed" page is displayed')
+def display_confirmed_page(context: Context):
+    expect(context.page.get_by_text("This release is not yet")).to_be_visible()
+
+
+@then('the "published" page is displayed')
+def display_published_page(context: Context):
+    check_provisional_release_page_content(context)
+
+
+@then('the "Cancelled" page is displayed')
+def display_cancelled_page(context: Context):
+    expect(context.page.get_by_role("definition")).to_match_aria_snapshot("- definition: Cancelled")
+    expect(context.get_by_text("Cancelled")).to_be_visible()

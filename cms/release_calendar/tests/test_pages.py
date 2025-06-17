@@ -90,9 +90,10 @@ class ReleaseCalendarPageTests(WagtailPageTestCase):
             self.assertContains(response, "Reason for change")
             self.assertContains(response, "Reason")
 
-    # Does not work for unknown reasons but would have tested preview_modes
-    # def test_preview_modes(self):
-    #     """Test preview modes for release calendar page."""
-    #     self.assertPageIsPreviewable(
-    #         self.page,
-    #     )
+    def test_preview_mode_url(self):
+        cases = ["PROVISIONAL", "CANCELLED", "PUBLISHED", "CONFIRMED"]
+
+        for case in cases:
+            preview_url = f"/admin/pages/{self.page.id}/edit/preview/?mode={case}"
+            response = self.client.get(preview_url, follow=True)
+            self.assertEqual(response.status_code, 200)
