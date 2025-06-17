@@ -242,7 +242,6 @@ msgstr ""
 #: cms/jinja2/templates/pages/release_calendar/release_calendar_page.html:9
 #: cms/jinja2/templates/pages/statistical_article_page.html:11
 #: cms/jinja2/templates/pages/statistical_article_page.html:18
-#| msgid "Release date"
 msgid "Release date:"
 msgstr "Dyddiad y datganiad"
 
@@ -263,7 +262,6 @@ msgid "This release is not yet published"
 msgstr ""
 
 #: cms/jinja2/templates/pages/release_calendar/release_calendar_page.html:10
-#| msgid "Next release"
 msgid "Next release date:"
 msgstr "Cyhoeddiad nesaf"
 
@@ -327,7 +325,6 @@ msgstr ""
 
 #: cms/jinja2/templates/pages/statistical_article_page--previous-releases.html:44
 #: cms/jinja2/templates/pages/statistical_article_page.html:29
-#| msgid "Next release"
 msgid "Latest release"
 msgstr "Cyhoeddiad nesaf"
 
@@ -336,7 +333,6 @@ msgid "There are currently no releases"
 msgstr ""
 
 #: cms/jinja2/templates/pages/statistical_article_page--related_data.html:8
-#| msgid "Release date"
 msgid "Related data"
 msgstr "Dyddiad y datganiad"
 
@@ -347,7 +343,6 @@ msgstr ""
 
 #: cms/jinja2/templates/pages/statistical_article_page.html:12
 #: cms/jinja2/templates/pages/statistical_article_page.html:19
-#| msgid "Next release"
 msgid "Next release:"
 msgstr "Cyhoeddiad nesaf"
 
@@ -364,7 +359,6 @@ msgid "View previous releases"
 msgstr ""
 
 #: cms/jinja2/templates/pages/statistical_article_page.html:35
-#| msgid "Next release"
 msgid "Not the latest release"
 msgstr "Cyhoeddiad nesaf"
 
@@ -468,7 +462,3 @@ msgstr "Cymraeg"
 #: cms/settings/base.py:353
 msgid "Ukrainian"
 msgstr ""
-
-#~| msgid "Release date"
-#~ msgid "Releases:"
-#~ msgstr "Dyddiad y datganiad"
