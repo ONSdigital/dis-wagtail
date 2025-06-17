@@ -423,7 +423,7 @@ class StatisticalArticlePage(BundledPageMixin, RoutablePageMixin, BasePage):  # 
         return cast("TemplateResponse", super().serve_preview(request, mode_name))
 
     def ld_entity(self) -> dict[str, object]:
-        """Add article schema properties to JSON LD."""
+        """Add statistical article specific schema properties to JSON LD."""
         properties = {
             "@type": "Article",
             "url": self.get_url(),  # TODO pass request to this one wagtailschemaorg supports it
@@ -431,18 +431,18 @@ class StatisticalArticlePage(BundledPageMixin, RoutablePageMixin, BasePage):  # 
             "description": self.listing_summary or self.summary,
             "author": {
                 "@type": "Person",
-                "name": "Demographic Outputs and Transformation Expertise",  # TODO use contact details or org name?
+                "name": self.contact_details.name if self.contact_details else "Office for National Statistics",
             },
             "publisher": {
                 "@type": "Organization",
                 "name": "Office for National Statistics",  # TODO make this a setting or constant?
-                "url": settings.ONS_WEBSITE_BASE_URL,  # TODO make this a setting or constant?
+                "url": settings.ONS_WEBSITE_BASE_URL,
             },
             "license": "https://www.nationalarchives.gov.uk/doc/open-government-licence/version/3/",
             "datePublished": self.release_date.isoformat(),
             "mainEntityOfPage": {
                 "@type": "WebPage",
-                "@id": self.get_url(),
+                "@id": self.get_url(),  # TODO pass request to this one wagtailschemaorg supports it
             },
         }
         return cast(dict[str, object], extend(super().ld_entity(), properties))
