@@ -6,7 +6,7 @@ from django.urls import reverse
 from django.utils.html import format_html
 from wagtail.admin.forms import WagtailAdminPageForm
 from wagtail.blocks.stream_block import StreamValue
-from wagtail.models import Locale, PageLogEntry
+from wagtail.models import Locale
 
 from cms.bundles.permissions import user_can_manage_bundles
 
@@ -124,21 +124,6 @@ class ReleaseCalendarPageAdminForm(WagtailAdminPageForm):
     def clean_changes_to_release_date(self) -> StreamValue:
         changes_to_release_date: StreamValue = self.cleaned_data.get("changes_to_release_date")
 
-        if self.instance.pk is None:
-            if changes_to_release_date:
-                raise ValidationError(
-                    "You cannot create a change to release date for a page that has not been published yet."
-                )
-            return changes_to_release_date
-
-        published_page = PageLogEntry.objects.filter(page=self.instance, action="wagtail.publish").exists()
-        if changes_to_release_date and not published_page:
-            self.add_error(
-                "changes_to_release_date",
-                ValidationError(
-                    "You cannot create a change to release date for a page that has not been published yet."
-                ),
-            )
         old_frozen_versions = [
             date_change_log.value["version_id"]
             for date_change_log in self.instance.changes_to_release_date
@@ -153,38 +138,17 @@ class ReleaseCalendarPageAdminForm(WagtailAdminPageForm):
         if old_frozen_versions != new_frozen_versions:
             raise ValidationError("You cannot remove a change to release date that has already been published.")
 
-        latest_frozen_date = max(
-            (
-                date_change_log.value["previous_date"]
-                for date_change_log in changes_to_release_date
-                if date_change_log.value["frozen"]
-            ),
-            default=None,
-        )
-
         new_date_change_log = None
         latest_date_change_log_version = 0
 
         for date_change_log in changes_to_release_date:
             if not date_change_log.value["frozen"]:
-                if new_date_change_log:
-                    raise ValidationError("Only one new change to release date can be published at a time")
-                new_date_change_log = date_change_log
-                if latest_frozen_date and date_change_log.value["previous_date"] < latest_frozen_date:
-                    raise ValidationError(
-                        "You cannot create a change to release date with a date earlier than the latest change"
-                    )
+                if not new_date_change_log:
+                    new_date_change_log = date_change_log
                 latest_date_change_log_version = max(
-                    latest_date_change_log_version, date_change_log.value["version_id"] or 0
+                    latest_date_change_log_version, date_change_log.value.get("version_id") or 0
                 )
 
-        if new_date_change_log and not new_date_change_log.value["version_id"]:
+        if new_date_change_log and not new_date_change_log.value.get("version_id"):
             new_date_change_log.value["version_id"] = latest_date_change_log_version + 1
-
-        sorted_changes = sorted(
-            changes_to_release_date,
-            key=lambda change: change.value["previous_date"],
-            reverse=True,
-        )
-
-        return StreamValue(changes_to_release_date.stream_block, sorted_changes)
+        return changes_to_release_date
