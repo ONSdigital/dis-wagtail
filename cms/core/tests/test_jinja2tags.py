@@ -2,6 +2,7 @@ from datetime import datetime
 
 from django.template import engines
 from django.test import SimpleTestCase
+from django.utils.translation import override
 
 
 class OnsDateFilterInJinjaTests(SimpleTestCase):
@@ -23,3 +24,14 @@ class OnsDateFilterInJinjaTests(SimpleTestCase):
             ts=dt,
         )
         self.assertEqual(rendered, "1 November 2025 1:00pm")
+
+    def test_datetime_format_welsh_typo(self):
+        """Test the Welsh translation typo for 'July'."""
+        dt = datetime(2025, 7, 1, 13, 0)  # 1 Jul 2025 13:00
+
+        with override("cy"):
+            rendered = self._render(
+                "{{ ts|ons_date('DATETIME_FORMAT') }}",
+                ts=dt,
+            )
+        self.assertIn("Gorffennaf", rendered, msg="Expected 'Gorffenaf' to be corrected to 'Gorffennaf'.")

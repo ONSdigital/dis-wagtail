@@ -462,3 +462,6 @@ msgstr "Cymraeg"
 #: cms/settings/base.py:353
 msgid "Ukrainian"
 msgstr ""
+
+msgid "To be confirmed"
+msgstr "I'w gadarnhau"
