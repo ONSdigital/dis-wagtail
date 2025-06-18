@@ -172,10 +172,8 @@ class BasePage(PageLDMixin, ListingFieldsMixin, SocialFieldsMixin, Page):  # typ
                 {
                     "@type": "ListItem",
                     "position": i,
-                    "item": {
-                        "name": str(breadcrumb["text"]),
-                        "@id": str(breadcrumb["url"]),
-                    },
+                    "name": str(breadcrumb["text"]),
+                    "item": str(breadcrumb["url"]),
                 }
             )
             breadcrumbs_jsonld["itemListElement"] = item_list
