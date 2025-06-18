@@ -129,9 +129,9 @@ class ONSAuthMiddleware(AuthenticationMiddleware):
         """Processes requests when AWS Cognito authentication is disabled.
         Logs out users that do not have a usable password.
         """
-        if request.user.is_authenticated and not request.user.has_usable_password():
+        if request.user.is_authenticated and request.user.is_external_user:
             logger.info(
-                "AWS Cognito is disabled; logging out user without a usable password",
+                "AWS Cognito is disabled; logging out external user",
                 extra={"external_user_id": request.user.external_user_id},
             )
             logout(request)
@@ -139,10 +139,7 @@ class ONSAuthMiddleware(AuthenticationMiddleware):
     @staticmethod
     def _handle_unauthenticated_user(request: "HttpRequest") -> None:
         """Logs out the user if JWT tokens are missing and the session configuration is unsuitable."""
-        if not request.user.is_authenticated:
-            return
-
-        if not settings.WAGTAIL_CORE_ADMIN_LOGIN_ENABLED or not request.user.has_usable_password():
+        if not settings.WAGTAIL_CORE_ADMIN_LOGIN_ENABLED or request.user.is_external_user:
             logger.info(
                 "Terminating session due to missing JWT tokens or insufficient login "
                 "configuration (external_user_id: %s).",

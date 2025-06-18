@@ -15,6 +15,15 @@ class User(AbstractUser):
     external_user_id = models.UUIDField(unique=True, null=True, editable=False)
     teams = models.ManyToManyField("teams.Team", related_name="users", blank=True)
 
+    @property
+    def is_external_user(self) -> bool:
+        """Return True for users who originate from an external identity provider
+        (i.e. they have an external_user_id) and have no usable password set.
+        External accounts rely on third-party authentication, so they should
+        never possess a native password.
+        """
+        return self.external_user_id is not None and not self.has_usable_password()
+
     def assign_groups_and_teams(self, /, groups_ids: Iterable[str]) -> None:
         """Assign groups and teams to the user based on their Cognito groups."""
         self._assign_groups(groups_ids)
