@@ -2,23 +2,24 @@ from typing import TYPE_CHECKING, Any
 
 from django.db import models
 from django.utils.text import slugify
-from django.utils.translation import gettext as _
+from django.utils.translation import gettext_lazy as _
 from wagtail.blocks import CharBlock, ChoiceBlock, DateBlock, ListBlock
 
 from .base import LinkBlock
 
 if TYPE_CHECKING:
+    from django_stubs_ext import StrOrPromise
     from wagtail.blocks.list_block import ListValue
 
 
 class RelatedContentType(models.TextChoices):
     """Related content types."""
 
-    ARTICLE = "article", "Article"
-    DATASET = "dataset", "Dataset"
-    METHODOLOGY = "methodology", "Methodology"
-    TIME_SERIES = "time_series", "Time series"
-    TOPIC = "topic", "Topic"
+    ARTICLE = "article", _("Article")
+    DATASET = "dataset", _("Dataset")
+    METHODOLOGY = "methodology", _("Methodology")
+    TIME_SERIES = "time_series", _("Time series")
+    TOPIC = "topic", _("Topic")
 
 
 class RelatedContentBlock(LinkBlock):
@@ -65,6 +66,6 @@ class RelatedLinksBlock(ListBlock):
         help_text = "A list of related links."
         template = "templates/components/streamfield/related_links_block.html"
 
-    def to_table_of_contents_items(self, _value: "ListValue") -> list[dict[str, str]]:
+    def to_table_of_contents_items(self, _value: "ListValue") -> list[dict[str, "StrOrPromise"]]:
         """Returns the table of contents component macro data."""
         return [{"url": "#" + self.slug, "text": self.heading}]

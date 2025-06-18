@@ -8,7 +8,6 @@ from django.conf import settings
 from django.db.models import QuerySet
 from django.utils.formats import date_format
 from django.utils.translation import gettext_lazy as _
-from django_stubs_ext import StrOrPromise
 from matplotlib.figure import Figure
 
 matplotlib_lock = Lock()
@@ -27,6 +26,7 @@ mpl.rcParams.update(
 
 if TYPE_CHECKING:
     from django.http import HttpRequest
+    from django_stubs_ext import StrOrPromise
     from wagtail.models import Page
 
 
@@ -61,7 +61,7 @@ def get_formatted_pages_list(
     return data
 
 
-def get_document_metadata_date(value: date | datetime | str, prefix: StrOrPromise) -> dict[str, Any]:
+def get_document_metadata_date(value: date | datetime | str, prefix: "StrOrPromise") -> dict[str, Any]:
     """Returns a dictionary with formatted date information for the document metadata."""
     return {
         "prefix": prefix,
