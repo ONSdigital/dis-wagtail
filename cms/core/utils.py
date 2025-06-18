@@ -53,7 +53,7 @@ def get_formatted_pages_list(
                 "url": page.get_url(request=request),
             },
             "metadata": {
-                "object": {"text": "Test"},
+                "object": {"text": getattr(page, "label", _("Page"))},
             },
             "description": getattr(page, "listing_summary", "") or getattr(page, "summary", ""),
         }
