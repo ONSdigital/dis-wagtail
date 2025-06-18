@@ -1,6 +1,7 @@
 from django.test import TestCase, override_settings
 from wagtail.test.utils import WagtailTestUtils
 
+from cms.core.enums import RelatedContentType
 from cms.standard_pages.tests.factories import IndexPageFactory, InformationPageFactory
 
 
@@ -145,3 +146,57 @@ class IndexPageTestCase(WagtailTestUtils, TestCase):
         """Test the page loads in external env."""
         response = self.client.get(self.page_url)
         self.assertEqual(response.status_code, 200)
+
+
+class InformationPageTestCase(WagtailTestUtils, TestCase):
+    """Test InformationPage model properties and methods."""
+
+    @classmethod
+    def setUpTestData(cls):
+        cls.page = InformationPageFactory(title="Test Information Page")
+
+        cls.page_url = cls.page.url
+
+    def test_page_loads(self):
+        """Test that the Information Page loads correctly."""
+        response = self.client.get(self.page_url)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, self.page.title)
+        self.assertContains(response, self.page.content)
+
+    def test_related_links(self):
+        another_information_page = InformationPageFactory(
+            title="Another Information Page",
+            parent=self.page.get_parent(),
+        )
+        self.page.content = [
+            {
+                "type": "related_links",
+                "value": [
+                    {
+                        "title": "An external page",
+                        "external_url": "external-url.com",
+                        "release_date": "2025-05-21",
+                        "content_type": RelatedContentType.ARTICLE,
+                    },
+                    {
+                        "page": another_information_page.pk,
+                        "release_date": "2025-01-02",
+                        "content_type": RelatedContentType.TIME_SERIES,
+                    },
+                ],
+            }
+        ]
+
+        self.page.save_revision().publish()
+
+        response = self.client.get(self.page_url)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Related links")  # Should have a heading added
+        self.assertContains(response, "An external page")
+        self.assertContains(response, "external-url.com")
+        self.assertContains(response, "Article")
+        self.assertContains(response, "21 May 2025")
+        self.assertContains(response, another_information_page.title)
+        self.assertContains(response, "2 January 2025")
+        self.assertContains(response, "Time series")

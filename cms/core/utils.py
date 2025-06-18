@@ -10,6 +10,8 @@ from django.utils.formats import date_format
 from django.utils.translation import gettext_lazy as _
 from matplotlib.figure import Figure
 
+from cms.core.enums import RelatedContentType
+
 matplotlib_lock = Lock()
 
 FORMULA_INDICATOR = "$$"
@@ -51,7 +53,7 @@ def get_formatted_pages_list(
                 "url": page.get_url(request=request),
             },
             "metadata": {
-                "object": {"text": getattr(page, "label", _("Page"))},
+                "object": {"text": "Test"},
             },
             "description": getattr(page, "listing_summary", "") or getattr(page, "summary", ""),
         }
@@ -69,6 +71,12 @@ def get_document_metadata_date(value: date | datetime | str, prefix: "StrOrPromi
         "iso": date_format(value, "c"),
         "short": date_format(value, "DATE_FORMAT"),
     }
+
+
+def get_related_content_type_label(content_type: str) -> str:
+    """Returns the label for a given related content type."""
+    label: str = getattr(RelatedContentType, content_type).label
+    return label
 
 
 def get_client_ip(request: "HttpRequest") -> str | None:

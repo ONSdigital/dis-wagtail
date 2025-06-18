@@ -1,25 +1,16 @@
 from typing import TYPE_CHECKING, Any
 
-from django.db import models
 from django.utils.text import slugify
 from django.utils.translation import gettext_lazy as _
 from wagtail.blocks import CharBlock, ChoiceBlock, DateBlock, ListBlock
+
+from cms.core.enums import RelatedContentType
 
 from .base import LinkBlock
 
 if TYPE_CHECKING:
     from django_stubs_ext import StrOrPromise
     from wagtail.blocks.list_block import ListValue
-
-
-class RelatedContentType(models.TextChoices):
-    """Related content types."""
-
-    ARTICLE = "article", _("Article")
-    DATASET = "dataset", _("Dataset")
-    METHODOLOGY = "methodology", _("Methodology")
-    TIME_SERIES = "time_series", _("Time series")
-    TOPIC = "topic", _("Topic")
 
 
 class RelatedContentBlock(LinkBlock):
