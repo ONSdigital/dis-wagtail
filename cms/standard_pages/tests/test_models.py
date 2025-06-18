@@ -76,6 +76,7 @@ class IndexPageTestCase(WagtailTestUtils, TestCase):
                 "title": "Title of the custom featured item",
                 "description": "Description of the custom featured item",
                 "external_url": "external-url.com",
+                "release_date": "2025-01-01",
             },
         }
 
@@ -100,7 +101,11 @@ class IndexPageTestCase(WagtailTestUtils, TestCase):
 
         featured_item_internal_page = {
             "type": "featured_item",
-            "value": {"page": internal_page.id, "description": "Description of the custom featured item"},
+            "value": {
+                "page": internal_page.id,
+                "description": "Description of the custom featured item",
+                "release_date": "2025-01-01",
+            },
         }
 
         self.index_page.featured_items = [featured_item_internal_page]

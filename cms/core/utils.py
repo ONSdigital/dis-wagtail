@@ -73,6 +73,33 @@ def get_document_metadata_date(value: date | datetime | str, prefix: "StrOrPromi
     }
 
 
+def get_document_metadata(
+    content_type: "StrOrPromise", date_value: date | datetime | str | None, prefix: "StrOrPromise"
+) -> dict[str, Any]:
+    """Returns a dictionary with formatted metadata information for the document."""
+    metadata = {
+        "object": {"text": content_type},
+    }
+
+    if date_value:
+        metadata["date"] = get_document_metadata_date(date_value, prefix)
+
+    return metadata
+
+
+def get_content_type_for_page(page: "Page") -> "StrOrPromise":
+    """Returns the content type for a given page."""
+    # Get page specific class
+    display_name = page.page_type_display_name
+    match display_name:
+        case "Methodology page":
+            return RelatedContentType.METHODOLOGY.label
+        case "Topic page":
+            return RelatedContentType.TOPIC.label
+        case _:
+            return RelatedContentType.ARTICLE.label
+
+
 def get_related_content_type_label(content_type: str) -> str:
     """Returns the label for a given related content type."""
     label: str = getattr(RelatedContentType, content_type).label
