@@ -855,8 +855,6 @@ if "WAGTAILADMIN_BASE_URL" in env:
     WAGTAILADMIN_BASE_URL = env["WAGTAILADMIN_BASE_URL"]
 
 # https://docs.wagtail.org/en/latest/reference/settings.html#wagtailadmin-login-url
-# if "WAGTAILADMIN_LOGIN_URL" in env:
-#     WAGTAILADMIN_LOGIN_URL = env["WAGTAILADMIN_LOGIN_URL"]
 WAGTAILADMIN_LOGIN_URL = env.get("WAGTAILADMIN_LOGIN_URL", "/admin/login/")
 
 # Custom image model
@@ -993,18 +991,6 @@ IDENTITY_API_BASE_URL = env.get("IDENTITY_API_BASE_URL")
 AWS_COGNITO_LOGIN_ENABLED = env.get("AWS_COGNITO_LOGIN_ENABLED", "false").lower() == "true"
 AWS_COGNITO_USER_POOL_ID = env.get("AWS_COGNITO_USER_POOL_ID")
 AWS_COGNITO_APP_CLIENT_ID = env.get("AWS_COGNITO_APP_CLIENT_ID")
-
-# TODO: Make system checks
-# if AWS_COGNITO_LOGIN_ENABLED:
-#     required_env_vars = [
-#         "IDENTITY_API_BASE_URL",
-#         "AUTH_TOKEN_REFRESH_URL",
-#         "AWS_COGNITO_APP_CLIENT_ID",
-#         "AWS_COGNITO_USER_POOL_ID",
-#     ]
-#     for var in required_env_vars:
-#         if not env.get(var):
-#             raise ImproperlyConfigured(f"Missing required environment variable: {var}")
 
 
 # Groups
