@@ -232,6 +232,13 @@ class BundleAdminFormTestCase(TestCase):
         self.assertFalse(form.is_valid())
         self.assertFormError(form, None, "Cannot approve the bundle without any pages")
 
+        # add a dataset
+        DatasetFactory(id=123)
+        raw_data = self.raw_form_data()
+        raw_data["bundled_datasets"] = inline_formset([{"dataset": 123}])
+        form = self.form_class(instance=self.bundle, data=nested_form_data(raw_data))
+        self.assertTrue(form.is_valid())
+
     def test_clean_validates_the_bundle_has_datasets(self):
         DatasetFactory(id=123)
         raw_data = self.raw_form_data()

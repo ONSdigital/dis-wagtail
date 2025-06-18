@@ -48,6 +48,18 @@ class BundleAdminForm(WagtailAdminModelForm):
 
         self.original_status = self.instance.status
 
+    def _has_datasets(self) -> bool:
+        has_datasets = False
+        for form in self.formsets["bundled_datasets"].forms:
+            if not form.is_valid() or form.cleaned_data["DELETE"]:
+                continue
+
+            if form.clean().get("dataset"):
+                has_datasets = True
+                break
+
+        return has_datasets
+
     def _validate_bundled_pages(self) -> None:
         """Validates and tidies up related pages.
 
@@ -98,7 +110,7 @@ class BundleAdminForm(WagtailAdminModelForm):
                     form.add_error("page", "This page is not ready to be published")
                     num_pages_not_ready += 1
 
-        if not has_pages:
+        if not has_pages and not self._has_datasets():
             raise ValidationError("Cannot approve the bundle without any pages")
 
         if num_pages_not_ready:
