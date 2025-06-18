@@ -18,6 +18,7 @@ services:
       > # Ensure dependencies and static files are ready from inside the container, as there can be issues relying on these being run outside in the local environment
       sh -c "poetry install &&
              django-admin collectstatic --verbosity 0 --noinput --clear &&
+             django-admin compilemessages --verbosity 0 &&
              django-admin migrate --noinput &&
              django-admin runserver 0.0.0.0:8000"
 
