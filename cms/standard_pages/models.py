@@ -107,7 +107,9 @@ class IndexPage(BundledPageMixin, BasePage):  # type: ignore[django-manager-miss
                     "title": {"text": link["text"], "url": link["url"]},
                     "description": featured_item.value["description"],
                     "metadata": get_document_metadata(
-                        featured_item.value["content_type"], featured_item.value["release_date"], _("Published")
+                        featured_item.value["content_type"],
+                        featured_item.value.get("release_date", None),
+                        _("Published"),
                     ),
                 }
             )

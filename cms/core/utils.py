@@ -89,7 +89,6 @@ def get_document_metadata(
 
 def get_content_type_for_page(page: "Page") -> "StrOrPromise":
     """Returns the content type for a given page."""
-    # Get page specific class
     display_name = page.page_type_display_name
     match display_name:
         case "Methodology page":
