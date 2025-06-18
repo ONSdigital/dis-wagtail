@@ -206,17 +206,6 @@ class BundleInspectView(InspectView):
             case _:
                 return super().get_field_label(field_name, field)  # type: ignore[no-any-return]
 
-    def get_field_display_value(self, field_name: str, field: "Field") -> Any:
-        """Allows customising field display in the inspect class.
-
-        This allows us to use get_FIELDNAME_display_value methods.
-        """
-        value_func = getattr(self, f"get_{field_name}_display_value", None)
-        if value_func is not None:
-            return value_func()
-
-        return super().get_field_display_value(field_name, field)
-
     def get_approved_display_value(self) -> str:
         """Custom approved by formatting. Varies based on status, and approver/time of approval."""
         if self.object.status in [BundleStatus.APPROVED, BundleStatus.PUBLISHED]:
