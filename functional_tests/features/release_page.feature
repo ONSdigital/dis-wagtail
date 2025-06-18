@@ -5,26 +5,12 @@ Feature: CMS users can draft, edit, and publish release pages
     And a superuser logs into the admin site
     And the user navigates to the release calendar page
 
-  Scenario: A CMS user can use preview mode to view pages at different status
-    When the user clicks "Add child page" to create a new draft release page
-    And the user enters some example content on the page
-    And the user sets the page status to "Cancelled"
-    And user adds notice
-    And user adds date_change_log
-    And the user clicks the "Save Draft" button
-    And the user clicks the "Preview" button
-    And the user changes preview mode to "Cancelled"
-    And the user opens the preview in a new tab
-    Then the release page displays the change in release date
-    And the notice is displayed
-
-  Scenario Outline: Testing preview modes
+  Scenario Outline: A CMS user can use preview mode to preview page at different statuses
     When the user clicks "Add child page" to create a new draft release page
     And the user enters some example content on the page
     And the user clicks the "Save Draft" button
     And the user clicks the "Preview" button
     And the user changes preview mode to "<PageStatus>"
-    And the user opens the preview in a new tab
     Then the "<PageStatus>" page is displayed
 
     Examples:

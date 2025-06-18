@@ -188,21 +188,30 @@ def user_changes_preview_mode(context: Context, page_status: str):
 
 
 @then('the "Provisional" page is displayed')
-def display_provisional_page(context: Context):
-    expect(context.page.get_by_text("This release is not yet")).to_be_visible()
+def preview_provisional_page(context: Context):
+    iframe_locator = context.page.frame_locator("#w-preview-iframe")
+    expect(iframe_locator.get_by_text("This release is not yet")).to_be_visible()
 
 
 @then('the "Confirmed" page is displayed')
-def display_confirmed_page(context: Context):
-    expect(context.page.get_by_text("This release is not yet")).to_be_visible()
+def preview_confirmed_page(context: Context):
+    iframe_locator = context.page.frame_locator("#w-preview-iframe")
+    expect(iframe_locator.get_by_text("This release is not yet")).to_be_visible()
 
 
-@then('the "published" page is displayed')
-def display_published_page(context: Context):
-    check_provisional_release_page_content(context)
+@then('the "Published" page is displayed')
+def preview_published_page(context: Context):
+    page = context.page.frame_locator("#w-preview-iframe")
+    expect(page.get_by_role("heading", name="My Release")).to_be_visible()
+    expect(page.get_by_role("heading", name="My Example Content Link")).to_be_visible()
+    expect(page.locator("#my-example-content-link").get_by_role("link", name="Release calendar")).to_be_visible()
+    expect(page.get_by_role("heading", name="Contact details")).to_be_visible()
+    expect(page.get_by_text(context.contact_details_snippet.name)).to_be_visible()
+    expect(page.get_by_role("link", name=context.contact_details_snippet.email)).to_be_visible()
+    expect(page.get_by_text("Accredited Official Statistics", exact=True)).to_be_visible()
 
 
 @then('the "Cancelled" page is displayed')
-def display_cancelled_page(context: Context):
-    expect(context.page.get_by_role("definition")).to_match_aria_snapshot("- definition: Cancelled")
-    expect(context.get_by_text("Cancelled")).to_be_visible()
+def preview_cancelled_page(context: Context):
+    iframe_locator = context.page.frame_locator("#w-preview-iframe")
+    expect(iframe_locator.get_by_text("Cancelled", exact=True)).to_be_visible()
