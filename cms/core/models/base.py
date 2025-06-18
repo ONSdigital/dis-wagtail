@@ -137,37 +137,27 @@ class BasePage(PageLDMixin, ListingFieldsMixin, SocialFieldsMixin, Page):  # typ
         return False
 
     def get_breadcrumbs(self, request: Optional["HttpRequest"] = None) -> list[dict[str, object]]:
-        """Returns the breadcrumbs as a list of dictionaries for the page.
-        Optionally include the page itself in the breadcrumbs by passing include_self=True.
+        """Returns the breadcrumbs for the page as a list of dictionaries compatible with the ONS design system
+        breadcrumbs component.
         """
         # TODO make request non-optional once wagtailschemaorg supports passing through the request.
-        breadcrumbs_list = []
+        breadcrumbs = []
         homepage_depth = 2
         for ancestor_page in self.get_ancestors().specific().defer_streamfields():
             if ancestor_page.is_root():
                 continue
             if ancestor_page.depth <= homepage_depth:
-                breadcrumbs_list.append({"url": "/", "text": _("Home")})
+                breadcrumbs.append({"url": "/", "text": _("Home")})
             elif not getattr(ancestor_page, "exclude_from_breadcrumbs", False):
-                breadcrumbs_list.append({"url": ancestor_page.get_url(request=request), "text": ancestor_page.title})
-        if request and (request.routable_resolver_match.view_name != "index_route"):  # type: ignore[attr-defined]
-            # e.g. if the request is for a routable page, not the page index route then we should include a
-            # breadcrumb for the index route (e.g. related data page underneath the article page)
-            # TODO verify if this is valid general behaviour or if we need do this for only specific routes
-            breadcrumbs_list.append({"url": self.get_url(request=request), "text": self.title})
-        return breadcrumbs_list
+                breadcrumbs.append({"url": ancestor_page.get_url(request=request), "text": ancestor_page.title})
+        return breadcrumbs
 
     @cached_property
-    def breadcrumbs_no_request(self) -> list[dict[str, object]]:
-        """Cached property to reduce the performance impact from calls without the request."""
-        # TODO remove this once wagtailschemaorg supports passing through the request.
-        return self.get_breadcrumbs()
-
     def breadcrumbs_as_jsonld(self) -> dict[str, object]:
         """Returns the list as a dictionary in the format required for JSON LD entity."""
         breadcrumbs_jsonld: dict[str, object] = {"@type": "BreadcrumbList"}
         item_list = []
-        for i, breadcrumb in enumerate(self.breadcrumbs_no_request):
+        for i, breadcrumb in enumerate(self.get_breadcrumbs()):
             item_list.append(
                 {
                     "@type": "ListItem",
@@ -181,8 +171,7 @@ class BasePage(PageLDMixin, ListingFieldsMixin, SocialFieldsMixin, Page):  # typ
 
     def ld_entity(self) -> dict[str, object]:
         """Add page breadcrumbs to the JSON LD properties."""
-        breadcrumbs = self.breadcrumbs_as_jsonld()
-        return cast(dict[str, Any], extend(super().ld_entity(), breadcrumbs))
+        return cast(dict[str, Any], extend(super().ld_entity(), self.breadcrumbs_as_jsonld))
 
 
 class BaseSiteSetting(WagtailBaseSiteSetting):
