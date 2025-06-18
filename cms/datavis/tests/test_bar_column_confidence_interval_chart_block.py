@@ -103,6 +103,22 @@ class BarColumnConfidenceIntervalChartBlockTestCase(BaseChartBlockTestCase):
         self.assertEqual("Estimate", config["estimateLineLabel"])
         self.assertEqual("Uncertainty range", config["uncertaintyRangeLabel"])
 
+    def test_column_chart_with_no_uncertainty(self):
+        """When a datum has no uncertainty range, all five box plot values should be the same."""
+        self.raw_data["select_chart_type"] = BarColumnConfidenceIntervalChartTypeChoices.COLUMN
+        self.raw_data["table"] = TableDataFactory(
+            table_data=[
+                ["Category", "Value", "Range min", "Range max"],
+                ["2005", "100", "", ""],
+                ["2006", "120", "110", "130"],
+            ]
+        )
+        config = self.get_component_config()
+        self.assertEqual(
+            [(100, 100, 100, 100, 100), (110, 110, 120, 130, 130)],
+            config["series"][0]["data"],
+        )
+
     def test_custom_legend_labels(self):
         """Test that custom legend labels are used when provided."""
         self.raw_data["estimate_line_label"] = "Custom Estimate"
