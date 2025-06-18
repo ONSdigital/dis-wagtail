@@ -202,6 +202,7 @@ class CoreBlocksTestCase(TestCase):
                 "url": "https://ons.gov.uk",
                 "text": "Example",
                 "description": "A link",
+                "metadata": {"object": {"text": "Article"}},
             },
         )
 
@@ -219,6 +220,7 @@ class CoreBlocksTestCase(TestCase):
                 "url": self.home_page.url,
                 "text": "Example",
                 "description": "A link",
+                "metadata": {"object": {"text": "Article"}},
             },
         )
 
@@ -234,6 +236,7 @@ class CoreBlocksTestCase(TestCase):
                 "url": self.home_page.url,
                 "text": self.home_page.title,
                 "description": "",
+                "metadata": {"object": {"text": "Article"}},
             },
         )
 
@@ -249,6 +252,7 @@ class CoreBlocksTestCase(TestCase):
                 "external_url": "https://ons.gov.uk",
                 "title": "Example",
                 "description": "A link",
+                "content_type": "ARTICLE",
             }
         )
 
@@ -257,6 +261,7 @@ class CoreBlocksTestCase(TestCase):
             {
                 "title": {"url": "https://ons.gov.uk", "text": "Example"},
                 "description": "A link",
+                "metadata": {"object": {"text": "Article"}},
             },
         )
 
@@ -265,6 +270,7 @@ class CoreBlocksTestCase(TestCase):
                 "page": self.home_page.pk,
                 "title": "Example",
                 "description": "A link",
+                "content_type": "TIME_SERIES",
             }
         )
 
@@ -273,12 +279,14 @@ class CoreBlocksTestCase(TestCase):
             {
                 "title": {"url": self.home_page.url, "text": "Example"},
                 "description": "A link",
+                "metadata": {"object": {"text": "Time series"}},
             },
         )
 
         value = block.to_python(
             {
                 "page": self.home_page.pk,
+                "content_type": "DATASET",
             }
         )
 
@@ -286,12 +294,13 @@ class CoreBlocksTestCase(TestCase):
             value.get_related_link(),
             {
                 "title": {"url": self.home_page.url, "text": self.home_page.title},
+                "metadata": {"object": {"text": "Dataset"}},
             },
         )
 
     def test_relatedlinksblock__get_context(self):
         """Check that RelatedLinksBlock heading and slug are in the context."""
-        block = RelatedLinksBlock()
+        block = RelatedLinksBlock(add_heading=True)
         value = block.to_python(
             [
                 {
@@ -308,13 +317,25 @@ class CoreBlocksTestCase(TestCase):
         self.assertEqual(
             context["related_links"],
             [
-                {"title": {"url": "https://ons.gov.uk", "text": "Example"}, "description": "A link"},
+                {
+                    "title": {"url": "https://ons.gov.uk", "text": "Example"},
+                    "description": "A link",
+                    "metadata": {"object": {"text": "Article"}},
+                },
             ],
         )
 
+        block_no_heading = RelatedLinksBlock()
+
+        context = block_no_heading.get_context(value)
+
+        self.assertNotIn("heading", context)
+        self.assertNotIn("slug", context)
+        self.assertIn("related_links", context)
+
     def test_relatedlinksblock__toc(self):
         """Check the RelatedLinksBlock TOC."""
-        block = RelatedLinksBlock()
+        block = RelatedLinksBlock(add_heading=True)
         self.assertEqual(
             block.to_table_of_contents_items(block.to_python([])), [{"url": "#related-links", "text": "Related links"}]
         )

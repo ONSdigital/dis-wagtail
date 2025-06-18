@@ -1,4 +1,5 @@
 import io
+from datetime import date, datetime
 from threading import Lock
 from typing import TYPE_CHECKING, Any, Optional, TypedDict
 
@@ -8,6 +9,8 @@ from django.db.models import QuerySet
 from django.utils.formats import date_format
 from django.utils.translation import gettext_lazy as _
 from matplotlib.figure import Figure
+
+from cms.core.enums import RelatedContentType
 
 matplotlib_lock = Lock()
 
@@ -25,6 +28,7 @@ mpl.rcParams.update(
 
 if TYPE_CHECKING:
     from django.http import HttpRequest
+    from django_stubs_ext import StrOrPromise
     from wagtail.models import Page
 
 
@@ -54,14 +58,51 @@ def get_formatted_pages_list(
             "description": getattr(page, "listing_summary", "") or getattr(page, "summary", ""),
         }
         if release_date := page.release_date:
-            datum["metadata"]["date"] = {
-                "prefix": _("Released"),
-                "showPrefix": True,
-                "iso": date_format(release_date, "c"),
-                "short": date_format(release_date, "DATE_FORMAT"),
-            }
+            datum["metadata"]["date"] = get_document_metadata_date(release_date, _("Released"))
         data.append(datum)
     return data
+
+
+def get_document_metadata_date(value: date | datetime | str, prefix: "StrOrPromise") -> dict[str, Any]:
+    """Returns a dictionary with formatted date information for the document metadata."""
+    return {
+        "prefix": prefix,
+        "showPrefix": True,
+        "iso": date_format(value, "c"),
+        "short": date_format(value, "DATE_FORMAT"),
+    }
+
+
+def get_document_metadata(
+    content_type: "StrOrPromise", date_value: date | datetime | str | None, prefix: "StrOrPromise"
+) -> dict[str, Any]:
+    """Returns a dictionary with formatted metadata information for the document."""
+    metadata = {
+        "object": {"text": content_type},
+    }
+
+    if date_value:
+        metadata["date"] = get_document_metadata_date(date_value, prefix)
+
+    return metadata
+
+
+def get_content_type_for_page(page: "Page") -> "StrOrPromise":
+    """Returns the content type for a given page."""
+    display_name = page.page_type_display_name
+    match display_name:
+        case "Methodology page":
+            return RelatedContentType.METHODOLOGY.label
+        case "Topic page":
+            return RelatedContentType.TOPIC.label
+        case _:
+            return RelatedContentType.ARTICLE.label
+
+
+def get_related_content_type_label(content_type: str) -> str:
+    """Returns the label for a given related content type."""
+    label: str = getattr(RelatedContentType, content_type).label
+    return label
 
 
 def get_client_ip(request: "HttpRequest") -> str | None:
