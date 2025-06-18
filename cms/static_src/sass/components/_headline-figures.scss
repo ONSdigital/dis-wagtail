@@ -1,8 +1,0 @@
-@use 'config' as *;
-
-// To be replaced by ONS grid sizing classes
-.headline-figures {
-    &__grid {
-        row-gap: rem-sizing(24);
-    }
-}

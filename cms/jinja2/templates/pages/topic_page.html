@@ -23,9 +23,9 @@
     {# fmt:on #}
 
     {% if page.headline_figures %}
-        <div class="ons-container headline-figures">
+        <div class="ons-container">
             <h2 class="ons-u-fs-m ons-u-mb-s">{{ _("Headline facts and figures") }}</h2>
-            <div class="ons-grid ons-grid-flex-gap ons-grid-flex-gap--24 headline-figures__grid">
+            <div class="ons-grid ons-grid-flex-gap ons-grid-flex-gap--l">
                 {% for figure in page.headline_figures %}
                     <div class="ons-grid__col ons-grid__col--flex-col ons-grid__col--stretch">{% include_block figure %}</div>
                 {% endfor %}
@@ -35,7 +35,7 @@
 {% endblock %}
 
 {% block main %}
-    <div class="ons-grid ons-grid-flex-gap ons-grid-flex-gap--32 ons-js-toc-container">
+    <div class="ons-grid ons-grid-flex-gap ons-grid-flex-gap--xl ons-js-toc-container">
         <div class="ons-grid__col ons-grid__col--sticky@m ons-col-4@m">
             {% with toc_title=_("Contents"), toc_aria_label=_("Sections in this page") %}
 

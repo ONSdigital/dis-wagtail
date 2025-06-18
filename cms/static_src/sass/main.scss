@@ -12,7 +12,6 @@ Don't add css code directly to this file, add it to the relevant component file 
 @use 'components/chart-embed';
 @use 'components/contact-details';
 @use 'components/featured-article';
-@use 'components/headline-figures';
 @use 'components/panel';
 @use 'components/release-header';
 @use 'components/rich-text';
@@ -25,5 +24,4 @@ Don't add css code directly to this file, add it to the relevant component file 
 @use 'components/design_system_overrides/container';
 @use 'components/design_system_overrides/grid';
 @use 'components/design_system_overrides/header';
-@use 'components/design_system_overrides/page';
 @use 'components/design_system_overrides/toc';
