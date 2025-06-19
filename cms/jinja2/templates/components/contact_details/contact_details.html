@@ -1,38 +1,64 @@
 {% from "components/text-indent/_macro.njk" import onsTextIndent %}
+{% from "components/description-list/_macro.njk" import onsDescriptionList %}
+
 
 {% if contact_details %}
     <section id="contact-details" class="spacing">
         <h2 class="ons-u-fs-l">{{ _("Contact details") }}</h2>
 
         {% call onsTextIndent() %}
-            <dl>
-                <div class="contact-details__item">
-                    <dt class="contact-details__term">
-                        <strong>Name</strong>:
-                    </dt>
-                    <dd class="contact-details__desc">
-                        {{ contact_details.name }}
-                    </dd>
-                </div>
-                <div class="contact-details__item">
-                    <dt class="contact-details__term">
-                        <strong>Email</strong>:
-                    </dt>
-                    <dd class="contact-details__desc">
-                        <a href="mailto:{{ contact_details.email }}">{{ contact_details.email }}</a>
-                    </dd>
-                </div>
+            {% set contact_name_label = _("Name") %}
+            {% set contact_email_label = _("Email") %}
+            {% set contact_email -%}
+                <a href="mailto:{{ contact_details.email }}">{{ contact_details.email }}</a>
+            {% endset -%}
+            {# fmt:off #}
                 {% if contact_details.phone %}
-                    <div class="contact-details__item">
-                        <dt class="contact-details__term">
-                            <strong>Telephone</strong>:
-                        </dt>
-                        <dd class="contact-details__desc">
-                            <a href="tel:{{ contact_details.phone|urlencode() }}">{{ contact_details.phone }}</a>
-                        </dd>
-                    </div>
+                    {% set contact_phone_label = _("Telephone") %}
+                    {% set contact_phone -%}
+                        <a href="tel:{{ contact_details.phone|urlencode() }}">{{ contact_details.phone }}</a>
+                    {%- endset %}
+                    {%- set contact_phone_html = {
+                            "term": contact_phone_label,
+                            "descriptions": [
+                                {
+                                    "description": contact_phone
+                                }
+                            ]
+                        }
+                    %}
+                {% else %}
+                    {%-set contact_phone_html = None %}
                 {% endif %}
-            </dl>
+            {# fmt:on #}
+
+            {{
+                onsDescriptionList({
+                    "classes": "ons-u-mb-no",
+                    "descriptionListLabel": "Information about this business and its survey requirements",
+                    "termCol": "2",
+                    "descriptionCol": "10",
+                    "itemsList": [
+                        {
+                            "term": contact_name_label,
+                            "descriptions": [
+                                {
+                                    "description": contact_details.name
+                                }
+                            ]
+                        },
+                        {
+                            "term": contact_email_label,
+                            "descriptions": [
+                                {
+                                    "description": contact_email
+                                }
+                            ]
+                        },
+                        contact_phone_html
+                    ]
+                })
+            }}
         {% endcall %}
     </section>
 {% endif %}
