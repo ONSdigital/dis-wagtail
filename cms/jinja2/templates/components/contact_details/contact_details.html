@@ -11,7 +11,7 @@
             {% set contact_email_label = _("Email") %}
             {% set contact_email -%}
                 <a href="mailto:{{ contact_details.email }}">{{ contact_details.email }}</a>
-            {% endset -%}
+            {%- endset %}
             {# fmt:off #}
                 {% if contact_details.phone %}
                     {% set contact_phone_label = _("Telephone") %}
@@ -26,12 +26,11 @@
                                 }
                             ]
                         }
-                    %}
+                    -%}
                 {% else %}
-                    {%-set contact_phone_html = None %}
+                    {% set contact_phone_html = None %}
                 {% endif %}
             
-
                 {{
                     onsDescriptionList({
                         "classes": "ons-u-mb-no",
