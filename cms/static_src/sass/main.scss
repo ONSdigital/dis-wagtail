@@ -3,7 +3,7 @@ Don't add css code directly to this file, add it to the relevant component file 
 
 // New components not yet in the design system
 @use 'components/accreditations';
-@use 'components/article-header';
+// @use 'components/article-header';
 @use 'components/button-nav';
 @use 'components/census-logo';
 @use 'components/common-header';
@@ -13,17 +13,17 @@ Don't add css code directly to this file, add it to the relevant component file 
 @use 'components/contact-details';
 @use 'components/featured-article';
 @use 'components/headline-figures';
-@use 'components/panel';
-@use 'components/release-header';
+// @use 'components/panel';
+// @use 'components/release-header';
 @use 'components/rich-text';
 @use 'components/spacing';
-@use 'components/topic-header';
+// @use 'components/topic-header';
 
 // ONS design system overrides (until these are no longer needed)
 @use 'components/design_system_overrides/back-to-top';
 @use 'components/design_system_overrides/button';
 @use 'components/design_system_overrides/container';
 @use 'components/design_system_overrides/grid';
-@use 'components/design_system_overrides/header';
-@use 'components/design_system_overrides/page';
-@use 'components/design_system_overrides/toc';
+// @use 'components/design_system_overrides/header';
+// @use 'components/design_system_overrides/page';
+// @use 'components/design_system_overrides/toc';
