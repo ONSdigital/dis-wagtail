@@ -30,35 +30,36 @@
                 {% else %}
                     {%-set contact_phone_html = None %}
                 {% endif %}
-            {# fmt:on #}
+            
 
-            {{
-                onsDescriptionList({
-                    "classes": "ons-u-mb-no",
-                    "descriptionListLabel": "Information about this business and its survey requirements",
-                    "termCol": "2",
-                    "descriptionCol": "10",
-                    "itemsList": [
-                        {
-                            "term": contact_name_label,
-                            "descriptions": [
-                                {
-                                    "description": contact_details.name
-                                }
-                            ]
-                        },
-                        {
-                            "term": contact_email_label,
-                            "descriptions": [
-                                {
-                                    "description": contact_email
-                                }
-                            ]
-                        },
-                        contact_phone_html
-                    ]
-                })
-            }}
+                {{
+                    onsDescriptionList({
+                        "classes": "ons-u-mb-no",
+                        "descriptionListLabel": "Information about this business and its survey requirements",
+                        "termCol": "2",
+                        "descriptionCol": "10",
+                        "itemsList": [
+                            {
+                                "term": contact_name_label,
+                                "descriptions": [
+                                    {
+                                        "description": contact_details.name
+                                    }
+                                ]
+                            },
+                            {
+                                "term": contact_email_label,
+                                "descriptions": [
+                                    {
+                                        "description": contact_email
+                                    }
+                                ]
+                            },
+                            contact_phone_html
+                        ]
+                    })
+                }}
+            {# fmt:on #}
         {% endcall %}
     </section>
 {% endif %}
