@@ -228,7 +228,7 @@ class PublishingAdminPermissionsTestCase(BaseGroupPermissionTestCase):
         self.check_and_remove_from_user_permissions_helper("core", "socialmediasettings", "change")
         self.check_and_remove_from_user_permissions_helper("wagtailcore", "logentry", "view")
 
-        self.check_and_remove_from_user_permissions_helper("release_calendar", "notice", "remove")
+        self.check_and_remove_from_user_permissions_helper("release_calendar", "notice", "modify")
 
         # Check that there are no other unexpected permissions
         self.assertListEqual([], self.user_permissions)
