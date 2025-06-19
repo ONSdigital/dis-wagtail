@@ -30,6 +30,7 @@ if TYPE_CHECKING:
     from django.http import HttpResponseBase
     from django.template.response import TemplateResponse
     from django.utils.safestring import SafeString
+    from wagtail.models import Page
 
     from cms.bundles.models import BundlesQuerySet
 
@@ -223,29 +224,44 @@ class BundleInspectView(InspectView):
     def get_release_calendar_page_display_value(self) -> str:
         """Returns the release calendar page link if it exists."""
         if self.object.release_calendar_page:
+            if self.object.status == BundleStatus.PUBLISHED:
+                url = self.object.release_calendar_page.get_url(request=self.request)
+            else:
+                url = reverse("bundles:preview_release_calendar", args=[self.object.pk])
+
             return format_html(
                 '<a href="{}" target="_blank" rel="noopener">{}</a>',
-                reverse("bundles:preview_release_calendar", args=[self.object.pk]),
+                url,
                 self.object.release_calendar_page.get_admin_display_title(),
             )
         return "N/A"
 
     def get_pages_for_manager(self) -> "SafeString":
-        pages = self.object.get_bundled_pages().specific()
+        pages = self.object.get_bundled_pages().specific().defer_streamfields()
+
+        def get_page_status(page: "Page") -> str:
+            if self.object.status == BundleStatus.PUBLISHED and page.live:
+                return "Published"
+            return page.current_workflow_state.current_task_state.task.name if page.current_workflow_state else "Draft"
+
+        def get_action(page: "Page") -> str:
+            if self.object.status == BundleStatus.PUBLISHED and page.live:
+                return str(page.get_url(request=self.request))
+            return reverse(
+                "bundles:preview",
+                args=(
+                    self.object.pk,
+                    page.pk,
+                ),
+            )
 
         data = (
             (
                 reverse("wagtailadmin_pages:edit", args=[page.pk]),
                 page.get_admin_display_title(),
                 page.get_verbose_name(),
-                (page.current_workflow_state.current_task_state.task.name if page.current_workflow_state else "Draft"),
-                reverse(
-                    "bundles:preview",
-                    args=(
-                        self.object.pk,
-                        page.pk,
-                    ),
-                ),
+                get_page_status(page),
+                get_action(page),
             )
             for page in pages
         )
