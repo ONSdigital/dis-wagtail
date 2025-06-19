@@ -251,30 +251,30 @@
                         }}
                         {# fmt:on #}
                     {% endwith %}
-        </div>
+                    </div>
 
-        <div class="ons-grid__col ons-col-8@m">
-            {% include_block page.content %}
+                    <div class="ons-grid__col ons-col-8@m">
+                        {% include_block page.content %}
 
-            {% if page.show_cite_this_page %}
-                <section id="cite-this-page" class="spacing">
-                    <h2 class="ons-u-fs-l">{{ _("Cite this analysis") }}</h2>
-                    <p>
-                        {%- set cite_link -%}
-                            <a href="{{ fullpageurl(page) }}">{{ page.display_title }}</a>
-                        {% endset %}
-                        {% trans trimmed release_date=page.release_date|date("DATE_FORMAT"), cite_link=cite_link %}
-                            Office for National Statistics (ONS), released {{ release_date }}, ONS website, statistical article, {{ cite_link }}
-                        {% endtrans %}
-                    </p>
-                </section>
-            {% endif %}
+                        {% if page.show_cite_this_page %}
+                            <section id="cite-this-page" class="spacing">
+                                <h2 class="ons-u-fs-l">{{ _("Cite this analysis") }}</h2>
+                                <p>
+                                    {%- set cite_link -%}
+                                        <a href="{{ fullpageurl(page) }}">{{ page.display_title }}</a>
+                                    {% endset %}
+                                    {% trans trimmed release_date=page.release_date|date("DATE_FORMAT"), cite_link=cite_link %}
+                                        Office for National Statistics (ONS), released {{ release_date }}, ONS website, statistical article, {{ cite_link }}
+                                    {% endtrans %}
+                                </p>
+                            </section>
+                        {% endif %}
 
-            {% if page.contact_details %}
-                {% with contact_details = page.contact_details%}
-                    {% include "templates/components/contact_details/contact_details.html" %}
-                {% endwith %}
-            {% endif %}
-        </div>
-    </div>
-{% endblock %}
+                        {% if page.contact_details %}
+                            {% with contact_details = page.contact_details%}
+                                {% include "templates/components/contact_details/contact_details.html" %}
+                            {% endwith %}
+                        {% endif %}
+                    </div>
+                    </div>
+                {% endblock %}
