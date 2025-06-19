@@ -4,7 +4,6 @@ from django.core.exceptions import ValidationError
 from django.urls import reverse
 from django.utils.html import format_html
 from wagtail.admin.forms import WagtailAdminPageForm
-from wagtail.blocks.stream_block import StreamValue
 from wagtail.models import Locale
 
 from cms.bundles.permissions import user_can_manage_bundles
@@ -72,7 +71,6 @@ class ReleaseCalendarPageAdminForm(WagtailAdminPageForm):
                     )
                 }
             )
-
         if (
             cleaned_data.get("release_date")
             and cleaned_data.get("next_release_date")
@@ -161,35 +159,3 @@ class ReleaseCalendarPageAdminForm(WagtailAdminPageForm):
             bundle_str,
         )
         raise ValidationError({"status": message})
-
-    def clean_changes_to_release_date(self) -> StreamValue:
-        changes_to_release_date: StreamValue = self.cleaned_data.get("changes_to_release_date")
-
-        old_frozen_versions = [
-            date_change_log.value["version_id"]
-            for date_change_log in self.instance.changes_to_release_date
-            if date_change_log.value["frozen"]
-        ]
-        new_frozen_versions = [
-            date_change_log.value["version_id"]
-            for date_change_log in changes_to_release_date
-            if date_change_log.value["frozen"]
-        ]
-
-        if old_frozen_versions != new_frozen_versions:
-            raise ValidationError("You cannot remove a change to release date that has already been published.")
-
-        new_date_change_log = None
-        latest_date_change_log_version = 0
-
-        for date_change_log in changes_to_release_date:
-            if not date_change_log.value["frozen"]:
-                if not new_date_change_log:
-                    new_date_change_log = date_change_log
-                latest_date_change_log_version = max(
-                    latest_date_change_log_version, date_change_log.value.get("version_id") or 0
-                )
-
-        if new_date_change_log and not new_date_change_log.value.get("version_id"):
-            new_date_change_log.value["version_id"] = latest_date_change_log_version + 1
-        return changes_to_release_date
