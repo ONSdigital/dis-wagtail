@@ -1,7 +1,14 @@
 @use 'config' as *;
 
 .contact-details {
-    &__line {
+    &__item {
         margin-bottom: 0;
+    }
+
+    &__term,
+    &__desc {
+        display: inline;
+        margin: 0;
+        padding: 0;
     }
 }

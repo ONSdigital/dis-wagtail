@@ -5,17 +5,34 @@
         <h2 class="ons-u-fs-l">{{ _("Contact details") }}</h2>
 
         {% call onsTextIndent() %}
-            <p class="contact-details__line">
-                <strong>Name</strong>: {{ contact_details.name }}
-            </p>
-            <p class="contact-details__line">
-                <strong>Email</strong>: <a href="mailto:{{ contact_details.email }}">{{ contact_details.email }}</a>
-            </p>
-            {% if contact_details.phone %}
-                <p class="contact-details__line">
-                    <strong>Telephone</strong>: <a href="tel:{{ contact_details.phone|urlencode() }}">{{ contact_details.phone }}</a>
-                </p>
-            {% endif %}
+            <dl>
+                <div class="contact-details__item">
+                    <dt class="contact-details__term">
+                        <strong>Name</strong>:
+                    </dt>
+                    <dd class="contact-details__desc">
+                        {{ contact_details.name }}
+                    </dd>
+                </div>
+                <div class="contact-details__item">
+                    <dt class="contact-details__term">
+                        <strong>Email</strong>:
+                    </dt>
+                    <dd class="contact-details__desc">
+                        <a href="mailto:{{ contact_details.email }}">{{ contact_details.email }}</a>
+                    </dd>
+                </div>
+                {% if contact_details.phone %}
+                    <div class="contact-details__item">
+                        <dt class="contact-details__term">
+                            <strong>Telephone</strong>:
+                        </dt>
+                        <dd class="contact-details__desc">
+                            <a href="tel:{{ contact_details.phone|urlencode() }}">{{ contact_details.phone }}</a>
+                        </dd>
+                    </div>
+                {% endif %}
+            </dl>
         {% endcall %}
     </section>
 {% endif %}
