@@ -1,28 +1,88 @@
 {% extends "templates/base_page.html" %}
 
+{% from "components/document-list/_macro.njk" import onsDocumentList %}
+{% from "components/hero/_macro.njk" import onsHero %}
+{% from "components/pagination/_macro.njk" import onsPagination %}
+
+{%- set page_title -%}
+    {% trans trimmed title=page.title %}Previous releases for {{ title }}{% endtrans %}
+{%- endset -%}
+
+{%- block header_area %}
+    {%- set hero_topic = _("Previous Releases") -%}
+    {%- set hero_title = page.title ~ " " ~ _("Statistical articles") -%}
+    {%- set breadcrumbs_aria_label = _("Breadcrumbs") -%}
+
+    {# fmt:off #}
+    {{-
+        onsHero({
+            "topic": hero_topic,
+            "title": hero_title,
+            "variants": 'grey',
+            "text": page.summary,
+            "wide": true,
+            "detailsColumns": 12,
+            "breadcrumbs": {
+                "ariaLabel": breadcrumbs_aria_label,
+                "itemsList": breadcrumbs(page, include_self=True),
+            }
+        })
+    -}}
+    {# fmt:on #}
+{% endblock -%}
+
 {% block main %}
-    <h1>{{ _("Previous Releases") }}</h1>
-    <ul>
-        {% for page in pages %}
-            <li><a href="{{ pageurl(page) }}">{{ page.title }}</a> - {{ page.release_date }}</li>
-        {% else %}
-            <p>{{ _("There are currently no releases") }}</p>
-        {% endfor %}
-    </ul>
+    <div class="ons-grid">
+        <div class="ons-grid__col ons-col-8@m">
+            {# using namespaced variable here so we can update previous_release_pages inside the pages loop #}
+            {%- set releases = namespace(previous_release_pages=[]) -%}
+            {%- set page_date_prefix = _("Released") -%}
 
-    {% block pagination %}
-        {% from "components/pagination/_macro.njk" import onsPagination %}
-        {% if pages.paginator.num_pages > 1 %}
+            {%- if pages %}
+                {%- for page in pages %}
+                    {% if loop.first %}
+                        {%- set page_meta_text = _("Latest release") -%}
+                    {% else %}
+                        {%- set page_meta_text = None -%}
+                    {% endif %}
 
-{# fmt:off #}
-            {{
-            onsPagination({
-            "currentPageNumber": pages.number ,
-            "pages": ons_pagination_url_list
-            })
-            }}
-        {# fmt:on #}
-        {% endif %}
-    {% endblock %}
+                    {# fmt:off #}
+                    {# update previous_release_pages array with page data on each iteration #}
+                    {%- set releases.previous_release_pages = releases.previous_release_pages + [ {
+                        "title": {
+                            "text": page.get_admin_display_title(),
+                            "url": pageurl(page)
+                        },
+                        "metadata": {
+                            "object": {
+                                "text": page_meta_text,
+                            },
+                            "date": {
+                                "prefix": page_date_prefix,
+                                "showPrefix": true,
+                                "iso": page.release_date,
+                                "short": page.release_date | ons_date("DATE_FORMAT")
+                            },
+                        }
+                    } ] -%}
+                    {# fmt:on #}
+                {% endfor -%}
 
+                {{ onsDocumentList({ "documents": releases.previous_release_pages }) }}
+            {% else %}
+                <p>{{ _("There are currently no releases") }}</p>
+            {% endif -%}
+
+            {%- block pagination %}
+                {%- if pages.paginator.num_pages > 1 %}
+                    {{-
+                    onsPagination({
+                    "currentPageNumber": pages.number,
+                    "pages": ons_pagination_url_list
+                    })
+                    -}}
+                {% endif -%}
+            {% endblock -%}
+        </div>
+    </div>
 {% endblock %}

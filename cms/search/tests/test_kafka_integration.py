@@ -3,7 +3,7 @@ import logging
 import time
 
 from django.conf import settings
-from django.test import TestCase, override_settings
+from django.test import TestCase
 from kafka import KafkaConsumer
 
 from cms.search.publishers import KafkaPublisher
@@ -11,10 +11,6 @@ from cms.search.utils import build_page_uri
 from cms.standard_pages.tests.factories import InformationPageFactory
 
 
-@override_settings(
-    KAFKA_CHANNEL_CREATED_OR_UPDATED="search-content-updated",
-    KAFKA_CHANNEL_DELETED="search-content-deleted",
-)
 class KafkaIntegrationTests(TestCase):
     """These tests will attempt to connect to a real Kafka instance at localhost:9092."""
 
@@ -26,7 +22,7 @@ class KafkaIntegrationTests(TestCase):
         # so we can verify messages that come in.
         cls.consumer_created = KafkaConsumer(
             "search-content-updated",
-            bootstrap_servers=[settings.KAFKA_SERVER],
+            bootstrap_servers=settings.KAFKA_SERVERS,
             auto_offset_reset="earliest",
             enable_auto_commit=True,
             group_id="test-group-created-updated",
@@ -34,7 +30,7 @@ class KafkaIntegrationTests(TestCase):
 
         cls.consumer_deleted = KafkaConsumer(
             "search-content-deleted",
-            bootstrap_servers=[settings.KAFKA_SERVER],
+            bootstrap_servers=settings.KAFKA_SERVERS,
             auto_offset_reset="earliest",
             enable_auto_commit=True,
             group_id="test-group-deleted",

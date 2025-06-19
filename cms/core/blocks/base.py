@@ -14,8 +14,7 @@ from wagtail.blocks import (
 class LinkBlockStructValue(StructValue):
     """Custom StructValue for link blocks."""
 
-    @cached_property
-    def link(self) -> dict | None:
+    def get_link(self, context: dict | None = None) -> dict[str, str] | None:
         """A convenience property that returns the block value in a consistent way,
         regardless of the chosen values (be it a Wagtail page or external link).
         """
@@ -30,11 +29,33 @@ class LinkBlockStructValue(StructValue):
                 value["description"] = desc
 
         if (page := self.get("page")) and page.live:
-            value = {"url": page.url, "text": title or page.title}
+            value = {
+                "url": page.get_url(request=context.get("request") if context else None),
+                "text": title or page.title,
+            }
             if has_description:
                 value["description"] = desc or getattr(page.specific_deferred, "summary", "")
 
         return value
+
+    def get_related_link(self, context: dict | None = None) -> dict[str, dict[str, str] | str] | None:
+        """Returns the required structure for the related link DS component.
+
+        Ref: https://service-manual.ons.gov.uk/design-system/components/document-list
+        """
+        if link := self.get_link(context=context):
+            related_link: dict[str, dict[str, str] | str] = {
+                "title": {"text": link["text"], "url": link["url"]},
+            }
+            if description := link.get("description", ""):
+                related_link["description"] = description
+
+            return related_link
+        return None
+
+    @cached_property
+    def link(self) -> dict | None:
+        return self.get_link()
 
 
 class LinkBlock(StructBlock):

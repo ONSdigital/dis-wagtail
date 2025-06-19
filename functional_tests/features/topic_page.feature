@@ -85,3 +85,12 @@ Feature: CMS users can draft, edit, and publish topic pages
         And the user clicks "Publish"
         And the user views the topic page
         Then the published topic page has the added headline figures in the correct order
+
+    Scenario: A CMS user can add datasets to a topic page
+        Given a superuser logs into the admin site
+        And a topic page exists under a theme page
+        When the user edits the topic page
+        And looks up and selects a dataset
+        And the user clicks "Publish"
+        And the user views the topic page
+        Then the selected datasets are displayed on the page
