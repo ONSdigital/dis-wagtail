@@ -405,6 +405,8 @@ class StatisticalArticlePage(BundledPageMixin, RoutablePageMixin, BasePage):  # 
         except (EmptyPage, PageNotAnInteger) as e:
             raise Http404 from e
 
+        request.breadcrumbs_include_self = True  # type: ignore[attr-defined]
+
         response: TemplateResponse = self.render(
             request,
             context_overrides={
@@ -423,21 +425,6 @@ class StatisticalArticlePage(BundledPageMixin, RoutablePageMixin, BasePage):  # 
         if mode_name == "related_data":
             return cast("TemplateResponse", self.related_data(request))
         return cast("TemplateResponse", super().serve_preview(request, mode_name))
-
-    def get_breadcrumbs(self, request: Optional["HttpRequest"] = None) -> list[dict[str, object]]:
-        """Append this page to the breadcrumbs if the request is for the related data sub-route."""
-        breadcrumbs = super().get_breadcrumbs(request)
-        if request and self.is_request_for_related_data(request):
-            breadcrumbs.append({"url": self.get_url(request=request), "text": self.title})
-        return breadcrumbs
-
-    def is_request_for_related_data(self, request: "HttpRequest") -> bool:
-        """Check if the request is for the related data route."""
-        if routable_resolver_match := request.routable_resolver_match:
-            return routable_resolver_match.view_name == "related_data"
-        if preview_mode := request.preview_mode:
-            return preview_mode == "related_data"
-        return False
 
     def ld_entity(self) -> dict[str, object]:
         """Add statistical article specific schema properties to JSON LD."""

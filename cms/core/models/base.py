@@ -150,6 +150,8 @@ class BasePage(PageLDMixin, ListingFieldsMixin, SocialFieldsMixin, Page):  # typ
                 breadcrumbs.append({"url": "/", "text": _("Home")})
             elif not getattr(ancestor_page, "exclude_from_breadcrumbs", False):
                 breadcrumbs.append({"url": ancestor_page.get_url(request=request), "text": ancestor_page.title})
+        if request and getattr(request, "breadcrumbs_include_self", False):
+            breadcrumbs.append({"url": self.get_url(request=request), "text": self.title})
         return breadcrumbs
 
     @cached_property
