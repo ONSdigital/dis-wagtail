@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-06-03 13:53+0100\n"
+"POT-Creation-Date: 2025-06-19 15:02+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -19,16 +19,16 @@ msgstr ""
 "Plural-Forms: nplurals=4; plural=(n==1) ? 0 : (n==2) ? 1 : (n != 8 && n != "
 "11) ? 2 : 3;\n"
 
-#: cms/articles/models.py:114
+#: cms/articles/models.py:115
 #: cms/jinja2/templates/components/featured/featured-article.html:11
 msgid "Article"
 msgstr ""
 
-#: cms/articles/models.py:323
+#: cms/articles/models.py:326
 msgid "Cite this article"
 msgstr ""
 
-#: cms/articles/models.py:325
+#: cms/articles/models.py:328
 #: cms/jinja2/templates/components/contact_details/contact_details.html:5
 #: cms/methodology/models.py:156 cms/release_calendar/models.py:213
 msgid "Contact details"
@@ -76,15 +76,15 @@ msgstr "Mae'r holl gynnwys ar gael o dan delerau'r"
 msgid ", except where otherwise stated"
 msgstr ", ac eithrio lle y nodir fel arall"
 
-#: cms/jinja2/templates/base_page.html:46
+#: cms/jinja2/templates/base_page.html:50
 msgid "in English"
 msgstr ""
 
-#: cms/jinja2/templates/base_page.html:47
+#: cms/jinja2/templates/base_page.html:51
 msgid "in Welsh"
 msgstr "yn y Gymraeg"
 
-#: cms/jinja2/templates/base_page.html:54
+#: cms/jinja2/templates/base_page.html:58
 #, python-format
 msgid ""
 "This page is currently not available %(in_language)s. It is displayed in its "
@@ -102,7 +102,7 @@ msgid "This release includes data from Census 2021"
 msgstr ""
 
 #: cms/jinja2/templates/components/navigation/breadcrumbs.html:9
-#: cms/navigation/templatetags/navigation_tags.py:144
+#: cms/navigation/templatetags/navigation_tags.py:142
 msgid "Home"
 msgstr "Hafan"
 
@@ -111,12 +111,12 @@ msgid "Correction"
 msgstr ""
 
 #: cms/jinja2/templates/components/streamfield/correction_block.html:9
-#: megalinter-reports/updated_sources/cms/jinja2/templates/components/streamfield/correction_block.html:7
 msgid "View superseded version"
 msgstr ""
 
 #: cms/jinja2/templates/components/streamfield/datasets_block.html:2
-#: cms/release_calendar/models.py:207
+#: cms/jinja2/templates/pages/topic_page.html:98
+#: cms/release_calendar/models.py:207 cms/topics/models.py:247
 msgid "Data"
 msgstr ""
 
@@ -418,24 +418,24 @@ msgstr ""
 msgid "Theme"
 msgstr ""
 
-#: cms/jinja2/templates/pages/topic_page.html:7 cms/topics/models.py:77
+#: cms/jinja2/templates/pages/topic_page.html:7 cms/topics/models.py:78
 msgid "Topic"
 msgstr ""
 
-#: cms/jinja2/templates/pages/topic_page.html:62 cms/topics/models.py:230
+#: cms/jinja2/templates/pages/topic_page.html:62 cms/topics/models.py:239
 msgid "Featured"
 msgstr ""
 
-#: cms/jinja2/templates/pages/topic_page.html:72 cms/topics/models.py:232
+#: cms/jinja2/templates/pages/topic_page.html:72 cms/topics/models.py:241
 msgid "Related articles"
 msgstr ""
 
-#: cms/jinja2/templates/pages/topic_page.html:79 cms/topics/models.py:234
+#: cms/jinja2/templates/pages/topic_page.html:85 cms/topics/models.py:243
 msgid "Methods and quality information"
 msgstr ""
 
-#: cms/jinja2/templates/pages/topic_page.html:86 cms/topics/models.py:236
-#: cms/topics/tests/test_models.py:128
+#: cms/jinja2/templates/pages/topic_page.html:111 cms/topics/models.py:245
+#: cms/topics/tests/test_models.py:140
 msgid "Explore more"
 msgstr ""
 
@@ -451,17 +451,17 @@ msgstr "Methodoleg"
 msgid "Related publications"
 msgstr ""
 
-#: cms/settings/base.py:351
+#: cms/settings/base.py:357
 msgid "English"
 msgstr ""
 
-#: cms/settings/base.py:352
+#: cms/settings/base.py:358
 msgid "Welsh"
 msgstr "Cymraeg"
 
-#: cms/settings/base.py:353
+#: cms/settings/base.py:359
 msgid "Ukrainian"
 msgstr ""
 
-msgid "To be confirmed"
-msgstr "I'w gadarnhau"
+#~ msgid "To be confirmed"
+#~ msgstr "I'w gadarnhau"
