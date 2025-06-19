@@ -11,8 +11,8 @@ def create_notice_deletion_permissions(apps, schema_editor):
     content_type = ContentType.objects.get_for_model(model_class)
     permission, _was_created = Permission.objects.get_or_create(
         content_type=content_type,
-        codename="remove_notice",
-        defaults={"name": "Can remove notice"},
+        codename="modify_notice",
+        defaults={"name": "Can modify notice"},
     )
     group = Group.objects.get(name=settings.PUBLISHING_ADMINS_GROUP_NAME)
 

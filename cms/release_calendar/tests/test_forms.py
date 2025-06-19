@@ -320,6 +320,7 @@ class ReleaseCalendarPageAdminFormTestCase(WagtailTestUtils, TestCase):
         """Checks that the notice cannot be removed from a release calendar page."""
         self.page.status = ReleaseStatus.PROVISIONAL
         self.page.notice = "Lorem ipsum"
+        self.page.save_revision().publish()
         data = self.form_data
         data["notice"] = None
 
@@ -329,7 +330,18 @@ class ReleaseCalendarPageAdminFormTestCase(WagtailTestUtils, TestCase):
         self.assertFormError(
             form,
             "notice",
-            ["You cannot remove the notice from a release calendar page."],
+            ["You cannot remove or edit a published notice from a release calendar page."],
+        )
+
+        data["notice"] = rich_text("Foobar")
+
+        form = self.form_class(instance=self.page, data=data, for_user=self.publishing_officer)
+
+        self.assertFalse(form.is_valid())
+        self.assertFormError(
+            form,
+            "notice",
+            ["You cannot remove or edit a published notice from a release calendar page."],
         )
 
         # Check that the notice can be removed by a publishing admin.
