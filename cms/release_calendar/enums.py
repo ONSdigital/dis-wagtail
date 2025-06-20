@@ -17,3 +17,5 @@ NON_PROVISIONAL_STATUS_CHOICES = [
     (ReleaseStatus[choice].value, ReleaseStatus[choice].label)  # type: ignore[misc]
     for choice in NON_PROVISIONAL_STATUSES
 ]
+
+LOCKED_STATUS_STATUSES = [ReleaseStatus.CANCELLED, ReleaseStatus.PUBLISHED]
