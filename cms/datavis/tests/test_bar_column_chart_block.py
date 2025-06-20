@@ -1,4 +1,4 @@
-from typing import cast
+from typing import NamedTuple, cast
 from unittest import mock
 
 from django.core.exceptions import ValidationError
@@ -107,12 +107,157 @@ class BarColumnChartBlockTestCase(BaseChartBlockTestCase):
         self.assertEqual(None, config["yAxis"]["title"])
 
     def test_show_data_labels(self):
-        for show_data_labels in [False, True]:
-            with self.subTest(show_data_labels=show_data_labels):
-                self.raw_data["show_data_labels"] = show_data_labels
+        self.assertEqual(
+            2,
+            BarColumnChartBlock.MAX_SERIES_COUNT_WITH_DATA_LABELS,
+            msg="Max number of series with data labels is hardcoded. Update this test if the value changes.",
+        )
+
+        class Case(NamedTuple):
+            chart_type: BarColumnChartTypeChoices
+            show_data_labels: bool
+            series_count: int
+            stacked: bool
+            expected_data_labels: bool
+
+        cases = (
+            # Data labels are supported on non-stacked bar charts with 1 or 2 series
+            Case(
+                BarColumnChartTypeChoices.BAR,
+                True,
+                1,
+                False,
+                True,
+            ),
+            Case(
+                BarColumnChartTypeChoices.BAR,
+                True,
+                2,
+                False,
+                True,
+            ),
+            # Don't show data labels on stacked bar charts
+            Case(
+                BarColumnChartTypeChoices.BAR,
+                True,
+                1,
+                True,
+                False,
+            ),
+            Case(
+                BarColumnChartTypeChoices.BAR,
+                True,
+                2,
+                True,
+                False,
+            ),
+            # Don't show data labels if there are three or more series
+            Case(
+                BarColumnChartTypeChoices.BAR,
+                True,
+                3,
+                False,
+                False,
+            ),
+            # Don't show data labels if the option is not checked.
+            # The five cases below otherwise repeat the previous five.
+            Case(
+                BarColumnChartTypeChoices.BAR,
+                False,
+                1,
+                False,
+                False,
+            ),
+            Case(
+                BarColumnChartTypeChoices.BAR,
+                False,
+                2,
+                False,
+                False,
+            ),
+            Case(
+                BarColumnChartTypeChoices.BAR,
+                False,
+                1,
+                True,
+                False,
+            ),
+            Case(
+                BarColumnChartTypeChoices.BAR,
+                False,
+                2,
+                True,
+                False,
+            ),
+            Case(
+                BarColumnChartTypeChoices.BAR,
+                False,
+                3,
+                False,
+                False,
+            ),
+            # Don't show data labels on column charts.
+            # The five cases below repeat the previous five, but for column charts.
+            Case(
+                BarColumnChartTypeChoices.COLUMN,
+                True,
+                1,
+                False,
+                False,
+            ),
+            Case(
+                BarColumnChartTypeChoices.COLUMN,
+                True,
+                2,
+                False,
+                False,
+            ),
+            Case(
+                BarColumnChartTypeChoices.COLUMN,
+                True,
+                1,
+                True,
+                False,
+            ),
+            Case(
+                BarColumnChartTypeChoices.COLUMN,
+                True,
+                2,
+                True,
+                False,
+            ),
+            Case(
+                BarColumnChartTypeChoices.COLUMN,
+                True,
+                3,
+                False,
+                False,
+            ),
+        )
+
+        for testcase in cases:
+            with self.subTest(case=testcase):
+                self.raw_data["select_chart_type"] = testcase.chart_type
+                self.raw_data["show_data_labels"] = testcase.show_data_labels
+                self.raw_data["use_stacked_layout"] = testcase.stacked
+
+                # Build the table data
+                self.raw_data["table"] = TableDataFactory(
+                    table_data=[
+                        ["", *[f"Series {i}" for i in range(1, testcase.series_count + 1)]],
+                        ["2005", *["100"] * testcase.series_count],
+                        ["2006", *["120"] * testcase.series_count],
+                        ["2007", *["140"] * testcase.series_count],
+                    ]
+                )
+
                 config = self.get_component_config()
                 for item in config["series"]:
-                    self.assertEqual(show_data_labels, item["dataLabels"])
+                    match testcase.expected_data_labels:
+                        case True:
+                            self.assertEqual(True, item["dataLabels"])
+                        case False:
+                            self.assertNotIn("dataLabels", item)
 
     def test_no_show_markers_option(self):
         """Test that this option is not present for line charts."""
