@@ -13,7 +13,7 @@ if TYPE_CHECKING:
 class ContentSectionBlock(blocks.StructBlock):
     """A content section with list of links."""
 
-    title = blocks.CharBlock()
+    title = blocks.CharBlock(label="Section title")
     links = blocks.ListBlock(RelatedContentBlock())
 
     class Meta:
@@ -60,7 +60,10 @@ class ReleaseCalendarPreReleaseAccessStoryBlock(blocks.StreamBlock):
 
     class Meta:
         template = "templates/components/streamfield/stream_block.html"
-        block_counts: ClassVar[dict[str, dict[str, int]]] = {"description": {"max_num": 1}, "table": {"max_num": 1}}
+        block_counts: ClassVar[dict[str, dict[str, int]]] = {
+            "description": {"max_num": 1},
+            "table": {"max_num": 1},
+        }
 
 
 class ReleaseCalendarRelatedLinksStoryBlock(blocks.StreamBlock):
