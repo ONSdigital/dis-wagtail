@@ -44,6 +44,9 @@ class ReleaseCalendarPageAdminForm(WagtailAdminPageForm):
             # If the status is locked, disable the status field
             self.fields["status"].disabled = True
 
+        if self.instance.live_notice and not user_can_modify_notice(self.for_user):
+            self.fields["notice"].disabled = True
+
     def clean(self) -> dict:
         """Validate the submitted release calendar data."""
         cleaned_data: dict = super().clean()
@@ -56,15 +59,6 @@ class ReleaseCalendarPageAdminForm(WagtailAdminPageForm):
                 raise ValidationError({"notice": "The notice field is required when the release is cancelled"})
 
             self.validate_bundle_not_pending_publication(status)
-
-        if (
-            self.instance.live_notice
-            and notice != self.instance.live_notice
-            and not user_can_modify_notice(self.for_user)
-        ):
-            raise ValidationError(
-                {"notice": "You cannot remove or edit a published notice from a release calendar page."}
-            )
 
         if status != ReleaseStatus.PROVISIONAL:
             # Input field is hidden with custom JS for non-provisional releases,
@@ -107,6 +101,22 @@ class ReleaseCalendarPageAdminForm(WagtailAdminPageForm):
             self.validate_release_next_date_text_format(next_release_date_text, locale_code, cleaned_data)
 
         return cleaned_data
+
+    def clean_notice(self) -> str:
+        """Validate the notice field."""
+        notice: str = self.cleaned_data.get("notice", "")
+
+        if (
+            self.instance.live_notice
+            and notice != self.instance.live_notice
+            and not user_can_modify_notice(self.for_user)
+        ):
+            self.add_error(
+                "notice",
+                ValidationError("You cannot remove or edit a published notice from a release calendar page."),
+            )
+            notice = self.instance.live_notice
+        return notice
 
     def validate_release_date_text_format(self, text: str, locale: Locale) -> None:
         """Validates that the release_date_text follows the locale-specific format."""

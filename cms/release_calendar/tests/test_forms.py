@@ -326,31 +326,28 @@ class ReleaseCalendarPageAdminFormTestCase(WagtailTestUtils, TestCase):
 
         form = self.form_class(instance=self.page, data=data, for_user=self.publishing_officer)
 
-        self.assertFalse(form.is_valid())
-        self.assertFormError(
-            form,
-            "notice",
-            ["You cannot remove or edit a published notice from a release calendar page."],
-        )
+        # The form is valid because the notice field is disabled and defaults to the current notice value.
+        self.assertTrue(form.is_valid())
+        self.assertEqual(form.cleaned_data["notice"], "Lorem ipsum")
 
-        data["notice"] = rich_text("Foobar")
+        # Check that always the last published notice is used.
+        self.page.notice = "Foo bar"
+        self.page.save_revision().publish()
+        # Update the value used by the page instance so it differs from the published one.
+        self.page.notice = "Hello world"
 
         form = self.form_class(instance=self.page, data=data, for_user=self.publishing_officer)
 
+        # This scenario triggers the validation, because the notice field is disabled and
+        # defaults to the current notice value, not the published one. This makes the form invalid,
+        # but the validation function correctly returns the last published notice.
         self.assertFalse(form.is_valid())
-        self.assertFormError(
-            form,
-            "notice",
-            ["You cannot remove or edit a published notice from a release calendar page."],
-        )
+        self.assertEqual(form.cleaned_data["notice"], "Foo bar")
 
-        # Check that the notice can be removed by a publishing admin.
+        # A publishing officer can clear the notice.
         form = self.form_class(instance=self.page, data=data, for_user=self.publishing_admin)
         self.assertTrue(form.is_valid())
-
-        # Check that the notice can be removed by a superuser.
-        form = self.form_class(instance=self.page, data=data, for_user=self.superuser)
-        self.assertTrue(form.is_valid())
+        self.assertEqual(form.cleaned_data["notice"], "")
 
     def test_form_clean__prevents_from_leaving_locked_statuses(self):
         """Checks that the form prevents changing the status from a locked status."""
@@ -361,7 +358,7 @@ class ReleaseCalendarPageAdminFormTestCase(WagtailTestUtils, TestCase):
                 self.page.status = status
                 self.page.save_revision().publish()
                 data["status"] = ReleaseStatus.CONFIRMED
-                form = self.form_class(instance=self.page, data=data)
+                form = self.form_class(instance=self.page, data=data, for_user=self.superuser)
                 # Trigger the form validation.
                 form.is_valid()
                 # Check that the status cannot be changed from a locked status.
@@ -375,7 +372,7 @@ class ReleaseCalendarPageAdminFormTestCase(WagtailTestUtils, TestCase):
         self.page.save_revision()
         data["notice"] = rich_text("Lorem ipsum")
         data["status"] = ReleaseStatus.CONFIRMED
-        form = self.form_class(instance=self.page, data=data)
+        form = self.form_class(instance=self.page, data=data, for_user=self.superuser)
         # Trigger the form validation.
         form.is_valid()
         # Check that the status can be changed back to confirmed from a locked status in draft.
@@ -385,7 +382,7 @@ class ReleaseCalendarPageAdminFormTestCase(WagtailTestUtils, TestCase):
         self.page.status = ReleaseStatus.CANCELLED
         self.page.save_revision().publish()
 
-        form = self.form_class(instance=self.page, data=data)
+        form = self.form_class(instance=self.page, data=data, for_user=self.superuser)
         form.is_valid()
         # Check that the status cannot be changed from a locked status.
         self.assertEqual(form.cleaned_data["status"], ReleaseStatus.CANCELLED)
