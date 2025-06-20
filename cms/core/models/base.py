@@ -175,6 +175,13 @@ class BasePage(PageLDMixin, ListingFieldsMixin, SocialFieldsMixin, Page):  # typ
         """Add page breadcrumbs to the JSON LD properties."""
         return cast(dict[str, Any], extend(super().ld_entity(), self.breadcrumbs_as_jsonld))
 
+    def get_canonical_url(self, request: Optional["HttpRequest"] = None) -> str:
+        """Get the default canonical URL for the page."""
+        if aliased_page := self.alias_of:
+            # The canonical url should point to the original page, if this page is an alias
+            return cast(str, aliased_page.get_url(request=request))
+        return cast(str, self.get_url(request=request))
+
 
 class BaseSiteSetting(WagtailBaseSiteSetting):
     """A customized site setting.

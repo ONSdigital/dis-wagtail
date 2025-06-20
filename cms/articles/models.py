@@ -450,3 +450,15 @@ class StatisticalArticlePage(BundledPageMixin, RoutablePageMixin, BasePage):  # 
             },
         }
         return cast(dict[str, object], extend(super().ld_entity(), properties))
+
+    def get_canonical_url(self, request: Optional["HttpRequest"] = None) -> str:
+        """The the article page canonical URL.
+        If the article is the latest in the series, this will be the evergreen series URL.
+        """
+        canonical_page = self
+        if aliased_page := self.alias_of:
+            # The canonical url should point to the original page, if this page is an alias
+            canonical_page = aliased_page
+        if canonical_page.is_latest:
+            return cast(str, canonical_page.get_parent().get_url(request=request))
+        return super().get_canonical_url(request=request)
