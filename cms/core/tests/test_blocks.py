@@ -385,6 +385,7 @@ class GlossaryTermBlockTestCase(TestCase):
             context["formatted_glossary_terms"],
             [
                 {
+                    "headingLevel": 3,
                     "title": term.name,
                     "content": f'<div class="rich-text">{term.definition}</div>',
                 }

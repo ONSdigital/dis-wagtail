@@ -1,3 +1,9 @@
 {% from "components/document-list/_macro.njk" import onsDocumentList %}
 
-{{ onsDocumentList({"documents": macro_data}) }}
+{# fmt:off #}
+    {{ onsDocumentList({
+            "headingLevel": 3,
+            "documents": macro_data
+        }) 
+    }}
+{# fmt:on #}
