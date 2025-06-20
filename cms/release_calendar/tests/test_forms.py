@@ -344,7 +344,7 @@ class ReleaseCalendarPageAdminFormTestCase(WagtailTestUtils, TestCase):
         self.assertFalse(form.is_valid())
         self.assertEqual(form.cleaned_data["notice"], "Foo bar")
 
-        # A publishing officer can clear the notice.
+        # A publishing admin can clear the notice.
         form = self.form_class(instance=self.page, data=data, for_user=self.publishing_admin)
         self.assertTrue(form.is_valid())
         self.assertEqual(form.cleaned_data["notice"], "")
