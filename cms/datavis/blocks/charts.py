@@ -384,7 +384,12 @@ class BarColumnConfidenceIntervalChartBlock(BaseVisualisationBlock):
                 # [whisker min, box bottom, centre line, box top, whisker max].
                 # We do not render the whiskers, so we set them to the same as the
                 # box extents.
-                "data": [(row[2], row[2], row[1], row[3], row[3]) for row in value["table"].rows],
+                "data": [
+                    (row[2], row[2], row[1], row[3], row[3])
+                    if row[2] and row[3]
+                    else (row[1], row[1], row[1], row[1], row[1])
+                    for row in value["table"].rows
+                ],
             }
         ]
 
