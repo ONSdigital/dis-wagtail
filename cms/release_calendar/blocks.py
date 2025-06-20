@@ -2,7 +2,6 @@ from typing import TYPE_CHECKING, ClassVar
 
 from django.conf import settings
 from django.utils.text import slugify
-from django.utils.translation import gettext_lazy as _
 from wagtail import blocks
 
 from cms.core.blocks import BasicTableBlock, LinkBlock, RelatedContentBlock
@@ -14,7 +13,7 @@ if TYPE_CHECKING:
 class ContentSectionBlock(blocks.StructBlock):
     """A content section with list of links."""
 
-    title = blocks.CharBlock(label=_("Section title"))
+    title = blocks.CharBlock(label="Section title")
     links = blocks.ListBlock(RelatedContentBlock())
 
     class Meta:

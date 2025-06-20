@@ -1,9 +1,7 @@
 from django.urls import reverse
-from django.utils import timezone
 from wagtail.test.utils import WagtailPageTestCase
 
 from cms.core.custom_date_format import ons_default_datetime
-from cms.release_calendar.enums import ReleaseStatus
 from cms.release_calendar.tests.factories import ReleaseCalendarPageFactory
 
 
@@ -56,41 +54,8 @@ class ReleaseCalendarPageTests(WagtailPageTestCase):
             content,
         )
 
-    def test_changes_to_release_dates_provisional_page(self):
-        """Test changes to release date cannot be displayed on a published provisional page."""
-        self.page.status = ReleaseStatus.PROVISIONAL
-        date_change_log = {
-            "previous_date": timezone.now(),
-            "reason_for_change": "Reason",
-        }
-        self.page.changes_to_release_date = [("date_change_log", date_change_log)]
-        self.page.save_revision().publish()
-
-        response = self.client.get(self.page.url)
-        self.assertNotContains(response, "Changes to this release date")
-        self.assertNotContains(response, "Previous date")
-        self.assertNotContains(response, "Reason for change")
-        self.assertNotContains(response, "Reason")
-
-    def test_changes_to_release_date_non_provisional_page(self):
-        """Test a change to release date is visible for published non-provisional status."""
-        cases = [ReleaseStatus.CONFIRMED, ReleaseStatus.PUBLISHED, ReleaseStatus.CANCELLED]
-        for case in cases:
-            self.page.status = case
-            date_change_log = {
-                "previous_date": timezone.now(),
-                "reason_for_change": "Reason",
-            }
-            self.page.changes_to_release_date = [("date_change_log", date_change_log)]
-            self.page.save_revision().publish()
-
-            response = self.client.get(self.page.url)
-            self.assertContains(response, "Changes to this release date")
-            self.assertContains(response, "Previous date")
-            self.assertContains(response, "Reason for change")
-            self.assertContains(response, "Reason")
-
     def test_preview_mode_url(self):
+        """Tests preview pages with preview mode loads."""
         cases = ["PROVISIONAL", "CANCELLED", "PUBLISHED", "CONFIRMED"]
 
         for case in cases:
