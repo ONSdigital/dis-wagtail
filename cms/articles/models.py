@@ -13,6 +13,7 @@ from wagtail.contrib.routable_page.models import RoutablePageMixin, path
 from wagtail.fields import RichTextField
 from wagtail.models import Page
 from wagtail.search import index
+from wagtailschemaorg.utils import extend
 
 from cms.articles.enums import SortingChoices
 from cms.articles.forms import StatisticalArticlePageAdminForm
@@ -404,6 +405,8 @@ class StatisticalArticlePage(BundledPageMixin, RoutablePageMixin, BasePage):  # 
         except (EmptyPage, PageNotAnInteger) as e:
             raise Http404 from e
 
+        request.breadcrumbs_include_self = True  # type: ignore[attr-defined]
+
         response: TemplateResponse = self.render(
             request,
             context_overrides={
@@ -422,3 +425,40 @@ class StatisticalArticlePage(BundledPageMixin, RoutablePageMixin, BasePage):  # 
         if mode_name == "related_data":
             return cast("TemplateResponse", self.related_data(request))
         return cast("TemplateResponse", super().serve_preview(request, mode_name))
+
+    def ld_entity(self) -> dict[str, object]:
+        """Add statistical article specific schema properties to JSON LD."""
+        properties = {
+            "@type": "Article",
+            "url": self.get_url(),  # TODO pass request to this one wagtailschemaorg supports it
+            "headline": self.listing_title or self.title,
+            "description": self.listing_summary or self.summary,
+            "author": {
+                "@type": "Person",
+                "name": self.contact_details.name if self.contact_details else "Office for National Statistics",
+            },
+            "publisher": {
+                "@type": "Organization",
+                "name": "Office for National Statistics",  # TODO make this a setting or constant?
+                "url": settings.ONS_WEBSITE_BASE_URL,
+            },
+            "license": "https://www.nationalarchives.gov.uk/doc/open-government-licence/version/3/",
+            "datePublished": self.release_date.isoformat(),
+            "mainEntityOfPage": {
+                "@type": "WebPage",
+                "@id": self.get_url(),  # TODO pass request to this one wagtailschemaorg supports it
+            },
+        }
+        return cast(dict[str, object], extend(super().ld_entity(), properties))
+
+    def get_canonical_url(self, request: Optional["HttpRequest"] = None) -> str:
+        """The the article page canonical URL.
+        If the article is the latest in the series, this will be the evergreen series URL.
+        """
+        canonical_page = self
+        if aliased_page := self.alias_of:
+            # The canonical url should point to the original page, if this page is an alias
+            canonical_page = aliased_page
+        if canonical_page.is_latest:
+            return cast(str, canonical_page.get_parent().get_url(request=request))
+        return super().get_canonical_url(request=request)

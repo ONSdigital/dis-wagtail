@@ -1,7 +1,9 @@
 from django.test import TestCase
 from django.urls import reverse
+from wagtail.coreutils import get_dummy_request
 from wagtail.test.utils.wagtail_tests import WagtailTestUtils
 
+from cms.articles.tests.factories import ArticleSeriesPageFactory, StatisticalArticlePageFactory
 from cms.core.models import ContactDetails
 
 
@@ -34,3 +36,68 @@ class ContactDetailsTestCase(WagtailTestUtils, TestCase):
 
         self.assertContains(response, "Contact details with this name and email combination already exists.")
         self.assertEqual(ContactDetails.objects.count(), 1)
+
+
+class PageBreadcrumbsTestCase(TestCase):
+    @classmethod
+    def setUpTestData(cls):
+        cls.series = ArticleSeriesPageFactory()
+        cls.statistical_article = StatisticalArticlePageFactory(parent=cls.series)
+
+    def setUp(self):
+        self.mock_request = get_dummy_request()
+
+    def test_breadcrumbs_output_format(self):
+        """Test that get_breadcrumbs correctly outputs the parent pages in the correct format."""
+        breadcrumbs_output = self.statistical_article.get_breadcrumbs(request=self.mock_request)
+
+        series_parent = self.series.get_parent()
+
+        expected_entries = [
+            {
+                "url": "/",
+                "text": "Home",
+            },
+            {
+                "url": series_parent.get_parent().get_url(),
+                "text": series_parent.get_parent().title,
+            },
+            {
+                "url": series_parent.get_url(),
+                "text": series_parent.title,
+            },
+        ]
+
+        self.assertIsInstance(breadcrumbs_output, list)
+        self.assertEqual(len(breadcrumbs_output), 3)
+        self.assertListEqual(breadcrumbs_output, expected_entries)
+
+    def test_breadcrumbs_include_self(self):
+        """Test that get_breadcrumbs includes the page when request includes `breadcrumbs_include_self` attribute."""
+        self.mock_request.breadcrumbs_include_self = True
+        breadcrumbs_output = self.statistical_article.get_breadcrumbs(request=self.mock_request)
+
+        series_parent = self.series.get_parent()
+
+        expected_entries = [
+            {
+                "url": "/",
+                "text": "Home",
+            },
+            {
+                "url": series_parent.get_parent().get_url(),
+                "text": series_parent.get_parent().title,
+            },
+            {
+                "url": series_parent.get_url(),
+                "text": series_parent.title,
+            },
+            {
+                "url": self.statistical_article.get_url(),
+                "text": self.statistical_article.title,
+            },
+        ]
+
+        self.assertIsInstance(breadcrumbs_output, list)
+        self.assertEqual(len(breadcrumbs_output), 4)
+        self.assertListEqual(breadcrumbs_output, expected_entries)

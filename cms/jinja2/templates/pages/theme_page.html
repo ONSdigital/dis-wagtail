@@ -15,7 +15,7 @@
             "wide": true,
             "breadcrumbs": {
                 "ariaLabel": breadcrumbs_aria_label,
-                "itemsList": breadcrumbs(page),
+                "itemsList": page.get_breadcrumbs(request=request),
             }
         })
     }}
