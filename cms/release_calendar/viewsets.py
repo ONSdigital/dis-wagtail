@@ -3,6 +3,7 @@ from django.utils import timezone
 from wagtail.admin.ui.tables import Column, DateColumn, LocaleColumn
 from wagtail.admin.views.generic.chooser import ChooseResultsView, ChooseView
 from wagtail.admin.viewsets.chooser import ChooserViewSet
+from wagtail.permission_policies.pages import PagePermissionPolicy
 
 from cms.bundles.enums import ACTIVE_BUNDLE_STATUSES
 from cms.release_calendar.enums import ReleaseStatus
@@ -14,12 +15,21 @@ class FutureReleaseCalendarMixin:
 
     def get_object_list(self) -> QuerySet[ReleaseCalendarPage]:
         # note: using this method to allow search to work without adding the bundle data in the index
+        explorable_pages = PagePermissionPolicy().explorable_instances(self.request.user)  # type: ignore[attr-defined]
+
         calendar_pages_to_exclude_qs = ReleaseCalendarPage.objects.filter(
             Q(status__in=[ReleaseStatus.CANCELLED, ReleaseStatus.PUBLISHED])
             | Q(release_date__lt=timezone.now())
             | Q(bundles__status__in=ACTIVE_BUNDLE_STATUSES)
+            | Q(alias_of__isnull=False)
         )
-        return ReleaseCalendarPage.objects.exclude(pk__in=calendar_pages_to_exclude_qs)
+        pages: QuerySet[ReleaseCalendarPage] = (
+            explorable_pages.type(ReleaseCalendarPage)
+            .specific()
+            .defer_streamfields()
+            .exclude(pk__in=calendar_pages_to_exclude_qs)
+        )
+        return pages
 
     @property
     def columns(self) -> list[Column]:
