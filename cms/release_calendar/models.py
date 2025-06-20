@@ -82,7 +82,7 @@ class ReleaseCalendarPage(BundledPageMixin, BasePage):  # type: ignore[django-ma
     content = StreamField(
         ReleaseCalendarStoryBlock(),
         blank=True,
-        help_text=("This can be populated through the bundle release process, but can also be manually set."),
+        help_text=("This is usually through the bundle release process, but can also be manually set."),
     )
     datasets = StreamField(DatasetStoryBlock(), blank=True, default=list)
 

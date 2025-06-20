@@ -32,7 +32,6 @@ class ReleaseDateChangeBlock(blocks.StructBlock):
 
     class Meta:
         template = "templates/components/streamfield/release_date_change_block.html"
-        help_text = "Warning: Once a date change log is published, it cannot be deleted."
 
 
 class ReleaseCalendarStoryBlock(blocks.StreamBlock):

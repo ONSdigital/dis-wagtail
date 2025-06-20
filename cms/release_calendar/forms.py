@@ -71,6 +71,7 @@ class ReleaseCalendarPageAdminForm(WagtailAdminPageForm):
                     )
                 }
             )
+
         if (
             cleaned_data.get("release_date")
             and cleaned_data.get("next_release_date")
