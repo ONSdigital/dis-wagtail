@@ -149,23 +149,26 @@ def user_edits_published_page(context: Context):
 
 @when('the user changes preview mode to "{page_status}"')
 def user_changes_preview_mode(context: Context, page_status: str):
-    context.page.get_by_label("Preview mode").select_option(page_status.upper())
+    context.page.get_by_label("Preview mode").select_option(page_status)
 
 
 @then('the "Provisional" page is displayed')
 def preview_provisional_page(context: Context):
+    context.page.wait_for_timeout(200)
     iframe_locator = context.page.frame_locator("#w-preview-iframe")
     expect(iframe_locator.get_by_text("This release is not yet")).to_be_visible()
 
 
 @then('the "Confirmed" page is displayed')
 def preview_confirmed_page(context: Context):
+    context.page.wait_for_timeout(200)
     iframe_locator = context.page.frame_locator("#w-preview-iframe")
     expect(iframe_locator.get_by_text("This release is not yet")).to_be_visible()
 
 
 @then('the "Published" page is displayed')
 def preview_published_page(context: Context):
+    context.page.wait_for_timeout(200)
     page = context.page.frame_locator("#w-preview-iframe")
     expect(page.get_by_role("heading", name="My Release")).to_be_visible()
     expect(page.get_by_role("heading", name="My Example Content Link")).to_be_visible()
@@ -178,5 +181,6 @@ def preview_published_page(context: Context):
 
 @then('the "Cancelled" page is displayed')
 def preview_cancelled_page(context: Context):
+    context.page.wait_for_timeout(200)
     iframe_locator = context.page.frame_locator("#w-preview-iframe")
     expect(iframe_locator.get_by_text("Cancelled", exact=True)).to_be_visible()
