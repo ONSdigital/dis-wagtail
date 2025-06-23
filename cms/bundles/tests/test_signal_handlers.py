@@ -160,3 +160,23 @@ class TestNotifications(TestCase):
 
         # Ensure no additional notification is sent
         self.assertEqual(len(mail.outbox), 0)
+
+    def test_that_an_error_is_logged_when_preview_team_member_has_no_email(self):
+        """Test that an error is logged when a preview notification email is sent to a preview team
+        and one of the members doesn't have an email.
+        """
+        bundle = BundleFactory(in_review=True, name="Preview Bundle")
+        team = TeamFactory()
+        user_without_email = UserFactory(email="")
+        team.users.add(user_without_email)
+
+        with self.assertLogs("cms.bundles.notifications.email", level="ERROR") as log:
+            bundle_team = BundleTeam(parent=bundle, team=team)
+            bundle_team.save()
+
+        self.assertEqual(log.records[0].user_id, user_without_email.id)
+        self.assertEqual(log.records[0].team_name, team.name)
+        self.assertEqual(log.records[0].bundle_name, bundle.name)
+        self.assertEqual(log.records[0].email_subject, f'Bundle "{bundle.name}" is ready for review')
+
+        self.assertEqual(len(mail.outbox), 0)
