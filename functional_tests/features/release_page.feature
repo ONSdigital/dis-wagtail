@@ -5,6 +5,14 @@ Feature: CMS users can draft, edit, and publish release pages
     And a superuser logs into the admin site
     And the user navigates to the release calendar page
 
+  Scenario: Using selectors
+    When the user clicks "Add child page" to create a new draft release page
+    And the user enters some example content on the page
+    And the user clicks the "Save Draft" button
+    And the user clicks the "Preview" button
+    And the user changes preview mode to "Cancelled"
+    Then the "Cancelled" page is displayed selector
+
   Scenario Outline: A CMS user can use preview mode to preview page at different statuses
     When the user clicks "Add child page" to create a new draft release page
     And the user enters some example content on the page
