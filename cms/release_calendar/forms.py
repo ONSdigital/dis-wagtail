@@ -7,6 +7,7 @@ from wagtail.admin.forms import WagtailAdminPageForm
 from wagtail.models import Locale
 
 from cms.bundles.permissions import user_can_manage_bundles
+from cms.core.widgets import ReadOnlyRichTextWidget
 from cms.release_calendar.permissions import user_can_modify_notice
 
 from .enums import LOCKED_STATUS_STATUSES, NON_PROVISIONAL_STATUS_CHOICES, ReleaseStatus
@@ -46,6 +47,7 @@ class ReleaseCalendarPageAdminForm(WagtailAdminPageForm):
 
         if self.instance.live_notice and not user_can_modify_notice(self.for_user):
             self.fields["notice"].disabled = True
+            self.fields["notice"].widget = ReadOnlyRichTextWidget()
 
     def clean(self) -> dict:
         """Validate the submitted release calendar data."""
