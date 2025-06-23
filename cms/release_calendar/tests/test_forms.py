@@ -299,7 +299,6 @@ class ReleaseCalendarPageAdminFormTestCase(WagtailTestUtils, TestCase):
 
     def test_form_clean__validates_release_date_when_confirmed__happy_path(self):
         """Checks that there are no errors when good data is submitted."""
-        self.page.save_revision().publish()
         data = self.raw_form_data()
         data["notice"] = rich_text("")
         data["release_date"] = timezone.now()
@@ -314,7 +313,6 @@ class ReleaseCalendarPageAdminFormTestCase(WagtailTestUtils, TestCase):
 
     def test_form_clean__set_release_date_text_to_empty_string_for_non_provisional_releases(self):
         """Checks that for non-provisional releases the provisional release date text is set to an empty string."""
-        self.page.save_revision().publish()
         data = self.raw_form_data()
         data["status"] = ReleaseStatus.PROVISIONAL
         data["release_date"] = timezone.now()
