@@ -66,3 +66,27 @@ class AreaChartBlockTestCase(BaseChartBlockTestCase):
             self.block.clean(self.get_value(empty_cell_data))
 
         self.assertEqual(AreaChartBlock.ERROR_EMPTY_CELLS, cm.exception.block_errors["table"].code)
+
+    def test_editable_x_axis_title(self):
+        self.raw_data["x_axis"]["title"] = "Editable X-axis Title"
+        config = self.get_component_config()
+        self.assertEqual("Editable X-axis Title", config["xAxis"]["title"])
+
+    def test_blank_x_axis_title(self):
+        self.raw_data["x_axis"]["title"] = ""
+        config = self.get_component_config()
+        # For area charts, editable X-axis title is supported, but the default
+        # value is `undefined`, so we expect it not to be set.
+        # Ref: https://api.highcharts.com/highcharts/xAxis.title
+        self.assertNotIn("title", config["xAxis"])
+
+    def test_editable_y_axis_title(self):
+        self.raw_data["y_axis"]["title"] = "Editable Y-axis Title"
+        config = self.get_component_config()
+        self.assertEqual("Editable Y-axis Title", config["yAxis"]["title"])
+
+    def test_blank_y_axis_title(self):
+        """A blank value should be converted to None."""
+        self.raw_data["y_axis"]["title"] = ""
+        config = self.get_component_config()
+        self.assertEqual(None, config["yAxis"]["title"])

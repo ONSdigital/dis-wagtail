@@ -87,24 +87,52 @@ class BarColumnChartBlockTestCase(BaseChartBlockTestCase):
         self.assertEqual(config["series"][1]["name"], "Series 2")
         self.assertEqual(config["series"][1]["data"], [50, 55, 60])
 
-    def test_no_x_axis_title(self):
+    def test_bar_chart_no_x_axis_title(self):
+        self.raw_data["select_chart_type"] = BarColumnChartTypeChoices.BAR
         config = self.get_component_config()
         self.assertNotIn("title", config["xAxis"])
-        # Test again, with title in the data, to prove this is not supported.
+
+    def test_bar_chart_x_axis_title_not_supported(self):
+        self.raw_data["select_chart_type"] = BarColumnChartTypeChoices.BAR
+        self.raw_data["x_axis"]["title"] = "Editable X-axis Title"
+        with self.assertRaises(blocks.StructBlockValidationError) as cm:
+            self.block.clean(self.get_value())
+        self.assertEqual(
+            BarColumnChartBlock.ERROR_HORIZONTAL_BAR_NO_CATEGORY_TITLE,
+            cm.exception.block_errors["x_axis"].code,
+        )
+
+    def test_column_chart_editable_x_axis_title(self):
+        self.raw_data["select_chart_type"] = BarColumnChartTypeChoices.COLUMN
         self.raw_data["x_axis"]["title"] = "Editable X-axis Title"
         config = self.get_component_config()
+        self.assertEqual("Editable X-axis Title", config["xAxis"]["title"])
+
+    def test_column_chart_blank_x_axis_title(self):
+        self.raw_data["select_chart_type"] = BarColumnChartTypeChoices.COLUMN
+        self.raw_data["x_axis"]["title"] = ""
+        config = self.get_component_config()
+        # For column charts, editable X-axis title is supported, but the default
+        # value is `undefined`, so we expect it not to be set.
+        # Ref: https://api.highcharts.com/highcharts/xAxis.title
         self.assertNotIn("title", config["xAxis"])
 
     def test_editable_y_axis_title(self):
-        self.raw_data["y_axis"]["title"] = "Editable Y-axis Title"
-        config = self.get_component_config()
-        self.assertEqual("Editable Y-axis Title", config["yAxis"]["title"])
+        for chart_type in BarColumnChartTypeChoices.values:
+            with self.subTest(chart_type=chart_type):
+                self.raw_data["select_chart_type"] = chart_type
+                self.raw_data["y_axis"]["title"] = "Editable Y-axis Title"
+                config = self.get_component_config()
+                self.assertEqual("Editable Y-axis Title", config["yAxis"]["title"])
 
     def test_blank_y_axis_title(self):
         """A blank value should be converted to None."""
-        self.raw_data["y_axis"]["title"] = ""
-        config = self.get_component_config()
-        self.assertEqual(None, config["yAxis"]["title"])
+        for chart_type in BarColumnChartTypeChoices.values:
+            with self.subTest(chart_type=chart_type):
+                self.raw_data["select_chart_type"] = chart_type
+                self.raw_data["y_axis"]["title"] = ""
+                config = self.get_component_config()
+                self.assertEqual(None, config["yAxis"]["title"])
 
     def test_show_data_labels(self):
         self.assertEqual(
