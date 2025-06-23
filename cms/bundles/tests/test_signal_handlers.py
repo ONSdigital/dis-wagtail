@@ -58,7 +58,7 @@ class TestNotifications(TestCase):
         self.assertEqual(len(mail.outbox), 1)
         self.assertIn(self.previewer.email, mail.outbox[0].to)
         self.assertIn(f'Bundle "{bundle.name}" is ready for review', mail.outbox[0].subject)
-        self.assertIn(bundle.inspect_url, mail.outbox[0].body)
+        self.assertIn(bundle.full_inspect_url, mail.outbox[0].body)
 
     def test_readding_team_to_bundle_triggers_notification(self):
         bundle = BundleFactory(in_review=True, name="Preview Bundle")
@@ -75,7 +75,7 @@ class TestNotifications(TestCase):
         self.assertListEqual(bundle.teams.get_object_list(), [])
         bundle_team = BundleTeam.objects.create(parent=bundle, team=self.preview_team)
         self.assertEqual(len(mail.outbox), 1)
-        self.assertIn(bundle.inspect_url, mail.outbox[0].body)
+        self.assertIn(bundle.full_inspect_url, mail.outbox[0].body)
 
     def test_email_is_sent_when_bundle_is_published_with_management_command(self):
         """Test that when a bundle is published manually (with a management command), an email is sent."""
@@ -97,7 +97,7 @@ class TestNotifications(TestCase):
 
         self.assertEqual(len(mail.outbox), 1)
         self.assertIn(f'Bundle "{bundle.name}" has been published', mail.outbox[0].subject)
-        self.assertIn(bundle.inspect_url, mail.outbox[0].body)
+        self.assertIn(bundle.full_inspect_url, mail.outbox[0].body)
 
     def test_email_is_sent_when_bundle_is_published_via_manual_publication(self):
         """Test that when a bundle is published manually (via the admin), an email is sent."""
@@ -129,7 +129,7 @@ class TestNotifications(TestCase):
 
         self.assertEqual(len(mail.outbox), 1)
         self.assertIn(f'Bundle "{bundle.name}" has been published', mail.outbox[0].subject)
-        self.assertIn(bundle.inspect_url, mail.outbox[0].body)
+        self.assertIn(bundle.full_inspect_url, mail.outbox[0].body)
 
     def test_notification_sent_only_on_first_change_to_in_preview(self):
         """Test that a notification is sent only on the first change to 'In Preview'."""
@@ -149,7 +149,7 @@ class TestNotifications(TestCase):
         self.assertEqual(len(mail.outbox), 1)
         self.assertIn(previewer.email, mail.outbox[0].to)
         self.assertIn(f'Bundle "{bundle.name}" is ready for review', mail.outbox[0].subject)
-        self.assertIn(bundle.inspect_url, mail.outbox[0].body)
+        self.assertIn(bundle.full_inspect_url, mail.outbox[0].body)
 
         # Clear the outbox and change the status to "Draft" and then back to "In Preview"
         mail.outbox = []

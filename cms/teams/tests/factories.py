@@ -6,7 +6,7 @@ from cms.teams.models import Team
 class TeamFactory(factory.django.DjangoModelFactory):
     """Factory for the preview team."""
 
-    identifier = factory.Faker("sentence", nb_words=4)
+    identifier = factory.Faker("uuid4")
     name = factory.Faker("sentence", nb_words=4)
 
     class Meta:

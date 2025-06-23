@@ -91,7 +91,7 @@ class BundleEditView(EditView):
 
         kwargs: dict = {"content_changed": self.has_content_changes}
         original_status = BundleStatus[self.form.original_status].label
-        url = self.request.build_absolute_uri(instance.inspect_url)
+        url = self.request.build_absolute_uri(instance.full_inspect_url)
 
         if instance.status == BundleStatus.APPROVED:
             action = "bundles.approve"

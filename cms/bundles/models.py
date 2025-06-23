@@ -195,8 +195,8 @@ class Bundle(index.Indexed, ClusterableModel, models.Model):  # type: ignore[dja
         return self.status == BundleStatus.APPROVED
 
     @property
-    def inspect_url(self) -> str:
-        """Returns the URL for bundle inspect view, or an empty string if the bundle is not saved yet."""
+    def full_inspect_url(self) -> str:
+        """Returns the absolute URL for the bundle inspect view, or an empty string if the bundle is not saved yet."""
         if not self.pk:
             return ""
 

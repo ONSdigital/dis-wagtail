@@ -75,15 +75,15 @@ class BundleModelTestCase(TestCase):
         BundleTeam.objects.create(parent=self.bundle, team=inactive_team)
         self.assertListEqual(self.bundle.active_team_ids, [team.pk])
 
-    def test_inspect_url_property(self):
-        """Test that inspect_url returns the correct URL."""
+    def test_full_inspect_url_property(self):
+        """Test that full_inspect_url returns the correct absolute URL."""
         expected_url = f"{settings.WAGTAILADMIN_BASE_URL}{reverse('bundle:inspect', args=[self.bundle.pk])}"
-        self.assertEqual(self.bundle.inspect_url, expected_url)
+        self.assertEqual(self.bundle.full_inspect_url, expected_url)
 
-    def test_inspect_url_property_returns_empty_string_for_unsaved_bundles(self):
-        """Test that inspect_url returns an empty string for unsaved bundles."""
+    def test_full_inspect_url_property_returns_empty_string_for_unsaved_bundles(self):
+        """Test that full_inspect_url returns an empty string for unsaved bundles."""
         unsaved_bundle = BundleFactory.build()
-        self.assertEqual(unsaved_bundle.inspect_url, "")
+        self.assertEqual(unsaved_bundle.full_inspect_url, "")
 
 
 class BundledPageMixinTestCase(TestCase):
