@@ -170,6 +170,7 @@ def preview_confirmed_page(context: Context):
 def preview_published_page(context: Context):
     context.page.wait_for_timeout(12000)
     page = context.page.frame_locator("#w-preview-iframe")
+    page.get_by_role("heading", name="My Example Content Link").wait_for(state="visible", timeout=15000)
     expect(page.get_by_role("heading", name="My Release")).to_be_visible()
     expect(page.get_by_role("heading", name="My Example Content Link")).to_be_visible()
     expect(page.locator("#my-example-content-link").get_by_role("link", name="Release calendar")).to_be_visible()
@@ -183,4 +184,5 @@ def preview_published_page(context: Context):
 def preview_cancelled_page(context: Context):
     context.page.wait_for_timeout(5000)
     iframe_locator = context.page.frame_locator("#w-preview-iframe")
+    iframe_locator.get_by_text("Cancelled", exact=True).wait_for(state="visible", timeout=15000)
     expect(iframe_locator.get_by_text("Cancelled", exact=True)).to_be_visible()
