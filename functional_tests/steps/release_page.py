@@ -1,8 +1,18 @@
 from behave import given, step, then, when  # pylint: disable=no-name-in-module
 from behave.runner import Context
+from django.urls import reverse
 from playwright.sync_api import expect
 
 from cms.core.custom_date_format import ons_default_datetime
+from cms.release_calendar.tests.factories import ReleaseCalendarPageFactory
+
+
+@given("a Release Calendar page with a publish notice exists")
+def create_release_calendar_page(context: Context):
+    context.release_calendar_page = ReleaseCalendarPageFactory(
+        notice="Lorem ipsum dolor sit amet, consectetur adipiscing elit.",
+    )
+    context.release_calendar_page.save_revision().publish()
 
 
 @given("the user navigates to the release calendar page")
@@ -15,6 +25,12 @@ def navigate_to_release_page(context: Context):
 @when('the user clicks "Add child page" to create a new draft release page')
 def click_add_child_page(context: Context):
     context.page.get_by_label("Add child page").click()
+
+
+@when("the user navigates to the published release calendar page")
+def navigate_to_published_release_page(context: Context):
+    edit_url = reverse("wagtailadmin_pages:edit", args=(context.release_calendar_page.id,))
+    context.page.goto(f"{context.base_url}{edit_url}")
 
 
 @step('the user sets the page status to "{page_status}"')
@@ -66,6 +82,11 @@ def check_that_default_status_is_provisional_and_release_date_text_is_visible(co
 @then("the date text field is not visible")
 def check_date_text_field(context: Context):
     expect(context.page.get_by_text("Or, release date text")).not_to_be_visible()
+
+
+@then("the notice field is disabled")
+def check_notice_field_disabled(context: Context):
+    expect(context.page.locator('[name="notice"]')).to_be_disabled()
 
 
 @when("the user inputs a {meridiem_indicator} datetime")

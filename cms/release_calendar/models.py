@@ -73,6 +73,7 @@ class ReleaseCalendarPage(BundledPageMixin, BasePage):  # type: ignore[django-ma
 
     notice = RichTextField(
         features=settings.RICH_TEXT_BASIC,
+        verbose_name="Cancellation notice",
         blank=True,
         help_text=(
             "Used for data change or cancellation notices. The notice is required when the release is cancelled"
@@ -251,6 +252,22 @@ class ReleaseCalendarPage(BundledPageMixin, BasePage):  # type: ignore[django-ma
             return None
         bundle: Bundle | None = self.bundles.active().first()  # pylint: disable=no-member
         return bundle
+
+    @property
+    def live_status(self) -> Optional[ReleaseStatus]:
+        if not self.pk:
+            return None
+        # We just want one field, so we don't use live_revision
+        # to avoid loading the whole revision object.
+        live_page = ReleaseCalendarPage.objects.filter(pk=self.pk).live().only("status").first()
+        return live_page.status if live_page else None
+
+    @property
+    def live_notice(self) -> Optional[str]:
+        if not self.pk:
+            return None
+        live_page = ReleaseCalendarPage.objects.filter(pk=self.pk).live().only("notice").first()
+        return live_page.notice if live_page else None
 
     @property
     def preview_modes(self) -> list[tuple[str, str | StrPromise]]:

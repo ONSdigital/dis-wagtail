@@ -20,7 +20,7 @@ class BundleFactory(factory.django.DjangoModelFactory):
     class Params:
         """Defines custom factory traits.
 
-        Usage: BundlFactory(approved=True) or BundlFactory(published=True)
+        Usage: BundleFactory(approved=True) or BundleFactory(published=True)
         """
 
         in_review = factory.Trait(
