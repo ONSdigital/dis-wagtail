@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-04-10 16:38+0100\n"
+"POT-Creation-Date: 2025-06-03 13:53+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -19,18 +19,18 @@ msgstr ""
 "Plural-Forms: nplurals=4; plural=(n==1) ? 0 : (n==2) ? 1 : (n != 8 && n != "
 "11) ? 2 : 3;\n"
 
-#: cms/articles/models.py:106
+#: cms/articles/models.py:114
 #: cms/jinja2/templates/components/featured/featured-article.html:11
 msgid "Article"
 msgstr ""
 
-#: cms/articles/models.py:247
+#: cms/articles/models.py:323
 msgid "Cite this article"
 msgstr ""
 
-#: cms/articles/models.py:249
+#: cms/articles/models.py:325
 #: cms/jinja2/templates/components/contact_details/contact_details.html:5
-#: cms/methodology/models.py:148 cms/release_calendar/models.py:193
+#: cms/methodology/models.py:156 cms/release_calendar/models.py:213
 msgid "Contact details"
 msgstr ""
 
@@ -38,48 +38,60 @@ msgstr ""
 msgid "Related links"
 msgstr ""
 
-#: cms/core/utils.py:33
+#: cms/core/utils.py:52
 msgid "Page"
 msgstr ""
 
-#: cms/core/utils.py:39
+#: cms/core/utils.py:58
 #: cms/jinja2/templates/components/featured/featured-article.html:7
+#: cms/jinja2/templates/pages/statistical_article_page--previous-releases.html:39
 msgid "Released"
 msgstr ""
 
-#: cms/jinja2/templates/base.html:37
+#: cms/jinja2/templates/base.html:29
 msgid "Beta"
 msgstr ""
 
-#: cms/jinja2/templates/base.html:38
+#: cms/jinja2/templates/base.html:30
 msgid "This is a new service."
 msgstr ""
 
-#: cms/jinja2/templates/base.html:39
+#: cms/jinja2/templates/base.html:31
 msgid "Menu"
 msgstr ""
 
-#: cms/jinja2/templates/base.html:40
+#: cms/jinja2/templates/base.html:32
 msgid "Main menu"
 msgstr ""
 
-#: cms/jinja2/templates/base.html:41
+#: cms/jinja2/templates/base.html:33
 msgid "Toggle main menu"
 msgstr ""
 
-#: cms/jinja2/templates/base.html:43
+#: cms/jinja2/templates/base.html:35
 msgid "All content is available under the"
 msgstr "Mae'r holl gynnwys ar gael o dan delerau'r"
 
-#: cms/jinja2/templates/base.html:46
+#: cms/jinja2/templates/base.html:38
 msgid ", except where otherwise stated"
 msgstr ", ac eithrio lle y nodir fel arall"
 
-#: cms/jinja2/templates/base_page.html:41
+#: cms/jinja2/templates/base_page.html:46
+msgid "in English"
+msgstr ""
+
+#: cms/jinja2/templates/base_page.html:47
+msgid "in Welsh"
+msgstr "yn y Gymraeg"
+
+#: cms/jinja2/templates/base_page.html:54
+#, python-format
 msgid ""
-"This page is currently not available in English. It is displayed in its "
+"This page is currently not available %(in_language)s. It is displayed in its "
 "original language."
 msgstr ""
+"Nid yw'r dudalen hon ar gael %(in_language)s ar hyn o bryd. Fe'i "
+"harddangosir yn ei hiaith wreiddiol."
 
 #: cms/jinja2/templates/components/accredited/accredited-information.html:7
 msgid "Accredited Official Statistics"
@@ -90,7 +102,7 @@ msgid "This release includes data from Census 2021"
 msgstr ""
 
 #: cms/jinja2/templates/components/navigation/breadcrumbs.html:9
-#: cms/navigation/templatetags/navigation_tags.py:139
+#: cms/navigation/templatetags/navigation_tags.py:144
 msgid "Home"
 msgstr "Hafan"
 
@@ -104,7 +116,7 @@ msgid "View superseded version"
 msgstr ""
 
 #: cms/jinja2/templates/components/streamfield/datasets_block.html:2
-#: cms/release_calendar/models.py:187
+#: cms/release_calendar/models.py:207
 msgid "Data"
 msgstr ""
 
@@ -114,10 +126,6 @@ msgstr ""
 
 #: cms/jinja2/templates/components/streamfield/glossary_section_block.html:5
 msgid "Hide all"
-msgstr ""
-
-#: cms/jinja2/templates/components/streamfield/headline_figures_block.html:2
-msgid "Headline facts and figures"
 msgstr ""
 
 #: cms/jinja2/templates/components/streamfield/notice_block.html:3
@@ -159,6 +167,11 @@ msgstr ""
 msgid "Last updated"
 msgstr ""
 
+#: cms/jinja2/templates/pages/information_page.html:53
+#: cms/jinja2/templates/pages/information_page.html:54
+msgid "Related content"
+msgstr ""
+
 #: cms/jinja2/templates/pages/login_page.html:10
 #: cms/jinja2/templates/pages/login_page.html:15
 msgid "Log in"
@@ -173,84 +186,96 @@ msgid "Published:"
 msgstr ""
 
 #: cms/jinja2/templates/pages/methodology_page.html:10
-#: cms/jinja2/templates/pages/statistical_article_page.html:16
+#: cms/jinja2/templates/pages/release_calendar/release_calendar_page--cancelled.html:7
+#: cms/jinja2/templates/pages/release_calendar/release_calendar_page--confirmed.html:6
+#: cms/jinja2/templates/pages/release_calendar/release_calendar_page--provisional.html:6
+#: cms/jinja2/templates/pages/release_calendar/release_calendar_page.html:8
+#: cms/jinja2/templates/pages/statistical_article_page--previous-releases.html:14
+#: cms/jinja2/templates/pages/statistical_article_page--related_data.html:9
+#: cms/jinja2/templates/pages/statistical_article_page.html:13
+#: cms/jinja2/templates/pages/statistical_article_page.html:20
+#: cms/jinja2/templates/pages/theme_page.html:7
+#: cms/jinja2/templates/pages/topic_page.html:8
 msgid "Breadcrumbs"
 msgstr ""
 
-#: cms/jinja2/templates/pages/methodology_page.html:89
-#: cms/jinja2/templates/pages/statistical_article_page.html:186
-#: cms/jinja2/templates/pages/topic_page.html:31
+#: cms/jinja2/templates/pages/methodology_page.html:11
+#: cms/jinja2/templates/pages/statistical_article_page.html:9
+#: cms/jinja2/templates/pages/statistical_article_page.html:14
+msgid "Contact:"
+msgstr ""
+
+#: cms/jinja2/templates/pages/methodology_page.html:88
+#: cms/jinja2/templates/pages/statistical_article_page.html:237
+#: cms/jinja2/templates/pages/topic_page.html:40
 msgid "Contents"
 msgstr ""
 
-#: cms/jinja2/templates/pages/methodology_page.html:89
-#: cms/jinja2/templates/pages/statistical_article_page.html:186
-#: cms/jinja2/templates/pages/topic_page.html:31
+#: cms/jinja2/templates/pages/methodology_page.html:88
+#: cms/jinja2/templates/pages/statistical_article_page.html:237
+#: cms/jinja2/templates/pages/topic_page.html:40
 msgid "Sections in this page"
 msgstr ""
 
-#: cms/jinja2/templates/pages/methodology_page.html:115
-#: cms/methodology/models.py:144
-msgid "Related publications"
-msgstr ""
-
-#: cms/jinja2/templates/pages/methodology_page.html:122
-#: cms/methodology/models.py:146
+#: cms/jinja2/templates/pages/methodology_page.html:118
+#: cms/methodology/models.py:154
 msgid "Cite this methodology"
 msgstr ""
 
-#: cms/jinja2/templates/pages/methodology_page.html:128
+#: cms/jinja2/templates/pages/methodology_page.html:124
 #, python-format
 msgid ""
 "Office for National Statistics (ONS), last revised "
 "%(latest_date_formatted)s, ONS website, methodology, %(cite_link)s"
 msgstr ""
 
-#: cms/jinja2/templates/pages/release_calendar/release_calendar_page--cancelled.html:9
-#: cms/jinja2/templates/pages/release_calendar/release_calendar_page--confirmed.html:7
-#: cms/jinja2/templates/pages/release_calendar/release_calendar_page.html:39
-msgid "Release date"
-msgstr "Dyddiad y datganiad"
-
-#: cms/jinja2/templates/pages/release_calendar/release_calendar_page--cancelled.html:10
-msgid "Cancelled"
-msgstr ""
-
-#: cms/jinja2/templates/pages/release_calendar/release_calendar_page--cancelled.html:25
-#: cms/jinja2/templates/pages/release_calendar/release_calendar_page--confirmed.html:24
-#: cms/jinja2/templates/pages/release_calendar/release_calendar_page.html:87
-#: cms/release_calendar/models.py:190
-msgid "Changes to this release date"
-msgstr ""
-
-#: cms/jinja2/templates/pages/release_calendar/release_calendar_page--confirmed.html:16
-#: cms/jinja2/templates/pages/release_calendar/release_calendar_page--provisional.html:18
-msgid "This release is not yet published"
-msgstr ""
-
-#: cms/jinja2/templates/pages/release_calendar/release_calendar_page--provisional.html:8
-msgid "Provisional release date"
-msgstr ""
-
-#: cms/jinja2/templates/pages/release_calendar/release_calendar_page.html:9
+#: cms/jinja2/templates/pages/release_calendar/release_calendar_page--cancelled.html:6
+#: cms/jinja2/templates/pages/release_calendar/release_calendar_page--confirmed.html:5
+#: cms/jinja2/templates/pages/release_calendar/release_calendar_page--provisional.html:5
+#: cms/jinja2/templates/pages/release_calendar/release_calendar_page.html:7
 msgid "Release"
 msgstr ""
 
-#: cms/jinja2/templates/pages/release_calendar/release_calendar_page.html:45
-msgid "Next release"
+#: cms/jinja2/templates/pages/release_calendar/release_calendar_page--cancelled.html:8
+#: cms/jinja2/templates/pages/release_calendar/release_calendar_page--confirmed.html:7
+#: cms/jinja2/templates/pages/release_calendar/release_calendar_page--provisional.html:7
+#: cms/jinja2/templates/pages/release_calendar/release_calendar_page.html:9
+#: cms/jinja2/templates/pages/statistical_article_page.html:11
+#: cms/jinja2/templates/pages/statistical_article_page.html:18
+msgid "Release date:"
+msgstr "Dyddiad y datganiad"
+
+#: cms/jinja2/templates/pages/release_calendar/release_calendar_page--cancelled.html:9
+msgid "Cancelled"
+msgstr ""
+
+#: cms/jinja2/templates/pages/release_calendar/release_calendar_page--cancelled.html:50
+#: cms/jinja2/templates/pages/release_calendar/release_calendar_page--confirmed.html:48
+#: cms/jinja2/templates/pages/release_calendar/release_calendar_page.html:96
+#: cms/release_calendar/models.py:210
+msgid "Changes to this release date"
+msgstr ""
+
+#: cms/jinja2/templates/pages/release_calendar/release_calendar_page--confirmed.html:39
+#: cms/jinja2/templates/pages/release_calendar/release_calendar_page--provisional.html:39
+msgid "This release is not yet published"
+msgstr ""
+
+#: cms/jinja2/templates/pages/release_calendar/release_calendar_page.html:10
+msgid "Next release date:"
 msgstr "Cyhoeddiad nesaf"
 
-#: cms/jinja2/templates/pages/release_calendar/release_calendar_page.html:70
-#: cms/release_calendar/models.py:180
+#: cms/jinja2/templates/pages/release_calendar/release_calendar_page.html:79
+#: cms/release_calendar/models.py:200
 msgid "Summary"
 msgstr ""
 
-#: cms/jinja2/templates/pages/release_calendar/release_calendar_page.html:98
-#: cms/release_calendar/models.py:197
+#: cms/jinja2/templates/pages/release_calendar/release_calendar_page.html:107
+#: cms/release_calendar/models.py:217
 msgid "About the data"
 msgstr ""
 
-#: cms/jinja2/templates/pages/release_calendar/release_calendar_page.html:109
+#: cms/jinja2/templates/pages/release_calendar/release_calendar_page.html:118
 msgid ""
 "These are accredited official statistics. They have been independently "
 "reviewed by the Office for Statistics Regulation (OSR) and found to comply "
@@ -259,147 +284,158 @@ msgid ""
 "for Statistics</a>. This broadly means that the statistics:"
 msgstr ""
 
-#: cms/jinja2/templates/pages/release_calendar/release_calendar_page.html:114
+#: cms/jinja2/templates/pages/release_calendar/release_calendar_page.html:123
 msgid "meet user needs"
 msgstr ""
 
-#: cms/jinja2/templates/pages/release_calendar/release_calendar_page.html:115
+#: cms/jinja2/templates/pages/release_calendar/release_calendar_page.html:124
 msgid "are presented clearly and accessibly"
 msgstr ""
 
-#: cms/jinja2/templates/pages/release_calendar/release_calendar_page.html:116
+#: cms/jinja2/templates/pages/release_calendar/release_calendar_page.html:125
 msgid "are produced using appropriate data and sound methods"
 msgstr ""
 
-#: cms/jinja2/templates/pages/release_calendar/release_calendar_page.html:117
+#: cms/jinja2/templates/pages/release_calendar/release_calendar_page.html:126
 msgid "are managed impartially and objectively in the public interest"
 msgstr ""
 
-#: cms/jinja2/templates/pages/release_calendar/release_calendar_page.html:126
-#: cms/release_calendar/models.py:202
+#: cms/jinja2/templates/pages/release_calendar/release_calendar_page.html:135
+#: cms/release_calendar/models.py:222
 msgid "Pre-release access list"
 msgstr ""
 
-#: cms/jinja2/templates/pages/release_calendar/release_calendar_page.html:133
-#: cms/release_calendar/models.py:206
+#: cms/jinja2/templates/pages/release_calendar/release_calendar_page.html:142
+#: cms/release_calendar/models.py:226
 msgid "You might also be interested in"
 msgstr ""
 
-#: cms/jinja2/templates/pages/statistical_article_page--previous-releases.html:4
+#: cms/jinja2/templates/pages/statistical_article_page--previous-releases.html:8
+#, python-format
+msgid "Previous releases for %(title)s"
+msgstr ""
+
+#: cms/jinja2/templates/pages/statistical_article_page--previous-releases.html:12
 msgid "Previous Releases"
 msgstr ""
 
-#: cms/jinja2/templates/pages/statistical_article_page--previous-releases.html:9
+#: cms/jinja2/templates/pages/statistical_article_page--previous-releases.html:13
+msgid "Statistical articles"
+msgstr ""
+
+#: cms/jinja2/templates/pages/statistical_article_page--previous-releases.html:44
+#: cms/jinja2/templates/pages/statistical_article_page.html:29
+msgid "Latest release"
+msgstr "Cyhoeddiad nesaf"
+
+#: cms/jinja2/templates/pages/statistical_article_page--previous-releases.html:73
 msgid "There are currently no releases"
 msgstr ""
 
-#: cms/jinja2/templates/pages/statistical_article_page.html:9
-msgid "Contact:"
-msgstr ""
+#: cms/jinja2/templates/pages/statistical_article_page--related_data.html:8
+msgid "Related data"
+msgstr "Dyddiad y datganiad"
 
 #: cms/jinja2/templates/pages/statistical_article_page.html:10
+#: cms/jinja2/templates/pages/statistical_article_page.html:17
 msgid "Statistical article"
 msgstr ""
 
-#: cms/jinja2/templates/pages/statistical_article_page.html:11
-#, fuzzy
-#| msgid "Release date"
-msgid "Release date:"
-msgstr "Dyddiad y datganiad"
-
 #: cms/jinja2/templates/pages/statistical_article_page.html:12
-#, fuzzy
-#| msgid "Next release"
+#: cms/jinja2/templates/pages/statistical_article_page.html:19
 msgid "Next release:"
 msgstr "Cyhoeddiad nesaf"
 
-#: cms/jinja2/templates/pages/statistical_article_page.html:13
-msgid "Edition:"
+#: cms/jinja2/templates/pages/statistical_article_page.html:24
+msgid "This version has been amended since publication"
 msgstr ""
 
-#: cms/jinja2/templates/pages/statistical_article_page.html:14
-#, fuzzy
-#| msgid "Release date"
-msgid "Releases:"
-msgstr "Dyddiad y datganiad"
-
-#: cms/jinja2/templates/pages/statistical_article_page.html:15
-msgid "Latest"
+#: cms/jinja2/templates/pages/statistical_article_page.html:25
+msgid "View amended version"
 msgstr ""
 
-#: cms/jinja2/templates/pages/statistical_article_page.html:42
+#: cms/jinja2/templates/pages/statistical_article_page.html:30
 msgid "View previous releases"
 msgstr ""
 
-#: cms/jinja2/templates/pages/statistical_article_page.html:46
+#: cms/jinja2/templates/pages/statistical_article_page.html:35
+msgid "Not the latest release"
+msgstr "Cyhoeddiad nesaf"
+
+#: cms/jinja2/templates/pages/statistical_article_page.html:36
 msgid "View latest release"
 msgstr ""
 
-#: cms/jinja2/templates/pages/statistical_article_page.html:50
+#: cms/jinja2/templates/pages/statistical_article_page.html:70
 msgid "To be announced"
 msgstr ""
 
-#: cms/jinja2/templates/pages/statistical_article_page.html:114
-msgid "This has been superseded."
-msgstr ""
-
-#: cms/jinja2/templates/pages/statistical_article_page.html:114
-msgid "View corrected version"
-msgstr ""
-
-#: cms/jinja2/templates/pages/statistical_article_page.html:122
+#: cms/jinja2/templates/pages/statistical_article_page.html:139
 msgid "Corrections and notices"
 msgstr ""
 
-#: cms/jinja2/templates/pages/statistical_article_page.html:124
+#: cms/jinja2/templates/pages/statistical_article_page.html:141
 msgid "Notices"
 msgstr ""
 
-#: cms/jinja2/templates/pages/statistical_article_page.html:126
+#: cms/jinja2/templates/pages/statistical_article_page.html:143
 msgid "Corrections"
 msgstr ""
 
-#: cms/jinja2/templates/pages/statistical_article_page.html:135
+#: cms/jinja2/templates/pages/statistical_article_page.html:152
 msgid "Show detail"
 msgstr ""
 
-#: cms/jinja2/templates/pages/statistical_article_page.html:148
+#: cms/jinja2/templates/pages/statistical_article_page.html:165
 msgid "Close detail"
 msgstr ""
 
-#: cms/jinja2/templates/pages/statistical_article_page.html:204
+#: cms/jinja2/templates/pages/statistical_article_page.html:196
+#: cms/jinja2/templates/pages/topic_page.html:27
+msgid "Headline facts and figures"
+msgstr ""
+
+#: cms/jinja2/templates/pages/statistical_article_page.html:217
+msgid "Explore Data"
+msgstr ""
+
+#: cms/jinja2/templates/pages/statistical_article_page.html:218
+msgid "View data used in this article"
+msgstr ""
+
+#: cms/jinja2/templates/pages/statistical_article_page.html:259
 msgid "Cite this analysis"
 msgstr ""
 
-#: cms/jinja2/templates/pages/statistical_article_page.html:209
+#: cms/jinja2/templates/pages/statistical_article_page.html:264
 #, python-format
 msgid ""
 "Office for National Statistics (ONS), released %(release_date)s, ONS "
 "website, statistical article, %(cite_link)s"
 msgstr ""
 
-#: cms/jinja2/templates/pages/theme_page.html:7
+#: cms/jinja2/templates/pages/theme_page.html:6
 msgid "Theme"
 msgstr ""
 
-#: cms/jinja2/templates/pages/topic_page.html:14 cms/topics/models.py:75
+#: cms/jinja2/templates/pages/topic_page.html:7 cms/topics/models.py:77
 msgid "Topic"
 msgstr ""
 
-#: cms/jinja2/templates/pages/topic_page.html:47 cms/topics/models.py:219
+#: cms/jinja2/templates/pages/topic_page.html:62 cms/topics/models.py:230
 msgid "Featured"
 msgstr ""
 
-#: cms/jinja2/templates/pages/topic_page.html:57 cms/topics/models.py:221
+#: cms/jinja2/templates/pages/topic_page.html:72 cms/topics/models.py:232
 msgid "Related articles"
 msgstr ""
 
-#: cms/jinja2/templates/pages/topic_page.html:64 cms/topics/models.py:223
+#: cms/jinja2/templates/pages/topic_page.html:79 cms/topics/models.py:234
 msgid "Methods and quality information"
 msgstr ""
 
-#: cms/jinja2/templates/pages/topic_page.html:71 cms/topics/models.py:225
-#: cms/topics/tests/test_models.py:125
+#: cms/jinja2/templates/pages/topic_page.html:86 cms/topics/models.py:236
+#: cms/topics/tests/test_models.py:128
 msgid "Explore more"
 msgstr ""
 
@@ -407,18 +443,25 @@ msgstr ""
 msgid "Continue"
 msgstr ""
 
-#: cms/methodology/models.py:45
+#: cms/methodology/models.py:50
 msgid "Methodology"
 msgstr "Methodoleg"
 
-#: cms/settings/base.py:341
+#: cms/methodology/models.py:142 cms/methodology/models.py:152
+msgid "Related publications"
+msgstr ""
+
+#: cms/settings/base.py:351
 msgid "English"
 msgstr ""
 
-#: cms/settings/base.py:342
+#: cms/settings/base.py:352
 msgid "Welsh"
-msgstr ""
+msgstr "Cymraeg"
 
-#: cms/settings/base.py:343
+#: cms/settings/base.py:353
 msgid "Ukrainian"
 msgstr ""
+
+msgid "To be confirmed"
+msgstr "I'w gadarnhau"

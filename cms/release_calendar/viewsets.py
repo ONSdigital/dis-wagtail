@@ -1,11 +1,10 @@
 from django.db.models import Q, QuerySet
 from django.utils import timezone
-from wagtail.admin.ui.tables import Column, DateColumn
+from wagtail.admin.ui.tables import Column, DateColumn, LocaleColumn
 from wagtail.admin.views.generic.chooser import ChooseResultsView, ChooseView
 from wagtail.admin.viewsets.chooser import ChooserViewSet
 
 from cms.bundles.enums import ACTIVE_BUNDLE_STATUSES
-from cms.core.ui import LocaleColumn
 from cms.release_calendar.enums import ReleaseStatus
 from cms.release_calendar.models import ReleaseCalendarPage
 

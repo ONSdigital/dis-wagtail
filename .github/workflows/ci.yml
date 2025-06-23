@@ -13,7 +13,8 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  POETRY_VERSION: '1.8.4' # keep in sync with pyproject.toml, Dockerfile
+  POETRY_VERSION: '1.8.5' # keep in sync with pyproject.toml, Dockerfile
+  COVERAGE_CORE: 'sysmon'
 
 jobs:
   lint:
@@ -86,7 +87,7 @@ jobs:
       ENABLE_DJANGO_DEFENDER: 'false'
       POSTGRES_HOST_AUTH_METHOD: trust
       SECRET_KEY: fake_secret_key_to_run_tests # pragma: allowlist secret
-      KAFKA_SERVER: localhost:9092
+      KAFKA_SERVERS: localhost:9092
 
     services:
       postgres:
