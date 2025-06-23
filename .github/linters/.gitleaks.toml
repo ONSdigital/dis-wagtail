@@ -10,6 +10,7 @@ description = "Global allowlists (skip conditions)"
 paths = [
     '''(?i)^.*\.env$''',  # Matches any file ending in .env (case-insensitive)
     '''(?i)^.*\.env\..*$''',  # Matches files like .env.test, .env.local, .env.production, etc.
+    ".secrets.baseline",  # Ignore the detect-secrets baseline file
     "cms/settings/local.py",  # Ignore local.py in the cms/settings directory
     "megalinter-reports"  # Ignore megalinter-reports directory
 ]

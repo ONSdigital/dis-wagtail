@@ -1,14 +1,12 @@
 from typing import TYPE_CHECKING, ClassVar
 
-from wagtail.admin.ui.tables import Column, LiveStatusTagColumn, UpdatedAtColumn
+from wagtail.admin.ui.tables import Column, LiveStatusTagColumn, LocaleColumn, UpdatedAtColumn
 from wagtail.permissions import ModelPermissionPolicy
 from wagtail.snippets.models import register_snippet
 from wagtail.snippets.views.chooser import ChooseResultsView as SnippetChooseResultsView
 from wagtail.snippets.views.chooser import ChooseView as SnippetChooseView
 from wagtail.snippets.views.chooser import SnippetChooserViewSet
 from wagtail.snippets.views.snippets import SnippetViewSet
-
-from cms.core.ui import LocaleColumn
 
 from .models import FooterMenu, MainMenu
 

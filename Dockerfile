@@ -30,7 +30,7 @@
 # environments. It also sets up the always-activated virtual environment and
 # installs Poetry.
 
-FROM python:3.12-slim AS base
+FROM python:3.13-slim AS base
 
 WORKDIR /app
 
@@ -84,7 +84,7 @@ RUN groupadd --gid $GID $USERNAME \
     && chown -R $UID:$GID /app $VIRTUAL_ENV
 
 # Install Poetry in its own virtual environment
-ARG POETRY_VERSION=1.8.4
+ARG POETRY_VERSION=1.8.5
 ARG POETRY_HOME=/opt/poetry
 # TODO: when moving to ONS infrastructure, replace RUN with
 # RUN --mount=type=cache,target=/root/.cache/pip <<EOF
@@ -206,7 +206,7 @@ COPY --chown=$UID:$GID . .
 RUN make load-design-system-templates
 
 COPY --chown=$UID:$GID --from=frontend-build --link /build/cms/static_compiled ./cms/static_compiled
-RUN django-admin collectstatic --noinput --clear
+RUN django-admin collectstatic --noinput --clear && django-admin compilemessages
 
 # Run Gunicorn using the config in gunicorn.conf.py (the default location for
 # the config file). To change gunicorn settings without needing to make code
