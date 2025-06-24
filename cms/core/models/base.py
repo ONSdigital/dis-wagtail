@@ -150,7 +150,7 @@ class BasePage(PageLDMixin, ListingFieldsMixin, SocialFieldsMixin, Page):  # typ
                 breadcrumbs.append({"url": "/", "text": _("Home")})
             elif not getattr(ancestor_page, "exclude_from_breadcrumbs", False):
                 breadcrumbs.append({"url": ancestor_page.get_url(request=request), "text": ancestor_page.title})
-        if request and getattr(request, "breadcrumbs_include_self", False):
+        if request and getattr(request, "subpage_route", ""):
             breadcrumbs.append({"url": self.get_url(request=request), "text": self.title})
         return breadcrumbs
 
@@ -175,12 +175,16 @@ class BasePage(PageLDMixin, ListingFieldsMixin, SocialFieldsMixin, Page):  # typ
         """Add page breadcrumbs to the JSON LD properties."""
         return cast(dict[str, Any], extend(super().ld_entity(), self.breadcrumbs_as_jsonld))
 
-    def get_canonical_url(self, request: Optional["HttpRequest"] = None) -> str:
+    def get_canonical_url(self, request: "HttpRequest") -> str:
         """Get the default canonical URL for the page."""
+        canonical_page = self
         if aliased_page := self.alias_of:
-            # The canonical url should point to the original page, if this page is an alias
-            return cast(str, aliased_page.get_url(request=request))
-        return cast(str, self.get_url(request=request))
+            # The canonical url should point to the original page if this page is an alias
+            canonical_page = aliased_page
+        if subpage_route := getattr(request, "subpage_route", ""):
+            # Include the subpage route if the request is for a subpage
+            return cast(str, canonical_page.get_url(request=request) + subpage_route)
+        return cast(str, canonical_page.get_url(request=request))
 
 
 class BaseSiteSetting(WagtailBaseSiteSetting):
