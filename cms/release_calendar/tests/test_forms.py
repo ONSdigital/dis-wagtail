@@ -1,19 +1,31 @@
+import datetime
+
+from django.conf import settings
+from django.contrib.auth.models import Group
 from django.test import TestCase
 from django.urls import reverse
 from django.utils import timezone
+from wagtail.models import Locale
 from wagtail.test.utils import WagtailTestUtils
 from wagtail.test.utils.form_data import nested_form_data, rich_text, streamfield
 
 from cms.bundles.tests.factories import BundleFactory
-from cms.release_calendar.enums import NON_PROVISIONAL_STATUS_CHOICES, ReleaseStatus
+from cms.release_calendar.enums import LOCKED_STATUS_STATUSES, NON_PROVISIONAL_STATUS_CHOICES, ReleaseStatus
 from cms.release_calendar.models import ReleaseCalendarPage
 from cms.release_calendar.tests.factories import ReleaseCalendarPageFactory
+from cms.users.tests.factories import UserFactory
 
 
 class ReleaseCalendarPageAdminFormTestCase(WagtailTestUtils, TestCase):
     @classmethod
     def setUpTestData(cls):
         cls.superuser = cls.create_superuser(username="admin")
+        cls.publishing_officer = UserFactory(username="publishing_officer")
+        officer_group = Group.objects.get(name=settings.PUBLISHING_OFFICERS_GROUP_NAME)
+        officer_group.user_set.add(cls.publishing_officer)
+        cls.publishing_admin = UserFactory(username="publishing_admin", access_admin=True)
+        admin_group = Group.objects.get(name=settings.PUBLISHING_ADMINS_GROUP_NAME)
+        admin_group.user_set.add(cls.publishing_admin)
 
     def setUp(self):
         self.page = ReleaseCalendarPageFactory()
@@ -41,11 +53,14 @@ class ReleaseCalendarPageAdminFormTestCase(WagtailTestUtils, TestCase):
 
     def test_form_init__status_choices(self):
         """Checks that when the release entry is non-provisional, the provisional state is not a choice."""
+        provisional_choices = [choice for choice in ReleaseStatus.choices if choice[0] != ReleaseStatus.PUBLISHED]
+        non_provisional_choices = [
+            choice for choice in NON_PROVISIONAL_STATUS_CHOICES if choice[0] != ReleaseStatus.PUBLISHED
+        ]
         cases = [
-            (ReleaseStatus.PROVISIONAL, ReleaseStatus.choices),
-            (ReleaseStatus.CONFIRMED, NON_PROVISIONAL_STATUS_CHOICES),
-            (ReleaseStatus.CANCELLED, NON_PROVISIONAL_STATUS_CHOICES),
-            (ReleaseStatus.PUBLISHED, NON_PROVISIONAL_STATUS_CHOICES),
+            (ReleaseStatus.PROVISIONAL, provisional_choices),
+            (ReleaseStatus.CONFIRMED, non_provisional_choices),
+            (ReleaseStatus.CANCELLED, non_provisional_choices),
         ]
         for status, choices in cases:
             with self.subTest(status=status, choices=choices):
@@ -53,6 +68,12 @@ class ReleaseCalendarPageAdminFormTestCase(WagtailTestUtils, TestCase):
                 form = self.form_class(instance=self.page)
 
                 self.assertEqual(form.fields["status"].choices, choices)
+
+    def test_form_init__status_choices__published(self):
+        """Checks that the status choices do not include PUBLISHED."""
+        form = self.form_class(instance=self.page)
+
+        self.assertNotIn(ReleaseStatus.PUBLISHED, [choice[0] for choice in form.fields["status"].choices])
 
     def test_form_init__release_date_disabled(self):
         """Checks that the release_date field is disabled when the status is published."""
@@ -75,6 +96,18 @@ class ReleaseCalendarPageAdminFormTestCase(WagtailTestUtils, TestCase):
 
         self.assertTrue(form.is_valid())
 
+    def test_form_clean__accepts_published_if_already_published(self):
+        """Checks that the form accepts a published status if the page is already published."""
+        self.page.status = ReleaseStatus.PUBLISHED
+        data = self.form_data
+        data["release_date"] = self.page.release_date = datetime.datetime(2025, 1, 2, 3, 4, 5, 0, tzinfo=datetime.UTC)
+        data["status"] = ReleaseStatus.PUBLISHED
+        form = self.form_class(instance=self.page, data=data)
+
+        # Print any form errors for debugging
+        self.assertTrue(form.is_valid())
+        self.assertEqual(form.cleaned_data["status"], ReleaseStatus.PUBLISHED)
+
     def test_form_clean__validates_notice(self):
         """Checks that there is a notice if cancelling."""
         data = self.form_data
@@ -86,17 +119,29 @@ class ReleaseCalendarPageAdminFormTestCase(WagtailTestUtils, TestCase):
 
     def test_form_clean__validates_release_date_is_mandatory(self):
         """Validates that the release date must be set on all."""
+        self.page.release_date = "2032-06-10"
         data = self.form_data
+        data["release_date"] = self.page.release_date
+        data["notice"] = rich_text("")
+
+        for status in ReleaseStatus:
+            if status == ReleaseStatus.PUBLISHED:
+                continue
+            with self.subTest(status=status):
+                self.page.status = data["status"] = status
+                form = self.form_class(instance=self.page, data=data)
+                self.assertTrue(form.is_valid())
+
+        self.page.release_date = None
+        data["release_date"] = None
 
         for status in ReleaseStatus:
             with self.subTest(status=status):
-                data["status"] = status
-                data["notice"] = rich_text("")
+                self.page.status = data["status"] = status
                 form = self.form_class(instance=self.page, data=data)
+                self.assertFalse(form.is_valid())
 
-                self.assertEqual(form.is_valid(), True)
-
-    def test_form_clean__validates_release_date_text(self):
+    def test_form_clean__validates_release_date_text_in_english(self):
         """Validates that the release date text format."""
         data = self.form_data
         cases = [
@@ -117,7 +162,40 @@ class ReleaseCalendarPageAdminFormTestCase(WagtailTestUtils, TestCase):
                     self.assertFormError(
                         form,
                         "release_date_text",
-                        ["The release date text must be in the 'Month YYYY' or 'Month YYYY to Month YYYY' format."],
+                        [
+                            "The release date text must be in the 'Month YYYY' or 'Month YYYY to Month YYYY'"
+                            " format in English."
+                        ],
+                    )
+
+    def test_form_clean__validates_release_date_text_in_welsh(self):
+        """Validates that the release date text format."""
+        data = self.form_data
+        welsh_locale, _ = Locale.objects.get_or_create(language_code="cy")
+
+        self.page.locale = welsh_locale
+        cases = [
+            ("Tachwedd 2024", True),
+            ("Tach 2024", False),
+            ("Tachwedd 24", False),
+            ("Tachwedd 2024 i Rhagfyr 2024", True),
+            ("Tachwedd 2024 i anfeidroldeb", False),
+            ("Tachwedd 2024 i Rhagfyr 2024 i Ionawr 2025", False),
+        ]
+        for text, is_valid in cases:
+            with self.subTest(text=text, is_valid=is_valid):
+                data["release_date_text"] = text
+                form = self.form_class(instance=self.page, data=data)
+
+                self.assertEqual(form.is_valid(), is_valid, f"Failed for text: {text}")
+                if not is_valid:
+                    self.assertFormError(
+                        form,
+                        "release_date_text",
+                        [
+                            "The release date text must be in the 'Month YYYY' or 'Month YYYY to Month YYYY'"
+                            " format in Welsh."
+                        ],
                     )
 
     def test_form_clean__validates_release_date_text_start_end_dates(self):
@@ -129,6 +207,83 @@ class ReleaseCalendarPageAdminFormTestCase(WagtailTestUtils, TestCase):
 
         self.assertFalse(form.is_valid())
         self.assertFormError(form, "release_date_text", ["The end month must be after the start month."])
+
+    def test_form_clean__validates_next_release_date_text_in_english(self):
+        """Validates that the next release date text format."""
+        data = self.form_data
+        data["release_date"] = "2024-01-01T00:00:00Z"
+        cases = [
+            ("12 November 2024 12:00pm", True),
+            ("Nov 2024", False),
+            ("November 24", False),
+            ("To be confirmed", True),
+            ("Lorem ipsum", False),
+        ]
+        for text, is_valid in cases:
+            with self.subTest(text=text, is_valid=is_valid):
+                data["next_release_date_text"] = text
+                form = self.form_class(instance=self.page, data=data)
+
+                self.assertEqual(form.is_valid(), is_valid)
+                if not is_valid:
+                    self.assertFormError(
+                        form,
+                        "next_release_date_text",
+                        [
+                            'The next release date text must be in the "DD Month YYYY Time" format or say '
+                            '"To be confirmed" in English.'
+                        ],
+                    )
+
+    def test_form_clean__validates_next_release_date_text_in_welsh(self):
+        """Validates that the next release date text format."""
+        data = self.form_data
+        welsh_locale, _ = Locale.objects.get_or_create(language_code="cy")
+
+        self.page.locale = welsh_locale
+        data["release_date"] = "2024-01-01T00:00:00Z"
+        cases = [
+            ("12 Tachwedd 2024 12:00pm", True),
+            ("Tach 2024", False),
+            ("Tachwedd 24", False),
+            ("I'w gadarnhau", True),
+            ("Lorem ipsum", False),
+        ]
+        for text, is_valid in cases:
+            with self.subTest(text=text, is_valid=is_valid):
+                data["next_release_date_text"] = text
+                form = self.form_class(instance=self.page, data=data)
+
+                self.assertEqual(form.is_valid(), is_valid)
+                if not is_valid:
+                    self.assertFormError(
+                        form,
+                        "next_release_date_text",
+                        [
+                            'The next release date text must be in the "DD Month YYYY Time" format or say '
+                            '"I\'w gadarnhau" in Welsh.'
+                        ],
+                    )
+
+    def test_form_clean__validates_next_release_date_text_is_after(self):
+        data = self.form_data
+        data["release_date"] = "2024-01-01T00:00:00Z"
+        data["next_release_date_text"] = "12 November 2023 12:00pm"
+
+        form = self.form_class(instance=self.page, data=data)
+
+        self.assertFalse(form.is_valid())
+
+        self.assertFormError(
+            form,
+            "next_release_date_text",
+            ["The next release date must be after the release date."],
+        )
+
+        data["next_release_date_text"] = "12 November 2024 12:00pm"  # It is later now
+        form = self.form_class(instance=self.page, data=data)
+
+        self.assertTrue(form.is_valid())
 
     def test_form_clean__can_add_release_date_when_confirming(self):
         """Checks that we can set a new release date when the release is confirmed, if previously it was empty."""
@@ -147,22 +302,90 @@ class ReleaseCalendarPageAdminFormTestCase(WagtailTestUtils, TestCase):
         self.page.status = ReleaseStatus.CONFIRMED
         data = self.form_data
         data["notice"] = rich_text("")
+        data["status"] = ReleaseStatus.CONFIRMED
+        data["release_date"] = timezone.now()
+        form = self.form_class(instance=self.page, data=data)
 
-        for status in [ReleaseStatus.CONFIRMED, ReleaseStatus.PUBLISHED]:
+        self.assertFalse(form.is_valid())
+        self.assertFormError(
+            form,
+            "changes_to_release_date",
+            [
+                "If a confirmed calendar entry needs to be rescheduled, "
+                "the 'Changes to release date' field must be filled out."
+            ],
+        )
+
+    def test_form_clean__validates_notice_cannot_be_removed(self):
+        """Checks that the notice cannot be removed from a release calendar page."""
+        self.page.status = ReleaseStatus.PROVISIONAL
+        self.page.notice = "Lorem ipsum"
+        self.page.save_revision().publish()
+        data = self.form_data
+        data["notice"] = None
+
+        form = self.form_class(instance=self.page, data=data, for_user=self.publishing_officer)
+
+        # The form is valid because the notice field is disabled and defaults to the current notice value.
+        self.assertTrue(form.is_valid())
+        self.assertEqual(form.cleaned_data["notice"], "Lorem ipsum")
+
+        # Check that always the last published notice is used.
+        self.page.notice = "Foo bar"
+        self.page.save_revision().publish()
+        # Update the value used by the page instance so it differs from the published one.
+        self.page.notice = "Hello world"
+
+        form = self.form_class(instance=self.page, data=data, for_user=self.publishing_officer)
+
+        # This scenario triggers the validation, because the notice field is disabled and
+        # defaults to the current notice value, not the published one. This makes the form invalid,
+        # but the validation function correctly returns the last published notice.
+        self.assertFalse(form.is_valid())
+        self.assertEqual(form.cleaned_data["notice"], "Foo bar")
+
+        # A publishing admin can clear the notice.
+        form = self.form_class(instance=self.page, data=data, for_user=self.publishing_admin)
+        self.assertTrue(form.is_valid())
+        self.assertEqual(form.cleaned_data["notice"], "")
+
+    def test_form_clean__prevents_from_leaving_locked_statuses(self):
+        """Checks that the form prevents changing the status from a locked status."""
+        data = self.form_data
+        data["notice"] = rich_text("")
+        for status in LOCKED_STATUS_STATUSES:
             with self.subTest(status=status):
-                data["status"] = status
-                data["release_date"] = timezone.now()
-                form = self.form_class(instance=self.page, data=data)
+                self.page.status = status
+                self.page.save_revision().publish()
+                data["status"] = ReleaseStatus.CONFIRMED
+                form = self.form_class(instance=self.page, data=data, for_user=self.superuser)
+                # Trigger the form validation.
+                form.is_valid()
+                # Check that the status cannot be changed from a locked status.
+                self.assertEqual(form.cleaned_data["status"], status)
 
-                self.assertFalse(form.is_valid())
-                self.assertFormError(
-                    form,
-                    "changes_to_release_date",
-                    [
-                        "If a confirmed calendar entry needs to be rescheduled, "
-                        "the 'Changes to release date' field must be filled out."
-                    ],
-                )
+    def test_form_clean__allows_leaving_locked_statuses_when_in_draft(self):
+        """Checks that the form prevents changing the status from a locked status."""
+        data = self.form_data
+        self.page.notice = "Lorem ipsum"
+        self.page.status = ReleaseStatus.CANCELLED
+        self.page.save_revision()
+        data["notice"] = rich_text("Lorem ipsum")
+        data["status"] = ReleaseStatus.CONFIRMED
+        form = self.form_class(instance=self.page, data=data, for_user=self.superuser)
+        # Trigger the form validation.
+        form.is_valid()
+        # Check that the status can be changed back to confirmed from a locked status in draft.
+        self.assertEqual(form.cleaned_data["status"], ReleaseStatus.CONFIRMED)
+
+        # Now publish cancellation.
+        self.page.status = ReleaseStatus.CANCELLED
+        self.page.save_revision().publish()
+
+        form = self.form_class(instance=self.page, data=data, for_user=self.superuser)
+        form.is_valid()
+        # Check that the status cannot be changed from a locked status.
+        self.assertEqual(form.cleaned_data["status"], ReleaseStatus.CANCELLED)
 
     def test_form_clean__validates_release_date_when_confirmed__happy_path(self):
         """Checks that there are no errors when good data is submitted."""
@@ -172,13 +395,11 @@ class ReleaseCalendarPageAdminFormTestCase(WagtailTestUtils, TestCase):
         data["changes_to_release_date"] = streamfield(
             [("date_change_log", {"previous_date": timezone.now(), "reason_for_change": "The reason"})]
         )
-        for status in [ReleaseStatus.CONFIRMED, ReleaseStatus.PUBLISHED]:
-            with self.subTest(status=status):
-                data["status"] = status
-                data = nested_form_data(data)
-                form = self.form_class(instance=self.page, data=data)
+        data["status"] = ReleaseStatus.CONFIRMED
+        data = nested_form_data(data)
+        form = self.form_class(instance=self.page, data=data)
 
-                self.assertTrue(form.is_valid())
+        self.assertTrue(form.is_valid())
 
     def test_form_clean__set_release_date_text_to_empty_string_for_non_provisional_releases(self):
         """Checks that for non-provisional releases the provisional release date text is set to an empty string."""
@@ -196,14 +417,12 @@ class ReleaseCalendarPageAdminFormTestCase(WagtailTestUtils, TestCase):
         self.assertTrue(form.is_valid())
         self.assertEqual(form.cleaned_data["release_date_text"], "November 2024")
 
-        for status in [ReleaseStatus.CONFIRMED, ReleaseStatus.PUBLISHED]:
-            with self.subTest(status=status):
-                data["status"] = status
-                data = nested_form_data(data)
-                form = self.form_class(instance=self.page, data=data)
+        data["status"] = ReleaseStatus.CONFIRMED
+        data = nested_form_data(data)
+        form = self.form_class(instance=self.page, data=data)
 
-                self.assertTrue(form.is_valid())
-                self.assertEqual(form.cleaned_data["release_date_text"], "")
+        self.assertTrue(form.is_valid())
+        self.assertEqual(form.cleaned_data["release_date_text"], "")
 
     def test_form_clean__validates_either_next_release_date_or_text(self):
         """Checks that editors can enter either the next release date or the text, not both."""

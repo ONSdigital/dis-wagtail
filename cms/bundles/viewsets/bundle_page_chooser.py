@@ -2,7 +2,7 @@ from typing import TYPE_CHECKING, Any, ClassVar
 
 from django import forms
 from wagtail.admin.forms.choosers import BaseFilterForm, LocaleFilterMixin, SearchFilterMixin
-from wagtail.admin.ui.tables import Column, DateColumn
+from wagtail.admin.ui.tables import Column, DateColumn, LocaleColumn
 from wagtail.admin.ui.tables.pages import PageStatusColumn
 from wagtail.admin.views.generic.chooser import ChooseResultsView, ChooseView
 from wagtail.admin.viewsets.chooser import ChooserViewSet
@@ -10,7 +10,6 @@ from wagtail.admin.widgets import BaseChooser
 from wagtail.models import Page
 
 from cms.bundles.utils import get_bundleable_page_types, get_pages_in_active_bundles
-from cms.core.ui import LocaleColumn
 
 if TYPE_CHECKING:
     from wagtail.query import PageQuerySet
