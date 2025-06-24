@@ -10,21 +10,22 @@ logger = logging.getLogger(__name__)
 
 def _send_bundle_email(bundle: Bundle, team: Team, subject: str, message: str) -> None:
     """Helper to send an email to all active users in the team."""
+    email_id_tuples = team.users.filter(is_active=True).values_list("email", "id")
     active_user_emails = []
 
-    for user in team.users.filter(is_active=True):
-        if user.email:
-            active_user_emails.append(user.email)
-        else:
+    for email, user_id in email_id_tuples:
+        if not email:
             logger.error(
                 "Attempted to send an email to a user without an email address",
                 extra={
-                    "user_id": user.id,
+                    "user_id": user_id,
                     "team_name": team.name,
                     "bundle_name": bundle.name,
                     "email_subject": subject,
                 },
             )
+        else:
+            active_user_emails.append(email)
 
     send_mail(
         subject=subject,
