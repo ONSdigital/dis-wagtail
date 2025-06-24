@@ -6,10 +6,13 @@
     {%- set localised_version_not_available = true -%}
 {%- endif -%}
 
-{# Render all JSON LD properties from the page object #}
 {% block meta %}
     {{ super() }}
+    {# Render all JSON LD properties from the page object #}
     {{ ld.for_object(page) }}
+    {% if no_index %}
+        <meta name="robots" content="noindex" />
+    {% endif %}
 {% endblock meta %}
 
 {% block social %}

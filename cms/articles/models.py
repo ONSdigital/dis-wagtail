@@ -362,6 +362,7 @@ class StatisticalArticlePage(BundledPageMixin, RoutablePageMixin, BasePage):  # 
             context_overrides={
                 "page": revision.as_object(),
                 "latest_version_url": self.get_url(request),
+                "no_index": True,
             },
         )
 
