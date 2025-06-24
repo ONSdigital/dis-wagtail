@@ -10,6 +10,7 @@ from wagtail.search import index
 from cms.bundles.mixins import BundledPageMixin
 from cms.core.blocks.related import RelatedContentBlock
 from cms.core.blocks.stream_blocks import CoreStoryBlock
+from cms.core.enums import RelatedContentType
 from cms.core.fields import StreamField
 from cms.core.forms import PageWithEquationsAdminForm
 from cms.core.models import BasePage
@@ -107,7 +108,7 @@ class IndexPage(BundledPageMixin, BasePage):  # type: ignore[django-manager-miss
                     "title": {"text": link["text"], "url": link["url"]},
                     "description": featured_item.value["description"],
                     "metadata": get_document_metadata(
-                        featured_item.value["content_type"],
+                        getattr(RelatedContentType, featured_item.value["content_type"]).label,
                         featured_item.value.get("release_date", None),
                         _("Published"),
                     ),
