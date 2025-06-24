@@ -150,7 +150,7 @@ class BasePage(PageLDMixin, ListingFieldsMixin, SocialFieldsMixin, Page):  # typ
                 breadcrumbs.append({"url": "/", "text": _("Home")})
             elif not getattr(ancestor_page, "exclude_from_breadcrumbs", False):
                 breadcrumbs.append({"url": ancestor_page.get_url(request=request), "text": ancestor_page.title})
-        if request and getattr(request, "subpage_route", ""):
+        if request and getattr(request, "is_for_subpage", False):
             breadcrumbs.append({"url": self.get_url(request=request), "text": self.title})
         return breadcrumbs
 
@@ -181,9 +181,11 @@ class BasePage(PageLDMixin, ListingFieldsMixin, SocialFieldsMixin, Page):  # typ
         if aliased_page := self.alias_of:
             # The canonical url should point to the original page if this page is an alias
             canonical_page = aliased_page
-        if subpage_route := getattr(request, "subpage_route", ""):
+        if getattr(request, "is_for_subpage", False) and (
+            resolver_match := getattr(request, "routable_resolver_match", "")
+        ):
             # Include the subpage route if the request is for a subpage
-            return cast(str, canonical_page.get_url(request=request) + subpage_route)
+            return cast(str, canonical_page.get_url(request=request) + resolver_match.route)
         return cast(str, canonical_page.get_url(request=request))
 
 

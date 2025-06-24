@@ -92,7 +92,7 @@ class ArticleSeriesPage(RoutablePageMixin, GenericTaxonomyMixin, BasePage):  # t
         except (EmptyPage, PageNotAnInteger) as e:
             raise Http404 from e
 
-        request.subpage_route = "previous-releases/"  # type: ignore[attr-defined]
+        request.is_for_subpage = True  # type: ignore[attr-defined]
         response: TemplateResponse = self.render(
             request,
             # TODO: update to include drafts when looking at previews holistically.
@@ -406,7 +406,7 @@ class StatisticalArticlePage(BundledPageMixin, RoutablePageMixin, BasePage):  # 
         except (EmptyPage, PageNotAnInteger) as e:
             raise Http404 from e
 
-        request.subpage_route = "related-data/"  # type: ignore[attr-defined]
+        request.is_for_subpage = True  # type: ignore[attr-defined]
 
         response: TemplateResponse = self.render(
             request,
@@ -460,9 +460,11 @@ class StatisticalArticlePage(BundledPageMixin, RoutablePageMixin, BasePage):  # 
         if aliased_page := self.alias_of:
             # The canonical url should point to the original page if this page is an alias
             canonical_page = aliased_page
-        if subpage_route := getattr(request, "subpage_route", ""):
+        if getattr(request, "is_for_subpage", False) and (
+            resolver_match := getattr(request, "routable_resolver_match", "")
+        ):
             # Include the subpage route if the request is for a subpage
-            return cast(str, canonical_page.get_url(request=request) + subpage_route)
+            return cast(str, canonical_page.get_url(request=request) + resolver_match.route)
         if canonical_page.is_latest:
             # If the page is the latest in the series then return the parent series URL,
             # which is evergreen for the latest article
