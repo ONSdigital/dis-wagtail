@@ -94,6 +94,12 @@ Feature: Role Based Access Control Permission as defined in data migrations
         When a Publishing Officer logs into the admin site
         Then the user can see the Preview teams menu item
 
+    Scenario: A Publishing Officer cannot change a published notice
+        Given a Release Calendar page with a publish notice exists
+        Given a Publishing Officer logs into the admin site
+        When the user navigates to the published release calendar page
+        Then the notice field is disabled
+
     # Viewer
 
     Scenario: A Viewer can inspect Bundles details
