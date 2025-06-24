@@ -10,30 +10,19 @@ from wagtail_factories import DocumentFactory
 from cms.private_media.storages import AccessControlledS3Storage
 
 
-@mock.patch.dict(
-    os.environ,
-    {
-        "AWS_ACCESS_KEY_ID": "testing",
-        "AWS_SECRET_ACCESS_KEY": "testing",
-        "AWS_SESSION_TOKEN": "testing",
-        "AWS_DEFAULT_REGION": "us-east-1",
-        # stop Boto3 from ever opening the real files
-        "AWS_SHARED_CREDENTIALS_FILE": os.devnull,
-        "AWS_CONFIG_FILE": os.devnull,
-        # and stop the metadata lookup just in case
-        "AWS_EC2_METADATA_DISABLED": "true",
-    },
-    clear=True,  # ← strip *everything* else first
-)
-@mock_aws
 @override_settings(
     AWS_STORAGE_BUCKET_NAME="test-bucket",
     AWS_S3_REGION_NAME="us-east-1",
+    AWS_ACCESS_KEY_ID="testing",
+    AWS_SECRET_ACCESS_KEY="testing",
+    AWS_SESSION_TOKEN="testing",
+    AWS_EC2_METADATA_DISABLED=True,
 )
+@mock_aws
 class AccessControlledS3StorageTests(TestCase):
-    # @classmethod
-    # def setUpTestData(cls):
-    #     cls.document = DocumentFactory()
+    @classmethod
+    def setUpTestData(cls):
+        cls.document = DocumentFactory()
 
     def setUp(self):
         super().setUp()
