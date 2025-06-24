@@ -175,12 +175,13 @@ def management_command(request: "HttpRequest", command_name: str) -> HttpRespons
     try:
         get_commands()[command_name]
     except KeyError:
+        logger.exception("Unknown command %r", command_name)
         return HttpResponse("Unknown command", status=404)
 
     try:
         call_command(command_name, skip_checks=True, no_color=True)
     except CommandError:
-        logger.exception("Error executing management command")
+        logger.exception("Error executing management command %r", command_name)
         return HttpResponse("Command failed", status=400)
 
     return HttpResponse()
