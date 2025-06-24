@@ -122,16 +122,16 @@ msgstr ""
 
 #: cms/jinja2/templates/components/streamfield/datasets_block.html:2
 #: cms/jinja2/templates/pages/topic_page.html:86
-#: cms/release_calendar/models.py:208 cms/topics/models.py:247
+#: cms/release_calendar/models.py:207 cms/topics/models.py:247
 msgid "Data"
 msgstr ""
 
 #: cms/jinja2/templates/components/streamfield/glossary_section_block.html:4
-msgid "Show all"
+msgid "Show all glossary terms"
 msgstr ""
 
 #: cms/jinja2/templates/components/streamfield/glossary_section_block.html:5
-msgid "Hide all"
+msgid "Hide all glossary terms"
 msgstr ""
 
 #: cms/jinja2/templates/components/streamfield/notice_block.html:3
