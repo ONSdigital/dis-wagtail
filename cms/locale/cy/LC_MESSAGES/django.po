@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-06-24 10:05+0100\n"
+"POT-Creation-Date: 2025-06-24 10:12+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -122,7 +122,7 @@ msgstr ""
 
 #: cms/jinja2/templates/components/streamfield/datasets_block.html:2
 #: cms/jinja2/templates/pages/topic_page.html:86
-#: cms/release_calendar/models.py:207 cms/topics/models.py:247
+#: cms/release_calendar/models.py:208 cms/topics/models.py:247
 msgid "Data"
 msgstr ""
 
