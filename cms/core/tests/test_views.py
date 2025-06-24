@@ -290,7 +290,7 @@ class ManagementCommandsEndpointTestCase(TestCase):
             reverse("internal:management-command", args=["sendtestemail"]),
             headers={"Authorization": self._get_basic_auth()},
         )
-        self.assertContains(response, "You must specify some email recipients", status_code=400)
+        self.assertContains(response, "Command failed", status_code=400)
 
     def test_runs_command(self):
         response = self.client.get(
