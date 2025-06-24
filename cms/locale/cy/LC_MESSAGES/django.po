@@ -469,5 +469,5 @@ msgstr "Cymraeg"
 msgid "Ukrainian"
 msgstr ""
 
-#~ msgid "To be confirmed"
-#~ msgstr "I'w gadarnhau"
+msgid "To be confirmed"
+msgstr "I'w gadarnhau"
