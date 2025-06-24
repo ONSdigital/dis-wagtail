@@ -1,4 +1,3 @@
-import os
 from unittest import mock
 
 from botocore.exceptions import ClientError
