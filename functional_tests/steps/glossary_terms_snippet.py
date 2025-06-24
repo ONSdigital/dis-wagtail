@@ -101,7 +101,7 @@ def the_glossary_term_definition_is_visible_in_preview_tab(context: Context):
 
 @then("the user can see the Glossary Term")
 def the_user_can_see_the_preview_of_the_glossary_term(context: Context) -> None:
-    expect(context.page.get_by_text("Term")).to_be_visible()
+    expect(context.page.get_by_text("Term", exact=True)).to_be_visible()
     expect(context.page.get_by_text("Definition", exact=True)).to_be_hidden()
 
 
