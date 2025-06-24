@@ -1,3 +1,4 @@
+import base64
 import logging
 import platform
 from datetime import UTC, datetime
@@ -263,3 +264,37 @@ class AdminPageTreeTestCase(WagtailTestUtils, TestCase):
         content = response.content.decode("utf-8")
 
         self.assertInHTML('<span class="w-status w-status--label w-m-0">English</span>', content)
+
+
+@override_settings(IS_EXTERNAL_ENV=False, MANAGEMENT_COMMANDS_URL_SECRET="SECRET")
+class ManagementCommandsEndpointTestCase(TestCase):
+    def _get_basic_auth(self, password="SECRET"):  # noqa: S107
+        return "Basic " + base64.b64encode(f"cms:{password}".encode()).decode()
+
+    def test_unknown_management_command(self):
+        response = self.client.get(
+            reverse("internal:management-command", args=["not-a-command"]),
+            headers={"Authorization": self._get_basic_auth()},
+        )
+        self.assertContains(response, "Unknown command", status_code=404)
+
+    def test_incorrect_basic_auth(self):
+        response = self.client.get(
+            reverse("internal:management-command", args=["test"]),
+            headers={"Authorization": self._get_basic_auth("incorrect")},
+        )
+        self.assertContains(response, "Forbidden", status_code=403)
+
+    def test_failing_command(self):
+        response = self.client.get(
+            reverse("internal:management-command", args=["sendtestemail"]),
+            headers={"Authorization": self._get_basic_auth()},
+        )
+        self.assertContains(response, "You must specify some email recipients", status_code=400)
+
+    def test_runs_command(self):
+        response = self.client.get(
+            reverse("internal:management-command", args=["publish_bundles"]),
+            headers={"Authorization": self._get_basic_auth()},
+        )
+        self.assertEqual(response.status_code, 200)

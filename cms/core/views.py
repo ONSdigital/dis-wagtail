@@ -5,8 +5,10 @@ from typing import TYPE_CHECKING
 
 import redis
 import redis.exceptions
+from baipw.utils import authorize as basic_auth_authorize
 from django.conf import settings
 from django.core.cache import caches
+from django.core.management import CommandError, call_command, get_commands
 from django.db import DatabaseError, connections
 from django.http import HttpResponse, HttpResponseServerError, JsonResponse
 from django.shortcuts import render
@@ -162,3 +164,22 @@ def health(request: "HttpRequest") -> HttpResponse:
     data["checks"] = checks
 
     return JsonResponse(data, status=500 if checks_failed else 200)
+
+
+@never_cache
+@require_GET
+def management_command(request: "HttpRequest", command_name: str) -> HttpResponse:
+    # Validates basic auth, or raises an exception
+    basic_auth_authorize(request, "cms", settings.MANAGEMENT_COMMANDS_URL_SECRET)
+
+    try:
+        get_commands()[command_name]
+    except KeyError:
+        return HttpResponse("Unknown command", status=404)
+
+    try:
+        call_command(command_name, skip_checks=True, no_color=True)
+    except CommandError as e:
+        return HttpResponse(str(e), status=400)
+
+    return HttpResponse()
