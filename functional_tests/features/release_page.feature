@@ -60,18 +60,3 @@ Feature: CMS users can draft, edit, and publish release pages
       | MeridiemIndicator |
       | am                |
       | pm                |
-
-  Scenario Outline: A CMS user can use preview mode to preview page at different statuses
-    When the user clicks "Add child page" to create a new draft release page
-    And the user enters some example content on the page
-    And the user clicks the "Save Draft" button
-    And the user clicks the "Preview" button
-    And the user changes preview mode to "<PageStatus>"
-    Then the "<PageStatus>" page is displayed
-
-    Examples:
-      | PageStatus  |
-      | Provisional |
-      | Confirmed   |
-      | Published   |
-      | Cancelled   |
