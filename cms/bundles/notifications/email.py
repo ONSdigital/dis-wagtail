@@ -1,5 +1,6 @@
 import logging
 
+from django.template import TemplateDoesNotExist
 from django.template.loader import render_to_string
 from wagtail.admin.mail import send_mail
 
@@ -32,8 +33,24 @@ def _send_bundle_email(bundle: Bundle, team: Team, subject: str, email_template_
     plain_text_template = f"bundles/notification_emails/plain_text_variant/{email_template_name}.txt"
     template_context = {"bundle_name": bundle.name, "bundle_inspect_url": bundle.full_inspect_url}
 
-    html_message = render_to_string(html_template, template_context)
-    plain_text_message = render_to_string(plain_text_template, template_context)
+    try:
+        plain_text_message = render_to_string(plain_text_template, template_context)
+    except TemplateDoesNotExist:  # At least the plain text template variant should always exist
+        logger.error(
+            "Plain text email template not found",
+            extra={
+                "bundle_name": bundle.name,
+                "team_name": team.name,
+                "email_subject": subject,
+                "email_template_name": email_template_name,
+            },
+        )
+        raise
+
+    try:
+        html_message = render_to_string(html_template, template_context)
+    except Exception:  # pylint: disable=broad-exception-caught
+        html_message = None
 
     try:
         send_mail(
