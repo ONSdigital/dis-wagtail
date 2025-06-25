@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import date, datetime, time
 
 from django.utils.dateformat import DateFormat
 from django.utils.formats import get_format
@@ -28,3 +28,8 @@ def ons_date_format(value: datetime, format_string: str) -> str:
     # Reference:
     # https://github.com/django/django/blob/c1fa3fdd040718356e5a3b9a0fe699d73f47a940/django/conf/locale/cy/LC_MESSAGES/django.po#L926
     return date_format.replace("Gorffenaf", "Gorffennaf")
+
+
+def ons_default_datetime() -> datetime:
+    """Returns today's date at 9:30am."""
+    return datetime.combine(date.today(), time(9, 30))
