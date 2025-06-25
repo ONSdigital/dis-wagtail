@@ -35,21 +35,34 @@ def _send_bundle_email(bundle: Bundle, team: Team, subject: str, email_template_
     html_message = render_to_string(html_template, template_context)
     plain_text_message = render_to_string(plain_text_template, template_context)
 
-    send_mail(
-        subject=subject,
-        message=plain_text_message,
-        recipient_list=active_user_emails,
-        html_message=html_message,
-    )
-
-    logger.info(
-        "Email notification sent",
-        extra={
-            "bundle_name": bundle.name,
-            "team_name": team.name,
-            "email_subject": subject,
-        },
-    )
+    try:
+        send_mail(
+            subject=subject,
+            message=plain_text_message,
+            recipient_list=active_user_emails,
+            html_message=html_message,
+        )
+        logger.info(
+            "Email notification sent",
+            extra={
+                "team_name": team.name,
+                "bundle_name": bundle.name,
+                "email_subject": subject,
+                "recipients": active_user_emails,
+            },
+        )
+    except Exception as e:  # pylint: disable=broad-exception-caught
+        logger.error(
+            "Failed to send bundle notification email",
+            exc_info=True,
+            extra={
+                "team_name": team.name,
+                "bundle_name": bundle.name,
+                "email_subject": subject,
+                "recipients": active_user_emails,
+                "error_message": str(e),
+            },
+        )
 
 
 def send_bundle_in_review_email(bundle_team: BundleTeam) -> None:
