@@ -170,7 +170,7 @@ def user_edits_published_page(context: Context):
 
 @when('the user changes preview mode to "{page_status}"')
 def user_changes_preview_mode(context: Context, page_status: str):
-    context.page.get_by_label("Preview mode").select_option(page_status)
+    context.page.get_by_label("Preview mode").select_option(label=page_status)
     context.page.wait_for_timeout(1000)
 
 
