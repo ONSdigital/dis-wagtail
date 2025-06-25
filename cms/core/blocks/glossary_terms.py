@@ -23,6 +23,7 @@ class GlossaryTermsBlock(ListBlock):
         context: dict = super().get_context(value, parent_context)
         context["formatted_glossary_terms"] = [
             {
+                "headingLevel": 3,
                 "title": glossary_term.name,
                 "content": richtext(glossary_term.definition),
             }
