@@ -3,8 +3,20 @@
 {% if slug %}
     <section id="{{ slug }}">
         <h2>{{ heading }}</h2>
-        {{ onsDocumentList({ "documents": related_links }) }}
+        {# fmt:off #}
+        {{ onsDocumentList({
+                "headingLevel": 3,
+                "documents": related_links
+            })
+        }}
+    {# fmt:on #}
     </section>
 {% else %}
-    {{ onsDocumentList({ "documents": related_links }) }}
+    {# fmt:off #}
+        {{ onsDocumentList({
+                "headingLevel": 3,
+                "documents": related_links
+            })
+        }}
+    {# fmt:on #}
 {% endif %}

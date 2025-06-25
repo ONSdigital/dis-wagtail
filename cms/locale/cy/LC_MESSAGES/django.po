@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-06-19 15:01+0100\n"
+"POT-Creation-Date: 2025-06-24 10:12+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -30,7 +30,7 @@ msgstr ""
 
 #: cms/articles/models.py:328
 #: cms/jinja2/templates/components/contact_details/contact_details.html:5
-#: cms/methodology/models.py:156 cms/release_calendar/models.py:213
+#: cms/methodology/models.py:156 cms/release_calendar/models.py:214
 msgid "Contact details"
 msgstr ""
 
@@ -97,6 +97,12 @@ msgstr ""
 msgid "Accredited Official Statistics"
 msgstr ""
 
+#: cms/jinja2/templates/components/accredited/accredited-logo.html:2
+msgid ""
+"Accredited official statistics. Find out more about types of official "
+"statistics."
+msgstr ""
+
 #: cms/jinja2/templates/components/census/census-information.html:6
 msgid "This release includes data from Census 2021"
 msgstr ""
@@ -116,7 +122,7 @@ msgstr ""
 
 #: cms/jinja2/templates/components/streamfield/datasets_block.html:2
 #: cms/jinja2/templates/pages/topic_page.html:86
-#: cms/release_calendar/models.py:207 cms/topics/models.py:247
+#: cms/release_calendar/models.py:208 cms/topics/models.py:247
 msgid "Data"
 msgstr ""
 
@@ -252,7 +258,7 @@ msgstr ""
 #: cms/jinja2/templates/pages/release_calendar/release_calendar_page--cancelled.html:50
 #: cms/jinja2/templates/pages/release_calendar/release_calendar_page--confirmed.html:48
 #: cms/jinja2/templates/pages/release_calendar/release_calendar_page.html:96
-#: cms/release_calendar/models.py:210
+#: cms/release_calendar/models.py:211
 msgid "Changes to this release date"
 msgstr ""
 
@@ -266,12 +272,12 @@ msgid "Next release date:"
 msgstr "Cyhoeddiad nesaf"
 
 #: cms/jinja2/templates/pages/release_calendar/release_calendar_page.html:79
-#: cms/release_calendar/models.py:200
+#: cms/release_calendar/models.py:201
 msgid "Summary"
 msgstr ""
 
 #: cms/jinja2/templates/pages/release_calendar/release_calendar_page.html:107
-#: cms/release_calendar/models.py:217
+#: cms/release_calendar/models.py:218
 msgid "About the data"
 msgstr ""
 
@@ -301,12 +307,12 @@ msgid "are managed impartially and objectively in the public interest"
 msgstr ""
 
 #: cms/jinja2/templates/pages/release_calendar/release_calendar_page.html:135
-#: cms/release_calendar/models.py:222
+#: cms/release_calendar/models.py:223
 msgid "Pre-release access list"
 msgstr ""
 
 #: cms/jinja2/templates/pages/release_calendar/release_calendar_page.html:142
-#: cms/release_calendar/models.py:226
+#: cms/release_calendar/models.py:227
 msgid "You might also be interested in"
 msgstr ""
 
