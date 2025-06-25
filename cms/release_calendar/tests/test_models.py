@@ -10,7 +10,7 @@ from wagtail.test.utils.wagtail_tests import WagtailTestUtils
 
 from cms.bundles.enums import BundleStatus
 from cms.bundles.tests.factories import BundleFactory
-from cms.core.custom_date_format import ons_date_format
+from cms.core.custom_date_format import ons_date_format, ons_default_datetime
 from cms.core.models import ContactDetails
 from cms.datasets.blocks import DatasetStoryBlock
 from cms.datasets.models import Dataset
@@ -251,29 +251,44 @@ class ReleaseCalendarPageAdminTests(WagtailTestUtils, TestCase):
     def setUp(self):
         self.client.force_login(self.superuser)
 
-    def test_date_placeholder_on_add_edit_page(self):
+    def test_date_placeholder_on_edit_form(self):
         """Test that the date input field displays date placeholder."""
         response = self.client.get(self.add_url)
 
         content = response.content.decode(encoding="utf-8")
-
-        datetime_placeholder = "YYYY-MM-DD HH:MM"
-
-        self.assertInHTML(
-            (
-                '<input type="text" name="release_date" autocomplete="off"'
-                f'placeholder="{datetime_placeholder}" id="id_release_date" required>'
-            ),
-            content,
-        )
-
         self.assertInHTML(
             (
                 '<input type="text" name="next_release_date" autocomplete="off" '
-                f'placeholder="{datetime_placeholder}" id="id_next_release_date">'
+                'placeholder="YYYY-MM-DD HH:MM" id="id_next_release_date">'
             ),
             content,
         )
+
+    def test_default_date_on_release_date(self):
+        """Test release date shows a default datetime from ons_default_datetime."""
+        response = self.client.get(self.add_url, follow=True)
+
+        content = response.content.decode(encoding="utf-8")
+
+        default_datetime = ons_default_datetime().strftime("%Y-%m-%d %H:%M")
+
+        self.assertInHTML(
+            (
+                f'<input type="text" name="release_date" value="{default_datetime}" autocomplete="off" '
+                f'placeholder="YYYY-MM-DD HH:MM" required id="id_release_date">'
+            ),
+            content,
+        )
+
+    def test_preview_mode_url(self):
+        """Tests preview pages with preview mode loads."""
+        cases = ["PROVISIONAL", "CANCELLED", "PUBLISHED", "CONFIRMED"]
+
+        preview_url = reverse("wagtailadmin_pages:preview_on_edit", args=(self.release_calendar_page.pk,))
+        for case in cases:
+            with self.subTest(case=case):
+                response = self.client.get(f"{preview_url}?mode={case}", follow=True)
+                self.assertEqual(response.status_code, 200)
 
     def test_delete_redirects_back_to_edit(self):
         """Test that we get redirected back to edit when trying to delete a release calendar page."""
