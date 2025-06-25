@@ -194,7 +194,7 @@
     {% if page.headline_figures %}
         <div class="ons-container ons-u-pt-l ons-u-pb-2xl">
             <h2 class="ons-u-fs-m">{{ _("Headline facts and figures") }}</h2>
-            <div class="ons-grid ons-grid-flex-gap ons-grid-flex-gap--l ons-u-pb-2xl">
+            <div class="ons-grid ons-grid-flex-gap ons-grid-flex-gap--l ons-u-pb-2xl" id="headline-figures">
                 {% for figure in page.headline_figures %}
                     <div class="ons-grid__col ons-grid__col--loose ons-grid__col--flex-col ons-grid__col--stretch ons-u-flex-grow{% if page.headline_figures|length > 2 %} ons-col-4@m{% endif %}">
                         {% include_block figure %}
