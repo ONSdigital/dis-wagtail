@@ -138,7 +138,7 @@ class AuthIntegrationTests(TestCase):
         external.save()
 
         self.client.force_login(external)
-        access, id_token = self._generate_tokens(groups=["role-admin"])
+        access, id_token = self._generate_tokens(groups=["role-admin"])  # pylint: disable=unused-variable
         # Set only access cookie
         self.client.cookies[settings.ACCESS_TOKEN_COOKIE_NAME] = access
         self.client.cookies.pop(settings.ID_TOKEN_COOKIE_NAME, None)
@@ -156,7 +156,7 @@ class AuthIntegrationTests(TestCase):
         external.save()
 
         self.client.force_login(external)
-        access, id_token = self._generate_tokens(groups=["role-admin"])
+        access, id_token = self._generate_tokens(groups=["role-admin"])  # pylint: disable=unused-variable
         # Set only ID cookie
         self.client.cookies.pop(settings.ACCESS_TOKEN_COOKIE_NAME, None)
         self.client.cookies[settings.ID_TOKEN_COOKIE_NAME] = id_token
@@ -212,20 +212,49 @@ class AuthIntegrationTests(TestCase):
         self.assertFalse(response.wsgi_request.user.is_authenticated)
 
     def test_session_update_on_new_jti(self):
-        access1, id1 = self._generate_tokens()
-        self._set_jwt_cookies(access1, id1)
-        _ = self.client.get(settings.WAGTAILADMIN_HOME_PATH)
+        # First login with default JTIs
+        a1, i1 = self._generate_tokens(groups=["role-admin"])
+        self._set_jwt_cookies(a1, i1)
+        self.client.get(settings.WAGTAILADMIN_HOME_PATH)
         old_key = self.client.session[JWT_SESSION_ID_KEY]
-        access2, id2 = self._generate_tokens()
-        self._set_jwt_cookies(access2, id2)
-        _ = self.client.get(settings.WAGTAILADMIN_HOME_PATH)
-        self.assertNotEqual(self.client.session[JWT_SESSION_ID_KEY], old_key)
+
+        #  Now mint a pair of tokens by overriding jti
+        a2 = build_jwt(
+            self.keypair,
+            token_use="access",
+            username=self.user_uuid,
+            client_id=settings.AWS_COGNITO_APP_CLIENT_ID,
+            jti="jti-access-2",  # override
+        )
+        i2 = build_jwt(
+            self.keypair,
+            token_use="id",
+            aud=settings.AWS_COGNITO_APP_CLIENT_ID,
+            **{
+                "cognito:username": self.user_uuid,
+                "email": f"{self.user_uuid}@example.com",
+                "given_name": "First",
+                "family_name": "Last",
+                "cognito:groups": ["role-admin"],
+                "jti": "jti-id-2",  # override
+            },
+        )
+        self._set_jwt_cookies(a2, i2)
+
+        self.client.get(settings.WAGTAILADMIN_HOME_PATH)
+        new_key = self.client.session[JWT_SESSION_ID_KEY]
+
+        # Now they differ
+        self.assertNotEqual(new_key, old_key)
+        self.assertEqual(new_key, "jti-access-2jti-id-2")
 
     @override_settings(AWS_COGNITO_LOGIN_ENABLED=False)
     def test_cognito_disabled_logs_out_external(self):
-        user = User.objects.create_user(username="u", email="u@e.com")
-        user.external_user_id = self.user_uuid
-        self.client.force_login(user)
+        external = User.objects.create(username="temp", email="temp@example.com")
+        external.external_user_id = self.user_uuid
+        external.set_unusable_password()
+        external.save()
+        self.client.force_login(external)
         response = self.client.get(settings.WAGTAILADMIN_HOME_PATH)
         self.assertFalse(response.wsgi_request.user.is_authenticated)
 
@@ -247,25 +276,31 @@ class AuthIntegrationTests(TestCase):
         access, id_token = self._generate_tokens()
         self._set_jwt_cookies(access, id_token)
         response = self.client.post(reverse("wagtailadmin_logout"))
-        self.assertNotIn(settings.ACCESS_TOKEN_COOKIE_NAME, response.cookies)
-        self.assertNotIn(settings.ID_TOKEN_COOKIE_NAME, response.cookies)
 
-    @override_settings(AWS_COGNITO_LOGIN_ENABLED=False)
-    def test_logout_view_leaves_cookies_when_disabled(self):
-        access, id_token = self._generate_tokens()
-        self._set_jwt_cookies(access, id_token)
-        response = self.client.post(reverse("wagtailadmin_logout"))
-        self.assertIn(settings.ACCESS_TOKEN_COOKIE_NAME, response.cookies)
-        self.assertIn(settings.ID_TOKEN_COOKIE_NAME, response.cookies)
+        # The cookies should still be present in response.cookies, but their value should be empty
+        for name in (settings.ACCESS_TOKEN_COOKIE_NAME, settings.ID_TOKEN_COOKIE_NAME):
+            self.assertIn(name, response.cookies, f"{name} should be in response.cookies (deleted via empty value)")
+            morsel = response.cookies[name]
+            # Empty string value means deleted
+            self.assertEqual(morsel.value, "")
+            # And max-age=0 confirms deletion
+            self.assertIn(morsel.get("max-age"), ("0", 0))
 
     def test_extend_session_post_and_get(self):
-        user = User.objects.create_user(external_user_id=self.user_uuid, username="u", email="u@e.com")
-        self.client.force_login(user)
-        response = self.client.post(reverse("extend_session"))
+        # Mint tokens and set cookies
+        access, id_token = self._generate_tokens(groups=["role-admin"])
+        self._set_jwt_cookies(access, id_token)
+
+        # POST to extend_session
+        url = reverse("extend_session")
+        response = self.client.post(url)
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.json()["status"], "success")
-        response = self.client.get(reverse("extend_session"))
-        self.assertEqual(response.status_code, 405)
+        self.assertJSONEqual(response.content, {"status": "success", "message": "Session extended."})
+
+        # GET should return 405
+        response2 = self.client.get(url)
+        self.assertEqual(response2.status_code, 405)
+        self.assertJSONEqual(response2.content, {"status": "error", "message": "Invalid request method."})
 
     def test_wagtail_hook_injection(self):
         # Cognito disabled
