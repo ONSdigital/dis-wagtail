@@ -51,7 +51,7 @@ class LinkBlockStructValue(StructValue):
 
         release_date: datetime = self.get("release_date")
 
-        if release_date and value:
+        if release_date:
             value["metadata"]["date"] = get_document_metadata_date(release_date, _("Released"))
 
         return value
