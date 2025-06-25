@@ -1,7 +1,6 @@
 import logging
 
 from django.template.loader import render_to_string
-from django.utils.html import strip_tags
 from wagtail.admin.mail import send_mail
 
 from cms.bundles.models import Bundle, BundleTeam
@@ -10,7 +9,7 @@ from cms.teams.models import Team
 logger = logging.getLogger(__name__)
 
 
-def _send_bundle_email(bundle: Bundle, team: Team, subject: str, email_template: str) -> None:
+def _send_bundle_email(bundle: Bundle, team: Team, subject: str, email_template_name: str) -> None:
     """Helper to send an email to all active users in the team."""
     email_id_tuples = team.users.filter(is_active=True).values_list("email", "id")
     active_user_emails = []
@@ -29,14 +28,16 @@ def _send_bundle_email(bundle: Bundle, team: Team, subject: str, email_template:
         else:
             active_user_emails.append(email)
 
-    html_message = render_to_string(
-        email_template, {"bundle_name": bundle.name, "bundle_inspect_url": bundle.full_inspect_url}
-    )
-    plain_message = strip_tags(html_message)
+    html_template = f"bundles/notification_emails/html_variant/{email_template_name}.html"
+    plain_text_template = f"bundles/notification_emails/plain_text_variant/{email_template_name}.txt"
+    template_context = {"bundle_name": bundle.name, "bundle_inspect_url": bundle.full_inspect_url}
+
+    html_message = render_to_string(html_template, template_context)
+    plain_text_message = render_to_string(plain_text_template, template_context)
 
     send_mail(
         subject=subject,
-        message=plain_message,
+        message=plain_text_message,
         recipient_list=active_user_emails,
         html_message=html_message,
     )
@@ -57,9 +58,9 @@ def send_bundle_in_review_email(bundle_team: BundleTeam) -> None:
     team: Team = bundle_team.team  # type: ignore[assignment]
     subject = f'Bundle "{bundle.name}" is ready for review'
 
-    email_template = "templates/notification_emails/bundle_in_review_email.html"
+    email_template_name = "bundle_in_review_email"
 
-    _send_bundle_email(bundle, team, subject, email_template)
+    _send_bundle_email(bundle, team, subject, email_template_name)
     bundle_team.preview_notification_sent = True
     bundle_team.save(update_fields=["preview_notification_sent"])
 
@@ -70,6 +71,6 @@ def send_bundle_published_email(bundle_team: BundleTeam) -> None:
     team: Team = bundle_team.team  # type: ignore[assignment]
     subject = f'Bundle "{bundle.name}" has been published'
 
-    email_template = "templates/bundles/notification_emails/bundle_published_email.html"
+    email_template_name = "bundle_published_email"
 
-    _send_bundle_email(bundle, team, subject, email_template)
+    _send_bundle_email(bundle, team, subject, email_template_name)
