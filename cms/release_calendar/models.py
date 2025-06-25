@@ -71,6 +71,7 @@ class ReleaseCalendarPage(BundledPageMixin, BasePage):  # type: ignore[django-ma
 
     notice = RichTextField(
         features=settings.RICH_TEXT_BASIC,
+        verbose_name="Cancellation notice",
         blank=True,
         help_text=(
             "Used for data change or cancellation notices. The notice is required when the release is cancelled"
@@ -120,7 +121,7 @@ class ReleaseCalendarPage(BundledPageMixin, BasePage):  # type: ignore[django-ma
                 ReleaseCalendarBundleNotePanel(heading="Note", classname="bundle-note"),
                 FieldRowPanel(
                     [
-                        FieldPanel("release_date", datetime_widget),
+                        FieldPanel("release_date", datetime_widget, required_on_save=True),
                         FieldPanel("release_date_text", heading="Or, release date text"),
                     ],
                     heading="",
@@ -137,8 +138,8 @@ class ReleaseCalendarPage(BundledPageMixin, BasePage):  # type: ignore[django-ma
             heading="Metadata",
             icon="cog",
         ),
-        "summary",
-        FieldPanel("content", icon="list-ul"),
+        FieldPanel("summary", required_on_save=True),
+        FieldPanel("content", icon="list-ul", required_on_save=True),
         FieldPanel("datasets", help_text="Select the datasets that this release relates to.", icon="doc-full"),
         FieldPanel("contact_details", icon="group"),
         MultiFieldPanel(
@@ -231,5 +232,21 @@ class ReleaseCalendarPage(BundledPageMixin, BasePage):  # type: ignore[django-ma
     def active_bundle(self) -> Optional["Bundle"]:
         if not self.pk:
             return None
-        bundle: Optional[Bundle] = self.bundles.active().first()  # pylint: disable=no-member
+        bundle: Bundle | None = self.bundles.active().first()  # pylint: disable=no-member
         return bundle
+
+    @property
+    def live_status(self) -> Optional[ReleaseStatus]:
+        if not self.pk:
+            return None
+        # We just want one field, so we don't use live_revision
+        # to avoid loading the whole revision object.
+        live_page = ReleaseCalendarPage.objects.filter(pk=self.pk).live().only("status").first()
+        return live_page.status if live_page else None
+
+    @property
+    def live_notice(self) -> Optional[str]:
+        if not self.pk:
+            return None
+        live_page = ReleaseCalendarPage.objects.filter(pk=self.pk).live().only("notice").first()
+        return live_page.notice if live_page else None

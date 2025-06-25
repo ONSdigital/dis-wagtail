@@ -1,11 +1,14 @@
 import json
 import logging
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, cast
 
+from aws_msk_iam_sasl_signer import MSKAuthTokenProvider
 from django.conf import settings
 from kafka import KafkaProducer
+from kafka.sasl.oauth import AbstractTokenProvider
 
+from cms.core.cache import memory_cache
 from cms.search.utils import build_resource_dict
 
 logger = logging.getLogger(__name__)
@@ -28,23 +31,25 @@ class BasePublisher(ABC):
     contract: https://github.com/ONSdigital/dis-search-upstream-stub/blob/main/docs/contract/resource_metadata.yml
     """
 
+    CREATED_OR_UPDATED_CHANNEL = "search-content-updated"
+    DELETED_CHANNEL = "search-content-deleted"
+
     def publish_created_or_updated(self, page: "Page") -> None:
         """Build the message for the created/updated event.
         Delegate sending to the subclass's _publish().
         """
-        channel = self.created_or_updated_channel
-        message = build_resource_dict(page)
-        return self._publish(channel, message)
+        return self._publish(self.CREATED_OR_UPDATED_CHANNEL, build_resource_dict(page))
 
     def publish_deleted(self, page: "Page") -> None:
         """Build the message for the deleted event.
         Delegate sending to the subclass's _publish().
         """
-        channel = self.deleted_channel
-        message = {
-            "uri": page.url_path,
-        }
-        return self._publish(channel, message)
+        return self._publish(
+            self.DELETED_CHANNEL,
+            {
+                "uri": page.url_path,
+            },
+        )
 
     @abstractmethod
     def _publish(self, channel: str | None, message: dict) -> None:
@@ -52,19 +57,17 @@ class BasePublisher(ABC):
         the message (e.g., Kafka, logging, etc.).
         """
 
-    @property
-    @abstractmethod
-    def created_or_updated_channel(self) -> str | None:
-        """Provide the channel (or other necessary routing key) for created/updated.
-        This can be a no-op or empty string for some implementations.
-        """
 
-    @property
-    @abstractmethod
-    def deleted_channel(self) -> str | None:
-        """Provide the channel (or other necessary routing key) for deleted messages.
-        This can be a no-op or empty string for some implementations.
-        """
+class IAMKafkaTokenProvider(AbstractTokenProvider):
+    """A token provider which uses IAM to request an auth token."""
+
+    # Generating the token does a request, so cache it for slightly less than the expiration.
+    @memory_cache(
+        MSKAuthTokenProvider.DEFAULT_TOKEN_EXPIRY_SECONDS - 5, key_generator_callable=lambda self: self.__qualname__
+    )
+    def token(self) -> str:
+        token, _ = MSKAuthTokenProvider.generate_auth_token(settings.AWS_REGION)
+        return cast(str, token)
 
 
 class KafkaPublisher(BasePublisher):
@@ -80,21 +83,22 @@ class KafkaPublisher(BasePublisher):
     """
 
     def __init__(self) -> None:
-        # Read Kafka configs settings
+        if settings.KAFKA_USE_IAM_AUTH:
+            auth_config = {
+                "security_protocol": "SASL_SSL",
+                "sasl_mechanism": "OAUTHBEARER",
+                "sasl_oauth_token_provider": IAMKafkaTokenProvider(),
+            }
+        else:
+            auth_config = {}
+
         self.producer = KafkaProducer(
-            bootstrap_servers=[settings.KAFKA_SERVER],
+            bootstrap_servers=settings.KAFKA_SERVERS,
             api_version=settings.KAFKA_API_VERSION,
             value_serializer=lambda v: json.dumps(v).encode("utf-8"),
             retries=5,
+            **auth_config,
         )
-
-    @property
-    def created_or_updated_channel(self) -> str | None:
-        return settings.KAFKA_CHANNEL_CREATED_OR_UPDATED
-
-    @property
-    def deleted_channel(self) -> str | None:
-        return settings.KAFKA_CHANNEL_DELETED
 
     def _publish(self, channel: str | None, message: dict) -> "RecordMetadata":
         """Send the message to Kafka."""
@@ -108,14 +112,6 @@ class KafkaPublisher(BasePublisher):
 
 class LogPublisher(BasePublisher):
     """Publishes 'messages' by simply logging them (no real message bus)."""
-
-    @property
-    def created_or_updated_channel(self) -> str:
-        return "log-created-or-updated"
-
-    @property
-    def deleted_channel(self) -> str:
-        return "log-deleted"
 
     def _publish(self, channel: str | None, message: dict) -> None:
         """Log the message."""

@@ -8,8 +8,6 @@ SHOW_TOOLBAR = True
 # Override size of the pagination used on the previous_release page.
 PREVIOUS_RELEASES_PER_PAGE = 3
 
-# Search Integration Kafka configuration 
+# Search Integration Kafka configuration
 # SEARCH_INDEX_PUBLISHER_BACKEND = "kafka" # comment this out to use LogPublisher
-# KAFKA_SERVER = os.getenv("KAFKA_SERVER", "localhost:9094")
-# KAFKA_CHANNEL_CREATED_OR_UPDATED = "search-content-updated"
-# KAFKA_CHANNEL_DELETED = "search-content-deleted"
+# KAFKA_SERVERS = os.getenv("KAFKA_SERVERS", "localhost:9094").split(",")
