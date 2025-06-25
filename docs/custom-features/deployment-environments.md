@@ -16,7 +16,7 @@ Management commands, database migrations, and other [scheduled jobs](./scheduled
 
 The "external" environment is the one used by the public.
 
-Writeable database access is restricted to a limited set of tables. This is enforced both at the database level and using database router (see `cms.core.db_router.ExternalEnvRouter`).
+Writeable database access is restricted to a limited set of tables. This is enforced both at the database level and by using a custom database router (see `cms.core.db_router.ExternalEnvRouter`).
 
 The URLs and apps required for the Wagtail admin are disabled. This includes the middleware required for authentication.
 
