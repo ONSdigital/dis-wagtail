@@ -76,20 +76,30 @@ class AuthIntegrationTests(TestCase):
         self.assertIsNotNone(id_payload, "ID token failed to validate")
 
     def test_first_time_login_creates_user_and_session(self):
-        access, id_token = self._generate_tokens(groups=["Publishing Admins"])
+        # Happy-path: valid tokens, no prior session
+        access, id_token = self._generate_tokens(groups=["role-admin"])
         self._set_jwt_cookies(access, id_token)
+
         response = self.client.get(settings.WAGTAILADMIN_HOME_PATH)
-        # middleware should create the user and log them in
+
         user = User.objects.get(external_user_id=self.user_uuid)
+        # user is now authenticated
         self.assertTrue(response.wsgi_request.user.is_authenticated)
-        session_key = self.client.session.get(JWT_SESSION_ID_KEY)
-        self.assertIsNotNone(session_key)
-        # User details
-        self.assertEqual(user.email, f"{self.user_uuid}@example.com")
-        self.assertEqual(user.first_name, "First")
-        self.assertEqual(user.last_name, "Last")
-        # Group assignment
-        self.assertTrue(Group.objects.filter(name="Publishing Admins", user=user).exists())
+
+        # Session key set
+        self.assertIn(JWT_SESSION_ID_KEY, self.client.session)
+        self.assertEqual(self.client.session[JWT_SESSION_ID_KEY], "jti-accessjti-id")
+
+        # Group assignment:
+        self.assertTrue(
+            Group.objects.filter(name=settings.PUBLISHING_ADMIN_GROUP_NAME, user=user).exists(),
+            "User should have been added to the Publishing Admin group",
+        )
+        # Always in the Viewer group
+        self.assertTrue(
+            Group.objects.filter(name=settings.VIEWERS_GROUP_NAME, user=user).exists(),
+            "User should always be in the Viewer group",
+        )
 
     def test_second_request_uses_existing_session(self):
         access, id_token = self._generate_tokens()
@@ -101,23 +111,59 @@ class AuthIntegrationTests(TestCase):
         self.assertTrue(response.wsgi_request.user.is_authenticated)
 
     def test_missing_both_tokens_logs_out(self):
-        user = User.objects.create_user(external_user_id=self.user_uuid, username="u", email="u@e.com")
-        user.is_external_user = True
-        self.client.force_login(user)
-        self.client.cookies.clear()
+        """No JWT cookies + external user in session -> immediate logout."""
+        # Create an external user (unusable password + external_user_id)
+        external = User.objects.create(username="temp", email="temp@example.com")
+        external.external_user_id = self.user_uuid
+        external.set_unusable_password()
+        external.save()
+
+        # Log them in (session cookie set); do NOT clear session cookie
+        self.client.force_login(external)
+        # Ensure no JWT cookies
+        self.client.cookies.pop(settings.ACCESS_TOKEN_COOKIE_NAME, None)
+        self.client.cookies.pop(settings.ID_TOKEN_COOKIE_NAME, None)
+
         response = self.client.get(settings.WAGTAILADMIN_HOME_PATH)
+        # They should be kicked back to login
+        self.assertEqual(response.status_code, 302)
+        self.assertIn("/admin/login/", response["Location"])
         self.assertFalse(response.wsgi_request.user.is_authenticated)
 
-    def test_only_one_token_present_logs_out(self):
-        access, id_token = self._generate_tokens()
-        # only access
+    def test_missing_only_access_token_logs_out(self):
+        """Only access token -> logout external user."""
+        external = User.objects.create(username="temp2", email="temp2@example.com")
+        external.external_user_id = self.user_uuid
+        external.set_unusable_password()
+        external.save()
+
+        self.client.force_login(external)
+        access, id_token = self._generate_tokens(groups=["role-admin"])
+        # Set only access cookie
         self.client.cookies[settings.ACCESS_TOKEN_COOKIE_NAME] = access
+        self.client.cookies.pop(settings.ID_TOKEN_COOKIE_NAME, None)
+
         response = self.client.get(settings.WAGTAILADMIN_HOME_PATH)
+        self.assertEqual(response.status_code, 302)
+        self.assertIn("/admin/login/", response["Location"])
         self.assertFalse(response.wsgi_request.user.is_authenticated)
-        # only id
-        self.client.cookies.clear()
+
+    def test_missing_only_id_token_logs_out(self):
+        """Only ID token -> logout external user."""
+        external = User.objects.create(username="temp3", email="temp3@example.com")
+        external.external_user_id = self.user_uuid
+        external.set_unusable_password()
+        external.save()
+
+        self.client.force_login(external)
+        access, id_token = self._generate_tokens(groups=["role-admin"])
+        # Set only ID cookie
+        self.client.cookies.pop(settings.ACCESS_TOKEN_COOKIE_NAME, None)
         self.client.cookies[settings.ID_TOKEN_COOKIE_NAME] = id_token
+
         response = self.client.get(settings.WAGTAILADMIN_HOME_PATH)
+        self.assertEqual(response.status_code, 302)
+        self.assertIn("/admin/login/", response["Location"])
         self.assertFalse(response.wsgi_request.user.is_authenticated)
 
     def test_expired_or_invalid_jwt_logs_out(self):
@@ -157,8 +203,8 @@ class AuthIntegrationTests(TestCase):
         self.assertFalse(response.wsgi_request.user.is_authenticated)
 
     def test_token_swap_attack_prevention(self):
-        user_a = User.objects.create_user(external_user_id="A", username="a", email="a@e.com")
-        user_a.is_external_user = True
+        user_a = User.objects.create_user(username="a", email="a@e.com")
+        user_a.external_user_id = self.user_uuid
         self.client.force_login(user_a)
         access, id_token = self._generate_tokens(username="B")
         self._set_jwt_cookies(access, id_token)
@@ -177,24 +223,22 @@ class AuthIntegrationTests(TestCase):
 
     @override_settings(AWS_COGNITO_LOGIN_ENABLED=False)
     def test_cognito_disabled_logs_out_external(self):
-        user = User.objects.create_user(external_user_id=self.user_uuid, username="u", email="u@e.com")
-        user.is_external_user = True
+        user = User.objects.create_user(username="u", email="u@e.com")
+        user.external_user_id = self.user_uuid
         self.client.force_login(user)
         response = self.client.get(settings.WAGTAILADMIN_HOME_PATH)
         self.assertFalse(response.wsgi_request.user.is_authenticated)
 
     @override_settings(AWS_COGNITO_LOGIN_ENABLED=False)
     def test_cognito_disabled_keeps_local(self):
-        user = User.objects.create_user(external_user_id=self.user_uuid, username="u2", email="u2@e.com")
-        user.is_external_user = False
+        user = User.objects.create_user(username="u2", email="u2@e.com")
         self.client.force_login(user)
         response = self.client.get(settings.WAGTAILADMIN_HOME_PATH)
         self.assertTrue(response.wsgi_request.user.is_authenticated)
 
     @override_settings(WAGTAIL_CORE_ADMIN_LOGIN_ENABLED=False)
     def test_core_admin_disabled_logs_out(self):
-        user = User.objects.create_user(external_user_id=self.user_uuid, username="u", email="u@e.com")
-        user.is_external_user = True
+        user = User.objects.create_user(username="u", email="u@e.com")
         self.client.force_login(user)
         response = self.client.get(settings.WAGTAILADMIN_HOME_PATH)
         self.assertFalse(response.wsgi_request.user.is_authenticated)
