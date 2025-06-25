@@ -27,19 +27,33 @@ def _send_bundle_email(bundle: Bundle, team: Team, subject: str, message: str) -
         else:
             active_user_emails.append(email)
 
-    send_mail(
-        subject=subject,
-        message=message,
-        recipient_list=active_user_emails,
-    )
-    logger.info(
-        "Email notification sent",
-        extra={
-            "bundle_name": bundle.name,
-            "team_name": team.name,
-            "email_subject": subject,
-        },
-    )
+    try:
+        send_mail(
+            subject=subject,
+            message=message,
+            recipient_list=active_user_emails,
+        )
+        logger.info(
+            "Email notification sent",
+            extra={
+                "team_name": team.name,
+                "bundle_name": bundle.name,
+                "email_subject": subject,
+                "recipients": active_user_emails,
+            },
+        )
+    except Exception as e:  # pylint: disable=broad-exception-caught
+        logger.error(
+            "Failed to send bundle notification email",
+            exc_info=True,
+            extra={
+                "team_name": team.name,
+                "bundle_name": bundle.name,
+                "email_subject": subject,
+                "recipients": active_user_emails,
+                "error_message": str(e),
+            },
+        )
 
 
 def send_bundle_in_review_email(bundle_team: BundleTeam) -> None:
