@@ -64,7 +64,7 @@ def get_formatted_pages_list(
 
 
 def get_document_metadata_date(value: date | datetime | str, prefix: "StrOrPromise") -> dict[str, Any]:
-    """Returns a dictionary with formatted date information for the document metadata."""
+    """Returns a dictionary with formatted date information for the DS document component metadata."""
     return {
         "prefix": prefix,
         "showPrefix": True,
