@@ -314,6 +314,9 @@ class JWKSCacheTests(SimpleTestCase):
     def test_jwks_cached(self):
         response = DummyResponse({"foo": "bar"})
         with mock.patch("cms.auth.utils.requests.get", return_value=response) as mock_get:
+            # Re-import under the test settings to clear the cache entirely
+            importlib.reload(utils)
+
             utils.get_jwks()
             utils.get_jwks()
             self.assertEqual(mock_get.call_count, 1)  # cached second time

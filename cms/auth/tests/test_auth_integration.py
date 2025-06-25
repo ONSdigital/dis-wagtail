@@ -1,6 +1,7 @@
 import base64
 import importlib
 import uuid
+from unittest.mock import patch
 
 from django.conf import settings
 from django.contrib.auth import get_user_model
@@ -332,19 +333,24 @@ class AuthIntegrationTests(TestCase):
 
 
 class WagtailHookTests(TestCase):
+    def setUp(self):
+        # Always clear out any leftover hook registrations
+        hooks._hooks.pop("insert_global_admin_js", None)  # pylint: disable=protected-access
+
     @override_settings(AWS_COGNITO_LOGIN_ENABLED=True)
     def test_wagtail_hook_injection(self):
-        # Re-load the hooks module so it sees the overridden setting
+        # Reload so the decorator runs under AWS_COGNITO_LOGIN_ENABLED=True
         importlib.reload(wagtail_hooks)
 
-        hooks_list = hooks.get_hooks("insert_global_admin_js")
-        self.assertEqual(len(hooks_list), 1)
+        #  Monkey-patch the static function *in that module:
+        with patch.object(wagtail_hooks, "static", lambda path: f"/static/{path}"):
+            hook_funcs = hooks.get_hooks("insert_global_admin_js")
+            self.assertEqual(len(hook_funcs), 1)
 
-        rendered = hooks_list[0]()
-
-        self.assertIn('<script id="auth-config"', rendered)
-        self.assertIn('"wagtailAdminHomePath":', rendered)
-        self.assertIn('<script src="', rendered)
+            rendered = hook_funcs[0]()  # now calls our patched static
+            self.assertIn('<script id="auth-config"', rendered)
+            self.assertIn('"wagtailAdminHomePath":', rendered)
+            self.assertIn('<script src="/static/js/auth.js"', rendered)
 
     @override_settings(AWS_COGNITO_LOGIN_ENABLED=False)
     def test_wagtail_hook_not_registered(self):
