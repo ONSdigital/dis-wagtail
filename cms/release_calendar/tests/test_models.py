@@ -1,21 +1,26 @@
 from http import HTTPStatus
+from unittest.mock import patch
 
 from django.test import RequestFactory, TestCase, override_settings
 from django.urls import reverse
 from django.utils import timezone
 from wagtail.blocks import StreamValue
+from wagtail.locks import BasicLock
 from wagtail.test.utils.wagtail_tests import WagtailTestUtils
 
+from cms.bundles.enums import BundleStatus
+from cms.bundles.tests.factories import BundleFactory
 from cms.core.custom_date_format import ons_date_format
 from cms.core.models import ContactDetails
 from cms.datasets.blocks import DatasetStoryBlock
 from cms.datasets.models import Dataset
 from cms.release_calendar.enums import ReleaseStatus
+from cms.release_calendar.locks import PageInBundleReadyToBePublishedLock
 from cms.release_calendar.models import ReleaseCalendarIndex
 from cms.release_calendar.tests.factories import ReleaseCalendarPageFactory
 
 
-class ReleaseCalendarPageTestCase(WagtailTestUtils, TestCase):
+class ReleaseCalendarPageModelTestCase(WagtailTestUtils, TestCase):
     """Test Release CalendarPage model properties and logic."""
 
     @classmethod
@@ -220,38 +225,103 @@ class ReleaseCalendarPageTestCase(WagtailTestUtils, TestCase):
             [{"url": "#summary", "text": "Summary"}, {"url": "#links", "text": "You might also be interested in"}],
         )
 
-    def test_delete_redirects_back_to_edit(self):
-        """Test that we get redirected back to edit when trying to delete a release calendar page."""
-        self.client.force_login(self.superuser)
-        response = self.client.post(
-            reverse("wagtailadmin_pages:delete", args=(self.page.id,)),
-            follow=True,
+    def test_get_lock(self):
+        self.assertIsNone(self.page.get_lock())
+
+        self.page.locked = True
+        self.assertIsInstance(self.page.get_lock(), BasicLock)
+
+    def test_get_lock_when_linked_with_bundle_ready_to_be_published(self):
+        BundleFactory(release_calendar_page=self.page, status=BundleStatus.APPROVED)
+        self.assertIsInstance(self.page.get_lock(), PageInBundleReadyToBePublishedLock)
+
+
+class ReleaseCalendarPageAdminTests(WagtailTestUtils, TestCase):
+    @classmethod
+    def setUpTestData(cls):
+        cls.superuser = cls.create_superuser("admin")
+        cls.release_calendar_page = ReleaseCalendarPageFactory()
+        cls.release_calendar_index = cls.release_calendar_page.get_parent()
+        cls.edit_url = reverse("wagtailadmin_pages:edit", args=[cls.release_calendar_page.pk])
+        cls.add_url = reverse(
+            "wagtailadmin_pages:add",
+            args=("release_calendar", "releasecalendarpage", cls.release_calendar_index.pk),
         )
 
-        edit_url = reverse("wagtailadmin_pages:edit", args=(self.page.id,))
-        self.assertRedirects(response, edit_url)
+    def setUp(self):
+        self.client.force_login(self.superuser)
 
+    def test_date_placeholder_on_add_edit_page(self):
+        """Test that the date input field displays date placeholder."""
+        response = self.client.get(self.add_url)
+
+        content = response.content.decode(encoding="utf-8")
+
+        datetime_placeholder = "YYYY-MM-DD HH:MM"
+
+        self.assertInHTML(
+            (
+                '<input type="text" name="release_date" autocomplete="off"'
+                f'placeholder="{datetime_placeholder}" id="id_release_date" required>'
+            ),
+            content,
+        )
+
+        self.assertInHTML(
+            (
+                '<input type="text" name="next_release_date" autocomplete="off" '
+                f'placeholder="{datetime_placeholder}" id="id_next_release_date">'
+            ),
+            content,
+        )
+
+    def test_delete_redirects_back_to_edit(self):
+        """Test that we get redirected back to edit when trying to delete a release calendar page."""
+        delete_url = reverse("wagtailadmin_pages:delete", args=(self.release_calendar_page.id,))
+        response = self.client.post(delete_url, follow=True)
+
+        self.assertRedirects(response, self.edit_url)
         self.assertIn(
             "Release Calendar pages cannot be deleted. You can mark them as cancelled instead.",
             [msg.message.strip() for msg in response.context["messages"]],
         )
 
-        response = self.client.get(
-            reverse("wagtailadmin_pages:delete", args=(self.page.id,)),
-            follow=True,
-        )
-        self.assertRedirects(response, edit_url)
+        response = self.client.get(delete_url, follow=True)
+        self.assertRedirects(response, self.edit_url)
 
     def test_add_view_does_not_contain_the_bundle_note_panel(self):
         self.client.force_login(self.superuser)
-        response = self.client.get(
-            reverse(
-                "wagtailadmin_pages:add",
-                args=("release_calendar", "releasecalendarpage", self.release_calendar_index.pk),
-            )
-        )
+        response = self.client.get(self.add_url)
         self.assertEqual(response.status_code, HTTPStatus.OK)
         self.assertNotContains(response, "bundle-note")
+
+    def test_page_locked_if_in_bundle_ready_to_be_published(self):
+        bundle = BundleFactory(release_calendar_page=self.release_calendar_page, status=BundleStatus.APPROVED)
+
+        response = self.client.get(self.edit_url)
+        self.assertContains(
+            response,
+            "This release calendar page is linked to a bundle that is ready to be published. "
+            "You must unlink them in order to make changes.",
+        )
+        self.assertContains(response, "Manage bundle")
+        self.assertContains(response, reverse("bundle:edit", args=[bundle.pk]))
+
+    @patch("cms.release_calendar.locks.user_can_manage_bundles", return_value=False)
+    @patch("cms.release_calendar.panels.user_can_manage_bundles", return_value=False)
+    @patch("cms.bundles.panels.user_can_manage_bundles", return_value=False)
+    def test_page_locked_if_in_bundle_ready_to_be_published_but_user_cannot_manage_bundles(self, _mock, _mock2, _mock3):
+        # note: we are mocking user_can_manage_bundles in all entry points.
+        bundle = BundleFactory(release_calendar_page=self.release_calendar_page, status=BundleStatus.APPROVED)
+
+        response = self.client.get(self.edit_url)
+        self.assertContains(
+            response,
+            "This release calendar page is linked to a bundle that is ready to be published. "
+            "You must unlink them in order to make changes.",
+        )
+        self.assertNotContains(response, "Manage bundle")
+        self.assertNotContains(response, reverse("bundle:edit", args=[bundle.pk]))
 
 
 class ReleaseCalendarPageRenderTestCase(TestCase):
