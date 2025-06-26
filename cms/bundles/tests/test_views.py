@@ -1,6 +1,6 @@
 from http import HTTPStatus
 
-from django.test import TestCase
+from django.test import TestCase, override_settings
 from django.urls import reverse
 from wagtail.models import ModelLogEntry
 from wagtail.test.utils.wagtail_tests import WagtailTestUtils
@@ -300,6 +300,14 @@ class PreviewBundleReleaseCalendarViewTestCase(WagtailTestUtils, TestCase):
         response = self.client.get(reverse("bundles:preview_release_calendar", args=[99999]))
         self.assertEqual(response.status_code, HTTPStatus.NOT_FOUND)
 
+    @override_settings(  # Address race condition in tests caused when calling delete() on a page
+        WAGTAILSEARCH_BACKENDS={
+            "default": {
+                "BACKEND": "wagtail.search.backends.base.SearchBackend",
+                "AUTO_UPDATE": False,
+            }
+        }
+    )
     def test_preview_release_calendar_page_when_no_release_calendar_page(self):
         self.client.force_login(self.publishing_officer)
         self.release_calendar_page.delete()

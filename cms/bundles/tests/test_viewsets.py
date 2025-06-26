@@ -1,7 +1,7 @@
 from http import HTTPStatus
 from unittest import mock
 
-from django.test import TestCase
+from django.test import TestCase, override_settings
 from django.urls import reverse
 from wagtail.admin.panels import get_edit_handler
 from wagtail.models import Locale, Page
@@ -382,6 +382,14 @@ class BundleViewSetTestCase(BundleViewSetTestCaseBase):
         self.assertContains(response, bundle_dataset_b.dataset.edition)
         self.assertContains(response, f'href="{bundle_dataset_b.dataset.website_url}"')
 
+    @override_settings(  # Address race condition in tests caused when calling delete() on a page
+        WAGTAILSEARCH_BACKENDS={
+            "default": {
+                "BACKEND": "wagtail.search.backends.base.SearchBackend",
+                "AUTO_UPDATE": False,
+            }
+        }
+    )
     def test_inspect_view__contains_release_calendar_page(self):
         """Checks that the inspect view displays the release calendar page."""
         release_calendar_page = ReleaseCalendarPageFactory(title="Foobar Release Calendar Page")
