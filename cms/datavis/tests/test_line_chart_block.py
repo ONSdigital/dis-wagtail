@@ -68,6 +68,7 @@ class LineChartBlockTestCase(BaseChartBlockTestCase):
         config = self.get_component_config()
         # For line charts, editable X-axis title is supported, but the default
         # value is `undefined`, so we expect it not to be set.
+        # Ref: https://api.highcharts.com/highcharts/xAxis.title
         self.assertNotIn("title", config["xAxis"])
 
     def test_editable_y_axis_title(self):
