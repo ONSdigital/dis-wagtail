@@ -17,6 +17,7 @@ from wagtail.search import index
 from cms.articles.enums import SortingChoices
 from cms.articles.forms import StatisticalArticlePageAdminForm
 from cms.articles.panels import HeadlineFiguresFieldPanel
+from cms.articles.utils import serialize_correction_or_notice
 from cms.bundles.mixins import BundledPageMixin
 from cms.core.blocks.headline_figures import HeadlineFiguresItemBlock
 from cms.core.blocks.panels import CorrectionBlock, NoticeBlock
@@ -422,3 +423,20 @@ class StatisticalArticlePage(BundledPageMixin, RoutablePageMixin, BasePage):  # 
         if mode_name == "related_data":
             return cast("TemplateResponse", self.related_data(request))
         return cast("TemplateResponse", super().serve_preview(request, mode_name))
+
+    def get_context(self, request: "HttpRequest", *args: Any, **kwargs: Any) -> dict:
+        """Adds additional context to the page."""
+        context: dict = super().get_context(request)
+        corrections = (
+            [serialize_correction_or_notice(correction, _("Correction")) for correction in self.corrections]
+            if self.corrections
+            else []
+        )
+        notices = (
+            [serialize_correction_or_notice(notice, _("Notice")) for notice in self.notices] if self.notices else []  # pylint: disable=not-an-iterable
+        )
+        context["corrections_and_notices"] = corrections + notices
+        context["has_corrections"] = bool(corrections)
+        context["has_notices"] = bool(notices)
+
+        return context
