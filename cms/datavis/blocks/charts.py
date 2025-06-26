@@ -67,6 +67,7 @@ class BarColumnChartBlock(BaseVisualisationBlock):
     ERROR_SERIES_OUT_OF_RANGE = "series_number_out_of_range"
     ERROR_ALL_SERIES_SELECTED = "all_series_selected"
     ERROR_BAR_CHART_NO_ASPECT_RATIO = "bar_chart_no_aspect_ratio"
+    ERROR_HORIZONTAL_BAR_NO_CATEGORY_TITLE = "horizontal_bar_no_category_title"
 
     # Remove unsupported features
     show_markers = None
@@ -97,11 +98,11 @@ class BarColumnChartBlock(BaseVisualisationBlock):
     x_axis = blocks.StructBlock(
         [
             (
-                # Temporarily remove options. Title needs to be added back, so
-                # there's no point removing this field entirely.
-                "note",
-                blocks.StaticBlock(
-                    admin_text="(Temporary change) No options currently available for the category axis.",
+                "title",
+                blocks.CharBlock(
+                    required=False,
+                    help_text="Only use axis titles if it is not clear from the title "
+                    "and subtitle what the axis represents. Column charts only.",
                 ),
             ),
         ],
@@ -153,11 +154,12 @@ class BarColumnChartBlock(BaseVisualisationBlock):
 
     def clean(self, value: "StructValue") -> "StructValue":
         value = super().clean(value)
-        value = self.clean_series_customisation(value)
-        value = self.clean_options(value)
+        self.validate_series_customisation(value)
+        self.validate_options(value)
+        self.validate_x_axis(value)
         return value
 
-    def clean_series_customisation(self, value: "StructValue") -> "StructValue":
+    def validate_series_customisation(self, value: "StructValue") -> "StructValue":
         _, series = self.get_series_data(value)
 
         errors = {}
@@ -195,9 +197,18 @@ class BarColumnChartBlock(BaseVisualisationBlock):
         if errors:
             raise blocks.StructBlockValidationError(block_errors=errors)
 
-        return value
+    def validate_x_axis(self, value: "StructValue") -> None:
+        if value.get("select_chart_type") == BarColumnChartTypeChoices.BAR and value.get("x_axis").get("title"):
+            raise blocks.StructBlockValidationError(
+                {
+                    "x_axis": ValidationError(
+                        "Category axis title is not supported for horizontal bar charts.",
+                        code=self.ERROR_HORIZONTAL_BAR_NO_CATEGORY_TITLE,
+                    )
+                }
+            )
 
-    def clean_options(self, value: "StructValue") -> "StructValue":
+    def validate_options(self, value: "StructValue") -> None:
         aspect_ratio_keys = [self.DESKTOP_ASPECT_RATIO, self.MOBILE_ASPECT_RATIO]
 
         errors = {}
@@ -248,6 +259,7 @@ class BarColumnConfidenceIntervalChartBlock(BaseVisualisationBlock):
     ERROR_UNMATCHED_RANGE = "unmatched_range"
     ERROR_INSUFFICIENT_COLUMNS = "insufficient_columns"
     ERROR_NON_NUMERIC_VALUE = "non_numeric_value"
+    ERROR_HORIZONTAL_BAR_NO_CATEGORY_TITLE = "horizontal_bar_no_category_title"
 
     # Table data settings
     INITIAL_COLUMN_HEADINGS: tuple[str, ...] = ("Category", "Value", "Range min", "Range max")
@@ -293,9 +305,11 @@ class BarColumnConfidenceIntervalChartBlock(BaseVisualisationBlock):
     x_axis = blocks.StructBlock(
         [
             (
-                "note",
-                blocks.StaticBlock(
-                    admin_text="(Temporary change) No options currently available for the category axis.",
+                "title",
+                blocks.CharBlock(
+                    required=False,
+                    help_text="Only use axis titles if it is not clear from the title "
+                    "and subtitle what the axis represents. Column charts only.",
                 ),
             ),
         ],
@@ -395,11 +409,12 @@ class BarColumnConfidenceIntervalChartBlock(BaseVisualisationBlock):
 
     def clean(self, value: "StructValue") -> "StructValue":
         value = super().clean(value)
-        value = self.clean_options(value)
-        value = self.clean_table(value)
+        self.validate_options(value)
+        self.validate_table(value)
+        self.validate_x_axis(value)
         return value
 
-    def clean_options(self, value: "StructValue") -> "StructValue":
+    def validate_options(self, value: "StructValue") -> None:
         aspect_ratio_keys = [self.DESKTOP_ASPECT_RATIO, self.MOBILE_ASPECT_RATIO]
 
         errors = {}
@@ -417,9 +432,7 @@ class BarColumnConfidenceIntervalChartBlock(BaseVisualisationBlock):
         if errors:
             raise blocks.StructBlockValidationError(block_errors=errors)
 
-        return value
-
-    def clean_table(self, value: "StructValue") -> "StructValue":
+    def validate_table(self, value: "StructValue") -> None:
         errors = {}
         # Category, Value, Range min, Range max
         if len(value["table"].headers) < self.REQUIRED_COLUMN_COUNT:
@@ -447,7 +460,18 @@ class BarColumnConfidenceIntervalChartBlock(BaseVisualisationBlock):
         if errors:
             raise blocks.StructBlockValidationError(block_errors=errors)
 
-        return value
+    def validate_x_axis(self, value: "StructValue") -> None:
+        if value.get("select_chart_type") == BarColumnConfidenceIntervalChartTypeChoices.BAR and value.get(
+            "x_axis"
+        ).get("title"):
+            raise blocks.StructBlockValidationError(
+                {
+                    "x_axis": ValidationError(
+                        "Category axis title is not supported for horizontal bar charts.",
+                        code=self.ERROR_HORIZONTAL_BAR_NO_CATEGORY_TITLE,
+                    )
+                }
+            )
 
 
 class ScatterPlotBlock(BaseVisualisationBlock):
@@ -534,9 +558,10 @@ class AreaChartBlock(BaseVisualisationBlock):
 
     def clean(self, value: "StructValue") -> "StructValue":
         value = super().clean(value)
-        return self.clean_table_data(value)
+        self.validate_table_data(value)
+        return value
 
-    def clean_table_data(self, value: "StructValue") -> "StructValue":
+    def validate_table_data(self, value: "StructValue") -> None:
         rows = value["table"].rows
 
         if any(cell == "" for row in rows[1:] for cell in row):
@@ -549,5 +574,3 @@ class AreaChartBlock(BaseVisualisationBlock):
                     )
                 }
             )
-
-        return value
