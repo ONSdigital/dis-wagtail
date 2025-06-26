@@ -147,14 +147,16 @@
             {% set corrections_and_notices_title = _("Corrections") %}
         {% endif %}
 
+        {# fmt:off #}
         {{
-        onsDetailsPanel({
-        "title": corrections_and_notices_title,
-        "openText": openText,
-        "closeText": closeText,
-        "detailsItems": corrections_and_notices
-        })
+            onsDetailsPanel({
+                "title": corrections_and_notices_title,
+                "openText": openText,
+                "closeText": closeText,
+                "detailsItems": corrections_and_notices
+            })
         }}
+        {# fmt:on #}
 
     {% endif %}
 
