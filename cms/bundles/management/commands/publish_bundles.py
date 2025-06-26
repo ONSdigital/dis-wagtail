@@ -1,5 +1,7 @@
 import logging
 import time
+from datetime import timedelta
+from math import ceil
 from typing import TYPE_CHECKING, Any, cast
 
 from django.conf import settings
@@ -37,6 +39,15 @@ class Command(BaseCommand):
             dest="dry_run",
             default=False,
             help="Dry run -- don't change anything.",
+        )
+        parser.add_argument(
+            "--max-hold-time",
+            type=int,
+            default=None,
+            help=(
+                "Maximum time to hold for an upcoming publish. "
+                "If bundles are due for publish within X seconds, hold up to that time before publishing them all.",
+            ),
         )
 
     def _update_related_release_calendar_page(self, bundle: Bundle) -> None:
@@ -100,7 +111,7 @@ class Command(BaseCommand):
 
         log(action="wagtail.publish.scheduled", instance=bundle)
 
-    def handle(self, *args: Any, **options: dict[str, Any]) -> None:
+    def handle(self, *args: Any, **options: Any) -> None:
         dry_run = False
         if options["dry_run"]:
             self.stdout.write("Will do a dry run.")
@@ -108,8 +119,19 @@ class Command(BaseCommand):
 
         self.base_url = getattr(settings, "WAGTAILADMIN_BASE_URL", "")
 
-        bundles_to_publish = Bundle.objects.filter(status=BundleStatus.APPROVED, release_date__lte=timezone.now())
-        if dry_run:
+        max_release_date = timezone.now()
+        max_hold_time = options["max_hold_time"]
+
+        if max_hold_time:
+            max_release_date += timedelta(seconds=max_hold_time)
+
+        bundles_to_publish = Bundle.objects.filter(
+            status=BundleStatus.APPROVED, release_date__lte=max_release_date
+        ).annotate_release_date()
+
+        if not bundles_to_publish:
+            self.stdout.write("No bundles to go live.")
+        elif dry_run:
             self.stdout.write("\n---------------------------------")
             if bundles_to_publish:
                 self.stdout.write("Bundles to be published:")
@@ -120,10 +142,24 @@ class Command(BaseCommand):
                         for page in bundle.get_bundled_pages().specific()
                     ]
                     self.stdout.write(f"  Pages: {'\n\t '.join(bundled_pages)}")
-
-            else:
-                self.stdout.write("No bundles to go live.")
         else:
+            if max_hold_time:
+                latest_publish = max(bundle.release_date for bundle in bundles_to_publish)
+
+                # Round up to prevent premature publishing
+                delta = ceil((latest_publish - timezone.now()).total_seconds())
+
+                if delta >= max_hold_time:
+                    raise RuntimeError(f"{delta=} unexpectedly more than {max_hold_time=}")
+
+                if delta > 0:
+                    self.stdout.write(f"Publish due in {delta}s, holding.")
+                    time.sleep(delta)
+                    self.stdout.write("Resuming publish")
+
+                    # Clear the QuerySet's cache in case
+                    bundles_to_publish = bundles_to_publish.all()
+
             for bundle in bundles_to_publish:
                 try:
                     self.handle_bundle(bundle)

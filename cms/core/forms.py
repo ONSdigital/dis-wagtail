@@ -16,7 +16,7 @@ LATEX_VALIDATION_ERROR = "The equation is not valid LaTeX. Please check the synt
 
 
 class PageWithCorrectionsAdminForm(DeduplicateTopicsAdminForm):
-    def clean_corrections(self) -> StreamValue:  # noqa: C901
+    def clean_corrections(self) -> StreamValue:
         corrections: StreamValue = self.cleaned_data["corrections"]
 
         if self.instance.pk is None:
