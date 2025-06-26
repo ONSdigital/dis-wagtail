@@ -1,7 +1,7 @@
 
-import random
+# import random
 from datetime import timedelta
-from typing import List
+# from typing import List
 
 import factory
 from behave import given, step, then, when # pylint: disable=no-name-in-module
@@ -137,7 +137,7 @@ def multiple_bundles_create(context: Context, no_bundles: str) -> None:
     context.bundles = []
     if no_bundles.isdigit():
         for bundle_index in range(int(no_bundles)):
-            context.bundles.append(BundleFactory(approved=True, created_by=context.user_data["user"]))
+            context.bundles.append(BundleFactory(approved=False, created_by=context.user_data["user"]))
 
 @given("there are {no_preview_teams} Preview teams")
 def multiple_preview_teams_create(context: Context, no_preview_teams: str) -> None:
@@ -206,7 +206,7 @@ def add_bundle_details(context: Context ) -> None:
 
 
 @step('the user can search for unknown bundle with response "{response}"' )
-def step_impl(context: Context, response: str) -> None:
+def search_for_new_bundle(context: Context, response: str) -> None:
     unknown_bundle = "Unkown bundle"
     if unknown_bundle not in get_bundles_names(context.bundles):
         context.page.get_by_role("textbox", name="Search term").click()
@@ -214,7 +214,7 @@ def step_impl(context: Context, response: str) -> None:
         expect(context.page.get_by_text(response)).to_be_visible()
 
 @step("the user can search for a known bundle")
-def step_impl(context: Context) -> None:
+def search_for_existing_bundle(context: Context) -> None:
     context.search_bundle = context.bundles[random.randint(0, len(context.bundles)-1)].name
     context.page.get_by_role("link", name="Bundles", exact=True).click()
     context.page.get_by_role("textbox", name="Search term").click()
@@ -225,8 +225,8 @@ def step_impl(context: Context) -> None:
     context.page.get_by_role("link", name=context.search_bundle).click()
 
 
-@step("the user edit edit the known bundle")
-def step_impl(context: Context) -> None:
+@step("the user can edit the known bundle")
+def can_edit_bundle(context: Context) -> None:
     search_bundle = context.bundles[random.randint(0, len(context.bundles) - 1)]
     search_release_calendar = context.release_calendar_pages[
         random.randint(0, len(context.release_calendar_pages) - 1)]
@@ -263,27 +263,28 @@ def step_impl(context: Context) -> None:
     context.page.get_by_text(search_preview_team).click()
     context.page.get_by_role("button", name="Confirm selection").click()
 
-    # page.get_by_role("textbox", name="Search term").fill("Test")
-    # page.get_by_role("link", name="Bundle Test").click()
-    # page.get_by_role("button", name="Choose Release Calendar page").click()
-    # page.get_by_role("textbox", name="Search term").click()
-    # page.get_by_label("Locale").select_option("en-gb")
-    # page.get_by_role("textbox", name="Search term").click()
-    # page.get_by_role("textbox", name="Search term").fill("June")
-    # page.get_by_role("link", name="June").click()
-    # page.locator("#id_status").select_option("IN_REVIEW")
-    # page.get_by_role("button", name="Add page").click()
-    # page.get_by_role("button", name="Choose a page").click()
-    # page.get_by_label("Locale").select_option("en-gb")
-    # page.get_by_label("Page type").select_option("StatisticalArticlePage")
-    # page.get_by_role("link", name="Bundles UI Testing: Some Title").click()
-
-
-    # page.get_by_text("Bundles U! test").click()
-    # page.get_by_role("button", name="Confirm selection").click()
-    # page.get_by_role("button", name="Save").click()
-
-
+@step("the user cannot edit the known bundle")
+def cannot_edit_bundle(context: Context) -> None:
+    pass
 
 def get_bundles_names(bundles) -> List[str]:
     return [ name.name for name in bundles ]
+
+
+@step("the user can preview the known bundle")
+def can_preview_bundle(context: Context) -> None:
+    pass
+
+@step("the user cannot preview the known bundle")
+def can_preview_bundle(context: Context) -> None:
+    pass
+
+
+@step("the user cannot approve the known bundle")
+def cannot_approve_bundle(context: Context) -> None:
+    pass
+
+
+@step("the user can approve the known bundle")
+def can_approve_bundle(context: Context) -> None:
+    pass
