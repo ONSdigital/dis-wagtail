@@ -200,6 +200,8 @@ jobs:
       matrix:
         browser:
           - chromium
+          - firefox
+          - webkit
     needs:
       - lint
       - lint-front-end
