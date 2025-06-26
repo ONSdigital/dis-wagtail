@@ -7,8 +7,10 @@ from wagtail.admin.forms import WagtailAdminPageForm
 from wagtail.models import Locale
 
 from cms.bundles.permissions import user_can_manage_bundles
+from cms.core.widgets import ReadOnlyRichTextWidget
+from cms.release_calendar.permissions import user_can_modify_notice
 
-from .enums import NON_PROVISIONAL_STATUS_CHOICES, ReleaseStatus
+from .enums import LOCKED_STATUS_STATUSES, NON_PROVISIONAL_STATUS_CHOICES, ReleaseStatus
 from .utils import get_translated_string, parse_day_month_year_time, parse_month_year
 
 DATE_SEPERATOR = {
@@ -39,14 +41,23 @@ class ReleaseCalendarPageAdminForm(WagtailAdminPageForm):
             self.fields["release_date"].disabled = True
             self.fields["status"].disabled = True
 
+        if self.instance.live_status in LOCKED_STATUS_STATUSES:
+            # If the status is locked, disable the status field
+            self.fields["status"].disabled = True
+
+        if self.instance.live_notice and not user_can_modify_notice(self.for_user):
+            self.fields["notice"].disabled = True
+            self.fields["notice"].widget = ReadOnlyRichTextWidget()
+
     def clean(self) -> dict:
         """Validate the submitted release calendar data."""
         cleaned_data: dict = super().clean()
 
         status = cleaned_data.get("status")
+        notice = cleaned_data.get("notice")
 
         if status == ReleaseStatus.CANCELLED:
-            if not cleaned_data.get("notice"):
+            if not notice:
                 raise ValidationError({"notice": "The notice field is required when the release is cancelled"})
 
             self.validate_bundle_not_pending_publication(status)
@@ -92,6 +103,22 @@ class ReleaseCalendarPageAdminForm(WagtailAdminPageForm):
             self.validate_release_next_date_text_format(next_release_date_text, locale_code, cleaned_data)
 
         return cleaned_data
+
+    def clean_notice(self) -> str:
+        """Validate the notice field."""
+        notice: str = self.cleaned_data.get("notice", "")
+
+        if (
+            self.instance.live_notice
+            and notice != self.instance.live_notice
+            and not user_can_modify_notice(self.for_user)
+        ):
+            self.add_error(
+                "notice",
+                ValidationError("You cannot remove or edit a published notice from a release calendar page."),
+            )
+            notice = self.instance.live_notice
+        return notice
 
     def validate_release_date_text_format(self, text: str, locale: Locale) -> None:
         """Validates that the release_date_text follows the locale-specific format."""
