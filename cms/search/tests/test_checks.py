@@ -68,6 +68,7 @@ class SearchIndexContentTypeCheckTests(TestCase):
         """
 
         class MyPageModelWithoutAttrTest1(Page):
+            search_auto_update = False  # note, this is Wagtail's search
             abstract = True
 
         mock_get_page_models.return_value = [MyPageModelWithoutAttrTest1]
@@ -87,6 +88,7 @@ class SearchIndexContentTypeCheckTests(TestCase):
         """
 
         class MyPageModelWithoutAttrTest2(Page):
+            search_auto_update = False  # note, this is Wagtail's search
             abstract = True
 
         mock_get_page_models.return_value = [MyPageModelWithoutAttrTest2]
@@ -100,6 +102,7 @@ class SearchIndexContentTypeCheckTests(TestCase):
 
         class MyPageModelWithAttr(Page):
             search_index_content_type = "cms.search.my_page_model"
+            search_auto_update = False  # note, this is Wagtail's search
             abstract = True
 
         mock_get_page_models.return_value = [MyPageModelWithAttr]
@@ -114,6 +117,7 @@ class SearchIndexContentTypeCheckTests(TestCase):
         """
 
         class IncludedPage(Page):
+            search_auto_update = False  # note, this is Wagtail's search
             abstract = True  # no search_index_content_type
 
         class ExcludedPage(Page):
