@@ -1,3 +1,4 @@
+# pylint: disable=too-many-public-methods
 from typing import cast
 
 from django.core.exceptions import ValidationError
@@ -266,3 +267,50 @@ class BarColumnConfidenceIntervalChartBlockTestCase(BaseChartBlockTestCase):
                     self.block.clean(value)
                 except ValidationError:
                     self.fail("Expected no ValidationError for column chart aspect ratio options")
+
+    def test_bar_chart_no_x_axis_title(self):
+        self.raw_data["select_chart_type"] = BarColumnConfidenceIntervalChartTypeChoices.BAR
+        config = self.get_component_config()
+        self.assertNotIn("title", config["xAxis"])
+
+    def test_bar_chart_x_axis_title_not_supported(self):
+        self.raw_data["select_chart_type"] = BarColumnConfidenceIntervalChartTypeChoices.BAR
+        self.raw_data["x_axis"]["title"] = "Editable X-axis Title"
+        with self.assertRaises(blocks.StructBlockValidationError) as cm:
+            self.block.clean(self.get_value())
+        self.assertEqual(
+            BarColumnConfidenceIntervalChartBlock.ERROR_HORIZONTAL_BAR_NO_CATEGORY_TITLE,
+            cm.exception.block_errors["x_axis"].code,
+        )
+
+    def test_column_chart_editable_x_axis_title(self):
+        self.raw_data["select_chart_type"] = BarColumnConfidenceIntervalChartTypeChoices.COLUMN
+        self.raw_data["x_axis"]["title"] = "Editable X-axis Title"
+        config = self.get_component_config()
+        self.assertEqual("Editable X-axis Title", config["xAxis"]["title"])
+
+    def test_column_chart_blank_x_axis_title(self):
+        self.raw_data["select_chart_type"] = BarColumnConfidenceIntervalChartTypeChoices.COLUMN
+        self.raw_data["x_axis"]["title"] = ""
+        config = self.get_component_config()
+        # For column charts, editable X-axis title is supported, but the default
+        # value is `undefined`, so we expect it not to be set.
+        # Ref: https://api.highcharts.com/highcharts/xAxis.title
+        self.assertNotIn("title", config["xAxis"])
+
+    def test_editable_y_axis_title(self):
+        for chart_type in BarColumnConfidenceIntervalChartTypeChoices.values:
+            with self.subTest(chart_type=chart_type):
+                self.raw_data["select_chart_type"] = chart_type
+                self.raw_data["y_axis"]["title"] = "Editable Y-axis Title"
+                config = self.get_component_config()
+                self.assertEqual("Editable Y-axis Title", config["yAxis"]["title"])
+
+    def test_blank_y_axis_title(self):
+        """A blank value should be converted to None."""
+        for chart_type in BarColumnConfidenceIntervalChartTypeChoices.values:
+            with self.subTest(chart_type=chart_type):
+                self.raw_data["select_chart_type"] = chart_type
+                self.raw_data["y_axis"]["title"] = ""
+                config = self.get_component_config()
+                self.assertEqual(None, config["yAxis"]["title"])
