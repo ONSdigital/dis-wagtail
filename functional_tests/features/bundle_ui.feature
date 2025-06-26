@@ -1,36 +1,112 @@
 Feature: UI Bundle Happy Paths
 
-    Scenario: A Publishing Admin Add New bundle Test_01
-        Given there are 3 Preview teams and viewer is a member of these teams
+#---- Bundle Create UI Tests -----
+    Scenario: A Publishing Admin creates a bundle
+        Given there is a Publishing Admin user
+        And there are 3 Preview teams
+        And the user is a member of the Preview teams
         And there are 3 release calendar pages
         And there are 3 Statistical Analysis pages
-        And there are 1 bundles
-        When a Publishing Admin logs into the admin site
-        And the user can see the Bundles menu item
-        And the user clicks the Bundles menu item
-        And the user can search for known bundle name Test_01
-        Then the user can add Bundles
-        And the user completes the Bundle details Test_01
-#
-#    Scenario: A Publishing Officer Should see the Bundles Menu and add bundle
-#        When a Publishing Officer logs into the admin site
+        And there are 3 bundles
+        When a Publishing Officer logs into the admin site
 #        And the user can see the Bundles menu item
 #        And the user clicks the Bundles menu item
-#        And the user can search
-#        And the user can search for Test_01
-#        And the user can search filter draft
-#        And the user can search filter In Preview
-#        And the user can search filter In Preview
-#
-#        Then the user can add Bundles
-#        And the user can search for Test_01
-#        And the user completes the Bundle details Test_01
-#        And the user can search for Test_01
-#
-#
-#    Scenario: A Viewer Should see the Bundles Menu but not add bundle
-#        When a Viewer logs into the admin site
+#        Then the user can search for unknown bundle with response "There are no bundles to"
+#        And the user can create a bundle
+##
+#    Scenario: A Publishing Officer creates a bundle
+#        Given there is a Publishing Officer user
+#        And there are 3 Preview teams
+#        And the user is a member of the Preview teams
+#        And there are 3 release calendar pages
+#        And there are 3 Statistical Analysis pages
+#        And there are 3 bundles
+#        When the user logs in
 #        And the user can see the Bundles menu item
 #        And the user clicks the Bundles menu item
-#        Then the user can not add Bundles
-
+#        Then the user can search for unknown bundle with response "There are no bundles to"
+#        And the user can create a bundle
+##
+#    Scenario: A Viewer not in preview groups cannot create a bundle
+#        Given there is a Viewer user
+#        And there are 3 Preview teams
+#        And there are 3 release calendar pages
+#        And there are 3 Statistical Analysis pages
+#        And there are 3 bundles
+#        When the user logs in
+#        And the user can see the Bundles menu item
+#        And the user clicks the Bundles menu item
+#        Then the user can search for unknown bundle with response "There are no bundles to display."
+#        And the user cannot create a bundle
+##
+#    Scenario: A Viewer in preview groups cannot create a bundle
+#        Given there is a Viewer user
+#        And there are 3 Preview teams
+#        And the user is a member of the Preview teams
+#        And there are 3 release calendar pages
+#        And there are 3 Statistical Analysis pages
+#        And there are 3 bundles
+#        When the user logs in
+#        And the user can see the Bundles menu item
+#        And the user clicks the Bundles menu item
+#        Then the user can search for unknown bundle with response "There are no bundles to"
+#        And the user cannot create a bundle
+#
+##---- Bundle Edit  UI Tests -----
+#    Scenario: A Publishing Admin edits bundle
+#        Given there is a Publishing Admin user
+#        And there are 3 Preview teams
+#        And the user is a member of the Preview teams
+#        And there are 3 release calendar pages
+#        And there are 3 Statistical Analysis pages
+#        And there are 3 bundles
+#        When the user logs in
+#        And the user can see the Bundles menu item
+#        And the user clicks the Bundles menu item
+#        Then the user can search for a known bundle
+#        And the user edit edit the known bundle
+#
+#    Scenario: A Publishing Officer edits bundle
+#        Given there is a Publishing Officer user
+#        And there are 3 Preview teams
+#        And the user is a member of the Preview teams
+#        And there are 3 release calendar pages
+#        And there are 3 Statistical Analysis pages
+#        And there are 3 bundles
+#        When the user logs in
+#        And the user can see the Bundles menu item
+#        And the user clicks the Bundles menu item
+#        Then the user can search for a known bundle
+#        And the user edit edit the known bundle
+##
+#    Scenario: A viewer edits bundle
+#        Given there is a Publishing Admin user
+#        And there are 3 Preview teams
+#        And the user is a member of the Preview teams
+#        And there are 3 release calendar pages
+#        And there are 3 Statistical Analysis pages
+#        And there are 3 bundles
+#        When the user logs in
+#        And the user can see the Bundles menu item
+#        And the user clicks the Bundles menu item
+#        Then the user can search for a known bundle
+#        And the user cannot edit the known bundle
+#
+##---- Bundle Preview UI Tests -----
+#
+#
+#---- Bundle Approve UI Tests -----
+#---- Bundle Preview UI Tests -----
+# ---- Bundle publish -----
+#    Scenario: A Published bundle cannot be edited
+#        Given there is a Publishing Admin user
+#        And there are 3 Preview teams
+#        And the Publishing Officer is a member of the Preview teams
+#        And there are 3 release calendar pages
+#        And there are 3 Statistical Analysis pages
+#        And there are 3 bundles
+#        When the user logs in
+#        And the user can see the Bundles menu item
+#        And the user clicks the Bundles menu item
+#        Then the user can search for known bundle
+#        And the user cannot edit a bundle
