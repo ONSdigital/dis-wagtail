@@ -15,7 +15,6 @@ dj-database-url = "~3.0.0"
 django-basic-auth-ip-whitelist = "~0.8"
 django-csp = "~4.0"
 django-defender = "~0.9.8"
-django-extensions = "~4.1"
 django-jinja = "^2.11.0"
 django-redis = "~5.4"
 django-storages = { version = "~1.14", extras = ["s3"] }
@@ -72,6 +71,7 @@ moto = {extras = ["iam","s3"], version = "^5.0.22"}
 django-migration-linter = "^5.2.0"
 fakeredis = "^2.29.0"
 time-machine = "^2.16.0"
+django-extensions = "^4.1"
 
 [tool.ruff]
 target-version = "py313"

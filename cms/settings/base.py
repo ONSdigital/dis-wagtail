@@ -94,7 +94,6 @@ INSTALLED_APPS = [
     "wagtail",
     "modelcluster",
     "taggit",
-    "django_extensions",
     "django.contrib.auth",  # Wagtail requires the auth app be installed, even if it's not used.
     "django.contrib.contenttypes",
     "whitenoise.runserver_nostatic",  # Must be before `django.contrib.staticfiles`
@@ -949,6 +948,8 @@ BUILD_TIME = datetime.datetime.fromtimestamp(int(env["BUILD_TIME"])) if env.get(
 GIT_COMMIT = env.get("GIT_COMMIT") or None
 TAG = env.get("TAG") or None
 START_TIME = datetime.datetime.now(tz=datetime.UTC)
+
+MANAGEMENT_COMMANDS_URL_SECRET = env.get("MANAGEMENT_COMMANDS_URL_SECRET", "")
 
 SLACK_NOTIFICATIONS_WEBHOOK_URL = env.get("SLACK_NOTIFICATIONS_WEBHOOK_URL")
 

@@ -16,7 +16,7 @@ max_requests_jitter = int(os.environ.get("GUNICORN_MAX_REQUESTS_JITTER", "50"))
 # Log to stdout
 accesslog = "-"
 
-# Time out after 25 seconds (notably shorter than Heroku's)
+# Time out after 25 seconds by default (notably shorter than Heroku's)
 timeout = int(os.environ.get("GUNICORN_TIMEOUT", "25"))
 
 # Load app pre-fork to save memory and worker startup time

@@ -32,6 +32,7 @@ ONS_API_BASE_URL = env.get("ONS_API_BASE_URL", "https://api.beta.ons.gov.uk/v1")
 # http://docs.wagtail.io/en/stable/contributing/styleguide.html
 INSTALLED_APPS += ["wagtail.contrib.styleguide"]  # noqa: F405
 INSTALLED_APPS += ["django_migration_linter"]
+INSTALLED_APPS += ["django_extensions"]
 
 # Disable forcing HTTPS locally since development server supports HTTP only.
 SECURE_SSL_REDIRECT = False

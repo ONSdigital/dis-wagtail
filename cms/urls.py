@@ -42,6 +42,10 @@ if not settings.IS_EXTERNAL_ENV:
 
     private_urlpatterns.append(path("admin/", include(wagtailadmin_urls)))
 
+    internal_urlpatterns.append(
+        path("management-command/<slug:command_name>/", core_views.management_command, name="management-command")
+    )
+
 if apps.is_installed("django.contrib.admin"):
     from django.contrib import admin  # pylint: disable=ungrouped-imports
 
