@@ -182,7 +182,7 @@ def creat_user_by_role(context: Context, user_role: str) -> None:
 
 
 @given("the {user_role} is a member of the Preview teams")
-def add_user_to_preview_teams(context: Context, user_role: str) -> None:
+def add_user_to_preview_teams(context: Context) -> None:
     for team in context.teams:
         user = context.user_data["user"]
         user.teams.add(team)
@@ -190,9 +190,7 @@ def add_user_to_preview_teams(context: Context, user_role: str) -> None:
 
 # Bundles UI Triggers
 @when("the {user_role} logs in")
-def log_in_user_by_role(context: Context, user_role: str) -> None:
-    print(context.user_data["username"])
-    print(context.user_data["password"])
+def log_in_user_by_role(context: Context) -> None:
 
     context.page.goto(f"{context.base_url}/admin/login/")
     context.page.get_by_placeholder("Enter your username").fill(context.user_data["username"])
