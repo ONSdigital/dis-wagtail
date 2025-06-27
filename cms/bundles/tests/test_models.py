@@ -1,4 +1,6 @@
+from django.conf import settings
 from django.test import TestCase
+from django.urls import reverse
 from django.utils import timezone
 
 from cms.articles.tests.factories import StatisticalArticlePageFactory
@@ -72,6 +74,16 @@ class BundleModelTestCase(TestCase):
         BundleTeam.objects.create(parent=self.bundle, team=team)
         BundleTeam.objects.create(parent=self.bundle, team=inactive_team)
         self.assertListEqual(self.bundle.active_team_ids, [team.pk])
+
+    def test_full_inspect_url_property(self):
+        """Test that full_inspect_url returns the correct absolute URL."""
+        expected_url = f"{settings.WAGTAILADMIN_BASE_URL}{reverse('bundle:inspect', args=[self.bundle.pk])}"
+        self.assertEqual(self.bundle.full_inspect_url, expected_url)
+
+    def test_full_inspect_url_property_returns_empty_string_for_unsaved_bundles(self):
+        """Test that full_inspect_url returns an empty string for unsaved bundles."""
+        unsaved_bundle = BundleFactory.build()
+        self.assertEqual(unsaved_bundle.full_inspect_url, "")
 
 
 class BundledPageMixinTestCase(TestCase):

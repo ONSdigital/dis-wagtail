@@ -1,8 +1,10 @@
 from typing import TYPE_CHECKING, ClassVar, Optional, Self
 
+from django.conf import settings
 from django.db import models
 from django.db.models import F, QuerySet
 from django.db.models.functions import Coalesce
+from django.urls import reverse
 from django.utils.functional import cached_property
 from modelcluster.fields import ParentalKey
 from modelcluster.models import ClusterableModel
@@ -60,6 +62,7 @@ class BundleDataset(Orderable):
 class BundleTeam(Orderable):
     parent = ParentalKey("Bundle", on_delete=models.CASCADE, related_name="teams")
     team: "models.ForeignKey[Team]" = models.ForeignKey("teams.Team", on_delete=models.CASCADE)
+    preview_notification_sent = models.BooleanField(default=False, editable=False)  # type: ignore[var-annotated]
 
     def __str__(self) -> str:
         return f"BundleTeam: {self.pk} bundle {self.parent_id} team: {self.team_id}"
@@ -190,6 +193,15 @@ class Bundle(index.Indexed, ClusterableModel, models.Model):  # type: ignore[dja
     @property
     def is_ready_to_be_published(self) -> bool:
         return self.status == BundleStatus.APPROVED
+
+    @property
+    def full_inspect_url(self) -> str:
+        """Returns the absolute URL for the bundle inspect view, or an empty string if the bundle is not saved yet."""
+        if not self.pk:
+            return ""
+
+        base_url = settings.WAGTAILADMIN_BASE_URL
+        return f"{base_url}{reverse('bundle:inspect', args=[self.pk])}"
 
     def get_bundled_pages(self, specific: bool = False) -> "PageQuerySet[Page]":
         pages = Page.objects.filter(pk__in=self.bundled_pages.values_list("page__pk", flat=True))
