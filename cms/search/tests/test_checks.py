@@ -68,7 +68,8 @@ class SearchIndexContentTypeCheckTests(TestCase):
         """
 
         class MyPageModelWithoutAttrTest1(Page):
-            pass
+            class Meta:
+                abstract = True
 
         mock_get_page_models.return_value = [MyPageModelWithoutAttrTest1]
         errors = check_search_index_content_type(app_configs=None)
@@ -87,7 +88,8 @@ class SearchIndexContentTypeCheckTests(TestCase):
         """
 
         class MyPageModelWithoutAttrTest2(Page):
-            pass
+            class Meta:
+                abstract = True
 
         mock_get_page_models.return_value = [MyPageModelWithoutAttrTest2]
         errors = check_search_index_content_type(app_configs=None)
@@ -101,6 +103,9 @@ class SearchIndexContentTypeCheckTests(TestCase):
         class MyPageModelWithAttr(Page):
             search_index_content_type = "cms.search.my_page_model"
 
+            class Meta:
+                abstract = True
+
         mock_get_page_models.return_value = [MyPageModelWithAttr]
         errors = check_search_index_content_type(app_configs=None)
         self.assertEqual(errors, [])
@@ -113,10 +118,14 @@ class SearchIndexContentTypeCheckTests(TestCase):
         """
 
         class IncludedPage(Page):
-            pass  # no search_index_content_type
+            # no search_index_content_type
+            class Meta:
+                abstract = True
 
         class ExcludedPage(Page):
-            pass  # no search_index_content_type but will be excluded
+            # no search_index_content_type but will be excluded
+            class Meta:
+                abstract = True
 
         mock_get_page_models.return_value = [IncludedPage, ExcludedPage]
 

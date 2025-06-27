@@ -72,21 +72,39 @@
             {% if formatted_articles %}
                 <section id="related-articles" class="spacing">
                     <h2>{{ _("Related articles") }}</h2>
-                    {{ onsDocumentList({"documents": formatted_articles}) }}
+                    {# fmt:off #}
+                        {{ onsDocumentList({
+                                "headingLevel": 3,
+                                "documents": formatted_articles
+                            })
+                        }}
+                    {# fmt:on #}
                 </section>
             {% endif %}
 
             {% if formatted_methodologies %}
                 <section id="related-methods" class="spacing">
                     <h2>{{ _("Methods and quality information") }}</h2>
-                    {{ onsDocumentList({"documents": formatted_methodologies}) }}
+                    {# fmt:off #}
+                        {{ onsDocumentList({
+                                "headingLevel": 3,
+                                "documents": formatted_methodologies
+                            })
+                        }}
+                    {# fmt:on #}
                 </section>
             {% endif %}
 
             {% if page.dataset_document_list %}
                 <section id="data" class="spacing">
                     <h2>{{ _("Data") }}</h2>
-                    {{ onsDocumentList({"documents": page.dataset_document_list}) }}
+                    {# fmt:off #}
+                        {{ onsDocumentList({
+                                "headingLevel": 3,
+                                "documents": page.dataset_document_list
+                            })
+                        }}
+                    {# fmt:on #}
                 </section>
             {% endif %}
 
