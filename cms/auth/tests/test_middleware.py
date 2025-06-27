@@ -7,6 +7,8 @@ from django.test import RequestFactory, TestCase, override_settings
 
 from cms.auth.middleware import JWT_SESSION_ID_KEY, ONSAuthMiddleware
 
+User = get_user_model()
+
 
 class ONSAuthMiddlewareTests(TestCase):
     def setUp(self):
@@ -30,15 +32,14 @@ class ONSAuthMiddlewareTests(TestCase):
     @override_settings(AWS_COGNITO_LOGIN_ENABLED=False)
     def test_cognito_disabled_logs_out_user_without_password(self):
         req = self._request()
-        fake_user = mock.Mock(
-            is_authenticated=True,
-            has_usable_password=lambda: False,
-            user_id="x",
-        )
+        user = User.objects.create(username="test", email="test@example.com")
+        user.external_user_id = str(uuid.uuid4())
+        user.set_unusable_password()
+        user.save()
 
         with (
             # AuthenticationMiddleware will resolve to this user
-            mock.patch("django.contrib.auth.get_user", return_value=fake_user),
+            mock.patch("django.contrib.auth.get_user", return_value=user),
             # we only want to spy on the helper, not replace it
             mock.patch.object(
                 self.middleware,
@@ -61,18 +62,14 @@ class ONSAuthMiddlewareTests(TestCase):
         ID_TOKEN_COOKIE_NAME="id",
         WAGTAIL_CORE_ADMIN_LOGIN_ENABLED=False,
     )
-    def test_no_tokens_logs_out(self):
+    def test_cognito_enabled_no_tokens_logs_out(self):
         req = self._request()
         req.COOKIES = {}  # no cookies at all
 
-        fake_user = mock.Mock(
-            is_authenticated=True,
-            has_usable_password=lambda: False,
-            user_id="u1",
-        )
+        user = User.objects.create(username="test", email="test@example.com")
 
         with (
-            mock.patch("django.contrib.auth.get_user", return_value=fake_user),
+            mock.patch("django.contrib.auth.get_user", return_value=user),
             mock.patch.object(
                 self.middleware,
                 "_handle_unauthenticated_user",
@@ -88,45 +85,22 @@ class ONSAuthMiddlewareTests(TestCase):
             m_logout.assert_called_once_with(req)
 
     # Cognito disabled and user has a local password -> should not logout
-    # TODO Check if they are logged in first
     @override_settings(AWS_COGNITO_LOGIN_ENABLED=False)
     def test_cognito_disabled_user_with_password_not_logged_out(self):
         req = self._request()
-        fake_user = mock.Mock(
-            is_authenticated=True,
-            has_usable_password=lambda: True,  # usable password
-            is_external_user=False,
-            external_user_id=None,
-            user_id="svc-user-1",
-        )
+        user = User.objects.create_superuser(username="test", email="test@example.com")
+        self.client.force_login(user)
 
         with (
-            mock.patch("django.contrib.auth.get_user", return_value=fake_user),
+            mock.patch("django.contrib.auth.get_user", return_value=user),
             mock.patch("cms.auth.middleware.logout") as m_logout,
         ):
             self.middleware.process_request(req)
             # Assert user is authenticated before checking logout
-            self.assertTrue(fake_user.is_authenticated)
-            m_logout.assert_not_called()
-
-    # Unauthenticated request w/ no cookies -> helper returns early, no logout
-    # TODO check if user is logged in first
-    @override_settings(
-        AWS_COGNITO_LOGIN_ENABLED=True,
-        ACCESS_TOKEN_COOKIE_NAME="access",
-        ID_TOKEN_COOKIE_NAME="id",
-    )
-    def test_unauthenticated_user_no_cookies_no_logout(self):
-        req = self._request()
-        req.COOKIES = {}  # missing tokens
-        req.user = mock.Mock(is_authenticated=False)
-
-        with mock.patch("cms.auth.middleware.logout") as m_logout:
-            self.middleware.process_request(req)
+            self.assertTrue(user.is_authenticated)
             m_logout.assert_not_called()
 
     # Wagtail admin login on and usable password -> stay logged-in
-    # TODO check if user is logged in first
     @override_settings(
         AWS_COGNITO_LOGIN_ENABLED=True,
         WAGTAIL_CORE_ADMIN_LOGIN_ENABLED=True,  # allows username/ password login
@@ -136,17 +110,16 @@ class ONSAuthMiddlewareTests(TestCase):
     def test_missing_tokens_but_wagtail_login_enabled_and_password_not_logged_out(self):
         req = self._request()
         req.COOKIES = {}  # no JWT cookies
-        fake_user = mock.Mock(
-            is_authenticated=True,
-            has_usable_password=lambda: True,
-            user_id="editor-1",
-        )
+        req = self._request()
+        user = User.objects.create_superuser(username="test", email="test@example.com")
+        self.client.force_login(user)
 
         with (
-            mock.patch("django.contrib.auth.get_user", return_value=fake_user),
+            mock.patch("django.contrib.auth.get_user", return_value=user),
             mock.patch("cms.auth.middleware.logout") as m_logout,
         ):
             self.middleware.process_request(req)
+            self.assertTrue(user.is_authenticated)
             m_logout.assert_not_called()
 
     # Positive path for _validate_client_ids -> _authenticate_user reached
@@ -156,11 +129,9 @@ class ONSAuthMiddlewareTests(TestCase):
         ACCESS_TOKEN_COOKIE_NAME="access",
         ID_TOKEN_COOKIE_NAME="id",
     )
-    # TODO test_valid_client_ids_authentication_successful
     # TODO Test opposite path for _validate_client_ids -> _authenticate_user not reached
-    def test_validate_client_ids_success_authenticate_called(self):
+    def test_valid_client_ids_authentication_successful(self):
         req = self._request()
-        req.user = mock.Mock(is_authenticated=False)
         req.COOKIES = {"access": "tokA", "id": "tokI"}
 
         payload_access = {
@@ -193,7 +164,6 @@ class ONSAuthMiddlewareTests(TestCase):
     def test_invalid_tokens_logout(self):
         req = self._request()
         req.COOKIES = {"access": "a", "id": "b"}
-        req.user = mock.Mock(is_authenticated=False)
         with (
             mock.patch("cms.auth.middleware.validate_jwt", return_value=None),
             mock.patch("cms.auth.middleware.logout") as m_logout,
@@ -210,7 +180,6 @@ class ONSAuthMiddlewareTests(TestCase):
     )
     def test_session_without_jwt_key_triggers_authenticate_and_saves_key(self):
         req = self._request()
-        req.user = mock.Mock(is_authenticated=True, user_id="u1")
         req.COOKIES = {"access": "tokA", "id": "tokI"}
 
         payload_access = {"client_id": "expected", "username": "u1", "jti": "ja", "token_use": "access"}
@@ -234,7 +203,6 @@ class ONSAuthMiddlewareTests(TestCase):
     def test_client_id_mismatch(self):
         req = self._request()
         req.COOKIES = {"access": "tokA", "id": "tokID"}
-        req.user = mock.Mock(is_authenticated=False)
         mock_payload_access = {"client_id": "wrong", "username": "u1", "jti": "ja", "token_use": "access"}
         mock_payload_id = {
             "aud": "wrong",
@@ -297,7 +265,6 @@ class ONSAuthMiddlewareTests(TestCase):
     )
     def test_authenticate_user_called_and_session_key_written(self):
         req = self._request()
-        req.user = mock.Mock(is_authenticated=False)
         req.session = {}
         req.COOKIES = {"access": "tokA", "id": "tokID"}
         payload_access = {"client_id": "expected", "username": "u1", "jti": "ja", "token_use": "access"}
@@ -327,7 +294,6 @@ class ONSAuthMiddlewareTests(TestCase):
     )
     def test_first_login_creates_user_and_saves_session(self):
         req = self._request()
-        req.user = mock.Mock(is_authenticated=False)
 
         req.COOKIES = {"access": "tokA", "id": "tokID"}
 
@@ -368,7 +334,6 @@ class ONSAuthMiddlewareTests(TestCase):
     def test_token_rotation_triggers_reauth(self):
         req = self._request()
         req.session = {}
-        req.user = mock.Mock(is_authenticated=True, user_id="u1")
 
         req.COOKIES = {"access": "tokA", "id": "tokID"}
 
@@ -406,7 +371,6 @@ class ONSAuthMiddlewareTests(TestCase):
     def test_username_mismatch_across_tokens_logout(self):
         req = self._request()
         req.COOKIES = {"access": "tokA", "id": "tokID"}
-        req.user = mock.Mock(is_authenticated=False)
 
         payload_access = {
             "client_id": "expected",
@@ -443,8 +407,6 @@ class ONSAuthMiddlewareTests(TestCase):
         uuid_a = str(uuid.uuid4())  # session user
         uuid_b = str(uuid.uuid4())  # token user (different)
 
-        fake_user = mock.Mock(is_authenticated=True, user_id=uuid_a)
-
         payload_access = {
             "client_id": "expected",
             "username": uuid_a,
@@ -460,11 +422,11 @@ class ONSAuthMiddlewareTests(TestCase):
         }
 
         with (
-            mock.patch("django.contrib.auth.get_user", return_value=fake_user),
             mock.patch("cms.auth.middleware.validate_jwt", side_effect=[payload_access, payload_id]),
             mock.patch("cms.auth.middleware.logout") as m_logout,
         ):
             self.middleware.process_request(req)
+            self.assertFalse(req.user.is_authenticated)
             m_logout.assert_called_once()
 
     # Existing user created=False -> update_details called
@@ -476,7 +438,6 @@ class ONSAuthMiddlewareTests(TestCase):
     )
     def test_existing_user_update_details_called(self):
         req = self._request()
-        req.user = mock.Mock(is_authenticated=False)
         req.COOKIES = {"access": "tokA", "id": "tokI"}
 
         payload_access = {"client_id": "expected", "username": "user99", "jti": "ja", "token_use": "access"}
@@ -490,11 +451,14 @@ class ONSAuthMiddlewareTests(TestCase):
             "token_use": "id",
         }
 
-        existing_user = mock.Mock(
-            user_id="user99",
-            update_details=mock.Mock(),
-            assign_groups_and_teams=mock.Mock(),
+        existing_user = User.objects.create(
+            username="user99",
+            email="user99@example.com",
+            first_name="U",
+            last_name="Ser",
         )
+        existing_user.update_details = mock.Mock()
+        existing_user.assign_groups_and_teams = mock.Mock()
 
         with (
             mock.patch("cms.auth.middleware.validate_jwt", side_effect=[payload_access, payload_id]),
@@ -519,7 +483,6 @@ class ONSAuthMiddlewareTests(TestCase):
     )
     def test_authenticate_user_assigns_groups_and_calls_login(self):
         req = self._request()
-        req.user = mock.Mock(is_authenticated=False)
         req.COOKIES = {"access": "tokA", "id": "tokI"}
 
         payload_access = {"client_id": "expected", "username": "g-tester", "jti": "ja", "token_use": "access"}
@@ -532,18 +495,18 @@ class ONSAuthMiddlewareTests(TestCase):
             "cognito:groups": ["role-admin", "team-alpha"],
         }
 
-        user_obj = mock.Mock(
-            user_id="g-tester",
-            assign_groups_and_teams=mock.Mock(),
-            update_details=mock.Mock(),
+        user = User.objects.create(
+            username="g-tester",
+            email="g@test.com",
         )
+        user.assign_groups_and_teams = mock.Mock()
 
         with (
             mock.patch("cms.auth.middleware.validate_jwt", side_effect=[payload_access, payload_id]),
-            mock.patch("cms.auth.middleware.User.objects.get_or_create", return_value=(user_obj, True)),
+            mock.patch("cms.auth.middleware.User.objects.get_or_create", return_value=(user, True)),
             mock.patch("cms.auth.middleware.login") as m_login,
         ):
             self.middleware.process_request(req)
 
-        user_obj.assign_groups_and_teams.assert_called_once_with(["role-admin", "team-alpha"])
-        m_login.assert_called_once_with(req, user_obj)
+        user.assign_groups_and_teams.assert_called_once_with(["role-admin", "team-alpha"])
+        m_login.assert_called_once_with(req, user)
