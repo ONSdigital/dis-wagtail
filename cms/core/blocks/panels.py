@@ -61,7 +61,6 @@ class CorrectionBlock(CorrectionOrNoticeBlock):
     version_id = blocks.IntegerBlock(required=False)
 
     class Meta:
-        template = "templates/components/streamfield/correction_block.html"
         help_text = "Warning: Once a correction is published, it cannot be deleted."
 
 
@@ -89,6 +88,4 @@ class PreviousVersionBlockAdapter(FieldBlockAdapter):
 register(PreviousVersionBlockAdapter(), PreviousVersionBlock)
 
 
-class NoticeBlock(CorrectionOrNoticeBlock):
-    class Meta:
-        template = "templates/components/streamfield/notice_block.html"
+class NoticeBlock(CorrectionOrNoticeBlock): ...
