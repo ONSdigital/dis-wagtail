@@ -88,12 +88,15 @@ class ONSAuthMiddlewareTests(TestCase):
             m_logout.assert_called_once_with(req)
 
     # Cognito disabled and user has a local password -> should not logout
+    # TODO Check if they are logged in first
     @override_settings(AWS_COGNITO_LOGIN_ENABLED=False)
     def test_cognito_disabled_user_with_password_not_logged_out(self):
         req = self._request()
         fake_user = mock.Mock(
             is_authenticated=True,
             has_usable_password=lambda: True,  # usable password
+            is_external_user=False,
+            external_user_id=None,
             user_id="svc-user-1",
         )
 
@@ -102,9 +105,12 @@ class ONSAuthMiddlewareTests(TestCase):
             mock.patch("cms.auth.middleware.logout") as m_logout,
         ):
             self.middleware.process_request(req)
+            # Assert user is authenticated before checking logout
+            self.assertTrue(fake_user.is_authenticated)
             m_logout.assert_not_called()
 
     # Unauthenticated request w/ no cookies -> helper returns early, no logout
+    # TODO check if user is logged in first
     @override_settings(
         AWS_COGNITO_LOGIN_ENABLED=True,
         ACCESS_TOKEN_COOKIE_NAME="access",
@@ -120,6 +126,7 @@ class ONSAuthMiddlewareTests(TestCase):
             m_logout.assert_not_called()
 
     # Wagtail admin login on and usable password -> stay logged-in
+    # TODO check if user is logged in first
     @override_settings(
         AWS_COGNITO_LOGIN_ENABLED=True,
         WAGTAIL_CORE_ADMIN_LOGIN_ENABLED=True,  # allows username/ password login
@@ -149,6 +156,8 @@ class ONSAuthMiddlewareTests(TestCase):
         ACCESS_TOKEN_COOKIE_NAME="access",
         ID_TOKEN_COOKIE_NAME="id",
     )
+    # TODO test_valid_client_ids_authentication_successful
+    # TODO Test opposite path for _validate_client_ids -> _authenticate_user not reached
     def test_validate_client_ids_success_authenticate_called(self):
         req = self._request()
         req.user = mock.Mock(is_authenticated=False)

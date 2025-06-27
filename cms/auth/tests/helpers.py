@@ -1,11 +1,20 @@
+import base64
+import importlib
 import json
+import uuid
 from collections import namedtuple
 from datetime import UTC, datetime, timedelta
+from typing import Any
 
 import jwt
 import requests
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import rsa
+from django.conf import settings
+from django.contrib.auth.models import Group
+from django.test import Client
+
+from cms.auth import utils as auth_utils
 
 RSAKeyPair = namedtuple("RSAKeyPair", ["private", "public_der", "kid"])
 
@@ -59,3 +68,88 @@ class DummyResponse:
 
         if self.status_code >= status_code:
             raise requests.HTTPError(f"HTTP {self.status_code}")
+
+
+class CognitoTokenMixin:
+    """Utilities reused by every auth-related TestCase."""
+
+    JWT_SESSION_ID_KEY: str = "jwt_session_id"
+
+    @classmethod
+    def setUpTestData(cls):  # pylint: disable=invalid-name
+        cls.user_uuid: str = str(uuid.uuid4())
+
+        # RSA keypair and JWKS stub
+        cls.keypair = generate_rsa_keypair()
+        public_b64 = base64.b64encode(cls.keypair.public_der).decode()
+        cls.jwks = {cls.keypair.kid: public_b64}
+
+        # Reload utils so module constants use overridden settings
+        importlib.reload(auth_utils)
+        # Stub JWKS fetch
+        auth_utils.get_jwks = lambda: cls.jwks
+
+    def generate_tokens(
+        self,
+        *,
+        username: str | None = None,
+        groups: list[str] | None = None,
+        client_id: str | None = None,
+        **jwt_overrides,
+    ) -> tuple[str, str]:
+        username = username or self.user_uuid
+        client_id = client_id or settings.AWS_COGNITO_APP_CLIENT_ID
+
+        access = build_jwt(
+            self.keypair,
+            token_use="access",
+            username=username,
+            client_id=client_id,
+            **jwt_overrides,
+        )
+
+        id_payload: dict[str, str | list[str]] = {
+            "cognito:username": username,
+            "email": f"{username}@example.com",
+            "given_name": "First",
+            "family_name": "Last",
+        }
+        if groups is not None:
+            id_payload["cognito:groups"] = groups
+
+        id_token = build_jwt(
+            self.keypair,
+            token_use="id",
+            aud=client_id,
+            **id_payload,
+            **jwt_overrides,
+        )
+
+        return f"Bearer {access}", id_token
+
+    def set_jwt_cookies(self, access_token: str, id_token: str) -> None:
+        client: Client = self.client
+        client.cookies[settings.ACCESS_TOKEN_COOKIE_NAME] = access_token
+        client.cookies[settings.ID_TOKEN_COOKIE_NAME] = id_token
+
+    def login_with_tokens(self, **token_kwargs: Any) -> None:
+        access, id_token = self.generate_tokens(**token_kwargs)
+        self.set_jwt_cookies(access, id_token)
+
+    def assertLoggedOut(self, redirect="/admin/login/") -> None:  # pylint: disable=invalid-name
+        response = self.client.get(settings.WAGTAILADMIN_HOME_PATH)
+        self.assertEqual(response.status_code, 302)
+        self.assertIn(redirect, response["Location"])
+        self.assertFalse(response.wsgi_request.user.is_authenticated)
+
+    def assertLoggedIn(self) -> None:  # pylint: disable=invalid-name
+        response = self.client.get(settings.WAGTAILADMIN_HOME_PATH)
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(response.wsgi_request.user.is_authenticated)
+
+    def assertInGroups(self, user, *group_names) -> None:  # pylint: disable=invalid-name
+        for name in group_names:
+            self.assertTrue(
+                Group.objects.filter(name=name, user=user).exists(),
+                f"User should belong to group '{name}'",
+            )
