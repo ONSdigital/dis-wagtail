@@ -257,7 +257,6 @@ class AuthIntegrationTests(CognitoTokenMixin, TestCase):
         self.client.force_login(user)
         self.assertLoggedOut()
 
-    # TODO: Possible bug found because of this test, needs investigation
     def test_logout_view_clears_cookies(self):
         self.login_with_tokens()
         self.assertLoggedIn()

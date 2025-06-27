@@ -153,6 +153,41 @@ class ONSAuthMiddlewareTests(TestCase):
             self.middleware.process_request(req)
             m_auth.assert_called_once()  # reached -> positive client-ID path
 
+    # Negative path for _validate_client_ids -> _authenticate_user NOT reached
+    @override_settings(
+        AWS_COGNITO_LOGIN_ENABLED=True,
+        AWS_COGNITO_APP_CLIENT_ID="expected-client-id",
+        ACCESS_TOKEN_COOKIE_NAME="access",
+        ID_TOKEN_COOKIE_NAME="id",
+    )
+    def test_invalid_client_ids_authentication_not_called(self):
+        req = self._request()
+        req.COOKIES = {"access": "tokA", "id": "tokI"}
+
+        # client_id and aud do not match expected
+        payload_access = {
+            "client_id": "wrong-client-id",
+            "username": "user1",
+            "jti": "ja",
+            "token_use": "access",
+        }
+        payload_id = {
+            "aud": "wrong-client-id",
+            "cognito:username": "user1",
+            "jti": "jb",
+            "email": "u@example.com",
+            "token_use": "id",
+        }
+
+        with (
+            mock.patch("cms.auth.middleware.validate_jwt", side_effect=[payload_access, payload_id]),
+            mock.patch.object(ONSAuthMiddleware, "_authenticate_user") as m_auth,
+            mock.patch("cms.auth.middleware.logout") as m_logout,
+        ):
+            self.middleware.process_request(req)
+            m_auth.assert_not_called()  # _authenticate_user should NOT be called
+            m_logout.assert_called_once()  # logout should be called due to client_id mismatch
+
     # Invalid tokens -> validate_jwt returns None
     @override_settings(
         AWS_COGNITO_LOGIN_ENABLED=True,
