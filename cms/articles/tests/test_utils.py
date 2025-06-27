@@ -13,17 +13,19 @@ class SerializeCorrectionOrNoticeTests(TestCase):
             "when": datetime(2023, 10, 26, 10, 30, 0),
             "text": "This is a test correction description.",
         }
-        result = serialize_correction_or_notice(mock_stream_child, "Correction")
+        result = serialize_correction_or_notice(mock_stream_child, superseded_url="https://example.com/")
 
         expected = {
             "text": "Correction",
             "date": {"iso": "2023-10-26T10:30:00", "short": "26 October 2023"},
             "description": "This is a test correction description.",
+            "url": "https://example.com/",
+            "urlText": "View superseded version",
         }
 
         mock_stream_child.value["text"] = "This is a test notice description."
 
-        result = serialize_correction_or_notice(mock_stream_child, "Notice")
+        result = serialize_correction_or_notice(mock_stream_child)
 
         expected = {
             "text": "Notice",

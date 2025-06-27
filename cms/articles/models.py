@@ -432,12 +432,18 @@ class StatisticalArticlePage(BundledPageMixin, RoutablePageMixin, BasePage):  # 
         """Adds additional context to the page."""
         context: dict = super().get_context(request)
         corrections = (
-            [serialize_correction_or_notice(correction, _("Correction")) for correction in self.corrections]
+            [
+                serialize_correction_or_notice(
+                    correction,
+                    superseded_url=self.reverse_subpage("previous_version", args=[correction.value["version_id"]]),
+                )
+                for correction in self.corrections
+            ]
             if self.corrections
             else []
         )
         notices = (
-            [serialize_correction_or_notice(notice, _("Notice")) for notice in self.notices] if self.notices else []  # pylint: disable=not-an-iterable
+            [serialize_correction_or_notice(notice) for notice in self.notices] if self.notices else []  # pylint: disable=not-an-iterable
         )
         context["corrections_and_notices"] = corrections + notices
         context["has_corrections"] = bool(corrections)
