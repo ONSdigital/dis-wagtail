@@ -38,7 +38,7 @@ ROLE_GROUP_IDS = {"role-admin", "role-publisher"}
     IDENTITY_API_BASE_URL="https://identity.example",
 )
 class SyncTeamsCommandTests(TestCase):
-    """Covers creation, update, de-activation, dry-run, API/network errors,
+    """Covers creation, update, de-activation, dry-run, API/ network errors,
     and role-group exclusion logic.
     """
 

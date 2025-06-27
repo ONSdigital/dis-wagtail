@@ -135,6 +135,11 @@ class ExtendSessionTests(WagtailTestUtils, TestCase):
         # call the view directly
         response = extend_session(request)
 
+        self.assertJSONEqual(
+            response.content,
+            {"status": "error", "message": "Invalid request method."},
+        )
+
         self.assertEqual(response.status_code, 405)
 
     def test_post_as_anonymous_redirects_to_login(self):

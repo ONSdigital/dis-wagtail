@@ -58,8 +58,6 @@ class ONSAuthMiddlewareTests(TestCase):
     # Missing cookies -> logout
     @override_settings(
         AWS_COGNITO_LOGIN_ENABLED=True,
-        ACCESS_TOKEN_COOKIE_NAME="access",
-        ID_TOKEN_COOKIE_NAME="id",
         WAGTAIL_CORE_ADMIN_LOGIN_ENABLED=False,
     )
     def test_cognito_enabled_no_tokens_logs_out(self):
@@ -203,8 +201,8 @@ class ONSAuthMiddlewareTests(TestCase):
     def test_client_id_mismatch(self):
         req = self._request()
         req.COOKIES = {"access": "tokA", "id": "tokID"}
-        mock_payload_access = {"client_id": "wrong", "username": "u1", "jti": "ja", "token_use": "access"}
-        mock_payload_id = {
+        payload_access = {"client_id": "wrong", "username": "u1", "jti": "ja", "token_use": "access"}
+        payload_id = {
             "aud": "wrong",
             "cognito:username": "u1",
             "jti": "jb",
@@ -213,7 +211,7 @@ class ONSAuthMiddlewareTests(TestCase):
         }
 
         with (
-            mock.patch("cms.auth.middleware.validate_jwt", side_effect=[mock_payload_access, mock_payload_id]),
+            mock.patch("cms.auth.middleware.validate_jwt", side_effect=[payload_access, payload_id]),
             mock.patch("cms.auth.middleware.logout") as m_logout,
         ):
             self.middleware.process_request(req)
@@ -246,10 +244,10 @@ class ONSAuthMiddlewareTests(TestCase):
         }
 
         # authenticated user that matches the token username
-        fake_user = mock.Mock(is_authenticated=True, user_id="u1")
+        user = User.objects.create(username="u1", email="u1@example.com")
 
         with (
-            mock.patch("django.contrib.auth.get_user", return_value=fake_user),
+            mock.patch("django.contrib.auth.get_user", return_value=user),
             mock.patch("cms.auth.middleware.validate_jwt", side_effect=[payload_access, payload_id]),
             mock.patch.object(ONSAuthMiddleware, "_authenticate_user") as m_auth,
         ):
@@ -320,8 +318,7 @@ class ONSAuthMiddlewareTests(TestCase):
         ):
             self.middleware.process_request(req)
 
-        user = get_user_model()
-        self.assertTrue(user.objects.filter(external_user_id=uid).exists())
+        self.assertTrue(User.objects.filter(external_user_id=uid).exists())
         self.assertEqual(req.session[JWT_SESSION_ID_KEY], "jajb")
 
     # Token rotation (new jti) -> re-authenticate and update session key
@@ -458,7 +455,6 @@ class ONSAuthMiddlewareTests(TestCase):
             last_name="Ser",
         )
         existing_user.update_details = mock.Mock()
-        existing_user.assign_groups_and_teams = mock.Mock()
 
         with (
             mock.patch("cms.auth.middleware.validate_jwt", side_effect=[payload_access, payload_id]),
