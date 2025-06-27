@@ -45,9 +45,10 @@ class LinkBlockStructValue(StructValue):
         if not value:
             return None
 
-        value["metadata"] = {
-            "object": {"text": get_related_content_type_label(self.get("content_type"))},
-        }
+        if content_type := self.get("content_type"):
+            value["metadata"] = {
+                "object": {"text": get_related_content_type_label(content_type)},
+            }
 
         release_date: datetime = self.get("release_date")
 
