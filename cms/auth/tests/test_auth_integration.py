@@ -14,20 +14,6 @@ User = get_user_model()
 JWT_SESSION_ID_KEY = CognitoTokenMixin.JWT_SESSION_ID_KEY
 
 
-@override_settings(
-    AWS_COGNITO_LOGIN_ENABLED=True,
-    AWS_COGNITO_APP_CLIENT_ID="test-client-id",
-    AWS_REGION="eu-west-2",
-    AWS_COGNITO_USER_POOL_ID="test-pool",
-    IDENTITY_API_BASE_URL="https://cognito-idp.eu-west-2.amazonaws.com/test-pool",
-    ACCESS_TOKEN_COOKIE_NAME="access",
-    ID_TOKEN_COOKIE_NAME="id",
-    WAGTAIL_CORE_ADMIN_LOGIN_ENABLED=True,
-    AUTH_TOKEN_REFRESH_URL="/auth/refresh/",
-    WAGTAILADMIN_HOME_PATH="/admin/",
-    CSRF_COOKIE_NAME="csrftoken",
-    SESSION_RENEWAL_OFFSET_SECONDS=300,
-)
 class AuthIntegrationTests(CognitoTokenMixin, TestCase):
     def test_first_time_login_creates_user_and_session(self):
         # Happy-path: valid tokens, no prior session
@@ -316,10 +302,8 @@ class AuthIntegrationTests(CognitoTokenMixin, TestCase):
         self.assertJSONEqual(response_2.content, {"status": "error", "message": "Invalid request method."})
 
 
-class WagtailHookTests(AuthIntegrationTests):
+class WagtailHookTests(CognitoTokenMixin, TestCase):
     def setUp(self):
-        # run AuthIntegrationTests.setUp to configure client, keys, jwks stub, etc.
-        super().setUp()
         # clear any previously-registered hooks
         hooks._hooks.pop("insert_global_admin_js", None)  # pylint: disable=protected-access
 

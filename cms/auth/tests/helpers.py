@@ -12,7 +12,7 @@ from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import rsa
 from django.conf import settings
 from django.contrib.auth.models import Group
-from django.test import Client
+from django.test import Client, TestCase, override_settings
 
 from cms.auth import utils as auth_utils
 
@@ -70,8 +70,24 @@ class DummyResponse:
             raise requests.HTTPError(f"HTTP {self.status_code}")
 
 
-class CognitoTokenMixin:
+@override_settings(
+    AWS_COGNITO_LOGIN_ENABLED=True,
+    AWS_COGNITO_APP_CLIENT_ID="test-client-id",
+    AWS_REGION="eu-west-2",
+    AWS_COGNITO_USER_POOL_ID="test-pool",
+    IDENTITY_API_BASE_URL="https://cognito-idp.eu-west-2.amazonaws.com/test-pool",
+    ACCESS_TOKEN_COOKIE_NAME="access",
+    ID_TOKEN_COOKIE_NAME="id",
+    WAGTAIL_CORE_ADMIN_LOGIN_ENABLED=True,
+    AUTH_TOKEN_REFRESH_URL="/auth/refresh/",
+    WAGTAILADMIN_HOME_PATH="/admin/",
+    CSRF_COOKIE_NAME="csrftoken",
+    SESSION_RENEWAL_OFFSET_SECONDS=300,
+)
+class CognitoTokenMixin(TestCase):
     """Utilities reused by every auth-related TestCase."""
+
+    __test__ = False  # Prevents Django's test runner from treating this as a runnable test case
 
     JWT_SESSION_ID_KEY: str = "jwt_session_id"
 
