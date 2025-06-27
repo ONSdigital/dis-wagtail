@@ -1,7 +1,9 @@
 from django.urls import reverse
 from wagtail.test.utils import WagtailPageTestCase
+from wagtail.test.utils.form_data import nested_form_data, rich_text, streamfield
 
 from cms.core.custom_date_format import ons_default_datetime
+from cms.release_calendar.enums import ReleaseStatus
 from cms.release_calendar.tests.factories import ReleaseCalendarPageFactory
 
 
@@ -56,9 +58,58 @@ class ReleaseCalendarPageTests(WagtailPageTestCase):
 
     def test_preview_mode_url(self):
         """Tests preview pages with preview mode loads."""
-        cases = ["PROVISIONAL", "CANCELLED", "PUBLISHED", "CONFIRMED"]
+        self.client.force_login(self.user)
 
-        for case in cases:
-            preview_url = f"/admin/pages/{self.page.id}/edit/preview/?mode={case}"
-            response = self.client.get(preview_url, follow=True)
-            self.assertEqual(response.status_code, 200)
+        cases = {
+            ReleaseStatus.PROVISIONAL: "This release is not yet",
+            ReleaseStatus.CONFIRMED: "This release is not yet",
+            ReleaseStatus.PUBLISHED: "The publication link",
+            ReleaseStatus.CANCELLED: "Cancelled for reasons",
+        }
+
+        post_data = nested_form_data(
+            {
+                "title": self.page.title,
+                "slug": self.page.slug,
+                "status": self.page.status,
+                "release_date": self.page.release_date,
+                "summary": rich_text(self.page.summary),
+                "notice": rich_text("Cancelled for reasons"),
+                "content": streamfield(
+                    [
+                        (
+                            "release_content",
+                            {
+                                "title": "Publications",
+                                "links": streamfield(
+                                    [
+                                        (
+                                            "item",
+                                            {"external_url": "https://ons.gov.uk", "title": "The publication link"},
+                                        )
+                                    ]
+                                ),
+                            },
+                        )
+                    ]
+                ),
+                "changes_to_release_date": streamfield([]),
+                "pre_release_access": streamfield([]),
+                "related_links": streamfield([]),
+                "datasets": streamfield([]),
+            }
+        )
+
+        preview_url_base = reverse("wagtailadmin_pages:preview_on_edit", args=[self.page.pk])
+        for mode, lookup in cases.items():
+            with self.subTest(mode=mode):
+                preview_url = f"{preview_url_base}?mode={mode}"
+                response = self.client.post(preview_url, post_data)
+                self.assertEqual(response.status_code, 200)
+                self.assertJSONEqual(
+                    response.content.decode(),
+                    {"is_valid": True, "is_available": True},
+                )
+
+                response = self.client.get(preview_url)
+                self.assertContains(response, lookup)
