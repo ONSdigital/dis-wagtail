@@ -3,8 +3,11 @@ from datetime import datetime
 from django.test import RequestFactory, SimpleTestCase, TestCase, override_settings
 from django.utils.formats import date_format
 
+from cms.articles.tests.factories import StatisticalArticlePageFactory
 from cms.core.models.base import BasePage
-from cms.core.utils import get_client_ip, get_formatted_pages_list, latex_formula_to_svg
+from cms.core.utils import get_client_ip, get_content_type_for_page, get_formatted_pages_list, latex_formula_to_svg
+from cms.methodology.tests.factories import MethodologyPageFactory
+from cms.topics.tests.factories import TopicPageFactory
 
 
 # DummyPage mimics the minimum attributes and methods of a Wagtail Page.
@@ -208,3 +211,20 @@ class LatexFormulaTestCase(TestCase):
         latex_formula = r"\frac{a}{b"
         with self.assertRaises(RuntimeError):
             latex_formula_to_svg(latex_formula)
+
+
+class TestContentTypeForPage(TestCase):
+    def test_get_content_type_for_page(self):
+        """Test the content type for a given page."""
+        # Create a dummy page
+        page = StatisticalArticlePageFactory(title="Test Article")
+        content_type = get_content_type_for_page(page)
+        self.assertEqual(content_type, "Article")
+
+        page = TopicPageFactory(title="Test Topic")
+        content_type = get_content_type_for_page(page)
+        self.assertEqual(content_type, "Topic")
+
+        page = MethodologyPageFactory(title="Test Methodology")
+        content_type = get_content_type_for_page(page)
+        self.assertEqual(content_type, "Methodology")

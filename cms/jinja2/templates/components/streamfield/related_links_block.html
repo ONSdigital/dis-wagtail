@@ -1,13 +1,22 @@
 {% from "components/document-list/_macro.njk" import onsDocumentList %}
 
-<section id="{{ slug }}">
-    <h2>{{ heading }}</h2>
-
+{% if slug %}
+    <section id="{{ slug }}">
+        <h2>{{ heading }}</h2>
+        {# fmt:off #}
+        {{ onsDocumentList({
+                "headingLevel": 3,
+                "documents": related_links
+            })
+        }}
+    {# fmt:on #}
+    </section>
+{% else %}
     {# fmt:off #}
         {{ onsDocumentList({
                 "headingLevel": 3,
                 "documents": related_links
-            }) 
+            })
         }}
     {# fmt:on #}
-</section>
+{% endif %}

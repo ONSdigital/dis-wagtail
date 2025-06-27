@@ -2,6 +2,7 @@ from typing import TYPE_CHECKING, Any, ClassVar
 
 from django.conf import settings
 from django.db import models
+from django.utils.translation import gettext_lazy as _
 from wagtail.admin.panels import FieldPanel, InlinePanel
 from wagtail.fields import RichTextField
 from wagtail.search import index
@@ -9,9 +10,11 @@ from wagtail.search import index
 from cms.bundles.mixins import BundledPageMixin
 from cms.core.blocks.related import RelatedContentBlock
 from cms.core.blocks.stream_blocks import CoreStoryBlock
+from cms.core.enums import RelatedContentType
 from cms.core.fields import StreamField
 from cms.core.forms import PageWithEquationsAdminForm
 from cms.core.models import BasePage
+from cms.core.utils import get_content_type_for_page, get_document_metadata
 from cms.core.widgets import date_widget
 from cms.taxonomy.mixins import GenericTaxonomyMixin
 
@@ -104,6 +107,11 @@ class IndexPage(BundledPageMixin, BasePage):  # type: ignore[django-manager-miss
                     "featured": "true",
                     "title": {"text": link["text"], "url": link["url"]},
                     "description": featured_item.value["description"],
+                    "metadata": get_document_metadata(
+                        getattr(RelatedContentType, featured_item.value["content_type"]).label,
+                        featured_item.value.get("release_date", None),
+                        _("Published"),
+                    ),
                 }
             )
         return formatted_items
@@ -121,6 +129,9 @@ class IndexPage(BundledPageMixin, BasePage):  # type: ignore[django-manager-miss
                         "url": child_page.get_url(request=request),
                     },
                     "description": getattr(child_page, "listing_summary", "") or getattr(child_page, "summary", ""),
+                    "metadata": get_document_metadata(
+                        get_content_type_for_page(child_page), child_page.last_published_at, _("Published")
+                    ),
                 }
             )
         return formatted_items

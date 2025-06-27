@@ -1,18 +1,7 @@
 <section id="{{ value.title|slugify() }}" class="ons-u-mb-xl">
     <h2>{{ value.title }}</h2>
 
-    <ul class="ons-list ons-list--bare">
-        {% for item in value.links %}
-            {% if item.link %}
-                <li class="ons-list__item">
-                    <div class="ons-u-mb-s">
-                        <a href="{{ item.link.url }}">{{ item.link.text }}</a>
-                        {% if item.link.description %}
-                            {{ item.link.description|richtext }}
-                        {% endif %}
-                    </div>
-                </li>
-            {% endif %}
-        {% endfor %}
-    </ul>
+    {% with bound_links_block=value.block.child_blocks.links.bind(value.links, parent_context) %}
+        {% include_block bound_links_block %}
+    {% endwith %}
 </section>
