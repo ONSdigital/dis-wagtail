@@ -74,3 +74,6 @@ KAFKA_SERVERS = os.getenv("KAFKA_SERVERS", "localhost:9094").split(",")
 
 # Ignore proxy count in tests
 XFF_STRICT = False
+
+# turn on the real Wagtail login form
+WAGTAIL_CORE_ADMIN_LOGIN_ENABLED = True
