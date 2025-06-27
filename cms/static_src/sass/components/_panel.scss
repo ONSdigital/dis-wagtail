@@ -1,7 +1,0 @@
-@use 'config' as *;
-
-.panel {
-    @include media-query('l') {
-        padding: rem-sizing(24) rem-sizing(24) rem-sizing(24) rem-sizing(39);
-    }
-}
