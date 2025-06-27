@@ -192,11 +192,13 @@
     {% endif %}
 
     {% if page.headline_figures %}
-        <div class="ons-container headline-figures">
-            <h2 class="headline-figures__heading ons-u-fs-m">{{ _("Headline facts and figures") }}</h2>
-            <div class="ons-grid ons-grid-flex-gap ons-grid-flex-gap--24 headline-figures__grid">
+        <div class="ons-container ons-u-pt-l ons-u-pb-2xl">
+            <h2 class="ons-u-fs-m">{{ _("Headline facts and figures") }}</h2>
+            <div class="ons-grid ons-grid-flex-gap ons-grid-flex-gap--l ons-u-pb-2xl" id="headline-figures">
                 {% for figure in page.headline_figures %}
-                    <div class="ons-grid__col ons-grid__col--flex-col ons-grid__col--stretch">{% include_block figure %}</div>
+                    <div class="ons-grid__col ons-grid__col--loose ons-grid__col--flex-col ons-grid__col--stretch ons-u-flex-grow{% if page.headline_figures|length > 2 %} ons-col-4@m{% endif %}">
+                        {% include_block figure %}
+                    </div>
                 {% endfor %}
             </div>
         </div>
@@ -205,7 +207,7 @@
 {% endblock %}
 
 {% block main %}
-    <div class="ons-grid ons-grid-flex-gap ons-grid-flex-gap--32 ons-js-toc-container">
+    <div class="ons-grid ons-grid-flex-gap ons-grid-flex-gap--xl ons-js-toc-container">
         <div class="ons-grid__col ons-grid__col--sticky@m ons-col-4@m">
             {% if page.datasets %}
                 {% if request.is_preview and page.pk %}
@@ -235,19 +237,19 @@
                     {% endif %}
 
                     {% with toc_title=_("Contents"), toc_aria_label=_("Sections in this page") %}
-                {# fmt:off #}
-                {{-
-                    onsTableOfContents({
-                        "title": toc_title,
-                        "ariaLabel": toc_aria_label,
-                        "itemsList": page.table_of_contents,
-                        "relatedLinks": related_links,
-                        "button": {
-                            "text": _("Save or print this page")
-                        }
-                    })
-                }}
-                {# fmt:on #}
+                        {# fmt:off #}
+                        {{-
+                            onsTableOfContents({
+                                "title": toc_title,
+                                "ariaLabel": toc_aria_label,
+                                "itemsList": page.table_of_contents,
+                                "relatedLinks": related_links,
+                                "button": {
+                                    "text": _("Save or print this page")
+                                }
+                            })
+                        }}
+                        {# fmt:on #}
                     {% endwith %}
                     </div>
 
