@@ -162,6 +162,9 @@ class StatisticalArticlePage(BundledPageMixin, RoutablePageMixin, BasePage):  # 
     label = _("Article")  # type: ignore[assignment]
 
     # Fields
+    standalone_article = models.BooleanField(
+        default=False, help_text="When ticked, the page title is that of the series."
+    )
     news_headline = models.CharField(max_length=255, blank=True)
     summary = RichTextField(features=settings.RICH_TEXT_BASIC)
 
@@ -225,6 +228,7 @@ class StatisticalArticlePage(BundledPageMixin, RoutablePageMixin, BasePage):  # 
                     placeholder="Release Edition *",
                     help_text="e.g. 'November 2024'.",
                 ),
+                FieldPanel("standalone_article", help_text="Tick this to mark this as a standalone article."),
                 FieldPanel(
                     "news_headline",
                     help_text=(
@@ -267,7 +271,6 @@ class StatisticalArticlePage(BundledPageMixin, RoutablePageMixin, BasePage):  # 
         HeadlineFiguresFieldPanel("headline_figures", icon="data-analysis"),
         FieldPanel("content", icon="list-ul", required_on_save=True),
     ]
-
     corrections_and_notices_panels: ClassVar[list["Panel"]] = [
         FieldPanel("corrections", icon="warning"),
         FieldPanel("notices", icon="info-circle"),
@@ -347,6 +350,8 @@ class StatisticalArticlePage(BundledPageMixin, RoutablePageMixin, BasePage):  # 
 
     def get_full_display_title(self, title: str | None = None) -> str:
         """Returns the full display title for the page, including the parent series title."""
+        if self.standalone_article:
+            return self.get_parent().title
         return f"{self.get_parent().title}: {title or self.title}"
 
     def get_headline_figure(self, figure_id: str) -> dict[str, str]:
