@@ -275,6 +275,42 @@ class StatisticalArticlePageTests(WagtailPageTestCase):  # pylint: disable=too-m
         self.assertContains(v2_response, "First correction text")
         self.assertNotContains(v2_response, "Second correction text")
 
+    def test_superseeded_version_uses_correct_title(self):
+        """Test that the superseded version uses the correct title."""
+        old_title = self.page.title
+
+        self.page.save_revision().publish()
+
+        original_revision_id = self.page.get_latest_revision().id
+
+        self.page.title = "New title"
+
+        first_correction = {
+            "version_id": 1,
+            "previous_version": original_revision_id,
+            "when": "2025-01-11",
+            "frozen": True,
+            "text": "Foobar correction text",
+        }
+
+        self.page.corrections = [
+            (
+                "correction",
+                first_correction,
+            )
+        ]
+
+        self.page.save_revision().publish()
+
+        live_response = self.client.get(self.page.url)
+        self.assertContains(live_response, "New title")
+        self.assertNotContains(live_response, old_title)
+
+        v1_response = self.client.get(self.page.url + "previous/v1/")
+
+        self.assertNotContains(v1_response, "New title")
+        self.assertContains(v1_response, old_title)
+
     def test_correction_toc_rendering(self):
         self.page.content = [
             {
