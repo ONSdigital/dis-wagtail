@@ -1,12 +1,9 @@
-from datetime import datetime
-
 from django.conf import settings
 from django.test import TestCase
 from wagtail.blocks import StreamBlockValidationError, StructBlockValidationError
 from wagtail.rich_text import RichText
 from wagtail.test.utils.wagtail_tests import WagtailTestUtils
 
-from cms.articles.tests.factories import ArticleSeriesPageFactory, StatisticalArticlePageFactory
 from cms.core.blocks import (
     BasicTableBlock,
     DocumentBlock,
@@ -18,7 +15,6 @@ from cms.core.blocks import (
     RelatedLinksBlock,
 )
 from cms.core.blocks.glossary_terms import GlossaryTermsBlock
-from cms.core.blocks.panels import CorrectionBlock, NoticeBlock
 from cms.core.tests.factories import GlossaryTermFactory
 from cms.core.tests.utils import get_test_document
 from cms.home.models import HomePage
