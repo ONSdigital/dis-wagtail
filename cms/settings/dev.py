@@ -22,6 +22,9 @@ WAGTAILADMIN_BASE_URL = "http://localhost:8000"
 # Display sent emails in the console while developing locally.
 EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
 
+# Sender address for email notifications
+DEFAULT_FROM_EMAIL = "cms@example.com"
+
 # Disable password validators when developing locally.
 AUTH_PASSWORD_VALIDATORS = []
 
@@ -121,6 +124,7 @@ MIGRATION_LINTER_OPTIONS = {
         "0006_statisticalarticlepage_dataset_sorting_and_more",  # Ignoring NOT NULL constraint
         "0005_user_remove_uuid_null",  # Ignoring NOT NULL constraint
         "0006_topicpage_datasets",  # Ignoring NOT NULL constraint
+        "0004_bundleteam_preview_notification_sent",  # Ignoring NOT NULL constraint
     ],
 }
 

@@ -17,7 +17,7 @@ from wagtail.log_actions import log
 
 from cms.bundles.enums import BundleStatus
 from cms.bundles.models import Bundle
-from cms.bundles.notifications import (
+from cms.bundles.notifications.slack import (
     notify_slack_of_publication_start,
     notify_slack_of_publish_end,
     notify_slack_of_status_change,
@@ -91,7 +91,7 @@ class BundleEditView(EditView):
 
         kwargs: dict = {"content_changed": self.has_content_changes}
         original_status = BundleStatus[self.form.original_status].label
-        url = self.request.build_absolute_uri(reverse("bundle:inspect", args=(instance.pk,)))
+        url = self.request.build_absolute_uri(instance.full_inspect_url)
 
         if instance.status == BundleStatus.APPROVED:
             action = "bundles.approve"
