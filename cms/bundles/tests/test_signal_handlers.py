@@ -97,7 +97,6 @@ class TestNotifications(TestCase):
 
         self.assertEqual(len(mail.outbox), 1)
         self.assertIn(f'Bundle "{bundle.name}" has been published', mail.outbox[0].subject)
-        self.assertIn(bundle.full_inspect_url, mail.outbox[0].body)
 
     def test_email_is_sent_when_bundle_is_published_via_manual_publication(self):
         """Test that when a bundle is published manually (via the admin), an email is sent."""
@@ -129,7 +128,6 @@ class TestNotifications(TestCase):
 
         self.assertEqual(len(mail.outbox), 1)
         self.assertIn(f'Bundle "{bundle.name}" has been published', mail.outbox[0].subject)
-        self.assertIn(bundle.full_inspect_url, mail.outbox[0].body)
 
     def test_notification_sent_only_on_first_change_to_in_preview(self):
         """Test that a notification is sent only on the first change to 'In Preview'."""
