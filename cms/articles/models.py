@@ -360,11 +360,20 @@ class StatisticalArticlePage(BundledPageMixin, RoutablePageMixin, BasePage):  # 
         # NB: Little validation is done on previous_version, as it's assumed handled on save
         revision = get_object_or_404(self.revisions, pk=correction.value["previous_version"])
 
+        page = revision.as_object()
+
+        # Get corrections and notices for this specific version
+        corrections, notices = page.get_serialized_corrections_and_notices(request)
+
         response: TemplateResponse = self.render(
             request,
             context_overrides={
-                "page": revision.as_object(),
+                "page": page,
                 "latest_version_url": self.get_url(request),
+                # Override the context with the corrections and notices for this version
+                "corrections_and_notices": corrections + notices,
+                "has_corrections": bool(corrections),
+                "has_notices": bool(notices),
             },
         )
 
@@ -428,14 +437,16 @@ class StatisticalArticlePage(BundledPageMixin, RoutablePageMixin, BasePage):  # 
             return cast("TemplateResponse", self.related_data(request))
         return cast("TemplateResponse", super().serve_preview(request, mode_name))
 
-    def get_context(self, request: "HttpRequest", *args: Any, **kwargs: Any) -> dict:
-        """Adds additional context to the page."""
-        context: dict = super().get_context(request)
+    def get_serialized_corrections_and_notices(
+        self, request: "HttpRequest"
+    ) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+        """Returns a list of corrections and notices for the page."""
         corrections = (
             [
                 serialize_correction_or_notice(
                     correction,
-                    superseded_url=self.reverse_subpage("previous_version", args=[correction.value["version_id"]]),
+                    superseded_url=self.get_url(request)
+                    + self.reverse_subpage("previous_version", args=[correction.value["version_id"]]),
                 )
                 for correction in self.corrections
             ]
@@ -445,6 +456,13 @@ class StatisticalArticlePage(BundledPageMixin, RoutablePageMixin, BasePage):  # 
         notices = (
             [serialize_correction_or_notice(notice) for notice in self.notices] if self.notices else []  # pylint: disable=not-an-iterable
         )
+        return corrections, notices
+
+    def get_context(self, request: "HttpRequest", *args: Any, **kwargs: Any) -> dict:
+        """Adds additional context to the page."""
+        context: dict = super().get_context(request)
+
+        corrections, notices = self.get_serialized_corrections_and_notices(request)
         context["corrections_and_notices"] = corrections + notices
         context["has_corrections"] = bool(corrections)
         context["has_notices"] = bool(notices)
