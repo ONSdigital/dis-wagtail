@@ -4,7 +4,7 @@ from django.conf import settings
 from django.utils.text import slugify
 from wagtail import blocks
 
-from cms.core.blocks import BasicTableBlock, LinkBlock, RelatedLinksBlock
+from cms.core.blocks import BasicTableBlock, LinkBlock, RelatedContentBlock
 
 if TYPE_CHECKING:
     from wagtail.blocks import StructValue
@@ -14,7 +14,7 @@ class ContentSectionBlock(blocks.StructBlock):
     """A content section with list of links."""
 
     title = blocks.CharBlock(label="Section title")
-    links = RelatedLinksBlock()
+    links = blocks.ListBlock(RelatedContentBlock())
 
     class Meta:
         template = "templates/components/streamfield/release_content_section.html"
