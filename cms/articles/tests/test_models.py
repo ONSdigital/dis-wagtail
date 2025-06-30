@@ -1,9 +1,10 @@
 import math
 from datetime import datetime
+from urllib.parse import urlparse
 
 from django.conf import settings
 from django.core.exceptions import ValidationError
-from django.test import TestCase, override_settings
+from django.test import RequestFactory, TestCase, override_settings
 from django.urls import reverse
 from django.utils import timezone
 from django.utils.formats import date_format
@@ -16,6 +17,7 @@ from cms.articles.tests.factories import ArticleSeriesPageFactory, StatisticalAr
 from cms.core.tests.factories import ContactDetailsFactory
 from cms.datasets.blocks import DatasetStoryBlock
 from cms.datasets.models import Dataset
+from cms.datavis.tests.factories import TableDataFactory
 
 
 class ArticleSeriesTestCase(WagtailTestUtils, TestCase):
@@ -575,6 +577,82 @@ class StatisticalArticlePageRenderTestCase(WagtailTestUtils, TestCase):
         """Test the page loads in external env."""
         response = self.client.get(self.basic_page_url)
         self.assertEqual(response.status_code, 200)
+
+
+class StatisticalArticlePageFeaturedArticleTestCase(WagtailTestUtils, TestCase):
+    def setUp(self):
+        self.page = StatisticalArticlePageFactory(
+            parent__title="PSF",
+            title="November 2024",
+            news_headline="",
+            contact_details=None,
+            show_cite_this_page=False,
+            release_date=datetime(2024, 11, 1),
+            main_points_summary="Test main points summary",
+        )
+
+    def test_as_featured_article_macro_data(self):
+        request = RequestFactory().get("/")
+        data = self.page.as_featured_article_macro_data(request)
+
+        self.assertEqual(data["title"]["text"], self.page.display_title)
+        self.assertIn("url", data["title"])
+        parsed = urlparse(data["title"]["url"])
+        self.assertEqual(parsed.netloc, "", "URL should be relative")
+        self.assertEqual(parsed.path, self.page.url)
+
+        self.assertEqual(data["metadata"]["text"], "Article")
+        self.assertEqual(data["metadata"]["date"]["prefix"], "Release date")
+        self.assertEqual(data["metadata"]["date"]["showPrefix"], True)
+        self.assertEqual(data["metadata"]["date"]["short"], "1 November 2024")
+        self.assertEqual(data["metadata"]["date"]["iso"], "2024-11-01")
+
+        self.assertEqual(data["headingLevel"], 3)
+        self.assertEqual(data["description"], "Test main points summary")
+
+    def test_as_featured_article_macro_data_with_chart(self):
+        """Test that a chart is used when available."""
+        table_data = TableDataFactory(
+            table_data=[
+                ["", "Series 0"],
+                ["2004", "100"],
+                ["2005", "120"],
+            ]
+        )
+
+        chart_data = {
+            "type": "line_chart",
+            "value": {
+                "title": "Test Chart",
+                "table": table_data,
+                "theme": "primary",
+                "show_legend": True,
+                "x_axis": {"title": ""},
+                "y_axis": {"title": ""},
+            },
+        }
+
+        self.page.featured_chart = [chart_data]
+        self.page.save()
+
+        request = RequestFactory().get("/")
+        data = self.page.as_featured_article_macro_data(request)
+
+        self.assertEqual(data["chart"]["chartType"], "line")
+        self.assertEqual(data["chart"]["title"], "Test Chart")
+        self.assertEqual(data["chart"]["theme"], "primary")
+
+        self.assertNotIn("image", data)
+
+    def test_as_featured_article_macro_data_without_chart(self):
+        """Test that a listing image is used when there is no chart."""
+        request = RequestFactory().get("/")
+        data = self.page.as_featured_article_macro_data(request)
+
+        self.assertNotIn("chart", data)
+
+        self.assertEqual(data["image"]["src"], self.page.listing_image.get_rendition("width-1252").url)
+        self.assertNotIn("alt", data["image"])
 
 
 class PreviousReleasesWithoutPaginationTestCase(TestCase):
