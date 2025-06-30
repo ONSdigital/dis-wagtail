@@ -6,6 +6,7 @@ from django.urls import reverse
 from django.utils import timezone
 from wagtail.blocks import StreamValue
 from wagtail.locks import BasicLock
+from wagtail.test.utils.form_data import nested_form_data, rich_text, streamfield
 from wagtail.test.utils.wagtail_tests import WagtailTestUtils
 
 from cms.bundles.enums import BundleStatus
@@ -282,13 +283,59 @@ class ReleaseCalendarPageAdminTests(WagtailTestUtils, TestCase):
 
     def test_preview_mode_url(self):
         """Tests preview pages with preview mode loads."""
-        cases = ["PROVISIONAL", "CANCELLED", "PUBLISHED", "CONFIRMED"]
+        cases = {
+            ReleaseStatus.PROVISIONAL: "This release is not yet",
+            ReleaseStatus.CONFIRMED: "This release is not yet",
+            ReleaseStatus.PUBLISHED: "The publication link",
+            ReleaseStatus.CANCELLED: "Cancelled for reasons",
+        }
 
-        preview_url = reverse("wagtailadmin_pages:preview_on_edit", args=(self.release_calendar_page.pk,))
-        for case in cases:
-            with self.subTest(case=case):
-                response = self.client.get(f"{preview_url}?mode={case}", follow=True)
+        post_data = nested_form_data(
+            {
+                "title": self.release_calendar_page.title,
+                "slug": self.release_calendar_page.slug,
+                "status": self.release_calendar_page.status,
+                "release_date": self.release_calendar_page.release_date,
+                "summary": rich_text(self.release_calendar_page.summary),
+                "notice": rich_text("Cancelled for reasons"),
+                "content": streamfield(
+                    [
+                        (
+                            "release_content",
+                            {
+                                "title": "Publications",
+                                "links": streamfield(
+                                    [
+                                        (
+                                            "item",
+                                            {"external_url": "https://ons.gov.uk", "title": "The publication link"},
+                                        )
+                                    ]
+                                ),
+                            },
+                        )
+                    ]
+                ),
+                "changes_to_release_date": streamfield([]),
+                "pre_release_access": streamfield([]),
+                "related_links": streamfield([]),
+                "datasets": streamfield([]),
+            }
+        )
+
+        preview_url_base = reverse("wagtailadmin_pages:preview_on_edit", args=[self.release_calendar_page.pk])
+        for mode, lookup in cases.items():
+            with self.subTest(mode=mode):
+                preview_url = f"{preview_url_base}?mode={mode}"
+                response = self.client.post(preview_url, post_data)
                 self.assertEqual(response.status_code, 200)
+                self.assertJSONEqual(
+                    response.content.decode(),
+                    {"is_valid": True, "is_available": True},
+                )
+
+                response = self.client.get(preview_url)
+                self.assertContains(response, lookup)
 
     def test_delete_redirects_back_to_edit(self):
         """Test that we get redirected back to edit when trying to delete a release calendar page."""
