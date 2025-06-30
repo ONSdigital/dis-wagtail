@@ -2,6 +2,7 @@ from datetime import timedelta
 from io import StringIO
 from unittest.mock import patch
 
+import time_machine
 from django.core.management import call_command
 from django.test import TestCase, override_settings
 from django.urls import reverse
@@ -220,6 +221,33 @@ class PublishBundlesCommandTestCase(TestCase):
             call_kwargs["url"], "https://test.ons.gov.uk" + reverse("bundle:inspect", args=(self.bundle.pk,))
         )
         self.assertIn(str(self.bundle.pk), call_kwargs["url"])
+
+    @override_settings(SLACK_NOTIFICATIONS_WEBHOOK_URL="https://slack.example.com")
+    @patch("cms.bundles.management.commands.publish_bundles.time.sleep")
+    @patch("cms.bundles.management.commands.publish_bundles.notify_slack_of_publication_start")
+    @patch("cms.bundles.management.commands.publish_bundles.notify_slack_of_publish_end")
+    def test_publish_bundle_with_hold(self, _mock_notify_end, _mock_notify_start, mock_sleep):
+        """Test publishing a bundle."""
+        # Sanity checks
+        self.assertFalse(self.statistical_article.live)
+        self.assertFalse(ModelLogEntry.objects.filter(action="wagtail.publish.scheduled").exists())
+        self.assertFalse(PageLogEntry.objects.filter(action="wagtail.publish.scheduled").exists())
+
+        with time_machine.travel(self.publication_date - timedelta(seconds=20)):
+            self.call_command(max_hold_time=10)
+
+        # 20 seconds before publish, there's nothing to do within 10 seconds, so nothing happens
+        self.bundle.refresh_from_db()
+        self.assertEqual(self.bundle.status, BundleStatus.APPROVED)
+        mock_sleep.assert_not_called()
+
+        with time_machine.travel(self.publication_date - timedelta(seconds=20), tick=False):
+            self.call_command(max_hold_time=30)
+
+        # 20 seconds before publish, wait 20 seconds, then publish
+        mock_sleep.assert_called_once_with(20)
+        self.bundle.refresh_from_db()
+        self.assertEqual(self.bundle.status, BundleStatus.PUBLISHED)
 
 
 class PublishScheduledWithoutBundlesCommandTestCase(TestCase):
