@@ -13,10 +13,13 @@ if TYPE_CHECKING:
     from wagtail.blocks.list_block import ListValue
 
 
-class RelatedContentBlock(LinkBlock):
+class LinkBlockWithDescription(LinkBlock):
+    description = CharBlock(required=False)
+
+
+class RelatedContentBlock(LinkBlockWithDescription):
     """Related content block with page or link validation."""
 
-    description = CharBlock(required=False)
     content_type = ChoiceBlock(
         choices=RelatedContentType.choices,
         default=RelatedContentType.ARTICLE,
