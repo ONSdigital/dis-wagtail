@@ -169,7 +169,10 @@ class StatisticalArticlePage(BundledPageMixin, RoutablePageMixin, BasePage):  # 
     content_panels: ClassVar[list["Panel"]] = [
         *BundledPageMixin.panels,
         TitleFieldPanel(
-            "title", placeholder="Edition*", help_text="Also known as the release edition. e.g. 'November 2024'."
+            "title",
+            heading="Edition",
+            placeholder="Edition*",
+            help_text="Also known as the release edition. e.g. 'November 2024'.",
         ),
         FieldPanel(
             "news_headline",
