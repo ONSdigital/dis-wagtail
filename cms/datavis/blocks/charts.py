@@ -68,6 +68,7 @@ class BarColumnChartBlock(BaseVisualisationBlock):
     ERROR_ALL_SERIES_SELECTED = "all_series_selected"
     ERROR_BAR_CHART_NO_ASPECT_RATIO = "bar_chart_no_aspect_ratio"
     ERROR_HORIZONTAL_BAR_NO_CATEGORY_TITLE = "horizontal_bar_no_category_title"
+    ERROR_NON_STACKED_COLUMN_NO_LINE = "non_stacked_column_no_line_overlay"
 
     # Remove unsupported features
     show_markers = None
@@ -170,6 +171,14 @@ class BarColumnChartBlock(BaseVisualisationBlock):
                 if value.get("select_chart_type") == BarColumnChartTypeChoices.BAR:
                     stream_block_errors[i] = ValidationError(
                         "Horizontal bar charts do not support line overlays.", code=self.ERROR_HORIZONTAL_BAR_NO_LINE
+                    )
+
+                elif value.get("select_chart_type") == BarColumnChartTypeChoices.COLUMN and not value.get(
+                    "use_stacked_layout"
+                ):
+                    stream_block_errors[i] = ValidationError(
+                        "Non-stacked column charts do not support line overlays.",
+                        code=self.ERROR_NON_STACKED_COLUMN_NO_LINE,
                     )
 
                 # Raise an error if the series number is not in the range of the number of series

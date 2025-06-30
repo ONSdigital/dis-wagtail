@@ -389,6 +389,7 @@ class ColumnChartWithLineTestCase(BaseChartBlockTestCase):
 
     def test_column_chart_with_one_line_overlay(self):
         self.raw_data["select_chart_type"] = "column"
+        self.raw_data["use_stacked_layout"] = True
         self.raw_data["series_customisation"] = [
             {"type": "series_as_line_overlay", "value": 1}  # NB 1-indexed
         ]
@@ -432,8 +433,23 @@ class ColumnChartWithLineTestCase(BaseChartBlockTestCase):
         # This is the only error
         self.assertEqual(1, len(cm.exception.block_errors))
 
+    def test_stacked_column_chart_with_line_overlay_is_not_allowed(self):
+        self.raw_data["select_chart_type"] = "column"
+        self.raw_data["use_stacked_layout"] = False
+        self.raw_data["series_customisation"] = [{"type": "series_as_line_overlay", "value": 1}]
+        with self.assertRaises(blocks.StructBlockValidationError) as cm:
+            self.block.clean(self.get_value())
+
+        self.assertEqual(
+            BarColumnChartBlock.ERROR_NON_STACKED_COLUMN_NO_LINE,
+            cm.exception.block_errors["series_customisation"].block_errors[0].code,
+        )
+        # This is the only error
+        self.assertEqual(1, len(cm.exception.block_errors))
+
     def test_error_is_raised_if_series_number_is_out_of_range(self):
         self.raw_data["select_chart_type"] = "column"
+        self.raw_data["use_stacked_layout"] = True
         for series_number in [0, 3]:
             with self.subTest(series_number=series_number):
                 self.raw_data["series_customisation"] = [
@@ -450,6 +466,7 @@ class ColumnChartWithLineTestCase(BaseChartBlockTestCase):
 
     def test_error_is_raised_if_series_number_is_duplicated(self):
         self.raw_data["select_chart_type"] = "column"
+        self.raw_data["use_stacked_layout"] = True
         self.raw_data["series_customisation"] = [
             {"type": "series_as_line_overlay", "value": 1},
             {"type": "series_as_line_overlay", "value": 1},
@@ -466,6 +483,7 @@ class ColumnChartWithLineTestCase(BaseChartBlockTestCase):
 
     def test_error_is_raised_if_all_series_are_selected_for_line_overlay(self):
         self.raw_data["select_chart_type"] = "column"
+        self.raw_data["use_stacked_layout"] = True
         self.raw_data["table"] = TableDataFactory(
             table_data=[
                 ["", "Only one series"],
@@ -490,6 +508,7 @@ class ColumnChartWithLineTestCase(BaseChartBlockTestCase):
 
     def test_all_series_selected_not_raised_for_number_out_of_range(self):
         self.raw_data["select_chart_type"] = "column"
+        self.raw_data["use_stacked_layout"] = True
         self.raw_data["series_customisation"] = [
             {"type": "series_as_line_overlay", "value": 1},
             {"type": "series_as_line_overlay", "value": 3},
