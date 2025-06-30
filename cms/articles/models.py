@@ -183,12 +183,14 @@ class StatisticalArticlePage(BundledPageMixin, RoutablePageMixin, BasePage):  # 
             ],
             heading="Title",
         ),
-        "summary",
+        FieldPanel("summary", required_on_save=True),
         MultiFieldPanel(
             [
                 FieldRowPanel(
                     [
-                        FieldPanel("release_date", date_widget, help_text="The actual release date"),
+                        FieldPanel(
+                            "release_date", date_widget, help_text="The actual release date", required_on_save=True
+                        ),
                         FieldPanel(
                             "next_release_date",
                             date_widget,
@@ -203,13 +205,13 @@ class StatisticalArticlePage(BundledPageMixin, RoutablePageMixin, BasePage):  # 
                 ),
                 "contact_details",
                 "show_cite_this_page",
-                "main_points_summary",
+                FieldPanel("main_points_summary", required_on_save=True),
             ],
             heading="Metadata",
             icon="cog",
         ),
         HeadlineFiguresFieldPanel("headline_figures", icon="data-analysis"),
-        FieldPanel("content", icon="list-ul"),
+        FieldPanel("content", icon="list-ul", required_on_save=True),
     ]
 
     corrections_and_notices_panels: ClassVar[list["Panel"]] = [
@@ -278,7 +280,11 @@ class StatisticalArticlePage(BundledPageMixin, RoutablePageMixin, BasePage):  # 
 
     def get_admin_display_title(self) -> str:
         """Changes the admin display title to include the parent title."""
-        return f"{self.get_parent().title}: {self.draft_title or self.title}"
+        return self.get_full_display_title(self.draft_title)
+
+    def get_full_display_title(self, title: str | None = None) -> str:
+        """Returns the full display title for the page, including the parent series title."""
+        return f"{self.get_parent().title}: {title or self.title}"
 
     def get_headline_figure(self, figure_id: str) -> dict[str, str]:
         if not self.headline_figures:
@@ -311,7 +317,7 @@ class StatisticalArticlePage(BundledPageMixin, RoutablePageMixin, BasePage):  # 
     @property
     def display_title(self) -> str:
         """Returns the page display title. If the news headline is set, it takes precedence over the series+title."""
-        return self.news_headline.strip() or self.get_admin_display_title()
+        return self.news_headline.strip() or self.get_full_display_title()
 
     @cached_property
     def table_of_contents(self) -> list[dict[str, str | object]]:

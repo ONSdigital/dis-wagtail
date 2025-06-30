@@ -15,18 +15,6 @@ from cms.standard_pages.tests.factories import IndexPageFactory, InformationPage
 class DummyPublisher(BasePublisher):
     """Concrete subclass of BasePublisher for testing the shared functionality."""
 
-    def __init__(self, channel_created_or_updated, channel_deleted):
-        self._channel_created_or_updated = channel_created_or_updated
-        self._channel_deleted = channel_deleted
-
-    @property
-    def created_or_updated_channel(self) -> str | None:
-        return self._channel_created_or_updated
-
-    @property
-    def deleted_channel(self) -> str | None:
-        return self._channel_deleted
-
     def _publish(self, channel, message):
         # We don't actually publish in tests; we just want to spy on the calls.
         pass
@@ -45,10 +33,7 @@ class BasePublisherTests(TestCase, WagtailTestUtils, ResourceDictAssertions):
             IndexPageFactory(slug="custom-slug-1"),
         ]
 
-        cls.publisher = DummyPublisher(
-            channel_created_or_updated="dummy-channel-created",
-            channel_deleted="dummy-channel-deleted",
-        )
+        cls.publisher = DummyPublisher()
 
     @patch.object(DummyPublisher, "_publish", return_value=None)
     def test_publish_created_or_updated_calls_publish(self, mock_method):
@@ -60,7 +45,7 @@ class BasePublisherTests(TestCase, WagtailTestUtils, ResourceDictAssertions):
             mock_method.assert_called_once()
             channel_called, message_called = mock_method.call_args[0]
 
-            self.assertEqual(channel_called, "dummy-channel-created")
+            self.assertEqual(channel_called, "search-content-updated")
             self.assert_base_fields(message_called, page)
 
             mock_method.reset_mock()
@@ -74,7 +59,7 @@ class BasePublisherTests(TestCase, WagtailTestUtils, ResourceDictAssertions):
             mock_method.assert_called_once()
             channel_called, message_called = mock_method.call_args[0]
 
-            self.assertEqual(channel_called, "dummy-channel-deleted")
+            self.assertEqual(channel_called, "search-content-deleted")
             self.assertIn("uri", message_called)
             self.assertEqual(message_called["uri"], page.url_path)
 
@@ -83,8 +68,6 @@ class BasePublisherTests(TestCase, WagtailTestUtils, ResourceDictAssertions):
 
 @override_settings(
     KAFKA_SERVERS=["localhost:9092"],
-    KAFKA_CHANNEL_CREATED_OR_UPDATED="search-content-updated",
-    KAFKA_CHANNEL_DELETED="search-content-deleted",
 )
 class KafkaPublisherTests(TestCase, ResourceDictAssertions):
     @classmethod
@@ -94,15 +77,13 @@ class KafkaPublisherTests(TestCase, ResourceDictAssertions):
     @patch("cms.search.publishers.KafkaProducer")
     def test_kafka_publisher_init(self, mock_producer_class):
         """Ensure KafkaPublisher picks up settings and constructs KafkaProducer correctly."""
-        publisher = KafkaPublisher()
+        KafkaPublisher()
         mock_producer_class.assert_called_once_with(
             bootstrap_servers=["localhost:9092"],
             api_version=(3, 5, 1),
             value_serializer=ANY,
             retries=5,
         )
-        self.assertEqual(publisher.created_or_updated_channel, "search-content-updated")
-        self.assertEqual(publisher.deleted_channel, "search-content-deleted")
 
     @patch("cms.search.publishers.KafkaProducer")
     def test_publish_created_or_updated(self, mock_producer_class):
@@ -172,7 +153,7 @@ class LogPublisherTests(TestCase, ResourceDictAssertions):
             "LogPublisher: Publishing to channel=%s, message=%s",
             "Wrong log format string",
         )
-        self.assertEqual(last_call_args[1], "log-created-or-updated", "Wrong channel argument")
+        self.assertEqual(last_call_args[1], "search-content-updated", "Wrong channel argument")
 
         msg_dict = last_call_args[2]
         self.assert_base_fields(msg_dict, self.information_page)
@@ -189,7 +170,7 @@ class LogPublisherTests(TestCase, ResourceDictAssertions):
             "LogPublisher: Publishing to channel=%s, message=%s",
             "Wrong log format string",
         )
-        self.assertEqual(last_call_args[1], "log-deleted", "Wrong channel argument")
+        self.assertEqual(last_call_args[1], "search-content-deleted", "Wrong channel argument")
 
         msg_dict = last_call_args[2]
         self.assertIn("uri", msg_dict, "Payload dict missing expected key 'uri'")

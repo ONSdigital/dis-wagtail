@@ -17,8 +17,6 @@ class KafkaSettingsCheckTests(TestCase):
     @override_settings(
         SEARCH_INDEX_PUBLISHER_BACKEND="kafka",
         KAFKA_SERVERS=None,
-        KAFKA_CHANNEL_CREATED_OR_UPDATED=None,
-        KAFKA_CHANNEL_DELETED=None,
     )
     def test_missing_kafka_settings(self):
         """If SEARCH_INDEX_PUBLISHER_BACKEND='kafka' but required Kafka settings are missing,
@@ -26,18 +24,13 @@ class KafkaSettingsCheckTests(TestCase):
         """
         errors = check_kafka_settings(app_configs=None)
 
-        # Expect 3 missing-settings errors: E001, E002, and E003
-        self.assertEqual(len(errors), 3)
+        self.assertEqual(len(errors), 1)
         error_ids = [error.id for error in errors]
         self.assertIn("search.E001", error_ids)  # Missing KAFKA_SERVERS
-        self.assertIn("search.E002", error_ids)  # Missing KAFKA_CHANNEL_CREATED_OR_UPDATED
-        self.assertIn("search.E003", error_ids)  # Missing KAFKA_CHANNEL_DELETED
 
     @override_settings(
         SEARCH_INDEX_PUBLISHER_BACKEND="kafka",
         KAFKA_SERVERS="",
-        KAFKA_CHANNEL_CREATED_OR_UPDATED="some-topic",
-        KAFKA_CHANNEL_DELETED="some-other-topic",
     )
     def test_empty_kafka_server_setting(self):
         """If a required Kafka setting is defined but empty, we should get an error
@@ -52,8 +45,6 @@ class KafkaSettingsCheckTests(TestCase):
     @override_settings(
         SEARCH_INDEX_PUBLISHER_BACKEND="kafka",
         KAFKA_SERVERS="localhost:9092",
-        KAFKA_CHANNEL_CREATED_OR_UPDATED="my-topic",
-        KAFKA_CHANNEL_DELETED="delete-topic",
     )
     def test_no_errors_if_all_kafka_settings_present(self):
         """If SEARCH_INDEX_PUBLISHER_BACKEND='kafka' and all required settings are properly defined,
@@ -77,7 +68,8 @@ class SearchIndexContentTypeCheckTests(TestCase):
         """
 
         class MyPageModelWithoutAttrTest1(Page):
-            pass
+            class Meta:
+                abstract = True
 
         mock_get_page_models.return_value = [MyPageModelWithoutAttrTest1]
         errors = check_search_index_content_type(app_configs=None)
@@ -96,7 +88,8 @@ class SearchIndexContentTypeCheckTests(TestCase):
         """
 
         class MyPageModelWithoutAttrTest2(Page):
-            pass
+            class Meta:
+                abstract = True
 
         mock_get_page_models.return_value = [MyPageModelWithoutAttrTest2]
         errors = check_search_index_content_type(app_configs=None)
@@ -110,6 +103,9 @@ class SearchIndexContentTypeCheckTests(TestCase):
         class MyPageModelWithAttr(Page):
             search_index_content_type = "cms.search.my_page_model"
 
+            class Meta:
+                abstract = True
+
         mock_get_page_models.return_value = [MyPageModelWithAttr]
         errors = check_search_index_content_type(app_configs=None)
         self.assertEqual(errors, [])
@@ -122,10 +118,14 @@ class SearchIndexContentTypeCheckTests(TestCase):
         """
 
         class IncludedPage(Page):
-            pass  # no search_index_content_type
+            # no search_index_content_type
+            class Meta:
+                abstract = True
 
         class ExcludedPage(Page):
-            pass  # no search_index_content_type but will be excluded
+            # no search_index_content_type but will be excluded
+            class Meta:
+                abstract = True
 
         mock_get_page_models.return_value = [IncludedPage, ExcludedPage]
 
