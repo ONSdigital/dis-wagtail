@@ -170,7 +170,12 @@ class StatisticalArticlePage(BundledPageMixin, RoutablePageMixin, BasePage):  # 
         *BundledPageMixin.panels,
         MultiFieldPanel(
             [
-                TitleFieldPanel("title", help_text="Also known as the release edition. e.g. 'November 2024'."),
+                TitleFieldPanel(
+                    "title",
+                    heading="Release Edition",
+                    placeholder="Release Edition *",
+                    help_text="e.g. 'November 2024'.",
+                ),
                 FieldPanel(
                     "news_headline",
                     help_text=(
@@ -181,7 +186,7 @@ class StatisticalArticlePage(BundledPageMixin, RoutablePageMixin, BasePage):  # 
                     icon="news",
                 ),
             ],
-            heading="Title",
+            heading="Edition",
         ),
         FieldPanel("summary", required_on_save=True),
         MultiFieldPanel(
@@ -280,7 +285,11 @@ class StatisticalArticlePage(BundledPageMixin, RoutablePageMixin, BasePage):  # 
 
     def get_admin_display_title(self) -> str:
         """Changes the admin display title to include the parent title."""
-        return f"{self.get_parent().title}: {self.draft_title or self.title}"
+        return self.get_full_display_title(self.draft_title)
+
+    def get_full_display_title(self, title: str | None = None) -> str:
+        """Returns the full display title for the page, including the parent series title."""
+        return f"{self.get_parent().title}: {title or self.title}"
 
     def get_headline_figure(self, figure_id: str) -> dict[str, str]:
         if not self.headline_figures:
@@ -313,7 +322,7 @@ class StatisticalArticlePage(BundledPageMixin, RoutablePageMixin, BasePage):  # 
     @property
     def display_title(self) -> str:
         """Returns the page display title. If the news headline is set, it takes precedence over the series+title."""
-        return self.news_headline.strip() or self.get_admin_display_title()
+        return self.news_headline.strip() or self.get_full_display_title()
 
     @cached_property
     def table_of_contents(self) -> list[dict[str, str | object]]:
