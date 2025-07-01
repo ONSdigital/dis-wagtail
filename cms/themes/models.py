@@ -15,7 +15,7 @@ class ThemePage(ExclusiveTaxonomyMixin, BasePage):  # type: ignore[django-manage
 
     template = "templates/pages/theme_page.html"
     parent_page_types: ClassVar[list[str]] = ["home.HomePage", "ThemePage"]
-    subpage_types: ClassVar[list[str]] = ["ThemePage", "topics.TopicPage"]
+    subpage_types: ClassVar[list[str]] = ["ThemePage"]
     page_description = "A theme page, such as 'Economy'."
     label = "Theme"
 
