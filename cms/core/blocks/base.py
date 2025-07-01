@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import date, datetime
 from typing import Any
 
 from django.core.exceptions import ValidationError
@@ -53,7 +53,7 @@ class LinkBlockStructValue(StructValue):
         if content_type := self.get("content_type"):
             content_type_label = get_related_content_type_label(content_type)
 
-        release_date: datetime | None = self.get("release_date") or page_release_date
+        release_date: date | datetime | None = self.get("release_date") or page_release_date
 
         if content_type_label or release_date:
             value["metadata"] = {}
