@@ -60,6 +60,7 @@ class LineChartBlock(BaseVisualisationBlock):
 class BarColumnChartBlock(BaseVisualisationBlock):
     x_axis_type = AxisType.CATEGORICAL
     MAX_SERIES_COUNT_WITH_DATA_LABELS = 2
+    MAX_DATA_POINTS_WITH_DATA_LABELS = 20
 
     # Error codes
     ERROR_DUPLICATE_SERIES = "duplicate_series_number"
@@ -92,7 +93,11 @@ class BarColumnChartBlock(BaseVisualisationBlock):
     show_data_labels = blocks.BooleanBlock(
         default=False,
         required=False,
-        help_text="Non-stacked bar charts with one or two series only. Data labels will be hidden for all other cases.",
+        help_text="""
+        Data labels are only allowed on non-stacked bar charts with one or two series,
+        and where the number of data points does not exceed 20 in any series.
+        Data labels will be hidden for all other cases.
+        """,
     )
     use_stacked_layout = blocks.BooleanBlock(default=False, required=False)
     # NB X_axis is labelled "Category axis" for bar/column charts
@@ -247,13 +252,15 @@ class BarColumnChartBlock(BaseVisualisationBlock):
         item = super().get_series_item(value, series_number, series_name, rows)
 
         # Add data labels configuration.
-        # This is only supported for non-stacked horizontal bar charts with 1 or 2 series
+        # This is only supported for non-stacked horizontal bar charts with 1 or 2 series,
+        # and where the number of data points does not exceed 20.
         if (
             value.get("show_data_labels")
             and value.get("select_chart_type") == BarColumnChartTypeChoices.BAR
             and not value.get("use_stacked_layout")
             # +1 to allow for the categories in the first column
             and len(value["table"].headers) <= self.MAX_SERIES_COUNT_WITH_DATA_LABELS + 1
+            and len(value["table"].rows) <= self.MAX_DATA_POINTS_WITH_DATA_LABELS
         ):
             item["dataLabels"] = True
 
