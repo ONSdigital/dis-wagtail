@@ -4,12 +4,10 @@
     width: 100%;
     display: flex;
     gap: rem-sizing(24);
-    margin-bottom: rem-sizing(16);
 
     &__block {
         flex-basis: 50%;
         background-color: var(--ons-color-grey-5);
-        padding: rem-sizing(16);
         display: flex;
         flex-direction: column;
         align-items: center;

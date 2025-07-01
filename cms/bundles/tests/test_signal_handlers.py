@@ -195,7 +195,10 @@ class TestNotifications(TestCase):
         self.assertEqual(record.team_name, self.preview_team.name)
         self.assertEqual(record.bundle_name, bundle.name)
         self.assertEqual(record.email_subject, f'Bundle "{bundle.name}" is ready for review')
-        self.assertEqual(record.recipients, [self.previewer.email, another_previewer.email])
+        self.assertEqual(
+            sorted(record.recipients),
+            sorted([self.previewer.email, another_previewer.email]),
+        )
         self.assertEqual(record.error_message, "SMTP error")
 
         self.assertEqual(len(mail.outbox), 0)

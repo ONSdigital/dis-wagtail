@@ -80,8 +80,9 @@ def contact_details_are_visible_on_the_page(context: Context):
     expect(context.page.get_by_text(f"Contact: {context.contact_details_snippet.name}")).to_be_visible()
     # in the section
     expect(context.page.get_by_role("heading", name="Contact details")).to_be_visible()
-    expect(context.page.get_by_text(f"Name: {context.contact_details_snippet.name}")).to_be_visible()
-    expect(context.page.get_by_text(f"Email: {context.contact_details_snippet.email}")).to_be_visible()
+    contact_link = context.page.get_by_role("link", name=context.contact_details_snippet.name)
+    expect(contact_link).to_be_visible()
+    expect(contact_link).to_have_attribute("href", f"mailto:{context.contact_details_snippet.email}")
 
 
 @when("the Last revised date is set to be before the Publication date")
