@@ -1,4 +1,3 @@
-from datetime import datetime
 from typing import TYPE_CHECKING, Any, ClassVar, Optional, cast
 
 from django.conf import settings
@@ -456,7 +455,7 @@ class StatisticalArticlePage(BundledPageMixin, RoutablePageMixin, BasePage):  # 
                 "prefix": _("Release date"),
                 "showPrefix": True,
                 "iso": self.release_date.isoformat(),
-                "short": ons_date_format(datetime.combine(self.release_date, datetime.min.time()), "DATE_FORMAT"),
+                "short": ons_date_format(self.release_date, "DATE_FORMAT"),
             }
 
         if self.featured_chart:
