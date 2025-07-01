@@ -7,13 +7,13 @@ from django.urls import reverse
 from wagtail import hooks
 
 from cms.auth import wagtail_hooks
-from cms.auth.tests.helpers import CognitoTokenMixin, build_jwt
+from cms.auth.tests.helpers import CognitoTokenTestCase, build_jwt
 from cms.users.models import User
 
-JWT_SESSION_ID_KEY = CognitoTokenMixin.JWT_SESSION_ID_KEY
+JWT_SESSION_ID_KEY = CognitoTokenTestCase.JWT_SESSION_ID_KEY
 
 
-class AuthIntegrationTests(CognitoTokenMixin, TestCase):
+class AuthIntegrationTests(CognitoTokenTestCase):
     def test_first_time_login_creates_user_and_session(self):
         # Happy-path: valid tokens, no prior session
         self.login_with_tokens()
@@ -300,7 +300,7 @@ class AuthIntegrationTests(CognitoTokenMixin, TestCase):
         self.assertJSONEqual(response_2.content, {"status": "error", "message": "Invalid request method."})
 
 
-class WagtailHookTests(CognitoTokenMixin, TestCase):
+class WagtailHookTests(CognitoTokenTestCase):
     def setUp(self):
         # clear any previously-registered hooks
         hooks._hooks.pop("insert_global_admin_js", None)  # pylint: disable=protected-access

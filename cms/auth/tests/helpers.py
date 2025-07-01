@@ -84,10 +84,8 @@ class DummyResponse:
     CSRF_COOKIE_NAME="csrftoken",
     SESSION_RENEWAL_OFFSET_SECONDS=300,
 )
-class CognitoTokenMixin(TestCase):
+class CognitoTokenTestCase(TestCase):
     """Utilities reused by every auth-related TestCase."""
-
-    __test__ = False  # Prevents Django's test runner from treating this as a runnable test case
 
     JWT_SESSION_ID_KEY: str = "jwt_session_id"
 
