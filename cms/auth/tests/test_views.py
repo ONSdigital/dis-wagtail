@@ -102,7 +102,6 @@ class ExtendSessionTests(WagtailTestUtils, TestCase):
 
         # attach CSRF cookie
         request.COOKIES["csrftoken"] = token
-        CsrfViewMiddleware(lambda r: None).process_view(request, extend_session, (), {})
 
         # authenticated super-user
         request.user = self.superuser
