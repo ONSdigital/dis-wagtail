@@ -168,20 +168,24 @@ class StatisticalArticlePage(BundledPageMixin, RoutablePageMixin, BasePage):  # 
 
     content_panels: ClassVar[list["Panel"]] = [
         *BundledPageMixin.panels,
-        TitleFieldPanel(
-            "title",
+        MultiFieldPanel(
+            [
+                TitleFieldPanel(
+                    "title",
+                    heading="Release Edition",
+                    help_text="e.g. 'November 2024'.",
+                ),
+                FieldPanel(
+                    "news_headline",
+                    help_text=(
+                        "Use this as a news headline. When populated, replaces the title displayed on the page. "
+                        "Note: the page slug is powered by the title field. "
+                        "You can change the slug in the 'Promote' tab."
+                    ),
+                    icon="news",
+                ),
+            ],
             heading="Edition",
-            placeholder="Edition*",
-            help_text="Also known as the release edition. e.g. 'November 2024'.",
-        ),
-        FieldPanel(
-            "news_headline",
-            help_text=(
-                "Use this as a news headline. When populated, replaces the title displayed on the page. "
-                "Note: the page slug is powered by the title field. "
-                "You can change the slug in the 'Promote' tab."
-            ),
-            icon="news",
         ),
         FieldPanel("summary", required_on_save=True),
         MultiFieldPanel(
