@@ -607,7 +607,6 @@ class StatisticalArticlePageFeaturedArticleTestCase(WagtailTestUtils, TestCase):
         self.assertEqual(data["metadata"]["date"]["short"], "1 November 2024")
         self.assertEqual(data["metadata"]["date"]["iso"], "2024-11-01")
 
-        self.assertEqual(data["headingLevel"], 3)
         self.assertEqual(data["description"], "Test main points summary")
 
     def test_as_featured_article_macro_data_with_chart(self):
@@ -641,6 +640,7 @@ class StatisticalArticlePageFeaturedArticleTestCase(WagtailTestUtils, TestCase):
         self.assertEqual(data["chart"]["chartType"], "line")
         self.assertEqual(data["chart"]["title"], "Test Chart")
         self.assertEqual(data["chart"]["theme"], "primary")
+        self.assertEqual(data["chart"]["headingLevel"], 3)
 
         self.assertNotIn("image", data)
 
