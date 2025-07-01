@@ -93,7 +93,8 @@ def get_document_metadata(
 
 def get_content_type_for_page(page: "Page") -> "StrOrPromise":
     """Returns the content type for a given page."""
-    return page.specific_deferred.label
+    label: StrOrPromise = page.specific_deferred.label
+    return label
 
 
 def get_related_content_type_label(content_type: str) -> str:
