@@ -13,7 +13,7 @@ from cms.users.tests.factories import UserFactory
 
 class TestEmailNotifications(TestCase):
     @classmethod
-    def setUpClass(cls):
+    def setUpTestData(cls):
         cls.email_alternatives_messages = ["Perfectly fine plain text message", "<p>Perfectly fine HTML message</p>"]
 
     def setUp(self):
