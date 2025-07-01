@@ -100,7 +100,7 @@ class ReleaseCalendarPageAdminFormTestCase(WagtailTestUtils, TestCase):
         """Checks that the form accepts a published status if the page is already published."""
         self.page.status = ReleaseStatus.PUBLISHED
         data = self.form_data
-        data["release_date"] = self.page.release_date = datetime.datetime(2025, 1, 2, 3, 4, 5, 0, tzinfo=datetime.UTC)
+        data["release_date"] = self.page.release_date = datetime.datetime(2025, 1, 2, 3, 4, 0, 0, tzinfo=datetime.UTC)
         data["status"] = ReleaseStatus.PUBLISHED
         form = self.form_class(instance=self.page, data=data)
 
@@ -442,7 +442,7 @@ class ReleaseCalendarPageAdminFormTestCase(WagtailTestUtils, TestCase):
         """Checks that editors enter a release that that is after the release date."""
         data = self.raw_form_data()
         data["notice"] = rich_text("")
-        data["release_date"] = data["next_release_date"] = timezone.now()
+        data["release_date"] = data["next_release_date"] = timezone.now().replace(second=0)
         data = nested_form_data(data)
         form = self.form_class(instance=self.page, data=data)
 
