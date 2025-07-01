@@ -64,7 +64,7 @@ lint-migrations: ## Run django-migration-linter
 .PHONY: test
 test:  ## Run the tests and check coverage.
 	poetry run coverage erase
-	poetry run coverage run ./manage.py test --parallel --settings=cms.settings.test --shuffle
+	COVERAGE_CORE=sysmon  poetry run coverage run ./manage.py test --parallel --settings=cms.settings.test --shuffle
 	poetry run coverage combine
 	poetry run coverage report --fail-under=90
 
@@ -166,7 +166,7 @@ runserver: ## Run the Django application locally
 	poetry run python ./manage.py runserver 0:8000
 
 .PHONY: dev-init
-dev-init: load-design-system-templates collectstatic makemigrations migrate load-topics createsuperuser  ## Run the pre-run setup scripts
+dev-init: load-design-system-templates collectstatic compilemessages makemigrations migrate load-topics createsuperuser  ## Run the pre-run setup scripts
 
 .PHONY: functional-tests-up
 functional-tests-up:  ## Start the functional tests docker compose dependencies

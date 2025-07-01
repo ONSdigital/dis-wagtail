@@ -201,6 +201,8 @@ TEMPLATES = [
 
 WSGI_APPLICATION = "cms.wsgi.application"
 
+AWS_REGION = env.get("AWS_REGION")
+
 
 # Database
 
@@ -222,7 +224,7 @@ if "PG_DB_ADDR" in env:
                 "PORT": env["PG_DB_PORT"],
                 "CONN_MAX_AGE": db_conn_max_age,
                 "CONN_HEALTH_CHECK": True,
-                "OPTIONS": {"use_iam_auth": True, "sslmode": "require", "region_name": env["AWS_REGION"]},
+                "OPTIONS": {"use_iam_auth": True, "sslmode": "require", "region_name": AWS_REGION},
             },
         )
     }
@@ -236,15 +238,16 @@ if "PG_DB_ADDR" in env:
         }
 
 else:
+    # note: dj_database_url.config() expects an int, while dj_database_url.DBConfig accepts None
     DATABASES = {
         "default": dj_database_url.config(
-            conn_max_age=db_conn_max_age, conn_health_checks=True, default="postgres://ons:ons@localhost:5432/ons"
+            conn_max_age=db_conn_max_age or 0, conn_health_checks=True, default="postgres://ons:ons@localhost:5432/ons"
         ),
     }
 
     if "READ_REPLICA_DATABASE_URL" in env:
         DATABASES["read_replica"] = dj_database_url.config(
-            env="READ_REPLICA_DATABASE_URL", conn_max_age=db_read_conn_max_age
+            env="READ_REPLICA_DATABASE_URL", conn_max_age=db_read_conn_max_age or 0
         )
 
 if "read_replica" not in DATABASES:
@@ -297,6 +300,9 @@ if redis_url := env.get("REDIS_TLS_URL", env.get("REDIS_URL")):
 elif elasticache_addr := env.get("ELASTICACHE_ADDR"):
     port = env["ELASTICACHE_PORT"]
 
+    if AWS_REGION is None:
+        raise ImproperlyConfigured("AWS_REGION must be defined to use Elasticache.")
+
     CACHES["default"] = {
         "BACKEND": "django_redis.cache.RedisCache",
         "LOCATION": f"rediss://{elasticache_addr}:{port}",
@@ -306,7 +312,7 @@ elif elasticache_addr := env.get("ELASTICACHE_ADDR"):
                 "credential_provider": ElastiCacheIAMCredentialProvider(
                     user=env["ELASTICACHE_USER_NAME"],
                     cluster_name=env["ELASTICACHE_CLUSTER_NAME"],
-                    region=env["AWS_REGION"],
+                    region=AWS_REGION,
                 )
             },
         },
@@ -426,9 +432,6 @@ MEDIA_URL = env.get("MEDIA_URL", "/media/")
 #
 # Three required environment variables are:
 #  * AWS_STORAGE_BUCKET_NAME
-#  * AWS_ACCESS_KEY_ID
-#  * AWS_SECRET_ACCESS_KEY
-# The last two are picked up by boto3:
 # https://boto3.amazonaws.com/v1/documentation/api/latest/guide/configuration.html#environment-variables
 if "AWS_STORAGE_BUCKET_NAME" in env:
     # Add django-storages to the installed apps
@@ -539,37 +542,53 @@ LOGGING = {
             "level": "INFO",
             "propagate": False,
         },
+        "gunicorn.error": {
+            "handlers": ["console"],
+            "level": "INFO",
+            "propagate": False,
+        },
     },
 }
 
 
 # Email settings
-# We use SMTP to send emails. We typically use transactional email services
-# that let us use SMTP.
-# https://docs.djangoproject.com/en/2.1/topics/email/
+# https://docs.djangoproject.com/en/stable/topics/email/
 
-# https://docs.djangoproject.com/en/stable/ref/settings/#email-host
-if "EMAIL_HOST" in env:
-    EMAIL_HOST = env["EMAIL_HOST"]
+# Use fixed strings in case import paths move
+match env.get("EMAIL_BACKEND_NAME", "").upper():
+    case "SES":
+        EMAIL_BACKEND = "django_ses.SESBackend"
+        AWS_SES_REGION_NAME = env["AWS_REGION"]
+        USE_SES_V2 = True
 
-# https://docs.djangoproject.com/en/stable/ref/settings/#email-port
-# Use a default port of 587, as Heroku & other services now block the Django default of 25
-try:
-    EMAIL_PORT = int(env.get("EMAIL_PORT", 587))
-except ValueError:
-    raise ImproperlyConfigured("The setting EMAIL_PORT should be an integer, e.g. 587") from None
+    case "SMTP":
+        EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
+        # https://docs.djangoproject.com/en/stable/ref/settings/#email-host
+        if "EMAIL_HOST" in env:
+            EMAIL_HOST = env["EMAIL_HOST"]
 
-# https://docs.djangoproject.com/en/stable/ref/settings/#email-host-user
-if "EMAIL_HOST_USER" in env:
-    EMAIL_HOST_USER = env["EMAIL_HOST_USER"]
+        # https://docs.djangoproject.com/en/stable/ref/settings/#email-port
+        # Use a default port of 587, as Heroku & other services now block the Django default of 25
+        try:
+            EMAIL_PORT = int(env.get("EMAIL_PORT", 587))
+        except ValueError:
+            raise ImproperlyConfigured("The setting EMAIL_PORT should be an integer, e.g. 587") from None
 
-# https://docs.djangoproject.com/en/stable/ref/settings/#email-host-password
-if "EMAIL_HOST_PASSWORD" in env:
-    EMAIL_HOST_PASSWORD = env["EMAIL_HOST_PASSWORD"]
+        # https://docs.djangoproject.com/en/stable/ref/settings/#email-host-user
+        if "EMAIL_HOST_USER" in env:
+            EMAIL_HOST_USER = env["EMAIL_HOST_USER"]
 
-# https://docs.djangoproject.com/en/stable/ref/settings/#email-use-tls
-# We always want to use TLS
-EMAIL_USE_TLS = True
+        # https://docs.djangoproject.com/en/stable/ref/settings/#email-host-password
+        if "EMAIL_HOST_PASSWORD" in env:
+            EMAIL_HOST_PASSWORD = env["EMAIL_HOST_PASSWORD"]
+
+        # https://docs.djangoproject.com/en/stable/ref/settings/#email-use-tls
+        # We always want to use TLS
+        EMAIL_USE_TLS = True
+
+    case _:
+        EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
+
 
 # https://docs.djangoproject.com/en/stable/ref/settings/#email-subject-prefix
 if "EMAIL_SUBJECT_PREFIX" in env:
@@ -738,28 +757,36 @@ SECURE_REFERRER_POLICY = env.get("SECURE_REFERRER_POLICY", "no-referrer-when-dow
 # Content Security policy settings
 # Most modern browsers don't honor the X-XSS-Protection HTTP header.
 # You can use Content-Security-Policy without allowing 'unsafe-inline' scripts instead.
-# http://django-csp.readthedocs.io/en/latest/configuration.html
+# https://django-csp.readthedocs.io/en/latest/configuration.html
 if "CSP_DEFAULT_SRC" in env:
     MIDDLEWARE.append("csp.middleware.CSPMiddleware")
 
     # The “special” source values of 'self', 'unsafe-inline', 'unsafe-eval', and 'none' must be quoted!
     # e.g.: CSP_DEFAULT_SRC = "'self'" Without quotes they will not work as intended.
-
     CSP_DEFAULT_SRC = env.get("CSP_DEFAULT_SRC", "").split(",")
+    CSP_DIRECTIVES = {
+        "default-src": CSP_DEFAULT_SRC,
+    }
+
     if "CSP_SCRIPT_SRC" in env:
-        CSP_SCRIPT_SRC = env.get("CSP_SCRIPT_SRC", "").split(",")
+        CSP_DIRECTIVES["script-src"] = env.get("CSP_SCRIPT_SRC", "").split(",")
     if "CSP_STYLE_SRC" in env:
-        CSP_STYLE_SRC = env.get("CSP_STYLE_SRC", "").split(",")
+        CSP_DIRECTIVES["style-src"] = env.get("CSP_STYLE_SRC", "").split(",")
     if "CSP_IMG_SRC" in env:
-        CSP_IMG_SRC = env.get("CSP_IMG_SRC", "").split(",")
+        CSP_DIRECTIVES["img-src"] = env.get("CSP_IMG_SRC", "").split(",")
     if "CSP_CONNECT_SRC" in env:
-        CSP_CONNECT_SRC = env.get("CSP_CONNECT_SRC", "").split(",")
+        CSP_DIRECTIVES["connect-src"] = env.get("CSP_CONNECT_SRC", "").split(",")
     if "CSP_FONT_SRC" in env:
-        CSP_FONT_SRC = env.get("CSP_FONT_SRC", "").split(",")
+        CSP_DIRECTIVES["font-src"] = env.get("CSP_FONT_SRC", "").split(",")
     if "CSP_BASE_URI" in env:
-        CSP_BASE_URI = env.get("CSP_BASE_URI", "").split(",")
+        CSP_DIRECTIVES["base-uri"] = env.get("CSP_BASE_URI", "").split(",")
     if "CSP_OBJECT_SRC" in env:
-        CSP_OBJECT_SRC = env.get("CSP_OBJECT_SRC", "").split(",")
+        CSP_DIRECTIVES["object-src"] = env.get("CSP_OBJECT_SRC", "").split(",")
+
+    if env.get("CSP_REPORT_ONLY", "false").lower() == "true":
+        CONTENT_SECURITY_POLICY_REPORT_ONLY = {"DIRECTIVES": CSP_DIRECTIVES}
+    else:
+        CONTENT_SECURITY_POLICY = {"DIRECTIVES": CSP_DIRECTIVES}
 
 
 # Basic authentication settings
@@ -932,9 +959,8 @@ WAGTAILSIMPLETRANSLATION_SYNC_PAGE_TREE = True
 
 # Configuration for the External Search service
 SEARCH_INDEX_PUBLISHER_BACKEND = os.getenv("SEARCH_INDEX_PUBLISHER_BACKEND")
-KAFKA_SERVER = os.getenv("KAFKA_SERVER")
-KAFKA_CHANNEL_CREATED_OR_UPDATED = os.getenv("KAFKA_CHANNEL_CREATED_OR_UPDATED")
-KAFKA_CHANNEL_DELETED = os.getenv("KAFKA_CHANNEL_DELETED")
+KAFKA_SERVERS = os.getenv("KAFKA_SERVERS", "").split(",")
+KAFKA_USE_IAM_AUTH = os.getenv("KAFKA_USE_IAM_AUTH", "false").lower() == "true"
 KAFKA_API_VERSION = tuple(map(int, os.getenv("KAFKA_API_VERSION", "3,5,1").split(",")))
 
 SEARCH_INDEX_EXCLUDED_PAGE_TYPES = (

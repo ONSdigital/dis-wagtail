@@ -1,34 +1,27 @@
 import logging
 import time
-import uuid
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, cast
 
 from django.conf import settings
 from django.core.management.base import BaseCommand
 from django.db import transaction
-from django.urls import reverse
 from django.utils import timezone
 from wagtail.log_actions import log
 
 from cms.bundles.enums import BundleStatus
 from cms.bundles.models import Bundle
-from cms.bundles.notifications import notify_slack_of_publication_start, notify_slack_of_publish_end
+from cms.bundles.notifications.slack import notify_slack_of_publication_start, notify_slack_of_publish_end
+from cms.bundles.utils import (
+    serialize_bundle_content_for_published_release_calendar_page,
+    serialize_datasets_for_release_calendar_page,
+)
+from cms.core.fields import StreamField
 from cms.release_calendar.enums import ReleaseStatus
 
 logger = logging.getLogger(__name__)
 
 if TYPE_CHECKING:
     from django.core.management.base import CommandParser
-    from wagtail.models import Page
-
-
-def serialize_page(page: "Page") -> dict[str, Any]:
-    """Serializes a page to a dictionary."""
-    return {
-        "id": uuid.uuid4(),
-        "type": "item",
-        "value": {"page": page.pk, "title": "", "description": "", "external_url": ""},
-    }
 
 
 class Command(BaseCommand):
@@ -47,33 +40,16 @@ class Command(BaseCommand):
 
     def _update_related_release_calendar_page(self, bundle: Bundle) -> None:
         """Updates the release calendar page related to the bundle with the pages in the bundle."""
-        content = []
-        article_pages = []
-        methodology_pages = []
-        for page in bundle.get_bundled_pages():
-            match page.specific_class.__name__:
-                case "StatisticalArticlePage":
-                    article_pages.append(serialize_page(page))
-                case "MethodologyPage":
-                    methodology_pages.append(serialize_page(page))
-
-        if article_pages:
-            content.append({"type": "release_content", "value": {"title": "Publications", "links": article_pages}})
-
-        if methodology_pages:
-            content.append({"type": "release_content", "value": {"title": "Methodology", "links": methodology_pages}})
-
-        datasets = [
-            {"type": "dataset_lookup", "id": uuid.uuid4(), "value": dataset["dataset"]}
-            for dataset in bundle.bundled_datasets.all().values("dataset")
-        ]
-
         page = bundle.release_calendar_page
-        page.content = content
-        page.datasets = datasets
-        page.status = ReleaseStatus.PUBLISHED
-        revision = page.save_revision(log_action=True)
-        revision.publish()
+        if page:  # To satisfy mypy, ensure page is not None
+            content = serialize_bundle_content_for_published_release_calendar_page(bundle)
+            datasets = serialize_datasets_for_release_calendar_page(bundle)
+
+            page.content = cast(StreamField, content)
+            page.datasets = cast(StreamField, datasets)
+            page.status = ReleaseStatus.PUBLISHED
+            revision = page.save_revision(log_action=True)
+            revision.publish()
 
     # TODO: revisit after discussion.
     @transaction.atomic
@@ -84,7 +60,7 @@ class Command(BaseCommand):
         - updates the release calendar entry
         """
         # only provide a URL if we can generate a full one
-        inspect_url = self.base_url + reverse("bundle:inspect", args=(bundle.pk,)) if self.base_url else None
+        inspect_url = bundle.full_inspect_url if self.base_url else None
 
         logger.info(
             "Publishing Bundle",

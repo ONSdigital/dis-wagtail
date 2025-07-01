@@ -25,6 +25,7 @@ from cms.core.fields import StreamField
 from cms.core.models import BasePage
 from cms.core.widgets import date_widget
 from cms.datasets.blocks import DatasetStoryBlock
+from cms.datasets.utils import format_datasets_as_document_list
 from cms.taxonomy.mixins import GenericTaxonomyMixin
 
 if TYPE_CHECKING:
@@ -169,7 +170,12 @@ class StatisticalArticlePage(BundledPageMixin, RoutablePageMixin, BasePage):  # 
         *BundledPageMixin.panels,
         MultiFieldPanel(
             [
-                TitleFieldPanel("title", help_text="Also known as the release edition. e.g. 'November 2024'."),
+                TitleFieldPanel(
+                    "title",
+                    heading="Release Edition",
+                    placeholder="Release Edition *",
+                    help_text="e.g. 'November 2024'.",
+                ),
                 FieldPanel(
                     "news_headline",
                     help_text=(
@@ -180,14 +186,16 @@ class StatisticalArticlePage(BundledPageMixin, RoutablePageMixin, BasePage):  # 
                     icon="news",
                 ),
             ],
-            heading="Title",
+            heading="Edition",
         ),
-        "summary",
+        FieldPanel("summary", required_on_save=True),
         MultiFieldPanel(
             [
                 FieldRowPanel(
                     [
-                        FieldPanel("release_date", date_widget, help_text="The actual release date"),
+                        FieldPanel(
+                            "release_date", date_widget, help_text="The actual release date", required_on_save=True
+                        ),
                         FieldPanel(
                             "next_release_date",
                             date_widget,
@@ -202,13 +210,13 @@ class StatisticalArticlePage(BundledPageMixin, RoutablePageMixin, BasePage):  # 
                 ),
                 "contact_details",
                 "show_cite_this_page",
-                "main_points_summary",
+                FieldPanel("main_points_summary", required_on_save=True),
             ],
             heading="Metadata",
             icon="cog",
         ),
         HeadlineFiguresFieldPanel("headline_figures", icon="data-analysis"),
-        FieldPanel("content", icon="list-ul"),
+        FieldPanel("content", icon="list-ul", required_on_save=True),
     ]
 
     corrections_and_notices_panels: ClassVar[list["Panel"]] = [
@@ -277,7 +285,11 @@ class StatisticalArticlePage(BundledPageMixin, RoutablePageMixin, BasePage):  # 
 
     def get_admin_display_title(self) -> str:
         """Changes the admin display title to include the parent title."""
-        return f"{self.get_parent().title}: {self.draft_title or self.title}"
+        return self.get_full_display_title(self.draft_title)
+
+    def get_full_display_title(self, title: str | None = None) -> str:
+        """Returns the full display title for the page, including the parent series title."""
+        return f"{self.get_parent().title}: {title or self.title}"
 
     def get_headline_figure(self, figure_id: str) -> dict[str, str]:
         if not self.headline_figures:
@@ -310,7 +322,7 @@ class StatisticalArticlePage(BundledPageMixin, RoutablePageMixin, BasePage):  # 
     @property
     def display_title(self) -> str:
         """Returns the page display title. If the news headline is set, it takes precedence over the series+title."""
-        return self.news_headline.strip() or self.get_admin_display_title()
+        return self.news_headline.strip() or self.get_full_display_title()
 
     @cached_property
     def table_of_contents(self) -> list[dict[str, str | object]]:
@@ -383,32 +395,17 @@ class StatisticalArticlePage(BundledPageMixin, RoutablePageMixin, BasePage):  # 
         return f"{_('All data related to')} {self.title}"
 
     @cached_property
-    def ordered_related_datasets(self) -> list[dict[str, Any]]:
-        dataset_documents: list = []
-        for dataset in self.datasets:  # pylint: disable=not-an-iterable
-            if dataset.block_type == "manual_link":
-                dataset_document = {
-                    "title": {"text": dataset.value["title"], "url": dataset.value["url"]},
-                    "metadata": {"object": {"text": "Dataset"}},
-                    "description": f"<p>{dataset.value['description']}</p>",
-                }
-            else:
-                dataset_document = {
-                    "title": {"text": dataset.value.title, "url": dataset.value.website_url},
-                    "metadata": {"object": {"text": "Dataset"}},
-                    "description": f"<p>{dataset.value.description}</p>",
-                }
-            dataset_documents.append(dataset_document)
-
+    def dataset_document_list(self) -> list[dict[str, Any]]:
+        dataset_documents = format_datasets_as_document_list(self.datasets)
         if self.dataset_sorting == SortingChoices.ALPHABETIC:
             dataset_documents = sorted(dataset_documents, key=lambda d: d["title"]["text"])
         return dataset_documents
 
     @path("related-data/")
     def related_data(self, request: "HttpRequest") -> "TemplateResponse":
-        if not self.ordered_related_datasets:
+        if not self.dataset_document_list:
             raise Http404
-        paginator = Paginator(self.ordered_related_datasets, per_page=settings.RELATED_DATASETS_PER_PAGE)
+        paginator = Paginator(self.dataset_document_list, per_page=settings.RELATED_DATASETS_PER_PAGE)
 
         try:
             paginated_datasets = paginator.page(request.GET.get("page", 1))

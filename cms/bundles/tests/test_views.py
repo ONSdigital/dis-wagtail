@@ -1,6 +1,6 @@
 from http import HTTPStatus
 
-from django.test import TestCase
+from django.test import TestCase, override_settings
 from django.urls import reverse
 from wagtail.models import ModelLogEntry
 from wagtail.test.utils.wagtail_tests import WagtailTestUtils
@@ -9,15 +9,20 @@ from cms.articles.tests.factories import StatisticalArticlePageFactory
 from cms.bundles.admin_forms import AddToBundleForm
 from cms.bundles.enums import PREVIEWABLE_BUNDLE_STATUSES, BundleStatus
 from cms.bundles.models import Bundle, BundleTeam
-from cms.bundles.tests.factories import BundleFactory, BundlePageFactory
+from cms.bundles.tests.factories import BundleDatasetFactory, BundleFactory, BundlePageFactory
 from cms.bundles.tests.utils import (
     create_bundle_manager,
     create_bundle_viewer,
 )
 from cms.home.models import HomePage
+from cms.release_calendar.tests.factories import ReleaseCalendarPageFactory
 from cms.teams.models import Team
 from cms.users.tests.factories import UserFactory
-from cms.workflows.tests.utils import mark_page_as_ready_to_publish
+from cms.workflows.tests.utils import (
+    mark_page_as_ready_for_review,
+    mark_page_as_ready_to_publish,
+    progress_page_workflow,
+)
 
 
 class AddToBundleViewTestCase(WagtailTestUtils, TestCase):
@@ -261,3 +266,175 @@ class PreviewBundleViewTestCase(WagtailTestUtils, TestCase):
         )
 
         self.assertEqual(ModelLogEntry.objects.filter(action="bundles.preview").count(), 0)
+
+
+class PreviewBundleReleaseCalendarViewTestCase(WagtailTestUtils, TestCase):
+    @classmethod
+    def setUpTestData(cls):
+        cls.superuser = cls.create_superuser(username="admin")
+        cls.publishing_officer = create_bundle_manager()
+
+        cls.release_calendar_page = ReleaseCalendarPageFactory()
+        cls.bundle = BundleFactory(
+            name="First Bundle", created_by=cls.publishing_officer, release_calendar_page=cls.release_calendar_page
+        )
+
+        cls.preview_url = reverse("bundles:preview_release_calendar", args=[cls.bundle.pk])
+
+    def test_view_requires_access_to_admin(self):
+        response = self.client.get(self.preview_url, follow=True)
+        self.assertRedirects(response, f"/admin/login/?next={self.preview_url}")
+
+        self.client.force_login(self.publishing_officer)
+        response = self.client.get(self.preview_url)
+        self.assertEqual(response.status_code, HTTPStatus.OK)
+
+    def test_preview_release_calendar_page(self):
+        self.client.force_login(self.publishing_officer)
+        response = self.client.get(self.preview_url)
+        self.assertEqual(response.status_code, HTTPStatus.OK)
+        self.assertContains(response, self.release_calendar_page.title)
+
+    def test_preview_release_calendar_page_when_bundle_does_not_exit(self):
+        self.client.force_login(self.publishing_officer)
+        response = self.client.get(reverse("bundles:preview_release_calendar", args=[99999]))
+        self.assertEqual(response.status_code, HTTPStatus.NOT_FOUND)
+
+    @override_settings(  # Address race condition in tests caused when calling delete() on a page
+        WAGTAILSEARCH_BACKENDS={
+            "default": {
+                "BACKEND": "wagtail.search.backends.base.SearchBackend",
+                "AUTO_UPDATE": False,
+            }
+        }
+    )
+    def test_preview_release_calendar_page_when_no_release_calendar_page(self):
+        self.client.force_login(self.publishing_officer)
+        self.release_calendar_page.delete()
+
+        response = self.client.get(self.preview_url)
+        self.assertEqual(response.status_code, HTTPStatus.NOT_FOUND)
+
+    def test_unauthorized_access_to_preview_release_calendar_page(self):
+        # Test that a user without the right permissions cannot access the preview page
+        unauthorized_user = UserFactory(access_admin=True)
+        self.client.force_login(unauthorized_user)
+
+        response = self.client.get(self.preview_url, follow=True)
+        self.assertRedirects(response, "/admin/")
+        self.assertContains(response, "Sorry, you do not have permission to access this area.")
+
+    def test_preview_release_calendar_page_with_pages_and_datasets(self):
+        self.client.force_login(self.publishing_officer)
+        statistical_article = StatisticalArticlePageFactory()
+        methodology_article = StatisticalArticlePageFactory()
+        BundlePageFactory(parent=self.bundle, page=statistical_article)
+        BundlePageFactory(parent=self.bundle, page=methodology_article)
+        bundle_dataset_a = BundleDatasetFactory(parent=self.bundle)
+        bundle_dataset_b = BundleDatasetFactory(parent=self.bundle)
+        bundle_dataset_c = BundleDatasetFactory(parent=self.bundle)
+
+        response = self.client.get(self.preview_url)
+        self.assertEqual(response.status_code, HTTPStatus.OK)
+
+        self.assertContains(response, statistical_article.title)
+        self.assertContains(response, methodology_article.title)
+        self.assertContains(response, bundle_dataset_a.dataset.title)
+        self.assertContains(response, bundle_dataset_b.dataset.title)
+        self.assertContains(response, bundle_dataset_c.dataset.title)
+
+    def test_preview_release_calendar_page_shows_status(self):
+        self.client.force_login(self.publishing_officer)
+        statistical_article = StatisticalArticlePageFactory()
+
+        BundlePageFactory(parent=self.bundle, page=statistical_article)
+
+        response = self.client.get(self.preview_url)
+
+        self.assertEqual(response.status_code, HTTPStatus.OK)
+        self.assertContains(response, f"{statistical_article.title} (Draft)")
+
+        workflow_state = mark_page_as_ready_for_review(statistical_article, self.publishing_officer)
+
+        response = self.client.get(self.preview_url)
+
+        self.assertContains(response, f"{statistical_article.title} (In Preview)")
+
+        progress_page_workflow(workflow_state)
+
+        response = self.client.get(self.preview_url)
+
+        self.assertContains(response, f"{statistical_article.title} (Ready to publish)")
+
+    def test_preview_release_calendar_page_has_preview_bar(self):
+        self.client.force_login(self.publishing_officer)
+        statistical_article = StatisticalArticlePageFactory()
+
+        BundlePageFactory(parent=self.bundle, page=statistical_article)
+
+        response = self.client.get(self.preview_url)
+        self.assertEqual(response.status_code, HTTPStatus.OK)
+
+        content = response.content.decode("utf-8")
+        release_calendar_url = reverse("bundles:preview_release_calendar", args=[self.bundle.pk])
+        self.assertInHTML(
+            f'<option value="{release_calendar_url}">{self.release_calendar_page.title}</option>',
+            content,
+        )
+
+        statistical_article_url = reverse("bundles:preview", args=[self.bundle.pk, statistical_article.pk])
+        self.assertInHTML(
+            f'<option value="{statistical_article_url}">{statistical_article.display_title}</option>', content
+        )
+
+    def test_preview_release_calendar_page_uses_correct_page_preview_url(self):
+        self.client.force_login(self.publishing_officer)
+        statistical_article = StatisticalArticlePageFactory()
+        methodology_article = StatisticalArticlePageFactory()
+
+        BundlePageFactory(parent=self.bundle, page=statistical_article)
+        BundlePageFactory(parent=self.bundle, page=methodology_article)
+
+        response = self.client.get(self.preview_url)
+
+        self.assertEqual(response.status_code, HTTPStatus.OK)
+        self.assertContains(response, reverse("bundles:preview", args=[self.bundle.pk, statistical_article.pk]))
+        self.assertContains(response, reverse("bundles:preview", args=[self.bundle.pk, methodology_article.pk]))
+
+    def test_preview_release_calendar_page_shows_preview_bar(self):
+        self.client.force_login(self.publishing_officer)
+        statistical_article = StatisticalArticlePageFactory()
+        methodology_article = StatisticalArticlePageFactory()
+
+        BundlePageFactory(parent=self.bundle, page=statistical_article)
+        BundlePageFactory(parent=self.bundle, page=methodology_article)
+
+        response = self.client.get(self.preview_url)
+
+        self.assertEqual(response.status_code, HTTPStatus.OK)
+
+        # Check for presence of bundle_inspect_url
+        self.assertContains(response, reverse("bundle:inspect", args=[self.bundle.pk]))
+
+        content = response.content.decode("utf-8")
+
+        # Check if preview bar is present and contains the correct options
+        self.assertInHTML(
+            '<label class="ons-label" for="preview-items">Preview items</label>',
+            content,
+        )
+        self.assertInHTML(
+            f'<option value="{reverse("bundles:preview_release_calendar", args=[self.bundle.pk])}">'
+            f"{self.release_calendar_page.title}</option>",
+            content,
+        )
+        self.assertInHTML(
+            f'<option value="{reverse("bundles:preview", args=[self.bundle.pk, statistical_article.pk])}">'
+            f"{statistical_article.display_title}</option>",
+            content,
+        )
+        self.assertInHTML(
+            f'<option value="{reverse("bundles:preview", args=[self.bundle.pk, methodology_article.pk])}">'
+            f"{methodology_article.display_title}</option>",
+            content,
+        )
