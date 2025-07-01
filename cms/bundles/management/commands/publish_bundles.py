@@ -1,7 +1,7 @@
 import logging
+import sched
 import time
 from datetime import timedelta
-from math import ceil
 from typing import TYPE_CHECKING, Any, cast
 
 from django.conf import settings
@@ -41,12 +41,12 @@ class Command(BaseCommand):
             help="Dry run -- don't change anything.",
         )
         parser.add_argument(
-            "--max-hold-time",
+            "--include-future",
             type=int,
             default=None,
             help=(
-                "Maximum time to hold for an upcoming publish. "
-                "If bundles are due for publish within X seconds, hold up to that time before publishing them all.",
+                "Number of seconds in the future to include for publishing. "
+                "Bundles in the future will be held until their publishing time."
             ),
         )
 
@@ -120,10 +120,8 @@ class Command(BaseCommand):
         self.base_url = getattr(settings, "WAGTAILADMIN_BASE_URL", "")
 
         max_release_date = timezone.now()
-        max_hold_time = options["max_hold_time"]
-
-        if max_hold_time:
-            max_release_date += timedelta(seconds=max_hold_time)
+        if include_future := options["include_future"]:
+            max_release_date += timedelta(seconds=include_future)
 
         bundles_to_publish = Bundle.objects.filter(
             status=BundleStatus.APPROVED, release_date__lte=max_release_date
@@ -136,32 +134,23 @@ class Command(BaseCommand):
             if bundles_to_publish:
                 self.stdout.write("Bundles to be published:")
                 for bundle in bundles_to_publish:
-                    self.stdout.write(f"- {bundle.name}")
+                    self.stdout.write(f"- {bundle.name} ({bundle.release_date.isoformat()})")
                     bundled_pages = [
                         f"{page.get_admin_display_title()} ({page.__class__.__name__})"
                         for page in bundle.get_bundled_pages().specific()
                     ]
                     self.stdout.write(f"  Pages: {'\n\t '.join(bundled_pages)}")
         else:
-            if max_hold_time:
-                latest_publish = max(bundle.release_date for bundle in bundles_to_publish)
+            # Explicitly use `time.time` so enterabs can be called with absolute timestamps.
+            bundle_scheduler = sched.scheduler(timefunc=time.time)
 
-                # Round up to prevent premature publishing
-                delta = ceil((latest_publish - timezone.now()).total_seconds())
-
-                if delta >= max_hold_time:
-                    raise RuntimeError(f"{delta=} unexpectedly more than {max_hold_time=}")
-
-                if delta > 0:
-                    self.stdout.write(f"Publish due in {delta}s, holding.")
-                    time.sleep(delta)
-                    self.stdout.write("Resuming publish")
-
-                    # Clear the QuerySet's cache in case
-                    bundles_to_publish = bundles_to_publish.all()
-
-            for bundle in bundles_to_publish:
+            def wrap_handle_bundle(bundle: Bundle) -> None:
                 try:
                     self.handle_bundle(bundle)
                 except Exception:  # pylint: disable=broad-exception-caught
                     logger.exception("Publish failed", extra={"bundle_id": bundle.id, "event": "publish_failed"})
+
+            for bundle in bundles_to_publish:
+                bundle_scheduler.enterabs(bundle.release_date.timestamp(), 1, wrap_handle_bundle, argument=(bundle,))
+
+            bundle_scheduler.run()
