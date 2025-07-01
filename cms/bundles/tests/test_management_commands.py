@@ -222,15 +222,8 @@ class PublishBundlesCommandTestCase(TestCase):
         )
         self.assertIn(str(self.bundle.pk), call_kwargs["url"])
 
-    @override_settings(SLACK_NOTIFICATIONS_WEBHOOK_URL="https://slack.example.com")
     @patch("cms.bundles.management.commands.publish_bundles.Command.handle_bundle")
     def test_publish_bundle_include_future(self, mock_handle_bundle):
-        """Test publishing a bundle."""
-        # Sanity checks
-        self.assertFalse(self.statistical_article.live)
-        self.assertFalse(ModelLogEntry.objects.filter(action="wagtail.publish.scheduled").exists())
-        self.assertFalse(PageLogEntry.objects.filter(action="wagtail.publish.scheduled").exists())
-
         with time_machine.travel(self.publication_date - timedelta(seconds=2)):
             self.call_command(include_future=1)
 
@@ -245,6 +238,13 @@ class PublishBundlesCommandTestCase(TestCase):
         # 2 seconds before publish, wait, then publish
         mock_handle_bundle.assert_called_once_with(self.bundle)
 
+    @patch("cms.bundles.management.commands.publish_bundles.Command.handle_bundle")
+    def test_publish_bundle_include_future_with_bundle_in_past(self, mock_handle_bundle):
+        with time_machine.travel(self.publication_date + timedelta(days=1)):
+            self.call_command(include_future=1)
+
+        mock_handle_bundle.assert_called_once_with(self.bundle)
+
     def test_publish_with_no_bundles(self):
         self.bundle.publication_date = timezone.now() + timedelta(minutes=10)
         self.bundle.save(update_fields=["publication_date"])
@@ -253,6 +253,13 @@ class PublishBundlesCommandTestCase(TestCase):
 
         self.bundle.refresh_from_db()
         self.assertEqual(self.bundle.status, BundleStatus.APPROVED)
+
+    @patch("cms.bundles.management.commands.publish_bundles.Command.handle_bundle")
+    def test_publish_with_future_bundles(self, mock_handle_bundle):
+        with time_machine.travel(self.publication_date - timedelta(days=1)):
+            self.call_command()
+
+        mock_handle_bundle.assert_not_called()
 
 
 class PublishScheduledWithoutBundlesCommandTestCase(TestCase):
