@@ -146,6 +146,14 @@ class Command(BaseCommand):
 
             def wrap_handle_bundle(bundle: Bundle) -> None:
                 try:
+                    # Refresh the bundle immediately before publishing, in case it's changed.
+                    bundle.refresh_from_db()
+
+                    # Use `contains` rather than `in` to force a new query
+                    if bundle.status != BundleStatus.APPROVED:
+                        logger.error("Bundle no longer approved", extra={"bundle_id": bundle.id})
+                        return
+
                     self.handle_bundle(bundle)
                 except Exception:  # pylint: disable=broad-exception-caught
                     logger.exception("Publish failed", extra={"bundle_id": bundle.id, "event": "publish_failed"})
