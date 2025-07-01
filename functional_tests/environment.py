@@ -6,7 +6,6 @@ from behave import use_fixture
 from behave.model import Scenario
 from behave.model_core import Status
 from behave.runner import Context
-from django.test.utils import override_settings
 from playwright.sync_api import sync_playwright
 
 from functional_tests.behave_fixtures import django_test_case, django_test_runner
@@ -110,10 +109,6 @@ def before_scenario(context: Context, scenario: Scenario):
 
     context.page = context.playwright_context.new_page()
 
-    # Set the page to the context so it can be used in steps and it can help with debugging auth.js errors
-    # and dis-authorisation-client-js library errors
-    context.page.on("console", lambda msg: print(f"[PAGE][{msg.type}] {msg.text}"))
-
     if context.playwright_trace:
         # Start a new tracing chunk to capture each scenario separately
         context.playwright_context.tracing.start_chunk(name=scenario.name, title=scenario.name)
@@ -134,22 +129,3 @@ def after_scenario(context: Context, scenario: Scenario):
         context.playwright_context.tracing.stop_chunk()
 
     context.page.close()
-
-
-def before_tag(context: Context, tag: str):
-    if tag == "cognito_enabled":
-        # only called for scenarios that have @cognito_enabled
-        context.aws_override = override_settings(
-            AWS_COGNITO_LOGIN_ENABLED=True,
-            AUTH_TOKEN_REFRESH_URL="/refresh/",  # noqa: S106
-            SESSION_RENEWAL_OFFSET_SECONDS=3,
-            ID_TOKEN_COOKIE_NAME="id",  # noqa: S106
-        )
-        context.aws_override.enable()
-
-
-def after_tag(context: Context, tag: str):
-    if tag == "cognito_enabled" and hasattr(context, "aws_override"):
-        # disable it as soon as that scenario is done
-        context.aws_override.disable()
-        del context.aws_override
