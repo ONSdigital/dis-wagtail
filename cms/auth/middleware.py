@@ -3,16 +3,16 @@ from collections.abc import Mapping
 from typing import TYPE_CHECKING
 
 from django.conf import settings
-from django.contrib.auth import get_user_model, login, logout
+from django.contrib.auth import login, logout
 from django.contrib.auth.middleware import AuthenticationMiddleware
 
 from cms.auth.utils import validate_jwt
+from cms.users.models import User
 
 if TYPE_CHECKING:
     from django.http import HttpRequest
 
 logger = logging.getLogger(__name__)
-User = get_user_model()
 
 JWT_SESSION_ID_KEY = "jwt_session_id"
 

@@ -1,13 +1,11 @@
 import uuid
 from unittest import mock
 
-from django.contrib.auth import get_user_model
 from django.contrib.sessions.middleware import SessionMiddleware
 from django.test import RequestFactory, TestCase, override_settings
 
 from cms.auth.middleware import JWT_SESSION_ID_KEY, ONSAuthMiddleware
-
-User = get_user_model()
+from cms.users.models import User
 
 
 class ONSAuthMiddlewareTests(TestCase):

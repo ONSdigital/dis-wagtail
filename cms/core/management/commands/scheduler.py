@@ -49,5 +49,4 @@ class Command(BaseCommand):
         self.add_management_command("publish_scheduled_without_bundles", CronTrigger(minute="*/5"))
 
         # Sync teams
-        # :TODO: Enable in ONS AWS environment.
-        # self.add_management_command("sync_teams", CronTrigger(minute="*/1"))
+        self.add_management_command("sync_teams", CronTrigger(minute="*/1"))

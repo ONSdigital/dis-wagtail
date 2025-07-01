@@ -2,15 +2,14 @@ import importlib
 import uuid
 
 from django.conf import settings
-from django.contrib.auth import get_user_model
 from django.test import TestCase, override_settings
 from django.urls import reverse
 from wagtail import hooks
 
 from cms.auth import wagtail_hooks
 from cms.auth.tests.helpers import CognitoTokenMixin, build_jwt
+from cms.users.models import User
 
-User = get_user_model()
 JWT_SESSION_ID_KEY = CognitoTokenMixin.JWT_SESSION_ID_KEY
 
 
