@@ -53,12 +53,15 @@ class LinkBlockStructValue(StructValue):
         if content_type := self.get("content_type"):
             content_type_label = get_related_content_type_label(content_type)
 
+        release_date: datetime = page_release_date or self.get("release_date")
+
+        if content_type_label or release_date:
+            value["metadata"] = {}
+
         if content_type_label:
             value["metadata"] = {
                 "object": {"text": content_type_label},
             }
-
-        release_date: datetime = page_release_date or self.get("release_date")
 
         if release_date:
             value["metadata"]["date"] = get_document_metadata_date(release_date, _("Released"))

@@ -102,13 +102,19 @@ class IndexPage(BundledPageMixin, BasePage):  # type: ignore[django-manager-miss
             if link is None:
                 continue
 
+            content_type = (
+                getattr(RelatedContentType, featured_item.value["content_type"]).label
+                if featured_item.value["content_type"]
+                else None
+            )
+
             formatted_items.append(
                 {
                     "featured": "true",
                     "title": {"text": link["text"], "url": link["url"]},
                     "description": featured_item.value["description"],
                     "metadata": get_document_metadata(
-                        getattr(RelatedContentType, featured_item.value["content_type"]).label,
+                        content_type,
                         featured_item.value.get("release_date", None),
                         _("Published"),
                     ),

@@ -74,12 +74,16 @@ def get_document_metadata_date(value: date | datetime | str, prefix: "StrOrPromi
 
 
 def get_document_metadata(
-    content_type: "StrOrPromise", date_value: date | datetime | str | None, prefix: "StrOrPromise"
+    content_type: "StrOrPromise | None", date_value: date | datetime | str | None, prefix: "StrOrPromise"
 ) -> dict[str, Any]:
     """Returns a dictionary with formatted metadata information for the DS document component."""
-    metadata = {
-        "object": {"text": content_type},
-    }
+    metadata = (
+        {
+            "object": {"text": content_type},
+        }
+        if content_type
+        else {}
+    )
 
     if date_value:
         metadata["date"] = get_document_metadata_date(date_value, prefix)
