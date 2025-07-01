@@ -1,8 +1,8 @@
 import factory
 import wagtail_factories
 
+from cms.home.models import HomePage
 from cms.taxonomy.tests.factories import TopicFactory
-from cms.themes.tests.factories import ThemePageFactory
 from cms.topics.models import TopicPage, TopicPageRelatedArticle, TopicPageRelatedMethodology
 
 
@@ -14,7 +14,7 @@ class TopicPageFactory(wagtail_factories.PageFactory):
 
     title = factory.Faker("sentence", nb_words=4)
     summary = factory.Faker("text", max_nb_chars=100)
-    parent = factory.SubFactory(ThemePageFactory)
+    parent = factory.LazyFunction(lambda: HomePage.objects.first())  # pylint: disable=unnecessary-lambda
     topic = factory.SubFactory(TopicFactory)
 
 

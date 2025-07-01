@@ -13,7 +13,7 @@ Feature: Role Based Access Control Permission as defined in data migrations
         And the user can publish a page
 
     Scenario: A Publishing Admin can bulk delete pages
-        Given a topic page exists under a theme page
+        Given a topic page exists under the homepage
         And a statistical article page has been published under the topic page
         When a Publishing Admin logs into the admin site
         Then the user can bulk delete the Theme page and its children

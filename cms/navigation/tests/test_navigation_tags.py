@@ -156,15 +156,11 @@ class BreadcrumbsTemplateTagTests(TestCase):
                 "text": "Home",
             },
             {
-                "url": series_parent.get_parent().get_url(),
-                "text": series_parent.get_parent().title,
-            },
-            {
                 "url": series_parent.get_url(),
                 "text": series_parent.title,
             },
         ]
 
         self.assertIsInstance(breadcrumbs_output, list)
-        self.assertEqual(len(breadcrumbs_output), 3)
+        self.assertEqual(len(breadcrumbs_output), 2)
         self.assertListEqual(breadcrumbs_output, expected_entries)

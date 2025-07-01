@@ -160,11 +160,13 @@ class TopicPageTestCase(TestCase):
     def test_translated_model_taxonomy_enforcement(self):
         # Create a translations of self.topic_page
         welsh_locale = Locale.objects.get(language_code="cy")
+        welsh_homepage = self.home_page.copy_for_translation(locale=welsh_locale)
 
         # This should not raise a ValidationError
         translated_topic_page = TopicPageFactory(
             title="Test Topic",
             locale=welsh_locale,
+            parent=welsh_homepage,
             translation_key=self.topic_page.translation_key,
             topic=self.topic_page.topic,
         )
