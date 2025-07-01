@@ -32,21 +32,23 @@ class TestEmailNotifications(TestCase):
 
         with (
             patch("cms.bundles.notifications.email.render_to_string") as mock_render,
-            self.assertLogs("cms.bundles.notifications.email", level="ERROR") as log,
         ):
             mock_render.side_effect = self.email_alternatives_messages
+            with self.assertLogs("cms.bundles.notifications.email", level="ERROR") as log:
+                _send_bundle_email(
+                    bundle=bundle,
+                    team=preview_team,
+                    email_template_name="example_template",
+                    subject="Test Subject",
+                )
 
-            _send_bundle_email(
-                bundle=bundle,
-                team=preview_team,
-                email_template_name="example_template",
-                subject="Test Subject",
-            )
+        self.assertEqual(len(log.records), 1, "Expected exactly one log record.")
 
-        self.assertEqual(log.records[0].user_id, user_without_email.id)
-        self.assertEqual(log.records[0].team_name, preview_team.name)
-        self.assertEqual(log.records[0].bundle_name, bundle.name)
-        self.assertEqual(log.records[0].email_subject, "Test Subject")
+        record = log.records[0]
+        self.assertEqual(record.user_id, user_without_email.id)
+        self.assertEqual(record.team_name, preview_team.name)
+        self.assertEqual(record.bundle_name, bundle.name)
+        self.assertEqual(record.email_subject, "Test Subject")
 
         self.assertEqual(len(mail.outbox), 0)
 
@@ -61,17 +63,18 @@ class TestEmailNotifications(TestCase):
         with (
             patch("cms.bundles.notifications.email.send_mail") as mock_send_mail,
             patch("cms.bundles.notifications.email.render_to_string") as mock_render,
-            self.assertLogs("cms.bundles.notifications.email", level="ERROR") as log,
         ):
             mock_send_mail.side_effect = Exception("SMTP error")
             mock_render.side_effect = self.email_alternatives_messages
+            with self.assertLogs("cms.bundles.notifications.email", level="ERROR") as log:
+                _send_bundle_email(
+                    bundle=bundle,
+                    team=preview_team,
+                    email_template_name="non_existent",
+                    subject="Test Subject",
+                )
 
-            _send_bundle_email(
-                bundle=bundle,
-                team=preview_team,
-                email_template_name="non_existent",
-                subject="Test Subject",
-            )
+        self.assertEqual(len(log.records), 1, "Expected exactly one log record.")
 
         record = log.records[0]
         self.assertEqual(record.msg, "Failed to send bundle notification email")
@@ -106,7 +109,7 @@ class TestEmailNotifications(TestCase):
                     email_template_name="non_existent",
                     subject="Test Subject",
                 )
-
+            self.assertEqual(len(log.records), 1, "Expected exactly one log record.")
             self.assertEqual(log.records[0].msg, "Plain text email template not found")
 
     def test_html_email_variant_is_not_sent_when_the_template_is_not_found(self):
@@ -127,6 +130,7 @@ class TestEmailNotifications(TestCase):
                     subject="Test Subject",
                 )
 
+        self.assertEqual(len(log.records), 1, "Expected exactly one log record.")
         self.assertEqual(log.records[0].msg, "Failed to generate HTML email message")
 
         self.assertEqual(len(mail.outbox), 1)
