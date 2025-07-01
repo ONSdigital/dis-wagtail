@@ -538,6 +538,26 @@ class ReleaseCalendarPageRenderTestCase(TestCase):
 
                 self.assertEqual("pre-release access notes" in str(response.content), is_shown)
 
+    def test_rendered__statistics_badge_url(self):
+        """Check statistics badge URL is rendered correctly."""
+        self.page.is_accredited = True
+        self.page.save_revision().publish()
+
+        cases = [ReleaseStatus.PROVISIONAL, ReleaseStatus.CONFIRMED, ReleaseStatus.PUBLISHED, ReleaseStatus.CANCELLED]
+        expected_url = (
+            "https://uksa.statisticsauthority.gov.uk/"
+            + "about-the-authority/uk-statistical-system/types-of-official-statistics/"
+        )
+
+        for status in cases:
+            with self.subTest(status=status, expected_url=expected_url):
+                self.page.status = status
+                self.page.save_revision().publish()
+
+                response = self.client.get(self.page.url)
+
+                self.assertContains(response, expected_url)
+
     def test_rendered__datasets(self):
         """Check datasets are shown only in a published state."""
         lookup_dataset = Dataset.objects.create(
