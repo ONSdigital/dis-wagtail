@@ -45,7 +45,7 @@ def _send_bundle_email(bundle: Bundle, team: Team, subject: str, email_template_
                 "email_template_name": email_template_name,
             },
         )
-        raise
+        raise  # Fatal configuration error - fail loudly
 
     try:
         html_message = render_to_string(html_template, template_context)
