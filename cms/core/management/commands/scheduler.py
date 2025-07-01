@@ -6,6 +6,7 @@ from typing import Any
 from apscheduler.executors.pool import ThreadPoolExecutor
 from apscheduler.schedulers.blocking import BlockingScheduler
 from apscheduler.triggers.cron import CronTrigger
+from django.conf import settings
 from django.core.management import call_command
 from django.core.management.base import BaseCommand
 
@@ -49,4 +50,5 @@ class Command(BaseCommand):
         self.add_management_command("publish_scheduled_without_bundles", CronTrigger(minute="*/5"))
 
         # Sync teams
-        self.add_management_command("sync_teams", CronTrigger(minute="*/1"))
+        if settings.AWS_COGNITO_TEAM_SYNC_ENABLED:
+            self.add_management_command("sync_teams", CronTrigger(minute="*/1"))
