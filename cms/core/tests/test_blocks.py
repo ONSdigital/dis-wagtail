@@ -241,7 +241,7 @@ class CoreBlocksTestCase(TestCase):
                 "url": self.home_page.url,
                 "text": "Example",
                 "description": "A link",
-                "metadata": {"object": {"text": "Article"}},
+                "metadata": {"object": {"text": "Page"}},
             },
         )
 
@@ -257,7 +257,7 @@ class CoreBlocksTestCase(TestCase):
                 "url": self.home_page.url,
                 "text": self.home_page.title,
                 "description": "",
-                "metadata": {"object": {"text": "Article"}},
+                "metadata": {"object": {"text": "Page"}},
             },
         )
 
