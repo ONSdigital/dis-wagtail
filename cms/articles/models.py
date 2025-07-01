@@ -465,8 +465,6 @@ class StatisticalArticlePage(BundledPageMixin, RoutablePageMixin, BasePage):  # 
 
             if isinstance(block_instance, BaseVisualisationBlock):
                 data["chart"] = block_instance.get_component_config(block_value)
-            else:
-                raise ValueError(f"Unsupported block type: {type(block_instance)}")
 
         elif self.listing_image:
             data["image"] = {
