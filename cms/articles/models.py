@@ -173,6 +173,7 @@ class StatisticalArticlePage(BundledPageMixin, RoutablePageMixin, BasePage):  # 
                 TitleFieldPanel(
                     "title",
                     heading="Release Edition",
+                    placeholder="Release Edition *",
                     help_text="e.g. 'November 2024'.",
                 ),
                 FieldPanel(
