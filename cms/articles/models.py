@@ -29,13 +29,7 @@ from cms.core.widgets import date_widget
 from cms.datasets.blocks import DatasetStoryBlock
 from cms.datasets.utils import format_datasets_as_document_list
 from cms.datavis.blocks.base import BaseVisualisationBlock
-from cms.datavis.blocks.featured_charts import (
-    FeaturedAreaChartBlock,
-    FeaturedBarColumnChartBlock,
-    FeaturedBarColumnConfidenceIntervalChartBlock,
-    FeaturedLineChartBlock,
-    FeaturedScatterPlotBlock,
-)
+from cms.datavis.blocks.featured_charts import FeaturedChartBlock
 from cms.taxonomy.mixins import GenericTaxonomyMixin
 
 if TYPE_CHECKING:
@@ -176,24 +170,7 @@ class StatisticalArticlePage(BundledPageMixin, RoutablePageMixin, BasePage):  # 
     dataset_sorting = models.CharField(choices=SortingChoices.choices, default=SortingChoices.AS_SHOWN, max_length=32)
     datasets = StreamField(DatasetStoryBlock(), blank=True, default=list)
 
-    # Featured chart for Topic page display
-    featured_chart = StreamField(
-        [
-            ("line_chart", FeaturedLineChartBlock(label="Line Chart")),
-            ("bar_column_chart", FeaturedBarColumnChartBlock(label="Bar/Column Chart")),
-            (
-                "bar_column_confidence_interval_chart",
-                FeaturedBarColumnConfidenceIntervalChartBlock(label="Bar/Column Chart with Confidence Intervals"),
-            ),
-            ("scatter_plot", FeaturedScatterPlotBlock(label="Scatter Plot")),
-            ("area_chart", FeaturedAreaChartBlock(label="Area Chart")),
-            # TODO: enable iframe once supported by the Design System, see
-            # https://github.com/ONSdigital/design-system/pull/3641
-            # ("iframe", ONSEmbedBlock(label="Iframe Embed")),
-        ],
-        blank=True,
-        max_num=1,
-    )
+    featured_chart = StreamField(FeaturedChartBlock(), blank=True, max_num=1)
 
     content_panels: ClassVar[list["Panel"]] = [
         *BundledPageMixin.panels,
