@@ -111,6 +111,20 @@ class Command(BaseCommand):
 
         log(action="wagtail.publish.scheduled", instance=bundle)
 
+    def _handle_bundle_action(self, bundle: Bundle) -> None:
+        try:
+            # Refresh the bundle immediately before publishing, in case it's changed.
+            bundle.refresh_from_db()
+
+            # Confirm the bundle is still approved
+            if bundle.status != BundleStatus.APPROVED:
+                logger.error("Bundle no longer approved", extra={"bundle_id": bundle.id})
+                return
+
+            self.handle_bundle(bundle)
+        except Exception:  # pylint: disable=broad-exception-caught
+            logger.exception("Publish failed", extra={"bundle_id": bundle.id, "event": "publish_failed"})
+
     def handle(self, *args: Any, **options: Any) -> None:
         dry_run = False
         if options["dry_run"]:
@@ -144,21 +158,9 @@ class Command(BaseCommand):
             # Explicitly use `time.time` so enterabs can be called with absolute timestamps.
             bundle_scheduler = sched.scheduler(timefunc=time.time)
 
-            def wrap_handle_bundle(bundle: Bundle) -> None:
-                try:
-                    # Refresh the bundle immediately before publishing, in case it's changed.
-                    bundle.refresh_from_db()
-
-                    # Use `contains` rather than `in` to force a new query
-                    if bundle.status != BundleStatus.APPROVED:
-                        logger.error("Bundle no longer approved", extra={"bundle_id": bundle.id})
-                        return
-
-                    self.handle_bundle(bundle)
-                except Exception:  # pylint: disable=broad-exception-caught
-                    logger.exception("Publish failed", extra={"bundle_id": bundle.id, "event": "publish_failed"})
-
             for bundle in bundles_to_publish:
-                bundle_scheduler.enterabs(bundle.release_date.timestamp(), 1, wrap_handle_bundle, argument=(bundle,))
+                bundle_scheduler.enterabs(
+                    bundle.release_date.timestamp(), 1, self._handle_bundle_action, argument=(bundle,)
+                )
 
             bundle_scheduler.run()
