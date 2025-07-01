@@ -189,7 +189,7 @@ class CoreBlocksTestCase(TestCase):
 
         self.assertEqual(
             info.exception.block_errors["content_type"].message,
-            "A content type must be selected when providing an external URL.",
+            "You must select a content type when providing an external URL.",
         )
 
     def test_relatedcontentblock_clean__happy_path(self):

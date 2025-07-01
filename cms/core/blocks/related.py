@@ -36,7 +36,7 @@ class RelatedContentBlock(LinkBlockWithDescription):
         errors = {}
 
         if cleaned_value["external_url"] and not cleaned_value["content_type"]:
-            errors["content_type"] = ValidationError("A content type must be selected when providing an external URL.")
+            errors["content_type"] = ValidationError("You must select a content type when providing an external URL.")
 
         if errors:
             raise StructBlockValidationError(block_errors=errors)
