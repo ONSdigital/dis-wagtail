@@ -14,7 +14,7 @@ from wagtail.blocks import (
     URLBlock,
 )
 
-from cms.core.utils import get_document_metadata_date, get_related_content_type_label
+from cms.core.utils import get_content_type_for_page, get_document_metadata_date, get_related_content_type_label
 
 
 class LinkBlockStructValue(StructValue):
@@ -25,6 +25,8 @@ class LinkBlockStructValue(StructValue):
         regardless of the chosen values (be it a Wagtail page or external link).
         """
         value = None
+        content_type_label = None
+        page_release_date = None
         title = self.get("title")
         desc = self.get("description")
         has_description = "description" in self
@@ -42,15 +44,21 @@ class LinkBlockStructValue(StructValue):
             if has_description:
                 value["description"] = desc or getattr(page.specific_deferred, "summary", "")
 
+            content_type_label = get_content_type_for_page(page)
+            page_release_date = getattr(page.specific_deferred, "release_date", None)
+
         if not value:
             return None
 
         if content_type := self.get("content_type"):
+            content_type_label = get_related_content_type_label(content_type)
+
+        if content_type_label:
             value["metadata"] = {
-                "object": {"text": get_related_content_type_label(content_type)},
+                "object": {"text": content_type_label},
             }
 
-        release_date: datetime = self.get("release_date")
+        release_date: datetime = page_release_date or self.get("release_date")
 
         if release_date:
             value["metadata"]["date"] = get_document_metadata_date(release_date, _("Released"))

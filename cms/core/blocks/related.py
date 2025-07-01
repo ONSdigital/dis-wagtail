@@ -1,16 +1,18 @@
 from typing import TYPE_CHECKING, Any
 
+from django.forms import ValidationError
 from django.utils.text import slugify
 from django.utils.translation import gettext_lazy as _
-from wagtail.blocks import CharBlock, ChoiceBlock, DateBlock, ListBlock
+from wagtail.blocks import CharBlock, ChoiceBlock, DateBlock, ListBlock, StructBlockValidationError
 
+from cms.core.blocks.base import LinkBlock
 from cms.core.enums import RelatedContentType
-
-from .base import LinkBlock
 
 if TYPE_CHECKING:
     from django_stubs_ext import StrOrPromise
     from wagtail.blocks.list_block import ListValue
+
+    from cms.core.blocks.base import LinkBlockStructValue
 
 
 class LinkBlockWithDescription(LinkBlock):
@@ -22,10 +24,24 @@ class RelatedContentBlock(LinkBlockWithDescription):
 
     content_type = ChoiceBlock(
         choices=RelatedContentType.choices,
-        default=RelatedContentType.ARTICLE,
         help_text="Select the type of related content.",
+        required=False,
     )
     release_date = DateBlock(required=False)
+
+    def clean(self, value: "LinkBlockStructValue") -> "LinkBlockStructValue":
+        """Validate the related content based on its type."""
+        cleaned_value = super().clean(value)
+
+        errors = {}
+
+        if cleaned_value["external_url"] and not cleaned_value["content_type"]:
+            errors["content_type"] = ValidationError("A content type must be selected when providing an external URL.")
+
+        if errors:
+            raise StructBlockValidationError(block_errors=errors)
+
+        return cleaned_value
 
 
 class RelatedLinksBlock(ListBlock):
