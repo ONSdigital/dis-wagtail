@@ -485,3 +485,12 @@ class ReleaseCalendarPageAdminFormTestCase(WagtailTestUtils, TestCase):
             "Please unschedule the bundle and unlink the release calendar page before making the cancellation."
         )
         self.assertFormError(form, "status", message)
+
+    def test_form_clean__sets_release_date_seconds_to_zero(
+        self,
+    ):
+        form = self.form_class(instance=self.page, data=self.form_data)
+
+        self.assertTrue(form.is_valid())
+
+        self.assertEqual(form.cleaned_data["release_date"].second, 0)
