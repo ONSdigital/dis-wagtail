@@ -49,8 +49,19 @@ def _send_bundle_email(bundle: Bundle, team: Team, subject: str, email_template_
 
     try:
         html_message = render_to_string(html_template, template_context)
-    except Exception:  # pylint: disable=broad-exception-caught
+    except Exception as e:  # pylint: disable=broad-exception-caught
         html_message = None
+        logger.warning(
+            "Failed to generate HTML email message",
+            exc_info=True,
+            extra={
+                "team_name": team.name,
+                "bundle_name": bundle.name,
+                "email_subject": subject,
+                "recipients": active_user_emails,
+                "error_message": str(e),
+            },
+        )
 
     try:
         send_mail(
