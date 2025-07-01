@@ -93,14 +93,7 @@ def get_document_metadata(
 
 def get_content_type_for_page(page: "Page") -> "StrOrPromise":
     """Returns the content type for a given page."""
-    display_name = page.page_type_display_name
-    match display_name:
-        case "Methodology page":
-            return RelatedContentType.METHODOLOGY.label
-        case "Topic page":
-            return RelatedContentType.TOPIC.label
-        case _:
-            return RelatedContentType.ARTICLE.label
+    return page.specific_deferred.label
 
 
 def get_related_content_type_label(content_type: str) -> str:
