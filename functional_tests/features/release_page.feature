@@ -4,12 +4,14 @@ Feature: CMS users can draft, edit, and publish release pages
     Given a contact details snippet exists
     And a superuser logs into the admin site
     And the user navigates to the release calendar page
+# page features
 
   Scenario: Upon creation of a release page, several datetime features are available to users
     When the user clicks "Add child page" to create a new draft release page
     Then the default release date time is today's date and 9:30 AM
     And the date placeholder, "YYYY-MM-DD HH:MM", is displayed in the date input textboxes
     And the time selection options are in 30 minute intervals
+# release date text field
 
   Scenario: Release date text field is visible for provisional releases
     When the user clicks "Add child page" to create a new draft release page
@@ -32,6 +34,7 @@ Feature: CMS users can draft, edit, and publish release pages
       | PageStatus |
       | Confirmed  |
       | Cancelled  |
+  # datetime
 
   Scenario Outline: A CMS user inputs a datetime on a release calendar page and the correct period is displayed
     When the user clicks "Add child page" to create a new draft release page
