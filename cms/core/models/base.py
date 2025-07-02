@@ -1,4 +1,3 @@
-from datetime import date, datetime
 from typing import TYPE_CHECKING, ClassVar, Optional, Self, cast
 
 from django.conf import settings
@@ -16,6 +15,8 @@ from cms.taxonomy.forms import DeduplicateTopicsAdminForm
 from .mixins import ListingFieldsMixin, SocialFieldsMixin
 
 if TYPE_CHECKING:
+    from datetime import date, datetime
+
     from django.db import models
     from wagtail.admin.panels import FieldPanel
     from wagtail.contrib.settings.models import (

@@ -6,6 +6,6 @@ class DatabaseWrapper(PostgresDatabaseWrapper):
 
     def init_connection_state(self) -> None:
         super().init_connection_state()
-        # with self.connection.cursor() as c:
-        #     c.execute("SET SESSION CHARACTERISTICS AS TRANSACTION READ ONLY;")
-        # self.connection.set_read_only(True)
+        with self.connection.cursor() as c:
+            c.execute("SET SESSION CHARACTERISTICS AS TRANSACTION READ ONLY;")
+        self.connection.set_read_only(True)
