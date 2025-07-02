@@ -40,13 +40,32 @@ if TYPE_CHECKING:
 FIGURE_ID_SEPARATOR = ","
 
 
+class ArticlesIndexPage(BasePage):  # type: ignore[django-manager-missing]
+    max_count_per_parent = 1
+    parent_page_types: ClassVar[list[str]] = ["topics.TopicPage"]
+    page_description = "A container for statistical article series. Used for URL structure purposes."
+
+    content_panels: ClassVar[list["Panel"]] = [
+        *Page.content_panels,
+        HelpPanel(content="This is a container for articles and article series for URL structure purposes."),
+    ]
+
+    def clean(self) -> None:
+        self.slug = "articles"
+        super().clean()
+
+    def minimal_clean(self) -> None:
+        self.slug = "articles"
+        super().clean()
+
+
 class ArticleSeriesPage(RoutablePageMixin, GenericTaxonomyMixin, BasePage):  # type: ignore[django-manager-missing]
     """The article series model."""
 
-    parent_page_types: ClassVar[list[str]] = ["topics.TopicPage"]
+    parent_page_types: ClassVar[list[str]] = ["ArticlesIndexPage"]
     subpage_types: ClassVar[list[str]] = ["StatisticalArticlePage"]
     preview_modes: ClassVar[list[str]] = []  # Disabling the preview mode due to it being a container page.
-    page_description = "A container for statistical article series."
+    page_description = "A container for statistical articles in a series."
     exclude_from_breadcrumbs = True
 
     content_panels: ClassVar[list["Panel"]] = [
@@ -395,7 +414,7 @@ class StatisticalArticlePage(BundledPageMixin, RoutablePageMixin, BasePage):  # 
         series = self.get_parent()
         if not series:
             return []
-        topic: TopicPage = series.get_parent().specific
+        topic: TopicPage = series.get_parent().get_parent().specific_deferred
         return [
             figure.value["figure_id"] for figure in topic.headline_figures if figure.value["series"].id == series.id
         ]

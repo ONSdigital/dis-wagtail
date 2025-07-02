@@ -49,7 +49,7 @@ def register_series_with_headline_figures_chooser_viewset() -> "SeriesWithHeadli
 
 @hooks.register("before_copy_page")
 def before_create_page(request: "HttpRequest", page: "Page") -> "HttpResponseRedirect | None":
-    if settings.ENFORCE_EXCLUSIVE_TAXONOMY and isinstance(page.specific, TopicPage | ThemePage):
+    if settings.ENFORCE_EXCLUSIVE_TAXONOMY and page.specific_class in [TopicPage, ThemePage]:
         messages.warning(
             request,
             "Topic and theme pages cannot be duplicated as selected taxonomy needs to be unique for each page.",

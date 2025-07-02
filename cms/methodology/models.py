@@ -29,6 +29,20 @@ if TYPE_CHECKING:
     from wagtail.query import PageQuerySet
 
 
+class MethodologyIndexPage(BasePage):  # type: ignore[django-manager-missing]
+    max_count_per_parent = 1
+    parent_page_types: ClassVar[list[str]] = ["topics.TopicPage"]
+    page_description = "A place for all methodologies."
+
+    def clean(self) -> None:
+        self.slug = "methodologies"
+        super().clean()
+
+    def minimal_clean(self) -> None:
+        self.slug = "methodologies"
+        super().clean()
+
+
 class MethodologyRelatedPage(Orderable):
     """Related pages for Methodology pages."""
 
@@ -44,7 +58,7 @@ class MethodologyRelatedPage(Orderable):
 
 class MethodologyPage(BundledPageMixin, GenericTaxonomyMixin, BasePage):  # type: ignore[django-manager-missing]
     base_form_class = PageWithEquationsAdminForm
-    parent_page_types: ClassVar[list[str]] = ["topics.TopicPage"]
+    parent_page_types: ClassVar[list[str]] = ["MethodologyIndexPage"]
     search_index_content_type: ClassVar[str] = "static_methodology"
     template = "templates/pages/methodology_page.html"
     label = _("Methodology")  # type: ignore[assignment]

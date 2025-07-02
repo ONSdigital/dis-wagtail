@@ -73,7 +73,7 @@ class TopicPage(BundledPageMixin, ExclusiveTaxonomyMixin, BasePage):  # type: ig
     base_form_class = TopicPageAdminForm
     template = "templates/pages/topic_page.html"
     parent_page_types: ClassVar[list[str]] = ["home.HomePage"]
-    subpage_types: ClassVar[list[str]] = ["articles.ArticleSeriesPage", "methodology.MethodologyPage"]
+    subpage_types: ClassVar[list[str]] = ["articles.ArticlesIndexPage", "methodology.MethodologyIndexPage"]
     page_description = "A specific topic page. e.g. 'Public sector finance' or 'Inflation and price indices'."
     label = _("Topic")  # type: ignore[assignment]
 
