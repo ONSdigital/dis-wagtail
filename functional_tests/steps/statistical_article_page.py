@@ -264,7 +264,7 @@ def user_can_click_on_view_detail_to_expand_block(context: Context, block_type: 
         expect(context.page.get_by_role("link", name="View superseded version")).to_be_visible()
 
     context.page.wait_for_timeout(500)
-    context.page.get_by_text("Close detail").click()
+    context.page.get_by_text("Hide detail").click()
     context.page.wait_for_timeout(500)
     expect(context.page.get_by_text(text)).to_be_hidden()
     expect(context.page.get_by_text(date)).to_be_hidden()
@@ -299,9 +299,9 @@ def user_can_click_on_show_detail_to_expand_corrections_and_notices_block(contex
     expect(context.page.get_by_role("link", name="View superseded version")).to_be_visible()
 
 
-@then('the user can click on "Close detail" to collapse the corrections and notices block')
+@then('the user can click on "Hide detail" to collapse the corrections and notices block')
 def user_can_click_on_hide_detail_to_collapse_corrections_and_notices_block(context: Context):
-    context.page.get_by_text("Close detail").click()
+    context.page.get_by_text("Hide detail").click()
 
     expect(context.page.get_by_text("Notice text")).to_be_hidden()
     expect(context.page.get_by_text("15 March 2025")).to_be_hidden()
