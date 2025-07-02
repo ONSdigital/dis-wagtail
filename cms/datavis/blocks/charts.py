@@ -20,6 +20,7 @@ from cms.datavis.blocks.base import BaseVisualisationBlock
 from cms.datavis.blocks.table import SimpleTableBlock, TableDataType
 from cms.datavis.blocks.utils import TextInputFloatBlock, TextInputIntegerBlock
 from cms.datavis.constants import (
+    AXIS_TITLE_HELP_TEXT,
     AxisType,
     BarColumnChartTypeChoices,
     BarColumnConfidenceIntervalChartTypeChoices,
@@ -51,6 +52,25 @@ class LineChartBlock(BaseVisualisationBlock):
             ("reference_line", LineAnnotationCategoricalBlock()),
         ],
         required=False,
+    )
+
+    x_axis = blocks.StructBlock(
+        [
+            ("title", blocks.CharBlock(required=False, help_text=AXIS_TITLE_HELP_TEXT)),
+            ("tick_interval_mobile", TextInputFloatBlock(label="Tick interval (mobile)", required=False)),
+            ("tick_interval_desktop", TextInputFloatBlock(label="Tick interval (desktop)", required=False)),
+        ]
+    )
+    y_axis = blocks.StructBlock(
+        [
+            ("title", blocks.CharBlock(required=False, help_text=AXIS_TITLE_HELP_TEXT)),
+            ("min", TextInputFloatBlock(label="Minimum", required=False)),
+            ("start_on_tick", blocks.BooleanBlock(label="Start on tick", default=True, required=False)),
+            ("max", TextInputFloatBlock(label="Maximum", required=False)),
+            ("end_on_tick", blocks.BooleanBlock(label="End on tick", default=True, required=False)),
+            ("tick_interval_mobile", TextInputFloatBlock(label="Tick interval (mobile)", required=False)),
+            ("tick_interval_desktop", TextInputFloatBlock(label="Tick interval (desktop)", required=False)),
+        ]
     )
 
     class Meta:
@@ -107,8 +127,7 @@ class BarColumnChartBlock(BaseVisualisationBlock):
                 "title",
                 blocks.CharBlock(
                     required=False,
-                    help_text="Only use axis titles if it is not clear from the title "
-                    "and subtitle what the axis represents. Column charts only.",
+                    help_text=AXIS_TITLE_HELP_TEXT,
                 ),
             ),
         ],
@@ -121,13 +140,13 @@ class BarColumnChartBlock(BaseVisualisationBlock):
                 "title",
                 blocks.CharBlock(
                     required=False,
-                    help_text="Only use axis titles if it is not clear from the title "
-                    "and subtitle what the axis represents.",
+                    help_text=AXIS_TITLE_HELP_TEXT,
                 ),
             ),
-            # TODO: Add min/max once support is added to the Design System
-            # ("min", TextInputFloatBlock(label="Minimum", required=False)),
-            # ("max", TextInputFloatBlock(label="Maximum", required=False)),
+            ("min", TextInputFloatBlock(label="Minimum", required=False)),
+            ("start_on_tick", blocks.BooleanBlock(label="Start on tick", default=True, required=False)),
+            ("max", TextInputFloatBlock(label="Maximum", required=False)),
+            ("end_on_tick", blocks.BooleanBlock(label="End on tick", default=True, required=False)),
             ("tick_interval_mobile", TextInputFloatBlock(label="Tick interval (mobile)", required=False)),
             ("tick_interval_desktop", TextInputFloatBlock(label="Tick interval (desktop)", required=False)),
         ],
@@ -319,31 +338,19 @@ class BarColumnConfidenceIntervalChartBlock(BaseVisualisationBlock):
     )
     # NB X_axis is labelled "Category axis" for bar/column charts
     x_axis = blocks.StructBlock(
-        [
-            (
-                "title",
-                blocks.CharBlock(
-                    required=False,
-                    help_text="Only use axis titles if it is not clear from the title "
-                    "and subtitle what the axis represents. Column charts only.",
-                ),
-            ),
-        ],
+        [("title", blocks.CharBlock(required=False, help_text=AXIS_TITLE_HELP_TEXT))],
         label="Category axis",
     )
     # NB Y_axis is labelled "Value axis" for bar/column charts
     y_axis = blocks.StructBlock(
         [
-            (
-                "title",
-                blocks.CharBlock(
-                    required=False,
-                    help_text="Only use axis titles if it is not clear from the title "
-                    "and subtitle what the axis represents.",
-                ),
-            ),
+            ("title", blocks.CharBlock(required=False, help_text=AXIS_TITLE_HELP_TEXT)),
             ("tick_interval_mobile", TextInputFloatBlock(label="Tick interval (mobile)", required=False)),
             ("tick_interval_desktop", TextInputFloatBlock(label="Tick interval (desktop)", required=False)),
+            ("min", TextInputFloatBlock(label="Minimum", required=False)),
+            ("start_on_tick", blocks.BooleanBlock(label="Start on tick", default=True, required=False)),
+            ("max", TextInputFloatBlock(label="Maximum", required=False)),
+            ("end_on_tick", blocks.BooleanBlock(label="End on tick", default=True, required=False)),
         ],
         label="Value axis",
     )
@@ -501,6 +508,29 @@ class ScatterPlotBlock(BaseVisualisationBlock):
     series_customisation = None
     show_markers = None
 
+    x_axis = blocks.StructBlock(
+        [
+            ("title", blocks.CharBlock(required=False, help_text=AXIS_TITLE_HELP_TEXT)),
+            ("tick_interval_mobile", TextInputFloatBlock(label="Tick interval (mobile)", required=False)),
+            ("tick_interval_desktop", TextInputFloatBlock(label="Tick interval (desktop)", required=False)),
+            ("min", TextInputFloatBlock(label="Minimum", required=False)),
+            ("start_on_tick", blocks.BooleanBlock(label="Start on tick", default=False, required=False)),
+            ("max", TextInputFloatBlock(label="Maximum", required=False)),
+            ("end_on_tick", blocks.BooleanBlock(label="End on tick", default=False, required=False)),
+        ]
+    )
+    y_axis = blocks.StructBlock(
+        [
+            ("title", blocks.CharBlock(required=False, help_text=AXIS_TITLE_HELP_TEXT)),
+            ("tick_interval_mobile", TextInputFloatBlock(label="Tick interval (mobile)", required=False)),
+            ("tick_interval_desktop", TextInputFloatBlock(label="Tick interval (desktop)", required=False)),
+            ("min", TextInputFloatBlock(label="Minimum", required=False)),
+            ("start_on_tick", blocks.BooleanBlock(label="Start on tick", default=True, required=False)),
+            ("max", TextInputFloatBlock(label="Maximum", required=False)),
+            ("end_on_tick", blocks.BooleanBlock(label="End on tick", default=True, required=False)),
+        ]
+    )
+
     TABLE_DEFAULT_DATA: TableDataType = (
         ["X", "Y", "Group"],
         ["", "", ""],
@@ -567,6 +597,31 @@ class AreaChartBlock(BaseVisualisationBlock):
             ("reference_line", LineAnnotationCategoricalBlock()),
         ],
         required=False,
+    )
+
+    x_axis = blocks.StructBlock(
+        [
+            ("title", blocks.CharBlock(required=False, help_text=AXIS_TITLE_HELP_TEXT)),
+            (
+                "tick_interval_mobile",
+                TextInputFloatBlock(label="Tick interval (mobile)", required=False),
+            ),
+            (
+                "tick_interval_desktop",
+                TextInputFloatBlock(label="Tick interval (desktop)", required=False),
+            ),
+        ]
+    )
+    y_axis = blocks.StructBlock(
+        [
+            ("title", blocks.CharBlock(required=False, help_text=AXIS_TITLE_HELP_TEXT)),
+            ("tick_interval_mobile", TextInputFloatBlock(label="Tick interval (mobile)", required=False)),
+            ("tick_interval_desktop", TextInputFloatBlock(label="Tick interval (desktop)", required=False)),
+            ("min", TextInputFloatBlock(label="Minimum", required=False)),
+            ("start_on_tick", blocks.BooleanBlock(label="Start on tick", default=True, required=False)),
+            ("max", TextInputFloatBlock(label="Maximum", required=False)),
+            ("end_on_tick", blocks.BooleanBlock(label="End on tick", default=True, required=False)),
+        ]
     )
 
     class Meta:

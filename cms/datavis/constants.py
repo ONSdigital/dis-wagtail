@@ -45,3 +45,6 @@ class BarColumnConfidenceIntervalChartTypeChoices(TextChoices):
 
     BAR = "columnrange", "Bar"
     COLUMN = "boxplot", "Column"
+
+
+AXIS_TITLE_HELP_TEXT = "Only use axis titles if it is not clear from the title and subtitle what the axis represents."

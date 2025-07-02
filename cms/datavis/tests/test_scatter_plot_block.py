@@ -1,3 +1,4 @@
+# pylint: disable=too-many-public-methods
 from django.core.exceptions import ValidationError
 from wagtail.blocks.struct_block import StructValue
 
@@ -52,6 +53,63 @@ class ScatterPlotBlockTestCase(BaseChartBlockTestCase):
 
     def test_get_component_config(self):
         self._test_get_component_config()
+
+    def test_x_axis_min_max_configuration(self):
+        """Test that min/max values are correctly configured for the x-axis."""
+        self.raw_data["x_axis"]["min"] = 0.5
+        self.raw_data["x_axis"]["max"] = 10.0
+        self.block.clean(self.get_value())
+        x_axis_config = self.get_value().block.get_component_config(self.get_value())["xAxis"]
+        self.assertEqual(0.5, x_axis_config["min"])
+        self.assertEqual(10.0, x_axis_config["max"])
+
+    def test_y_axis_min_max_configuration(self):
+        """Test that min/max values are correctly configured for the y-axis."""
+        self.raw_data["y_axis"]["min"] = -5.0
+        self.raw_data["y_axis"]["max"] = 50.0
+        self.block.clean(self.get_value())
+        y_axis_config = self.get_value().block.get_component_config(self.get_value())["yAxis"]
+        self.assertEqual(-5.0, y_axis_config["min"])
+        self.assertEqual(50.0, y_axis_config["max"])
+
+    def test_x_axis_start_end_on_tick_defaults(self):
+        """Test that start_on_tick and end_on_tick default to False for x-axis.
+
+        NB this is the only chart type (at the time of writing) that supports
+        min/max values for a Highcharts xAxis (not counting bar chart, where
+        Highcharts calls its horizontal value axis the yAxis). Highcharts's
+        default start/end-on-tick behaviour for xAxis is False, contrasting
+        with True for yAxis.
+        """
+        self.block.clean(self.get_value())
+        x_axis_config = self.get_value().block.get_component_config(self.get_value())["xAxis"]
+        self.assertEqual(False, x_axis_config["startOnTick"])
+        self.assertEqual(False, x_axis_config["endOnTick"])
+
+    def test_y_axis_start_end_on_tick_defaults(self):
+        """Test that start_on_tick and end_on_tick default to True for y-axis."""
+        self.block.clean(self.get_value())
+        y_axis_config = self.get_value().block.get_component_config(self.get_value())["yAxis"]
+        self.assertEqual(True, y_axis_config["startOnTick"])
+        self.assertEqual(True, y_axis_config["endOnTick"])
+
+    def test_x_axis_start_end_on_tick_configuration(self):
+        """Test that start_on_tick and end_on_tick can be configured for the x-axis."""
+        self.raw_data["x_axis"]["start_on_tick"] = False
+        self.raw_data["x_axis"]["end_on_tick"] = False
+        self.block.clean(self.get_value())
+        x_axis_config = self.get_value().block.get_component_config(self.get_value())["xAxis"]
+        self.assertEqual(False, x_axis_config["startOnTick"])
+        self.assertEqual(False, x_axis_config["endOnTick"])
+
+    def test_y_axis_start_end_on_tick_configuration(self):
+        """Test that start_on_tick and end_on_tick can be configured for the y-axis."""
+        self.raw_data["y_axis"]["start_on_tick"] = False
+        self.raw_data["y_axis"]["end_on_tick"] = False
+        self.block.clean(self.get_value())
+        y_axis_config = self.get_value().block.get_component_config(self.get_value())["yAxis"]
+        self.assertEqual(False, y_axis_config["startOnTick"])
+        self.assertEqual(False, y_axis_config["endOnTick"])
 
     def test_highcharts_chart_type(self):
         self.assertEqual(HighChartsChartType.SCATTER, self.block.highcharts_chart_type)

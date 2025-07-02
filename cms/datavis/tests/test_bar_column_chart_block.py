@@ -1,3 +1,4 @@
+# pylint: disable=too-many-public-methods
 from typing import NamedTuple, cast
 from unittest import mock
 
@@ -407,6 +408,73 @@ class BarColumnChartBlockTestCase(BaseChartBlockTestCase):
         for key in ["tickIntervalMobile", "tickIntervalDesktop"]:
             with self.subTest(key=key):
                 self.assertNotIn(key, x_axis_config)
+
+    def test_value_axis_min_max_configuration(self):
+        """Test that min/max values are correctly configured for the value axis."""
+        for chart_type in BarColumnChartTypeChoices.values:
+            with self.subTest(chart_type=chart_type):
+                self.raw_data["select_chart_type"] = chart_type
+                self.raw_data["y_axis"]["min"] = 10.5
+                self.raw_data["y_axis"]["max"] = 100.0
+                self.block.clean(self.get_value())
+                y_axis_config = self.get_value().block.get_component_config(self.get_value())["yAxis"]
+                self.assertEqual(10.5, y_axis_config["min"])
+                self.assertEqual(100.0, y_axis_config["max"])
+
+    def test_value_axis_start_end_on_tick_defaults(self):
+        """Test that start_on_tick and end_on_tick default to False for value axis."""
+        for chart_type in BarColumnChartTypeChoices.values:
+            with self.subTest(chart_type=chart_type):
+                self.raw_data["select_chart_type"] = chart_type
+                self.block.clean(self.get_value())
+                y_axis_config = self.get_value().block.get_component_config(self.get_value())["yAxis"]
+                self.assertEqual(True, y_axis_config["startOnTick"])
+                self.assertEqual(True, y_axis_config["endOnTick"])
+
+    def test_value_axis_start_end_on_tick_configuration(self):
+        """Test that start_on_tick and end_on_tick can be configured for the value axis."""
+        for chart_type in BarColumnChartTypeChoices.values:
+            with self.subTest(chart_type=chart_type):
+                self.raw_data["select_chart_type"] = chart_type
+                self.raw_data["y_axis"]["start_on_tick"] = False
+                self.raw_data["y_axis"]["end_on_tick"] = False
+                self.block.clean(self.get_value())
+                y_axis_config = self.get_value().block.get_component_config(self.get_value())["yAxis"]
+                self.assertEqual(False, y_axis_config["startOnTick"])
+                self.assertEqual(False, y_axis_config["endOnTick"])
+
+    def test_category_axis_min_max_configuration(self):
+        """Test that min/max values are not configured for the category axis."""
+        for chart_type in BarColumnChartTypeChoices.values:
+            with self.subTest(chart_type=chart_type):
+                self.raw_data["select_chart_type"] = chart_type
+                self.block.clean(self.get_value())
+                x_axis_config = self.get_value().block.get_component_config(self.get_value())["xAxis"]
+                self.assertNotIn("min", x_axis_config)
+                self.assertNotIn("max", x_axis_config)
+                self.assertNotIn("startOnTick", x_axis_config)
+                self.assertNotIn("endOnTick", x_axis_config)
+
+    def test_category_axis_start_end_on_tick_defaults(self):
+        """Test that start_on_tick and end_on_tick are not configured for category axis."""
+        for chart_type in BarColumnChartTypeChoices.values:
+            with self.subTest(chart_type=chart_type):
+                self.raw_data["select_chart_type"] = chart_type
+                self.block.clean(self.get_value())
+                x_axis_config = self.get_value().block.get_component_config(self.get_value())["xAxis"]
+                self.assertNotIn("startOnTick", x_axis_config)
+                self.assertNotIn("endOnTick", x_axis_config)
+
+    def test_category_axis_limits_not_configurable(self):
+        for chart_type in BarColumnChartTypeChoices.values:
+            with self.subTest(chart_type=chart_type):
+                self.raw_data["select_chart_type"] = chart_type
+                self.block.clean(self.get_value())
+                x_axis_config = self.get_value().block.get_component_config(self.get_value())["xAxis"]
+                self.assertNotIn("min", x_axis_config)
+                self.assertNotIn("max", x_axis_config)
+                self.assertNotIn("startOnTick", x_axis_config)
+                self.assertNotIn("endOnTick", x_axis_config)
 
 
 class ColumnChartWithLineTestCase(BaseChartBlockTestCase):

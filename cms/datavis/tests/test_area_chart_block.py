@@ -90,3 +90,37 @@ class AreaChartBlockTestCase(BaseChartBlockTestCase):
         self.raw_data["y_axis"]["title"] = ""
         config = self.get_component_config()
         self.assertEqual(None, config["yAxis"]["title"])
+
+    def test_y_axis_min_max_configuration(self):
+        """Test that min/max values are correctly configured for the y-axis."""
+        self.raw_data["y_axis"]["min"] = 0.0
+        self.raw_data["y_axis"]["max"] = 150.0
+        self.block.clean(self.get_value())
+        y_axis_config = self.get_value().block.get_component_config(self.get_value())["yAxis"]
+        self.assertEqual(0.0, y_axis_config["min"])
+        self.assertEqual(150.0, y_axis_config["max"])
+
+    def test_y_axis_start_end_on_tick_defaults(self):
+        """Test that start_on_tick and end_on_tick default to True for y-axis."""
+        self.block.clean(self.get_value())
+        y_axis_config = self.get_value().block.get_component_config(self.get_value())["yAxis"]
+        self.assertEqual(True, y_axis_config["startOnTick"])
+        self.assertEqual(True, y_axis_config["endOnTick"])
+
+    def test_y_axis_start_end_on_tick_configuration(self):
+        """Test that start_on_tick and end_on_tick can be configured for the y-axis."""
+        self.raw_data["y_axis"]["start_on_tick"] = False
+        self.raw_data["y_axis"]["end_on_tick"] = False
+        self.block.clean(self.get_value())
+        y_axis_config = self.get_value().block.get_component_config(self.get_value())["yAxis"]
+        self.assertEqual(False, y_axis_config["startOnTick"])
+        self.assertEqual(False, y_axis_config["endOnTick"])
+
+    def test_x_axis_min_max_not_configurable(self):
+        """Test that min/max values are not configurable for x-axis on area charts."""
+        self.block.clean(self.get_value())
+        x_axis_config = self.get_value().block.get_component_config(self.get_value())["xAxis"]
+        self.assertNotIn("min", x_axis_config)
+        self.assertNotIn("max", x_axis_config)
+        self.assertNotIn("startOnTick", x_axis_config)
+        self.assertNotIn("endOnTick", x_axis_config)
