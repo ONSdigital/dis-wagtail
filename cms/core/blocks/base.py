@@ -45,7 +45,7 @@ class LinkBlockStructValue(StructValue):
                 value["description"] = desc or getattr(page.specific_deferred, "summary", "")
 
             content_type_label = get_content_type_for_page(page)
-            page_release_date = getattr(page.specific_deferred, "release_date", None)
+            page_release_date = getattr(page.specific_deferred, "release_date", page.last_published_at)
 
         if not value:
             return None

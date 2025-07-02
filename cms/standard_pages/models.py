@@ -10,7 +10,6 @@ from wagtail.search import index
 from cms.bundles.mixins import BundledPageMixin
 from cms.core.blocks.related import RelatedContentBlock
 from cms.core.blocks.stream_blocks import CoreStoryBlock
-from cms.core.enums import RelatedContentType
 from cms.core.fields import StreamField
 from cms.core.forms import PageWithEquationsAdminForm
 from cms.core.models import BasePage
@@ -102,22 +101,12 @@ class IndexPage(BundledPageMixin, BasePage):  # type: ignore[django-manager-miss
             if link is None:
                 continue
 
-            content_type = (
-                getattr(RelatedContentType, featured_item.value["content_type"]).label
-                if featured_item.value["content_type"]
-                else None
-            )
-
             formatted_items.append(
                 {
                     "featured": "true",
                     "title": {"text": link["text"], "url": link["url"]},
-                    "description": featured_item.value["description"],
-                    "metadata": get_document_metadata(
-                        content_type,
-                        featured_item.value.get("release_date", None),
-                        _("Published"),
-                    ),
+                    "description": link["description"],
+                    "metadata": link.get("metadata", {}),
                 }
             )
         return formatted_items
@@ -136,7 +125,9 @@ class IndexPage(BundledPageMixin, BasePage):  # type: ignore[django-manager-miss
                     },
                     "description": getattr(child_page, "listing_summary", "") or getattr(child_page, "summary", ""),
                     "metadata": get_document_metadata(
-                        get_content_type_for_page(child_page), child_page.last_published_at, _("Published")
+                        get_content_type_for_page(child_page),
+                        getattr(child_page, "release_date", child_page.last_published_at),
+                        _("Published"),
                     ),
                 }
             )

@@ -1,6 +1,9 @@
+from datetime import datetime
+
 from django.test import TestCase, override_settings
 from wagtail.test.utils import WagtailTestUtils
 
+from cms.articles.tests.factories import StatisticalArticlePageFactory
 from cms.core.enums import RelatedContentType
 from cms.standard_pages.tests.factories import IndexPageFactory, InformationPageFactory
 
@@ -97,14 +100,13 @@ class IndexPageTestCase(WagtailTestUtils, TestCase):
         """
         child_page = InformationPageFactory(parent=self.index_page, title="Child page")
 
-        internal_page = IndexPageFactory()
+        internal_page = StatisticalArticlePageFactory(release_date=datetime(2025, 1, 1))
 
         featured_item_internal_page = {
             "type": "featured_item",
             "value": {
                 "page": internal_page.id,
                 "description": "Description of the custom featured item",
-                "release_date": "2025-01-01",
             },
         }
 
@@ -114,9 +116,12 @@ class IndexPageTestCase(WagtailTestUtils, TestCase):
         response = self.client.get(self.page_url)
         self.assertEqual(response.status_code, 200)
 
-        self.assertContains(response, internal_page.title)
+        self.assertContains(response, internal_page.display_title)
         self.assertContains(response, internal_page.url)
         self.assertContains(response, featured_item_internal_page["value"]["description"])
+        self.assertContains(response, "Released")
+        self.assertContains(response, "1 January 2025")
+        self.assertContains(response, "Article")
 
         self.assertNotContains(response, child_page.title)
         self.assertNotContains(response, child_page.url)
