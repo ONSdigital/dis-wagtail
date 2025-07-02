@@ -2,6 +2,7 @@ import json
 from http import HTTPStatus
 
 from bs4 import BeautifulSoup
+from wagtail.models import Locale
 from wagtail.test.utils import WagtailPageTestCase
 
 from cms.standard_pages.tests.factories import IndexPageFactory, InformationPageFactory
@@ -52,6 +53,24 @@ class PageCanonicalUrlTests(WagtailPageTestCase):
         self.assertEqual(response.status_code, HTTPStatus.OK)
         self.assertContains(
             response, f'<link rel="canonical" href="{self.page.get_full_url(request=self.dummy_request)}" />'
+        )
+
+    def test_translated_page_canonical_url(self):
+        """Test that a translated page has the correct localised canonical URL."""
+        cy_locale = Locale.objects.get(language_code="cy")
+        for page_ancestor in self.page.get_ancestors(inclusive=False)[1:]:
+            translated_page = page_ancestor.copy_for_translation(locale=cy_locale)
+            translated_page.save_revision().publish()
+
+        welsh_page = self.page.copy_for_translation(locale=cy_locale)
+        welsh_page.save_revision().publish()
+
+        response = self.client.get(welsh_page.get_url(request=self.dummy_request))
+
+        self.assertEqual(response.status_code, HTTPStatus.OK)
+        self.assertIn(welsh_page.get_site().root_url + "/cy/", welsh_page.get_full_url(request=self.dummy_request))
+        self.assertContains(
+            response, f'<link rel="canonical" href="{welsh_page.get_full_url(request=self.dummy_request)}" />'
         )
 
 
