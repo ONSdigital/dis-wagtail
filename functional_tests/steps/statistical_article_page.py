@@ -76,7 +76,7 @@ def user_goes_to_add_new_article_page(context: Context):
 def user_populates_the_statistical_article_page(context: Context):
     page = context.page
     page_title = "The article page"
-    page.get_by_placeholder("Page title*").fill(page_title)
+    page.get_by_role("textbox", name="Release Edition").fill(page_title)
     context.original_statistical_article_page_title = page_title
     page.get_by_role("region", name="Summary*").get_by_role("textbox").fill("Page summary")
     page.locator('[data-contentpath="main_points_summary"] [role="textbox"]').fill("Main points summary")
@@ -96,7 +96,7 @@ def user_populates_the_statistical_article_page(context: Context):
 
 @step("the user updates the statistical article page content")
 def user_updates_the_statistical_article_page_content(context: Context):
-    context.page.get_by_placeholder("Page title*").fill("Updated article title")
+    context.page.get_by_role("textbox", name="Release Edition").fill("Updated article title")
 
 
 @step('the user clicks on "View superseded version"')
