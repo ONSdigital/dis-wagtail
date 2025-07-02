@@ -18,6 +18,8 @@ from cms.taxonomy.forms import DeduplicateTopicsAdminForm
 from .mixins import ListingFieldsMixin, SocialFieldsMixin
 
 if TYPE_CHECKING:
+    from datetime import date, datetime
+
     from django.db import models
     from django.http import HttpRequest
     from wagtail.admin.panels import FieldPanel
@@ -138,6 +140,12 @@ class BasePage(PageLDMixin, ListingFieldsMixin, SocialFieldsMixin, Page):  # typ
             return bool(streamvalue.stream_block.has_ons_embed(streamvalue))
 
         return False
+
+    @property
+    def publication_date(self) -> "date | datetime | None":
+        """Return the publication date of the page."""
+        # Use the release_date field if available, otherwise return last_published_at.
+        return getattr(self, "release_date", self.last_published_at)
 
     def get_breadcrumbs(self, request: Optional["HttpRequest"] = None) -> list[dict[str, object]]:
         """Returns the breadcrumbs for the page as a list of dictionaries compatible with the ONS design system
