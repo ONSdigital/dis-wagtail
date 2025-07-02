@@ -56,19 +56,16 @@ class PageBreadcrumbsTestCase(TestCase):
 
         expected_entries = [
             {
-                "url": "/",
+                "url": series_parent.get_site().root_url,
                 "text": "Home",
-                "full_url": series_parent.get_site().root_url,
             },
             {
-                "url": series_parent.get_parent().get_url(request=self.dummy_request),
+                "url": series_parent.get_parent().get_full_url(request=self.dummy_request),
                 "text": series_parent.get_parent().title,
-                "full_url": series_parent.get_parent.get_full_url(request=self.dummy_request),
             },
             {
-                "url": series_parent.get_url(request=self.dummy_request),
+                "url": series_parent.get_full_url(request=self.dummy_request),
                 "text": series_parent.title,
-                "full_url": series_parent.get_full_url(request=self.dummy_request),
             },
         ]
 
@@ -77,32 +74,28 @@ class PageBreadcrumbsTestCase(TestCase):
         self.assertListEqual(breadcrumbs_output, expected_entries)
 
     def test_breadcrumbs_include_self(self):
-        """Test that get_breadcrumbs includes the page when request includes `breadcrumbs_include_self` attribute."""
-        self.dummy_request.breadcrumbs_include_self = True
+        """Test that get_breadcrumbs includes the page when request includes `is_for_subpage` attribute."""
+        self.dummy_request.is_for_subpage = True
         breadcrumbs_output = self.statistical_article.get_breadcrumbs(request=self.dummy_request)
 
         series_parent = self.series.get_parent()
 
         expected_entries = [
             {
-                "url": "/",
+                "url": series_parent.get_site().root_url,
                 "text": "Home",
-                "full_url": series_parent.get_site().root_url,
             },
             {
-                "url": series_parent.get_parent().get_url(request=self.dummy_request),
+                "url": series_parent.get_parent().get_full_url(request=self.dummy_request),
                 "text": series_parent.get_parent().title,
-                "full_url": series_parent.get_parent.get_full_url(request=self.dummy_request),
             },
             {
-                "url": series_parent.get_url(request=self.dummy_request),
+                "url": series_parent.get_full_url(request=self.dummy_request),
                 "text": series_parent.title,
-                "full_url": series_parent.get_full_url(request=self.dummy_request),
             },
             {
-                "url": self.statistical_article.get_url(request=self.dummy_request),
+                "url": self.statistical_article.get_full_url(request=self.dummy_request),
                 "text": self.statistical_article.title,
-                "full_url": self.statistical_article.get_full_url(request=self.dummy_request),
             },
         ]
 

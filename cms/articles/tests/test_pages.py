@@ -397,12 +397,12 @@ class StatisticalArticlePageTests(WagtailPageTestCase):  # pylint: disable=too-m
         theme = topic.get_parent()
 
         self.assertInHTML(
-            f'<a class="ons-breadcrumbs__link" href="{topic.url}">{topic.title}</a>',
+            f'<a class="ons-breadcrumbs__link" href="{topic.full_url}">{topic.title}</a>',
             content,
         )
 
         self.assertInHTML(
-            f'<a class="ons-breadcrumbs__link" href="{theme.url}">{theme.title}</a>',
+            f'<a class="ons-breadcrumbs__link" href="{theme.full_url}">{theme.title}</a>',
             content,
         )
 
@@ -669,7 +669,7 @@ class StatisticalArticlePageTests(WagtailPageTestCase):  # pylint: disable=too-m
         """Test that Welsh articles have the correct english canonical URL when they have not been explicitly
         translated.
         """
-        response = self.client.get(f"/cy{self.page.get_url(request=self.dummy_request)}/")
+        response = self.client.get(f"/cy{self.page.get_url(request=self.dummy_request)}")
         self.assertEqual(response.status_code, HTTPStatus.OK)
         self.assertContains(
             response, f'<link rel="canonical" href="{self.series.get_full_url(request=self.dummy_request)}" />'

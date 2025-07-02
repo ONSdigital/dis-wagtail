@@ -76,13 +76,13 @@ class PageSchemaOrgTests(WagtailPageTestCase):
         self.assertEqual(actual_jsonld["@context"], "http://schema.org")
         self.assertEqual(actual_jsonld["@type"], "WebPage")
         self.assertEqual(actual_jsonld["name"], "Home")
-        self.assertEqual(actual_jsonld["url"], self.page.get_site().root_url)
-        self.assertEqual(actual_jsonld["@id"], self.page.get_site().root_url)
+        self.assertEqual(actual_jsonld["url"], self.page.get_site().root_url + "/")
+        self.assertEqual(actual_jsonld["@id"], self.page.get_site().root_url + "/")
         self.assertNotIn("breadcrumb", actual_jsonld, "The home should not have breadcrumbs")
 
     def test_schema_org_data_with_breadcrumbs(self):
         """Test that the page has the correct schema.org markup including breadcrumbs."""
-        response = self.client.get(self.page.url)
+        response = self.client.get(self.page.get_url(request=self.dummy_request))
         self.assertEqual(response.status_code, HTTPStatus.OK)
 
         self.assertContains(response, '<script type="application/ld+json">')

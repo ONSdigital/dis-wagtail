@@ -150,23 +150,11 @@ class BasePage(PageLDMixin, ListingFieldsMixin, SocialFieldsMixin, Page):  # typ
             if ancestor_page.is_root():
                 continue
             if ancestor_page.depth <= homepage_depth:
-                breadcrumbs.append({"url": "/", "text": _("Home"), "full_url": self.get_site().root_url})
+                breadcrumbs.append({"url": self.get_site().root_url, "text": _("Home")})
             elif not getattr(ancestor_page, "exclude_from_breadcrumbs", False):
-                breadcrumbs.append(
-                    {
-                        "url": ancestor_page.get_url(request=request),
-                        "text": ancestor_page.title,
-                        "full_url": ancestor_page.get_full_url(request=request),
-                    }
-                )
+                breadcrumbs.append({"url": ancestor_page.get_full_url(request=request), "text": ancestor_page.title})
         if request and getattr(request, "is_for_subpage", False):
-            breadcrumbs.append(
-                {
-                    "url": self.get_url(request=request),
-                    "text": self.title,
-                    "full_url": self.get_full_url(request=request),
-                }
-            )
+            breadcrumbs.append({"url": self.get_full_url(request=request), "text": self.title})
         return breadcrumbs
 
     @cached_property
@@ -180,7 +168,7 @@ class BasePage(PageLDMixin, ListingFieldsMixin, SocialFieldsMixin, Page):  # typ
                     "@type": "ListItem",
                     "position": i,
                     "name": str(breadcrumb["text"]),
-                    "item": str(breadcrumb["full_url"]),
+                    "item": str(breadcrumb["url"]),
                 }
             )
 
