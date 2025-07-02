@@ -8,7 +8,7 @@ if TYPE_CHECKING:
 
 
 def serialize_correction_or_notice(entry: "StreamChild", *, superseded_url: str | None = None) -> dict:
-    """Serialize a correction or notice entry for the API.
+    """Serialize a correction or notice entry for the Design System.
 
     Args:
         entry (StreamChild): The stream child containing the correction or notice data.
