@@ -496,6 +496,11 @@ class ColumnChartWithLineTestCase(BaseChartBlockTestCase):
         with self.assertRaises(blocks.StructBlockValidationError) as cm:
             self.block.clean(self.get_value())
 
+        self.assertEqual(
+            BarColumnChartBlock.ERROR_NON_STACKED_COLUMN_NO_LINE,
+            cm.exception.block_errors["series_customisation"].block_errors[0].code,
+        )
+        # This is the only error
         self.assertEqual(1, len(cm.exception.block_errors))
 
     def test_unstacked_column_chart_with_two_series_and_line_overlay_is_allowed(self):
