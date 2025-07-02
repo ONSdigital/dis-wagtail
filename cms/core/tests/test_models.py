@@ -1,4 +1,3 @@
-from django.conf import settings
 from django.test import TestCase
 from django.urls import reverse
 from wagtail.coreutils import get_dummy_request
@@ -117,6 +116,4 @@ class CanonicalFullUrlsTestCase(TestCase):
         """Test that get_canonical_url returns the correct full URL for a page, including base URL."""
         canonical_url = self.information_page.get_canonical_full_url(self.mock_request)
 
-        self.assertEqual(
-            canonical_url, settings.WAGTAILADMIN_BASE_URL + self.information_page.get_url(self.mock_request)
-        )
+        self.assertEqual(canonical_url, self.information_page.get_full_url(self.mock_request))

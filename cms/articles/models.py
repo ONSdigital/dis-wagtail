@@ -436,6 +436,8 @@ class StatisticalArticlePage(BundledPageMixin, RoutablePageMixin, BasePage):  # 
             "url": self.get_full_url(),  # TODO pass request to this one wagtailschemaorg supports it
             "headline": self.listing_title or self.title,
             "description": self.listing_summary or self.summary,
+            "datePublished": self.release_date.isoformat(),
+            "license": "https://www.nationalarchives.gov.uk/doc/open-government-licence/version/3/",
             "author": {
                 "@type": "Person",
                 "name": self.contact_details.name if self.contact_details else "Office for National Statistics",
@@ -445,8 +447,6 @@ class StatisticalArticlePage(BundledPageMixin, RoutablePageMixin, BasePage):  # 
                 "name": "Office for National Statistics",  # TODO make this a setting or constant?
                 "url": settings.ONS_WEBSITE_BASE_URL,
             },
-            "license": "https://www.nationalarchives.gov.uk/doc/open-government-licence/version/3/",
-            "datePublished": self.release_date.isoformat(),
             "mainEntityOfPage": {
                 "@type": "WebPage",
                 "@id": self.get_full_url(),  # TODO pass request to this one wagtailschemaorg supports it
@@ -458,16 +458,16 @@ class StatisticalArticlePage(BundledPageMixin, RoutablePageMixin, BasePage):  # 
         """The article page canonical URL.
         If the article is the latest in the series, this will be the evergreen series URL.
         """
-        base_url = settings.WAGTAILADMIN_BASE_URL
         canonical_page = self
         if aliased_page := self.alias_of:
             # The canonical url should point to the original page if this page is an alias
             canonical_page = aliased_page
-        if getattr(request, "is_for_subpage", False) and (getattr(request, "routable_resolver_match", "")):
+        if getattr(request, "is_for_subpage", False) and getattr(request, "routable_resolver_match", None):
             # Include the subpage route if the request is for a subpage
-            return cast(str, canonical_page.get_full_url(request=request) + request.routable_resolver_match.route)
+            resolver_match = request.routable_resolver_match  # type: ignore[attr-defined]
+            return cast(str, canonical_page.get_full_url(request=request) + resolver_match.route)
         if canonical_page.is_latest:
-            # If the page is the latest in the series then return the parent series URL,
+            # If the page is the latest in the series, then return the parent series URL,
             # which is evergreen for the latest article
-            return cast(str, base_url + canonical_page.get_parent().get_url(request=request))
+            return cast(str, canonical_page.get_parent().get_full_url(request=request))
         return super().get_canonical_full_url(request=request)

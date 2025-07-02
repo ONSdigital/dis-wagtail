@@ -1,5 +1,8 @@
+import json
 from http import HTTPStatus
 
+from bs4 import BeautifulSoup
+from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.test import override_settings
 from django.urls import reverse
@@ -665,6 +668,36 @@ class StatisticalArticlePageTests(WagtailPageTestCase):  # pylint: disable=too-m
         v1_response = self.client.get(self.page.url + "previous/v1/")
 
         self.assertContains(v1_response, '<meta name="robots" content="noindex" />')
+
+    def test_schema_org_properties(self):
+        """Test that the page has the correct schema.org markup."""
+        response = self.client.get(self.page.url)
+        self.assertEqual(response.status_code, HTTPStatus.OK)
+
+        self.assertContains(response, '<script type="application/ld+json">')
+
+        soup = BeautifulSoup(response.content, "html.parser")
+        jsonld_scripts = soup.find_all("script", {"type": "application/ld+json"})
+        self.assertEqual(len(jsonld_scripts), 1)
+
+        actual_jsonld = json.loads(jsonld_scripts[0].string)
+        self.assertEqual(actual_jsonld["@context"], "http://schema.org")
+        self.assertEqual(actual_jsonld["@type"], "Article")
+        self.assertEqual(actual_jsonld["name"], self.page.title)
+        self.assertEqual(actual_jsonld["url"], self.page.get_full_url(self.dummy_request))
+        self.assertEqual(actual_jsonld["@id"], self.page.get_full_url(self.dummy_request))
+        self.assertEqual(actual_jsonld["description"], self.page.summary)
+        self.assertEqual(actual_jsonld["datePublished"], self.page.release_date.isoformat())
+        self.assertIn("breadcrumb", actual_jsonld)
+        self.assertEqual(actual_jsonld["author"]["@type"], "Person")
+        self.assertEqual(actual_jsonld["author"]["name"], self.page.contact_details.name)
+
+        self.assertEqual(actual_jsonld["publisher"]["@type"], "Organization")
+        self.assertEqual(actual_jsonld["publisher"]["name"], "Office for National Statistics")
+        self.assertEqual(actual_jsonld["publisher"]["url"], settings.ONS_WEBSITE_BASE_URL)
+
+        self.assertEqual(actual_jsonld["mainEntityOfPage"]["@type"], "WebPage")
+        self.assertEqual(actual_jsonld["mainEntityOfPage"]["@id"], self.page.get_full_url(self.dummy_request))
 
 
 class DatePlaceholderTests(WagtailPageTestCase):

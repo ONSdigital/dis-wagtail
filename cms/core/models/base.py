@@ -150,11 +150,25 @@ class BasePage(PageLDMixin, ListingFieldsMixin, SocialFieldsMixin, Page):  # typ
             if ancestor_page.is_root():
                 continue
             if ancestor_page.depth <= homepage_depth:
-                breadcrumbs.append({"url": "/", "text": _("Home")})
+                breadcrumbs.append(
+                    {"url": "/", "text": _("Home"), "full_url": self.get_url_parts(request=request)[1] + "/"}
+                )
             elif not getattr(ancestor_page, "exclude_from_breadcrumbs", False):
-                breadcrumbs.append({"url": ancestor_page.get_url(request=request), "text": ancestor_page.title})
+                breadcrumbs.append(
+                    {
+                        "url": ancestor_page.get_url(request=request),
+                        "text": ancestor_page.title,
+                        "full_url": ancestor_page.get_full_url(request=request),
+                    }
+                )
         if request and getattr(request, "is_for_subpage", False):
-            breadcrumbs.append({"url": self.get_url(request=request), "text": self.title})
+            breadcrumbs.append(
+                {
+                    "url": self.get_url(request=request),
+                    "text": self.title,
+                    "full_url": self.get_full_url(request=request),
+                }
+            )
         return breadcrumbs
 
     @cached_property
@@ -168,7 +182,7 @@ class BasePage(PageLDMixin, ListingFieldsMixin, SocialFieldsMixin, Page):  # typ
                     "@type": "ListItem",
                     "position": i,
                     "name": str(breadcrumb["text"]),
-                    "item": str(breadcrumb["url"]),
+                    "item": str(breadcrumb["full_url"]),
                 }
             )
 
@@ -193,9 +207,10 @@ class BasePage(PageLDMixin, ListingFieldsMixin, SocialFieldsMixin, Page):  # typ
         if aliased_page := self.alias_of:
             # The canonical url should point to the original page if this page is an alias
             canonical_page = aliased_page
-        if getattr(request, "is_for_subpage", False) and (getattr(request, "routable_resolver_match", "")):
+        if getattr(request, "is_for_subpage", False) and getattr(request, "routable_resolver_match", None):
             # Include the subpage route if the request is for a subpage
-            return cast(str, canonical_page.get_full_url(request=request) + request.routable_resolver_match.route)
+            resolver_match = request.routable_resolver_match  # type: ignore[attr-defined]
+            return cast(str, canonical_page.get_full_url(request=request) + resolver_match.route)
         return cast(str, canonical_page.get_full_url(request=request))
 
 

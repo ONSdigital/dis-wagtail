@@ -57,7 +57,7 @@ class PageSchemaOrgTests(WagtailPageTestCase):
         cls.index_page = IndexPageFactory()
         cls.page = InformationPageFactory(parent=cls.index_page)
 
-    def test_page_schema_org_home_page(self):
+    def test_schema_org_home_page(self):
         """Test that the page has the correct schema.org markup."""
         response = self.client.get("/")
         self.assertEqual(response.status_code, HTTPStatus.OK)
@@ -77,7 +77,7 @@ class PageSchemaOrgTests(WagtailPageTestCase):
         self.assertNotIn("breadcrumb", actual_jsonld, "The home should not have breadcrumbs")
 
     def test_page_schema_org_with_breadcrumbs(self):
-        """Test that the page has the correct schema.org markup."""
+        """Test that the page has the correct schema.org markup including breadcrumbs."""
         response = self.client.get(self.page.url)
         self.assertEqual(response.status_code, HTTPStatus.OK)
 
@@ -91,8 +91,8 @@ class PageSchemaOrgTests(WagtailPageTestCase):
         self.assertEqual(actual_jsonld["@context"], "http://schema.org")
         self.assertEqual(actual_jsonld["@type"], "WebPage")
         self.assertEqual(actual_jsonld["name"], self.page.title)
-        self.assertEqual(actual_jsonld["url"], self.page.get_full_url())
-        self.assertEqual(actual_jsonld["@id"], self.page.get_full_url())
+        self.assertEqual(actual_jsonld["url"], self.page.get_full_url(request=self.dummy_request))
+        self.assertEqual(actual_jsonld["@id"], self.page.get_full_url(request=self.dummy_request))
         self.assertEqual(actual_jsonld["description"], self.page.search_description)
 
         actual_jsonld_breadcrumbs = actual_jsonld.get("breadcrumb")
@@ -100,11 +100,11 @@ class PageSchemaOrgTests(WagtailPageTestCase):
         self.assertEqual(actual_jsonld_breadcrumbs["@type"], "BreadcrumbList")
         breadcrumbs = actual_jsonld_breadcrumbs["itemListElement"]
         self.assertEqual(len(breadcrumbs), 2)
-        self.assertEqual(breadcrumbs[0]["item"], "/")
+        self.assertEqual(breadcrumbs[0]["item"], "http://localhost/")
         self.assertEqual(breadcrumbs[0]["name"], "Home")
         self.assertEqual(breadcrumbs[0]["@type"], "ListItem")
         self.assertEqual(breadcrumbs[0]["position"], 1)
-        self.assertEqual(breadcrumbs[1]["item"], self.index_page.url)
+        self.assertEqual(breadcrumbs[1]["item"], self.index_page.get_full_url(request=self.dummy_request))
         self.assertEqual(breadcrumbs[1]["name"], self.index_page.title)
         self.assertEqual(breadcrumbs[1]["@type"], "ListItem")
         self.assertEqual(breadcrumbs[1]["position"], 2)
