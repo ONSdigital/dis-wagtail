@@ -150,9 +150,7 @@ class BasePage(PageLDMixin, ListingFieldsMixin, SocialFieldsMixin, Page):  # typ
             if ancestor_page.is_root():
                 continue
             if ancestor_page.depth <= homepage_depth:
-                breadcrumbs.append(
-                    {"url": "/", "text": _("Home"), "full_url": self.get_url_parts(request=request)[1] + "/"}
-                )
+                breadcrumbs.append({"url": "/", "text": _("Home"), "full_url": self.get_site().root_url})
             elif not getattr(ancestor_page, "exclude_from_breadcrumbs", False):
                 breadcrumbs.append(
                     {

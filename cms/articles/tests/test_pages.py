@@ -659,20 +659,24 @@ class StatisticalArticlePageTests(WagtailPageTestCase):  # pylint: disable=too-m
 
     def test_latest_page_canonical_url(self):
         """Test that articles have the correct canonical series evergreen URL."""
-        response = self.client.get(self.page.url)
+        response = self.client.get(self.page.get_url(request=self.dummy_request))
         self.assertEqual(response.status_code, HTTPStatus.OK)
-        self.assertContains(response, f'<link rel="canonical" href="http://testserver{self.series.url}" />')
+        self.assertContains(
+            response, f'<link rel="canonical" href="{self.series.get_full_url(request=self.dummy_request)}" />'
+        )
 
     def test_welsh_page_alias_canonical_url(self):
         """Test that Welsh articles have the correct english canonical URL when they have not been explicitly
         translated.
         """
-        response = self.client.get(f"/cy{self.page.url}")
+        response = self.client.get(f"/cy{self.page.get_url(request=self.dummy_request)}/")
         self.assertEqual(response.status_code, HTTPStatus.OK)
-        self.assertContains(response, f'<link rel="canonical" href="http://testserver{self.series.url}" />')
+        self.assertContains(
+            response, f'<link rel="canonical" href="{self.series.get_full_url(request=self.dummy_request)}" />'
+        )
 
     def test_corrected_article_versions_are_marked_no_index(self):
-        response = self.client.get(self.page.url)
+        response = self.client.get(self.page.get_url(request=self.dummy_request))
         self.assertNotContains(response, "Corrections")
         self.assertNotContains(response, "Notices")
         self.assertNotContains(response, "View superseded version")
@@ -701,13 +705,13 @@ class StatisticalArticlePageTests(WagtailPageTestCase):  # pylint: disable=too-m
 
         self.page.save_revision().publish()
 
-        v1_response = self.client.get(self.page.url + "previous/v1/")
+        v1_response = self.client.get(self.page.get_url(request=self.dummy_request) + "previous/v1/")
 
         self.assertContains(v1_response, '<meta name="robots" content="noindex" />')
 
-    def test_schema_org_properties(self):
+    def test_schema_org_data(self):
         """Test that the page has the correct schema.org markup."""
-        response = self.client.get(self.page.url)
+        response = self.client.get(self.page.get_url(request=self.dummy_request))
         self.assertEqual(response.status_code, HTTPStatus.OK)
 
         self.assertContains(response, '<script type="application/ld+json">')
