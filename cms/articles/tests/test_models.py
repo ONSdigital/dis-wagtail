@@ -401,6 +401,28 @@ class StatisticalArticlePageRenderTestCase(WagtailTestUtils, TestCase):
         self.assertNotContains(response, self.page.get_admin_display_title())
         self.assertContains(response, "Breaking News!")
 
+    def test_full_display_title(self):
+        self.assertEqual(self.basic_page.display_title, "PSF: November 2024")
+
+        self.basic_page.title = "Lorem Ipsum"
+        self.basic_page.save_revision()
+
+        # The page object shows the newer title
+        self.assertEqual(self.basic_page.display_title, "PSF: Lorem Ipsum")
+
+        # However, the live page will show the old title until it is published
+        response = self.client.get(self.basic_page_url)
+
+        self.assertNotContains(response, "PSF: Lorem Ipsum")
+        self.assertContains(response, "PSF: November 2024")
+
+        self.basic_page.save_revision().publish()
+
+        response = self.client.get(self.basic_page_url)
+
+        self.assertContains(response, "PSF: Lorem Ipsum")
+        self.assertNotContains(response, "PSF: November 2024")
+
     def test_next_release_date(self):
         """Checks that when no next release date, the template shows 'To be announced'."""
         response = self.client.get(self.basic_page_url)
@@ -625,35 +647,42 @@ class PreviousReleasesWithPaginationPagesTestCase(TestCase):
                 "expected_contains": [
                     f'class="ons-pagination__position">Page 1 of {self.total_pages}',
                     'class="ons-pagination__item ons-pagination__item--current"',
-                    f'aria-label="Go to the last page (Page {self.total_pages})"',
+                    f'aria-label="Go to the last page ({self.total_pages})"',
                     'class="ons-pagination__item ons-pagination__item--next"',
+                    'aria-label="Go to the next page (2)"',
                 ],
                 "expected_not_contains": [
-                    'aria-label="Go to the first page (Page 1)"',
+                    'aria-label="Go to the first page"',
                     'class="ons-pagination__item ons-pagination__item--previous"',
+                    'aria-label="Go to the previous page"',
                 ],
             },
             3: {  # Middle page
                 "expected_contains": [
                     f'class="ons-pagination__position">Page 3 of {self.total_pages}',
-                    'aria-label="Go to the first page (Page 1)"',
+                    'aria-label="Go to the first page"',
                     'class="ons-pagination__item ons-pagination__item--previous"',
+                    'aria-label="Go to page 2"',
                     'class="ons-pagination__item ons-pagination__item--current"',
-                    f'aria-label="Go to the last page (Page {self.total_pages})"',
+                    f'aria-label="Go to the last page ({self.total_pages})"',
                     'class="ons-pagination__item ons-pagination__item--next"',
+                    'aria-label="Go to page 4"',
                 ],
                 "expected_not_contains": [],
             },
             5: {  # Last page
                 "expected_contains": [
                     f'class="ons-pagination__position">Page 5 of {self.total_pages}',
-                    'aria-label="Go to the first page (Page 1)"',
+                    'aria-label="Go to the first page"',
                     'class="ons-pagination__item ons-pagination__item--previous"',
+                    'aria-label="Go to the previous page (4)"',
                     'class="ons-pagination__item ons-pagination__item--current"',
+                    'aria-current="true"',
                 ],
                 "expected_not_contains": [
-                    f'aria-label="Go to the last page (Page {self.total_pages})"',
+                    f'aria-label="Go to the last page ({self.total_pages})"',
                     'class="ons-pagination__item ons-pagination__item--next"',
+                    'aria-label="Go to the next page"',
                 ],
             },
         }

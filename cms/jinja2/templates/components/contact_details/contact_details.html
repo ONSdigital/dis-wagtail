@@ -1,21 +1,64 @@
 {% from "components/text-indent/_macro.njk" import onsTextIndent %}
+{% from "components/description-list/_macro.njk" import onsDescriptionList %}
 
 {% if contact_details %}
     <section id="contact-details" class="spacing">
         <h2 class="ons-u-fs-l">{{ _("Contact details") }}</h2>
 
         {% call onsTextIndent() %}
-            <p class="contact-details__line">
-                <strong>Name</strong>: {{ contact_details.name }}
-            </p>
-            <p class="contact-details__line">
-                <strong>Email</strong>: <a href="mailto:{{ contact_details.email }}">{{ contact_details.email }}</a>
-            </p>
+            {% set contact_description = _("Contact details for a person, team or organisation") %}
+            {% set contact_name_label = _("Name") %}
+            {% set contact_email_label = _("Email") %}
+            {% set contact_email -%}
+                <a href="mailto:{{ contact_details.email }}">{{ contact_details.email }}</a>
+            {%- endset %}
+            {# fmt:off #}
             {% if contact_details.phone %}
-                <p class="contact-details__line">
-                    <strong>Telephone</strong>: <a href="tel:{{ contact_details.phone|urlencode() }}">{{ contact_details.phone }}</a>
-                </p>
+                {% set contact_phone_label = _("Telephone") %}
+                {% set contact_phone -%}
+                    <a href="tel:{{ contact_details.phone|urlencode() }}">{{ contact_details.phone }}</a>
+                {%- endset %}
+                {%- set contact_phone_html = {
+                        "term": contact_phone_label,
+                        "descriptions": [
+                            {
+                                "description": contact_phone
+                            }
+                        ]
+                    }
+                -%}
+            {% else %}
+                {% set contact_phone_html = None %}
             {% endif %}
+        
+            {{
+                onsDescriptionList({
+                    "classes": "ons-u-mb-no",
+                    "descriptionListLabel": contact_description,
+                    "termCol": "2",
+                    "descriptionCol": "10",
+                    "itemsList": [
+                        {
+                            "term": contact_name_label,
+                            "descriptions": [
+                                {
+                                    "description": contact_details.name
+                                }
+                            ]
+                        },
+                        {
+                            "term": contact_email_label,
+                            "descriptions": [
+                                {
+                                    "description": contact_email
+                                }
+                            ]
+                        },
+                        contact_phone_html
+                    ]
+                })
+            }}
+            {# fmt:on #}
         {% endcall %}
     </section>
 {% endif %}
