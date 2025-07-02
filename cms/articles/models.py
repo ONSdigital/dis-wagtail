@@ -171,7 +171,12 @@ class StatisticalArticlePage(BundledPageMixin, RoutablePageMixin, BasePage):  # 
         *BundledPageMixin.panels,
         MultiFieldPanel(
             [
-                TitleFieldPanel("title", help_text="Also known as the release edition. e.g. 'November 2024'."),
+                TitleFieldPanel(
+                    "title",
+                    heading="Release Edition",
+                    placeholder="Release Edition *",
+                    help_text="e.g. 'November 2024'.",
+                ),
                 FieldPanel(
                     "news_headline",
                     help_text=(
@@ -182,7 +187,7 @@ class StatisticalArticlePage(BundledPageMixin, RoutablePageMixin, BasePage):  # 
                     icon="news",
                 ),
             ],
-            heading="Title",
+            heading="Edition",
         ),
         FieldPanel("summary", required_on_save=True),
         MultiFieldPanel(
