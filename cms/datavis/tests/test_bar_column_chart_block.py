@@ -141,19 +141,27 @@ class BarColumnChartBlockTestCase(BaseChartBlockTestCase):
             msg="Max number of series with data labels is hardcoded. Update this test if the value changes.",
         )
 
+        self.assertEqual(
+            20,
+            BarColumnChartBlock.MAX_DATA_POINTS_WITH_DATA_LABELS,
+            msg="Max number of points with data labels is hardcoded. Update this test if the value changes.",
+        )
+
         class Case(NamedTuple):
             chart_type: BarColumnChartTypeChoices
             show_data_labels: bool
             series_count: int
+            data_points_count: int
             stacked: bool
             expected_data_labels: bool
 
         cases = (
-            # Data labels are supported on non-stacked bar charts with 1 or 2 series
+            # Data labels are supported on non-stacked bar charts with 1 or 2 series, and a maximum of 20 data points.
             Case(
                 BarColumnChartTypeChoices.BAR,
                 True,
                 1,
+                20,
                 False,
                 True,
             ),
@@ -161,6 +169,7 @@ class BarColumnChartBlockTestCase(BaseChartBlockTestCase):
                 BarColumnChartTypeChoices.BAR,
                 True,
                 2,
+                20,
                 False,
                 True,
             ),
@@ -169,6 +178,7 @@ class BarColumnChartBlockTestCase(BaseChartBlockTestCase):
                 BarColumnChartTypeChoices.BAR,
                 True,
                 1,
+                20,
                 True,
                 False,
             ),
@@ -176,6 +186,7 @@ class BarColumnChartBlockTestCase(BaseChartBlockTestCase):
                 BarColumnChartTypeChoices.BAR,
                 True,
                 2,
+                20,
                 True,
                 False,
             ),
@@ -184,15 +195,26 @@ class BarColumnChartBlockTestCase(BaseChartBlockTestCase):
                 BarColumnChartTypeChoices.BAR,
                 True,
                 3,
+                20,
+                False,
+                False,
+            ),
+            # Don't show data labels if there are more than 20 data points
+            Case(
+                BarColumnChartTypeChoices.BAR,
+                True,
+                1,
+                21,
                 False,
                 False,
             ),
             # Don't show data labels if the option is not checked.
-            # The five cases below otherwise repeat the previous five.
+            # The six cases below otherwise repeat the previous six.
             Case(
                 BarColumnChartTypeChoices.BAR,
                 False,
                 1,
+                20,
                 False,
                 False,
             ),
@@ -200,6 +222,7 @@ class BarColumnChartBlockTestCase(BaseChartBlockTestCase):
                 BarColumnChartTypeChoices.BAR,
                 False,
                 2,
+                20,
                 False,
                 False,
             ),
@@ -207,6 +230,7 @@ class BarColumnChartBlockTestCase(BaseChartBlockTestCase):
                 BarColumnChartTypeChoices.BAR,
                 False,
                 1,
+                20,
                 True,
                 False,
             ),
@@ -214,6 +238,7 @@ class BarColumnChartBlockTestCase(BaseChartBlockTestCase):
                 BarColumnChartTypeChoices.BAR,
                 False,
                 2,
+                20,
                 True,
                 False,
             ),
@@ -221,15 +246,25 @@ class BarColumnChartBlockTestCase(BaseChartBlockTestCase):
                 BarColumnChartTypeChoices.BAR,
                 False,
                 3,
+                20,
+                False,
+                False,
+            ),
+            Case(
+                BarColumnChartTypeChoices.BAR,
+                False,
+                1,
+                21,
                 False,
                 False,
             ),
             # Don't show data labels on column charts.
-            # The five cases below repeat the previous five, but for column charts.
+            # The six cases below repeat the previous six, but for column charts.
             Case(
                 BarColumnChartTypeChoices.COLUMN,
                 True,
                 1,
+                20,
                 False,
                 False,
             ),
@@ -237,6 +272,7 @@ class BarColumnChartBlockTestCase(BaseChartBlockTestCase):
                 BarColumnChartTypeChoices.COLUMN,
                 True,
                 2,
+                20,
                 False,
                 False,
             ),
@@ -244,6 +280,7 @@ class BarColumnChartBlockTestCase(BaseChartBlockTestCase):
                 BarColumnChartTypeChoices.COLUMN,
                 True,
                 1,
+                20,
                 True,
                 False,
             ),
@@ -251,6 +288,7 @@ class BarColumnChartBlockTestCase(BaseChartBlockTestCase):
                 BarColumnChartTypeChoices.COLUMN,
                 True,
                 2,
+                20,
                 True,
                 False,
             ),
@@ -258,6 +296,15 @@ class BarColumnChartBlockTestCase(BaseChartBlockTestCase):
                 BarColumnChartTypeChoices.COLUMN,
                 True,
                 3,
+                20,
+                False,
+                False,
+            ),
+            Case(
+                BarColumnChartTypeChoices.COLUMN,
+                True,
+                1,
+                21,
                 False,
                 False,
             ),
@@ -273,9 +320,10 @@ class BarColumnChartBlockTestCase(BaseChartBlockTestCase):
                 self.raw_data["table"] = TableDataFactory(
                     table_data=[
                         ["", *[f"Series {i}" for i in range(1, testcase.series_count + 1)]],
-                        ["2005", *["100"] * testcase.series_count],
-                        ["2006", *["120"] * testcase.series_count],
-                        ["2007", *["140"] * testcase.series_count],
+                        *[
+                            [str(2005 + i), *[str(100 + (i * 20))] * testcase.series_count]
+                            for i in range(testcase.data_points_count)
+                        ],
                     ]
                 )
 
