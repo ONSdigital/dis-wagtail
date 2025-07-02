@@ -8,8 +8,11 @@
 
 {% block meta %}
     {{ super() }}
-    {# Render all JSON LD properties from the page object #}
-    {{ ld.for_object(page) }}
+    {% if page %}
+        {# Render all JSON LD properties from the page object #}
+        {{ ld.for_object(page) }}
+    {% endif %}
+
     {% if no_index %}
         <meta name="robots" content="noindex" />
     {% endif %}

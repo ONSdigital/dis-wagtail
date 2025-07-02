@@ -1,3 +1,4 @@
+from django.conf import settings
 from django.test import TestCase
 from django.urls import reverse
 from wagtail.coreutils import get_dummy_request
@@ -5,6 +6,7 @@ from wagtail.test.utils.wagtail_tests import WagtailTestUtils
 
 from cms.articles.tests.factories import ArticleSeriesPageFactory, StatisticalArticlePageFactory
 from cms.core.models import ContactDetails
+from cms.standard_pages.tests.factories import InformationPageFactory
 
 
 class ContactDetailsTestCase(WagtailTestUtils, TestCase):
@@ -101,3 +103,20 @@ class PageBreadcrumbsTestCase(TestCase):
         self.assertIsInstance(breadcrumbs_output, list)
         self.assertEqual(len(breadcrumbs_output), 4)
         self.assertListEqual(breadcrumbs_output, expected_entries)
+
+
+class CanonicalFullUrlsTestCase(TestCase):
+    @classmethod
+    def setUpTestData(cls):
+        cls.information_page = InformationPageFactory()
+
+    def setUp(self):
+        self.mock_request = get_dummy_request()
+
+    def test_canonical_full_url(self):
+        """Test that get_canonical_url returns the correct full URL for a page, including base URL."""
+        canonical_url = self.information_page.get_canonical_full_url(self.mock_request)
+
+        self.assertEqual(
+            canonical_url, settings.WAGTAILADMIN_BASE_URL + self.information_page.get_url(self.mock_request)
+        )

@@ -60,6 +60,9 @@ class BasePage(PageLDMixin, ListingFieldsMixin, SocialFieldsMixin, Page):  # typ
     # used a page type label in the front-end
     label = "Page"
 
+    # The default schema.org type for pages
+    schema_org_type = "WebPage"
+
     class Meta:
         abstract = True
 
@@ -156,10 +159,10 @@ class BasePage(PageLDMixin, ListingFieldsMixin, SocialFieldsMixin, Page):  # typ
 
     @cached_property
     def breadcrumbs_as_jsonld(self) -> dict[str, object]:
-        """Returns the list as a dictionary in the format required for JSON LD entity."""
-        breadcrumbs_jsonld: dict[str, object] = {"@type": "BreadcrumbList"}
+        """Returns the breadcrumbs as a dictionary in the format required for a JSON LD entity."""
+        breadcrumbs_jsonld: dict[str, object] = {}
         item_list = []
-        for i, breadcrumb in enumerate(self.get_breadcrumbs()):
+        for i, breadcrumb in enumerate(self.get_breadcrumbs(), 1):
             item_list.append(
                 {
                     "@type": "ListItem",
@@ -168,25 +171,32 @@ class BasePage(PageLDMixin, ListingFieldsMixin, SocialFieldsMixin, Page):  # typ
                     "item": str(breadcrumb["url"]),
                 }
             )
-            breadcrumbs_jsonld["itemListElement"] = item_list
+
+        if item_list:
+            breadcrumbs_jsonld["breadcrumb"] = {
+                "@type": "BreadcrumbList",
+                "itemListElement": item_list,
+            }
         return breadcrumbs_jsonld
 
     def ld_entity(self) -> dict[str, object]:
         """Add page breadcrumbs to the JSON LD properties."""
-        return cast(dict[str, Any], extend(super().ld_entity(), self.breadcrumbs_as_jsonld))
+        page_ld_entity: dict[str, object] = {"@type": self.schema_org_type}
+        page_ld_entity.update(self.breadcrumbs_as_jsonld)
+        if not page_ld_entity.get("description", ""):
+            page_ld_entity["description"] = self.search_description or self.listing_summary
+        return cast(dict[str, Any], extend(super().ld_entity(), page_ld_entity))
 
-    def get_canonical_url(self, request: "HttpRequest") -> str:
+    def get_canonical_full_url(self, request: "HttpRequest") -> str:
         """Get the default canonical URL for the page."""
         canonical_page = self
         if aliased_page := self.alias_of:
             # The canonical url should point to the original page if this page is an alias
             canonical_page = aliased_page
-        if getattr(request, "is_for_subpage", False) and (
-            resolver_match := getattr(request, "routable_resolver_match", "")
-        ):
+        if getattr(request, "is_for_subpage", False) and (getattr(request, "routable_resolver_match", "")):
             # Include the subpage route if the request is for a subpage
-            return cast(str, canonical_page.get_url(request=request) + resolver_match.route)
-        return cast(str, canonical_page.get_url(request=request))
+            return cast(str, canonical_page.get_full_url(request=request) + request.routable_resolver_match.route)
+        return cast(str, canonical_page.get_full_url(request=request))
 
 
 class BaseSiteSetting(WagtailBaseSiteSetting):

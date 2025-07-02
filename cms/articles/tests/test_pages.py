@@ -60,7 +60,8 @@ class ArticleSeriesPageTests(WagtailPageTestCase):
 class StatisticalArticlePageTests(WagtailPageTestCase):  # pylint: disable=too-many-public-methods
     @classmethod
     def setUpTestData(cls):
-        cls.page = StatisticalArticlePageFactory()
+        cls.series = ArticleSeriesPageFactory()
+        cls.page = StatisticalArticlePageFactory(parent=cls.series)
         # TODO: Fix the factory to generate headline_figures correctly
         cls.page.headline_figures = [
             {
@@ -616,6 +617,54 @@ class StatisticalArticlePageTests(WagtailPageTestCase):  # pylint: disable=too-m
 
         self.assertEqual(new_page.datasets, self.page.datasets)
         self.assertEqual(new_page.dataset_sorting, self.page.dataset_sorting)
+
+    def test_latest_page_canonical_url(self):
+        """Test that articles have the correct canonical series evergreen URL."""
+        response = self.client.get(self.page.url)
+        self.assertEqual(response.status_code, HTTPStatus.OK)
+        self.assertContains(response, f'<link rel="canonical" href="http://testserver{self.series.url}" />')
+
+    def test_welsh_page_alias_canonical_url(self):
+        """Test that Welsh articles have the correct english canonical URL when they have not been explicitly
+        translated.
+        """
+        response = self.client.get(f"/cy{self.page.url}")
+        self.assertEqual(response.status_code, HTTPStatus.OK)
+        self.assertContains(response, f'<link rel="canonical" href="http://testserver{self.series.url}" />')
+
+    def test_corrected_article_versions_are_marked_no_index(self):
+        response = self.client.get(self.page.url)
+        self.assertNotContains(response, "Corrections")
+        self.assertNotContains(response, "Notices")
+        self.assertNotContains(response, "View superseded version")
+        self.assertNotContains(response, '<meta name="robots" content="noindex" />')
+
+        self.page.save_revision().publish()
+
+        original_revision_id = self.page.get_latest_revision().id
+
+        self.page.summary = "Corrected summary"
+
+        first_correction = {
+            "version_id": 1,
+            "previous_version": original_revision_id,
+            "when": "2025-01-11",
+            "frozen": True,
+            "text": "First correction text",
+        }
+
+        self.page.corrections = [
+            (
+                "correction",
+                first_correction,
+            )
+        ]
+
+        self.page.save_revision().publish()
+
+        v1_response = self.client.get(self.page.url + "previous/v1/")
+
+        self.assertContains(v1_response, '<meta name="robots" content="noindex" />')
 
 
 class DatePlaceholderTests(WagtailPageTestCase):

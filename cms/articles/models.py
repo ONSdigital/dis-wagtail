@@ -110,6 +110,8 @@ class StatisticalArticlePage(BundledPageMixin, RoutablePageMixin, BasePage):  # 
 
     base_form_class = StatisticalArticlePageAdminForm
 
+    schema_org_type = "Article"
+
     parent_page_types: ClassVar[list[str]] = ["ArticleSeriesPage"]
     subpage_types: ClassVar[list[str]] = []
     search_index_content_type: ClassVar[str] = "bulletin"
@@ -431,8 +433,7 @@ class StatisticalArticlePage(BundledPageMixin, RoutablePageMixin, BasePage):  # 
     def ld_entity(self) -> dict[str, object]:
         """Add statistical article specific schema properties to JSON LD."""
         properties = {
-            "@type": "Article",
-            "url": self.get_url(),  # TODO pass request to this one wagtailschemaorg supports it
+            "url": self.get_full_url(),  # TODO pass request to this one wagtailschemaorg supports it
             "headline": self.listing_title or self.title,
             "description": self.listing_summary or self.summary,
             "author": {
@@ -448,26 +449,25 @@ class StatisticalArticlePage(BundledPageMixin, RoutablePageMixin, BasePage):  # 
             "datePublished": self.release_date.isoformat(),
             "mainEntityOfPage": {
                 "@type": "WebPage",
-                "@id": self.get_url(),  # TODO pass request to this one wagtailschemaorg supports it
+                "@id": self.get_full_url(),  # TODO pass request to this one wagtailschemaorg supports it
             },
         }
         return cast(dict[str, object], extend(super().ld_entity(), properties))
 
-    def get_canonical_url(self, request: "HttpRequest") -> str:
+    def get_canonical_full_url(self, request: "HttpRequest") -> str:
         """The article page canonical URL.
         If the article is the latest in the series, this will be the evergreen series URL.
         """
+        base_url = settings.WAGTAILADMIN_BASE_URL
         canonical_page = self
         if aliased_page := self.alias_of:
             # The canonical url should point to the original page if this page is an alias
             canonical_page = aliased_page
-        if getattr(request, "is_for_subpage", False) and (
-            resolver_match := getattr(request, "routable_resolver_match", "")
-        ):
+        if getattr(request, "is_for_subpage", False) and (getattr(request, "routable_resolver_match", "")):
             # Include the subpage route if the request is for a subpage
-            return cast(str, canonical_page.get_url(request=request) + resolver_match.route)
+            return cast(str, canonical_page.get_full_url(request=request) + request.routable_resolver_match.route)
         if canonical_page.is_latest:
             # If the page is the latest in the series then return the parent series URL,
             # which is evergreen for the latest article
-            return cast(str, canonical_page.get_parent().get_url(request=request))
-        return super().get_canonical_url(request=request)
+            return cast(str, base_url + canonical_page.get_parent().get_url(request=request))
+        return super().get_canonical_full_url(request=request)
