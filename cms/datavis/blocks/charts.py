@@ -184,7 +184,7 @@ class BarColumnChartBlock(BaseVisualisationBlock):
                     and not value.get("use_stacked_layout")
                 ) and len(series) > series_count_when_validating_line_overlay:
                     stream_block_errors[i] = ValidationError(
-                        "Non-stacked column charts with more than two series do not support line overlays.",
+                        "To show a line overlay with multiple series, use a stacked layout",
                         code=self.ERROR_NON_STACKED_COLUMN_NO_LINE,
                     )
 
