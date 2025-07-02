@@ -1,3 +1,4 @@
+from datetime import date, datetime
 from typing import TYPE_CHECKING, ClassVar, Optional, Self, cast
 
 from django.conf import settings
@@ -131,6 +132,12 @@ class BasePage(ListingFieldsMixin, SocialFieldsMixin, Page):  # type: ignore[dja
             return bool(streamvalue.stream_block.has_ons_embed(streamvalue))
 
         return False
+
+    @property
+    def publication_date(self) -> "date | datetime | None":
+        """Return the publication date of the page."""
+        # Use the release_date field if available, otherwise return last_published_at.
+        return getattr(self, "release_date", self.last_published_at)
 
 
 class BaseSiteSetting(WagtailBaseSiteSetting):

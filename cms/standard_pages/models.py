@@ -126,7 +126,7 @@ class IndexPage(BundledPageMixin, BasePage):  # type: ignore[django-manager-miss
                     "description": getattr(child_page, "listing_summary", "") or getattr(child_page, "summary", ""),
                     "metadata": get_document_metadata(
                         get_content_type_for_page(child_page),
-                        getattr(child_page, "release_date", child_page.last_published_at),
+                        child_page.specific_deferred.publication_date,
                         _("Published"),
                     ),
                 }
