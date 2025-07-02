@@ -4,7 +4,6 @@ from typing import Any
 from django.core.exceptions import ValidationError
 from django.forms.utils import ErrorList
 from django.utils.functional import cached_property
-from django.utils.translation import gettext_lazy as _
 from wagtail.blocks import (
     CharBlock,
     PageChooserBlock,
@@ -64,7 +63,7 @@ class LinkBlockStructValue(StructValue):
             }
 
         if release_date:
-            value["metadata"]["date"] = get_document_metadata_date(release_date, _("Released"))
+            value["metadata"]["date"] = get_document_metadata_date(release_date)
 
         return value
 

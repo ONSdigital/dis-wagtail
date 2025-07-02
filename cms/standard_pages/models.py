@@ -2,7 +2,6 @@ from typing import TYPE_CHECKING, Any, ClassVar
 
 from django.conf import settings
 from django.db import models
-from django.utils.translation import gettext_lazy as _
 from wagtail.admin.panels import FieldPanel, InlinePanel
 from wagtail.fields import RichTextField
 from wagtail.search import index
@@ -125,9 +124,7 @@ class IndexPage(BundledPageMixin, BasePage):  # type: ignore[django-manager-miss
                     },
                     "description": getattr(child_page, "listing_summary", "") or getattr(child_page, "summary", ""),
                     "metadata": get_document_metadata(
-                        get_content_type_for_page(child_page),
-                        child_page.specific_deferred.publication_date,
-                        _("Released"),
+                        get_content_type_for_page(child_page), child_page.specific_deferred.publication_date
                     ),
                 }
             )

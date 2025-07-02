@@ -58,15 +58,15 @@ def get_formatted_pages_list(
             "description": getattr(page, "listing_summary", "") or getattr(page, "summary", ""),
         }
         if release_date := page.release_date:
-            datum["metadata"]["date"] = get_document_metadata_date(release_date, _("Released"))
+            datum["metadata"]["date"] = get_document_metadata_date(release_date)
         data.append(datum)
     return data
 
 
-def get_document_metadata_date(value: date | datetime | str, prefix: "StrOrPromise") -> dict[str, Any]:
+def get_document_metadata_date(value: date | datetime | str, *, prefix: "StrOrPromise | None" = None) -> dict[str, Any]:
     """Returns a dictionary with formatted date information for the DS document component metadata."""
     return {
-        "prefix": prefix,
+        "prefix": prefix or _("Released"),
         "showPrefix": True,
         "iso": date_format(value, "c"),
         "short": date_format(value, "DATE_FORMAT"),
@@ -74,7 +74,10 @@ def get_document_metadata_date(value: date | datetime | str, prefix: "StrOrPromi
 
 
 def get_document_metadata(
-    content_type: "StrOrPromise | None", date_value: date | datetime | str | None, prefix: "StrOrPromise"
+    content_type: "StrOrPromise | None",
+    date_value: date | datetime | str | None,
+    *,
+    prefix: "StrOrPromise | None" = None,
 ) -> dict[str, Any]:
     """Returns a dictionary with formatted metadata information for the DS document component."""
     metadata = (
@@ -86,7 +89,7 @@ def get_document_metadata(
     )
 
     if date_value:
-        metadata["date"] = get_document_metadata_date(date_value, prefix)
+        metadata["date"] = get_document_metadata_date(date_value, prefix=prefix)
 
     return metadata
 
