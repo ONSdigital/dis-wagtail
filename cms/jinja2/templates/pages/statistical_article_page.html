@@ -135,9 +135,6 @@
     }}
     {# fmt:on #}
     {% if has_corrections or has_notices %}
-        {% set openText = _("Show detail") %}
-        {% set closeText = _("Close detail") %}
-
         {% if has_corrections and has_notices %}
             {% set corrections_and_notices_title = _("Corrections and notices") %}
         {% elif has_notices %}
@@ -150,8 +147,6 @@
         {{
             onsDetailsPanel({
                 "title": corrections_and_notices_title,
-                "openText": openText,
-                "closeText": closeText,
                 "detailsItems": corrections_and_notices
             })
         }}

@@ -446,14 +446,15 @@ class StatisticalArticlePage(BundledPageMixin, RoutablePageMixin, BasePage):  # 
         self, request: "HttpRequest"
     ) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
         """Returns a list of corrections and notices for the page."""
+        base_url = self.get_url(request)
         corrections = (
             [
                 serialize_correction_or_notice(
                     correction,
-                    superseded_url=self.get_url(request)
+                    superseded_url=base_url
                     + self.reverse_subpage("previous_version", args=[correction.value["version_id"]]),
                 )
-                for correction in self.corrections
+                for correction in self.corrections  # pylint: disable=not-an-iterable
             ]
             if self.corrections
             else []

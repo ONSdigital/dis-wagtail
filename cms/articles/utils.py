@@ -18,11 +18,12 @@ def serialize_correction_or_notice(entry: "StreamChild", *, superseded_url: str 
     Returns:
         dict: A dictionary containing the serialized data.
     """
+    is_correction = bool(superseded_url)
     content = {
-        "text": _("Correction") if superseded_url else _("Notice"),
+        "text": _("Correction") if is_correction else _("Notice"),
         "date": {
             "iso": date_format(entry.value["when"], "c"),
-            "short": date_format(entry.value["when"], "DATE_FORMAT"),
+            "short": date_format(entry.value["when"], "DATETIME_FORMAT" if is_correction else "DATE_FORMAT"),
         },
         "description": entry.value["text"],
     }
