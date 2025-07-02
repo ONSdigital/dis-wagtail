@@ -1,9 +1,12 @@
+from datetime import datetime
+
 from django.conf import settings
 from django.test import TestCase
 from wagtail.blocks import StreamBlockValidationError, StructBlockValidationError
 from wagtail.rich_text import RichText
 from wagtail.test.utils.wagtail_tests import WagtailTestUtils
 
+from cms.articles.tests.factories import StatisticalArticlePageFactory
 from cms.core.blocks import (
     BasicTableBlock,
     DocumentBlock,
