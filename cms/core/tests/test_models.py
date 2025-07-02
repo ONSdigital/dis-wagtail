@@ -46,11 +46,11 @@ class PageBreadcrumbsTestCase(TestCase):
         cls.statistical_article = StatisticalArticlePageFactory(parent=cls.series)
 
     def setUp(self):
-        self.mock_request = get_dummy_request()
+        self.dummy_request = get_dummy_request()
 
     def test_breadcrumbs_output_format(self):
         """Test that get_breadcrumbs correctly outputs the parent pages in the correct format."""
-        breadcrumbs_output = self.statistical_article.get_breadcrumbs(request=self.mock_request)
+        breadcrumbs_output = self.statistical_article.get_breadcrumbs(request=self.dummy_request)
 
         series_parent = self.series.get_parent()
 
@@ -58,14 +58,17 @@ class PageBreadcrumbsTestCase(TestCase):
             {
                 "url": "/",
                 "text": "Home",
+                "full_url": series_parent.get_site().root_url,
             },
             {
-                "url": series_parent.get_parent().get_url(),
+                "url": series_parent.get_parent().get_url(request=self.dummy_request),
                 "text": series_parent.get_parent().title,
+                "full_url": series_parent.get_parent.get_full_url(request=self.dummy_request),
             },
             {
-                "url": series_parent.get_url(),
+                "url": series_parent.get_url(request=self.dummy_request),
                 "text": series_parent.title,
+                "full_url": series_parent.get_full_url(request=self.dummy_request),
             },
         ]
 
@@ -75,8 +78,8 @@ class PageBreadcrumbsTestCase(TestCase):
 
     def test_breadcrumbs_include_self(self):
         """Test that get_breadcrumbs includes the page when request includes `breadcrumbs_include_self` attribute."""
-        self.mock_request.breadcrumbs_include_self = True
-        breadcrumbs_output = self.statistical_article.get_breadcrumbs(request=self.mock_request)
+        self.dummy_request.breadcrumbs_include_self = True
+        breadcrumbs_output = self.statistical_article.get_breadcrumbs(request=self.dummy_request)
 
         series_parent = self.series.get_parent()
 
@@ -84,18 +87,22 @@ class PageBreadcrumbsTestCase(TestCase):
             {
                 "url": "/",
                 "text": "Home",
+                "full_url": series_parent.get_site().root_url,
             },
             {
-                "url": series_parent.get_parent().get_url(),
+                "url": series_parent.get_parent().get_url(request=self.dummy_request),
                 "text": series_parent.get_parent().title,
+                "full_url": series_parent.get_parent.get_full_url(request=self.dummy_request),
             },
             {
-                "url": series_parent.get_url(),
+                "url": series_parent.get_url(request=self.dummy_request),
                 "text": series_parent.title,
+                "full_url": series_parent.get_full_url(request=self.dummy_request),
             },
             {
-                "url": self.statistical_article.get_url(),
+                "url": self.statistical_article.get_url(request=self.dummy_request),
                 "text": self.statistical_article.title,
+                "full_url": self.statistical_article.get_full_url(request=self.dummy_request),
             },
         ]
 
