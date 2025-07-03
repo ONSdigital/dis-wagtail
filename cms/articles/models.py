@@ -376,6 +376,79 @@ class StatisticalArticlePage(BundledPageMixin, RoutablePageMixin, BasePage):  # 
         )
         return bool(self.pk == latest_id)  # to placate mypy
 
+    @property
+    def topic_ids(self) -> list[str]:
+        """Returns a list of topic IDs associated with the parent article series page."""
+        return list(self.get_parent().specific_deferred.topics.values_list("topic_id", flat=True))
+
+    @property
+    def figures_used_by_ancestor(self) -> list[str]:
+        """Returns a list of figure IDs used by the ancestor topic page."""
+        series = self.get_parent()
+        if not series:
+            return []
+
+        # imported inline to avoid circular imports
+        from cms.topics.models import TopicPage  # pylint: disable=import-outside-toplevel
+
+        topic: TopicPage = TopicPage.objects.ancestor_of(self).first().specific_deferred
+        return [
+            figure.value["figure_id"] for figure in topic.headline_figures if figure.value["series"].id == series.id
+        ]
+
+    @cached_property
+    def related_data_display_title(self) -> str:
+        return f"{_('All data related to')} {self.title}"
+
+    @cached_property
+    def dataset_document_list(self) -> list[dict[str, Any]]:
+        dataset_documents = format_datasets_as_document_list(self.datasets)
+        if self.dataset_sorting == SortingChoices.ALPHABETIC:
+            dataset_documents = sorted(dataset_documents, key=lambda d: d["title"]["text"])
+        return dataset_documents
+
+    def get_serialized_corrections_and_notices(
+        self, request: "HttpRequest"
+    ) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+        """Returns a list of corrections and notices for the page."""
+        base_url = self.get_url(request)
+        corrections = (
+            [
+                serialize_correction_or_notice(
+                    correction,
+                    superseded_url=base_url
+                    + self.reverse_subpage("previous_version", args=[correction.value["version_id"]]),
+                )
+                for correction in self.corrections  # pylint: disable=not-an-iterable
+            ]
+            if self.corrections
+            else []
+        )
+        notices = (
+            [serialize_correction_or_notice(notice) for notice in self.notices] if self.notices else []  # pylint: disable=not-an-iterable
+        )
+        return corrections, notices
+
+    def get_context(self, request: "HttpRequest", *args: Any, **kwargs: Any) -> dict:
+        """Adds additional context to the page."""
+        context: dict = super().get_context(request)
+
+        corrections, notices = self.get_serialized_corrections_and_notices(request)
+        context["corrections_and_notices"] = corrections + notices
+        context["has_corrections"] = bool(corrections)
+        context["has_notices"] = bool(notices)
+
+        return context
+
+    @property
+    def preview_modes(self) -> list[tuple[str, str]]:
+        return [("default", "Article Page"), ("related_data", "Related Data Page")]
+
+    def serve_preview(self, request: "HttpRequest", mode_name: str) -> "TemplateResponse":
+        if mode_name == "related_data":
+            return cast("TemplateResponse", self.related_data(request))
+        return cast("TemplateResponse", super().serve_preview(request, mode_name))
+
     @path("versions/v<int:version>/")
     def previous_version(self, request: "HttpRequest", version: int) -> "TemplateResponse":
         if version <= 0 or not self.corrections:
@@ -410,37 +483,6 @@ class StatisticalArticlePage(BundledPageMixin, RoutablePageMixin, BasePage):  # 
 
         return response
 
-    @property
-    def topic_ids(self) -> list[str]:
-        """Returns a list of topic IDs associated with the parent article series page."""
-        return list(self.get_parent().specific_deferred.topics.values_list("topic_id", flat=True))
-
-    @property
-    def figures_used_by_ancestor(self) -> list[str]:
-        """Returns a list of figure IDs used by the ancestor topic page."""
-        series = self.get_parent()
-        if not series:
-            return []
-
-        # imported inline to avoid circular imports
-        from cms.topics.models import TopicPage  # pylint: disable=import-outside-toplevel
-
-        topic: TopicPage = TopicPage.objects.ancestor_of(self).first().specific_deferred
-        return [
-            figure.value["figure_id"] for figure in topic.headline_figures if figure.value["series"].id == series.id
-        ]
-
-    @cached_property
-    def related_data_display_title(self) -> str:
-        return f"{_('All data related to')} {self.title}"
-
-    @cached_property
-    def dataset_document_list(self) -> list[dict[str, Any]]:
-        dataset_documents = format_datasets_as_document_list(self.datasets)
-        if self.dataset_sorting == SortingChoices.ALPHABETIC:
-            dataset_documents = sorted(dataset_documents, key=lambda d: d["title"]["text"])
-        return dataset_documents
-
     @path("related-data/")
     def related_data(self, request: "HttpRequest") -> "TemplateResponse":
         if not self.dataset_document_list:
@@ -462,48 +504,6 @@ class StatisticalArticlePage(BundledPageMixin, RoutablePageMixin, BasePage):  # 
             template="templates/pages/statistical_article_page--related_data.html",
         )
         return response
-
-    @property
-    def preview_modes(self) -> list[tuple[str, str]]:
-        return [("default", "Article Page"), ("related_data", "Related Data Page")]
-
-    def serve_preview(self, request: "HttpRequest", mode_name: str) -> "TemplateResponse":
-        if mode_name == "related_data":
-            return cast("TemplateResponse", self.related_data(request))
-        return cast("TemplateResponse", super().serve_preview(request, mode_name))
-
-    def get_serialized_corrections_and_notices(
-        self, request: "HttpRequest"
-    ) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
-        """Returns a list of corrections and notices for the page."""
-        base_url = self.get_url(request)
-        corrections = (
-            [
-                serialize_correction_or_notice(
-                    correction,
-                    superseded_url=base_url
-                    + self.reverse_subpage("previous_version", args=[correction.value["version_id"]]),
-                )
-                for correction in self.corrections  # pylint: disable=not-an-iterable
-            ]
-            if self.corrections
-            else []
-        )
-        notices = (
-            [serialize_correction_or_notice(notice) for notice in self.notices] if self.notices else []  # pylint: disable=not-an-iterable
-        )
-        return corrections, notices
-
-    def get_context(self, request: "HttpRequest", *args: Any, **kwargs: Any) -> dict:
-        """Adds additional context to the page."""
-        context: dict = super().get_context(request)
-
-        corrections, notices = self.get_serialized_corrections_and_notices(request)
-        context["corrections_and_notices"] = corrections + notices
-        context["has_corrections"] = bool(corrections)
-        context["has_notices"] = bool(notices)
-
-        return context
 
     def get_url_parts(self, request: Optional["HttpRequest"] = None) -> tuple[int, str | None, str | None] | None:
         url_parts = super().get_url_parts(request=request)
