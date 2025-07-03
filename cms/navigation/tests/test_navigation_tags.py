@@ -149,11 +149,16 @@ class BreadcrumbsTemplateTagTests(TestCase):
         breadcrumbs_output = breadcrumbs({"request": self.mock_request}, self.statistical_article)
 
         series_parent = self.series.get_parent()
+        topic = series_parent.get_parent()
 
         expected_entries = [
             {
                 "url": "/",
                 "text": "Home",
+            },
+            {
+                "url": topic.get_url(),
+                "text": topic.title,
             },
             {
                 "url": series_parent.get_url(),
@@ -162,5 +167,5 @@ class BreadcrumbsTemplateTagTests(TestCase):
         ]
 
         self.assertIsInstance(breadcrumbs_output, list)
-        self.assertEqual(len(breadcrumbs_output), 2)
+        self.assertEqual(len(breadcrumbs_output), 3)
         self.assertListEqual(breadcrumbs_output, expected_entries)

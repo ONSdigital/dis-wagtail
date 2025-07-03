@@ -10,48 +10,43 @@ from cms.articles.enums import SortingChoices
 from cms.articles.tests.factories import ArticleSeriesPageFactory, StatisticalArticlePageFactory
 from cms.datasets.blocks import DatasetStoryBlock
 from cms.datasets.models import Dataset
+from cms.topics.models import TopicPage
 
 
 class ArticleSeriesPageTests(WagtailPageTestCase):
     @classmethod
     def setUpTestData(cls):
-        cls.page = ArticleSeriesPageFactory()
+        cls.page = ArticleSeriesPageFactory(title="The Article Series")
 
     def test_default_route(self):
         self.assertPageIsRoutable(self.page)
 
-    def test_default_route_redirect(self):
-        StatisticalArticlePageFactory(parent=self.page)
+    def test_default_route_rendering(self):
+        self.assertPageIsRenderable(self.page, accept_404=True)
+        StatisticalArticlePageFactory(parent=self.page, title="Statistical Article")
+        self.assertPageIsRenderable(self.page, accept_404=False, accept_redirect=True)
+
+    def test_default_route_renders_latest_article(self):
+        article = StatisticalArticlePageFactory(parent=self.page, title="Latest Article")
         response = self.client.get(self.page.url)
-        self.assertRedirects(response, self.page.url + "latest/")
-
-    def test_latest_route(self):
-        self.assertPageIsRoutable(self.page, "latest/")
-
-    def test_latest_route_rendering(self):
-        self.assertPageIsRenderable(self.page, "latest/", accept_404=True)
-
-    def test_latest_route_rendering_of_article(self):
-        article = StatisticalArticlePageFactory(parent=self.page)
-        response = self.client.get(self.page.url + "latest/")
         self.assertEqual(response.status_code, HTTPStatus.OK)
         self.assertContains(response, article.title)
 
     def test_previous_releases_route(self):
-        self.assertPageIsRoutable(self.page, "previous-releases/")
+        self.assertPageIsRoutable(self.page, "editions/")
 
     def test_previous_releases_route_rendering(self):
-        self.assertPageIsRenderable(self.page, "previous-releases/")
+        self.assertPageIsRenderable(self.page, "editions/")
 
     def test_previous_releases_article_list(self):
-        response = self.client.get(self.page.url + "previous-releases/")
+        response = self.client.get(self.page.url + "editions/")
         self.assertEqual(response.status_code, HTTPStatus.OK)
         self.assertContains(response, "There are currently no releases")
 
         first_article = StatisticalArticlePageFactory(parent=self.page)
         second_article = StatisticalArticlePageFactory(parent=self.page)
 
-        response = self.client.get(self.page.url + "previous-releases/")
+        response = self.client.get(self.page.url + "editions/")
         self.assertEqual(response.status_code, HTTPStatus.OK)
         self.assertContains(response, first_article.title)
         self.assertContains(response, second_article.title)
@@ -118,9 +113,9 @@ class StatisticalArticlePageTests(WagtailPageTestCase):  # pylint: disable=too-m
         self.assertEqual(response.status_code, HTTPStatus.NOT_FOUND)
 
     def test_correction_routes(self):
-        self.assertPageIsRoutable(self.page, "previous/v1/")
-        self.assertPageIsRoutable(self.page, "previous/v2/")
-        self.assertPageIsRoutable(self.page, "previous/v3/")
+        self.assertPageIsRoutable(self.page, "versions/v1/")
+        self.assertPageIsRoutable(self.page, "versions/v2/")
+        self.assertPageIsRoutable(self.page, "versions/v3/")
 
     def test_can_add_correction(self):  # pylint: disable=too-many-statements # noqa
         response = self.client.get(self.page.url)
@@ -164,7 +159,7 @@ class StatisticalArticlePageTests(WagtailPageTestCase):  # pylint: disable=too-m
         self.assertNotContains(response, original_summary)
         self.assertContains(response, "Corrected summary")
 
-        v1_response = self.client.get(self.page.url + "previous/v1/")
+        v1_response = self.client.get(self.page.url + "versions/v1/")
 
         # The old version should not contain corrections
         self.assertNotContains(v1_response, "Corrections")
@@ -172,7 +167,7 @@ class StatisticalArticlePageTests(WagtailPageTestCase):  # pylint: disable=too-m
         self.assertContains(v1_response, original_summary)
 
         # V2 doesn't exist yet, should return 404
-        v2_response = self.client.get(self.page.url + "previous/v2/")
+        v2_response = self.client.get(self.page.url + "versions/v2/")
         self.assertEqual(v2_response.status_code, HTTPStatus.NOT_FOUND)
 
         second_correction = {
@@ -208,7 +203,7 @@ class StatisticalArticlePageTests(WagtailPageTestCase):  # pylint: disable=too-m
         self.assertContains(response, "Second corrected summary")
 
         # V2 now exists
-        v2_response = self.client.get(self.page.url + "previous/v2/")
+        v2_response = self.client.get(self.page.url + "versions/v2/")
         self.assertEqual(v2_response.status_code, HTTPStatus.OK)
 
         self.assertContains(v2_response, "Corrections")
@@ -216,7 +211,7 @@ class StatisticalArticlePageTests(WagtailPageTestCase):  # pylint: disable=too-m
         self.assertNotContains(v2_response, "Second correction text")
 
         # V3 doesn't exist yet, should return 404
-        v3_response = self.client.get(self.page.url + "previous/v3/")
+        v3_response = self.client.get(self.page.url + "versions/v3/")
         self.assertEqual(v3_response.status_code, HTTPStatus.NOT_FOUND)
 
         third_correction = {
@@ -255,7 +250,7 @@ class StatisticalArticlePageTests(WagtailPageTestCase):  # pylint: disable=too-m
         self.assertContains(response, "Third corrected summary")
 
         # V3 now exists
-        v3_response = self.client.get(self.page.url + "previous/v3/")
+        v3_response = self.client.get(self.page.url + "versions/v3/")
         self.assertEqual(v3_response.status_code, HTTPStatus.OK)
 
         self.assertContains(v3_response, "Corrections")
@@ -265,12 +260,12 @@ class StatisticalArticlePageTests(WagtailPageTestCase):  # pylint: disable=too-m
 
         # Check that at this stage all other versions are still correct
 
-        v1_response = self.client.get(self.page.url + "previous/v1/")
+        v1_response = self.client.get(self.page.url + "versions/v1/")
         self.assertNotContains(v1_response, "Corrections")
         self.assertNotContains(v1_response, "View superseded version")
         self.assertContains(v1_response, original_summary)
 
-        v2_response = self.client.get(self.page.url + "previous/v2/")
+        v2_response = self.client.get(self.page.url + "versions/v2/")
         self.assertContains(v2_response, "Corrections")
         self.assertContains(v2_response, "First correction text")
         self.assertNotContains(v2_response, "Second correction text")
@@ -306,7 +301,7 @@ class StatisticalArticlePageTests(WagtailPageTestCase):  # pylint: disable=too-m
         self.assertContains(live_response, "New title")
         self.assertNotContains(live_response, old_title)
 
-        v1_response = self.client.get(self.page.url + "previous/v1/")
+        v1_response = self.client.get(self.page.url + "versions/v1/")
 
         self.assertNotContains(v1_response, "New title")
         self.assertContains(v1_response, old_title)
@@ -369,7 +364,7 @@ class StatisticalArticlePageTests(WagtailPageTestCase):  # pylint: disable=too-m
             page_content,
         )
 
-        v1_response = self.client.get(self.page.url + "previous/v1/")
+        v1_response = self.client.get(self.page.url + "versions/v1/")
 
         page_content = v1_response.content.decode(encoding="utf-8")
 
@@ -474,7 +469,7 @@ class StatisticalArticlePageTests(WagtailPageTestCase):  # pylint: disable=too-m
 
     def test_headline_figures_removal_validation(self):
         series = self.page.get_parent()
-        topic = series.get_parent()
+        topic = TopicPage.objects.ancestor_of(series).first()
         topic.headline_figures.extend(
             [
                 (

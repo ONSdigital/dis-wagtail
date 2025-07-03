@@ -30,12 +30,10 @@ from cms.datasets.utils import format_datasets_as_document_list
 from cms.taxonomy.mixins import GenericTaxonomyMixin
 
 if TYPE_CHECKING:
-    from django.http import HttpRequest
-    from django.http.response import HttpResponseRedirect
+    from django.http import HttpRequest, HttpResponse
     from django.template.response import TemplateResponse
     from wagtail.admin.panels import Panel
 
-    from cms.topics.models import TopicPage
 
 FIGURE_ID_SEPARATOR = ","
 
@@ -87,20 +85,15 @@ class ArticleSeriesPage(RoutablePageMixin, GenericTaxonomyMixin, BasePage):  # t
         return latest
 
     @path("")
-    def index(self, request: "HttpRequest") -> "HttpResponseRedirect":
-        """Redirect to /latest as this is a container page without its own content."""
-        return redirect(self.get_url(request) + self.reverse_subpage("latest_release"))
-
-    @path("latest/")
-    def latest_release(self, request: "HttpRequest") -> "TemplateResponse":
+    def index_route(self, request: "HttpRequest", *args: Any, **kwargs: Any) -> "HttpResponse":
         """Serves the latest statistical article page in the series."""
-        latest = self.get_latest()
-        if not latest:
+        if not (latest := self.get_latest()):
             raise Http404
-        response: TemplateResponse = latest.serve(request)
-        return response
 
-    @path("previous-releases/")
+        request.is_preview = getattr(request, "is_preview", False)  # type: ignore[attr-defined]
+        return latest.serve(request, *args, serve_as_edition=True, **kwargs)
+
+    @path("editions/")
     def previous_releases(self, request: "HttpRequest") -> "TemplateResponse":
         children = StatisticalArticlePage.objects.live().child_of(self).order_by("-release_date")
         paginator = Paginator(children, per_page=settings.PREVIOUS_RELEASES_PER_PAGE)
@@ -118,6 +111,20 @@ class ArticleSeriesPage(RoutablePageMixin, GenericTaxonomyMixin, BasePage):  # t
             template="templates/pages/statistical_article_page--previous-releases.html",
         )
         return response
+
+    @path("editions/<str:slug>/")
+    def release(self, request: "HttpRequest", slug: str, **kwargs: Any) -> "HttpResponse":
+        if not (edition := StatisticalArticlePage.objects.live().filter(slug=slug).first()):
+            raise Http404
+        return cast("HttpResponse", edition.serve(request, serve_as_edition=True, **kwargs))
+
+    @path("editions/<str:slug>/related-data/")
+    def release_related_data(self, request: "HttpRequest", slug: str) -> "HttpResponse":
+        return cast("HttpResponse", self.release(request, slug, related_data=True))
+
+    @path("editions/<str:slug>/versions/v<int:version>/")
+    def release_with_versions(self, request: "HttpRequest", slug: str, version: int) -> "HttpResponse":
+        return cast("HttpResponse", self.release(request, slug, version=version))
 
 
 class StatisticalArticlePage(BundledPageMixin, RoutablePageMixin, BasePage):  # type: ignore[django-manager-missing]
@@ -272,12 +279,12 @@ class StatisticalArticlePage(BundledPageMixin, RoutablePageMixin, BasePage):  # 
         if self.next_release_date and self.next_release_date <= self.release_date:
             raise ValidationError({"next_release_date": "The next release date must be after the release date."})
 
-        if self.headline_figures and len(self.headline_figures) == 1:  # pylint: disable=unsubscriptable-object
+        if self.headline_figures and len(self.headline_figures) == 1:
             # Check if headline_figures has 1 item (we can't use min_num because we allow 0)
             raise ValidationError({"headline_figures": "If you add headline figures, please add at least 2."})
 
         if self.headline_figures and len(self.headline_figures) > 0:
-            figure_ids = [figure.value["figure_id"] for figure in self.headline_figures]  # pylint: disable=unsubscriptable-object,not-an-iterable
+            figure_ids = [figure.value["figure_id"] for figure in self.headline_figures]  # pylint: disable=not-an-iterable
         else:
             figure_ids = []
 
@@ -315,7 +322,7 @@ class StatisticalArticlePage(BundledPageMixin, RoutablePageMixin, BasePage):  # 
         if not self.headline_figures:
             return {}
 
-        for figure in self.headline_figures:  # pylint: disable=unsubscriptable-object
+        for figure in self.headline_figures:
             if figure.value["figure_id"] == figure_id:
                 return dict(figure.value)
 
@@ -369,7 +376,7 @@ class StatisticalArticlePage(BundledPageMixin, RoutablePageMixin, BasePage):  # 
         )
         return bool(self.pk == latest_id)  # to placate mypy
 
-    @path("previous/v<int:version>/")
+    @path("versions/v<int:version>/")
     def previous_version(self, request: "HttpRequest", version: int) -> "TemplateResponse":
         if version <= 0 or not self.corrections:
             raise Http404
@@ -414,7 +421,11 @@ class StatisticalArticlePage(BundledPageMixin, RoutablePageMixin, BasePage):  # 
         series = self.get_parent()
         if not series:
             return []
-        topic: TopicPage = series.get_parent().get_parent().specific_deferred
+
+        # imported inline to avoid circular imports
+        from cms.topics.models import TopicPage  # pylint: disable=import-outside-toplevel
+
+        topic: TopicPage = TopicPage.objects.ancestor_of(self).first().specific_deferred
         return [
             figure.value["figure_id"] for figure in topic.headline_figures if figure.value["series"].id == series.id
         ]
@@ -493,3 +504,48 @@ class StatisticalArticlePage(BundledPageMixin, RoutablePageMixin, BasePage):  # 
         context["has_notices"] = bool(notices)
 
         return context
+
+    def get_url_parts(self, request: Optional["HttpRequest"] = None) -> tuple[int, str | None, str | None] | None:
+        url_parts = super().get_url_parts(request=request)
+        if url_parts is None:
+            return None
+
+        site_id: int = url_parts[0]
+        root_url: str | None = url_parts[1]
+        page_path: str | None = url_parts[2]
+
+        if not (root_url and page_path):
+            return site_id, root_url, page_path
+
+        # inject the "edition" slug before the page slug in the path
+        # works in conjunction with ArticleSeriesPage.release()
+        split = page_path.strip("/").split("/")
+        split.insert(-1, "editions")
+        page_path = "/".join(["", *split, ""])
+
+        return site_id, root_url, page_path
+
+    def serve(self, request: "HttpRequest", *args: Any, **kwargs: Any) -> "HttpResponse":
+        """Handle the page serving with the /editions/ virtual slug.
+
+        Note: if you add routes to the page model, coordinate with ArticleSeriesPage paths.
+        """
+        serve_as_edition = kwargs.pop("serve_as_edition", False)
+        if not serve_as_edition:
+            # if for some reason we're getting the non-editioned path
+            # redirect to the path with the /edition/ slug
+            page_url = self.get_url(request=request)
+            if page_url != request.path:
+                return redirect(page_url)
+
+        if kwargs.pop("related_data", None):
+            view, _view_args, _view_kwargs = self.resolve_subpage("/related-data/")
+            serve_kwargs = {**kwargs, **_view_kwargs}
+            return cast("HttpResponse", super().serve(request, view=view, args=args, kwargs=serve_kwargs))
+
+        if version := kwargs.pop("version", None):
+            view, _view_args, _view_kwargs = self.resolve_subpage(f"/versions/v{version}/")
+            serve_kwargs = {**kwargs, **_view_kwargs}
+            return cast("HttpResponse", super().serve(request, view=view, args=args, kwargs=serve_kwargs))
+
+        return cast("HttpResponse", super().serve(request, *args, **kwargs))
