@@ -64,12 +64,12 @@ class LineChartBlock(BaseVisualisationBlock):
     y_axis = blocks.StructBlock(
         [
             ("title", blocks.CharBlock(required=False, help_text=AXIS_TITLE_HELP_TEXT)),
+            ("tick_interval_mobile", TextInputFloatBlock(label="Tick interval (mobile)", required=False)),
+            ("tick_interval_desktop", TextInputFloatBlock(label="Tick interval (desktop)", required=False)),
             ("min", TextInputFloatBlock(label="Minimum", required=False)),
             ("start_on_tick", blocks.BooleanBlock(label="Start on tick", default=True, required=False)),
             ("max", TextInputFloatBlock(label="Maximum", required=False)),
             ("end_on_tick", blocks.BooleanBlock(label="End on tick", default=True, required=False)),
-            ("tick_interval_mobile", TextInputFloatBlock(label="Tick interval (mobile)", required=False)),
-            ("tick_interval_desktop", TextInputFloatBlock(label="Tick interval (desktop)", required=False)),
         ]
     )
 
@@ -143,12 +143,12 @@ class BarColumnChartBlock(BaseVisualisationBlock):
                     help_text=AXIS_TITLE_HELP_TEXT,
                 ),
             ),
+            ("tick_interval_mobile", TextInputFloatBlock(label="Tick interval (mobile)", required=False)),
+            ("tick_interval_desktop", TextInputFloatBlock(label="Tick interval (desktop)", required=False)),
             ("min", TextInputFloatBlock(label="Minimum", required=False)),
             ("start_on_tick", blocks.BooleanBlock(label="Start on tick", default=True, required=False)),
             ("max", TextInputFloatBlock(label="Maximum", required=False)),
             ("end_on_tick", blocks.BooleanBlock(label="End on tick", default=True, required=False)),
-            ("tick_interval_mobile", TextInputFloatBlock(label="Tick interval (mobile)", required=False)),
-            ("tick_interval_desktop", TextInputFloatBlock(label="Tick interval (desktop)", required=False)),
         ],
         label="Value axis",
     )
