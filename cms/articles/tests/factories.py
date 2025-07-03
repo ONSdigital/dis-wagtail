@@ -5,11 +5,8 @@ import factory
 import wagtail_factories
 from django.utils import timezone
 
-from cms.articles.models import ArticleSeriesPage, StatisticalArticlePage
-from cms.core.tests.factories import (
-    ContactDetailsFactory,
-    SectionContentBlockFactory,
-)
+from cms.articles.models import ArticleSeriesPage, ArticlesIndexPage, StatisticalArticlePage
+from cms.core.tests.factories import ContactDetailsFactory, SectionContentBlockFactory
 from cms.topics.tests.factories import TopicPageFactory
 
 
@@ -21,6 +18,13 @@ class HeadlineFigureBlockFactory(wagtail_factories.StructBlockFactory):
     trend = wagtail_factories.CharBlockFactory()
 
 
+class ArticlesIndexPageFactory(wagtail_factories.PageFactory):
+    class Meta:
+        model = ArticlesIndexPage
+
+    parent = factory.SubFactory(TopicPageFactory)
+
+
 class ArticleSeriesPageFactory(wagtail_factories.PageFactory):
     """Factory for ArticleSeriesPage."""
 
@@ -28,7 +32,7 @@ class ArticleSeriesPageFactory(wagtail_factories.PageFactory):
         model = ArticleSeriesPage
 
     title = factory.Faker("sentence", nb_words=4)
-    parent = factory.SubFactory(TopicPageFactory)
+    parent = factory.SubFactory(ArticlesIndexPageFactory)
 
 
 class StatisticalArticlePageFactory(wagtail_factories.PageFactory):

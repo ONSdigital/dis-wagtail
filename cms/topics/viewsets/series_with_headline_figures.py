@@ -79,7 +79,7 @@ class SeriesWithHeadlineFiguresChooserMixin:
         # using this rather than inline import to placate pyright complaining about cyclic imports
         topic_page_model = resolve_model_string("topics.TopicPage")
         try:
-            series_pages = series_pages.child_of(topic_page_model.objects.get(pk=topic_page_id))
+            series_pages = series_pages.descendant_of(topic_page_model.objects.get(pk=topic_page_id))
         except topic_page_model.DoesNotExist:
             series_pages = series_pages.none()
 

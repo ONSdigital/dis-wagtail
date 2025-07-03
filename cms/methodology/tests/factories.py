@@ -9,14 +9,21 @@ from cms.core.tests.factories import (
     ContactDetailsFactory,
     SectionContentBlockFactory,
 )
-from cms.methodology.models import MethodologyPage, MethodologyRelatedPage
+from cms.methodology.models import MethodologyIndexPage, MethodologyPage, MethodologyRelatedPage
 from cms.topics.tests.factories import TopicPageFactory
+
+
+class MethodologyIndexPageFactory(wagtail_factories.PageFactory):
+    class Meta:
+        model = MethodologyIndexPage
+
+    parent = factory.SubFactory(TopicPageFactory)
 
 
 class MethodologyPageFactory(wagtail_factories.PageFactory):
     """Factory for MethodologyPage."""
 
-    parent = factory.SubFactory(TopicPageFactory)
+    parent = factory.SubFactory(MethodologyIndexPageFactory)
 
     class Meta:
         model = MethodologyPage

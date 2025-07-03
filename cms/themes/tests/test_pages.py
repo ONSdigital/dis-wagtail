@@ -3,7 +3,7 @@ from http import HTTPStatus
 from django.urls import reverse
 from wagtail.test.utils import WagtailPageTestCase
 
-from cms.topics.tests.factories import ThemePageFactory
+from cms.themes.tests.factories import ThemePageFactory
 
 
 class ThemePageTests(WagtailPageTestCase):
