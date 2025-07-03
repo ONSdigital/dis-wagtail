@@ -104,7 +104,9 @@ class TestFutureReleaseCalendarChooserViewSet(WagtailTestUtils, TestCase):
             self.assertNotContains(response, self.published.title)
             self.assertNotContains(response, self.past.title)
             self.assertContains(
-                response, "here are no release calendar pages that are pending or not in an active bundle already."
+                response,
+                "There are no pending release calendar pages with a "
+                "future release date that are not in an active bundle already.",
             )
 
         simple_user = UserFactory(username="viewer", access_admin=True)
