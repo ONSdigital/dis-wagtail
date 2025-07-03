@@ -19,7 +19,7 @@ class ONSDateFormat(DateFormat):
         return ""
 
 
-def ons_date_format(value: datetime, format_string: str) -> str:
+def ons_date_format(value: date | datetime, format_string: str) -> str:
     date_format = ONSDateFormat(value).format(get_format(format_string))
 
     # Note: Django currently has a typo in the Welsh translation for "July" (Gorffenaf instead of Gorffennaf).

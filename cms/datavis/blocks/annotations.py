@@ -249,12 +249,14 @@ class LineAnnotationStructValue(AnnotationStructValue):
         axis = self.get("axis")
         value = self.get("value")
 
-        config.update({
-            "axis": axis,
-            "labelWidth": self.get("label_width"),
-            # X-axis can be categorical or linear, y-axis is always linear
-            "value": self.get_x_position(value) if axis == AxisChoices.X else value,
-        })
+        config.update(
+            {
+                "axis": axis,
+                "labelWidth": self.get("label_width"),
+                # X-axis can be categorical or linear, y-axis is always linear
+                "value": self.get_x_position(value) if axis == AxisChoices.X else value,
+            }
+        )
 
         # Only apply custom label positioning if set:
         if any(self.get(key) is not None for key in ["label_offset_x", "label_offset_y"]):
