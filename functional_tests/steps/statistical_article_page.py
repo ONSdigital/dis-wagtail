@@ -419,8 +419,8 @@ def user_enters_data_into_chart_table(context: Context):
                 context.page.keyboard.press("Enter")
 
 
-@given("a statistical article page with a configured featured chart exists")
-def a_statistical_article_page_with_configured_featured_chart_exists(context: Context):
+@given("a statistical article with valid streamfield content exists")
+def a_statistical_article_with_valid_streamfield_content_exists(context: Context):
     """Create a statistical article page with a configured featured chart."""
     an_article_series_exists(context)
     content = [
@@ -437,6 +437,18 @@ def a_statistical_article_page_with_configured_featured_chart_exists(context: Co
             },
         }
     ]
+    context.statistical_article_page = StatisticalArticlePageFactory(
+        parent=context.article_series_page,
+        title="Statistical article with featured chart",
+        content=content,
+    )
+    context.statistical_article_page.save()
+
+
+@given("a statistical article page with a configured featured chart exists")
+def a_statistical_article_page_with_configured_featured_chart_exists(context: Context):
+    """Create a statistical article page with a configured featured chart."""
+    a_statistical_article_with_valid_streamfield_content_exists(context)
     featured_chart = [
         {
             "type": "line_chart",
@@ -451,12 +463,7 @@ def a_statistical_article_page_with_configured_featured_chart_exists(context: Co
             },
         }
     ]
-    context.statistical_article_page = StatisticalArticlePageFactory(
-        parent=context.article_series_page,
-        title="Statistical article with featured chart",
-        featured_chart=featured_chart,
-        content=content,
-    )
+    context.statistical_article_page.featured_chart = featured_chart
     context.statistical_article_page.save()
 
 
@@ -518,6 +525,7 @@ def submitting_the_wagtail_page_edit_form_is_successful(context: Context):
 def user_selects_featured_chart_preview_mode(context: Context):
     preview_button = context.page.locator('button[aria-label="Toggle preview"]')
     preview_button.click()
+    context.page.wait_for_timeout(500)
     preview_mode_select = context.page.locator("#id_preview_mode")
     preview_mode_select.select_option(value="featured_article")
 
@@ -525,6 +533,7 @@ def user_selects_featured_chart_preview_mode(context: Context):
 @step("the user sees a preview of the containing Topic page")
 def user_sees_a_preview_of_the_published_topic_page(context: Context):
     context.preview_frame = context.page.frame_locator('iframe[title="Preview"][id="w-preview-iframe"]')
+    context.page.wait_for_timeout(500)
     expect(context.preview_frame.get_by_role("heading", name=context.topic_page.title)).to_be_visible()
 
 
@@ -567,4 +576,4 @@ def the_featured_article_component_contains_the_featured_chart(context: Context)
 
 @step("the featured article component contains the featured article listing image")
 def the_featured_article_component_contains_the_featured_article_listing_image(context: Context):
-    expect(context.featured_article_component.get_by_role("img")).to_be_visible()
+    expect(context.featured_article_component.locator("img")).to_be_visible()

@@ -489,6 +489,5 @@ class StatisticalArticlePage(BundledPageMixin, RoutablePageMixin, BasePage):  # 
                 from cms.topics.models import TopicPage  # pylint: disable=import-outside-toplevel
 
                 topic_page = TopicPage.objects.ancestor_of(self).first()
-                topic_page.featured_series = self.get_parent().specific
-                return cast("TemplateResponse", topic_page.serve(request))
+                return cast("TemplateResponse", topic_page.serve(request, featured_item=self))
         return cast("TemplateResponse", super().serve_preview(request, mode_name))
