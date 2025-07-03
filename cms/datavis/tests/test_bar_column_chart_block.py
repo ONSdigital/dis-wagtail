@@ -100,7 +100,7 @@ class BarColumnChartBlockTestCase(BaseChartBlockTestCase):
             self.block.clean(self.get_value())
         self.assertEqual(
             BarColumnChartBlock.ERROR_HORIZONTAL_BAR_NO_CATEGORY_TITLE,
-            cm.exception.block_errors["x_axis"].code,
+            cm.exception.block_errors["x_axis"].block_errors["title"].code,
         )
 
     def test_column_chart_editable_x_axis_title(self):
