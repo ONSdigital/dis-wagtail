@@ -261,8 +261,6 @@ class BarColumnChartBlock(BaseVisualisationBlock):
         if errors:
             raise blocks.StructBlockValidationError(block_errors=errors)
 
-        return value
-
     def get_series_item(
         self,
         value: "StructValue",
