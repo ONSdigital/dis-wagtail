@@ -236,9 +236,13 @@ class BarColumnChartBlock(BaseVisualisationBlock):
         if value.get("select_chart_type") == BarColumnChartTypeChoices.BAR and value.get("x_axis").get("title"):
             raise blocks.StructBlockValidationError(
                 {
-                    "x_axis": ValidationError(
-                        "Category axis title is not supported for horizontal bar charts.",
-                        code=self.ERROR_HORIZONTAL_BAR_NO_CATEGORY_TITLE,
+                    "x_axis": blocks.StructBlockValidationError(
+                        block_errors={
+                            "title": ValidationError(
+                                "Category axis title is not supported for horizontal bar charts.",
+                                code=self.ERROR_HORIZONTAL_BAR_NO_CATEGORY_TITLE,
+                            )
+                        }
                     )
                 }
             )
@@ -491,9 +495,13 @@ class BarColumnConfidenceIntervalChartBlock(BaseVisualisationBlock):
         ).get("title"):
             raise blocks.StructBlockValidationError(
                 {
-                    "x_axis": ValidationError(
-                        "Category axis title is not supported for horizontal bar charts.",
-                        code=self.ERROR_HORIZONTAL_BAR_NO_CATEGORY_TITLE,
+                    "x_axis": blocks.StructBlockValidationError(
+                        block_errors={
+                            "title": ValidationError(
+                                "Category axis title is not supported for horizontal bar charts.",
+                                code=self.ERROR_HORIZONTAL_BAR_NO_CATEGORY_TITLE,
+                            )
+                        }
                     )
                 }
             )
