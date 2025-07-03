@@ -481,7 +481,15 @@ class ColumnChartWithLineTestCase(BaseChartBlockTestCase):
         # This is the only error
         self.assertEqual(1, len(cm.exception.block_errors))
 
-    def test_stacked_column_chart_with_line_overlay_is_not_allowed(self):
+    def test_unstacked_column_chart_with_more_than_two_series_and_line_overlay_is_not_allowed(self):
+        self.raw_data["table"] = TableDataFactory(
+            table_data=[
+                ["", "Series 1", "Series 2", "Series 3"],
+                ["2005", "100", "50", "100"],
+                ["2006", "120", "55", "120"],
+                ["2007", "140", "60", "140"],
+            ]
+        )
         self.raw_data["select_chart_type"] = "column"
         self.raw_data["use_stacked_layout"] = False
         self.raw_data["series_customisation"] = [{"type": "series_as_line_overlay", "value": 1}]
@@ -494,6 +502,12 @@ class ColumnChartWithLineTestCase(BaseChartBlockTestCase):
         )
         # This is the only error
         self.assertEqual(1, len(cm.exception.block_errors))
+
+    def test_unstacked_column_chart_with_two_series_and_line_overlay_is_allowed(self):
+        self.raw_data["select_chart_type"] = "column"
+        self.raw_data["use_stacked_layout"] = False
+        self.raw_data["series_customisation"] = [{"type": "series_as_line_overlay", "value": 1}]
+        self.block.clean(self.get_value())
 
     def test_error_is_raised_if_series_number_is_out_of_range(self):
         self.raw_data["select_chart_type"] = "column"
