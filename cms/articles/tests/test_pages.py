@@ -7,10 +7,13 @@ from wagtail.blocks import StreamValue
 from wagtail.test.utils import WagtailPageTestCase
 
 from cms.articles.enums import SortingChoices
+from cms.articles.models import ArticlesIndexPage
 from cms.articles.tests.factories import ArticleSeriesPageFactory, StatisticalArticlePageFactory
 from cms.datasets.blocks import DatasetStoryBlock
 from cms.datasets.models import Dataset
+from cms.home.models import HomePage
 from cms.topics.models import TopicPage
+from cms.topics.tests.utils import create_simple_topic_page
 
 
 class ArticleSeriesPageTests(WagtailPageTestCase):
@@ -649,39 +652,48 @@ class StatisticalArticlePageTests(WagtailPageTestCase):  # pylint: disable=too-m
         self.assertEqual(new_page.dataset_sorting, self.page.dataset_sorting)
 
 
-class DatePlaceholderTests(WagtailPageTestCase):
+class MiscellaneousTests(WagtailPageTestCase):
     @classmethod
     def setUpTestData(cls):
-        cls.page = StatisticalArticlePageFactory()
+        cls.home_page = HomePage.objects.first()
         cls.user = cls.create_superuser("admin")
 
-    def test_date_placeholder(self):
-        """Test that the date input field displays date placeholder."""
+    def setUp(self):
         self.client.force_login(self.user)
 
-        parent_page = self.page.get_parent()
-        add_sibling_url = reverse("wagtailadmin_pages:add_subpage", args=[parent_page.id])
-
-        response = self.client.get(add_sibling_url, follow=True)
-
-        content = response.content.decode(encoding="utf-8")
+    def test_date_placeholder_on_article_edit_form(self):
+        """Test that the date input field displays date placeholder."""
+        page = StatisticalArticlePageFactory()
+        response = self.client.get(reverse("wagtailadmin_pages:add_subpage", args=[page.get_parent().id]), follow=True)
 
         date_placeholder = "YYYY-MM-DD"
 
-        self.assertInHTML(
+        self.assertContains(
+            response,
             (
                 f'<input type="text" name="release_date" autocomplete="off" placeholder="{date_placeholder}"'
                 'aria-describedby="panel-child-content-child-metadata-child-dates-child-release_date-helptext"'
                 'required="" id="id_release_date">'
             ),
-            content,
+            html=True,
         )
 
-        self.assertInHTML(
+        self.assertContains(
+            response,
             (
                 f'<input type="text" name="next_release_date" autocomplete="off" placeholder="{date_placeholder}"'
                 ' aria-describedby="panel-child-content-child-metadata-child-dates-child-next_release_date-helptext"'
                 'id="id_next_release_date">'
             ),
-            content,
+            html=True,
+        )
+
+    def test_articles_index_created_after_topic_page_creation(self):
+        self.assertEqual(ArticlesIndexPage.objects.count(), 0)
+
+        create_simple_topic_page(self.client, self.home_page.pk)
+
+        self.assertEqual(ArticlesIndexPage.objects.count(), 2)
+        self.assertEqual(
+            set(ArticlesIndexPage.objects.values_list("locale__language_code", flat=True)), {"en-gb", "cy"}
         )

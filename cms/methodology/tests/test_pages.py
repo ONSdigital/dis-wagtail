@@ -1,7 +1,10 @@
 from django.urls import reverse
 from wagtail.test.utils import WagtailPageTestCase
 
+from cms.home.models import HomePage
+from cms.methodology.models import MethodologyIndexPage
 from cms.methodology.tests.factories import MethodologyPageFactory, MethodologyRelatedPageFactory
+from cms.topics.tests.utils import create_simple_topic_page
 
 
 class MethodologyPageTest(WagtailPageTestCase):
@@ -63,4 +66,24 @@ class MethodologyPageTest(WagtailPageTestCase):
                 f'placeholder="{date_placeholder}" id="id_last_revised_date">'
             ),
             html=True,
+        )
+
+
+class MethodologyIndexPageTest(WagtailPageTestCase):
+    @classmethod
+    def setUpTestData(cls):
+        cls.home_page = HomePage.objects.first()
+        cls.user = cls.create_superuser("admin")
+
+    def setUp(self):
+        self.client.force_login(self.user)
+
+    def test_methodology_index_created_after_topic_page_creation(self):
+        self.assertEqual(MethodologyIndexPage.objects.count(), 0)
+
+        create_simple_topic_page(self.client, self.home_page.pk)
+
+        self.assertEqual(MethodologyIndexPage.objects.count(), 2)
+        self.assertEqual(
+            set(MethodologyIndexPage.objects.values_list("locale__language_code", flat=True)), {"en-gb", "cy"}
         )
