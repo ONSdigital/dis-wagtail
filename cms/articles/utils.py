@@ -1,7 +1,8 @@
 from typing import TYPE_CHECKING
 
-from django.utils.formats import date_format
 from django.utils.translation import gettext_lazy as _
+
+from cms.core.custom_date_format import ons_date_format
 
 if TYPE_CHECKING:
     from wagtail.blocks.stream_block import StreamChild
@@ -22,8 +23,8 @@ def serialize_correction_or_notice(entry: "StreamChild", *, superseded_url: str 
     content = {
         "text": _("Correction") if is_correction else _("Notice"),
         "date": {
-            "iso": date_format(entry.value["when"], "c"),
-            "short": date_format(entry.value["when"], "DATETIME_FORMAT" if is_correction else "DATE_FORMAT"),
+            "iso": ons_date_format(entry.value["when"], "c"),
+            "short": ons_date_format(entry.value["when"], "DATETIME_FORMAT" if is_correction else "DATE_FORMAT"),
         },
         "description": entry.value["text"],
     }
