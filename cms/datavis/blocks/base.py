@@ -54,7 +54,7 @@ class BaseVisualisationBlock(blocks.StructBlock):
 
     # Always define axes in subclasses
     x_axis = blocks.StaticBlock()
-    y_axis = blocks.StructBlock()
+    y_axis = blocks.StaticBlock()
 
     DESKTOP_ASPECT_RATIO = "desktop_aspect_ratio"
     MOBILE_ASPECT_RATIO = "mobile_aspect_ratio"
