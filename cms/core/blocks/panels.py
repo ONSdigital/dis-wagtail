@@ -88,4 +88,5 @@ class PreviousVersionBlockAdapter(FieldBlockAdapter):
 register(PreviousVersionBlockAdapter(), PreviousVersionBlock)
 
 
-class NoticeBlock(CorrectionOrNoticeBlock): ...
+class NoticeBlock(CorrectionOrNoticeBlock):
+    when = blocks.DateBlock()
