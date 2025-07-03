@@ -246,6 +246,7 @@ class StatisticalArticlePageTestCase(WagtailTestUtils, TestCase):
                         for i in range(7)
                     ]
                 ),
+                "featured_chart": streamfield([]),
             }
         )
         response = self.client.post(reverse("wagtailadmin_pages:edit", args=[self.page.pk]), data, follow=True)
@@ -291,6 +292,7 @@ class StatisticalArticlePageTestCase(WagtailTestUtils, TestCase):
                 "corrections": streamfield([]),
                 "notices": streamfield([]),
                 "headline_figures": streamfield([]),
+                "featured_chart": streamfield([]),
             }
         )
         response = self.client.post(reverse("wagtailadmin_pages:edit", args=[self.page.pk]), data, follow=True)
