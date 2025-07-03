@@ -1,3 +1,4 @@
+from datetime import datetime
 from typing import Any
 
 from django.core.exceptions import ValidationError
@@ -187,3 +188,9 @@ class ReleaseCalendarPageAdminForm(WagtailAdminPageForm):
             bundle_str,
         )
         raise ValidationError({"status": message})
+
+    def clean_release_date(self) -> datetime | None:
+        # Set seconds to 0 to make scheduling less surprising
+        if release_date := self.cleaned_data["release_date"]:
+            return release_date.replace(second=0)  # type: ignore[no-any-return]
+        return None
