@@ -237,6 +237,9 @@ class BundleInspectView(InspectView):
         return "N/A"
 
     def get_pages_for_manager(self) -> "SafeString":
+        """Returns all the bundle page.
+        Publishing Admins / Officers can see everything when inspecting the bundle.
+        """
         pages = self.object.get_bundled_pages().specific().defer_streamfields()
 
         def get_page_status(page: "Page") -> str:
@@ -280,6 +283,9 @@ class BundleInspectView(InspectView):
         )
 
     def get_pages_for_previewer(self) -> "SafeString":
+        """Returns the list of bundle pages a previewer-only user can see when inspecting the bundle.
+        These are pages in the bundle that are in the "Ready for review" workflow state.
+        """
         pages = self.object.get_pages_for_previewers()
 
         data = (
