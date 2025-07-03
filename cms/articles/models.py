@@ -10,6 +10,7 @@ from django.utils.functional import cached_property
 from django.utils.translation import gettext_lazy as _
 from wagtail.admin.panels import FieldPanel, FieldRowPanel, HelpPanel, MultiFieldPanel, TitleFieldPanel
 from wagtail.contrib.routable_page.models import RoutablePageMixin, path
+from wagtail.coreutils import resolve_model_string
 from wagtail.fields import RichTextField
 from wagtail.models import Page
 from wagtail.search import index
@@ -127,6 +128,7 @@ class ArticleSeriesPage(RoutablePageMixin, GenericTaxonomyMixin, BasePage):  # t
         return cast("HttpResponse", self.release(request, slug, version=version))
 
 
+# pylint: disable=too-many-public-methods
 class StatisticalArticlePage(BundledPageMixin, RoutablePageMixin, BasePage):  # type: ignore[django-manager-missing]
     """The statistical article page model.
 
@@ -388,10 +390,9 @@ class StatisticalArticlePage(BundledPageMixin, RoutablePageMixin, BasePage):  # 
         if not series:
             return []
 
-        # imported inline to avoid circular imports
-        from cms.topics.models import TopicPage  # pylint: disable=import-outside-toplevel
-
-        topic: TopicPage = TopicPage.objects.ancestor_of(self).first().specific_deferred
+        # using this rather than inline import to placate pyright complaining about cyclic imports
+        topic_page_class = resolve_model_string("topics.TopicPage")
+        topic = topic_page_class.objects.ancestor_of(self).first().specific_deferred
         return [
             figure.value["figure_id"] for figure in topic.headline_figures if figure.value["series"].id == series.id
         ]
