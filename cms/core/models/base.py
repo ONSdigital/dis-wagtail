@@ -170,6 +170,7 @@ class BasePage(PageLDMixin, ListingFieldsMixin, SocialFieldsMixin, Page):  # typ
         """Returns the breadcrumbs as a dictionary in the format required for a JSON LD entity."""
         breadcrumbs_jsonld: dict[str, object] = {}
         item_list = []
+
         for i, breadcrumb in enumerate(self.get_breadcrumbs(), 1):
             item_list.append(
                 {
@@ -185,27 +186,36 @@ class BasePage(PageLDMixin, ListingFieldsMixin, SocialFieldsMixin, Page):  # typ
                 "@type": "BreadcrumbList",
                 "itemListElement": item_list,
             }
+
         return breadcrumbs_jsonld
 
     def ld_entity(self) -> dict[str, object]:
         """Add page breadcrumbs to the JSON LD properties."""
         page_ld_entity: dict[str, object] = {"@type": self.schema_org_type}
         page_ld_entity.update(self.breadcrumbs_as_jsonld)
+
         if not page_ld_entity.get("description", ""):
             page_ld_entity["description"] = self.search_description or self.listing_summary
+
         return cast(dict[str, Any], extend(super().ld_entity(), page_ld_entity))
 
     def get_canonical_full_url(self, request: "HttpRequest") -> str:
-        """Get the default canonical URL for the page."""
-        canonical_page = self
-        if aliased_page := self.alias_of:
-            # The canonical url should point to the original page if this page is an alias
-            canonical_page = aliased_page
+        """Get the default canonical URL for the page for the given request.
+        This will normally be this page's full URL, except:
+        - If this page is an alias, the canonical URL should be for the original, aliased page.
+        - If the request is for a subpage (marked by setting the attribute `is_for_subpage=True` on the request object),
+          then it will include the subpage route from the request.
+        """
         if getattr(request, "is_for_subpage", False) and getattr(request, "routable_resolver_match", None):
-            # Include the subpage route if the request is for a subpage
             resolver_match = request.routable_resolver_match  # type: ignore[attr-defined]
-            return cast(str, canonical_page.get_full_url(request=request) + resolver_match.route)
-        return cast(str, canonical_page.get_full_url(request=request))
+            return cast(str, self.canonical_page.get_full_url(request=request) + resolver_match.route)
+
+        return cast(str, self.canonical_page.get_full_url(request=request))
+
+    @cached_property
+    def canonical_page(self) -> "BasePage":
+        """The canonical page for this page, which is either itself or the original page if it's an alias."""
+        return self.alias_of or self
 
 
 class BaseSiteSetting(WagtailBaseSiteSetting):

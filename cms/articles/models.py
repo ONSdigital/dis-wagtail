@@ -464,19 +464,11 @@ class StatisticalArticlePage(BundledPageMixin, RoutablePageMixin, BasePage):  # 
         return cast(dict[str, object], extend(super().ld_entity(), properties))
 
     def get_canonical_full_url(self, request: "HttpRequest") -> str:
-        """The article page canonical URL.
+        """Get the article page canonical URL for the given request.
         If the article is the latest in the series, this will be the evergreen series URL.
+        Otherwise, it will be the default canonical page URL.
         """
-        canonical_page = self
-        if aliased_page := self.alias_of:
-            # The canonical url should point to the original page if this page is an alias
-            canonical_page = aliased_page
-        if getattr(request, "is_for_subpage", False) and getattr(request, "routable_resolver_match", None):
-            # Include the subpage route if the request is for a subpage
-            resolver_match = request.routable_resolver_match  # type: ignore[attr-defined]
-            return cast(str, canonical_page.get_full_url(request=request) + resolver_match.route)
-        if canonical_page.is_latest:
-            # If the page is the latest in the series, then return the parent series URL,
-            # which is evergreen for the latest article
-            return cast(str, canonical_page.get_parent().get_full_url(request=request))
+        if self.canonical_page.is_latest and not getattr(request, "is_for_subpage", False):
+            return cast(str, self.canonical_page.get_parent().get_full_url(request=request))
+
         return super().get_canonical_full_url(request=request)
