@@ -174,10 +174,30 @@ class CoreBlocksTestCase(TestCase):
 
         self.assertEqual(info.exception.block_errors["title"].message, "Title is required for external links.")
 
+    def test_relatedcontentblock_clean__url_no_content_type(self):
+        """Checks that the content type is supplied if checking an external url."""
+        block = RelatedContentBlock()
+        value = block.to_python(
+            {
+                "external_url": "https://ons.gov.uk",
+                "title": "Example",
+            }
+        )
+
+        with self.assertRaises(StructBlockValidationError) as info:
+            block.clean(value)
+
+        self.assertEqual(
+            info.exception.block_errors["content_type"].message,
+            "You must select a content type when providing an external URL.",
+        )
+
     def test_relatedcontentblock_clean__happy_path(self):
         """Happy path for the RelatedContentBlock validation."""
         block = RelatedContentBlock()
-        value = block.to_python({"external_url": "https://ons.gov.uk", "title": "The link", "description": ""})
+        value = block.to_python(
+            {"external_url": "https://ons.gov.uk", "title": "The link", "description": "", "content_type": "ARTICLE"}
+        )
 
         self.assertEqual(block.clean(value), value)
 
@@ -193,6 +213,7 @@ class CoreBlocksTestCase(TestCase):
                 "external_url": "https://ons.gov.uk",
                 "title": "Example",
                 "description": "A link",
+                "content_type": "ARTICLE",
             }
         )
 
@@ -202,6 +223,7 @@ class CoreBlocksTestCase(TestCase):
                 "url": "https://ons.gov.uk",
                 "text": "Example",
                 "description": "A link",
+                "metadata": {"object": {"text": "Article"}},
             },
         )
 
@@ -219,6 +241,7 @@ class CoreBlocksTestCase(TestCase):
                 "url": self.home_page.url,
                 "text": "Example",
                 "description": "A link",
+                "metadata": {"object": {"text": "Page"}},
             },
         )
 
@@ -234,6 +257,35 @@ class CoreBlocksTestCase(TestCase):
                 "url": self.home_page.url,
                 "text": self.home_page.title,
                 "description": "",
+                "metadata": {"object": {"text": "Page"}},
+            },
+        )
+
+        statistical_article = StatisticalArticlePageFactory(
+            release_date=datetime(2023, 10, 1), summary="Our test description"
+        )
+
+        value = block.to_python(
+            {
+                "page": statistical_article.pk,
+            }
+        )
+
+        self.assertDictEqual(
+            value.link,
+            {
+                "url": statistical_article.url,
+                "text": statistical_article.display_title,
+                "description": "Our test description",
+                "metadata": {
+                    "date": {
+                        "iso": "2023-10-01",
+                        "prefix": "Released",
+                        "short": "1 October 2023",
+                        "showPrefix": True,
+                    },
+                    "object": {"text": "Article"},
+                },
             },
         )
 
@@ -249,6 +301,7 @@ class CoreBlocksTestCase(TestCase):
                 "external_url": "https://ons.gov.uk",
                 "title": "Example",
                 "description": "A link",
+                "content_type": "ARTICLE",
             }
         )
 
@@ -257,6 +310,7 @@ class CoreBlocksTestCase(TestCase):
             {
                 "title": {"url": "https://ons.gov.uk", "text": "Example"},
                 "description": "A link",
+                "metadata": {"object": {"text": "Article"}},
             },
         )
 
@@ -265,6 +319,7 @@ class CoreBlocksTestCase(TestCase):
                 "page": self.home_page.pk,
                 "title": "Example",
                 "description": "A link",
+                "content_type": "TIME_SERIES",
             }
         )
 
@@ -273,12 +328,14 @@ class CoreBlocksTestCase(TestCase):
             {
                 "title": {"url": self.home_page.url, "text": "Example"},
                 "description": "A link",
+                "metadata": {"object": {"text": "Time series"}},
             },
         )
 
         value = block.to_python(
             {
                 "page": self.home_page.pk,
+                "content_type": "DATASET",
             }
         )
 
@@ -286,18 +343,20 @@ class CoreBlocksTestCase(TestCase):
             value.get_related_link(),
             {
                 "title": {"url": self.home_page.url, "text": self.home_page.title},
+                "metadata": {"object": {"text": "Dataset"}},
             },
         )
 
     def test_relatedlinksblock__get_context(self):
         """Check that RelatedLinksBlock heading and slug are in the context."""
-        block = RelatedLinksBlock()
+        block = RelatedLinksBlock(add_heading=True)
         value = block.to_python(
             [
                 {
                     "external_url": "https://ons.gov.uk",
                     "title": "Example",
                     "description": "A link",
+                    "content_type": "ARTICLE",
                 }
             ]
         )
@@ -308,13 +367,25 @@ class CoreBlocksTestCase(TestCase):
         self.assertEqual(
             context["related_links"],
             [
-                {"title": {"url": "https://ons.gov.uk", "text": "Example"}, "description": "A link"},
+                {
+                    "title": {"url": "https://ons.gov.uk", "text": "Example"},
+                    "description": "A link",
+                    "metadata": {"object": {"text": "Article"}},
+                },
             ],
         )
 
+        block_no_heading = RelatedLinksBlock()
+
+        context = block_no_heading.get_context(value)
+
+        self.assertNotIn("heading", context)
+        self.assertNotIn("slug", context)
+        self.assertIn("related_links", context)
+
     def test_relatedlinksblock__toc(self):
         """Check the RelatedLinksBlock TOC."""
-        block = RelatedLinksBlock()
+        block = RelatedLinksBlock(add_heading=True)
         self.assertEqual(
             block.to_table_of_contents_items(block.to_python([])), [{"url": "#related-links", "text": "Related links"}]
         )
