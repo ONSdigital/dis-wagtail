@@ -8,7 +8,6 @@ from wagtail.blocks.struct_block import StructValue
 
 from cms.datavis.blocks.chart_options import AspectRatioBlock
 from cms.datavis.blocks.table import SimpleTableBlock
-from cms.datavis.blocks.utils import TextInputFloatBlock
 from cms.datavis.constants import AxisType, HighChartsChartType, HighchartsTheme
 
 AnnotationsList = list[dict[str, Any]]
@@ -53,49 +52,9 @@ class BaseVisualisationBlock(blocks.StructBlock):
         "periods missing.",
     )
 
-    # X axis
-    x_axis = blocks.StructBlock(
-        [
-            (
-                "title",
-                blocks.CharBlock(
-                    required=False,
-                    help_text="Only use axis titles if it is not clear from the title "
-                    "and subtitle what the axis represents.",
-                ),
-            ),
-            ("min", TextInputFloatBlock(label="Minimum", required=False)),
-            ("max", TextInputFloatBlock(label="Maximum", required=False)),
-            (
-                "tick_interval_mobile",
-                TextInputFloatBlock(label="Tick interval (mobile)", required=False),
-            ),
-            (
-                "tick_interval_desktop",
-                TextInputFloatBlock(label="Tick interval (desktop)", required=False),
-            ),
-        ]
-    )
-
-    # Y axis
-    y_axis = blocks.StructBlock(
-        [
-            (
-                "title",
-                blocks.CharBlock(
-                    required=False,
-                    help_text="Only use axis titles if it is not clear from the title "
-                    "and subtitle what the axis represents.",
-                ),
-            ),
-            ("min", TextInputFloatBlock(label="Minimum", required=False)),
-            ("max", TextInputFloatBlock(label="Maximum", required=False)),
-            ("tick_interval_mobile", TextInputFloatBlock(label="Tick interval (mobile)", required=False)),
-            ("tick_interval_desktop", TextInputFloatBlock(label="Tick interval (desktop)", required=False)),
-            ("value_suffix", blocks.CharBlock(required=False)),  # TODO: implement non-stripping charblock for affixes
-            ("tooltip_suffix", blocks.CharBlock(required=False)),  # TODO: implement non-stripping charblock for affixes
-        ]
-    )
+    # Always define axes in subclasses
+    x_axis = blocks.StaticBlock()
+    y_axis = blocks.StaticBlock()
 
     DESKTOP_ASPECT_RATIO = "desktop_aspect_ratio"
     MOBILE_ASPECT_RATIO = "mobile_aspect_ratio"
@@ -201,8 +160,12 @@ class BaseVisualisationBlock(blocks.StructBlock):
             config["tickIntervalDesktop"] = tick_interval_desktop
         if (min_value := attrs.get("min")) is not None:
             config["min"] = min_value
+        if (start_on_tick := attrs.get("start_on_tick")) is not None:
+            config["startOnTick"] = start_on_tick
         if (max_value := attrs.get("max")) is not None:
             config["max"] = max_value
+        if (end_on_tick := attrs.get("end_on_tick")) is not None:
+            config["endOnTick"] = end_on_tick
         return config
 
     def get_y_axis_config(
@@ -227,8 +190,12 @@ class BaseVisualisationBlock(blocks.StructBlock):
             }
         if (min_value := attrs.get("min")) is not None:
             config["min"] = min_value
+        if (start_on_tick := attrs.get("start_on_tick")) is not None:
+            config["startOnTick"] = start_on_tick
         if (max_value := attrs.get("max")) is not None:
             config["max"] = max_value
+        if (end_on_tick := attrs.get("end_on_tick")) is not None:
+            config["endOnTick"] = end_on_tick
         return config
 
     def get_annotations_config(self, value: "StructValue") -> AnnotationsReturn:
