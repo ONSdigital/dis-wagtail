@@ -111,7 +111,7 @@ class BundleAdminForm(WagtailAdminModelForm):
                     num_pages_not_ready += 1
 
         if not has_pages and not self._has_datasets():
-            raise ValidationError("Cannot approve the bundle without any pages")
+            raise ValidationError("Cannot approve the bundle without any pages or datasets")
 
         if num_pages_not_ready:
             self.cleaned_data["status"] = self.instance.status

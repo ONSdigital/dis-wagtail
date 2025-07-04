@@ -230,7 +230,7 @@ class BundleAdminFormTestCase(TestCase):
         form = self.form_class(instance=self.bundle, data=nested_form_data(raw_data))
 
         self.assertFalse(form.is_valid())
-        self.assertFormError(form, None, "Cannot approve the bundle without any pages")
+        self.assertFormError(form, None, "Cannot approve the bundle without any pages or datasets")
 
         # add a dataset
         DatasetFactory(id=123)
