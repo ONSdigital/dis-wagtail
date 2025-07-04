@@ -15,6 +15,7 @@ from django.contrib.auth.models import Group
 from django.test import Client, TestCase, override_settings
 
 from cms.auth import utils as auth_utils
+from cms.users.models import User
 
 RSAKeyPair = namedtuple("RSAKeyPair", ["private", "public_der", "kid"])
 
@@ -79,15 +80,11 @@ class DummyResponse:
     ACCESS_TOKEN_COOKIE_NAME="access",
     ID_TOKEN_COOKIE_NAME="id",
     WAGTAIL_CORE_ADMIN_LOGIN_ENABLED=True,
-    AUTH_TOKEN_REFRESH_URL="/auth/refresh/",
     WAGTAILADMIN_HOME_PATH="/admin/",
-    CSRF_COOKIE_NAME="csrftoken",
     SESSION_RENEWAL_OFFSET_SECONDS=300,
 )
 class CognitoTokenTestCase(TestCase):
     """Utilities reused by every auth-related TestCase."""
-
-    JWT_SESSION_ID_KEY: str = "jwt_session_id"
 
     @classmethod
     def setUpTestData(cls):  # pylint: disable=invalid-name
@@ -160,8 +157,11 @@ class CognitoTokenTestCase(TestCase):
         response = self.client.get(settings.WAGTAILADMIN_HOME_PATH)
         self.assertEqual(response.status_code, 200)
         self.assertTrue(response.wsgi_request.user.is_authenticated)
+        # User should now exist after login
+        self.assertTrue(User.objects.filter(external_user_id=self.user_uuid).exists())
 
-    def assertInGroups(self, user, *group_names) -> None:  # pylint: disable=invalid-name
+    def assertInGroups(self, *group_names) -> None:  # pylint: disable=invalid-name
+        user = User.objects.get(external_user_id=self.user_uuid)
         for name in group_names:
             self.assertTrue(
                 Group.objects.filter(name=name, user=user).exists(),

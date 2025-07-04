@@ -5,7 +5,7 @@ import SessionManagement from 'dis-authorisation-client-js';
 /** ----------------------------------------------------------------
  *  Grab the JSON produced by:
  *      {{ AUTH_CONFIG | json_script('auth-config') }}
- *  in the Jinja template (or the Python hook).
+ *  in the Jinja template (or the context processor).
  * ----------------------------------------------------------------*/
 
 let authConfig = {};

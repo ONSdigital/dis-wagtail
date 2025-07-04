@@ -51,4 +51,6 @@ class Command(BaseCommand):
 
         # Sync teams
         if settings.AWS_COGNITO_TEAM_SYNC_ENABLED:
-            self.add_management_command("sync_teams", CronTrigger(minute="*/1"))
+            self.add_management_command(
+                "sync_teams", CronTrigger(minute=f"*/{settings.AWS_COGNITO_TEAM_SYNC_FREQUENCY}")
+            )

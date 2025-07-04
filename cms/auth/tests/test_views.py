@@ -4,7 +4,6 @@ from django.contrib import messages
 from django.contrib.messages.storage.fallback import FallbackStorage
 from django.contrib.sessions.middleware import SessionMiddleware
 from django.middleware import csrf
-from django.middleware.csrf import CsrfViewMiddleware
 from django.test import Client, RequestFactory, TestCase, override_settings
 from django.urls import reverse
 from wagtail.test.utils import WagtailTestUtils
