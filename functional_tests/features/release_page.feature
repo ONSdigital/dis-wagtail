@@ -11,29 +11,6 @@ Feature: CMS users can draft, edit, and publish release pages
     Then the default release date time is today's date and 9:30 AM
     And the date placeholder, "YYYY-MM-DD HH:MM", is displayed in the date input textboxes
     And the time selection options are in 30 minute intervals
-# release date text field
-
-  Scenario: Release date text field is visible for provisional releases
-    When the user clicks "Add child page" to create a new draft release page
-    Then the page status is set to "Provisional" and the release date text field is visible
-
-  Scenario: Release date text field is added
-    When the user clicks "Add child page" to create a new draft release page
-    And the user enters some example content on the page
-    And the user adds a release date text
-    And the user clicks "Publish"
-    And the user clicks "View Live" on the publish confirmation banner
-    Then the release date text is displayed
-
-  Scenario Outline: Release date text field is hidden for provisional releases
-    When the user clicks "Add child page" to create a new draft release page
-    And the user sets the page status to "<PageStatus>"
-    Then the date text field is not visible
-
-    Examples:
-      | PageStatus |
-      | Confirmed  |
-      | Cancelled  |
   # datetime
 
   Scenario Outline: A CMS user inputs a datetime on a release calendar page and the correct period is displayed
@@ -48,3 +25,130 @@ Feature: CMS users can draft, edit, and publish release pages
       | MeridiemIndicator |
       | am                |
       | pm                |
+# Release Calendar page creation
+
+  Scenario Outline: A CMS user creates and drafts a release calendar page
+    When the user clicks "Add child page" to create a new draft release page
+    And the user enters some example content on the page
+    And the user clicks the "Save Draft" button
+    And the user clicks the "Preview" button
+    Then the "<PageStatus>" page is displayed in the preview pane
+# publishded and cancelled FAILS
+
+    Examples:
+      | PageStatus  |
+      | Provisional |
+      | Confirmed   |
+      | Published   |
+      | Cancelled   |
+
+  Scenario Outline: A CMS user can use preview mode to preview page at different statuses
+    When the user clicks "Add child page" to create a new draft release page
+    And the user enters some example content on the page
+    And the user clicks the "Save Draft" button
+    And the user clicks the "Preview" button
+    And the user changes preview mode to "<PageStatus>"
+    Then the "<PageStatus>" page is displayed in the preview pane
+
+    Examples:
+      | PageStatus  |
+      | Provisional |
+      | Confirmed   |
+      | Published   |
+      | Cancelled   |
+
+  Scenario Outline: User creates and publishes a release calendar page with the different status
+    When the user clicks "Add child page" to create a new draft release page
+    And the user sets the page status to "<PageStatus>"
+    And the user enters some example content on the page
+    And the user clicks "Publish"
+    Then the user clicks "View Live" on the publish confirmation banner
+    And the "<PageStatus>" page is displayed
+    # All fail - what is missing in content
+
+    Examples:
+      | PageStatus  |
+      | Provisional |
+      | Confirmed   |
+      | Cancelled   |
+# Release date and next release date validations.
+# Validate Release Date text
+
+  Scenario: Release date text field is visible for provisional releases
+    When the user clicks "Add child page" to create a new draft release page
+    Then the page status is set to "Provisional" and the release date text field is visible
+
+  Scenario: Release date text field is added
+    When the user clicks "Add child page" to create a new draft release page
+    And the user enters some example content on the page
+    And the user adds a release date text
+    And the user clicks "Publish"
+    And the user clicks "View Live" on the publish confirmation banner
+    Then the release date text is displayed
+
+  Scenario Outline: Release date text field is hidden for non-provisional releases
+    When the user clicks "Add child page" to create a new draft release page
+    And the user sets the page status to "<PageStatus>"
+    Then the date text field is not visible
+
+    Examples:
+      | PageStatus |
+      | Confirmed  |
+      | Cancelled  |
+# TO DO:
+
+  Scenario Outline: User cannot input invalid release date text
+    When the user clicks "Add child page" to create a new draft release page
+    And the user enters some example content on the page
+    And the user adds a invalid <ReleaseDate> text
+    And the user clicks "Publish"
+    Then an error message is displayed describing invalid <ReleaseDate> text input
+
+    Examples:
+      | ReleaseDate       |
+      | release date      |
+      | next release date |
+# check for more in forms.p 123 - 166
+# Error handling for specific status
+
+  Scenario: User publishes a cancelled page, they must enter a notice
+    When the user clicks "Add child page" to create a new draft release page
+    And the user enters some example content on the page
+    And the user sets the page status to "Cancelled"
+    And the user clicks "Publish"
+    Then an error message is displayed describing notice must be added
+# changes to release date
+# 70 to 84 - If confirmed and published
+# TO DO:
+
+  Scenario: User enters a change in release date, validation error is raised
+    And a published Release Calendar page exists
+    When the user navigates to the confirmed published release calendar page
+    And the user edits this to have a different release date
+    And the user clicks "Publish"
+  # may add draft too
+    Then an error message is displayed describing that a date change log is needed
+
+  Scenario: User enters the next release date which is before the release date
+    When the user clicks "Add child page" to create a new draft release page
+    And the user enters some example content on the page
+    And adds the next release date before the release date
+    Then an error validation is raised
+
+  Scenario: User enters the next release date which is before the release date
+    When the user clicks "Add child page" to create a new draft release page
+    And the user enters some example content on the page
+    And the user enters both next release date and next release date text
+    Then an error validation is raised to say you cannot have both
+#locale?
+
+  Scenario: User enters the next release date which is before the release date
+    And a published confirmed Release Calendar page exists
+    When the user edits this to have a different release date
+    And the user clicks "Publish"
+    Then an error message is displayed describing that a date change log is needed
+# Clean notice?
+# Ensure all required fields are validated with appropriate error handling.
+# Choosing contact details (will need the creation of an instance of contact within Snippets).
+# Pre-release access checks.
+# Related links checks
