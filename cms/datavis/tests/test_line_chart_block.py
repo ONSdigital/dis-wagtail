@@ -194,3 +194,9 @@ class LineChartBlockTestCase(BaseChartBlockTestCase):
         self.assertNotIn("max", x_axis_config)
         self.assertNotIn("startOnTick", x_axis_config)
         self.assertNotIn("endOnTick", x_axis_config)
+
+    def test_custom_reference_line(self):
+        self.raw_data["y_axis"]["custom_reference_line"] = 100
+        self.block.clean(self.get_value())
+        y_axis_config = self.get_value().block.get_component_config(self.get_value())["yAxis"]
+        self.assertEqual(100, y_axis_config["customReferenceLineValue"])
