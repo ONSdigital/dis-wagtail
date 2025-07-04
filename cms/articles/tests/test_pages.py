@@ -1,5 +1,6 @@
 from http import HTTPStatus
 
+from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.test import override_settings
 from django.urls import reverse
@@ -8,6 +9,7 @@ from wagtail.test.utils import WagtailPageTestCase
 
 from cms.articles.enums import SortingChoices
 from cms.articles.tests.factories import ArticleSeriesPageFactory, StatisticalArticlePageFactory
+from cms.core.tests.utils import extract_response_jsonld
 from cms.datasets.blocks import DatasetStoryBlock
 from cms.datasets.models import Dataset
 
@@ -60,7 +62,8 @@ class ArticleSeriesPageTests(WagtailPageTestCase):
 class StatisticalArticlePageTests(WagtailPageTestCase):  # pylint: disable=too-many-public-methods
     @classmethod
     def setUpTestData(cls):
-        cls.page = StatisticalArticlePageFactory()
+        cls.series = ArticleSeriesPageFactory()
+        cls.page = StatisticalArticlePageFactory(parent=cls.series)
         # TODO: Fix the factory to generate headline_figures correctly
         cls.page.headline_figures = [
             {
@@ -393,12 +396,12 @@ class StatisticalArticlePageTests(WagtailPageTestCase):  # pylint: disable=too-m
         theme = topic.get_parent()
 
         self.assertInHTML(
-            f'<a class="ons-breadcrumbs__link" href="{topic.url}">{topic.title}</a>',
+            f'<a class="ons-breadcrumbs__link" href="{topic.full_url}">{topic.title}</a>',
             content,
         )
 
         self.assertInHTML(
-            f'<a class="ons-breadcrumbs__link" href="{theme.url}">{theme.title}</a>',
+            f'<a class="ons-breadcrumbs__link" href="{theme.full_url}">{theme.title}</a>',
             content,
         )
 
@@ -652,6 +655,83 @@ class StatisticalArticlePageTests(WagtailPageTestCase):  # pylint: disable=too-m
 
         self.assertEqual(new_page.datasets, self.page.datasets)
         self.assertEqual(new_page.dataset_sorting, self.page.dataset_sorting)
+
+    def test_latest_page_canonical_url(self):
+        """Test that articles have the correct canonical series evergreen URL."""
+        response = self.client.get(self.page.get_url(request=self.dummy_request))
+        self.assertEqual(response.status_code, HTTPStatus.OK)
+        self.assertContains(
+            response, f'<link rel="canonical" href="{self.series.get_full_url(request=self.dummy_request)}" />'
+        )
+
+    def test_welsh_page_alias_canonical_url(self):
+        """Test that Welsh articles have the correct english canonical URL when they have not been explicitly
+        translated.
+        """
+        response = self.client.get(f"/cy{self.page.get_url(request=self.dummy_request)}")
+        self.assertEqual(response.status_code, HTTPStatus.OK)
+        self.assertContains(
+            response, f'<link rel="canonical" href="{self.series.get_full_url(request=self.dummy_request)}" />'
+        )
+
+    def test_corrected_article_versions_are_marked_no_index(self):
+        response = self.client.get(self.page.get_url(request=self.dummy_request))
+        self.assertNotContains(response, "Corrections")
+        self.assertNotContains(response, "Notices")
+        self.assertNotContains(response, "View superseded version")
+        self.assertNotContains(response, '<meta name="robots" content="noindex" />')
+
+        self.page.save_revision().publish()
+
+        original_revision_id = self.page.get_latest_revision().id
+
+        self.page.summary = "Corrected summary"
+
+        first_correction = {
+            "version_id": 1,
+            "previous_version": original_revision_id,
+            "when": "2025-01-11",
+            "frozen": True,
+            "text": "First correction text",
+        }
+
+        self.page.corrections = [
+            (
+                "correction",
+                first_correction,
+            )
+        ]
+
+        self.page.save_revision().publish()
+
+        v1_response = self.client.get(self.page.get_url(request=self.dummy_request) + "previous/v1/")
+
+        self.assertContains(v1_response, '<meta name="robots" content="noindex" />')
+
+    def test_schema_org_data(self):
+        """Test that the page has the correct schema.org markup."""
+        response = self.client.get(self.page.get_url(request=self.dummy_request))
+        self.assertEqual(response.status_code, HTTPStatus.OK)
+
+        actual_jsonld = extract_response_jsonld(response.content, self)
+
+        self.assertEqual(actual_jsonld["@context"], "http://schema.org")
+        self.assertEqual(actual_jsonld["@type"], "Article")
+        self.assertEqual(actual_jsonld["name"], self.page.title)
+        self.assertEqual(actual_jsonld["url"], self.page.get_full_url(self.dummy_request))
+        self.assertEqual(actual_jsonld["@id"], self.page.get_full_url(self.dummy_request))
+        self.assertEqual(actual_jsonld["description"], self.page.summary)
+        self.assertEqual(actual_jsonld["datePublished"], self.page.release_date.isoformat())
+        self.assertIn("breadcrumb", actual_jsonld)
+        self.assertEqual(actual_jsonld["author"]["@type"], "Person")
+        self.assertEqual(actual_jsonld["author"]["name"], self.page.contact_details.name)
+
+        self.assertEqual(actual_jsonld["publisher"]["@type"], "Organization")
+        self.assertEqual(actual_jsonld["publisher"]["name"], "Office for National Statistics")
+        self.assertEqual(actual_jsonld["publisher"]["url"], settings.ONS_WEBSITE_BASE_URL)
+
+        self.assertEqual(actual_jsonld["mainEntityOfPage"]["@type"], "WebPage")
+        self.assertEqual(actual_jsonld["mainEntityOfPage"]["@id"], self.page.get_full_url(self.dummy_request))
 
 
 class DatePlaceholderTests(WagtailPageTestCase):

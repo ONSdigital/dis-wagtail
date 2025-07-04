@@ -86,6 +86,7 @@ INSTALLED_APPS = [
     "wagtail.search",
     "wagtail.admin",
     "wagtail.locales",
+    "wagtailschemaorg",
     "wagtail.contrib.settings",
     "wagtail.contrib.redirects",
     "wagtail.contrib.legacy.richtext",
@@ -184,6 +185,7 @@ TEMPLATES = [
                 "wagtail.contrib.settings.jinja2tags.settings",
                 "cms.core.jinja2tags.CoreExtension",
                 "cms.navigation.jinja2tags.NavigationExtension",
+                "wagtailschemaorg.jinja2tags.WagtailSchemaOrgExtension",
             ],
         },
     },
@@ -954,6 +956,7 @@ SLACK_NOTIFICATIONS_WEBHOOK_URL = env.get("SLACK_NOTIFICATIONS_WEBHOOK_URL")
 
 ONS_API_BASE_URL = env.get("ONS_API_BASE_URL", "https://api.beta.ons.gov.uk/v1")
 ONS_WEBSITE_BASE_URL = env.get("ONS_WEBSITE_BASE_URL", "https://www.ons.gov.uk")
+ONS_ORGANISATION_NAME = env.get("ONS_ORGANISATION_NAME", "Office for National Statistics")
 
 WAGTAILSIMPLETRANSLATION_SYNC_PAGE_TREE = True
 
