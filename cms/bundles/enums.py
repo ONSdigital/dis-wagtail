@@ -12,8 +12,7 @@ class BundleStatus(models.TextChoices):
 
 ACTIVE_BUNDLE_STATUSES = [BundleStatus.DRAFT, BundleStatus.IN_REVIEW, BundleStatus.APPROVED]
 ACTIVE_BUNDLE_STATUS_CHOICES = [
-    (BundleStatus[choice].value, BundleStatus[choice].label)  # type: ignore[misc]
-    for choice in ACTIVE_BUNDLE_STATUSES
+    (BundleStatus[choice].value, BundleStatus[choice].label) for choice in ACTIVE_BUNDLE_STATUSES
 ]
 EDITABLE_BUNDLE_STATUSES = [BundleStatus.DRAFT, BundleStatus.IN_REVIEW]
 PREVIEWABLE_BUNDLE_STATUSES = [BundleStatus.IN_REVIEW, BundleStatus.APPROVED]
