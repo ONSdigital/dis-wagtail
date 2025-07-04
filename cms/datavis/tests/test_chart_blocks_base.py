@@ -23,6 +23,7 @@ class BaseChartBlockTestCase(SimpleTestCase, WagtailTestUtils):
             "title": "Test Chart",
             "subtitle": "Test Subtitle",
             "caption": "Test Caption",
+            "audio_description": "Test Audio Description",
             "table": TableDataFactory(),
             "theme": "primary",
             "show_legend": True,
@@ -64,6 +65,7 @@ class BaseChartBlockTestCase(SimpleTestCase, WagtailTestUtils):
             # `value` dict key, expected value
             ("title", "Test Chart"),
             ("subtitle", "Test Subtitle"),
+            ("audio_description", "Test Audio Description"),
             ("caption", "Test Caption"),
         ]
         if "theme" in self.block.child_blocks:

@@ -27,6 +27,9 @@ class BaseVisualisationBlock(blocks.StructBlock):
 
     title = blocks.CharBlock()
     subtitle = blocks.CharBlock()
+    audio_description = blocks.TextBlock(
+        required=True, help_text="An overview of what the chart shows for screen readers."
+    )
     caption = blocks.CharBlock(required=False)
 
     table = SimpleTableBlock(label="Data table")
@@ -114,6 +117,7 @@ class BaseVisualisationBlock(blocks.StructBlock):
             "chartType": self.get_highcharts_chart_type(value),
             "theme": value.get("theme"),
             "headingLevel": 3,
+            "description": value.get("audio_description"),
             "title": value.get("title"),
             "subtitle": value.get("subtitle"),
             "caption": value.get("caption"),
