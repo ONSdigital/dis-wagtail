@@ -166,3 +166,26 @@ def user_edits_published_page(context: Context):
     page.get_by_role("link", name="View child pages of 'Home'").first.click()
     page.get_by_role("link", name="View child pages of 'Release").click()
     page.get_by_role("link", name="Edit 'My Release'").click()
+
+
+@step("the user returns to editing the release page")
+def user_returns_to_editing_the_release_page(context: Context):
+    context.page.get_by_role("link", name="Edit").click()
+
+
+@step("the user adds a release date change")
+def user_adds_a_release_date_change(context: Context):
+    page = context.page
+    change_to_release_date_section = page.locator("#panel-child-content-changes_to_release_date-section")
+    change_to_release_date_section.get_by_role("button", name="Insert a block").click()
+    change_to_release_date_section.get_by_label("Previous date*").fill("2024-12-20 14:30")
+    change_to_release_date_section.get_by_label("Reason for change*").fill("Updated due to data availability")
+
+
+@then("the user cannot delete the release date change")
+def user_cannot_delete_the_release_date_change(context: Context):
+    page = context.page
+    page.wait_for_timeout(500)  # added to allow JS to be ready
+    expect(
+        page.locator("#panel-child-content-changes_to_release_date-section [data-streamfield-action='DELETE']")
+    ).to_be_hidden()
