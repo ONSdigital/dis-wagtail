@@ -177,24 +177,27 @@ def multiple_statistical_analysis(context: Context, no_statistical_analysis: str
 
 
 @given("there is a {user_role} user")
-def creat_user_by_role(context: Context, user_role: str) -> None:
+def create_user_by_role(context: Context, user_role: str) -> None:
+    if 'users' not in context:
+        context.users = []
     context.user_data = create_user(user_role)
-
+    context.page.goto(f"{context.base_url}/admin/login/")
+    context.users.append({'role': user_role, 'user': context.user_data})
 
 @given("the {user_role} is a member of the Preview teams")
-def add_user_to_preview_teams(context: Context) -> None:
+def add_user_to_preview_teams(context: Context, user_role : str) -> None:
+    user = [d for d in context.users if d['role'] == user_role][0]['user']['user']
     for team in context.teams:
-        user = context.user_data["user"]
         user.teams.add(team)
 
 
 # Bundles UI Triggers
 @when("the {user_role} logs in")
-def log_in_user_by_role(context: Context) -> None:
-
+def log_in_user_by_role(context: Context, user_role: str) -> None:
+    user = [d for d in context.users if d['role'] == user_role][0]['user']
     context.page.goto(f"{context.base_url}/admin/login/")
-    context.page.get_by_placeholder("Enter your username").fill(context.user_data["username"])
-    context.page.get_by_placeholder("Enter password").fill(context.user_data["password"])
+    context.page.get_by_placeholder("Enter your username").fill(user["username"])
+    context.page.get_by_placeholder("Enter password").fill(user["password"])
     context.page.get_by_role("button", name="Sign in").click()
 
 
