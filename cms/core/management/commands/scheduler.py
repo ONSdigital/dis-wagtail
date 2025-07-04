@@ -6,6 +6,7 @@ from typing import Any
 from apscheduler.executors.pool import ThreadPoolExecutor
 from apscheduler.schedulers.blocking import BlockingScheduler
 from apscheduler.triggers.cron import CronTrigger
+from django.conf import settings
 from django.core.management import call_command
 from django.core.management.base import BaseCommand
 
@@ -43,6 +44,13 @@ class Command(BaseCommand):
         """Configures the scheduler and triggers."""
         # "second=0" run the task every minute, on the minute (ie when the seconds = 0)
         self.add_management_command("publish_bundles", CronTrigger(second=0))
+
         # Run every 5 minutes.
         # See https://apscheduler.readthedocs.io/en/3.x/modules/triggers/cron.html#expression-types
         self.add_management_command("publish_scheduled_without_bundles", CronTrigger(minute="*/5"))
+
+        # Sync teams
+        if settings.AWS_COGNITO_TEAM_SYNC_ENABLED:
+            self.add_management_command(
+                "sync_teams", CronTrigger(minute=f"*/{settings.AWS_COGNITO_TEAM_SYNC_FREQUENCY}")
+            )
