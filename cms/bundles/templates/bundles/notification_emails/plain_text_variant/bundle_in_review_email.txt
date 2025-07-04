@@ -1,0 +1,16 @@
+Hello,
+
+The preview of your release {{bundle_name}} is available for review.
+Please follow this link: {{bundle_inspect_url}} to review. 
+Login using your existing Florence user name and password.
+Guidance on how to use Wagtail is available here [link to SharePoint TBC].
+
+Changes to your release should be requested via your Tracker change log.
+
+If you have any questions please contact your named Publishing Officer (list available here: https://statics.teams.cdn.office.net.mcas.ms/evergreen-assets/safelinks/1/atp-safelinks.html).
+
+Do not reply directly to this message as this inbox is not monitored.
+
+Kind regards,
+Publishing team
+Publishing@ons.gov.uk
