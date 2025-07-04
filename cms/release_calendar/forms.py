@@ -4,6 +4,7 @@ from django.core.exceptions import ValidationError
 from django.urls import reverse
 from django.utils.html import format_html
 from wagtail.admin.forms import WagtailAdminPageForm
+from wagtail.blocks.stream_block import StreamValue
 from wagtail.models import Locale
 
 from cms.bundles.permissions import user_can_manage_bundles
@@ -119,6 +120,28 @@ class ReleaseCalendarPageAdminForm(WagtailAdminPageForm):
             )
             notice = self.instance.live_notice
         return notice
+
+    def clean_changes_to_release_date(self) -> StreamValue:
+        """Validate the changes_to_release_date field."""
+        changes_to_release_date: StreamValue = self.cleaned_data["changes_to_release_date"]
+
+        if self.instance.pk is None:
+            return changes_to_release_date
+
+        old_frozen_changes = [change for change in self.instance.changes_to_release_date if change.value["frozen"]]
+        new_frozen_changes = [change for change in changes_to_release_date if change.value["frozen"]]
+
+        # Check if any frozen changes are being removed or tampered with
+        if len(old_frozen_changes) != len(new_frozen_changes):
+            self.add_error(
+                "changes_to_release_date",
+                ValidationError(
+                    "You cannot remove a release date change that has already been published. "
+                    "Please refresh the page and try again."
+                ),
+            )
+
+        return changes_to_release_date
 
     def validate_release_date_text_format(self, text: str, locale: Locale) -> None:
         """Validates that the release_date_text follows the locale-specific format."""
