@@ -1,10 +1,9 @@
-import json
 from http import HTTPStatus
 
-from bs4 import BeautifulSoup
 from wagtail.models import Locale
 from wagtail.test.utils import WagtailPageTestCase
 
+from cms.core.tests.utils import extract_response_jsonld
 from cms.standard_pages.tests.factories import IndexPageFactory, InformationPageFactory
 
 
@@ -56,15 +55,14 @@ class PageCanonicalUrlTests(WagtailPageTestCase):
         )
 
     def test_translated_page_canonical_url(self):
-        """Test that a translated page has the correct localised canonical URL."""
+        """Test that a translated page has the correct language coded canonical URL."""
         cy_locale = Locale.objects.get(language_code="cy")
-        for page_ancestor in self.page.get_ancestors(inclusive=False)[1:]:
+        for page_ancestor in self.page.get_ancestors()[1:]:
             translated_page = page_ancestor.copy_for_translation(locale=cy_locale)
             translated_page.save_revision().publish()
 
         welsh_page = self.page.copy_for_translation(locale=cy_locale)
         welsh_page.save_revision().publish()
-
         response = self.client.get(welsh_page.get_url(request=self.dummy_request))
 
         self.assertEqual(response.status_code, HTTPStatus.OK)
@@ -85,13 +83,8 @@ class PageSchemaOrgTests(WagtailPageTestCase):
         response = self.client.get("/")
         self.assertEqual(response.status_code, HTTPStatus.OK)
 
-        self.assertContains(response, '<script type="application/ld+json">')
+        actual_jsonld = extract_response_jsonld(response.content, self)
 
-        soup = BeautifulSoup(response.content, "html.parser")
-        jsonld_scripts = soup.find_all("script", {"type": "application/ld+json"})
-        self.assertEqual(len(jsonld_scripts), 1)
-
-        actual_jsonld = json.loads(jsonld_scripts[0].string)
         self.assertEqual(actual_jsonld["@context"], "http://schema.org")
         self.assertEqual(actual_jsonld["@type"], "WebPage")
         self.assertEqual(actual_jsonld["name"], "Home")
@@ -104,13 +97,8 @@ class PageSchemaOrgTests(WagtailPageTestCase):
         response = self.client.get(self.page.get_url(request=self.dummy_request))
         self.assertEqual(response.status_code, HTTPStatus.OK)
 
-        self.assertContains(response, '<script type="application/ld+json">')
+        actual_jsonld = extract_response_jsonld(response.content, self)
 
-        soup = BeautifulSoup(response.content, "html.parser")
-        jsonld_scripts = soup.find_all("script", {"type": "application/ld+json"})
-        self.assertEqual(len(jsonld_scripts), 1)
-
-        actual_jsonld = json.loads(jsonld_scripts[0].string)
         self.assertEqual(actual_jsonld["@context"], "http://schema.org")
         self.assertEqual(actual_jsonld["@type"], "WebPage")
         self.assertEqual(actual_jsonld["name"], self.page.title)

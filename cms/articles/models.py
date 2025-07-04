@@ -485,24 +485,25 @@ class StatisticalArticlePage(BundledPageMixin, RoutablePageMixin, BasePage):  # 
 
     def ld_entity(self) -> dict[str, object]:
         """Add statistical article specific schema properties to JSON LD."""
+        # TODO pass through request to this one wagtailschemaorg supports it
         properties = {
-            "url": self.get_full_url(),  # TODO pass request to this one wagtailschemaorg supports it
-            "headline": self.listing_title or self.title,
-            "description": self.listing_summary or self.summary,
+            "url": self.get_full_url(),
+            "headline": self.seo_title or self.listing_title or self.title,
+            "description": self.search_description or self.listing_summary or self.summary,
             "datePublished": self.release_date.isoformat(),
             "license": "https://www.nationalarchives.gov.uk/doc/open-government-licence/version/3/",
             "author": {
                 "@type": "Person",
-                "name": self.contact_details.name if self.contact_details else "Office for National Statistics",
+                "name": self.contact_details.name if self.contact_details else settings.ONS_ORGANISATION_NAME,
             },
             "publisher": {
                 "@type": "Organization",
-                "name": "Office for National Statistics",  # TODO make this a setting or constant?
+                "name": settings.ONS_ORGANISATION_NAME,
                 "url": settings.ONS_WEBSITE_BASE_URL,
             },
             "mainEntityOfPage": {
                 "@type": "WebPage",
-                "@id": self.get_full_url(),  # TODO pass request to this one wagtailschemaorg supports it
+                "@id": self.get_full_url(),
             },
         }
         return cast(dict[str, object], extend(super().ld_entity(), properties))

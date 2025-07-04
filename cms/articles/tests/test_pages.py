@@ -1,7 +1,5 @@
-import json
 from http import HTTPStatus
 
-from bs4 import BeautifulSoup
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.test import override_settings
@@ -11,6 +9,7 @@ from wagtail.test.utils import WagtailPageTestCase
 
 from cms.articles.enums import SortingChoices
 from cms.articles.tests.factories import ArticleSeriesPageFactory, StatisticalArticlePageFactory
+from cms.core.tests.utils import extract_response_jsonld
 from cms.datasets.blocks import DatasetStoryBlock
 from cms.datasets.models import Dataset
 
@@ -714,13 +713,8 @@ class StatisticalArticlePageTests(WagtailPageTestCase):  # pylint: disable=too-m
         response = self.client.get(self.page.get_url(request=self.dummy_request))
         self.assertEqual(response.status_code, HTTPStatus.OK)
 
-        self.assertContains(response, '<script type="application/ld+json">')
+        actual_jsonld = extract_response_jsonld(response.content, self)
 
-        soup = BeautifulSoup(response.content, "html.parser")
-        jsonld_scripts = soup.find_all("script", {"type": "application/ld+json"})
-        self.assertEqual(len(jsonld_scripts), 1)
-
-        actual_jsonld = json.loads(jsonld_scripts[0].string)
         self.assertEqual(actual_jsonld["@context"], "http://schema.org")
         self.assertEqual(actual_jsonld["@type"], "Article")
         self.assertEqual(actual_jsonld["name"], self.page.title)
