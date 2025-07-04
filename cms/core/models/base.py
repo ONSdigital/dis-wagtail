@@ -15,6 +15,8 @@ from cms.taxonomy.forms import DeduplicateTopicsAdminForm
 from .mixins import ListingFieldsMixin, SocialFieldsMixin
 
 if TYPE_CHECKING:
+    from datetime import date, datetime
+
     from django.db import models
     from wagtail.admin.panels import FieldPanel
     from wagtail.contrib.settings.models import (
@@ -131,6 +133,12 @@ class BasePage(ListingFieldsMixin, SocialFieldsMixin, Page):  # type: ignore[dja
             return bool(streamvalue.stream_block.has_ons_embed(streamvalue))
 
         return False
+
+    @property
+    def publication_date(self) -> "date | datetime | None":
+        """Return the publication date of the page."""
+        # Use the release_date field if available, otherwise return last_published_at.
+        return getattr(self, "release_date", self.last_published_at)
 
 
 class BaseSiteSetting(WagtailBaseSiteSetting):

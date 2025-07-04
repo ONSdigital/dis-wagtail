@@ -4,20 +4,28 @@ from django.conf import settings
 from django.utils.text import slugify
 from wagtail import blocks
 
-from cms.core.blocks import BasicTableBlock, LinkBlock, RelatedContentBlock
+from cms.core.blocks import BasicTableBlock, LinkBlock, LinkBlockWithDescription
 
 if TYPE_CHECKING:
     from wagtail.blocks import StructValue
+    from wagtail.blocks.list_block import ListValue
 
 
 class ContentSectionBlock(blocks.StructBlock):
     """A content section with list of links."""
 
     title = blocks.CharBlock(label="Section title")
-    links = blocks.ListBlock(RelatedContentBlock())
+    links = blocks.ListBlock(LinkBlockWithDescription())
 
     class Meta:
         template = "templates/components/streamfield/release_content_section.html"
+
+    def get_context(self, value: "ListValue", parent_context: dict | None = None) -> dict:
+        """Inject our block heading and slug in the template context."""
+        context: dict = super().get_context(value, parent_context=parent_context)
+        context["related_links"] = [item.get_related_link(context=context) for item in value["links"]]
+
+        return context
 
     def to_table_of_contents_items(self, value: "StructValue") -> list[dict[str, str]]:
         """Convert the value to the table of contents component macro format."""
