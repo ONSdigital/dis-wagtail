@@ -26,11 +26,13 @@ from .blocks import (
 )
 from .enums import NON_PROVISIONAL_STATUSES, ReleaseStatus
 from .forms import ReleaseCalendarPageAdminForm
+from .locks import PageInBundleReadyToBePublishedLock
 from .panels import ReleaseCalendarBundleNotePanel
 
 if TYPE_CHECKING:
     from django.http import HttpRequest
     from django.template.response import TemplateResponse
+    from wagtail.locks import BaseLock
 
     from cms.bundles.models import Bundle
 
@@ -282,3 +284,9 @@ class ReleaseCalendarPage(BundledPageMixin, BasePage):  # type: ignore[django-ma
         }
 
         return cast("TemplateResponse", templates.get(mode_name, templates["PROVISIONAL"]))
+
+    def get_lock(self) -> Optional["BaseLock"]:
+        if self.active_bundle and self.active_bundle.is_ready_to_be_published:
+            return PageInBundleReadyToBePublishedLock(self)
+
+        return super().get_lock()

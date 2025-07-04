@@ -12,6 +12,7 @@ from cms.core.cache import get_default_cache_control_decorator
 from cms.core.query import order_by_pk_position
 from cms.taxonomy.forms import DeduplicateTopicsAdminForm
 
+from ..forms import ONSCopyForm
 from .mixins import ListingFieldsMixin, SocialFieldsMixin
 
 if TYPE_CHECKING:
@@ -49,6 +50,7 @@ class BasePage(ListingFieldsMixin, SocialFieldsMixin, Page):  # type: ignore[dja
     """Base page class with listing and social fields additions as well as cache decorators."""
 
     base_form_class = DeduplicateTopicsAdminForm
+    copy_form_class = ONSCopyForm
 
     show_in_menus_default = True
     # Used to check for the existence of equation and ONS embed blocks.
