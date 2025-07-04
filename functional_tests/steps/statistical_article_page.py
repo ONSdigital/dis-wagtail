@@ -462,6 +462,7 @@ def a_statistical_article_page_with_configured_featured_chart_exists(context: Co
             "value": {
                 "title": "Test Chart",
                 "subtitle": "Test Subtitle",
+                "audio_description": "This is the audio description",
                 "table": TableDataFactory(table_data=[["", "Series 1"], ["2005", "100"]]),
                 "theme": "primary",
                 "show_legend": True,
