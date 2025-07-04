@@ -2,6 +2,7 @@ from collections.abc import Sequence
 from contextlib import suppress
 from typing import Any, ClassVar, Optional, cast
 
+from django.conf import settings
 from django.forms.widgets import RadioSelect
 from wagtail import blocks
 from wagtail.blocks.struct_block import StructValue
@@ -28,6 +29,7 @@ class BaseVisualisationBlock(blocks.StructBlock):
     title = blocks.CharBlock()
     subtitle = blocks.CharBlock()
     caption = blocks.CharBlock(required=False)
+    footnotes = blocks.RichTextBlock(required=False, features=settings.RICH_TEXT_BASIC)
 
     table = SimpleTableBlock(label="Data table")
 
@@ -123,6 +125,7 @@ class BaseVisualisationBlock(blocks.StructBlock):
             "series": series,
             "useStackedLayout": value.get("use_stacked_layout"),
             "download": self.get_download_config(value),
+            "footnotes": value.get("footnotes"),
         }
 
         point_annotations, range_annotations, line_annotations = self.get_annotations_config(value)
