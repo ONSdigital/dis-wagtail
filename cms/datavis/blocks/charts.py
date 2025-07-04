@@ -64,12 +64,12 @@ class LineChartBlock(BaseVisualisationBlock):
     y_axis = blocks.StructBlock(
         [
             ("title", blocks.CharBlock(required=False, help_text=AXIS_TITLE_HELP_TEXT)),
+            ("tick_interval_mobile", TextInputFloatBlock(label="Tick interval (mobile)", required=False)),
+            ("tick_interval_desktop", TextInputFloatBlock(label="Tick interval (desktop)", required=False)),
             ("min", TextInputFloatBlock(label="Minimum", required=False)),
             ("start_on_tick", blocks.BooleanBlock(label="Start on tick", default=True, required=False)),
             ("max", TextInputFloatBlock(label="Maximum", required=False)),
             ("end_on_tick", blocks.BooleanBlock(label="End on tick", default=True, required=False)),
-            ("tick_interval_mobile", TextInputFloatBlock(label="Tick interval (mobile)", required=False)),
-            ("tick_interval_desktop", TextInputFloatBlock(label="Tick interval (desktop)", required=False)),
         ]
     )
 
@@ -143,12 +143,12 @@ class BarColumnChartBlock(BaseVisualisationBlock):
                     help_text=AXIS_TITLE_HELP_TEXT,
                 ),
             ),
+            ("tick_interval_mobile", TextInputFloatBlock(label="Tick interval (mobile)", required=False)),
+            ("tick_interval_desktop", TextInputFloatBlock(label="Tick interval (desktop)", required=False)),
             ("min", TextInputFloatBlock(label="Minimum", required=False)),
             ("start_on_tick", blocks.BooleanBlock(label="Start on tick", default=True, required=False)),
             ("max", TextInputFloatBlock(label="Maximum", required=False)),
             ("end_on_tick", blocks.BooleanBlock(label="End on tick", default=True, required=False)),
-            ("tick_interval_mobile", TextInputFloatBlock(label="Tick interval (mobile)", required=False)),
-            ("tick_interval_desktop", TextInputFloatBlock(label="Tick interval (desktop)", required=False)),
         ],
         label="Value axis",
     )
@@ -236,9 +236,13 @@ class BarColumnChartBlock(BaseVisualisationBlock):
         if value.get("select_chart_type") == BarColumnChartTypeChoices.BAR and value.get("x_axis").get("title"):
             raise blocks.StructBlockValidationError(
                 {
-                    "x_axis": ValidationError(
-                        "Category axis title is not supported for horizontal bar charts.",
-                        code=self.ERROR_HORIZONTAL_BAR_NO_CATEGORY_TITLE,
+                    "x_axis": blocks.StructBlockValidationError(
+                        block_errors={
+                            "title": ValidationError(
+                                "Category axis title is not supported for horizontal bar charts.",
+                                code=self.ERROR_HORIZONTAL_BAR_NO_CATEGORY_TITLE,
+                            )
+                        }
                     )
                 }
             )
@@ -489,9 +493,13 @@ class BarColumnConfidenceIntervalChartBlock(BaseVisualisationBlock):
         ).get("title"):
             raise blocks.StructBlockValidationError(
                 {
-                    "x_axis": ValidationError(
-                        "Category axis title is not supported for horizontal bar charts.",
-                        code=self.ERROR_HORIZONTAL_BAR_NO_CATEGORY_TITLE,
+                    "x_axis": blocks.StructBlockValidationError(
+                        block_errors={
+                            "title": ValidationError(
+                                "Category axis title is not supported for horizontal bar charts.",
+                                code=self.ERROR_HORIZONTAL_BAR_NO_CATEGORY_TITLE,
+                            )
+                        }
                     )
                 }
             )
