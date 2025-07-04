@@ -158,7 +158,7 @@ class CognitoTokenTestCase(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertTrue(response.wsgi_request.user.is_authenticated)
         # User should now exist after login
-        self.assertTrue(User.objects.filter(external_user_id=self.user_uuid).exists())
+        self.assertTrue(User.objects.filter(external_user_id=response.wsgi_request.user.external_user_id).exists())
 
     def assertInGroups(self, *group_names) -> None:  # pylint: disable=invalid-name
         user = User.objects.get(external_user_id=self.user_uuid)

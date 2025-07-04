@@ -159,6 +159,9 @@ class AuthIntegrationTests(CognitoTokenTestCase):
 
     def test_username_mismatch_between_tokens(self):
         uuid_other = str(uuid.uuid4())
+        # Log in with valid tokens for user_uuid
+        self.login_with_tokens()
+        self.assertLoggedIn()
 
         access = build_jwt(
             self.keypair,
@@ -180,16 +183,21 @@ class AuthIntegrationTests(CognitoTokenTestCase):
     def test_token_mismatch_session(self):
         uuid_other = str(uuid.uuid4())
         # Log in with valid tokens for user_uuid
-        access, id_token = self.generate_tokens()
-        self.set_jwt_cookies(access, id_token)
+        self.login_with_tokens()
         self.assertFalse(User.objects.filter(external_user_id=self.user_uuid).exists())
 
         self.assertLoggedIn()
+        # self.assertLoggedIn()
         # Now swap to tokens for a different user
-        access2, id_token2 = self.generate_tokens(username=uuid_other)
-        self.set_jwt_cookies(access2, id_token2)
+        access_2, id_token_2 = self.generate_tokens(username=uuid_other)
+        self.set_jwt_cookies(access_2, id_token_2)
 
-        self.assertLoggedOut()
+        response_2 = self.client.get(settings.WAGTAILADMIN_HOME_PATH)
+        print("Response 2: ", response_2.status_code)
+        self.assertEqual(response_2.status_code, 302)
+        self.assertFalse(response_2.wsgi_request.user.is_authenticated)
+        # User shouldn't exist after login
+        self.assertFalse(User.objects.filter(external_user_id=uuid_other).exists())
 
     def test_session_update_on_new_jti(self):
         # First login with default JTIs
