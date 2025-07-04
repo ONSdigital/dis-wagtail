@@ -134,6 +134,7 @@ Feature: Statistical Article Page components
         And the user switches to the Promote tab
         And the user clicks "Line chart" in the featured chart streamfield block selector
         And the user fills in the line chart title
+        And the user fills in the chart audio description
         And the user enters data into the chart table
         And the user clicks "Publish"
         Then submitting the Wagtail page edit form is successful

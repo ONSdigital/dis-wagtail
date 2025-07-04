@@ -392,6 +392,13 @@ def user_fills_in_chart_title(context: Context):
     featured_chart_content.get_by_label("Title*").fill("Test Chart")
 
 
+@step("the user fills in the chart audio description")
+def user_fills_in_chart_audio_description(context: Context):
+    featured_chart_content = context.page.locator("#panel-child-promote-featured_chart-content")
+    context.page.pause()
+    featured_chart_content.get_by_label("Audio Description*").fill("This is the audio description")
+
+
 @step("the user enters data into the chart table")
 def user_enters_data_into_chart_table(context: Context):
     """Fill the table with test data by clicking and typing in each cell."""
