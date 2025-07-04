@@ -395,7 +395,6 @@ def user_fills_in_chart_title(context: Context):
 @step("the user fills in the chart audio description")
 def user_fills_in_chart_audio_description(context: Context):
     featured_chart_content = context.page.locator("#panel-child-promote-featured_chart-content")
-    context.page.pause()
     featured_chart_content.get_by_label("Audio Description*").fill("This is the audio description")
 
 
