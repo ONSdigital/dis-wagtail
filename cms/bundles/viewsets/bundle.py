@@ -167,7 +167,11 @@ class BundleInspectView(InspectView):
         return user_can_manage_bundles(self.request.user)
 
     def get_fields(self) -> list[str]:
-        """Returns the list of fields to include in the inspect view."""
+        """Returns the list of fields to include in the inspect view.
+
+        Note: values are inserted by methods following the get_FIELDNAME_display_value pattern.
+        See InspectView.get_field_display_value.
+        """
         if self.can_manage:
             return [
                 "name",
