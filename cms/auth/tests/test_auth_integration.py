@@ -55,6 +55,50 @@ class AuthIntegrationTests(CognitoTokenTestCase):
             settings.VIEWERS_GROUP_NAME,
         )
 
+    def test_existing_user_details_are_updated_on_login(self):
+        """User details are updated if Cognito tokens provide new info."""
+        # Create a user with old details and external_user_id
+        user = User.objects.create(
+            username="testuser",
+            email="old_email@example.com",
+            first_name="OldFirst",
+            last_name="OldLast",
+            external_user_id=self.user_uuid,
+        )
+
+        # Generate tokens with updated details
+        new_email = "new_email@example.com"
+        new_first = "NewFirst"
+        new_last = "NewLast"
+
+        access = build_jwt(
+            self.keypair,
+            token_use="access",
+            username=self.user_uuid,
+            client_id=settings.AWS_COGNITO_APP_CLIENT_ID,
+        )
+        id_token = build_jwt(
+            self.keypair,
+            token_use="id",
+            aud=settings.AWS_COGNITO_APP_CLIENT_ID,
+            **{
+                "cognito:username": self.user_uuid,
+                "email": new_email,
+                "given_name": new_first,
+                "family_name": new_last,
+            },
+        )
+
+        self.set_jwt_cookies(access, id_token)
+        # Trigger authentication (middleware runs)
+        self.client.get(settings.WAGTAILADMIN_HOME_PATH)
+
+        # Refresh from DB and check details updated
+        user.refresh_from_db()
+        self.assertEqual(user.email, new_email)
+        self.assertEqual(user.first_name, new_first)
+        self.assertEqual(user.last_name, new_last)
+
     def test_subsequent_request_uses_existing_session_when_jti_unchanged(self):
         self.login_with_tokens()
         self.assertLoggedIn()

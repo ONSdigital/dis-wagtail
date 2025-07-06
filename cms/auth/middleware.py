@@ -139,11 +139,13 @@ class ONSAuthMiddleware(AuthenticationMiddleware):
     @staticmethod
     def _handle_unauthenticated_user(request: "HttpRequest") -> None:
         """Logs out the user if JWT tokens are missing and the session configuration is unsuitable."""
-        if not settings.WAGTAIL_CORE_ADMIN_LOGIN_ENABLED or (
-            request.user.is_authenticated and request.user.is_external_user
-        ):
+        if not settings.WAGTAIL_CORE_ADMIN_LOGIN_ENABLED:
+            logger.info("Terminating session due to missing JWT tokens or insufficient login configuration.")
+            logout(request)
+        elif request.user.is_authenticated and getattr(request.user, "is_external_user", False):
             logger.info(
                 "Terminating session due to missing JWT tokens or insufficient login configuration.",
+                extra={"external_user_id": getattr(request.user, "external_user_id", None)},
             )
             logout(request)
 
@@ -169,5 +171,6 @@ class ONSAuthMiddleware(AuthenticationMiddleware):
         # Assign groups if provided.
         groups_ids = id_payload.get("cognito:groups") or []
         user.assign_groups_and_teams(groups_ids)
+        user.save()
 
         login(request, user)

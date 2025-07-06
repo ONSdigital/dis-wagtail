@@ -125,7 +125,6 @@ class ONSAuthMiddlewareTests(TestCase):
         ACCESS_TOKEN_COOKIE_NAME="access",
         ID_TOKEN_COOKIE_NAME="id",
     )
-    # TODO Test opposite path for _validate_client_ids -> _authenticate_user not reached
     def test_valid_client_ids_authentication_successful(self):
         req = self._request()
         req.COOKIES = {"access": "tokA", "id": "tokI"}
@@ -500,6 +499,56 @@ class ONSAuthMiddlewareTests(TestCase):
             email="user99@example.com",
             first_name="U",
             last_name="Ser",
+            created=False,
+        )
+
+    @override_settings(
+        AWS_COGNITO_LOGIN_ENABLED=True,
+        AWS_COGNITO_APP_CLIENT_ID="expected",
+        ACCESS_TOKEN_COOKIE_NAME="access",
+        ID_TOKEN_COOKIE_NAME="id",
+    )
+    def test_existing_user_details_are_updated(self):
+        req = self._request()
+        req.COOKIES = {"access": "tokA", "id": "tokI"}
+
+        payload_access = {
+            "client_id": "expected",
+            "username": "user99",
+            "jti": "ja",
+            "token_use": "access",
+        }
+        payload_id = {
+            "aud": "expected",
+            "cognito:username": "user99",
+            "jti": "jb",
+            "email": "new_email@example.com",
+            "given_name": "NewFirst",
+            "family_name": "NewLast",
+            "token_use": "id",
+        }
+
+        # Create an existing user with old details
+        existing_user = User.objects.create(
+            username="user99",
+            email="old_email@example.com",
+            first_name="OldFirst",
+            last_name="OldLast",
+        )
+        # Mock update_details to track calls
+        existing_user.update_details = mock.Mock()
+
+        with (
+            mock.patch("cms.auth.middleware.validate_jwt", side_effect=[payload_access, payload_id]),
+            mock.patch("cms.auth.middleware.User.objects.get_or_create", return_value=(existing_user, False)),
+            mock.patch("cms.auth.middleware.login"),  # Prevent actual login
+        ):
+            self.middleware.process_request(req)
+
+        existing_user.update_details.assert_called_once_with(
+            email="new_email@example.com",
+            first_name="NewFirst",
+            last_name="NewLast",
             created=False,
         )
 
