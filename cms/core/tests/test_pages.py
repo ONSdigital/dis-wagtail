@@ -63,13 +63,11 @@ class PageCanonicalUrlTests(WagtailPageTestCase):
 
         welsh_page = self.page.copy_for_translation(locale=cy_locale)
         welsh_page.save_revision().publish()
-        response = self.client.get(welsh_page.get_url(request=self.dummy_request))
-
+        response = self.client.get(welsh_page.get_url())
         self.assertEqual(response.status_code, HTTPStatus.OK)
-        self.assertIn(welsh_page.get_site().root_url + "/cy/", welsh_page.get_full_url(request=self.dummy_request))
-        self.assertContains(
-            response, f'<link rel="canonical" href="{welsh_page.get_full_url(request=self.dummy_request)}" />'
-        )
+
+        self.assertIn(welsh_page.get_site().root_url + "/cy/", welsh_page.get_full_url())
+        self.assertContains(response, f'<link rel="canonical" href="{welsh_page.get_full_url()}" />')
 
 
 class PageSchemaOrgTests(WagtailPageTestCase):
@@ -90,7 +88,7 @@ class PageSchemaOrgTests(WagtailPageTestCase):
         self.assertEqual(actual_jsonld["name"], "Home")
         self.assertEqual(actual_jsonld["url"], self.page.get_site().root_url + "/")
         self.assertEqual(actual_jsonld["@id"], self.page.get_site().root_url + "/")
-        self.assertNotIn("breadcrumb", actual_jsonld, "The home should not have breadcrumbs")
+        self.assertNotIn("breadcrumb", actual_jsonld, "The home page should not have breadcrumbs")
 
     def test_schema_org_data_with_breadcrumbs(self):
         """Test that the page has the correct schema.org markup including breadcrumbs."""
