@@ -4,6 +4,7 @@ from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.test import override_settings
 from django.urls import reverse
+from django.utils.html import strip_tags
 from wagtail.blocks import StreamValue
 from wagtail.test.utils import WagtailPageTestCase
 
@@ -720,7 +721,7 @@ class StatisticalArticlePageTests(WagtailPageTestCase):  # pylint: disable=too-m
         self.assertEqual(actual_jsonld["name"], self.page.title)
         self.assertEqual(actual_jsonld["url"], self.page.get_full_url(self.dummy_request))
         self.assertEqual(actual_jsonld["@id"], self.page.get_full_url(self.dummy_request))
-        self.assertEqual(actual_jsonld["description"], self.page.summary)
+        self.assertEqual(actual_jsonld["description"], strip_tags(self.page.summary))
         self.assertEqual(actual_jsonld["datePublished"], self.page.release_date.isoformat())
         self.assertIn("breadcrumb", actual_jsonld)
         self.assertEqual(actual_jsonld["author"]["@type"], "Person")
@@ -732,6 +733,87 @@ class StatisticalArticlePageTests(WagtailPageTestCase):  # pylint: disable=too-m
 
         self.assertEqual(actual_jsonld["mainEntityOfPage"]["@type"], "WebPage")
         self.assertEqual(actual_jsonld["mainEntityOfPage"]["@id"], self.page.get_full_url(self.dummy_request))
+
+    def test_schema_org_contact_falls_back_to_org_name(self):
+        """Test that the schema.org contact defaults to the organisation name and type."""
+        self.page.contact_details = None
+        self.page.save_revision().publish()
+
+        response = self.client.get(self.page.get_url(request=self.dummy_request))
+        self.assertEqual(response.status_code, HTTPStatus.OK)
+
+        actual_jsonld = extract_response_jsonld(response.content, self)
+
+        self.assertEqual(actual_jsonld["author"]["name"], settings.ONS_ORGANISATION_NAME)
+        self.assertEqual(actual_jsonld["author"]["@type"], "Organization")
+
+    def test_schema_org_headline(self):
+        """Test the schema.org headline uses the seo_title by default,
+        falling back to listing_title and then page title.
+        """
+        headline_cases = [
+            {
+                "seo_title": "SEO Title",
+                "listing_title": "Listing Title",
+                "expected_headline": "SEO Title",
+            },
+            {
+                "seo_title": "",
+                "listing_title": "Listing Title",
+                "expected_headline": "Listing Title",
+            },
+            {
+                "seo_title": "",
+                "listing_title": "",
+                "expected_headline": self.page.title,
+            },
+        ]
+
+        for headline_case in headline_cases:
+            with self.subTest(headline_case=headline_case):
+                self.page.seo_title = headline_case["seo_title"]
+                self.page.listing_title = headline_case["listing_title"]
+                self.page.save_revision().publish()
+
+                response = self.client.get(self.page.get_url(request=self.dummy_request))
+                self.assertEqual(response.status_code, HTTPStatus.OK)
+                actual_jsonld = extract_response_jsonld(response.content, self)
+
+                self.assertEqual(actual_jsonld["headline"], headline_case["expected_headline"])
+
+    def test_schema_org_description(self):
+        """Test the schema.org headline uses the search_description by default,
+        falling back to listing_summary and then page summary (stripped on html tags).
+        """
+        description_cases = [
+            {
+                "search_description": "Search description",
+                "listing_summary": "Listing summary",
+                "expected_description": "Search description",
+            },
+            {
+                "search_description": "",
+                "listing_summary": "Listing summary",
+                "expected_description": "Listing summary",
+            },
+            {
+                "search_description": "",
+                "listing_summary": "",
+                "expected_description": strip_tags(self.page.summary),
+            },
+        ]
+
+        for description_case in description_cases:
+            with self.subTest(description_case=description_case):
+                self.page.search_description = description_case["search_description"]
+                self.page.listing_summary = description_case["listing_summary"]
+                self.page.save_revision().publish()
+
+                response = self.client.get(self.page.get_url(request=self.dummy_request))
+                self.assertEqual(response.status_code, HTTPStatus.OK)
+                actual_jsonld = extract_response_jsonld(response.content, self)
+
+                self.assertEqual(actual_jsonld["description"], description_case["expected_description"])
 
 
 class DatePlaceholderTests(WagtailPageTestCase):

@@ -117,3 +117,32 @@ class PageSchemaOrgTests(WagtailPageTestCase):
         self.assertEqual(breadcrumbs[1]["name"], self.index_page.title)
         self.assertEqual(breadcrumbs[1]["@type"], "ListItem")
         self.assertEqual(breadcrumbs[1]["position"], 2)
+
+    def test_schema_org_description(self):
+        """Test the schema.org headline uses the search_description by default,
+        falling back to listing_summary.
+        """
+        description_cases = [
+            {
+                "search_description": "Search description",
+                "listing_summary": "Listing summary",
+                "expected_description": "Search description",
+            },
+            {
+                "search_description": "",
+                "listing_summary": "Listing summary",
+                "expected_description": "Listing summary",
+            },
+        ]
+
+        for description_case in description_cases:
+            with self.subTest(description_case=description_case):
+                self.page.search_description = description_case["search_description"]
+                self.page.listing_summary = description_case["listing_summary"]
+                self.page.save_revision().publish()
+
+                response = self.client.get(self.page.get_url(request=self.dummy_request))
+                self.assertEqual(response.status_code, HTTPStatus.OK)
+                actual_jsonld = extract_response_jsonld(response.content, self)
+
+                self.assertEqual(actual_jsonld["description"], description_case["expected_description"])

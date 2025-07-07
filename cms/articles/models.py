@@ -7,6 +7,7 @@ from django.db import models
 from django.http import Http404
 from django.shortcuts import get_object_or_404, redirect
 from django.utils.functional import cached_property
+from django.utils.html import strip_tags
 from django.utils.translation import gettext_lazy as _
 from wagtail.admin.panels import FieldPanel, FieldRowPanel, HelpPanel, MultiFieldPanel, TitleFieldPanel
 from wagtail.contrib.routable_page.models import RoutablePageMixin, path
@@ -489,11 +490,11 @@ class StatisticalArticlePage(BundledPageMixin, RoutablePageMixin, BasePage):  # 
         properties = {
             "url": self.get_full_url(),
             "headline": self.seo_title or self.listing_title or self.title,
-            "description": self.search_description or self.listing_summary or self.summary,
+            "description": self.search_description or self.listing_summary or strip_tags(self.summary),
             "datePublished": self.release_date.isoformat(),
             "license": "https://www.nationalarchives.gov.uk/doc/open-government-licence/version/3/",
             "author": {
-                "@type": "Person",
+                "@type": "Person" if self.contact_details else "Organization",
                 "name": self.contact_details.name if self.contact_details else settings.ONS_ORGANISATION_NAME,
             },
             "publisher": {
