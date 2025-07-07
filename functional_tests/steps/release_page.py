@@ -182,6 +182,15 @@ def user_adds_a_release_date_change(context: Context):
     change_to_release_date_section.get_by_label("Reason for change*").fill("Updated due to data availability")
 
 
+@step("the user adds another release date change")
+def user_adds_another_release_date_change(context: Context):
+    page = context.page
+    change_to_release_date_section = page.locator("#panel-child-content-changes_to_release_date-section")
+    change_to_release_date_section.get_by_role("button", name="Insert a block").nth(1).click()
+    change_to_release_date_section.get_by_label("Previous date*").nth(1).fill("2024-12-19 12:15")
+    change_to_release_date_section.get_by_label("Reason for change*").nth(1).fill("New update to release schedule")
+
+
 @then("the user cannot delete the release date change")
 def user_cannot_delete_the_release_date_change(context: Context):
     page = context.page
@@ -189,3 +198,10 @@ def user_cannot_delete_the_release_date_change(context: Context):
     expect(
         page.locator("#panel-child-content-changes_to_release_date-section [data-streamfield-action='DELETE']")
     ).to_be_hidden()
+
+
+@then("the user sees a validation error message about adding multiple release date changes")
+def user_sees_validation_error_for_multiple_changes(context: Context):
+    expect(
+        context.page.get_by_text("Only one 'Changes to release date' entry can be added per release date change.")
+    ).to_be_visible()
