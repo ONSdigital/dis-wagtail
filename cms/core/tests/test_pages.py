@@ -119,9 +119,7 @@ class PageSchemaOrgTests(WagtailPageTestCase):
         self.assertEqual(breadcrumbs[1]["position"], 2)
 
     def test_schema_org_description(self):
-        """Test the schema.org headline uses the search_description by default,
-        falling back to listing_summary.
-        """
+        """Test the schema.org headline uses the search_description by default, falling back to listing_summary."""
         description_cases = [
             {
                 "search_description": "Search description",
