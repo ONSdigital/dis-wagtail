@@ -108,9 +108,8 @@ class ReleaseCalendarPageAdminForm(WagtailAdminPageForm):
             and self.live_page
             and live_status in [ReleaseStatus.CONFIRMED, ReleaseStatus.PUBLISHED]
         ):
-            self.validate_change_log(date_has_changed, change_log_added)
+            self._validate_change_logs_dates(date_has_changed, change_log_added)
 
-        # Case 3: More than one new change log was added in a single operation.
         if added_changes_count > 1:
             raise ValidationError(
                 {
@@ -248,7 +247,7 @@ class ReleaseCalendarPageAdminForm(WagtailAdminPageForm):
         )
         raise ValidationError({"status": message})
 
-    def validate_change_log(self, date_has_changed: bool, change_log_added: bool) -> None:
+    def _validate_change_logs_dates(self, date_has_changed: bool, change_log_added: bool) -> None:
         if date_has_changed and not change_log_added:
             raise ValidationError(
                 {
