@@ -394,7 +394,7 @@ class BundleViewSetTestCase(BundleViewSetTestCaseBase):
         """Checks that the inspect view displays the release calendar page."""
         release_calendar_page = ReleaseCalendarPageFactory(title="Foobar Release Calendar Page")
         self.bundle.release_calendar_page = release_calendar_page
-        self.bundle.save()
+        self.bundle.save(update_fields=["release_calendar_page"])
 
         response = self.client.get(reverse("bundle:inspect", args=[self.bundle.pk]))
 
@@ -407,6 +407,18 @@ class BundleViewSetTestCase(BundleViewSetTestCaseBase):
 
         content = response.content.decode("utf-8")
         self.assertInHTML("<dt>Associated release calendar page</dt><dd>N/A</dd>", content)
+
+    def test_inspect_view__links_to_live_pages_after_publication(self):
+        release_calendar_page = ReleaseCalendarPageFactory(title="Foobar Release Calendar Page")
+        self.bundle.release_calendar_page = release_calendar_page
+        self.bundle.status = BundleStatus.PUBLISHED
+        self.bundle.save(update_fields=["status", "release_calendar_page"])
+
+        response = self.client.get(reverse("bundle:inspect", args=[self.bundle.pk]))
+
+        self.assertContains(response, "Foobar Release Calendar Page")
+        self.assertContains(response, release_calendar_page.url)
+        self.assertNotContains(response, reverse("bundles:preview_release_calendar", args=[self.bundle.id]))
 
 
 class BundleIndexViewTestCase(BundleViewSetTestCaseBase):

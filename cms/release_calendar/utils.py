@@ -78,6 +78,9 @@ def parse_day_month_year_time(text: str, locale_code: str) -> datetime | None:
 def get_translated_string(string_to_translate: str, language_code: str) -> str:
     """Translates a string to a specific language.
 
+    Note that in most cases you would use the `gettext` or `gettext_lazy` functions directly in your templates or views.
+    This function is provided for cases where you need to translate a string programmatically.
+
     Args:
       string_to_translate: The string to be translated.
       language_code: The language code for the desired translation (e.g., 'cy' for Welsh).
