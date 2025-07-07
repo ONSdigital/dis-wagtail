@@ -83,6 +83,7 @@ class ReleaseCalendarPageAdminForm(WagtailAdminPageForm):
         new_changes = cleaned_data.get("changes_to_release_date", [])
         old_changes_count = len(self.instance.changes_to_release_date)
         new_changes_count = len(new_changes)
+        added_changes_count = new_changes_count - old_changes_count
 
         date_has_changed = live_release_date is not None and live_release_date != cleaned_data.get("release_date")
         change_log_added = new_changes_count > old_changes_count
@@ -93,6 +94,16 @@ class ReleaseCalendarPageAdminForm(WagtailAdminPageForm):
             and live_status in [ReleaseStatus.CONFIRMED, ReleaseStatus.PUBLISHED]
         ):
             self.validate_change_log(date_has_changed, change_log_added)
+
+        # Case 3: More than one new change log was added in a single operation.
+        if added_changes_count > 1:
+            raise ValidationError(
+                {
+                    "changes_to_release_date": (
+                        "Only one 'Changes to release date' entry can be added per release date change."
+                    )
+                }
+            )
 
         if (
             cleaned_data.get("release_date")

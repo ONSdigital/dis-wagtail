@@ -370,6 +370,34 @@ class ReleaseCalendarPageAdminFormTestCase(WagtailTestUtils, TestCase):
 
         self.assertTrue(form.is_valid())
 
+    def test_form_clean__disallows_multiple_new_change_logs(self):
+        """Checks that only one new change log entry can be added per release date change."""
+        # Set up the page with a confirmed status and publish it to create a live version
+        self.page.status = ReleaseStatus.CONFIRMED
+        self.page.release_date = timezone.now()
+        self.page.save_revision().publish()
+
+        # Now try to add multiple change log entries with a new release date
+        data = self.raw_form_data()
+        data["notice"] = rich_text("")
+        data["status"] = ReleaseStatus.CONFIRMED
+        data["release_date"] = timezone.now() + datetime.timedelta(days=1)  # Different date
+        data["changes_to_release_date"] = streamfield(
+            [
+                ("date_change_log", {"previous_date": timezone.now(), "reason_for_change": "First reason"}),
+                ("date_change_log", {"previous_date": timezone.now(), "reason_for_change": "Second reason"}),
+            ]
+        )
+        data = nested_form_data(data)
+        form = self.form_class(instance=self.page, data=data)
+
+        self.assertFalse(form.is_valid())
+        self.assertFormError(
+            form,
+            "changes_to_release_date",
+            ["Only one 'Changes to release date' entry can be added per release date change."],
+        )
+
     def test_form_clean__validates_notice_cannot_be_removed(self):
         """Checks that the notice cannot be removed from a release calendar page."""
         self.page.status = ReleaseStatus.PROVISIONAL
