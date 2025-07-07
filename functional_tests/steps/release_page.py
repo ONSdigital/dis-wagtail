@@ -205,3 +205,15 @@ def user_sees_validation_error_for_multiple_changes(context: Context):
     expect(
         context.page.get_by_text("Only one 'Changes to release date' entry can be added per release date change.")
     ).to_be_visible()
+
+
+@then("the release calendar page is successfully updated")
+def release_calendar_page_is_successfully_updated(context: Context):
+    page = context.page
+    expect(page.get_by_text("Page 'My Release' has been updated.")).to_be_visible()
+
+
+@then("the release calendar page is successfully published")
+def release_calendar_page_is_successfully_published(context: Context):
+    page = context.page
+    expect(page.get_by_text("Page 'My Release' has been published.")).to_be_visible()

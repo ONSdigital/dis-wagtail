@@ -38,7 +38,11 @@ class ReleaseCalendarPageAdminForm(WagtailAdminPageForm):
             from .models import ReleaseCalendarPage  # pylint: disable=import-outside-toplevel
 
             self.live_page = (
-                ReleaseCalendarPage.objects.filter(pk=self.instance.pk).live().only("release_date", "status").first()
+                ReleaseCalendarPage.objects.filter(pk=self.instance.pk)
+                .live()
+                # Grab the fields we need for validation
+                .only("release_date", "status", "changes_to_release_date")
+                .first()
             )
 
         if self.instance.status != ReleaseStatus.PROVISIONAL:
@@ -96,7 +100,7 @@ class ReleaseCalendarPageAdminForm(WagtailAdminPageForm):
         live_release_date = self.live_page.release_date if self.live_page else None
         live_status = self.live_page.status if self.live_page else None
         new_changes = cleaned_data.get("changes_to_release_date", [])
-        old_changes_count = len(self.instance.changes_to_release_date)
+        old_changes_count = len(self.live_page.changes_to_release_date) if self.live_page else 0
         new_changes_count = len(new_changes)
         added_changes_count = new_changes_count - old_changes_count
 
