@@ -28,6 +28,16 @@ class ReleaseCalendarPageAdminForm(WagtailAdminPageForm):
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
 
+        # Get the live version of the page for validation comparisons
+        self.live_page = None
+        if self.instance and self.instance.pk:
+            # Avoid circular import
+            from .models import ReleaseCalendarPage  # pylint: disable=import-outside-toplevel
+
+            self.live_page = (
+                ReleaseCalendarPage.objects.filter(pk=self.instance.pk).live().only("release_date", "status").first()
+            )
+
         if self.instance.status != ReleaseStatus.PROVISIONAL:
             # Once a release calendar page is confirmed, it cannot go back to provisional
             self.fields["status"].choices = NON_PROVISIONAL_STATUS_CHOICES
@@ -68,21 +78,21 @@ class ReleaseCalendarPageAdminForm(WagtailAdminPageForm):
             # set to None to avoid unexpected behavior
             cleaned_data["release_date_text"] = ""
 
+        live_release_date = self.live_page.release_date if self.live_page else None
+        live_status = self.live_page.status if self.live_page else None
+        new_changes = cleaned_data.get("changes_to_release_date", [])
+        old_changes_count = len(self.instance.changes_to_release_date)
+        new_changes_count = len(new_changes)
+
+        date_has_changed = live_release_date is not None and live_release_date != cleaned_data.get("release_date")
+        change_log_added = new_changes_count > old_changes_count
+
         if (
             status in [ReleaseStatus.CONFIRMED, ReleaseStatus.PUBLISHED]
-            and self.instance.release_date
-            and self.instance.release_date != cleaned_data.get("release_date")
-            and len(self.instance.changes_to_release_date) == len(cleaned_data.get("changes_to_release_date", []))
+            and self.live_page
+            and live_status in [ReleaseStatus.CONFIRMED, ReleaseStatus.PUBLISHED]
         ):
-            # A change in the release date requires updating changes_to_release_date
-            raise ValidationError(
-                {
-                    "changes_to_release_date": (
-                        "If a confirmed calendar entry needs to be rescheduled, "
-                        "the 'Changes to release date' field must be filled out."
-                    )
-                }
-            )
+            self.validate_change_log(date_has_changed, change_log_added)
 
         if (
             cleaned_data.get("release_date")
@@ -210,3 +220,24 @@ class ReleaseCalendarPageAdminForm(WagtailAdminPageForm):
             bundle_str,
         )
         raise ValidationError({"status": message})
+
+    def validate_change_log(self, date_has_changed: bool, change_log_added: bool) -> None:
+        if date_has_changed and not change_log_added:
+            raise ValidationError(
+                {
+                    "changes_to_release_date": (
+                        "If a confirmed calendar entry needs to be rescheduled, "
+                        "the 'Changes to release date' field must be filled out."
+                    )
+                }
+            )
+
+        if change_log_added and not date_has_changed:
+            raise ValidationError(
+                {
+                    "changes_to_release_date": (
+                        "You have added a 'Changes to release date' entry, "
+                        "but the release date is the same as the published version."
+                    )
+                }
+            )
