@@ -1,4 +1,4 @@
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from django.core.exceptions import ValidationError
 from django.urls import reverse
@@ -13,6 +13,9 @@ from cms.release_calendar.permissions import user_can_modify_notice
 
 from .enums import LOCKED_STATUS_STATUSES, NON_PROVISIONAL_STATUS_CHOICES, ReleaseStatus
 from .utils import get_translated_string, parse_day_month_year_time, parse_month_year
+
+if TYPE_CHECKING:
+    from .models import ReleaseCalendarPage
 
 DATE_SEPERATOR = {
     "en": " to ",
@@ -29,9 +32,9 @@ class ReleaseCalendarPageAdminForm(WagtailAdminPageForm):
         super().__init__(*args, **kwargs)
 
         # Get the live version of the page for validation comparisons
-        self.live_page = None
+        self.live_page: "ReleaseCalendarPage | None" = None  # noqa: UP037
         if self.instance and self.instance.pk:
-            # Avoid circular import
+            # Import at runtime to avoid circular import
             from .models import ReleaseCalendarPage  # pylint: disable=import-outside-toplevel
 
             self.live_page = (
@@ -64,20 +67,32 @@ class ReleaseCalendarPageAdminForm(WagtailAdminPageForm):
         """Validate the submitted release calendar data."""
         cleaned_data: dict = super().clean()
 
-        status = cleaned_data.get("status")
-        notice = cleaned_data.get("notice")
+        status = cleaned_data.get("status", "")
+        notice = cleaned_data.get("notice", "")
+        self._validate_cancelled_status(status, notice)
+        self._validate_non_provisional_status(status, cleaned_data)
+        self._validate_change_logs(status, cleaned_data)
+        self._validate_date_fields(cleaned_data)
+        self._validate_text_fields(cleaned_data)
 
+        return cleaned_data
+
+    def _validate_cancelled_status(self, status: str, notice: str) -> None:
+        """Validate cancelled status requirements."""
         if status == ReleaseStatus.CANCELLED:
             if not notice:
                 raise ValidationError({"notice": "The notice field is required when the release is cancelled"})
-
             self.validate_bundle_not_pending_publication(status)
 
+    def _validate_non_provisional_status(self, status: str, cleaned_data: dict) -> None:
+        """Validate non-provisional status requirements."""
         if status != ReleaseStatus.PROVISIONAL:
             # Input field is hidden with custom JS for non-provisional releases,
             # set to None to avoid unexpected behavior
             cleaned_data["release_date_text"] = ""
 
+    def _validate_change_logs(self, status: str, cleaned_data: dict) -> None:
+        """Validate change log requirements."""
         live_release_date = self.live_page.release_date if self.live_page else None
         live_status = self.live_page.status if self.live_page else None
         new_changes = cleaned_data.get("changes_to_release_date", [])
@@ -105,6 +120,8 @@ class ReleaseCalendarPageAdminForm(WagtailAdminPageForm):
                 }
             )
 
+    def _validate_date_fields(self, cleaned_data: dict) -> None:
+        """Validate date field relationships."""
         if (
             cleaned_data.get("release_date")
             and cleaned_data.get("next_release_date")
@@ -116,15 +133,14 @@ class ReleaseCalendarPageAdminForm(WagtailAdminPageForm):
             error = "Please enter the next release date or the next release text, not both."
             raise ValidationError({"next_release_date": error, "next_release_date_text": error})
 
+    def _validate_text_fields(self, cleaned_data: dict) -> None:
+        """Validate text field formats."""
         if release_date_text := cleaned_data.get("release_date_text"):
             self.validate_release_date_text_format(release_date_text, self.instance.locale)
 
         if next_release_date_text := cleaned_data.get("next_release_date_text"):
             locale_code = "en" if self.instance.locale.language_code == "en-gb" else self.instance.locale.language_code
-
             self.validate_release_next_date_text_format(next_release_date_text, locale_code, cleaned_data)
-
-        return cleaned_data
 
     def clean_notice(self) -> str:
         """Validate the notice field."""
