@@ -230,14 +230,6 @@ def display_cancelled_page(context: Context):
     expect(context.page.get_by_text("Cancelled", exact=True)).to_be_visible()
 
 
-# with page.expect_popup() as page1_info:
-#         page.get_by_role("link", name="Preview in new tab").click()
-#     page1 = page1_info.value
-#     page1.get_by_role("heading", name="My Release").click()
-#     page1.get_by_role("heading", name="Summary").click()
-#     page1.get_by_role("paragraph").filter(has_text="Summary").click()
-
-
 @when("the user adds a invalid release date text")
 def user_inputs_invalid_release_date_text(context: Context):
     context.page.get_by_label("Or, release date text").fill("Invalid 4356")
@@ -297,11 +289,6 @@ def user_add_next_release_date_before_release_date(context: Context):
     context.page.locator("#id_next_release_date").fill("2023-12-25")
 
 
-# <input type="text" maxlength="255" name="next_release_date_text" id="id_next_release_date_text"
-# aria-describedby="panel-child-content-child-metadata-child-panel1-child-next_release_date_text-helptext"/>
-# aka get_by_role("textbox", name="Or, next release date text")
-
-
 @when("the user enters both next release date and next release date text")
 def user_adds_both_next_and_release_date(context: Context):
     context.page.locator("#id_next_release_date").fill("2024-12-25")
@@ -310,6 +297,7 @@ def user_adds_both_next_and_release_date(context: Context):
 
 @then("an error validation is raised to say you cannot have both")
 def error_cannot_have_both_next_release_date_and_text(context: Context):
+    expect(context.page.get_by_text("Please enter the next release")).to_be_visible()
     expect(
         context.page.locator(
             "#panel-child-content-child-metadata-child-panel1-child-next_release_date-errors"
@@ -326,3 +314,100 @@ def error_cannot_have_both_next_release_date_and_text(context: Context):
 def error_next_release_date_before_release_date(context: Context):
     expect(context.page.get_by_text("The page could not be created")).to_be_visible()
     expect(context.page.get_by_text("The next release date must be")).to_be_visible()
+
+
+@when("multiple descriptions are added under pre-release access")
+def add_multiple_description(context: Context):
+    context.page.locator("#panel-child-content-pre_release_access-content").get_by_role(
+        "button", name="Insert a block"
+    ).click()
+    context.page.get_by_role("option", name="Description").click()
+    context.page.locator("#panel-child-content-pre_release_access-content").get_by_role(
+        "button", name="Insert a block"
+    ).nth(2).click()
+    context.page.get_by_role("option", name="Description").click()
+
+
+@then("an error message is displayed about the descriptions")
+def error_multiple_description(context: Context):
+    expect(context.page.get_by_text("Description: The maximum")).to_be_visible()
+
+
+@when("multiple tables are added under pre-release access")
+def add_multiple_tables(context: Context):
+    context.page.locator("#panel-child-content-pre_release_access-content").get_by_role(
+        "button", name="Insert a block"
+    ).click()
+    context.page.get_by_text("Basic table").click()
+    context.page.locator("#panel-child-content-pre_release_access-content").get_by_role(
+        "button", name="Insert a block"
+    ).nth(1).click()
+    context.page.locator("#downshift-7-item-1").get_by_text("Basic table").click()
+
+
+@then("an error message is displayed about the tables")
+def error_multiple_tables(context: Context):
+    expect(context.page.get_by_text("Basic table: The maximum")).to_be_visible()
+
+
+@then("an error message is displayed to select and option")
+def error_unpicked_table_option(context: Context):
+    expect(context.page.get_by_text("The page could not be saved")).to_be_visible()
+    expect(context.page.get_by_text("Select an option for Table")).to_be_visible()
+
+
+@then("an error message is displayed about empty table")
+def error_empty_table(context: Context):
+    expect(context.page.get_by_text("The page could not be saved")).to_be_visible()
+    expect(context.page.get_by_text("The table cannot be empty")).to_be_visible()
+
+
+@when("the user adds pre-release access information")
+def add_pre_release_access(context: Context):
+    # Table
+    context.page.locator("#panel-child-content-pre_release_access-content").get_by_role(
+        "button", name="Insert a block"
+    ).click()
+    context.page.get_by_text("Basic table").click()
+    context.page.get_by_label("Table headers").select_option("row")
+    context.page.get_by_role("textbox", name="Table caption").click()
+    context.page.get_by_role("textbox", name="Table caption").press("CapsLock")
+    context.page.get_by_role("textbox", name="Table caption").fill("Caption")
+    context.page.locator("td").first.click()
+    context.page.get_by_role("region", name="Basic table *").locator("textarea").fill("head")
+    context.page.locator("td:nth-child(2)").first.click()
+    context.page.get_by_role("region", name="Basic table *").locator("textarea").fill("head 2")
+    context.page.locator("tr:nth-child(2) > td").first.click()
+    context.page.get_by_role("region", name="Basic table *").locator("textarea").fill("text 1")
+    context.page.locator("tr:nth-child(3) > td").first.click()
+    context.page.get_by_role("region", name="Basic table *").locator("textarea").fill("text 2")
+
+    # Description
+    context.page.locator("#panel-child-content-pre_release_access-content").get_by_role(
+        "button", name="Insert a block"
+    ).nth(1).click()
+    context.page.get_by_role("option", name="Description").click()
+    context.page.get_by_role("region", name="Description *").get_by_role("textbox").fill("Description")
+
+
+@when("the user adds related links")
+def add_related_links(context: Context):
+    context.page.locator("#panel-child-content-related_links-content").get_by_role(
+        "button", name="Insert a block"
+    ).click()
+    context.page.get_by_role("button", name="Choose a page").click()
+    context.page.get_by_role("link", name="Home").click()
+    context.page.get_by_role("button", name="Save draft").click()
+
+
+@then("the pre-release access is displayed")
+def displayed_pre_release_access(context: Context):
+    expect(context.page.get_by_role("heading", name="Pre-release access list")).to_be_visible()
+    expect(context.page.get_by_text("head")).to_be_visible()
+    expect(context.page.get_by_role("cell", name="1")).to_be_visible()
+
+
+@then("the related links is displayed")
+def displayed_related_links(context: Context):
+    expect(context.page.get_by_role("heading", name="You might also be interested")).to_be_visible()
+    expect(context.page.locator("#links").get_by_role("link", name="Home")).to_be_visible()

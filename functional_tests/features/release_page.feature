@@ -87,7 +87,7 @@ Feature: CMS users can draft, edit, and publish release pages
       | Confirmed  |
       | Cancelled  |
 
-  Scenario Outline: User cannot input invalid release date text
+  Scenario Outline: Validation error for invalid release date text
     When the user clicks "Add child page" to create a new draft release page
     And the user enters some example content on the page
     And the user adds a invalid <ReleaseDate> text
@@ -99,7 +99,7 @@ Feature: CMS users can draft, edit, and publish release pages
       | release date      |
       | next release date |
 
-  Scenario Outline: User publishes a cancelled page, they must enter a notice
+  Scenario Outline: Validation error when cancelled page is published without notice
     When the user clicks "Add child page" to create a new draft release page
     And the user enters some example content on the page
     And the user sets the page status to "Cancelled"
@@ -120,22 +120,46 @@ Feature: CMS users can draft, edit, and publish release pages
   # may add draft too
     Then an error message is displayed describing that a date change log is needed
 
-  Scenario: User enters the next release date which is before the release date
+  Scenario: Validation error when next release date is before the release date
     When the user clicks "Add child page" to create a new draft release page
     And the user enters some example content on the page
     And adds the next release date before the release date
     And the user clicks "Publish"
     Then an error validation is raised to say you cannot do this
 
-  Scenario: User enters the next release date and release date text
+  Scenario: Validation error when next release date and release date text is entered
     When the user clicks "Add child page" to create a new draft release page
     And the user enters some example content on the page
     And the user enters both next release date and next release date text
     And the user clicks "Publish"
     # failing: locator not found
     Then an error validation is raised to say you cannot have both
+# Pre-release access checks
+
+  Scenario: Validation error when more than one description added on Pre-release Access
+    When the user clicks "Add child page" to create a new draft release page
+    And the user enters some example content on the page
+    And multiple descriptions are added under pre-release access
+    Then an error message is displayed about the descriptions
+
+  Scenario: Validation error when more than one table added on Pre-release Access
+    When the user clicks "Add child page" to create a new draft release page
+    And the user enters some example content on the page
+    And multiple tables are added under pre-release access
+    And the user clicks "Publish"
+    Then an error message is displayed about the tables
+# error message
+# Test add correctly - pre release access and related links
+
+  Scenario: User adds pre-release access and related links to the page
+    When the user clicks "Add child page" to create a new draft release page
+    And the user enters some example content on the page
+    And the user adds pre-release access information
+    And the user adds related links
+    And the user clicks "Publish"
+    And the user clicks "View Live" on the publish confirmation banner
+    Then the pre-release access is displayed
+    And the related links is displayed
 #locale?
 # Clean notice?
 # Choosing contact details (will need the creation of an instance of contact within Snippets).
-# Pre-release access checks.
-# Related links checks
