@@ -1,10 +1,10 @@
 import importlib
 import uuid
+from unittest.mock import patch
 
 from django.conf import settings
 from django.test import override_settings
 from django.urls import reverse
-from wagtail import hooks
 
 from cms.auth import wagtail_hooks
 from cms.auth.middleware import JWT_SESSION_ID_KEY
@@ -231,13 +231,13 @@ class AuthIntegrationTests(CognitoTokenTestCase):
         self.assertFalse(User.objects.filter(external_user_id=self.user_uuid).exists())
 
         self.assertLoggedIn()
-        # self.assertLoggedIn()
+
         # Now swap to tokens for a different user
         access_2, id_token_2 = self.generate_tokens(username=uuid_other)
         self.set_jwt_cookies(access_2, id_token_2)
 
         response_2 = self.client.get(settings.WAGTAILADMIN_HOME_PATH)
-        print("Response 2: ", response_2.status_code)
+
         self.assertEqual(response_2.status_code, 302)
         self.assertFalse(response_2.wsgi_request.user.is_authenticated)
         # User shouldn't exist after login
@@ -389,27 +389,22 @@ class AuthIntegrationTests(CognitoTokenTestCase):
 
 
 class WagtailHookTests(CognitoTokenTestCase):
-    def setUp(self):
-        # clear any previously-registered hooks
-        hooks._hooks.pop("insert_global_admin_js", None)  # pylint: disable=protected-access
-
     def test_wagtail_hook_injection(self):
         # reload under AWS_COGNITO_LOGIN_ENABLED=True
         importlib.reload(wagtail_hooks)
-        # stub out the module's static() so it doesn't hit a manifest
-        wagtail_hooks.static = lambda path: f"/static/{path}"
 
-        # set cookies and hit /admin/
-        self.login_with_tokens()
-        self.assertLoggedIn()
+        with patch.object(wagtail_hooks, "static", lambda path: f"/static/{path}"):
+            # set cookies and hit /admin/
+            self.login_with_tokens()
+            self.assertLoggedIn()
 
-        resp = self.client.get(settings.WAGTAILADMIN_HOME_PATH)
-        self.assertEqual(resp.status_code, 200)
-        html = resp.content.decode()
+            resp = self.client.get(settings.WAGTAILADMIN_HOME_PATH)
+            self.assertEqual(resp.status_code, 200)
+            html = resp.content.decode()
 
-        self.assertIn('<script id="auth-config"', html)
-        self.assertIn('"wagtailAdminHomePath":', html)
-        self.assertIn('<script src="/static/js/auth.js"', html)
+            self.assertIn('<script id="auth-config"', html)
+            self.assertIn('"wagtailAdminHomePath":', html)
+            self.assertIn('<script src="/static/js/auth.js"', html)
 
     @override_settings(AWS_COGNITO_LOGIN_ENABLED=False)
     def test_wagtail_hook_not_registered(self):
