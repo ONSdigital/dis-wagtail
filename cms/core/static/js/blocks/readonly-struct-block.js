@@ -1,3 +1,4 @@
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 class ReadonlyStructBlockDefinition extends window.wagtailStreamField.blocks.StructBlockDefinition {
   frozenHelpText = '';
 
@@ -35,6 +36,3 @@ class ReadonlyStructBlockDefinition extends window.wagtailStreamField.blocks.Str
     return block;
   }
 }
-
-// Export for use in other modules
-window.ReadonlyStructBlockDefinition = ReadonlyStructBlockDefinition;
