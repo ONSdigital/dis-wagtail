@@ -54,7 +54,14 @@ class ReleaseDateChangeBlockAdapter(StructBlockAdapter):
     @cached_property
     def media(self) -> Media:
         structblock_media = super().media
-        return Media(js=[*structblock_media._js, "js/blocks/release-date-change-block.js"], css=structblock_media._css)  # pylint: disable=protected-access
+        return Media(
+            js=[
+                *structblock_media._js,  # pylint: disable=protected-access
+                "js/blocks/readonly-struct-block.js",
+                "js/blocks/release-date-change-block.js",
+            ],
+            css=structblock_media._css,  # pylint: disable=protected-access
+        )
 
 
 register(ReleaseDateChangeBlockAdapter(), ReleaseDateChangeBlock)
