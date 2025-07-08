@@ -80,9 +80,10 @@ class PageCanonicalUrlTests(WagtailPageTestCase):
         )
 
     def test_welsh_page_alias_canonical_url(self):
-        """Test that the Welsh home page has the correct english canonical URL
-        when it has not been explicitly translated.
+        """Test that the a welsh page has the correct english canonical URL when it has not been explicitly
+        translated.
         """
+        self.page.copy_for_translation(locale=Locale.objects.get(language_code="cy"), copy_parents=True, alias=True)
         response = self.client.get(f"/cy{self.page.get_url(request=self.dummy_request)}")
         self.assertEqual(response.status_code, HTTPStatus.OK)
         self.assertContains(
