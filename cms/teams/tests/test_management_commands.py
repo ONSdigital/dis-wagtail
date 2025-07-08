@@ -30,16 +30,13 @@ def api_group(
     }
 
 
-ROLE_GROUP_IDS = {"role-admin", "role-publisher"}
-
-
 @override_settings(
-    ROLE_GROUP_IDS=list(ROLE_GROUP_IDS),
+    SERVICE_AUTH_TOKEN="test-token",
     IDENTITY_API_BASE_URL="https://identity.example",
 )
 class SyncTeamsCommandTests(TestCase):
-    """Covers creation, update, de-activation, dry-run, API/ network errors,
-    and role-group exclusion logic.
+    """Covers creation, update, de-activation, dry-run, API/network errors,
+    auth headers, and role-group exclusion logic.
     """
 
     def _call_command(self, *, dry_run=False):
@@ -47,15 +44,26 @@ class SyncTeamsCommandTests(TestCase):
         with open("/dev/null", "w", encoding="utf-8") as stdout:
             management.call_command("sync_teams", *argv, stdout=stdout)
 
-    def _mock_api(self, groups):
-        """Patch requests.get so /groups returns supplied list."""
+    def _mock_api(self, groups, expected_headers=None):
+        """Patch requests.get so /groups returns supplied list, optionally asserting headers."""
         resp_json = {"groups": groups}
 
         def fake_get(url, *args, **kwargs):
             self.assertIn("/groups", url)
-            return mock.Mock(status_code=200, json=lambda: resp_json, raise_for_status=lambda: None)
+            headers = kwargs.get("headers", {})
+            if expected_headers is not None:
+                self.assertEqual(headers, expected_headers)
 
-        return mock.patch("cms.teams.management.commands.sync_teams.requests.get", side_effect=fake_get)
+            return mock.Mock(
+                status_code=200,
+                json=lambda: resp_json,
+                raise_for_status=lambda: None,
+            )
+
+        return mock.patch(
+            "cms.teams.management.commands.sync_teams.requests.get",
+            side_effect=fake_get,
+        )
 
     def test_create_update_deactivate(self):
         """happy-path: create new, update existing, deactivate missing."""
@@ -195,3 +203,20 @@ class SyncTeamsCommandTests(TestCase):
             m_save.called,
             "Team.save() should not be called when nothing changed",
         )
+
+    def test_auth_headers_are_included_in_request(self):
+        """Ensure the command sends the correct auth headers to the API."""
+        expected = {
+            "Authorization": "Bearer test-token",
+            "X-Florence-Token": "Bearer test-token",
+        }
+        with self._mock_api([], expected_headers=expected):
+            self._call_command()
+
+    @override_settings(SERVICE_AUTH_TOKEN=None)
+    def test_missing_service_auth_token_raises_command_error(self):
+        """Ensure the command raises an error if SERVICE_AUTH_TOKEN is not set."""
+        with self.assertRaises(CommandError) as exc:
+            self._call_command()
+
+        self.assertIn("SERVICE_AUTH_TOKEN is not set in settings.", str(exc.exception))
