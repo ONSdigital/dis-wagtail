@@ -11,6 +11,7 @@ class ThemeIndexPageFactory(wagtail_factories.PageFactory):
         model = ThemeIndexPage
 
     parent = factory.LazyFunction(lambda: HomePage.objects.first())  # pylint: disable=unnecessary-lambda
+    title = factory.Faker("sentence", nb_words=4)
 
 
 class ThemePageFactory(wagtail_factories.PageFactory):
@@ -19,7 +20,7 @@ class ThemePageFactory(wagtail_factories.PageFactory):
     class Meta:
         model = ThemePage
 
+    parent = factory.SubFactory(ThemeIndexPageFactory)
     title = factory.Faker("sentence", nb_words=4)
     summary = factory.Faker("text", max_nb_chars=100)
-    parent = factory.SubFactory(ThemeIndexPageFactory)
     topic = factory.SubFactory(TopicFactory)

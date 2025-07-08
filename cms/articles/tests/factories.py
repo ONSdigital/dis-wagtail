@@ -23,6 +23,7 @@ class ArticlesIndexPageFactory(wagtail_factories.PageFactory):
         model = ArticlesIndexPage
 
     parent = factory.SubFactory(TopicPageFactory)
+    title = factory.Faker("sentence", nb_words=4)
 
 
 class ArticleSeriesPageFactory(wagtail_factories.PageFactory):
@@ -31,8 +32,8 @@ class ArticleSeriesPageFactory(wagtail_factories.PageFactory):
     class Meta:
         model = ArticleSeriesPage
 
-    title = factory.Faker("sentence", nb_words=4)
     parent = factory.SubFactory(ArticlesIndexPageFactory)
+    title = factory.Faker("sentence", nb_words=4)
 
 
 class StatisticalArticlePageFactory(wagtail_factories.PageFactory):
@@ -42,8 +43,8 @@ class StatisticalArticlePageFactory(wagtail_factories.PageFactory):
         model = StatisticalArticlePage
         django_get_or_create: ClassVar[list[str]] = ["slug", "parent"]
 
-    title = factory.Faker("sentence", nb_words=4)
     parent = factory.SubFactory(ArticleSeriesPageFactory)
+    title = factory.Faker("sentence", nb_words=4)
 
     summary = factory.Faker("text", max_nb_chars=100)
     news_headline = factory.Faker("text", max_nb_chars=50)

@@ -29,10 +29,10 @@ class BaseMainMenuTestCase(TestCase):
         cls.highlights_2 = HighlightsBlockFactory()
 
         cls.theme_page_1 = ThemePageFactory()
-        cls.theme_page_2 = ThemePageFactory()
+        cls.theme_page_2 = ThemePageFactory(parent=cls.theme_page_1.get_parent())
 
-        cls.topic_page_1 = TopicPageFactory(parent=cls.theme_page_1)
-        cls.topic_page_2 = TopicPageFactory(parent=cls.theme_page_2)
+        cls.topic_page_1 = TopicPageFactory()
+        cls.topic_page_2 = TopicPageFactory()
 
     def raw_form_data(self, highlights_data=None, columns_data=None) -> dict:
         highlights_data = highlights_data or []
