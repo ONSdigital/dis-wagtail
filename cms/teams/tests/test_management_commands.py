@@ -44,8 +44,13 @@ class SyncTeamsCommandTests(TestCase):
         with open("/dev/null", "w", encoding="utf-8") as stdout:
             management.call_command("sync_teams", *argv, stdout=stdout)
 
-    def _mock_api(self, groups, expected_headers=None):
-        """Patch requests.get so /groups returns supplied list, optionally asserting headers."""
+    def assert_command_failure_message(self, cm):
+        self.assertIn("Team sync failed: Failed to fetch groups from the identity API.", str(cm.exception))
+
+    def _mock_api(self, groups, response=None, error=None, expected_headers=None):
+        """Patch requests.get so /groups returns supplied list,
+        optionally asserting headers and raising side effects.
+        """
         resp_json = {"groups": groups}
 
         def fake_get(url, *args, **kwargs):
@@ -53,6 +58,12 @@ class SyncTeamsCommandTests(TestCase):
             headers = kwargs.get("headers", {})
             if expected_headers is not None:
                 self.assertEqual(headers, expected_headers)
+
+            if error:
+                raise error
+
+            if response:
+                return response
 
             return mock.Mock(
                 status_code=200,
@@ -128,11 +139,10 @@ class SyncTeamsCommandTests(TestCase):
         self.assertTrue(team.is_active)
 
     def test_network_error_raises_command_error(self):
-        def boom(*_, **__):
-            raise requests.ConnectionError("no network")
-
-        with mock.patch("cms.teams.management.commands.sync_teams.requests.get", boom), self.assertRaises(CommandError):
+        with self._mock_api([], error=requests.ConnectionError("no network")), self.assertRaises(CommandError) as cm:
             self._call_command()
+
+        self.assert_command_failure_message(cm)
 
     def test_invalid_json_raises_command_error(self):
         bad_resp = mock.Mock(
@@ -141,27 +151,24 @@ class SyncTeamsCommandTests(TestCase):
             json=lambda: (_ for _ in ()).throw(ValueError("bad json")),  # iterator trick to raise
         )
 
-        with (
-            mock.patch("cms.teams.management.commands.sync_teams.requests.get", return_value=bad_resp),
-            self.assertRaises(CommandError),
-        ):
+        with self._mock_api([], response=bad_resp), self.assertRaises(CommandError) as cm:
             self._call_command()
 
+        self.assert_command_failure_message(cm)
+
+    @override_settings(IDENTITY_API_BASE_URL=None)
     def test_missing_base_url_setting_raises(self):
-        with override_settings(IDENTITY_API_BASE_URL=None), self.assertRaises(CommandError):
+        with self.assertRaises(CommandError) as cm:
             self._call_command()
+
+        self.assertIn("IDENTITY_API_BASE_URL is not set in settings.", str(cm.exception))
 
     # HTTP 5xx raise_for_status fires up as CommandError
     def test_http_error_raises_command_error(self):
-        bad_resp = mock.Mock(
-            status_code=500,
-            raise_for_status=mock.Mock(side_effect=requests.HTTPError("boom")),
-        )
-        with (
-            mock.patch("cms.teams.management.commands.sync_teams.requests.get", return_value=bad_resp),
-            self.assertRaises(CommandError),
-        ):
+        with self._mock_api([], error=requests.HTTPError("boom")), self.assertRaises(CommandError) as cm:
             self._call_command()
+
+        self.assert_command_failure_message(cm)
 
     # A previously inactive team should be re-activated when present in the remote payload.
     def test_inactive_team_reactivated(self):
