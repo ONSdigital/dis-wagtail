@@ -19,6 +19,7 @@ def global_vars(request: "HttpRequest") -> dict[str, Any]:
         "LANGUAGE_CODE": settings.LANGUAGE_CODE,
         "IS_EXTERNAL_ENV": settings.IS_EXTERNAL_ENV,
         "AWS_COGNITO_LOGIN_ENABLED": settings.AWS_COGNITO_LOGIN_ENABLED,
+        "WAGTAIL_CORE_ADMIN_LOGIN_ENABLED": settings.WAGTAIL_CORE_ADMIN_LOGIN_ENABLED,
         "AUTH_CONFIG": get_auth_config(),
         "FALLBACK_OG_IMAGE_URL": settings.FALLBACK_OG_IMAGE_URL,
     }

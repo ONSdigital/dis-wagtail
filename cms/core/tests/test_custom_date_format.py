@@ -1,4 +1,4 @@
-from datetime import date, datetime
+from datetime import UTC, date, datetime
 
 from django.test import SimpleTestCase
 
@@ -37,3 +37,8 @@ class CustomDateFormatTests(SimpleTestCase):
         # Should not contain AM/PM since it's just a date
         self.assertNotIn("am", rendered.lower())
         self.assertNotIn("pm", rendered.lower())
+
+    def test_date_localized(self):
+        dt = datetime(2025, 7, 8, 11, 21, 48, tzinfo=UTC)
+        rendered = ons_date_format(dt, "DATETIME_FORMAT")
+        self.assertEqual(rendered, "8 July 2025 12:21pm")
