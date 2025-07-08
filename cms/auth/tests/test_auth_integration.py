@@ -1,4 +1,3 @@
-import importlib
 import uuid
 from unittest.mock import patch
 
@@ -390,9 +389,6 @@ class AuthIntegrationTests(CognitoTokenTestCase):
 
 class WagtailHookTests(CognitoTokenTestCase):
     def test_wagtail_hook_injection(self):
-        # reload under AWS_COGNITO_LOGIN_ENABLED=True
-        importlib.reload(wagtail_hooks)
-
         with patch.object(wagtail_hooks, "static", lambda path: f"/static/{path}"):
             # set cookies and hit /admin/
             self.login_with_tokens()
@@ -408,9 +404,6 @@ class WagtailHookTests(CognitoTokenTestCase):
 
     @override_settings(AWS_COGNITO_LOGIN_ENABLED=False)
     def test_wagtail_hook_not_registered(self):
-        # reload under the disabled setting
-        importlib.reload(wagtail_hooks)
-
         # Create and login as superuser
         User.objects.create_superuser(username="test", email="test@example.com", password="password123")
         response = self.client.post(
@@ -425,7 +418,8 @@ class WagtailHookTests(CognitoTokenTestCase):
         # User with username 'test' should now exist after login
         self.assertTrue(User.objects.filter(username="test").exists())
 
-        html = response.content.decode()
+        response_admin = self.client.get(settings.WAGTAILADMIN_HOME_PATH)
+        html = response_admin.content.decode()
 
         self.assertNotIn('id="auth-config"', html)
         self.assertNotIn("auth.js", html)

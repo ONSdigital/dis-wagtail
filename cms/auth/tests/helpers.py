@@ -1,5 +1,4 @@
 import base64
-import importlib
 import json
 import uuid
 from collections import namedtuple
@@ -95,8 +94,6 @@ class CognitoTokenTestCase(TestCase):
         public_b64 = base64.b64encode(cls.keypair.public_der).decode()
         cls.jwks = {cls.keypair.kid: public_b64}
 
-        # Reload utils so module constants use overridden settings
-        importlib.reload(auth_utils)
         # Stub JWKS fetch
         auth_utils.get_jwks = lambda: cls.jwks
 
