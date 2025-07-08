@@ -26,7 +26,7 @@ class TopicPageTestCase(TestCase):
         cls.topic_page = TopicPageFactory(title="Test Topic")
 
         # Create relevant pages
-        cls.article_series = ArticleSeriesPageFactory(title="Article Series", parent=cls.topic_page)
+        cls.article_series = ArticleSeriesPageFactory(title="Article Series", parent__parent=cls.topic_page)
         cls.older_article = StatisticalArticlePageFactory(
             title="Older Article", parent=cls.article_series, release_date=datetime(2024, 11, 1)
         )
@@ -35,10 +35,12 @@ class TopicPageTestCase(TestCase):
         )
 
         cls.topic_page.featured_series = cls.article_series
-        cls.topic_page.save()
+        cls.topic_page.save(update_fields=["featured_series"])
 
-        cls.methodology = MethodologyPageFactory(parent=cls.topic_page, publication_date=datetime(2024, 6, 1))
-        cls.another_methodology = MethodologyPageFactory(parent=cls.topic_page, publication_date=datetime(2024, 11, 1))
+        cls.methodology = MethodologyPageFactory(parent__parent=cls.topic_page, publication_date=datetime(2024, 6, 1))
+        cls.another_methodology = MethodologyPageFactory(
+            parent=cls.methodology.get_parent(), publication_date=datetime(2024, 11, 1)
+        )
 
     def test_topic_label(self):
         self.assertEqual(self.topic_page.label, "Topic")
@@ -54,7 +56,7 @@ class TopicPageTestCase(TestCase):
         # Create additional articles
         article_in_other_series = StatisticalArticlePageFactory(
             title="Article in other series",
-            parent=ArticleSeriesPageFactory(parent=self.topic_page),
+            parent=ArticleSeriesPageFactory(parent=self.article_series.get_parent()),
             release_date=datetime(2025, 2, 1),
         )
 
@@ -67,7 +69,7 @@ class TopicPageTestCase(TestCase):
         # Create additional articles
         article_in_other_series = StatisticalArticlePageFactory(
             title="Article in other series",
-            parent=ArticleSeriesPageFactory(parent=self.topic_page),
+            parent=ArticleSeriesPageFactory(parent=self.article_series.get_parent()),
             release_date=datetime(2025, 2, 1),
         )
 
@@ -79,7 +81,7 @@ class TopicPageTestCase(TestCase):
         new_article = StatisticalArticlePageFactory(parent=self.article_series)
         StatisticalArticlePageFactory(
             title="Article in other series",
-            parent=ArticleSeriesPageFactory(parent=self.topic_page),
+            parent=ArticleSeriesPageFactory(parent=self.article_series.get_parent()),
             release_date=datetime(2025, 2, 1),
         )
 
@@ -97,8 +99,12 @@ class TopicPageTestCase(TestCase):
         self.assertListEqual(self.topic_page.processed_methodologies, [self.methodology, self.another_methodology])
 
     def test_processed_methodologies_shows_only_highlighted_if_all_selected(self):
-        new_methodology = MethodologyPageFactory(parent=self.topic_page, publication_date=datetime(2024, 2, 1))
-        new_methodology2 = MethodologyPageFactory(parent=self.topic_page, publication_date=datetime(2023, 2, 1))
+        new_methodology = MethodologyPageFactory(
+            parent=self.methodology.get_parent(), publication_date=datetime(2024, 2, 1)
+        )
+        new_methodology2 = MethodologyPageFactory(
+            parent=self.methodology.get_parent(), publication_date=datetime(2023, 2, 1)
+        )
 
         TopicPageRelatedMethodologyFactory(parent=self.topic_page, page=self.methodology)
         TopicPageRelatedMethodologyFactory(parent=self.topic_page, page=new_methodology2)
