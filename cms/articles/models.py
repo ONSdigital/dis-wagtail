@@ -57,6 +57,10 @@ class ArticlesIndexPage(BasePage):  # type: ignore[django-manager-missing]
         self.slug = "articles"
         super().minimal_clean()
 
+    def serve(self, request: "HttpRequest", *args: Any, **kwargs: Any) -> "HttpResponse":
+        # FIXME: redirect to the publications listing for the topic
+        return redirect(self.get_parent().get_url(request=request))
+
 
 class ArticleSeriesPage(RoutablePageMixin, GenericTaxonomyMixin, BasePage):  # type: ignore[django-manager-missing]
     """The article series model."""

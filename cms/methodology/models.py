@@ -4,6 +4,7 @@ from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.db import models
 from django.http import HttpRequest
+from django.shortcuts import redirect
 from django.utils.functional import cached_property
 from django.utils.translation import gettext_lazy as _
 from modelcluster.fields import ParentalKey
@@ -24,6 +25,7 @@ from cms.taxonomy.mixins import GenericTaxonomyMixin
 if TYPE_CHECKING:
     import datetime
 
+    from django.http import HttpResponse
     from django_stubs_ext import StrPromise
     from wagtail.admin.panels import Panel
     from wagtail.query import PageQuerySet
@@ -41,6 +43,10 @@ class MethodologyIndexPage(BasePage):  # type: ignore[django-manager-missing]
     def minimal_clean(self) -> None:
         self.slug = "methodologies"
         super().minimal_clean()
+
+    def serve(self, request: "HttpRequest", *args: Any, **kwargs: Any) -> "HttpResponse":
+        # FIXME: redirect to the publications listing for the topic
+        return redirect(self.get_parent().get_url(request=request))
 
 
 class MethodologyRelatedPage(Orderable):
