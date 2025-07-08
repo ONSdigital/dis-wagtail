@@ -3,7 +3,7 @@ from behave.runner import Context
 from django.urls import reverse
 from playwright.sync_api import expect
 
-from cms.themes.tests.factories import ThemePageFactory
+from cms.themes.tests.factories import ThemeIndexPageFactory
 
 
 @when("the user clicks the action button toggle")
@@ -47,18 +47,18 @@ def the_user_edits_a_page(context: Context, page: str) -> None:
 
 @when("the user tries to create a new theme page")
 def user_tries_to_create_new_theme_page(context: Context) -> None:
+    theme_index = ThemeIndexPageFactory(title="Browse")
     context.page.get_by_role("button", name="Pages").click()
-    context.page.get_by_role("link", name="Home English", exact=True).click()
+    context.page.get_by_role("link", name="View child pages of 'Home'").click()
+    context.page.get_by_role("link", name=theme_index.title, exact=True).click()
     context.page.get_by_role("link", name="Add child page").click()
-    context.page.get_by_role("link", name="Theme page . A theme page,").click()
 
 
 @when("the user tries to create a new topic page")
 def user_tries_to_create_new_topic_page(context: Context) -> None:
-    topic_theme = ThemePageFactory()
     context.page.get_by_role("button", name="Pages").click()
     context.page.get_by_role("link", name="Home English", exact=True).click()
-    context.page.get_by_role("link", name=f"Add a child page to '{topic_theme.title}'").click()
+    context.page.get_by_role("link", name="Add child page").click()
     context.page.get_by_role("link", name="Topic page . A specific topic").click()
 
 

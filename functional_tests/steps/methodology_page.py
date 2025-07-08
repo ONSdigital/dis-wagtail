@@ -2,15 +2,17 @@ from behave import step, then, when  # pylint: disable=no-name-in-module
 from behave.runner import Context
 from playwright.sync_api import expect
 
+from cms.methodology.tests.factories import MethodologyIndexPageFactory
+
 
 @step("the user creates a methodology page as a child of the existing topic page")
 def user_creates_methodology_page(context: Context):
+    methodology_index = MethodologyIndexPageFactory(parent=context.topic_page)
     context.page.get_by_role("button", name="Pages").click()
     context.page.get_by_role("link", name="View child pages of 'Home'").click()
-    context.page.get_by_role("link", name=f"View child pages of '{context.theme_page.title}'").click()
-    context.page.get_by_role("link", name=context.topic_page.title, exact=True).click()
+    context.page.get_by_role("link", name=f"View child pages of '{context.topic_page.title}'").click()
+    context.page.get_by_role("link", name=methodology_index.title, exact=True).click()
     context.page.get_by_role("link", name="Add child page", exact=True).click()
-    context.page.get_by_role("link", name="Methodology page", exact=True).click()
 
 
 @step("the user populates the methodology page")
