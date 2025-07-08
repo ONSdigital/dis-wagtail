@@ -208,16 +208,12 @@ class BasePage(PageLDMixin, ListingFieldsMixin, SocialFieldsMixin, Page):  # typ
         - If the request is for a subpage (marked by setting the attribute `is_for_subpage=True` on the request object),
           then it will include the subpage route from the request.
         """
+        canonical_page = self.alias_of or self
         if getattr(request, "is_for_subpage", False) and getattr(request, "routable_resolver_match", None):
             resolver_match = request.routable_resolver_match  # type: ignore[attr-defined]
-            return cast(str, self.canonical_page.get_full_url(request=request) + resolver_match.route)
+            return cast(str, canonical_page.get_full_url(request=request) + resolver_match.route)
 
-        return cast(str, self.canonical_page.get_full_url(request=request))
-
-    @cached_property
-    def canonical_page(self) -> "BasePage":
-        """The canonical page for this page, which is either itself or the original page if it's an alias."""
-        return self.alias_of or self
+        return cast(str, canonical_page.get_full_url(request=request))
 
 
 class BaseSiteSetting(WagtailBaseSiteSetting):

@@ -514,7 +514,8 @@ class StatisticalArticlePage(BundledPageMixin, RoutablePageMixin, BasePage):  # 
         If the article is the latest in the series, this will be the evergreen series URL.
         Otherwise, it will be the default canonical page URL.
         """
-        if self.canonical_page.is_latest and not getattr(request, "is_for_subpage", False):
-            return cast(str, self.canonical_page.get_parent().get_full_url(request=request))
+        canonical_page = self.alias_of.specific if self.alias_of else self
+        if canonical_page.is_latest and not getattr(request, "is_for_subpage", False):
+            return cast(str, canonical_page.get_parent().get_full_url(request=request))
 
         return super().get_canonical_full_url(request=request)

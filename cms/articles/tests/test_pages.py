@@ -665,6 +665,15 @@ class StatisticalArticlePageTests(WagtailPageTestCase):  # pylint: disable=too-m
             response, f'<link rel="canonical" href="{self.series.get_full_url(request=self.dummy_request)}" />'
         )
 
+    def test_non_latest_page_canonical_url(self):
+        """Test that once an article page is not the latest, the canonical URL is the page's own URL."""
+        StatisticalArticlePageFactory(parent=self.series)  # Create new, later article in the series
+        response = self.client.get(self.page.get_url(request=self.dummy_request))
+        self.assertEqual(response.status_code, HTTPStatus.OK)
+        self.assertContains(
+            response, f'<link rel="canonical" href="{self.page.get_full_url(request=self.dummy_request)}" />'
+        )
+
     def test_welsh_page_alias_canonical_url(self):
         """Test that Welsh articles have the correct english canonical URL when they have not been explicitly
         translated.
