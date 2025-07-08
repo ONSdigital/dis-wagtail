@@ -24,6 +24,7 @@ class ContextProcessorTestCase(TestCase):
             "LANGUAGE_CODE": "en-gb",
             "IS_EXTERNAL_ENV": False,
             "AWS_COGNITO_LOGIN_ENABLED": settings.AWS_COGNITO_LOGIN_ENABLED,
+            "WAGTAIL_CORE_ADMIN_LOGIN_ENABLED": settings.WAGTAIL_CORE_ADMIN_LOGIN_ENABLED,
             "AUTH_CONFIG": get_auth_config(),
         }
         self.assertEqual(global_vars(self.request), expected)
