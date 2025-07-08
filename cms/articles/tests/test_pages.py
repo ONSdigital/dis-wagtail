@@ -6,6 +6,7 @@ from django.test import override_settings
 from django.urls import reverse
 from django.utils.html import strip_tags
 from wagtail.blocks import StreamValue
+from wagtail.models import Locale
 from wagtail.test.utils import WagtailPageTestCase
 
 from cms.articles.enums import SortingChoices
@@ -678,10 +679,23 @@ class StatisticalArticlePageTests(WagtailPageTestCase):  # pylint: disable=too-m
         """Test that Welsh articles have the correct english canonical URL when they have not been explicitly
         translated.
         """
+        self.page.copy_for_translation(locale=Locale.objects.get(language_code="cy"), copy_parents=True, alias=True)
         response = self.client.get(f"/cy{self.page.get_url(request=self.dummy_request)}")
         self.assertEqual(response.status_code, HTTPStatus.OK)
         self.assertContains(
             response, f'<link rel="canonical" href="{self.series.get_full_url(request=self.dummy_request)}" />'
+        )
+
+    def test_translated_welsh_page_canonical_url(self):
+        """Test that a translated article has the correct language coded canonical URL."""
+        welsh_page = self.page.copy_for_translation(locale=Locale.objects.get(language_code="cy"), copy_parents=True)
+        welsh_page.save_revision().publish()
+        response = self.client.get(f"/cy{self.page.get_url(request=self.dummy_request)}")
+        self.assertEqual(response.status_code, HTTPStatus.OK)
+        welsh_parent_series = welsh_page.get_parent()
+        self.assertIn(welsh_page.get_site().root_url + "/cy/", welsh_parent_series.get_full_url())
+        self.assertContains(
+            response, f'<link rel="canonical" href="{welsh_parent_series.get_full_url(request=self.dummy_request)}" />'
         )
 
     def test_corrected_article_versions_are_marked_no_index(self):

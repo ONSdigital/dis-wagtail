@@ -91,12 +91,7 @@ class PageCanonicalUrlTests(WagtailPageTestCase):
 
     def test_translated_page_canonical_url(self):
         """Test that a translated page has the correct language coded canonical URL."""
-        cy_locale = Locale.objects.get(language_code="cy")
-        for page_ancestor in self.page.get_ancestors()[1:]:
-            translated_page = page_ancestor.copy_for_translation(locale=cy_locale)
-            translated_page.save_revision().publish()
-
-        welsh_page = self.page.copy_for_translation(locale=cy_locale)
+        welsh_page = self.page.copy_for_translation(locale=Locale.objects.get(language_code="cy"), copy_parents=True)
         welsh_page.save_revision().publish()
         response = self.client.get(welsh_page.get_url())
         self.assertEqual(response.status_code, HTTPStatus.OK)
