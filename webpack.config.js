@@ -12,6 +12,7 @@ const projectRoot = 'cms';
 const options = {
   entry: {
     main: `./${projectRoot}/static_src/javascript/main.js`,
+    auth: `./${projectRoot}/static_src/javascript/auth.js`,
   },
   resolve: {
     extensions: ['.ts', '.js'],
