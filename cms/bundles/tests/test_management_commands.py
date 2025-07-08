@@ -230,6 +230,8 @@ class PublishBundlesCommandTestCase(TestCase):
             # 2 seconds before publish, there's nothing to do within 1 second, so nothing happens
             mock_handle_bundle.assert_not_called()
             self.assertLess(timezone.now(), self.publication_date)
+            self.assertIn("No bundles to go live.", self.stdout.getvalue())
+            self.stdout.seek(0)
 
             self.call_command(include_future=2)
 
@@ -237,6 +239,8 @@ class PublishBundlesCommandTestCase(TestCase):
 
         # 2 seconds before publish, wait, then publish
         mock_handle_bundle.assert_called_once_with(self.bundle)
+        self.assertIn("Found 1 bundle(s) to publish", self.stdout.getvalue())
+        self.assertIn(f"Publishing {self.bundle.name} in", self.stdout.getvalue())
 
     @patch("cms.bundles.management.commands.publish_bundles.Command.handle_bundle")
     def test_publish_bundle_include_future_with_bundle_in_past(self, mock_handle_bundle):
@@ -254,12 +258,15 @@ class PublishBundlesCommandTestCase(TestCase):
         self.bundle.refresh_from_db()
         self.assertEqual(self.bundle.status, BundleStatus.APPROVED)
 
+        self.assertIn("No bundles to go live.", self.stdout.getvalue())
+
     @patch("cms.bundles.management.commands.publish_bundles.Command.handle_bundle")
     def test_publish_with_future_bundles(self, mock_handle_bundle):
         with time_machine.travel(self.publication_date - timedelta(days=1)):
             self.call_command()
 
         mock_handle_bundle.assert_not_called()
+        self.assertIn("No bundles to go live.", self.stdout.getvalue())
 
 
 class PublishScheduledWithoutBundlesCommandTestCase(TestCase):

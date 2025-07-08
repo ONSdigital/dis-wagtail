@@ -158,9 +158,14 @@ class Command(BaseCommand):
             # Explicitly use `time.time` so enterabs can be called with absolute timestamps.
             bundle_scheduler = sched.scheduler(timefunc=time.time)
 
+            now_ts = bundle_scheduler.timefunc()
+
+            self.stdout.write(f"Found {len(bundles_to_publish)} bundle(s) to publish")
+
             for bundle in bundles_to_publish:
-                bundle_scheduler.enterabs(
-                    bundle.release_date.timestamp(), 1, self._handle_bundle_action, argument=(bundle,)
-                )
+                bundle_ts = bundle.release_date.timestamp()
+                bundle_scheduler.enterabs(bundle_ts, 1, self._handle_bundle_action, argument=(bundle,))
+                if bundle_ts > now_ts:
+                    self.stdout.write(f"Publishing {bundle.name} in {bundle_ts - now_ts:.0f}s")
 
             bundle_scheduler.run()
