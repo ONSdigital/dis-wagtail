@@ -15,7 +15,7 @@ Is a management command that publishes [bundles](bundles.md) that are scheduled 
 
 ### `--include-future`
 
-To reduce the impact of the process and infrastructure warm-up time, `publish_bundles` starts earlier than necessary and includes bundles which need to be published in the future. The command then waits until each bundle's release time, and then publishes it. Bundles due to be published in the past are still published immediately without wait.
+To reduce the impact of the process and infrastructure warm-up time, `publish_bundles` starts earlier than necessary and includes bundles which need to be published in the future. The command then waits until each bundle's release time, and then publishes it. Bundles due to be published in the past are still published immediately.
 
 For example, for a release scheduled at `07:00`, `publish_bundles` will start shortly after `06:59` (it starts on odd-numbered minutes with `--include-future=60`), notice the bundle due at `07:00`, sleep for around 60 seconds (ie until it's `07:00`), then publish the bundle.
 
