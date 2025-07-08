@@ -16,7 +16,7 @@ Feature: Role Based Access Control Permission as defined in data migrations
         Given a topic page exists under the homepage
         And a statistical article page has been published under the topic page
         When a Publishing Admin logs into the admin site
-        Then the user can bulk delete the Theme page and its children
+        Then the user can bulk delete the topic page and its children
 
     Scenario: A Publishing Admin can lock and unlock a page
         Given a Publishing Admin logs into the admin site
