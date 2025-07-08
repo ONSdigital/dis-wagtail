@@ -173,11 +173,11 @@ class BasePage(PageLDMixin, ListingFieldsMixin, SocialFieldsMixin, Page):  # typ
         breadcrumbs_jsonld: dict[str, object] = {}
         item_list = []
 
-        for i, breadcrumb in enumerate(self.get_breadcrumbs(), 1):
+        for position, breadcrumb in enumerate(self.get_breadcrumbs(), 1):
             item_list.append(
                 {
                     "@type": "ListItem",
-                    "position": i,
+                    "position": position,
                     "name": str(breadcrumb["text"]),
                     "item": str(breadcrumb["url"]),
                 }

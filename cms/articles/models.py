@@ -486,7 +486,7 @@ class StatisticalArticlePage(BundledPageMixin, RoutablePageMixin, BasePage):  # 
 
     def ld_entity(self) -> dict[str, object]:
         """Add statistical article specific schema properties to JSON LD."""
-        # TODO pass through request to this one wagtailschemaorg supports it
+        # TODO pass through request to this, once wagtailschemaorg supports it
         properties = {
             "url": self.get_full_url(),
             "headline": self.seo_title or self.listing_title or self.title,

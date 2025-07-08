@@ -144,3 +144,19 @@ class PageSchemaOrgTests(WagtailPageTestCase):
                 actual_jsonld = extract_response_jsonld(response.content, self)
 
                 self.assertEqual(actual_jsonld["description"], description_case["expected_description"])
+
+
+class SocialMetaTests(WagtailPageTestCase):
+    @classmethod
+    def setUpTestData(cls):
+        cls.page = InformationPageFactory()
+
+    def test_social_meta_image_fallback(self):
+        """Test that the image meta tag falls back to the ONS logo from the CDN."""
+        response = self.client.get(self.page.get_url(request=self.dummy_request))
+        self.assertEqual(response.status_code, HTTPStatus.OK)
+
+        self.assertContains(
+            response,
+            '<meta property="og:image" content="https://cdn.ons.gov.uk/assets/images/ons-logo/v2/ons-logo.png" />',
+        )
