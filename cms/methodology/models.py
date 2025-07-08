@@ -40,7 +40,7 @@ class MethodologyIndexPage(BasePage):  # type: ignore[django-manager-missing]
 
     def minimal_clean(self) -> None:
         self.slug = "methodologies"
-        super().clean()
+        super().minimal_clean()
 
 
 class MethodologyRelatedPage(Orderable):

@@ -13,7 +13,7 @@ from cms.datasets.blocks import DatasetStoryBlock
 from cms.datasets.models import Dataset
 from cms.home.models import HomePage
 from cms.topics.models import TopicPage
-from cms.topics.tests.utils import create_simple_topic_page
+from cms.topics.tests.utils import post_page_add_form_to_create_topic_page
 
 
 class ArticleSeriesPageTests(WagtailPageTestCase):
@@ -691,7 +691,7 @@ class MiscellaneousTests(WagtailPageTestCase):
     def test_articles_index_created_after_topic_page_creation(self):
         self.assertEqual(ArticlesIndexPage.objects.count(), 0)
 
-        create_simple_topic_page(self.client, self.home_page.pk)
+        post_page_add_form_to_create_topic_page(self.client, self.home_page.pk)
 
         self.assertEqual(ArticlesIndexPage.objects.count(), 2)
         self.assertEqual(

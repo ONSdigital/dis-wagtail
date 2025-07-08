@@ -4,7 +4,7 @@ from wagtail.test.utils import WagtailPageTestCase
 from cms.home.models import HomePage
 from cms.methodology.models import MethodologyIndexPage
 from cms.methodology.tests.factories import MethodologyPageFactory, MethodologyRelatedPageFactory
-from cms.topics.tests.utils import create_simple_topic_page
+from cms.topics.tests.utils import post_page_add_form_to_create_topic_page
 
 
 class MethodologyPageTest(WagtailPageTestCase):
@@ -81,7 +81,7 @@ class MethodologyIndexPageTest(WagtailPageTestCase):
     def test_methodology_index_created_after_topic_page_creation(self):
         self.assertEqual(MethodologyIndexPage.objects.count(), 0)
 
-        create_simple_topic_page(self.client, self.home_page.pk)
+        post_page_add_form_to_create_topic_page(self.client, self.home_page.pk)
 
         self.assertEqual(MethodologyIndexPage.objects.count(), 2)
         self.assertEqual(

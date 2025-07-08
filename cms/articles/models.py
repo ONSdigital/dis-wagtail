@@ -55,7 +55,7 @@ class ArticlesIndexPage(BasePage):  # type: ignore[django-manager-missing]
 
     def minimal_clean(self) -> None:
         self.slug = "articles"
-        super().clean()
+        super().minimal_clean()
 
 
 class ArticleSeriesPage(RoutablePageMixin, GenericTaxonomyMixin, BasePage):  # type: ignore[django-manager-missing]
@@ -540,13 +540,13 @@ class StatisticalArticlePage(BundledPageMixin, RoutablePageMixin, BasePage):  # 
                 return redirect(page_url)
 
         if kwargs.pop("related_data", None):
-            view, _view_args, _view_kwargs = self.resolve_subpage("/related-data/")
-            serve_kwargs = {**kwargs, **_view_kwargs}
+            view, _view_args, view_kwargs = self.resolve_subpage("/related-data/")
+            serve_kwargs = {**kwargs, **view_kwargs}
             return cast("HttpResponse", super().serve(request, view=view, args=args, kwargs=serve_kwargs))
 
         if version := kwargs.pop("version", None):
-            view, _view_args, _view_kwargs = self.resolve_subpage(f"/versions/v{version}/")
-            serve_kwargs = {**kwargs, **_view_kwargs}
+            view, _view_args, view_kwargs = self.resolve_subpage(f"/versions/v{version}/")
+            serve_kwargs = {**kwargs, **view_kwargs}
             return cast("HttpResponse", super().serve(request, view=view, args=args, kwargs=serve_kwargs))
 
         return cast("HttpResponse", super().serve(request, *args, **kwargs))
