@@ -1,5 +1,6 @@
 from http import HTTPStatus
 
+from django.conf import settings
 from wagtail.models import Locale
 from wagtail.test.utils import WagtailPageTestCase
 
@@ -158,5 +159,5 @@ class SocialMetaTests(WagtailPageTestCase):
 
         self.assertContains(
             response,
-            '<meta property="og:image" content="https://cdn.ons.gov.uk/assets/images/ons-logo/v2/ons-logo.png" />',
+            f'<meta property="og:image" content="{settings.FALLBACK_OG_IMAGE_URL}" />',
         )

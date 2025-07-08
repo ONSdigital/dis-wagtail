@@ -25,5 +25,6 @@ class ContextProcessorTestCase(TestCase):
             "IS_EXTERNAL_ENV": False,
             "AWS_COGNITO_LOGIN_ENABLED": settings.AWS_COGNITO_LOGIN_ENABLED,
             "AUTH_CONFIG": get_auth_config(),
+            "FALLBACK_OG_IMAGE_URL": settings.FALLBACK_OG_IMAGE_URL,
         }
         self.assertEqual(global_vars(self.request), expected)
