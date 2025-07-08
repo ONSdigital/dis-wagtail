@@ -41,6 +41,8 @@ djangorestframework = "^3.16.0"
 matplotlib = "^3.10.3"
 django-ses = "^4.4.0"
 aws-msk-iam-sasl-signer-python = "^1.0.2"
+pyjwt = "^2.10.1"
+cryptography = "^45.0.4"
 wagtail-schema-org = "^4.1.1"
 
 [tool.poetry.group.dev.dependencies]
@@ -104,7 +106,7 @@ select = [
 ]
 
 ignore = [
-    # Conflicts with google docstring style
+    # Conflicts with Google docstring style
     "D205",
     # Allow missing docstring, remove to enforce docstrings across the board
     "D100", "D101", "D102", "D103", "D104", "D105", "D106", "D107",

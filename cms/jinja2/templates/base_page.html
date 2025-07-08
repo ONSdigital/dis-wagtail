@@ -112,4 +112,10 @@
 {% block scripts %}
     {{ super() }}
     {% include "templates/partials/content_scripts.html" %}
+
+    {# Load JS to refresh user session if required #}
+    {% if AWS_COGNITO_LOGIN_ENABLED and not IS_EXTERNAL_ENV and request.user.is_authenticated %}
+        {{ AUTH_CONFIG | json_script('auth-config') }}
+        <script src="{{ static('js/auth.js') }}" defer></script>
+    {% endif %}
 {% endblock %}
