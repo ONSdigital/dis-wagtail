@@ -7,7 +7,6 @@ from django.http import HttpRequest
 from django.shortcuts import redirect
 from django.urls import reverse
 from django.utils import timezone
-from django.utils.formats import date_format
 from django.utils.functional import cached_property
 from django.utils.html import format_html, format_html_join
 from wagtail.admin.ui.tables import Column, DateColumn, UpdatedAtColumn, UserColumn
@@ -23,6 +22,7 @@ from cms.bundles.notifications.slack import (
     notify_slack_of_status_change,
 )
 from cms.bundles.permissions import user_can_manage_bundles, user_can_preview_bundle
+from cms.core.custom_date_format import ons_date_format
 from cms.datasets.models import Dataset
 
 if TYPE_CHECKING:
@@ -211,18 +211,26 @@ class BundleInspectView(InspectView):
             case _:
                 return super().get_field_label(field_name, field)  # type: ignore[no-any-return]
 
+    def get_created_at_display_value(self) -> str:
+        return ons_date_format(self.object.created_at, settings.DATETIME_FORMAT)
+
+    def get_approved_at_display_value(self) -> str:
+        return ons_date_format(self.object.approved_at, settings.DATETIME_FORMAT) if self.object.approved_at else ""
+
     def get_approved_display_value(self) -> str:
         """Custom approved by formatting. Varies based on status, and approver/time of approval."""
         if self.object.status in [BundleStatus.APPROVED, BundleStatus.PUBLISHED]:
             if self.object.approved_by_id and self.object.approved_at:
-                return f"{self.object.approved_by} on {date_format(self.object.approved_at, settings.DATETIME_FORMAT)}"
+                return (
+                    f"{self.object.approved_by} on {ons_date_format(self.object.approved_at, settings.DATETIME_FORMAT)}"
+                )
             return "Unknown approval data"
         return "Pending approval"
 
     def get_scheduled_publication_display_value(self) -> str:
         """Displays the scheduled publication date, if set."""
         if self.object.scheduled_publication_date:
-            return date_format(self.object.scheduled_publication_date, settings.DATETIME_FORMAT)
+            return ons_date_format(self.object.scheduled_publication_date, settings.DATETIME_FORMAT)
         return "No scheduled publication"
 
     def get_release_calendar_page_display_value(self) -> str:
