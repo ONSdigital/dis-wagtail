@@ -71,8 +71,7 @@ CACHES["default"] = {  # noqa: F405
 ENABLE_DJANGO_DEFENDER = False
 
 # Auth
-SERVICE_AUTH_TOKEN = "WT1234AB-456C-789D-1E2F-90GH1234I567"  # noqa: S105 - Dummy token for local development
-WAGTAIL_CORE_ADMIN_LOGIN_ENABLED = True
+SERVICE_AUTH_TOKEN = "wagtail-test-auth-token"  # noqa: S105 - Dummy token matching config in dis-authentication-stub
 AUTH_STUB_URL = "http://localhost:29500"
 AWS_COGNITO_USER_POOL_ID = "dis-authentication-stub"
 AWS_COGNITO_APP_CLIENT_ID = "dis-authentication-stub"
