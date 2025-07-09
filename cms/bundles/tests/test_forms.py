@@ -1,5 +1,6 @@
 from datetime import timedelta
 from typing import Any
+from unittest.mock import patch
 
 from django import forms
 from django.test import TestCase
@@ -283,3 +284,154 @@ class BundleAdminFormTestCase(TestCase):
 
         self.assertTrue(form.is_valid())
         self.assertEqual(form.cleaned_data["publication_date"], self.bundle.publication_date)
+
+
+class BundleDatasetValidationTestCase(TestCase):
+    """Test cases for dataset validation in the BundleAdminForm."""
+
+    @classmethod
+    def setUpTestData(cls):
+        cls.bundle = BundleFactory(name="Test Bundle")
+        cls.form_class = get_edit_handler(Bundle).get_form_class()
+        cls.approver = UserFactory()
+
+    def setUp(self):
+        self.patcher = patch("cms.bundles.forms.DatasetAPIClient")
+        self.mock_client_class = self.patcher.start()
+        self.mock_client = self.mock_client_class.return_value
+
+    def tearDown(self):
+        self.patcher.stop()
+
+    def raw_form_data_with_dataset(self, dataset_id: int) -> dict[str, Any]:
+        """Returns raw form data with a dataset."""
+        return {
+            "name": "Test Bundle",
+            "status": BundleStatus.APPROVED,
+            "bundled_pages": inline_formset([]),
+            "bundled_datasets": inline_formset([{"dataset": dataset_id}]),
+            "teams": inline_formset([]),
+        }
+
+    def test_dataset_validation_approved_dataset_passes(self):
+        """Test that approved datasets pass validation."""
+        dataset = DatasetFactory(id=123)
+        self.mock_client.get_dataset_status.return_value = {"status": "approved"}
+
+        raw_data = self.raw_form_data_with_dataset(dataset.id)
+        form = self.form_class(instance=self.bundle, data=nested_form_data(raw_data), for_user=self.approver)
+
+        self.assertTrue(form.is_valid())
+        self.mock_client.get_dataset_status.assert_called_once_with(dataset.namespace)
+
+    def test_dataset_validation_unapproved_dataset_fails(self):
+        """Test that unapproved datasets fail validation."""
+        dataset = DatasetFactory(id=123, title="Test Dataset")
+        self.mock_client.get_dataset_status.return_value = {"status": "draft"}
+
+        raw_data = self.raw_form_data_with_dataset(dataset.id)
+        form = self.form_class(instance=self.bundle, data=nested_form_data(raw_data), for_user=self.approver)
+
+        self.assertFalse(form.is_valid())
+        self.assertFormError(
+            form,
+            None,
+            ["Cannot approve the bundle with dataset not ready to be published: Test Dataset (status: draft)"],
+        )
+
+    def test_dataset_validation_multiple_datasets_mixed_statuses(self):
+        """Test validation with multiple datasets having different statuses."""
+        dataset1 = DatasetFactory(id=123, title="Approved Dataset")
+        dataset2 = DatasetFactory(id=124, title="Draft Dataset")
+
+        def mock_get_dataset_status(namespace):
+            if namespace == dataset1.namespace:
+                return {"status": "approved"}
+            elif namespace == dataset2.namespace:
+                return {"status": "draft"}
+            return {"status": "unknown"}
+
+        self.mock_client.get_dataset_status.side_effect = mock_get_dataset_status
+
+        raw_data = {
+            "name": "Test Bundle",
+            "status": BundleStatus.APPROVED,
+            "bundled_pages": inline_formset([]),
+            "bundled_datasets": inline_formset([{"dataset": dataset1.id}, {"dataset": dataset2.id}]),
+            "teams": inline_formset([]),
+        }
+
+        form = self.form_class(instance=self.bundle, data=nested_form_data(raw_data), for_user=self.approver)
+
+        self.assertFalse(form.is_valid())
+        self.assertFormError(
+            form,
+            None,
+            ["Cannot approve the bundle with dataset not ready to be published: Draft Dataset (status: draft)"],
+        )
+
+    def test_dataset_validation_api_error_fails_gracefully(self):
+        """Test that API errors are handled gracefully."""
+        from cms.bundles.api import DatasetAPIClientError
+
+        dataset = DatasetFactory(id=123, title="Test Dataset")
+        self.mock_client.get_dataset_status.side_effect = DatasetAPIClientError("API Error")
+
+        raw_data = self.raw_form_data_with_dataset(dataset.id)
+        form = self.form_class(instance=self.bundle, data=nested_form_data(raw_data), for_user=self.approver)
+
+        self.assertFalse(form.is_valid())
+        self.assertFormError(
+            form,
+            None,
+            ["Cannot approve the bundle with dataset not ready to be published: Test Dataset (status check failed)"],
+        )
+
+    def test_dataset_validation_only_runs_when_approving(self):
+        """Test that dataset validation only runs when changing status to APPROVED."""
+        dataset = DatasetFactory(id=123)
+        self.mock_client.get_dataset_status.return_value = {"status": "draft"}
+
+        raw_data = self.raw_form_data_with_dataset(dataset.id)
+        raw_data["status"] = BundleStatus.IN_REVIEW  # Not approving
+
+        form = self.form_class(instance=self.bundle, data=nested_form_data(raw_data), for_user=self.approver)
+
+        self.assertTrue(form.is_valid())
+        self.mock_client.get_dataset_status.assert_not_called()
+
+    def test_dataset_validation_skipped_when_no_datasets(self):
+        """Test that dataset validation is skipped when there are no datasets."""
+        raw_data = {
+            "name": "Test Bundle",
+            "status": BundleStatus.APPROVED,
+            "bundled_pages": inline_formset([]),
+            "bundled_datasets": inline_formset([]),
+            "teams": inline_formset([]),
+        }
+
+        form = self.form_class(instance=self.bundle, data=nested_form_data(raw_data), for_user=self.approver)
+
+        self.assertFalse(form.is_valid())  # Should fail because no pages or datasets
+        self.mock_client.get_dataset_status.assert_not_called()
+
+    def test_dataset_validation_handles_deleted_datasets(self):
+        """Test that validation handles datasets marked for deletion."""
+        dataset1 = DatasetFactory(id=123, title="Approved Dataset")
+        dataset2 = DatasetFactory(id=124, title="Deleted Dataset")
+
+        self.mock_client.get_dataset_status.return_value = {"status": "approved"}
+
+        raw_data = {
+            "name": "Test Bundle",
+            "status": BundleStatus.APPROVED,
+            "bundled_pages": inline_formset([]),
+            "bundled_datasets": inline_formset([{"dataset": dataset1.id}, {"dataset": dataset2.id, "DELETE": True}]),
+            "teams": inline_formset([]),
+        }
+
+        form = self.form_class(instance=self.bundle, data=nested_form_data(raw_data), for_user=self.approver)
+
+        self.assertTrue(form.is_valid())
+        # Should only check the non-deleted dataset
+        self.mock_client.get_dataset_status.assert_called_once_with(dataset1.namespace)

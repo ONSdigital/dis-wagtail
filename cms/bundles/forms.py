@@ -1,3 +1,4 @@
+import logging
 from typing import TYPE_CHECKING, Any
 
 from django import forms
@@ -6,8 +7,11 @@ from django.template.defaultfilters import pluralize
 from django.utils import timezone
 from wagtail.admin.forms import WagtailAdminModelForm
 
+from cms.bundles.api import DatasetAPIClient, DatasetAPIClientError
 from cms.bundles.enums import ACTIVE_BUNDLE_STATUS_CHOICES, EDITABLE_BUNDLE_STATUSES, BundleStatus
 from cms.workflows.models import ReadyToPublishGroupTask
+
+logger = logging.getLogger(__name__)
 
 if TYPE_CHECKING:
     from .models import Bundle
@@ -59,6 +63,38 @@ class BundleAdminForm(WagtailAdminModelForm):
                 break
 
         return has_datasets
+
+    def _validate_bundled_datasets_status(self) -> None:
+        """Validate that all bundled datasets are approved when bundle is set to approved status."""
+        if not self._has_datasets():
+            return
+
+        client = DatasetAPIClient()
+        datasets_not_approved = []
+
+        for form in self.formsets["bundled_datasets"].forms:
+            if form.cleaned_data.get("DELETE"):
+                continue
+
+            if dataset := form.clean().get("dataset"):
+                try:
+                    response = client.get_dataset_status(dataset.namespace)
+                    dataset_status = response.get("status", "unknown")
+
+                    if dataset_status != "approved":
+                        datasets_not_approved.append(f"{dataset.title} (status: {dataset_status})")
+
+                except DatasetAPIClientError as e:
+                    logger.error(f"Failed to check status for dataset {dataset.namespace}: {e!s}")
+                    datasets_not_approved.append(f"{dataset.title} (status check failed)")
+
+        if datasets_not_approved:
+            self.cleaned_data["status"] = self.instance.status
+            dataset_list = ", ".join(datasets_not_approved)
+            raise ValidationError(
+                f"Cannot approve the bundle with dataset{pluralize(len(datasets_not_approved))} "
+                f"not ready to be published: {dataset_list}"
+            )
 
     def _validate_bundled_pages(self) -> None:
         """Validates and tidies up related pages.
@@ -154,6 +190,9 @@ class BundleAdminForm(WagtailAdminModelForm):
             if submitted_status == BundleStatus.APPROVED:
                 # ensure all bundled pages are ready to publish
                 self._validate_bundled_pages_status()
+
+                # ensure all bundled datasets are approved
+                self._validate_bundled_datasets_status()
 
                 cleaned_data["approved_at"] = timezone.now()
                 cleaned_data["approved_by"] = self.for_user
