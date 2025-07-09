@@ -1,3 +1,10 @@
+/**
+ * This adapter expects that the StructBlock is defined in Wagtail with a help
+ * text and the following field:
+ *
+ * frozen = blocks.BooleanBlock(required=False, default=False)
+ */
+
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 class ReadonlyStructBlockDefinition extends window.wagtailStreamField.blocks.StructBlockDefinition {
   frozenHelpText = '';

@@ -17,7 +17,7 @@ from .utils import get_translated_string, parse_day_month_year_time, parse_month
 if TYPE_CHECKING:
     from .models import ReleaseCalendarPage
 
-DATE_SEPERATOR = {
+DATE_SEPARATOR = {
     "en": " to ",
     "cy": " i ",
 }
@@ -188,10 +188,10 @@ class ReleaseCalendarPageAdminForm(WagtailAdminPageForm):
         # Normalize the locale code to a standard format
         locale_code = "en" if locale.language_code == "en-gb" else locale.language_code
 
-        if locale_code not in DATE_SEPERATOR:
+        if locale_code not in DATE_SEPARATOR:
             raise NotImplementedError(f"Release date text validation not implemented for locale '{locale_code}'.")
 
-        parts = text.split(DATE_SEPERATOR[locale_code], maxsplit=1)
+        parts = text.split(DATE_SEPARATOR[locale_code], maxsplit=1)
         dates = [parse_month_year(part, locale_code) for part in parts]
 
         if any(date is None for date in dates) or len(dates) > MAX_DATE_PARTS:
