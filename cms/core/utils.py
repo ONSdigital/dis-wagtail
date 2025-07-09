@@ -10,6 +10,7 @@ from django.utils.formats import date_format
 from django.utils.translation import gettext_lazy as _
 from matplotlib.figure import Figure
 
+from cms.core.custom_date_format import ons_date_format
 from cms.core.enums import RelatedContentType
 
 matplotlib_lock = Lock()
@@ -63,19 +64,19 @@ def get_formatted_pages_list(
     return data
 
 
-def get_document_metadata_date(value: date | datetime | str, *, prefix: "StrOrPromise | None" = None) -> dict[str, Any]:
+def get_document_metadata_date(value: date | datetime, *, prefix: "StrOrPromise | None" = None) -> dict[str, Any]:
     """Returns a dictionary with formatted date information for the DS document component metadata."""
     return {
         "prefix": prefix or _("Released"),
         "showPrefix": True,
         "iso": date_format(value, "c"),
-        "short": date_format(value, "DATE_FORMAT"),
+        "short": ons_date_format(value, "DATE_FORMAT"),
     }
 
 
 def get_document_metadata(
     content_type: "StrOrPromise | None",
-    date_value: date | datetime | str | None,
+    date_value: date | datetime | None,
     *,
     prefix: "StrOrPromise | None" = None,
 ) -> dict[str, Any]:

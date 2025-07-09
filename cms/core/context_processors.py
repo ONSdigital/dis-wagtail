@@ -1,12 +1,14 @@
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from django.conf import settings
+
+from cms.auth.utils import get_auth_config
 
 if TYPE_CHECKING:
     from django.http import HttpRequest
 
 
-def global_vars(request: "HttpRequest") -> dict[str, str | bool | None]:
+def global_vars(request: "HttpRequest") -> dict[str, Any]:
     """Set our global variables to use in templates."""
     return {
         "GOOGLE_TAG_MANAGER_CONTAINER_ID": settings.GOOGLE_TAG_MANAGER_CONTAINER_ID,
@@ -16,4 +18,7 @@ def global_vars(request: "HttpRequest") -> dict[str, str | bool | None]:
         "SEO_NOINDEX": settings.SEO_NOINDEX,
         "LANGUAGE_CODE": settings.LANGUAGE_CODE,
         "IS_EXTERNAL_ENV": settings.IS_EXTERNAL_ENV,
+        "AWS_COGNITO_LOGIN_ENABLED": settings.AWS_COGNITO_LOGIN_ENABLED,
+        "WAGTAIL_CORE_ADMIN_LOGIN_ENABLED": settings.WAGTAIL_CORE_ADMIN_LOGIN_ENABLED,
+        "AUTH_CONFIG": get_auth_config(),
     }
