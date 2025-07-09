@@ -41,14 +41,14 @@ class TeamsViewSet(ModelViewSet):
     add_to_admin_menu = True
     menu_order = 200
     inspect_view_enabled = True
-    list_display: ClassVar[list[str]] = ["name", "total_members", "created_at", "updated_at"]
-    list_filter: ClassVar[list[str]] = ["name", "is_active", "created_at", "updated_at"]
+    list_display: ClassVar[list[str]] = ["name", "identifier", "created_at", "updated_at"]
+    list_filter: ClassVar[list[str]] = ["name", "identifier", "is_active", "created_at", "updated_at"]
     inspect_view_fields: ClassVar[list[str]] = [
         "name",
+        "identifier",
         "created_at",
         "updated_at",
         "is_active",
-        "total_members",
         "users",
     ]
 
