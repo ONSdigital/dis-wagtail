@@ -216,7 +216,7 @@ class ReleaseCalendarPage(BundledPageMixin, BasePage):  # type: ignore[django-ma
         items = [{"url": "#summary", "text": _("Summary")}]
 
         if self.status == ReleaseStatus.PUBLISHED:
-            for block in self.content:  # pylint: disable=not-an-iterable
+            for block in self.content:
                 items += block.block.to_table_of_contents_items(block.value)
 
             if self.datasets:
@@ -252,7 +252,7 @@ class ReleaseCalendarPage(BundledPageMixin, BasePage):  # type: ignore[django-ma
     def active_bundle(self) -> Optional["Bundle"]:
         if not self.pk:
             return None
-        bundle: Bundle | None = self.bundles.active().first()  # pylint: disable=no-member
+        bundle: Bundle | None = self.bundles.active().first()
         return bundle
 
     @property
