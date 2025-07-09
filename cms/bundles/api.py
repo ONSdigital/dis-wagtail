@@ -1,19 +1,11 @@
 import logging
+from http import HTTPStatus
 from typing import Any, Optional
 
 import requests
 from django.conf import settings
 
 logger = logging.getLogger(__name__)
-
-# HTTP status codes
-HTTP_ACCEPTED = 202
-HTTP_NO_CONTENT = 204
-HTTP_BAD_REQUEST = 400
-HTTP_UNAUTHORIZED = 401
-HTTP_NOT_FOUND = 404
-HTTP_CONFLICT = 409
-HTTP_SERVER_ERROR = 500
 
 
 class DatasetAPIClientError(Exception):
@@ -81,7 +73,7 @@ class DatasetAPIClient:
             Response data as a dictionary
         """
         # Handle 202 responses (accepted, but processing)
-        if response.status_code == HTTP_ACCEPTED:
+        if response.status_code == HTTPStatus.ACCEPTED:
             return {
                 "status": "accepted",
                 "location": response.headers.get("Location", ""),
@@ -89,7 +81,7 @@ class DatasetAPIClient:
             }
 
         # Handle 204 responses (no content)
-        if response.status_code == HTTP_NO_CONTENT:
+        if response.status_code == HTTPStatus.NO_CONTENT:
             return {"status": "success", "message": "Operation completed successfully"}
 
         # Try to parse JSON response
@@ -113,15 +105,15 @@ class DatasetAPIClient:
         base_msg = f"HTTP {error.response.status_code} error for {method} {url}"
         status_code = error.response.status_code
 
-        if status_code == HTTP_BAD_REQUEST:
+        if status_code == HTTPStatus.BAD_REQUEST:
             return f"{base_msg}: Bad Request - Invalid data provided"
-        if status_code == HTTP_UNAUTHORIZED:
+        if status_code == HTTPStatus.UNAUTHORIZED:
             return f"{base_msg}: Unauthorized - Invalid authentication"
-        if status_code == HTTP_NOT_FOUND:
+        if status_code == HTTPStatus.NOT_FOUND:
             return f"{base_msg}: Not Found - Resource not found"
-        if status_code == HTTP_CONFLICT:
+        if status_code == HTTPStatus.CONFLICT:
             return f"{base_msg}: Conflict - Resource already exists or conflict"
-        if status_code >= HTTP_SERVER_ERROR:
+        if status_code >= HTTPStatus.INTERNAL_SERVER_ERROR:
             return f"{base_msg}: Server Error - Internal server error"
 
         return base_msg

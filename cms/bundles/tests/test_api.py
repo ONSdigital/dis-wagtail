@@ -1,3 +1,4 @@
+from http import HTTPStatus
 from unittest.mock import Mock, patch
 
 import requests
@@ -10,7 +11,7 @@ class DatasetAPIClientTests(TestCase):
     def setUp(self):
         self.base_url = "https://test-api.example.com"
 
-    def _create_mock_response(self, status_code=200, json_data=None, headers=None):
+    def _create_mock_response(self, status_code=HTTPStatus.OK, json_data=None, headers=None):
         """Helper method to create a mock response."""
         mock_response = Mock()
         mock_response.status_code = status_code
@@ -29,7 +30,9 @@ class DatasetAPIClientTests(TestCase):
 
     @patch("cms.bundles.api.requests.Session")
     def test_create_bundle_success(self, mock_session_class):
-        mock_response = self._create_mock_response(201, {"id": "test-bundle-123", "title": "Test Bundle"})
+        mock_response = self._create_mock_response(
+            HTTPStatus.CREATED, {"id": "test-bundle-123", "title": "Test Bundle"}
+        )
         mock_session = self._create_mock_session(mock_response)
         mock_session_class.return_value = mock_session
 
@@ -46,7 +49,9 @@ class DatasetAPIClientTests(TestCase):
 
     @patch("cms.bundles.api.requests.Session")
     def test_create_bundle_accepted_response(self, mock_session_class):
-        mock_response = self._create_mock_response(202, headers={"Location": "/bundles/test-bundle-123/status"})
+        mock_response = self._create_mock_response(
+            HTTPStatus.ACCEPTED, headers={"Location": "/bundles/test-bundle-123/status"}
+        )
         mock_session = self._create_mock_session(mock_response)
         mock_session_class.return_value = mock_session
 
@@ -64,7 +69,7 @@ class DatasetAPIClientTests(TestCase):
 
     @patch("cms.bundles.api.requests.Session")
     def test_update_bundle_success(self, mock_session_class):
-        mock_response = self._create_mock_response(200, {"id": "test-bundle-123", "title": "Updated Bundle"})
+        mock_response = self._create_mock_response(HTTPStatus.OK, {"id": "test-bundle-123", "title": "Updated Bundle"})
         mock_session = self._create_mock_session(mock_response)
         mock_session_class.return_value = mock_session
 
@@ -80,7 +85,7 @@ class DatasetAPIClientTests(TestCase):
 
     @patch("cms.bundles.api.requests.Session")
     def test_update_bundle_status_success(self, mock_session_class):
-        mock_response = self._create_mock_response(200, {"id": "test-bundle-123", "status": "APPROVED"})
+        mock_response = self._create_mock_response(HTTPStatus.OK, {"id": "test-bundle-123", "status": "APPROVED"})
         mock_session = self._create_mock_session(mock_response)
         mock_session_class.return_value = mock_session
 
@@ -94,7 +99,7 @@ class DatasetAPIClientTests(TestCase):
 
     @patch("cms.bundles.api.requests.Session")
     def test_delete_bundle_success(self, mock_session_class):
-        mock_response = self._create_mock_response(204)
+        mock_response = self._create_mock_response(HTTPStatus.NO_CONTENT)
         mock_session = self._create_mock_session(mock_response)
         mock_session_class.return_value = mock_session
 
@@ -106,7 +111,7 @@ class DatasetAPIClientTests(TestCase):
 
     @patch("cms.bundles.api.requests.Session")
     def test_get_dataset_status_success(self, mock_session_class):
-        mock_response = self._create_mock_response(200, {"id": "dataset-123", "status": "approved"})
+        mock_response = self._create_mock_response(HTTPStatus.OK, {"id": "dataset-123", "status": "approved"})
         mock_session = self._create_mock_session(mock_response)
         mock_session_class.return_value = mock_session
 
@@ -118,7 +123,7 @@ class DatasetAPIClientTests(TestCase):
 
     @patch("cms.bundles.api.requests.Session")
     def test_get_bundle_status_success(self, mock_session_class):
-        mock_response = self._create_mock_response(200, {"id": "test-bundle-123", "status": "DRAFT"})
+        mock_response = self._create_mock_response(HTTPStatus.OK, {"id": "test-bundle-123", "status": "DRAFT"})
         mock_session = self._create_mock_session(mock_response)
         mock_session_class.return_value = mock_session
 
@@ -133,7 +138,7 @@ class DatasetAPIClientTests(TestCase):
     @patch("cms.bundles.api.requests.Session")
     def test_http_error_handling(self, mock_session_class):
         mock_response = Mock()
-        mock_response.status_code = 400
+        mock_response.status_code = HTTPStatus.BAD_REQUEST
         mock_response.raise_for_status.side_effect = requests.exceptions.HTTPError(response=mock_response)
         mock_session = self._create_mock_session(mock_response)
         mock_session_class.return_value = mock_session
@@ -148,7 +153,7 @@ class DatasetAPIClientTests(TestCase):
     @patch("cms.bundles.api.requests.Session")
     def test_unauthorized_error(self, mock_session_class):
         mock_response = Mock()
-        mock_response.status_code = 401
+        mock_response.status_code = HTTPStatus.UNAUTHORIZED
         mock_response.raise_for_status.side_effect = requests.exceptions.HTTPError(response=mock_response)
         mock_session = self._create_mock_session(mock_response)
         mock_session_class.return_value = mock_session
@@ -163,7 +168,7 @@ class DatasetAPIClientTests(TestCase):
     @patch("cms.bundles.api.requests.Session")
     def test_not_found_error(self, mock_session_class):
         mock_response = Mock()
-        mock_response.status_code = 404
+        mock_response.status_code = HTTPStatus.NOT_FOUND
         mock_response.raise_for_status.side_effect = requests.exceptions.HTTPError(response=mock_response)
         mock_session = self._create_mock_session(mock_response)
         mock_session_class.return_value = mock_session
@@ -178,7 +183,7 @@ class DatasetAPIClientTests(TestCase):
     @patch("cms.bundles.api.requests.Session")
     def test_server_error(self, mock_session_class):
         mock_response = Mock()
-        mock_response.status_code = 500
+        mock_response.status_code = HTTPStatus.INTERNAL_SERVER_ERROR
         mock_response.raise_for_status.side_effect = requests.exceptions.HTTPError(response=mock_response)
         mock_session = self._create_mock_session(mock_response)
         mock_session_class.return_value = mock_session
@@ -205,7 +210,7 @@ class DatasetAPIClientTests(TestCase):
     @patch("cms.bundles.api.requests.Session")
     def test_json_parsing_error(self, mock_session_class):
         mock_response = Mock()
-        mock_response.status_code = 200
+        mock_response.status_code = HTTPStatus.OK
         mock_response.json.side_effect = ValueError("Invalid JSON")
         mock_response.raise_for_status.return_value = None
         mock_session = self._create_mock_session(mock_response)
