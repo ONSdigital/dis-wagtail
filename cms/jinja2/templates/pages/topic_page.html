@@ -23,11 +23,13 @@
     {# fmt:on #}
 
     {% if page.headline_figures %}
-        <div class="ons-container headline-figures">
-            <h2 class="headline-figures__heading ons-u-fs-m">{{ _("Headline facts and figures") }}</h2>
-            <div class="ons-grid ons-grid-flex-gap ons-grid-flex-gap--24 headline-figures__grid">
+        <div class="ons-container">
+            <h2 class="ons-u-fs-m ons-u-mb-s">{{ _("Headline facts and figures") }}</h2>
+            <div class="ons-grid ons-grid-flex-gap ons-grid-flex-gap--l ons-u-pb-2xl" id="headline-figures">
                 {% for figure in page.headline_figures %}
-                    <div class="ons-grid__col ons-grid__col--flex-col ons-grid__col--stretch">{% include_block figure %}</div>
+                    <div class="ons-grid__col ons-grid__col--flex-col ons-grid__col--stretc ons-u-flex-grow{% if page.headline_figures|length > 2 %} ons-col-4@m{% endif %}h">
+                        {% include_block figure %}
+                    </div>
                 {% endfor %}
             </div>
         </div>
@@ -35,7 +37,7 @@
 {% endblock %}
 
 {% block main %}
-    <div class="ons-grid ons-grid-flex-gap ons-grid-flex-gap--32 ons-js-toc-container">
+    <div class="ons-grid ons-grid-flex-gap ons-grid-flex-gap--xl ons-js-toc-container">
         <div class="ons-grid__col ons-grid__col--sticky@m ons-col-4@m">
             {% with toc_title=_("Contents"), toc_aria_label=_("Sections in this page") %}
 
@@ -70,21 +72,39 @@
             {% if formatted_articles %}
                 <section id="related-articles" class="spacing">
                     <h2>{{ _("Related articles") }}</h2>
-                    {{ onsDocumentList({"documents": formatted_articles}) }}
+                    {# fmt:off #}
+                        {{ onsDocumentList({
+                                "headingLevel": 3,
+                                "documents": formatted_articles
+                            })
+                        }}
+                    {# fmt:on #}
                 </section>
             {% endif %}
 
             {% if formatted_methodologies %}
                 <section id="related-methods" class="spacing">
                     <h2>{{ _("Methods and quality information") }}</h2>
-                    {{ onsDocumentList({"documents": formatted_methodologies}) }}
+                    {# fmt:off #}
+                        {{ onsDocumentList({
+                                "headingLevel": 3,
+                                "documents": formatted_methodologies
+                            })
+                        }}
+                    {# fmt:on #}
                 </section>
             {% endif %}
 
             {% if page.dataset_document_list %}
                 <section id="data" class="spacing">
                     <h2>{{ _("Data") }}</h2>
-                    {{ onsDocumentList({"documents": page.dataset_document_list}) }}
+                    {# fmt:off #}
+                        {{ onsDocumentList({
+                                "headingLevel": 3,
+                                "documents": page.dataset_document_list
+                            })
+                        }}
+                    {# fmt:on #}
                 </section>
             {% endif %}
 

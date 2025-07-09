@@ -1,7 +1,9 @@
+from datetime import UTC, datetime
 from http import HTTPStatus
 from unittest import mock
 
-from django.test import TestCase
+import time_machine
+from django.test import TestCase, override_settings
 from django.urls import reverse
 from wagtail.admin.panels import get_edit_handler
 from wagtail.models import Locale, Page
@@ -382,11 +384,19 @@ class BundleViewSetTestCase(BundleViewSetTestCaseBase):
         self.assertContains(response, bundle_dataset_b.dataset.edition)
         self.assertContains(response, f'href="{bundle_dataset_b.dataset.website_url}"')
 
+    @override_settings(  # Address race condition in tests caused when calling delete() on a page
+        WAGTAILSEARCH_BACKENDS={
+            "default": {
+                "BACKEND": "wagtail.search.backends.base.SearchBackend",
+                "AUTO_UPDATE": False,
+            }
+        }
+    )
     def test_inspect_view__contains_release_calendar_page(self):
         """Checks that the inspect view displays the release calendar page."""
         release_calendar_page = ReleaseCalendarPageFactory(title="Foobar Release Calendar Page")
         self.bundle.release_calendar_page = release_calendar_page
-        self.bundle.save()
+        self.bundle.save(update_fields=["release_calendar_page"])
 
         response = self.client.get(reverse("bundle:inspect", args=[self.bundle.pk]))
 
@@ -399,6 +409,32 @@ class BundleViewSetTestCase(BundleViewSetTestCaseBase):
 
         content = response.content.decode("utf-8")
         self.assertInHTML("<dt>Associated release calendar page</dt><dd>N/A</dd>", content)
+
+    def test_inspect_view__links_to_live_pages_after_publication(self):
+        release_calendar_page = ReleaseCalendarPageFactory(title="Foobar Release Calendar Page")
+        self.bundle.release_calendar_page = release_calendar_page
+        self.bundle.status = BundleStatus.PUBLISHED
+        self.bundle.save(update_fields=["status", "release_calendar_page"])
+
+        response = self.client.get(reverse("bundle:inspect", args=[self.bundle.pk]))
+
+        self.assertContains(response, "Foobar Release Calendar Page")
+        self.assertContains(response, release_calendar_page.url)
+        self.assertNotContains(response, reverse("bundles:preview_release_calendar", args=[self.bundle.id]))
+
+    @time_machine.travel(datetime(2025, 7, 1, 12, 37), tick=False)
+    def test_inspect_view__datetime_use_configured_timezone(self):
+        bundle = BundleFactory(
+            status=BundleStatus.APPROVED,
+            approved_by=self.superuser,
+            approved_at=datetime(2025, 7, 1, 12, 45, tzinfo=UTC),
+            publication_date=datetime(2025, 7, 1, 13, 00, tzinfo=UTC),
+        )
+        response = self.client.get(reverse("bundle:inspect", args=[bundle.pk]))
+
+        self.assertContains(response, "1 July 2025 1:37pm")
+        self.assertContains(response, "1 July 2025 1:45pm")
+        self.assertContains(response, "1 July 2025 2:00pm")
 
 
 class BundleIndexViewTestCase(BundleViewSetTestCaseBase):

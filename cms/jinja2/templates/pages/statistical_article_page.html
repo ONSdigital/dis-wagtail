@@ -4,6 +4,7 @@
 {% from "components/panel/_macro.njk" import onsPanel %}
 {% from "components/hero/_macro.njk" import onsHero %}
 {% from "components/table-of-contents/_macro.njk" import onsTableOfContents %}
+{% from "components/details-panel/_macro.njk" import onsDetailsPanel %}
 
 {#- We set variables for text so that it gets picked up by makemessages -#}
 {%- set contact_label = _("Contact:") -%}
@@ -108,6 +109,7 @@
             "variants": 'grey',
             "text": page.summary,
             "officialStatisticsBadge": page.is_accredited,
+            "officialStatisticsBadgeUrl": "https://uksa.statisticsauthority.gov.uk/about-the-authority/uk-statistical-system/types-of-official-statistics/",
             "wide": true,
             "informationPanel":{
                 "panelText": infoPanelText,
@@ -132,71 +134,38 @@
         })
     }}
     {# fmt:on #}
-
-    {# TBD: to be replaced with corrections and notices DS compoennt #}
-    {% if page.corrections or page.notices %}
-        {% if page.corrections and page.notices %}
+    {% if has_corrections or has_notices %}
+        {% set openText = _("Show detail") %}
+        {% set closeText = _("Hide detail") %}
+        {% if has_corrections and has_notices %}
             {% set corrections_and_notices_title = _("Corrections and notices") %}
-        {% elif page.notices %}
+        {% elif has_notices %}
             {% set corrections_and_notices_title = _("Notices") %}
         {% else %}
             {% set corrections_and_notices_title = _("Corrections") %}
         {% endif %}
-        <details class="ons-corrections-notices ons-u-mb-l" open>
-            <summary class="ons-corrections-notices__banner ons-u-pt-s ons-u-pb-s">
-                <div class="ons-container ons-corrections-notices__banner-contents">
-                    <span class="ons-corrections-notices__info-icon ons-u-mr-2xs" aria-hidden="true">i</span>
-                    <div class="ons-corrections-notices__banner-body">
-                        <h3 class="ons-corrections-notices__banner-title ons-u-mb-2xs">{{ corrections_and_notices_title }}</h3>
-                        <div class="ons-corrections-notices__banner-detail-reveal">
-                            <span class="ons-corrections-notices__banner-detail-text">{{ _("Show detail") }}</span>
-                            <span class="ons-corrections-notices__banner-detail-icon">
-                                {% from "components/icon/_macro.njk" import onsIcon %}
-                                {# fmt:off #}
-                                {{
-                                    onsIcon({
-                                        "iconType": "chevron"
-                                    })
-                                }}
-                                {# fmt:on #}
-                            </span>
-                        </div>
-                        <div class="ons-corrections-notices__banner-detail-hide">
-                            <span class="ons-corrections-notices__banner-detail-text">{{ _("Close detail") }}</span>
-                            <span class="ons-corrections-notices__banner-detail-icon">
-                                {% from "components/icon/_macro.njk" import onsIcon %}
-                                {# fmt:off #}
-                                {{
-                                    onsIcon({
-                                        "iconType": "chevron"
-                                    })
-                                }}
-                                {# fmt:on #}
-                            </span>
-                        </div>
-                    </div>
-                </div>
-            </summary>
 
-            <div class="ons-container ons-corrections-notices__content ons-u-pt-xl ons-u-pb-3xl">
-                {% if page.corrections %}
-                    {% for correction in page.corrections %}
-                        {% include_block correction %}
-                    {% endfor %}
-                {% endif %}
-                {% if page.notices %}
-                    {{ page.notices }}
-                {% endif %}
-            </div>
-        </details>
+        {# fmt:off #}
+        {{
+            onsDetailsPanel({
+                "title": corrections_and_notices_title,
+                "openText": openText,
+                "closeText": closeText,
+                "detailsItems": corrections_and_notices
+            })
+        }}
+        {# fmt:on #}
+
     {% endif %}
 
     {% if page.headline_figures %}
-        <div class="ons-container headline-figures">
-            <h2 class="headline-figures__heading ons-u-fs-m">{{ _("Headline facts and figures") }}</h2>
-            <div class="ons-grid ons-grid-flex-gap ons-grid-flex-gap--24 headline-figures__grid">
+        <div class="ons-container ons-u-pt-l ons-u-pb-2xl">
+            <h2 class="ons-u-fs-m">{{ _("Headline facts and figures") }}</h2>
+            <div class="ons-grid ons-grid-flex-gap ons-grid-flex-gap--l ons-u-pb-2xl" id="headline-figures">
                 {% for figure in page.headline_figures %}
-                    <div class="ons-grid__col ons-grid__col--flex-col ons-grid__col--stretch">{% include_block figure %}</div>
+                    <div class="ons-grid__col ons-grid__col--loose ons-grid__col--flex-col ons-grid__col--stretch ons-u-flex-grow{% if page.headline_figures|length > 2 %} ons-col-4@m{% endif %}">
+                        {% include_block figure %}
+                    </div>
                 {% endfor %}
             </div>
         </div>
@@ -205,7 +174,7 @@
 {% endblock %}
 
 {% block main %}
-    <div class="ons-grid ons-grid-flex-gap ons-grid-flex-gap--32 ons-js-toc-container">
+    <div class="ons-grid ons-grid-flex-gap ons-grid-flex-gap--xl ons-js-toc-container">
         <div class="ons-grid__col ons-grid__col--sticky@m ons-col-4@m">
             {% if page.datasets %}
                 {% if request.is_preview and page.pk %}
@@ -235,19 +204,19 @@
                     {% endif %}
 
                     {% with toc_title=_("Contents"), toc_aria_label=_("Sections in this page") %}
-                {# fmt:off #}
-                {{-
-                    onsTableOfContents({
-                        "title": toc_title,
-                        "ariaLabel": toc_aria_label,
-                        "itemsList": page.table_of_contents,
-                        "relatedLinks": related_links,
-                        "button": {
-                            "text": _("Save or print this page")
-                        }
-                    })
-                }}
-                {# fmt:on #}
+                        {# fmt:off #}
+                        {{-
+                            onsTableOfContents({
+                                "title": toc_title,
+                                "ariaLabel": toc_aria_label,
+                                "itemsList": page.table_of_contents,
+                                "relatedLinks": related_links,
+                                "button": {
+                                    "text": _("Save or print this page")
+                                }
+                            })
+                        }}
+                        {# fmt:on #}
                     {% endwith %}
                     </div>
 
