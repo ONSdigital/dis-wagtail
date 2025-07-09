@@ -2,6 +2,7 @@ from datetime import date, datetime, time
 
 from django.utils.dateformat import DateFormat
 from django.utils.formats import get_format
+from django.utils.timezone import is_aware, localtime
 
 
 class ONSDateFormat(DateFormat):
@@ -20,6 +21,9 @@ class ONSDateFormat(DateFormat):
 
 
 def ons_date_format(value: date | datetime, format_string: str) -> str:
+    # ensure the value uses the configured timezone
+    if isinstance(value, datetime) and is_aware(value):
+        value = localtime(value)
     formatted_date = ONSDateFormat(value).format(get_format(format_string))
 
     # Note: Django currently has a typo in the Welsh translation for "July" (Gorffenaf instead of Gorffennaf).

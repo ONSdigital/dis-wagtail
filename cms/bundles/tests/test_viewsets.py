@@ -1,6 +1,8 @@
+from datetime import UTC, datetime
 from http import HTTPStatus
 from unittest import mock
 
+import time_machine
 from django.test import TestCase, override_settings
 from django.urls import reverse
 from wagtail.admin.panels import get_edit_handler
@@ -419,6 +421,20 @@ class BundleViewSetTestCase(BundleViewSetTestCaseBase):
         self.assertContains(response, "Foobar Release Calendar Page")
         self.assertContains(response, release_calendar_page.url)
         self.assertNotContains(response, reverse("bundles:preview_release_calendar", args=[self.bundle.id]))
+
+    @time_machine.travel(datetime(2025, 7, 1, 12, 37), tick=False)
+    def test_inspect_view__datetime_use_configured_timezone(self):
+        bundle = BundleFactory(
+            status=BundleStatus.APPROVED,
+            approved_by=self.superuser,
+            approved_at=datetime(2025, 7, 1, 12, 45, tzinfo=UTC),
+            publication_date=datetime(2025, 7, 1, 13, 00, tzinfo=UTC),
+        )
+        response = self.client.get(reverse("bundle:inspect", args=[bundle.pk]))
+
+        self.assertContains(response, "1 July 2025 1:37pm")
+        self.assertContains(response, "1 July 2025 1:45pm")
+        self.assertContains(response, "1 July 2025 2:00pm")
 
 
 class BundleIndexViewTestCase(BundleViewSetTestCaseBase):
