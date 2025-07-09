@@ -6,11 +6,18 @@ from django.conf import settings
 
 logger = logging.getLogger(__name__)
 
+# HTTP status codes
+HTTP_ACCEPTED = 202
+HTTP_NO_CONTENT = 204
+HTTP_BAD_REQUEST = 400
+HTTP_UNAUTHORIZED = 401
+HTTP_NOT_FOUND = 404
+HTTP_CONFLICT = 409
+HTTP_SERVER_ERROR = 500
+
 
 class DatasetAPIClientError(Exception):
     """Base exception for DatasetAPIClient errors."""
-
-    pass
 
 
 class DatasetAPIClient:
@@ -52,38 +59,10 @@ class DatasetAPIClient:
         try:
             response = self.session.request(method, url, json=data)
             response.raise_for_status()
-
-            # Handle 202 responses (accepted, but processing)
-            if response.status_code == 202:
-                return {
-                    "status": "accepted",
-                    "location": response.headers.get("Location", ""),
-                    "message": "Request accepted and is being processed",
-                }
-
-            # Handle 204 responses (no content)
-            if response.status_code == 204:
-                return {"status": "success", "message": "Operation completed successfully"}
-
-            # Try to parse JSON response
-            try:
-                return response.json()
-            except ValueError:
-                return {"status": "success", "message": "Operation completed successfully"}
+            return self._process_response(response)
 
         except requests.exceptions.HTTPError as e:
-            error_msg = f"HTTP {e.response.status_code} error for {method} {url}"
-            if e.response.status_code == 400:
-                error_msg += ": Bad Request - Invalid data provided"
-            elif e.response.status_code == 401:
-                error_msg += ": Unauthorized - Invalid authentication"
-            elif e.response.status_code == 404:
-                error_msg += ": Not Found - Resource not found"
-            elif e.response.status_code == 409:
-                error_msg += ": Conflict - Resource already exists or conflict"
-            elif e.response.status_code >= 500:
-                error_msg += ": Server Error - Internal server error"
-
+            error_msg = self._format_http_error(e, method, url)
             logger.error(error_msg)
             raise DatasetAPIClientError(error_msg) from e
 
@@ -91,6 +70,61 @@ class DatasetAPIClient:
             error_msg = f"Network error for {method} {url}: {e!s}"
             logger.error(error_msg)
             raise DatasetAPIClientError(error_msg) from e
+
+    def _process_response(self, response: requests.Response) -> dict[str, Any]:
+        """Process successful API responses.
+
+        Args:
+            response: The requests Response object
+
+        Returns:
+            Response data as a dictionary
+        """
+        # Handle 202 responses (accepted, but processing)
+        if response.status_code == HTTP_ACCEPTED:
+            return {
+                "status": "accepted",
+                "location": response.headers.get("Location", ""),
+                "message": "Request accepted and is being processed",
+            }
+
+        # Handle 204 responses (no content)
+        if response.status_code == HTTP_NO_CONTENT:
+            return {"status": "success", "message": "Operation completed successfully"}
+
+        # Try to parse JSON response
+        try:
+            json_data: dict[str, Any] = response.json()
+            return json_data
+        except ValueError:
+            return {"status": "success", "message": "Operation completed successfully"}
+
+    def _format_http_error(self, error: requests.exceptions.HTTPError, method: str, url: str) -> str:
+        """Format HTTP error messages with appropriate context.
+
+        Args:
+            error: The HTTPError exception
+            method: HTTP method used
+            url: URL that failed
+
+        Returns:
+            Formatted error message
+        """
+        base_msg = f"HTTP {error.response.status_code} error for {method} {url}"
+        status_code = error.response.status_code
+
+        if status_code == HTTP_BAD_REQUEST:
+            return f"{base_msg}: Bad Request - Invalid data provided"
+        if status_code == HTTP_UNAUTHORIZED:
+            return f"{base_msg}: Unauthorized - Invalid authentication"
+        if status_code == HTTP_NOT_FOUND:
+            return f"{base_msg}: Not Found - Resource not found"
+        if status_code == HTTP_CONFLICT:
+            return f"{base_msg}: Conflict - Resource already exists or conflict"
+        if status_code >= HTTP_SERVER_ERROR:
+            return f"{base_msg}: Server Error - Internal server error"
+
+        return base_msg
 
     def create_bundle(self, bundle_data: dict[str, Any]) -> dict[str, Any]:
         """Create a new bundle via the API.

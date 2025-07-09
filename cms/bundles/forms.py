@@ -73,10 +73,13 @@ class BundleAdminForm(WagtailAdminModelForm):
         datasets_not_approved = []
 
         for form in self.formsets["bundled_datasets"].forms:
+            if not form.is_valid():
+                continue
+
             if form.cleaned_data.get("DELETE"):
                 continue
 
-            if dataset := form.clean().get("dataset"):
+            if dataset := form.cleaned_data.get("dataset"):
                 try:
                     response = client.get_dataset_status(dataset.namespace)
                     dataset_status = response.get("status", "unknown")
@@ -85,7 +88,7 @@ class BundleAdminForm(WagtailAdminModelForm):
                         datasets_not_approved.append(f"{dataset.title} (status: {dataset_status})")
 
                 except DatasetAPIClientError as e:
-                    logger.error(f"Failed to check status for dataset {dataset.namespace}: {e!s}")
+                    logger.error("Failed to check status for dataset %s: %s", dataset.namespace, e)
                     datasets_not_approved.append(f"{dataset.title} (status check failed)")
 
         if datasets_not_approved:

@@ -66,6 +66,7 @@ def _build_bundle_data_for_api(bundle: Bundle) -> dict[str, Any]:
 def handle_bundle_dataset_api_sync(instance: Bundle, created: bool, **kwargs: Any) -> None:
     """Handle synchronization with the Dataset API for bundle creation and status updates."""
     client = DatasetAPIClient()
+    update_fields = kwargs.get("update_fields")
 
     try:
         if created:
@@ -77,28 +78,25 @@ def handle_bundle_dataset_api_sync(instance: Bundle, created: bool, **kwargs: An
             if "id" in response:
                 instance.dataset_api_id = response["id"]
                 instance.save(update_fields=["dataset_api_id"])
-                logger.info(f"Created bundle {instance.pk} in Dataset API with ID: {instance.dataset_api_id}")
+                logger.info("Created bundle %s in Dataset API with ID: %s", instance.pk, instance.dataset_api_id)
             else:
-                logger.warning(f"Bundle {instance.pk} created in API but no ID returned")
+                logger.warning("Bundle %s created in API but no ID returned", instance.pk)
 
-        elif instance.dataset_api_id:
-            # Check if status has changed
-            original_bundle = Bundle.objects.get(pk=instance.pk)
-            if hasattr(original_bundle, "_state") and original_bundle._state.fields_cache:
-                original_status = original_bundle._state.fields_cache.get("status")
-                if original_status and original_status != instance.status:
-                    # Status has changed, update in API
-                    client.update_bundle_status(instance.dataset_api_id, instance.status)
-                    logger.info(f"Updated bundle {instance.pk} status to {instance.status} in Dataset API")
+        elif instance.dataset_api_id and not created:
+            # For updates, only sync if we're not in the middle of setting the dataset_api_id
+            if update_fields is None or "dataset_api_id" not in update_fields:
+                # This is likely a status update or other field change
+                client.update_bundle_status(instance.dataset_api_id, instance.status)
+                logger.info("Updated bundle %s status to %s in Dataset API", instance.pk, instance.status)
 
     except DatasetAPIClientError as e:
-        logger.error(f"Failed to sync bundle {instance.pk} with Dataset API: {e!s}")
+        logger.error("Failed to sync bundle %s with Dataset API: %s", instance.pk, e)
         # Don't raise the exception to avoid breaking the admin interface
         # The bundle will still be saved locally
 
 
 @receiver(post_save, sender=BundleDataset)
-def handle_bundle_dataset_added(instance: BundleDataset, created: bool, **kwargs: Any) -> None:
+def handle_bundle_dataset_added(instance: BundleDataset, **kwargs: Any) -> None:
     """Handle when a dataset is added to a bundle."""
     if instance.parent.dataset_api_id:
         client = DatasetAPIClient()
@@ -106,10 +104,10 @@ def handle_bundle_dataset_added(instance: BundleDataset, created: bool, **kwargs
         try:
             bundle_data = _build_bundle_data_for_api(instance.parent)
             client.update_bundle(instance.parent.dataset_api_id, bundle_data)
-            logger.info(f"Updated bundle {instance.parent.pk} datasets in Dataset API")
+            logger.info("Updated bundle %s datasets in Dataset API", instance.parent.pk)
 
         except DatasetAPIClientError as e:
-            logger.error(f"Failed to update bundle {instance.parent.pk} datasets in Dataset API: {e!s}")
+            logger.error("Failed to update bundle %s datasets in Dataset API: %s", instance.parent.pk, e)
 
 
 @receiver(post_delete, sender=BundleDataset)
@@ -121,10 +119,10 @@ def handle_bundle_dataset_removed(instance: BundleDataset, **kwargs: Any) -> Non
         try:
             bundle_data = _build_bundle_data_for_api(instance.parent)
             client.update_bundle(instance.parent.dataset_api_id, bundle_data)
-            logger.info(f"Updated bundle {instance.parent.pk} datasets in Dataset API")
+            logger.info("Updated bundle %s datasets in Dataset API", instance.parent.pk)
 
         except DatasetAPIClientError as e:
-            logger.error(f"Failed to update bundle {instance.parent.pk} datasets in Dataset API: {e!s}")
+            logger.error("Failed to update bundle %s datasets in Dataset API: %s", instance.parent.pk, e)
 
 
 @receiver(post_delete, sender=Bundle)
@@ -135,8 +133,8 @@ def handle_bundle_deletion(instance: Bundle, **kwargs: Any) -> None:
 
         try:
             client.delete_bundle(instance.dataset_api_id)
-            logger.info(f"Deleted bundle {instance.pk} from Dataset API")
+            logger.info("Deleted bundle %s from Dataset API", instance.pk)
 
         except DatasetAPIClientError as e:
-            logger.error(f"Failed to delete bundle {instance.pk} from Dataset API: {e!s}")
+            logger.error("Failed to delete bundle %s from Dataset API: %s", instance.pk, e)
             # Don't raise the exception to avoid breaking the deletion process
