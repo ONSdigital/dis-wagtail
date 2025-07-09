@@ -326,7 +326,7 @@ class ReleaseCalendarPageAdminFormTestCase(WagtailTestUtils, TestCase):
         """Checks that adding a change log entry requires a different release date."""
         # Set up the page with a confirmed status and publish it to create a live version
         self.page.status = ReleaseStatus.CONFIRMED
-        self.page.release_date = timezone.now()
+        self.page.release_date = timezone.now().replace(second=0)
         self.page.save_revision().publish()
 
         # Now try to add a change log entry without changing the release date
