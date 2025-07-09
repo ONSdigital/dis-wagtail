@@ -1,7 +1,10 @@
 import json
+import re
 from collections import defaultdict
-from typing import TYPE_CHECKING, Any, ClassVar
+from typing import TYPE_CHECKING, Any, ClassVar, Optional
+from urllib.parse import urlparse
 
+from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.forms import widgets
 from wagtail import blocks
@@ -16,7 +19,7 @@ from cms.datavis.blocks.annotations import (
     RangeAnnotationCategoricalBlock,
     RangeAnnotationLinearBlock,
 )
-from cms.datavis.blocks.base import BaseVisualisationBlock
+from cms.datavis.blocks.base import BaseChartBlock, BaseVisualisationBlock
 from cms.datavis.blocks.table import SimpleTableBlock, TableDataType
 from cms.datavis.blocks.utils import TextInputFloatBlock, TextInputIntegerBlock
 from cms.datavis.constants import (
@@ -31,7 +34,7 @@ if TYPE_CHECKING:
     from wagtail.blocks.struct_block import StructValue
 
 
-class LineChartBlock(BaseVisualisationBlock):
+class LineChartBlock(BaseChartBlock):
     highcharts_chart_type = HighChartsChartType.LINE
     x_axis_type = AxisType.CATEGORICAL
 
@@ -77,7 +80,7 @@ class LineChartBlock(BaseVisualisationBlock):
         icon = "chart-line"
 
 
-class BarColumnChartBlock(BaseVisualisationBlock):
+class BarColumnChartBlock(BaseChartBlock):
     x_axis_type = AxisType.CATEGORICAL
     MAX_SERIES_COUNT_WITH_DATA_LABELS = 2
     MAX_DATA_POINTS_WITH_DATA_LABELS = 20
@@ -290,7 +293,7 @@ class BarColumnChartBlock(BaseVisualisationBlock):
         return item
 
 
-class BarColumnConfidenceIntervalChartBlock(BaseVisualisationBlock):
+class BarColumnConfidenceIntervalChartBlock(BaseChartBlock):
     x_axis_type = AxisType.CATEGORICAL
 
     # Error codes
@@ -505,7 +508,7 @@ class BarColumnConfidenceIntervalChartBlock(BaseVisualisationBlock):
             )
 
 
-class ScatterPlotBlock(BaseVisualisationBlock):
+class ScatterPlotBlock(BaseChartBlock):
     highcharts_chart_type = HighChartsChartType.SCATTER
     x_axis_type = AxisType.LINEAR
 
@@ -584,7 +587,7 @@ class ScatterPlotBlock(BaseVisualisationBlock):
         return rows, series
 
 
-class AreaChartBlock(BaseVisualisationBlock):
+class AreaChartBlock(BaseChartBlock):
     highcharts_chart_type = HighChartsChartType.AREA
     x_axis_type = AxisType.CATEGORICAL
 
@@ -653,3 +656,70 @@ class AreaChartBlock(BaseVisualisationBlock):
                     )
                 }
             )
+
+
+class IframeBlock(BaseVisualisationBlock):
+    iframe_source_url = blocks.URLBlock(
+        required=True,
+        help_text=f"""
+        Your URL must start with
+        {" or ".join(f"<code>{prefix}</code>" for prefix in settings.IFRAME_VISUALISATION_EMBED_PREFIX_LIST)}.
+        The '*' is a wildcard for any domain or subdomain that matches.
+        """,
+    )
+
+    class Meta:
+        icon = "code"
+
+    def clean(self, value: "StructValue") -> "StructValue":
+        errors = {}
+        parsed_url = urlparse(value["iframe_source_url"])
+        hostname = parsed_url.hostname
+
+        if not hostname:
+            errors["iframe_source_url"] = ValidationError(
+                """
+                Please enter a valid URL. The URL should start with
+                'https://' or 'http://' and contain a valid domain name.
+                """
+            )
+        else:
+            # Check if the hostname matches any of the allowed patterns
+            def matches_pattern(hostname: str, pattern: str) -> bool:
+                regex_pattern = pattern.replace(".", r"\.")
+                regex_pattern = regex_pattern.replace(r"*\.", r"(.*\.)?")
+                regex_pattern = "^" + regex_pattern + r"$"
+                return re.match(regex_pattern, hostname) is not None
+
+            if not any(
+                matches_pattern(hostname, pattern) for pattern in settings.IFRAME_VISUALISATION_EMBED_PREFIX_LIST
+            ):
+                errors["iframe_source_url"] = ValidationError(
+                    f"""
+                    The URL hostname must match one of the allowed patterns:
+                    {" or ".join(settings.IFRAME_VISUALISATION_EMBED_PREFIX_LIST)}
+                    """
+                )
+
+        if errors:
+            raise blocks.StructBlockValidationError(errors)
+
+        return super().clean(value)
+
+    def get_component_config(self, value: "StructValue") -> dict[str, Any]:
+        config = {
+            "headingLevel": 3,
+            "title": value.get("title"),
+            "subtitle": value.get("subtitle"),
+            "caption": value.get("caption"),
+            "description": value.get("audio_description"),
+            "iframeUrl": value.get("iframe_source_url"),
+        }
+
+        return config
+
+    def get_context(self, value: "StructValue", parent_context: Optional[dict[str, Any]] = None) -> dict[str, Any]:
+        context: dict[str, Any] = super().get_context(value, parent_context)
+
+        context["chart_config"] = self.get_component_config(value)
+        return context

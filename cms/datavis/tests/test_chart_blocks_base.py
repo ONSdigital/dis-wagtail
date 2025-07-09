@@ -3,12 +3,12 @@ from typing import Any, ClassVar
 from django.test import SimpleTestCase
 from wagtail.test.utils import WagtailTestUtils
 
-from cms.datavis.blocks.base import BaseVisualisationBlock
+from cms.datavis.blocks.base import BaseChartBlock
 from cms.datavis.tests.factories import TableDataFactory
 
 
 class BaseChartBlockTestCase(SimpleTestCase, WagtailTestUtils):
-    block_type: ClassVar[type[BaseVisualisationBlock]]
+    block_type: ClassVar[type[BaseChartBlock]]
     raw_data: dict[str, Any]
 
     @classmethod
