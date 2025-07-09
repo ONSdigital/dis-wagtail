@@ -66,8 +66,10 @@ teams_viewset = TeamsViewSet("teams")
 class TeamChooseMixin:
     @property
     def columns(self) -> list[Column]:
+        title_column = self.title_column  # type: ignore[attr-defined]
+        title_column.label = "Name"
         return [
-            self.title_column,  # type: ignore[attr-defined]
+            title_column,
             Column("identifier"),
             DateColumn(
                 "updated_at",
