@@ -201,7 +201,7 @@ class BasePage(PageLDMixin, ListingFieldsMixin, SocialFieldsMixin, Page):  # typ
 
         return cast(dict[str, Any], extend(super().ld_entity(), page_ld_entity))
 
-    def get_canonical_full_url(self, request: "HttpRequest") -> str:
+    def get_canonical_url(self, request: "HttpRequest") -> str:
         """Get the default canonical URL for the page for the given request.
         This will normally be this page's full URL, except:
         - If this page is an alias, the canonical URL should be for the original, aliased page.

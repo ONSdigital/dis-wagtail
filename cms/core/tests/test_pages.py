@@ -189,5 +189,5 @@ class SocialMetaTests(WagtailPageTestCase):
 
         self.assertContains(
             response,
-            f'<meta property="og:image" content="{settings.FALLBACK_OG_IMAGE_URL}" />',
+            f'<meta property="og:image" content="{settings.DEFAULT_OG_IMAGE_URL}" />',
         )

@@ -110,10 +110,10 @@ class CanonicalFullUrlsTestCase(TestCase):
         cls.information_page = InformationPageFactory()
 
     def setUp(self):
-        self.mock_request = get_dummy_request()
+        self.dummy_request = get_dummy_request()
 
-    def test_canonical_full_url(self):
+    def test_canonical_url(self):
         """Test that get_canonical_url returns the correct full URL for a page, including base URL."""
-        canonical_url = self.information_page.get_canonical_full_url(self.mock_request)
+        canonical_url = self.information_page.get_canonical_url(self.dummy_request)
 
-        self.assertEqual(canonical_url, self.information_page.get_full_url(self.mock_request))
+        self.assertEqual(canonical_url, self.information_page.get_full_url(self.dummy_request))

@@ -960,9 +960,7 @@ ONS_API_BASE_URL = env.get("ONS_API_BASE_URL", "https://api.beta.ons.gov.uk/v1")
 ONS_WEBSITE_BASE_URL = env.get("ONS_WEBSITE_BASE_URL", "https://www.ons.gov.uk")
 ONS_ORGANISATION_NAME = env.get("ONS_ORGANISATION_NAME", "Office for National Statistics")
 
-FALLBACK_OG_IMAGE_URL = env.get(
-    "FALLBACK_OG_IMAGE_URL", "https://cdn.ons.gov.uk/assets/images/ons-logo/v2/ons-logo.png"
-)
+DEFAULT_OG_IMAGE_URL = env.get("DEFAULT_OG_IMAGE_URL", "https://cdn.ons.gov.uk/assets/images/ons-logo/v2/ons-logo.png")
 
 WAGTAILSIMPLETRANSLATION_SYNC_PAGE_TREE = True
 

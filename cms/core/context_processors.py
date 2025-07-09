@@ -21,5 +21,5 @@ def global_vars(request: "HttpRequest") -> dict[str, Any]:
         "AWS_COGNITO_LOGIN_ENABLED": settings.AWS_COGNITO_LOGIN_ENABLED,
         "WAGTAIL_CORE_ADMIN_LOGIN_ENABLED": settings.WAGTAIL_CORE_ADMIN_LOGIN_ENABLED,
         "AUTH_CONFIG": get_auth_config(),
-        "FALLBACK_OG_IMAGE_URL": settings.FALLBACK_OG_IMAGE_URL,
+        "DEFAULT_OG_IMAGE_URL": settings.DEFAULT_OG_IMAGE_URL,
     }

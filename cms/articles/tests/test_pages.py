@@ -1,3 +1,4 @@
+from datetime import timedelta
 from http import HTTPStatus
 
 from django.conf import settings
@@ -667,10 +668,14 @@ class StatisticalArticlePageTests(WagtailPageTestCase):  # pylint: disable=too-m
         )
 
     def test_non_latest_page_canonical_url(self):
-        """Test that once an article page is not the latest, the canonical URL is the page's own URL."""
-        StatisticalArticlePageFactory(parent=self.series)  # Create new, later article in the series
+        """Test that once an article page is not the latest, the canonical URL becomes the page's own full URL."""
+        # Create new, later article in the series
+        StatisticalArticlePageFactory(parent=self.series, release_date=self.page.release_date + timedelta(days=1))
+        self.assertFalse(self.page.is_latest)
+
         response = self.client.get(self.page.get_url(request=self.dummy_request))
         self.assertEqual(response.status_code, HTTPStatus.OK)
+
         self.assertContains(
             response, f'<link rel="canonical" href="{self.page.get_full_url(request=self.dummy_request)}" />'
         )
@@ -692,11 +697,9 @@ class StatisticalArticlePageTests(WagtailPageTestCase):  # pylint: disable=too-m
         welsh_page.save_revision().publish()
         response = self.client.get(f"/cy{self.page.get_url(request=self.dummy_request)}")
         self.assertEqual(response.status_code, HTTPStatus.OK)
-        welsh_parent_series = welsh_page.get_parent()
-        self.assertIn(welsh_page.get_site().root_url + "/cy/", welsh_parent_series.get_full_url())
-        self.assertContains(
-            response, f'<link rel="canonical" href="{welsh_parent_series.get_full_url(request=self.dummy_request)}" />'
-        )
+        welsh_series_url = welsh_page.get_parent().get_full_url()
+        self.assertIn(welsh_page.get_site().root_url + "/cy/", welsh_series_url)
+        self.assertContains(response, f'<link rel="canonical" href="{welsh_series_url}" />')
 
     def test_corrected_article_versions_are_marked_no_index(self):
         response = self.client.get(self.page.get_url(request=self.dummy_request))
