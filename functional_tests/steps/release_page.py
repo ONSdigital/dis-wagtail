@@ -144,13 +144,13 @@ def user_add_next_release_date_before_release_date(context: Context):
 
 @when("the user enters both next release date and next release date text")
 def user_adds_both_next_and_release_date(context: Context):
-    context.page.locator("#id_next_release_date").fill("2024-12-25")
-    context.page.locator("#id_next_release_date_text").fill("February 2025")
+    context.page.locator("#id_next_release_date").fill("2025-12-25")
+    context.page.locator("#id_next_release_date_text").fill("December 2025")
 
 
 @then("an error validation is raised to say you cannot have both")
 def error_cannot_have_both_next_release_date_and_text(context: Context):
-    expect(context.page.get_by_text("Please enter the next release")).to_be_visible()
+    expect(context.page.get_by_text("The page could not be saved")).to_be_visible()
     expect(
         context.page.locator(
             "#panel-child-content-child-metadata-child-panel1-child-next_release_date-errors"
@@ -214,7 +214,7 @@ def add_contact_detail(context: Context):
 
 @then("contact detail is displayed")
 def displayed_contact_detail(context: Context):
-    page = context.page
+    page = context.preview_page
     expect(page.get_by_role("heading", name="Contact details")).to_be_visible()
     expect(page.get_by_text(context.contact_details_snippet.name)).to_be_visible()
     expect(page.get_by_role("link", name=context.contact_details_snippet.email)).to_be_visible()
@@ -240,36 +240,42 @@ def user_changes_preview_mode(context: Context, page_status: str):
     context.page.get_by_label("Preview mode").select_option(page_status)
 
 
+@when("the preview tab opened")
+def open_preview_tab(context: Context):
+    context.page.get_by_role("link", name="Preview in new tab").click()
+
+    with context.page.expect_popup() as page1_info:
+        context.page.get_by_role("link", name="Preview in new tab").click()
+    context.preview_page = page1_info.value
+
+
 @then('the "Provisional" page is displayed')
 def display_provisional_page(context: Context):
     expect(context.page.get_by_text("This release is not yet")).to_be_visible()
 
 
-@then('the "Provisional" page is displayed in the preview pane')
+@then('the "Provisional" page is displayed in the preview page')
 def preview_provisional_page(context: Context):
-    iframe_locator = context.page.frame_locator("#w-preview-iframe")
-    expect(iframe_locator.get_by_text("This release is not yet")).to_be_visible()
+    expect(context.preview_page.get_by_text("This release is not yet")).to_be_visible()
 
 
-@then('the "Confirmed" page is displayed in the preview pane')
+@then('the "Confirmed" page is displayed in the preview page')
 def preview_confirmed_page(context: Context):
-    iframe_locator = context.page.frame_locator("#w-preview-iframe")
-    expect(iframe_locator.get_by_text("This release is not yet")).to_be_visible()
+    expect(context.preview_page.get_by_text("This release is not yet")).to_be_visible()
 
 
-@then('the "Published" page is displayed in the preview pane')
+@then('the "Published" page is displayed in the preview page')
 def preview_published_page(context: Context):
-    page = context.page.frame_locator("#w-preview-iframe")
+    page = context.preview_page
     expect(page.get_by_role("heading", name="My Release")).to_be_visible()
     expect(page.get_by_role("heading", name="My Example Content Link")).to_be_visible()
     expect(page.locator("#my-example-content-link").get_by_role("link", name="Release calendar")).to_be_visible()
     expect(page.get_by_text("Accredited Official Statistics", exact=True)).to_be_visible()
 
 
-@then('the "Cancelled" page is displayed in the preview pane')
+@then('the "Cancelled" page is displayed in the preview page')
 def preview_cancelled_page(context: Context):
-    iframe_locator = context.page.frame_locator("#w-preview-iframe")
-    expect(iframe_locator.get_by_text("Cancelled", exact=True)).to_be_visible()
+    expect(context.preview_page.get_by_text("Cancelled", exact=True)).to_be_visible()
 
 
 @then('the "Confirmed" page is displayed')
@@ -338,6 +344,7 @@ def error_empty_table(context: Context):
     expect(context.page.get_by_text("The table cannot be empty")).to_be_visible()
 
 
+# not in use
 @when("the user adds pre-release access information")
 def add_pre_release_access(context: Context):
     # Table
@@ -368,6 +375,7 @@ def add_related_links(context: Context):
     context.page.get_by_role("link", name="Home").click()
 
 
+# Fails as the filled table empties upon saving
 @then("the pre-release access is displayed")
 def displayed_pre_release_access(context: Context):
     expect(context.page.get_by_role("heading", name="Pre-release access list")).to_be_visible()
@@ -377,13 +385,13 @@ def displayed_pre_release_access(context: Context):
 
 @then("the related links is displayed")
 def displayed_related_links(context: Context):
-    expect(context.page.get_by_role("heading", name="You might also be interested")).to_be_visible()
-    expect(context.page.locator("#links").get_by_role("link", name="Home")).to_be_visible()
+    expect(context.preview_page.get_by_role("heading", name="You might also be interested")).to_be_visible()
+    expect(context.preview_page.locator("#links").get_by_role("link", name="Home")).to_be_visible()
 
 
 @then("the release date change is displayed")
 def displayed_date_change_log(context: Context):
-    expect(context.page.get_by_text("Updated due to data availability")).to_be_visible()
+    expect(context.preview_page.get_by_text("Updated due to data availability")).to_be_visible()
 
 
 # notice

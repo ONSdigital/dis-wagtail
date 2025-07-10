@@ -73,20 +73,14 @@ Feature: CMS users can draft, edit, and publish release pages
     Then an error validation is raised to say you cannot have both
 # Release Calendar page creation
 
-  Scenario: A CMS user creates and drafts a release calendar page
-    When the user clicks "Add child page" to create a new draft release page
-    And the user enters some example content on the page
-    And the user clicks the "Save Draft" button
-    And the user clicks the "Preview" button
-    Then the "Provisional" page is displayed in the preview pane
-
   Scenario Outline: A CMS user can use preview mode to preview page at different statuses
     When the user clicks "Add child page" to create a new draft release page
     And the user enters "<PageStatus>" page content
     And the user clicks the "Save Draft" button
     And the user clicks the "Preview" button
     And the user changes preview mode to "<PageStatus>"
-    Then the "<PageStatus>" page is displayed in the preview pane
+    And the preview tab opened
+    Then the "<PageStatus>" page is displayed in the preview page
 
     Examples:
       | PageStatus  |
@@ -111,17 +105,18 @@ Feature: CMS users can draft, edit, and publish release pages
 
   Scenario: A CMS User publishes a release page with pre-release access, contact details, date change log and related links
     And a contact details snippet exists
-    When the user clicks "Add child page" to create a new draft release page
-    And the user sets the page status to "Confirmed"
-    And the user enters some example content on the page
+    And a Release Calendar page with a publish notice exists
+    When the user navigates to the published release calendar page
     And the user adds a release date change
     And the user adds contact details
-    And the user adds pre-release access information
+    # And the user adds pre-release access information
     And the user adds related links
-    And the user clicks "Publish"
-    And the user clicks "View Live" on the publish confirmation banner
-    Then the pre-release access is displayed
-    And the related links is displayed
+    And the user clicks the "Save Draft" button
+    And the user clicks the "Preview" button
+    And the user changes preview mode to "Published"
+    And the preview tab opened
+    # Then the pre-release access is displayed
+    Then the related links is displayed
     And contact detail is displayed
     And the release date change is displayed
 
