@@ -10,6 +10,7 @@ from wagtail.test.utils.form_data import inline_formset, nested_form_data
 
 from cms.articles.tests.factories import ArticleSeriesPageFactory, StatisticalArticlePageFactory
 from cms.bundles.admin_forms import AddToBundleForm
+from cms.bundles.api import BundleAPIClientError
 from cms.bundles.enums import ACTIVE_BUNDLE_STATUS_CHOICES, BundleStatus
 from cms.bundles.models import Bundle
 from cms.bundles.tests.factories import BundleFactory, BundlePageFactory
@@ -296,7 +297,7 @@ class BundleDatasetValidationTestCase(TestCase):
         cls.approver = UserFactory()
 
     def setUp(self):
-        self.patcher = patch("cms.bundles.forms.DatasetAPIClient")
+        self.patcher = patch("cms.bundles.forms.BundleAPIClient")
         self.mock_client_class = self.patcher.start()
         self.mock_client = self.mock_client_class.return_value
 
@@ -347,7 +348,7 @@ class BundleDatasetValidationTestCase(TestCase):
         def mock_get_dataset_status(namespace):
             if namespace == dataset1.namespace:
                 return {"status": "approved"}
-            elif namespace == dataset2.namespace:
+            if namespace == dataset2.namespace:
                 return {"status": "draft"}
             return {"status": "unknown"}
 
@@ -372,10 +373,8 @@ class BundleDatasetValidationTestCase(TestCase):
 
     def test_dataset_validation_api_error_fails_gracefully(self):
         """Test that API errors are handled gracefully."""
-        from cms.bundles.api import DatasetAPIClientError
-
         dataset = DatasetFactory(id=123, title="Test Dataset")
-        self.mock_client.get_dataset_status.side_effect = DatasetAPIClientError("API Error")
+        self.mock_client.get_dataset_status.side_effect = BundleAPIClientError("API Error")
 
         raw_data = self.raw_form_data_with_dataset(dataset.id)
         form = self.form_class(instance=self.bundle, data=nested_form_data(raw_data), for_user=self.approver)

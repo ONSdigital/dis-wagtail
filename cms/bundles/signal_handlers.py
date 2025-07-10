@@ -4,7 +4,7 @@ from typing import Any
 from django.db.models.signals import post_delete, post_save
 from django.dispatch import receiver
 
-from cms.bundles.api import DatasetAPIClient, DatasetAPIClientError
+from cms.bundles.api import BundleAPIClient, BundleAPIClientError
 from cms.bundles.enums import BundleStatus
 from cms.bundles.models import Bundle, BundleDataset, BundleTeam
 from cms.bundles.notifications.email import send_bundle_in_review_email, send_bundle_published_email
@@ -65,7 +65,7 @@ def _build_bundle_data_for_api(bundle: Bundle) -> dict[str, Any]:
 @receiver(post_save, sender=Bundle)
 def handle_bundle_dataset_api_sync(instance: Bundle, created: bool, **kwargs: Any) -> None:
     """Handle synchronization with the Dataset API for bundle creation and status updates."""
-    client = DatasetAPIClient()
+    client = BundleAPIClient()
     update_fields = kwargs.get("update_fields")
 
     try:
@@ -82,14 +82,14 @@ def handle_bundle_dataset_api_sync(instance: Bundle, created: bool, **kwargs: An
             else:
                 logger.warning("Bundle %s created in API but no ID returned", instance.pk)
 
-        elif instance.dataset_api_id and not created:
+        elif instance.dataset_api_id:
             # For updates, only sync if we're not in the middle of setting the dataset_api_id
             if update_fields is None or "dataset_api_id" not in update_fields:
                 # This is likely a status update or other field change
                 client.update_bundle_status(instance.dataset_api_id, instance.status)
                 logger.info("Updated bundle %s status to %s in Dataset API", instance.pk, instance.status)
 
-    except DatasetAPIClientError as e:
+    except BundleAPIClientError as e:
         logger.error("Failed to sync bundle %s with Dataset API: %s", instance.pk, e)
         # Don't raise the exception to avoid breaking the admin interface
         # The bundle will still be saved locally
@@ -99,14 +99,14 @@ def handle_bundle_dataset_api_sync(instance: Bundle, created: bool, **kwargs: An
 def handle_bundle_dataset_added(instance: BundleDataset, **kwargs: Any) -> None:
     """Handle when a dataset is added to a bundle."""
     if instance.parent.dataset_api_id:
-        client = DatasetAPIClient()
+        client = BundleAPIClient()
 
         try:
             bundle_data = _build_bundle_data_for_api(instance.parent)
             client.update_bundle(instance.parent.dataset_api_id, bundle_data)
             logger.info("Updated bundle %s datasets in Dataset API", instance.parent.pk)
 
-        except DatasetAPIClientError as e:
+        except BundleAPIClientError as e:
             logger.error("Failed to update bundle %s datasets in Dataset API: %s", instance.parent.pk, e)
 
 
@@ -114,14 +114,14 @@ def handle_bundle_dataset_added(instance: BundleDataset, **kwargs: Any) -> None:
 def handle_bundle_dataset_removed(instance: BundleDataset, **kwargs: Any) -> None:
     """Handle when a dataset is removed from a bundle."""
     if instance.parent.dataset_api_id:
-        client = DatasetAPIClient()
+        client = BundleAPIClient()
 
         try:
             bundle_data = _build_bundle_data_for_api(instance.parent)
             client.update_bundle(instance.parent.dataset_api_id, bundle_data)
             logger.info("Updated bundle %s datasets in Dataset API", instance.parent.pk)
 
-        except DatasetAPIClientError as e:
+        except BundleAPIClientError as e:
             logger.error("Failed to update bundle %s datasets in Dataset API: %s", instance.parent.pk, e)
 
 
@@ -129,12 +129,12 @@ def handle_bundle_dataset_removed(instance: BundleDataset, **kwargs: Any) -> Non
 def handle_bundle_deletion(instance: Bundle, **kwargs: Any) -> None:
     """Handle when a bundle is deleted."""
     if instance.dataset_api_id:
-        client = DatasetAPIClient()
+        client = BundleAPIClient()
 
         try:
             client.delete_bundle(instance.dataset_api_id)
             logger.info("Deleted bundle %s from Dataset API", instance.pk)
 
-        except DatasetAPIClientError as e:
+        except BundleAPIClientError as e:
             logger.error("Failed to delete bundle %s from Dataset API: %s", instance.pk, e)
             # Don't raise the exception to avoid breaking the deletion process

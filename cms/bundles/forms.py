@@ -7,7 +7,7 @@ from django.template.defaultfilters import pluralize
 from django.utils import timezone
 from wagtail.admin.forms import WagtailAdminModelForm
 
-from cms.bundles.api import DatasetAPIClient, DatasetAPIClientError
+from cms.bundles.api import BundleAPIClient, BundleAPIClientError
 from cms.bundles.enums import ACTIVE_BUNDLE_STATUS_CHOICES, EDITABLE_BUNDLE_STATUSES, BundleStatus
 from cms.workflows.models import ReadyToPublishGroupTask
 
@@ -69,7 +69,7 @@ class BundleAdminForm(WagtailAdminModelForm):
         if not self._has_datasets():
             return
 
-        client = DatasetAPIClient()
+        client = BundleAPIClient()
         datasets_not_approved = []
 
         for form in self.formsets["bundled_datasets"].forms:
@@ -87,7 +87,7 @@ class BundleAdminForm(WagtailAdminModelForm):
                     if dataset_status != "approved":
                         datasets_not_approved.append(f"{dataset.title} (status: {dataset_status})")
 
-                except DatasetAPIClientError as e:
+                except BundleAPIClientError as e:
                     logger.error("Failed to check status for dataset %s: %s", dataset.namespace, e)
                     datasets_not_approved.append(f"{dataset.title} (status check failed)")
 

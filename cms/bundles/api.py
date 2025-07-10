@@ -8,11 +8,11 @@ from django.conf import settings
 logger = logging.getLogger(__name__)
 
 
-class DatasetAPIClientError(Exception):
-    """Base exception for DatasetAPIClient errors."""
+class BundleAPIClientError(Exception):
+    """Base exception for BundleAPIClient errors."""
 
 
-class DatasetAPIClient:
+class BundleAPIClient:
     """Client for interacting with the ONS Dataset API bundle endpoints."""
 
     def __init__(self, base_url: Optional[str] = None):
@@ -44,7 +44,7 @@ class DatasetAPIClient:
             Response data as dictionary
 
         Raises:
-            DatasetAPIClientError: For API errors
+            BundleAPIClientError: For API errors
         """
         url = f"{self.base_url}/{endpoint.lstrip('/')}"
 
@@ -56,12 +56,12 @@ class DatasetAPIClient:
         except requests.exceptions.HTTPError as e:
             error_msg = self._format_http_error(e, method, url)
             logger.error("HTTP error occurred: %s", error_msg)
-            raise DatasetAPIClientError(error_msg) from e
+            raise BundleAPIClientError(error_msg) from e
 
         except requests.exceptions.RequestException as e:
             error_msg = f"Network error for {method} {url}: {e!s}"
             logger.error("Network error for %s %s: %s", method, url, e)
-            raise DatasetAPIClientError(error_msg) from e
+            raise BundleAPIClientError(error_msg) from e
 
     def _process_response(self, response: requests.Response) -> dict[str, Any]:
         """Process successful API responses.

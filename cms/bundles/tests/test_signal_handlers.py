@@ -9,7 +9,7 @@ from django.utils import timezone
 from wagtail.test.utils.form_data import inline_formset, nested_form_data
 
 from cms.articles.tests.factories import StatisticalArticlePageFactory
-from cms.bundles.api import DatasetAPIClientError
+from cms.bundles.api import BundleAPIClientError
 from cms.bundles.enums import BundleStatus
 from cms.bundles.models import Bundle, BundleDataset, BundleTeam
 from cms.bundles.tests.factories import BundleFactory, BundlePageFactory
@@ -158,10 +158,10 @@ class TestNotifications(TestCase):
         self.assertEqual(len(mail.outbox), 0)
 
 
-class TestDatasetAPISignalHandlers(TestCase):
+class TestBundleAPISignalHandlers(TestCase):
     def setUp(self):
         """Set up the test case."""
-        self.patcher = patch("cms.bundles.signal_handlers.DatasetAPIClient")
+        self.patcher = patch("cms.bundles.signal_handlers.BundleAPIClient")
         self.mock_client_class = self.patcher.start()
         self.mock_client = self.mock_client_class.return_value
 
@@ -280,7 +280,7 @@ class TestDatasetAPISignalHandlers(TestCase):
 
     def test_api_error_during_bundle_creation_does_not_break_save(self):
         """Test that API errors during bundle creation don't prevent saving."""
-        self.mock_client.create_bundle.side_effect = DatasetAPIClientError("API Error")
+        self.mock_client.create_bundle.side_effect = BundleAPIClientError("API Error")
 
         # This should not raise an exception
         bundle = BundleFactory(name="Test Bundle")
@@ -296,7 +296,7 @@ class TestDatasetAPISignalHandlers(TestCase):
 
         # Clear any calls from bundle creation
         self.mock_client.reset_mock()
-        self.mock_client.update_bundle_status.side_effect = DatasetAPIClientError("API Error")
+        self.mock_client.update_bundle_status.side_effect = BundleAPIClientError("API Error")
 
         # This should not raise an exception
         bundle.status = BundleStatus.APPROVED
@@ -313,7 +313,7 @@ class TestDatasetAPISignalHandlers(TestCase):
 
         # Clear any calls from bundle creation
         self.mock_client.reset_mock()
-        self.mock_client.delete_bundle.side_effect = DatasetAPIClientError("API Error")
+        self.mock_client.delete_bundle.side_effect = BundleAPIClientError("API Error")
 
         # This should not raise an exception
         bundle.delete()

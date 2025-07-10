@@ -4,10 +4,10 @@ from unittest.mock import Mock, patch
 import requests
 from django.test import TestCase
 
-from cms.bundles.api import DatasetAPIClient, DatasetAPIClientError
+from cms.bundles.api import BundleAPIClient, BundleAPIClientError
 
 
-class DatasetAPIClientTests(TestCase):
+class BundleAPIClientTests(TestCase):
     def setUp(self):
         self.base_url = "https://test-api.example.com"
 
@@ -36,7 +36,7 @@ class DatasetAPIClientTests(TestCase):
         mock_session = self._create_mock_session(mock_response)
         mock_session_class.return_value = mock_session
 
-        client = DatasetAPIClient(base_url=self.base_url)
+        client = BundleAPIClient(base_url=self.base_url)
         bundle_data = {
             "title": "Test Bundle",
             "content": [{"id": "dataset-1", "type": "dataset"}, {"id": "page-1", "type": "page"}],
@@ -55,7 +55,7 @@ class DatasetAPIClientTests(TestCase):
         mock_session = self._create_mock_session(mock_response)
         mock_session_class.return_value = mock_session
 
-        client = DatasetAPIClient(base_url=self.base_url)
+        client = BundleAPIClient(base_url=self.base_url)
         result = client.create_bundle({"title": "Test Bundle", "content": []})
 
         self.assertEqual(
@@ -73,7 +73,7 @@ class DatasetAPIClientTests(TestCase):
         mock_session = self._create_mock_session(mock_response)
         mock_session_class.return_value = mock_session
 
-        client = DatasetAPIClient(base_url=self.base_url)
+        client = BundleAPIClient(base_url=self.base_url)
         bundle_data = {"title": "Updated Bundle", "content": []}
 
         result = client.update_bundle("test-bundle-123", bundle_data)
@@ -89,7 +89,7 @@ class DatasetAPIClientTests(TestCase):
         mock_session = self._create_mock_session(mock_response)
         mock_session_class.return_value = mock_session
 
-        client = DatasetAPIClient(base_url=self.base_url)
+        client = BundleAPIClient(base_url=self.base_url)
         result = client.update_bundle_status("test-bundle-123", "APPROVED")
 
         mock_session.request.assert_called_once_with(
@@ -103,7 +103,7 @@ class DatasetAPIClientTests(TestCase):
         mock_session = self._create_mock_session(mock_response)
         mock_session_class.return_value = mock_session
 
-        client = DatasetAPIClient(base_url=self.base_url)
+        client = BundleAPIClient(base_url=self.base_url)
         result = client.delete_bundle("test-bundle-123")
 
         mock_session.request.assert_called_once_with("DELETE", f"{self.base_url}/bundles/test-bundle-123", json=None)
@@ -115,7 +115,7 @@ class DatasetAPIClientTests(TestCase):
         mock_session = self._create_mock_session(mock_response)
         mock_session_class.return_value = mock_session
 
-        client = DatasetAPIClient(base_url=self.base_url)
+        client = BundleAPIClient(base_url=self.base_url)
         result = client.get_dataset_status("dataset-123")
 
         mock_session.request.assert_called_once_with("GET", f"{self.base_url}/datasets/dataset-123/status", json=None)
@@ -127,7 +127,7 @@ class DatasetAPIClientTests(TestCase):
         mock_session = self._create_mock_session(mock_response)
         mock_session_class.return_value = mock_session
 
-        client = DatasetAPIClient(base_url=self.base_url)
+        client = BundleAPIClient(base_url=self.base_url)
         result = client.get_bundle_status("test-bundle-123")
 
         mock_session.request.assert_called_once_with(
@@ -143,8 +143,8 @@ class DatasetAPIClientTests(TestCase):
         mock_session = self._create_mock_session(mock_response)
         mock_session_class.return_value = mock_session
 
-        client = DatasetAPIClient(base_url=self.base_url)
-        with self.assertRaises(DatasetAPIClientError) as context:
+        client = BundleAPIClient(base_url=self.base_url)
+        with self.assertRaises(BundleAPIClientError) as context:
             client.create_bundle({"title": "Test"})
 
         self.assertIn("HTTP 400 error", str(context.exception))
@@ -158,8 +158,8 @@ class DatasetAPIClientTests(TestCase):
         mock_session = self._create_mock_session(mock_response)
         mock_session_class.return_value = mock_session
 
-        client = DatasetAPIClient(base_url=self.base_url)
-        with self.assertRaises(DatasetAPIClientError) as context:
+        client = BundleAPIClient(base_url=self.base_url)
+        with self.assertRaises(BundleAPIClientError) as context:
             client.create_bundle({"title": "Test"})
 
         self.assertIn("HTTP 401 error", str(context.exception))
@@ -173,8 +173,8 @@ class DatasetAPIClientTests(TestCase):
         mock_session = self._create_mock_session(mock_response)
         mock_session_class.return_value = mock_session
 
-        client = DatasetAPIClient(base_url=self.base_url)
-        with self.assertRaises(DatasetAPIClientError) as context:
+        client = BundleAPIClient(base_url=self.base_url)
+        with self.assertRaises(BundleAPIClientError) as context:
             client.delete_bundle("nonexistent-bundle")
 
         self.assertIn("HTTP 404 error", str(context.exception))
@@ -188,8 +188,8 @@ class DatasetAPIClientTests(TestCase):
         mock_session = self._create_mock_session(mock_response)
         mock_session_class.return_value = mock_session
 
-        client = DatasetAPIClient(base_url=self.base_url)
-        with self.assertRaises(DatasetAPIClientError) as context:
+        client = BundleAPIClient(base_url=self.base_url)
+        with self.assertRaises(BundleAPIClientError) as context:
             client.create_bundle({"title": "Test"})
 
         self.assertIn("HTTP 500 error", str(context.exception))
@@ -201,8 +201,8 @@ class DatasetAPIClientTests(TestCase):
         mock_session.request.side_effect = requests.exceptions.ConnectionError("Network error")
         mock_session_class.return_value = mock_session
 
-        client = DatasetAPIClient(base_url=self.base_url)
-        with self.assertRaises(DatasetAPIClientError) as context:
+        client = BundleAPIClient(base_url=self.base_url)
+        with self.assertRaises(BundleAPIClientError) as context:
             client.create_bundle({"title": "Test"})
 
         self.assertIn("Network error", str(context.exception))
@@ -216,7 +216,7 @@ class DatasetAPIClientTests(TestCase):
         mock_session = self._create_mock_session(mock_response)
         mock_session_class.return_value = mock_session
 
-        client = DatasetAPIClient(base_url=self.base_url)
+        client = BundleAPIClient(base_url=self.base_url)
         result = client.create_bundle({"title": "Test"})
 
         # Should return success message when JSON parsing fails
@@ -226,12 +226,12 @@ class DatasetAPIClientTests(TestCase):
         with patch("cms.bundles.api.settings") as mock_settings:
             mock_settings.ONS_API_BASE_URL = "https://default-api.example.com"
 
-            client = DatasetAPIClient()
+            client = BundleAPIClient()
 
             self.assertEqual(client.base_url, "https://default-api.example.com")
 
     def test_client_initialization_with_custom_url(self):
-        client = DatasetAPIClient(base_url="https://custom-api.example.com")
+        client = BundleAPIClient(base_url="https://custom-api.example.com")
 
         self.assertEqual(client.base_url, "https://custom-api.example.com")
 
@@ -239,6 +239,6 @@ class DatasetAPIClientTests(TestCase):
         with patch("cms.bundles.api.settings") as mock_settings:
             del mock_settings.ONS_API_BASE_URL
 
-            client = DatasetAPIClient()
+            client = BundleAPIClient()
 
             self.assertEqual(client.base_url, "https://api.beta.ons.gov.uk/v1")
