@@ -170,10 +170,10 @@ class Bundle(index.Indexed, ClusterableModel, models.Model):  # type: ignore[dja
     @cached_property
     def scheduled_publication_date(self) -> Optional["datetime.datetime"]:
         """Returns the direct publication date or the linked release calendar page, if set."""
-        date: datetime.datetime | None = self.publication_date
-        if not date and self.release_calendar_page_id:
-            date = self.release_calendar_page.release_date  # type: ignore[union-attr]
-        return date
+        publication_date: datetime.datetime | None = self.publication_date
+        if not publication_date and self.release_calendar_page_id:
+            publication_date = self.release_calendar_page.release_date  # type: ignore[union-attr]
+        return publication_date
 
     @cached_property
     def active_team_ids(self) -> list[int]:
