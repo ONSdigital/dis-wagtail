@@ -1,16 +1,30 @@
-Hello,
+{% extends "bundles/notification_emails/html_variant/base_email.html" %}
 
-The preview of your release {{bundle_name}} is available for review.
-Please follow this link: {{bundle_inspect_url}} to review.
-Login using your existing Florence user name and password.
-Guidance on how to use Wagtail is available here [link to SharePoint TBC].
+{% block title %}Bundle "{{bundle.name}}" is ready for review{% endblock %}
 
-Changes to your release should be requested via your Tracker change log.
+{% block content %}
+    <p>
+        Hello,
+        <br>
+        <br>
+        The preview of your release {{bundle_name}} is available for review.
+        Please follow this link: {{bundle_inspect_url}} to review.
+        Login using your existing Florence user name and password.
+        Guidance on how to use Wagtail is available here [link to SharePoint TBC].
+        <br>
+        <br>
+        Changes to your release should be requested via your Tracker change log.
 
-If you have any questions please contact your named Publishing Officer (list available <a href="https://statics.teams.cdn.office.net.mcas.ms/evergreen-assets/safelinks/1/atp-safelinks.html">here</a>).
-
-Do not reply directly to this message as this inbox is not monitored.
-
-Kind regards,
-Publishing team
-Publishing@ons.gov.uk
+        <br>
+        <br>
+        If you have any questions please contact your named Publishing Officer (list available <a href="https://statics.teams.cdn.office.net.mcas.ms/evergreen-assets/safelinks/1/atp-safelinks.html">here</a>).
+        <br>
+        <br>
+        Do not reply directly to this message as this inbox is not monitored.
+        <br>
+        <br>
+        Kind regards,<br>
+        Publishing team <br>
+        Publishing@ons.gov.uk
+    </p>
+{% endblock %}
