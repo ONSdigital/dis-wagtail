@@ -55,13 +55,13 @@ class DatasetAPIClient:
 
         except requests.exceptions.HTTPError as e:
             error_msg = self._format_http_error(e, method, url)
-            logger.error(error_msg)
+            logger.error("HTTP error occurred: %s", error_msg)
             raise DatasetAPIClientError(error_msg) from e
 
         except requests.exceptions.RequestException as e:
-            error_msg = f"Network error for {method} {url}: {e!s}"
-            logger.error(error_msg)
-            raise DatasetAPIClientError(error_msg) from e
+            error_msg = "Network error for %s %s: %s"
+            logger.error(error_msg, method, url, e)
+            raise DatasetAPIClientError(error_msg % (method, url, e)) from e
 
     def _process_response(self, response: requests.Response) -> dict[str, Any]:
         """Process successful API responses.
