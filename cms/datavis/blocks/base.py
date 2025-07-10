@@ -28,6 +28,9 @@ class BaseVisualisationBlock(blocks.StructBlock):
 
     title = blocks.CharBlock()
     subtitle = blocks.CharBlock()
+    audio_description = blocks.TextBlock(
+        required=True, help_text="An overview of what the chart shows for screen readers."
+    )
     caption = blocks.CharBlock(required=False)
     footnotes = blocks.RichTextBlock(required=False, features=settings.RICH_TEXT_BASIC)
 
@@ -116,6 +119,7 @@ class BaseVisualisationBlock(blocks.StructBlock):
             "chartType": self.get_highcharts_chart_type(value),
             "theme": value.get("theme"),
             "headingLevel": 3,
+            "description": value.get("audio_description"),
             "title": value.get("title"),
             "subtitle": value.get("subtitle"),
             "caption": value.get("caption"),
@@ -199,6 +203,8 @@ class BaseVisualisationBlock(blocks.StructBlock):
             config["max"] = max_value
         if (end_on_tick := attrs.get("end_on_tick")) is not None:
             config["endOnTick"] = end_on_tick
+        if (custom_reference_line := attrs.get("custom_reference_line")) is not None:
+            config["customReferenceLineValue"] = custom_reference_line
         return config
 
     def get_annotations_config(self, value: "StructValue") -> AnnotationsReturn:

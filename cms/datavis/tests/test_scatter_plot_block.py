@@ -17,6 +17,7 @@ class ScatterPlotBlockTestCase(BaseChartBlockTestCase):
             "title": "Test Chart",
             "subtitle": "Test Subtitle",
             "caption": "Test Caption",
+            "audio_description": "Test Audio Description",
             "table": TableDataFactory(
                 table_data=[
                     ["X", "Y", "Group"],

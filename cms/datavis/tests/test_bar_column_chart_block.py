@@ -100,7 +100,7 @@ class BarColumnChartBlockTestCase(BaseChartBlockTestCase):
             self.block.clean(self.get_value())
         self.assertEqual(
             BarColumnChartBlock.ERROR_HORIZONTAL_BAR_NO_CATEGORY_TITLE,
-            cm.exception.block_errors["x_axis"].code,
+            cm.exception.block_errors["x_axis"].block_errors["title"].code,
         )
 
     def test_column_chart_editable_x_axis_title(self):
@@ -475,6 +475,85 @@ class BarColumnChartBlockTestCase(BaseChartBlockTestCase):
                 self.assertNotIn("max", x_axis_config)
                 self.assertNotIn("startOnTick", x_axis_config)
                 self.assertNotIn("endOnTick", x_axis_config)
+
+    def test_custom_reference_line_with_one_series(self):
+        self.raw_data["select_chart_type"] = BarColumnChartTypeChoices.COLUMN
+        self.raw_data["y_axis"]["custom_reference_line"] = 100
+        self.raw_data["table"] = TableDataFactory(
+            table_data=[
+                ["", "Series 1"],
+                ["2005", "100"],
+                ["2006", "120"],
+                ["2007", "140"],
+            ]
+        )
+        self.block.clean(self.get_value())
+        y_axis_config = self.get_value().block.get_component_config(self.get_value())["yAxis"]
+        self.assertEqual(100, y_axis_config["customReferenceLineValue"])
+
+    def test_custom_reference_line_not_supported_for_bar_charts(self):
+        self.raw_data["select_chart_type"] = BarColumnChartTypeChoices.BAR
+        self.raw_data["y_axis"]["custom_reference_line"] = 100
+        self.raw_data["table"] = TableDataFactory(
+            table_data=[
+                ["", "Series 1"],  # only one series
+                ["2005", "100"],
+                ["2006", "120"],
+                ["2007", "140"],
+            ]
+        )
+        with self.assertRaises(blocks.StructBlockValidationError) as cm:
+            self.block.clean(self.get_value())
+        self.assertEqual(
+            BarColumnChartBlock.ERROR_HORIZONTAL_BAR_NO_CUSTOM_REFERENCE_LINE,
+            cm.exception.block_errors["y_axis"].block_errors["custom_reference_line"].code,
+        )
+
+    def test_custom_reference_line_not_supported_for_multiple_series(self):
+        self.raw_data["select_chart_type"] = BarColumnChartTypeChoices.COLUMN
+        self.raw_data["y_axis"]["custom_reference_line"] = 100
+        self.raw_data["table"] = TableDataFactory(
+            table_data=[
+                ["", "Series 1", "Series 2"],
+                ["2005", "100", "50"],
+                ["2006", "120", "55"],
+                ["2007", "140", "60"],
+            ]
+        )
+        with self.assertRaises(blocks.StructBlockValidationError) as cm:
+            self.block.clean(self.get_value())
+        self.assertEqual(
+            BarColumnChartBlock.ERROR_MULTIPLE_SERIES_NO_REFERENCE_LINE,
+            cm.exception.block_errors["y_axis"].block_errors["custom_reference_line"].code,
+        )
+
+    def test_custom_reference_line_not_supported_for_line_overlay(self):
+        """Line overlay requires a series, so custom reference line is not supported.
+
+        It's questionable whether this should be allowed, but it's not
+        currently. Extra validation would be necessary to permit this.
+
+        This test is to ensure that the tests are updated if this feature is
+        supported in future.
+        """
+        self.raw_data["select_chart_type"] = BarColumnChartTypeChoices.COLUMN
+        self.raw_data["use_stacked_layout"] = True
+        self.raw_data["y_axis"]["custom_reference_line"] = 100
+        self.raw_data["series_customisation"] = [{"type": "series_as_line_overlay", "value": 1}]
+        self.raw_data["table"] = TableDataFactory(
+            table_data=[
+                ["", "Series 1", "Series 2"],
+                ["2005", "100", "50"],
+                ["2006", "120", "55"],
+                ["2007", "140", "60"],
+            ]
+        )
+        with self.assertRaises(blocks.StructBlockValidationError) as cm:
+            self.block.clean(self.get_value())
+        self.assertEqual(
+            BarColumnChartBlock.ERROR_MULTIPLE_SERIES_NO_REFERENCE_LINE,
+            cm.exception.block_errors["y_axis"].block_errors["custom_reference_line"].code,
+        )
 
 
 class ColumnChartWithLineTestCase(BaseChartBlockTestCase):

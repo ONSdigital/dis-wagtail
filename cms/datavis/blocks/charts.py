@@ -64,13 +64,20 @@ class LineChartBlock(BaseVisualisationBlock):
     y_axis = blocks.StructBlock(
         [
             ("title", blocks.CharBlock(required=False, help_text=AXIS_TITLE_HELP_TEXT)),
+            ("tick_interval_mobile", TextInputFloatBlock(label="Tick interval (mobile)", required=False)),
+            ("tick_interval_desktop", TextInputFloatBlock(label="Tick interval (desktop)", required=False)),
             ("min", TextInputFloatBlock(label="Minimum", required=False)),
             ("start_on_tick", blocks.BooleanBlock(label="Start on tick", default=True, required=False)),
             ("max", TextInputFloatBlock(label="Maximum", required=False)),
             ("end_on_tick", blocks.BooleanBlock(label="End on tick", default=True, required=False)),
-            ("tick_interval_mobile", TextInputFloatBlock(label="Tick interval (mobile)", required=False)),
-            ("tick_interval_desktop", TextInputFloatBlock(label="Tick interval (desktop)", required=False)),
-        ]
+            (
+                "custom_reference_line",
+                TextInputFloatBlock(
+                    required=False,
+                    help_text="Display the thicker reference line at a value other than zero, for indexed data",
+                ),
+            ),
+        ],
     )
 
     class Meta:
@@ -81,6 +88,7 @@ class BarColumnChartBlock(BaseVisualisationBlock):
     x_axis_type = AxisType.CATEGORICAL
     MAX_SERIES_COUNT_WITH_DATA_LABELS = 2
     MAX_DATA_POINTS_WITH_DATA_LABELS = 20
+    MAX_SERIES_COUNT_WITH_CUSTOM_REFERENCE_LINE = 1
 
     # Error codes
     ERROR_DUPLICATE_SERIES = "duplicate_series_number"
@@ -90,6 +98,8 @@ class BarColumnChartBlock(BaseVisualisationBlock):
     ERROR_BAR_CHART_NO_ASPECT_RATIO = "bar_chart_no_aspect_ratio"
     ERROR_HORIZONTAL_BAR_NO_CATEGORY_TITLE = "horizontal_bar_no_category_title"
     ERROR_NON_STACKED_COLUMN_NO_LINE = "non_stacked_column_no_line_overlay"
+    ERROR_HORIZONTAL_BAR_NO_CUSTOM_REFERENCE_LINE = "horizontal_bar_no_custom_reference_line"
+    ERROR_MULTIPLE_SERIES_NO_REFERENCE_LINE = "multiple_series_no_reference_line"
 
     # Remove unsupported features
     show_markers = None
@@ -143,12 +153,21 @@ class BarColumnChartBlock(BaseVisualisationBlock):
                     help_text=AXIS_TITLE_HELP_TEXT,
                 ),
             ),
+            ("tick_interval_mobile", TextInputFloatBlock(label="Tick interval (mobile)", required=False)),
+            ("tick_interval_desktop", TextInputFloatBlock(label="Tick interval (desktop)", required=False)),
             ("min", TextInputFloatBlock(label="Minimum", required=False)),
             ("start_on_tick", blocks.BooleanBlock(label="Start on tick", default=True, required=False)),
             ("max", TextInputFloatBlock(label="Maximum", required=False)),
             ("end_on_tick", blocks.BooleanBlock(label="End on tick", default=True, required=False)),
-            ("tick_interval_mobile", TextInputFloatBlock(label="Tick interval (mobile)", required=False)),
-            ("tick_interval_desktop", TextInputFloatBlock(label="Tick interval (desktop)", required=False)),
+            (
+                "custom_reference_line",
+                TextInputFloatBlock(
+                    label="Custom reference line",
+                    required=False,
+                    help_text="Display the thicker reference line at a value other than zero, for indexed data. "
+                    "Available on column charts only.",
+                ),
+            ),
         ],
         label="Value axis",
     )
@@ -182,6 +201,7 @@ class BarColumnChartBlock(BaseVisualisationBlock):
         self.validate_series_customisation(value)
         self.validate_options(value)
         self.validate_x_axis(value)
+        self.validate_y_axis(value)
         return value
 
     def validate_series_customisation(self, value: "StructValue") -> "StructValue":
@@ -236,12 +256,48 @@ class BarColumnChartBlock(BaseVisualisationBlock):
         if value.get("select_chart_type") == BarColumnChartTypeChoices.BAR and value.get("x_axis").get("title"):
             raise blocks.StructBlockValidationError(
                 {
-                    "x_axis": ValidationError(
-                        "Category axis title is not supported for horizontal bar charts.",
-                        code=self.ERROR_HORIZONTAL_BAR_NO_CATEGORY_TITLE,
+                    "x_axis": blocks.StructBlockValidationError(
+                        block_errors={
+                            "title": ValidationError(
+                                "Category axis title is not supported for horizontal bar charts.",
+                                code=self.ERROR_HORIZONTAL_BAR_NO_CATEGORY_TITLE,
+                            )
+                        }
                     )
                 }
             )
+
+    def validate_y_axis(self, value: "StructValue") -> None:
+        if value.get("y_axis").get("custom_reference_line"):
+            if value.get("select_chart_type") == BarColumnChartTypeChoices.BAR:
+                raise blocks.StructBlockValidationError(
+                    block_errors={
+                        "y_axis": blocks.StructBlockValidationError(
+                            block_errors={
+                                "custom_reference_line": ValidationError(
+                                    "Custom reference line is not supported for bar charts.",
+                                    code=self.ERROR_HORIZONTAL_BAR_NO_CUSTOM_REFERENCE_LINE,
+                                )
+                            }
+                        )
+                    }
+                )
+
+            if len(value["table"].headers) > self.MAX_SERIES_COUNT_WITH_CUSTOM_REFERENCE_LINE + 1:
+                # NOTE Currently this prevents use of custom reference line even
+                # when the second series is a line overlay.
+                raise blocks.StructBlockValidationError(
+                    {
+                        "y_axis": blocks.StructBlockValidationError(
+                            block_errors={
+                                "custom_reference_line": ValidationError(
+                                    "Custom reference line is supported for single-series data only.",
+                                    code=self.ERROR_MULTIPLE_SERIES_NO_REFERENCE_LINE,
+                                )
+                            }
+                        )
+                    }
+                )
 
     def validate_options(self, value: "StructValue") -> None:
         aspect_ratio_keys = [self.DESKTOP_ASPECT_RATIO, self.MOBILE_ASPECT_RATIO]
@@ -489,9 +545,13 @@ class BarColumnConfidenceIntervalChartBlock(BaseVisualisationBlock):
         ).get("title"):
             raise blocks.StructBlockValidationError(
                 {
-                    "x_axis": ValidationError(
-                        "Category axis title is not supported for horizontal bar charts.",
-                        code=self.ERROR_HORIZONTAL_BAR_NO_CATEGORY_TITLE,
+                    "x_axis": blocks.StructBlockValidationError(
+                        block_errors={
+                            "title": ValidationError(
+                                "Category axis title is not supported for horizontal bar charts.",
+                                code=self.ERROR_HORIZONTAL_BAR_NO_CATEGORY_TITLE,
+                            )
+                        }
                     )
                 }
             )
