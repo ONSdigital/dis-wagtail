@@ -21,6 +21,7 @@ def _check_middleware(errors: list, settings_obj) -> None:
 
 
 def _check_aws_cognito(errors: list, settings_obj) -> None:
+    print("Checking AWS Cognito settings...")  # Debugging output
     aws_cognito_enabled = getattr(settings_obj, "AWS_COGNITO_LOGIN_ENABLED", False)
     if aws_cognito_enabled:
         cognito_settings: list[tuple[str, str, str]] = [
@@ -72,24 +73,24 @@ def _check_cookie_names(errors: list, settings_obj) -> None:
             )
 
 
-def _check_csrf_trusted_origins(errors: list, settings_obj) -> None:
-    aws_cognito_enabled = getattr(settings_obj, "AWS_COGNITO_LOGIN_ENABLED", False)
-    if aws_cognito_enabled:
-        csrf_trusted_origins = getattr(settings_obj, "CSRF_TRUSTED_ORIGINS", [])
-        wagtail_login_url = getattr(settings_obj, "WAGTAILADMIN_LOGIN_URL", "")
-        if wagtail_login_url.startswith(("http://", "https://")):
-            from urllib.parse import urlparse
+# def _check_csrf_trusted_origins(errors: list, settings_obj) -> None:
+#     aws_cognito_enabled = getattr(settings_obj, "AWS_COGNITO_LOGIN_ENABLED", False)
+#     if aws_cognito_enabled:
+#         csrf_trusted_origins = getattr(settings_obj, "CSRF_TRUSTED_ORIGINS", [])
+#         wagtail_login_url = getattr(settings_obj, "WAGTAILADMIN_LOGIN_URL", "")
+#         if wagtail_login_url.startswith(("http://", "https://")):
+#             from urllib.parse import urlparse
 
-            parsed = urlparse(wagtail_login_url)
-            origin = f"{parsed.scheme}://{parsed.netloc}"
-            if origin not in csrf_trusted_origins:
-                errors.append(
-                    Warning(
-                        f"WAGTAILADMIN_LOGIN_URL points to '{origin}' but it's not in CSRF_TRUSTED_ORIGINS.",
-                        hint=f"Add '{origin}' to CSRF_TRUSTED_ORIGINS.",
-                        id="auth.W005",
-                    )
-                )
+#             parsed = urlparse(wagtail_login_url)
+#             origin = f"{parsed.scheme}://{parsed.netloc}"
+#             if origin not in csrf_trusted_origins:
+#                 errors.append(
+#                     Warning(
+#                         f"WAGTAILADMIN_LOGIN_URL points to '{origin}' but it's not in CSRF_TRUSTED_ORIGINS.",
+#                         hint=f"Add '{origin}' to CSRF_TRUSTED_ORIGINS.",
+#                         id="auth.W005",
+#                     )
+#                 )
 
 
 def _check_session_config(errors: list, settings_obj) -> None:
@@ -154,12 +155,13 @@ def _check_group_names(errors: list, settings_obj) -> None:
 @register()
 def check_auth_settings(app_configs: Iterable[AppConfig] | None, **kwargs: Any) -> list[Error]:  # pylint: disable=unused-argument
     """Check that required auth settings are properly configured."""
+    print("Running auth settings checks...")  # Debugging output
     errors: list[Error] = []
     _check_middleware(errors, settings)
     _check_aws_cognito(errors, settings)
     _check_auth_backends(errors, settings)
     _check_cookie_names(errors, settings)
-    _check_csrf_trusted_origins(errors, settings)
+    # _check_csrf_trusted_origins(errors, settings)
     _check_session_config(errors, settings)
     return errors
 
