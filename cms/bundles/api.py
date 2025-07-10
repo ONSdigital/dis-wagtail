@@ -59,9 +59,9 @@ class DatasetAPIClient:
             raise DatasetAPIClientError(error_msg) from e
 
         except requests.exceptions.RequestException as e:
-            error_msg = "Network error for %s %s: %s"
-            logger.error(error_msg, method, url, e)
-            raise DatasetAPIClientError(error_msg % (method, url, e)) from e
+            error_msg = f"Network error for {method} {url}: {e!s}"
+            logger.error("Network error for %s %s: %s", method, url, e)
+            raise DatasetAPIClientError(error_msg) from e
 
     def _process_response(self, response: requests.Response) -> dict[str, Any]:
         """Process successful API responses.
