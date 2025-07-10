@@ -981,8 +981,8 @@ SEARCH_INDEX_EXCLUDED_PAGE_TYPES = (
 
 # Allowed prefixes for iframe visualisations
 IFRAME_VISUALISATION_EMBED_PREFIX_LIST = env.get(
-    "IFRAME_VISUALISATION_EMBED_PREFIX_LIST", ["*.ons.gov.uk", "*.onsdigital.uk"]
-)
+    "IFRAME_VISUALISATION_EMBED_PREFIX_LIST", "ons.gov.uk,onsdigital.uk"
+).split(",")
 
 # FIXME: remove before going live
 ENFORCE_EXCLUSIVE_TAXONOMY = env.get("ENFORCE_EXCLUSIVE_TAXONOMY", "true").lower() == "true"

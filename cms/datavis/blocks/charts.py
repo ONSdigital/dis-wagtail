@@ -1,5 +1,4 @@
 import json
-import re
 from collections import defaultdict
 from typing import TYPE_CHECKING, Any, ClassVar, Optional
 from urllib.parse import urlparse
@@ -674,7 +673,7 @@ class IframeBlock(BaseVisualisationBlock):
     def clean(self, value: "StructValue") -> "StructValue":
         errors = {}
         parsed_url = urlparse(value["iframe_source_url"])
-        hostname = parsed_url.hostname
+        hostname = parsed_url.netloc
 
         if not hostname:
             errors["iframe_source_url"] = ValidationError(
@@ -684,15 +683,12 @@ class IframeBlock(BaseVisualisationBlock):
                 """
             )
         else:
-            # Check if the hostname matches any of the allowed patterns
-            def matches_pattern(hostname: str, pattern: str) -> bool:
-                regex_pattern = pattern.replace(".", r"\.")
-                regex_pattern = regex_pattern.replace(r"*\.", r"(.*\.)?")
-                regex_pattern = "^" + regex_pattern + r"$"
-                return re.match(regex_pattern, hostname) is not None
+
+            def matches_domain(domain: str, allowed_domain: str) -> bool:
+                return hostname == allowed_domain or hostname.endswith(f".{allowed_domain}")
 
             if not any(
-                matches_pattern(hostname, pattern) for pattern in settings.IFRAME_VISUALISATION_EMBED_PREFIX_LIST
+                matches_domain(hostname, pattern) for pattern in settings.IFRAME_VISUALISATION_EMBED_PREFIX_LIST
             ):
                 errors["iframe_source_url"] = ValidationError(
                     f"""

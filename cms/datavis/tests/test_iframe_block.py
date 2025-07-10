@@ -44,9 +44,7 @@ class IframeBlockTestCase(BaseVisualisationBlockTestCase):
 
     def test_valid_urls(self):
         """Test valid URL patterns for each domain in the valid_domains list."""
-        for domain_pattern in self.valid_domains:
-            base_domain = domain_pattern.replace("*.", "")
-
+        for base_domain in self.valid_domains:
             url_patterns = [
                 f"https://{base_domain}/visualisations/dvc/1234567890",
                 f"https://www.{base_domain}/visualisations/dvc/1234567890",
@@ -54,7 +52,7 @@ class IframeBlockTestCase(BaseVisualisationBlockTestCase):
             ]
 
             for url in url_patterns:
-                with self.subTest(domain=domain_pattern, url=url):
+                with self.subTest(domain=base_domain, url=url):
                     valid_data = self.raw_data.copy()
                     valid_data["iframe_source_url"] = url
                     value = self.get_value(valid_data)
