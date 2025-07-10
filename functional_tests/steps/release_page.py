@@ -150,7 +150,7 @@ def user_adds_both_next_and_release_date(context: Context):
 
 @then("an error validation is raised to say you cannot have both")
 def error_cannot_have_both_next_release_date_and_text(context: Context):
-    expect(context.page.get_by_text("The page could not be saved")).to_be_visible()
+    expect(context.page.get_by_text("The page could not be created")).to_be_visible()
     expect(
         context.page.locator(
             "#panel-child-content-child-metadata-child-panel1-child-next_release_date-errors"
@@ -344,7 +344,7 @@ def error_empty_table(context: Context):
     expect(context.page.get_by_text("The table cannot be empty")).to_be_visible()
 
 
-# not in use
+# unused
 @when("the user adds pre-release access information")
 def add_pre_release_access(context: Context):
     # Table
@@ -378,9 +378,10 @@ def add_related_links(context: Context):
 # Fails as the filled table empties upon saving
 @then("the pre-release access is displayed")
 def displayed_pre_release_access(context: Context):
-    expect(context.page.get_by_role("heading", name="Pre-release access list")).to_be_visible()
-    expect(context.page.get_by_text("head")).to_be_visible()
-    expect(context.page.get_by_text("Description")).to_be_visible()
+    page = context.preview_page
+    expect(page.get_by_text("Pre-release access list")).to_be_visible()
+    expect(page.get_by_text("head")).to_be_visible()
+    expect(page.get_by_text("Description")).to_be_visible()
 
 
 @then("the related links is displayed")
@@ -394,7 +395,7 @@ def displayed_date_change_log(context: Context):
     expect(context.preview_page.get_by_text("Updated due to data availability")).to_be_visible()
 
 
-# notice
+# Notice
 @then("the notice field is disabled")
 def check_notice_field_disabled(context: Context):
     expect(context.page.locator('[name="notice"]')).to_be_disabled()
@@ -406,7 +407,7 @@ def error_cancelled_notice_must_be_added(context: Context):
     expect(context.page.get_by_text("The notice field is required")).to_be_visible()
 
 
-# release date changes
+# Release date changes
 @step("the user adds a release date change")
 def user_adds_a_release_date_change(context: Context):
     page = context.page
