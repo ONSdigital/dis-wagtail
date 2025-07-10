@@ -22,6 +22,55 @@ Feature: CMS users can draft, edit, and publish release pages
       | MeridiemIndicator |
       | am                |
       | pm                |
+# Release date and next release date validations
+
+  Scenario: Release date text field is visible for provisional releases
+    When the user clicks "Add child page" to create a new draft release page
+    Then the page status is set to "Provisional" and the release date text field is visible
+
+  Scenario: Release date text field is added
+    When the user clicks "Add child page" to create a new draft release page
+    And the user enters some example content on the page
+    And the user adds a release date text
+    And the user clicks "Publish"
+    And the user clicks "View Live" on the publish confirmation banner
+    Then the release date text is displayed
+
+  Scenario Outline: Release date text field is hidden for non-provisional releases
+    When the user clicks "Add child page" to create a new draft release page
+    And the user sets the page status to "<PageStatus>"
+    Then the date text field is not visible
+
+    Examples:
+      | PageStatus |
+      | Confirmed  |
+      | Cancelled  |
+
+  Scenario Outline: Validation error with invalid release date text input
+    When the user clicks "Add child page" to create a new draft release page
+    And the user enters some example content on the page
+    And the user adds a invalid <ReleaseDate> text
+    And the user clicks "Publish"
+    Then an error message is displayed describing invalid <ReleaseDate> text input
+
+    Examples:
+      | ReleaseDate       |
+      | release date      |
+      | next release date |
+
+  Scenario: Validation error when next release date is before the release date
+    When the user clicks "Add child page" to create a new draft release page
+    And the user enters some example content on the page
+    And adds the next release date before the release date
+    And the user clicks "Publish"
+    Then an error validation is raised to say next release date cannot be before release date
+
+  Scenario: Validation error when next release date and next release date text is entered
+    When the user clicks "Add child page" to create a new draft release page
+    And the user enters some example content on the page
+    And the user enters both next release date and next release date text
+    And the user clicks "Publish"
+    Then an error validation is raised to say you cannot have both
 # Release Calendar page creation
 
   Scenario: A CMS user creates and drafts a release calendar page
@@ -46,7 +95,7 @@ Feature: CMS users can draft, edit, and publish release pages
       | Published   |
       | Cancelled   |
 
-  Scenario Outline: User creates and publishes a release calendar page with different status
+  Scenario Outline: A CMS user creates and publishes a release calendar page with different status
     When the user clicks "Add child page" to create a new draft release page
     And the user sets the page status to "<PageStatus>"
     And the user enters "<PageStatus>" page content
@@ -59,52 +108,35 @@ Feature: CMS users can draft, edit, and publish release pages
       | Provisional |
       | Confirmed   |
       | Cancelled   |
-# Release date and next release date validations.
 
-  Scenario: User adds contact details, publishes page and contact detail is displayed
+  Scenario: A CMS User publishes a release page with pre-release access, contact details, date change log and related links
     And a contact details snippet exists
     When the user clicks "Add child page" to create a new draft release page
     And the user sets the page status to "Confirmed"
     And the user enters some example content on the page
+    And the user adds a release date change
     And the user adds contact details
+    And the user adds pre-release access information
+    And the user adds related links
     And the user clicks "Publish"
     And the user clicks "View Live" on the publish confirmation banner
-    Then the "Published" page is displayed
+    Then the pre-release access is displayed
+    And the related links is displayed
     And contact detail is displayed
+    And the release date change is displayed
 
-  Scenario: Release date text field is visible for provisional releases
-    When the user clicks "Add child page" to create a new draft release page
-    Then the page status is set to "Provisional" and the release date text field is visible
-
-  Scenario: Release date text field is added
+  Scenario: Validation error when more than one description added on pre-release Access
     When the user clicks "Add child page" to create a new draft release page
     And the user enters some example content on the page
-    And the user adds a release date text
-    And the user clicks "Publish"
-    And the user clicks "View Live" on the publish confirmation banner
-    Then the release date text is displayed
+    And multiple descriptions are added under pre-release access
+    Then an error message is displayed about the descriptions
 
-  Scenario Outline: Release date text field is hidden for non-provisional releases
-    When the user clicks "Add child page" to create a new draft release page
-    And the user sets the page status to "<PageStatus>"
-    Then the date text field is not visible
-
-    Examples:
-      | PageStatus |
-      | Confirmed  |
-      | Cancelled  |
-
-  Scenario Outline: Validation error for invalid release date text
+  Scenario: Validation error when more than one table added on pre-release Access
     When the user clicks "Add child page" to create a new draft release page
     And the user enters some example content on the page
-    And the user adds a invalid <ReleaseDate> text
+    And multiple tables are added under pre-release access
     And the user clicks "Publish"
-    Then an error message is displayed describing invalid <ReleaseDate> text input
-
-    Examples:
-      | ReleaseDate       |
-      | release date      |
-      | next release date |
+    Then an error message is displayed about the tables
 
   Scenario Outline: Validation error when cancelled page is published without notice
     When the user clicks "Add child page" to create a new draft release page
@@ -114,50 +146,14 @@ Feature: CMS users can draft, edit, and publish release pages
     Then an error message is displayed describing notice must be added
 # changes to release date
 
-  Scenario Outline: User enters a change in release date, validation error is raised
+  Scenario Outline: Validation error raised when there is a change in release date and no change log added
     When the user clicks "Add child page" to create a new draft release page
     And the user enters some example content on the page
-    And the user sets the page status to "Confirmed"
+    And the user clicks "Publish"
+    And the user edits this to have a different release date
+    And the user returns to editing the release page
     And the user clicks "Publish"
     Then an error message is displayed describing that a date change log is needed
-
-  Scenario: Validation error when next release date is before the release date
-    When the user clicks "Add child page" to create a new draft release page
-    And the user enters some example content on the page
-    And adds the next release date before the release date
-    And the user clicks "Publish"
-    Then an error validation is raised to say you cannot do this
-
-  Scenario: Validation error when next release date and release date text is entered
-    When the user clicks "Add child page" to create a new draft release page
-    And the user enters some example content on the page
-    And the user enters both next release date and next release date text
-    And the user clicks "Publish"
-    Then an error validation is raised to say you cannot have both
-# Pre-release access checks
-
-  Scenario: Validation error when more than one description added on Pre-release Access
-    When the user clicks "Add child page" to create a new draft release page
-    And the user enters some example content on the page
-    And multiple descriptions are added under pre-release access
-    Then an error message is displayed about the descriptions
-
-  Scenario: Validation error when more than one table added on Pre-release Access
-    When the user clicks "Add child page" to create a new draft release page
-    And the user enters some example content on the page
-    And multiple tables are added under pre-release access
-    And the user clicks "Publish"
-    Then an error message is displayed about the tables
-
-  Scenario: User adds pre-release access and related links to the page
-    When the user clicks "Add child page" to create a new draft release page
-    And the user enters some example content on the page
-    And the user adds pre-release access information
-    And the user adds related links
-    And the user clicks "Publish"
-    And the user clicks "View Live" on the publish confirmation banner
-    Then the pre-release access is displayed
-    And the related links is displayed
 
   Scenario: A CMS user cannot delete a release date change once the release page is published
     When the user clicks "Add child page" to create a new draft release page
