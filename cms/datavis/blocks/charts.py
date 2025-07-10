@@ -685,10 +685,11 @@ class IframeBlock(BaseVisualisationBlock):
         else:
 
             def matches_domain(domain: str, allowed_domain: str) -> bool:
-                return hostname == allowed_domain or hostname.endswith(f".{allowed_domain}")
+                return domain == allowed_domain or hostname.endswith(f".{allowed_domain}")
 
             if not any(
-                matches_domain(hostname, pattern) for pattern in settings.IFRAME_VISUALISATION_EMBED_PREFIX_LIST
+                matches_domain(hostname, allowed_domain)
+                for allowed_domain in settings.IFRAME_VISUALISATION_EMBED_PREFIX_LIST
             ):
                 errors["iframe_source_url"] = ValidationError(
                     f"""
