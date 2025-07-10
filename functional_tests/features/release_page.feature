@@ -1,17 +1,14 @@
 Feature: CMS users can draft, edit, and publish release pages
 
   Background:
-    Given a contact details snippet exists
-    And a superuser logs into the admin site
+    Given a superuser logs into the admin site
     And the user navigates to the release calendar page
-# page features
 
   Scenario: Upon creation of a release page, several datetime features are available to users
     When the user clicks "Add child page" to create a new draft release page
     Then the default release date time is today's date and 9:30 AM
     And the date placeholder, "YYYY-MM-DD HH:MM", is displayed in the date input textboxes
     And the time selection options are in 30 minute intervals
-  # datetime
 
   Scenario Outline: A CMS user inputs a datetime on a release calendar page and the correct period is displayed
     When the user clicks "Add child page" to create a new draft release page
@@ -36,7 +33,7 @@ Feature: CMS users can draft, edit, and publish release pages
 
   Scenario Outline: A CMS user can use preview mode to preview page at different statuses
     When the user clicks "Add child page" to create a new draft release page
-    And the user enters some example content on the page
+    And the user enters "<PageStatus>" page content
     And the user clicks the "Save Draft" button
     And the user clicks the "Preview" button
     And the user changes preview mode to "<PageStatus>"
@@ -49,14 +46,13 @@ Feature: CMS users can draft, edit, and publish release pages
       | Published   |
       | Cancelled   |
 
-  Scenario Outline: User creates and publishes a release calendar page with the different status
+  Scenario Outline: User creates and publishes a release calendar page with different status
     When the user clicks "Add child page" to create a new draft release page
     And the user sets the page status to "<PageStatus>"
-    And the user enters some example content on the page
+    And the user enters "<PageStatus>" page content
     And the user clicks "Publish"
-    Then the user clicks "View Live" on the publish confirmation banner
-    And the "<PageStatus>" page is displayed
-    # All fail - Check what is missing in content - notice and such
+    And the user clicks "View Live" on the publish confirmation banner
+    Then the "<PageStatus>" page is displayed
 
     Examples:
       | PageStatus  |
@@ -64,6 +60,17 @@ Feature: CMS users can draft, edit, and publish release pages
       | Confirmed   |
       | Cancelled   |
 # Release date and next release date validations.
+
+  Scenario: User adds contact details, publishes page and contact detail is displayed
+    And a contact details snippet exists
+    When the user clicks "Add child page" to create a new draft release page
+    And the user sets the page status to "Confirmed"
+    And the user enters some example content on the page
+    And the user adds contact details
+    And the user clicks "Publish"
+    And the user clicks "View Live" on the publish confirmation banner
+    Then the "Published" page is displayed
+    And contact detail is displayed
 
   Scenario: Release date text field is visible for provisional releases
     When the user clicks "Add child page" to create a new draft release page
@@ -103,21 +110,15 @@ Feature: CMS users can draft, edit, and publish release pages
     When the user clicks "Add child page" to create a new draft release page
     And the user enters some example content on the page
     And the user sets the page status to "Cancelled"
-    And the user clicks <Action>
+    And the user clicks "Publish"
     Then an error message is displayed describing notice must be added
-
-    Examples:
-      | Action                  |
-      | "Publish"               |
-      | the "Save Draft" button |
 # changes to release date
 
-  Scenario: User enters a change in release date, validation error is raised
+  Scenario Outline: User enters a change in release date, validation error is raised
     When the user clicks "Add child page" to create a new draft release page
     And the user enters some example content on the page
     And the user sets the page status to "Confirmed"
     And the user clicks "Publish"
-  # may add draft too
     Then an error message is displayed describing that a date change log is needed
 
   Scenario: Validation error when next release date is before the release date
@@ -132,7 +133,6 @@ Feature: CMS users can draft, edit, and publish release pages
     And the user enters some example content on the page
     And the user enters both next release date and next release date text
     And the user clicks "Publish"
-    # failing: locator not found
     Then an error validation is raised to say you cannot have both
 # Pre-release access checks
 
@@ -148,8 +148,6 @@ Feature: CMS users can draft, edit, and publish release pages
     And multiple tables are added under pre-release access
     And the user clicks "Publish"
     Then an error message is displayed about the tables
-# error message
-# Test add correctly - pre release access and related links
 
   Scenario: User adds pre-release access and related links to the page
     When the user clicks "Add child page" to create a new draft release page
@@ -160,6 +158,3 @@ Feature: CMS users can draft, edit, and publish release pages
     And the user clicks "View Live" on the publish confirmation banner
     Then the pre-release access is displayed
     And the related links is displayed
-#locale?
-# Clean notice?
-# Choosing contact details (will need the creation of an instance of contact within Snippets).

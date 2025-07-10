@@ -38,6 +38,9 @@ def set_page_status(context: Context, page_status: str):
     context.page.get_by_label("Status*").select_option(page_status.upper())
 
 
+@when('the user enters "Published" page content')
+@when('the user enters "Provisional" page content')
+@when('the user enters "Confirmed" page content')
 @when("the user enters some example content on the page")
 def enter_example_release_content(context: Context):
     page = context.page
@@ -55,10 +58,27 @@ def enter_example_release_content(context: Context):
     page.get_by_label("Explore").click()
     page.get_by_role("link", name="Release calendar").click()
 
-    page.get_by_role("button", name="Choose contact details").click()
-    page.get_by_role("link", name=context.contact_details_snippet.name).click()
-
     page.get_by_label("Accredited Official Statistics").check()
+
+
+@when("the user adds contact details")
+def add_contact_detail(context: Context):
+    context.page.get_by_role("button", name="Choose contact details").click()
+    context.page.get_by_role("link", name=context.contact_details_snippet.name).click()
+
+
+@then("contact detail is displayed")
+def displayed_contact_detail(context: Context):
+    page = context.page
+    expect(page.get_by_role("heading", name="Contact details")).to_be_visible()
+    expect(page.get_by_text(context.contact_details_snippet.name)).to_be_visible()
+    expect(page.get_by_role("link", name=context.contact_details_snippet.email)).to_be_visible()
+
+
+@when('the user enters "Cancelled" page content')
+def enter_cancelled_release_content(context: Context):
+    context.page.locator(".public-DraftStyleDefault-block").first.fill("Notice cancelled")
+    enter_example_release_content(context)
 
 
 @then("the release page displays example content")
@@ -67,9 +87,6 @@ def check_provisional_release_page_content(context: Context):
     expect(page.get_by_role("heading", name="My Release")).to_be_visible()
     expect(page.get_by_role("heading", name="My Example Content Link")).to_be_visible()
     expect(page.locator("#my-example-content-link").get_by_role("link", name="Release calendar")).to_be_visible()
-    expect(page.get_by_role("heading", name="Contact details")).to_be_visible()
-    expect(page.get_by_text(context.contact_details_snippet.name)).to_be_visible()
-    expect(page.get_by_role("link", name=context.contact_details_snippet.email)).to_be_visible()
     expect(page.get_by_text("Accredited Official Statistics", exact=True)).to_be_visible()
 
 
@@ -228,6 +245,7 @@ def display_published_page(context: Context):
 @then('the "Cancelled" page is displayed')
 def display_cancelled_page(context: Context):
     expect(context.page.get_by_text("Cancelled", exact=True)).to_be_visible()
+    expect(context.page.get_by_text("Notice cancelled")).to_be_visible()
 
 
 @when("the user adds a invalid release date text")
@@ -242,7 +260,6 @@ def user_inputs_invalid_next_release_date_text(context: Context):
 
 @then("an error message is displayed describing invalid next release date text input")
 def error_invalid_next_release_date_text(context: Context):
-    # TO FIND
     expect(context.page.get_by_text("The next release date text")).to_be_visible()
     expect(context.page.get_by_text("Format: 'DD Month YYYY Time'")).to_be_visible()
 
@@ -373,14 +390,7 @@ def add_pre_release_access(context: Context):
     context.page.get_by_role("textbox", name="Table caption").click()
     context.page.get_by_role("textbox", name="Table caption").press("CapsLock")
     context.page.get_by_role("textbox", name="Table caption").fill("Caption")
-    context.page.locator("td").first.click()
-    context.page.get_by_role("region", name="Basic table *").locator("textarea").fill("head")
-    context.page.locator("td:nth-child(2)").first.click()
-    context.page.get_by_role("region", name="Basic table *").locator("textarea").fill("head 2")
-    context.page.locator("tr:nth-child(2) > td").first.click()
-    context.page.get_by_role("region", name="Basic table *").locator("textarea").fill("text 1")
-    context.page.locator("tr:nth-child(3) > td").first.click()
-    context.page.get_by_role("region", name="Basic table *").locator("textarea").fill("text 2")
+    context.page.locator("td").first.fill("head")
 
     # Description
     context.page.locator("#panel-child-content-pre_release_access-content").get_by_role(
@@ -397,14 +407,13 @@ def add_related_links(context: Context):
     ).click()
     context.page.get_by_role("button", name="Choose a page").click()
     context.page.get_by_role("link", name="Home").click()
-    context.page.get_by_role("button", name="Save draft").click()
 
 
 @then("the pre-release access is displayed")
 def displayed_pre_release_access(context: Context):
     expect(context.page.get_by_role("heading", name="Pre-release access list")).to_be_visible()
     expect(context.page.get_by_text("head")).to_be_visible()
-    expect(context.page.get_by_role("cell", name="1")).to_be_visible()
+    expect(context.page.get_by_text("Description")).to_be_visible()
 
 
 @then("the related links is displayed")
