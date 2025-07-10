@@ -89,6 +89,7 @@ class DatasetAPIClient:
             json_data: dict[str, Any] = response.json()
             return json_data
         except ValueError:
+            # Request was successful but returned non-JSON response - handle gracefully
             return {"status": "success", "message": "Operation completed successfully"}
 
     def _format_http_error(self, error: requests.exceptions.HTTPError, method: str, url: str) -> str:
