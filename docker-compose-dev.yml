@@ -54,5 +54,11 @@ services:
     ports:
       - '9094:9094'
 
+  mailhog:
+    image: mailhog/mailhog:latest
+    ports:
+      - '1025:1025' # SMTP port
+      - '8025:8025' # HTTP UI at http://localhost:8025
+
 volumes:
   pgdata:

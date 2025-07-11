@@ -32,6 +32,7 @@ The Wagtail CMS for managing and publishing content for the Office for National 
         - [Front-end](#front-end)
         - [pre-commit](#pre-commit)
         - [Megalinter](#megalinter-lintformat-non-python-files)
+        - [MailHog (Email Testing)](#mailhog-email-testing)
     - [Django Migrations](#django-migrations)
 - [Contributing](#contributing)
 - [License](#license)
@@ -436,6 +437,29 @@ To start the linter and automatically rectify fixable issues, run:
 ```bash
 make megalint
 ```
+
+#### MailHog (Email Testing)
+
+MailHog is a lightweight, local SMTP server and web interface that captures all outgoing email from our application without actually delivering it.
+Rather than sending mail to real recipients, messages are stored in MailHog’s inbox for easy inspection.
+
+- **SMTP endpoint:** `localhost:1025`
+- **Web UI:** [http://localhost:8025](http://localhost:8025)
+
+Use MailHog to:
+
+- Preview email content, headers and attachments
+- Verify templates and formatting before going to production
+- Test email-related workflows
+
+No additional configuration is needed here – our development settings already point at MailHog’s SMTP port,
+and every `send_mail` call will appear instantly in the UI.
+
+> **Tip:** If we want to disable MailHog and simply log emails to the console, switch to Django’s console backend:
+>
+> ```python
+> EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+> ```
 
 ### Django Migrations
 
