@@ -15,6 +15,18 @@ AnnotationsReturn = tuple[AnnotationsList, AnnotationsList, AnnotationsList]
 
 
 class BaseVisualisationBlock(blocks.StructBlock):
+    title = blocks.CharBlock()
+    subtitle = blocks.CharBlock()
+    audio_description = blocks.TextBlock(
+        required=True, help_text="An overview of what the chart shows for screen readers."
+    )
+    caption = blocks.CharBlock(required=False)
+
+    class Meta:
+        template = "templates/components/streamfield/datavis/base_highcharts_chart_block.html"
+
+
+class BaseChartBlock(BaseVisualisationBlock):
     # Extra attributes for subclasses
     highcharts_chart_type: ClassVar[HighChartsChartType]
     x_axis_type: ClassVar[AxisType]
@@ -24,14 +36,6 @@ class BaseVisualisationBlock(blocks.StructBlock):
     # Note that static blocks are intended to be overridden with real blocks or
     # None in subclasses. They are included here in order to control the
     # ordering, as StructBlock has no panel support.
-
-    title = blocks.CharBlock()
-    subtitle = blocks.CharBlock()
-    audio_description = blocks.TextBlock(
-        required=True, help_text="An overview of what the chart shows for screen readers."
-    )
-    caption = blocks.CharBlock(required=False)
-
     table = SimpleTableBlock(label="Data table")
 
     # Override select_chart_type as a ChoiceBlock in subclasses which have
@@ -94,9 +98,6 @@ class BaseVisualisationBlock(blocks.StructBlock):
     )
 
     series_customisation = blocks.StaticBlock()
-
-    class Meta:
-        template = "templates/components/streamfield/datavis/base_highcharts_chart_block.html"
 
     def get_context(self, value: "StructValue", parent_context: Optional[dict[str, Any]] = None) -> dict[str, Any]:
         context: dict[str, Any] = super().get_context(value, parent_context)
