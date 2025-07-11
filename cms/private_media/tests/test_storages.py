@@ -9,8 +9,15 @@ from wagtail_factories import DocumentFactory
 from cms.private_media.storages import AccessControlledS3Storage
 
 
+@override_settings(
+    AWS_STORAGE_BUCKET_NAME="test-bucket",
+    AWS_S3_REGION_NAME="us-east-1",
+    AWS_ACCESS_KEY_ID="testing",
+    AWS_SECRET_ACCESS_KEY="testing",
+    AWS_SESSION_TOKEN="testing",
+    AWS_EC2_METADATA_DISABLED=True,
+)
 @mock_aws
-@override_settings(AWS_STORAGE_BUCKET_NAME="test-bucket")
 class AccessControlledS3StorageTests(TestCase):
     @classmethod
     def setUpTestData(cls):
@@ -22,6 +29,8 @@ class AccessControlledS3StorageTests(TestCase):
         # Create a bucket to allow '_set_file_acl' to at least reach the 'put' stage
         bucket = self.storage.connection.Bucket(settings.AWS_STORAGE_BUCKET_NAME)
         bucket.create()
+
+        self.document = DocumentFactory()
 
     def test_make_private_client_error_on_acl_set(self):
         with self.assertLogs("cms.private_media.storages", level="ERROR") as logs:
