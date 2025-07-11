@@ -1,6 +1,7 @@
 import logging
 from typing import Any
 
+from django.conf import settings
 from django.db.models.signals import post_delete, post_save
 from django.dispatch import receiver
 
@@ -65,6 +66,9 @@ def _build_bundle_data_for_api(bundle: Bundle) -> dict[str, Any]:
 @receiver(post_save, sender=Bundle)
 def handle_bundle_dataset_api_sync(instance: Bundle, created: bool, **kwargs: Any) -> None:
     """Handle synchronization with the Dataset API for bundle creation and status updates."""
+    if not getattr(settings, "ONS_BUNDLE_API_ENABLED", False):
+        return
+
     client = BundleAPIClient()
     update_fields = kwargs.get("update_fields")
 
@@ -98,6 +102,9 @@ def handle_bundle_dataset_api_sync(instance: Bundle, created: bool, **kwargs: An
 @receiver(post_save, sender=BundleDataset)
 def handle_bundle_dataset_added(instance: BundleDataset, **kwargs: Any) -> None:
     """Handle when a dataset is added to a bundle."""
+    if not getattr(settings, "ONS_BUNDLE_API_ENABLED", False):
+        return
+
     if instance.parent.dataset_api_id:
         client = BundleAPIClient()
 
@@ -113,6 +120,9 @@ def handle_bundle_dataset_added(instance: BundleDataset, **kwargs: Any) -> None:
 @receiver(post_delete, sender=BundleDataset)
 def handle_bundle_dataset_removed(instance: BundleDataset, **kwargs: Any) -> None:
     """Handle when a dataset is removed from a bundle."""
+    if not getattr(settings, "ONS_BUNDLE_API_ENABLED", False):
+        return
+
     if instance.parent.dataset_api_id:
         client = BundleAPIClient()
 
@@ -128,6 +138,9 @@ def handle_bundle_dataset_removed(instance: BundleDataset, **kwargs: Any) -> Non
 @receiver(post_delete, sender=Bundle)
 def handle_bundle_deletion(instance: Bundle, **kwargs: Any) -> None:
     """Handle when a bundle is deleted."""
+    if not getattr(settings, "ONS_BUNDLE_API_ENABLED", False):
+        return
+
     if instance.dataset_api_id:
         client = BundleAPIClient()
 

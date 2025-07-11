@@ -3,7 +3,7 @@ from typing import Any
 from unittest.mock import patch
 
 from django import forms
-from django.test import TestCase
+from django.test import TestCase, override_settings
 from django.utils import timezone
 from wagtail.admin.panels import get_edit_handler
 from wagtail.test.utils.form_data import inline_formset, nested_form_data
@@ -287,6 +287,7 @@ class BundleAdminFormTestCase(TestCase):
         self.assertEqual(form.cleaned_data["publication_date"], self.bundle.publication_date)
 
 
+@override_settings(ONS_BUNDLE_API_ENABLED=True)
 class BundleDatasetValidationTestCase(TestCase):
     """Test cases for dataset validation in the BundleAdminForm."""
 
@@ -434,3 +435,40 @@ class BundleDatasetValidationTestCase(TestCase):
         self.assertTrue(form.is_valid())
         # Should only check the non-deleted dataset
         self.mock_client.get_dataset_status.assert_called_once_with(dataset1.namespace)
+
+
+@override_settings(ONS_BUNDLE_API_ENABLED=False)
+class BundleDatasetValidationDisabledTestCase(TestCase):
+    """Test cases for dataset validation when API is disabled."""
+
+    @classmethod
+    def setUpTestData(cls):
+        cls.bundle = BundleFactory(name="Test Bundle")
+        cls.form_class = get_edit_handler(Bundle).get_form_class()
+        cls.approver = UserFactory()
+
+    def setUp(self):
+        self.patcher = patch("cms.bundles.forms.BundleAPIClient")
+        self.mock_client_class = self.patcher.start()
+        self.mock_client = self.mock_client_class.return_value
+
+    def tearDown(self):
+        self.patcher.stop()
+
+    def test_dataset_validation_skipped_when_api_disabled(self):
+        """Test that dataset validation is skipped when ONS_BUNDLE_API_ENABLED is False."""
+        dataset = DatasetFactory(id=123, title="Test Dataset")
+
+        raw_data = {
+            "name": "Test Bundle",
+            "status": BundleStatus.APPROVED,
+            "bundled_pages": inline_formset([]),
+            "bundled_datasets": inline_formset([{"dataset": dataset.id}]),
+            "teams": inline_formset([]),
+        }
+
+        form = self.form_class(instance=self.bundle, data=nested_form_data(raw_data), for_user=self.approver)
+
+        self.assertTrue(form.is_valid())
+        # API client should not be called when disabled
+        self.mock_client.get_dataset_status.assert_not_called()

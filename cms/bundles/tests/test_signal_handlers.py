@@ -3,7 +3,7 @@ from unittest.mock import patch
 
 from django.core import mail
 from django.core.management import call_command
-from django.test import TestCase
+from django.test import TestCase, override_settings
 from django.urls import reverse
 from django.utils import timezone
 from wagtail.test.utils.form_data import inline_formset, nested_form_data
@@ -158,6 +158,7 @@ class TestNotifications(TestCase):
         self.assertEqual(len(mail.outbox), 0)
 
 
+@override_settings(ONS_BUNDLE_API_ENABLED=True)
 class TestBundleAPISignalHandlers(TestCase):
     def setUp(self):
         """Set up the test case."""
@@ -320,3 +321,61 @@ class TestBundleAPISignalHandlers(TestCase):
 
         # The bundle should still be deleted
         self.assertFalse(Bundle.objects.filter(pk=bundle_pk).exists())
+
+
+@override_settings(ONS_BUNDLE_API_ENABLED=False)
+class TestBundleAPISignalHandlersDisabled(TestCase):
+    def setUp(self):
+        """Set up the test case."""
+        self.patcher = patch("cms.bundles.signal_handlers.BundleAPIClient")
+        self.mock_client_class = self.patcher.start()
+        self.mock_client = self.mock_client_class.return_value
+
+    def tearDown(self):
+        """Clean up after the test."""
+        self.patcher.stop()
+
+    def test_bundle_creation_does_not_call_api_when_disabled(self):
+        """Test that creating a bundle does not call the API when the flag is off."""
+        BundleFactory(name="Test Bundle")
+        self.mock_client.create_bundle.assert_not_called()
+
+    def test_bundle_status_update_does_not_call_api_when_disabled(self):
+        """Test that updating bundle status does not call the API when disabled."""
+        bundle = BundleFactory(dataset_api_id="api-bundle-123")
+        self.mock_client.reset_mock()
+
+        bundle.status = BundleStatus.APPROVED
+        bundle.save()
+
+        self.mock_client.update_bundle_status.assert_not_called()
+
+    def test_bundle_deletion_does_not_call_api_when_disabled(self):
+        """Test that deleting a bundle does not call the API when disabled."""
+        bundle = BundleFactory(dataset_api_id="api-bundle-123")
+        self.mock_client.reset_mock()
+
+        bundle.delete()
+
+        self.mock_client.delete_bundle.assert_not_called()
+
+    def test_adding_dataset_to_bundle_does_not_call_api_when_disabled(self):
+        """Test that adding a dataset to a bundle does not call the API when disabled."""
+        bundle = BundleFactory(dataset_api_id="api-bundle-123")
+        dataset = DatasetFactory()
+        self.mock_client.reset_mock()
+
+        BundleDataset.objects.create(parent=bundle, dataset=dataset)
+
+        self.mock_client.update_bundle.assert_not_called()
+
+    def test_removing_dataset_from_bundle_does_not_call_api_when_disabled(self):
+        """Test that removing a dataset from a bundle does not call the API when disabled."""
+        bundle = BundleFactory(dataset_api_id="api-bundle-123")
+        dataset = DatasetFactory()
+        bundle_dataset = BundleDataset.objects.create(parent=bundle, dataset=dataset)
+        self.mock_client.reset_mock()
+
+        bundle_dataset.delete()
+
+        self.mock_client.update_bundle.assert_not_called()

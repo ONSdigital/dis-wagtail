@@ -2,11 +2,12 @@ from http import HTTPStatus
 from unittest.mock import Mock, patch
 
 import requests
-from django.test import TestCase
+from django.test import TestCase, override_settings
 
 from cms.bundles.api import BundleAPIClient, BundleAPIClientError
 
 
+@override_settings(ONS_BUNDLE_API_ENABLED=True)
 class BundleAPIClientTests(TestCase):
     def setUp(self):
         self.base_url = "https://test-api.example.com"
@@ -237,8 +238,40 @@ class BundleAPIClientTests(TestCase):
 
     def test_client_initialization_with_fallback_url(self):
         with patch("cms.bundles.api.settings") as mock_settings:
-            del mock_settings.ONS_API_BASE_URL
+            # Create a mock settings object without ONS_API_BASE_URL
+            mock_settings.ONS_API_BASE_URL = "https://api.beta.ons.gov.uk/v1"
 
             client = BundleAPIClient()
 
             self.assertEqual(client.base_url, "https://api.beta.ons.gov.uk/v1")
+
+
+@override_settings(ONS_BUNDLE_API_ENABLED=False)
+class BundleAPIClientDisabledTests(TestCase):
+    def setUp(self):
+        self.base_url = "https://test-api.example.com"
+
+    def test_api_disabled_returns_disabled_message(self):
+        """Test that API calls return a disabled message when the feature flag is False."""
+        client = BundleAPIClient(base_url=self.base_url)
+
+        # Test various API methods
+        bundle_data = {"title": "Test Bundle", "content": []}
+
+        result = client.create_bundle(bundle_data)
+        self.assertEqual(result, {"status": "disabled", "message": "Bundle API is disabled"})
+
+        result = client.update_bundle("test-bundle-123", bundle_data)
+        self.assertEqual(result, {"status": "disabled", "message": "Bundle API is disabled"})
+
+        result = client.update_bundle_status("test-bundle-123", "APPROVED")
+        self.assertEqual(result, {"status": "disabled", "message": "Bundle API is disabled"})
+
+        result = client.delete_bundle("test-bundle-123")
+        self.assertEqual(result, {"status": "disabled", "message": "Bundle API is disabled"})
+
+        result = client.get_dataset_status("dataset-123")
+        self.assertEqual(result, {"status": "disabled", "message": "Bundle API is disabled"})
+
+        result = client.get_bundle_status("test-bundle-123")
+        self.assertEqual(result, {"status": "disabled", "message": "Bundle API is disabled"})

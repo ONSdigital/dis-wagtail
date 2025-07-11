@@ -2,6 +2,7 @@ import logging
 from typing import TYPE_CHECKING, Any
 
 from django import forms
+from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.template.defaultfilters import pluralize
 from django.utils import timezone
@@ -67,6 +68,9 @@ class BundleAdminForm(WagtailAdminModelForm):
     def _validate_bundled_datasets_status(self) -> None:
         """Validate that all bundled datasets are approved when bundle is set to approved status."""
         if not self._has_datasets():
+            return
+
+        if not getattr(settings, "ONS_BUNDLE_API_ENABLED", False):
             return
 
         client = BundleAPIClient()
