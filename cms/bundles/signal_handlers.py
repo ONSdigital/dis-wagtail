@@ -65,46 +65,52 @@ def handle_bundle_dataset_api_sync(instance: Bundle, **kwargs: Any) -> None:
         # The bundle will still be saved locally
 
 
-@receiver([post_save, post_delete], sender=BundleDataset)
+@receiver(post_save, sender=BundleDataset)
 @ons_bundle_api_enabled
-def handle_bundle_dataset_added_or_removed(instance: BundleDataset, **kwargs: Any) -> None:
-    """Handle when a dataset is added to or removed from a bundle."""
+def handle_bundle_dataset_added(instance: BundleDataset, created: bool, **kwargs: Any) -> None:
+    """Handle when a dataset is added to a bundle."""
+    if not created or not instance.parent.bundle_api_id:
+        return
+
+    client = BundleAPIClient()
+
+    try:
+        # Add the content item to the bundle
+        content_item = {
+            "content_type": "DATASET",
+            "metadata": {
+                "dataset_id": instance.dataset.namespace,
+                "edition_id": "default",  # This may need to be adjusted based on actual data
+                "version_id": 1,  # This may need to be adjusted based on actual data
+            },
+            "links": {  # These links will need to be generated correctly
+                "edit": "http://example.com/edit",
+                "preview": "http://example.com/preview",
+            },
+        }
+        client.add_content_to_bundle(instance.parent.bundle_api_id, content_item)
+        logger.info("Added content %s to bundle %s in Dataset API", instance.dataset.namespace, instance.parent.pk)
+
+    except BundleAPIClientError as e:
+        logger.error("Failed to add content to bundle %s in Dataset API: %s", instance.parent.pk, e)
+
+
+@receiver(post_delete, sender=BundleDataset)
+@ons_bundle_api_enabled
+def handle_bundle_dataset_removed(instance: BundleDataset, **kwargs: Any) -> None:
+    """Handle when a dataset is removed from a bundle."""
     if not instance.parent.bundle_api_id:
         return
 
     client = BundleAPIClient()
 
-    if kwargs.get("signal") == post_delete:
-        try:
-            # The content_id is the dataset's namespace
-            content_id = instance.dataset.namespace
-            client.delete_content_from_bundle(instance.parent.bundle_api_id, content_id)
-            logger.info("Deleted content %s from bundle %s in Dataset API", content_id, instance.parent.pk)
-        except BundleAPIClientError as e:
-            logger.error(
-                "Failed to delete content %s from bundle %s in Dataset API: %s", content_id, instance.parent.pk, e
-            )
-    else:  # post_save
-        try:
-            # This part of the logic needs to be updated to add a single content item
-            # instead of updating the whole bundle.
-            content_item = {
-                "content_type": "DATASET",
-                "metadata": {
-                    "dataset_id": instance.dataset.namespace,
-                    "edition_id": "default",  # This may need to be adjusted based on actual data
-                    "version_id": 1,  # This may need to be adjusted based on actual data
-                },
-                "links": {  # These links will need to be generated correctly
-                    "edit": "http://example.com/edit",
-                    "preview": "http://example.com/preview",
-                },
-            }
-            client.add_content_to_bundle(instance.parent.bundle_api_id, content_item)
-            logger.info("Added content %s to bundle %s in Dataset API", instance.dataset.namespace, instance.parent.pk)
-
-        except BundleAPIClientError as e:
-            logger.error("Failed to add content to bundle %s in Dataset API: %s", instance.parent.pk, e)
+    try:
+        # The content_id is the dataset's namespace
+        content_id = instance.dataset.namespace
+        client.delete_content_from_bundle(instance.parent.bundle_api_id, content_id)
+        logger.info("Deleted content %s from bundle %s in Dataset API", content_id, instance.parent.pk)
+    except BundleAPIClientError as e:
+        logger.error("Failed to delete content %s from bundle %s in Dataset API: %s", content_id, instance.parent.pk, e)
 
 
 @receiver(post_delete, sender=Bundle)
