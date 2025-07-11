@@ -164,17 +164,18 @@ def get_preview_items_for_bundle(bundle: "Bundle", page_id: int, pages_in_bundle
 
 
 def _build_bundle_data_for_api(bundle: "Bundle") -> dict[str, Any]:
-    """Build bundle data for API calls."""
-    content = []
+    """Build the dictionary of bundle data for the API."""
+    # Determine bundle_type based on scheduling
+    bundle_type = "SCHEDULED" if bundle.scheduled_publication_date else "MANUAL"
 
-    # Add bundled pages
-    for bundle_page in bundle.bundled_pages.all():
-        if bundle_page.page:
-            content.append({"id": str(bundle_page.page.pk), "type": "page"})
+    # Get preview teams
+    preview_teams = [{"id": str(team.id)} for team in bundle.teams.all()]
 
-    # Add bundled datasets
-    for bundle_dataset in bundle.bundled_datasets.all():
-        if bundle_dataset.dataset:
-            content.append({"id": bundle_dataset.dataset.namespace, "type": "dataset"})
-
-    return {"title": bundle.name, "content": content}
+    return {
+        "title": bundle.name,
+        "bundle_type": bundle_type,
+        "state": bundle.status,
+        "managed_by": "WAGTAIL",  # This seems to be a constant for this system
+        "preview_teams": preview_teams,
+        "scheduled_at": bundle.scheduled_publication_date.isoformat() if bundle.scheduled_publication_date else None,
+    }

@@ -9,7 +9,6 @@ from cms.bundles.decorators import ons_bundle_api_enabled
 from cms.bundles.enums import BundleStatus
 from cms.bundles.models import Bundle, BundleDataset, BundleTeam
 from cms.bundles.notifications.email import send_bundle_in_review_email, send_bundle_published_email
-from cms.bundles.utils import _build_bundle_data_for_api
 
 logger = logging.getLogger(__name__)
 
@@ -57,7 +56,7 @@ def handle_bundle_dataset_api_sync(instance: Bundle, **kwargs: Any) -> None:
     try:
         if instance.bundle_api_id and (update_fields is None or "bundle_api_id" not in update_fields):
             # This is likely a status update or other field change
-            client.update_bundle_status(instance.bundle_api_id, instance.status)
+            client.update_bundle_state(instance.bundle_api_id, instance.status)
             logger.info("Updated bundle %s status to %s in Dataset API", instance.pk, instance.status)
 
     except BundleAPIClientError as e:
@@ -70,16 +69,42 @@ def handle_bundle_dataset_api_sync(instance: Bundle, **kwargs: Any) -> None:
 @ons_bundle_api_enabled
 def handle_bundle_dataset_added_or_removed(instance: BundleDataset, **kwargs: Any) -> None:
     """Handle when a dataset is added to or removed from a bundle."""
-    if instance.parent.bundle_api_id:
-        client = BundleAPIClient()
+    if not instance.parent.bundle_api_id:
+        return
 
+    client = BundleAPIClient()
+
+    if kwargs.get("signal") == post_delete:
         try:
-            bundle_data = _build_bundle_data_for_api(instance.parent)
-            client.update_bundle(instance.parent.bundle_api_id, bundle_data)
-            logger.info("Updated bundle %s datasets in Dataset API", instance.parent.pk)
+            # The content_id is the dataset's namespace
+            content_id = instance.dataset.namespace
+            client.delete_content_from_bundle(instance.parent.bundle_api_id, content_id)
+            logger.info("Deleted content %s from bundle %s in Dataset API", content_id, instance.parent.pk)
+        except BundleAPIClientError as e:
+            logger.error(
+                "Failed to delete content %s from bundle %s in Dataset API: %s", content_id, instance.parent.pk, e
+            )
+    else:  # post_save
+        try:
+            # This part of the logic needs to be updated to add a single content item
+            # instead of updating the whole bundle.
+            content_item = {
+                "content_type": "DATASET",
+                "metadata": {
+                    "dataset_id": instance.dataset.namespace,
+                    "edition_id": "default",  # This may need to be adjusted based on actual data
+                    "version_id": 1,  # This may need to be adjusted based on actual data
+                },
+                "links": {  # These links will need to be generated correctly
+                    "edit": "http://example.com/edit",
+                    "preview": "http://example.com/preview",
+                },
+            }
+            client.add_content_to_bundle(instance.parent.bundle_api_id, content_item)
+            logger.info("Added content %s to bundle %s in Dataset API", instance.dataset.namespace, instance.parent.pk)
 
         except BundleAPIClientError as e:
-            logger.error("Failed to update bundle %s datasets in Dataset API: %s", instance.parent.pk, e)
+            logger.error("Failed to add content to bundle %s in Dataset API: %s", instance.parent.pk, e)
 
 
 @receiver(post_delete, sender=Bundle)

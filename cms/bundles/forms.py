@@ -233,13 +233,36 @@ class BundleAdminForm(WagtailAdminModelForm):
         ):
             client = BundleAPIClient()
             try:
+                # Create the bundle in the API with the correct payload
                 bundle_data = _build_bundle_data_for_api(bundle)
                 response = client.create_bundle(bundle_data)
 
                 if "id" in response:
-                    bundle.bundle_api_id = response["id"]
+                    bundle.bundle_api_id = str(response["id"])
                     bundle.save(update_fields=["bundle_api_id"])
                     logger.info("Created bundle %s in Dataset API with ID: %s", bundle.pk, bundle.bundle_api_id)
+
+                    # Now add the datasets to the bundle via the /contents endpoint
+                    for bundled_dataset in bundle.bundled_datasets.all():
+                        content_item = {
+                            "content_type": "DATASET",
+                            "metadata": {
+                                "dataset_id": bundled_dataset.dataset.namespace,
+                                "edition_id": "default",  # This may need to be adjusted based on actual data
+                                "version_id": 1,  # This may need to be adjusted based on actual data
+                            },
+                            "links": {  # These links will need to be generated correctly
+                                "edit": "http://example.com/edit",
+                                "preview": "http://example.com/preview",
+                            },
+                        }
+                        client.add_content_to_bundle(bundle.bundle_api_id, content_item)
+                        logger.info(
+                            "Added content %s to bundle %s in Dataset API",
+                            bundled_dataset.dataset.namespace,
+                            bundle.bundle_api_id,
+                        )
+
                 else:
                     logger.warning("Bundle %s created in API but no ID returned", bundle.pk)
 

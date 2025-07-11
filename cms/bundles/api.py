@@ -39,13 +39,20 @@ class BundleAPIClient:
             # TODO: Add authentication headers
         )
 
-    def _make_request(self, method: str, endpoint: str, data: Optional[dict[str, Any]] = None) -> dict[str, Any]:
+    def _make_request(
+        self,
+        method: str,
+        endpoint: str,
+        data: Optional[dict[str, Any] | str] = None,
+        params: Optional[dict[str, Any]] = None,
+    ) -> dict[str, Any]:
         """Make a request to the API and handle common errors.
 
         Args:
             method: HTTP method (GET, POST, PUT, DELETE)
             endpoint: API endpoint relative to base_url
-            data: Request data for POST/PUT requests
+            data: Request data for POST/PUT requests. Can be a dict (for JSON) or a string.
+            params: URL parameters for GET requests
 
         Returns:
             Response data as dictionary
@@ -60,7 +67,18 @@ class BundleAPIClient:
             return {"status": "disabled", "message": "Bundle API is disabled"}
 
         try:
-            response = self.session.request(method, url, json=data)
+            # Pass data as `json` if it's a dict, otherwise as `data`
+            request_kwargs: dict[str, Any] = {}
+            if data is not None:
+                if isinstance(data, dict):
+                    request_kwargs["json"] = data
+                else:
+                    request_kwargs["data"] = data
+
+            if params is not None:
+                request_kwargs["params"] = params
+
+            response = self.session.request(method, url, **request_kwargs)
             response.raise_for_status()
             return self._process_response(response)
 
@@ -146,17 +164,53 @@ class BundleAPIClient:
         """
         return self._make_request("PUT", f"/bundles/{bundle_id}", data=bundle_data)
 
-    def update_bundle_status(self, bundle_id: str, status: str) -> dict[str, Any]:
-        """Update the status of a bundle via the API.
+    def update_bundle_state(self, bundle_id: str, state: str) -> dict[str, Any]:
+        """Update the state of a bundle via the API.
 
         Args:
             bundle_id: The ID of the bundle to update
-            status: New status for the bundle
+            state: New state for the bundle
 
         Returns:
             API response data
         """
-        return self._make_request("PUT", f"/bundles/{bundle_id}/status", data={"status": status})
+        # The swagger spec expects a raw string for the state, not a JSON object.
+        return self._make_request("PUT", f"/bundles/{bundle_id}/state", data=state)
+
+    def add_content_to_bundle(self, bundle_id: str, content_item: dict[str, Any]) -> dict[str, Any]:
+        """Add a content item to a bundle.
+
+        Args:
+            bundle_id: The ID of the bundle to add content to.
+            content_item: The content item to add.
+
+        Returns:
+            API response data
+        """
+        return self._make_request("POST", f"/bundles/{bundle_id}/contents", data=content_item)
+
+    def delete_content_from_bundle(self, bundle_id: str, content_id: str) -> dict[str, Any]:
+        """Delete a content item from a bundle.
+
+        Args:
+            bundle_id: The ID of the bundle to delete content from.
+            content_id: The ID of the content item to delete.
+
+        Returns:
+            API response data
+        """
+        return self._make_request("DELETE", f"/bundles/{bundle_id}/contents/{content_id}")
+
+    def get_bundle_contents(self, bundle_id: str) -> dict[str, Any]:
+        """Get the list of contents for a specific bundle.
+
+        Args:
+            bundle_id: The ID of the bundle to get contents for.
+
+        Returns:
+            API response data containing the list of contents.
+        """
+        return self._make_request("GET", f"/bundles/{bundle_id}/contents")
 
     def delete_bundle(self, bundle_id: str) -> dict[str, Any]:
         """Delete a bundle via the API.
@@ -168,6 +222,41 @@ class BundleAPIClient:
             API response data
         """
         return self._make_request("DELETE", f"/bundles/{bundle_id}")
+
+    def get_bundles(self, limit: int = 20, offset: int = 0, publish_date: str | None = None) -> dict[str, Any]:
+        """Get a list of all bundles.
+
+        Args:
+            limit: The maximum number of items to return.
+            offset: The starting index of the items to return.
+            publish_date: Filter bundles by their scheduled publication date.
+
+        Returns:
+            API response data containing a list of bundles.
+        """
+        params: dict[str, Any] = {"limit": limit, "offset": offset}
+        if publish_date:
+            params["publish_date"] = publish_date
+        return self._make_request("GET", "/bundles", params=params)
+
+    def get_bundle(self, bundle_id: str) -> dict[str, Any]:
+        """Get a single bundle by its ID.
+
+        Args:
+            bundle_id: The ID of the bundle to retrieve.
+
+        Returns:
+            API response data for the bundle.
+        """
+        return self._make_request("GET", f"/bundles/{bundle_id}")
+
+    def get_health(self) -> dict[str, Any]:
+        """Get the health status of the API.
+
+        Returns:
+            API response data containing the health status.
+        """
+        return self._make_request("GET", "/health")
 
     def get_dataset_status(self, dataset_id: str) -> dict[str, Any]:
         """Get the status of a dataset via the API.
