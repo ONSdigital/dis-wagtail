@@ -3,8 +3,12 @@ from datetime import datetime
 from django.test import RequestFactory, SimpleTestCase, TestCase, override_settings
 from django.utils.formats import date_format
 
+from cms.articles.tests.factories import StatisticalArticlePageFactory
+from cms.core.custom_date_format import ons_date_format
 from cms.core.models.base import BasePage
-from cms.core.utils import get_client_ip, get_formatted_pages_list, latex_formula_to_svg
+from cms.core.utils import get_client_ip, get_content_type_for_page, get_formatted_pages_list, latex_formula_to_svg
+from cms.methodology.tests.factories import MethodologyPageFactory
+from cms.topics.tests.factories import TopicPageFactory
 
 
 # DummyPage mimics the minimum attributes and methods of a Wagtail Page.
@@ -80,7 +84,7 @@ class GetFormattedPagesListTests(TestCase):
         result = get_formatted_pages_list([page])
 
         expected_iso = date_format(test_date, "c")
-        expected_short = date_format(test_date, "DATE_FORMAT")
+        expected_short = ons_date_format(test_date, "DATE_FORMAT")
 
         expected = {
             "title": {"text": "Test Page", "url": "https://ons.gov.uk"},
@@ -107,7 +111,7 @@ class GetFormattedPagesListTests(TestCase):
         result = get_formatted_pages_list(pages)
 
         expected_iso = date_format(test_date, "c")
-        expected_short = date_format(test_date, "DATE_FORMAT")
+        expected_short = ons_date_format(test_date, "DATE_FORMAT")
 
         expected_page1 = {
             "title": {"text": "Page One", "url": "https://ons.gov.uk"},
@@ -208,3 +212,20 @@ class LatexFormulaTestCase(TestCase):
         latex_formula = r"\frac{a}{b"
         with self.assertRaises(RuntimeError):
             latex_formula_to_svg(latex_formula)
+
+
+class TestContentTypeForPage(TestCase):
+    def test_get_content_type_for_page(self):
+        """Test the content type for a given page."""
+        # Create a dummy page
+        page = StatisticalArticlePageFactory(title="Test Article")
+        content_type = get_content_type_for_page(page)
+        self.assertEqual(content_type, "Article")
+
+        page = TopicPageFactory(title="Test Topic")
+        content_type = get_content_type_for_page(page)
+        self.assertEqual(content_type, "Topic")
+
+        page = MethodologyPageFactory(title="Test Methodology")
+        content_type = get_content_type_for_page(page)
+        self.assertEqual(content_type, "Methodology")

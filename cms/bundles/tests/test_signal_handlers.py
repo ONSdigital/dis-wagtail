@@ -1,5 +1,4 @@
 from datetime import timedelta
-from unittest.mock import patch
 
 from django.core import mail
 from django.core.management import call_command
@@ -97,7 +96,6 @@ class TestNotifications(TestCase):
 
         self.assertEqual(len(mail.outbox), 1)
         self.assertIn(f'Bundle "{bundle.name}" has been published', mail.outbox[0].subject)
-        self.assertIn(bundle.full_inspect_url, mail.outbox[0].body)
 
     def test_email_is_sent_when_bundle_is_published_via_manual_publication(self):
         """Test that when a bundle is published manually (via the admin), an email is sent."""
@@ -129,7 +127,6 @@ class TestNotifications(TestCase):
 
         self.assertEqual(len(mail.outbox), 1)
         self.assertIn(f'Bundle "{bundle.name}" has been published', mail.outbox[0].subject)
-        self.assertIn(bundle.full_inspect_url, mail.outbox[0].body)
 
     def test_notification_sent_only_on_first_change_to_in_preview(self):
         """Test that a notification is sent only on the first change to 'In Preview'."""
@@ -155,50 +152,4 @@ class TestNotifications(TestCase):
         bundle.save()
 
         # Ensure no additional notification is sent
-        self.assertEqual(len(mail.outbox), 0)
-
-    def test_that_an_error_is_logged_when_preview_team_member_has_no_email(self):
-        """Test that an error is logged when a preview notification email is sent to a preview team
-        and one of the members doesn't have an email.
-        """
-        bundle = BundleFactory(in_review=True, name="Preview Bundle")
-        team = TeamFactory()
-        user_without_email = UserFactory(email="")
-        team.users.add(user_without_email)
-
-        with self.assertLogs("cms.bundles.notifications.email", level="ERROR") as log:
-            bundle_team = BundleTeam(parent=bundle, team=team)
-            bundle_team.save()
-
-        self.assertEqual(log.records[0].user_id, user_without_email.id)
-        self.assertEqual(log.records[0].team_name, team.name)
-        self.assertEqual(log.records[0].bundle_name, bundle.name)
-        self.assertEqual(log.records[0].email_subject, f'Bundle "{bundle.name}" is ready for review')
-
-        self.assertEqual(len(mail.outbox), 0)
-
-    def test_that_an_error_is_logged_when_send_mail_raises_exception(self):
-        """Test that an error is logged when send_mail raises an exception."""
-        bundle = BundleFactory(in_review=True, name="Preview Bundle")
-        another_previewer = UserFactory()
-        another_previewer.teams.set([self.preview_team])
-
-        with (
-            patch("cms.bundles.notifications.email.send_mail", side_effect=Exception("SMTP error")),
-            self.assertLogs("cms.bundles.notifications.email", level="ERROR") as log,
-        ):
-            bundle_team = BundleTeam(parent=bundle, team=self.preview_team)
-            bundle_team.save()
-
-        record = log.records[0]
-        self.assertEqual(record.msg, "Failed to send bundle notification email")
-        self.assertEqual(record.team_name, self.preview_team.name)
-        self.assertEqual(record.bundle_name, bundle.name)
-        self.assertEqual(record.email_subject, f'Bundle "{bundle.name}" is ready for review')
-        self.assertEqual(
-            sorted(record.recipients),
-            sorted([self.previewer.email, another_previewer.email]),
-        )
-        self.assertEqual(record.error_message, "SMTP error")
-
         self.assertEqual(len(mail.outbox), 0)

@@ -97,7 +97,7 @@ Feature: Statistical Article Page components
         And the user clicks "View Live" on the publish confirmation banner
         Then the published statistical article page has the corrections and notices block
         And the user can click on "Show detail" to expand the corrections and notices block
-        And the user can click on "Close detail" to collapse the corrections and notices block
+        And the user can click on "Hide detail" to collapse the corrections and notices block
 
     Scenario: A CMS user can add headline figures to a Statistical Article Page
         When the user goes to add a new statistical article page
