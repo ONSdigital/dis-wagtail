@@ -397,6 +397,10 @@ class StatisticalArticlePageRenderTestCase(WagtailTestUtils, TestCase):
         response = self.client.get(self.basic_page_url)
         self.assertContains(response, "PSF: November 2024")
 
+        # Set an SEO title so that the display title is also not included in the schema org properties
+        self.page.seo_title = "SEO Title"
+        self.page.save_revision().publish()
+
         response = self.client.get(self.page_url)
         self.assertNotContains(response, self.page.get_admin_display_title())
         self.assertContains(response, "Breaking News!")

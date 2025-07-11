@@ -489,9 +489,9 @@ class StatisticalArticlePage(BundledPageMixin, RoutablePageMixin, BasePage):  # 
         # TODO pass through request to this, once wagtailschemaorg supports it
         properties = {
             "url": self.get_full_url(),
-            "headline": self.seo_title or self.listing_title or self.title,
+            "headline": self.seo_title or self.listing_title or self.get_full_display_title(),
             "description": self.search_description or self.listing_summary or strip_tags(self.summary),
-            "datePublished": self.release_date.isoformat(),
+            "datePublished": self.first_published_at.isoformat() if self.first_published_at else None,
             "license": "https://www.nationalarchives.gov.uk/doc/open-government-licence/version/3/",
             "author": {
                 "@type": "Person" if self.contact_details else "Organization",

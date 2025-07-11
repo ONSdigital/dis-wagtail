@@ -57,3 +57,5 @@ class StatisticalArticlePageFactory(wagtail_factories.PageFactory):
     is_accredited = False
     is_census = False
     show_cite_this_page = True
+    first_published_at = factory.LazyFunction(timezone.now)
+    last_published_at = factory.LazyFunction(timezone.now)
