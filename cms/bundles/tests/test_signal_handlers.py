@@ -206,7 +206,7 @@ class TestBundleAPISignalHandlers(TestCase):
         bundle.status = BundleStatus.APPROVED
         bundle.save()
 
-        self.mock_client.update_bundle_status.assert_called_once_with("api-bundle-123", BundleStatus.APPROVED)
+        self.mock_client.update_bundle_state.assert_called_once_with("api-bundle-123", BundleStatus.APPROVED)
 
     def test_bundle_deletion_calls_api(self):
         """Test that deleting a bundle calls the Dataset API."""
@@ -241,10 +241,12 @@ class TestBundleAPISignalHandlers(TestCase):
 
         BundleDataset.objects.create(parent=bundle, dataset=dataset)
 
-        self.mock_client.update_bundle.assert_called_once()
-        call_args = self.mock_client.update_bundle.call_args[0]
+        self.mock_client.add_content_to_bundle.assert_called_once()
+        call_args = self.mock_client.add_content_to_bundle.call_args[0]
         self.assertEqual(call_args[0], "api-bundle-123")  # bundle_id
-        self.assertEqual(call_args[1]["title"], bundle.name)  # bundle_data
+        content_item = call_args[1]  # content_item
+        self.assertEqual(content_item["content_type"], "DATASET")
+        self.assertEqual(content_item["metadata"]["dataset_id"], dataset.namespace)
 
     def test_removing_dataset_from_bundle_calls_api(self):
         """Test that removing a dataset from a bundle calls the Dataset API."""
@@ -257,9 +259,10 @@ class TestBundleAPISignalHandlers(TestCase):
 
         bundle_dataset.delete()
 
-        self.mock_client.update_bundle.assert_called_once()
-        call_args = self.mock_client.update_bundle.call_args[0]
+        self.mock_client.delete_content_from_bundle.assert_called_once()
+        call_args = self.mock_client.delete_content_from_bundle.call_args[0]
         self.assertEqual(call_args[0], "api-bundle-123")  # bundle_id
+        self.assertEqual(call_args[1], dataset.namespace)  # content_id
 
     def test_bundle_creation_does_not_call_api_even_with_errors(self):
         """Test that bundle creation doesn't call the API even if there would be errors."""
@@ -282,7 +285,7 @@ class TestBundleAPISignalHandlers(TestCase):
 
         # Clear any calls from bundle creation
         self.mock_client.reset_mock()
-        self.mock_client.update_bundle_status.side_effect = BundleAPIClientError("API Error")
+        self.mock_client.update_bundle_state.side_effect = BundleAPIClientError("API Error")
 
         # This should not raise an exception
         bundle.status = BundleStatus.APPROVED
@@ -333,7 +336,7 @@ class TestBundleAPISignalHandlersDisabled(TestCase):
         bundle.status = BundleStatus.APPROVED
         bundle.save()
 
-        self.mock_client.update_bundle_status.assert_not_called()
+        self.mock_client.update_bundle_state.assert_not_called()
 
     def test_bundle_deletion_does_not_call_api_when_disabled(self):
         """Test that deleting a bundle does not call the API when disabled."""

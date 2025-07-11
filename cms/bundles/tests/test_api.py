@@ -85,16 +85,16 @@ class BundleAPIClientTests(TestCase):
         self.assertEqual(result, {"id": "test-bundle-123", "title": "Updated Bundle"})
 
     @patch("cms.bundles.api.requests.Session")
-    def test_update_bundle_status_success(self, mock_session_class):
+    def test_update_bundle_state_success(self, mock_session_class):
         mock_response = self._create_mock_response(HTTPStatus.OK, {"id": "test-bundle-123", "status": "APPROVED"})
         mock_session = self._create_mock_session(mock_response)
         mock_session_class.return_value = mock_session
 
         client = BundleAPIClient(base_url=self.base_url)
-        result = client.update_bundle_status("test-bundle-123", "APPROVED")
+        result = client.update_bundle_state("test-bundle-123", "APPROVED")
 
         mock_session.request.assert_called_once_with(
-            "PUT", f"{self.base_url}/bundles/test-bundle-123/status", json={"status": "APPROVED"}
+            "PUT", f"{self.base_url}/bundles/test-bundle-123/state", data="APPROVED"
         )
         self.assertEqual(result, {"id": "test-bundle-123", "status": "APPROVED"})
 
@@ -107,7 +107,7 @@ class BundleAPIClientTests(TestCase):
         client = BundleAPIClient(base_url=self.base_url)
         result = client.delete_bundle("test-bundle-123")
 
-        mock_session.request.assert_called_once_with("DELETE", f"{self.base_url}/bundles/test-bundle-123", json=None)
+        mock_session.request.assert_called_once_with("DELETE", f"{self.base_url}/bundles/test-bundle-123")
         self.assertEqual(result, {"status": "success", "message": "Operation completed successfully"})
 
     @patch("cms.bundles.api.requests.Session")
@@ -119,7 +119,7 @@ class BundleAPIClientTests(TestCase):
         client = BundleAPIClient(base_url=self.base_url)
         result = client.get_dataset_status("dataset-123")
 
-        mock_session.request.assert_called_once_with("GET", f"{self.base_url}/datasets/dataset-123/status", json=None)
+        mock_session.request.assert_called_once_with("GET", f"{self.base_url}/datasets/dataset-123/status")
         self.assertEqual(result, {"id": "dataset-123", "status": "approved"})
 
     @patch("cms.bundles.api.requests.Session")
@@ -131,9 +131,7 @@ class BundleAPIClientTests(TestCase):
         client = BundleAPIClient(base_url=self.base_url)
         result = client.get_bundle_status("test-bundle-123")
 
-        mock_session.request.assert_called_once_with(
-            "GET", f"{self.base_url}/bundles/test-bundle-123/status", json=None
-        )
+        mock_session.request.assert_called_once_with("GET", f"{self.base_url}/bundles/test-bundle-123/status")
         self.assertEqual(result, {"id": "test-bundle-123", "status": "DRAFT"})
 
     @patch("cms.bundles.api.requests.Session")
@@ -264,7 +262,7 @@ class BundleAPIClientDisabledTests(TestCase):
         result = client.update_bundle("test-bundle-123", bundle_data)
         self.assertEqual(result, {"status": "disabled", "message": "Bundle API is disabled"})
 
-        result = client.update_bundle_status("test-bundle-123", "APPROVED")
+        result = client.update_bundle_state("test-bundle-123", "APPROVED")
         self.assertEqual(result, {"status": "disabled", "message": "Bundle API is disabled"})
 
         result = client.delete_bundle("test-bundle-123")

@@ -534,9 +534,17 @@ class BundleFormSaveTestCase(TestCase):
         self.mock_client.create_bundle.assert_called_once()
         call_args = self.mock_client.create_bundle.call_args[0][0]
         self.assertEqual(call_args["title"], "Test Bundle")
-        self.assertEqual(len(call_args["content"]), 1)
-        self.assertEqual(call_args["content"][0]["type"], "dataset")
-        self.assertEqual(call_args["content"][0]["id"], dataset.namespace)
+        self.assertEqual(call_args["bundle_type"], "MANUAL")
+        self.assertEqual(call_args["state"], "DRAFT")
+        self.assertEqual(call_args["managed_by"], "WAGTAIL")
+
+        # Content should be added separately
+        self.mock_client.add_content_to_bundle.assert_called_once()
+        content_call_args = self.mock_client.add_content_to_bundle.call_args[0]
+        self.assertEqual(content_call_args[0], "api-bundle-123")  # bundle_id
+        content_item = content_call_args[1]
+        self.assertEqual(content_item["content_type"], "DATASET")
+        self.assertEqual(content_item["metadata"]["dataset_id"], dataset.namespace)
 
         # Bundle should have the API ID set
         self.assertEqual(bundle.bundle_api_id, "api-bundle-123")
@@ -633,9 +641,17 @@ class BundleFormSaveTestCase(TestCase):
         self.mock_client.create_bundle.assert_called_once()
         call_args = self.mock_client.create_bundle.call_args[0][0]
         self.assertEqual(call_args["title"], "Updated Bundle")
-        self.assertEqual(len(call_args["content"]), 1)
-        self.assertEqual(call_args["content"][0]["type"], "dataset")
-        self.assertEqual(call_args["content"][0]["id"], dataset.namespace)
+        self.assertEqual(call_args["bundle_type"], "MANUAL")
+        self.assertEqual(call_args["state"], "DRAFT")
+        self.assertEqual(call_args["managed_by"], "WAGTAIL")
+
+        # Content should be added separately
+        self.mock_client.add_content_to_bundle.assert_called_once()
+        content_call_args = self.mock_client.add_content_to_bundle.call_args[0]
+        self.assertEqual(content_call_args[0], "api-bundle-456")  # bundle_id
+        content_item = content_call_args[1]
+        self.assertEqual(content_item["content_type"], "DATASET")
+        self.assertEqual(content_item["metadata"]["dataset_id"], dataset.namespace)
 
         # Bundle should have the API ID set
         self.assertEqual(bundle.bundle_api_id, "api-bundle-456")
