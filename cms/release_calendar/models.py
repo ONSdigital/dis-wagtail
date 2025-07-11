@@ -222,9 +222,6 @@ class ReleaseCalendarPage(BundledPageMixin, BasePage):  # type: ignore[django-ma
             if self.datasets:
                 items += [{"url": "#datasets", "text": _("Data")}]
 
-            if self.active_bundle and self.active_bundle.bundled_datasets.count() > 0:
-                items += [{"url": "#bundle-datasets", "text": _("Bundle Datasets")}]
-
         if self.status in NON_PROVISIONAL_STATUSES and self.changes_to_release_date:
             items += [
                 {

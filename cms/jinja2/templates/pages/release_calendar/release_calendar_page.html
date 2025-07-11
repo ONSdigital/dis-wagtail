@@ -90,36 +90,6 @@
                     {% include_block page.datasets %}
                 {% endif %}
 
-                {% if page.active_bundle and page.active_bundle.bundled_datasets.count() > 0 %}
-                    <section id="bundle-datasets" class="spacing">
-                        <h2>{{ _("Bundle Datasets") }}</h2>
-                        <div class="ons-grid">
-                            {% for bundle_dataset in page.active_bundle.bundled_datasets.all() %}
-                                {% if bundle_dataset.dataset %}
-                                    <div class="ons-grid__col ons-col-4@m ons-col-6@s">
-                                        <div class="ons-card">
-                                            <div class="ons-card__content">
-                                                <h3 class="ons-card__title">
-                                                    <a href="{{ bundle_dataset.dataset.website_url }}" class="ons-card__link">
-                                                        {{ bundle_dataset.dataset.title }}
-                                                    </a>
-                                                </h3>
-                                                <p class="ons-card__text">
-                                                    {{ bundle_dataset.dataset.description|truncate(150) }}
-                                                </p>
-                                                <div class="ons-card__meta">
-                                                    <span class="ons-u-fs-s">{{ _("Edition:") }} {{ bundle_dataset.dataset.formatted_edition }}</span>
-                                                    <span class="ons-u-fs-s">{{ _("Version:") }} {{ bundle_dataset.dataset.version }}</span>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                {% endif %}
-                            {% endfor %}
-                        </div>
-                    </section>
-                {% endif %}
-
                 {% with contact_details = page.contact_details%}
                     {% include "templates/components/contact_details/contact_details.html" %}
                 {% endwith %}
