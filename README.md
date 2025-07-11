@@ -457,6 +457,7 @@ and every `send_mail` call will appear instantly in the UI.
 
 > [!TIP]
 > If you want to disable MailHog and simply log emails to your console, switch to Django’s console backend:
+>
 > ```python
 > EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 > ```
