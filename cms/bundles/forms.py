@@ -2,6 +2,7 @@ import logging
 from typing import TYPE_CHECKING, Any
 
 from django import forms
+from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.template.defaultfilters import pluralize
 from django.utils import timezone
@@ -10,6 +11,7 @@ from wagtail.admin.forms import WagtailAdminModelForm
 from cms.bundles.api import BundleAPIClient, BundleAPIClientError
 from cms.bundles.decorators import ons_bundle_api_enabled
 from cms.bundles.enums import ACTIVE_BUNDLE_STATUS_CHOICES, EDITABLE_BUNDLE_STATUSES, BundleStatus
+from cms.bundles.utils import _build_bundle_data_for_api
 from cms.workflows.models import ReadyToPublishGroupTask
 
 logger = logging.getLogger(__name__)
@@ -214,3 +216,47 @@ class BundleAdminForm(WagtailAdminModelForm):
                     cleaned_data["publication_date"] = self.instance.publication_date
 
         return cleaned_data
+
+    def save(self, commit: bool = True) -> "Bundle":
+        """Save the bundle, handling API creation for new bundles with datasets."""
+        # Check if this is a new bundle creation
+        is_new_bundle = self.instance.pk is None
+
+        if is_new_bundle:
+            # For new bundles, first save without committing to get the instance
+            bundle = super().save(commit=False)
+
+            # Save the bundle to the database first
+            if commit:
+                bundle.save()
+                # Save the many-to-many relationships
+                self.save_m2m()
+
+                # Check if the bundle has datasets and the API is enabled
+                if self._has_datasets() and getattr(settings, "ONS_BUNDLE_API_ENABLED", False):
+                    # Create the bundle in the API
+                    client = BundleAPIClient()
+                    try:
+                        bundle_data = _build_bundle_data_for_api(bundle)
+                        response = client.create_bundle(bundle_data)
+
+                        # Save the API ID returned by the API
+                        if "id" in response:
+                            bundle.dataset_api_id = response["id"]
+                            bundle.save(update_fields=["dataset_api_id"])
+                            logger.info(
+                                "Created bundle %s in Dataset API with ID: %s", bundle.pk, bundle.dataset_api_id
+                            )
+                        else:
+                            logger.warning("Bundle %s created in API but no ID returned", bundle.pk)
+
+                    except BundleAPIClientError as e:
+                        logger.error("Failed to create bundle %s in Dataset API: %s", bundle.pk, e)
+                        # Don't raise the exception to avoid breaking the admin interface
+                        # The bundle will still be saved locally
+
+            return bundle
+
+        # For existing bundles, use the standard save behavior
+        bundle = super().save(commit=commit)
+        return bundle

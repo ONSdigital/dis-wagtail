@@ -472,3 +472,176 @@ class BundleDatasetValidationDisabledTestCase(TestCase):
         self.assertTrue(form.is_valid())
         # API client should not be called when disabled
         self.mock_client.get_dataset_status.assert_not_called()
+
+
+@override_settings(ONS_BUNDLE_API_ENABLED=True)
+class BundleFormSaveTestCase(TestCase):
+    """Test cases for the BundleAdminForm save method."""
+
+    @classmethod
+    def setUpTestData(cls):
+        cls.form_class = get_edit_handler(Bundle).get_form_class()
+        cls.approver = UserFactory()
+
+    def setUp(self):
+        self.patcher = patch("cms.bundles.forms.BundleAPIClient")
+        self.mock_client_class = self.patcher.start()
+        self.mock_client = self.mock_client_class.return_value
+
+    def tearDown(self):
+        self.patcher.stop()
+
+    def test_save_new_bundle_without_datasets_does_not_call_api(self):
+        """Test that saving a new bundle without datasets doesn't call the API."""
+        self.mock_client.create_bundle.return_value = {"id": "api-bundle-123"}
+
+        raw_data = {
+            "name": "Test Bundle",
+            "status": BundleStatus.DRAFT,
+            "bundled_pages": inline_formset([]),
+            "bundled_datasets": inline_formset([]),
+            "teams": inline_formset([]),
+        }
+
+        form = self.form_class(data=nested_form_data(raw_data), for_user=self.approver)
+
+        self.assertTrue(form.is_valid())
+        bundle = form.save()
+
+        # API should not be called for bundles without datasets
+        self.mock_client.create_bundle.assert_not_called()
+        self.assertIsNone(bundle.dataset_api_id)
+
+    def test_save_new_bundle_with_datasets_calls_api(self):
+        """Test that saving a new bundle with datasets calls the API."""
+        self.mock_client.create_bundle.return_value = {"id": "api-bundle-123"}
+
+        dataset = DatasetFactory(id=123, title="Test Dataset")
+        raw_data = {
+            "name": "Test Bundle",
+            "status": BundleStatus.DRAFT,
+            "bundled_pages": inline_formset([]),
+            "bundled_datasets": inline_formset([{"dataset": dataset.id}]),
+            "teams": inline_formset([]),
+        }
+
+        form = self.form_class(data=nested_form_data(raw_data), for_user=self.approver)
+
+        self.assertTrue(form.is_valid())
+        bundle = form.save()
+
+        # API should be called for bundles with datasets
+        self.mock_client.create_bundle.assert_called_once()
+        call_args = self.mock_client.create_bundle.call_args[0][0]
+        self.assertEqual(call_args["title"], "Test Bundle")
+        self.assertEqual(len(call_args["content"]), 1)
+        self.assertEqual(call_args["content"][0]["type"], "dataset")
+        self.assertEqual(call_args["content"][0]["id"], dataset.namespace)
+
+        # Bundle should have the API ID set
+        self.assertEqual(bundle.dataset_api_id, "api-bundle-123")
+
+    def test_save_existing_bundle_uses_standard_behavior(self):
+        """Test that saving an existing bundle uses standard Django form behavior."""
+        existing_bundle = BundleFactory(name="Existing Bundle")
+
+        raw_data = {
+            "name": "Updated Bundle",
+            "status": BundleStatus.DRAFT,
+            "bundled_pages": inline_formset([]),
+            "bundled_datasets": inline_formset([]),
+            "teams": inline_formset([]),
+        }
+
+        form = self.form_class(instance=existing_bundle, data=nested_form_data(raw_data), for_user=self.approver)
+
+        self.assertTrue(form.is_valid())
+        bundle = form.save()
+
+        # API should not be called for existing bundles in form save
+        self.mock_client.create_bundle.assert_not_called()
+        self.assertEqual(bundle.name, "Updated Bundle")
+
+    def test_save_new_bundle_with_datasets_api_error_does_not_break_save(self):
+        """Test that API errors during bundle creation don't prevent saving."""
+        self.mock_client.create_bundle.side_effect = BundleAPIClientError("API Error")
+
+        dataset = DatasetFactory(id=123, title="Test Dataset")
+        raw_data = {
+            "name": "Test Bundle",
+            "status": BundleStatus.DRAFT,
+            "bundled_pages": inline_formset([]),
+            "bundled_datasets": inline_formset([{"dataset": dataset.id}]),
+            "teams": inline_formset([]),
+        }
+
+        form = self.form_class(data=nested_form_data(raw_data), for_user=self.approver)
+
+        self.assertTrue(form.is_valid())
+        # This should not raise an exception
+        bundle = form.save()
+
+        # The bundle should still be saved
+        self.assertTrue(bundle.pk)
+        self.assertEqual(bundle.name, "Test Bundle")
+        self.assertIsNone(bundle.dataset_api_id)
+
+    def test_save_new_bundle_with_datasets_no_api_id_returned(self):
+        """Test handling when API doesn't return an ID."""
+        self.mock_client.create_bundle.return_value = {"message": "Created but no ID"}
+
+        dataset = DatasetFactory(id=123, title="Test Dataset")
+        raw_data = {
+            "name": "Test Bundle",
+            "status": BundleStatus.DRAFT,
+            "bundled_pages": inline_formset([]),
+            "bundled_datasets": inline_formset([{"dataset": dataset.id}]),
+            "teams": inline_formset([]),
+        }
+
+        form = self.form_class(data=nested_form_data(raw_data), for_user=self.approver)
+
+        self.assertTrue(form.is_valid())
+        bundle = form.save()
+
+        # API should be called but bundle should not have API ID
+        self.mock_client.create_bundle.assert_called_once()
+        self.assertIsNone(bundle.dataset_api_id)
+
+
+@override_settings(ONS_BUNDLE_API_ENABLED=False)
+class BundleFormSaveDisabledTestCase(TestCase):
+    """Test cases for the BundleAdminForm save method when API is disabled."""
+
+    @classmethod
+    def setUpTestData(cls):
+        cls.form_class = get_edit_handler(Bundle).get_form_class()
+        cls.approver = UserFactory()
+
+    def setUp(self):
+        self.patcher = patch("cms.bundles.forms.BundleAPIClient")
+        self.mock_client_class = self.patcher.start()
+        self.mock_client = self.mock_client_class.return_value
+
+    def tearDown(self):
+        self.patcher.stop()
+
+    def test_save_new_bundle_with_datasets_does_not_call_api_when_disabled(self):
+        """Test that saving a new bundle with datasets doesn't call the API when disabled."""
+        dataset = DatasetFactory(id=123, title="Test Dataset")
+        raw_data = {
+            "name": "Test Bundle",
+            "status": BundleStatus.DRAFT,
+            "bundled_pages": inline_formset([]),
+            "bundled_datasets": inline_formset([{"dataset": dataset.id}]),
+            "teams": inline_formset([]),
+        }
+
+        form = self.form_class(data=nested_form_data(raw_data), for_user=self.approver)
+
+        self.assertTrue(form.is_valid())
+        bundle = form.save()
+
+        # API should not be called when disabled
+        self.mock_client.create_bundle.assert_not_called()
+        self.assertIsNone(bundle.dataset_api_id)

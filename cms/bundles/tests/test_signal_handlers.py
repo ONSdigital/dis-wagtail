@@ -170,26 +170,17 @@ class TestBundleAPISignalHandlers(TestCase):
         """Clean up after the test."""
         self.patcher.stop()
 
-    def test_bundle_creation_calls_api(self):
-        """Test that creating a bundle calls the Dataset API."""
-        self.mock_client.create_bundle.return_value = {"id": "api-bundle-123"}
-
+    def test_bundle_creation_does_not_call_api(self):
+        """Test that creating a bundle does not call the Dataset API."""
         bundle = BundleFactory(name="Test Bundle")
 
-        self.mock_client.create_bundle.assert_called_once()
-        call_args = self.mock_client.create_bundle.call_args[0][0]
-        self.assertEqual(call_args["title"], "Test Bundle")
-        self.assertEqual(call_args["content"], [])
+        self.mock_client.create_bundle.assert_not_called()
 
         bundle.refresh_from_db()
-        self.assertEqual(bundle.dataset_api_id, "api-bundle-123")
+        self.assertIsNone(bundle.dataset_api_id)
 
-    def test_bundle_creation_with_pages_and_datasets(self):
-        """Test that creating a bundle with pages and datasets includes them in the API call."""
-        self.mock_client.create_bundle.return_value = {"id": "api-bundle-123"}
-
-        # Create the bundle with related objects BEFORE the bundle is created
-        # This tests the signal that fires during bundle creation
+    def test_bundle_creation_with_pages_and_datasets_does_not_call_api(self):
+        """Test that creating a bundle with pages and datasets does not call the API on creation."""
         page = StatisticalArticlePageFactory()
         dataset = DatasetFactory()
 
@@ -198,21 +189,12 @@ class TestBundleAPISignalHandlers(TestCase):
         BundlePageFactory(parent=bundle, page=page)
         BundleDataset.objects.create(parent=bundle, dataset=dataset)
 
-        # Since the bundle was already created, test that the create_bundle was called
-        # and that the bundle data includes the relationships
-        self.mock_client.create_bundle.assert_called()
-        call_args = self.mock_client.create_bundle.call_args[0][0]
-        self.assertEqual(call_args["title"], "Test Bundle")
+        # Bundle creation should not call the API
+        self.mock_client.create_bundle.assert_not_called()
 
-        # The create_bundle call might have been made before the relationships were added
-        # so let's check if update_bundle was called to sync the relationships
-        if self.mock_client.update_bundle.called:
-            # Check the update_bundle call for the complete data
-            update_call_args = self.mock_client.update_bundle.call_args[0][1]
-            self.assertEqual(len(update_call_args["content"]), 2)
-            content_types = [item["type"] for item in update_call_args["content"]]
-            self.assertIn("page", content_types)
-            self.assertIn("dataset", content_types)
+        # But adding datasets should trigger update_bundle if the bundle has dataset_api_id
+        # Since this bundle doesn't have dataset_api_id, update_bundle should not be called
+        self.mock_client.update_bundle.assert_not_called()
 
     def test_bundle_status_update_calls_api(self):
         """Test that updating bundle status calls the Dataset API."""
@@ -279,17 +261,20 @@ class TestBundleAPISignalHandlers(TestCase):
         call_args = self.mock_client.update_bundle.call_args[0]
         self.assertEqual(call_args[0], "api-bundle-123")  # bundle_id
 
-    def test_api_error_during_bundle_creation_does_not_break_save(self):
-        """Test that API errors during bundle creation don't prevent saving."""
+    def test_bundle_creation_does_not_call_api_even_with_errors(self):
+        """Test that bundle creation doesn't call the API even if there would be errors."""
         self.mock_client.create_bundle.side_effect = BundleAPIClientError("API Error")
 
-        # This should not raise an exception
+        # This should not raise an exception and should not call the API
         bundle = BundleFactory(name="Test Bundle")
 
         # The bundle should still be saved
         self.assertTrue(bundle.pk)
         self.assertEqual(bundle.name, "Test Bundle")
         self.assertIsNone(bundle.dataset_api_id)
+
+        # API should not be called
+        self.mock_client.create_bundle.assert_not_called()
 
     def test_api_error_during_status_update_does_not_break_save(self):
         """Test that API errors during status update don't prevent saving."""

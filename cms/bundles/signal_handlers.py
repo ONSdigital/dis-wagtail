@@ -9,6 +9,7 @@ from cms.bundles.decorators import ons_bundle_api_enabled
 from cms.bundles.enums import BundleStatus
 from cms.bundles.models import Bundle, BundleDataset, BundleTeam
 from cms.bundles.notifications.email import send_bundle_in_review_email, send_bundle_published_email
+from cms.bundles.utils import _build_bundle_data_for_api
 
 logger = logging.getLogger(__name__)
 
@@ -46,50 +47,18 @@ def handle_bundle_publication(instance: Bundle, **kwargs: Any) -> None:
             send_bundle_published_email(bundle_team=bundle_team)
 
 
-def _build_bundle_data_for_api(bundle: Bundle) -> dict[str, Any]:
-    """Build bundle data for API calls."""
-    content = []
-
-    # Add bundled pages
-    for bundle_page in bundle.bundled_pages.all():
-        if bundle_page.page:
-            content.append({"id": str(bundle_page.page.pk), "type": "page"})
-
-    # Add bundled datasets
-    for bundle_dataset in bundle.bundled_datasets.all():
-        if bundle_dataset.dataset:
-            content.append({"id": bundle_dataset.dataset.namespace, "type": "dataset"})
-
-    return {"title": bundle.name, "content": content}
-
-
 @receiver(post_save, sender=Bundle)
 @ons_bundle_api_enabled
-def handle_bundle_dataset_api_sync(instance: Bundle, created: bool, **kwargs: Any) -> None:
-    """Handle synchronization with the Dataset API for bundle creation and status updates."""
+def handle_bundle_dataset_api_sync(instance: Bundle, **kwargs: Any) -> None:
+    """Handle synchronization with the Dataset API for bundle status updates."""
     client = BundleAPIClient()
     update_fields = kwargs.get("update_fields")
 
     try:
-        if created:
-            # Create new bundle in the API
-            bundle_data = _build_bundle_data_for_api(instance)
-            response = client.create_bundle(bundle_data)
-
-            # Save the API ID returned by the API
-            if "id" in response:
-                instance.dataset_api_id = response["id"]
-                instance.save(update_fields=["dataset_api_id"])
-                logger.info("Created bundle %s in Dataset API with ID: %s", instance.pk, instance.dataset_api_id)
-            else:
-                logger.warning("Bundle %s created in API but no ID returned", instance.pk)
-
-        elif instance.dataset_api_id:
-            # For updates, only sync if we're not in the middle of setting the dataset_api_id (see above)
-            if update_fields is None or "dataset_api_id" not in update_fields:
-                # This is likely a status update or other field change
-                client.update_bundle_status(instance.dataset_api_id, instance.status)
-                logger.info("Updated bundle %s status to %s in Dataset API", instance.pk, instance.status)
+        if instance.dataset_api_id and (update_fields is None or "dataset_api_id" not in update_fields):
+            # This is likely a status update or other field change
+            client.update_bundle_status(instance.dataset_api_id, instance.status)
+            logger.info("Updated bundle %s status to %s in Dataset API", instance.pk, instance.status)
 
     except BundleAPIClientError as e:
         logger.error("Failed to sync bundle %s with Dataset API: %s", instance.pk, e)

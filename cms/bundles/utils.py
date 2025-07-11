@@ -161,3 +161,20 @@ def get_preview_items_for_bundle(bundle: "Bundle", page_id: int, pages_in_bundle
         )
 
     return preview_items
+
+
+def _build_bundle_data_for_api(bundle: "Bundle") -> dict[str, Any]:
+    """Build bundle data for API calls."""
+    content = []
+
+    # Add bundled pages
+    for bundle_page in bundle.bundled_pages.all():
+        if bundle_page.page:
+            content.append({"id": str(bundle_page.page.pk), "type": "page"})
+
+    # Add bundled datasets
+    for bundle_dataset in bundle.bundled_datasets.all():
+        if bundle_dataset.dataset:
+            content.append({"id": bundle_dataset.dataset.namespace, "type": "dataset"})
+
+    return {"title": bundle.name, "content": content}
