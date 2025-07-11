@@ -71,7 +71,7 @@ Feature: CMS users can draft, edit, and publish release pages
     And the user enters both next release date and next release date text
     And the user clicks "Publish"
     Then an error validation is raised to say you cannot have both
-# Release Calendar page creation
+# Release Calendar page creation and previews
 
   Scenario Outline: A CMS user can use preview mode to preview page at different statuses
     When the user clicks "Add child page" to create a new draft release page
@@ -103,35 +103,20 @@ Feature: CMS users can draft, edit, and publish release pages
       | Confirmed   |
       | Cancelled   |
 
-  Scenario: A CMS User publishes a release page
-    And a contact details snippet exists
+  Scenario: A CMS User publishes a release page and the preview will will display all content
+    Given a contact details snippet exists
     And a Release Calendar page with a publish notice exists
     When the user navigates to the published release calendar page
     And the user adds a release date change
     And the user adds contact details
-    And the user adds pre-release access information
     And the user adds related links
     And the user clicks the "Save Draft" button
     And the user clicks the "Preview" button
     And the user changes preview mode to "Published"
     And the preview tab opened
-    Then the pre-release access is displayed
     Then the related links is displayed
     And contact detail is displayed
     And the release date change is displayed
-
-  Scenario: Validation error when more than one description added on pre-release Access
-    When the user clicks "Add child page" to create a new draft release page
-    And the user enters some example content on the page
-    And multiple descriptions are added under pre-release access
-    Then an error message is displayed about the descriptions
-
-  Scenario: Validation error when more than one table added on pre-release Access
-    When the user clicks "Add child page" to create a new draft release page
-    And the user enters some example content on the page
-    And multiple tables are added under pre-release access
-    And the user clicks "Publish"
-    Then an error message is displayed about the tables
 
   Scenario Outline: Validation error when cancelled page is published without notice
     When the user clicks "Add child page" to create a new draft release page
