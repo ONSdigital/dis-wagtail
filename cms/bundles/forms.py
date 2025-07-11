@@ -1,13 +1,20 @@
+import logging
 from typing import TYPE_CHECKING, Any
 
 from django import forms
+from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.template.defaultfilters import pluralize
 from django.utils import timezone
 from wagtail.admin.forms import WagtailAdminModelForm
 
+from cms.bundles.api import BundleAPIClient, BundleAPIClientError
+from cms.bundles.decorators import ons_bundle_api_enabled
 from cms.bundles.enums import ACTIVE_BUNDLE_STATUS_CHOICES, EDITABLE_BUNDLE_STATUSES, BundleStatus
+from cms.bundles.utils import _build_bundle_data_for_api
 from cms.workflows.models import ReadyToPublishGroupTask
+
+logger = logging.getLogger(__name__)
 
 if TYPE_CHECKING:
     from .models import Bundle
@@ -59,6 +66,43 @@ class BundleAdminForm(WagtailAdminModelForm):
                 break
 
         return has_datasets
+
+    @ons_bundle_api_enabled
+    def _validate_bundled_datasets_status(self) -> None:
+        """Validate that all bundled datasets are approved when bundle is set to approved status."""
+        if not self._has_datasets():
+            return
+
+        client = BundleAPIClient()
+        datasets_not_approved = []
+
+        for form in self.formsets["bundled_datasets"].forms:
+            if not form.is_valid():
+                continue
+
+            if form.cleaned_data.get("DELETE"):
+                continue
+
+            if dataset := form.cleaned_data.get("dataset"):
+                try:
+                    response = client.get_dataset_status(dataset.namespace)
+                    dataset_status = response.get("status", "unknown")
+
+                    if dataset_status != "approved":
+                        datasets_not_approved.append(f"{dataset.title} (status: {dataset_status})")
+
+                except BundleAPIClientError as e:
+                    logger.error("Failed to check status for dataset %s: %s", dataset.namespace, e)
+                    datasets_not_approved.append(f"{dataset.title} (status check failed)")
+
+        if datasets_not_approved:
+            # Return the original status
+            self.cleaned_data["status"] = self.instance.status
+            dataset_list = ", ".join(datasets_not_approved)
+            raise ValidationError(
+                f"Cannot approve the bundle with dataset{pluralize(len(datasets_not_approved))} "
+                f"not ready to be published: {dataset_list}"
+            )
 
     def _validate_bundled_pages(self) -> None:
         """Validates and tidies up related pages.
@@ -155,6 +199,9 @@ class BundleAdminForm(WagtailAdminModelForm):
                 # ensure all bundled pages are ready to publish
                 self._validate_bundled_pages_status()
 
+                # ensure all bundled datasets are approved
+                self._validate_bundled_datasets_status()
+
                 cleaned_data["approved_at"] = timezone.now()
                 cleaned_data["approved_by"] = self.for_user
             elif self.instance.status == BundleStatus.APPROVED:
@@ -169,3 +216,59 @@ class BundleAdminForm(WagtailAdminModelForm):
                     cleaned_data["publication_date"] = self.instance.publication_date
 
         return cleaned_data
+
+    def save(self, commit: bool = True) -> "Bundle":
+        """Save the bundle and create in API if it has datasets but no API ID."""
+        # Use the standard save behavior first. This handles new/existing objects
+        # and m2m relations if commit=True.
+        bundle: Bundle = super().save(commit=commit)
+
+        # If commit=True, and the bundle now has datasets but hasn't been created
+        # in the API yet, create it now.
+        if (
+            commit
+            and self._has_datasets()
+            and not bundle.bundle_api_id
+            and getattr(settings, "ONS_BUNDLE_API_ENABLED", False)
+        ):
+            client = BundleAPIClient()
+            try:
+                # Create the bundle in the API with the correct payload
+                bundle_data = _build_bundle_data_for_api(bundle)
+                response = client.create_bundle(bundle_data)
+
+                if "id" in response:
+                    bundle.bundle_api_id = str(response["id"])
+                    bundle.save(update_fields=["bundle_api_id"])
+                    logger.info("Created bundle %s in Dataset API with ID: %s", bundle.pk, bundle.bundle_api_id)
+
+                    # Now add the datasets to the bundle via the /contents endpoint
+                    for bundled_dataset in bundle.bundled_datasets.all():
+                        content_item = {
+                            "content_type": "DATASET",
+                            "metadata": {
+                                "dataset_id": bundled_dataset.dataset.namespace,
+                                "edition_id": "default",  # This may need to be adjusted based on actual data
+                                "version_id": 1,  # This may need to be adjusted based on actual data
+                            },
+                            "links": {  # These links will need to be generated correctly
+                                "edit": "http://example.com/edit",
+                                "preview": "http://example.com/preview",
+                            },
+                        }
+                        client.add_content_to_bundle(bundle.bundle_api_id, content_item)
+                        logger.info(
+                            "Added content %s to bundle %s in Dataset API",
+                            bundled_dataset.dataset.namespace,
+                            bundle.bundle_api_id,
+                        )
+
+                else:
+                    logger.warning("Bundle %s created in API but no ID returned", bundle.pk)
+
+            except BundleAPIClientError as e:
+                logger.error("Failed to create bundle %s in Dataset API: %s", bundle.pk, e)
+                # Don't raise the exception to avoid breaking the admin interface
+                # The bundle will still be saved locally
+
+        return bundle

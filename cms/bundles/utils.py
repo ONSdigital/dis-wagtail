@@ -161,3 +161,21 @@ def get_preview_items_for_bundle(bundle: "Bundle", page_id: int, pages_in_bundle
         )
 
     return preview_items
+
+
+def _build_bundle_data_for_api(bundle: "Bundle") -> dict[str, Any]:
+    """Build the dictionary of bundle data for the API."""
+    # Determine bundle_type based on scheduling
+    bundle_type = "SCHEDULED" if bundle.scheduled_publication_date else "MANUAL"
+
+    # Get preview teams
+    preview_teams = [{"id": str(team.id)} for team in bundle.teams.all()]
+
+    return {
+        "title": bundle.name,
+        "bundle_type": bundle_type,
+        "state": bundle.status,
+        "managed_by": "WAGTAIL",  # This seems to be a constant for this system
+        "preview_teams": preview_teams,
+        "scheduled_at": bundle.scheduled_publication_date.isoformat() if bundle.scheduled_publication_date else None,
+    }

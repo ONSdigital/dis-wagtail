@@ -1011,3 +1011,6 @@ ID_TOKEN_COOKIE_NAME = "id_token"  # noqa: S105
 WAGTAILADMIN_HOME_PATH = env.get("WAGTAILADMIN_HOME_PATH", "admin/")
 DJANGO_ADMIN_HOME_PATH = env.get("DJANGO_ADMIN_HOME_PATH", "django-admin/")
 SESSION_RENEWAL_OFFSET_SECONDS = env.get("SESSION_RENEWAL_OFFSET_SECONDS", 60 * 5)  # 5 minutes
+
+# Feature flag to enable/disable interaction with the ONS Bundle API
+ONS_BUNDLE_API_ENABLED = False
