@@ -961,9 +961,12 @@ WAGTAILSIMPLETRANSLATION_SYNC_PAGE_TREE = True
 
 # Configuration for the External Search service
 SEARCH_INDEX_PUBLISHER_BACKEND = os.getenv("SEARCH_INDEX_PUBLISHER_BACKEND")
+# TODO: Should we default to "kafka" or leave it empty?
+# TODO: No need for empty string as KafkaProducer will default to localhost:9092
 KAFKA_SERVERS = os.getenv("KAFKA_SERVERS", "").split(",")
 KAFKA_USE_IAM_AUTH = os.getenv("KAFKA_USE_IAM_AUTH", "false").lower() == "true"
-KAFKA_API_VERSION = tuple(map(int, os.getenv("KAFKA_API_VERSION", "3,5,1").split(",")))
+# TODO: We can use the dot notation here
+KAFKA_API_VERSION = tuple(map(int, os.getenv("KAFKA_API_VERSION", "3.5.1").split(".")))
 
 SEARCH_INDEX_EXCLUDED_PAGE_TYPES = (
     "HomePage",
