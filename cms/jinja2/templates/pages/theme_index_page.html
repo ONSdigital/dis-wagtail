@@ -1,0 +1,22 @@
+{% extends "templates/base_page.html" %}
+
+{% from "components/hero/_macro.njk" import onsHero %}
+
+{% block header_area %}
+    {%- set hero_topic = _("Browse") -%}
+    {%- set breadcrumbs_aria_label = _("Breadcrumbs") -%}
+    {# fmt:off #}
+    {{
+        onsHero({
+            "topic": hero_topic,
+            "title": page.title,
+            "variants": 'pale-blue',
+            "wide": true,
+            "breadcrumbs": {
+                "ariaLabel": breadcrumbs_aria_label,
+                "itemsList": breadcrumbs(page),
+            }
+        })
+    }}
+    {# fmt:on #}
+{% endblock %}

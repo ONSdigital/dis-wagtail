@@ -18,7 +18,7 @@ class BaseFooterMenuTestCase(TestCase):
         cls.form_class = get_edit_handler(FooterMenu).get_form_class()
 
         cls.theme_page_1 = ThemePageFactory()
-        cls.theme_page_2 = ThemePageFactory()
+        cls.theme_page_2 = ThemePageFactory(parent=cls.theme_page_1.get_parent())
 
         cls.example_url_1 = "https://example.com"
         cls.example_url_2 = "https://example2.com"

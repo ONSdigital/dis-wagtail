@@ -6,6 +6,7 @@ from django.urls import reverse
 from playwright.sync_api import expect
 
 from cms.articles.tests.factories import ArticleSeriesPageFactory, StatisticalArticlePageFactory
+from cms.topics.models import TopicPage
 
 
 @given("an article series page exists")
@@ -14,7 +15,7 @@ def an_article_series_exists(context: Context):
         context.article_series_page = ArticleSeriesPageFactory(title="PSF", parent=topic_page)
     else:
         context.article_series_page = ArticleSeriesPageFactory(title="PSF")
-        context.topic_page = context.article_series_page.get_parent()
+        context.topic_page = TopicPage.objects.ancestor_of(context.article_series_page).first()
 
 
 @given("a statistical article exists")

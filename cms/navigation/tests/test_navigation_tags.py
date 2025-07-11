@@ -149,6 +149,7 @@ class BreadcrumbsTemplateTagTests(TestCase):
         breadcrumbs_output = breadcrumbs({"request": self.mock_request}, self.statistical_article)
 
         series_parent = self.series.get_parent()
+        topic = series_parent.get_parent()
 
         expected_entries = [
             {
@@ -156,8 +157,8 @@ class BreadcrumbsTemplateTagTests(TestCase):
                 "text": "Home",
             },
             {
-                "url": series_parent.get_parent().get_url(),
-                "text": series_parent.get_parent().title,
+                "url": topic.get_url(),
+                "text": topic.title,
             },
             {
                 "url": series_parent.get_url(),
