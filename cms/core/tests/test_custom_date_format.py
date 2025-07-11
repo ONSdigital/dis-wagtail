@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import UTC, date, datetime
 
 from django.test import SimpleTestCase
 
@@ -26,3 +26,19 @@ class CustomDateFormatTests(SimpleTestCase):
                 rendered.endswith(expected),
                 msg=f"{hour:02d}:30 should end with '{expected}', got {rendered!r}",
             )
+
+    def test_date_formatting(self):
+        """Test that ons_date_format works with date objects (not just datetime)."""
+        test_date = date(2025, 11, 1)  # 1 Nov 2025
+        rendered = ons_date_format(test_date, "DATE_FORMAT")
+        self.assertIsInstance(rendered, str)
+        self.assertIn("Nov", rendered)
+        self.assertIn("2025", rendered)
+        # Should not contain AM/PM since it's just a date
+        self.assertNotIn("am", rendered.lower())
+        self.assertNotIn("pm", rendered.lower())
+
+    def test_date_localized(self):
+        dt = datetime(2025, 7, 8, 11, 21, 48, tzinfo=UTC)
+        rendered = ons_date_format(dt, "DATETIME_FORMAT")
+        self.assertEqual(rendered, "8 July 2025 12:21pm")

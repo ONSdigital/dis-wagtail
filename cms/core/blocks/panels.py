@@ -61,7 +61,6 @@ class CorrectionBlock(CorrectionOrNoticeBlock):
     version_id = blocks.IntegerBlock(required=False)
 
     class Meta:
-        template = "templates/components/streamfield/correction_block.html"
         help_text = "Warning: Once a correction is published, it cannot be deleted."
 
 
@@ -71,7 +70,14 @@ class CorrectionBlockAdapter(StructBlockAdapter):
     @cached_property
     def media(self) -> Media:
         structblock_media = super().media
-        return Media(js=[*structblock_media._js, "js/blocks/correction-block.js"], css=structblock_media._css)  # pylint: disable=protected-access
+        return Media(
+            js=[
+                *structblock_media._js,  # pylint: disable=protected-access
+                "js/blocks/readonly-struct-block.js",
+                "js/blocks/correction-block.js",
+            ],
+            css=structblock_media._css,  # pylint: disable=protected-access
+        )
 
 
 register(CorrectionBlockAdapter(), CorrectionBlock)
@@ -90,5 +96,4 @@ register(PreviousVersionBlockAdapter(), PreviousVersionBlock)
 
 
 class NoticeBlock(CorrectionOrNoticeBlock):
-    class Meta:
-        template = "templates/components/streamfield/notice_block.html"
+    when = blocks.DateBlock()

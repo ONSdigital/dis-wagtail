@@ -201,6 +201,8 @@ class BaseChartBlock(BaseVisualisationBlock):
             config["max"] = max_value
         if (end_on_tick := attrs.get("end_on_tick")) is not None:
             config["endOnTick"] = end_on_tick
+        if (custom_reference_line := attrs.get("custom_reference_line")) is not None:
+            config["customReferenceLineValue"] = custom_reference_line
         return config
 
     def get_annotations_config(self, value: "StructValue") -> AnnotationsReturn:
