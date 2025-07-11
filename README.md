@@ -32,7 +32,7 @@ The Wagtail CMS for managing and publishing content for the Office for National 
         - [Front-end](#front-end)
         - [pre-commit](#pre-commit)
         - [Megalinter](#megalinter-lintformat-non-python-files)
-        - [MailHog (Email Testing)](#mailhog-email-testing)
+    - [MailHog (Email Testing)](#mailhog-email-testing)
     - [Django Migrations](#django-migrations)
 - [Contributing](#contributing)
 - [License](#license)
@@ -438,7 +438,7 @@ To start the linter and automatically rectify fixable issues, run:
 make megalint
 ```
 
-#### MailHog (Email Testing)
+### MailHog (Email Testing)
 
 MailHog is a lightweight, local SMTP server and web interface that captures all outgoing email from our application without actually delivering it.
 Rather than sending mail to real recipients, messages are stored in MailHog’s inbox for easy inspection.
