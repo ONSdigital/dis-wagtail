@@ -8,7 +8,7 @@ from cms.datavis.tests.test_chart_blocks_base import BaseVisualisationBlockTestC
 
 class IframeBlockTestCase(BaseVisualisationBlockTestCase):
     block_type = IframeBlock
-    valid_domains = settings.IFRAME_VISUALISATION_EMBED_PREFIX_LIST
+    valid_domains = settings.IFRAME_VISUALISATION_PREFIX_LIST
 
     def setUp(self):
         super().setUp()

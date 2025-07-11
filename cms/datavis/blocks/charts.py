@@ -662,7 +662,7 @@ class IframeBlock(BaseVisualisationBlock):
         required=True,
         help_text=f"""
         Your URL must start with
-        {" or ".join(f"<code>{prefix}</code>" for prefix in settings.IFRAME_VISUALISATION_EMBED_PREFIX_LIST)}.
+        {" or ".join(f"<code>{prefix}</code>" for prefix in settings.IFRAME_VISUALISATION_PREFIX_LIST)}.
         The '*' is a wildcard for any domain or subdomain that matches.
         """,
     )
@@ -688,13 +688,12 @@ class IframeBlock(BaseVisualisationBlock):
                 return domain == allowed_domain or hostname.endswith(f".{allowed_domain}")
 
             if not any(
-                matches_domain(hostname, allowed_domain)
-                for allowed_domain in settings.IFRAME_VISUALISATION_EMBED_PREFIX_LIST
+                matches_domain(hostname, allowed_domain) for allowed_domain in settings.IFRAME_VISUALISATION_PREFIX_LIST
             ):
                 errors["iframe_source_url"] = ValidationError(
                     f"""
                     The URL hostname must match one of the allowed patterns:
-                    {" or ".join(settings.IFRAME_VISUALISATION_EMBED_PREFIX_LIST)}
+                    {" or ".join(settings.IFRAME_VISUALISATION_PREFIX_LIST)}
                     """
                 )
 
