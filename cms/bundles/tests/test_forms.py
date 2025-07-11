@@ -608,6 +608,61 @@ class BundleFormSaveTestCase(TestCase):
         self.mock_client.create_bundle.assert_called_once()
         self.assertIsNone(bundle.dataset_api_id)
 
+    def test_save_existing_bundle_with_first_dataset_calls_api(self):
+        """Test that editing an existing bundle to add its first dataset calls the API."""
+        self.mock_client.create_bundle.return_value = {"id": "api-bundle-456"}
+
+        # Create an existing bundle without datasets
+        existing_bundle = BundleFactory(name="Existing Bundle", dataset_api_id=None)
+        dataset = DatasetFactory(id=123, title="Test Dataset")
+
+        raw_data = {
+            "name": "Updated Bundle",
+            "status": BundleStatus.DRAFT,
+            "bundled_pages": inline_formset([]),
+            "bundled_datasets": inline_formset([{"dataset": dataset.id}]),
+            "teams": inline_formset([]),
+        }
+
+        form = self.form_class(instance=existing_bundle, data=nested_form_data(raw_data), for_user=self.approver)
+
+        self.assertTrue(form.is_valid())
+        bundle = form.save()
+
+        # API should be called when adding first dataset to existing bundle
+        self.mock_client.create_bundle.assert_called_once()
+        call_args = self.mock_client.create_bundle.call_args[0][0]
+        self.assertEqual(call_args["title"], "Updated Bundle")
+        self.assertEqual(len(call_args["content"]), 1)
+        self.assertEqual(call_args["content"][0]["type"], "dataset")
+        self.assertEqual(call_args["content"][0]["id"], dataset.namespace)
+
+        # Bundle should have the API ID set
+        self.assertEqual(bundle.dataset_api_id, "api-bundle-456")
+
+    def test_save_existing_bundle_with_existing_api_id_does_not_call_api(self):
+        """Test that editing an existing bundle that already has an API ID doesn't call create_bundle."""
+        # Create an existing bundle with API ID
+        existing_bundle = BundleFactory(name="Existing Bundle", dataset_api_id="existing-api-id")
+        dataset = DatasetFactory(id=123, title="Test Dataset")
+
+        raw_data = {
+            "name": "Updated Bundle",
+            "status": BundleStatus.DRAFT,
+            "bundled_pages": inline_formset([]),
+            "bundled_datasets": inline_formset([{"dataset": dataset.id}]),
+            "teams": inline_formset([]),
+        }
+
+        form = self.form_class(instance=existing_bundle, data=nested_form_data(raw_data), for_user=self.approver)
+
+        self.assertTrue(form.is_valid())
+        bundle = form.save()
+
+        # API should NOT be called for bundles that already have an API ID
+        self.mock_client.create_bundle.assert_not_called()
+        self.assertEqual(bundle.dataset_api_id, "existing-api-id")
+
 
 @override_settings(ONS_BUNDLE_API_ENABLED=False)
 class BundleFormSaveDisabledTestCase(TestCase):
