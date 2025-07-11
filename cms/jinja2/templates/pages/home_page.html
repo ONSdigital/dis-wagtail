@@ -1,7 +1,7 @@
 {% extends "templates/base_page.html" %}
 {% from "components/hero/_macro.njk" import onsHero %}
-
 {% from "components/panel/_macro.njk" import onsPanel %}
+{% from "components/button/_macro.njk" import onsButton %}
 
 {% block header_area %}
     {# fmt:off #}
@@ -20,7 +20,34 @@
 
         <div class="ons-u-fs-r">
             {% if not IS_EXTERNAL_ENV %}
-                <p>To access the administrative interface, please go to <a href="{{ url('wagtailadmin_home') }}"><code>/admin</code></a></p>
+                {% set adminUrl = url("wagtailadmin_home") %}
+
+                <p>To access the administrative interface, please use the following option(s):</p>
+                {% if WAGTAIL_CORE_ADMIN_LOGIN_ENABLED %}
+                    {% set loginUrl = adminUrl ~ 'login' %}
+                    {# fmt:off #}
+                    {{
+                        onsButton({
+                            "text": "Wagtail Core Default Login",
+                            "url": loginUrl,
+                            "variants": ["small", "secondary"],
+                            "noIcon": true,
+                        })
+                    }}
+                    {# fmt:on #}
+                {% endif %}
+                {% if AWS_COGNITO_LOGIN_ENABLED %}
+                    {# fmt:off #}
+                    {{
+                        onsButton({
+                            "text": "Florence Login",
+                            "url": adminUrl,
+                            "variants": "small",
+                            "noIcon": true
+                        })
+                    }}
+                    {# fmt:on #}
+                {% endif %}
             {% endif %}
         </div>
     {% endcall %}
