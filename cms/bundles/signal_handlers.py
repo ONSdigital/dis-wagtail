@@ -1,11 +1,11 @@
 import logging
 from typing import Any
 
-from django.conf import settings
 from django.db.models.signals import post_delete, post_save
 from django.dispatch import receiver
 
 from cms.bundles.api import BundleAPIClient, BundleAPIClientError
+from cms.bundles.decorators import ons_bundle_api_enabled
 from cms.bundles.enums import BundleStatus
 from cms.bundles.models import Bundle, BundleDataset, BundleTeam
 from cms.bundles.notifications.email import send_bundle_in_review_email, send_bundle_published_email
@@ -64,11 +64,9 @@ def _build_bundle_data_for_api(bundle: Bundle) -> dict[str, Any]:
 
 
 @receiver(post_save, sender=Bundle)
+@ons_bundle_api_enabled
 def handle_bundle_dataset_api_sync(instance: Bundle, created: bool, **kwargs: Any) -> None:
     """Handle synchronization with the Dataset API for bundle creation and status updates."""
-    if not getattr(settings, "ONS_BUNDLE_API_ENABLED", False):
-        return
-
     client = BundleAPIClient()
     update_fields = kwargs.get("update_fields")
 
@@ -87,7 +85,7 @@ def handle_bundle_dataset_api_sync(instance: Bundle, created: bool, **kwargs: An
                 logger.warning("Bundle %s created in API but no ID returned", instance.pk)
 
         elif instance.dataset_api_id:
-            # For updates, only sync if we're not in the middle of setting the dataset_api_id
+            # For updates, only sync if we're not in the middle of setting the dataset_api_id (see above)
             if update_fields is None or "dataset_api_id" not in update_fields:
                 # This is likely a status update or other field change
                 client.update_bundle_status(instance.dataset_api_id, instance.status)
@@ -99,30 +97,10 @@ def handle_bundle_dataset_api_sync(instance: Bundle, created: bool, **kwargs: An
         # The bundle will still be saved locally
 
 
-@receiver(post_save, sender=BundleDataset)
-def handle_bundle_dataset_added(instance: BundleDataset, **kwargs: Any) -> None:
+@receiver([post_save, post_delete], sender=BundleDataset)
+@ons_bundle_api_enabled
+def handle_bundle_dataset_added_or_removed(instance: BundleDataset, **kwargs: Any) -> None:
     """Handle when a dataset is added to a bundle."""
-    if not getattr(settings, "ONS_BUNDLE_API_ENABLED", False):
-        return
-
-    if instance.parent.dataset_api_id:
-        client = BundleAPIClient()
-
-        try:
-            bundle_data = _build_bundle_data_for_api(instance.parent)
-            client.update_bundle(instance.parent.dataset_api_id, bundle_data)
-            logger.info("Updated bundle %s datasets in Dataset API", instance.parent.pk)
-
-        except BundleAPIClientError as e:
-            logger.error("Failed to update bundle %s datasets in Dataset API: %s", instance.parent.pk, e)
-
-
-@receiver(post_delete, sender=BundleDataset)
-def handle_bundle_dataset_removed(instance: BundleDataset, **kwargs: Any) -> None:
-    """Handle when a dataset is removed from a bundle."""
-    if not getattr(settings, "ONS_BUNDLE_API_ENABLED", False):
-        return
-
     if instance.parent.dataset_api_id:
         client = BundleAPIClient()
 
@@ -136,11 +114,9 @@ def handle_bundle_dataset_removed(instance: BundleDataset, **kwargs: Any) -> Non
 
 
 @receiver(post_delete, sender=Bundle)
+@ons_bundle_api_enabled
 def handle_bundle_deletion(instance: Bundle, **kwargs: Any) -> None:
     """Handle when a bundle is deleted."""
-    if not getattr(settings, "ONS_BUNDLE_API_ENABLED", False):
-        return
-
     if instance.dataset_api_id:
         client = BundleAPIClient()
 

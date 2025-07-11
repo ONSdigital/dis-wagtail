@@ -2,13 +2,13 @@ import logging
 from typing import TYPE_CHECKING, Any
 
 from django import forms
-from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.template.defaultfilters import pluralize
 from django.utils import timezone
 from wagtail.admin.forms import WagtailAdminModelForm
 
 from cms.bundles.api import BundleAPIClient, BundleAPIClientError
+from cms.bundles.decorators import ons_bundle_api_enabled
 from cms.bundles.enums import ACTIVE_BUNDLE_STATUS_CHOICES, EDITABLE_BUNDLE_STATUSES, BundleStatus
 from cms.workflows.models import ReadyToPublishGroupTask
 
@@ -65,12 +65,10 @@ class BundleAdminForm(WagtailAdminModelForm):
 
         return has_datasets
 
+    @ons_bundle_api_enabled
     def _validate_bundled_datasets_status(self) -> None:
         """Validate that all bundled datasets are approved when bundle is set to approved status."""
         if not self._has_datasets():
-            return
-
-        if not getattr(settings, "ONS_BUNDLE_API_ENABLED", False):
             return
 
         client = BundleAPIClient()
@@ -96,6 +94,7 @@ class BundleAdminForm(WagtailAdminModelForm):
                     datasets_not_approved.append(f"{dataset.title} (status check failed)")
 
         if datasets_not_approved:
+            # Return the original status
             self.cleaned_data["status"] = self.instance.status
             dataset_list = ", ".join(datasets_not_approved)
             raise ValidationError(
