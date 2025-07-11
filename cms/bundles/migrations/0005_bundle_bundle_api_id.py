@@ -11,7 +11,7 @@ class Migration(migrations.Migration):
     operations = [
         migrations.AddField(
             model_name="bundle",
-            name="dataset_api_id",
+            name="bundle_api_id",
             field=models.CharField(blank=True, editable=False, max_length=255, null=True),
         ),
     ]

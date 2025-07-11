@@ -510,7 +510,7 @@ class BundleFormSaveTestCase(TestCase):
 
         # API should not be called for bundles without datasets
         self.mock_client.create_bundle.assert_not_called()
-        self.assertIsNone(bundle.dataset_api_id)
+        self.assertIsNone(bundle.bundle_api_id)
 
     def test_save_new_bundle_with_datasets_calls_api(self):
         """Test that saving a new bundle with datasets calls the API."""
@@ -539,7 +539,7 @@ class BundleFormSaveTestCase(TestCase):
         self.assertEqual(call_args["content"][0]["id"], dataset.namespace)
 
         # Bundle should have the API ID set
-        self.assertEqual(bundle.dataset_api_id, "api-bundle-123")
+        self.assertEqual(bundle.bundle_api_id, "api-bundle-123")
 
     def test_save_existing_bundle_uses_standard_behavior(self):
         """Test that saving an existing bundle uses standard Django form behavior."""
@@ -584,7 +584,7 @@ class BundleFormSaveTestCase(TestCase):
         # The bundle should still be saved
         self.assertTrue(bundle.pk)
         self.assertEqual(bundle.name, "Test Bundle")
-        self.assertIsNone(bundle.dataset_api_id)
+        self.assertIsNone(bundle.bundle_api_id)
 
     def test_save_new_bundle_with_datasets_no_api_id_returned(self):
         """Test handling when API doesn't return an ID."""
@@ -606,14 +606,14 @@ class BundleFormSaveTestCase(TestCase):
 
         # API should be called but bundle should not have API ID
         self.mock_client.create_bundle.assert_called_once()
-        self.assertIsNone(bundle.dataset_api_id)
+        self.assertIsNone(bundle.bundle_api_id)
 
     def test_save_existing_bundle_with_first_dataset_calls_api(self):
         """Test that editing an existing bundle to add its first dataset calls the API."""
         self.mock_client.create_bundle.return_value = {"id": "api-bundle-456"}
 
         # Create an existing bundle without datasets
-        existing_bundle = BundleFactory(name="Existing Bundle", dataset_api_id=None)
+        existing_bundle = BundleFactory(name="Existing Bundle", bundle_api_id=None)
         dataset = DatasetFactory(id=123, title="Test Dataset")
 
         raw_data = {
@@ -638,12 +638,12 @@ class BundleFormSaveTestCase(TestCase):
         self.assertEqual(call_args["content"][0]["id"], dataset.namespace)
 
         # Bundle should have the API ID set
-        self.assertEqual(bundle.dataset_api_id, "api-bundle-456")
+        self.assertEqual(bundle.bundle_api_id, "api-bundle-456")
 
     def test_save_existing_bundle_with_existing_api_id_does_not_call_api(self):
         """Test that editing an existing bundle that already has an API ID doesn't call create_bundle."""
         # Create an existing bundle with API ID
-        existing_bundle = BundleFactory(name="Existing Bundle", dataset_api_id="existing-api-id")
+        existing_bundle = BundleFactory(name="Existing Bundle", bundle_api_id="existing-api-id")
         dataset = DatasetFactory(id=123, title="Test Dataset")
 
         raw_data = {
@@ -661,7 +661,7 @@ class BundleFormSaveTestCase(TestCase):
 
         # API should NOT be called for bundles that already have an API ID
         self.mock_client.create_bundle.assert_not_called()
-        self.assertEqual(bundle.dataset_api_id, "existing-api-id")
+        self.assertEqual(bundle.bundle_api_id, "existing-api-id")
 
 
 @override_settings(ONS_BUNDLE_API_ENABLED=False)
@@ -699,4 +699,4 @@ class BundleFormSaveDisabledTestCase(TestCase):
 
         # API should not be called when disabled
         self.mock_client.create_bundle.assert_not_called()
-        self.assertIsNone(bundle.dataset_api_id)
+        self.assertIsNone(bundle.bundle_api_id)

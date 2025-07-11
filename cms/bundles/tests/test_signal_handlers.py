@@ -177,7 +177,7 @@ class TestBundleAPISignalHandlers(TestCase):
         self.mock_client.create_bundle.assert_not_called()
 
         bundle.refresh_from_db()
-        self.assertIsNone(bundle.dataset_api_id)
+        self.assertIsNone(bundle.bundle_api_id)
 
     def test_bundle_creation_with_pages_and_datasets_does_not_call_api(self):
         """Test that creating a bundle with pages and datasets does not call the API on creation."""
@@ -192,13 +192,13 @@ class TestBundleAPISignalHandlers(TestCase):
         # Bundle creation should not call the API
         self.mock_client.create_bundle.assert_not_called()
 
-        # But adding datasets should trigger update_bundle if the bundle has dataset_api_id
-        # Since this bundle doesn't have dataset_api_id, update_bundle should not be called
+        # But adding datasets should trigger update_bundle if the bundle has bundle_api_id
+        # Since this bundle doesn't have bundle_api_id, update_bundle should not be called
         self.mock_client.update_bundle.assert_not_called()
 
     def test_bundle_status_update_calls_api(self):
         """Test that updating bundle status calls the Dataset API."""
-        bundle = BundleFactory(dataset_api_id="api-bundle-123")
+        bundle = BundleFactory(bundle_api_id="api-bundle-123")
 
         # Clear any calls from bundle creation
         self.mock_client.reset_mock()
@@ -210,8 +210,8 @@ class TestBundleAPISignalHandlers(TestCase):
 
     def test_bundle_deletion_calls_api(self):
         """Test that deleting a bundle calls the Dataset API."""
-        bundle = BundleFactory(dataset_api_id="api-bundle-123")
-        bundle_id = bundle.dataset_api_id
+        bundle = BundleFactory(bundle_api_id="api-bundle-123")
+        bundle_id = bundle.bundle_api_id
 
         # Clear any calls from bundle creation
         self.mock_client.reset_mock()
@@ -221,8 +221,8 @@ class TestBundleAPISignalHandlers(TestCase):
         self.mock_client.delete_bundle.assert_called_once_with(bundle_id)
 
     def test_bundle_deletion_without_api_id_does_not_call_api(self):
-        """Test that deleting a bundle without dataset_api_id doesn't call the API."""
-        bundle = BundleFactory(dataset_api_id=None)
+        """Test that deleting a bundle without bundle_api_id doesn't call the API."""
+        bundle = BundleFactory(bundle_api_id=None)
 
         # Clear any calls from bundle creation
         self.mock_client.reset_mock()
@@ -233,7 +233,7 @@ class TestBundleAPISignalHandlers(TestCase):
 
     def test_adding_dataset_to_bundle_calls_api(self):
         """Test that adding a dataset to a bundle calls the Dataset API."""
-        bundle = BundleFactory(dataset_api_id="api-bundle-123")
+        bundle = BundleFactory(bundle_api_id="api-bundle-123")
         dataset = DatasetFactory()
 
         # Clear any calls from bundle creation
@@ -248,7 +248,7 @@ class TestBundleAPISignalHandlers(TestCase):
 
     def test_removing_dataset_from_bundle_calls_api(self):
         """Test that removing a dataset from a bundle calls the Dataset API."""
-        bundle = BundleFactory(dataset_api_id="api-bundle-123")
+        bundle = BundleFactory(bundle_api_id="api-bundle-123")
         dataset = DatasetFactory()
         bundle_dataset = BundleDataset.objects.create(parent=bundle, dataset=dataset)
 
@@ -271,14 +271,14 @@ class TestBundleAPISignalHandlers(TestCase):
         # The bundle should still be saved
         self.assertTrue(bundle.pk)
         self.assertEqual(bundle.name, "Test Bundle")
-        self.assertIsNone(bundle.dataset_api_id)
+        self.assertIsNone(bundle.bundle_api_id)
 
         # API should not be called
         self.mock_client.create_bundle.assert_not_called()
 
     def test_api_error_during_status_update_does_not_break_save(self):
         """Test that API errors during status update don't prevent saving."""
-        bundle = BundleFactory(dataset_api_id="api-bundle-123")
+        bundle = BundleFactory(bundle_api_id="api-bundle-123")
 
         # Clear any calls from bundle creation
         self.mock_client.reset_mock()
@@ -294,7 +294,7 @@ class TestBundleAPISignalHandlers(TestCase):
 
     def test_api_error_during_deletion_does_not_break_deletion(self):
         """Test that API errors during deletion don't prevent deletion."""
-        bundle = BundleFactory(dataset_api_id="api-bundle-123")
+        bundle = BundleFactory(bundle_api_id="api-bundle-123")
         bundle_pk = bundle.pk
 
         # Clear any calls from bundle creation
@@ -327,7 +327,7 @@ class TestBundleAPISignalHandlersDisabled(TestCase):
 
     def test_bundle_status_update_does_not_call_api_when_disabled(self):
         """Test that updating bundle status does not call the API when disabled."""
-        bundle = BundleFactory(dataset_api_id="api-bundle-123")
+        bundle = BundleFactory(bundle_api_id="api-bundle-123")
         self.mock_client.reset_mock()
 
         bundle.status = BundleStatus.APPROVED
@@ -337,7 +337,7 @@ class TestBundleAPISignalHandlersDisabled(TestCase):
 
     def test_bundle_deletion_does_not_call_api_when_disabled(self):
         """Test that deleting a bundle does not call the API when disabled."""
-        bundle = BundleFactory(dataset_api_id="api-bundle-123")
+        bundle = BundleFactory(bundle_api_id="api-bundle-123")
         self.mock_client.reset_mock()
 
         bundle.delete()
@@ -346,7 +346,7 @@ class TestBundleAPISignalHandlersDisabled(TestCase):
 
     def test_adding_dataset_to_bundle_does_not_call_api_when_disabled(self):
         """Test that adding a dataset to a bundle does not call the API when disabled."""
-        bundle = BundleFactory(dataset_api_id="api-bundle-123")
+        bundle = BundleFactory(bundle_api_id="api-bundle-123")
         dataset = DatasetFactory()
         self.mock_client.reset_mock()
 
@@ -356,7 +356,7 @@ class TestBundleAPISignalHandlersDisabled(TestCase):
 
     def test_removing_dataset_from_bundle_does_not_call_api_when_disabled(self):
         """Test that removing a dataset from a bundle does not call the API when disabled."""
-        bundle = BundleFactory(dataset_api_id="api-bundle-123")
+        bundle = BundleFactory(bundle_api_id="api-bundle-123")
         dataset = DatasetFactory()
         bundle_dataset = BundleDataset.objects.create(parent=bundle, dataset=dataset)
         self.mock_client.reset_mock()

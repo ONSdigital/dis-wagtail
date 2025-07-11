@@ -228,7 +228,7 @@ class BundleAdminForm(WagtailAdminModelForm):
         if (
             commit
             and self._has_datasets()
-            and not bundle.dataset_api_id
+            and not bundle.bundle_api_id
             and getattr(settings, "ONS_BUNDLE_API_ENABLED", False)
         ):
             client = BundleAPIClient()
@@ -237,9 +237,9 @@ class BundleAdminForm(WagtailAdminModelForm):
                 response = client.create_bundle(bundle_data)
 
                 if "id" in response:
-                    bundle.dataset_api_id = response["id"]
-                    bundle.save(update_fields=["dataset_api_id"])
-                    logger.info("Created bundle %s in Dataset API with ID: %s", bundle.pk, bundle.dataset_api_id)
+                    bundle.bundle_api_id = response["id"]
+                    bundle.save(update_fields=["bundle_api_id"])
+                    logger.info("Created bundle %s in Dataset API with ID: %s", bundle.pk, bundle.bundle_api_id)
                 else:
                     logger.warning("Bundle %s created in API but no ID returned", bundle.pk)
 
