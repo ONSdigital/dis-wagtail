@@ -1,4 +1,3 @@
-# pylint: disable=too-many-public-methods
 from collections.abc import Iterable
 from typing import Any
 from unittest.mock import Mock, patch

@@ -1,3 +1,4 @@
+from datetime import datetime
 from typing import TYPE_CHECKING, Any
 
 from django import forms
@@ -135,6 +136,12 @@ class BundleAdminForm(WagtailAdminModelForm):
 
         if publication_date and publication_date < timezone.now():
             raise ValidationError({"publication_date": "The release date cannot be in the past."})
+
+    def clean_publication_date(self) -> datetime | None:
+        # Set seconds to 0 to make scheduling less surprising
+        if publication_date := self.cleaned_data["publication_date"]:
+            return publication_date.replace(second=0)  # type: ignore[no-any-return]
+        return None
 
     def clean(self) -> dict[str, Any] | None:
         """Validates the form.

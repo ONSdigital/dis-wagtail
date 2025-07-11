@@ -11,9 +11,16 @@ every minute, and [`publish_scheduled_without_bundles`](https://github.com/ONSdi
 
 ## `publish_bundles`
 
-Is a management command that publishes [bundles](bundles.md) that are scheduled and ready to publish.
+Is a management command that publishes [bundles](bundles.md) that are scheduled and ready to publish. Bundles are considered for publishing if their release date is in the past.
+
+### `--include-future`
+
+To reduce the impact of the process and infrastructure warm-up time, `publish_bundles` starts earlier than necessary and includes bundles which need to be published in the future. The command then waits until each bundle's release time, and then publishes it. Bundles due to be published in the past are still published immediately.
+
+For example, for a release scheduled at `07:00`, `publish_bundles` will start shortly after `06:59` (it starts on odd-numbered minutes with `--include-future=60`), notice the bundle due at `07:00`, sleep for around 60 seconds (ie until it's `07:00`), then publish the bundle.
+
+How far in the future bundles should be included is set with the `--include-future` option, which takes a number of seconds.
 
 ## `publish_scheduled_without_bundles`
 
-Is a modified version of the Wagtail core [`publish_scheduled`](https://github.com/wagtail/wagtail/blob/main/wagtail/management/commands/publish_scheduled.py)
-management command that excludes any pages that are in an active bundle.
+Is a modified version of the Wagtail core [`publish_scheduled`](https://github.com/wagtail/wagtail/blob/main/wagtail/management/commands/publish_scheduled.py) management command that excludes any pages that are in an active bundle. Pages are considered for publishing if their publish date is in the past.
