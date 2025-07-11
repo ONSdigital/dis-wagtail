@@ -455,12 +455,11 @@ Use MailHog to:
 No additional configuration is needed here – our development settings already point at MailHog’s SMTP port,
 and every `send_mail` call will appear instantly in the UI.
 
-> **Tip:** If you want to disable MailHog and simply log emails to the console, switch to Django’s console backend by updating your local.py settings file:
-
-```python
-# local.py
-EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
-```
+> **Tip:** If you want to disable MailHog and simply log emails to your console, switch to Django’s console backend:
+>
+> ```python
+> EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+> ```
 
 ### Django Migrations
 
