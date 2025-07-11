@@ -8,6 +8,11 @@ from django.conf import settings
 logger = logging.getLogger(__name__)
 
 
+class BundleAPIMessage:
+    REQUEST_ACCEPTED = "Request accepted and is being processed"
+    OPERATION_SUCCESS = "Operation completed successfully"
+
+
 class BundleAPIClientError(Exception):
     """Base exception for BundleAPIClient errors."""
 
@@ -31,6 +36,7 @@ class BundleAPIClient:
                 "Content-Type": "application/json",
                 "Accept": "application/json",
             }
+            # TODO: Add authentication headers
         )
 
     def _make_request(self, method: str, endpoint: str, data: Optional[dict[str, Any]] = None) -> dict[str, Any]:
@@ -82,12 +88,12 @@ class BundleAPIClient:
             return {
                 "status": "accepted",
                 "location": response.headers.get("Location", ""),
-                "message": "Request accepted and is being processed",
+                "message": BundleAPIMessage.REQUEST_ACCEPTED,
             }
 
         # Handle 204 responses (no content)
         if response.status_code == HTTPStatus.NO_CONTENT:
-            return {"status": "success", "message": "Operation completed successfully"}
+            return {"status": "success", "message": BundleAPIMessage.OPERATION_SUCCESS}
 
         # Try to parse JSON response
         try:
@@ -95,7 +101,7 @@ class BundleAPIClient:
             return json_data
         except ValueError:
             # Request was successful but returned non-JSON response - handle gracefully
-            return {"status": "success", "message": "Operation completed successfully"}
+            return {"status": "success", "message": BundleAPIMessage.OPERATION_SUCCESS}
 
     def _format_http_error(self, error: requests.exceptions.HTTPError, method: str, url: str) -> str:
         """Format HTTP error messages with appropriate context.
@@ -108,21 +114,14 @@ class BundleAPIClient:
         Returns:
             Formatted error message
         """
-        base_msg = f"HTTP {error.response.status_code} error for {method} {url}"
         status_code = error.response.status_code
+        base_msg = f"HTTP {status_code} error for {method} {url}"
 
-        if status_code == HTTPStatus.BAD_REQUEST:
-            return f"{base_msg}: Bad Request - Invalid data provided"
-        if status_code == HTTPStatus.UNAUTHORIZED:
-            return f"{base_msg}: Unauthorized - Invalid authentication"
-        if status_code == HTTPStatus.NOT_FOUND:
-            return f"{base_msg}: Not Found - Resource not found"
-        if status_code == HTTPStatus.CONFLICT:
-            return f"{base_msg}: Conflict - Resource already exists or conflict"
-        if status_code >= HTTPStatus.INTERNAL_SERVER_ERROR:
-            return f"{base_msg}: Server Error - Internal server error"
-
-        return base_msg
+        try:
+            return f"{base_msg}: {HTTPStatus(status_code).phrase}"
+        except ValueError:
+            # Handle non-standard or unknown status codes gracefully
+            return f"{base_msg}: Unknown Error"
 
     def create_bundle(self, bundle_data: dict[str, Any]) -> dict[str, Any]:
         """Create a new bundle via the API.
