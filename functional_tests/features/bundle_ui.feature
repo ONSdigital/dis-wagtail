@@ -1,4 +1,23 @@
 Feature: UI Bundle Happy Paths
+    """
+    User Role Bundle Life Cycle Happy Path
+                                | Create | Preview | Edit | Preview | Approve | Preview | Publish
+        Publishing Admin        |
+            not in preview team |
+            in preview team     |
+        Publishing Officer      |
+            not in preview team |
+            in preview team     |
+        Viewer                  |
+                        not in preview team |
+            in preview team     |
+
+    User Role
+        Publishing Admin, in preview team, not in preview team, bundle creator, not bundle creator
+        Publishing Officer in preview team, not in preview team bundle creator, not bundle creator
+        Viewer in preview team, not in preview team
+    """
+
 
 #---- Bundle Create UI Tests -----
     Scenario: A Publishing Admin creates a bundle
