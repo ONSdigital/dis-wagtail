@@ -67,6 +67,7 @@ class WorkflowTweaksTestCase(WagtailTestUtils, TestCase):
                 "notices": streamfield([]),
                 "action-workflow-action": "true",
                 "workflow-action-name": "approve",
+                "featured_chart": streamfield([]),
             }
         )
         response = self.client.post(self.edit_url, data, follow=True)

@@ -21,6 +21,7 @@ if TYPE_CHECKING:
     from wagtail.admin.panels import Panel
 
 
+# pylint: disable=line-too-long
 class InformationPage(BundledPageMixin, GenericTaxonomyMixin, BasePage):  # type: ignore[django-manager-missing]
     """A generic information page model."""
 
