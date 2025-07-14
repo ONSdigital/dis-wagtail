@@ -91,18 +91,18 @@ def handle_bundle_dataset_added(instance: BundleDataset, created: bool, **kwargs
         response = client.add_content_to_bundle(instance.parent.bundle_api_id, content_item)
 
         # Find the content_id from the response
-        content_id = None
-        for item in response.get("contents", []):
-            metadata = item.get("metadata", {})
-            if (
-                metadata.get("dataset_id") == instance.dataset.namespace
-                and metadata.get("edition_id") == instance.dataset.edition
-                and metadata.get("version_id") == instance.dataset.version
-            ):
-                content_id = item.get("id")
-                break
+        content_item = next(
+            (
+                item
+                for item in response.get("contents", [])
+                if item.get("metadata", {}).get("dataset_id") == instance.dataset.namespace
+                and item.get("metadata", {}).get("edition_id") == instance.dataset.edition
+                and item.get("metadata", {}).get("version_id") == instance.dataset.version
+            ),
+            None,
+        )
 
-        if content_id:
+        if content_item and (content_id := content_item.get("id")):
             instance.content_api_id = content_id
             instance.save(update_fields=["content_api_id"])
             logger.info("Added content %s to bundle %s in Dataset API", instance.dataset.namespace, instance.parent.pk)
