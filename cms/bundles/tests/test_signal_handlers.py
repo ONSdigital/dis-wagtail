@@ -236,10 +236,16 @@ class TestBundleAPISignalHandlers(TestCase):
         bundle = BundleFactory(bundle_api_id="api-bundle-123")
         dataset = DatasetFactory()
 
-        # Mock the API response to return a full Bundle object with contents
+        # Mock the API response to return a full Bundle object with contents following swagger spec
         mock_response = {
             "id": "api-bundle-123",
             "title": "Test Bundle",
+            "bundle_type": "MANUAL",
+            "preview_teams": [{"id": "team-uuid-1"}],
+            "state": "DRAFT",
+            "created_at": "2025-07-14T10:30:00.000Z",
+            "created_by": {"email": "test@example.com"},
+            "updated_at": "2025-07-14T10:30:00.000Z",
             "contents": [
                 {
                     "id": "content-123",
@@ -248,6 +254,18 @@ class TestBundleAPISignalHandlers(TestCase):
                         "dataset_id": dataset.namespace,
                         "edition_id": dataset.edition,
                         "version_id": dataset.version,
+                        "title": "Test Dataset Title",
+                    },
+                    "state": "APPROVED",
+                    "links": {
+                        "edit": (
+                            f"https://publishing.ons.gov.uk/data-admin/edit/datasets/{dataset.namespace}/"
+                            f"editions/time-series/versions/{dataset.version}"
+                        ),
+                        "preview": (
+                            f"https://publishing.ons.gov.uk/data-admin/preview/datasets/{dataset.namespace}/"
+                            f"editions/time-series/versions/{dataset.version}"
+                        ),
                     },
                 }
             ],
@@ -340,10 +358,16 @@ class TestBundleAPISignalHandlers(TestCase):
         bundle = BundleFactory(bundle_api_id="api-bundle-123")
         dataset = DatasetFactory()
 
-        # Mock the API response to return a Bundle without the expected content
+        # Mock the API response to return a Bundle without the expected content following swagger spec
         mock_response = {
             "id": "api-bundle-123",
             "title": "Test Bundle",
+            "bundle_type": "MANUAL",
+            "preview_teams": [{"id": "team-uuid-1"}],
+            "state": "DRAFT",
+            "created_at": "2025-07-14T10:30:00.000Z",
+            "created_by": {"email": "test@example.com"},
+            "updated_at": "2025-07-14T10:30:00.000Z",
             "contents": [],  # Empty contents array
         }
         self.mock_client.add_content_to_bundle.return_value = mock_response
