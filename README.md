@@ -57,8 +57,9 @@ Ensure you have the following installed:
    using the Docker setup.
 5. **[Node](https://nodejs.org/en)** and **[`nvm` (Node Version Manager)](https://github.com/nvm-sh/nvm)** for front-end
    tooling.
-6. **[JQ](https://jqlang.github.io/jq/)** for the step in the build that installs the design system templates
-7. **Operation System**: Ubuntu/MacOS
+6. **[JQ](https://jqlang.github.io/jq/)** for the step in the build that installs the design system templates.
+7. **[MacPorts](https://www.macports.org/install.php)**: We need MacPorts so we can install the required packages to render equations using LaTeX strings via Matplotlib locally (outside of a docker container).
+8. **Operation System**: Ubuntu/ MacOS.
 
 ### Setup
 
@@ -461,6 +462,16 @@ and every `send_mail` call will appear instantly in the UI.
 > ```python
 > EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 > ```
+
+### Installing The Required LaTeX Packages For Local Development
+
+In order to generate the equations in Wagtail using LaTeX strings via Matplotlib (Non-JS Equations), we will need to use `MacPorts` to install the following packages `texlive-latex-extra`.
+
+As a prerequisite you will have to have `MacPorts` installed. See [Pre-requisites](#pre-requisites) step 7 for MacPorts installation.
+
+```bash
+sudo port install texlive-latex-extra
+```
 
 ### Django Migrations
 

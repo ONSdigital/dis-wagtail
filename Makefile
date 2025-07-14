@@ -39,6 +39,18 @@ format-html:  ## Format the HTML code
 format-frontend:  ## Format front-end files (CSS, JS, YAML, MD)
 	npm run format
 
+.PHONY: nvm-use
+nvm-use: ## Use the Node Version Manager to set the Node version
+	nvm use
+	
+.PHONY: npm-install
+npm-install: nvm-use ## Install the Node.js dependencies
+	npm install
+
+.PHONY: npm-build
+npm-build: nvm-use ## Build the front-end assets
+	npm run build
+
 .PHONY: lint
 lint: lint-py lint-html lint-frontend lint-migrations ## Run all linters (python, html, front-end, migrations)
 
@@ -166,7 +178,7 @@ runserver: ## Run the Django application locally
 	poetry run python ./manage.py runserver 0:8000
 
 .PHONY: dev-init
-dev-init: load-design-system-templates collectstatic compilemessages makemigrations migrate load-topics createsuperuser  ## Run the pre-run setup scripts
+dev-init: load-design-system-templates collectstatic compilemessages makemigrations migrate load-topics createsuperuser npm-install npm-build ## Run the pre-run setup scripts
 
 .PHONY: functional-tests-up
 functional-tests-up:  ## Start the functional tests docker compose dependencies
