@@ -37,10 +37,22 @@ class IframeBlockTestCase(BaseVisualisationBlockTestCase):
     def test_invalid_url(self):
         """Validate that invalid URLs are rejected."""
         invalid_data = self.raw_data.copy()
-        invalid_data["iframe_source_url"] = "https://www.random.url.com"
-        value = self.get_value(invalid_data)
-        with self.assertRaises(ValidationError, msg="Expected ValidationError for invalid URL"):
-            self.block.clean(value)
+
+        cases = {
+            "https://www.random.url.com": "The URL hostname must match one of the allowed patterns: "
+            "ons.gov.uk or onsdigital.uk",
+            "http://ons.gov.uk": "Please enter a valid URL. "
+            "It should start with 'https://' and contain a valid domain name.",
+        }
+
+        for bad_url, message in cases.items():
+            with self.subTest(bad_url=bad_url):
+                invalid_data["iframe_source_url"] = bad_url
+                value = self.get_value(invalid_data)
+                with self.assertRaises(ValidationError, msg="Expected ValidationError for invalid URL") as info:
+                    self.block.clean(value)
+
+                self.assertEqual(info.exception.block_errors["iframe_source_url"].message, message)
 
     def test_valid_urls(self):
         """Test valid URL patterns for each domain in the valid_domains list."""

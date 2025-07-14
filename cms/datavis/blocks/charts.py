@@ -727,12 +727,9 @@ class IframeBlock(BaseVisualisationBlock):
         parsed_url = urlparse(value["iframe_source_url"])
         hostname = parsed_url.netloc
 
-        if not hostname:
+        if not (value["iframe_source_url"].startswith("https://") and hostname):
             errors["iframe_source_url"] = ValidationError(
-                """
-                Please enter a valid URL. The URL should start with
-                'https://' or 'http://' and contain a valid domain name.
-                """
+                "Please enter a valid URL. It should start with 'https://' and contain a valid domain name."
             )
         else:
 
@@ -743,11 +740,9 @@ class IframeBlock(BaseVisualisationBlock):
                 matches_domain(hostname, allowed_domain)
                 for allowed_domain in settings.IFRAME_VISUALISATION_ALLOWED_DOMAINS
             ):
+                patterns_str = " or ".join(settings.IFRAME_VISUALISATION_ALLOWED_DOMAINS)
                 errors["iframe_source_url"] = ValidationError(
-                    f"""
-                    The URL hostname must match one of the allowed patterns:
-                    {" or ".join(settings.IFRAME_VISUALISATION_ALLOWED_DOMAINS)}
-                    """
+                    f"The URL hostname must match one of the allowed patterns: {patterns_str}"
                 )
 
         if errors:
