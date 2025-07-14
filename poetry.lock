@@ -3219,6 +3219,20 @@ linting = ["pre-commit (>=3.6.0,<4)"]
 testing = ["dj-database-url (==2.1.0)", "pytest (==8.1.1)", "pytest-cov (==5.0.0)", "pytest-django (==4.8.0)"]
 
 [[package]]
+name = "wagtailtables"
+version = "0.2.2"
+description = "jSpreadsheet table blocks for Wagtail"
+optional = false
+python-versions = "*"
+files = [
+    {file = "wagtailtables-0.2.2-py3-none-any.whl", hash = "sha256:52da006affb2e8b8f1357de9f04808110db12fd2f563b2c7c611cc68bbb54492"},
+    {file = "wagtailtables-0.2.2.tar.gz", hash = "sha256:45bfcfda12e56e479fae05e0438efb5026928793d588c9d08101d5af27021544"},
+]
+
+[package.dependencies]
+wagtail = ">=3.0"
+
+[[package]]
 name = "wcwidth"
 version = "0.2.13"
 description = "Measures the displayed width of unicode strings in a terminal"
@@ -3297,4 +3311,4 @@ files = [
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.13"
-content-hash = "1d876e098e8a9973b37a3dd6d09228d9d8bd44da0987280a23b0c7c8b173ce82"
+content-hash = "ca3b43e4d0ae8a4ddf0806f50a3761135f91513c5025f6c81d02867a0345f957"

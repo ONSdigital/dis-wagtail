@@ -14,6 +14,7 @@ from django.utils.translation import gettext_lazy as _
 from django_jinja.builtins import DEFAULT_EXTENSIONS
 
 from cms.core.elasticache import ElastiCacheIAMCredentialProvider
+from cms.core.jinja2 import custom_json_dumps
 
 env = os.environ.copy()
 
@@ -64,6 +65,7 @@ INSTALLED_APPS = [
     "cms.bundles",
     "cms.core",
     "cms.datasets",
+    "cms.datavis",
     "cms.documents",
     "cms.home",
     "cms.images",
@@ -104,6 +106,7 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     "django_jinja",
     "wagtailmath",
+    "wagtailtables",
     "wagtailfontawesomesvg",
     "wagtail_tinytableblock",
     "rest_framework",
@@ -186,6 +189,10 @@ TEMPLATES = [
                 "cms.navigation.jinja2tags.NavigationExtension",
                 "wagtailschemaorg.jinja2tags.WagtailSchemaOrgExtension",
             ],
+            "policies": {
+                # https://jinja.palletsprojects.com/en/stable/api/#policies
+                "json.dumps_function": custom_json_dumps,
+            },
         },
     },
     {

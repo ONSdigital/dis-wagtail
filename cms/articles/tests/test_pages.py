@@ -62,7 +62,7 @@ class ArticleSeriesPageTests(WagtailPageTestCase):
         self.assertContains(response, second_article.title)
 
 
-class StatisticalArticlePageTests(WagtailPageTestCase):  # pylint: disable=too-many-public-methods
+class StatisticalArticlePageTests(WagtailPageTestCase):
     @classmethod
     def setUpTestData(cls):
         cls.series = ArticleSeriesPageFactory()
