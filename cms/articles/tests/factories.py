@@ -47,6 +47,7 @@ class StatisticalArticlePageFactory(wagtail_factories.PageFactory):
     release_date = factory.LazyFunction(lambda: timezone.now().date())
     next_release_date = factory.LazyAttribute(lambda o: o.release_date + timedelta(days=1))
     contact_details = factory.SubFactory(ContactDetailsFactory)
+    listing_image = factory.SubFactory(wagtail_factories.ImageFactory)
 
     headline_figures = wagtail_factories.StreamFieldFactory({"figures": factory.SubFactory(HeadlineFigureBlockFactory)})
     content = wagtail_factories.StreamFieldFactory(
