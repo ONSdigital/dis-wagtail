@@ -22,11 +22,14 @@ from cms.bundles.mixins import BundledPageMixin
 from cms.core.blocks.headline_figures import HeadlineFiguresItemBlock
 from cms.core.blocks.panels import CorrectionBlock, NoticeBlock
 from cms.core.blocks.stream_blocks import SectionStoryBlock
+from cms.core.custom_date_format import ons_date_format
 from cms.core.fields import StreamField
 from cms.core.models import BasePage
 from cms.core.widgets import date_widget
 from cms.datasets.blocks import DatasetStoryBlock
 from cms.datasets.utils import format_datasets_as_document_list
+from cms.datavis.blocks.base import BaseVisualisationBlock
+from cms.datavis.blocks.featured_charts import FeaturedChartBlock
 from cms.taxonomy.mixins import GenericTaxonomyMixin
 
 if TYPE_CHECKING:
@@ -101,7 +104,7 @@ class ArticleSeriesPage(RoutablePageMixin, GenericTaxonomyMixin, BasePage):  # t
         return response
 
 
-class StatisticalArticlePage(BundledPageMixin, RoutablePageMixin, BasePage):  # type: ignore[django-manager-missing]
+class StatisticalArticlePage(BundledPageMixin, RoutablePageMixin, BasePage):  # type: ignore[django-manager-missing] # pylint: disable=too-many-public-methods
     """The statistical article page model.
 
     Previously known as statistical bulletin, statistical analysis article, analysis page.
@@ -166,6 +169,8 @@ class StatisticalArticlePage(BundledPageMixin, RoutablePageMixin, BasePage):  # 
 
     dataset_sorting = models.CharField(choices=SortingChoices.choices, default=SortingChoices.AS_SHOWN, max_length=32)
     datasets = StreamField(DatasetStoryBlock(), blank=True, default=list)
+
+    featured_chart = StreamField(FeaturedChartBlock(), blank=True, max_num=1)
 
     content_panels: ClassVar[list["Panel"]] = [
         *BundledPageMixin.panels,
@@ -233,6 +238,15 @@ class StatisticalArticlePage(BundledPageMixin, RoutablePageMixin, BasePage):  # 
     additional_panel_tabs: ClassVar[list[tuple[list["Panel"], str]]] = [
         (related_data_panels, "Related data"),
         (corrections_and_notices_panels, "Corrections and notices"),
+    ]
+
+    promote_panels: ClassVar[list["Panel"]] = [
+        *BasePage.promote_panels,
+        FieldPanel(
+            "featured_chart",
+            help_text="Configure a chart for when this article is featured on a topic page.",
+            icon="chart-line",
+        ),
     ]
 
     search_fields: ClassVar[list[index.BaseField]] = [
@@ -433,13 +447,59 @@ class StatisticalArticlePage(BundledPageMixin, RoutablePageMixin, BasePage):  # 
         )
         return response
 
+    def as_featured_article_macro_data(self, request: "HttpRequest") -> dict[str, Any]:
+        """Returns data formatted for the onsFeaturedArticle Nunjucks/Jinja2 macro."""
+        data = {
+            "title": {
+                "url": self.get_url(request),
+                "text": self.listing_title or self.display_title,
+            },
+            "metadata": {
+                "text": self.label,
+            },
+            "description": self.main_points_summary,
+        }
+
+        if self.release_date:
+            data["metadata"]["date"] = {
+                "prefix": _("Release date"),
+                "showPrefix": True,
+                "iso": self.release_date.isoformat(),
+                "short": ons_date_format(self.release_date, "DATE_FORMAT"),
+            }
+
+        if self.featured_chart:
+            chart_block = self.featured_chart[0]  # pylint: disable=unsubscriptable-object
+            block_instance = chart_block.block
+            block_value = chart_block.value
+
+            if isinstance(block_instance, BaseVisualisationBlock):
+                data["chart"] = block_instance.get_component_config(block_value)
+
+        elif self.listing_image:
+            data["image"] = {
+                "src": self.listing_image.get_rendition("width-1252").url,
+            }
+
+        return data
+
     @property
     def preview_modes(self) -> list[tuple[str, str]]:
-        return [("default", "Article Page"), ("related_data", "Related Data Page")]
+        return [
+            ("default", "Article Page"),
+            ("related_data", "Related Data Page"),
+            ("featured_article", "Featured Article"),
+        ]
 
     def serve_preview(self, request: "HttpRequest", mode_name: str) -> "TemplateResponse":
-        if mode_name == "related_data":
-            return cast("TemplateResponse", self.related_data(request))
+        match mode_name:
+            case "related_data":
+                return cast("TemplateResponse", self.related_data(request))
+            case "featured_article":
+                from cms.topics.models import TopicPage  # pylint: disable=import-outside-toplevel
+
+                topic_page = TopicPage.objects.ancestor_of(self).first()
+                return cast("TemplateResponse", topic_page.serve(request, featured_item=self))
         return cast("TemplateResponse", super().serve_preview(request, mode_name))
 
     def get_serialized_corrections_and_notices(
