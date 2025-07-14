@@ -1,6 +1,6 @@
 import logging
 from http import HTTPStatus
-from typing import Any, Optional
+from typing import Any, Literal, Optional
 
 import requests
 from django.conf import settings
@@ -314,14 +314,14 @@ def extract_content_id_from_bundle_response(response: dict[str, Any], dataset: A
     return None
 
 
-def get_data_admin_action_url(action: str, dataset_id: str, version_id: str) -> str:
+def get_data_admin_action_url(action: Literal["edit", "preview"], dataset_id: str, version_id: str) -> str:
     """Generate a URL for dataset actions in the ONS Data Admin interface.
 
     This function constructs URLs for dataset operations in the ONS Data Admin
     system, which is used for editing and previewing datasets.
 
     Args:
-        action: The action to perform (e.g., "edit", "preview")
+        action: The action to perform ("edit", "preview")
         dataset_id: The unique identifier for the dataset
         version_id: The version identifier for the dataset
 

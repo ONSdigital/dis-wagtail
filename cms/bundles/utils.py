@@ -175,7 +175,7 @@ def build_bundle_data_for_api(bundle: "Bundle") -> dict[str, Any]:
         "title": bundle.name,
         "bundle_type": bundle_type,
         "state": bundle.status,
-        "managed_by": "WAGTAIL",  # This seems to be a constant for this system
+        "managed_by": "WAGTAIL",
         "preview_teams": preview_teams,
         "scheduled_at": bundle.scheduled_publication_date.isoformat() if bundle.scheduled_publication_date else None,
     }

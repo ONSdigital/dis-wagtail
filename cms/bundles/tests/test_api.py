@@ -1,4 +1,5 @@
 from http import HTTPStatus
+from typing import Literal
 from unittest.mock import Mock, patch
 
 import requests
@@ -411,7 +412,7 @@ class GetDataAdminActionUrlTests(TestCase):
         version_id = "2"
 
         # Test multiple actions
-        actions = ["edit", "preview", "view", "delete"]
+        actions: Literal["edit", "preview"] = ["edit", "preview"]
         for action in actions:
             url = get_data_admin_action_url(action, dataset_id, version_id)
             expected = (
