@@ -4,7 +4,7 @@ from unittest.mock import Mock, patch
 import requests
 from django.test import TestCase, override_settings
 
-from cms.bundles.api import BundleAPIClient, BundleAPIClientError
+from cms.bundles.api import BundleAPIClient, BundleAPIClientError, get_data_admin_action_url
 
 
 @override_settings(ONS_BUNDLE_API_ENABLED=True)
@@ -273,3 +273,29 @@ class BundleAPIClientDisabledTests(TestCase):
 
         result = client.get_bundle_status("test-bundle-123")
         self.assertEqual(result, {"status": "disabled", "message": "Bundle API is disabled"})
+
+
+class GetDataAdminActionUrlTests(TestCase):
+    """Tests for the get_data_admin_action_url function."""
+
+    def test_get_data_admin_action_url_with_different_actions(self):
+        """Test that different actions work correctly."""
+        dataset_id = "test-dataset"
+        version_id = "2"
+
+        # Test multiple actions
+        actions = ["edit", "preview", "view", "delete"]
+        for action in actions:
+            url = get_data_admin_action_url(action, dataset_id, version_id)
+            expected = (
+                f"https://publishing.ons.gov.uk/data-admin/{action}/datasets/{dataset_id}/"
+                f"editions/time-series/versions/{version_id}"
+            )
+            self.assertEqual(url, expected)
+
+    @override_settings(ONS_DATA_ADMIN_URL="https://custom.example.com/admin/")
+    def test_get_data_admin_action_url_custom_base_url(self):
+        """Test that custom base URL from settings is used correctly."""
+        url = get_data_admin_action_url("edit", "cpih", "1")
+        expected = "https://custom.example.com/admin/edit/datasets/cpih/editions/time-series/versions/1"
+        self.assertEqual(url, expected)
