@@ -33,6 +33,7 @@ The Wagtail CMS for managing and publishing content for the Office for National 
         - [pre-commit](#pre-commit)
         - [Megalinter](#megalinter-lintformat-non-python-files)
     - [Mailpit (Email Testing)](#mailpit-email-testing)
+    - [Installing the Required LaTeX Packages for Local Development](#installing-the-required-latex-packages-for-local-development)
     - [Django Migrations](#django-migrations)
 - [Contributing](#contributing)
 - [License](#license)
@@ -58,7 +59,7 @@ Ensure you have the following installed:
 5. **[Node](https://nodejs.org/en)** and **[`nvm` (Node Version Manager)](https://github.com/nvm-sh/nvm)** for front-end
    tooling.
 6. **[JQ](https://jqlang.github.io/jq/)** for the step in the build that installs the design system templates.
-7. **[MacPorts](https://www.macports.org/install.php)**: We need MacPorts so we can install the required packages to render equations using LaTeX strings via Matplotlib locally (outside of a docker container).
+7. `texlive-latex-extra`: Required by `matplotlib` to render LaTeX equations. See [below](#installing-the-required-latex-packages-for-local-development) for instructions on how to install on macOS.
 8. **Operation System**: Ubuntu/ MacOS.
 
 ### Setup
@@ -467,7 +468,7 @@ and every `send_mail` call will appear instantly in the UI.
 
 In order to generate the equations in Wagtail using LaTeX strings via Matplotlib (Non-JS Equations), we will need to use `MacPorts` to install the following packages `texlive-latex-extra`.
 
-As a prerequisite you will have to have `MacPorts` installed. See [Pre-requisites](#pre-requisites) step 7 for MacPorts installation.
+As a prerequisite you will have to have [MacPorts](https://www.macports.org/install.php) installed.
 
 ```bash
 sudo port install texlive-latex-extra
