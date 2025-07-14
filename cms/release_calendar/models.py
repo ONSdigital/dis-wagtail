@@ -1,4 +1,5 @@
-from typing import TYPE_CHECKING, Any, ClassVar, Optional
+from collections.abc import Sequence
+from typing import TYPE_CHECKING, Any, ClassVar, Optional, cast
 
 from django.conf import settings
 from django.db import models
@@ -11,10 +12,10 @@ from wagtail.models import Page
 from wagtail.search import index
 
 from cms.bundles.mixins import BundledPageMixin
-from cms.core.custom_date_format import ons_date_format
+from cms.core.custom_date_format import ons_date_format, ons_default_datetime
 from cms.core.fields import StreamField
 from cms.core.models import BasePage
-from cms.core.widgets import datetime_widget
+from cms.core.widgets import ONSAdminDateTimeInput
 from cms.datasets.blocks import DatasetStoryBlock
 
 from .blocks import (
@@ -25,10 +26,13 @@ from .blocks import (
 )
 from .enums import NON_PROVISIONAL_STATUSES, ReleaseStatus
 from .forms import ReleaseCalendarPageAdminForm
+from .locks import PageInBundleReadyToBePublishedLock
 from .panels import ReleaseCalendarBundleNotePanel
 
 if TYPE_CHECKING:
     from django.http import HttpRequest
+    from django.template.response import TemplateResponse
+    from wagtail.locks import BaseLock
 
     from cms.bundles.models import Bundle
 
@@ -56,7 +60,7 @@ class ReleaseCalendarPage(BundledPageMixin, BasePage):  # type: ignore[django-ma
     status = models.CharField(choices=ReleaseStatus.choices, default=ReleaseStatus.PROVISIONAL, max_length=32)
     summary = RichTextField(features=settings.RICH_TEXT_BASIC)
 
-    release_date = models.DateTimeField(blank=False, null=False)
+    release_date = models.DateTimeField(blank=False, null=False, default=ons_default_datetime)
     release_date_text = models.CharField(
         max_length=50,
         blank=True,
@@ -78,7 +82,11 @@ class ReleaseCalendarPage(BundledPageMixin, BasePage):  # type: ignore[django-ma
         ),
     )
 
-    content = StreamField(ReleaseCalendarStoryBlock(), blank=True)
+    content = StreamField(
+        ReleaseCalendarStoryBlock(),
+        blank=True,
+        help_text=("This is usually through the bundle release process, but can also be manually set."),
+    )
     datasets = StreamField(DatasetStoryBlock(), blank=True, default=list)
 
     contact_details = models.ForeignKey(
@@ -121,15 +129,22 @@ class ReleaseCalendarPage(BundledPageMixin, BasePage):  # type: ignore[django-ma
                 ReleaseCalendarBundleNotePanel(heading="Note", classname="bundle-note"),
                 FieldRowPanel(
                     [
-                        FieldPanel("release_date", datetime_widget, required_on_save=True),
+                        FieldPanel(
+                            "release_date",
+                            widget=ONSAdminDateTimeInput(),
+                            required_on_save=True,
+                        ),
                         FieldPanel("release_date_text", heading="Or, release date text"),
                     ],
                     heading="",
                 ),
                 FieldRowPanel(
                     [
-                        FieldPanel("next_release_date", datetime_widget),
-                        FieldPanel("next_release_date_text", heading="Or, next release date text"),
+                        FieldPanel("next_release_date", widget=ONSAdminDateTimeInput()),
+                        FieldPanel(
+                            "next_release_date_text",
+                            heading="Or, next release date text",
+                        ),
                     ],
                     heading="",
                 ),
@@ -140,7 +155,11 @@ class ReleaseCalendarPage(BundledPageMixin, BasePage):  # type: ignore[django-ma
         ),
         FieldPanel("summary", required_on_save=True),
         FieldPanel("content", icon="list-ul", required_on_save=True),
-        FieldPanel("datasets", help_text="Select the datasets that this release relates to.", icon="doc-full"),
+        FieldPanel(
+            "datasets",
+            help_text="Select the datasets that this release relates to.",
+            icon="doc-full",
+        ),
         FieldPanel("contact_details", icon="group"),
         MultiFieldPanel(
             [
@@ -208,7 +227,12 @@ class ReleaseCalendarPage(BundledPageMixin, BasePage):  # type: ignore[django-ma
                 items += [{"url": "#datasets", "text": _("Data")}]
 
         if self.status in NON_PROVISIONAL_STATUSES and self.changes_to_release_date:
-            items += [{"url": "#changes-to-release-date", "text": _("Changes to this release date")}]
+            items += [
+                {
+                    "url": "#changes-to-release-date",
+                    "text": _("Changes to this release date"),
+                }
+            ]
 
         if self.status == ReleaseStatus.PUBLISHED and self.contact_details_id:
             text = _("Contact details")
@@ -250,3 +274,23 @@ class ReleaseCalendarPage(BundledPageMixin, BasePage):  # type: ignore[django-ma
             return None
         live_page = ReleaseCalendarPage.objects.filter(pk=self.pk).live().only("notice").first()
         return live_page.notice if live_page else None
+
+    @property
+    def preview_modes(self) -> Sequence[tuple[str, str]]:
+        return ReleaseStatus.choices
+
+    def get_preview_template(self, request: None, mode_name: str) -> "TemplateResponse":
+        templates = {
+            "PROVISIONAL": "templates/pages/release_calendar/release_calendar_page--provisional.html",
+            "CONFIRMED": "templates/pages/release_calendar/release_calendar_page--confirmed.html",
+            "CANCELLED": "templates/pages/release_calendar/release_calendar_page--cancelled.html",
+            "PUBLISHED": "templates/pages/release_calendar/release_calendar_page.html",
+        }
+
+        return cast("TemplateResponse", templates.get(mode_name, templates["PROVISIONAL"]))
+
+    def get_lock(self) -> Optional["BaseLock"]:
+        if self.active_bundle and self.active_bundle.is_ready_to_be_published:
+            return PageInBundleReadyToBePublishedLock(self)
+
+        return super().get_lock()

@@ -1,0 +1,4 @@
+{% from "components/chart/_macro.njk" import onsChart %}
+
+{%- do chart_config.update(id=block_id) -%}
+{{ onsChart(chart_config) }}

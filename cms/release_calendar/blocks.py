@@ -1,23 +1,35 @@
 from typing import TYPE_CHECKING, ClassVar
 
 from django.conf import settings
+from django.forms import Media
+from django.utils.functional import cached_property
 from django.utils.text import slugify
 from wagtail import blocks
+from wagtail.blocks.struct_block import StructBlockAdapter
+from wagtail.telepath import register
 
-from cms.core.blocks import BasicTableBlock, LinkBlock, RelatedContentBlock
+from cms.core.blocks import BasicTableBlock, LinkBlock, LinkBlockWithDescription
 
 if TYPE_CHECKING:
     from wagtail.blocks import StructValue
+    from wagtail.blocks.list_block import ListValue
 
 
 class ContentSectionBlock(blocks.StructBlock):
     """A content section with list of links."""
 
-    title = blocks.CharBlock()
-    links = blocks.ListBlock(RelatedContentBlock())
+    title = blocks.CharBlock(label="Section title")
+    links = blocks.ListBlock(LinkBlockWithDescription())
 
     class Meta:
         template = "templates/components/streamfield/release_content_section.html"
+
+    def get_context(self, value: "ListValue", parent_context: dict | None = None) -> dict:
+        """Inject our block heading and slug in the template context."""
+        context: dict = super().get_context(value, parent_context=parent_context)
+        context["related_links"] = [item.get_related_link(context=context) for item in value["links"]]
+
+        return context
 
     def to_table_of_contents_items(self, value: "StructValue") -> list[dict[str, str]]:
         """Convert the value to the table of contents component macro format."""
@@ -29,9 +41,30 @@ class ReleaseDateChangeBlock(blocks.StructBlock):
 
     previous_date = blocks.DateTimeBlock()
     reason_for_change = blocks.TextBlock()
+    frozen = blocks.BooleanBlock(required=False, default=False)
 
     class Meta:
         template = "templates/components/streamfield/release_date_change_block.html"
+        help_text = "Warning: Once a release date change is published, it cannot be deleted."
+
+
+class ReleaseDateChangeBlockAdapter(StructBlockAdapter):
+    js_constructor = "cms.release_calendar.blocks.ReleaseDateChangeBlock"
+
+    @cached_property
+    def media(self) -> Media:
+        structblock_media = super().media
+        return Media(
+            js=[
+                *structblock_media._js,  # pylint: disable=protected-access
+                "js/blocks/readonly-struct-block.js",
+                "js/blocks/release-date-change-block.js",
+            ],
+            css=structblock_media._css,  # pylint: disable=protected-access
+        )
+
+
+register(ReleaseDateChangeBlockAdapter(), ReleaseDateChangeBlock)
 
 
 class ReleaseCalendarStoryBlock(blocks.StreamBlock):
@@ -60,7 +93,10 @@ class ReleaseCalendarPreReleaseAccessStoryBlock(blocks.StreamBlock):
 
     class Meta:
         template = "templates/components/streamfield/stream_block.html"
-        block_counts: ClassVar[dict[str, dict[str, int]]] = {"description": {"max_num": 1}, "table": {"max_num": 1}}
+        block_counts: ClassVar[dict[str, dict[str, int]]] = {
+            "description": {"max_num": 1},
+            "table": {"max_num": 1},
+        }
 
 
 class ReleaseCalendarRelatedLinksStoryBlock(blocks.StreamBlock):

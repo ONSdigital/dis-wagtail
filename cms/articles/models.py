@@ -17,15 +17,19 @@ from wagtail.search import index
 from cms.articles.enums import SortingChoices
 from cms.articles.forms import StatisticalArticlePageAdminForm
 from cms.articles.panels import HeadlineFiguresFieldPanel
+from cms.articles.utils import serialize_correction_or_notice
 from cms.bundles.mixins import BundledPageMixin
 from cms.core.blocks.headline_figures import HeadlineFiguresItemBlock
 from cms.core.blocks.panels import CorrectionBlock, NoticeBlock
 from cms.core.blocks.stream_blocks import SectionStoryBlock
+from cms.core.custom_date_format import ons_date_format
 from cms.core.fields import StreamField
 from cms.core.models import BasePage
 from cms.core.widgets import date_widget
 from cms.datasets.blocks import DatasetStoryBlock
 from cms.datasets.utils import format_datasets_as_document_list
+from cms.datavis.blocks.base import BaseVisualisationBlock
+from cms.datavis.blocks.featured_charts import FeaturedChartBlock
 from cms.taxonomy.mixins import GenericTaxonomyMixin
 
 if TYPE_CHECKING:
@@ -100,7 +104,7 @@ class ArticleSeriesPage(RoutablePageMixin, GenericTaxonomyMixin, BasePage):  # t
         return response
 
 
-class StatisticalArticlePage(BundledPageMixin, RoutablePageMixin, BasePage):  # type: ignore[django-manager-missing]
+class StatisticalArticlePage(BundledPageMixin, RoutablePageMixin, BasePage):  # type: ignore[django-manager-missing] # pylint: disable=too-many-public-methods
     """The statistical article page model.
 
     Previously known as statistical bulletin, statistical analysis article, analysis page.
@@ -166,11 +170,18 @@ class StatisticalArticlePage(BundledPageMixin, RoutablePageMixin, BasePage):  # 
     dataset_sorting = models.CharField(choices=SortingChoices.choices, default=SortingChoices.AS_SHOWN, max_length=32)
     datasets = StreamField(DatasetStoryBlock(), blank=True, default=list)
 
+    featured_chart = StreamField(FeaturedChartBlock(), blank=True, max_num=1)
+
     content_panels: ClassVar[list["Panel"]] = [
         *BundledPageMixin.panels,
         MultiFieldPanel(
             [
-                TitleFieldPanel("title", help_text="Also known as the release edition. e.g. 'November 2024'."),
+                TitleFieldPanel(
+                    "title",
+                    heading="Release Edition",
+                    placeholder="Release Edition *",
+                    help_text="e.g. 'November 2024'.",
+                ),
                 FieldPanel(
                     "news_headline",
                     help_text=(
@@ -181,7 +192,7 @@ class StatisticalArticlePage(BundledPageMixin, RoutablePageMixin, BasePage):  # 
                     icon="news",
                 ),
             ],
-            heading="Title",
+            heading="Edition",
         ),
         FieldPanel("summary", required_on_save=True),
         MultiFieldPanel(
@@ -227,6 +238,15 @@ class StatisticalArticlePage(BundledPageMixin, RoutablePageMixin, BasePage):  # 
     additional_panel_tabs: ClassVar[list[tuple[list["Panel"], str]]] = [
         (related_data_panels, "Related data"),
         (corrections_and_notices_panels, "Corrections and notices"),
+    ]
+
+    promote_panels: ClassVar[list["Panel"]] = [
+        *BasePage.promote_panels,
+        FieldPanel(
+            "featured_chart",
+            help_text="Configure a chart for when this article is featured on a topic page.",
+            icon="chart-line",
+        ),
     ]
 
     search_fields: ClassVar[list[index.BaseField]] = [
@@ -280,7 +300,11 @@ class StatisticalArticlePage(BundledPageMixin, RoutablePageMixin, BasePage):  # 
 
     def get_admin_display_title(self) -> str:
         """Changes the admin display title to include the parent title."""
-        return f"{self.get_parent().title}: {self.draft_title or self.title}"
+        return self.get_full_display_title(self.draft_title)
+
+    def get_full_display_title(self, title: str | None = None) -> str:
+        """Returns the full display title for the page, including the parent series title."""
+        return f"{self.get_parent().title}: {title or self.title}"
 
     def get_headline_figure(self, figure_id: str) -> dict[str, str]:
         if not self.headline_figures:
@@ -313,7 +337,7 @@ class StatisticalArticlePage(BundledPageMixin, RoutablePageMixin, BasePage):  # 
     @property
     def display_title(self) -> str:
         """Returns the page display title. If the news headline is set, it takes precedence over the series+title."""
-        return self.news_headline.strip() or self.get_admin_display_title()
+        return self.news_headline.strip() or self.get_full_display_title()
 
     @cached_property
     def table_of_contents(self) -> list[dict[str, str | object]]:
@@ -355,11 +379,20 @@ class StatisticalArticlePage(BundledPageMixin, RoutablePageMixin, BasePage):  # 
         # NB: Little validation is done on previous_version, as it's assumed handled on save
         revision = get_object_or_404(self.revisions, pk=correction.value["previous_version"])
 
+        page = revision.as_object()
+
+        # Get corrections and notices for this specific version
+        corrections, notices = page.get_serialized_corrections_and_notices(request)
+
         response: TemplateResponse = self.render(
             request,
             context_overrides={
-                "page": revision.as_object(),
+                "page": page,
                 "latest_version_url": self.get_url(request),
+                # Override the context with the corrections and notices for this version
+                "corrections_and_notices": corrections + notices,
+                "has_corrections": bool(corrections),
+                "has_notices": bool(notices),
             },
         )
 
@@ -414,11 +447,90 @@ class StatisticalArticlePage(BundledPageMixin, RoutablePageMixin, BasePage):  # 
         )
         return response
 
+    def as_featured_article_macro_data(self, request: "HttpRequest") -> dict[str, Any]:
+        """Returns data formatted for the onsFeaturedArticle Nunjucks/Jinja2 macro."""
+        data = {
+            "title": {
+                "url": self.get_url(request),
+                "text": self.listing_title or self.display_title,
+            },
+            "metadata": {
+                "text": self.label,
+            },
+            "description": self.main_points_summary,
+        }
+
+        if self.release_date:
+            data["metadata"]["date"] = {
+                "prefix": _("Release date"),
+                "showPrefix": True,
+                "iso": self.release_date.isoformat(),
+                "short": ons_date_format(self.release_date, "DATE_FORMAT"),
+            }
+
+        if self.featured_chart:
+            chart_block = self.featured_chart[0]  # pylint: disable=unsubscriptable-object
+            block_instance = chart_block.block
+            block_value = chart_block.value
+
+            if isinstance(block_instance, BaseVisualisationBlock):
+                data["chart"] = block_instance.get_component_config(block_value)
+
+        elif self.listing_image:
+            data["image"] = {
+                "src": self.listing_image.get_rendition("width-1252").url,
+            }
+
+        return data
+
     @property
     def preview_modes(self) -> list[tuple[str, str]]:
-        return [("default", "Article Page"), ("related_data", "Related Data Page")]
+        return [
+            ("default", "Article Page"),
+            ("related_data", "Related Data Page"),
+            ("featured_article", "Featured Article"),
+        ]
 
     def serve_preview(self, request: "HttpRequest", mode_name: str) -> "TemplateResponse":
-        if mode_name == "related_data":
-            return cast("TemplateResponse", self.related_data(request))
+        match mode_name:
+            case "related_data":
+                return cast("TemplateResponse", self.related_data(request))
+            case "featured_article":
+                from cms.topics.models import TopicPage  # pylint: disable=import-outside-toplevel
+
+                topic_page = TopicPage.objects.ancestor_of(self).first()
+                return cast("TemplateResponse", topic_page.serve(request, featured_item=self))
         return cast("TemplateResponse", super().serve_preview(request, mode_name))
+
+    def get_serialized_corrections_and_notices(
+        self, request: "HttpRequest"
+    ) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+        """Returns a list of corrections and notices for the page."""
+        base_url = self.get_url(request)
+        corrections = (
+            [
+                serialize_correction_or_notice(
+                    correction,
+                    superseded_url=base_url
+                    + self.reverse_subpage("previous_version", args=[correction.value["version_id"]]),
+                )
+                for correction in self.corrections  # pylint: disable=not-an-iterable
+            ]
+            if self.corrections
+            else []
+        )
+        notices = (
+            [serialize_correction_or_notice(notice) for notice in self.notices] if self.notices else []  # pylint: disable=not-an-iterable
+        )
+        return corrections, notices
+
+    def get_context(self, request: "HttpRequest", *args: Any, **kwargs: Any) -> dict:
+        """Adds additional context to the page."""
+        context: dict = super().get_context(request)
+
+        corrections, notices = self.get_serialized_corrections_and_notices(request)
+        context["corrections_and_notices"] = corrections + notices
+        context["has_corrections"] = bool(corrections)
+        context["has_notices"] = bool(notices)
+
+        return context

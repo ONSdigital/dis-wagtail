@@ -7,7 +7,6 @@ from django.http import HttpRequest
 from django.shortcuts import redirect
 from django.urls import reverse
 from django.utils import timezone
-from django.utils.formats import date_format
 from django.utils.functional import cached_property
 from django.utils.html import format_html, format_html_join
 from wagtail.admin.ui.tables import Column, DateColumn, UpdatedAtColumn, UserColumn
@@ -17,12 +16,13 @@ from wagtail.log_actions import log
 
 from cms.bundles.enums import BundleStatus
 from cms.bundles.models import Bundle
-from cms.bundles.notifications import (
+from cms.bundles.notifications.slack import (
     notify_slack_of_publication_start,
     notify_slack_of_publish_end,
     notify_slack_of_status_change,
 )
 from cms.bundles.permissions import user_can_manage_bundles, user_can_preview_bundle
+from cms.core.custom_date_format import ons_date_format
 from cms.datasets.models import Dataset
 
 if TYPE_CHECKING:
@@ -30,6 +30,7 @@ if TYPE_CHECKING:
     from django.http import HttpResponseBase
     from django.template.response import TemplateResponse
     from django.utils.safestring import SafeString
+    from wagtail.models import Page
 
     from cms.bundles.models import BundlesQuerySet
 
@@ -91,7 +92,7 @@ class BundleEditView(EditView):
 
         kwargs: dict = {"content_changed": self.has_content_changes}
         original_status = BundleStatus[self.form.original_status].label
-        url = self.request.build_absolute_uri(reverse("bundle:inspect", args=(instance.pk,)))
+        url = self.request.build_absolute_uri(instance.full_inspect_url)
 
         if instance.status == BundleStatus.APPROVED:
             action = "bundles.approve"
@@ -166,7 +167,11 @@ class BundleInspectView(InspectView):
         return user_can_manage_bundles(self.request.user)
 
     def get_fields(self) -> list[str]:
-        """Returns the list of fields to include in the inspect view."""
+        """Returns the list of fields to include in the inspect view.
+
+        Note: values are inserted by methods following the get_FIELDNAME_display_value pattern.
+        See InspectView.get_field_display_value.
+        """
         if self.can_manage:
             return [
                 "name",
@@ -206,57 +211,72 @@ class BundleInspectView(InspectView):
             case _:
                 return super().get_field_label(field_name, field)  # type: ignore[no-any-return]
 
-    def get_field_display_value(self, field_name: str, field: "Field") -> Any:
-        """Allows customising field display in the inspect class.
+    def get_created_at_display_value(self) -> str:
+        return ons_date_format(self.object.created_at, settings.DATETIME_FORMAT)
 
-        This allows us to use get_FIELDNAME_display_value methods.
-        """
-        value_func = getattr(self, f"get_{field_name}_display_value", None)
-        if value_func is not None:
-            return value_func()
-
-        return super().get_field_display_value(field_name, field)
+    def get_approved_at_display_value(self) -> str:
+        return ons_date_format(self.object.approved_at, settings.DATETIME_FORMAT) if self.object.approved_at else ""
 
     def get_approved_display_value(self) -> str:
         """Custom approved by formatting. Varies based on status, and approver/time of approval."""
         if self.object.status in [BundleStatus.APPROVED, BundleStatus.PUBLISHED]:
             if self.object.approved_by_id and self.object.approved_at:
-                return f"{self.object.approved_by} on {date_format(self.object.approved_at, settings.DATETIME_FORMAT)}"
+                return (
+                    f"{self.object.approved_by} on {ons_date_format(self.object.approved_at, settings.DATETIME_FORMAT)}"
+                )
             return "Unknown approval data"
         return "Pending approval"
 
     def get_scheduled_publication_display_value(self) -> str:
         """Displays the scheduled publication date, if set."""
         if self.object.scheduled_publication_date:
-            return date_format(self.object.scheduled_publication_date, settings.DATETIME_FORMAT)
+            return ons_date_format(self.object.scheduled_publication_date, settings.DATETIME_FORMAT)
         return "No scheduled publication"
 
     def get_release_calendar_page_display_value(self) -> str:
         """Returns the release calendar page link if it exists."""
         if self.object.release_calendar_page:
+            if self.object.status == BundleStatus.PUBLISHED:
+                url = self.object.release_calendar_page.get_url(request=self.request)
+            else:
+                url = reverse("bundles:preview_release_calendar", args=[self.object.pk])
+
             return format_html(
                 '<a href="{}" target="_blank" rel="noopener">{}</a>',
-                reverse("bundles:preview_release_calendar", args=[self.object.pk]),
+                url,
                 self.object.release_calendar_page.get_admin_display_title(),
             )
         return "N/A"
 
     def get_pages_for_manager(self) -> "SafeString":
-        pages = self.object.get_bundled_pages().specific()
+        """Returns all the bundle page.
+        Publishing Admins / Officers can see everything when inspecting the bundle.
+        """
+        pages = self.object.get_bundled_pages().specific().defer_streamfields()
+
+        def get_page_status(page: "Page") -> str:
+            if self.object.status == BundleStatus.PUBLISHED and page.live:
+                return "Published"
+            return page.current_workflow_state.current_task_state.task.name if page.current_workflow_state else "Draft"
+
+        def get_action(page: "Page") -> str:
+            if self.object.status == BundleStatus.PUBLISHED and page.live:
+                return str(page.get_url(request=self.request))
+            return reverse(
+                "bundles:preview",
+                args=(
+                    self.object.pk,
+                    page.pk,
+                ),
+            )
 
         data = (
             (
                 reverse("wagtailadmin_pages:edit", args=[page.pk]),
                 page.get_admin_display_title(),
                 page.get_verbose_name(),
-                (page.current_workflow_state.current_task_state.task.name if page.current_workflow_state else "Draft"),
-                reverse(
-                    "bundles:preview",
-                    args=(
-                        self.object.pk,
-                        page.pk,
-                    ),
-                ),
+                get_page_status(page),
+                get_action(page),
             )
             for page in pages
         )
@@ -275,6 +295,9 @@ class BundleInspectView(InspectView):
         )
 
     def get_pages_for_previewer(self) -> "SafeString":
+        """Returns the list of bundle pages a previewer-only user can see when inspecting the bundle.
+        These are pages in the bundle that are in the "Ready for review" workflow state.
+        """
         pages = self.object.get_pages_for_previewers()
 
         data = (

@@ -41,13 +41,16 @@ djangorestframework = "^3.16.0"
 matplotlib = "^3.10.3"
 django-ses = "^4.4.0"
 aws-msk-iam-sasl-signer-python = "^1.0.2"
+wagtailtables = "^0.2.2"
+pyjwt = "^2.10.1"
+cryptography = "^45.0.4"
 
 [tool.poetry.group.dev.dependencies]
 # :TODO: Remove pylint when ruff supports all pylint rules
 djhtml = "3.0.8"  # keep version in sync with .pre-commit-config.yaml
-mypy = "^1.15.0"
+mypy = "^1.16.0"
 types-requests = "^2.32.0.20250602"
-django-stubs = { version="^5.2.0", extras=["compatible-mypy"]}
+django-stubs = { version="^5.2.1", extras=["compatible-mypy"]}
 pylint = "^3.3.7"
 pylint-django = "^2.6.1"
 ruff = "0.11.13"  # keep version in sync with .pre-commit-config.yaml
@@ -56,8 +59,7 @@ wagtail-factories = "^4.2.1"
 coverage = "^7.8.2"
 responses = "^0.25.7"
 
-dslr = "^0.4.0"
-psycopg2-binary = "^2.9.10"
+dslr = "^0.5.1"
 django-debug-toolbar = "^5.2.0"
 pudb = "^2025.1"
 tblib = "^3.1.0"
@@ -104,14 +106,16 @@ select = [
 ]
 
 ignore = [
-    # Conflicts with google docstring style
+    # Conflicts with Google docstring style
     "D205",
     # Allow missing docstring, remove to enforce docstrings across the board
     "D100", "D101", "D102", "D103", "D104", "D105", "D106", "D107",
     # indentation contains tabs
     "W191",
     # Prefer explicit type rather than union (|) shorthand
-    "UP007"
+    "UP007",
+    # Allow complex functions
+    "C901",
 ]
 
 [tool.ruff.lint.pydocstyle]

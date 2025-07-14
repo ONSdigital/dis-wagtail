@@ -23,6 +23,8 @@ services:
       STATIC_DIR: /app/static/
       STATIC_URL: /static/
       KAFKA_SERVERS: broker:9092
+      WAGTAIL_CORE_ADMIN_LOGIN_ENABLED: true
+      EMAIL_HOST: mailpit
     ports:
       - 3000:3000 # webpack
       - 8000:8000 # runserver
@@ -55,6 +57,11 @@ services:
     extends:
       file: docker-compose-dev.yml
       service: broker
+
+  mailpit:
+    extends:
+      file: docker-compose-dev.yml
+      service: mailpit
 
 volumes:
   node_modules:

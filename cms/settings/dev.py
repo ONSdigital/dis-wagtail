@@ -19,8 +19,14 @@ INTERNAL_IPS = ("127.0.0.1", "10.0.2.2")
 # This is only to test Wagtail emails.
 WAGTAILADMIN_BASE_URL = "http://localhost:8000"
 
-# Display sent emails in the console while developing locally.
-EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
+# Display sent emails in via mailpit @ http://localhost:8025
+EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
+EMAIL_HOST = env.get("EMAIL_HOST", "localhost")
+EMAIL_PORT = 1025
+EMAIL_USE_TLS = False
+
+# Sender address for email notifications
+DEFAULT_FROM_EMAIL = "cms@example.com"
 
 # Disable password validators when developing locally.
 AUTH_PASSWORD_VALIDATORS = []
@@ -67,6 +73,22 @@ CACHES["default"] = {  # noqa: F405
 # Django Defender
 ENABLE_DJANGO_DEFENDER = False
 
+# Auth
+SERVICE_AUTH_TOKEN = "wagtail-test-auth-token"  # noqa: S105 - Dummy token matching config in dis-authentication-stub
+WAGTAIL_CORE_ADMIN_LOGIN_ENABLED = True
+AUTH_STUB_URL = "http://localhost:29500"
+AWS_COGNITO_USER_POOL_ID = "dis-authentication-stub"
+AWS_COGNITO_APP_CLIENT_ID = "dis-authentication-stub"
+IDENTITY_API_BASE_URL = env.get("IDENTITY_API_BASE_URL", f"{AUTH_STUB_URL}/v1")
+AUTH_TOKEN_REFRESH_URL = env.get("AUTH_TOKEN_REFRESH_URL", f"{AUTH_STUB_URL}/tokens/self")
+
+if AWS_COGNITO_LOGIN_ENABLED:  # noqa: F405
+    WAGTAILADMIN_LOGIN_URL = env.get("WAGTAILADMIN_LOGIN_URL", f"{AUTH_STUB_URL}/florence/login")
+    LOGOUT_REDIRECT_URL = env.get("LOGOUT_REDIRECT_URL", f"{AUTH_STUB_URL}/florence/logout")
+    AWS_REGION = "eu-west-2"
+
+# Set auth stub as a trusted origin
+CSRF_TRUSTED_ORIGINS = env.get("CSRF_TRUSTED_ORIGINS", AUTH_STUB_URL).split(",")
 
 # Import settings from local.py file if it exists. Please use it to keep
 # settings that are not meant to be checked into Git and never check it in.
@@ -105,6 +127,8 @@ MIGRATION_LINTER_OPTIONS = {
         "0004_statisticalarticlepage_headline_figures_figure_ids",
         "0006_statisticalarticlepage_dataset_sorting_and_more",  # Ignoring NOT NULL constraint
         "0006_topicpage_datasets",  # Ignoring NOT NULL constraint
+        "0004_bundleteam_preview_notification_sent",  # Ignoring NOT NULL constraint
+        "0007_statisticalarticlepage_featured_chart_content_and_more",  # Ignoring NOT NULL constraint
     ],
 }
 

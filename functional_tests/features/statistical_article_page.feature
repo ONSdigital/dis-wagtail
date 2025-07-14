@@ -97,7 +97,7 @@ Feature: Statistical Article Page components
         And the user clicks "View Live" on the publish confirmation banner
         Then the published statistical article page has the corrections and notices block
         And the user can click on "Show detail" to expand the corrections and notices block
-        And the user can click on "Close detail" to collapse the corrections and notices block
+        And the user can click on "Hide detail" to collapse the corrections and notices block
 
     Scenario: A CMS user can add headline figures to a Statistical Article Page
         When the user goes to add a new statistical article page
@@ -122,6 +122,69 @@ Feature: Statistical Article Page components
         And the user clicks "View Live" on the publish confirmation banner
         And the user clicks "View data used in this article" on the article page
         Then the related data page for the article is shown
+
+    Scenario: A CMS user can see a featured chart field on a Statistical Article Page
+        When the user goes to add a new statistical article page
+        And the user switches to the Promote tab
+        Then the user sees a "Featured Chart" field
+
+    Scenario: A CMS user can add a featured chart on a Statistical Article Page
+        When the user goes to add a new statistical article page
+        And the user adds basic statistical article page content
+        And the user switches to the Promote tab
+        And the user clicks "Line chart" in the featured chart streamfield block selector
+        And the user fills in the line chart title
+        And the user fills in the chart audio description
+        And the user enters data into the chart table
+        And the user clicks "Publish"
+        Then submitting the Wagtail page edit form is successful
+
+    Scenario: A CMS user can preview a featured chart on a Statistical Article Page
+        Given a statistical article page with a configured featured chart exists
+        But the statistical article page is not a featured article on its containing topic page
+        When the user goes to edit the statistical article page
+        And the user selects the "featured chart" preview mode
+        Then the user sees a preview of the containing Topic page
+        And the topic page preview contains the featured article component
+        And the featured article component contains the featured chart
+
+    Scenario: A featured chart preview is the version currently being edited
+        Given a statistical article with valid streamfield content exists
+        But the statistical article page is not a featured article on its containing topic page
+        When the user goes to edit the statistical article page
+        And the user switches to the Promote tab
+        And the user clicks "Line chart" in the featured chart streamfield block selector
+        And the user fills in the line chart title
+        And the user fills in the chart audio description
+        And the user enters data into the chart table
+        And the user selects the "featured chart" preview mode
+        Then the user sees a preview of the containing Topic page
+        And the topic page preview contains the featured article component
+        And the featured article component contains the featured chart
+
+    Scenario: A featured chart is visible on the containing topic page
+        Given a statistical article page with a configured featured chart exists
+        And the statistical article page is selected as the featured article on its containing topic page
+        When the user visits the containing topic page
+        Then the user sees the published topic page
+        And the featured article is shown
+        And the featured article component contains the featured chart
+
+    Scenario: A listing image is visible on the containing topic page
+        Given a statistical article page with a configured listing image exists
+        And the statistical article page is selected as the featured article on its containing topic page
+        When the user visits the containing topic page
+        Then the user sees the published topic page
+        And the featured article is shown
+        And the featured article component contains the featured article listing image
+
+    Scenario: A CMS user can save a Statistical Article Page without a featured chart
+        When the user goes to add a new statistical article page
+        And the user adds basic statistical article page content
+        And the user switches to the Promote tab
+        And the user leaves the featured chart fields blank
+        And the user clicks "Publish"
+        Then submitting the Wagtail page edit form is successful
 
     @no_javascript
     Scenario: The fallback equation is visible to non-JS users

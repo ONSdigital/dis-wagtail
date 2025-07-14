@@ -85,7 +85,7 @@
             <div class="ons-grid">
                 <div class="ons-grid__col ons-col-{{ pageColNumber }}@m {{ pageColClasses }}">
                     {# This is the main tag in the base template in the design system #}
-                    <div class="ons-page__main {{ mainColClasses }}">
+                    <div class="ons-page__main ons-u-mb-5xl {{ mainColClasses }}">
                         {% block main %}{% endblock %}
                         {{ onsBackToTop() }}{# used in small viewports #}
                     </div>
@@ -98,4 +98,10 @@
 {% block scripts %}
     {{ super() }}
     {% include "templates/partials/content_scripts.html" %}
+
+    {# Load JS to refresh user session if required #}
+    {% if AWS_COGNITO_LOGIN_ENABLED and not IS_EXTERNAL_ENV and request.user.is_authenticated %}
+        {{ AUTH_CONFIG | json_script('auth-config') }}
+        <script src="{{ static('js/auth.js') }}" defer></script>
+    {% endif %}
 {% endblock %}
