@@ -169,13 +169,13 @@ class BundleAPIClient:
 
         Args:
             bundle_id: The ID of the bundle to update
-            state: New state for the bundle
+            state: New state for the bundle (DRAFT, IN_REVIEW, APPROVED, PUBLISHED)
 
         Returns:
             API response data
         """
-        # The swagger spec expects a raw string for the state, not a JSON object.
-        return self._make_request("PUT", f"/bundles/{bundle_id}/state", data=state)
+        # The swagger spec expects a JSON object with a 'state' field
+        return self._make_request("PUT", f"/bundles/{bundle_id}/state", data={"state": state})
 
     def add_content_to_bundle(self, bundle_id: str, content_item: dict[str, Any]) -> dict[str, Any]:
         """Add a content item to a bundle.
@@ -304,6 +304,4 @@ def get_data_admin_action_url(action: str, dataset_id: str, version_id: str) -> 
         the standard edition format used by the ONS Data Admin system. This may
         need to be updated if other edition formats are supported in the future.
     """
-    # E.g. https://publishing.ons.gov.uk/data-admin/edit/datasets/cpih/editions/time-series/versions/1
-    # TODO: Check if "time_series" is correct for all datasets - the swagger spec always uses "time-series"
     return f"{settings.ONS_DATA_ADMIN_URL}{action}/datasets/{dataset_id}/editions/time-series/versions/{version_id}"

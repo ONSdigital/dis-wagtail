@@ -31,22 +31,33 @@ class BundleAPIClientTests(TestCase):
 
     @patch("cms.bundles.api.requests.Session")
     def test_create_bundle_success(self, mock_session_class):
-        mock_response = self._create_mock_response(
-            HTTPStatus.CREATED, {"id": "test-bundle-123", "title": "Test Bundle"}
-        )
+        # Mock response following Bundle API swagger spec
+        mock_response_data = {
+            "id": "test-bundle-123",
+            "title": "Test Bundle",
+            "bundle_type": "MANUAL",
+            "preview_teams": [{"id": "team-uuid-1"}],
+            "state": "DRAFT",
+            "created_at": "2025-07-14T10:30:00.000Z",
+            "created_by": "user-uuid-1",
+            "contents": [],
+        }
+        mock_response = self._create_mock_response(HTTPStatus.CREATED, mock_response_data)
         mock_session = self._create_mock_session(mock_response)
         mock_session_class.return_value = mock_session
 
         client = BundleAPIClient(base_url=self.base_url)
+        # Bundle data following Bundle API swagger spec
         bundle_data = {
             "title": "Test Bundle",
-            "content": [{"id": "dataset-1", "type": "dataset"}, {"id": "page-1", "type": "page"}],
+            "bundle_type": "MANUAL",
+            "preview_teams": [{"id": "team-uuid-1"}],
         }
 
         result = client.create_bundle(bundle_data)
 
         mock_session.request.assert_called_once_with("POST", f"{self.base_url}/bundles", json=bundle_data)
-        self.assertEqual(result, {"id": "test-bundle-123", "title": "Test Bundle"})
+        self.assertEqual(result, mock_response_data)
 
     @patch("cms.bundles.api.requests.Session")
     def test_create_bundle_accepted_response(self, mock_session_class):
@@ -57,7 +68,14 @@ class BundleAPIClientTests(TestCase):
         mock_session_class.return_value = mock_session
 
         client = BundleAPIClient(base_url=self.base_url)
-        result = client.create_bundle({"title": "Test Bundle", "content": []})
+        # Bundle data following Bundle API swagger spec
+        bundle_data = {
+            "title": "Test Bundle",
+            "bundle_type": "SCHEDULED",
+            "preview_teams": [{"id": "team-uuid-1"}],
+            "scheduled_at": "2025-04-04T07:00:00.000Z",
+        }
+        result = client.create_bundle(bundle_data)
 
         self.assertEqual(
             result,
@@ -70,23 +88,54 @@ class BundleAPIClientTests(TestCase):
 
     @patch("cms.bundles.api.requests.Session")
     def test_update_bundle_success(self, mock_session_class):
-        mock_response = self._create_mock_response(HTTPStatus.OK, {"id": "test-bundle-123", "title": "Updated Bundle"})
+        # Mock response following Bundle API swagger spec
+        mock_response_data = {
+            "id": "test-bundle-123",
+            "title": "Updated Bundle",
+            "bundle_type": "MANUAL",
+            "preview_teams": [{"id": "team-uuid-1"}],
+            "state": "DRAFT",
+            "created_at": "2025-07-14T10:30:00.000Z",
+            "created_by": "user-uuid-1",
+            "contents": [],
+        }
+        mock_response = self._create_mock_response(
+            HTTPStatus.OK, mock_response_data, headers={"ETag": "updated-etag-123"}
+        )
         mock_session = self._create_mock_session(mock_response)
         mock_session_class.return_value = mock_session
 
         client = BundleAPIClient(base_url=self.base_url)
-        bundle_data = {"title": "Updated Bundle", "content": []}
+        # Bundle data following Bundle API swagger spec
+        bundle_data = {
+            "title": "Updated Bundle",
+            "bundle_type": "MANUAL",
+            "preview_teams": [{"id": "team-uuid-1"}],
+        }
 
         result = client.update_bundle("test-bundle-123", bundle_data)
 
         mock_session.request.assert_called_once_with(
             "PUT", f"{self.base_url}/bundles/test-bundle-123", json=bundle_data
         )
-        self.assertEqual(result, {"id": "test-bundle-123", "title": "Updated Bundle"})
+        self.assertEqual(result, mock_response_data)
 
     @patch("cms.bundles.api.requests.Session")
     def test_update_bundle_state_success(self, mock_session_class):
-        mock_response = self._create_mock_response(HTTPStatus.OK, {"id": "test-bundle-123", "status": "APPROVED"})
+        # Mock response following Bundle API swagger spec
+        mock_response_data = {
+            "id": "test-bundle-123",
+            "title": "Test Bundle",
+            "bundle_type": "MANUAL",
+            "preview_teams": [{"id": "team-uuid-1"}],
+            "state": "APPROVED",
+            "created_at": "2025-07-14T10:30:00.000Z",
+            "created_by": "user-uuid-1",
+            "contents": [],
+        }
+        mock_response = self._create_mock_response(
+            HTTPStatus.OK, mock_response_data, headers={"ETag": "state-updated-etag-123"}
+        )
         mock_session = self._create_mock_session(mock_response)
         mock_session_class.return_value = mock_session
 
@@ -94,9 +143,9 @@ class BundleAPIClientTests(TestCase):
         result = client.update_bundle_state("test-bundle-123", "APPROVED")
 
         mock_session.request.assert_called_once_with(
-            "PUT", f"{self.base_url}/bundles/test-bundle-123/state", data="APPROVED"
+            "PUT", f"{self.base_url}/bundles/test-bundle-123/state", json={"state": "APPROVED"}
         )
-        self.assertEqual(result, {"id": "test-bundle-123", "status": "APPROVED"})
+        self.assertEqual(result, mock_response_data)
 
     @patch("cms.bundles.api.requests.Session")
     def test_delete_bundle_success(self, mock_session_class):

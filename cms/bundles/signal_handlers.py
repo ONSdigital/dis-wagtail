@@ -84,13 +84,15 @@ def handle_bundle_dataset_added(instance: BundleDataset, created: bool, **kwargs
                 "version_id": instance.dataset.version,
             },
             "links": {
+                # The API expects edit and preview URLs to be provided, according to the spec.
                 "edit": get_data_admin_action_url("edit", instance.dataset.namespace, instance.dataset.version),
                 "preview": get_data_admin_action_url("preview", instance.dataset.namespace, instance.dataset.version),
             },
         }
+
         response = client.add_content_to_bundle(instance.parent.bundle_api_id, content_item)
 
-        # Find the content_id from the response
+        # Find the content_id from the response by going through the contents.
         content_item = next(
             (
                 item
@@ -105,7 +107,12 @@ def handle_bundle_dataset_added(instance: BundleDataset, created: bool, **kwargs
         if content_item and (content_id := content_item.get("id")):
             instance.content_api_id = content_id
             instance.save(update_fields=["content_api_id"])
-            logger.info("Added content %s to bundle %s in Dataset API", instance.dataset.namespace, instance.parent.pk)
+            logger.info(
+                "Added content %s to bundle %s in Dataset API with ID %s",
+                instance.dataset.namespace,
+                instance.parent.pk,
+                content_id,
+            )
         else:
             logger.error("Could not find content_id in response for bundle %s", instance.parent.pk)
 
