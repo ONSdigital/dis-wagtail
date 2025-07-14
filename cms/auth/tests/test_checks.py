@@ -56,7 +56,7 @@ class AuthSettingsCheckTests(TestCase):
 
         client_id_error = next(e for e in errors if e.id == "auth.E002")
         self.assertIn("AWS_COGNITO_APP_CLIENT_ID is required", client_id_error.msg)
-        self.assertIn("1234567890abcdefghijklmnop", client_id_error.hint)
+        self.assertIn("the-cognito-app-client-id", client_id_error.hint)
 
     @override_settings(
         AWS_COGNITO_LOGIN_ENABLED=True,
