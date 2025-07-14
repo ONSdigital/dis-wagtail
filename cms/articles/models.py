@@ -491,7 +491,7 @@ class StatisticalArticlePage(BundledPageMixin, RoutablePageMixin, BasePage):  # 
             "url": self.get_full_url(),
             "headline": self.seo_title or self.listing_title or self.get_full_display_title(),
             "description": self.search_description or self.listing_summary or strip_tags(self.summary),
-            "datePublished": self.first_published_at.isoformat() if self.first_published_at else None,
+            "datePublished": self.release_date.isoformat(),
             "license": "https://www.nationalarchives.gov.uk/doc/open-government-licence/version/3/",
             "author": {
                 "@type": "Person" if self.contact_details else "Organization",

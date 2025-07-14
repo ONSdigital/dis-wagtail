@@ -748,7 +748,7 @@ class StatisticalArticlePageTests(WagtailPageTestCase):  # pylint: disable=too-m
         self.assertEqual(actual_jsonld["url"], self.page.get_full_url(self.dummy_request))
         self.assertEqual(actual_jsonld["@id"], self.page.get_full_url(self.dummy_request))
         self.assertEqual(actual_jsonld["description"], strip_tags(self.page.summary))
-        self.assertEqual(actual_jsonld["datePublished"], self.page.first_published_at.isoformat())
+        self.assertEqual(actual_jsonld["datePublished"], self.page.release_date.isoformat())
         self.assertIn("breadcrumb", actual_jsonld)
         self.assertEqual(actual_jsonld["author"]["@type"], "Person")
         self.assertEqual(actual_jsonld["author"]["name"], self.page.contact_details.name)
