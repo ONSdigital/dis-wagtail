@@ -43,8 +43,8 @@ class BundleAPIClient:
         self,
         method: str,
         endpoint: str,
-        data: Optional[dict[str, Any] | str] = None,
-        params: Optional[dict[str, Any]] = None,
+        data: Optional[dict[str, Any]] = None,
+        params: Optional[dict[str, int | str]] = None,
     ) -> dict[str, Any]:
         """Make a request to the API and handle common errors.
 
@@ -67,15 +67,12 @@ class BundleAPIClient:
             return {"status": "disabled", "message": "Bundle API is disabled"}
 
         try:
-            # Pass data as `json` if it's a dict, otherwise as `data`
-            request_kwargs: dict[str, Any] = {}
+            request_kwargs: dict[str, dict[str, Any]] = {}
             if data is not None:
-                if isinstance(data, dict):
-                    request_kwargs["json"] = data
-                else:
-                    request_kwargs["data"] = data
+                request_kwargs["json"] = data
 
             if params is not None:
+                # Params like pagination from get_bundles() etc.
                 request_kwargs["params"] = params
 
             response = self.session.request(method, url, **request_kwargs)
@@ -223,6 +220,7 @@ class BundleAPIClient:
         """
         return self._make_request("DELETE", f"/bundles/{bundle_id}")
 
+    # Note: Currently unused, but kept for future use
     def get_bundles(self, limit: int = 20, offset: int = 0, publish_date: str | None = None) -> dict[str, Any]:
         """Get a list of all bundles.
 
@@ -234,11 +232,12 @@ class BundleAPIClient:
         Returns:
             API response data containing a list of bundles.
         """
-        params: dict[str, Any] = {"limit": limit, "offset": offset}
+        params: dict[str, str | int] = {"limit": limit, "offset": offset}
         if publish_date:
             params["publish_date"] = publish_date
         return self._make_request("GET", "/bundles", params=params)
 
+    # Note: Currently unused, but kept for future use
     def get_bundle(self, bundle_id: str) -> dict[str, Any]:
         """Get a single bundle by its ID.
 
@@ -250,6 +249,7 @@ class BundleAPIClient:
         """
         return self._make_request("GET", f"/bundles/{bundle_id}")
 
+    # Note: Currently unused, but kept for future use
     def get_health(self) -> dict[str, Any]:
         """Get the health status of the API.
 
@@ -257,17 +257,6 @@ class BundleAPIClient:
             API response data containing the health status.
         """
         return self._make_request("GET", "/health")
-
-    def get_dataset_status(self, dataset_id: str) -> dict[str, Any]:
-        """Get the status of a dataset via the API.
-
-        Args:
-            dataset_id: The ID of the dataset to check
-
-        Returns:
-            API response data containing dataset status
-        """
-        return self._make_request("GET", f"/datasets/{dataset_id}/status")
 
     def get_bundle_status(self, bundle_id: str) -> dict[str, Any]:
         """Get the status of a bundle via the API.

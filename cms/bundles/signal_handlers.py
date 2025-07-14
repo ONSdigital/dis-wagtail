@@ -119,6 +119,7 @@ def handle_bundle_dataset_removed(instance: BundleDataset, **kwargs: Any) -> Non
         logger.info("Deleted content %s from bundle %s in Dataset API", content_id, instance.parent.pk)
     except BundleAPIClientError as e:
         logger.error("Failed to delete content %s from bundle %s in Dataset API: %s", content_id, instance.parent.pk, e)
+        # Don't raise the exception to avoid breaking the deletion process
 
 
 @receiver(post_delete, sender=Bundle)
@@ -134,4 +135,3 @@ def handle_bundle_deletion(instance: Bundle, **kwargs: Any) -> None:
 
         except BundleAPIClientError as e:
             logger.error("Failed to delete bundle %s from Dataset API: %s", instance.pk, e)
-            # Don't raise the exception to avoid breaking the deletion process

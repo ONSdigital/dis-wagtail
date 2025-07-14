@@ -72,33 +72,54 @@ class BundleAdminForm(WagtailAdminModelForm):
 
         return has_datasets
 
+    def _get_dataset_title_from_form_data(self, dataset_id: str) -> str:
+        """Get dataset title from form data based on dataset ID."""
+        for form in self.formsets["bundled_datasets"].forms:
+            if (
+                form.is_valid()
+                and not form.cleaned_data.get("DELETE")
+                and (dataset := form.cleaned_data.get("dataset"))
+                and dataset.namespace == dataset_id
+            ):
+                return dataset.title
+        return dataset_id
+
+    def _check_bundle_contents_approval_status(self) -> list[str]:
+        """Check bundle contents and return list of non-approved datasets."""
+        client = BundleAPIClient()
+        datasets_not_approved = []
+
+        try:
+            response = client.get_bundle_contents(self.instance.bundle_api_id)
+
+            # Check each content item in the bundle
+            for item in response.get("contents", []):
+                item_state = item.get("state", "unknown")
+
+                if item_state != "APPROVED":
+                    # Find the corresponding dataset title from the metadata
+                    metadata = item.get("metadata", {})
+                    dataset_id = metadata.get("dataset_id", "unknown")
+                    dataset_title = self._get_dataset_title_from_form_data(dataset_id)
+                    datasets_not_approved.append(f"{dataset_title} (state: {item_state})")
+
+        except BundleAPIClientError as e:
+            logger.error("Failed to check bundle contents for bundle %s: %s", self.instance.bundle_api_id, e)
+            datasets_not_approved.append("Bundle content validation failed")
+
+        return datasets_not_approved
+
     @ons_bundle_api_enabled
     def _validate_bundled_datasets_status(self) -> None:
         """Validate that all bundled datasets are approved when bundle is set to approved status."""
         if not self._has_datasets():
             return
 
-        client = BundleAPIClient()
-        datasets_not_approved = []
+        # Skip validation if bundle doesn't have an API ID yet
+        if not self.instance.bundle_api_id:
+            return
 
-        for form in self.formsets["bundled_datasets"].forms:
-            if not form.is_valid():
-                continue
-
-            if form.cleaned_data.get("DELETE"):
-                continue
-
-            if dataset := form.cleaned_data.get("dataset"):
-                try:
-                    response = client.get_dataset_status(dataset.namespace)
-                    dataset_status = response.get("status", "unknown")
-
-                    if dataset_status != "approved":
-                        datasets_not_approved.append(f"{dataset.title} (status: {dataset_status})")
-
-                except BundleAPIClientError as e:
-                    logger.error("Failed to check status for dataset %s: %s", dataset.namespace, e)
-                    datasets_not_approved.append(f"{dataset.title} (status check failed)")
+        datasets_not_approved = self._check_bundle_contents_approval_status()
 
         if datasets_not_approved:
             # Return the original status
@@ -204,7 +225,7 @@ class BundleAdminForm(WagtailAdminModelForm):
                 # ensure all bundled pages are ready to publish
                 self._validate_bundled_pages_status()
 
-                # ensure all bundled datasets are approved
+                # ensure all bundled datasets are approved (the function will check if the API is enabled)
                 self._validate_bundled_datasets_status()
 
                 cleaned_data["approved_at"] = timezone.now()

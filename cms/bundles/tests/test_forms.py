@@ -318,18 +318,48 @@ class BundleDatasetValidationTestCase(TestCase):
     def test_dataset_validation_approved_dataset_passes(self):
         """Test that approved datasets pass validation."""
         dataset = DatasetFactory(id=123)
-        self.mock_client.get_dataset_status.return_value = {"status": "approved"}
+        self.bundle.bundle_api_id = "test-bundle-123"
+        self.bundle.save()
+
+        self.mock_client.get_bundle_contents.return_value = {
+            "contents": [
+                {
+                    "id": "content-1",
+                    "state": "APPROVED",
+                    "metadata": {
+                        "dataset_id": dataset.namespace,
+                        "edition_id": dataset.edition,
+                        "version_id": dataset.version,
+                    },
+                }
+            ]
+        }
 
         raw_data = self.raw_form_data_with_dataset(dataset.id)
         form = self.form_class(instance=self.bundle, data=nested_form_data(raw_data), for_user=self.approver)
 
         self.assertTrue(form.is_valid())
-        self.mock_client.get_dataset_status.assert_called_once_with(dataset.namespace)
+        self.mock_client.get_bundle_contents.assert_called_once_with("test-bundle-123")
 
     def test_dataset_validation_unapproved_dataset_fails(self):
         """Test that unapproved datasets fail validation."""
         dataset = DatasetFactory(id=123, title="Test Dataset")
-        self.mock_client.get_dataset_status.return_value = {"status": "draft"}
+        self.bundle.bundle_api_id = "test-bundle-123"
+        self.bundle.save()
+
+        self.mock_client.get_bundle_contents.return_value = {
+            "contents": [
+                {
+                    "id": "content-1",
+                    "state": "DRAFT",
+                    "metadata": {
+                        "dataset_id": dataset.namespace,
+                        "edition_id": dataset.edition,
+                        "version_id": dataset.version,
+                    },
+                }
+            ]
+        }
 
         raw_data = self.raw_form_data_with_dataset(dataset.id)
         form = self.form_class(instance=self.bundle, data=nested_form_data(raw_data), for_user=self.approver)
@@ -338,22 +368,38 @@ class BundleDatasetValidationTestCase(TestCase):
         self.assertFormError(
             form,
             None,
-            ["Cannot approve the bundle with dataset not ready to be published: Test Dataset (status: draft)"],
+            ["Cannot approve the bundle with dataset not ready to be published: Test Dataset (state: DRAFT)"],
         )
 
     def test_dataset_validation_multiple_datasets_mixed_statuses(self):
         """Test validation with multiple datasets having different statuses."""
         dataset1 = DatasetFactory(id=123, title="Approved Dataset")
         dataset2 = DatasetFactory(id=124, title="Draft Dataset")
+        self.bundle.bundle_api_id = "test-bundle-123"
+        self.bundle.save()
 
-        def mock_get_dataset_status(namespace):
-            if namespace == dataset1.namespace:
-                return {"status": "approved"}
-            if namespace == dataset2.namespace:
-                return {"status": "draft"}
-            return {"status": "unknown"}
-
-        self.mock_client.get_dataset_status.side_effect = mock_get_dataset_status
+        self.mock_client.get_bundle_contents.return_value = {
+            "contents": [
+                {
+                    "id": "content-1",
+                    "state": "APPROVED",
+                    "metadata": {
+                        "dataset_id": dataset1.namespace,
+                        "edition_id": dataset1.edition,
+                        "version_id": dataset1.version,
+                    },
+                },
+                {
+                    "id": "content-2",
+                    "state": "DRAFT",
+                    "metadata": {
+                        "dataset_id": dataset2.namespace,
+                        "edition_id": dataset2.edition,
+                        "version_id": dataset2.version,
+                    },
+                },
+            ]
+        }
 
         raw_data = {
             "name": "Test Bundle",
@@ -369,13 +415,16 @@ class BundleDatasetValidationTestCase(TestCase):
         self.assertFormError(
             form,
             None,
-            ["Cannot approve the bundle with dataset not ready to be published: Draft Dataset (status: draft)"],
+            ["Cannot approve the bundle with dataset not ready to be published: Draft Dataset (state: DRAFT)"],
         )
 
     def test_dataset_validation_api_error_fails_gracefully(self):
         """Test that API errors are handled gracefully."""
         dataset = DatasetFactory(id=123, title="Test Dataset")
-        self.mock_client.get_dataset_status.side_effect = BundleAPIClientError("API Error")
+        self.bundle.bundle_api_id = "test-bundle-123"
+        self.bundle.save()
+
+        self.mock_client.get_bundle_contents.side_effect = BundleAPIClientError("API Error")
 
         raw_data = self.raw_form_data_with_dataset(dataset.id)
         form = self.form_class(instance=self.bundle, data=nested_form_data(raw_data), for_user=self.approver)
@@ -384,13 +433,28 @@ class BundleDatasetValidationTestCase(TestCase):
         self.assertFormError(
             form,
             None,
-            ["Cannot approve the bundle with dataset not ready to be published: Test Dataset (status check failed)"],
+            ["Cannot approve the bundle with dataset not ready to be published: Bundle content validation failed"],
         )
 
     def test_dataset_validation_only_runs_when_approving(self):
         """Test that dataset validation only runs when changing status to APPROVED."""
         dataset = DatasetFactory(id=123)
-        self.mock_client.get_dataset_status.return_value = {"status": "draft"}
+        self.bundle.bundle_api_id = "test-bundle-123"
+        self.bundle.save()
+
+        self.mock_client.get_bundle_contents.return_value = {
+            "contents": [
+                {
+                    "id": "content-1",
+                    "state": "DRAFT",
+                    "metadata": {
+                        "dataset_id": dataset.namespace,
+                        "edition_id": dataset.edition,
+                        "version_id": dataset.version,
+                    },
+                }
+            ]
+        }
 
         raw_data = self.raw_form_data_with_dataset(dataset.id)
         raw_data["status"] = BundleStatus.IN_REVIEW  # Not approving
@@ -398,7 +462,7 @@ class BundleDatasetValidationTestCase(TestCase):
         form = self.form_class(instance=self.bundle, data=nested_form_data(raw_data), for_user=self.approver)
 
         self.assertTrue(form.is_valid())
-        self.mock_client.get_dataset_status.assert_not_called()
+        self.mock_client.get_bundle_contents.assert_not_called()
 
     def test_dataset_validation_skipped_when_no_datasets(self):
         """Test that dataset validation is skipped when there are no datasets."""
@@ -413,14 +477,54 @@ class BundleDatasetValidationTestCase(TestCase):
         form = self.form_class(instance=self.bundle, data=nested_form_data(raw_data), for_user=self.approver)
 
         self.assertFalse(form.is_valid())  # Should fail because no pages or datasets
-        self.mock_client.get_dataset_status.assert_not_called()
+        self.mock_client.get_bundle_contents.assert_not_called()
+
+    def test_dataset_validation_skipped_when_no_bundle_api_id(self):
+        """Test that dataset validation is skipped when bundle has no API ID."""
+        dataset = DatasetFactory(id=123, title="Test Dataset")
+        # Bundle doesn't have bundle_api_id set
+        self.assertIsNone(self.bundle.bundle_api_id)
+
+        raw_data = self.raw_form_data_with_dataset(dataset.id)
+        form = self.form_class(instance=self.bundle, data=nested_form_data(raw_data), for_user=self.approver)
+
+        self.assertTrue(form.is_valid())
+        self.mock_client.get_bundle_contents.assert_not_called()
+
+    def test_dataset_validation_empty_contents_array(self):
+        """Test validation handles empty contents array from API."""
+        dataset = DatasetFactory(id=123, title="Test Dataset")
+        self.bundle.bundle_api_id = "test-bundle-123"
+        self.bundle.save()
+
+        self.mock_client.get_bundle_contents.return_value = {"contents": []}
+
+        raw_data = self.raw_form_data_with_dataset(dataset.id)
+        form = self.form_class(instance=self.bundle, data=nested_form_data(raw_data), for_user=self.approver)
+
+        self.assertTrue(form.is_valid())
+        self.mock_client.get_bundle_contents.assert_called_once_with("test-bundle-123")
 
     def test_dataset_validation_handles_deleted_datasets(self):
         """Test that validation handles datasets marked for deletion."""
         dataset1 = DatasetFactory(id=123, title="Approved Dataset")
         dataset2 = DatasetFactory(id=124, title="Deleted Dataset")
+        self.bundle.bundle_api_id = "test-bundle-123"
+        self.bundle.save()
 
-        self.mock_client.get_dataset_status.return_value = {"status": "approved"}
+        self.mock_client.get_bundle_contents.return_value = {
+            "contents": [
+                {
+                    "id": "content-1",
+                    "state": "APPROVED",
+                    "metadata": {
+                        "dataset_id": dataset1.namespace,
+                        "edition_id": dataset1.edition,
+                        "version_id": dataset1.version,
+                    },
+                }
+            ]
+        }
 
         raw_data = {
             "name": "Test Bundle",
@@ -433,8 +537,8 @@ class BundleDatasetValidationTestCase(TestCase):
         form = self.form_class(instance=self.bundle, data=nested_form_data(raw_data), for_user=self.approver)
 
         self.assertTrue(form.is_valid())
-        # Should only check the non-deleted dataset
-        self.mock_client.get_dataset_status.assert_called_once_with(dataset1.namespace)
+        # Should check bundle contents once
+        self.mock_client.get_bundle_contents.assert_called_once_with("test-bundle-123")
 
 
 @override_settings(ONS_BUNDLE_API_ENABLED=False)
@@ -471,7 +575,7 @@ class BundleDatasetValidationDisabledTestCase(TestCase):
 
         self.assertTrue(form.is_valid())
         # API client should not be called when disabled
-        self.mock_client.get_dataset_status.assert_not_called()
+        self.mock_client.get_bundle_contents.assert_not_called()
 
 
 @override_settings(ONS_BUNDLE_API_ENABLED=True)

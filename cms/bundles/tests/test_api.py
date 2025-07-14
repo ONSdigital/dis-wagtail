@@ -166,16 +166,88 @@ class BundleAPIClientTests(TestCase):
         self.assertEqual(result, {"status": "success", "message": "Operation completed successfully"})
 
     @patch("cms.bundles.api.requests.Session")
-    def test_get_dataset_status_success(self, mock_session_class):
-        mock_response = self._create_mock_response(HTTPStatus.OK, {"id": "dataset-123", "status": "approved"})
+    def test_get_bundle_contents_success(self, mock_session_class):
+        mock_response_data = {
+            "contents": [
+                {
+                    "id": "content-123",
+                    "content_type": "DATASET",
+                    "state": "APPROVED",
+                    "metadata": {
+                        "dataset_id": "cpih",
+                        "edition_id": "time-series",
+                        "version_id": "1",
+                    },
+                    "links": {
+                        "edit": (
+                            "https://publishing.ons.gov.uk/data-admin/edit/datasets/cpih/"
+                            "editions/time-series/versions/1"
+                        ),
+                        "preview": (
+                            "https://publishing.ons.gov.uk/data-admin/preview/datasets/cpih/"
+                            "editions/time-series/versions/1"
+                        ),
+                    },
+                },
+                {
+                    "id": "content-456",
+                    "content_type": "DATASET",
+                    "state": "DRAFT",
+                    "metadata": {
+                        "dataset_id": "inflation",
+                        "edition_id": "time-series",
+                        "version_id": "2",
+                    },
+                    "links": {
+                        "edit": (
+                            "https://publishing.ons.gov.uk/data-admin/edit/datasets/inflation/"
+                            "editions/time-series/versions/2"
+                        ),
+                        "preview": (
+                            "https://publishing.ons.gov.uk/data-admin/preview/datasets/inflation/"
+                            "editions/time-series/versions/2"
+                        ),
+                    },
+                },
+            ]
+        }
+        mock_response = self._create_mock_response(HTTPStatus.OK, mock_response_data)
         mock_session = self._create_mock_session(mock_response)
         mock_session_class.return_value = mock_session
 
         client = BundleAPIClient(base_url=self.base_url)
-        result = client.get_dataset_status("dataset-123")
+        result = client.get_bundle_contents("test-bundle-123")
 
-        mock_session.request.assert_called_once_with("GET", f"{self.base_url}/datasets/dataset-123/status")
-        self.assertEqual(result, {"id": "dataset-123", "status": "approved"})
+        mock_session.request.assert_called_once_with("GET", f"{self.base_url}/bundles/test-bundle-123/contents")
+        self.assertEqual(result, mock_response_data)
+
+    @patch("cms.bundles.api.requests.Session")
+    def test_get_bundle_contents_empty(self, mock_session_class):
+        mock_response_data = {"contents": []}
+        mock_response = self._create_mock_response(HTTPStatus.OK, mock_response_data)
+        mock_session = self._create_mock_session(mock_response)
+        mock_session_class.return_value = mock_session
+
+        client = BundleAPIClient(base_url=self.base_url)
+        result = client.get_bundle_contents("empty-bundle-123")
+
+        mock_session.request.assert_called_once_with("GET", f"{self.base_url}/bundles/empty-bundle-123/contents")
+        self.assertEqual(result, {"contents": []})
+
+    @patch("cms.bundles.api.requests.Session")
+    def test_get_bundle_contents_not_found(self, mock_session_class):
+        mock_response = Mock()
+        mock_response.status_code = HTTPStatus.NOT_FOUND
+        mock_response.raise_for_status.side_effect = requests.exceptions.HTTPError(response=mock_response)
+        mock_session = self._create_mock_session(mock_response)
+        mock_session_class.return_value = mock_session
+
+        client = BundleAPIClient(base_url=self.base_url)
+        with self.assertRaises(BundleAPIClientError) as context:
+            client.get_bundle_contents("nonexistent-bundle")
+
+        self.assertIn("HTTP 404 error", str(context.exception))
+        self.assertIn("Not Found", str(context.exception))
 
     @patch("cms.bundles.api.requests.Session")
     def test_get_bundle_status_success(self, mock_session_class):
@@ -323,7 +395,7 @@ class BundleAPIClientDisabledTests(TestCase):
         result = client.delete_bundle("test-bundle-123")
         self.assertEqual(result, {"status": "disabled", "message": "Bundle API is disabled"})
 
-        result = client.get_dataset_status("dataset-123")
+        result = client.get_bundle_contents("test-bundle-123")
         self.assertEqual(result, {"status": "disabled", "message": "Bundle API is disabled"})
 
         result = client.get_bundle_status("test-bundle-123")
