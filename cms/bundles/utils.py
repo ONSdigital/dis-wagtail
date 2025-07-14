@@ -169,7 +169,7 @@ def build_bundle_data_for_api(bundle: "Bundle") -> dict[str, Any]:
     bundle_type = "SCHEDULED" if bundle.scheduled_publication_date else "MANUAL"
 
     # Get preview teams
-    preview_teams = [{"id": str(team.id)} for team in bundle.teams.all()]
+    preview_teams = [{"id": str(team_id)} for team_id in bundle.teams.values_list("id", flat=True)]
 
     return {
         "title": bundle.name,

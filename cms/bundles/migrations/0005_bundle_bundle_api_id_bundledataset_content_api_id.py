@@ -4,20 +4,19 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('bundles', '0004_bundleteam_preview_notification_sent'),
+        ("bundles", "0004_bundleteam_preview_notification_sent"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='bundle',
-            name='bundle_api_id',
+            model_name="bundle",
+            name="bundle_api_id",
             field=models.CharField(blank=True, editable=False, max_length=255, null=True),
         ),
         migrations.AddField(
-            model_name='bundledataset',
-            name='content_api_id',
+            model_name="bundledataset",
+            name="content_api_id",
             field=models.CharField(blank=True, max_length=255, null=True),
         ),
     ]
