@@ -742,7 +742,7 @@ class IframeBlock(BaseVisualisationBlock):
             ):
                 patterns_str = " or ".join(settings.IFRAME_VISUALISATION_ALLOWED_DOMAINS)
                 errors["iframe_source_url"] = ValidationError(
-                    f"The URL hostname must match one of the allowed patterns: {patterns_str}"
+                    f"The URL hostname is not in the list of allowed domains: {patterns_str}"
                 )
 
         if errors:
