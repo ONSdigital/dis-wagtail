@@ -14,7 +14,7 @@ def _check_aws_cognito(errors: list, settings_obj: "LazySettings") -> None:
     if aws_cognito_enabled:
         cognito_settings: list[tuple[str, str, str]] = [
             ("AWS_COGNITO_USER_POOL_ID", "eu-west-2_xxxxxxxxx", "auth.E001"),
-            ("AWS_COGNITO_APP_CLIENT_ID", "1234567890abcdefghijklmnop", "auth.E002"),
+            ("AWS_COGNITO_APP_CLIENT_ID", "the-cognito-app-client-id", "auth.E002"),
             ("AWS_REGION", "eu-west-2", "auth.E003"),
             ("AUTH_TOKEN_REFRESH_URL", "http://localhost:29500/tokens/self", "auth.E004"),
             ("LOGOUT_REDIRECT_URL", "http://localhost:29500/logout", "auth.E005"),
@@ -25,7 +25,7 @@ def _check_aws_cognito(errors: list, settings_obj: "LazySettings") -> None:
                 errors.append(
                     Error(
                         f"{setting} is required when AWS_COGNITO_LOGIN_ENABLED is True.",
-                        hint=f"Set {setting} to e.g. '{hint_value}'.",
+                        hint=f"Set {setting} to an appropriate value. e.g. '{hint_value}'.",
                         id=error_id,
                     )
                 )
@@ -70,7 +70,7 @@ def _check_team_sync(errors: list, settings_obj: "LazySettings") -> None:
         if team_sync_frequency is not None and team_sync_frequency < 1:
             errors.append(
                 Error(
-                    f"AWS_COGNITO_TEAM_SYNC_FREQUENCY must be at least 1 (got {team_sync_frequency}).",
+                    f"AWS_COGNITO_TEAM_SYNC_FREQUENCY must be at least 1 minute (got {team_sync_frequency}).",
                     hint="Set AWS_COGNITO_TEAM_SYNC_FREQUENCY to a positive integer.",
                     id="auth.E008",
                 )
