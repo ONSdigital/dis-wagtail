@@ -113,7 +113,9 @@ ignore = [
     # indentation contains tabs
     "W191",
     # Prefer explicit type rather than union (|) shorthand
-    "UP007"
+    "UP007",
+    # Allow complex functions
+    "C901",
 ]
 
 [tool.ruff.lint.pydocstyle]

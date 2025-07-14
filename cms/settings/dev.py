@@ -19,8 +19,11 @@ INTERNAL_IPS = ("127.0.0.1", "10.0.2.2")
 # This is only to test Wagtail emails.
 WAGTAILADMIN_BASE_URL = "http://localhost:8000"
 
-# Display sent emails in the console while developing locally.
-EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
+# Display sent emails in via mailpit @ http://localhost:8025
+EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
+EMAIL_HOST = env.get("EMAIL_HOST", "localhost")
+EMAIL_PORT = 1025
+EMAIL_USE_TLS = False
 
 # Sender address for email notifications
 DEFAULT_FROM_EMAIL = "cms@example.com"

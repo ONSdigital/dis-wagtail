@@ -1,11 +1,40 @@
-Hello,
+{% extends "bundles/notification_emails/html_variant/base_email.html" %}
 
-Your release {{bundle_name}} has now been published to the ONS website.
+{% block title %}Bundle "{{bundle_name}}" has been published{% endblock %}
 
-Please review your release on the ONS website and contact the Publishing team if you require any further support.
+{% block content %}
+    <!-- djlint:off H021-->
+    <table role="presentation" cellpadding="0" cellspacing="0" width="100%">
+        <tr>
+            <td style="padding:0 24px; font-family:Arial, sans-serif;">
 
-Do not reply to this message as this mailbox isn't monitored.
+                <p style="margin:0 0 16px 0; line-height:1.4;">
+                    Hello,
+                </p>
 
-Kind regards,
-Publishing team
-Publishing@ons.gov.uk
+                <p style="margin:0 0 16px 0; line-height:1.4;">
+                    Your release {{bundle_name}} has now been published on the ONS website.
+                </p>
+
+                <p style="margin:0 0 16px 0; line-height:1.4;">
+                    Please review the release on the ONS website and contact the Publishing team if you need any further support.
+                </p>
+
+                <p style="margin:0 0 16px 0; line-height:1.4;">
+                    Do not reply to this message, as this mailbox is not monitored.
+                </p>
+
+                <p style="margin:0 0 8px 0; line-height:1.4;">
+                    Kind regards,
+                </p>
+
+                <p style="margin:0; line-height:1.4;">
+                    Publishing team<br>
+                    <a href="mailto:Publishing@ons.gov.uk" style="color:#0066cc;">Publishing@ons.gov.uk</a>
+                </p>
+
+            </td>
+        </tr>
+    </table>
+    <!-- djlint:on -->
+{% endblock %}
