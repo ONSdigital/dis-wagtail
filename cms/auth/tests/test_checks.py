@@ -124,7 +124,7 @@ class IdentityAPISettingsCheckTests(TestCase):
 
         self.assertEqual(len(errors), 1)
         error = errors[0]
-        self.assertEqual(error.id, "auth.E001")
+        self.assertEqual(error.id, "auth.E007")
         self.assertIn("SERVICE_AUTH_TOKEN is not set", error.msg)
         self.assertIn("IDENTITY_API_BASE_URL is configured", error.msg)
         self.assertIn("AWS_COGNITO_TEAM_SYNC_ENABLED is True", error.msg)
@@ -139,7 +139,7 @@ class IdentityAPISettingsCheckTests(TestCase):
         errors = check_identity_api_settings(app_configs=None)
 
         self.assertEqual(len(errors), 1)
-        self.assertEqual(errors[0].id, "auth.E001")
+        self.assertEqual(errors[0].id, "auth.E007")
 
     @override_settings(
         IDENTITY_API_BASE_URL="https://identity.example.com",
@@ -179,7 +179,7 @@ class IdentityAPISettingsCheckTests(TestCase):
 
         self.assertEqual(len(errors), 1)
         error = errors[0]
-        self.assertEqual(error.id, "auth.E002")
+        self.assertEqual(error.id, "auth.E008")
         self.assertIn("AWS_COGNITO_TEAM_SYNC_FREQUENCY must be at least 1", error.msg)
         self.assertIn(f"(got {settings.AWS_COGNITO_TEAM_SYNC_FREQUENCY})", error.msg)
 
@@ -193,7 +193,7 @@ class IdentityAPISettingsCheckTests(TestCase):
 
         self.assertEqual(len(errors), 1)
         error = errors[0]
-        self.assertEqual(error.id, "auth.E002")
+        self.assertEqual(error.id, "auth.E008")
         self.assertIn(f"(got {settings.AWS_COGNITO_TEAM_SYNC_FREQUENCY})", error.msg)
 
     @override_settings(
@@ -251,5 +251,5 @@ class CombinedChecksTests(TestCase):
         identity_errors = check_identity_api_settings(app_configs=None)
         self.assertEqual(len(identity_errors), 2)  # Missing token and invalid frequency
         error_ids = [e.id for e in identity_errors]
-        self.assertIn("auth.E001", error_ids)
-        self.assertIn("auth.E002", error_ids)
+        self.assertIn("auth.E007", error_ids)
+        self.assertIn("auth.E008", error_ids)

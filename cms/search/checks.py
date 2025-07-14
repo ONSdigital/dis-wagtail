@@ -60,7 +60,7 @@ def check_search_index_content_type(app_configs: Iterable[AppConfig] | None, **k
                         f"'{model.__name__}' or add '{model.__name__}' to "
                         "SEARCH_INDEX_EXCLUDED_PAGE_TYPES."
                     ),
-                    id="search.E001",
+                    id="search.E002",
                 )
             )
 

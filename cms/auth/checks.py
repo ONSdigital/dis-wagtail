@@ -58,7 +58,7 @@ def _check_identity_api(errors: list, settings_obj: "LazySettings") -> None:
                         "AWS_COGNITO_TEAM_SYNC_ENABLED is True."
                     ),
                     hint="Set SERVICE_AUTH_TOKEN for API authentication.",
-                    id="auth.E001",
+                    id="auth.E007",
                 )
             )
 
@@ -72,7 +72,7 @@ def _check_team_sync(errors: list, settings_obj: "LazySettings") -> None:
                 Error(
                     f"AWS_COGNITO_TEAM_SYNC_FREQUENCY must be at least 1 (got {team_sync_frequency}).",
                     hint="Set AWS_COGNITO_TEAM_SYNC_FREQUENCY to a positive integer.",
-                    id="auth.E002",
+                    id="auth.E008",
                 )
             )
 
