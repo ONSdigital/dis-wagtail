@@ -1,16 +1,47 @@
-Hello,
+{% extends "bundles/notification_emails/html_variant/base_email.html" %}
 
-The preview of your release {{bundle_name}} is available for review.
-Please follow this link: {{bundle_inspect_url}} to review.
-Login using your existing Florence user name and password.
-Guidance on how to use Wagtail is available here [link to SharePoint TBC].
+{% block title %}Bundle "{{bundle.name}}" is ready for review{% endblock %}
 
-Changes to your release should be requested via your Tracker change log.
+{% block content %}
+    <!-- djlint:off H021-->     
+    <table role="presentation" cellpadding="0" cellspacing="0" width="100%">
+        <tr>
+            <td style="padding:0 24px; font-family:Arial, sans-serif;">
 
-If you have any questions please contact your named Publishing Officer (list available <a href="https://statics.teams.cdn.office.net.mcas.ms/evergreen-assets/safelinks/1/atp-safelinks.html">here</a>).
+                <p style="margin:0 0 16px 0; line-height:1.4;">
+                    Hello,
+                </p>
 
-Do not reply directly to this message as this inbox is not monitored.
+                <p style="margin:0 0 16px 0; line-height:1.4;">
+                    The preview of your release {{bundle_name}} is available for review.<br>
+                    Please follow this link: <a href="{{bundle_inspect_url}}">{{bundle_inspect_url}}</a> to review.<br>
+                    Login using your existing Florence user name and password.<br>
+                    Guidance on how to use Wagtail is available here [link to SharePoint TBC].
+                </p>
 
-Kind regards,
-Publishing team
-Publishing@ons.gov.uk
+                <p style="margin:0 0 16px 0; line-height:1.4;">
+                    Changes to your release should be requested via your Tracker change log.
+                </p>
+
+                <p style="margin:0 0 16px 0; line-height:1.4;">
+                    If you have any questions please contact your named Publishing Officer (list available <a href="https://statics.teams.cdn.office.net.mcas.ms/evergreen-assets/safelinks/1/atp-safelinks.html">here</a>).
+                </p>
+
+                <p style="margin:0 0 16px 0; line-height:1.4;">
+                    Do not reply directly to this message as this inbox is not monitored.
+                </p>
+
+                <p style="margin:0 0 8px 0; line-height:1.4;">
+                    Kind regards,
+                </p>
+
+                <p style="margin:0; line-height:1.4;">
+                    Publishing team<br>
+                    <a href="mailto:Publishing@ons.gov.uk" style="color:#0066cc;">Publishing@ons.gov.uk</a>
+                </p>
+
+            </td>
+        </tr>
+    </table>
+    <!-- djlint:on -->
+{% endblock %}

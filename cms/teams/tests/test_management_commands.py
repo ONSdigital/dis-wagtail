@@ -30,16 +30,13 @@ def api_group(
     }
 
 
-ROLE_GROUP_IDS = {"role-admin", "role-publisher"}
-
-
 @override_settings(
-    ROLE_GROUP_IDS=list(ROLE_GROUP_IDS),
+    SERVICE_AUTH_TOKEN="test-token",
     IDENTITY_API_BASE_URL="https://identity.example",
 )
 class SyncTeamsCommandTests(TestCase):
-    """Covers creation, update, de-activation, dry-run, API/ network errors,
-    and role-group exclusion logic.
+    """Covers creation, update, de-activation, dry-run, API/network errors,
+    auth headers, and role-group exclusion logic.
     """
 
     def _call_command(self, *, dry_run=False):
@@ -47,15 +44,37 @@ class SyncTeamsCommandTests(TestCase):
         with open("/dev/null", "w", encoding="utf-8") as stdout:
             management.call_command("sync_teams", *argv, stdout=stdout)
 
-    def _mock_api(self, groups):
-        """Patch requests.get so /groups returns supplied list."""
+    def assert_command_failure_message(self, cm):
+        self.assertIn("Team sync failed: Failed to fetch groups from the identity API.", str(cm.exception))
+
+    def _mock_api(self, groups, response=None, error=None, expected_headers=None):
+        """Patch requests.get so /groups returns supplied list,
+        optionally asserting headers and raising side effects.
+        """
         resp_json = {"groups": groups}
 
         def fake_get(url, *args, **kwargs):
             self.assertIn("/groups", url)
-            return mock.Mock(status_code=200, json=lambda: resp_json, raise_for_status=lambda: None)
+            headers = kwargs.get("headers", {})
+            if expected_headers is not None:
+                self.assertEqual(headers, expected_headers)
 
-        return mock.patch("cms.teams.management.commands.sync_teams.requests.get", side_effect=fake_get)
+            if error:
+                raise error
+
+            if response:
+                return response
+
+            return mock.Mock(
+                status_code=200,
+                json=lambda: resp_json,
+                raise_for_status=lambda: None,
+            )
+
+        return mock.patch(
+            "cms.teams.management.commands.sync_teams.requests.get",
+            side_effect=fake_get,
+        )
 
     def test_create_update_deactivate(self):
         """happy-path: create new, update existing, deactivate missing."""
@@ -120,11 +139,10 @@ class SyncTeamsCommandTests(TestCase):
         self.assertTrue(team.is_active)
 
     def test_network_error_raises_command_error(self):
-        def boom(*_, **__):
-            raise requests.ConnectionError("no network")
-
-        with mock.patch("cms.teams.management.commands.sync_teams.requests.get", boom), self.assertRaises(CommandError):
+        with self._mock_api([], error=requests.ConnectionError("no network")), self.assertRaises(CommandError) as cm:
             self._call_command()
+
+        self.assert_command_failure_message(cm)
 
     def test_invalid_json_raises_command_error(self):
         bad_resp = mock.Mock(
@@ -133,27 +151,24 @@ class SyncTeamsCommandTests(TestCase):
             json=lambda: (_ for _ in ()).throw(ValueError("bad json")),  # iterator trick to raise
         )
 
-        with (
-            mock.patch("cms.teams.management.commands.sync_teams.requests.get", return_value=bad_resp),
-            self.assertRaises(CommandError),
-        ):
+        with self._mock_api([], response=bad_resp), self.assertRaises(CommandError) as cm:
             self._call_command()
 
+        self.assert_command_failure_message(cm)
+
+    @override_settings(IDENTITY_API_BASE_URL=None)
     def test_missing_base_url_setting_raises(self):
-        with override_settings(IDENTITY_API_BASE_URL=None), self.assertRaises(CommandError):
+        with self.assertRaises(CommandError) as cm:
             self._call_command()
+
+        self.assertIn("IDENTITY_API_BASE_URL is not set in settings.", str(cm.exception))
 
     # HTTP 5xx raise_for_status fires up as CommandError
     def test_http_error_raises_command_error(self):
-        bad_resp = mock.Mock(
-            status_code=500,
-            raise_for_status=mock.Mock(side_effect=requests.HTTPError("boom")),
-        )
-        with (
-            mock.patch("cms.teams.management.commands.sync_teams.requests.get", return_value=bad_resp),
-            self.assertRaises(CommandError),
-        ):
+        with self._mock_api([], error=requests.HTTPError("boom")), self.assertRaises(CommandError) as cm:
             self._call_command()
+
+        self.assert_command_failure_message(cm)
 
     # A previously inactive team should be re-activated when present in the remote payload.
     def test_inactive_team_reactivated(self):
@@ -195,3 +210,20 @@ class SyncTeamsCommandTests(TestCase):
             m_save.called,
             "Team.save() should not be called when nothing changed",
         )
+
+    def test_auth_headers_are_included_in_request(self):
+        """Ensure the command sends the correct auth headers to the API."""
+        expected = {
+            "Authorization": "Bearer test-token",
+            "X-Florence-Token": "Bearer test-token",
+        }
+        with self._mock_api([], expected_headers=expected):
+            self._call_command()
+
+    @override_settings(SERVICE_AUTH_TOKEN=None)
+    def test_missing_service_auth_token_raises_command_error(self):
+        """Ensure the command raises an error if SERVICE_AUTH_TOKEN is not set."""
+        with self.assertRaises(CommandError) as exc:
+            self._call_command()
+
+        self.assertIn("SERVICE_AUTH_TOKEN is not set in settings.", str(exc.exception))
