@@ -50,6 +50,8 @@ def handle_bundle_publication(instance: Bundle, **kwargs: Any) -> None:
         for bundle_team in active_bundle_teams:
             send_bundle_published_email(bundle_team=bundle_team)
 
+        # @TODO: Publish the datasets when endpoint available?
+
 
 @receiver(post_save, sender=Bundle)
 @ons_bundle_api_enabled

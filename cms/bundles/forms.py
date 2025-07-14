@@ -81,13 +81,17 @@ class BundleAdminForm(WagtailAdminModelForm):
                 and (dataset := form.cleaned_data.get("dataset"))
                 and dataset.namespace == dataset_id
             ):
-                return dataset.title
+                return str(dataset.title)
         return dataset_id
 
     def _check_bundle_contents_approval_status(self) -> list[str]:
         """Check bundle contents and return list of non-approved datasets."""
         client = BundleAPIClient()
-        datasets_not_approved = []
+        datasets_not_approved: list[str] = []
+
+        # Ensure bundle_api_id is not None
+        if not self.instance.bundle_api_id:
+            return datasets_not_approved
 
         try:
             response = client.get_bundle_contents(self.instance.bundle_api_id)

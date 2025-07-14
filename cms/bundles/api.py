@@ -67,7 +67,7 @@ class BundleAPIClient:
             return {"status": "disabled", "message": "Bundle API is disabled"}
 
         try:
-            request_kwargs: dict[str, dict[str, Any]] = {}
+            request_kwargs: dict[str, Any] = {}
             if data is not None:
                 request_kwargs["json"] = data
 
@@ -249,7 +249,6 @@ class BundleAPIClient:
         """
         return self._make_request("GET", f"/bundles/{bundle_id}")
 
-    # Note: Currently unused, but kept for future use
     def get_health(self) -> dict[str, Any]:
         """Get the health status of the API.
 
