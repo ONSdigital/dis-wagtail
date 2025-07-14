@@ -56,9 +56,6 @@ class BundleDataset(Orderable):
 
     panels: ClassVar[list["Panel"]] = ["dataset"]
 
-    class Meta(Orderable.Meta):
-        unique_together: ClassVar = [("parent", "dataset")]
-
     def __str__(self) -> str:
         return f"BundleDataset: dataset {self.dataset_id} in bundle {self.parent_id}"
 
