@@ -99,7 +99,7 @@ def handle_bundle_dataset_added(instance: BundleDataset, created: bool, **kwargs
                 and item.get("metadata", {}).get("edition_id") == instance.dataset.edition
                 and item.get("metadata", {}).get("version_id") == instance.dataset.version
             ),
-            None,
+            {},
         )
 
         if content_item and (content_id := content_item.get("id")):

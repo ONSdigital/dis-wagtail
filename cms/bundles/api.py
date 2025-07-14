@@ -282,6 +282,28 @@ class BundleAPIClient:
 
 
 def get_data_admin_action_url(action: str, dataset_id: str, version_id: str) -> str:
+    """Generate a URL for dataset actions in the ONS Data Admin interface.
+
+    This function constructs URLs for dataset operations in the ONS Data Admin
+    system, which is used for editing and previewing datasets.
+
+    Args:
+        action: The action to perform (e.g., "edit", "preview")
+        dataset_id: The unique identifier for the dataset
+        version_id: The version identifier for the dataset
+
+    Returns:
+        A complete URL string for the specified dataset action
+
+    Example:
+        >>> get_data_admin_action_url("edit", "cpih", "1")
+        "https://publishing.ons.gov.uk/data-admin/edit/datasets/cpih/editions/time-series/versions/1"
+
+    Note:
+        The edition is currently hardcoded to "time-series" as this appears to be
+        the standard edition format used by the ONS Data Admin system. This may
+        need to be updated if other edition formats are supported in the future.
+    """
     # E.g. https://publishing.ons.gov.uk/data-admin/edit/datasets/cpih/editions/time-series/versions/1
     # TODO: Check if "time_series" is correct for all datasets - the swagger spec always uses "time-series"
     return f"{settings.ONS_DATA_ADMIN_URL}{action}/datasets/{dataset_id}/editions/time-series/versions/{version_id}"
