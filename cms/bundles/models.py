@@ -84,6 +84,9 @@ class BundlesQuerySet(QuerySet):
     def previewable(self) -> Self:
         return self.filter(status__in=PREVIEWABLE_BUNDLE_STATUSES)
 
+    def annotate_release_date(self) -> "BundlesQuerySet":
+        return self.annotate(release_date=models.F("release_date"))  # type: ignore[no-any-return]
+
 
 # note: mypy doesn't cope with dynamic base classes and fails with:
 # 'Unsupported dynamic base class "models.Manager.from_queryset"  [misc]'

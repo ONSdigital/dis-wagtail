@@ -438,7 +438,8 @@ disable=raw-checker-failed,
         too-few-public-methods,
         missing-class-docstring,
         missing-function-docstring,
-        fixme
+        fixme,
+        too-many-public-methods,
 
 # note:
 # - wrong-import-order: covered by ruff
