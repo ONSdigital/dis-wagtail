@@ -8,7 +8,12 @@ from django.template.defaultfilters import pluralize
 from django.utils import timezone
 from wagtail.admin.forms import WagtailAdminModelForm
 
-from cms.bundles.api import BundleAPIClient, BundleAPIClientError
+from cms.bundles.api import (
+    BundleAPIClient,
+    BundleAPIClientError,
+    build_content_item_for_dataset,
+    extract_content_id_from_bundle_response,
+)
 from cms.bundles.decorators import ons_bundle_api_enabled
 from cms.bundles.enums import ACTIVE_BUNDLE_STATUS_CHOICES, EDITABLE_BUNDLE_STATUSES, BundleStatus
 from cms.bundles.utils import build_bundle_data_for_api
@@ -244,19 +249,15 @@ class BundleAdminForm(WagtailAdminModelForm):
 
                     # Now add the datasets to the bundle via the /contents endpoint
                     for bundled_dataset in bundle.bundled_datasets.all():
-                        content_item = {
-                            "content_type": "DATASET",
-                            "metadata": {
-                                "dataset_id": bundled_dataset.dataset.namespace,
-                                "edition_id": "default",  # This may need to be adjusted based on actual data
-                                "version_id": 1,  # This may need to be adjusted based on actual data
-                            },
-                            "links": {  # These links will need to be generated correctly
-                                "edit": "http://example.com/edit",
-                                "preview": "http://example.com/preview",
-                            },
-                        }
-                        client.add_content_to_bundle(bundle.bundle_api_id, content_item)
+                        content_item = build_content_item_for_dataset(bundled_dataset.dataset)
+                        response = client.add_content_to_bundle(bundle.bundle_api_id, content_item)
+
+                        # Extract and store the content_api_id from the response
+                        content_id = extract_content_id_from_bundle_response(response, bundled_dataset.dataset)
+
+                        if content_id:
+                            bundled_dataset.content_api_id = content_id
+                            bundled_dataset.save(update_fields=["content_api_id"])
                         logger.info(
                             "Added content %s to bundle %s in Dataset API",
                             bundled_dataset.dataset.namespace,

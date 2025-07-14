@@ -281,6 +281,51 @@ class BundleAPIClient:
         return self._make_request("GET", f"/bundles/{bundle_id}/status")
 
 
+def build_content_item_for_dataset(dataset: Any) -> dict[str, Any]:
+    """Build a content item dict for a dataset following Bundle API swagger spec.
+
+    Args:
+        dataset: A Dataset instance with namespace, edition, and version fields
+
+    Returns:
+        A dictionary representing a ContentItem for the Bundle API
+    """
+    return {
+        "content_type": "DATASET",
+        "metadata": {
+            "dataset_id": dataset.namespace,
+            "edition_id": dataset.edition,
+            "version_id": dataset.version,
+        },
+        "links": {
+            "edit": get_data_admin_action_url("edit", dataset.namespace, dataset.version),
+            "preview": get_data_admin_action_url("preview", dataset.namespace, dataset.version),
+        },
+    }
+
+
+def extract_content_id_from_bundle_response(response: dict[str, Any], dataset: Any) -> str | None:
+    """Extract content_id from Bundle API response for a specific dataset.
+
+    Args:
+        response: Bundle API response containing contents array
+        dataset: Dataset instance to find in the response
+
+    Returns:
+        The content_id if found, None otherwise
+    """
+    for item in response.get("contents", []):
+        metadata = item.get("metadata", {})
+        if (
+            metadata.get("dataset_id") == dataset.namespace
+            and metadata.get("edition_id") == dataset.edition
+            and metadata.get("version_id") == dataset.version
+        ):
+            content_id = item.get("id")
+            return content_id if content_id is not None else None
+    return None
+
+
 def get_data_admin_action_url(action: str, dataset_id: str, version_id: str) -> str:
     """Generate a URL for dataset actions in the ONS Data Admin interface.
 

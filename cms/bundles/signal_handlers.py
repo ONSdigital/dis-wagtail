@@ -4,7 +4,12 @@ from typing import Any
 from django.db.models.signals import post_delete, post_save
 from django.dispatch import receiver
 
-from cms.bundles.api import BundleAPIClient, BundleAPIClientError, get_data_admin_action_url
+from cms.bundles.api import (
+    BundleAPIClient,
+    BundleAPIClientError,
+    build_content_item_for_dataset,
+    extract_content_id_from_bundle_response,
+)
 from cms.bundles.decorators import ons_bundle_api_enabled
 from cms.bundles.enums import BundleStatus
 from cms.bundles.models import Bundle, BundleDataset, BundleTeam
@@ -76,35 +81,14 @@ def handle_bundle_dataset_added(instance: BundleDataset, created: bool, **kwargs
 
     try:
         # Add the content item to the bundle
-        content_item = {
-            "content_type": "DATASET",
-            "metadata": {
-                "dataset_id": instance.dataset.namespace,
-                "edition_id": instance.dataset.edition,
-                "version_id": instance.dataset.version,
-            },
-            "links": {
-                # The API expects edit and preview URLs to be provided, according to the spec.
-                "edit": get_data_admin_action_url("edit", instance.dataset.namespace, instance.dataset.version),
-                "preview": get_data_admin_action_url("preview", instance.dataset.namespace, instance.dataset.version),
-            },
-        }
+        content_item = build_content_item_for_dataset(instance.dataset)
 
         response = client.add_content_to_bundle(instance.parent.bundle_api_id, content_item)
 
-        # Find the content_id from the response by going through the contents.
-        content_item = next(
-            (
-                item
-                for item in response.get("contents", [])
-                if item.get("metadata", {}).get("dataset_id") == instance.dataset.namespace
-                and item.get("metadata", {}).get("edition_id") == instance.dataset.edition
-                and item.get("metadata", {}).get("version_id") == instance.dataset.version
-            ),
-            {},
-        )
+        # Extract content_id from the response
+        content_id = extract_content_id_from_bundle_response(response, instance.dataset)
 
-        if content_item and (content_id := content_item.get("id")):
+        if content_id:
             instance.content_api_id = content_id
             instance.save(update_fields=["content_api_id"])
             logger.info(

@@ -4,7 +4,13 @@ from unittest.mock import Mock, patch
 import requests
 from django.test import TestCase, override_settings
 
-from cms.bundles.api import BundleAPIClient, BundleAPIClientError, get_data_admin_action_url
+from cms.bundles.api import (
+    BundleAPIClient,
+    BundleAPIClientError,
+    build_content_item_for_dataset,
+    extract_content_id_from_bundle_response,
+    get_data_admin_action_url,
+)
 
 
 @override_settings(ONS_BUNDLE_API_ENABLED=True)
@@ -348,3 +354,99 @@ class GetDataAdminActionUrlTests(TestCase):
         url = get_data_admin_action_url("edit", "cpih", "1")
         expected = "https://custom.example.com/admin/edit/datasets/cpih/editions/time-series/versions/1"
         self.assertEqual(url, expected)
+
+
+class ContentItemUtilityTests(TestCase):
+    """Tests for content item utility functions."""
+
+    def setUp(self):
+        # Create a mock dataset object
+        self.dataset = type(
+            "Dataset",
+            (),
+            {
+                "namespace": "cpih",
+                "edition": "time-series",
+                "version": "1",
+            },
+        )()
+
+    @override_settings(ONS_DATA_ADMIN_URL="https://publishing.ons.gov.uk/data-admin/")
+    def test_build_content_item_for_dataset(self):
+        """Test that build_content_item_for_dataset creates the correct structure."""
+        content_item = build_content_item_for_dataset(self.dataset)
+
+        expected = {
+            "content_type": "DATASET",
+            "metadata": {
+                "dataset_id": "cpih",
+                "edition_id": "time-series",
+                "version_id": "1",
+            },
+            "links": {
+                "edit": ("https://publishing.ons.gov.uk/data-admin/edit/datasets/cpih/editions/time-series/versions/1"),
+                "preview": (
+                    "https://publishing.ons.gov.uk/data-admin/preview/datasets/cpih/editions/time-series/versions/1"
+                ),
+            },
+        }
+
+        self.assertEqual(content_item, expected)
+
+    def test_extract_content_id_from_bundle_response_found(self):
+        """Test extracting content_id when the dataset is found in the response."""
+        response = {
+            "contents": [
+                {
+                    "id": "content-123",
+                    "metadata": {
+                        "dataset_id": "cpih",
+                        "edition_id": "time-series",
+                        "version_id": "1",
+                    },
+                },
+                {
+                    "id": "content-456",
+                    "metadata": {
+                        "dataset_id": "other-dataset",
+                        "edition_id": "time-series",
+                        "version_id": "2",
+                    },
+                },
+            ]
+        }
+
+        content_id = extract_content_id_from_bundle_response(response, self.dataset)
+        self.assertEqual(content_id, "content-123")
+
+    def test_extract_content_id_from_bundle_response_not_found(self):
+        """Test extracting content_id when the dataset is not found in the response."""
+        response = {
+            "contents": [
+                {
+                    "id": "content-456",
+                    "metadata": {
+                        "dataset_id": "other-dataset",
+                        "edition_id": "time-series",
+                        "version_id": "2",
+                    },
+                },
+            ]
+        }
+
+        content_id = extract_content_id_from_bundle_response(response, self.dataset)
+        self.assertIsNone(content_id)
+
+    def test_extract_content_id_from_bundle_response_empty_contents(self):
+        """Test extracting content_id when the response has no contents."""
+        response = {"contents": []}
+
+        content_id = extract_content_id_from_bundle_response(response, self.dataset)
+        self.assertIsNone(content_id)
+
+    def test_extract_content_id_from_bundle_response_missing_contents(self):
+        """Test extracting content_id when the response has no contents key."""
+        response = {}
+
+        content_id = extract_content_id_from_bundle_response(response, self.dataset)
+        self.assertIsNone(content_id)
