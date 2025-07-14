@@ -52,8 +52,12 @@ class BundleDataset(Orderable):
     dataset = models.ForeignKey(  # type: ignore[var-annotated]
         "datasets.Dataset", blank=True, null=True, on_delete=models.SET_NULL
     )
+    content_api_id: models.CharField = models.CharField(max_length=255, blank=True, null=True)
 
     panels: ClassVar[list["Panel"]] = ["dataset"]
+
+    class Meta(Orderable.Meta):
+        unique_together: ClassVar = [("parent", "dataset")]
 
     def __str__(self) -> str:
         return f"BundleDataset: dataset {self.dataset_id} in bundle {self.parent_id}"

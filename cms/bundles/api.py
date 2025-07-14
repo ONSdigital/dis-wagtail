@@ -279,3 +279,9 @@ class BundleAPIClient:
             API response data containing bundle status
         """
         return self._make_request("GET", f"/bundles/{bundle_id}/status")
+
+
+def get_data_admin_action_url(action: str, dataset_id: str, version_id: str) -> str:
+    # E.g. https://publishing.ons.gov.uk/data-admin/edit/datasets/cpih/editions/time-series/versions/1
+    # TODO: Check if "time_series" is correct for all datasets - the swagger spec always uses "time-series"
+    return f"{settings.ONS_DATA_ADMIN_URL}{action}/datasets/{dataset_id}/editions/time-series/versions/{version_id}"

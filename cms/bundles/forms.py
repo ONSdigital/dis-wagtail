@@ -11,7 +11,7 @@ from wagtail.admin.forms import WagtailAdminModelForm
 from cms.bundles.api import BundleAPIClient, BundleAPIClientError
 from cms.bundles.decorators import ons_bundle_api_enabled
 from cms.bundles.enums import ACTIVE_BUNDLE_STATUS_CHOICES, EDITABLE_BUNDLE_STATUSES, BundleStatus
-from cms.bundles.utils import _build_bundle_data_for_api
+from cms.bundles.utils import build_bundle_data_for_api
 from cms.workflows.models import ReadyToPublishGroupTask
 
 logger = logging.getLogger(__name__)
@@ -234,7 +234,7 @@ class BundleAdminForm(WagtailAdminModelForm):
             client = BundleAPIClient()
             try:
                 # Create the bundle in the API with the correct payload
-                bundle_data = _build_bundle_data_for_api(bundle)
+                bundle_data = build_bundle_data_for_api(bundle)
                 response = client.create_bundle(bundle_data)
 
                 if "id" in response:

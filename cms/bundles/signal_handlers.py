@@ -4,7 +4,7 @@ from typing import Any
 from django.db.models.signals import post_delete, post_save
 from django.dispatch import receiver
 
-from cms.bundles.api import BundleAPIClient, BundleAPIClientError
+from cms.bundles.api import BundleAPIClient, BundleAPIClientError, get_data_admin_action_url
 from cms.bundles.decorators import ons_bundle_api_enabled
 from cms.bundles.enums import BundleStatus
 from cms.bundles.models import Bundle, BundleDataset, BundleTeam
@@ -80,16 +80,34 @@ def handle_bundle_dataset_added(instance: BundleDataset, created: bool, **kwargs
             "content_type": "DATASET",
             "metadata": {
                 "dataset_id": instance.dataset.namespace,
-                "edition_id": "default",  # This may need to be adjusted based on actual data
-                "version_id": 1,  # This may need to be adjusted based on actual data
+                "edition_id": instance.dataset.edition,
+                "version_id": instance.dataset.version,
             },
-            "links": {  # These links will need to be generated correctly
-                "edit": "http://example.com/edit",
-                "preview": "http://example.com/preview",
+            "links": {
+                "edit": get_data_admin_action_url("edit", instance.dataset.namespace, instance.dataset.version),
+                "preview": get_data_admin_action_url("preview", instance.dataset.namespace, instance.dataset.version),
             },
         }
-        client.add_content_to_bundle(instance.parent.bundle_api_id, content_item)
-        logger.info("Added content %s to bundle %s in Dataset API", instance.dataset.namespace, instance.parent.pk)
+        response = client.add_content_to_bundle(instance.parent.bundle_api_id, content_item)
+
+        # Find the content_id from the response
+        content_id = None
+        for item in response.get("contents", []):
+            metadata = item.get("metadata", {})
+            if (
+                metadata.get("dataset_id") == instance.dataset.namespace
+                and metadata.get("edition_id") == instance.dataset.edition
+                and metadata.get("version_id") == instance.dataset.version
+            ):
+                content_id = item.get("id")
+                break
+
+        if content_id:
+            instance.content_api_id = content_id
+            instance.save(update_fields=["content_api_id"])
+            logger.info("Added content %s to bundle %s in Dataset API", instance.dataset.namespace, instance.parent.pk)
+        else:
+            logger.error("Could not find content_id in response for bundle %s", instance.parent.pk)
 
     except BundleAPIClientError as e:
         logger.error("Failed to add content to bundle %s in Dataset API: %s", instance.parent.pk, e)
@@ -99,14 +117,13 @@ def handle_bundle_dataset_added(instance: BundleDataset, created: bool, **kwargs
 @ons_bundle_api_enabled
 def handle_bundle_dataset_removed(instance: BundleDataset, **kwargs: Any) -> None:
     """Handle when a dataset is removed from a bundle."""
-    if not instance.parent.bundle_api_id:
+    if not instance.parent.bundle_api_id or not instance.content_api_id:
         return
 
     client = BundleAPIClient()
 
     try:
-        # The content_id is the dataset's namespace
-        content_id = instance.dataset.namespace
+        content_id = instance.content_api_id
         client.delete_content_from_bundle(instance.parent.bundle_api_id, content_id)
         logger.info("Deleted content %s from bundle %s in Dataset API", content_id, instance.parent.pk)
     except BundleAPIClientError as e:

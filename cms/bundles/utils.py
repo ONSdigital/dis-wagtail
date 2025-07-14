@@ -163,7 +163,7 @@ def get_preview_items_for_bundle(bundle: "Bundle", page_id: int, pages_in_bundle
     return preview_items
 
 
-def _build_bundle_data_for_api(bundle: "Bundle") -> dict[str, Any]:
+def build_bundle_data_for_api(bundle: "Bundle") -> dict[str, Any]:
     """Build the dictionary of bundle data for the API."""
     # Determine bundle_type based on scheduling
     bundle_type = "SCHEDULED" if bundle.scheduled_publication_date else "MANUAL"

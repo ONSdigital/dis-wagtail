@@ -1014,3 +1014,5 @@ SESSION_RENEWAL_OFFSET_SECONDS = env.get("SESSION_RENEWAL_OFFSET_SECONDS", 60 * 
 
 # Feature flag to enable/disable interaction with the ONS Bundle API
 ONS_BUNDLE_API_ENABLED = False
+
+ONS_DATA_ADMIN_URL = "https://publishing.ons.gov.uk/data-admin/"
