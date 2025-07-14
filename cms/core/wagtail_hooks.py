@@ -28,6 +28,13 @@ def register_icons(icons: list[str]) -> list[str]:
         "data-analysis.svg",
         "identity.svg",
         "news.svg",
+        "wagtailfontawesomesvg/solid/chart-bar.svg",
+        "wagtailfontawesomesvg/solid/chart-column.svg",
+        "wagtailfontawesomesvg/solid/chart-line.svg",
+        "wagtailfontawesomesvg/solid/chart-area.svg",
+        "wagtailfontawesomesvg/solid/table-cells.svg",
+        "wagtailfontawesomesvg/solid/location-crosshairs.svg",
+        "wagtailfontawesomesvg/solid/square.svg",
     ]
 
 
