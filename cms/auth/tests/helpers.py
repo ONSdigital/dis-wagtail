@@ -86,7 +86,7 @@ class CognitoTokenTestCase(TestCase):
     """Utilities reused by every auth-related TestCase."""
 
     @classmethod
-    def setUpTestData(cls):  # pylint: disable=invalid-name
+    def setUpTestData(cls):
         cls.user_uuid: str = str(uuid.uuid4())
 
         # RSA keypair and JWKS stub
