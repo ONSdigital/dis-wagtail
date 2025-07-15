@@ -154,6 +154,7 @@ class BasePage(PageLDMixin, ListingFieldsMixin, SocialFieldsMixin, Page):  # typ
         breadcrumbs component.
         """
         # TODO make request non-optional once wagtailschemaorg supports passing through the request.
+        # https://github.com/neon-jungle/wagtail-schema.org/issues/29
         breadcrumbs = []
         homepage_depth = 2
         for ancestor_page in self.get_ancestors().specific().defer_streamfields():
