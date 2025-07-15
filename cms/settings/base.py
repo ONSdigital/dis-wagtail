@@ -14,6 +14,7 @@ from django.utils.translation import gettext_lazy as _
 from django_jinja.builtins import DEFAULT_EXTENSIONS
 
 from cms.core.elasticache import ElastiCacheIAMCredentialProvider
+from cms.core.jinja2 import custom_json_dumps
 
 env = os.environ.copy()
 
@@ -64,6 +65,7 @@ INSTALLED_APPS = [
     "cms.bundles",
     "cms.core",
     "cms.datasets",
+    "cms.datavis",
     "cms.documents",
     "cms.home",
     "cms.images",
@@ -103,6 +105,7 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     "django_jinja",
     "wagtailmath",
+    "wagtailtables",
     "wagtailfontawesomesvg",
     "wagtail_tinytableblock",
     "rest_framework",
@@ -184,6 +187,10 @@ TEMPLATES = [
                 "cms.core.jinja2tags.CoreExtension",
                 "cms.navigation.jinja2tags.NavigationExtension",
             ],
+            "policies": {
+                # https://jinja.palletsprojects.com/en/stable/api/#policies
+                "json.dumps_function": custom_json_dumps,
+            },
         },
     },
     {
@@ -982,10 +989,11 @@ SEARCH_API_DEFAULT_PAGE_SIZE = int(os.getenv("SEARCH_API_DEFAULT_PAGE_SIZE", "20
 SEARCH_API_MAX_PAGE_SIZE = int(os.getenv("SEARCH_API_MAX_PAGE_SIZE", "500"))
 
 # Auth
+SERVICE_AUTH_TOKEN = env.get("SERVICE_AUTH_TOKEN")
 WAGTAIL_CORE_ADMIN_LOGIN_ENABLED = env.get("WAGTAIL_CORE_ADMIN_LOGIN_ENABLED", "false").lower() == "true"
 LOGOUT_REDIRECT_URL = env.get("LOGOUT_REDIRECT_URL", WAGTAILADMIN_LOGIN_URL)
 AUTH_TOKEN_REFRESH_URL = env.get("AUTH_TOKEN_REFRESH_URL")
-SESSION_COOKIE_AGE = env.get("SESSION_COOKIE_AGE", 60 * 15)  # 15 minutes to match Auth Service
+SESSION_COOKIE_AGE = int(env.get("SESSION_COOKIE_AGE", 60 * 15))  # 15 minutes to match Auth Service
 SESSION_EXPIRE_AT_BROWSER_CLOSE = True
 IDENTITY_API_BASE_URL = env.get("IDENTITY_API_BASE_URL")
 AWS_COGNITO_LOGIN_ENABLED = env.get("AWS_COGNITO_LOGIN_ENABLED", "false").lower() == "true"
@@ -995,7 +1003,6 @@ AWS_COGNITO_APP_CLIENT_ID = env.get("AWS_COGNITO_APP_CLIENT_ID")
 # Auth Sync Teams
 AWS_COGNITO_TEAM_SYNC_ENABLED = env.get("AWS_COGNITO_TEAM_SYNC_ENABLED", "false").lower() == "true"
 AWS_COGNITO_TEAM_SYNC_FREQUENCY = int(env.get("AWS_COGNITO_TEAM_SYNC_FREQUENCY", "1"))
-
 
 # Groups
 PUBLISHING_ADMIN_GROUP_NAME = "Publishing Admins"
