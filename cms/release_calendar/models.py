@@ -129,7 +129,11 @@ class ReleaseCalendarPage(BundledPageMixin, BasePage):  # type: ignore[django-ma
                 ReleaseCalendarBundleNotePanel(heading="Note", classname="bundle-note"),
                 FieldRowPanel(
                     [
-                        FieldPanel("release_date", widget=ONSAdminDateTimeInput(), required_on_save=True),
+                        FieldPanel(
+                            "release_date",
+                            widget=ONSAdminDateTimeInput(),
+                            required_on_save=True,
+                        ),
                         FieldPanel("release_date_text", heading="Or, release date text"),
                     ],
                     heading="",
