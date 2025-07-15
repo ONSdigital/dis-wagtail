@@ -5,6 +5,7 @@ from wagtail.blocks import RichTextBlock, StreamBlock, StructBlock
 from wagtail.images.blocks import ImageChooserBlock
 
 from cms.core.blocks import (
+    AccordionBlock,
     AnnouncementPanelBlock,
     DocumentsBlock,
     HeadingBlock,
@@ -38,6 +39,7 @@ class SectionContentBlock(StreamBlock):
     warning_panel = WarningPanelBlock()
     information_panel = InformationPanelBlock()
     announcement_panel = AnnouncementPanelBlock()
+    accordion = AccordionBlock()
     image = ImageChooserBlock(group="Media")
     documents = DocumentsBlock(group="Media")
     video_embed = VideoEmbedBlock(group="Media")
