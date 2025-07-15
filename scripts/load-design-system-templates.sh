@@ -7,15 +7,8 @@ set -e
 REPO_NAME="onsdigital/design-system"
 TAG_NAME="$1"
 
-# If the tag name is not provided (i.e., the argument is empty),
-# fetch the latest release tag from the GitHub API.
-if [ -z "${TAG_NAME}" ]; then
-    echo "No tag name provided. Fetching the latest release..."
-    TAG_NAME=$(curl --silent "https://api.github.com/repos/${REPO_NAME}/releases/latest" | jq '.name' | tr -d '"')
-fi
-
 if [ -z "${TAG_NAME}" ] || [ "${TAG_NAME}" == "null" ]; then
-    echo "Error: Could not determine a valid release tag. Exiting."
+    echo "Error: Invalid release tag provided. Exiting."
     exit 1
 fi
 
