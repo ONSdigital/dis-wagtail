@@ -4,20 +4,26 @@
 #
 set -e
 
-REPO_NAME="onsdigital/design-system"
-TAG_NAME="$1"
-
-if [ -z "${TAG_NAME}" ] || [ "${TAG_NAME}" == "null" ]; then
-    echo "Error: Invalid release tag provided. Exiting."
-    exit 1
-fi
-
 DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 cd "${DIR}"/.. || exit
 
+if [ $# -eq 0 ] || [ "$1" == "" ]; then
+    echo "Usage: load-design-system-templates.sh {TAG_NAME}"
+elif [ "$1" == "" ]; then
+    TAG_NAME=$(curl --silent "https://api.github.com/repos/${REPO_NAME}/releases" | jq '.[0].name' | tr -d '"')
+else
+    TAG_NAME="$1"
+fi
+
+REPO_NAME="onsdigital/design-system"
 DOWNLOAD_URL=$(curl --silent "https://api.github.com/repos/${REPO_NAME}/releases/tags/${TAG_NAME}" | jq '.assets[0].browser_download_url' | tr -d '"')
 RELEASE_NAME=${DOWNLOAD_URL##*/}
+
+if [ -z "${DOWNLOAD_URL}" ] || [ "${DOWNLOAD_URL}" == "null" ]; then
+    echo "Error: Could not retrieve download URL. Exiting."
+    exit 1
+fi
 
 echo "Fetching ${DOWNLOAD_URL}"
 
