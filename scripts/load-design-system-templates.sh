@@ -10,8 +10,7 @@ cd "${DIR}"/.. || exit
 
 if [ $# -eq 0 ] || [ "$1" == "" ]; then
     echo "Usage: load-design-system-templates.sh {TAG_NAME}"
-elif [ "$1" == "" ]; then
-    TAG_NAME=$(curl --silent "https://api.github.com/repos/${REPO_NAME}/releases" | jq '.[0].name' | tr -d '"')
+    exit 0
 else
     TAG_NAME="$1"
 fi
