@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-07-14 16:43+0100\n"
+"POT-Creation-Date: 2025-07-15 11:00+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -54,6 +54,14 @@ msgstr ""
 #: cms/articles/utils.py:34
 #: megalinter-reports/updated_sources/cms/jinja2/templates/components/streamfield/correction_block.html:7
 msgid "View superseded version"
+msgstr ""
+
+#: cms/core/blocks/accordion.py:41
+msgid "Show all"
+msgstr ""
+
+#: cms/core/blocks/accordion.py:42
+msgid "Hide all"
 msgstr ""
 
 #: cms/core/blocks/related.py:60
