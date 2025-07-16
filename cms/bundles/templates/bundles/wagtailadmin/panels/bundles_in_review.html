@@ -11,8 +11,7 @@
                     <tr>
                         <th class="title">Title</th>
                         <th>Scheduled publication date</th>
-                        <th>Added</th>
-                        <th>Added by</th>
+                        <th>Updated</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -26,8 +25,7 @@
                             <td>
                                 {{ bundle.scheduled_publication_date|default_if_none:"" }}
                             </td>
-                            <td>{% human_readable_date bundle.created_at %}</td>
-                            <td>{% if bundle.created_by %}{% include "wagtailadmin/shared/user_avatar.html" with user=bundle.created_by username=bundle.created_by.get_full_name|default:bundle.created_by.get_username %}{% endif %}</td>
+                            <td>{% if bundle.updated_at %}{% human_readable_date bundle.updated_at %}{% endif %}</td>
                         </tr>
                     {% endfor %}
                 </tbody>

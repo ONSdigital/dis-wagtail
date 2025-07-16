@@ -9,7 +9,7 @@ from django.urls import reverse
 from django.utils import timezone
 from django.utils.functional import cached_property
 from django.utils.html import format_html, format_html_join
-from wagtail.admin.ui.tables import Column, DateColumn, UpdatedAtColumn, UserColumn
+from wagtail.admin.ui.tables import Column, UpdatedAtColumn
 from wagtail.admin.views.generic import CreateView, EditView, IndexView, InspectView
 from wagtail.admin.viewsets.model import ModelViewSet
 from wagtail.log_actions import log
@@ -365,13 +365,13 @@ class BundleIndexView(IndexView):
     model = Bundle
 
     def get_base_queryset(self) -> "BundlesQuerySet":
-        """Modifies the Bundle queryset with the related created_by ForeignKey selected to avoid N+1 queries."""
+        """Modifies the Bundle queryset to vary results based on the user capabilities."""
         queryset: BundlesQuerySet = super().get_base_queryset()
 
         if not self.can_manage:
             queryset = queryset.previewable().filter(teams__team__in=self.request.user.active_team_ids).distinct()
 
-        return queryset.select_related("created_by").prefetch_related("teams__team")
+        return queryset
 
     def get_edit_url(self, instance: Bundle) -> str | None:
         """Override the default edit url to disable the edit URL for released bundles."""
@@ -391,24 +391,11 @@ class BundleIndexView(IndexView):
     @cached_property
     def columns(self) -> list[Column]:
         """Defines the list of desired columns in the listing."""
-        if self.can_manage:
-            return [
-                self._get_title_column("__str__"),
-                Column("scheduled_publication_date", label="Scheduled for"),
-                Column("get_status_display", label="Status"),
-                UpdatedAtColumn(),
-                DateColumn(name="created_at", label="Added", sort_key="created_at"),
-                UserColumn("created_by", label="Added by"),
-                Column(name="teams", accessor="get_teams_display", label="Preview teams"),
-                DateColumn(name="approved_at", label="Approved at", sort_key="approved_at"),
-                UserColumn("approved_by"),
-            ]
-
         return [
             self._get_title_column("__str__"),
             Column("scheduled_publication_date", label="Scheduled for"),
-            DateColumn(name="created_at", label="Added", sort_key="created_at"),
-            UserColumn("created_by", label="Added by"),
+            Column("get_status_display", label="Status"),
+            UpdatedAtColumn(),
         ]
 
 

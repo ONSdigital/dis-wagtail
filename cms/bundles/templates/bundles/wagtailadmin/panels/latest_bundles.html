@@ -3,7 +3,7 @@
     {% panel id="latest-bundles" heading="Latest active bundles" classname="w-panel--dashboard" %}
         <div class="ons-padding-start ons-padding-end">
             {% help_block status="info" %}
-                <p>Bundles are collections of pages and datasets to publish together.</p>
+                <p>Bundles are collections of pages and datasets to publish together. Showing the latest {{ num_bundles }}.</p>
             {% endhelp_block %}
             <p>
                 <a href="{% url 'bundle:add' %}" class="button bicolor button--icon">{% icon name="plus" wrapped=1 %}Add bundle</a>
@@ -16,14 +16,12 @@
                 <col width="15%"/>
                 <col width="15%"/>
                 <col width="15%"/>
-                <col width="15%"/>
                 <thead>{# add class="w-sr-only" to make this visible for screen readers only #}
                     <tr>
                         <th class="title">Title</th>
                         <th>Status</th>
                         <th>Scheduled publication date</th>
-                        <th>Added</th>
-                        <th>Added by</th>
+                        <th>Updated</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -48,8 +46,7 @@
                             <td>
                                 {{ bundle.scheduled_publication_date|default_if_none:"" }}
                             </td>
-                            <td>{% human_readable_date bundle.created_at %}</td>
-                            <td>{% if bundle.created_by %}{% include "wagtailadmin/shared/user_avatar.html" with user=bundle.created_by username=bundle.created_by.get_full_name|default:bundle.created_by.get_username %}{% endif %}</td>
+                            <td>{% if bundle.updated_at %}{% human_readable_date bundle.updated_at %}{% endif %}</td>
                         </tr>
                     {% endfor %}
                 </tbody>
