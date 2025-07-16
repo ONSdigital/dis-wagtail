@@ -36,7 +36,7 @@ extension-pkg-whitelist=
 # Return non-zero exit code if any of these messages/categories are detected,
 # even if score is above --fail-under value. Syntax same as enable. Messages
 # specified are enabled, while categories only check already-enabled messages.
-fail-on=
+fail-on=useless-suppression
 
 # Specify a score threshold under which the program will exit with error.
 fail-under=10
@@ -426,7 +426,6 @@ disable=raw-checker-failed,
         locally-disabled,
         file-ignored,
         suppressed-message,
-        useless-suppression,
         deprecated-pragma,
         use-symbolic-message-instead,
         use-implicit-booleaness-not-comparison-to-string,
@@ -438,7 +437,8 @@ disable=raw-checker-failed,
         too-few-public-methods,
         missing-class-docstring,
         missing-function-docstring,
-        fixme
+        fixme,
+        too-many-public-methods,
 
 # note:
 # - wrong-import-order: covered by ruff

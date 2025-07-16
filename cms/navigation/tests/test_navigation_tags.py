@@ -4,7 +4,6 @@ from wagtail.coreutils import get_dummy_request
 from cms.articles.tests.factories import ArticleSeriesPageFactory, StatisticalArticlePageFactory
 from cms.core.tests.factories import LinkBlockFactory
 from cms.navigation.templatetags.navigation_tags import (
-    breadcrumbs,
     footer_menu_columns,
     main_menu_columns,
     main_menu_highlights,
@@ -146,7 +145,7 @@ class BreadcrumbsTemplateTagTests(TestCase):
 
     def test_breadcrumbs_output_format(self):
         """Test that breadcrumbs outputs the correct format."""
-        breadcrumbs_output = breadcrumbs({"request": self.mock_request}, self.statistical_article)
+        breadcrumbs_output = self.statistical_article.get_breadcrumbs(request=self.mock_request)
 
         series_parent = self.series.get_parent()
         topic = series_parent.get_parent()
@@ -157,11 +156,11 @@ class BreadcrumbsTemplateTagTests(TestCase):
                 "text": "Home",
             },
             {
-                "url": topic.get_url(),
+                "url": topic.get_full_url(),
                 "text": topic.title,
             },
             {
-                "url": series_parent.get_url(),
+                "url": series_parent.get_full_url(),
                 "text": series_parent.title,
             },
         ]

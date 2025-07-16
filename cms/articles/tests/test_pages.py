@@ -1,14 +1,19 @@
+from datetime import timedelta
 from http import HTTPStatus
 
+from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.test import override_settings
 from django.urls import reverse
+from django.utils.html import strip_tags
 from wagtail.blocks import StreamValue
+from wagtail.models import Locale
 from wagtail.test.utils import WagtailPageTestCase
 
 from cms.articles.enums import SortingChoices
 from cms.articles.models import ArticlesIndexPage
 from cms.articles.tests.factories import ArticleSeriesPageFactory, StatisticalArticlePageFactory
+from cms.core.tests.utils import extract_response_jsonld
 from cms.datasets.blocks import DatasetStoryBlock
 from cms.datasets.models import Dataset
 from cms.home.models import HomePage
@@ -55,10 +60,11 @@ class ArticleSeriesPageTests(WagtailPageTestCase):
         self.assertContains(response, second_article.title)
 
 
-class StatisticalArticlePageTests(WagtailPageTestCase):  # pylint: disable=too-many-public-methods
+class StatisticalArticlePageTests(WagtailPageTestCase):
     @classmethod
     def setUpTestData(cls):
-        cls.page = StatisticalArticlePageFactory()
+        cls.series = ArticleSeriesPageFactory()
+        cls.page = StatisticalArticlePageFactory(parent=cls.series)
         # TODO: Fix the factory to generate headline_figures correctly
         cls.page.headline_figures = [
             {
@@ -391,12 +397,12 @@ class StatisticalArticlePageTests(WagtailPageTestCase):  # pylint: disable=too-m
         theme = topic.get_parent()
 
         self.assertInHTML(
-            f'<a class="ons-breadcrumbs__link" href="{topic.url}">{topic.title}</a>',
+            f'<a class="ons-breadcrumbs__link" href="{topic.full_url}">{topic.title}</a>',
             content,
         )
 
         self.assertInHTML(
-            f'<a class="ons-breadcrumbs__link" href="{theme.url}">{theme.title}</a>',
+            f'<a class="ons-breadcrumbs__link" href="{theme.full_url}">{theme.title}</a>',
             content,
         )
 
@@ -650,6 +656,188 @@ class StatisticalArticlePageTests(WagtailPageTestCase):  # pylint: disable=too-m
 
         self.assertEqual(new_page.datasets, self.page.datasets)
         self.assertEqual(new_page.dataset_sorting, self.page.dataset_sorting)
+
+    def test_latest_page_canonical_url(self):
+        """Test that articles have the correct canonical series evergreen URL."""
+        response = self.client.get(self.page.get_url(request=self.dummy_request))
+        self.assertEqual(response.status_code, HTTPStatus.OK)
+        self.assertContains(
+            response, f'<link rel="canonical" href="{self.series.get_full_url(request=self.dummy_request)}" />'
+        )
+
+    def test_non_latest_page_canonical_url(self):
+        """Test that once an article page is not the latest, the canonical URL becomes the page's own full URL."""
+        # Create new, later article in the series
+        StatisticalArticlePageFactory(parent=self.series, release_date=self.page.release_date + timedelta(days=1))
+        self.assertFalse(self.page.is_latest)
+
+        response = self.client.get(self.page.get_url(request=self.dummy_request))
+        self.assertEqual(response.status_code, HTTPStatus.OK)
+
+        self.assertContains(
+            response, f'<link rel="canonical" href="{self.page.get_full_url(request=self.dummy_request)}" />'
+        )
+
+    def test_welsh_page_alias_canonical_url(self):
+        """Test that Welsh articles have the correct english canonical URL when they have not been explicitly
+        translated.
+        """
+        self.page.copy_for_translation(locale=Locale.objects.get(language_code="cy"), copy_parents=True, alias=True)
+        response = self.client.get(f"/cy{self.page.get_url(request=self.dummy_request)}")
+        self.assertEqual(response.status_code, HTTPStatus.OK)
+        self.assertContains(
+            response, f'<link rel="canonical" href="{self.series.get_full_url(request=self.dummy_request)}" />'
+        )
+
+    def test_translated_welsh_page_canonical_url(self):
+        """Test that a translated article has the correct language coded canonical URL."""
+        welsh_page = self.page.copy_for_translation(locale=Locale.objects.get(language_code="cy"), copy_parents=True)
+        welsh_page.save_revision().publish()
+        response = self.client.get(f"/cy{self.page.get_url(request=self.dummy_request)}")
+        self.assertEqual(response.status_code, HTTPStatus.OK)
+        welsh_series_url = welsh_page.get_parent().get_full_url()
+        self.assertIn(welsh_page.get_site().root_url + "/cy/", welsh_series_url)
+        self.assertContains(response, f'<link rel="canonical" href="{welsh_series_url}" />')
+
+    def test_corrected_article_versions_are_marked_no_index(self):
+        response = self.client.get(self.page.get_url(request=self.dummy_request))
+        self.assertNotContains(response, "Corrections")
+        self.assertNotContains(response, "Notices")
+        self.assertNotContains(response, "View superseded version")
+        self.assertNotContains(response, '<meta name="robots" content="noindex" />')
+
+        self.page.save_revision().publish()
+
+        original_revision_id = self.page.get_latest_revision().id
+
+        self.page.summary = "Corrected summary"
+
+        first_correction = {
+            "version_id": 1,
+            "previous_version": original_revision_id,
+            "when": "2025-01-11",
+            "frozen": True,
+            "text": "First correction text",
+        }
+
+        self.page.corrections = [
+            (
+                "correction",
+                first_correction,
+            )
+        ]
+
+        self.page.save_revision().publish()
+
+        v1_response = self.client.get(self.page.get_url(request=self.dummy_request) + "previous/v1/")
+
+        self.assertContains(v1_response, '<meta name="robots" content="noindex" />')
+
+    def test_schema_org_data(self):
+        """Test that the page has the correct schema.org markup."""
+        response = self.client.get(self.page.get_url(request=self.dummy_request))
+        self.assertEqual(response.status_code, HTTPStatus.OK)
+
+        actual_jsonld = extract_response_jsonld(response.content, self)
+
+        self.assertEqual(actual_jsonld["@context"], "http://schema.org")
+        self.assertEqual(actual_jsonld["@type"], "Article")
+        self.assertEqual(actual_jsonld["headline"], self.page.get_full_display_title())
+        self.assertEqual(actual_jsonld["url"], self.page.get_full_url(self.dummy_request))
+        self.assertEqual(actual_jsonld["@id"], self.page.get_full_url(self.dummy_request))
+        self.assertEqual(actual_jsonld["description"], strip_tags(self.page.summary))
+        self.assertEqual(actual_jsonld["datePublished"], self.page.release_date.isoformat())
+        self.assertIn("breadcrumb", actual_jsonld)
+        self.assertEqual(actual_jsonld["author"]["@type"], "Person")
+        self.assertEqual(actual_jsonld["author"]["name"], self.page.contact_details.name)
+
+        self.assertEqual(actual_jsonld["publisher"]["@type"], "Organization")
+        self.assertEqual(actual_jsonld["publisher"]["name"], "Office for National Statistics")
+        self.assertEqual(actual_jsonld["publisher"]["url"], settings.ONS_WEBSITE_BASE_URL)
+
+        self.assertEqual(actual_jsonld["mainEntityOfPage"]["@type"], "WebPage")
+        self.assertEqual(actual_jsonld["mainEntityOfPage"]["@id"], self.page.get_full_url(self.dummy_request))
+
+    def test_schema_org_contact_falls_back_to_org_name(self):
+        """Test that the schema.org contact defaults to the organisation name and type."""
+        self.page.contact_details = None
+        self.page.save_revision().publish()
+
+        response = self.client.get(self.page.get_url(request=self.dummy_request))
+        self.assertEqual(response.status_code, HTTPStatus.OK)
+
+        actual_jsonld = extract_response_jsonld(response.content, self)
+
+        self.assertEqual(actual_jsonld["author"]["name"], settings.ONS_ORGANISATION_NAME)
+        self.assertEqual(actual_jsonld["author"]["@type"], "Organization")
+
+    def test_schema_org_headline(self):
+        """Test the schema.org headline uses the seo_title by default,
+        falling back to listing_title and then page title.
+        """
+        headline_cases = [
+            {
+                "seo_title": "SEO Title",
+                "listing_title": "Listing Title",
+                "expected_headline": "SEO Title",
+            },
+            {
+                "seo_title": "",
+                "listing_title": "Listing Title",
+                "expected_headline": "Listing Title",
+            },
+            {
+                "seo_title": "",
+                "listing_title": "",
+                "expected_headline": self.page.get_full_display_title(),
+            },
+        ]
+
+        for headline_case in headline_cases:
+            with self.subTest(headline_case=headline_case):
+                self.page.seo_title = headline_case["seo_title"]
+                self.page.listing_title = headline_case["listing_title"]
+                self.page.save_revision().publish()
+
+                response = self.client.get(self.page.get_url(request=self.dummy_request))
+                self.assertEqual(response.status_code, HTTPStatus.OK)
+                actual_jsonld = extract_response_jsonld(response.content, self)
+
+                self.assertEqual(actual_jsonld["headline"], headline_case["expected_headline"])
+
+    def test_schema_org_description(self):
+        """Test the schema.org headline uses the search_description by default,
+        falling back to listing_summary and then page summary (stripped on html tags).
+        """
+        description_cases = [
+            {
+                "search_description": "Search description",
+                "listing_summary": "Listing summary",
+                "expected_description": "Search description",
+            },
+            {
+                "search_description": "",
+                "listing_summary": "Listing summary",
+                "expected_description": "Listing summary",
+            },
+            {
+                "search_description": "",
+                "listing_summary": "",
+                "expected_description": strip_tags(self.page.summary),
+            },
+        ]
+
+        for description_case in description_cases:
+            with self.subTest(description_case=description_case):
+                self.page.search_description = description_case["search_description"]
+                self.page.listing_summary = description_case["listing_summary"]
+                self.page.save_revision().publish()
+
+                response = self.client.get(self.page.get_url(request=self.dummy_request))
+                self.assertEqual(response.status_code, HTTPStatus.OK)
+                actual_jsonld = extract_response_jsonld(response.content, self)
+
+                self.assertEqual(actual_jsonld["description"], description_case["expected_description"])
 
 
 class MiscellaneousTests(WagtailPageTestCase):

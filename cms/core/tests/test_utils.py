@@ -13,7 +13,7 @@ from cms.topics.tests.factories import TopicPageFactory
 
 # DummyPage mimics the minimum attributes and methods of a Wagtail Page.
 class DummyPage(BasePage):
-    def __init__(self, title, summary="", listing_summary="", url="https://ons.gov.uk", **kwargs):  # pylint: disable=super-init-not-called
+    def __init__(self, title, summary="", listing_summary="", url="https://ons.gov.uk", **kwargs):
         # this just set attributes manually.
         self.title = title
         self.summary = summary

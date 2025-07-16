@@ -95,7 +95,7 @@ class IndexPage(BundledPageMixin, BasePage):  # type: ignore[django-manager-miss
     def _get_formatted_featured_items(self) -> list[dict[str, str | dict[str, str]]]:
         """Format items from self.featured_items."""
         formatted_items = []
-        for featured_item in self.featured_items:  # pylint: disable=not-an-iterable
+        for featured_item in self.featured_items:
             link = featured_item.value.link
             if link is None:
                 continue
@@ -139,7 +139,7 @@ class IndexPage(BundledPageMixin, BasePage):  # type: ignore[django-manager-miss
                 "title": related_link.value.link.get("text"),
                 "url": related_link.value.link.get("url"),
             }
-            for related_link in self.related_links  # pylint: disable=not-an-iterable
+            for related_link in self.related_links
         ]
 
         return formatted_links
