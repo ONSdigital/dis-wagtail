@@ -3,6 +3,7 @@ from typing import TYPE_CHECKING, Any, ClassVar, cast
 
 from django.conf import settings
 from django.core.exceptions import PermissionDenied
+from django.db.models import F
 from django.http import HttpRequest
 from django.shortcuts import redirect
 from django.urls import reverse
@@ -363,6 +364,7 @@ class BundleIndexView(IndexView):
     """
 
     model = Bundle
+    default_ordering = "name"
 
     def get_base_queryset(self) -> "BundlesQuerySet":
         """Modifies the Bundle queryset to vary results based on the user capabilities."""
@@ -379,6 +381,23 @@ class BundleIndexView(IndexView):
             queryset = queryset.exclude(status=BundleStatus.PUBLISHED)
 
         return cast("BundlesQuerySet", super().filter_queryset(queryset))
+
+    def order_queryset(self, queryset: "BundlesQuerySet") -> "BundlesQuerySet":
+        if self.ordering in ["status", "-status", "scheduled_publication_date", "-scheduled_publication_date"]:
+            # ensures we have the _updated_at field used by core
+            queryset = self._annotate_queryset_updated_at(queryset)
+
+            match self.ordering:
+                case "scheduled_publication_date":
+                    return queryset.annotate_release_date().order_by(F("release_date").asc(nulls_first=True))
+                case "-scheduled_publication_date":
+                    return queryset.annotate_release_date().order_by(F("release_date").desc(nulls_last=True))
+                case "status":
+                    return queryset.annotate_status_label().order_by(F("status_label").asc())
+                case "-status":
+                    return queryset.annotate_status_label().order_by(F("status_label").desc())
+
+        return cast("BundlesQuerySet", super().order_queryset(queryset))
 
     def get_edit_url(self, instance: Bundle) -> str | None:
         """Override the default edit url to disable the edit URL for released bundles."""
@@ -399,9 +418,9 @@ class BundleIndexView(IndexView):
     def columns(self) -> list[Column]:
         """Defines the list of desired columns in the listing."""
         return [
-            self._get_title_column("__str__"),
-            Column("scheduled_publication_date", label="Scheduled for"),
-            Column("get_status_display", label="Status"),
+            self._get_title_column("name"),
+            Column("scheduled_publication_date", label="Scheduled for", sort_key="scheduled_publication_date"),
+            Column("get_status_display", label="Status", sort_key="status"),
             UpdatedAtColumn(),
         ]
 

@@ -3,7 +3,8 @@ from typing import TYPE_CHECKING, ClassVar, Optional, Self
 from django.conf import settings
 from django.contrib.contenttypes.models import ContentType
 from django.db import models
-from django.db.models import F, QuerySet
+from django.db.models import Case, F, QuerySet, Value, When
+from django.db.models.fields import CharField
 from django.db.models.functions import Cast, Coalesce
 from django.urls import reverse
 from django.utils.functional import cached_property
@@ -103,6 +104,15 @@ class BundlesQuerySet(QuerySet):
             .values("timestamp")[:1]
         )
         return self.annotate(updated_at=models.Subquery(latest_log))  # type: ignore[no-any-return]
+
+    def annotate_status_label(self) -> "BundlesQuerySet":
+        """Annotates the queryset with the status label, rather than the value saved in the db."""
+        return self.annotate(  # type: ignore[no-any-return]
+            status_label=Case(
+                *[When(status=choice[0], then=Value(choice[1])) for choice in BundleStatus.choices],
+                output_field=CharField(),
+            )
+        )
 
 
 # note: mypy doesn't cope with dynamic base classes and fails with:
