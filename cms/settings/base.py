@@ -986,6 +986,11 @@ SEARCH_INDEX_EXCLUDED_PAGE_TYPES = (
     "Page",
 )
 
+# Allowed prefixes for iframe visualisations
+IFRAME_VISUALISATION_ALLOWED_DOMAINS = env.get(
+    "IFRAME_VISUALISATION_ALLOWED_DOMAINS", "ons.gov.uk,onsdigital.uk"
+).split(",")
+
 # FIXME: remove before going live
 ENFORCE_EXCLUSIVE_TAXONOMY = env.get("ENFORCE_EXCLUSIVE_TAXONOMY", "true").lower() == "true"
 ALLOW_TEAM_MANAGEMENT = env.get("ALLOW_TEAM_MANAGEMENT", "false").lower() == "true"

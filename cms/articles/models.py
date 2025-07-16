@@ -30,7 +30,7 @@ from cms.core.models import BasePage
 from cms.core.widgets import date_widget
 from cms.datasets.blocks import DatasetStoryBlock
 from cms.datasets.utils import format_datasets_as_document_list
-from cms.datavis.blocks.base import BaseVisualisationBlock
+from cms.datavis.blocks.base import BaseChartBlock
 from cms.datavis.blocks.featured_charts import FeaturedChartBlock
 from cms.taxonomy.mixins import GenericTaxonomyMixin
 
@@ -482,7 +482,7 @@ class StatisticalArticlePage(BundledPageMixin, RoutablePageMixin, BasePage):  # 
             block_instance = chart_block.block
             block_value = chart_block.value
 
-            if isinstance(block_instance, BaseVisualisationBlock):
+            if isinstance(block_instance, BaseChartBlock):
                 data["chart"] = block_instance.get_component_config(block_value)
 
         elif self.listing_image:
