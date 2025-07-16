@@ -10,7 +10,7 @@ cd "${DIR}"/.. || exit
 
 if [ $# -eq 0 ] || [ "$1" == "" ]; then
     echo "Usage: load-design-system-templates.sh {TAG_NAME}"
-    exit 0
+    exit 1
 else
     TAG_NAME="$1"
 fi
