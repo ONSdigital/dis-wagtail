@@ -712,11 +712,11 @@ class AreaChartBlock(BaseChartBlock):
 class IframeBlock(BaseVisualisationBlock):
     iframe_source_url = blocks.URLBlock(
         required=True,
-        help_text=f"""
-        Your URL must start with
-        {" or ".join(f"<code>{prefix}</code>" for prefix in settings.IFRAME_VISUALISATION_ALLOWED_DOMAINS)}.
-        The '*' is a wildcard for any domain or subdomain that matches.
-        """,
+        help_text=(
+            "Enter the full URL of the visualisation you want to embed. "
+            "The URL must start with <code>https://</code> and the hostname must match one of the allowed domains: "
+            f"{' or '.join(f'<code>{prefix}</code>' for prefix in settings.IFRAME_VISUALISATION_ALLOWED_DOMAINS)}."
+        ),
     )
 
     class Meta:
