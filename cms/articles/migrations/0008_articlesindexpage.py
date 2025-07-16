@@ -6,9 +6,7 @@ from django.db import migrations, models
 
 class Migration(migrations.Migration):
     dependencies = [
-        ("articles", "0006_statisticalarticlepage_dataset_sorting_and_more"),
-        ("images", "0004_alter_customimage__privacy"),
-        ("wagtailcore", "0094_alter_page_locale"),
+        ("articles", "0007_statisticalarticlepage_featured_chart_content_and_more"),
     ]
 
     operations = [
