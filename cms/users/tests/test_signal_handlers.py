@@ -132,20 +132,14 @@ class UserProfileSignalTestCase(WagtailTestUtils, TestCase):
 
     def test_user_profile_notifications_disabled_on_creation(self):
         self.assertFalse(self.profile.submitted_notifications)
-        self.assertFalse(self.profile.approved_notifications)
-        self.assertFalse(self.profile.rejected_notifications)
-        self.assertFalse(self.profile.updated_comments_notifications)
+        self.assertTrue(self.profile.approved_notifications)
+        self.assertTrue(self.profile.rejected_notifications)
+        self.assertTrue(self.profile.updated_comments_notifications)
 
     def test_user_profile_notifications_not_changed_on_update(self):
         self.profile.submitted_notifications = True
-        self.profile.approved_notifications = True
-        self.profile.rejected_notifications = True
-        self.profile.updated_comments_notifications = True
         self.profile.save()
 
         self.profile.refresh_from_db()
 
         self.assertTrue(self.profile.submitted_notifications)
-        self.assertTrue(self.profile.approved_notifications)
-        self.assertTrue(self.profile.rejected_notifications)
-        self.assertTrue(self.profile.updated_comments_notifications)

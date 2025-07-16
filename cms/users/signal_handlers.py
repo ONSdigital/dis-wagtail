@@ -63,14 +63,8 @@ def audit_user_login_failed(sender: Any, credentials: dict, request: HttpRequest
 def disable_profile_notifications(sender: Any, instance: UserProfile, created: bool, **kwargs: Any) -> None:  # pylint: disable=unused-argument
     if created:
         instance.submitted_notifications = False
-        instance.approved_notifications = False
-        instance.rejected_notifications = False
-        instance.updated_comments_notifications = False
         instance.save(
             update_fields=[
                 "submitted_notifications",
-                "approved_notifications",
-                "rejected_notifications",
-                "updated_comments_notifications",
             ]
         )
