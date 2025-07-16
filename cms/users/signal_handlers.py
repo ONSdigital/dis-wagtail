@@ -62,6 +62,8 @@ def audit_user_login_failed(sender: Any, credentials: dict, request: HttpRequest
 @receiver(post_save, sender=UserProfile)
 def disable_profile_notifications(sender: Any, instance: UserProfile, created: bool, **kwargs: Any) -> None:  # pylint: disable=unused-argument
     if created:
+        # We want to disable the "submitted notifications" by default as they are sent regardless
+        # of the user's interaction with pages / workflow-enabled snippets and add a lot of noise.
         instance.submitted_notifications = False
         instance.save(
             update_fields=[
