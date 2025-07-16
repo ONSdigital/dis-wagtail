@@ -50,10 +50,10 @@ class BundleViewSetTestCaseBase(WagtailTestUtils, TestCase):
         cls.bundle_index_url = reverse("bundle:index")
         cls.bundle_add_url = reverse("bundle:add")
 
-        cls.published_bundle = BundleFactory(published=True, name="Publish Bundle")
+        cls.published_bundle = BundleFactory(published=True, name="Publish test Bundle")
         cls.published_bundle_edit_url = reverse("bundle:edit", args=[cls.published_bundle.id])
 
-        cls.approved_bundle = BundleFactory(approved=True, name="Approve Bundle")
+        cls.approved_bundle = BundleFactory(approved=True, name="Approve test Bundle")
         cls.approved_bundle_edit_url = reverse("bundle:edit", args=[cls.approved_bundle.id])
 
         cls.in_review_bundle = BundleFactory(in_review=True, name="Preview Bundle")
@@ -466,16 +466,23 @@ class BundleIndexViewTestCase(BundleViewSetTestCaseBase):
         self.assertNotContains(response, self.published_bundle_edit_url)
 
         self.assertContains(response, BundleStatus.DRAFT.label, 2)  # status + status filter
-        self.assertContains(response, BundleStatus.PUBLISHED.label, 2)  # status + status filter
         self.assertContains(response, BundleStatus.APPROVED.label, 2)  # status + status filter
+        self.assertContains(response, BundleStatus.PUBLISHED.label, 1)  # status filter
 
-        self.assertContains(response, self.published_bundle.name)
         self.assertContains(response, self.approved_bundle.name)
+        self.assertContains(response, self.bundle.name)
+        self.assertNotContains(response, self.published_bundle.name)
 
-    def test_index_view_search(self):
-        response = self.client.get(f"{self.bundle_index_url}?q=publish")
+    def test_index_view_contains_published_bundle_when_status_filter_applied(self):
+        response = self.client.get(f"{self.bundle_index_url}?status={BundleStatus.PUBLISHED}")
         self.assertContains(response, self.published_bundle.name)
         self.assertNotContains(response, self.approved_bundle.name)
+        self.assertNotContains(response, self.bundle.name)
+
+    def test_index_view_search(self):
+        response = self.client.get(f"{self.bundle_index_url}?q=test")
+        self.assertContains(response, self.approved_bundle.name)
+        self.assertNotContains(response, self.published_bundle.name)
 
     def test_index_view__previewers__contains_only_relevant_bundles(self):
         self.client.force_login(self.bundle_viewer)

@@ -1,5 +1,5 @@
 import time
-from typing import TYPE_CHECKING, Any, ClassVar
+from typing import TYPE_CHECKING, Any, ClassVar, cast
 
 from django.conf import settings
 from django.core.exceptions import PermissionDenied
@@ -372,6 +372,13 @@ class BundleIndexView(IndexView):
             queryset = queryset.previewable().filter(teams__team__in=self.request.user.active_team_ids).distinct()
 
         return queryset
+
+    def filter_queryset(self, queryset: "BundlesQuerySet") -> "BundlesQuerySet":
+        # automatically filter out published bundles if the status filter is not applied
+        if not self.request.GET.get("status"):
+            queryset = queryset.exclude(status=BundleStatus.PUBLISHED)
+
+        return cast("BundlesQuerySet", super().filter_queryset(queryset))
 
     def get_edit_url(self, instance: Bundle) -> str | None:
         """Override the default edit url to disable the edit URL for released bundles."""
