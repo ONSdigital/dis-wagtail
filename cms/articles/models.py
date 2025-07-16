@@ -125,7 +125,7 @@ class ArticleSeriesPage(RoutablePageMixin, GenericTaxonomyMixin, BasePage):  # t
 
     @path("editions/<str:slug>/")
     def release(self, request: "HttpRequest", slug: str, **kwargs: Any) -> "HttpResponse":
-        if not (edition := StatisticalArticlePage.objects.live().filter(slug=slug).first()):
+        if not (edition := StatisticalArticlePage.objects.live().child_of(self).filter(slug=slug).first()):
             raise Http404
         return cast("HttpResponse", edition.serve(request, serve_as_edition=True, **kwargs))
 

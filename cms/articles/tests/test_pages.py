@@ -693,9 +693,9 @@ class StatisticalArticlePageTests(WagtailPageTestCase):
         """Test that a translated article has the correct language coded canonical URL."""
         welsh_page = self.page.copy_for_translation(locale=Locale.objects.get(language_code="cy"), copy_parents=True)
         welsh_page.save_revision().publish()
-        response = self.client.get(f"/cy{self.page.get_url(request=self.dummy_request)}")
+        response = self.client.get(welsh_page.get_url(request=self.dummy_request))
         self.assertEqual(response.status_code, HTTPStatus.OK)
-        welsh_series_url = welsh_page.get_parent().get_full_url()
+        welsh_series_url = welsh_page.get_parent().get_full_url(request=self.dummy_request)
         self.assertIn(welsh_page.get_site().root_url + "/cy/", welsh_series_url)
         self.assertContains(response, f'<link rel="canonical" href="{welsh_series_url}" />')
 
@@ -729,8 +729,7 @@ class StatisticalArticlePageTests(WagtailPageTestCase):
 
         self.page.save_revision().publish()
 
-        v1_response = self.client.get(self.page.get_url(request=self.dummy_request) + "previous/v1/")
-
+        v1_response = self.client.get(self.page.get_url(request=self.dummy_request) + "versions/v1/")
         self.assertContains(v1_response, '<meta name="robots" content="noindex" />')
 
     def test_schema_org_data(self):
