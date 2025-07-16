@@ -550,9 +550,9 @@ class StatisticalArticlePage(BundledPageMixin, RoutablePageMixin, BasePage):  # 
             case "related_data":
                 return cast("TemplateResponse", self.related_data(request))
             case "featured_article":
-                from cms.topics.models import TopicPage  # pylint: disable=import-outside-toplevel
-
-                topic_page = TopicPage.objects.ancestor_of(self).first()
+                # using this rather than inline import to placate pyright complaining about cyclic imports
+                topic_page_class = resolve_model_string("topics.TopicPage")
+                topic_page = topic_page_class.objects.ancestor_of(self).first()
                 return cast("TemplateResponse", topic_page.serve(request, featured_item=self))
         return cast("TemplateResponse", super().serve_preview(request, mode_name))
 
