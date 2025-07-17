@@ -19,8 +19,8 @@
                 <thead>{# add class="w-sr-only" to make this visible for screen readers only #}
                     <tr>
                         <th class="title">Title</th>
+                        <th>Scheduled for</th>
                         <th>Status</th>
-                        <th>Scheduled publication date</th>
                         <th>Updated</th>
                     </tr>
                 </thead>
@@ -40,12 +40,8 @@
                                     </li>
                                 </ul>
                             </td>
-                            <td>
-                                {{ bundle.get_status_display }}
-                            </td>
-                            <td>
-                                {{ bundle.scheduled_publication_date|default_if_none:"" }}
-                            </td>
+                            <td>{{ bundle.scheduled_publication_date|default_if_none:"" }}</td>
+                            <td>{{ bundle.get_status_display }}</td>
                             <td>{% if bundle.updated_at %}{% human_readable_date bundle.updated_at %}{% endif %}</td>
                         </tr>
                     {% endfor %}
