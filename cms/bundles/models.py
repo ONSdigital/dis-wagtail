@@ -52,6 +52,7 @@ class BundleDataset(Orderable):
     dataset = models.ForeignKey(  # type: ignore[var-annotated]
         "datasets.Dataset", blank=True, null=True, on_delete=models.SET_NULL
     )
+    content_api_id: models.CharField = models.CharField(max_length=255, blank=True, null=True)
 
     panels: ClassVar[list["Panel"]] = ["dataset"]
 
@@ -131,6 +132,7 @@ class Bundle(index.Indexed, ClusterableModel, models.Model):  # type: ignore[dja
         related_name="bundles",
     )
     status = models.CharField(choices=BundleStatus.choices, default=BundleStatus.DRAFT, max_length=32)
+    bundle_api_id = models.CharField(max_length=255, blank=True, null=True, editable=False)
 
     objects = BundleManager()
 
