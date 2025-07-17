@@ -186,6 +186,15 @@ Feature: Statistical Article Page components
         And the user clicks "Publish"
         Then submitting the Wagtail page edit form is successful
 
+    Scenario: A CMS user can add an accordion section to a Statistical Article Page
+        When the user goes to add a new statistical article page
+        And the user adds basic statistical article page content
+        And the user adds an accordion section with title and content
+        And the user clicks "Publish"
+        And the user clicks "View Live" on the publish confirmation banner
+        Then the published statistical article page has the added accordion section
+        And the user can expand and collapse the accordion section
+
     @no_javascript
     Scenario: The fallback equation is visible to non-JS users
         Given a statistical article page with equations exists

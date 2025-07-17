@@ -180,6 +180,7 @@ In order to run it:
     - creating a superuser with:
         - username: `admin`
         - password: `changeme` # pragma: allowlist secret
+    - setting the port the Wagtail site(s)
 
     ```bash
     make dev-init
