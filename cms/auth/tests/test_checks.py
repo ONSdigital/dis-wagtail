@@ -183,7 +183,10 @@ class IdentityAPISettingsCheckTests(TestCase):
         error = errors[0]
         self.assertEqual(error.id, "auth.E007")
         self.assertIn(
-            "IDENTITY_API_BASE_URL is required when AWS_COGNITO_LOGIN_ENABLED or AWS_COGNITO_TEAM_SYNC_ENABLED is True.",
+            (
+                "IDENTITY_API_BASE_URL is required when AWS_COGNITO_LOGIN_ENABLED or "
+                "AWS_COGNITO_TEAM_SYNC_ENABLED is True."
+            ),
             error.msg,
         )
 
