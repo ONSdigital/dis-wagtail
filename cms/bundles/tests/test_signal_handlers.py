@@ -1,6 +1,8 @@
+import json
 from datetime import timedelta
 from unittest.mock import patch
 
+import responses
 from django.core import mail
 from django.core.management import call_command
 from django.test import TestCase, override_settings
@@ -9,7 +11,6 @@ from django.utils import timezone
 from wagtail.test.utils.form_data import inline_formset, nested_form_data
 
 from cms.articles.tests.factories import StatisticalArticlePageFactory
-from cms.bundles.api import BundleAPIClientError
 from cms.bundles.enums import BundleStatus
 from cms.bundles.models import Bundle, BundleDataset, BundleTeam
 from cms.bundles.tests.factories import BundleFactory, BundlePageFactory
@@ -159,22 +160,14 @@ class TestNotifications(TestCase):
 
 
 @override_settings(ONS_BUNDLE_API_ENABLED=True)
+@responses.activate
 class TestBundleAPISignalHandlers(TestCase):
-    def setUp(self):
-        """Set up the test case."""
-        self.patcher = patch("cms.bundles.signal_handlers.BundleAPIClient")
-        self.mock_client_class = self.patcher.start()
-        self.mock_client = self.mock_client_class.return_value
-
-    def tearDown(self):
-        """Clean up after the test."""
-        self.patcher.stop()
-
     def test_bundle_creation_does_not_call_api(self):
         """Test that creating a bundle does not call the Dataset API."""
-        bundle = BundleFactory(name="Test Bundle")
+        bundle = BundleFactory()
 
-        self.mock_client.create_bundle.assert_not_called()
+        # No API calls should be made for bundle creation
+        self.assertEqual(len(responses.calls), 0)
 
         bundle.refresh_from_db()
         self.assertIsNone(bundle.bundle_api_id)
@@ -185,51 +178,63 @@ class TestBundleAPISignalHandlers(TestCase):
         dataset = DatasetFactory()
 
         # Create bundle with pages and datasets
-        bundle = BundleFactory(name="Test Bundle")
+        bundle = BundleFactory()
         BundlePageFactory(parent=bundle, page=page)
         BundleDataset.objects.create(parent=bundle, dataset=dataset)
 
         # Bundle creation should not call the API
-        self.mock_client.create_bundle.assert_not_called()
-
-        # But adding datasets should trigger update_bundle if the bundle has bundle_api_id
-        # Since this bundle doesn't have bundle_api_id, update_bundle should not be called
-        self.mock_client.update_bundle.assert_not_called()
+        # Since the bundle doesn't have bundle_api_id, adding datasets should not call the API either
+        self.assertEqual(len(responses.calls), 0)
 
     def test_bundle_status_update_calls_api(self):
         """Test that updating bundle status calls the Dataset API."""
         bundle = BundleFactory(bundle_api_id="api-bundle-123")
 
-        # Clear any calls from bundle creation
-        self.mock_client.reset_mock()
+        # Mock the API endpoint for bundle state update
+        responses.add(
+            responses.PUT,
+            "https://dummy_base_api/bundles/api-bundle-123/state",
+            json={"status": "success", "message": "Bundle state updated"},
+            status=200,
+        )
 
         bundle.status = BundleStatus.APPROVED
         bundle.save()
 
-        self.mock_client.update_bundle_state.assert_called_once_with("api-bundle-123", BundleStatus.APPROVED)
+        # Verify the API was called
+        self.assertEqual(len(responses.calls), 1)
+        self.assertEqual(responses.calls[0].request.url, "https://dummy_base_api/bundles/api-bundle-123/state")
+
+        request_body = json.loads(responses.calls[0].request.body)
+        self.assertEqual(request_body["state"], BundleStatus.APPROVED)
 
     def test_bundle_deletion_calls_api(self):
         """Test that deleting a bundle calls the Dataset API."""
         bundle = BundleFactory(bundle_api_id="api-bundle-123")
         bundle_id = bundle.bundle_api_id
 
-        # Clear any calls from bundle creation
-        self.mock_client.reset_mock()
+        # Mock the API endpoint for bundle deletion
+        responses.add(
+            responses.DELETE,
+            "https://dummy_base_api/bundles/api-bundle-123",
+            json={"status": "success", "message": "Bundle deleted"},
+            status=200,
+        )
 
         bundle.delete()
 
-        self.mock_client.delete_bundle.assert_called_once_with(bundle_id)
+        # Verify the API was called
+        self.assertEqual(len(responses.calls), 1)
+        self.assertEqual(responses.calls[0].request.url, f"https://dummy_base_api/bundles/{bundle_id}")
 
     def test_bundle_deletion_without_api_id_does_not_call_api(self):
         """Test that deleting a bundle without bundle_api_id doesn't call the API."""
         bundle = BundleFactory(bundle_api_id=None)
 
-        # Clear any calls from bundle creation
-        self.mock_client.reset_mock()
-
         bundle.delete()
 
-        self.mock_client.delete_bundle.assert_not_called()
+        # No API calls should be made
+        self.assertEqual(len(responses.calls), 0)
 
     def test_adding_dataset_to_bundle_calls_api(self):
         """Test that adding a dataset to a bundle calls the Dataset API."""
@@ -270,22 +275,27 @@ class TestBundleAPISignalHandlers(TestCase):
                 }
             ],
         }
-        self.mock_client.add_content_to_bundle.return_value = mock_response
 
-        # Clear any calls from bundle creation
-        self.mock_client.reset_mock()
-        self.mock_client.add_content_to_bundle.return_value = mock_response
+        # Mock the API endpoint for adding content to bundle
+        responses.add(
+            responses.POST,
+            "https://dummy_base_api/bundles/api-bundle-123/contents",
+            json=mock_response,
+            status=200,
+        )
 
         bundle_dataset = BundleDataset.objects.create(parent=bundle, dataset=dataset)
 
-        self.mock_client.add_content_to_bundle.assert_called_once()
-        call_args = self.mock_client.add_content_to_bundle.call_args[0]
-        self.assertEqual(call_args[0], "api-bundle-123")  # bundle_id
-        content_item = call_args[1]  # content_item
-        self.assertEqual(content_item["content_type"], "DATASET")
-        self.assertEqual(content_item["metadata"]["dataset_id"], dataset.namespace)
-        self.assertEqual(content_item["metadata"]["edition_id"], dataset.edition)
-        self.assertEqual(content_item["metadata"]["version_id"], dataset.version)
+        # Verify the API was called
+        self.assertEqual(len(responses.calls), 1)
+        self.assertEqual(responses.calls[0].request.url, "https://dummy_base_api/bundles/api-bundle-123/contents")
+
+        # Check the request body contains the correct content item
+        request_body = json.loads(responses.calls[0].request.body)
+        self.assertEqual(request_body["content_type"], "DATASET")
+        self.assertEqual(request_body["metadata"]["dataset_id"], dataset.namespace)
+        self.assertEqual(request_body["metadata"]["edition_id"], dataset.edition)
+        self.assertEqual(request_body["metadata"]["version_id"], dataset.version)
 
         # Verify that the content_api_id was extracted and saved
         bundle_dataset.refresh_from_db()
@@ -297,38 +307,45 @@ class TestBundleAPISignalHandlers(TestCase):
         dataset = DatasetFactory()
         bundle_dataset = BundleDataset.objects.create(parent=bundle, dataset=dataset, content_api_id="content-123")
 
-        # Clear any calls from bundle creation
-        self.mock_client.reset_mock()
+        # Mock the API endpoint for removing content from bundle
+        responses.add(
+            responses.DELETE,
+            "https://dummy_base_api/bundles/api-bundle-123/contents/content-123",
+            json={"status": "success", "message": "Content removed from bundle"},
+            status=200,
+        )
 
         bundle_dataset.delete()
 
-        self.mock_client.delete_content_from_bundle.assert_called_once()
-        call_args = self.mock_client.delete_content_from_bundle.call_args[0]
-        self.assertEqual(call_args[0], "api-bundle-123")  # bundle_id
-        self.assertEqual(call_args[1], "content-123")  # content_id
+        # Verify the API was called
+        self.assertEqual(len(responses.calls), 1)
+        self.assertEqual(
+            responses.calls[0].request.url, "https://dummy_base_api/bundles/api-bundle-123/contents/content-123"
+        )
 
     def test_bundle_creation_does_not_call_api_even_with_errors(self):
         """Test that bundle creation doesn't call the API even if there would be errors."""
-        self.mock_client.create_bundle.side_effect = BundleAPIClientError("API Error")
-
         # This should not raise an exception and should not call the API
-        bundle = BundleFactory(name="Test Bundle")
+        bundle = BundleFactory()
 
         # The bundle should still be saved
         self.assertTrue(bundle.pk)
-        self.assertEqual(bundle.name, "Test Bundle")
         self.assertIsNone(bundle.bundle_api_id)
 
         # API should not be called
-        self.mock_client.create_bundle.assert_not_called()
+        self.assertEqual(len(responses.calls), 0)
 
     def test_api_error_during_status_update_does_not_break_save(self):
         """Test that API errors during status update don't prevent saving."""
         bundle = BundleFactory(bundle_api_id="api-bundle-123")
 
-        # Clear any calls from bundle creation
-        self.mock_client.reset_mock()
-        self.mock_client.update_bundle_state.side_effect = BundleAPIClientError("API Error")
+        # Mock the API endpoint to return an error
+        responses.add(
+            responses.PUT,
+            "https://dummy_base_api/bundles/api-bundle-123/state",
+            json={"error": "API Error"},
+            status=500,
+        )
 
         # This should not raise an exception
         bundle.status = BundleStatus.APPROVED
@@ -343,9 +360,13 @@ class TestBundleAPISignalHandlers(TestCase):
         bundle = BundleFactory(bundle_api_id="api-bundle-123")
         bundle_pk = bundle.pk
 
-        # Clear any calls from bundle creation
-        self.mock_client.reset_mock()
-        self.mock_client.delete_bundle.side_effect = BundleAPIClientError("API Error")
+        # Mock the API endpoint to return an error
+        responses.add(
+            responses.DELETE,
+            "https://dummy_base_api/bundles/api-bundle-123",
+            json={"error": "API Error"},
+            status=500,
+        )
 
         # This should not raise an exception
         bundle.delete()
@@ -370,11 +391,14 @@ class TestBundleAPISignalHandlers(TestCase):
             "updated_at": "2025-07-14T10:30:00.000Z",
             "contents": [],  # Empty contents array
         }
-        self.mock_client.add_content_to_bundle.return_value = mock_response
 
-        # Clear any calls from bundle creation
-        self.mock_client.reset_mock()
-        self.mock_client.add_content_to_bundle.return_value = mock_response
+        # Mock the API endpoint for adding content to bundle
+        responses.add(
+            responses.POST,
+            "https://dummy_base_api/bundles/api-bundle-123/contents",
+            json=mock_response,
+            status=200,
+        )
 
         with self.assertLogs("cms.bundles.signal_handlers", level="ERROR") as cm:
             bundle_dataset = BundleDataset.objects.create(parent=bundle, dataset=dataset)
@@ -391,33 +415,33 @@ class TestBundleAPISignalHandlers(TestCase):
         dataset = DatasetFactory()
         bundle_dataset = BundleDataset.objects.create(parent=bundle, dataset=dataset, content_api_id=None)
 
-        # Clear any calls from bundle creation
-        self.mock_client.reset_mock()
-
         bundle_dataset.delete()
 
-        self.mock_client.delete_content_from_bundle.assert_not_called()
+        # No API calls should be made
+        self.assertEqual(len(responses.calls), 0)
 
     def test_adding_dataset_to_bundle_without_bundle_api_id_does_not_call_api(self):
         """Test that adding a dataset to a bundle without bundle_api_id doesn't call the API."""
         bundle = BundleFactory(bundle_api_id=None)
         dataset = DatasetFactory()
 
-        # Clear any calls from bundle creation
-        self.mock_client.reset_mock()
-
         BundleDataset.objects.create(parent=bundle, dataset=dataset)
 
-        self.mock_client.add_content_to_bundle.assert_not_called()
+        # No API calls should be made
+        self.assertEqual(len(responses.calls), 0)
 
     def test_api_error_during_adding_dataset_does_not_break_save(self):
         """Test that API errors during adding dataset don't prevent saving."""
         bundle = BundleFactory(bundle_api_id="api-bundle-123")
         dataset = DatasetFactory()
 
-        # Clear any calls from bundle creation
-        self.mock_client.reset_mock()
-        self.mock_client.add_content_to_bundle.side_effect = BundleAPIClientError("API Error")
+        # Mock the API endpoint to return an error
+        responses.add(
+            responses.POST,
+            "https://dummy_base_api/bundles/api-bundle-123/contents",
+            json={"error": "API Error"},
+            status=500,
+        )
 
         # This should not raise an exception
         bundle_dataset = BundleDataset.objects.create(parent=bundle, dataset=dataset)
@@ -433,9 +457,13 @@ class TestBundleAPISignalHandlers(TestCase):
         bundle_dataset = BundleDataset.objects.create(parent=bundle, dataset=dataset, content_api_id="content-123")
         bundle_dataset_pk = bundle_dataset.pk
 
-        # Clear any calls from bundle creation
-        self.mock_client.reset_mock()
-        self.mock_client.delete_content_from_bundle.side_effect = BundleAPIClientError("API Error")
+        # Mock the API endpoint to return an error
+        responses.add(
+            responses.DELETE,
+            "https://dummy_base_api/bundles/api-bundle-123/contents/content-123",
+            json={"error": "API Error"},
+            status=500,
+        )
 
         # This should not raise an exception
         bundle_dataset.delete()
