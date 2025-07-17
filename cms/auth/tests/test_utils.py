@@ -10,7 +10,7 @@ import jwt
 import requests
 from django.test import SimpleTestCase, override_settings
 
-from cms.auth import utils  # pylint: disable=import-error
+from cms.auth import utils
 from cms.auth.tests.helpers import DummyResponse, build_jwt, generate_rsa_keypair
 
 
