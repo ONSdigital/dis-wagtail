@@ -56,7 +56,7 @@
             },
             "breadcrumbs": {
                 "ariaLabel": breadcrumbs_label,
-                "itemsList": breadcrumbs(page),
+                "itemsList": page.get_breadcrumbs(request=request),
             }
         })
     }}
