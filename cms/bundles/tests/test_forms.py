@@ -378,7 +378,7 @@ class BundleDatasetValidationTestCase(TestCase):
         self.assertFormError(
             form,
             None,
-            ["Cannot approve the bundle with dataset not ready to be published: Test Dataset (state: DRAFT)"],
+            ["Cannot approve the bundle with 1 dataset not ready to be published: Test Dataset (state: DRAFT)"],
         )
 
     def test_dataset_validation_multiple_datasets_mixed_statuses(self):
@@ -425,7 +425,57 @@ class BundleDatasetValidationTestCase(TestCase):
         self.assertFormError(
             form,
             None,
-            ["Cannot approve the bundle with dataset not ready to be published: Draft Dataset (state: DRAFT)"],
+            ["Cannot approve the bundle with 1 dataset not ready to be published: Draft Dataset (state: DRAFT)"],
+        )
+
+    def test_dataset_validation_multiple_datasets_not_ready(self):
+        """Test that multiple datasets not ready shows proper pluralization."""
+        dataset1 = DatasetFactory(id=123, title="Draft Dataset 1")
+        dataset2 = DatasetFactory(id=124, title="Draft Dataset 2")
+        self.bundle.bundle_api_id = "test-bundle-123"
+        self.bundle.save()
+
+        self.mock_client.get_bundle_contents.return_value = {
+            "contents": [
+                {
+                    "id": "content-1",
+                    "state": "DRAFT",
+                    "metadata": {
+                        "dataset_id": dataset1.namespace,
+                        "edition_id": dataset1.edition,
+                        "version_id": dataset1.version,
+                    },
+                },
+                {
+                    "id": "content-2",
+                    "state": "DRAFT",
+                    "metadata": {
+                        "dataset_id": dataset2.namespace,
+                        "edition_id": dataset2.edition,
+                        "version_id": dataset2.version,
+                    },
+                },
+            ]
+        }
+
+        raw_data = {
+            "name": "Test Bundle",
+            "status": BundleStatus.APPROVED,
+            "bundled_pages": inline_formset([]),
+            "bundled_datasets": inline_formset([{"dataset": dataset1.id}, {"dataset": dataset2.id}]),
+            "teams": inline_formset([]),
+        }
+
+        form = self.form_class(instance=self.bundle, data=nested_form_data(raw_data), for_user=self.approver)
+
+        self.assertFalse(form.is_valid())
+        self.assertFormError(
+            form,
+            None,
+            [
+                "Cannot approve the bundle with 2 datasets not ready to be published: "
+                "Draft Dataset 1 (state: DRAFT), Draft Dataset 2 (state: DRAFT)"
+            ],
         )
 
     def test_dataset_validation_api_error_fails_gracefully(self):
@@ -443,7 +493,7 @@ class BundleDatasetValidationTestCase(TestCase):
         self.assertFormError(
             form,
             None,
-            ["Cannot approve the bundle with dataset not ready to be published: Bundle content validation failed"],
+            ["Cannot approve the bundle with 1 dataset not ready to be published: Bundle content validation failed"],
         )
 
     def test_dataset_validation_only_runs_when_approving(self):
