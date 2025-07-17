@@ -2,11 +2,9 @@ import sys
 from io import StringIO
 from typing import Any
 
+import pglock
 from django.core.management import call_command
 from django.core.management.base import BaseCommand, CommandParser
-from django.db import DEFAULT_DB_ALIAS, connections
-from django.db.utils import OperationalError
-from postgres_lock.lock import PostgresLock
 
 
 class Command(BaseCommand):
@@ -48,27 +46,12 @@ class Command(BaseCommand):
             self.stdout.write("No migrations to run.", self.style.SUCCESS)
             return
 
-        with connections[DEFAULT_DB_ALIAS].cursor() as cursor:
-            # Set a statement timeout to terminate if the lock is held for too long
-            cursor.execute("SET statement_timeout = %s;", [options["timeout"] * 1000])
-
         self.stdout.write("Acquiring lock...", self.style.MIGRATE_HEADING)
 
-        try:
-            # Attempt to acquire the lock. The context manager will block until the lock is acquired.
-            with PostgresLock(name="locked_migrate", using=DEFAULT_DB_ALIAS):
+        with pglock.advisory(lock_id=__name__, timeout=options["timeout"]) as acquired:
+            if acquired:
                 self.stdout.write("Lock acquired - running migrations.", self.style.SUCCESS)
-
-                with connections[DEFAULT_DB_ALIAS].cursor() as cursor:
-                    # Reset statement timeout before running migrations
-                    cursor.execute("SET statement_timeout = DEFAULT;")
-
                 call_command("migrate", interactive=False)
-
-        except OperationalError as e:
-            if "statement timeout" in str(e):
-                # Show a nicer error message on timeout
+            else:
                 self.stdout.write("Lock took too long to acquire - aborting", self.style.ERROR)
                 sys.exit(1)
-            else:
-                raise

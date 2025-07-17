@@ -893,18 +893,33 @@ Django = "*"
 testing = ["django-modelcluster"]
 
 [[package]]
-name = "django-postgres-lock"
-version = "0.1.1"
-description = "Django Postgres Lock"
+name = "django-pgactivity"
+version = "1.7.1"
+description = "Monitor, kill, and analyze Postgres queries."
 optional = false
-python-versions = ">=3.5"
+python-versions = "<4,>=3.9.0"
 files = [
-    {file = "django-postgres-lock-0.1.1.tar.gz", hash = "sha256:0be614d18730740d39ae44705b30f5e71e3811e50692af7e01f5c05d1a8c7a0b"},
-    {file = "django_postgres_lock-0.1.1-py3-none-any.whl", hash = "sha256:e22c9934bd4f24061398c19a734209658d2868226daf8e6f2625c23e1e27ffd0"},
+    {file = "django_pgactivity-1.7.1-py3-none-any.whl", hash = "sha256:0cd9e8dbaab7997410bd0fe490417d63f568fa27fd02e548bb3ea8dc73e0e319"},
+    {file = "django_pgactivity-1.7.1.tar.gz", hash = "sha256:4d8aad75c2d48e1e79f39d9163b5f134f5867f65c75f08c37fa745d5e8f3d6fa"},
 ]
 
 [package.dependencies]
-Django = ">=1.11"
+django = ">=4"
+
+[[package]]
+name = "django-pglock"
+version = "1.7.2"
+description = "Postgres locking routines and lock table access."
+optional = false
+python-versions = "<4,>=3.9.0"
+files = [
+    {file = "django_pglock-1.7.2-py3-none-any.whl", hash = "sha256:2f9335527779445fe86507b37e26cfde485a32b91d982a8f80039d3bcd25d596"},
+    {file = "django_pglock-1.7.2.tar.gz", hash = "sha256:d1d8521b382a5819e8d14978d0e8e63ab2763cb784f5a6bfdbe5de807da4a61a"},
+]
+
+[package.dependencies]
+django = ">=4"
+django-pgactivity = ">=1.2,<2"
 
 [[package]]
 name = "django-redis"
@@ -3328,4 +3343,4 @@ files = [
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.13"
-content-hash = "529fe965a38245d0930a294db548f95cee9af89233b4b6fd517cc7caca8226dc"
+content-hash = "7c8b3b277ffa349b9c4305502f9771e71b1d9a6d4034636f287b970200919018"

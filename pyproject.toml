@@ -44,7 +44,7 @@ aws-msk-iam-sasl-signer-python = "^1.0.2"
 wagtailtables = "^0.2.2"
 pyjwt = "^2.10.1"
 cryptography = "^45.0.4"
-django-postgres-lock = "^0.1.1"
+django-pglock = "^1.7.2"
 
 [tool.poetry.group.dev.dependencies]
 # :TODO: Remove pylint when ruff supports all pylint rules
