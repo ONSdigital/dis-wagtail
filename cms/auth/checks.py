@@ -9,7 +9,7 @@ if TYPE_CHECKING:
     from django.conf import LazySettings
 
 
-def _check_aws_cognito(settings_obj: "LazySettings") -> None:
+def _check_aws_cognito(settings_obj: "LazySettings") -> list[Error]:
     errors: list[Error] = []
 
     if not getattr(settings_obj, "AWS_COGNITO_LOGIN_ENABLED", False):
@@ -36,7 +36,7 @@ def _check_aws_cognito(settings_obj: "LazySettings") -> None:
     return errors
 
 
-def _check_session_config(settings_obj: "LazySettings") -> None:
+def _check_session_config(settings_obj: "LazySettings") -> list[Error]:
     errors: list[Error] = []
     session_cookie_age = getattr(settings_obj, "SESSION_COOKIE_AGE", None)
     session_renewal_offset = getattr(settings_obj, "SESSION_RENEWAL_OFFSET_SECONDS", None)
@@ -54,7 +54,7 @@ def _check_session_config(settings_obj: "LazySettings") -> None:
     return errors
 
 
-def _check_identity_api(settings_obj: "LazySettings") -> None:
+def _check_identity_api(settings_obj: "LazySettings") -> list[Error]:
     errors: list[Error] = []
     cognito_enabled = getattr(settings_obj, "AWS_COGNITO_LOGIN_ENABLED", False)
     identity_api_url = getattr(settings_obj, "IDENTITY_API_BASE_URL", None)
@@ -87,7 +87,7 @@ def _check_identity_api(settings_obj: "LazySettings") -> None:
     return errors
 
 
-def _check_team_sync(settings_obj: "LazySettings") -> None:
+def _check_team_sync(settings_obj: "LazySettings") -> list[Error]:
     errors: list[Error] = []
 
     if not getattr(settings_obj, "AWS_COGNITO_TEAM_SYNC_ENABLED", False):
