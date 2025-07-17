@@ -132,7 +132,7 @@ class BundleAdminForm(WagtailAdminModelForm):
             dataset_list = ", ".join(datasets_not_approved)
             num_not_approved = len(datasets_not_approved)
             raise ValidationError(
-                f"Cannot approve the bundle with {num_not_approved} dataset{pluralize(num_not_approved))} "
+                f"Cannot approve the bundle with {num_not_approved} dataset{pluralize(num_not_approved)} "
                 f"not ready to be published: {dataset_list}"
             )
 
