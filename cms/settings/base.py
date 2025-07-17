@@ -14,6 +14,7 @@ from django.utils.translation import gettext_lazy as _
 from django_jinja.builtins import DEFAULT_EXTENSIONS
 
 from cms.core.elasticache import ElastiCacheIAMCredentialProvider
+from cms.core.jinja2 import custom_json_dumps
 
 env = os.environ.copy()
 
@@ -64,6 +65,7 @@ INSTALLED_APPS = [
     "cms.bundles",
     "cms.core",
     "cms.datasets",
+    "cms.datavis",
     "cms.documents",
     "cms.home",
     "cms.images",
@@ -88,6 +90,7 @@ INSTALLED_APPS = [
     "wagtail.search",
     "wagtail.admin",
     "wagtail.locales",
+    "wagtailschemaorg",
     "wagtail.contrib.settings",
     "wagtail.contrib.redirects",
     "wagtail.contrib.legacy.richtext",
@@ -103,6 +106,7 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     "django_jinja",
     "wagtailmath",
+    "wagtailtables",
     "wagtailfontawesomesvg",
     "wagtail_tinytableblock",
     "rest_framework",
@@ -183,7 +187,12 @@ TEMPLATES = [
                 "wagtail.contrib.settings.jinja2tags.settings",
                 "cms.core.jinja2tags.CoreExtension",
                 "cms.navigation.jinja2tags.NavigationExtension",
+                "wagtailschemaorg.jinja2tags.WagtailSchemaOrgExtension",
             ],
+            "policies": {
+                # https://jinja.palletsprojects.com/en/stable/api/#policies
+                "json.dumps_function": custom_json_dumps,
+            },
         },
     },
     {
@@ -956,6 +965,9 @@ SLACK_NOTIFICATIONS_WEBHOOK_URL = env.get("SLACK_NOTIFICATIONS_WEBHOOK_URL")
 
 ONS_API_BASE_URL = env.get("ONS_API_BASE_URL", "https://api.beta.ons.gov.uk/v1")
 ONS_WEBSITE_BASE_URL = env.get("ONS_WEBSITE_BASE_URL", "https://www.ons.gov.uk")
+ONS_ORGANISATION_NAME = env.get("ONS_ORGANISATION_NAME", "Office for National Statistics")
+
+DEFAULT_OG_IMAGE_URL = env.get("DEFAULT_OG_IMAGE_URL", "https://cdn.ons.gov.uk/assets/images/ons-logo/v2/ons-logo.png")
 
 WAGTAILSIMPLETRANSLATION_SYNC_PAGE_TREE = True
 
@@ -974,6 +986,11 @@ SEARCH_INDEX_EXCLUDED_PAGE_TYPES = (
     "Page",
 )
 
+# Allowed prefixes for iframe visualisations
+IFRAME_VISUALISATION_ALLOWED_DOMAINS = env.get(
+    "IFRAME_VISUALISATION_ALLOWED_DOMAINS", "ons.gov.uk,onsdigital.uk"
+).split(",")
+
 # FIXME: remove before going live
 ENFORCE_EXCLUSIVE_TAXONOMY = env.get("ENFORCE_EXCLUSIVE_TAXONOMY", "true").lower() == "true"
 ALLOW_TEAM_MANAGEMENT = env.get("ALLOW_TEAM_MANAGEMENT", "false").lower() == "true"
@@ -986,7 +1003,7 @@ SERVICE_AUTH_TOKEN = env.get("SERVICE_AUTH_TOKEN")
 WAGTAIL_CORE_ADMIN_LOGIN_ENABLED = env.get("WAGTAIL_CORE_ADMIN_LOGIN_ENABLED", "false").lower() == "true"
 LOGOUT_REDIRECT_URL = env.get("LOGOUT_REDIRECT_URL", WAGTAILADMIN_LOGIN_URL)
 AUTH_TOKEN_REFRESH_URL = env.get("AUTH_TOKEN_REFRESH_URL")
-SESSION_COOKIE_AGE = env.get("SESSION_COOKIE_AGE", 60 * 15)  # 15 minutes to match Auth Service
+SESSION_COOKIE_AGE = int(env.get("SESSION_COOKIE_AGE", 60 * 15))  # 15 minutes to match Auth Service
 SESSION_EXPIRE_AT_BROWSER_CLOSE = True
 IDENTITY_API_BASE_URL = env.get("IDENTITY_API_BASE_URL")
 AWS_COGNITO_LOGIN_ENABLED = env.get("AWS_COGNITO_LOGIN_ENABLED", "false").lower() == "true"
