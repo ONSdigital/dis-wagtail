@@ -493,8 +493,8 @@ class BundleIndexViewTestCase(BundleViewSetTestCaseBase):
         self.bundle_viewer.teams.add(another_preview_team)
 
         response = self.client.get(self.bundle_index_url)
-        # the title + label for inspect link + label for the dropdown button
-        self.assertContains(response, self.in_review_bundle.name, 3)
+        # the title + label for inspect link
+        self.assertContains(response, self.in_review_bundle.name, 2)
         self.assertNotContains(response, self.published_bundle.name)
         self.assertNotContains(response, self.approved_bundle.name)
         self.assertNotContains(response, self.another_in_review_bundle.name)

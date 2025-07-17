@@ -13,6 +13,7 @@ from django.utils.html import format_html, format_html_join
 from wagtail.admin.ui.tables import Column, DateColumn
 from wagtail.admin.views.generic import CreateView, EditView, IndexView, InspectView
 from wagtail.admin.viewsets.model import ModelViewSet
+from wagtail.admin.widgets import ListingButton
 from wagtail.log_actions import log
 
 from cms.bundles.enums import BundleStatus
@@ -410,6 +411,30 @@ class BundleIndexView(IndexView):
     @cached_property
     def can_manage(self) -> bool:
         return user_can_manage_bundles(self.request.user)
+
+    def get_list_buttons(self, instance: Bundle) -> list[ListingButton]:
+        buttons = []
+        if edit_url := self.get_edit_url(instance):
+            buttons.append(
+                ListingButton(
+                    "Edit",
+                    url=edit_url,
+                    icon_name="edit",
+                    attrs={"aria-label": f"Edit '{instance!s}'"},
+                    priority=10,
+                )
+            )
+        if inspect_url := self.get_inspect_url(instance):
+            buttons.append(
+                ListingButton(
+                    "Inspect",
+                    url=inspect_url,
+                    icon_name="info-circle",
+                    attrs={"aria-label": f"Inspect '{instance!s}'"},
+                    priority=20,
+                )
+            )
+        return buttons
 
     @cached_property
     def columns(self) -> list[Column]:
