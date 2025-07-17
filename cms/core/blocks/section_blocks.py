@@ -23,6 +23,7 @@ from cms.datavis.blocks import (
     AreaChartBlock,
     BarColumnChartBlock,
     BarColumnConfidenceIntervalChartBlock,
+    IframeBlock,
     LineChartBlock,
     ScatterPlotBlock,
 )
@@ -56,6 +57,7 @@ class SectionContentBlock(StreamBlock):
     )
     scatter_plot = ScatterPlotBlock(group="DataVis", label="Scatter Plot")
     area_chart = AreaChartBlock(group="DataVis", label="Area Chart")
+    iframe_visualisation = IframeBlock(group="DataVis", label="Iframe Visualisation")
 
     class Meta:
         template = "templates/components/streamfield/stream_block.html"
