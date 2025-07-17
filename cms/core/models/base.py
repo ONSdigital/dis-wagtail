@@ -1,12 +1,15 @@
-from typing import TYPE_CHECKING, ClassVar, Optional, Self, cast
+from typing import TYPE_CHECKING, Any, ClassVar, Optional, Self, cast
 
 from django.conf import settings
 from django.utils.decorators import method_decorator
 from django.utils.functional import cached_property
+from django.utils.translation import gettext_lazy as _
 from wagtail.admin.panels import ObjectList, TabbedInterface
 from wagtail.models import Page
 from wagtail.query import PageQuerySet
 from wagtail.utils.decorators import cached_classmethod
+from wagtailschemaorg.models import PageLDMixin
+from wagtailschemaorg.utils import extend
 
 from cms.core.cache import get_default_cache_control_decorator
 from cms.core.query import order_by_pk_position
@@ -19,6 +22,7 @@ if TYPE_CHECKING:
     from datetime import date, datetime
 
     from django.db import models
+    from django.http import HttpRequest
     from wagtail.admin.panels import FieldPanel
     from wagtail.contrib.settings.models import (
         BaseGenericSetting as _WagtailBaseGenericSetting,
@@ -46,7 +50,7 @@ __all__ = ["BasePage", "BaseSiteSetting"]
 
 # Apply default cache headers on this page model's serve method.
 @method_decorator(get_default_cache_control_decorator(), name="serve")
-class BasePage(ListingFieldsMixin, SocialFieldsMixin, Page):  # type: ignore[django-manager-missing]
+class BasePage(PageLDMixin, ListingFieldsMixin, SocialFieldsMixin, Page):  # type: ignore[django-manager-missing]
     """Base page class with listing and social fields additions as well as cache decorators."""
 
     base_form_class = DeduplicateTopicsAdminForm
@@ -59,6 +63,9 @@ class BasePage(ListingFieldsMixin, SocialFieldsMixin, Page):  # type: ignore[dja
 
     # used a page type label in the front-end
     label = "Page"
+
+    # The default schema.org type for pages
+    schema_org_type = "WebPage"
 
     class Meta:
         abstract = True
@@ -141,6 +148,73 @@ class BasePage(ListingFieldsMixin, SocialFieldsMixin, Page):  # type: ignore[dja
         """Return the publication date of the page."""
         # Use the release_date field if available, otherwise return last_published_at.
         return getattr(self, "release_date", self.last_published_at)
+
+    def get_breadcrumbs(self, request: Optional["HttpRequest"] = None) -> list[dict[str, object]]:
+        """Returns the breadcrumbs for the page as a list of dictionaries compatible with the ONS design system
+        breadcrumbs component.
+        """
+        # TODO make request non-optional once wagtailschemaorg supports passing through the request.
+        # https://github.com/neon-jungle/wagtail-schema.org/issues/29
+        breadcrumbs = []
+        homepage_depth = 2
+        for ancestor_page in self.get_ancestors().specific().defer_streamfields():
+            if ancestor_page.is_root():
+                continue
+            if ancestor_page.depth <= homepage_depth:
+                breadcrumbs.append({"url": self.get_site().root_url, "text": _("Home")})
+            elif not getattr(ancestor_page, "exclude_from_breadcrumbs", False):
+                breadcrumbs.append({"url": ancestor_page.get_full_url(request=request), "text": ancestor_page.title})
+        if request and getattr(request, "is_for_subpage", False):
+            breadcrumbs.append({"url": self.get_full_url(request=request), "text": self.title})
+        return breadcrumbs
+
+    @cached_property
+    def breadcrumbs_as_jsonld(self) -> dict[str, object]:
+        """Returns the breadcrumbs as a dictionary in the format required for a JSON LD entity."""
+        breadcrumbs_jsonld: dict[str, object] = {}
+        item_list = []
+
+        for position, breadcrumb in enumerate(self.get_breadcrumbs(), 1):
+            item_list.append(
+                {
+                    "@type": "ListItem",
+                    "position": position,
+                    "name": str(breadcrumb["text"]),
+                    "item": str(breadcrumb["url"]),
+                }
+            )
+
+        if item_list:
+            breadcrumbs_jsonld["breadcrumb"] = {
+                "@type": "BreadcrumbList",
+                "itemListElement": item_list,
+            }
+
+        return breadcrumbs_jsonld
+
+    def ld_entity(self) -> dict[str, object]:
+        """Add page breadcrumbs to the JSON LD properties."""
+        page_ld_entity: dict[str, object] = {"@type": self.schema_org_type}
+        page_ld_entity.update(self.breadcrumbs_as_jsonld)
+
+        if not page_ld_entity.get("description", ""):
+            page_ld_entity["description"] = self.search_description or self.listing_summary
+
+        return cast(dict[str, Any], extend(super().ld_entity(), page_ld_entity))
+
+    def get_canonical_url(self, request: "HttpRequest") -> str:
+        """Get the default canonical URL for the page for the given request.
+        This will normally be this page's full URL, except:
+        - If this page is an alias, the canonical URL should be for the original, aliased page.
+        - If the request is for a subpage (marked by setting the attribute `is_for_subpage=True` on the request object),
+          then it will include the subpage route from the request.
+        """
+        canonical_page = self.alias_of or self
+        if getattr(request, "is_for_subpage", False) and getattr(request, "routable_resolver_match", None):
+            resolver_match = request.routable_resolver_match  # type: ignore[attr-defined]
+            return cast(str, canonical_page.get_full_url(request=request) + resolver_match.route)
+
+        return cast(str, canonical_page.get_full_url(request=request))
 
 
 class BaseSiteSetting(WagtailBaseSiteSetting):

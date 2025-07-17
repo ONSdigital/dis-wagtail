@@ -401,6 +401,10 @@ class StatisticalArticlePageRenderTestCase(WagtailTestUtils, TestCase):
         response = self.client.get(self.basic_page_url)
         self.assertContains(response, "PSF: November 2024")
 
+        # Set an SEO title so that the display title is also not included in the schema org properties
+        self.page.seo_title = "SEO Title"
+        self.page.save_revision().publish()
+
         response = self.client.get(self.page_url)
         self.assertNotContains(response, self.page.get_admin_display_title())
         self.assertContains(response, "Breaking News!")
@@ -460,7 +464,7 @@ class StatisticalArticlePageRenderTestCase(WagtailTestUtils, TestCase):
         article_series = self.basic_page.get_parent()
         self.assertNotContains(
             response,
-            f'<a class="ons-breadcrumbs__link" href="{article_series.url}">{article_series.title}</a>',
+            f'<a class="ons-breadcrumbs__link" href="{article_series.full_url}">{article_series.title}</a>',
             html=True,
         )
 
@@ -468,7 +472,7 @@ class StatisticalArticlePageRenderTestCase(WagtailTestUtils, TestCase):
         topics_page = article_series.get_parent()
         self.assertContains(
             response,
-            f'<a class="ons-breadcrumbs__link" href="{topics_page.url}">{topics_page.title}</a>',
+            f'<a class="ons-breadcrumbs__link" href="{topics_page.full_url}">{topics_page.title}</a>',
             html=True,
         )
 
@@ -676,7 +680,7 @@ class PreviousReleasesWithoutPaginationTestCase(TestCase):
 
         self.assertContains(
             response,
-            f'<a class="ons-breadcrumbs__link" href="{parent_page.url}">{parent_page.title}</a>',
+            f'<a class="ons-breadcrumbs__link" href="{parent_page.full_url}">{parent_page.title}</a>',
             html=True,
         )
 

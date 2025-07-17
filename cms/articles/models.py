@@ -7,12 +7,14 @@ from django.db import models
 from django.http import Http404
 from django.shortcuts import get_object_or_404, redirect
 from django.utils.functional import cached_property
+from django.utils.html import strip_tags
 from django.utils.translation import gettext_lazy as _
 from wagtail.admin.panels import FieldPanel, FieldRowPanel, HelpPanel, MultiFieldPanel, TitleFieldPanel
 from wagtail.contrib.routable_page.models import RoutablePageMixin, path
 from wagtail.fields import RichTextField
 from wagtail.models import Page
 from wagtail.search import index
+from wagtailschemaorg.utils import extend
 
 from cms.articles.enums import SortingChoices
 from cms.articles.forms import StatisticalArticlePageAdminForm
@@ -28,7 +30,7 @@ from cms.core.models import BasePage
 from cms.core.widgets import date_widget
 from cms.datasets.blocks import DatasetStoryBlock
 from cms.datasets.utils import format_datasets_as_document_list
-from cms.datavis.blocks.base import BaseVisualisationBlock
+from cms.datavis.blocks.base import BaseChartBlock
 from cms.datavis.blocks.featured_charts import FeaturedChartBlock
 from cms.taxonomy.mixins import GenericTaxonomyMixin
 
@@ -95,6 +97,7 @@ class ArticleSeriesPage(RoutablePageMixin, GenericTaxonomyMixin, BasePage):  # t
         except (EmptyPage, PageNotAnInteger) as e:
             raise Http404 from e
 
+        request.is_for_subpage = True  # type: ignore[attr-defined]
         response: TemplateResponse = self.render(
             request,
             # TODO: update to include drafts when looking at previews holistically.
@@ -104,13 +107,16 @@ class ArticleSeriesPage(RoutablePageMixin, GenericTaxonomyMixin, BasePage):  # t
         return response
 
 
-class StatisticalArticlePage(BundledPageMixin, RoutablePageMixin, BasePage):  # type: ignore[django-manager-missing] # pylint: disable=too-many-public-methods
+# pylint: disable=too-many-public-methods
+class StatisticalArticlePage(BundledPageMixin, RoutablePageMixin, BasePage):  # type: ignore[django-manager-missing]
     """The statistical article page model.
 
     Previously known as statistical bulletin, statistical analysis article, analysis page.
     """
 
     base_form_class = StatisticalArticlePageAdminForm
+
+    schema_org_type = "Article"
 
     parent_page_types: ClassVar[list[str]] = ["ArticleSeriesPage"]
     subpage_types: ClassVar[list[str]] = []
@@ -389,6 +395,7 @@ class StatisticalArticlePage(BundledPageMixin, RoutablePageMixin, BasePage):  # 
             context_overrides={
                 "page": page,
                 "latest_version_url": self.get_url(request),
+                "no_index": True,
                 # Override the context with the corrections and notices for this version
                 "corrections_and_notices": corrections + notices,
                 "has_corrections": bool(corrections),
@@ -437,6 +444,8 @@ class StatisticalArticlePage(BundledPageMixin, RoutablePageMixin, BasePage):  # 
         except (EmptyPage, PageNotAnInteger) as e:
             raise Http404 from e
 
+        request.is_for_subpage = True  # type: ignore[attr-defined]
+
         response: TemplateResponse = self.render(
             request,
             context_overrides={
@@ -473,7 +482,7 @@ class StatisticalArticlePage(BundledPageMixin, RoutablePageMixin, BasePage):  # 
             block_instance = chart_block.block
             block_value = chart_block.value
 
-            if isinstance(block_instance, BaseVisualisationBlock):
+            if isinstance(block_instance, BaseChartBlock):
                 data["chart"] = block_instance.get_component_config(block_value)
 
         elif self.listing_image:
@@ -534,3 +543,40 @@ class StatisticalArticlePage(BundledPageMixin, RoutablePageMixin, BasePage):  # 
         context["has_notices"] = bool(notices)
 
         return context
+
+    def ld_entity(self) -> dict[str, object]:
+        """Add statistical article specific schema properties to JSON LD."""
+        # TODO pass through request to this, once wagtailschemaorg supports it
+        # https://github.com/neon-jungle/wagtail-schema.org/issues/29
+        properties = {
+            "url": self.get_full_url(),
+            "headline": self.seo_title or self.listing_title or self.get_full_display_title(),
+            "description": self.search_description or self.listing_summary or strip_tags(self.summary),
+            "datePublished": self.release_date.isoformat(),
+            "license": "https://www.nationalarchives.gov.uk/doc/open-government-licence/version/3/",
+            "author": {
+                "@type": "Person" if self.contact_details else "Organization",
+                "name": self.contact_details.name if self.contact_details else settings.ONS_ORGANISATION_NAME,
+            },
+            "publisher": {
+                "@type": "Organization",
+                "name": settings.ONS_ORGANISATION_NAME,
+                "url": settings.ONS_WEBSITE_BASE_URL,
+            },
+            "mainEntityOfPage": {
+                "@type": "WebPage",
+                "@id": self.get_full_url(),
+            },
+        }
+        return cast(dict[str, object], extend(super().ld_entity(), properties))
+
+    def get_canonical_url(self, request: "HttpRequest") -> str:
+        """Get the article page canonical URL for the given request.
+        If the article is the latest in the series, this will be the evergreen series URL.
+        Otherwise, it will be the default canonical page URL.
+        """
+        canonical_page = self.alias_of.specific_deferred if self.alias_of_id else self
+        if canonical_page.is_latest and not getattr(request, "is_for_subpage", False):
+            return cast(str, canonical_page.get_parent().get_full_url(request=request))
+
+        return super().get_canonical_url(request=request)
