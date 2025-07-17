@@ -19,7 +19,6 @@ def update_bundles_updated_at(apps, schema_editor):
         .values("timestamp")[:1]
     )
     for bundle in Bundle.objects.annotate(_updated_at=models.Subquery(latest_log)):
-        print(bundle, bundle._updated_at)
         bundle.updated_at = bundle._updated_at
         bundle.save(update_fields=["updated_at"])
 
