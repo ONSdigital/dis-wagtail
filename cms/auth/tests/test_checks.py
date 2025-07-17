@@ -149,14 +149,59 @@ class IdentityAPISettingsCheckTests(TestCase):
         errors = check_identity_api_settings(app_configs=None)
         self.assertEqual(errors, [])
 
-    # @override_settings(
-    #     IDENTITY_API_BASE_URL=None,
-    #     AWS_COGNITO_TEAM_SYNC_ENABLED=True,
-    # )
-    # def test_no_identity_api_url(self):
-    #     """When IDENTITY_API_BASE_URL is not set, SERVICE_AUTH_TOKEN check is skipped."""
-    #     errors = check_identity_api_settings(app_configs=None)
-    #     self.assertEqual(errors, [])
+    @override_settings(
+        AWS_COGNITO_LOGIN_ENABLED=True,
+        IDENTITY_API_BASE_URL=None,
+        AWS_COGNITO_TEAM_SYNC_ENABLED=False,
+        SERVICE_AUTH_TOKEN="valid-token",
+    )
+    def test_cognito_enabled_identity_api_url_missing(self):
+        """When AWS_COGNITO_LOGIN_ENABLED is True and IDENTITY_API_BASE_URL is not set, should raise E007."""
+        errors = check_identity_api_settings(app_configs=None)
+
+        self.assertEqual(len(errors), 1)
+        error = errors[0]
+        self.assertEqual(error.id, "auth.E007")
+        self.assertIn(
+            (
+                "IDENTITY_API_BASE_URL is required when AWS_COGNITO_LOGIN_ENABLED or "
+                "AWS_COGNITO_TEAM_SYNC_ENABLED is True."
+            ),
+            error.msg,
+        )
+
+    @override_settings(
+        AWS_COGNITO_TEAM_SYNC_ENABLED=True,
+        IDENTITY_API_BASE_URL=None,
+        SERVICE_AUTH_TOKEN="valid-token",
+    )
+    def test_team_sync_enabled_identity_api_url_missing(self):
+        """When AWS_COGNITO_TEAM_SYNC_ENABLED is True and IDENTITY_API_BASE_URL is not set, should raise E007."""
+        errors = check_identity_api_settings(app_configs=None)
+
+        self.assertEqual(len(errors), 1)
+        error = errors[0]
+        self.assertEqual(error.id, "auth.E007")
+        self.assertIn(
+            "IDENTITY_API_BASE_URL is required when AWS_COGNITO_LOGIN_ENABLED or AWS_COGNITO_TEAM_SYNC_ENABLED is True.",
+            error.msg,
+        )
+
+    @override_settings(
+        AWS_COGNITO_TEAM_SYNC_ENABLED=True,
+        IDENTITY_API_BASE_URL=None,
+        SERVICE_AUTH_TOKEN=None,
+    )
+    def test_team_sync_enabled_missing_identity_api_url_and_service_auth_token(self):
+        """When team sync is enabled but both IDENTITY_API_BASE_URL and SERVICE_AUTH_TOKEN are missing,
+        should raise E007 and E009.
+        """
+        errors = check_identity_api_settings(app_configs=None)
+
+        self.assertEqual(len(errors), 2)
+        error_ids = {e.id for e in errors}
+        self.assertIn("auth.E007", error_ids)
+        self.assertIn("auth.E009", error_ids)
 
     @override_settings(
         AWS_COGNITO_TEAM_SYNC_ENABLED=False,
