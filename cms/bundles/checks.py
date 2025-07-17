@@ -3,7 +3,8 @@ from typing import Any, Optional
 
 from django.apps import AppConfig
 from django.conf import settings
-from django.core.checks import CheckMessage, Error, Info, register
+from django.core.checks import CheckMessage, Info, register
+from django.core.checks import Warning as DjangoWarning
 
 from cms.bundles.api import BundleAPIClient, BundleAPIClientError
 
@@ -37,22 +38,22 @@ def check_bundle_api_health(app_configs: Optional[Sequence[AppConfig]], **kwargs
 
     except BundleAPIClientError as e:
         errors.append(
-            Error(
+            DjangoWarning(
                 f"Bundle API health check failed: {e}",
                 hint=(
                     "Check if the Bundle API service is running and accessible. "
                     f"API URL: {getattr(settings, 'ONS_API_BASE_URL', 'Not configured')}"
                 ),
-                id="bundles.E001",
+                id="bundles.W001",
             )
         )
 
     except Exception as e:  # pylint: disable=broad-exception-caught
         errors.append(
-            Error(
+            DjangoWarning(
                 f"Unexpected error during Bundle API health check: {e}",
                 hint="Review Bundle API configuration and network connectivity.",
-                id="bundles.E002",
+                id="bundles.W002",
             )
         )
 
