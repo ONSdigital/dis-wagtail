@@ -2,16 +2,15 @@
 import django.utils.timezone
 from django.db import migrations, models
 from django.db.models.functions import Cast
-from wagtail.log_actions import registry as log_registry
 
 
 def update_bundles_updated_at(apps, schema_editor):
     Bundle = apps.get_model("bundles", "Bundle")
     ContentType = apps.get_model("contenttypes", "ContentType")
+    ModelLogEntry = apps.get_model("wagtailcore", "ModelLogEntry")
 
-    log_model = log_registry.get_log_model_for_model(Bundle)
     latest_log = (
-        log_model.objects.filter(
+        ModelLogEntry.objects.filter(
             content_type=ContentType.objects.get_for_model(Bundle, for_concrete_model=False).pk,
             object_id=Cast(models.OuterRef("pk"), models.CharField()),
         )
