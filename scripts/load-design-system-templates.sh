@@ -15,22 +15,16 @@ else
     TAG_NAME="$1"
 fi
 
-REPO_NAME="onsdigital/design-system"
-DOWNLOAD_URL=$(curl --silent "https://api.github.com/repos/${REPO_NAME}/releases/tags/${TAG_NAME}" | jq '.assets[0].browser_download_url' | tr -d '"')
-RELEASE_NAME=${DOWNLOAD_URL##*/}
-
-if [ -z "${DOWNLOAD_URL}" ] || [ "${DOWNLOAD_URL}" == "null" ]; then
-    echo "Error: Could not retrieve download URL. Exiting."
-    exit 1
-fi
-
 echo "Fetching ${DOWNLOAD_URL}"
+
+REPO_NAME="onsdigital/design-system"
+RELEASE_NAME="design-system-${TAG_NAME}.tar.gz"
+DOWNLOAD_URL="https://github.com/${REPO_NAME}/releases/download/${TAG_NAME}/templates.zip"
 
 TEMP_DIR=$(mktemp -d)
 
-curl --silent -L --url "https://github.com/${REPO_NAME}/releases/download/${TAG_NAME}/${RELEASE_NAME}" --output "${TEMP_DIR}/${RELEASE_NAME}"
+curl --silent --fail -L --url "${DOWNLOAD_URL}" --output "${TEMP_DIR}/${RELEASE_NAME}"
 unzip -q -o "${TEMP_DIR}/${RELEASE_NAME}" -d .
-rm -rf "${TEMP_DIR}"
 
 rm -rf ./cms/jinja2/components
 rm -rf ./cms/jinja2/layout
