@@ -1,6 +1,7 @@
 from unittest.mock import patch
 
-from django.core.checks import Error, Info
+from django.core.checks import Info
+from django.core.checks import Warning as DjangoWarning
 from django.test import TestCase, override_settings
 
 from cms.bundles.api import BundleAPIClientError
@@ -51,8 +52,8 @@ class BundleAPIHealthCheckTests(TestCase):
         errors = check_bundle_api_health(None)
 
         self.assertEqual(len(errors), 1)
-        self.assertIsInstance(errors[0], Error)
-        self.assertEqual(errors[0].id, "bundles.E001")
+        self.assertIsInstance(errors[0], DjangoWarning)
+        self.assertEqual(errors[0].id, "bundles.W001")
         self.assertIn("Bundle API health check failed: Connection failed", errors[0].msg)
         self.assertIn("https://test-api.example.com", errors[0].hint)
 
@@ -66,8 +67,8 @@ class BundleAPIHealthCheckTests(TestCase):
         errors = check_bundle_api_health(None)
 
         self.assertEqual(len(errors), 1)
-        self.assertIsInstance(errors[0], Error)
-        self.assertEqual(errors[0].id, "bundles.E002")
+        self.assertIsInstance(errors[0], DjangoWarning)
+        self.assertEqual(errors[0].id, "bundles.W002")
         self.assertIn("Unexpected error during Bundle API health check: Unexpected error", errors[0].msg)
         self.assertIn("Review Bundle API configuration", errors[0].hint)
 
@@ -81,7 +82,7 @@ class BundleAPIHealthCheckTests(TestCase):
         errors = check_bundle_api_health(None)
 
         self.assertEqual(len(errors), 1)
-        self.assertIsInstance(errors[0], Error)
-        self.assertEqual(errors[0].id, "bundles.E001")
+        self.assertIsInstance(errors[0], DjangoWarning)
+        self.assertEqual(errors[0].id, "bundles.W001")
         self.assertIn("API URL:", errors[0].hint)
         self.assertIn("Connection failed", errors[0].msg)
