@@ -101,7 +101,7 @@ class BundleAdminForm(WagtailAdminModelForm):
             for item in response.get("contents", []):
                 item_state = item.get("state", "unknown")
 
-                if item_state != "APPROVED":
+                if item_state != BundleStatus.APPROVED.value:
                     # Find the corresponding dataset title from the metadata
                     metadata = item.get("metadata", {})
                     dataset_id = metadata.get("dataset_id", "unknown")
