@@ -505,7 +505,7 @@ class BundleIndexViewTestCase(BundleViewSetTestCaseBase):
             "": ("name",),
             "name": ("name",),
             "-name": ("-name",),
-            "scheduled_publication_date": (OrderBy(F("release_date"), descending=False, nulls_first=True),),
+            "scheduled_publication_date": (OrderBy(F("release_date"), descending=False, nulls_last=True),),
             "-scheduled_publication_date": (OrderBy(F("release_date"), descending=True, nulls_last=True),),
             "status": (OrderBy(F("status_label"), descending=False),),
             "-status": (OrderBy(F("status_label"), descending=True),),
