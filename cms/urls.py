@@ -18,6 +18,7 @@ from cms.private_media import views as private_media_views
 internal_urlpatterns = [
     path("readiness/", core_views.ready, name="readiness"),
     path("liveness/", core_views.liveness, name="liveness"),
+    path("health/", core_views.health, name="health"),
 ]
 
 # Private URLs are not meant to be cached.
