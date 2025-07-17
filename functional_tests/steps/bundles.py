@@ -11,7 +11,7 @@ from wagtail.test.utils.form_data import inline_formset, nested_form_data
 
 from cms.bundles.enums import BundleStatus
 from cms.bundles.models import BundleTeam
-from cms.bundles.tests.factories import BundleFactory
+from cms.bundles.tests.factories import BundleFactory, BundlePageFactory
 from cms.release_calendar.enums import ReleaseStatus
 from cms.release_calendar.tests.factories import ReleaseCalendarPageFactory
 from cms.teams.models import Team
@@ -139,44 +139,46 @@ def multiple_bundles_create(context: Context, no_bundles: str) -> None:
         for __ in range(int(no_bundles)):
             context.bundles.append(BundleFactory(approved=False, created_by=user))
 
-@given("there are {no_bundles} bundles created by {creator_role} with status {status}, "
-       "Preview Teams {teams}, Release Calendar {add_rel_cal}, Pages {add_stat_page}")
-def multiple_bundles_create(context: Context, no_bundles: str,  creator_role: str,
-                            status: str, teams: str, add_rel_cal: str, add_stat_page: str) -> None:
+@given("there are {no_bundles} bundles created by {creator_role} with status {status} "
+       "Preview Teams {teams} Release Calendar {add_rel_cal} Pages {add_stat_page}")
+def multiple_bundles_create(context: Context, no_bundles: str, creator_role: str,
+                            status: str, teams: str, add_rel_cal: str, add_stat_page: str, bundle_approved=None) -> None:
     context.bundles = []
     if no_bundles.isdigit():
         for __ in range(int(no_bundles)):
             if not any([d for d in context.users if d['role'] == creator_role]):
                 create_user_by_role(context, creator_role)
-            bundle = BundleFactory()
-
-            bundle.created_by = [d for d in context.users if d['role'] == creator_role][0]['user']['user']
-
+            bundle_creator = [d for d in context.users if d['role'] == creator_role][0]['user']['user']
+            bundle_status = BundleStatus.DRAFT
+            bundle_approved = False
             if status == "Approved":
-                bundle.status = BundleStatus.APPROVED
-                bundle.approved = True
-            elif status == "In_Review":
-                bundle.status = BundleStatus.IN_REVIEW
-            else:
-                bundle.status = BundleStatus.DRAFT
+                bundle_status = BundleStatus.APPROVED
+                bundle_approved = True
+            if status == "In_Review":
+                bundle_status = BundleStatus.IN_REVIEW
 
-            if bool(teams) and hasattr(context, "teams"):
-                team_name_list = []
-                for team in context.teams:
-                    team_name_list.append({"team": team.name})
-                bundle.team = inline_formset(team_name_list)
-
-            pages_list = []
-            if bool(add_rel_cal) and hasattr(context, "release_calendar_pages"):
-                for page in context.release_calendar_pages:
-                    pages_list.append({"page": page.id})
-
-            if bool(add_stat_page) and hasattr(context, "statistical_article_pages"):
-                for page in context.statistical_article_pages:
-                    pages_list.append({"page": page.id})
-            bundle.bundled_pages = inline_formset(pages_list)
-            
+            bundle = BundleFactory(created_by=bundle_creator,
+                                   status=bundle_status,
+                                   approved=bundle_approved
+                                   )
             context.bundles.append(bundle)
+
+    if bool(teams) and hasattr(context, "teams"):
+        context.bundle_teams = []
+        for team in context.teams:
+            for bundle in context.bundles:
+                context.bundle_teams.append(BundleTeam(parent=bundle, team=team))
+
+    if bool(add_rel_cal) and hasattr(context, "release_calendar_pages"):
+        for page in context.release_calendar_pages:
+            for bundle in context.bundles:
+                BundlePageFactory(parent=bundle, page=page)
+
+    if bool(add_stat_page) and hasattr(context, "statistical_article_pages"):
+        for page in context.statistical_article_pages:
+            for bundle in context.bundles:
+                BundlePageFactory(parent=bundle, page=page)
+
 
 @given("there are {no_preview_teams} Preview teams")
 def multiple_preview_teams_create(context: Context, no_preview_teams: str) -> None:
@@ -296,8 +298,7 @@ def can_edit_bundle(context: Context) -> None:
 
 @step("the user can preview a bundle")
 def can_preview_bundle(context: Context) -> None:
-    print(context.bundles[0])
-    context.page1.get_by_role("link", name="Bundles UI Test 1 Bundle").click()
+    context.page.get_by_role("link", name=context.bundles[0].name).click()
 
 
 @step("the user cannot approve the known bundle")

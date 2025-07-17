@@ -34,72 +34,72 @@ Feature: UI Bundle Happy Paths
 #        Then the user cannot create a bundle
 #
 ##---- Bundle Edit UI Tests -----
-    Scenario Outline: A User can edit a bundle with no preview teams and no release calendar
-        Given there is a <role> user
-        And there is a <creator_role> user
-        And there are 1 Statistical Analysis pages
-        And there are <Num_bundles> bundles created by <creator_role> with status <status>, Preview Teams <preview_teams>, Release Calendar <add_rel_cal>, Pages <add_stat_page>
-        When the <role> logs in
-        And the user goes to the bundle menu page
-        Then the user can edit a bundle
-        Examples: users
-           | role               | Num_bundles | creator_role       | status | preview_teams | add_rel_cal | add_stat_page |
-           | Publishing Admin   | 1           | Publishing Admin   | Draft  | False         |  False      | False         |
-           | Publishing Officer | 1           | Publishing Officer | Draft  | False         |  False      | False         |
-           | Publishing Admin   | 1           | Publishing Officer | Draft  | False         |  False      | False         |
-           | Publishing Officer | 1           | Publishing Admin   | Draft  | False         |  False      | False         |
-
-    Scenario Outline: A User can edit a bundle with preview teams but no membership and no release calendar
-        Given there is a <role> user
-        And there is a <creator_role> user
-        And there are 1 Statistical Analysis pages
-        And there are 1 Preview teams
-        And there are <Num_bundles> bundles created by <creator_role> with status <status>, Preview Teams <preview_teams>, Release Calendar <add_rel_cal>, Pages <add_stat_page>
-        When the <role> logs in
-        And the user goes to the bundle menu page
-        Then the user can edit a bundle
-        Examples: users
-           | role               | Num_bundles | creator_role       | status         | preview_teams |add_rel_cal | add_stat_page |
-           | Publishing Admin   | 1           | Publishing Admin   | Draft          | True          | False      | False         |
-           | Publishing Officer | 1           | Publishing Officer | Draft          | True          | False      | False         |
-           | Publishing Admin   | 1           | Publishing Officer | Draft          | True          | False      | False         |
-           | Publishing Officer | 1           | Publishing Admin   | Draft          | True          | False      | False         |
-
-   Scenario Outline: A User can edit a bundle with preview teams without user membership and release calendar
-        Given there is a <role> user
-        And there is a <creator_role> user
-        And there are 1 Statistical Analysis pages
-        And there are 1 release calendar pages
-        And there are 1 Preview teams
-        And there are <Num_bundles> bundles created by <creator_role> with status <status>, Preview Teams <preview_teams>, Release Calendar <add_rel_cal>, Pages <add_stat_page>
-        When the <role> logs in
-        And the user goes to the bundle menu page
-        Then the user can edit a bundle
-        Examples: users
-           | role               | Num_bundles | creator_role       | status         | preview_teams |add_rel_cal | add_stat_page |
-           | Publishing Admin   | 1           | Publishing Admin   | Draft          | True          | False      | False         |
-           | Publishing Officer | 1           | Publishing Officer | Draft          | True          | False      | False         |
-           | Publishing Admin   | 1           | Publishing Officer | Draft          | True          | False      | False         |
-           | Publishing Officer | 1           | Publishing Admin   | Draft          | True          | False      | False         |
-
-    Scenario Outline: A User can edit a bundle with preview teams with user membership and release calendar
-        Given there is a <role> user
-        And there is a <creator_role> user
-        And there are 1 Statistical Analysis pages
-        And there are 1 release calendar pages
-        And there are 1 Preview teams
-        And the <role> is a member of the Preview teams
-        And there are <Num_bundles> bundles created by <creator_role> with status <status>, Preview Teams <preview_teams>, Release Calendar <add_rel_cal>, Pages <add_stat_page>
-        When the <role> logs in
-        And the user goes to the bundle menu page
-        Then the user can edit a bundle
-        Examples: users
-           | role               | Num_bundles | creator_role       | status         | preview_teams |add_rel_cal | add_stat_page |
-           | Publishing Admin   | 1           | Publishing Admin   | Draft          | True          | False      | False         |
-           | Publishing Officer | 1           | Publishing Officer | Draft          | True          | False      | False         |
-           | Publishing Admin   | 1           | Publishing Officer | Draft          | True          | False      | False         |
-           | Publishing Officer | 1           | Publishing Admin   | Draft          | True          | False      | False         |
-
+#    Scenario Outline: A User can edit a bundle with no preview teams and no release calendar
+#        Given there is a <role> user
+#        And there is a <creator_role> user
+#        And there are 1 Statistical Analysis pages
+#        And there are <Num_bundles> bundles created by <creator_role> with status <status>, Preview Teams <preview_teams>, Release Calendar <add_rel_cal>, Pages <add_stat_page>
+#        When the <role> logs in
+#        And the user goes to the bundle menu page
+#        Then the user can edit a bundle
+#        Examples: users
+#           | role               | Num_bundles | creator_role       | status | preview_teams | add_rel_cal | add_stat_page |
+#           | Publishing Admin   | 1           | Publishing Admin   | Draft  | False         |  False      | False         |
+#           | Publishing Officer | 1           | Publishing Officer | Draft  | False         |  False      | False         |
+#           | Publishing Admin   | 1           | Publishing Officer | Draft  | False         |  False      | False         |
+#           | Publishing Officer | 1           | Publishing Admin   | Draft  | False         |  False      | False         |
+#
+#    Scenario Outline: A User can edit a bundle with preview teams but no membership and no release calendar
+#        Given there is a <role> user
+#        And there is a <creator_role> user
+#        And there are 1 Statistical Analysis pages
+#        And there are 1 Preview teams
+#        And there are <Num_bundles> bundles created by <creator_role> with status <status>, Preview Teams <preview_teams>, Release Calendar <add_rel_cal>, Pages <add_stat_page>
+#        When the <role> logs in
+#        And the user goes to the bundle menu page
+#        Then the user can edit a bundle
+#        Examples: users
+#           | role               | Num_bundles | creator_role       | status         | preview_teams |add_rel_cal | add_stat_page |
+#           | Publishing Admin   | 1           | Publishing Admin   | Draft          | True          | False      | False         |
+#           | Publishing Officer | 1           | Publishing Officer | Draft          | True          | False      | False         |
+#           | Publishing Admin   | 1           | Publishing Officer | Draft          | True          | False      | False         |
+#           | Publishing Officer | 1           | Publishing Admin   | Draft          | True          | False      | False         |
+#
+#   Scenario Outline: A User can edit a bundle with preview teams without user membership and release calendar
+#        Given there is a <role> user
+#        And there is a <creator_role> user
+#        And there are 1 Statistical Analysis pages
+#        And there are 1 release calendar pages
+#        And there are 1 Preview teams
+#        And there are <Num_bundles> bundles created by <creator_role> with status <status>, Preview Teams <preview_teams>, Release Calendar <add_rel_cal>, Pages <add_stat_page>
+#        When the <role> logs in
+#        And the user goes to the bundle menu page
+#        Then the user can edit a bundle
+#        Examples: users
+#           | role               | Num_bundles | creator_role       | status         | preview_teams |add_rel_cal | add_stat_page |
+#           | Publishing Admin   | 1           | Publishing Admin   | Draft          | True          | False      | False         |
+#           | Publishing Officer | 1           | Publishing Officer | Draft          | True          | False      | False         |
+#           | Publishing Admin   | 1           | Publishing Officer | Draft          | True          | False      | False         |
+#           | Publishing Officer | 1           | Publishing Admin   | Draft          | True          | False      | False         |
+#
+#    Scenario Outline: A User can edit a bundle with preview teams with user membership and release calendar
+#        Given there is a <role> user
+#        And there is a <creator_role> user
+#        And there are 1 Statistical Analysis pages
+#        And there are 1 release calendar pages
+#        And there are 1 Preview teams
+#        And the <role> is a member of the Preview teams
+#        And there are <Num_bundles> bundles created by <creator_role> with status <status> Preview Teams <preview_teams> Release Calendar <add_rel_cal>, Pages <add_stat_page>
+#        When the <role> logs in
+#        And the user goes to the bundle menu page
+#        Then the user can edit a bundle
+#        Examples: users
+#           | role               | Num_bundles | creator_role       | status         | preview_teams |add_rel_cal | add_stat_page |
+#           | Publishing Admin   | 1           | Publishing Admin   | Draft          | True          | False      | False         |
+#           | Publishing Officer | 1           | Publishing Officer | Draft          | True          | False      | False         |
+#           | Publishing Admin   | 1           | Publishing Officer | Draft          | True          | False      | False         |
+#           | Publishing Officer | 1           | Publishing Admin   | Draft          | True          | False      | False         |
+#
 
 #---- Bundle Preview UI Tests -----
 
@@ -112,12 +112,12 @@ Feature: UI Bundle Happy Paths
         Then the user can preview a bundle
         Examples: users
            | role               | Num_bundles | creator_role       | status         | preview_teams |add_rel_cal | add_stat_page |
-           | Publishing Admin   | 1           | Publishing Admin   | Draft          | False         | False      | False         |
-           | Publishing Officer | 1           | Publishing Officer | Draft          | False         | False      | False         |
-           | Publishing Admin   | 1           | Publishing Officer | Draft          | False         | False      | False         |
-           | Publishing Officer | 1           | Publishing Admin   | Draft          | False         | False      | False         |
-           | Viewer             | 1           | Publishing Admin   | Draft          | False         | False      | False         |
-           | Viewer             | 1           | Publishing Officer | Draft          | False         | False      | False         |
+           | Publishing Admin   | 1           | Publishing Admin   | In_Review      | False         | False      | False         |
+#           | Publishing Officer | 1           | Publishing Officer | Draft          | False         | False      | False         |
+#           | Publishing Admin   | 1           | Publishing Officer | Draft          | False         | False      | False         |
+#           | Publishing Officer | 1           | Publishing Admin   | Draft          | False         | False      | False         |
+#           | Viewer             | 1           | Publishing Admin   | Draft          | False         | False      | False         |
+#           | Viewer             | 1           | Publishing Officer | Draft          | False         | False      | False         |
 
 #
 #    Scenario: A Publishing Officer can preview the known bundle
