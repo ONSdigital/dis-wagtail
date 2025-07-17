@@ -389,7 +389,7 @@ class BundleIndexView(IndexView):
 
             match self.ordering:
                 case "scheduled_publication_date":
-                    return queryset.annotate_release_date().order_by(F("release_date").asc(nulls_first=True))
+                    return queryset.annotate_release_date().order_by(F("release_date").asc(nulls_last=True))
                 case "-scheduled_publication_date":
                     return queryset.annotate_release_date().order_by(F("release_date").desc(nulls_last=True))
                 case "status":
