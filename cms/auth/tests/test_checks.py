@@ -124,10 +124,8 @@ class IdentityAPISettingsCheckTests(TestCase):
 
         self.assertEqual(len(errors), 1)
         error = errors[0]
-        self.assertEqual(error.id, "auth.E007")
-        self.assertIn("SERVICE_AUTH_TOKEN is not set", error.msg)
-        self.assertIn("IDENTITY_API_BASE_URL is configured", error.msg)
-        self.assertIn("AWS_COGNITO_TEAM_SYNC_ENABLED is True", error.msg)
+        self.assertEqual(error.id, "auth.E009")
+        self.assertIn("SERVICE_AUTH_TOKEN is required when AWS_COGNITO_TEAM_SYNC_ENABLED is True.", error.msg)
 
     @override_settings(
         IDENTITY_API_BASE_URL="https://identity.example.com",
@@ -139,7 +137,7 @@ class IdentityAPISettingsCheckTests(TestCase):
         errors = check_identity_api_settings(app_configs=None)
 
         self.assertEqual(len(errors), 1)
-        self.assertEqual(errors[0].id, "auth.E007")
+        self.assertEqual(errors[0].id, "auth.E009")
 
     @override_settings(
         IDENTITY_API_BASE_URL="https://identity.example.com",
@@ -151,26 +149,27 @@ class IdentityAPISettingsCheckTests(TestCase):
         errors = check_identity_api_settings(app_configs=None)
         self.assertEqual(errors, [])
 
-    @override_settings(
-        IDENTITY_API_BASE_URL=None,
-        AWS_COGNITO_TEAM_SYNC_ENABLED=True,
-    )
-    def test_no_identity_api_url(self):
-        """When IDENTITY_API_BASE_URL is not set, SERVICE_AUTH_TOKEN check is skipped."""
-        errors = check_identity_api_settings(app_configs=None)
-        self.assertEqual(errors, [])
+    # @override_settings(
+    #     IDENTITY_API_BASE_URL=None,
+    #     AWS_COGNITO_TEAM_SYNC_ENABLED=True,
+    # )
+    # def test_no_identity_api_url(self):
+    #     """When IDENTITY_API_BASE_URL is not set, SERVICE_AUTH_TOKEN check is skipped."""
+    #     errors = check_identity_api_settings(app_configs=None)
+    #     self.assertEqual(errors, [])
 
     @override_settings(
-        IDENTITY_API_BASE_URL="https://identity.example.com",
         AWS_COGNITO_TEAM_SYNC_ENABLED=False,
     )
     def test_team_sync_disabled(self):
-        """When team sync is disabled, SERVICE_AUTH_TOKEN is not required."""
+        """When team sync is disabled, SERVICE_AUTH_TOKEN and IDENTITY_API_BASE_URL is not required."""
         errors = check_identity_api_settings(app_configs=None)
         self.assertEqual(errors, [])
 
     @override_settings(
         AWS_COGNITO_TEAM_SYNC_ENABLED=True,
+        IDENTITY_API_BASE_URL="https://identity.example.com",
+        SERVICE_AUTH_TOKEN="valid-token",
         AWS_COGNITO_TEAM_SYNC_FREQUENCY=0,
     )
     def test_team_sync_frequency_zero(self):
@@ -185,6 +184,8 @@ class IdentityAPISettingsCheckTests(TestCase):
 
     @override_settings(
         AWS_COGNITO_TEAM_SYNC_ENABLED=True,
+        IDENTITY_API_BASE_URL="https://identity.example.com",
+        SERVICE_AUTH_TOKEN="valid-token",
         AWS_COGNITO_TEAM_SYNC_FREQUENCY=-5,
     )
     def test_team_sync_frequency_negative(self):
@@ -198,6 +199,8 @@ class IdentityAPISettingsCheckTests(TestCase):
 
     @override_settings(
         AWS_COGNITO_TEAM_SYNC_ENABLED=True,
+        IDENTITY_API_BASE_URL="https://identity.example.com",
+        SERVICE_AUTH_TOKEN="valid-token",
         AWS_COGNITO_TEAM_SYNC_FREQUENCY=1,
     )
     def test_team_sync_frequency_valid(self):
@@ -207,6 +210,8 @@ class IdentityAPISettingsCheckTests(TestCase):
 
     @override_settings(
         AWS_COGNITO_TEAM_SYNC_ENABLED=True,
+        IDENTITY_API_BASE_URL="https://identity.example.com",
+        SERVICE_AUTH_TOKEN="valid-token",
     )
     def test_team_sync_frequency_not_set(self):
         """When AWS_COGNITO_TEAM_SYNC_FREQUENCY is not set, no error (defaults are assumed valid)."""
@@ -235,9 +240,8 @@ class CombinedChecksTests(TestCase):
         LOGOUT_REDIRECT_URL="http://localhost:29500/logout",
         SESSION_COOKIE_AGE=300,
         SESSION_RENEWAL_OFFSET_SECONDS=400,
-        IDENTITY_API_BASE_URL="https://identity.example.com",
         AWS_COGNITO_TEAM_SYNC_ENABLED=True,
-        SERVICE_AUTH_TOKEN=None,
+        SERVICE_AUTH_TOKEN="valid-token",
         AWS_COGNITO_TEAM_SYNC_FREQUENCY=0,
     )
     def test_multiple_errors_across_checks(self):

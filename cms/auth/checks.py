@@ -56,19 +56,31 @@ def _check_session_config(settings_obj: "LazySettings") -> None:
 
 def _check_identity_api(settings_obj: "LazySettings") -> None:
     errors: list[Error] = []
+    cognito_enabled = getattr(settings_obj, "AWS_COGNITO_LOGIN_ENABLED", False)
     identity_api_url = getattr(settings_obj, "IDENTITY_API_BASE_URL", None)
     team_sync_enabled = getattr(settings_obj, "AWS_COGNITO_TEAM_SYNC_ENABLED", False)
     service_auth_token = getattr(settings_obj, "SERVICE_AUTH_TOKEN", None)
 
-    if identity_api_url and team_sync_enabled and not service_auth_token:
+    # Validate IDENTITY_API_BASE_URL is set if either Cognito or Team Sync is enabled
+    if (cognito_enabled or team_sync_enabled) and not identity_api_url:
         errors.append(
             Error(
                 (
-                    "SERVICE_AUTH_TOKEN is not set but IDENTITY_API_BASE_URL is configured and "
+                    "IDENTITY_API_BASE_URL is required when AWS_COGNITO_LOGIN_ENABLED or "
                     "AWS_COGNITO_TEAM_SYNC_ENABLED is True."
                 ),
-                hint="Set SERVICE_AUTH_TOKEN for API authentication.",
+                hint="Set IDENTITY_API_BASE_URL to the identity API endpoint.",
                 id="auth.E007",
+            )
+        )
+
+    # If team sync is enabled, SERVICE_AUTH_TOKEN must be set
+    if team_sync_enabled and not service_auth_token:
+        errors.append(
+            Error(
+                ("SERVICE_AUTH_TOKEN is required when AWS_COGNITO_TEAM_SYNC_ENABLED is True."),
+                hint="Set SERVICE_AUTH_TOKEN for API authentication.",
+                id="auth.E009",
             )
         )
 
