@@ -10,7 +10,7 @@ from django.urls import reverse
 from django.utils import timezone
 from django.utils.functional import cached_property
 from django.utils.html import format_html, format_html_join
-from wagtail.admin.ui.tables import Column, UpdatedAtColumn
+from wagtail.admin.ui.tables import Column, DateColumn
 from wagtail.admin.views.generic import CreateView, EditView, IndexView, InspectView
 from wagtail.admin.viewsets.model import ModelViewSet
 from wagtail.log_actions import log
@@ -384,9 +384,6 @@ class BundleIndexView(IndexView):
 
     def order_queryset(self, queryset: "BundlesQuerySet") -> "BundlesQuerySet":
         if self.ordering in ["status", "-status", "scheduled_publication_date", "-scheduled_publication_date"]:
-            # ensures we have the _updated_at field used by core
-            queryset = self._annotate_queryset_updated_at(queryset)
-
             match self.ordering:
                 case "scheduled_publication_date":
                     return queryset.annotate_release_date().order_by(F("release_date").asc(nulls_last=True))
@@ -421,7 +418,7 @@ class BundleIndexView(IndexView):
             self._get_title_column("name"),
             Column("scheduled_publication_date", label="Scheduled for", sort_key="scheduled_publication_date"),
             Column("get_status_display", label="Status", sort_key="status"),
-            UpdatedAtColumn(),
+            DateColumn(name="updated_at", sort_key="updated_at"),
         ]
 
 

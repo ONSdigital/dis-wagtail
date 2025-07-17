@@ -121,7 +121,7 @@ class LatestBundlesPanel(Component):
         """Returns the latest 10 bundles if the panel is shown."""
         queryset: QuerySet[Bundle] = Bundle.objects.none()
         if self.is_shown:
-            queryset = Bundle.objects.active().annotate_queryset_updated_at()[: self.num_bundles]
+            queryset = Bundle.objects.active()[: self.num_bundles]
 
         return queryset
 
@@ -165,7 +165,6 @@ class BundlesInReviewPanel(Component):
         if self.is_shown:
             queryset = (
                 Bundle.objects.previewable()
-                .annotate_queryset_updated_at()
                 .filter(teams__team__in=self.request.user.active_team_ids)  # type: ignore[union-attr]
                 .distinct()
             )

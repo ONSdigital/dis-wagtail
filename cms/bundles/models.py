@@ -1,18 +1,16 @@
 from typing import TYPE_CHECKING, ClassVar, Optional, Self
 
 from django.conf import settings
-from django.contrib.contenttypes.models import ContentType
 from django.db import models
 from django.db.models import Case, F, QuerySet, Value, When
 from django.db.models.fields import CharField
-from django.db.models.functions import Cast, Coalesce
+from django.db.models.functions import Coalesce
 from django.urls import reverse
 from django.utils.functional import cached_property
 from modelcluster.fields import ParentalKey
 from modelcluster.models import ClusterableModel
 from wagtail.admin.panels import FieldPanel, FieldRowPanel, InlinePanel, MultipleChooserPanel
-from wagtail.log_actions import registry as log_registry
-from wagtail.models import ModelLogEntry, Orderable, Page
+from wagtail.models import Orderable, Page
 from wagtail.search import index
 
 from cms.core.widgets import ONSAdminDateTimeInput
@@ -86,25 +84,6 @@ class BundlesQuerySet(QuerySet):
     def annotate_release_date(self) -> "BundlesQuerySet":
         return self.annotate(release_date=models.F("release_date"))  # type: ignore[no-any-return]
 
-    def annotate_queryset_updated_at(self) -> "BundlesQuerySet":
-        # Annotate the objects' updated_at using the latest log entry's timestamp
-        log_model = log_registry.get_log_model_for_model(self.model)
-
-        # If the log model is not a subclass of ModelLogEntry, we don't know how
-        # to query the logs for the object, so skip the annotation.
-        if not log_model or not issubclass(log_model, ModelLogEntry):
-            return self
-
-        latest_log = (
-            log_model.objects.filter(
-                content_type=ContentType.objects.get_for_model(self.model, for_concrete_model=False),
-                object_id=Cast(models.OuterRef("pk"), models.CharField()),
-            )
-            .order_by("-timestamp", "-pk")
-            .values("timestamp")[:1]
-        )
-        return self.annotate(updated_at=models.Subquery(latest_log))  # type: ignore[no-any-return]
-
     def annotate_status_label(self) -> "BundlesQuerySet":
         """Annotates the queryset with the status label, rather than the value saved in the db."""
         return self.annotate(  # type: ignore[no-any-return]
@@ -142,6 +121,8 @@ class Bundle(index.Indexed, ClusterableModel, models.Model):  # type: ignore[dja
     )
     # See https://docs.wagtail.org/en/stable/advanced_topics/reference_index.html
     created_by.wagtail_reference_index_ignore = True  # type: ignore[attr-defined]
+
+    updated_at = models.DateTimeField(auto_now=True)
 
     approved_at = models.DateTimeField(blank=True, null=True)
     approved_by = models.ForeignKey(
