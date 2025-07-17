@@ -3,7 +3,6 @@ from typing import TYPE_CHECKING
 from jinja2.ext import Extension
 
 from cms.navigation.templatetags.navigation_tags import (
-    breadcrumbs,
     footer_menu_columns,
     main_menu_columns,
     main_menu_highlights,
@@ -21,7 +20,6 @@ class NavigationExtension(Extension):  # pylint: disable=abstract-method
 
         self.environment.globals.update(
             {
-                "breadcrumbs": breadcrumbs,
                 "footer_menu_columns": footer_menu_columns,
                 "main_menu_columns": main_menu_columns,
                 "main_menu_highlights": main_menu_highlights,

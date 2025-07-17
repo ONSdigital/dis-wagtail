@@ -90,6 +90,7 @@ INSTALLED_APPS = [
     "wagtail.search",
     "wagtail.admin",
     "wagtail.locales",
+    "wagtailschemaorg",
     "wagtail.contrib.settings",
     "wagtail.contrib.redirects",
     "wagtail.contrib.legacy.richtext",
@@ -186,6 +187,7 @@ TEMPLATES = [
                 "wagtail.contrib.settings.jinja2tags.settings",
                 "cms.core.jinja2tags.CoreExtension",
                 "cms.navigation.jinja2tags.NavigationExtension",
+                "wagtailschemaorg.jinja2tags.WagtailSchemaOrgExtension",
             ],
             "policies": {
                 # https://jinja.palletsprojects.com/en/stable/api/#policies
@@ -963,6 +965,9 @@ SLACK_NOTIFICATIONS_WEBHOOK_URL = env.get("SLACK_NOTIFICATIONS_WEBHOOK_URL")
 
 ONS_API_BASE_URL = env.get("ONS_API_BASE_URL", "https://api.beta.ons.gov.uk/v1")
 ONS_WEBSITE_BASE_URL = env.get("ONS_WEBSITE_BASE_URL", "https://www.ons.gov.uk")
+ONS_ORGANISATION_NAME = env.get("ONS_ORGANISATION_NAME", "Office for National Statistics")
+
+DEFAULT_OG_IMAGE_URL = env.get("DEFAULT_OG_IMAGE_URL", "https://cdn.ons.gov.uk/assets/images/ons-logo/v2/ons-logo.png")
 
 WAGTAILSIMPLETRANSLATION_SYNC_PAGE_TREE = True
 
@@ -980,6 +985,11 @@ SEARCH_INDEX_EXCLUDED_PAGE_TYPES = (
     "TopicPage",
     "Page",
 )
+
+# Allowed prefixes for iframe visualisations
+IFRAME_VISUALISATION_ALLOWED_DOMAINS = env.get(
+    "IFRAME_VISUALISATION_ALLOWED_DOMAINS", "ons.gov.uk,onsdigital.uk"
+).split(",")
 
 # FIXME: remove before going live
 ENFORCE_EXCLUSIVE_TAXONOMY = env.get("ENFORCE_EXCLUSIVE_TAXONOMY", "true").lower() == "true"
