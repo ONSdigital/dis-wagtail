@@ -167,6 +167,8 @@ runserver: ## Run the Django application locally
 
 .PHONY: dev-init
 dev-init: load-design-system-templates collectstatic compilemessages makemigrations migrate load-topics createsuperuser  ## Run the pre-run setup scripts
+	## Set all Wagtail sites to our development port of 8000
+	poetry run python manage.py shell -c "from wagtail.models import Site; Site.objects.all().update(port=8000)"
 
 .PHONY: functional-tests-up
 functional-tests-up:  ## Start the functional tests docker compose dependencies
