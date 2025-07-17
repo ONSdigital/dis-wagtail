@@ -467,12 +467,15 @@ class BundleIndexViewTestCase(BundleViewSetTestCaseBase):
         self.assertNotContains(response, self.published_bundle_edit_url)
 
         self.assertContains(response, BundleStatus.DRAFT.label, 2)  # status + status filter
-        self.assertContains(response, BundleStatus.APPROVED.label, 2)  # status + status filter
+        self.assertContains(response, BundleStatus.APPROVED.label, 3)  # status + status filter + shortcut button
         self.assertContains(response, BundleStatus.PUBLISHED.label, 1)  # status filter
 
         self.assertContains(response, self.approved_bundle.name)
         self.assertContains(response, self.bundle.name)
         self.assertNotContains(response, self.published_bundle.name)
+
+        self.assertContains(response, "View &quot;Ready to publish&quot;")
+        self.assertContains(response, f"{self.bundle_index_url}?status={BundleStatus.APPROVED}")
 
     def test_index_view_contains_published_bundle_when_status_filter_applied(self):
         response = self.client.get(self.bundle_index_url, query_params={"status": BundleStatus.PUBLISHED})
@@ -498,6 +501,7 @@ class BundleIndexViewTestCase(BundleViewSetTestCaseBase):
         self.assertNotContains(response, self.published_bundle.name)
         self.assertNotContains(response, self.approved_bundle.name)
         self.assertNotContains(response, self.another_in_review_bundle.name)
+        self.assertNotContains(response, "View &quot;Ready to publish&quot;")
 
     def test_ordering(self):
         """Checks that the correct ordering is applied."""

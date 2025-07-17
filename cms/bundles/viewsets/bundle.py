@@ -13,7 +13,7 @@ from django.utils.html import format_html, format_html_join
 from wagtail.admin.ui.tables import Column, DateColumn
 from wagtail.admin.views.generic import CreateView, EditView, IndexView, InspectView
 from wagtail.admin.viewsets.model import ModelViewSet
-from wagtail.admin.widgets import ListingButton
+from wagtail.admin.widgets import HeaderButton, ListingButton
 from wagtail.log_actions import log
 
 from cms.bundles.enums import BundleStatus
@@ -411,6 +411,27 @@ class BundleIndexView(IndexView):
     @cached_property
     def can_manage(self) -> bool:
         return user_can_manage_bundles(self.request.user)
+
+    def get_header_buttons(self) -> list[HeaderButton]:
+        if not self.can_manage:
+            return []
+
+        buttons = self.header_buttons
+        filtered_url = f"{self.get_index_url()}?status={BundleStatus.APPROVED}"
+        buttons.append(
+            HeaderButton(
+                label='View "Ready to publish"',
+                url=filtered_url,
+                icon_name="check",
+                attrs={
+                    "data-controller": "w-tooltip",
+                    "data-w-tooltip-content-value": "View bundles that are ready to publish",
+                    "aria-label": "View bundles that are ready to publish",
+                },
+            )
+        )
+
+        return sorted(buttons)
 
     def get_list_buttons(self, instance: Bundle) -> list[ListingButton]:
         buttons = []
