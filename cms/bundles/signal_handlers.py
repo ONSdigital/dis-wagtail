@@ -76,6 +76,7 @@ def handle_bundle_dataset_api_sync(instance: Bundle, **kwargs: Any) -> None:
 @ons_bundle_api_enabled
 def handle_bundle_dataset_added(instance: BundleDataset, created: bool, **kwargs: Any) -> None:
     """Handle when a dataset is added to a bundle."""
+    # Only proceed if the dataset is being created (i.e. is not getting updated) and the bundle has a bundle_api_id
     if not created or not instance.parent.bundle_api_id:
         return
 
