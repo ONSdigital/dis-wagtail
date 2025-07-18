@@ -254,6 +254,16 @@ class BundleAdminFormTestCase(TestCase):
 
         self.assertFalse(form.is_valid())
 
+    def test_clean_sets_publication_date_seconds_to_zero(self):
+        form = self.form_class(
+            instance=self.bundle,
+            data=nested_form_data(self.raw_form_data() | {"publication_date": timezone.now() + timedelta(days=1)}),
+        )
+
+        self.assertTrue(form.is_valid(), form.errors)
+
+        self.assertEqual(form.cleaned_data["publication_date"].second, 0)
+
     def test_clean__preserves_past_release_calendar_page_when_unscheduling(self):
         release_calendar_page = ReleaseCalendarPageFactory(release_date=timezone.now() - timedelta(minutes=5))
         self.bundle.release_calendar_page = release_calendar_page

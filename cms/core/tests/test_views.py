@@ -249,6 +249,10 @@ class HealthProbeTestCase(TestCase):
         response = self.client.get(self.url, headers={"X-Forwarded-For": x_forwarded_for})
         self.assertEqual(response.status_code, 200)
 
+    def test_alternate_url(self):
+        response = self.client.get(reverse("internal:health"))
+        self.assertEqual(response.status_code, 200)
+
 
 class AdminPageTreeTestCase(WagtailTestUtils, TestCase):
     @classmethod

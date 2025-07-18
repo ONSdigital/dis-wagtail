@@ -1,5 +1,6 @@
 import IframeResize from './components/iframe-resize';
 import detailsToggle from './components/details';
+
 import '../sass/main.scss';
 
 function initComponent(ComponentClass) {
