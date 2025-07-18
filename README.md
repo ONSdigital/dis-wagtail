@@ -59,7 +59,7 @@ Ensure you have the following installed:
 5. **[Node](https://nodejs.org/en)** and **[`nvm` (Node Version Manager)](https://github.com/nvm-sh/nvm)** for front-end
    tooling.
 6. **[JQ](https://jqlang.github.io/jq/)** for the step in the build that installs the design system templates.
-7. `texlive-latex-extra`: Required by `matplotlib` to render LaTeX equations. See [below](#installing-the-required-latex-packages-for-local-development) for instructions on how to install on macOS.
+7. `texlive-latex-extra` and `texlive-fonts-recommended`: Required by `matplotlib` to render LaTeX equations. See [below](#installing-the-required-latex-packages-for-local-development) for instructions on how to install on macOS.
 8. **Operation System**: Ubuntu/ MacOS.
 
 ### Setup
@@ -467,12 +467,12 @@ and every `send_mail` call will appear instantly in the UI.
 
 ### Installing The Required LaTeX Packages For Local Development
 
-In order to generate the equations in Wagtail using LaTeX strings via Matplotlib (Non-JS Equations), we will need to use `MacPorts` to install the following packages `texlive-latex-extra`.
+In order to generate the equations in Wagtail using LaTeX strings via Matplotlib (Non-JS Equations), we will need to use `MacPorts` to install the following packages `texlive-latex-extra` and `texlive-fonts-recommended`.
 
 As a prerequisite you will have to have [MacPorts](https://www.macports.org/install.php) installed.
 
 ```bash
-sudo port install texlive-latex-extra
+sudo port install texlive-latex-extra texlive-fonts-recommended
 ```
 
 ### Django Migrations
