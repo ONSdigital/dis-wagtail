@@ -1,0 +1,13 @@
+{% extends "templates/base_page.html" %}
+{% block main %}
+    <div class="ons-page__container ons-container">
+        <div class="ons-grid ons-u-ml-no">
+            <div class="ons-grid__col ons-u-pl-no">
+                <h1 class="ons-u-mt-xl ons-u-fw-b">{{ page_title }}</h1>
+                <div class="ons-page__main ons-u-mt-s">
+                    {% block error_content %}{% endblock %}
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}
