@@ -7,7 +7,7 @@ from cms.core.custom_date_format import ons_default_datetime
 from cms.release_calendar.tests.factories import ReleaseCalendarPageFactory
 
 
-@given("a Release Calendar page with a publish notice exists")
+@given("a Release Calendar page with a published notice exists")
 def create_release_calendar_page(context: Context):
     context.release_calendar_page = ReleaseCalendarPageFactory(
         notice="Lorem ipsum dolor sit amet, consectetur adipiscing elit.",
@@ -38,7 +38,9 @@ def user_returns_to_editing_the_release_page(context: Context):
     context.page.get_by_role("link", name="Edit").click()
 
 
-# datetime validation
+# Time input features
+
+
 @when("the user inputs a {meridiem_indicator} datetime")
 def add_datetime(context: Context, meridiem_indicator: str):
     if meridiem_indicator == "am":
@@ -109,12 +111,14 @@ def thirty_minute_interval_for_time_selection(context: Context):
 
 
 # Release date and next release date
-@when("the user adds a invalid release date text")
+
+
+@when("the user adds an invalid release date text")
 def user_inputs_invalid_release_date_text(context: Context):
     context.page.get_by_label("Or, release date text").fill("Invalid 4356")
 
 
-@when("the user adds a invalid next release date text")
+@when("the user adds an invalid next release date text")
 def user_inputs_invalid_next_release_date_text(context: Context):
     context.page.get_by_role("textbox", name="Or, next release date text").fill("Invalid 6444")
 
@@ -137,7 +141,7 @@ def check_date_text_field(context: Context):
 
 
 @when("adds the next release date before the release date")
-def user_add_next_release_date_before_release_date(context: Context):
+def user_adds_next_release_date_before_release_date(context: Context):
     context.page.get_by_role("textbox", name="Release date*").fill("2024-12-25")
     context.page.locator("#id_next_release_date").fill("2023-12-25")
 
@@ -148,7 +152,7 @@ def user_adds_both_next_and_release_date(context: Context):
     context.page.locator("#id_next_release_date_text").fill("December 2025")
 
 
-@then("an error validation is raised to say you cannot have both")
+@then("An error message says you cannot enter a next release date and a next release date text at the same time")
 def error_cannot_have_both_next_release_date_and_text(context: Context):
     expect(context.page.get_by_text("The page could not be created")).to_be_visible()
     expect(
@@ -181,7 +185,7 @@ def set_page_status(context: Context, page_status: str):
 @when('the user enters "Provisional" page content')
 @when('the user enters "Confirmed" page content')
 @when("the user enters some example content on the page")
-def enter_example_release_content(context: Context):
+def user_enters_example_release_content(context: Context):
     page = context.page
     page.get_by_placeholder("Page title*").fill("My Release")
 
@@ -201,36 +205,29 @@ def enter_example_release_content(context: Context):
 
 
 @when('the user enters "Cancelled" page content')
-def enter_cancelled_release_content(context: Context):
+def user_enters_cancelled_release_content(context: Context):
     context.page.locator(".public-DraftStyleDefault-block").first.fill("Notice cancelled")
-    enter_example_release_content(context)
+    user_enters_example_release_content(context)
 
 
 @when("the user adds contact details")
-def add_contact_detail(context: Context):
+def user_adds_contact_detail(context: Context):
     context.page.get_by_role("button", name="Choose contact details").click()
     context.page.get_by_role("link", name=context.contact_details_snippet.name).click()
 
 
 @then("contact detail is displayed")
-def displayed_contact_detail(context: Context):
+def displayed_contact_details(context: Context):
     page = context.preview_page
     expect(page.get_by_role("heading", name="Contact details")).to_be_visible()
     expect(page.get_by_text(context.contact_details_snippet.name)).to_be_visible()
     expect(page.get_by_role("link", name=context.contact_details_snippet.email)).to_be_visible()
 
 
-@then("the release page displays example content")
-def check_provisional_release_page_content(context: Context):
-    page = context.page
-    expect(page.get_by_role("heading", name="My Release")).to_be_visible()
-    expect(page.get_by_role("heading", name="My Example Content Link")).to_be_visible()
-    expect(page.locator("#my-example-content-link").get_by_role("link", name="Release calendar")).to_be_visible()
-    expect(page.get_by_text("Accredited Official Statistics", exact=True)).to_be_visible()
-
-
 @then('the page status is set to "Provisional" and the release date text field is visible')
-def check_that_default_status_is_provisional_and_release_date_text_is_visible(context: Context):
+def check_that_default_status_is_provisional_and_release_date_text_is_visible(
+    context: Context,
+):
     expect(context.page.get_by_label("Status*")).to_have_value("PROVISIONAL")
     expect(context.page.get_by_text("Or, release date text")).to_be_visible()
 
@@ -240,7 +237,7 @@ def user_changes_preview_mode(context: Context, page_status: str):
     context.page.get_by_label("Preview mode").select_option(page_status)
 
 
-@when("the preview tab opened")
+@when("the preview tab is opened")
 def open_preview_tab(context: Context):
     context.page.get_by_role("link", name="Preview in new tab").click()
 
@@ -250,22 +247,22 @@ def open_preview_tab(context: Context):
 
 
 @then('the "Provisional" page is displayed')
-def display_provisional_page(context: Context):
+def display_provisional_release_page(context: Context):
     expect(context.page.get_by_text("This release is not yet")).to_be_visible()
 
 
-@then('the "Provisional" page is displayed in the preview page')
-def preview_provisional_page(context: Context):
+@then('the "Provisional" page is displayed in the preview tab')
+def preview_provisional_release_page(context: Context):
     expect(context.preview_page.get_by_text("This release is not yet")).to_be_visible()
 
 
-@then('the "Confirmed" page is displayed in the preview page')
-def preview_confirmed_page(context: Context):
+@then('the "Confirmed" page is displayed in the preview tab')
+def preview_confirmed_release_page(context: Context):
     expect(context.preview_page.get_by_text("This release is not yet")).to_be_visible()
 
 
-@then('the "Published" page is displayed in the preview page')
-def preview_published_page(context: Context):
+@then('the "Published" page is displayed in the preview tab')
+def preview_published_release_page(context: Context):
     page = context.preview_page
     expect(page.get_by_role("heading", name="My Release")).to_be_visible()
     expect(page.get_by_role("heading", name="My Example Content Link")).to_be_visible()
@@ -273,7 +270,7 @@ def preview_published_page(context: Context):
     expect(page.get_by_text("Accredited Official Statistics", exact=True)).to_be_visible()
 
 
-@then('the "Cancelled" page is displayed in the preview page')
+@then('the "Cancelled" page is displayed in the preview tab')
 def preview_cancelled_page(context: Context):
     expect(context.preview_page.get_by_text("Cancelled", exact=True)).to_be_visible()
 
@@ -299,7 +296,7 @@ def display_cancelled_page(context: Context):
 
 
 @when("the user adds related links")
-def add_related_links(context: Context):
+def user_adds_related_links(context: Context):
     context.page.locator("#panel-child-content-related_links-content").get_by_role(
         "button", name="Insert a block"
     ).click()
@@ -307,7 +304,7 @@ def add_related_links(context: Context):
     context.page.get_by_role("link", name="Home").click()
 
 
-@then("the related links is displayed")
+@then("related links are displayed")
 def displayed_related_links(context: Context):
     expect(context.preview_page.get_by_role("heading", name="You might also be interested")).to_be_visible()
     expect(context.preview_page.locator("#links").get_by_role("link", name="Home")).to_be_visible()
@@ -319,6 +316,8 @@ def displayed_date_change_log(context: Context):
 
 
 # Notice
+
+
 @then("the notice field is disabled")
 def check_notice_field_disabled(context: Context):
     expect(context.page.locator('[name="notice"]')).to_be_disabled()
@@ -330,9 +329,11 @@ def error_cancelled_notice_must_be_added(context: Context):
     expect(context.page.get_by_text("The notice field is required")).to_be_visible()
 
 
-# Prerelease access
+# Pre-release access
+
+
 @when("the user adds pre-release access information")
-def add_pre_release_access(context: Context):
+def user_adds_pre_release_access(context: Context):
     page = context.page
     # Table
     page.locator("#panel-child-content-pre_release_access-content").get_by_role("button", name="Insert a block").click()
@@ -363,7 +364,7 @@ def displayed_pre_release_access(context: Context):
 
 
 @when("multiple descriptions are added under pre-release access")
-def add_multiple_description(context: Context):
+def user_adds_multiple_descriptions_to_pre_release_access(context: Context):
     context.page.locator("#panel-child-content-pre_release_access-content").get_by_role(
         "button", name="Insert a block"
     ).click()
@@ -380,7 +381,7 @@ def error_multiple_description(context: Context):
 
 
 @when("multiple tables are added under pre-release access")
-def add_multiple_tables(context: Context):
+def user_adds_multiple_tables_to_pre_release_access(context: Context):
     context.page.locator("#panel-child-content-pre_release_access-content").get_by_role(
         "button", name="Insert a block"
     ).click()
@@ -409,6 +410,8 @@ def error_empty_table(context: Context):
 
 
 # Release date changes
+
+
 @step("the user adds a release date change")
 def user_adds_a_release_date_change(context: Context):
     page = context.page
@@ -453,3 +456,14 @@ def release_calendar_page_is_successfully_updated(context: Context):
 def release_calendar_page_is_successfully_published(context: Context):
     page = context.page
     expect(page.get_by_text("Page 'My Release' has been published.")).to_be_visible()
+
+
+@when("the user edits this to have a different release date")
+def user_enters_different_release_date(context: Context):
+    context.page.get_by_role("textbox", name="Release date*").fill("2025-01-25")
+
+
+@then("an error message is displayed describing that a date change log is needed")
+def error_release_date_change_message(context: Context):
+    expect(context.page.get_by_text("The page could not be saved")).to_be_visible()
+    expect(context.page.get_by_text("If a confirmed calendar entry")).to_be_visible()
