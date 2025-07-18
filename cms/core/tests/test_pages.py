@@ -191,3 +191,32 @@ class SocialMetaTests(WagtailPageTestCase):
             response,
             f'<meta property="og:image" content="{settings.DEFAULT_OG_IMAGE_URL}" />',
         )
+
+
+class ErrorPageTests(WagtailPageTestCase):
+    def test_404_page(self):
+        """Test that the 404 page can be served."""
+        e404_urls = [
+            "/non-existent-page/",
+            "/nested/non-existent-page/",
+            "/non-existent-page/?with_query=string",
+        ]
+        for url in e404_urls:
+            with self.subTest(url=url):
+                response = self.client.get(url)
+                self.assertEqual(response.status_code, HTTPStatus.NOT_FOUND)
+                self.assertIn("Page not found", response.content.decode("utf-8"))
+                self.assertIn("If you entered a web address, check it is correct.", response.content.decode("utf-8"))
+
+    def test_301_before_404_page(self):
+        """Test that a 301 redirect is returned before the 404 page is served when necessary."""
+        # The lack of a trailing slash on the URL should result in a 301 redirect,
+        # even if the page does not exist.
+        response = self.client.get("/non-existent-page-with-no-trailing-slash")
+        self.assertEqual(response.status_code, HTTPStatus.MOVED_PERMANENTLY)
+
+        # Follow the redirect
+        response = self.client.get(response["Location"])
+        self.assertEqual(response.status_code, HTTPStatus.NOT_FOUND)
+        self.assertIn("Page not found", response.content.decode("utf-8"))
+        self.assertIn("If you entered a web address, check it is correct.", response.content.decode("utf-8"))

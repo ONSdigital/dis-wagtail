@@ -1,10 +1,8 @@
-{% extends "templates/base_page.html" %}
+{% extends "templates/pages/errors/base_error.html" %}
+{% set page_title = _("Page not found") %}
 
-{# TODO: update the head title to settings.core.SystemMessagesSettings.title_404 #}
-{% block title %}{{ settings.core.SystemMessagesSettings.title_404 }}{% endblock %}
-
-{% block main %}
-    <h1>{{ settings.core.SystemMessagesSettings.title_404 }}</h1>
-
-    {{ settings.core.SystemMessagesSettings.body_404|richtext }}
+{% block error_content %}
+    <p>{{ _("If you entered a web address, check it is correct.") }}</p>
+    <p>{{ _("If you pasted the web address, check you copied the whole address.") }}</p>
+    <p>{{ _("If the web address is correct, or you selected a link or button, <a href=\"/aboutus/contactus/generalandstatisticalenquiries\">contact us</a>.") }}</p>
 {% endblock %}
