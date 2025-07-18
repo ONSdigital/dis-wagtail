@@ -108,6 +108,7 @@ Feature: CMS users can draft, edit, and publish release pages
     And a Release Calendar page with a publish notice exists
     When the user navigates to the published release calendar page
     And the user adds a release date change
+    And the user adds pre-release access information
     And the user adds contact details
     And the user adds related links
     And the user clicks the "Save Draft" button
@@ -117,6 +118,7 @@ Feature: CMS users can draft, edit, and publish release pages
     Then the related links is displayed
     And contact detail is displayed
     And the release date change is displayed
+    And the pre-release access is displayed
 
   Scenario Outline: Validation error when cancelled page is published without notice
     When the user clicks "Add child page" to create a new draft release page
@@ -124,6 +126,19 @@ Feature: CMS users can draft, edit, and publish release pages
     And the user sets the page status to "Cancelled"
     And the user clicks "Publish"
     Then an error message is displayed describing notice must be added
+
+  Scenario: Validation error when more than one description added on pre-release Access
+    When the user clicks "Add child page" to create a new draft release page
+    And the user enters some example content on the page
+    And multiple descriptions are added under pre-release access
+    Then an error message is displayed about the descriptions
+
+  Scenario: Validation error when more than one table added on pre-release Access
+    When the user clicks "Add child page" to create a new draft release page
+    And the user enters some example content on the page
+    And multiple tables are added under pre-release access
+    And the user clicks "Publish"
+    Then an error message is displayed about the tables
 # changes to release date
 
   Scenario Outline: Validation error raised when there is a change in release date and no change log added
