@@ -15,11 +15,11 @@ else
     TAG_NAME="$1"
 fi
 
-echo "Fetching ${DOWNLOAD_URL}"
-
 REPO_NAME="onsdigital/design-system"
 RELEASE_NAME="design-system-${TAG_NAME}.tar.gz"
 DOWNLOAD_URL="https://github.com/${REPO_NAME}/releases/download/${TAG_NAME}/templates.zip"
+
+echo "Fetching ${DOWNLOAD_URL}"
 
 TEMP_DIR=$(mktemp -d)
 
