@@ -79,13 +79,11 @@ mypy:  ## Run mypy.
 
 .PHONY: install
 install:  ## Install the dependencies excluding dev.
-	nvm use
 	npm install --production
 	poetry install --only main --no-root
 
 .PHONY: install-dev
 install-dev:  ## Install the dependencies including dev.
-	nvm use
 	npm ci
 	poetry install --no-root
 
