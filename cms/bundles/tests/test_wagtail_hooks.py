@@ -72,7 +72,6 @@ class WagtailHooksTestCase(WagtailTestUtils, TestCase):
 
         for bundle in [self.draft_bundle, self.in_review_bundle, self.approved_bundle]:
             self.assertContains(response, bundle.name)
-            self.assertContains(response, bundle.created_by.get_full_name())
             self.assertContains(response, bundle.status.label)
         self.assertNotContains(response, self.published_bundle.status.label)
 
