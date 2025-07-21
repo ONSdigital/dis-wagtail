@@ -2,21 +2,13 @@ from unittest import mock
 
 from botocore.exceptions import ClientError
 from django.conf import settings
-from django.test import TestCase, override_settings
+from django.test import TestCase
 from moto import mock_aws
 from wagtail_factories import DocumentFactory
 
 from cms.private_media.storages import AccessControlledS3Storage
 
 
-@override_settings(
-    AWS_STORAGE_BUCKET_NAME="test-bucket",
-    AWS_S3_REGION_NAME="us-east-1",
-    AWS_ACCESS_KEY_ID="testing",
-    AWS_SECRET_ACCESS_KEY="testing",
-    AWS_SESSION_TOKEN="testing",
-    AWS_EC2_METADATA_DISABLED=True,
-)
 @mock_aws
 class AccessControlledS3StorageTests(TestCase):
     @classmethod
