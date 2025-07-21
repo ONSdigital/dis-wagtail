@@ -243,11 +243,40 @@ def user_adds_a_notice(context: Context):
     page.wait_for_timeout(500)
 
 
+@step("the user adds an accordion section with title and content")
+def user_adds_accordion_section(context: Context):
+    page = context.page
+    page.get_by_label("Content ()").get_by_title("Insert a block").nth(3).click()
+    page.get_by_text("Accordion").click()
+    page.get_by_label("Title*").fill("Test Accordion Section")
+    page.get_by_role("region", name="Content*").get_by_role("textbox").nth(3).fill("Test accordion content")
+    context.page.wait_for_timeout(500)  # Wait for JS to process
+
+
 @then("the published statistical article page has the added correction")
 def the_published_statistical_article_page_has_the_added_correction(context: Context):
     expect(context.page.get_by_role("heading", name="Corrections")).to_be_visible()
     expect(context.page.get_by_text("13 March 2025")).to_be_hidden()
     expect(context.page.get_by_text("Correction text")).to_be_hidden()
+
+
+@then("the published statistical article page has the added accordion section")
+def the_published_statistical_article_page_has_the_added_accordion_section(context: Context):
+    expect(context.page.get_by_role("heading", name="Test Accordion Section")).to_be_visible()
+    expect(context.page.get_by_text("Test accordion content")).to_be_hidden()
+
+
+@then("the user can expand and collapse the accordion section")
+def user_can_expand_and_collapse_accordion_section(context: Context):
+    expect(context.page.get_by_role("button", name="Show all")).to_be_visible()
+    context.page.get_by_role("heading", name="Test Accordion Section").click()
+    expect(context.page.get_by_role("button", name="Hide all")).to_be_visible()
+    expect(context.page.get_by_text("Test accordion content")).to_be_visible()
+    context.page.get_by_role("heading", name="Test Accordion Section").click()
+    expect(context.page.get_by_text("Test accordion content")).to_be_hidden()
+    context.page.get_by_role("button", name="Show all").click()
+    expect(context.page.get_by_role("button", name="Hide all")).to_be_visible()
+    expect(context.page.get_by_text("Test accordion content")).to_be_visible()
 
 
 @then("the user can expand and collapse {block_type} details")

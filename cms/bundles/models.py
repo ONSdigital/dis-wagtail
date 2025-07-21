@@ -2,7 +2,8 @@ from typing import TYPE_CHECKING, ClassVar, Optional, Self
 
 from django.conf import settings
 from django.db import models
-from django.db.models import F, QuerySet
+from django.db.models import Case, F, QuerySet, Value, When
+from django.db.models.fields import CharField
 from django.db.models.functions import Coalesce
 from django.urls import reverse
 from django.utils.functional import cached_property
@@ -84,6 +85,15 @@ class BundlesQuerySet(QuerySet):
     def annotate_release_date(self) -> "BundlesQuerySet":
         return self.annotate(release_date=models.F("release_date"))  # type: ignore[no-any-return]
 
+    def annotate_status_label(self) -> "BundlesQuerySet":
+        """Annotates the queryset with the status label, rather than the value saved in the db."""
+        return self.annotate(  # type: ignore[no-any-return]
+            status_label=Case(
+                *[When(status=choice[0], then=Value(choice[1])) for choice in BundleStatus.choices],
+                output_field=CharField(),
+            )
+        )
+
 
 # note: mypy doesn't cope with dynamic base classes and fails with:
 # 'Unsupported dynamic base class "models.Manager.from_queryset"  [misc]'
@@ -112,6 +122,8 @@ class Bundle(index.Indexed, ClusterableModel, models.Model):  # type: ignore[dja
     )
     # See https://docs.wagtail.org/en/stable/advanced_topics/reference_index.html
     created_by.wagtail_reference_index_ignore = True  # type: ignore[attr-defined]
+
+    updated_at = models.DateTimeField(auto_now=True)
 
     approved_at = models.DateTimeField(blank=True, null=True)
     approved_by = models.ForeignKey(
