@@ -16,6 +16,7 @@ from wagtail.admin.viewsets.model import ModelViewSet
 from wagtail.admin.widgets import HeaderButton, ListingButton
 from wagtail.log_actions import log
 
+from cms.bundles.action_menu import BundleActionMenu
 from cms.bundles.enums import BundleStatus
 from cms.bundles.models import Bundle
 from cms.bundles.notifications.slack import (
@@ -40,6 +41,8 @@ if TYPE_CHECKING:
 class BundleCreateView(CreateView):
     """The Bundle create view class."""
 
+    template_name = "bundles/wagtailadmin/edit.html"
+
     def save_instance(self) -> Bundle:
         """Automatically set the creating user on Bundle creation."""
         instance: Bundle = super().save_instance()
@@ -47,11 +50,19 @@ class BundleCreateView(CreateView):
         instance.save(update_fields=["created_by"])
         return instance
 
+    def get_context_data(self, **kwargs: Any) -> dict[str, Any]:
+        context: dict[str, Any] = super().get_context_data(**kwargs)
+
+        # initialise the action menu
+        action_menu = BundleActionMenu(self.request, bundle=None)
+        context["media"] += action_menu.media
+        context["action_menu"] = action_menu
+        return context
+
 
 class BundleEditView(EditView):
     """The Bundle edit view class."""
 
-    actions: ClassVar[list[str]] = ["edit", "save-and-approve", "publish", "unschedule"]
     template_name = "bundles/wagtailadmin/edit.html"
     has_content_changes: bool = False
     start_time: float | None = None
@@ -67,17 +78,20 @@ class BundleEditView(EditView):
         kwargs: dict = super().get_form_kwargs()
         if self.request.method == "POST":
             data = self.request.POST.copy()
-            if "action-save-and-approve" in self.request.POST:
+            if "action-save-to-preview" in self.request.POST:
+                data["status"] = BundleStatus.IN_REVIEW.value
+            elif "action-approve" in self.request.POST:
                 data["status"] = BundleStatus.APPROVED.value
                 data["approved_at"] = timezone.now()
                 data["approved_by"] = self.request.user
-                kwargs["data"] = data
-            elif "action-unschedule" in self.request.POST:
+            elif "action-return-to-draft" in self.request.POST:
                 data["status"] = BundleStatus.DRAFT.value
-                kwargs["data"] = data
+            elif "action-return-to-preview" in self.request.POST:
+                data["status"] = BundleStatus.IN_REVIEW.value
             elif "action-publish" in self.request.POST:
                 data["status"] = BundleStatus.PUBLISHED.value
-                kwargs["data"] = data
+
+            kwargs["data"] = data
         return kwargs
 
     def save_instance(self) -> Bundle:
@@ -135,6 +149,22 @@ class BundleEditView(EditView):
 
             notify_slack_of_publish_end(self.object, time.time() - start_time, user=self.request.user)
 
+    def get_available_actions(self) -> list[str]:
+        bundle = self.get_object()
+
+        match bundle.status:
+            case BundleStatus.DRAFT:
+                return ["edit", "save-to-preview"]
+            case BundleStatus.IN_REVIEW:
+                return ["edit", "return-to-draft", "approve"]
+            case BundleStatus.APPROVED:
+                actions = ["return-to-draft", "return-to-preview"]
+                if not bundle.scheduled_publication_date:
+                    actions += ["publish"]
+                return actions
+            case _:
+                return []
+
     def get_context_data(self, **kwargs: Any) -> dict:
         """Updates the template context.
 
@@ -143,13 +173,10 @@ class BundleEditView(EditView):
         """
         context: dict = super().get_context_data(**kwargs)
 
-        context["show_save_and_approve"] = self.object.can_be_approved
-        context["show_publish"] = (
-            self.object.status == BundleStatus.APPROVED and not self.object.scheduled_publication_date
-        )
-        context["show_unschedule"] = (
-            self.object.status == BundleStatus.APPROVED and self.object.scheduled_publication_date
-        )
+        # initialise the action menu
+        action_menu = BundleActionMenu(self.request, bundle=self.get_object())
+        context["media"] += action_menu.media
+        context["action_menu"] = action_menu
 
         return context
 
