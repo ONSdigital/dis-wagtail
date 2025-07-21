@@ -27,5 +27,6 @@ class ContextProcessorTestCase(TestCase):
             "WAGTAIL_CORE_ADMIN_LOGIN_ENABLED": settings.WAGTAIL_CORE_ADMIN_LOGIN_ENABLED,
             "AUTH_CONFIG": get_auth_config(),
             "DEFAULT_OG_IMAGE_URL": settings.DEFAULT_OG_IMAGE_URL,
+            "CONTACT_US_URL": settings.CONTACT_US_URL,
         }
         self.assertEqual(global_vars(self.request), expected)
