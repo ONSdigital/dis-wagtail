@@ -128,7 +128,8 @@ MIGRATION_LINTER_OPTIONS = {
         "0006_statisticalarticlepage_dataset_sorting_and_more",  # Ignoring NOT NULL constraint
         "0006_topicpage_datasets",  # Ignoring NOT NULL constraint
         "0004_bundleteam_preview_notification_sent",  # Ignoring NOT NULL constraint
-        "0007_statisticalarticlepage_featured_chart_content_and_more",  # Ignoring NOT NULL constraint
+        "0007_statisticalarticlepage_featured_chart_content_and_more",  # Ignoring NOT NULL constraint,
+        "0008_delete_systemmessagessettings",  # Ignoring dropping table
     ],
 }
 
