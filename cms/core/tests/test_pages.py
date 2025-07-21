@@ -220,3 +220,16 @@ class ErrorPageTests(WagtailPageTestCase):
         self.assertEqual(response.status_code, HTTPStatus.NOT_FOUND)
         self.assertIn("Page not found", response.content.decode("utf-8"))
         self.assertIn("If you entered a web address, check it is correct.", response.content.decode("utf-8"))
+
+    def test_404_page_uses_contact_us_setting(self):
+        """Test that the 404 page uses the CONTACT_US_URL setting for the contact link."""
+        response = self.client.get("/non-existent-page/")
+        self.assertEqual(response.status_code, HTTPStatus.NOT_FOUND)
+        self.assertContains(response, f'href="{settings.CONTACT_US_URL}"', status_code=HTTPStatus.NOT_FOUND)
+
+    @override_settings(CONTACT_US_URL="/custom/contact-path/")
+    def test_404_page_uses_custom_contact_us_setting(self):
+        """Test that the 404 page uses a custom CONTACT_US_URL setting when configured."""
+        response = self.client.get("/non-existent-page/")
+        self.assertEqual(response.status_code, HTTPStatus.NOT_FOUND)
+        self.assertContains(response, 'href="/custom/contact-path/"', status_code=HTTPStatus.NOT_FOUND)
