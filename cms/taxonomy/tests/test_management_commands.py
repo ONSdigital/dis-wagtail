@@ -1,4 +1,3 @@
-# pylint: disable=too-many-public-methods
 from collections.abc import Iterable
 from typing import Any
 from unittest.mock import Mock, patch
@@ -459,26 +458,6 @@ class SyncTopicsTests(TestCase):
 
         # When, then raises
         self.assertRaises(RuntimeError, sync_topics.Command().handle)
-
-    # TODO
-    # Move subtopic to root
-    # Move root topic to subtopic
-    # Error response
-    # Error response in subtopic call
-    # No Topics from API
-    # Single Topic, No Description
-    # Single Topic, Already Exists In The Database (No Changes)
-    # Single Topic, Already Exists The Database (Needs Update)
-    # Multiple Topics, Hierarchical (Parent → Child)
-    # Updating the Parent of an Existing Topic (Moving a Child to a Different Parent)
-    # Topics Marked as Removed (Topics in the database Not in API)
-    # Previously Removed Topic Reappears in API
-    # Multiple Nested Levels of Subtopics
-    # Tests deep nesting (Parent → Child → Grandchild).
-    # Verifies the breadth-first or stack-based approach processes all levels correctly.
-    # API Returns an Error or Timeout
-    # Inconsistent Link Data: Subtopics Link Provided but subtopics_ids is Empty
-    # Duplicate IDs in API Response (Unlikely, but a Potential Data Integrity Issue)
 
 
 def create_topic(topic_id: str, include_description: bool = True) -> Topic:

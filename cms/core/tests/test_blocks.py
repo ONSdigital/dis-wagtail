@@ -6,8 +6,10 @@ from wagtail.blocks import StreamBlockValidationError, StructBlockValidationErro
 from wagtail.rich_text import RichText
 from wagtail.test.utils.wagtail_tests import WagtailTestUtils
 
-from cms.articles.tests.factories import ArticleSeriesPageFactory, StatisticalArticlePageFactory
+from cms.articles.tests.factories import StatisticalArticlePageFactory
 from cms.core.blocks import (
+    AccordionBlock,
+    AccordionSectionBlock,
     BasicTableBlock,
     DocumentBlock,
     DocumentsBlock,
@@ -18,7 +20,6 @@ from cms.core.blocks import (
     RelatedLinksBlock,
 )
 from cms.core.blocks.glossary_terms import GlossaryTermsBlock
-from cms.core.blocks.panels import CorrectionBlock, NoticeBlock
 from cms.core.tests.factories import GlossaryTermFactory
 from cms.core.tests.utils import get_test_document
 from cms.home.models import HomePage
@@ -716,39 +717,77 @@ class ONSTableBlockTestCase(WagtailTestUtils, TestCase):
             self.assertListEqual(self.block._prepare_cells(cells), expected)  # pylint: disable=protected-access
 
 
-class NoticeBlockTestCase(TestCase):
-    @classmethod
-    def setUpTestData(cls):
-        cls.notice_data = {
-            "when": datetime(2025, 1, 1),
-            "text": "Notice text",
-        }
+class AccordionBlockTestCase(TestCase):
+    """Test for accordion blocks."""
 
-    def test_render_block(self):
-        block = NoticeBlock()
-        rendered = block.render(self.notice_data)
+    def setUp(self):
+        self.accordion_block = AccordionBlock()
+        self.accordion_section_block = AccordionSectionBlock()
 
-        self.assertIn("1 January 2025", rendered)
-        self.assertIn("Notice text", rendered)
+    def test_accordion_section_block_structure(self):
+        """Test that AccordionSectionBlock has the correct structure."""
+        self.assertIn("title", self.accordion_section_block.child_blocks)
+        self.assertIn("content", self.accordion_section_block.child_blocks)
 
+        # Test max_length on title
+        title_block = self.accordion_section_block.child_blocks["title"]
+        self.assertEqual(title_block.field.max_length, 200)
 
-class CorrectionBlockTestCase(TestCase):
-    @classmethod
-    def setUpTestData(cls):
-        cls.correction_data = {
-            "when": datetime(2025, 1, 1, 13, 59, 00),
-            "text": "Correction text",
-            "previous_version": 1,
-            "version_id": 1,
-        }
-        cls.series = ArticleSeriesPageFactory()
-        cls.statistical_article = StatisticalArticlePageFactory(parent=cls.series)
+        # Test that both fields are required
+        self.assertTrue(title_block.required)
+        self.assertTrue(self.accordion_section_block.child_blocks["content"].required)
 
-    def test_render_block(self):
-        block = CorrectionBlock()
-        rendered = block.render(self.correction_data, context={"request": None, "page": self.statistical_article})
+    def test_accordion_section_block_to_python(self):
+        """Test that AccordionSectionBlock can parse data correctly."""
+        data = {"title": "Test Section", "content": "This is test content"}
 
-        self.assertIn("1 January 2025 1:59pm", rendered)
-        self.assertIn("Correction text", rendered)
-        self.assertIn("View superseded version", rendered)
-        self.assertIn("/previous/v1", rendered)
+        value = self.accordion_section_block.to_python(data)
+        self.assertEqual(value["title"], "Test Section")
+        self.assertIn("This is test content", str(value["content"]))
+
+    def test_accordion_block_get_context(self):
+        """Test that AccordionBlock generates correct context."""
+        test_data = [{"title": "Section 1", "content": "Content 1"}, {"title": "Section 2", "content": "Content 2"}]
+
+        value = self.accordion_block.to_python(test_data)
+        context = self.accordion_block.get_context(value)
+
+        # Check that context contains expected keys
+        self.assertIn("accordion_sections", context)
+        self.assertIn("show_all_text", context)
+        self.assertIn("hide_all_text", context)
+
+        # Check accordion_sections structure
+        accordion_sections = context["accordion_sections"]
+        self.assertEqual(len(accordion_sections), 2)
+
+        # Check first section
+        first_section = accordion_sections[0]
+        self.assertEqual(first_section["title"], "Section 1")
+        self.assertIn("Content 1", str(first_section["content"]))
+
+        # Check second section
+        second_section = accordion_sections[1]
+        self.assertEqual(second_section["title"], "Section 2")
+        self.assertIn("Content 2", str(second_section["content"]))
+
+        # Check button text
+        self.assertEqual(context["show_all_text"], "Show all")
+        self.assertEqual(context["hide_all_text"], "Hide all")
+
+    def test_accordion_block_render(self):
+        """Test that AccordionBlock renders correctly."""
+        test_data = [{"title": "Test Section", "content": "Test content"}]
+
+        value = self.accordion_block.to_python(test_data)
+        rendered = self.accordion_block.render(value)
+
+        self.assertIn("Test Section", rendered)
+        self.assertIn("Test content", rendered)
+
+    def test_accordion_block_empty_list(self):
+        """Test AccordionBlock with empty list."""
+        value = self.accordion_block.to_python([])
+        context = self.accordion_block.get_context(value)
+
+        self.assertEqual(len(context["accordion_sections"]), 0)

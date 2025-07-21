@@ -1,6 +1,9 @@
+from datetime import UTC, datetime
 from http import HTTPStatus
 from unittest import mock
 
+import time_machine
+from django.db.models import F, OrderBy
 from django.test import TestCase, override_settings
 from django.urls import reverse
 from wagtail.admin.panels import get_edit_handler
@@ -48,10 +51,10 @@ class BundleViewSetTestCaseBase(WagtailTestUtils, TestCase):
         cls.bundle_index_url = reverse("bundle:index")
         cls.bundle_add_url = reverse("bundle:add")
 
-        cls.published_bundle = BundleFactory(published=True, name="Publish Bundle")
+        cls.published_bundle = BundleFactory(published=True, name="Publish test Bundle")
         cls.published_bundle_edit_url = reverse("bundle:edit", args=[cls.published_bundle.id])
 
-        cls.approved_bundle = BundleFactory(approved=True, name="Approve Bundle")
+        cls.approved_bundle = BundleFactory(approved=True, name="Approve test Bundle")
         cls.approved_bundle_edit_url = reverse("bundle:edit", args=[cls.approved_bundle.id])
 
         cls.in_review_bundle = BundleFactory(in_review=True, name="Preview Bundle")
@@ -394,7 +397,7 @@ class BundleViewSetTestCase(BundleViewSetTestCaseBase):
         """Checks that the inspect view displays the release calendar page."""
         release_calendar_page = ReleaseCalendarPageFactory(title="Foobar Release Calendar Page")
         self.bundle.release_calendar_page = release_calendar_page
-        self.bundle.save()
+        self.bundle.save(update_fields=["release_calendar_page"])
 
         response = self.client.get(reverse("bundle:inspect", args=[self.bundle.pk]))
 
@@ -407,6 +410,32 @@ class BundleViewSetTestCase(BundleViewSetTestCaseBase):
 
         content = response.content.decode("utf-8")
         self.assertInHTML("<dt>Associated release calendar page</dt><dd>N/A</dd>", content)
+
+    def test_inspect_view__links_to_live_pages_after_publication(self):
+        release_calendar_page = ReleaseCalendarPageFactory(title="Foobar Release Calendar Page")
+        self.bundle.release_calendar_page = release_calendar_page
+        self.bundle.status = BundleStatus.PUBLISHED
+        self.bundle.save(update_fields=["status", "release_calendar_page"])
+
+        response = self.client.get(reverse("bundle:inspect", args=[self.bundle.pk]))
+
+        self.assertContains(response, "Foobar Release Calendar Page")
+        self.assertContains(response, release_calendar_page.url)
+        self.assertNotContains(response, reverse("bundles:preview_release_calendar", args=[self.bundle.id]))
+
+    @time_machine.travel(datetime(2025, 7, 1, 12, 37), tick=False)
+    def test_inspect_view__datetime_use_configured_timezone(self):
+        bundle = BundleFactory(
+            status=BundleStatus.APPROVED,
+            approved_by=self.superuser,
+            approved_at=datetime(2025, 7, 1, 12, 45, tzinfo=UTC),
+            publication_date=datetime(2025, 7, 1, 13, 00, tzinfo=UTC),
+        )
+        response = self.client.get(reverse("bundle:inspect", args=[bundle.pk]))
+
+        self.assertContains(response, "1 July 2025 1:37pm")
+        self.assertContains(response, "1 July 2025 1:45pm")
+        self.assertContains(response, "1 July 2025 2:00pm")
 
 
 class BundleIndexViewTestCase(BundleViewSetTestCaseBase):
@@ -438,16 +467,23 @@ class BundleIndexViewTestCase(BundleViewSetTestCaseBase):
         self.assertNotContains(response, self.published_bundle_edit_url)
 
         self.assertContains(response, BundleStatus.DRAFT.label, 2)  # status + status filter
-        self.assertContains(response, BundleStatus.PUBLISHED.label, 2)  # status + status filter
         self.assertContains(response, BundleStatus.APPROVED.label, 2)  # status + status filter
+        self.assertContains(response, BundleStatus.PUBLISHED.label, 1)  # status filter
 
-        self.assertContains(response, self.published_bundle.name)
         self.assertContains(response, self.approved_bundle.name)
+        self.assertContains(response, self.bundle.name)
+        self.assertNotContains(response, self.published_bundle.name)
 
-    def test_index_view_search(self):
-        response = self.client.get(f"{self.bundle_index_url}?q=publish")
+    def test_index_view_contains_published_bundle_when_status_filter_applied(self):
+        response = self.client.get(self.bundle_index_url, query_params={"status": BundleStatus.PUBLISHED})
         self.assertContains(response, self.published_bundle.name)
         self.assertNotContains(response, self.approved_bundle.name)
+        self.assertNotContains(response, self.bundle.name)
+
+    def test_index_view_search(self):
+        response = self.client.get(self.bundle_index_url, query_params={"q": "test"})
+        self.assertContains(response, self.approved_bundle.name)
+        self.assertNotContains(response, self.published_bundle.name)
 
     def test_index_view__previewers__contains_only_relevant_bundles(self):
         self.client.force_login(self.bundle_viewer)
@@ -462,6 +498,26 @@ class BundleIndexViewTestCase(BundleViewSetTestCaseBase):
         self.assertNotContains(response, self.published_bundle.name)
         self.assertNotContains(response, self.approved_bundle.name)
         self.assertNotContains(response, self.another_in_review_bundle.name)
+
+    def test_ordering(self):
+        """Checks that the correct ordering is applied."""
+        cases = {
+            "": ("name",),
+            "name": ("name",),
+            "-name": ("-name",),
+            "scheduled_publication_date": (OrderBy(F("release_date"), descending=False, nulls_last=True),),
+            "-scheduled_publication_date": (OrderBy(F("release_date"), descending=True, nulls_last=True),),
+            "status": (OrderBy(F("status_label"), descending=False),),
+            "-status": (OrderBy(F("status_label"), descending=True),),
+            "invalid_ordering": ("name",),
+        }
+        for param, order_by in cases.items():
+            with self.subTest(param=param):
+                response = self.client.get(self.bundle_index_url, query_params={"ordering": param})
+                self.assertEqual(
+                    response.context_data["object_list"].query.order_by,
+                    order_by,
+                )
 
 
 class BundleChooserViewsetTestCase(BundleViewSetTestCaseBase):

@@ -1,3 +1,4 @@
+# pylint: disable=too-many-lines
 """Django settings for ons project."""
 
 import datetime
@@ -13,6 +14,7 @@ from django.utils.translation import gettext_lazy as _
 from django_jinja.builtins import DEFAULT_EXTENSIONS
 
 from cms.core.elasticache import ElastiCacheIAMCredentialProvider
+from cms.core.jinja2 import custom_json_dumps
 
 env = os.environ.copy()
 
@@ -59,9 +61,11 @@ if "CSRF_TRUSTED_ORIGINS" in env:
 
 INSTALLED_APPS = [
     "cms.articles",
+    "cms.auth",
     "cms.bundles",
     "cms.core",
     "cms.datasets",
+    "cms.datavis",
     "cms.documents",
     "cms.home",
     "cms.images",
@@ -86,6 +90,7 @@ INSTALLED_APPS = [
     "wagtail.search",
     "wagtail.admin",
     "wagtail.locales",
+    "wagtailschemaorg",
     "wagtail.contrib.settings",
     "wagtail.contrib.redirects",
     "wagtail.contrib.legacy.richtext",
@@ -101,6 +106,7 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     "django_jinja",
     "wagtailmath",
+    "wagtailtables",
     "wagtailfontawesomesvg",
     "wagtail_tinytableblock",
     "rest_framework",
@@ -138,10 +144,7 @@ MIDDLEWARE = [
 if not IS_EXTERNAL_ENV:
     common_middleware_index = MIDDLEWARE.index("django.middleware.common.CommonMiddleware")
     MIDDLEWARE.insert(common_middleware_index, "django.contrib.messages.middleware.MessageMiddleware")
-    MIDDLEWARE.insert(
-        common_middleware_index,
-        "django.contrib.auth.middleware.AuthenticationMiddleware",
-    )
+    MIDDLEWARE.insert(common_middleware_index, "cms.auth.middleware.ONSAuthMiddleware")
     MIDDLEWARE.insert(common_middleware_index, "django.contrib.sessions.middleware.SessionMiddleware")
     MIDDLEWARE.insert(common_middleware_index, "xff.middleware.XForwardedForMiddleware")
 
@@ -184,7 +187,12 @@ TEMPLATES = [
                 "wagtail.contrib.settings.jinja2tags.settings",
                 "cms.core.jinja2tags.CoreExtension",
                 "cms.navigation.jinja2tags.NavigationExtension",
+                "wagtailschemaorg.jinja2tags.WagtailSchemaOrgExtension",
             ],
+            "policies": {
+                # https://jinja.palletsprojects.com/en/stable/api/#policies
+                "json.dumps_function": custom_json_dumps,
+            },
         },
     },
     {
@@ -855,6 +863,9 @@ WAGTAIL_SITE_NAME = "Office for National Statistics"
 if "WAGTAILADMIN_BASE_URL" in env:
     WAGTAILADMIN_BASE_URL = env["WAGTAILADMIN_BASE_URL"]
 
+# https://docs.wagtail.org/en/latest/reference/settings.html#wagtailadmin-login-url
+WAGTAILADMIN_LOGIN_URL = env.get("WAGTAILADMIN_LOGIN_URL", "/admin/login/")
+
 # Custom image model
 # https://docs.wagtail.io/en/stable/advanced_topics/images/custom_image_model.html
 WAGTAILIMAGES_IMAGE_MODEL = "images.CustomImage"
@@ -954,6 +965,9 @@ SLACK_NOTIFICATIONS_WEBHOOK_URL = env.get("SLACK_NOTIFICATIONS_WEBHOOK_URL")
 
 ONS_API_BASE_URL = env.get("ONS_API_BASE_URL", "https://api.beta.ons.gov.uk/v1")
 ONS_WEBSITE_BASE_URL = env.get("ONS_WEBSITE_BASE_URL", "https://www.ons.gov.uk")
+ONS_ORGANISATION_NAME = env.get("ONS_ORGANISATION_NAME", "Office for National Statistics")
+
+DEFAULT_OG_IMAGE_URL = env.get("DEFAULT_OG_IMAGE_URL", "https://cdn.ons.gov.uk/assets/images/ons-logo/v2/ons-logo.png")
 
 WAGTAILSIMPLETRANSLATION_SYNC_PAGE_TREE = True
 
@@ -961,7 +975,7 @@ WAGTAILSIMPLETRANSLATION_SYNC_PAGE_TREE = True
 SEARCH_INDEX_PUBLISHER_BACKEND = os.getenv("SEARCH_INDEX_PUBLISHER_BACKEND")
 KAFKA_SERVERS = os.getenv("KAFKA_SERVERS", "").split(",")
 KAFKA_USE_IAM_AUTH = os.getenv("KAFKA_USE_IAM_AUTH", "false").lower() == "true"
-KAFKA_API_VERSION = tuple(map(int, os.getenv("KAFKA_API_VERSION", "3,5,1").split(",")))
+KAFKA_API_VERSION = tuple(map(int, os.getenv("KAFKA_API_VERSION", "3.5.1").split(".")))
 
 SEARCH_INDEX_EXCLUDED_PAGE_TYPES = (
     "HomePage",
@@ -972,9 +986,45 @@ SEARCH_INDEX_EXCLUDED_PAGE_TYPES = (
     "Page",
 )
 
+# Allowed prefixes for iframe visualisations
+IFRAME_VISUALISATION_ALLOWED_DOMAINS = env.get(
+    "IFRAME_VISUALISATION_ALLOWED_DOMAINS", "ons.gov.uk,onsdigital.uk"
+).split(",")
+
 # FIXME: remove before going live
 ENFORCE_EXCLUSIVE_TAXONOMY = env.get("ENFORCE_EXCLUSIVE_TAXONOMY", "true").lower() == "true"
 ALLOW_TEAM_MANAGEMENT = env.get("ALLOW_TEAM_MANAGEMENT", "false").lower() == "true"
 
 SEARCH_API_DEFAULT_PAGE_SIZE = int(os.getenv("SEARCH_API_DEFAULT_PAGE_SIZE", "20"))
 SEARCH_API_MAX_PAGE_SIZE = int(os.getenv("SEARCH_API_MAX_PAGE_SIZE", "500"))
+
+# Auth
+SERVICE_AUTH_TOKEN = env.get("SERVICE_AUTH_TOKEN")
+WAGTAIL_CORE_ADMIN_LOGIN_ENABLED = env.get("WAGTAIL_CORE_ADMIN_LOGIN_ENABLED", "false").lower() == "true"
+LOGOUT_REDIRECT_URL = env.get("LOGOUT_REDIRECT_URL", WAGTAILADMIN_LOGIN_URL)
+AUTH_TOKEN_REFRESH_URL = env.get("AUTH_TOKEN_REFRESH_URL")
+SESSION_COOKIE_AGE = int(env.get("SESSION_COOKIE_AGE", 60 * 15))  # 15 minutes to match Auth Service
+SESSION_EXPIRE_AT_BROWSER_CLOSE = True
+IDENTITY_API_BASE_URL = env.get("IDENTITY_API_BASE_URL")
+AWS_COGNITO_LOGIN_ENABLED = env.get("AWS_COGNITO_LOGIN_ENABLED", "false").lower() == "true"
+AWS_COGNITO_USER_POOL_ID = env.get("AWS_COGNITO_USER_POOL_ID")
+AWS_COGNITO_APP_CLIENT_ID = env.get("AWS_COGNITO_APP_CLIENT_ID")
+
+# Auth Sync Teams
+AWS_COGNITO_TEAM_SYNC_ENABLED = env.get("AWS_COGNITO_TEAM_SYNC_ENABLED", "false").lower() == "true"
+AWS_COGNITO_TEAM_SYNC_FREQUENCY = int(env.get("AWS_COGNITO_TEAM_SYNC_FREQUENCY", "1"))
+
+# Groups
+PUBLISHING_ADMIN_GROUP_NAME = "Publishing Admins"
+PUBLISHING_OFFICER_GROUP_NAME = "Publishing Officers"
+VIEWERS_GROUP_NAME = "Viewers"
+ROLE_GROUP_IDS = {"role-admin", "role-publisher"}
+
+# Cookie Names
+ACCESS_TOKEN_COOKIE_NAME = "access_token"  # noqa: S105
+REFRESH_TOKEN_COOKIE_NAME = "refresh_token"  # noqa: S105
+ID_TOKEN_COOKIE_NAME = "id_token"  # noqa: S105
+
+WAGTAILADMIN_HOME_PATH = env.get("WAGTAILADMIN_HOME_PATH", "admin/")
+DJANGO_ADMIN_HOME_PATH = env.get("DJANGO_ADMIN_HOME_PATH", "django-admin/")
+SESSION_RENEWAL_OFFSET_SECONDS = env.get("SESSION_RENEWAL_OFFSET_SECONDS", 60 * 5)  # 5 minutes

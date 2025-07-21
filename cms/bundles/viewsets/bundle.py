@@ -1,16 +1,16 @@
 import time
-from typing import TYPE_CHECKING, Any, ClassVar
+from typing import TYPE_CHECKING, Any, ClassVar, cast
 
 from django.conf import settings
 from django.core.exceptions import PermissionDenied
+from django.db.models import F
 from django.http import HttpRequest
 from django.shortcuts import redirect
 from django.urls import reverse
 from django.utils import timezone
-from django.utils.formats import date_format
 from django.utils.functional import cached_property
 from django.utils.html import format_html, format_html_join
-from wagtail.admin.ui.tables import Column, DateColumn, UpdatedAtColumn, UserColumn
+from wagtail.admin.ui.tables import Column, DateColumn
 from wagtail.admin.views.generic import CreateView, EditView, IndexView, InspectView
 from wagtail.admin.viewsets.model import ModelViewSet
 from wagtail.log_actions import log
@@ -23,6 +23,7 @@ from cms.bundles.notifications.slack import (
     notify_slack_of_status_change,
 )
 from cms.bundles.permissions import user_can_manage_bundles, user_can_preview_bundle
+from cms.core.custom_date_format import ons_date_format
 from cms.datasets.models import Dataset
 
 if TYPE_CHECKING:
@@ -30,6 +31,7 @@ if TYPE_CHECKING:
     from django.http import HttpResponseBase
     from django.template.response import TemplateResponse
     from django.utils.safestring import SafeString
+    from wagtail.models import Page
 
     from cms.bundles.models import BundlesQuerySet
 
@@ -166,7 +168,11 @@ class BundleInspectView(InspectView):
         return user_can_manage_bundles(self.request.user)
 
     def get_fields(self) -> list[str]:
-        """Returns the list of fields to include in the inspect view."""
+        """Returns the list of fields to include in the inspect view.
+
+        Note: values are inserted by methods following the get_FIELDNAME_display_value pattern.
+        See InspectView.get_field_display_value.
+        """
         if self.can_manage:
             return [
                 "name",
@@ -206,57 +212,72 @@ class BundleInspectView(InspectView):
             case _:
                 return super().get_field_label(field_name, field)  # type: ignore[no-any-return]
 
-    def get_field_display_value(self, field_name: str, field: "Field") -> Any:
-        """Allows customising field display in the inspect class.
+    def get_created_at_display_value(self) -> str:
+        return ons_date_format(self.object.created_at, settings.DATETIME_FORMAT)
 
-        This allows us to use get_FIELDNAME_display_value methods.
-        """
-        value_func = getattr(self, f"get_{field_name}_display_value", None)
-        if value_func is not None:
-            return value_func()
-
-        return super().get_field_display_value(field_name, field)
+    def get_approved_at_display_value(self) -> str:
+        return ons_date_format(self.object.approved_at, settings.DATETIME_FORMAT) if self.object.approved_at else ""
 
     def get_approved_display_value(self) -> str:
         """Custom approved by formatting. Varies based on status, and approver/time of approval."""
         if self.object.status in [BundleStatus.APPROVED, BundleStatus.PUBLISHED]:
             if self.object.approved_by_id and self.object.approved_at:
-                return f"{self.object.approved_by} on {date_format(self.object.approved_at, settings.DATETIME_FORMAT)}"
+                return (
+                    f"{self.object.approved_by} on {ons_date_format(self.object.approved_at, settings.DATETIME_FORMAT)}"
+                )
             return "Unknown approval data"
         return "Pending approval"
 
     def get_scheduled_publication_display_value(self) -> str:
         """Displays the scheduled publication date, if set."""
         if self.object.scheduled_publication_date:
-            return date_format(self.object.scheduled_publication_date, settings.DATETIME_FORMAT)
+            return ons_date_format(self.object.scheduled_publication_date, settings.DATETIME_FORMAT)
         return "No scheduled publication"
 
     def get_release_calendar_page_display_value(self) -> str:
         """Returns the release calendar page link if it exists."""
         if self.object.release_calendar_page:
+            if self.object.status == BundleStatus.PUBLISHED:
+                url = self.object.release_calendar_page.get_url(request=self.request)
+            else:
+                url = reverse("bundles:preview_release_calendar", args=[self.object.pk])
+
             return format_html(
                 '<a href="{}" target="_blank" rel="noopener">{}</a>',
-                reverse("bundles:preview_release_calendar", args=[self.object.pk]),
+                url,
                 self.object.release_calendar_page.get_admin_display_title(),
             )
         return "N/A"
 
     def get_pages_for_manager(self) -> "SafeString":
-        pages = self.object.get_bundled_pages().specific()
+        """Returns all the bundle page.
+        Publishing Admins / Officers can see everything when inspecting the bundle.
+        """
+        pages = self.object.get_bundled_pages().specific().defer_streamfields()
+
+        def get_page_status(page: "Page") -> str:
+            if self.object.status == BundleStatus.PUBLISHED and page.live:
+                return "Published"
+            return page.current_workflow_state.current_task_state.task.name if page.current_workflow_state else "Draft"
+
+        def get_action(page: "Page") -> str:
+            if self.object.status == BundleStatus.PUBLISHED and page.live:
+                return str(page.get_url(request=self.request))
+            return reverse(
+                "bundles:preview",
+                args=(
+                    self.object.pk,
+                    page.pk,
+                ),
+            )
 
         data = (
             (
                 reverse("wagtailadmin_pages:edit", args=[page.pk]),
                 page.get_admin_display_title(),
                 page.get_verbose_name(),
-                (page.current_workflow_state.current_task_state.task.name if page.current_workflow_state else "Draft"),
-                reverse(
-                    "bundles:preview",
-                    args=(
-                        self.object.pk,
-                        page.pk,
-                    ),
-                ),
+                get_page_status(page),
+                get_action(page),
             )
             for page in pages
         )
@@ -275,6 +296,9 @@ class BundleInspectView(InspectView):
         )
 
     def get_pages_for_previewer(self) -> "SafeString":
+        """Returns the list of bundle pages a previewer-only user can see when inspecting the bundle.
+        These are pages in the bundle that are in the "Ready for review" workflow state.
+        """
         pages = self.object.get_pages_for_previewers()
 
         data = (
@@ -340,15 +364,37 @@ class BundleIndexView(IndexView):
     """
 
     model = Bundle
+    default_ordering = "name"
 
     def get_base_queryset(self) -> "BundlesQuerySet":
-        """Modifies the Bundle queryset with the related created_by ForeignKey selected to avoid N+1 queries."""
+        """Modifies the Bundle queryset to vary results based on the user capabilities."""
         queryset: BundlesQuerySet = super().get_base_queryset()
 
         if not self.can_manage:
             queryset = queryset.previewable().filter(teams__team__in=self.request.user.active_team_ids).distinct()
 
-        return queryset.select_related("created_by").prefetch_related("teams__team")
+        return queryset
+
+    def filter_queryset(self, queryset: "BundlesQuerySet") -> "BundlesQuerySet":
+        # automatically filter out published bundles if the status filter is not applied
+        if not self.request.GET.get("status"):
+            queryset = queryset.exclude(status=BundleStatus.PUBLISHED)
+
+        return cast("BundlesQuerySet", super().filter_queryset(queryset))
+
+    def order_queryset(self, queryset: "BundlesQuerySet") -> "BundlesQuerySet":
+        if self.ordering in ["status", "-status", "scheduled_publication_date", "-scheduled_publication_date"]:
+            match self.ordering:
+                case "scheduled_publication_date":
+                    return queryset.annotate_release_date().order_by(F("release_date").asc(nulls_last=True))
+                case "-scheduled_publication_date":
+                    return queryset.annotate_release_date().order_by(F("release_date").desc(nulls_last=True))
+                case "status":
+                    return queryset.annotate_status_label().order_by(F("status_label").asc())
+                case "-status":
+                    return queryset.annotate_status_label().order_by(F("status_label").desc())
+
+        return cast("BundlesQuerySet", super().order_queryset(queryset))
 
     def get_edit_url(self, instance: Bundle) -> str | None:
         """Override the default edit url to disable the edit URL for released bundles."""
@@ -368,24 +414,11 @@ class BundleIndexView(IndexView):
     @cached_property
     def columns(self) -> list[Column]:
         """Defines the list of desired columns in the listing."""
-        if self.can_manage:
-            return [
-                self._get_title_column("__str__"),
-                Column("scheduled_publication_date", label="Scheduled for"),
-                Column("get_status_display", label="Status"),
-                UpdatedAtColumn(),
-                DateColumn(name="created_at", label="Added", sort_key="created_at"),
-                UserColumn("created_by", label="Added by"),
-                Column(name="teams", accessor="get_teams_display", label="Preview teams"),
-                DateColumn(name="approved_at", label="Approved at", sort_key="approved_at"),
-                UserColumn("approved_by"),
-            ]
-
         return [
-            self._get_title_column("__str__"),
-            Column("scheduled_publication_date", label="Scheduled for"),
-            DateColumn(name="created_at", label="Added", sort_key="created_at"),
-            UserColumn("created_by", label="Added by"),
+            self._get_title_column("name"),
+            Column("scheduled_publication_date", label="Scheduled for", sort_key="scheduled_publication_date"),
+            Column("get_status_display", label="Status", sort_key="status"),
+            DateColumn(name="updated_at", sort_key="updated_at"),
         ]
 
 

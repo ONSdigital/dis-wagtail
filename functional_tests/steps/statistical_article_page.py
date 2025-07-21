@@ -4,8 +4,10 @@ from behave import given, step, then, when  # pylint: disable=no-name-in-module
 from behave.runner import Context
 from django.urls import reverse
 from playwright.sync_api import expect
+from wagtail_factories import ImageFactory
 
 from cms.articles.tests.factories import ArticleSeriesPageFactory, StatisticalArticlePageFactory
+from cms.datavis.tests.factories import TableDataFactory
 
 
 @given("an article series page exists")
@@ -102,7 +104,7 @@ def user_updates_the_statistical_article_page_content(context: Context):
 @step('the user clicks on "View superseded version"')
 def user_clicks_on_view_superseded_version(context: Context):
     page = context.page
-    page.locator(".ons-corrections-notices__banner").click()
+    page.get_by_text("Show detail").click()
     page.get_by_role("link", name="View superseded version").click()
 
 
@@ -241,11 +243,40 @@ def user_adds_a_notice(context: Context):
     page.wait_for_timeout(500)
 
 
+@step("the user adds an accordion section with title and content")
+def user_adds_accordion_section(context: Context):
+    page = context.page
+    page.get_by_label("Content ()").get_by_title("Insert a block").nth(3).click()
+    page.get_by_text("Accordion").click()
+    page.get_by_label("Title*").fill("Test Accordion Section")
+    page.get_by_role("region", name="Content*").get_by_role("textbox").nth(3).fill("Test accordion content")
+    context.page.wait_for_timeout(500)  # Wait for JS to process
+
+
 @then("the published statistical article page has the added correction")
 def the_published_statistical_article_page_has_the_added_correction(context: Context):
     expect(context.page.get_by_role("heading", name="Corrections")).to_be_visible()
-    expect(context.page.get_by_text("13 March 2025 1:59pm")).to_be_hidden()
+    expect(context.page.get_by_text("13 March 2025")).to_be_hidden()
     expect(context.page.get_by_text("Correction text")).to_be_hidden()
+
+
+@then("the published statistical article page has the added accordion section")
+def the_published_statistical_article_page_has_the_added_accordion_section(context: Context):
+    expect(context.page.get_by_role("heading", name="Test Accordion Section")).to_be_visible()
+    expect(context.page.get_by_text("Test accordion content")).to_be_hidden()
+
+
+@then("the user can expand and collapse the accordion section")
+def user_can_expand_and_collapse_accordion_section(context: Context):
+    expect(context.page.get_by_role("button", name="Show all")).to_be_visible()
+    context.page.get_by_role("heading", name="Test Accordion Section").click()
+    expect(context.page.get_by_role("button", name="Hide all")).to_be_visible()
+    expect(context.page.get_by_text("Test accordion content")).to_be_visible()
+    context.page.get_by_role("heading", name="Test Accordion Section").click()
+    expect(context.page.get_by_text("Test accordion content")).to_be_hidden()
+    context.page.get_by_role("button", name="Show all").click()
+    expect(context.page.get_by_role("button", name="Hide all")).to_be_visible()
+    expect(context.page.get_by_text("Test accordion content")).to_be_visible()
 
 
 @then("the user can expand and collapse {block_type} details")
@@ -255,7 +286,7 @@ def user_can_click_on_view_detail_to_expand_block(context: Context, block_type: 
         date = "13 March 2025 1:59pm"
     else:
         text = "Notice text"
-        date = "15 March 2025 1:59pm"
+        date = "15 March 2025"
 
     context.page.get_by_text("Show detail").click()
     expect(context.page.get_by_text(text)).to_be_visible()
@@ -264,7 +295,7 @@ def user_can_click_on_view_detail_to_expand_block(context: Context, block_type: 
         expect(context.page.get_by_role("link", name="View superseded version")).to_be_visible()
 
     context.page.wait_for_timeout(500)
-    context.page.get_by_text("Close detail").click()
+    context.page.get_by_text("Hide detail").click()
     context.page.wait_for_timeout(500)
     expect(context.page.get_by_text(text)).to_be_hidden()
     expect(context.page.get_by_text(date)).to_be_hidden()
@@ -292,19 +323,19 @@ def the_published_statistical_article_page_has_the_added_headline_figures(contex
 def user_can_click_on_show_detail_to_expand_corrections_and_notices_block(context: Context):
     context.page.get_by_text("Show detail").click()
     expect(context.page.get_by_text("Notice text")).to_be_visible()
-    expect(context.page.get_by_text("15 March 2025 1:59pm")).to_be_visible()
+    expect(context.page.get_by_text("15 March 2025")).to_be_visible()
 
     expect(context.page.get_by_text("Correction text")).to_be_visible()
     expect(context.page.get_by_text("13 March 2025 1:59pm")).to_be_visible()
     expect(context.page.get_by_role("link", name="View superseded version")).to_be_visible()
 
 
-@then('the user can click on "Close detail" to collapse the corrections and notices block')
+@then('the user can click on "Hide detail" to collapse the corrections and notices block')
 def user_can_click_on_hide_detail_to_collapse_corrections_and_notices_block(context: Context):
-    context.page.get_by_text("Close detail").click()
+    context.page.get_by_text("Hide detail").click()
 
     expect(context.page.get_by_text("Notice text")).to_be_hidden()
-    expect(context.page.get_by_text("15 March 2025 1:59pm")).to_be_hidden()
+    expect(context.page.get_by_text("15 March 2025")).to_be_hidden()
 
     expect(context.page.get_by_text("Correction text")).to_be_hidden()
     expect(context.page.get_by_text("13 March 2025 1:59pm")).to_be_hidden()
@@ -319,7 +350,7 @@ def the_published_statistical_article_page_has_corrections_in_chronological_orde
 @then("the published statistical article page has the added notice")
 def the_published_statistical_article_page_has_the_added_notice(context: Context):
     expect(context.page.get_by_role("heading", name="Notices")).to_be_visible()
-    expect(context.page.get_by_text("15 March 2025 1:59pm")).to_be_hidden()
+    expect(context.page.get_by_text("15 March 2025")).to_be_hidden()
     expect(context.page.get_by_text("Notice text")).to_be_hidden()
 
 
@@ -361,3 +392,224 @@ def check_related_data_page_content(context: Context):
     expect(page.get_by_text("Example dataset for functional testing")).to_be_visible()
     expect(page.get_by_role("link", name="Manual Dataset")).to_be_visible()
     expect(page.get_by_text("Manually entered test dataset")).to_be_visible()
+
+
+@step("the user switches to the Promote tab")
+def user_switches_to_promote_tab(context: Context):
+    promote_tab = context.page.locator("#tab-label-promote")
+    promote_tab.click()
+
+
+@then('the user sees a "Featured Chart" field')
+def user_sees_a_featured_chart_field(context: Context):
+    field = context.page.locator("#panel-child-promote-featured_chart-section")
+    expect(field).to_be_visible()
+    add_block_icon = context.page.locator("#panel-child-promote-featured_chart-content").get_by_title("Insert a block")
+    expect(add_block_icon).to_be_visible()
+
+
+@step('the user clicks "Line chart" in the featured chart streamfield block selector')
+def user_clicks_line_chart_in_featured_chart_streamfield_block_selector(context: Context):
+    featured_chart_content = context.page.locator("#panel-child-promote-featured_chart-content")
+    featured_chart_content.get_by_title("Insert a block").click()
+    featured_chart_content.get_by_text("Line chart").click()
+
+
+@step("the user fills in the line chart title")
+def user_fills_in_chart_title(context: Context):
+    featured_chart_content = context.page.locator("#panel-child-promote-featured_chart-content")
+    featured_chart_content.get_by_label("Title*").fill("Test Chart")
+
+
+@step("the user fills in the chart audio description")
+def user_fills_in_chart_audio_description(context: Context):
+    featured_chart_content = context.page.locator("#panel-child-promote-featured_chart-content")
+    featured_chart_content.get_by_label("Audio Description*").fill("This is the audio description")
+
+
+@step("the user enters data into the chart table")
+def user_enters_data_into_chart_table(context: Context):
+    """Fill the table with test data by clicking and typing in each cell."""
+    # Wait for the table editor to be ready
+    context.page.wait_for_timeout(500)
+
+    # Find the table editor
+    table_editor = context.page.locator(".jexcel_container")
+    expect(table_editor).to_be_visible()
+
+    table_data = [["", "Series 1"], ["2005", "100"], ["2006", "101"]]
+
+    # Fill each cell by clicking and typing
+    for row_idx, row_data in enumerate(table_data):
+        for col_idx, value in enumerate(row_data):
+            table_editor.locator(f'td[data-x="{col_idx}"][data-y="{row_idx}"]').click()
+
+            # Type the value
+            context.page.keyboard.type(value)
+
+            # Press Tab to move to next cell (or Enter for next row)
+            if col_idx < len(row_data) - 1:
+                context.page.keyboard.press("Tab")
+            else:
+                context.page.keyboard.press("Enter")
+
+
+@given("a statistical article with valid streamfield content exists")
+def a_statistical_article_with_valid_streamfield_content_exists(context: Context):
+    """Create a statistical article page with a configured featured chart."""
+    an_article_series_exists(context)
+    content = [
+        {
+            "type": "section",
+            "value": {
+                "title": "The section heading",
+                "content": [
+                    {
+                        "type": "rich_text",
+                        "value": "The paragraph text",
+                    }
+                ],
+            },
+        }
+    ]
+    context.statistical_article_page = StatisticalArticlePageFactory(
+        parent=context.article_series_page,
+        title="Statistical article with featured chart",
+        content=content,
+    )
+    context.statistical_article_page.save()
+
+
+@given("a statistical article page with a configured featured chart exists")
+def a_statistical_article_page_with_configured_featured_chart_exists(context: Context):
+    """Create a statistical article page with a configured featured chart."""
+    a_statistical_article_with_valid_streamfield_content_exists(context)
+    featured_chart = [
+        {
+            "type": "line_chart",
+            "value": {
+                "title": "Test Chart",
+                "subtitle": "Test Subtitle",
+                "audio_description": "This is the audio description",
+                "table": TableDataFactory(table_data=[["", "Series 1"], ["2005", "100"]]),
+                "theme": "primary",
+                "show_legend": True,
+                "x_axis": {"title": ""},
+                "y_axis": {"title": ""},
+            },
+        }
+    ]
+    context.statistical_article_page.featured_chart = featured_chart
+    context.statistical_article_page.save()
+
+
+@given("a statistical article page with a configured listing image exists")
+def a_statistical_article_page_with_configured_listing_image_exists(context: Context):
+    """Create a statistical article page with a configured listing image."""
+    an_article_series_exists(context)
+    content = [
+        {
+            "type": "section",
+            "value": {
+                "title": "The section heading",
+                "content": [
+                    {
+                        "type": "rich_text",
+                        "value": "The paragraph text",
+                    }
+                ],
+            },
+        }
+    ]
+    listing_image = ImageFactory(title="Test listing image")
+    context.statistical_article_page = StatisticalArticlePageFactory(
+        parent=context.article_series_page,
+        title="Statistical article with listing image",
+        listing_image=listing_image,
+        content=content,
+    )
+    context.statistical_article_page.save()
+
+
+@given("the statistical article page is not a featured article on its containing topic page")
+def the_statistical_article_page_is_not_a_featured_article_on_its_containing_topic_page(context: Context):
+    context.topic_page.featured_series = None
+    context.topic_page.save_revision().publish()
+
+
+@step("the user goes to edit the statistical article page")
+def user_goes_to_edit_statistical_article_page(context: Context):
+    """Navigate to edit the statistical article page."""
+    edit_url = reverse("wagtailadmin_pages:edit", args=(context.statistical_article_page.id,))
+    context.page.goto(f"{context.base_url}{edit_url}")
+
+
+@step("the user leaves the featured chart fields blank")
+def user_leaves_featured_chart_fields_blank(context: Context):
+    featured_chart_content = context.page.locator("#panel-child-promote-featured_chart-content")
+    expect(featured_chart_content.get_by_title("Insert a block")).to_be_visible()
+    expect(featured_chart_content.locator("[data-streamfield-child]")).to_have_count(0)
+
+
+@then("submitting the Wagtail page edit form is successful")
+def submitting_the_wagtail_page_edit_form_is_successful(context: Context):
+    expect(context.page.locator(".messages").locator(".success")).to_be_visible()
+    expect(context.page.locator(".messages").locator(".error")).not_to_be_visible()
+
+
+@step('the user selects the "featured chart" preview mode')
+def user_selects_featured_chart_preview_mode(context: Context):
+    preview_button = context.page.locator('button[aria-label="Toggle preview"]')
+    preview_button.click()
+    context.page.wait_for_timeout(500)
+    preview_mode_select = context.page.locator("#id_preview_mode")
+    preview_mode_select.select_option(value="featured_article")
+
+
+@step("the user sees a preview of the containing Topic page")
+def user_sees_a_preview_of_the_published_topic_page(context: Context):
+    context.preview_frame = context.page.frame_locator('iframe[title="Preview"][id="w-preview-iframe"]')
+    context.page.wait_for_timeout(500)
+    expect(context.preview_frame.get_by_role("heading", name=context.topic_page.title)).to_be_visible()
+
+
+@step("the topic page preview contains the featured article component")
+def the_topic_page_preview_contains_the_featured_article_component(context: Context):
+    context.featured_article_component = context.preview_frame.locator("#featured")
+    expect(
+        context.featured_article_component.get_by_role("link", name=context.statistical_article_page.display_title)
+    ).to_be_visible()
+
+
+@given("the statistical article page is selected as the featured article on its containing topic page")
+def the_statistical_article_page_is_selected_as_the_featured_article_on_its_containing_topic_page(context: Context):
+    context.topic_page.featured_series = context.article_series_page
+    context.topic_page.save_revision().publish()
+
+
+@step("the user visits the containing topic page")
+def user_visits_the_containing_topic_page(context: Context):
+    context.page.goto(f"{context.base_url}{context.topic_page.get_url()}")
+
+
+@step("the user sees the published topic page")
+def user_sees_the_published_topic_page(context: Context):
+    expect(context.page.get_by_role("heading", name=context.topic_page.title)).to_be_visible()
+
+
+@step("the featured article is shown")
+def the_featured_article_is_shown(context: Context):
+    context.featured_article_component = context.page.locator("#featured")
+    expect(
+        context.featured_article_component.get_by_role("link", name=context.statistical_article_page.display_title)
+    ).to_be_visible()
+
+
+@step("the featured article component contains the featured chart")
+def the_featured_article_component_contains_the_featured_chart(context: Context):
+    expect(context.featured_article_component.get_by_text("Test Chart")).to_be_visible()
+
+
+@step("the featured article component contains the featured article listing image")
+def the_featured_article_component_contains_the_featured_article_listing_image(context: Context):
+    expect(context.featured_article_component.locator("img")).to_be_visible()

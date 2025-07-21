@@ -4,6 +4,7 @@ from django.test import RequestFactory, SimpleTestCase, TestCase, override_setti
 from django.utils.formats import date_format
 
 from cms.articles.tests.factories import StatisticalArticlePageFactory
+from cms.core.custom_date_format import ons_date_format
 from cms.core.models.base import BasePage
 from cms.core.utils import get_client_ip, get_content_type_for_page, get_formatted_pages_list, latex_formula_to_svg
 from cms.methodology.tests.factories import MethodologyPageFactory
@@ -12,7 +13,7 @@ from cms.topics.tests.factories import TopicPageFactory
 
 # DummyPage mimics the minimum attributes and methods of a Wagtail Page.
 class DummyPage(BasePage):
-    def __init__(self, title, summary="", listing_summary="", url="https://ons.gov.uk", **kwargs):  # pylint: disable=super-init-not-called
+    def __init__(self, title, summary="", listing_summary="", url="https://ons.gov.uk", **kwargs):
         # this just set attributes manually.
         self.title = title
         self.summary = summary
@@ -83,7 +84,7 @@ class GetFormattedPagesListTests(TestCase):
         result = get_formatted_pages_list([page])
 
         expected_iso = date_format(test_date, "c")
-        expected_short = date_format(test_date, "DATE_FORMAT")
+        expected_short = ons_date_format(test_date, "DATE_FORMAT")
 
         expected = {
             "title": {"text": "Test Page", "url": "https://ons.gov.uk"},
@@ -110,7 +111,7 @@ class GetFormattedPagesListTests(TestCase):
         result = get_formatted_pages_list(pages)
 
         expected_iso = date_format(test_date, "c")
-        expected_short = date_format(test_date, "DATE_FORMAT")
+        expected_short = ons_date_format(test_date, "DATE_FORMAT")
 
         expected_page1 = {
             "title": {"text": "Page One", "url": "https://ons.gov.uk"},
