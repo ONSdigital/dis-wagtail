@@ -76,7 +76,7 @@ class SearchIndexContentTypeCheckTests(TestCase):
 
         self.assertEqual(len(errors), 1)
         error = errors[0]
-        self.assertEqual(error.id, "search.E007")
+        self.assertEqual(error.id, "search.E002")
         self.assertIn("does not define a 'search_index_content_type'", error.msg)
         self.assertIn("Either add an attribute/property 'search_index_content_type'", error.hint)
 
@@ -136,4 +136,4 @@ class SearchIndexContentTypeCheckTests(TestCase):
         # We expect only 1 error from IncludedPage
         self.assertEqual(len(errors), 1)
         self.assertIn("IncludedPage", errors[0].msg)
-        self.assertEqual(errors[0].id, "search.E007")
+        self.assertEqual(errors[0].id, "search.E002")
