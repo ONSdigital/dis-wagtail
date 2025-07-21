@@ -1,14 +1,16 @@
 from collections.abc import Iterable
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
-from django.apps import AppConfig
 from django.conf import settings
 from django.core.checks import Error, register
 from wagtail.models import get_page_models
 
+if TYPE_CHECKING:
+    from django.apps import AppConfig
+
 
 @register()
-def check_kafka_settings(app_configs: Iterable[AppConfig] | None, **kwargs: Any) -> list[Error]:  # pylint: disable=unused-argument
+def check_kafka_settings(app_configs: Iterable["AppConfig"] | None, **kwargs: Any) -> list[Error]:  # pylint: disable=unused-argument
     """Check that required Kafka settings are present."""
     errors: list[Error] = []
 
@@ -36,7 +38,7 @@ def check_kafka_settings(app_configs: Iterable[AppConfig] | None, **kwargs: Any)
 
 
 @register()
-def check_search_index_content_type(app_configs: Iterable[AppConfig] | None, **kwargs: Any) -> list[Error]:  # pylint: disable=unused-argument
+def check_search_index_content_type(app_configs: Iterable["AppConfig"] | None, **kwargs: Any) -> list[Error]:  # pylint: disable=unused-argument
     """Check that each page model not excluded by SEARCH_INDEX_EXCLUDED_PAGE_TYPES
     defines a 'search_index_content_type' attribute/property.
     """
