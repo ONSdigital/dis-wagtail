@@ -15,8 +15,6 @@ The Wagtail CMS for managing and publishing content for the Office for National 
 
 ## Table of Contents
 
-[//]: # ':TODO: Enable link checking once https://github.com/tcort/markdown-link-check/issues/250 is resolved.'
-
 - [Getting Started](#getting-started)
     - [Pre-requisites](#pre-requisites)
     - [Setup](#setup)
