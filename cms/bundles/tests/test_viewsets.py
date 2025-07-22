@@ -49,6 +49,7 @@ class BundleViewSetTestCaseBase(WagtailTestUtils, TestCase):
         # a regular generic_user that can only access the Wagtail admin
         cls.generic_user = UserFactory(username="generic.generic_user", access_admin=True)
 
+        cls.dashboard_url = reverse("wagtailadmin_home")
         cls.bundle_index_url = reverse("bundle:index")
         cls.bundle_add_url = reverse("bundle:add")
 
@@ -73,6 +74,7 @@ class BundleViewSetTestCaseBase(WagtailTestUtils, TestCase):
         self.statistical_article_page = StatisticalArticlePageFactory(title="PSF")
 
         self.edit_url = reverse("bundle:edit", args=[self.bundle.id])
+        self.inspect_url = reverse("bundle:inspect", args=[self.bundle.id])
 
         self.client.force_login(self.publishing_officer)
 
@@ -92,6 +94,7 @@ class BundleViewSetTestCase(BundleViewSetTestCaseBase):
 
     def test_bundle_add_view(self):
         """Test bundle creation."""
+        self.assertFalse(Bundle.objects.filter(name="A New Bundle").exists())
         response = self.client.post(
             self.bundle_add_url,
             nested_form_data(
@@ -105,8 +108,9 @@ class BundleViewSetTestCase(BundleViewSetTestCaseBase):
             ),
         )
 
-        self.assertEqual(response.status_code, 302)
-        self.assertTrue(Bundle.objects.filter(name="A New Bundle").exists())
+        bundle = Bundle.objects.get(name="A New Bundle")
+        self.assertRedirects(response, reverse("bundle:edit", args=[bundle.id]))
+        self.assertEqual(response.context["message"], "Bundle successfully created.")
 
     def test_bundle_add_view__with_page_already_in_a_bundle(self):
         """Test bundle creation."""
@@ -160,7 +164,7 @@ class BundleViewSetTestCase(BundleViewSetTestCaseBase):
         response = self.client.get(self.published_bundle_edit_url)
         self.assertRedirects(response, self.bundle_index_url)
 
-    def post_with_action_and_test(self, action, expected_status):
+    def post_with_action_and_test(self, action: str, expected_status: BundleStatus, redirects_to: str | None = None):
         self.client.force_login(self.superuser)
         mark_page_as_ready_to_publish(self.statistical_article_page, self.superuser)
 
@@ -169,6 +173,8 @@ class BundleViewSetTestCase(BundleViewSetTestCaseBase):
         data["status"] = BundleStatus.PUBLISHED.value  # attempting to force it
 
         response = self.client.post(self.edit_url, data)
+        if redirects_to:
+            self.assertRedirects(response, redirects_to)
 
         self.bundle.refresh_from_db()
         self.assertEqual(self.bundle.status, expected_status)
@@ -177,21 +183,20 @@ class BundleViewSetTestCase(BundleViewSetTestCaseBase):
 
     def test_bundle_edit_view__generic_save_preserves_the_status(self):
         original_status = self.bundle.status
-        self.post_with_action_and_test("action-edit", original_status)
-        # self.assertRedirects(response, self.edit_url)
+        self.post_with_action_and_test("action-edit", original_status, self.edit_url)
 
     def test_bundle_edit_view__save_to_preview(self):
-        self.post_with_action_and_test("action-save-to-preview", BundleStatus.IN_REVIEW)
+        self.post_with_action_and_test("action-save-to-preview", BundleStatus.IN_REVIEW, self.inspect_url)
 
     def test_bundle_edit_view__approve__from_invalid_status(self):
-        self.post_with_action_and_test("action-approve", BundleStatus.DRAFT)
+        self.post_with_action_and_test("action-approve", BundleStatus.DRAFT, self.dashboard_url)
 
     @mock.patch("cms.bundles.viewsets.bundle.notify_slack_of_status_change")
     def test_bundle_edit_view__approve__happy_path(self, mock_notify_slack):
         self.bundle.status = BundleStatus.IN_REVIEW
         self.bundle.save(update_fields=["status"])
 
-        self.post_with_action_and_test("action-approve", BundleStatus.APPROVED)
+        self.post_with_action_and_test("action-approve", BundleStatus.APPROVED, self.inspect_url)
 
         self.assertIsNotNone(self.bundle.approved_at)
         self.assertEqual(self.bundle.approved_by, self.superuser)
@@ -199,45 +204,45 @@ class BundleViewSetTestCase(BundleViewSetTestCaseBase):
         self.assertTrue(mock_notify_slack.called)
 
     def test_bundle_edit_view__return_to_preview__from_invalid_status(self):
-        self.post_with_action_and_test("action-return-to-preview", BundleStatus.DRAFT)
+        self.post_with_action_and_test("action-return-to-preview", BundleStatus.DRAFT, self.dashboard_url)
 
     def test_bundle_edit_view__return_to_preview__happy_path(self):
         self.bundle.status = BundleStatus.APPROVED
         self.bundle.save(update_fields=["status"])
-        self.post_with_action_and_test("action-return-to-preview", BundleStatus.IN_REVIEW)
+        self.post_with_action_and_test("action-return-to-preview", BundleStatus.IN_REVIEW, self.inspect_url)
 
     def test_bundle_edit_view__return_to_draft_from_in_preview(self):
         self.bundle.status = BundleStatus.IN_REVIEW
         self.bundle.save(update_fields=["status"])
-        self.post_with_action_and_test("action-return-to-draft", BundleStatus.DRAFT)
+        self.post_with_action_and_test("action-return-to-draft", BundleStatus.DRAFT, self.edit_url)
 
     def test_bundle_edit_view__return_to_draft_from_approved(self):
         self.bundle.status = BundleStatus.APPROVED
         self.bundle.save(update_fields=["status"])
-        self.post_with_action_and_test("action-return-to-draft", BundleStatus.DRAFT)
+        self.post_with_action_and_test("action-return-to-draft", BundleStatus.DRAFT, self.edit_url)
 
     def test_bundle_edit_view__publish__from_invalid_status__draft(self):
         self.bundle.status = BundleStatus.DRAFT
         self.bundle.save(update_fields=["status"])
-        response = self.post_with_action_and_test("action-publish", BundleStatus.DRAFT)
+        response = self.post_with_action_and_test("action-publish", BundleStatus.DRAFT, self.dashboard_url)
         self.assertEqual(response.context["message"], "Sorry, you do not have permission to access this area.")
 
     def test_bundle_edit_view__publish__from_invalid_status__preview(self):
         self.bundle.status = BundleStatus.IN_REVIEW
         self.bundle.save(update_fields=["status"])
-        response = self.post_with_action_and_test("action-publish", BundleStatus.IN_REVIEW)
+        response = self.post_with_action_and_test("action-publish", BundleStatus.IN_REVIEW, self.dashboard_url)
         self.assertEqual(response.context["message"], "Sorry, you do not have permission to access this area.")
 
-    def test_bundle_edit_view__manual_publish__when_scheduled(self):
+    def test_bundle_edit_view__manual_publish__disallowed_when_scheduled(self):
         self.bundle.status = BundleStatus.APPROVED
         self.bundle.publication_date = timezone.now()
         self.bundle.save(update_fields=["status", "publication_date"])
-        self.post_with_action_and_test("action-publish", BundleStatus.APPROVED)
+        self.post_with_action_and_test("action-publish", BundleStatus.APPROVED, self.dashboard_url)
 
     def test_bundle_edit_view__manual_publish__happy_path(self):
         self.bundle.status = BundleStatus.APPROVED
         self.bundle.save(update_fields=["status"])
-        self.post_with_action_and_test("action-publish", BundleStatus.PUBLISHED)
+        self.post_with_action_and_test("action-publish", BundleStatus.PUBLISHED, self.bundle_index_url)
 
     def test_bundle_edit_view__page_chooser_contain_workflow_state_information(self):
         BundlePageFactory(parent=self.bundle, page=self.statistical_article_page)

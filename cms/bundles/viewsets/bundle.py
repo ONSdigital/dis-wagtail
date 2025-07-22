@@ -50,6 +50,15 @@ class BundleCreateView(CreateView):
         instance.save(update_fields=["created_by"])
         return instance
 
+    def get_success_url(self) -> str:
+        return self.get_edit_url()
+
+    def get_success_message(self, instance: Bundle) -> str:
+        return "Bundle successfully created."
+
+    def get_success_buttons(self) -> list:
+        return []
+
     def get_context_data(self, **kwargs: Any) -> dict[str, Any]:
         context: dict[str, Any] = super().get_context_data(**kwargs)
 
@@ -178,6 +187,29 @@ class BundleEditView(EditView):
                 if not bundle.scheduled_publication_date:
                     actions += ["publish"]
                 return actions
+            case _:
+                return []
+
+    def get_success_url(self) -> str:
+        match self.object.status:
+            case BundleStatus.IN_REVIEW:
+                if "action-edit" in self.request.POST:
+                    return self.get_edit_url()
+                return self.get_inspect_url()
+            case BundleStatus.APPROVED:
+                return self.get_inspect_url()
+            case BundleStatus.PUBLISHED:
+                return reverse(self.index_url_name)
+            case _:
+                return self.get_edit_url()
+
+    def get_success_buttons(self) -> list:
+        # only include the edit button when not staying on the edit page.
+        match self.object.status:
+            case BundleStatus.IN_REVIEW:
+                return super().get_success_buttons()
+            case BundleStatus.APPROVED:
+                return super().get_success_buttons()
             case _:
                 return []
 
