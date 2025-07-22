@@ -56,7 +56,7 @@ class PageBreadcrumbsTestCase(TestCase):
 
         expected_entries = [
             {
-                "url": series_parent.get_site().get_full_url(),
+                "url": series_parent.get_site().root_url,
                 "text": "Home",
             },
             {
