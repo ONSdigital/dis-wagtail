@@ -77,7 +77,7 @@ class CreateMenuItem(ActionMenuItem):
 
 class SaveAsDraftMenuItem(ActionMenuItem):
     name = "action-edit"
-    icon_name = "edit"
+    icon_name = "draft"
     label = "Save as draft"
     label_progress = "Saving…"
     use_shortcut = True
