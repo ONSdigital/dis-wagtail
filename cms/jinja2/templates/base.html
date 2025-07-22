@@ -9,6 +9,7 @@
 
 {% if page %}
     {% set body_class = ["template-", page.get_verbose_name()| lower | replace(" ", "-")] | join %}
+    {% set canonical_url = page.get_canonical_url(request) %}
 {% else %}
     {% set body_class = '' %}
 {% endif %}
@@ -73,6 +74,7 @@
     },
     "meta": {
         "hrefLangs": hreflangs,
+        "canonicalUrl": canonical_url,
     }
 }
 %}

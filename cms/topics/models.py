@@ -139,7 +139,7 @@ class TopicPage(BundledPageMixin, ExclusiveTaxonomyMixin, BasePage):  # type: ig
         """Additional context for the template."""
         context: dict = super().get_context(request, *args, **kwargs)
         context["table_of_contents"] = self.table_of_contents
-        context["featured_item"] = self.latest_article_in_featured_series
+        context["featured_item"] = kwargs.get("featured_item", self.latest_article_in_featured_series)
         context["formatted_articles"] = get_formatted_pages_list(self.processed_articles, request=request)
         context["formatted_methodologies"] = get_formatted_pages_list(self.processed_methodologies, request=request)
         return context

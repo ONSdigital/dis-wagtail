@@ -1,3 +1,4 @@
+from .accordion import AccordionBlock, AccordionSectionBlock
 from .embeddable import (
     DocumentBlock,
     DocumentsBlock,
@@ -7,9 +8,11 @@ from .embeddable import (
 )
 from .markup import BasicTableBlock, HeadingBlock, ONSTableBlock, QuoteBlock
 from .panels import AnnouncementPanelBlock, InformationPanelBlock, WarningPanelBlock
-from .related import LinkBlock, RelatedContentBlock, RelatedLinksBlock
+from .related import LinkBlock, LinkBlockWithDescription, RelatedContentBlock, RelatedLinksBlock
 
 __all__ = [
+    "AccordionBlock",
+    "AccordionSectionBlock",
     "AnnouncementPanelBlock",
     "BasicTableBlock",
     "DocumentBlock",
@@ -18,6 +21,7 @@ __all__ = [
     "ImageBlock",
     "InformationPanelBlock",
     "LinkBlock",
+    "LinkBlockWithDescription",
     "ONSEmbedBlock",
     "ONSTableBlock",
     "QuoteBlock",

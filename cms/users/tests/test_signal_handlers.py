@@ -1,6 +1,7 @@
 from django.test import TestCase
 from django.urls import reverse
 from wagtail.test.utils import WagtailTestUtils
+from wagtail.users.models import UserProfile
 
 
 class AuditLogTestCase(WagtailTestUtils, TestCase):
@@ -121,3 +122,26 @@ class AuditLogTestCase(WagtailTestUtils, TestCase):
         self.assertEqual(record.event, "user_login_failed")
         self.assertEqual(record.ip_address, "127.0.0.1")
         self.assertEqual(record.user_agent, "my browser")
+
+
+class UserProfileSignalTestCase(WagtailTestUtils, TestCase):
+    @classmethod
+    def setUpTestData(cls) -> None:
+        cls.user = cls.create_superuser(username="admin", password="password")
+        cls.profile = UserProfile.get_for_user(cls.user)
+
+    def test_user_profile_submitted_notifications_disabled_on_creation(self):
+        # only "submitted notifications" are disabled as they are global
+        # the rest are left as they are as they require interaction with the page/workflow-enabled snippet
+        self.assertFalse(self.profile.submitted_notifications)
+        self.assertTrue(self.profile.approved_notifications)
+        self.assertTrue(self.profile.rejected_notifications)
+        self.assertTrue(self.profile.updated_comments_notifications)
+
+    def test_user_profile_notifications_not_changed_on_update(self):
+        self.profile.submitted_notifications = True
+        self.profile.save()
+
+        self.profile.refresh_from_db()
+
+        self.assertTrue(self.profile.submitted_notifications)

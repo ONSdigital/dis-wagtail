@@ -2,7 +2,7 @@ from unittest import mock
 
 from botocore.exceptions import ClientError
 from django.conf import settings
-from django.test import TestCase, override_settings
+from django.test import TestCase
 from moto import mock_aws
 from wagtail_factories import DocumentFactory
 
@@ -10,7 +10,6 @@ from cms.private_media.storages import AccessControlledS3Storage
 
 
 @mock_aws
-@override_settings(AWS_STORAGE_BUCKET_NAME="test-bucket")
 class AccessControlledS3StorageTests(TestCase):
     @classmethod
     def setUpTestData(cls):
@@ -22,6 +21,8 @@ class AccessControlledS3StorageTests(TestCase):
         # Create a bucket to allow '_set_file_acl' to at least reach the 'put' stage
         bucket = self.storage.connection.Bucket(settings.AWS_STORAGE_BUCKET_NAME)
         bucket.create()
+
+        self.document = DocumentFactory()
 
     def test_make_private_client_error_on_acl_set(self):
         with self.assertLogs("cms.private_media.storages", level="ERROR") as logs:

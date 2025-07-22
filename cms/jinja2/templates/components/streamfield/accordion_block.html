@@ -1,0 +1,14 @@
+{% from "components/accordion/_macro.njk" import onsAccordion %}
+
+{# fmt:off #}
+{{-
+    onsAccordion({
+        "id": "accordion-" ~ block_id,
+        "allButton": {
+            "open": show_all_text,
+            "close": hide_all_text
+        },
+        "itemsList": accordion_sections
+    })
+-}}
+{# fmt:on #}

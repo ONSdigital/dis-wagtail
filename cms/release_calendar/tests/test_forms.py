@@ -100,7 +100,7 @@ class ReleaseCalendarPageAdminFormTestCase(WagtailTestUtils, TestCase):
         """Checks that the form accepts a published status if the page is already published."""
         self.page.status = ReleaseStatus.PUBLISHED
         data = self.form_data
-        data["release_date"] = self.page.release_date = datetime.datetime(2025, 1, 2, 3, 4, 5, 0, tzinfo=datetime.UTC)
+        data["release_date"] = self.page.release_date = datetime.datetime(2025, 1, 2, 3, 4, 0, 0, tzinfo=datetime.UTC)
         data["status"] = ReleaseStatus.PUBLISHED
         form = self.form_class(instance=self.page, data=data)
 
@@ -299,11 +299,17 @@ class ReleaseCalendarPageAdminFormTestCase(WagtailTestUtils, TestCase):
 
     def test_form_clean__validates_changes_to_release_date_must_be_filled(self):
         """Checks that one must add data to changes_to_release_date if the confirmed release data changes."""
+        # Set up the page with a confirmed status and publish it to create a live version
         self.page.status = ReleaseStatus.CONFIRMED
-        data = self.form_data
+        self.page.release_date = timezone.now()
+        self.page.save_revision().publish()
+
+        # Now try to change the release date without adding a change log entry
+        data = self.raw_form_data()
         data["notice"] = rich_text("")
         data["status"] = ReleaseStatus.CONFIRMED
-        data["release_date"] = timezone.now()
+        data["release_date"] = timezone.now() + datetime.timedelta(days=1)  # Different date
+        data = nested_form_data(data)
         form = self.form_class(instance=self.page, data=data)
 
         self.assertFalse(form.is_valid())
@@ -314,6 +320,82 @@ class ReleaseCalendarPageAdminFormTestCase(WagtailTestUtils, TestCase):
                 "If a confirmed calendar entry needs to be rescheduled, "
                 "the 'Changes to release date' field must be filled out."
             ],
+        )
+
+    def test_form_clean__validates_change_log_requires_date_change(self):
+        """Checks that adding a change log entry requires a different release date."""
+        # Set up the page with a confirmed status and publish it to create a live version
+        self.page.status = ReleaseStatus.CONFIRMED
+        self.page.release_date = timezone.now().replace(second=0)
+        self.page.save_revision().publish()
+
+        # Now try to add a change log entry without changing the release date
+        data = self.raw_form_data()
+        data["notice"] = rich_text("")
+        data["status"] = ReleaseStatus.CONFIRMED
+        data["release_date"] = self.page.release_date  # Same date as published
+        data["changes_to_release_date"] = streamfield(
+            [("date_change_log", {"previous_date": timezone.now(), "reason_for_change": "The reason"})]
+        )
+        data = nested_form_data(data)
+        form = self.form_class(instance=self.page, data=data)
+
+        self.assertFalse(form.is_valid())
+        self.assertFormError(
+            form,
+            "changes_to_release_date",
+            [
+                "You have added a 'Changes to release date' entry, but the release "
+                "date is the same as the published version."
+            ],
+        )
+
+    def test_form_clean__validates_change_log_and_date_change_are_valid(self):
+        """Checks that the form is valid when both date and change log are updated together."""
+        # Set up the page with a confirmed status and publish it to create a live version
+        self.page.status = ReleaseStatus.CONFIRMED
+        self.page.release_date = timezone.now()
+        self.page.save_revision().publish()
+
+        # Now change both the release date and add a change log entry
+        data = self.raw_form_data()
+        data["notice"] = rich_text("")
+        data["status"] = ReleaseStatus.CONFIRMED
+        data["release_date"] = timezone.now() + datetime.timedelta(days=1)  # Different date
+        data["changes_to_release_date"] = streamfield(
+            [("date_change_log", {"previous_date": timezone.now(), "reason_for_change": "The reason"})]
+        )
+        data = nested_form_data(data)
+        form = self.form_class(instance=self.page, data=data)
+
+        self.assertTrue(form.is_valid())
+
+    def test_form_clean__disallows_multiple_new_change_logs(self):
+        """Checks that only one new change log entry can be added per release date change."""
+        # Set up the page with a confirmed status and publish it to create a live version
+        self.page.status = ReleaseStatus.CONFIRMED
+        self.page.release_date = timezone.now()
+        self.page.save_revision().publish()
+
+        # Now try to add multiple change log entries with a new release date
+        data = self.raw_form_data()
+        data["notice"] = rich_text("")
+        data["status"] = ReleaseStatus.CONFIRMED
+        data["release_date"] = timezone.now() + datetime.timedelta(days=1)  # Different date
+        data["changes_to_release_date"] = streamfield(
+            [
+                ("date_change_log", {"previous_date": timezone.now(), "reason_for_change": "First reason"}),
+                ("date_change_log", {"previous_date": timezone.now(), "reason_for_change": "Second reason"}),
+            ]
+        )
+        data = nested_form_data(data)
+        form = self.form_class(instance=self.page, data=data)
+
+        self.assertFalse(form.is_valid())
+        self.assertFormError(
+            form,
+            "changes_to_release_date",
+            ["Only one 'Changes to release date' entry can be added per release date change."],
         )
 
     def test_form_clean__validates_notice_cannot_be_removed(self):
@@ -442,7 +524,7 @@ class ReleaseCalendarPageAdminFormTestCase(WagtailTestUtils, TestCase):
         """Checks that editors enter a release that that is after the release date."""
         data = self.raw_form_data()
         data["notice"] = rich_text("")
-        data["release_date"] = data["next_release_date"] = timezone.now()
+        data["release_date"] = data["next_release_date"] = timezone.now().replace(second=0)
         data = nested_form_data(data)
         form = self.form_class(instance=self.page, data=data)
 
@@ -485,3 +567,12 @@ class ReleaseCalendarPageAdminFormTestCase(WagtailTestUtils, TestCase):
             "Please unschedule the bundle and unlink the release calendar page before making the cancellation."
         )
         self.assertFormError(form, "status", message)
+
+    def test_form_clean__sets_release_date_seconds_to_zero(
+        self,
+    ):
+        form = self.form_class(instance=self.page, data=self.form_data)
+
+        self.assertTrue(form.is_valid())
+
+        self.assertEqual(form.cleaned_data["release_date"].second, 0)

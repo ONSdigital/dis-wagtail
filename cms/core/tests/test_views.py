@@ -249,17 +249,30 @@ class HealthProbeTestCase(TestCase):
         response = self.client.get(self.url, headers={"X-Forwarded-For": x_forwarded_for})
         self.assertEqual(response.status_code, 200)
 
+    def test_alternate_url(self):
+        response = self.client.get(reverse("internal:health"))
+        self.assertEqual(response.status_code, 200)
+
 
 class AdminPageTreeTestCase(WagtailTestUtils, TestCase):
     @classmethod
     def setUpTestData(cls):
         cls.superuser = cls.create_superuser(username="admin")
+        cls.homepage = HomePage.objects.first()
+
+    def setUp(self):
+        self.client.force_login(self.superuser)
 
     def test_locale_label(self):
         """Check that the admin page tree is present on the page."""
-        self.client.force_login(self.superuser)
-        homepage = HomePage.objects.first()
-        response = self.client.get(f"/admin/pages/{homepage.id}/")
+        response = self.client.get(reverse("wagtailadmin_explore", args=[self.homepage.id]))
         content = response.content.decode("utf-8")
 
         self.assertInHTML('<span class="w-status w-status--label w-m-0">English</span>', content)
+
+    def test_copy_page_does_not_have_publish_or_alias_options(self):
+        """Test that the options to publish or copy as alias are removed via cms.core.forms.ONSCopyForm."""
+        response = self.client.get(reverse("wagtailadmin_pages:copy", args=[self.homepage.id]))
+
+        self.assertNotContains(response, "id_publish_copies")
+        self.assertNotContains(response, "id_alias")

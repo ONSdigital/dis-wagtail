@@ -16,6 +16,7 @@ This is the first phase towards ONS-wide Single Sign-On.
 | `AWS_COGNITO_APP_CLIENT_ID`        | The Cognito app client ID.                                                                                                                                                                         |
 | `IDENTITY_API_BASE_URL`            | Used to fetch teams data.                                                                                                                                                                          |
 | `SESSION_RENEWAL_OFFSET_SECONDS`   | The time offsets for session renewal. Defaults to 300 (5 minutes). Used by auth.js to pass to the [dis-authorisation-client-js](https://github.com/ONSdigital/dis-authorisation-client-js) library |
+| `SERVICE_AUTH_TOKEN`               | The service auth token used to authenticate the Wagtail CMS with the Identity API. This is required for the `sync_teams` management command to work.                                               |
 
 TODO: add details about the middleware, auth.js, ONSLogoutView and the team sync management command.
 

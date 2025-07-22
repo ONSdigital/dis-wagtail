@@ -17,11 +17,6 @@ from cms.core.cache import memory_cache
 
 logger = logging.getLogger(__name__)
 
-JWKS_URL = f"{settings.IDENTITY_API_BASE_URL}/jwt-keys"
-EXPECTED_ISSUER = f"https://cognito-idp.{settings.AWS_REGION}.amazonaws.com/{settings.AWS_COGNITO_USER_POOL_ID}"
-EXPECTED_AUDIENCE = settings.AWS_COGNITO_APP_CLIENT_ID
-ALGORITHMS = ["RS256"]
-
 
 def _parse_der_public_key(b64_der_key: str) -> RSAPublicKey:
     """Parses a Base64 encoded DER public key and returns the public key object."""
@@ -37,7 +32,9 @@ def _parse_der_public_key(b64_der_key: str) -> RSAPublicKey:
 @memory_cache(60 * 30)
 def get_jwks() -> dict[str, str]:
     """Retrieves and caches JSON Web Key Sets (JWKS) for token verification."""
-    response = requests.get(JWKS_URL, timeout=5)
+    jwks_url = f"{settings.IDENTITY_API_BASE_URL}/jwt-keys"
+
+    response = requests.get(jwks_url, timeout=5)
     response.raise_for_status()
     return cast(dict[str, str], response.json())
 
@@ -76,15 +73,19 @@ def _validate_jwt(token: str, *, extra_fields: Iterable[str], token_type: str) -
         logger.error("Public key not found for kid", extra={"kid": kid})
         return None
 
+    expected_issuer = f"https://cognito-idp.{settings.AWS_REGION}.amazonaws.com/{settings.AWS_COGNITO_USER_POOL_ID}"
+    expected_audience = settings.AWS_COGNITO_APP_CLIENT_ID
+    algorithms = ["RS256"]
+
     claims: dict[str, Any] = cast(
         dict[str, Any],
         jwt_decode(
             token,
             key=_parse_der_public_key(public_key_b64),
-            algorithms=ALGORITHMS,
-            issuer=EXPECTED_ISSUER,
+            algorithms=algorithms,
+            issuer=expected_issuer,
             # aud is not present in access token
-            audience=EXPECTED_AUDIENCE if token_type == "id" else None,  # noqa: S105
+            audience=expected_audience if token_type == "id" else None,  # noqa: S105
             options={
                 "verify_signature": True,
                 "verify_exp": True,

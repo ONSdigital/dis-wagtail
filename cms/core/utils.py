@@ -1,4 +1,5 @@
 import io
+from datetime import date, datetime
 from threading import Lock
 from typing import TYPE_CHECKING, Any, Optional, TypedDict
 
@@ -8,6 +9,9 @@ from django.db.models import QuerySet
 from django.utils.formats import date_format
 from django.utils.translation import gettext_lazy as _
 from matplotlib.figure import Figure
+
+from cms.core.custom_date_format import ons_date_format
+from cms.core.enums import RelatedContentType
 
 matplotlib_lock = Lock()
 
@@ -25,6 +29,7 @@ mpl.rcParams.update(
 
 if TYPE_CHECKING:
     from django.http import HttpRequest
+    from django_stubs_ext import StrOrPromise
     from wagtail.models import Page
 
 
@@ -54,14 +59,52 @@ def get_formatted_pages_list(
             "description": getattr(page, "listing_summary", "") or getattr(page, "summary", ""),
         }
         if release_date := page.release_date:
-            datum["metadata"]["date"] = {
-                "prefix": _("Released"),
-                "showPrefix": True,
-                "iso": date_format(release_date, "c"),
-                "short": date_format(release_date, "DATE_FORMAT"),
-            }
+            datum["metadata"]["date"] = get_document_metadata_date(release_date)
         data.append(datum)
     return data
+
+
+def get_document_metadata_date(value: date | datetime, *, prefix: "StrOrPromise | None" = None) -> dict[str, Any]:
+    """Returns a dictionary with formatted date information for the DS document component metadata."""
+    return {
+        "prefix": prefix or _("Released"),
+        "showPrefix": True,
+        "iso": date_format(value, "c"),
+        "short": ons_date_format(value, "DATE_FORMAT"),
+    }
+
+
+def get_document_metadata(
+    content_type: "StrOrPromise | None",
+    date_value: date | datetime | None,
+    *,
+    prefix: "StrOrPromise | None" = None,
+) -> dict[str, Any]:
+    """Returns a dictionary with formatted metadata information for the DS document component."""
+    metadata = (
+        {
+            "object": {"text": content_type},
+        }
+        if content_type
+        else {}
+    )
+
+    if date_value:
+        metadata["date"] = get_document_metadata_date(date_value, prefix=prefix)
+
+    return metadata
+
+
+def get_content_type_for_page(page: "Page") -> "StrOrPromise":
+    """Returns the content type for a given page."""
+    label: StrOrPromise = page.specific_deferred.label
+    return label
+
+
+def get_related_content_type_label(content_type: str) -> str:
+    """Returns the label for a given related content type."""
+    label: str = getattr(RelatedContentType, content_type).label
+    return label
 
 
 def get_client_ip(request: "HttpRequest") -> str | None:

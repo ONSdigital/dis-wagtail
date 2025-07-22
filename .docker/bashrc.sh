@@ -3,4 +3,5 @@
 
 if [ -n "$DEVCONTAINER" ]; then
     alias honcho="honcho -f .docker/Procfile"
+    alias djtest="./manage.py test --settings=cms.settings.test"
 fi

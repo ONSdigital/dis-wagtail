@@ -17,6 +17,7 @@ logger = logging.getLogger(__name__)
 class Command(BaseCommand):
     help = "Syncs teams from the identity API"
     identity_api_base_url: str | None = None
+    service_auth_token: str | None = None
 
     def add_arguments(self, parser: argparse.ArgumentParser) -> None:
         parser.add_argument(
@@ -35,6 +36,10 @@ class Command(BaseCommand):
         self.identity_api_base_url = getattr(settings, "IDENTITY_API_BASE_URL", None)
         if not self.identity_api_base_url:
             raise CommandError("IDENTITY_API_BASE_URL is not set in settings.")
+
+        self.service_auth_token = getattr(settings, "SERVICE_AUTH_TOKEN", None)
+        if not self.service_auth_token:
+            raise CommandError("SERVICE_AUTH_TOKEN is not set in settings.")
 
         try:
             self.sync_teams(dry_run)
@@ -61,7 +66,14 @@ class Command(BaseCommand):
             return None
 
     def _fetch_groups(self, url: str) -> Optional[list[dict]]:
-        response = requests.get(url, timeout=120)
+        # Include both the standard Authorization header and the legacy X-Florence-Token.
+        # The X-Florence-Token remains mandatory for now because some services still depend on older middleware.
+        # Once all services are upgraded, we can remove the X-Florence-Token header entirely.
+        headers = {
+            "Authorization": f"Bearer {self.service_auth_token}",
+            "X-Florence-Token": f"Bearer {self.service_auth_token}",
+        }
+        response = requests.get(url, headers=headers, timeout=30)
         response.raise_for_status()
         try:
             data: dict[str, Any] = response.json()

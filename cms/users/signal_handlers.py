@@ -2,8 +2,10 @@ import logging
 from typing import Any
 
 from django.contrib.auth.signals import user_logged_in, user_logged_out, user_login_failed
+from django.db.models.signals import post_save
 from django.dispatch import receiver
 from django.http import HttpRequest
+from wagtail.users.models import UserProfile
 
 from cms.core.utils import get_client_ip
 
@@ -55,3 +57,16 @@ def audit_user_login_failed(sender: Any, credentials: dict, request: HttpRequest
             "user_agent": request.headers.get("User-Agent") if request else None,
         },
     )
+
+
+@receiver(post_save, sender=UserProfile)
+def disable_profile_notifications(sender: Any, instance: UserProfile, created: bool, **kwargs: Any) -> None:  # pylint: disable=unused-argument
+    if created:
+        # We want to disable the "submitted notifications" by default as they are sent regardless
+        # of the user's interaction with pages / workflow-enabled snippets and add a lot of noise.
+        instance.submitted_notifications = False
+        instance.save(
+            update_fields=[
+                "submitted_notifications",
+            ]
+        )

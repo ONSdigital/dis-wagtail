@@ -103,6 +103,7 @@ class LatestBundlesPanel(Component):
     name = "latest_bundles"
     order = 150
     template_name = "bundles/wagtailadmin/panels/latest_bundles.html"
+    num_bundles = 10
 
     def __init__(self, request: "HttpRequest") -> None:
         self.request = request
@@ -120,7 +121,7 @@ class LatestBundlesPanel(Component):
         """Returns the latest 10 bundles if the panel is shown."""
         queryset: QuerySet[Bundle] = Bundle.objects.none()
         if self.is_shown:
-            queryset = Bundle.objects.active().select_related("created_by", "created_by__wagtail_userprofile")[:10]
+            queryset = Bundle.objects.active()[: self.num_bundles]
 
         return queryset
 
@@ -130,6 +131,7 @@ class LatestBundlesPanel(Component):
         context["request"] = self.request
         context["bundles"] = self.get_latest_bundles()
         context["is_shown"] = self.is_shown
+        context["num_bundles"] = self.num_bundles
         return context
 
 
@@ -164,7 +166,6 @@ class BundlesInReviewPanel(Component):
             queryset = (
                 Bundle.objects.previewable()
                 .filter(teams__team__in=self.request.user.active_team_ids)  # type: ignore[union-attr]
-                .select_related("created_by", "created_by__wagtail_userprofile")
                 .distinct()
             )
 

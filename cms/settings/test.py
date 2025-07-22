@@ -77,3 +77,12 @@ XFF_STRICT = False
 
 # turn on the real Wagtail login form
 WAGTAIL_CORE_ADMIN_LOGIN_ENABLED = True
+
+
+# Setting dummy environment variables for credentials and region in our test setup for the S3 storage tests.
+AWS_STORAGE_BUCKET_NAME = "test-bucket"
+AWS_S3_REGION_NAME = "us-east-1"
+AWS_ACCESS_KEY_ID = "testing"
+AWS_SECRET_ACCESS_KEY = "testing"  # noqa: S105
+AWS_SESSION_TOKEN = "testing"  # noqa: S105
+AWS_EC2_METADATA_DISABLED = True

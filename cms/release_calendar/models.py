@@ -1,3 +1,4 @@
+from collections.abc import Sequence
 from typing import TYPE_CHECKING, Any, ClassVar, Optional, cast
 
 from django.conf import settings
@@ -5,7 +6,6 @@ from django.db import models
 from django.utils.functional import cached_property
 from django.utils.text import slugify
 from django.utils.translation import gettext_lazy as _
-from django_stubs_ext import StrPromise
 from wagtail.admin.panels import FieldPanel, FieldRowPanel, MultiFieldPanel
 from wagtail.fields import RichTextField
 from wagtail.models import Page
@@ -26,11 +26,13 @@ from .blocks import (
 )
 from .enums import NON_PROVISIONAL_STATUSES, ReleaseStatus
 from .forms import ReleaseCalendarPageAdminForm
+from .locks import PageInBundleReadyToBePublishedLock
 from .panels import ReleaseCalendarBundleNotePanel
 
 if TYPE_CHECKING:
     from django.http import HttpRequest
     from django.template.response import TemplateResponse
+    from wagtail.locks import BaseLock
 
     from cms.bundles.models import Bundle
 
@@ -127,7 +129,11 @@ class ReleaseCalendarPage(BundledPageMixin, BasePage):  # type: ignore[django-ma
                 ReleaseCalendarBundleNotePanel(heading="Note", classname="bundle-note"),
                 FieldRowPanel(
                     [
-                        FieldPanel("release_date", widget=ONSAdminDateTimeInput(), required_on_save=True),
+                        FieldPanel(
+                            "release_date",
+                            widget=ONSAdminDateTimeInput(),
+                            required_on_save=True,
+                        ),
                         FieldPanel("release_date_text", heading="Or, release date text"),
                     ],
                     heading="",
@@ -214,7 +220,7 @@ class ReleaseCalendarPage(BundledPageMixin, BasePage):  # type: ignore[django-ma
         items = [{"url": "#summary", "text": _("Summary")}]
 
         if self.status == ReleaseStatus.PUBLISHED:
-            for block in self.content:  # pylint: disable=not-an-iterable
+            for block in self.content:
                 items += block.block.to_table_of_contents_items(block.value)
 
             if self.datasets:
@@ -250,7 +256,7 @@ class ReleaseCalendarPage(BundledPageMixin, BasePage):  # type: ignore[django-ma
     def active_bundle(self) -> Optional["Bundle"]:
         if not self.pk:
             return None
-        bundle: Bundle | None = self.bundles.active().first()  # pylint: disable=no-member
+        bundle: Bundle | None = self.bundles.active().first()
         return bundle
 
     @property
@@ -270,7 +276,7 @@ class ReleaseCalendarPage(BundledPageMixin, BasePage):  # type: ignore[django-ma
         return live_page.notice if live_page else None
 
     @property
-    def preview_modes(self) -> list[tuple[str, str | StrPromise]]:
+    def preview_modes(self) -> Sequence[tuple[str, str]]:
         return ReleaseStatus.choices
 
     def get_preview_template(self, request: None, mode_name: str) -> "TemplateResponse":
@@ -282,3 +288,9 @@ class ReleaseCalendarPage(BundledPageMixin, BasePage):  # type: ignore[django-ma
         }
 
         return cast("TemplateResponse", templates.get(mode_name, templates["PROVISIONAL"]))
+
+    def get_lock(self) -> Optional["BaseLock"]:
+        if self.active_bundle and self.active_bundle.is_ready_to_be_published:
+            return PageInBundleReadyToBePublishedLock(self)
+
+        return super().get_lock()

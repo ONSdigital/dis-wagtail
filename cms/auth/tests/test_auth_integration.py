@@ -1,20 +1,17 @@
-import importlib
 import uuid
+from unittest.mock import patch
 
 from django.conf import settings
-from django.contrib.auth import get_user_model
-from django.test import TestCase, override_settings
+from django.test import override_settings
 from django.urls import reverse
-from wagtail import hooks
 
 from cms.auth import wagtail_hooks
-from cms.auth.tests.helpers import CognitoTokenMixin, build_jwt
+from cms.auth.middleware import JWT_SESSION_ID_KEY
+from cms.auth.tests.helpers import CognitoTokenTestCase, build_jwt
+from cms.users.models import User
 
-User = get_user_model()
-JWT_SESSION_ID_KEY = CognitoTokenMixin.JWT_SESSION_ID_KEY
 
-
-class AuthIntegrationTests(CognitoTokenMixin, TestCase):
+class AuthIntegrationTests(CognitoTokenTestCase):
     def test_first_time_login_creates_user_and_session(self):
         # Happy-path: valid tokens, no prior session
         self.login_with_tokens()
@@ -40,8 +37,7 @@ class AuthIntegrationTests(CognitoTokenMixin, TestCase):
                 self.assertLoggedIn()
 
                 # User should be in the expected group
-                user = User.objects.get(external_user_id=self.user_uuid)
-                self.assertInGroups(user, expected_group, settings.VIEWERS_GROUP_NAME)
+                self.assertInGroups(expected_group, settings.VIEWERS_GROUP_NAME)
 
     def test_group_assignment_for_multiple_roles(self):
         """Check group assignment when user has both admin and officer roles."""
@@ -51,22 +47,65 @@ class AuthIntegrationTests(CognitoTokenMixin, TestCase):
         User.objects.filter(external_user_id=self.user_uuid).delete()
         self.assertLoggedIn()
 
-        user = User.objects.get(external_user_id=self.user_uuid)
         # User should be in both admin and officer groups
         self.assertInGroups(
-            user,
             settings.PUBLISHING_ADMIN_GROUP_NAME,
             settings.PUBLISHING_OFFICER_GROUP_NAME,
             settings.VIEWERS_GROUP_NAME,
         )
+
+    def test_existing_user_details_are_updated_on_login(self):
+        """User details are updated if Cognito tokens provide new info."""
+        # Create a user with old details and external_user_id
+        user = User.objects.create(
+            username="testuser",
+            email="old_email@example.com",
+            first_name="OldFirst",
+            last_name="OldLast",
+            external_user_id=self.user_uuid,
+        )
+
+        # Generate tokens with updated details
+        new_email = "new_email@example.com"
+        new_first = "NewFirst"
+        new_last = "NewLast"
+
+        access = build_jwt(
+            self.keypair,
+            token_use="access",
+            username=self.user_uuid,
+            client_id=settings.AWS_COGNITO_APP_CLIENT_ID,
+        )
+        id_token = build_jwt(
+            self.keypair,
+            token_use="id",
+            aud=settings.AWS_COGNITO_APP_CLIENT_ID,
+            **{
+                "cognito:username": self.user_uuid,
+                "email": new_email,
+                "given_name": new_first,
+                "family_name": new_last,
+            },
+        )
+
+        self.set_jwt_cookies(access, id_token)
+        # Trigger authentication (middleware runs)
+        self.client.get(settings.WAGTAILADMIN_HOME_PATH)
+
+        # Refresh from DB and check details updated
+        user.refresh_from_db()
+        self.assertEqual(user.email, new_email)
+        self.assertEqual(user.first_name, new_first)
+        self.assertEqual(user.last_name, new_last)
 
     def test_subsequent_request_uses_existing_session_when_jti_unchanged(self):
         self.login_with_tokens()
         self.assertLoggedIn()
         first_key = self.client.session[JWT_SESSION_ID_KEY]
 
-        first_key = self.client.session[JWT_SESSION_ID_KEY]  # pylint: disable=assignment-from-no-return
-        subsequent_key = self.client.session[JWT_SESSION_ID_KEY]  # pylint: disable=assignment-from-no-return
+        # Simulate a subsequent request with the same tokens
+        self.assertLoggedIn()
+        subsequent_key = self.client.session[JWT_SESSION_ID_KEY]
         self.assertEqual(subsequent_key, first_key)
 
     def test_missing_tokens_logs_out(self):
@@ -112,9 +151,6 @@ class AuthIntegrationTests(CognitoTokenMixin, TestCase):
                     self.client.cookies[settings.ID_TOKEN_COOKIE_NAME] = id_token
 
                 self.assertLoggedOut()
-
-                # Clean up session for next subtest
-                self.client.logout()
 
     def test_expired_or_invalid_jwt_logs_out(self):
         """Subtest: expired access, expired id, both expired -> logout external user."""
@@ -165,7 +201,10 @@ class AuthIntegrationTests(CognitoTokenMixin, TestCase):
         self.assertLoggedOut()
 
     def test_username_mismatch_between_tokens(self):
-        uid_other = str(uuid.uuid4())
+        uuid_other = str(uuid.uuid4())
+        # Log in with valid tokens for user_uuid
+        self.login_with_tokens()
+        self.assertLoggedIn()
 
         access = build_jwt(
             self.keypair,
@@ -178,29 +217,36 @@ class AuthIntegrationTests(CognitoTokenMixin, TestCase):
             self.keypair,
             token_use="id",
             aud=settings.AWS_COGNITO_APP_CLIENT_ID,
-            **{"cognito:username": uid_other, "email": "test@example.com"},
+            **{"cognito:username": uuid_other, "email": "test@example.com"},
         )
 
         self.set_jwt_cookies(access, id_token)
         self.assertLoggedOut()
 
     def test_token_mismatch_session(self):
+        uuid_other = str(uuid.uuid4())
         # Log in with valid tokens for user_uuid
-        access, id_token = self.generate_tokens()
-        self.set_jwt_cookies(access, id_token)
+        self.login_with_tokens()
+        self.assertFalse(User.objects.filter(external_user_id=self.user_uuid).exists())
 
         self.assertLoggedIn()
 
         # Now swap to tokens for a different user
-        access2, id_token2 = self.generate_tokens(username="test_2")
-        self.set_jwt_cookies(access2, id_token2)
+        access_2, id_token_2 = self.generate_tokens(username=uuid_other)
+        self.set_jwt_cookies(access_2, id_token_2)
 
-        self.assertLoggedOut()
+        response_2 = self.client.get(settings.WAGTAILADMIN_HOME_PATH)
+
+        self.assertEqual(response_2.status_code, 302)
+        self.assertFalse(response_2.wsgi_request.user.is_authenticated)
+        # User shouldn't exist after login
+        self.assertFalse(User.objects.filter(external_user_id=uuid_other).exists())
 
     def test_session_update_on_new_jti(self):
         # First login with default JTIs
         self.login_with_tokens()
         self.assertLoggedIn()
+
         old_key = self.client.session[JWT_SESSION_ID_KEY]
 
         #  Now mint a pair of tokens by overriding jti
@@ -239,23 +285,63 @@ class AuthIntegrationTests(CognitoTokenMixin, TestCase):
 
     @override_settings(AWS_COGNITO_LOGIN_ENABLED=False)
     def test_core_admin_login_available_when_cognito_disabled(self):
-        user = User.objects.create_superuser(username="test", email="test@example.com")
-        self.client.force_login(user)
-        self.assertLoggedIn()
+        User.objects.create_superuser(username="test", email="test@example.com", password="password123")
+        response = self.client.post(
+            "/admin/login/",
+            {
+                "username": "test",
+                "password": "password123",
+            },
+        )
+        self.assertEqual(response.status_code, 302)  # Redirect on successful login
+        self.assertTrue(response.wsgi_request.user.is_authenticated)
+        # User with username 'test' should now exist after login
+        self.assertTrue(User.objects.filter(username="test").exists())
 
     def test_core_admin_login_available_when_cognito_enabled(self):
-        user = User.objects.create_superuser(username="test", email="test@example.com")
-        self.client.force_login(user)
-        self.assertLoggedIn()
+        User.objects.create_superuser(username="test", email="test@example.com", password="password123")
+        response = self.client.post(
+            "/admin/login/",
+            {
+                "username": "test",
+                "password": "password123",
+            },
+        )
+        self.assertEqual(response.status_code, 302)  # Redirect on successful login
+        self.assertTrue(response.wsgi_request.user.is_authenticated)
+        # User with username 'test' should now exist after login
+        self.assertTrue(User.objects.filter(username="test").exists())
 
-    @override_settings(WAGTAIL_CORE_ADMIN_LOGIN_ENABLED=False)
     def test_core_admin_disabled_logs_out(self):
         """Test that when WAGTAIL_CORE_ADMIN_LOGIN_ENABLED is set to False,
         an authenticated user is logged out upon accessing the Wagtail admin home path.
         """
-        user = User.objects.create_superuser(username="test", email="test@example.com")
-        self.client.force_login(user)
-        self.assertLoggedOut()
+        # Create and login as superuser
+        User.objects.create_superuser(username="test", email="test@example.com", password="password123")
+        response = self.client.post(
+            "/admin/login/",
+            {
+                "username": "test",
+                "password": "password123",
+            },
+        )
+        self.assertEqual(response.status_code, 302)
+        self.assertTrue(response.wsgi_request.user.is_authenticated)
+        # User with username 'test' should now exist after login
+        self.assertTrue(User.objects.filter(username="test").exists())
+
+        # Now flip the flag to False and access the admin home
+        with override_settings(WAGTAIL_CORE_ADMIN_LOGIN_ENABLED=False):
+            response = self.client.get(settings.WAGTAILADMIN_HOME_PATH)
+            self.assertLoggedOut()
+
+    @override_settings(WAGTAIL_CORE_ADMIN_LOGIN_ENABLED=False)
+    def test_core_admin_unavailable_when_core_admin_disabled(self):
+        """Test that the core admin login page is unavailable when WAGTAIL_CORE_ADMIN_LOGIN_ENABLED is False."""
+        User.objects.create_superuser(username="test", email="test@example.com", password="password123")
+        response = self.client.get(settings.WAGTAILADMIN_HOME_PATH)
+        # Should redirect to florence login page or similar
+        self.assertEqual(response.status_code, 302)
 
     def test_logout_view_clears_cookies(self):
         self.login_with_tokens()
@@ -301,41 +387,39 @@ class AuthIntegrationTests(CognitoTokenMixin, TestCase):
         self.assertJSONEqual(response_2.content, {"status": "error", "message": "Invalid request method."})
 
 
-class WagtailHookTests(CognitoTokenMixin, TestCase):
-    def setUp(self):
-        # clear any previously-registered hooks
-        hooks._hooks.pop("insert_global_admin_js", None)  # pylint: disable=protected-access
-
+class WagtailHookTests(CognitoTokenTestCase):
     def test_wagtail_hook_injection(self):
-        # reload under AWS_COGNITO_LOGIN_ENABLED=True
-        importlib.reload(wagtail_hooks)
-        # stub out the module's static() so it doesn't hit a manifest
-        wagtail_hooks.static = lambda path: f"/static/{path}"
+        with patch.object(wagtail_hooks, "static", lambda path: f"/static/{path}"):
+            # set cookies and hit /admin/
+            self.login_with_tokens()
+            self.assertLoggedIn()
 
-        # set cookies and hit /admin/
-        self.login_with_tokens()
-        self.assertLoggedIn()
+            resp = self.client.get(settings.WAGTAILADMIN_HOME_PATH)
+            self.assertEqual(resp.status_code, 200)
+            html = resp.content.decode()
 
-        resp = self.client.get(settings.WAGTAILADMIN_HOME_PATH)
-        self.assertEqual(resp.status_code, 200)
-        html = resp.content.decode()
-
-        self.assertIn('<script id="auth-config"', html)
-        self.assertIn('"wagtailAdminHomePath":', html)
-        self.assertIn('<script src="/static/js/auth.js"', html)
+            self.assertIn('<script id="auth-config"', html)
+            self.assertIn('"wagtailAdminHomePath":', html)
+            self.assertIn('<script src="/static/js/auth.js"', html)
 
     @override_settings(AWS_COGNITO_LOGIN_ENABLED=False)
     def test_wagtail_hook_not_registered(self):
-        # reload under the disabled setting
-        importlib.reload(wagtail_hooks)
+        # Create and login as superuser
+        User.objects.create_superuser(username="test", email="test@example.com", password="password123")
+        response = self.client.post(
+            "/admin/login/",
+            {
+                "username": "test",
+                "password": "password123",
+            },
+        )
+        self.assertEqual(response.status_code, 302)
+        self.assertTrue(response.wsgi_request.user.is_authenticated)
+        # User with username 'test' should now exist after login
+        self.assertTrue(User.objects.filter(username="test").exists())
 
-        user = User.objects.create_superuser(username="test", email="test@example.com")
-        self.client.force_login(user)
-        response = self.client.get(settings.WAGTAILADMIN_HOME_PATH)
-
-        self.assertLoggedIn()
-
-        html = response.content.decode()
+        response_admin = self.client.get(settings.WAGTAILADMIN_HOME_PATH)
+        html = response_admin.content.decode()
 
         self.assertNotIn('id="auth-config"', html)
         self.assertNotIn("auth.js", html)

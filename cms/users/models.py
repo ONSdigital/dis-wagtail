@@ -29,8 +29,6 @@ class User(AbstractUser):
         self._assign_groups(groups_ids)
         self._assign_teams(groups_ids)
 
-        self.save()
-
     @cached_property
     def active_team_ids(self) -> list[int]:
         return list(self.teams.filter(is_active=True).values_list("pk", flat=True))

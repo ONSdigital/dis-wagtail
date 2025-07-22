@@ -1,8 +1,10 @@
 import logging
+from typing import Any
 
 from django.forms import ValidationError
 from wagtail.admin.forms import WagtailAdminPageForm
 from wagtail.admin.forms.choosers import BaseFilterForm, SearchFilterMixin
+from wagtail.admin.forms.pages import CopyForm
 from wagtail.blocks.stream_block import StreamValue
 from wagtail.models import PageLogEntry
 
@@ -16,7 +18,7 @@ LATEX_VALIDATION_ERROR = "The equation is not valid LaTeX. Please check the synt
 
 
 class PageWithCorrectionsAdminForm(DeduplicateTopicsAdminForm):
-    def clean_corrections(self) -> StreamValue:  # noqa: C901
+    def clean_corrections(self) -> StreamValue:
         corrections: StreamValue = self.cleaned_data["corrections"]
 
         if self.instance.pk is None:
@@ -145,3 +147,13 @@ class PageWithEquationsAdminForm(WagtailAdminPageForm):
                 self._process_content_block(block)
 
         return content
+
+
+class ONSCopyForm(CopyForm):
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        super().__init__(*args, **kwargs)
+
+        if "publish_copies" in self.fields:
+            del self.fields["publish_copies"]
+        if "alias" in self.fields:
+            del self.fields["alias"]

@@ -1,8 +1,11 @@
 from django.test import TestCase
 from django.urls import reverse
+from wagtail.coreutils import get_dummy_request
 from wagtail.test.utils.wagtail_tests import WagtailTestUtils
 
+from cms.articles.tests.factories import ArticleSeriesPageFactory, StatisticalArticlePageFactory
 from cms.core.models import ContactDetails
+from cms.standard_pages.tests.factories import InformationPageFactory
 
 
 class ContactDetailsTestCase(WagtailTestUtils, TestCase):
@@ -34,3 +37,83 @@ class ContactDetailsTestCase(WagtailTestUtils, TestCase):
 
         self.assertContains(response, "Contact details with this name and email combination already exists.")
         self.assertEqual(ContactDetails.objects.count(), 1)
+
+
+class PageBreadcrumbsTestCase(TestCase):
+    @classmethod
+    def setUpTestData(cls):
+        cls.series = ArticleSeriesPageFactory()
+        cls.statistical_article = StatisticalArticlePageFactory(parent=cls.series)
+
+    def setUp(self):
+        self.dummy_request = get_dummy_request()
+
+    def test_breadcrumbs_output_format(self):
+        """Test that get_breadcrumbs correctly outputs the parent pages in the correct format."""
+        breadcrumbs_output = self.statistical_article.get_breadcrumbs(request=self.dummy_request)
+
+        series_parent = self.series.get_parent()
+
+        expected_entries = [
+            {
+                "url": series_parent.get_site().root_url,
+                "text": "Home",
+            },
+            {
+                "url": series_parent.get_parent().get_full_url(request=self.dummy_request),
+                "text": series_parent.get_parent().title,
+            },
+            {
+                "url": series_parent.get_full_url(request=self.dummy_request),
+                "text": series_parent.title,
+            },
+        ]
+
+        self.assertIsInstance(breadcrumbs_output, list)
+        self.assertEqual(len(breadcrumbs_output), 3)
+        self.assertListEqual(breadcrumbs_output, expected_entries)
+
+    def test_breadcrumbs_include_self(self):
+        """Test that get_breadcrumbs includes the page when request includes `is_for_subpage` attribute."""
+        self.dummy_request.is_for_subpage = True
+        breadcrumbs_output = self.statistical_article.get_breadcrumbs(request=self.dummy_request)
+
+        series_parent = self.series.get_parent()
+
+        expected_entries = [
+            {
+                "url": series_parent.get_site().root_url,
+                "text": "Home",
+            },
+            {
+                "url": series_parent.get_parent().get_full_url(request=self.dummy_request),
+                "text": series_parent.get_parent().title,
+            },
+            {
+                "url": series_parent.get_full_url(request=self.dummy_request),
+                "text": series_parent.title,
+            },
+            {
+                "url": self.statistical_article.get_full_url(request=self.dummy_request),
+                "text": self.statistical_article.title,
+            },
+        ]
+
+        self.assertIsInstance(breadcrumbs_output, list)
+        self.assertEqual(len(breadcrumbs_output), 4)
+        self.assertListEqual(breadcrumbs_output, expected_entries)
+
+
+class CanonicalFullUrlsTestCase(TestCase):
+    @classmethod
+    def setUpTestData(cls):
+        cls.information_page = InformationPageFactory()
+
+    def setUp(self):
+        self.dummy_request = get_dummy_request()
+
+    def test_canonical_url(self):
+        """Test that get_canonical_url returns the correct full URL for a page, including base URL."""
+        canonical_url = self.information_page.get_canonical_url(self.dummy_request)
+
+        self.assertEqual(canonical_url, self.information_page.get_full_url(self.dummy_request))

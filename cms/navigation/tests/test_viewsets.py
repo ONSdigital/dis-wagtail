@@ -48,7 +48,7 @@ class FooterMenuViewSetTestCase(WagtailTestUtils, TestCase):
         cls.superuser = cls.create_superuser(username="admin")
 
         cls.add_url = reverse("wagtailsnippets_navigation_footermenu:add")
-        cls.dashboard_url = reverse("wagtailadmin_home")  # Neha wants explanation here?
+        cls.dashboard_url = reverse("wagtailadmin_home")
 
     def setUp(self):
         self.client.force_login(self.superuser)

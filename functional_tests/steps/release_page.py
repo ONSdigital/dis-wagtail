@@ -166,3 +166,54 @@ def user_edits_published_page(context: Context):
     page.get_by_role("link", name="View child pages of 'Home'").first.click()
     page.get_by_role("link", name="View child pages of 'Release").click()
     page.get_by_role("link", name="Edit 'My Release'").click()
+
+
+@step("the user returns to editing the release page")
+def user_returns_to_editing_the_release_page(context: Context):
+    context.page.get_by_role("link", name="Edit").click()
+
+
+@step("the user adds a release date change")
+def user_adds_a_release_date_change(context: Context):
+    page = context.page
+    change_to_release_date_section = page.locator("#panel-child-content-changes_to_release_date-section")
+    change_to_release_date_section.get_by_role("button", name="Insert a block").click()
+    change_to_release_date_section.get_by_label("Previous date*").fill("2024-12-20 14:30")
+    change_to_release_date_section.get_by_label("Reason for change*").fill("Updated due to data availability")
+
+
+@step("the user adds another release date change")
+def user_adds_another_release_date_change(context: Context):
+    page = context.page
+    change_to_release_date_section = page.locator("#panel-child-content-changes_to_release_date-section")
+    change_to_release_date_section.get_by_role("button", name="Insert a block").nth(1).click()
+    change_to_release_date_section.get_by_label("Previous date*").nth(1).fill("2024-12-19 12:15")
+    change_to_release_date_section.get_by_label("Reason for change*").nth(1).fill("New update to release schedule")
+
+
+@then("the user cannot delete the release date change")
+def user_cannot_delete_the_release_date_change(context: Context):
+    page = context.page
+    page.wait_for_timeout(500)  # added to allow JS to be ready
+    expect(
+        page.locator("#panel-child-content-changes_to_release_date-section [data-streamfield-action='DELETE']")
+    ).to_be_hidden()
+
+
+@then("the user sees a validation error message about adding multiple release date changes")
+def user_sees_validation_error_for_multiple_changes(context: Context):
+    expect(
+        context.page.get_by_text("Only one 'Changes to release date' entry can be added per release date change.")
+    ).to_be_visible()
+
+
+@then("the release calendar page is successfully updated")
+def release_calendar_page_is_successfully_updated(context: Context):
+    page = context.page
+    expect(page.get_by_text("Page 'My Release' has been updated.")).to_be_visible()
+
+
+@then("the release calendar page is successfully published")
+def release_calendar_page_is_successfully_published(context: Context):
+    page = context.page
+    expect(page.get_by_text("Page 'My Release' has been published.")).to_be_visible()

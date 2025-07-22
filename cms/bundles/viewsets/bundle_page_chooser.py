@@ -45,11 +45,14 @@ class PagesWithDraftsMixin:
         - have unpublished changes
         - are not in another active bundle
         """
+        pre_filter_q = Page.objects.type(*get_bundleable_page_types()).filter(
+            has_unpublished_changes=True, alias_of__isnull=True
+        )
         return (
             Page.objects.specific(defer=True)
-            # using pk_in because the direct has_unpublished_changes=True filter
-            # requires Page to have has_unpublished_changes added to search fields which we cannot do
-            .filter(pk__in=Page.objects.type(*get_bundleable_page_types()).filter(has_unpublished_changes=True))
+            # using pk_in because the direct has_unpublished_changes and alias_of filter
+            # requires Page to have them added to search fields which we cannot do
+            .filter(pk__in=pre_filter_q)
             .exclude(pk__in=get_pages_in_active_bundles())
             .order_by("-latest_revision_created_at")
         )
@@ -66,13 +69,11 @@ class PagesWithDraftsMixin:
             DateColumn(
                 "updated",
                 label="Updated",
-                width="12%",
                 accessor="latest_revision_created_at",
             ),
             Column(
                 "type",
                 label="Type",
-                width="12%",
                 accessor="page_type_display_name",
             ),
             PageStatusColumn("status", label="Status", width="12%"),

@@ -1,5 +1,4 @@
 import base64
-import importlib
 import json
 import uuid
 from collections import namedtuple
@@ -15,6 +14,7 @@ from django.contrib.auth.models import Group
 from django.test import Client, TestCase, override_settings
 
 from cms.auth import utils as auth_utils
+from cms.users.models import User
 
 RSAKeyPair = namedtuple("RSAKeyPair", ["private", "public_der", "kid"])
 
@@ -79,20 +79,14 @@ class DummyResponse:
     ACCESS_TOKEN_COOKIE_NAME="access",
     ID_TOKEN_COOKIE_NAME="id",
     WAGTAIL_CORE_ADMIN_LOGIN_ENABLED=True,
-    AUTH_TOKEN_REFRESH_URL="/auth/refresh/",
     WAGTAILADMIN_HOME_PATH="/admin/",
-    CSRF_COOKIE_NAME="csrftoken",
     SESSION_RENEWAL_OFFSET_SECONDS=300,
 )
-class CognitoTokenMixin(TestCase):
+class CognitoTokenTestCase(TestCase):
     """Utilities reused by every auth-related TestCase."""
 
-    __test__ = False  # Prevents Django's test runner from treating this as a runnable test case
-
-    JWT_SESSION_ID_KEY: str = "jwt_session_id"
-
     @classmethod
-    def setUpTestData(cls):  # pylint: disable=invalid-name
+    def setUpTestData(cls):
         cls.user_uuid: str = str(uuid.uuid4())
 
         # RSA keypair and JWKS stub
@@ -100,8 +94,6 @@ class CognitoTokenMixin(TestCase):
         public_b64 = base64.b64encode(cls.keypair.public_der).decode()
         cls.jwks = {cls.keypair.kid: public_b64}
 
-        # Reload utils so module constants use overridden settings
-        importlib.reload(auth_utils)
         # Stub JWKS fetch
         auth_utils.get_jwks = lambda: cls.jwks
 
@@ -162,8 +154,11 @@ class CognitoTokenMixin(TestCase):
         response = self.client.get(settings.WAGTAILADMIN_HOME_PATH)
         self.assertEqual(response.status_code, 200)
         self.assertTrue(response.wsgi_request.user.is_authenticated)
+        # User should now exist after login
+        self.assertTrue(User.objects.filter(external_user_id=response.wsgi_request.user.external_user_id).exists())
 
-    def assertInGroups(self, user, *group_names) -> None:  # pylint: disable=invalid-name
+    def assertInGroups(self, *group_names) -> None:  # pylint: disable=invalid-name
+        user = User.objects.get(external_user_id=self.user_uuid)
         for name in group_names:
             self.assertTrue(
                 Group.objects.filter(name=name, user=user).exists(),

@@ -1,18 +1,12 @@
+{% from "components/document-list/_macro.njk" import onsDocumentList %}
+
 <section id="{{ value.title|slugify() }}" class="ons-u-mb-xl">
     <h2>{{ value.title }}</h2>
-
-    <ul class="ons-list ons-list--bare">
-        {% for item in value.links %}
-            {% if item.link %}
-                <li class="ons-list__item">
-                    <div class="ons-u-mb-s">
-                        <a href="{{ item.link.url }}">{{ item.link.text }}</a>
-                        {% if item.link.description %}
-                            {{ item.link.description|richtext }}
-                        {% endif %}
-                    </div>
-                </li>
-            {% endif %}
-        {% endfor %}
-    </ul>
+    {# fmt:off #}
+    {{ onsDocumentList({
+            "headingLevel": 3,
+            "documents": related_links
+        })
+    }}
+    {# fmt:on #}
 </section>

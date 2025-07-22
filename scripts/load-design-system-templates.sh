@@ -10,29 +10,27 @@ cd "${DIR}"/.. || exit
 
 if [ $# -eq 0 ] || [ "$1" == "" ]; then
     echo "Usage: load-design-system-templates.sh {TAG_NAME}"
-elif [ "$1" == "" ]; then
-    TAG_NAME=$(curl --silent "https://api.github.com/repos/${REPO_NAME}/releases" | jq '.[0].name' | tr -d '"')
+    exit 1
 else
     TAG_NAME="$1"
 fi
 
 REPO_NAME="onsdigital/design-system"
-DOWNLOAD_URL=$(curl --silent "https://api.github.com/repos/${REPO_NAME}/releases/tags/${TAG_NAME}" | jq '.assets[0].browser_download_url' | tr -d '"')
-RELEASE_NAME=${DOWNLOAD_URL##*/}
+RELEASE_NAME="design-system-${TAG_NAME}.tar.gz"
+DOWNLOAD_URL="https://github.com/${REPO_NAME}/releases/download/${TAG_NAME}/templates.zip"
 
 echo "Fetching ${DOWNLOAD_URL}"
 
 TEMP_DIR=$(mktemp -d)
 
-curl --silent -L --url "https://github.com/${REPO_NAME}/releases/download/${TAG_NAME}/${RELEASE_NAME}" --output "${TEMP_DIR}/${RELEASE_NAME}"
+curl --silent --fail -L --url "${DOWNLOAD_URL}" --output "${TEMP_DIR}/${RELEASE_NAME}"
 unzip -q -o "${TEMP_DIR}/${RELEASE_NAME}" -d .
-rm -rf "${TEMP_DIR}"
 
 rm -rf ./cms/jinja2/components
 rm -rf ./cms/jinja2/layout
 mv -f templates/* ./cms/jinja2
 rm -rf templates
-echo "Saved Design System templates to 'cms/jinja2/components' and 'cms/jinja2/components'"
+echo "Saved Design System templates to 'cms/jinja2/components' and 'cms/jinja2/layout'"
 
 #
 # Now load the print stylesheet

@@ -4,6 +4,7 @@ from wagtail.blocks import RichTextBlock, StreamBlock
 from wagtail.images.blocks import ImageChooserBlock
 
 from cms.core.blocks import (
+    AccordionBlock,
     AnnouncementPanelBlock,
     DocumentsBlock,
     HeadingBlock,
@@ -48,10 +49,11 @@ class CoreStoryBlock(StreamBlock):
     warning_panel = WarningPanelBlock()
     information_panel = InformationPanelBlock()
     announcement_panel = AnnouncementPanelBlock()
+    accordion = AccordionBlock()
     video_embed = VideoEmbedBlock(group="Media")
     image = ImageChooserBlock(group="Media")
     documents = DocumentsBlock(group="Media")
-    related_links = RelatedLinksBlock()
+    related_links = RelatedLinksBlock(add_heading=True)  # Add a heading as this is outside of a section block
     table = ONSTableBlock(group="DataVis", allow_links=True)
     equation = EquationBlock(group="DataVis", icon="decimal")
     ons_embed = ONSEmbedBlock(group="DataVis", label="ONS General Embed")

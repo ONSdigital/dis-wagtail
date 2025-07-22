@@ -5,5 +5,4 @@ class SearchConfig(AppConfig):
     name = "cms.search"
 
     def ready(self) -> None:
-        import cms.search.checks  # pylint: disable=unused-import, import-outside-toplevel
-        import cms.search.signal_handlers  # noqa # pylint: disable=unused-import, import-outside-toplevel
+        from . import checks, signal_handlers  # noqa: F401 # pylint: disable=unused-import, import-outside-toplevel

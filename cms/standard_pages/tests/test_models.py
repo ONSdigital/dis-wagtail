@@ -1,6 +1,10 @@
+from datetime import datetime
+
 from django.test import TestCase, override_settings
 from wagtail.test.utils import WagtailTestUtils
 
+from cms.articles.tests.factories import StatisticalArticlePageFactory
+from cms.core.enums import RelatedContentType
 from cms.standard_pages.tests.factories import IndexPageFactory, InformationPageFactory
 
 
@@ -75,6 +79,7 @@ class IndexPageTestCase(WagtailTestUtils, TestCase):
                 "title": "Title of the custom featured item",
                 "description": "Description of the custom featured item",
                 "external_url": "external-url.com",
+                "release_date": "2025-01-01",
             },
         }
 
@@ -95,11 +100,14 @@ class IndexPageTestCase(WagtailTestUtils, TestCase):
         """
         child_page = InformationPageFactory(parent=self.index_page, title="Child page")
 
-        internal_page = IndexPageFactory()
+        internal_page = StatisticalArticlePageFactory(release_date=datetime(2025, 1, 1))
 
         featured_item_internal_page = {
             "type": "featured_item",
-            "value": {"page": internal_page.id, "description": "Description of the custom featured item"},
+            "value": {
+                "page": internal_page.id,
+                "description": "Description of the custom featured item",
+            },
         }
 
         self.index_page.featured_items = [featured_item_internal_page]
@@ -108,9 +116,12 @@ class IndexPageTestCase(WagtailTestUtils, TestCase):
         response = self.client.get(self.page_url)
         self.assertEqual(response.status_code, 200)
 
-        self.assertContains(response, internal_page.title)
+        self.assertContains(response, internal_page.display_title)
         self.assertContains(response, internal_page.url)
         self.assertContains(response, featured_item_internal_page["value"]["description"])
+        self.assertContains(response, "Released")
+        self.assertContains(response, "1 January 2025")
+        self.assertContains(response, "Article")
 
         self.assertNotContains(response, child_page.title)
         self.assertNotContains(response, child_page.url)
@@ -145,3 +156,57 @@ class IndexPageTestCase(WagtailTestUtils, TestCase):
         """Test the page loads in external env."""
         response = self.client.get(self.page_url)
         self.assertEqual(response.status_code, 200)
+
+
+class InformationPageTestCase(WagtailTestUtils, TestCase):
+    """Test InformationPage model properties and methods."""
+
+    @classmethod
+    def setUpTestData(cls):
+        cls.page = InformationPageFactory(title="Test Information Page")
+
+        cls.page_url = cls.page.url
+
+    def test_page_loads(self):
+        """Test that the Information Page loads correctly."""
+        response = self.client.get(self.page_url)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, self.page.title)
+        self.assertContains(response, self.page.content)
+
+    def test_related_links(self):
+        another_information_page = InformationPageFactory(
+            title="Another Information Page",
+            parent=self.page.get_parent(),
+        )
+        self.page.content = [
+            {
+                "type": "related_links",
+                "value": [
+                    {
+                        "title": "An external page",
+                        "external_url": "external-url.com",
+                        "release_date": "2025-05-21",
+                        "content_type": RelatedContentType.ARTICLE,
+                    },
+                    {
+                        "page": another_information_page.pk,
+                        "release_date": "2025-01-02",
+                        "content_type": RelatedContentType.TIME_SERIES,
+                    },
+                ],
+            }
+        ]
+
+        self.page.save_revision().publish()
+
+        response = self.client.get(self.page_url)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Related links")  # Should have a heading added
+        self.assertContains(response, "An external page")
+        self.assertContains(response, "external-url.com")
+        self.assertContains(response, "Article")
+        self.assertContains(response, "21 May 2025")
+        self.assertContains(response, another_information_page.title)
+        self.assertContains(response, "2 January 2025")
+        self.assertContains(response, "Time series")

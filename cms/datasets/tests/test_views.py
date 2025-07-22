@@ -23,7 +23,7 @@ class TestDatasetSearchFilterMixin(TestCase):
         objects = [obj1, obj2]
 
         filter_form = DatasetSearchFilterForm()
-        filter_form.cleaned_data = {}  # pylint: disable=attribute-defined-outside-init
+        filter_form.cleaned_data = {}
         test_searches = [
             ("foo", [obj1]),
             ("bar", [obj1]),

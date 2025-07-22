@@ -1,11 +1,5 @@
 Feature: Publishing Officer can draft, edit, and publish bundles
 
-    Scenario: A Publishing Officer adds a bundle and the added by is populated with the creator
-        Given a Publishing Officer logs into the admin site
-        When a bundle has been created with a creator
-        Then the user goes to the bundle menu page
-        And the bundle menu shows bundle and Added by is not empty
-
     Scenario: A Publishing Officer adds a bundle and the inspect page for the bundle shows the created by as populated
         Given a Publishing Officer logs into the admin site
         And a bundle has been created with a creator

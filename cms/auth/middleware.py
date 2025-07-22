@@ -3,16 +3,16 @@ from collections.abc import Mapping
 from typing import TYPE_CHECKING
 
 from django.conf import settings
-from django.contrib.auth import get_user_model, login, logout
+from django.contrib.auth import login, logout
 from django.contrib.auth.middleware import AuthenticationMiddleware
 
 from cms.auth.utils import validate_jwt
+from cms.users.models import User
 
 if TYPE_CHECKING:
     from django.http import HttpRequest
 
 logger = logging.getLogger(__name__)
-User = get_user_model()
 
 JWT_SESSION_ID_KEY = "jwt_session_id"
 
@@ -144,6 +144,7 @@ class ONSAuthMiddleware(AuthenticationMiddleware):
         ):
             logger.info(
                 "Terminating session due to missing JWT tokens or insufficient login configuration.",
+                extra={"external_user_id": getattr(request.user, "external_user_id", None)},
             )
             logout(request)
 
@@ -169,5 +170,6 @@ class ONSAuthMiddleware(AuthenticationMiddleware):
         # Assign groups if provided.
         groups_ids = id_payload.get("cognito:groups") or []
         user.assign_groups_and_teams(groups_ids)
+        user.save()
 
         login(request, user)

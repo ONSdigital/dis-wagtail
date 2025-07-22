@@ -12,6 +12,7 @@ from cms.core.blocks.stream_blocks import CoreStoryBlock
 from cms.core.fields import StreamField
 from cms.core.forms import PageWithEquationsAdminForm
 from cms.core.models import BasePage
+from cms.core.utils import get_content_type_for_page, get_document_metadata
 from cms.core.widgets import date_widget
 from cms.taxonomy.mixins import GenericTaxonomyMixin
 
@@ -94,7 +95,7 @@ class IndexPage(BundledPageMixin, BasePage):  # type: ignore[django-manager-miss
     def _get_formatted_featured_items(self) -> list[dict[str, str | dict[str, str]]]:
         """Format items from self.featured_items."""
         formatted_items = []
-        for featured_item in self.featured_items:  # pylint: disable=not-an-iterable
+        for featured_item in self.featured_items:
             link = featured_item.value.link
             if link is None:
                 continue
@@ -103,7 +104,8 @@ class IndexPage(BundledPageMixin, BasePage):  # type: ignore[django-manager-miss
                 {
                     "featured": "true",
                     "title": {"text": link["text"], "url": link["url"]},
-                    "description": featured_item.value["description"],
+                    "description": link["description"],
+                    "metadata": link.get("metadata", {}),
                 }
             )
         return formatted_items
@@ -121,6 +123,9 @@ class IndexPage(BundledPageMixin, BasePage):  # type: ignore[django-manager-miss
                         "url": child_page.get_url(request=request),
                     },
                     "description": getattr(child_page, "listing_summary", "") or getattr(child_page, "summary", ""),
+                    "metadata": get_document_metadata(
+                        get_content_type_for_page(child_page), child_page.specific_deferred.publication_date
+                    ),
                 }
             )
         return formatted_items
@@ -134,7 +139,7 @@ class IndexPage(BundledPageMixin, BasePage):  # type: ignore[django-manager-miss
                 "title": related_link.value.link.get("text"),
                 "url": related_link.value.link.get("url"),
             }
-            for related_link in self.related_links  # pylint: disable=not-an-iterable
+            for related_link in self.related_links
         ]
 
         return formatted_links

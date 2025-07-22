@@ -22,11 +22,8 @@ EXPECTED_CONTENT_TYPES = {
 class ResourceDictAssertions(SimpleTestCase):
     """Mixin that provides shared assertions for the resource metadata dict.
     - Inheriting from SimpleTestCase gives us all the assert helpers (silences pylint/mypy).
-    - __test__ = False prevents Django's test runner from treating this
     mixin as a runnable test case.
     """
-
-    __test__ = False
 
     def assert_base_fields(self, payload: dict, page: Page) -> None:
         self.assertIn("uri", payload)
