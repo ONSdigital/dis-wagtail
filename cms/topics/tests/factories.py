@@ -12,9 +12,9 @@ class TopicPageFactory(wagtail_factories.PageFactory):
     class Meta:
         model = TopicPage
 
+    parent = factory.LazyFunction(lambda: HomePage.objects.first())  # pylint: disable=unnecessary-lambda
     title = factory.Faker("sentence", nb_words=4)
     summary = factory.Faker("text", max_nb_chars=100)
-    parent = factory.LazyFunction(lambda: HomePage.objects.first())  # pylint: disable=unnecessary-lambda
     topic = factory.SubFactory(TopicFactory)
 
 

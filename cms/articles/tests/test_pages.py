@@ -839,7 +839,7 @@ class StatisticalArticlePageTests(WagtailPageTestCase):
                 self.assertEqual(actual_jsonld["description"], description_case["expected_description"])
 
 
-class MiscellaneousTests(WagtailPageTestCase):
+class GeneralPageTests(WagtailPageTestCase):
     @classmethod
     def setUpTestData(cls):
         cls.home_page = HomePage.objects.first()

@@ -23,12 +23,11 @@ class MethodologyIndexPageFactory(wagtail_factories.PageFactory):
 class MethodologyPageFactory(wagtail_factories.PageFactory):
     """Factory for MethodologyPage."""
 
-    parent = factory.SubFactory(MethodologyIndexPageFactory)
-
     class Meta:
         model = MethodologyPage
         django_get_or_create: ClassVar[list[str]] = ["slug", "parent"]
 
+    parent = factory.SubFactory(MethodologyIndexPageFactory)
     title = factory.Faker("sentence", nb_words=4)
 
     summary = factory.Faker("text", max_nb_chars=100)

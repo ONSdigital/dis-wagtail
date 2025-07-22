@@ -41,6 +41,7 @@ class MethodologyIndexPage(BasePage):  # type: ignore[django-manager-missing]
         super().clean()
 
     def minimal_clean(self) -> None:
+        # ensure the slug is always set to "methodologies", even for saving drafts, where minimal_clean is used
         self.slug = "methodologies"
         super().minimal_clean()
 
