@@ -21,7 +21,7 @@ from cms.workflows.utils import is_page_ready_to_preview, is_page_ready_to_publi
 
 from .enums import ACTIVE_BUNDLE_STATUSES, EDITABLE_BUNDLE_STATUSES, PREVIEWABLE_BUNDLE_STATUSES, BundleStatus
 from .forms import BundleAdminForm
-from .panels import PageChooserWithStatusPanel
+from .panels import BundleStatusPanel, PageChooserWithStatusPanel
 
 if TYPE_CHECKING:
     import datetime
@@ -160,6 +160,7 @@ class Bundle(index.Indexed, ClusterableModel, models.Model):  # type: ignore[dja
             heading="Scheduling",
             icon="calendar",
         ),
+        BundleStatusPanel(heading="Status"),
         InlinePanel("bundled_pages", heading="Bundled pages", icon="doc-empty", label="Page"),
         MultipleChooserPanel(
             "bundled_datasets", heading="Data API datasets", label="Dataset", chooser_field_name="dataset"
