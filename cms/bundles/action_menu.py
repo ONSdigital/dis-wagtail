@@ -147,7 +147,7 @@ class ManualPublishMenuItem(ActionMenuItem):
 
     def is_shown(self, context: dict[str, Any]) -> bool:
         bundle = context["bundle"]
-        return bundle is not None and not bundle.scheduled_publication_date and bundle.status == BundleStatus.APPROVED
+        return bundle is not None and bundle.can_be_manually_published
 
 
 class BundleActionMenu:

@@ -1,4 +1,4 @@
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from http import HTTPStatus
 from unittest import mock
 
@@ -232,11 +232,17 @@ class BundleViewSetTestCase(BundleViewSetTestCaseBase):
         response = self.post_with_action_and_test("action-publish", BundleStatus.IN_REVIEW, self.dashboard_url)
         self.assertEqual(response.context["message"], "Sorry, you do not have permission to access this area.")
 
-    def test_bundle_edit_view__manual_publish__disallowed_when_scheduled(self):
+    def test_bundle_edit_view__manual_publish__disallowed_when_scheduled_and_date_in_future(self):
+        self.bundle.status = BundleStatus.APPROVED
+        self.bundle.publication_date = timezone.now() + timedelta(days=1)
+        self.bundle.save(update_fields=["status", "publication_date"])
+        self.post_with_action_and_test("action-publish", BundleStatus.APPROVED, self.dashboard_url)
+
+    def test_bundle_edit_view__manual_publish__happy_path__when_scheduled_and_date_in_past(self):
         self.bundle.status = BundleStatus.APPROVED
         self.bundle.publication_date = timezone.now()
         self.bundle.save(update_fields=["status", "publication_date"])
-        self.post_with_action_and_test("action-publish", BundleStatus.APPROVED, self.dashboard_url)
+        self.post_with_action_and_test("action-publish", BundleStatus.PUBLISHED, self.bundle_index_url)
 
     def test_bundle_edit_view__manual_publish__happy_path(self):
         self.bundle.status = BundleStatus.APPROVED

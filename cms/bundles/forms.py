@@ -131,11 +131,15 @@ class BundleAdminForm(WagtailAdminModelForm):
             self.add_error("release_calendar_page", error)
             self.add_error("publication_date", error)
 
-        if release_calendar_page and release_calendar_page.release_date < timezone.now():
+        if (
+            release_calendar_page
+            and release_calendar_page.release_date < timezone.now()
+            and not self.instance.can_be_manually_published
+        ):
             error = "The release date on the release calendar page cannot be in the past."
             raise ValidationError({"release_calendar_page": error})
 
-        if publication_date and publication_date < timezone.now():
+        if publication_date and publication_date < timezone.now() and not self.instance.can_be_manually_published:
             raise ValidationError({"publication_date": "The release date cannot be in the past."})
 
     def clean_publication_date(self) -> datetime | None:
