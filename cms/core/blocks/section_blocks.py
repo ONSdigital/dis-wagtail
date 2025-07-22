@@ -5,6 +5,7 @@ from wagtail.blocks import RichTextBlock, StreamBlock, StructBlock
 from wagtail.images.blocks import ImageChooserBlock
 
 from cms.core.blocks import (
+    AccordionBlock,
     AnnouncementPanelBlock,
     DocumentsBlock,
     HeadingBlock,
@@ -22,6 +23,7 @@ from cms.datavis.blocks import (
     AreaChartBlock,
     BarColumnChartBlock,
     BarColumnConfidenceIntervalChartBlock,
+    IframeBlock,
     LineChartBlock,
     ScatterPlotBlock,
 )
@@ -38,6 +40,7 @@ class SectionContentBlock(StreamBlock):
     warning_panel = WarningPanelBlock()
     information_panel = InformationPanelBlock()
     announcement_panel = AnnouncementPanelBlock()
+    accordion = AccordionBlock()
     image = ImageChooserBlock(group="Media")
     documents = DocumentsBlock(group="Media")
     video_embed = VideoEmbedBlock(group="Media")
@@ -54,6 +57,7 @@ class SectionContentBlock(StreamBlock):
     )
     scatter_plot = ScatterPlotBlock(group="DataVis", label="Scatter Plot")
     area_chart = AreaChartBlock(group="DataVis", label="Area Chart")
+    iframe_visualisation = IframeBlock(group="DataVis", label="Iframe Visualisation")
 
     class Meta:
         template = "templates/components/streamfield/stream_block.html"

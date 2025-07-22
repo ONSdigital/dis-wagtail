@@ -130,22 +130,18 @@ class UserProfileSignalTestCase(WagtailTestUtils, TestCase):
         cls.user = cls.create_superuser(username="admin", password="password")
         cls.profile = UserProfile.get_for_user(cls.user)
 
-    def test_user_profile_notifications_disabled_on_creation(self):
+    def test_user_profile_submitted_notifications_disabled_on_creation(self):
+        # only "submitted notifications" are disabled as they are global
+        # the rest are left as they are as they require interaction with the page/workflow-enabled snippet
         self.assertFalse(self.profile.submitted_notifications)
-        self.assertFalse(self.profile.approved_notifications)
-        self.assertFalse(self.profile.rejected_notifications)
-        self.assertFalse(self.profile.updated_comments_notifications)
+        self.assertTrue(self.profile.approved_notifications)
+        self.assertTrue(self.profile.rejected_notifications)
+        self.assertTrue(self.profile.updated_comments_notifications)
 
     def test_user_profile_notifications_not_changed_on_update(self):
         self.profile.submitted_notifications = True
-        self.profile.approved_notifications = True
-        self.profile.rejected_notifications = True
-        self.profile.updated_comments_notifications = True
         self.profile.save()
 
         self.profile.refresh_from_db()
 
         self.assertTrue(self.profile.submitted_notifications)
-        self.assertTrue(self.profile.approved_notifications)
-        self.assertTrue(self.profile.rejected_notifications)
-        self.assertTrue(self.profile.updated_comments_notifications)

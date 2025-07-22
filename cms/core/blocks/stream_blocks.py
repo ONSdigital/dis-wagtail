@@ -4,6 +4,7 @@ from wagtail.blocks import RichTextBlock, StreamBlock
 from wagtail.images.blocks import ImageChooserBlock
 
 from cms.core.blocks import (
+    AccordionBlock,
     AnnouncementPanelBlock,
     DocumentsBlock,
     HeadingBlock,
@@ -48,6 +49,7 @@ class CoreStoryBlock(StreamBlock):
     warning_panel = WarningPanelBlock()
     information_panel = InformationPanelBlock()
     announcement_panel = AnnouncementPanelBlock()
+    accordion = AccordionBlock()
     video_embed = VideoEmbedBlock(group="Media")
     image = ImageChooserBlock(group="Media")
     documents = DocumentsBlock(group="Media")
