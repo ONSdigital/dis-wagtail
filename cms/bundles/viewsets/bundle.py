@@ -184,7 +184,7 @@ class BundleEditView(EditView):
                 return ["edit", "return-to-draft", "approve"]
             case BundleStatus.APPROVED:
                 actions = ["return-to-draft", "return-to-preview"]
-                if not bundle.scheduled_publication_date:
+                if bundle.can_be_manually_published:
                     actions += ["publish"]
                 return actions
             case _:
