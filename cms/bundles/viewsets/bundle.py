@@ -1,15 +1,16 @@
 import time
-from typing import TYPE_CHECKING, Any, ClassVar
+from typing import TYPE_CHECKING, Any, ClassVar, cast
 
 from django.conf import settings
 from django.core.exceptions import PermissionDenied
+from django.db.models import F
 from django.http import HttpRequest
 from django.shortcuts import redirect
 from django.urls import reverse
 from django.utils import timezone
 from django.utils.functional import cached_property
 from django.utils.html import format_html, format_html_join
-from wagtail.admin.ui.tables import Column, DateColumn, UpdatedAtColumn, UserColumn
+from wagtail.admin.ui.tables import Column, DateColumn
 from wagtail.admin.views.generic import CreateView, EditView, IndexView, InspectView
 from wagtail.admin.viewsets.model import ModelViewSet
 from wagtail.log_actions import log
@@ -363,15 +364,37 @@ class BundleIndexView(IndexView):
     """
 
     model = Bundle
+    default_ordering = "name"
 
     def get_base_queryset(self) -> "BundlesQuerySet":
-        """Modifies the Bundle queryset with the related created_by ForeignKey selected to avoid N+1 queries."""
+        """Modifies the Bundle queryset to vary results based on the user capabilities."""
         queryset: BundlesQuerySet = super().get_base_queryset()
 
         if not self.can_manage:
             queryset = queryset.previewable().filter(teams__team__in=self.request.user.active_team_ids).distinct()
 
-        return queryset.select_related("created_by").prefetch_related("teams__team")
+        return queryset
+
+    def filter_queryset(self, queryset: "BundlesQuerySet") -> "BundlesQuerySet":
+        # automatically filter out published bundles if the status filter is not applied
+        if not self.request.GET.get("status"):
+            queryset = queryset.exclude(status=BundleStatus.PUBLISHED)
+
+        return cast("BundlesQuerySet", super().filter_queryset(queryset))
+
+    def order_queryset(self, queryset: "BundlesQuerySet") -> "BundlesQuerySet":
+        if self.ordering in ["status", "-status", "scheduled_publication_date", "-scheduled_publication_date"]:
+            match self.ordering:
+                case "scheduled_publication_date":
+                    return queryset.annotate_release_date().order_by(F("release_date").asc(nulls_last=True))
+                case "-scheduled_publication_date":
+                    return queryset.annotate_release_date().order_by(F("release_date").desc(nulls_last=True))
+                case "status":
+                    return queryset.annotate_status_label().order_by(F("status_label").asc())
+                case "-status":
+                    return queryset.annotate_status_label().order_by(F("status_label").desc())
+
+        return cast("BundlesQuerySet", super().order_queryset(queryset))
 
     def get_edit_url(self, instance: Bundle) -> str | None:
         """Override the default edit url to disable the edit URL for released bundles."""
@@ -391,24 +414,11 @@ class BundleIndexView(IndexView):
     @cached_property
     def columns(self) -> list[Column]:
         """Defines the list of desired columns in the listing."""
-        if self.can_manage:
-            return [
-                self._get_title_column("__str__"),
-                Column("scheduled_publication_date", label="Scheduled for"),
-                Column("get_status_display", label="Status"),
-                UpdatedAtColumn(),
-                DateColumn(name="created_at", label="Added", sort_key="created_at"),
-                UserColumn("created_by", label="Added by"),
-                Column(name="teams", accessor="get_teams_display", label="Preview teams"),
-                DateColumn(name="approved_at", label="Approved at", sort_key="approved_at"),
-                UserColumn("approved_by"),
-            ]
-
         return [
-            self._get_title_column("__str__"),
-            Column("scheduled_publication_date", label="Scheduled for"),
-            DateColumn(name="created_at", label="Added", sort_key="created_at"),
-            UserColumn("created_by", label="Added by"),
+            self._get_title_column("name"),
+            Column("scheduled_publication_date", label="Scheduled for", sort_key="scheduled_publication_date"),
+            Column("get_status_display", label="Status", sort_key="status"),
+            DateColumn(name="updated_at", sort_key="updated_at"),
         ]
 
 

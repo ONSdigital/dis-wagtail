@@ -3,6 +3,7 @@ from http import HTTPStatus
 from unittest import mock
 
 import time_machine
+from django.db.models import F, OrderBy
 from django.test import TestCase, override_settings
 from django.urls import reverse
 from wagtail.admin.panels import get_edit_handler
@@ -50,10 +51,10 @@ class BundleViewSetTestCaseBase(WagtailTestUtils, TestCase):
         cls.bundle_index_url = reverse("bundle:index")
         cls.bundle_add_url = reverse("bundle:add")
 
-        cls.published_bundle = BundleFactory(published=True, name="Publish Bundle")
+        cls.published_bundle = BundleFactory(published=True, name="Publish test Bundle")
         cls.published_bundle_edit_url = reverse("bundle:edit", args=[cls.published_bundle.id])
 
-        cls.approved_bundle = BundleFactory(approved=True, name="Approve Bundle")
+        cls.approved_bundle = BundleFactory(approved=True, name="Approve test Bundle")
         cls.approved_bundle_edit_url = reverse("bundle:edit", args=[cls.approved_bundle.id])
 
         cls.in_review_bundle = BundleFactory(in_review=True, name="Preview Bundle")
@@ -466,16 +467,23 @@ class BundleIndexViewTestCase(BundleViewSetTestCaseBase):
         self.assertNotContains(response, self.published_bundle_edit_url)
 
         self.assertContains(response, BundleStatus.DRAFT.label, 2)  # status + status filter
-        self.assertContains(response, BundleStatus.PUBLISHED.label, 2)  # status + status filter
         self.assertContains(response, BundleStatus.APPROVED.label, 2)  # status + status filter
+        self.assertContains(response, BundleStatus.PUBLISHED.label, 1)  # status filter
 
-        self.assertContains(response, self.published_bundle.name)
         self.assertContains(response, self.approved_bundle.name)
+        self.assertContains(response, self.bundle.name)
+        self.assertNotContains(response, self.published_bundle.name)
 
-    def test_index_view_search(self):
-        response = self.client.get(f"{self.bundle_index_url}?q=publish")
+    def test_index_view_contains_published_bundle_when_status_filter_applied(self):
+        response = self.client.get(self.bundle_index_url, query_params={"status": BundleStatus.PUBLISHED})
         self.assertContains(response, self.published_bundle.name)
         self.assertNotContains(response, self.approved_bundle.name)
+        self.assertNotContains(response, self.bundle.name)
+
+    def test_index_view_search(self):
+        response = self.client.get(self.bundle_index_url, query_params={"q": "test"})
+        self.assertContains(response, self.approved_bundle.name)
+        self.assertNotContains(response, self.published_bundle.name)
 
     def test_index_view__previewers__contains_only_relevant_bundles(self):
         self.client.force_login(self.bundle_viewer)
@@ -490,6 +498,26 @@ class BundleIndexViewTestCase(BundleViewSetTestCaseBase):
         self.assertNotContains(response, self.published_bundle.name)
         self.assertNotContains(response, self.approved_bundle.name)
         self.assertNotContains(response, self.another_in_review_bundle.name)
+
+    def test_ordering(self):
+        """Checks that the correct ordering is applied."""
+        cases = {
+            "": ("name",),
+            "name": ("name",),
+            "-name": ("-name",),
+            "scheduled_publication_date": (OrderBy(F("release_date"), descending=False, nulls_last=True),),
+            "-scheduled_publication_date": (OrderBy(F("release_date"), descending=True, nulls_last=True),),
+            "status": (OrderBy(F("status_label"), descending=False),),
+            "-status": (OrderBy(F("status_label"), descending=True),),
+            "invalid_ordering": ("name",),
+        }
+        for param, order_by in cases.items():
+            with self.subTest(param=param):
+                response = self.client.get(self.bundle_index_url, query_params={"ordering": param})
+                self.assertEqual(
+                    response.context_data["object_list"].query.order_by,
+                    order_by,
+                )
 
 
 class BundleChooserViewsetTestCase(BundleViewSetTestCaseBase):
@@ -525,7 +553,9 @@ class BundlePageChooserViewsetTestCase(WagtailTestUtils, TestCase):
 
         cls.bundle = BundleFactory()
 
-        cls.page_draft = StatisticalArticlePageFactory(live=False, title="Article draft")
+        cls.page_draft = StatisticalArticlePageFactory(
+            live=False, title="Article draft", parent__title="Article series"
+        )
         cls.page_draft.save_revision()
         cls.page_live = StatisticalArticlePageFactory(live=True, title="Live page")
         cls.page_live_plus_draft = StatisticalArticlePageFactory(live=True, title="Live page with draft")
@@ -556,18 +586,18 @@ class BundlePageChooserViewsetTestCase(WagtailTestUtils, TestCase):
         )
 
     def test_choose_view(self):
-        welsh_page_draft = StatisticalArticlePageFactory(
-            live=False, title="Article draft Welsh", locale=Locale.objects.get(language_code="cy")
+        welsh_page_draft = self.page_draft.copy_for_translation(
+            locale=Locale.objects.get(language_code="cy"), copy_parents=True
         )
         welsh_page_draft.save_revision()
+
         response = self.client.get(self.chooser_url)
 
         self.assertEqual(response.status_code, 200)
         self.assertTemplateUsed(response, "wagtailadmin/generic/chooser/chooser.html")
 
-        self.assertContains(response, self.page_draft.get_admin_display_title())
-        self.assertContains(response, welsh_page_draft.get_admin_display_title())
-        self.assertContains(response, self.page_live_plus_draft.get_admin_display_title())
+        self.assertContains(response, self.page_draft.get_admin_display_title(), 2)  # en + cy
+        self.assertContains(response, self.page_live_plus_draft.get_admin_display_title(), 1)
         self.assertNotContains(response, self.page_live.get_admin_display_title())
         self.assertNotContains(response, self.page_draft_in_bundle.get_admin_display_title())
 
@@ -588,6 +618,17 @@ class BundlePageChooserViewsetTestCase(WagtailTestUtils, TestCase):
         self.assertTemplateUsed(response, "wagtailadmin/generic/chooser/chooser.html")
 
         self.assertContains(response, self.page_draft_in_bundle.get_admin_display_title())
+
+    def test_choose_view__excludes_aliases(self):
+        # create an alias for one of the pages
+        self.page_draft.copy_for_translation(
+            locale=Locale.objects.get(language_code="cy"), alias=True, copy_parents=True
+        )
+
+        response = self.client.get(self.chooser_url)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, self.page_draft.get_admin_display_title(), 1)
 
     def test_choose_view__no_results(self):
         self.page_draft.save_revision().publish()
