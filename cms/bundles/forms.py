@@ -5,16 +5,16 @@ from django import forms
 from django.core.exceptions import ValidationError
 from django.template.defaultfilters import pluralize
 from django.utils import timezone
-from wagtail.admin.forms import WagtailAdminModelForm
 
 from cms.bundles.enums import ACTIVE_BUNDLE_STATUS_CHOICES, EDITABLE_BUNDLE_STATUSES, BundleStatus
+from cms.core.forms import DeduplicateInlinePanelAdminForm
 from cms.workflows.models import ReadyToPublishGroupTask
 
 if TYPE_CHECKING:
     from .models import Bundle
 
 
-class BundleAdminForm(WagtailAdminModelForm):
+class BundleAdminForm(DeduplicateInlinePanelAdminForm):
     """The Bundle admin form used in the add/edit interface."""
 
     instance: "Bundle"
@@ -63,28 +63,12 @@ class BundleAdminForm(WagtailAdminModelForm):
         return has_datasets
 
     def _validate_bundled_pages(self) -> None:
-        """Validates and tidies up related pages.
-
-        - if we have an empty page reference, remove it form the form data
-        - ensure the selected page is not in another active bundle.
-        """
-        chosen = []
-        for idx, form in enumerate(self.formsets["bundled_pages"].forms):
+        """Validates related pages to ensure the selected page is not in another active bundle."""
+        for form in self.formsets["bundled_pages"].forms:
             if not form.is_valid():
                 continue
 
             page = form.clean().get("page")
-            if page is None:
-                # tidy up in case the page reference is empty
-                self.formsets["bundled_pages"].forms[idx].cleaned_data["DELETE"] = True
-                continue
-
-            if page in chosen:
-                # we saw this already, mark for removal to avoid duplicates.
-                self.formsets["bundled_pages"].forms[idx].cleaned_data["DELETE"] = True
-                continue
-
-            chosen.append(page)
 
             if not form.cleaned_data["DELETE"]:
                 page = page.specific
@@ -153,6 +137,11 @@ class BundleAdminForm(WagtailAdminModelForm):
         cleaned_data: dict[str, Any] = super().clean()
 
         self._validate_publication_date()
+
+        # deduplicate entries
+        self.deduplicate_formset("bundled_pages", "page")
+        self.deduplicate_formset("bundled_datasets", "dataset")
+        self.deduplicate_formset("teams", "team")
 
         self._validate_bundled_pages()
 
