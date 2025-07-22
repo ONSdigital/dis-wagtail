@@ -5,7 +5,7 @@ from behave.runner import Context
 
 from behave import given, then, when  # pylint: disable=no-name-in-module
 from playwright.sync_api import Request, Route
-from cms.auth.tests.helpers import CognitoTokenMixin
+from cms.auth.tests.helpers import CognitoTokenTestCase
 import uuid
 from playwright.sync_api import expect
 from django.contrib.auth import get_user_model
@@ -120,7 +120,7 @@ def create_valid_tokens(context):
     print(f"Keypair KID: {keypair.kid}")
 
     # Create helper instance
-    helper = CognitoTokenMixin()
+    helper = CognitoTokenTestCase()
     helper.keypair = keypair
     helper.user_uuid = context.user_uuid
 
