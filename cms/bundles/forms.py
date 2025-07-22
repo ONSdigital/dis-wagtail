@@ -26,7 +26,8 @@ class BundleAdminForm(WagtailAdminModelForm):
         - disabled/hide the approved at/by fields
         """
         super().__init__(*args, **kwargs)
-        # hide the "Released" status choice
+        # hide the status field, and exclude the "Released" status choice
+        self.fields["status"].widget = forms.HiddenInput()
         if self.instance.status in EDITABLE_BUNDLE_STATUSES:
             self.fields["status"].choices = ACTIVE_BUNDLE_STATUS_CHOICES
         elif self.instance.status == BundleStatus.APPROVED.value:

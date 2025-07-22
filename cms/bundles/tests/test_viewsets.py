@@ -6,6 +6,7 @@ import time_machine
 from django.db.models import F, OrderBy
 from django.test import TestCase, override_settings
 from django.urls import reverse
+from django.utils import timezone
 from wagtail.admin.panels import get_edit_handler
 from wagtail.models import Locale, Page
 from wagtail.test.utils import WagtailTestUtils
@@ -58,6 +59,7 @@ class BundleViewSetTestCaseBase(WagtailTestUtils, TestCase):
         cls.approved_bundle_edit_url = reverse("bundle:edit", args=[cls.approved_bundle.id])
 
         cls.in_review_bundle = BundleFactory(in_review=True, name="Preview Bundle")
+        cls.in_review_bundle_edit_url = reverse("bundle:edit", args=[cls.in_review_bundle.id])
 
         preview_team = Team.objects.create(identifier="foo", name="Preview team")
         BundleTeam.objects.create(parent=cls.in_review_bundle, team=preview_team)
@@ -77,6 +79,16 @@ class BundleViewSetTestCaseBase(WagtailTestUtils, TestCase):
 
 class BundleViewSetTestCase(BundleViewSetTestCaseBase):
     """Test Bundle viewset functionality."""
+
+    def get_base_form_data(self):
+        return nested_form_data(
+            {
+                "name": "The bundle",
+                "bundled_pages": inline_formset([{"page": self.statistical_article_page.id}]),
+                "bundled_datasets": inline_formset([]),
+                "teams": inline_formset([]),
+            }
+        )
 
     def test_bundle_add_view(self):
         """Test bundle creation."""
@@ -134,6 +146,7 @@ class BundleViewSetTestCase(BundleViewSetTestCaseBase):
                     "bundled_pages": inline_formset([{"page": self.statistical_article_page.id}]),
                     "teams": inline_formset([]),
                     "bundled_datasets": inline_formset([]),
+                    "action-edit": "action-edit",
                 }
             ),
         )
@@ -147,27 +160,84 @@ class BundleViewSetTestCase(BundleViewSetTestCaseBase):
         response = self.client.get(self.published_bundle_edit_url)
         self.assertRedirects(response, self.bundle_index_url)
 
-    def test_bundle_edit_view__updates_approved_fields_on_save_and_approve(self):
-        """Checks the fields are populated if the user clicks the 'Save and approve' button."""
+    def post_with_action_and_test(self, action, expected_status):
         self.client.force_login(self.superuser)
         mark_page_as_ready_to_publish(self.statistical_article_page, self.superuser)
-        self.client.post(
-            self.edit_url,
-            nested_form_data(
-                {
-                    "name": "Updated Bundle",
-                    "status": self.bundle.status,  # correct. "save and approve" should update the status directly
-                    "bundled_pages": inline_formset([{"page": self.statistical_article_page.id}]),
-                    "teams": inline_formset([]),
-                    "action-save-and-approve": "save-and-approve",
-                    "bundled_datasets": inline_formset([]),
-                }
-            ),
-        )
+
+        data = self.get_base_form_data()
+        data[action] = action
+        data["status"] = BundleStatus.PUBLISHED.value  # attempting to force it
+
+        response = self.client.post(self.edit_url, data)
+
         self.bundle.refresh_from_db()
-        self.assertEqual(self.bundle.status, BundleStatus.APPROVED)
+        self.assertEqual(self.bundle.status, expected_status)
+
+        return response
+
+    def test_bundle_edit_view__generic_save_preserves_the_status(self):
+        original_status = self.bundle.status
+        self.post_with_action_and_test("action-edit", original_status)
+        # self.assertRedirects(response, self.edit_url)
+
+    def test_bundle_edit_view__save_to_preview(self):
+        self.post_with_action_and_test("action-save-to-preview", BundleStatus.IN_REVIEW)
+
+    def test_bundle_edit_view__approve__from_invalid_status(self):
+        self.post_with_action_and_test("action-approve", BundleStatus.DRAFT)
+
+    @mock.patch("cms.bundles.viewsets.bundle.notify_slack_of_status_change")
+    def test_bundle_edit_view__approve__happy_path(self, mock_notify_slack):
+        self.bundle.status = BundleStatus.IN_REVIEW
+        self.bundle.save(update_fields=["status"])
+
+        self.post_with_action_and_test("action-approve", BundleStatus.APPROVED)
+
         self.assertIsNotNone(self.bundle.approved_at)
         self.assertEqual(self.bundle.approved_by, self.superuser)
+
+        self.assertTrue(mock_notify_slack.called)
+
+    def test_bundle_edit_view__return_to_preview__from_invalid_status(self):
+        self.post_with_action_and_test("action-return-to-preview", BundleStatus.DRAFT)
+
+    def test_bundle_edit_view__return_to_preview__happy_path(self):
+        self.bundle.status = BundleStatus.APPROVED
+        self.bundle.save(update_fields=["status"])
+        self.post_with_action_and_test("action-return-to-preview", BundleStatus.IN_REVIEW)
+
+    def test_bundle_edit_view__return_to_draft_from_in_preview(self):
+        self.bundle.status = BundleStatus.IN_REVIEW
+        self.bundle.save(update_fields=["status"])
+        self.post_with_action_and_test("action-return-to-draft", BundleStatus.DRAFT)
+
+    def test_bundle_edit_view__return_to_draft_from_approved(self):
+        self.bundle.status = BundleStatus.APPROVED
+        self.bundle.save(update_fields=["status"])
+        self.post_with_action_and_test("action-return-to-draft", BundleStatus.DRAFT)
+
+    def test_bundle_edit_view__publish__from_invalid_status__draft(self):
+        self.bundle.status = BundleStatus.DRAFT
+        self.bundle.save(update_fields=["status"])
+        response = self.post_with_action_and_test("action-publish", BundleStatus.DRAFT)
+        self.assertEqual(response.context["message"], "Sorry, you do not have permission to access this area.")
+
+    def test_bundle_edit_view__publish__from_invalid_status__preview(self):
+        self.bundle.status = BundleStatus.IN_REVIEW
+        self.bundle.save(update_fields=["status"])
+        response = self.post_with_action_and_test("action-publish", BundleStatus.IN_REVIEW)
+        self.assertEqual(response.context["message"], "Sorry, you do not have permission to access this area.")
+
+    def test_bundle_edit_view__manual_publish__when_scheduled(self):
+        self.bundle.status = BundleStatus.APPROVED
+        self.bundle.publication_date = timezone.now()
+        self.bundle.save(update_fields=["status", "publication_date"])
+        self.post_with_action_and_test("action-publish", BundleStatus.APPROVED)
+
+    def test_bundle_edit_view__manual_publish__happy_path(self):
+        self.bundle.status = BundleStatus.APPROVED
+        self.bundle.save(update_fields=["status"])
+        self.post_with_action_and_test("action-publish", BundleStatus.PUBLISHED)
 
     def test_bundle_edit_view__page_chooser_contain_workflow_state_information(self):
         BundlePageFactory(parent=self.bundle, page=self.statistical_article_page)
@@ -184,57 +254,12 @@ class BundleViewSetTestCase(BundleViewSetTestCaseBase):
         response = self.client.get(self.edit_url)
         self.assertContains(response, f"{page_title} (Ready to publish)")
 
-    def test_bundle_edit_view__goes_back_to_draft_on_unschedule(self):
-        """Checks the fields are populated if the user clicks the 'Save and approve' button."""
-        self.client.force_login(self.superuser)
-        mark_page_as_ready_to_publish(self.statistical_article_page, self.superuser)
-        self.client.post(
-            self.edit_url,
-            nested_form_data(
-                {
-                    "name": "Updated Bundle",
-                    "status": self.bundle.status,  # correct. "unschedule" should update the status directly
-                    "bundled_pages": inline_formset([{"page": self.statistical_article_page.id}]),
-                    "teams": inline_formset([]),
-                    "action-unschedule": "unschedule",
-                }
-            ),
-        )
-        self.bundle.refresh_from_db()
-        self.assertEqual(self.bundle.status, BundleStatus.DRAFT)
-
-    @mock.patch("cms.bundles.viewsets.bundle.notify_slack_of_status_change")
-    def test_bundle_approval__happy_path(self, mock_notify_slack):
-        """Test bundle approval workflow."""
-        self.client.force_login(self.superuser)
-
-        mark_page_as_ready_to_publish(self.statistical_article_page, self.superuser)
-
-        response = self.client.post(
-            self.edit_url,
-            nested_form_data(
-                {
-                    "name": self.bundle.name,
-                    "status": BundleStatus.APPROVED,
-                    "bundled_pages": inline_formset([{"page": self.statistical_article_page.id}]),
-                    "teams": inline_formset([]),
-                    "bundled_datasets": inline_formset([]),
-                }
-            ),
-        )
-
-        self.assertEqual(response.status_code, 302)
-        self.bundle.refresh_from_db()
-        self.assertEqual(self.bundle.status, BundleStatus.APPROVED)
-        self.assertIsNotNone(self.bundle.approved_at)
-        self.assertEqual(self.bundle.approved_by, self.superuser)
-
-        self.assertTrue(mock_notify_slack.called)
-
     @mock.patch("cms.bundles.viewsets.bundle.notify_slack_of_status_change")
     def test_bundle_approval__cannot__approve_if_pages_are_not_ready_to_publish(self, mock_notify_slack):
         """Test bundle approval workflow."""
         self.client.force_login(self.publishing_officer)
+        self.bundle.status = BundleStatus.IN_REVIEW
+        self.bundle.save(update_fields=["status"])
         original_status = self.bundle.status
 
         response = self.client.post(
@@ -245,6 +270,7 @@ class BundleViewSetTestCase(BundleViewSetTestCaseBase):
                     "status": BundleStatus.APPROVED,
                     "bundled_pages": inline_formset([{"page": self.statistical_article_page.id}]),
                     "teams": inline_formset([]),
+                    "action-approve": "action-approve",
                 }
             ),
             follow=True,

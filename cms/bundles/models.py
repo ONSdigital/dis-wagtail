@@ -160,7 +160,6 @@ class Bundle(index.Indexed, ClusterableModel, models.Model):  # type: ignore[dja
             heading="Scheduling",
             icon="calendar",
         ),
-        "status",
         InlinePanel("bundled_pages", heading="Bundled pages", icon="doc-empty", label="Page"),
         MultipleChooserPanel(
             "bundled_datasets", heading="Data API datasets", label="Dataset", chooser_field_name="dataset"
@@ -169,6 +168,7 @@ class Bundle(index.Indexed, ClusterableModel, models.Model):  # type: ignore[dja
             "teams", heading="Preview teams", icon="user", label="Preview team", chooser_field_name="team"
         ),
         # these are handled by the form
+        FieldPanel("status", classname="hidden w-hidden"),
         FieldPanel("approved_by", classname="hidden w-hidden"),
         FieldPanel("approved_at", classname="hidden w-hidden"),
     ]

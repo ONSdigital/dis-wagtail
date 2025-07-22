@@ -71,6 +71,10 @@ class BundleEditView(EditView):
         if (instance := self.get_object()) and instance.status == BundleStatus.PUBLISHED:
             return redirect(self.index_url_name)
 
+        if request.method == "POST" and self.get_action(request) not in self.get_available_actions():
+            # someone's trying to POST with an action that is not available, so bail out early
+            raise PermissionDenied
+
         response: HttpResponseBase = super().dispatch(request, *args, **kwargs)
         return response
 
@@ -90,6 +94,8 @@ class BundleEditView(EditView):
                 data["status"] = BundleStatus.IN_REVIEW.value
             elif "action-publish" in self.request.POST:
                 data["status"] = BundleStatus.PUBLISHED.value
+            else:
+                data["status"] = self.get_object().status
 
             kwargs["data"] = data
         return kwargs
@@ -149,7 +155,17 @@ class BundleEditView(EditView):
 
             notify_slack_of_publish_end(self.object, time.time() - start_time, user=self.request.user)
 
+    def get_action(self, request: "HttpRequest") -> str:
+        """Determine the POST action."""
+        for action in self.get_available_actions():
+            if request.POST.get(f"action-{action}"):
+                return action
+        # EditView.get_action falls back to "edit". We want to prevent that in order to enforce
+        # the available actions depending on the bundle status
+        return "invalid"
+
     def get_available_actions(self) -> list[str]:
+        """Determines the valid actions for the edit form depending on the bundle state."""
         bundle = self.get_object()
 
         match bundle.status:
