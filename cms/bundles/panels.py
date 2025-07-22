@@ -39,24 +39,29 @@ class BundleNotePanel(HelpPanel):
             if not hasattr(instance, "active_bundle"):
                 return ""
 
+            can_manage = user_can_manage_bundles(self.request.user)
             if bundle := instance.active_bundle:
-                if user_can_manage_bundles(self.request.user):
-                    content = format_html(
+                if can_manage:
+                    return format_html(
                         "<p>This page is in the following bundle: "
                         '<a href="{}" target="_blank" title="Manage bundle">{}</a> (Status: {})</p>',
                         reverse("bundle:edit", args=[bundle.pk]),
                         bundle.name,
                         bundle.get_status_display(),
                     )
-                else:
-                    content = format_html(
-                        "<p>This page is in the following bundle: {} (Status: {})</p>",
-                        bundle.name,
-                        bundle.get_status_display(),
-                    )
-            else:
-                content = format_html("<p>{}</p>", "This page is not part of any bundles.")
-            return content
+                return format_html(
+                    "<p>This page is in the following bundle: {} (Status: {})</p>",
+                    bundle.name,
+                    bundle.get_status_display(),
+                )
+
+            if can_manage:
+                return format_html(
+                    "<p>This page is not part of any bundles. "
+                    '<a href="{}" class="button button-small button-secondary">Add to Bundle</a></p>',
+                    reverse("bundles:add_to_bundle", args=(instance.pk,), query={"next": self.request.path}),
+                )
+            return format_html("<p>{}</p>", "This page is not part of any bundles.")
 
 
 class CustomAdminPageChooser(PagesWithDraftsForBundleChooserWidget):

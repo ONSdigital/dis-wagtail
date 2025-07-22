@@ -33,7 +33,21 @@ class BundleNotePanelTestCase(WagtailTestUtils, TestCase):
 
     def test_panel_content_without_bundles(self):
         """Test panel content when page is not in any bundles."""
-        self.assertIn("This page is not part of any bundles", self.get_bound_panel(self.page).content)
+        content = self.get_bound_panel(self.page).content
+        self.assertIn("This page is not part of any bundles", content)
+
+        # note: next=/ comes from the fact that this is a dummy request.
+        url = reverse("bundles:add_to_bundle", args=(self.page.pk,), query={"next": "/"})
+        self.assertIn(f'<a href="{url}" class="button button-small button-secondary">Add to Bundle</a></p>', content)
+
+    @patch("cms.bundles.panels.user_can_manage_bundles", return_value=False)
+    def test_panel_content_without_bundles__if_user_cannot_manage(self, _mock_can_manage_bundles):
+        """Test panel content when page is not in any bundles."""
+        content = self.get_bound_panel(self.page).content
+        self.assertIn("This page is not part of any bundles", content)
+
+        url = reverse("bundles:add_to_bundle", args=(self.page.pk,))
+        self.assertNotIn(f'<a href="{url}" class="button button-small button-secondary">Add to Bundle</a></p>', content)
 
     def test_panel_content_with_bundles(self):
         """Test panel content when page is in bundles."""
