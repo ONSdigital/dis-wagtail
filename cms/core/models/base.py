@@ -216,6 +216,11 @@ class BasePage(PageLDMixin, ListingFieldsMixin, SocialFieldsMixin, Page):  # typ
 
         return cast(str, canonical_page.get_full_url(request=request))
 
+    @cached_property
+    def analytics_values(self) -> dict[str, str | bool]:
+        """Return a dictionary of analytics values for this page."""
+        return {"pageTitle": self.title}
+
 
 class BaseSiteSetting(WagtailBaseSiteSetting):
     """A customized site setting.

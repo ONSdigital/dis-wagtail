@@ -85,6 +85,19 @@
 
     {% if GOOGLE_TAG_MANAGER_CONTAINER_ID and not request.is_preview %}
         <script>
+            window.dataLayer = window.dataLayer || [];
+            dataLayer.push({
+                "product": "wagtail",
+            });
+        </script>
+
+        {% if page %}
+            <script>
+                dataLayer.push({{ page.analytics_values|tojson }});
+            </script>
+        {% endif %}
+
+        <script>
             function loadGTM(){
                 (function(w,d,s,l,i){
                     w[l]=w[l]||[];

@@ -27,6 +27,7 @@ from cms.core.blocks.stream_blocks import SectionStoryBlock
 from cms.core.custom_date_format import ons_date_format
 from cms.core.fields import StreamField
 from cms.core.models import BasePage
+from cms.core.utils import google_analytics_date_format
 from cms.core.widgets import date_widget
 from cms.datasets.blocks import DatasetStoryBlock
 from cms.datasets.utils import format_datasets_as_document_list
@@ -529,7 +530,9 @@ class StatisticalArticlePage(BundledPageMixin, RoutablePageMixin, BasePage):  # 
             else []
         )
         notices = (
-            [serialize_correction_or_notice(notice) for notice in self.notices] if self.notices else []  # pylint: disable=not-an-iterable
+            [serialize_correction_or_notice(notice) for notice in self.notices]  # pylint: disable=not-an-iterable
+            if self.notices
+            else []
         )
         return corrections, notices
 
@@ -580,3 +583,23 @@ class StatisticalArticlePage(BundledPageMixin, RoutablePageMixin, BasePage):  # 
             return cast(str, canonical_page.get_parent().get_full_url(request=request))
 
         return super().get_canonical_url(request=request)
+
+    @cached_property
+    def analytics_values(self) -> dict[str, str | bool]:
+        parent_series = self.get_parent()
+        parent_topic = parent_series.get_parent()  # TODO needs updating after URL restructure
+
+        values = {
+            "pageTitle": self.get_full_display_title(),
+            "contentType": "statistical-articles",
+            "contentGroup": parent_topic.slug,
+            "outputSeries": parent_series.slug,
+            "outputEdition": self.slug,
+            "releaseDate": google_analytics_date_format(self.release_date),
+            "latestRelease": self.is_latest,
+            "wordCount": "755",  # TODO implement word count calculation
+            "contentTheme": "Business, Industry and Trade",  # TODO what is this?
+        }
+        if self.next_release_date:
+            values["nextReleaseDate"] = google_analytics_date_format(self.next_release_date)
+        return super().analytics_values | values
