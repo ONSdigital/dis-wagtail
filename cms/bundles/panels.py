@@ -23,7 +23,7 @@ class BundleStatusPanel(HelpPanel):
             if not hasattr(instance, "status"):
                 return ""
 
-            return format_html("<p>{}</p>", instance.get_status_display())
+            return format_html("<p>{}</p>", instance.get_status_display())  # type: ignore[attr-defined]
 
 
 class BundleNotePanel(HelpPanel):

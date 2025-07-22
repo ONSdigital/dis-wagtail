@@ -51,7 +51,7 @@ class BundleCreateView(CreateView):
         return instance
 
     def get_success_url(self) -> str:
-        return self.get_edit_url()
+        return cast(str, self.get_edit_url())
 
     def get_success_message(self, instance: Bundle) -> str:
         return "Bundle successfully created."
@@ -193,25 +193,25 @@ class BundleEditView(EditView):
     def get_success_url(self) -> str:
         match self.object.status:
             case BundleStatus.IN_REVIEW:
-                if "action-edit" in self.request.POST:
-                    return self.get_edit_url()
-                return self.get_inspect_url()
+                url = self.get_edit_url() if "action-edit" in self.request.POST else self.get_inspect_url()
             case BundleStatus.APPROVED:
-                return self.get_inspect_url()
+                url = self.get_inspect_url()
             case BundleStatus.PUBLISHED:
-                return reverse(self.index_url_name)
+                url = reverse(self.index_url_name)
             case _:
-                return self.get_edit_url()
+                url = self.get_edit_url()
+        return cast(str, url)
 
     def get_success_buttons(self) -> list:
         # only include the edit button when not staying on the edit page.
         match self.object.status:
             case BundleStatus.IN_REVIEW:
-                return super().get_success_buttons()
+                buttons = cast(list, super().get_success_buttons())
             case BundleStatus.APPROVED:
-                return super().get_success_buttons()
+                buttons = cast(list, super().get_success_buttons())
             case _:
-                return []
+                buttons = []
+        return buttons
 
     def get_context_data(self, **kwargs: Any) -> dict:
         """Updates the template context.
