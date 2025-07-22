@@ -204,14 +204,13 @@ class BundleEditView(EditView):
 
     def get_success_buttons(self) -> list:
         # only include the edit button when not staying on the edit page.
-        match self.object.status:
-            case BundleStatus.IN_REVIEW:
-                buttons = cast(list, super().get_success_buttons())
-            case BundleStatus.APPROVED:
-                buttons = cast(list, super().get_success_buttons())
-            case _:
-                buttons = []
-        return buttons
+        if "action-edit" in self.request.POST:
+            return []
+
+        if self.object.status in [BundleStatus.IN_REVIEW, BundleStatus.APPROVED]:
+            return cast(list, super().get_success_buttons())
+
+        return []
 
     def get_context_data(self, **kwargs: Any) -> dict:
         """Updates the template context.
