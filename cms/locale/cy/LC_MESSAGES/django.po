@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-07-22 10:14+0100\n"
+"POT-Creation-Date: 2025-07-22 11:15+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -508,6 +508,10 @@ msgstr ""
 msgid "Related publications"
 msgstr ""
 
+#: cms/release_calendar/forms.py:223
+msgid "To be confirmed"
+msgstr "I'w gadarnhau"
+
 #: cms/settings/base.py:365
 msgid "English"
 msgstr ""
@@ -519,6 +523,3 @@ msgstr "Cymraeg"
 #: cms/settings/base.py:367
 msgid "Ukrainian"
 msgstr ""
-
-msgid "To be confirmed"
-msgstr "I'w gadarnhau"
