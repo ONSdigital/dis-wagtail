@@ -35,6 +35,7 @@ class MethodologyIndexPage(BasePage):  # type: ignore[django-manager-missing]
     max_count_per_parent = 1
     parent_page_types: ClassVar[list[str]] = ["topics.TopicPage"]
     page_description = "A place for all methodologies."
+    preview_modes: ClassVar[list[str]] = []  # Disabling the preview mode as this redirects away
 
     def clean(self) -> None:
         self.slug = "methodologies"

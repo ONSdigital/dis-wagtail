@@ -48,6 +48,7 @@ class ArticlesIndexPage(BasePage):  # type: ignore[django-manager-missing]
     max_count_per_parent = 1
     parent_page_types: ClassVar[list[str]] = ["topics.TopicPage"]
     page_description = "A container for statistical article series. Used for URL structure purposes."
+    preview_modes: ClassVar[list[str]] = []  # Disabling the preview mode as this redirects away
 
     content_panels: ClassVar[list["Panel"]] = [
         *Page.content_panels,
