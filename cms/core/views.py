@@ -34,8 +34,21 @@ def page_not_found(
 
 
 def server_error(request: "HttpRequest", template_name: str = "templates/pages/errors/500.html") -> HttpResponse:
-    """Custom 500 error view to use our error template."""
-    return defaults.server_error(request, template_name)
+    try:
+        # Attempt to render the main, translatable 500 page.
+        return render(request, template_name, status=500)
+    except Exception as e:  # pylint: disable=broad-exception-caught
+        # If any exception occurs, log it and fall back.
+        logger.error("Error rendering the primary 500.html page: %s. Falling back to the basic version.", e)
+        try:
+            # Render a simple, dependency-free HTML file.
+            return render(request, "templates/pages/errors/500_fallback.html", status=500)
+        except Exception as final_e:  # pylint: disable=broad-exception-caught
+            # As a last resort, if even the basic template fails, return a short, plain response.
+            logger.critical("FATAL: Could not render the basic 500 page: %s", final_e)
+            return HttpResponseServerError(
+                "<h1>Server Error (500)</h1><p>Sorry, there's a problem with the service.</p>", content_type="text/html"
+            )
 
 
 def csrf_failure(

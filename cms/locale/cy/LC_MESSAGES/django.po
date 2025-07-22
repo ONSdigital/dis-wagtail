@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-07-22 11:15+0100\n"
+"POT-Creation-Date: 2025-07-22 15:09+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -214,6 +214,7 @@ msgid "Page not found"
 msgstr ""
 
 #: cms/jinja2/templates/pages/errors/404.html:5
+#: cms/jinja2/templates/pages/errors/500.html:5
 msgid "If you entered a web address, check it is correct."
 msgstr ""
 
@@ -222,10 +223,22 @@ msgid "If you pasted the web address, check you copied the whole address."
 msgstr ""
 
 #: cms/jinja2/templates/pages/errors/404.html:7
+#: cms/jinja2/templates/pages/errors/500.html:7
 #, python-format
 msgid ""
 "If the web address is correct, or you selected a link or button, <a "
 "href=\"%(contact_url)s\">contact us</a>."
+msgstr ""
+
+#: cms/jinja2/templates/pages/errors/500.html:2
+msgid "Sorry, there's a problem with the service"
+msgstr ""
+
+#: cms/jinja2/templates/pages/errors/500.html:6
+#, python-format
+msgid ""
+"Our scheduled publications can also be found on our <a "
+"href=\"%(backup_url)s\">backup site</a>."
 msgstr ""
 
 #: cms/jinja2/templates/pages/information_page.html:8
