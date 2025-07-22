@@ -73,7 +73,7 @@ Feature: CMS users can draft, edit, and publish release pages
     And the user enters some example content on the page
     And the user enters both next release date and next release date text
     And the user clicks "Publish"
-    Then An error message says you cannot enter a next release date and a next release date text at the same time
+    Then an error message says you cannot enter a next release date and a next release date text at the same time
 
 # Preview modes
 

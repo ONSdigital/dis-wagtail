@@ -152,7 +152,7 @@ def user_adds_both_next_and_release_date(context: Context):
     context.page.locator("#id_next_release_date_text").fill("December 2025")
 
 
-@then("An error message says you cannot enter a next release date and a next release date text at the same time")
+@then("an error message says you cannot enter a next release date and a next release date text at the same time")
 def error_cannot_have_both_next_release_date_and_text(context: Context):
     expect(context.page.get_by_text("The page could not be created")).to_be_visible()
     expect(
