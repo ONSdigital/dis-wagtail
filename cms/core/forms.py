@@ -34,13 +34,8 @@ class DeduplicateInlinePanelAdminForm(WagtailAdminPageForm):
             if not form.is_valid():
                 continue
             item = form.clean().get(target_field)
-            if item is None:
-                # tidy up in case the page reference is empty
-                self.formsets[formset].forms[idx].cleaned_data["DELETE"] = True
-                continue
-
-            if item in chosen:
-                # we saw this already, mark for removal to avoid duplicates
+            if item is None or item in chosen:
+                # tidy up in case the page reference is empty or we saw this already
                 self.formsets[formset].forms[idx].cleaned_data["DELETE"] = True
                 continue
 
