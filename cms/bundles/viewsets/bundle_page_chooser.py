@@ -4,12 +4,16 @@ from django import forms
 from wagtail.admin.forms.choosers import BaseFilterForm, LocaleFilterMixin, SearchFilterMixin
 from wagtail.admin.ui.tables import Column, DateColumn, LocaleColumn
 from wagtail.admin.ui.tables.pages import PageStatusColumn
-from wagtail.admin.views.generic.chooser import ChooseResultsView, ChooseView
+from wagtail.admin.views.generic.chooser import ChooseResultsView, ChooseView, ChosenMultipleView, ChosenView
 from wagtail.admin.viewsets.chooser import ChooserViewSet
 from wagtail.admin.widgets import BaseChooser
 from wagtail.models import Page
 
-from cms.bundles.utils import get_bundleable_page_types, get_pages_in_active_bundles
+from cms.bundles.utils import (
+    get_bundleable_page_types,
+    get_page_title_with_workflow_status,
+    get_pages_in_active_bundles,
+)
 
 if TYPE_CHECKING:
     from wagtail.query import PageQuerySet
@@ -86,10 +90,23 @@ class PagesWithDraftsForBundleChooseView(PagesWithDraftsMixin, ChooseView): ...
 class PagesWithDraftsForBundleChooseResultsView(PagesWithDraftsMixin, ChooseResultsView): ...
 
 
+class BundlePagesChosenMixin:
+    def get_display_title(self, instance: Page) -> str:
+        return get_page_title_with_workflow_status(instance)
+
+
+class BundlePagesChosenView(BundlePagesChosenMixin, ChosenView): ...
+
+
+class BundlePagesChosenMultipleView(BundlePagesChosenMixin, ChosenMultipleView): ...
+
+
 class PagesWithDraftsForBundleChooserViewSet(ChooserViewSet):
     model = Page
     choose_view_class = PagesWithDraftsForBundleChooseView
     choose_results_view_class = PagesWithDraftsForBundleChooseResultsView
+    chosen_view_class = BundlePagesChosenView
+    chosen_multiple_view_class = BundlePagesChosenMultipleView
     preserve_url_parameters: ClassVar[list[str]] = ["multiple", "bundle_id"]
     register_widget = False
 

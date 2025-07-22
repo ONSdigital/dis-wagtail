@@ -5,6 +5,7 @@ from django.utils.html import format_html
 from wagtail.admin.panels import FieldPanel, HelpPanel
 
 from cms.bundles.permissions import user_can_manage_bundles
+from cms.bundles.utils import get_page_title_with_workflow_status
 from cms.bundles.viewsets.bundle_page_chooser import PagesWithDraftsForBundleChooserWidget
 
 if TYPE_CHECKING:
@@ -60,12 +61,7 @@ class BundleNotePanel(HelpPanel):
 
 class CustomAdminPageChooser(PagesWithDraftsForBundleChooserWidget):
     def get_display_title(self, instance: "Page") -> str:
-        title: str = instance.specific_deferred.get_admin_display_title()
-
-        if workflow_state := instance.current_workflow_state:
-            return f"{title} ({workflow_state.current_task_state.task.name})"
-
-        return f"{title} (Draft)"
+        return get_page_title_with_workflow_status(instance)
 
 
 class PageChooserWithStatusPanel(FieldPanel):

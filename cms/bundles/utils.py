@@ -161,3 +161,12 @@ def get_preview_items_for_bundle(bundle: "Bundle", page_id: int, pages_in_bundle
         )
 
     return preview_items
+
+
+def get_page_title_with_workflow_status(page: Page) -> str:
+    title: str = page.specific_deferred.get_admin_display_title()
+
+    if workflow_state := page.current_workflow_state:
+        return f"{title} ({workflow_state.current_task_state.task.name})"
+
+    return f"{title} (Draft)"

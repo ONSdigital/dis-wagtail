@@ -760,9 +760,37 @@ class BundlePageChooserViewsetTestCase(WagtailTestUtils, TestCase):
         self.assertContains(response, topic_page_draft.get_admin_display_title())
         self.assertNotContains(response, self.page_live.get_admin_display_title())
 
-    def test_featured_series_viewset_configuration(self):
+    def test_chooser_viewset_configuration(self):
         self.assertFalse(bundle_page_chooser_viewset.register_widget)
         self.assertEqual(bundle_page_chooser_viewset.model, Page)
         self.assertEqual(bundle_page_chooser_viewset.choose_one_text, "Choose a page")
         self.assertEqual(bundle_page_chooser_viewset.choose_another_text, "Choose another page")
         self.assertEqual(bundle_page_chooser_viewset.edit_item_text, "Edit this page")
+
+    def test_chosen(self):
+        response = self.client.get(
+            reverse(
+                bundle_page_chooser_viewset.get_url_name("chosen"),
+                args=[self.page_draft.pk],
+            )
+        )
+        response_json = response.json()
+
+        self.assertEqual(response_json["result"]["id"], str(self.page_draft.pk))
+        self.assertEqual(response_json["result"]["title"], f"{self.page_draft.get_admin_display_title()} (Draft)")
+
+    def test_chosen_multiple(self):
+        mark_page_as_ready_for_review(self.page_draft)
+        response = self.client.get(
+            reverse(
+                bundle_page_chooser_viewset.get_url_name("chosen"),
+                args=[self.page_draft.pk],
+                query={"multiple": True},
+            )
+        )
+        response_json = response.json()
+
+        self.assertEqual(response_json["result"][0]["id"], str(self.page_draft.pk))
+        self.assertEqual(
+            response_json["result"][0]["title"], f"{self.page_draft.get_admin_display_title()} (In Preview)"
+        )
