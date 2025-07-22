@@ -164,7 +164,7 @@ class BundleViewSetTestCase(BundleViewSetTestCaseBase):
         response = self.client.get(self.published_bundle_edit_url)
         self.assertRedirects(response, self.bundle_index_url)
 
-    def post_with_action_and_test(self, action: str, expected_status: BundleStatus, redirects_to: str | None = None):
+    def post_with_action_and_test(self, action: str, expected_status: BundleStatus, redirects_to: str):
         self.client.force_login(self.superuser)
         mark_page_as_ready_to_publish(self.statistical_article_page, self.superuser)
 
@@ -173,8 +173,7 @@ class BundleViewSetTestCase(BundleViewSetTestCaseBase):
         data["status"] = BundleStatus.PUBLISHED.value  # attempting to force it
 
         response = self.client.post(self.edit_url, data)
-        if redirects_to:
-            self.assertRedirects(response, redirects_to)
+        self.assertRedirects(response, redirects_to)
 
         self.bundle.refresh_from_db()
         self.assertEqual(self.bundle.status, expected_status)
