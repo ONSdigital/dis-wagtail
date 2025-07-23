@@ -93,7 +93,7 @@
 
         {% if page %}
             <script>
-                dataLayer.push({{ page.analytics_values|tojson }});
+                dataLayer.push({{ page.get_analytics_values(request)|tojson }});
             </script>
         {% endif %}
 

@@ -217,9 +217,13 @@ class BasePage(PageLDMixin, ListingFieldsMixin, SocialFieldsMixin, Page):  # typ
         return cast(str, canonical_page.get_full_url(request=request))
 
     @cached_property
-    def analytics_values(self) -> dict[str, str | bool]:
-        """Return a dictionary of analytics values for this page."""
+    def cached_analytics_values(self) -> dict[str, str | bool]:
+        """Return a dictionary of cachable analytics values for this page."""
         return {"pageTitle": self.title}
+
+    def get_analytics_values(self, request: "HttpRequest") -> dict[str, str | bool]:
+        """Return a dictionary of analytics values for this page."""
+        return self.cached_analytics_values
 
 
 class BaseSiteSetting(WagtailBaseSiteSetting):

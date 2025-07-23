@@ -585,7 +585,7 @@ class StatisticalArticlePage(BundledPageMixin, RoutablePageMixin, BasePage):  # 
         return super().get_canonical_url(request=request)
 
     @cached_property
-    def analytics_values(self) -> dict[str, str | bool]:
+    def cached_analytics_values(self) -> dict[str, str | bool]:
         parent_series = self.get_parent()
         parent_topic = parent_series.get_parent()  # TODO needs updating after URL restructure
 
@@ -598,8 +598,17 @@ class StatisticalArticlePage(BundledPageMixin, RoutablePageMixin, BasePage):  # 
             "releaseDate": google_analytics_date_format(self.release_date),
             "latestRelease": self.is_latest,
             "wordCount": "755",  # TODO implement word count calculation
-            "contentTheme": "Business, Industry and Trade",  # TODO what is this?
+            "contentTheme": "Business, Industry and Trade",  # TODO what is this? The top parent of the taxonomy topic?
         }
+
         if self.next_release_date:
             values["nextReleaseDate"] = google_analytics_date_format(self.next_release_date)
-        return super().analytics_values | values
+        return super().cached_analytics_values | values
+
+    def get_analytics_values(self, request: "HttpRequest") -> dict[str, str | bool]:
+        values = self.cached_analytics_values
+        if self.is_latest and request.path == self.get_url(request):
+            # If this is the latest release, but the request path is the full page URL, not the evergreen latest,
+            # then include the evergreen latest URL (the parent series URL) in the analytics values.
+            values["pageURL"] = self.get_parent().get_full_url(request)
+        return values
