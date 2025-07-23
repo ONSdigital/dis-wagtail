@@ -22,7 +22,7 @@ Feature: A general use of Methodology Page
 
     Scenario: A CMS user can add a Contact Details snippet on the Methodology page
         Given a topic page exists under a theme page
-        And a contact detail snippet exists
+        And a contact details snippet exists
         And a superuser logs into the admin site
         When the user creates a methodology page as a child of the existing topic page
         And the user populates the methodology page

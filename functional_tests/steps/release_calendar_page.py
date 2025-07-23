@@ -74,7 +74,7 @@ def user_enters_cancelled_release_content(context: Context):
     user_enters_example_release_content(context)
 
 
-@when("the user adds contact detail")
+@when("the user adds contact details")
 def user_adds_contact_detail(context: Context):
     context.page.get_by_role("button", name="Choose contact details").click()
     context.page.get_by_role("link", name=context.contact_details_snippet.name).click()
@@ -159,7 +159,7 @@ def display_cancelled_page(context: Context):
     expect(context.page.get_by_text("Notice cancelled")).to_be_visible()
 
 
-@when("the user adds related link")
+@when("the user adds related links")
 def user_adds_related_links(context: Context):
     context.page.locator("#panel-child-content-related_links-content").get_by_role(
         "button", name="Insert a block"
@@ -168,7 +168,7 @@ def user_adds_related_links(context: Context):
     context.page.get_by_role("link", name="Home").click()
 
 
-@then("related link is displayed")
+@then("related links are displayed")
 def displayed_related_links(context: Context):
     expect(context.preview_page.get_by_role("heading", name="You might also be interested")).to_be_visible()
     expect(context.preview_page.locator("#links").get_by_role("link", name="Home")).to_be_visible()
@@ -218,7 +218,7 @@ def user_adds_pre_release_access(context: Context):
     page.get_by_role("region", name="Description *").get_by_role("textbox").fill("Description")
 
 
-@then("pre-release access information is displayed")
+@then("the pre-release access information is displayed")
 def displayed_pre_release_access(context: Context):
     page = context.preview_page
     expect(page.get_by_text("Pre-release access list")).to_be_visible()
