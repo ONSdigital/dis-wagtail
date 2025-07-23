@@ -15,8 +15,6 @@ The Wagtail CMS for managing and publishing content for the Office for National 
 
 ## Table of Contents
 
-[//]: # ':TODO: Enable link checking once https://github.com/tcort/markdown-link-check/issues/250 is resolved.'
-
 - [Getting Started](#getting-started)
     - [Pre-requisites](#pre-requisites)
     - [Setup](#setup)
@@ -33,6 +31,7 @@ The Wagtail CMS for managing and publishing content for the Office for National 
         - [pre-commit](#pre-commit)
         - [Megalinter](#megalinter-lintformat-non-python-files)
     - [Mailpit (Email Testing)](#mailpit-email-testing)
+    - [Installing the Required LaTeX Packages for Local Development](#installing-the-required-latex-packages-for-local-development)
     - [Django Migrations](#django-migrations)
 - [Contributing](#contributing)
 - [License](#license)
@@ -57,8 +56,9 @@ Ensure you have the following installed:
    using the Docker setup.
 5. **[Node](https://nodejs.org/en)** and **[`nvm` (Node Version Manager)](https://github.com/nvm-sh/nvm)** for front-end
    tooling.
-6. **[JQ](https://jqlang.github.io/jq/)** for the step in the build that installs the design system templates
-7. **Operation System**: Ubuntu/MacOS
+6. **[JQ](https://jqlang.github.io/jq/)** for the step in the build that installs the design system templates.
+7. `texlive-latex-extra` and `texlive-fonts-recommended`: Required by `matplotlib` to render LaTeX equations. See [below](#installing-the-required-latex-packages-for-local-development) for instructions on how to install on macOS.
+8. **Operation System**: Ubuntu/ MacOS.
 
 ### Setup
 
@@ -182,6 +182,7 @@ In order to run it:
     - creating a superuser with:
         - username: `admin`
         - password: `changeme` # pragma: allowlist secret
+    - setting the port the Wagtail site(s)
 
     ```bash
     make dev-init
@@ -461,6 +462,16 @@ and every `send_mail` call will appear instantly in the UI.
 > ```python
 > EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 > ```
+
+### Installing The Required LaTeX Packages For Local Development
+
+In order to generate the equations in Wagtail using LaTeX strings via Matplotlib (Non-JS Equations), we will need to use `MacPorts` to install the following packages `texlive-latex-extra` and `texlive-fonts-recommended`.
+
+As a prerequisite you will have to have [MacPorts](https://www.macports.org/install.php) installed.
+
+```bash
+sudo port install texlive-latex-extra texlive-fonts-recommended
+```
 
 ### Django Migrations
 

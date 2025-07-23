@@ -3212,6 +3212,23 @@ files = [
 ]
 
 [[package]]
+name = "wagtail-schema-org"
+version = "4.1.1"
+description = "Add Schema.org JSON-LD to your website"
+optional = false
+python-versions = "*"
+files = [
+    {file = "wagtail-schema.org-4.1.1.tar.gz", hash = "sha256:23b68ee7d7db710d7c6f253c96bcbdc2b14543fc86a62374d837ffaa50e85096"},
+    {file = "wagtail_schema.org-4.1.1-py2.py3-none-any.whl", hash = "sha256:0bb84bd0ac2aeec49a16a8dc7deab9e6d0754613b83a69407f7eefcd4ed1ae51"},
+]
+
+[package.dependencies]
+wagtail = ">=4.1"
+
+[package.extras]
+testing = ["jinja2 (>=2.10,<3.0)", "markupsafe (==2.0.1)"]
+
+[[package]]
 name = "wagtail-tinytableblock"
 version = "0.3.4"
 description = "A Wagtail StreamField block powered by TinyMCE and its table plugin"
@@ -3343,4 +3360,4 @@ files = [
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.13"
-content-hash = "7c8b3b277ffa349b9c4305502f9771e71b1d9a6d4034636f287b970200919018"
+content-hash = "f8a41edb1bfc28a8a0007a0326b5dace60dd0fcc668510c0edeee75a2f1874f6"
