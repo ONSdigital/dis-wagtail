@@ -10,7 +10,9 @@ Feature: CMS user can manage changes to release date on the release calendar pag
     When the user navigates to the published release calendar page
     And the user adds a release date change
     And the user clicks the "Save Draft" button
-    And the user opens the preview in a new tab with a preview mode of "Published"
+    And the user clicks the "Preview" button
+    And the user changes preview mode to "Published"
+    And the preview tab is opened
     Then the release date change is displayed
 
   Scenario: A CMS user cannot delete a release date change once the release page is published

@@ -8,13 +8,15 @@ Feature: CMS users can draft, edit, and publish release pages
 
   Scenario Outline: A CMS user can use preview modes to preview the page at different statuses
     When the user clicks "Add child page" to create a new draft release page
-    And the user enters "<PreviewMode>" page content
+    And the user enters "<PageStatus>" page content
     And the user clicks the "Save Draft" button
-    And the user opens the preview in a new tab with a preview mode of "<PreviewMode>"
-    Then the "<PreviewMode>" page is displayed in the preview tab
+    And the user clicks the "Preview" button
+    And the user changes preview mode to "<PageStatus>"
+    And the preview tab is opened
+    Then the "<PageStatus>" page is displayed in the preview tab
 
     Examples:
-      | PreviewMode |
+      | PageStatus  |
       | Provisional |
       | Confirmed   |
       | Published   |
@@ -44,7 +46,9 @@ Feature: CMS users can draft, edit, and publish release pages
     When the user navigates to the published release calendar page
     And the user adds <Feature>
     And the user clicks the "Save Draft" button
-    And the user opens the preview in a new tab with a preview mode of "Published"
+    And the user clicks the "Preview" button
+    And the user changes preview mode to "Published"
+    And the preview tab is opened
     Then <Feature> is displayed
 
     Examples:
