@@ -232,7 +232,7 @@ msgstr ""
 
 #: cms/jinja2/templates/pages/errors/500.html:2
 msgid "Sorry, there's a problem with the service"
-msgstr ""
+msgstr "Mae'n ddrwg gennym, mae problem gyda'r gwasanaeth"
 
 #: cms/jinja2/templates/pages/errors/500.html:6
 #, python-format
