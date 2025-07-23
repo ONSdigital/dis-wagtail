@@ -5,7 +5,7 @@ from django.db import migrations, models
 
 class Migration(migrations.Migration):
     dependencies = [
-        ("bundles", "0004_bundleteam_preview_notification_sent"),
+        ("bundles", "0005_bundle_updated_at"),
     ]
 
     operations = [
