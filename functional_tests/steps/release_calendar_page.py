@@ -96,20 +96,6 @@ def check_that_default_status_is_provisional_and_release_date_text_is_visible(
     expect(context.page.get_by_text("Or, release date text")).to_be_visible()
 
 
-@when('the user changes preview mode to "{page_status}"')
-def user_changes_preview_mode(context: Context, page_status: str):
-    context.page.get_by_label("Preview mode").select_option(page_status)
-
-
-@when("the preview tab is opened")
-def open_preview_tab(context: Context):
-    context.page.get_by_role("link", name="Preview in new tab").click()
-
-    with context.page.expect_popup() as page1_info:
-        context.page.get_by_role("link", name="Preview in new tab").click()
-    context.preview_page = page1_info.value
-
-
 @then('the "Provisional" page is displayed')
 def display_provisional_release_page(context: Context):
     expect(context.page.get_by_text("This release is not yet")).to_be_visible()
