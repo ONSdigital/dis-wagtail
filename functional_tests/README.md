@@ -2,27 +2,31 @@
 
 <!-- TOC -->
 
-- [Structure](#structure)
-- [Dependencies](#dependencies)
+- [Functional Tests](#functional-tests)
+  - [Structure](#structure)
+  - [Dependencies](#dependencies)
     - [App Instance For Test Development](#app-instance-for-test-development)
     - [Clearing and Initialising the Functional Test Development Database](#clearing-and-initialising-the-functional-test-development-database)
-- [Running the Tests](#running-the-tests)
+      - [Using DSLR Snapshots for Development](#using-dslr-snapshots-for-development)
+  - [Running the Tests](#running-the-tests)
     - [Playwright Options](#playwright-options)
-- [Developing Tests](#developing-tests)
+  - [Developing Tests](#developing-tests)
     - [Useful Documentation](#useful-documentation)
-- [Viewing Failure Traces](#viewing-failure-traces)
+  - [Viewing Failure Traces](#viewing-failure-traces)
     - [Viewing the Failure Trace from GitHub Actions](#viewing-the-failure-trace-from-github-actions)
-- [Test Code Standards and Style Guide](#test-code-standards-and-style-guide)
+  - [Test Data Setup](#test-data-setup)
+  - [Test Code Standards and Style Guide](#test-code-standards-and-style-guide)
     - [Context Use](#context-use)
+      - [Only step functions and environment hooks should interact with the context attributes](#only-step-functions-and-environment-hooks-should-interact-with-the-context-attributes)
     - [Sharing Code Between Steps](#sharing-code-between-steps)
     - [Step wording](#step-wording)
     - [Assertions](#assertions)
     - [Step parameter types](#step-parameter-types)
-- [How the Tests Work](#how-the-tests-work)
+  - [How the Tests Work](#how-the-tests-work)
     - [Django Test Runner and Test Case](#django-test-runner-and-test-case)
     - [Database Snapshot and Restore](#database-snapshot-and-restore)
     - [Playwright](#playwright)
-- [Why Aren't We Using Existing Django Testing Modules?](#why-arent-we-using-existing-django-testing-modules)
+  - [Why Aren't We Using Existing Django Testing Modules?](#why-arent-we-using-existing-django-testing-modules)
     - [Pytest-BDD](#pytest-bdd)
     - [Behave-Django](#behave-django)
 
@@ -89,7 +93,7 @@ wiping your normal local development environment.
 
 ```shell
 poetry run python manage.py reset_db --settings=cms.settings.functional_test
-poetry run python manage.py migrate --settings=cms.settings.functional_test
+poetry run python manage.py locked_migrate --settings=cms.settings.functional_test
 ```
 
 Then for logging into the CMS, create a superuser with

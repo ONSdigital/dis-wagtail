@@ -11,4 +11,4 @@ To work around this, there's a custom `locked_migrate` management command. This 
 Advisory locks are automatically released when the connections is terminated. If multiple processes are waiting for the lock, the first is given the lock (First in, first out).
 
 > [!WARNING]
-> Running `manage.py migrate` directly is still supported, however does not do any locking checks. Ensure no other migration commands are running before running this.
+> Unless absolutely necessary, `locked_migrate` should always be used. Running `manage.py migrate` directly is still supported, however does not do any locking checks. Ensure no other migration commands are running before running this.
