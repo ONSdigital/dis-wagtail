@@ -38,9 +38,21 @@ class BundleAdminForm(DeduplicateInlinePanelAdminForm):
                 elif self.instance.publication_date:
                     fields_to_exclude_from_being_disabled.append("publication_date")
 
+            # disable all direct fields
             for field_name in self.fields:
                 if field_name not in fields_to_exclude_from_being_disabled:
                     self.fields[field_name].disabled = True
+
+            if "data" in kwargs and kwargs["data"].get("status") != BundleStatus.APPROVED.value:
+                # the form is initialised in a POST request, and the status has changed
+                # drop the InlinePanel formsets (bundle_pages, bundle_datasets, teams) so
+                # no changes are made
+                self.formsets: dict[str, Any] = {}
+            else:
+                # we're initializing the form with GET, tell th InlinePanel formsets they cannot
+                # add more items, so the "Add X" button is not shown
+                for formset in self.formsets.values():
+                    formset.max_num = len(formset.forms)
 
         # fully hide and disable the approved_at/by fields to prevent form tampering
         self.fields["approved_at"].disabled = True
@@ -52,6 +64,8 @@ class BundleAdminForm(DeduplicateInlinePanelAdminForm):
 
     def _has_datasets(self) -> bool:
         has_datasets = False
+        if "bundled_pages" not in self.formsets:
+            return False
         for form in self.formsets["bundled_datasets"].forms:
             if not form.is_valid() or form.cleaned_data["DELETE"]:
                 continue
@@ -64,6 +78,8 @@ class BundleAdminForm(DeduplicateInlinePanelAdminForm):
 
     def _validate_bundled_pages(self) -> None:
         """Validates related pages to ensure the selected page is not in another active bundle."""
+        if "bundled_pages" not in self.formsets:
+            return
         for form in self.formsets["bundled_pages"].forms:
             if not form.is_valid():
                 continue

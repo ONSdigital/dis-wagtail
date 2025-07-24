@@ -1,8 +1,9 @@
-from typing import TYPE_CHECKING, Any, Union
+from typing import TYPE_CHECKING, Any, Union, cast
 
 from django.urls import reverse
+from django.utils.functional import cached_property
 from django.utils.html import format_html
-from wagtail.admin.panels import FieldPanel, HelpPanel
+from wagtail.admin.panels import FieldPanel, HelpPanel, MultipleChooserPanel
 
 from cms.bundles.permissions import user_can_manage_bundles
 from cms.bundles.utils import get_page_title_with_workflow_status
@@ -64,12 +65,71 @@ class BundleNotePanel(HelpPanel):
             return format_html("<p>{}</p>", "This page is not part of any bundles.")
 
 
+class BundleFieldPanel(FieldPanel):
+    """Defines a bundle-specific FieldPanel that is conditionally read-only."""
+
+    def __init__(self, field_name: str, accessor: str | None = None, **kwargs: Any) -> None:
+        super().__init__(field_name, **kwargs)
+        self.accessor = accessor
+
+    def clone_kwargs(self) -> dict[str, Any]:
+        kwargs: dict[str, Any] = super().clone_kwargs()
+        kwargs["accessor"] = self.accessor
+        return kwargs
+
+    class BoundPanel(FieldPanel.BoundPanel):
+        def __init__(self, **kwargs: Any) -> None:
+            super().__init__(**kwargs)
+
+            instance = self.instance
+            if self.panel.accessor and getattr(self.instance, f"{self.panel.accessor}_id"):
+                instance = getattr(self.instance, self.panel.accessor)
+
+            self.read_only = getattr(instance, "is_ready_to_be_published", False)
+
+    def format_value_for_display(self, value: Any) -> str:
+        if value is None:
+            return ""  # an empty string looks better than "None"
+        return cast(str, super().format_value_for_display(value))
+
+
+class BundleMultipleChooserPanel(MultipleChooserPanel):
+    """Defines a bundle-specific MultiFieldPanel that is conditionally read-only."""
+
+    class BoundPanel(MultipleChooserPanel.BoundPanel):
+        def __init__(self, **kwargs: Any) -> None:
+            super().__init__(**kwargs)
+
+            self.read_only = self.instance.is_ready_to_be_published
+
+        @property
+        def template_name(self) -> str:
+            if self.read_only:
+                return "bundles/wagtailadmin/panels/read_only_output.html"
+            return cast(str, super().template_name)
+
+        @cached_property
+        def value_from_instance(self) -> Any:
+            return getattr(self.instance, self.panel.relation_name)
+
+        def get_context_data(self, parent_context: dict[str, Any] | None = None) -> dict[str, Any]:
+            context: dict[str, Any] = super().get_context_data(parent_context)
+            if self.read_only:
+                context.update(
+                    {
+                        "display_value": self.panel.format_value_for_display(self.value_from_instance),
+                        "can_order": False,
+                    }
+                )
+            return context
+
+
 class CustomAdminPageChooser(PagesWithDraftsForBundleChooserWidget):
     def get_display_title(self, instance: "Page") -> str:
         return get_page_title_with_workflow_status(instance)
 
 
-class PageChooserWithStatusPanel(FieldPanel):
+class PageChooserWithStatusPanel(BundleFieldPanel):
     """A custom page chooser panel that includes the page workflow status."""
 
     def get_form_options(self) -> dict[str, list | dict]:
@@ -80,7 +140,12 @@ class PageChooserWithStatusPanel(FieldPanel):
 
         return opts
 
-    class BoundPanel(FieldPanel.BoundPanel):
+    def format_value_for_display(self, value: Any) -> str:
+        if value is None:
+            return ""
+        return get_page_title_with_workflow_status(value)
+
+    class BoundPanel(BundleFieldPanel.BoundPanel):
         def __init__(self, **kwargs: Any) -> None:
             """Sets the panel heading to the page verbose name to help differentiate page types."""
             super().__init__(**kwargs)

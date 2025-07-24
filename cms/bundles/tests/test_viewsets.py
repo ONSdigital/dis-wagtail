@@ -71,7 +71,7 @@ class BundleViewSetTestCaseBase(WagtailTestUtils, TestCase):
 
     def setUp(self):
         self.bundle = BundleFactory(name="Original bundle", created_by=self.publishing_officer)
-        self.statistical_article_page = StatisticalArticlePageFactory(title="PSF")
+        self.statistical_article_page = StatisticalArticlePageFactory(title="The article", parent__title="PSF")
 
         self.edit_url = reverse("bundle:edit", args=[self.bundle.id])
         self.inspect_url = reverse("bundle:inspect", args=[self.bundle.id])
@@ -148,6 +148,25 @@ class BundleViewSetAddTestCase(BundleViewSetTestCaseBase):
             f'placeholder="{datetime_placeholder}" id="id_publication_date">',
             html=True,
         )
+
+    def test_bundle_form_uses_release_calendar_chooser_widget(self):
+        form_class = get_edit_handler(Bundle).get_form_class()
+        form = form_class(instance=self.bundle)
+
+        self.assertIn("release_calendar_page", form.fields)
+        chooser_widget = form.fields["release_calendar_page"].widget
+        self.assertIsInstance(chooser_widget, FutureReleaseCalendarChooserWidget)
+
+        self.assertEqual(
+            chooser_widget.get_chooser_modal_url(),
+            # the admin path + the chooser namespace
+            reverse("wagtailadmin_home") + "release_calendar_chooser/",
+        )
+
+        response = self.client.get(
+            self.bundle_add_url,
+        )
+        self.assertContains(response, "Choose Release Calendar page")
 
 
 class BundleViewSetEditTestCase(BundleViewSetTestCaseBase):
@@ -317,24 +336,26 @@ class BundleViewSetEditTestCase(BundleViewSetTestCaseBase):
 
         self.assertFalse(mock_notify_slack.called)
 
-    def test_bundle_form_uses_release_calendar_chooser_widget(self):
-        form_class = get_edit_handler(Bundle).get_form_class()
-        form = form_class(instance=self.bundle)
-
-        self.assertIn("release_calendar_page", form.fields)
-        chooser_widget = form.fields["release_calendar_page"].widget
-        self.assertIsInstance(chooser_widget, FutureReleaseCalendarChooserWidget)
-
-        self.assertEqual(
-            chooser_widget.get_chooser_modal_url(),
-            # the admin path + the chooser namespace
-            reverse("wagtailadmin_home") + "release_calendar_chooser/",
-        )
-
-        response = self.client.get(
-            self.bundle_add_url,
-        )
+    def test_bundle_edit_view__non_readonly(self):
+        response = self.client.get(self.edit_url)
         self.assertContains(response, "Choose Release Calendar page")
+        self.assertContains(response, "Add page")
+        self.assertContains(response, "Add dataset")
+        self.assertContains(response, "Add preview team")
+
+    def test_bundle_edit_view__readonly_when_bundle_approved(self):
+        self.bundle.status = BundleStatus.IN_REVIEW
+        self.bundle.save(update_fields=["status"])
+        self.post_with_action_and_test("action-approve", BundleStatus.APPROVED, self.inspect_url)
+
+        response = self.client.get(self.edit_url)
+        self.assertNotContains(response, "Choose Release Calendar page")
+        self.assertNotContains(response, "Add page")
+        self.assertNotContains(response, "Add dataset")
+        self.assertNotContains(response, "Add preview team")
+
+        self.assertContains(response, "Statistical article page")
+        self.assertContains(response, self.statistical_article_page.get_admin_display_title())
 
 
 class BundleViewSetInspectTestCase(BundleViewSetTestCaseBase):
