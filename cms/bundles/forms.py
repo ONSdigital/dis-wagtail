@@ -3,7 +3,6 @@ from datetime import datetime
 from typing import TYPE_CHECKING, Any
 
 from django import forms
-from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.template.defaultfilters import pluralize
 from django.utils import timezone
@@ -255,54 +254,56 @@ class BundleAdminForm(WagtailAdminModelForm):
 
         return cleaned_data
 
+    @ons_bundle_api_enabled
+    def _check_and_push_to_dataset_api(self, bundle: "Bundle") -> None:
+        """Check if the bundle has datasets and push it to the Dataset API if it does."""
+        # No need to do anything if there are no datasets in the bundle or if the bundle already has an API ID.
+        if not self._has_datasets() or bundle.bundle_api_id:
+            return
+
+        client = BundleAPIClient()
+        try:
+            # Create the bundle in the API with the correct payload
+            bundle_data = build_bundle_data_for_api(bundle)
+            response = client.create_bundle(bundle_data)
+
+            if "id" in response:
+                bundle.bundle_api_id = str(response["id"])
+                bundle.save(update_fields=["bundle_api_id"])
+                logger.info("Created bundle %s in Dataset API with ID: %s", bundle.pk, bundle.bundle_api_id)
+
+                # Now add the datasets to the bundle via the /contents endpoint
+                for bundled_dataset in bundle.bundled_datasets.all():
+                    content_item = build_content_item_for_dataset(bundled_dataset.dataset)
+                    response = client.add_content_to_bundle(bundle.bundle_api_id, content_item)
+
+                    # Extract and store the content_api_id from the response
+                    content_id = extract_content_id_from_bundle_response(response, bundled_dataset.dataset)
+
+                    if content_id:
+                        bundled_dataset.content_api_id = content_id
+                        bundled_dataset.save(update_fields=["content_api_id"])
+                    logger.info(
+                        "Added content %s to bundle %s in Dataset API",
+                        bundled_dataset.dataset.namespace,
+                        bundle.bundle_api_id,
+                    )
+
+            else:
+                logger.warning("Bundle %s created in API but no ID returned", bundle.pk)
+
+        except BundleAPIClientError as e:
+            logger.error("Failed to create bundle %s in Dataset API: %s", bundle.pk, e)
+            # Don't raise the exception to avoid breaking the admin interface
+            # The bundle will still be saved locally
+
     def save(self, commit: bool = True) -> "Bundle":
         """Save the bundle and create in API if it has datasets but no API ID."""
         # Use the standard save behavior first. This handles new/existing objects
         # and m2m relations if commit=True.
         bundle: Bundle = super().save(commit=commit)
 
-        # If commit=True, and the bundle now has datasets but hasn't been created
-        # in the API yet, create it now.
-        if (
-            commit
-            and self._has_datasets()
-            and not bundle.bundle_api_id
-            and getattr(settings, "ONS_BUNDLE_API_ENABLED", False)
-        ):
-            client = BundleAPIClient()
-            try:
-                # Create the bundle in the API with the correct payload
-                bundle_data = build_bundle_data_for_api(bundle)
-                response = client.create_bundle(bundle_data)
-
-                if "id" in response:
-                    bundle.bundle_api_id = str(response["id"])
-                    bundle.save(update_fields=["bundle_api_id"])
-                    logger.info("Created bundle %s in Dataset API with ID: %s", bundle.pk, bundle.bundle_api_id)
-
-                    # Now add the datasets to the bundle via the /contents endpoint
-                    for bundled_dataset in bundle.bundled_datasets.all():
-                        content_item = build_content_item_for_dataset(bundled_dataset.dataset)
-                        response = client.add_content_to_bundle(bundle.bundle_api_id, content_item)
-
-                        # Extract and store the content_api_id from the response
-                        content_id = extract_content_id_from_bundle_response(response, bundled_dataset.dataset)
-
-                        if content_id:
-                            bundled_dataset.content_api_id = content_id
-                            bundled_dataset.save(update_fields=["content_api_id"])
-                        logger.info(
-                            "Added content %s to bundle %s in Dataset API",
-                            bundled_dataset.dataset.namespace,
-                            bundle.bundle_api_id,
-                        )
-
-                else:
-                    logger.warning("Bundle %s created in API but no ID returned", bundle.pk)
-
-            except BundleAPIClientError as e:
-                logger.error("Failed to create bundle %s in Dataset API: %s", bundle.pk, e)
-                # Don't raise the exception to avoid breaking the admin interface
-                # The bundle will still be saved locally
+        if commit:
+            self._check_and_push_to_dataset_api(bundle)
 
         return bundle
