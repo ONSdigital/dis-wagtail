@@ -78,10 +78,6 @@ class BundleViewSetTestCaseBase(WagtailTestUtils, TestCase):
 
         self.client.force_login(self.publishing_officer)
 
-
-class BundleViewSetTestCase(BundleViewSetTestCaseBase):
-    """Test Bundle viewset functionality."""
-
     def get_base_form_data(self):
         return nested_form_data(
             {
@@ -92,6 +88,8 @@ class BundleViewSetTestCase(BundleViewSetTestCaseBase):
             }
         )
 
+
+class BundleViewSetAddTestCase(BundleViewSetTestCaseBase):
     def test_bundle_add_view(self):
         """Test bundle creation."""
         self.assertFalse(Bundle.objects.filter(name="A New Bundle").exists())
@@ -139,6 +137,8 @@ class BundleViewSetTestCase(BundleViewSetTestCaseBase):
                 self.assertRedirects(response, "/admin/")
                 self.assertContains(response, "Sorry, you do not have permission to access this area.")
 
+
+class BundleViewSetEditTestCase(BundleViewSetTestCaseBase):
     def test_bundle_edit_view(self):
         """Test bundle editing."""
         response = self.client.post(
@@ -324,6 +324,8 @@ class BundleViewSetTestCase(BundleViewSetTestCaseBase):
         )
         self.assertContains(response, "Choose Release Calendar page")
 
+
+class BundleViewSetInspectTestCase(BundleViewSetTestCaseBase):
     def test_inspect_view__previewers__access(self):
         self.client.force_login(self.bundle_viewer)
 
