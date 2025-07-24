@@ -1,32 +1,8 @@
-<!DOCTYPE html>
-<html lang="en-GB">
-    <head>
-        <meta charset="utf-8">
-        <meta http-equiv="X-UA-Compatible" content="IE=edge">
-        <title>{{ _("Internal Server Error") }}</title>
-        <meta name="viewport" content="width=device-width, initial-scale=1">
-        <meta name="description" content="{{ _('Internal Server Error (500)') }}">
-        <style>
-            html {
-                background-color: #eee;
-                font-family: sans-serif;
-                color: rgba(0, 0, 0, 0.8);
-            }
-            body {
-                max-width: 40rem;
-                margin: 0 auto;
-                padding: 2rem;
-            }
-            .errorcode {
-                color: rgba(0, 0, 0, 0.25);
-                margin-top: 2rem;
-                font-size: 0.8rem;
-            }
-        </style>
-    </head>
-    <body>
-        <h1>Something went wrong</h1>
-        <p>{{ _("We’re sorry! Our server is acting up right now. Please try again soon.") }}</p>
-        <p class="errorcode">{{ _("Internal Server Error (500)") }}</p>
-    </body>
-</html>
+{% extends "templates/pages/errors/base_error.html" %}
+{% set page_title = _("Sorry, there's a problem with the service") %}
+
+{% block error_content %}
+    <p>{{ _("If you entered a web address, check it is correct.") }}</p>
+    <p>{% trans backup_url=BACKUP_SITE_URL %}Our scheduled publications can also be found on our <a href="{{ backup_url }}">backup site</a>.{% endtrans %}</p>
+    <p>{% trans contact_url=CONTACT_US_URL %}If the web address is correct, or you selected a link or button, <a href="{{ contact_url }}">contact us</a>.{% endtrans %}</p>
+{% endblock %}
