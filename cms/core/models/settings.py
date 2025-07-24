@@ -1,16 +1,11 @@
-from typing import ClassVar
-
 from django.db import models
-from wagtail.admin.panels import FieldPanel, MultiFieldPanel
 from wagtail.contrib.settings.models import register_setting
-from wagtail.fields import RichTextField
 
 from cms.core.models.base import BaseSiteSetting
 from cms.images.models import CustomImage
 
 __all__ = [
     "SocialMediaSettings",
-    "SystemMessagesSettings",
 ]
 
 
@@ -37,19 +32,3 @@ class SocialMediaSettings(BaseSiteSetting):
         default="Office for National Statistics",
         help_text="Site name, used by Open Graph.",
     )
-
-
-@register_setting
-class SystemMessagesSettings(BaseSiteSetting):
-    """Settings class for global system messages."""
-
-    class Meta:
-        verbose_name = "system messages"
-
-    title_404 = models.CharField("Title", max_length=255, default="Page not found")
-    body_404 = RichTextField(
-        "Text",
-        default="<p>You may be trying to find a page that doesn&rsquo;t exist or has been moved.</p>",
-    )
-
-    panels: ClassVar[list[FieldPanel]] = [MultiFieldPanel(["title_404", "body_404"], "404 page")]
