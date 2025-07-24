@@ -286,8 +286,8 @@ def build_content_item_for_dataset(dataset: Any) -> dict[str, Any]:
             "version_id": dataset.version,
         },
         "links": {
-            "edit": get_data_admin_action_url("edit", dataset.namespace, dataset.version),
-            "preview": get_data_admin_action_url("preview", dataset.namespace, dataset.version),
+            "edit": get_data_admin_action_url("edit", dataset.namespace, dataset.edition, dataset.version),
+            "preview": get_data_admin_action_url("preview", dataset.namespace, dataset.edition, dataset.version),
         },
     }
 
@@ -314,7 +314,9 @@ def extract_content_id_from_bundle_response(response: dict[str, Any], dataset: A
     return None
 
 
-def get_data_admin_action_url(action: Literal["edit", "preview"], dataset_id: str, version_id: str) -> str:
+def get_data_admin_action_url(
+    action: Literal["edit", "preview"], dataset_id: str, edition_id: str, version_id: str
+) -> str:
     """Generate a URL for dataset actions in the ONS Data Admin interface.
 
     This function constructs URLs for dataset operations in the ONS Data Admin
@@ -323,18 +325,14 @@ def get_data_admin_action_url(action: Literal["edit", "preview"], dataset_id: st
     Args:
         action: The action to perform ("edit", "preview")
         dataset_id: The unique identifier for the dataset
+        edition_id: The edition identifier for the dataset
         version_id: The version identifier for the dataset
 
     Returns:
         A complete URL string for the specified dataset action
 
     Example:
-        >>> get_data_admin_action_url("edit", "cpih", "1")
+        >>> get_data_admin_action_url("edit", "cpih", "time-series", "1")
         "https://publishing.ons.gov.uk/data-admin/edit/datasets/cpih/editions/time-series/versions/1"
-
-    Note:
-        The edition is currently hardcoded to "time-series" as this appears to be
-        the standard edition format used by the ONS Data Admin system. This may
-        need to be updated if other edition formats are supported in the future.
     """
-    return f"{settings.ONS_DATA_ADMIN_URL}{action}/datasets/{dataset_id}/editions/time-series/versions/{version_id}"
+    return f"{settings.ONS_DATA_ADMIN_URL}{action}/datasets/{dataset_id}/editions/{edition_id}/versions/{version_id}"

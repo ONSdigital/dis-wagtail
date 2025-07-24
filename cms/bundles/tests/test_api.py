@@ -409,22 +409,23 @@ class GetDataAdminActionUrlTests(TestCase):
     def test_get_data_admin_action_url_with_different_actions(self):
         """Test that different actions work correctly."""
         dataset_id = "test-dataset"
+        edition_id = "time-series"
         version_id = "2"
 
         # Test multiple actions
         actions: Literal["edit", "preview"] = ["edit", "preview"]
         for action in actions:
-            url = get_data_admin_action_url(action, dataset_id, version_id)
+            url = get_data_admin_action_url(action, dataset_id, edition_id, version_id)
             expected = (
                 f"https://publishing.ons.gov.uk/data-admin/{action}/datasets/{dataset_id}/"
-                f"editions/time-series/versions/{version_id}"
+                f"editions/{edition_id}/versions/{version_id}"
             )
             self.assertEqual(url, expected)
 
     @override_settings(ONS_DATA_ADMIN_URL="https://custom.example.com/admin/")
     def test_get_data_admin_action_url_custom_base_url(self):
         """Test that custom base URL from settings is used correctly."""
-        url = get_data_admin_action_url("edit", "cpih", "1")
+        url = get_data_admin_action_url("edit", "cpih", "time-series", "1")
         expected = "https://custom.example.com/admin/edit/datasets/cpih/editions/time-series/versions/1"
         self.assertEqual(url, expected)
 
