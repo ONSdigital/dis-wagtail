@@ -1,6 +1,6 @@
 import uuid
 from functools import cache
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Literal
 
 from django.urls import reverse
 from wagtail.coreutils import resolve_model_string
@@ -163,13 +163,19 @@ def get_preview_items_for_bundle(bundle: "Bundle", page_id: int, pages_in_bundle
     return preview_items
 
 
+def get_preview_teams_for_bundle(bundle: "Bundle") -> list[dict[Literal["id"], str]]:
+    """Get formatted preview teams for a bundle for API usage."""
+    team_identifiers = bundle.teams.values_list("team__identifier", flat=True)
+    return [{"id": identifier} for identifier in team_identifiers]
+
+
 def build_bundle_data_for_api(bundle: "Bundle") -> dict[str, Any]:
     """Build the dictionary of bundle data for the API."""
     # Determine bundle_type based on scheduling
     bundle_type = "SCHEDULED" if bundle.scheduled_publication_date else "MANUAL"
 
     # Get preview teams
-    preview_teams = [{"id": str(team_id)} for team_id in bundle.teams.values_list("id", flat=True)]
+    preview_teams = get_preview_teams_for_bundle(bundle)
 
     return {
         "title": bundle.name,

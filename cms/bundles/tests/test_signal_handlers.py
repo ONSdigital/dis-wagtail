@@ -471,6 +471,137 @@ class TestBundleAPISignalHandlers(TestCase):
         # The bundle_dataset should still be deleted
         self.assertFalse(BundleDataset.objects.filter(pk=bundle_dataset_pk).exists())
 
+    def test_add_team_triggers_preview_teams_sync(self):
+        """Test that adding a team to a bundle calls the API to sync preview teams."""
+        bundle = BundleFactory(bundle_api_id="api-bundle-123")
+        team = TeamFactory(identifier="team-identifier-1")
+
+        # Mock the API endpoint for bundle update
+        responses.add(
+            responses.PUT,
+            "https://dummy_base_api/bundles/api-bundle-123",
+            json={"status": "success", "message": "Bundle updated"},
+            status=200,
+        )
+
+        # Add team to bundle via BundleTeam creation - this should trigger the sync
+        BundleTeam.objects.create(parent=bundle, team=team)
+
+        # Verify the API was called
+        self.assertEqual(len(responses.calls), 1)
+        self.assertEqual(responses.calls[0].request.url, "https://dummy_base_api/bundles/api-bundle-123")
+
+        # Check the request body contains the correct preview teams
+        request_body = json.loads(responses.calls[0].request.body)
+        self.assertEqual(request_body["preview_teams"], [{"id": "team-identifier-1"}])
+
+    def test_remove_team_triggers_preview_teams_sync(self):
+        """Test that removing a team from a bundle calls the API to sync preview teams."""
+        bundle = BundleFactory(bundle_api_id="api-bundle-123")
+        team1 = TeamFactory(identifier="team-identifier-1")
+        team2 = TeamFactory(identifier="team-identifier-2")
+
+        # Add teams to bundle first
+        bundle_team1 = BundleTeam.objects.create(parent=bundle, team=team1)
+        BundleTeam.objects.create(parent=bundle, team=team2)
+
+        # Clear responses to focus on the removal
+        responses.reset()
+
+        # Mock the API endpoint for bundle update
+        responses.add(
+            responses.PUT,
+            "https://dummy_base_api/bundles/api-bundle-123",
+            json={"status": "success", "message": "Bundle updated"},
+            status=200,
+        )
+
+        # Remove one team - this should trigger the sync
+        bundle_team1.delete()
+
+        # Verify the API was called
+        self.assertEqual(len(responses.calls), 1)
+        self.assertEqual(responses.calls[0].request.url, "https://dummy_base_api/bundles/api-bundle-123")
+
+        # Check the request body contains only the remaining team
+        request_body = json.loads(responses.calls[0].request.body)
+        self.assertEqual(request_body["preview_teams"], [{"id": "team-identifier-2"}])
+
+    def test_clear_teams_triggers_preview_teams_sync(self):
+        """Test that clearing all teams from a bundle calls the API to sync preview teams."""
+        bundle = BundleFactory(bundle_api_id="api-bundle-123")
+        team1 = TeamFactory(identifier="team-identifier-1")
+        team2 = TeamFactory(identifier="team-identifier-2")
+
+        # Add teams to bundle first
+        bundle_team1 = BundleTeam.objects.create(parent=bundle, team=team1)
+        bundle_team2 = BundleTeam.objects.create(parent=bundle, team=team2)
+
+        # Clear responses to focus on the clear operation
+        responses.reset()
+
+        # Mock the API endpoint for bundle update - expect 2 calls since we delete each BundleTeam separately
+        responses.add(
+            responses.PUT,
+            "https://dummy_base_api/bundles/api-bundle-123",
+            json={"status": "success", "message": "Bundle updated"},
+            status=200,
+        )
+        responses.add(
+            responses.PUT,
+            "https://dummy_base_api/bundles/api-bundle-123",
+            json={"status": "success", "message": "Bundle updated"},
+            status=200,
+        )
+
+        # Clear all teams by deleting BundleTeam objects - this should trigger the sync
+        bundle_team1.delete()
+        bundle_team2.delete()
+
+        # Verify the API was called twice (once for each deletion)
+        self.assertEqual(len(responses.calls), 2)
+
+        # The last call should show empty preview teams
+        request_body = json.loads(responses.calls[-1].request.body)
+        self.assertEqual(request_body["preview_teams"], [])
+
+    def test_sync_preview_teams_skips_bundle_without_api_id(self):
+        """Test that the sync is skipped if the bundle doesn't have an API ID."""
+        bundle = BundleFactory(bundle_api_id=None)
+        team = TeamFactory(identifier="team-identifier-1")
+
+        # Add team to bundle - this should not trigger any API call
+        BundleTeam.objects.create(parent=bundle, team=team)
+
+        # No API calls should be made
+        self.assertEqual(len(responses.calls), 0)
+
+    def test_sync_preview_teams_handles_api_errors_gracefully(self):
+        """Test that API errors during preview teams sync don't prevent the operation."""
+        bundle = BundleFactory(bundle_api_id="api-bundle-123")
+        team = TeamFactory(identifier="team-identifier-1")
+
+        # Mock the API endpoint to return an error
+        responses.add(
+            responses.PUT,
+            "https://dummy_base_api/bundles/api-bundle-123",
+            json={"error": "API Error"},
+            status=500,
+        )
+
+        # This should not raise an exception, but should log the error
+        with self.assertLogs("cms.bundles.signal_handlers", level="ERROR") as cm:
+            BundleTeam.objects.create(parent=bundle, team=team)
+
+        # Verify the API was called
+        self.assertEqual(len(responses.calls), 1)
+
+        # Verify error was logged
+        self.assertIn("Failed to sync preview teams for bundle", cm.output[0])
+
+        # The team should still be added to the bundle
+        self.assertTrue(bundle.teams.filter(team=team).exists())
+
 
 @override_settings(ONS_BUNDLE_API_ENABLED=False)
 class TestBundleAPISignalHandlersDisabled(TestCase):
@@ -528,3 +659,15 @@ class TestBundleAPISignalHandlersDisabled(TestCase):
         bundle_dataset.delete()
 
         self.mock_client.delete_content_from_bundle.assert_not_called()
+
+    def test_sync_preview_teams_disabled_when_api_is_disabled(self):
+        """Test that preview teams sync is skipped when the API is disabled."""
+        bundle = BundleFactory(bundle_api_id="api-bundle-123")
+        team = TeamFactory(identifier="team-identifier-1")
+        self.mock_client.reset_mock()
+
+        # Add team to bundle - this should not trigger any API call
+        BundleTeam.objects.create(parent=bundle, team=team)
+
+        # No API calls should be made
+        self.mock_client.update_bundle.assert_not_called()

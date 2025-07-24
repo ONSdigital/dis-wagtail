@@ -14,6 +14,7 @@ from cms.bundles.decorators import ons_bundle_api_enabled
 from cms.bundles.enums import BundleStatus
 from cms.bundles.models import Bundle, BundleDataset, BundleTeam
 from cms.bundles.notifications.email import send_bundle_in_review_email, send_bundle_published_email
+from cms.bundles.utils import get_preview_teams_for_bundle
 
 logger = logging.getLogger(__name__)
 
@@ -138,3 +139,39 @@ def handle_bundle_deletion(instance: Bundle, **kwargs: Any) -> None:
 
         except BundleAPIClientError as e:
             logger.error("Failed to delete bundle %s from Dataset API: %s", instance.pk, e)
+
+
+def _sync_preview_teams_with_bundle_api(bundle: Bundle) -> None:
+    """Helper function to sync a bundle's preview teams with the Bundle API."""
+    if not bundle.bundle_api_id:
+        # This happens when no datasets have been added to the bundle yet
+        logger.info("Bundle %s does not have an API ID. Skipping preview team sync.", bundle.pk)
+        return
+
+    payload = {"preview_teams": get_preview_teams_for_bundle(bundle)}
+
+    try:
+        client = BundleAPIClient()
+        client.update_bundle(bundle_id=bundle.bundle_api_id, bundle_data=payload)
+        logger.info(
+            "Successfully synced preview teams for bundle %s.",
+            bundle.bundle_api_id,
+        )
+    except BundleAPIClientError as e:
+        logger.error("Failed to sync preview teams for bundle %s: %s", bundle.bundle_api_id, e)
+        # Don't raise the exception to avoid breaking the application
+
+
+@receiver(post_save, sender=BundleTeam)
+@ons_bundle_api_enabled
+def sync_preview_teams_with_bundle_api_on_add(instance: BundleTeam, created: bool, **kwargs: Any) -> None:
+    """Synchronizes the bundle's preview teams with the Bundle API when a team is added."""
+    if created:
+        _sync_preview_teams_with_bundle_api(instance.parent)
+
+
+@receiver(post_delete, sender=BundleTeam)
+@ons_bundle_api_enabled
+def sync_preview_teams_with_bundle_api_on_remove(instance: BundleTeam, **kwargs: Any) -> None:
+    """Synchronizes the bundle's preview teams with the Bundle API when a team is removed."""
+    _sync_preview_teams_with_bundle_api(instance.parent)
