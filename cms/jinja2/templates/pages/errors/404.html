@@ -1,5 +1,15 @@
 {% extends "templates/base_page.html" %}
 
+{% block head %}
+    {{ block.super() }}
+    <script>
+        dataLayer.push({
+            "contentType": "404-pages",
+            "contentGroup": "404-pages",
+        });
+    </script>
+{% endblock %}
+
 {# TODO: update the head title to settings.core.SystemMessagesSettings.title_404 #}
 {% block title %}{{ settings.core.SystemMessagesSettings.title_404 }}{% endblock %}
 

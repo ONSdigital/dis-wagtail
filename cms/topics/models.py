@@ -266,8 +266,8 @@ class TopicPage(BundledPageMixin, ExclusiveTaxonomyMixin, BasePage):  # type: ig
     @cached_property
     def cached_analytics_values(self) -> dict[str, str | bool]:
         """Return a dictionary of cachable analytics values for this page."""
-        return {
-            "contentType": "topic-pages",
-            "contentGroup": self.slug,
-            "contentTheme": "???",  # TODO what is contentTheme?
-        }
+        values = super().cached_analytics_values
+        values["contentType"] = "topic-pages"
+        values["contentGroup"] = self.slug
+        values["contentTheme"] = "???"  # TODO what is contentTheme?
+        return values

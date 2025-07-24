@@ -2,6 +2,7 @@ from typing import TYPE_CHECKING, Any, ClassVar
 
 from django.conf import settings
 from django.db import models
+from django.utils.functional import cached_property
 from wagtail.admin.panels import FieldPanel, InlinePanel
 from wagtail.fields import RichTextField
 from wagtail.search import index
@@ -12,7 +13,7 @@ from cms.core.blocks.stream_blocks import CoreStoryBlock
 from cms.core.fields import StreamField
 from cms.core.forms import PageWithEquationsAdminForm
 from cms.core.models import BasePage
-from cms.core.utils import get_content_type_for_page, get_document_metadata
+from cms.core.utils import get_content_type_for_page, get_document_metadata, google_analytics_date_format
 from cms.core.widgets import date_widget
 from cms.taxonomy.mixins import GenericTaxonomyMixin
 
@@ -49,6 +50,14 @@ class InformationPage(BundledPageMixin, GenericTaxonomyMixin, BasePage):  # type
         index.SearchField("summary"),
         index.SearchField("content"),
     ]
+
+    @cached_property
+    def cached_analytics_values(self) -> dict[str, str | bool]:
+        values = super().cached_analytics_values
+        values["releaseDate"] = google_analytics_date_format(self.publication_date)
+        if self.last_updated:
+            values["lastUpdatedDate"] = google_analytics_date_format(self.last_updated)
+        return values
 
 
 class IndexPage(BundledPageMixin, BasePage):  # type: ignore[django-manager-missing]

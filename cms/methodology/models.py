@@ -160,6 +160,8 @@ class MethodologyPage(BundledPageMixin, GenericTaxonomyMixin, BasePage):  # type
     @cached_property
     def cached_analytics_values(self) -> dict[str, str | bool]:
         values = super().cached_analytics_values
+        values["contentType"] = "methodologies"
+        values["contentGroup"] = self.get_parent().slug
         values["releaseDate"] = google_analytics_date_format(self.publication_date)
         if self.last_revised_date:
             values["lastUpdatedDate"] = google_analytics_date_format(self.last_revised_date)

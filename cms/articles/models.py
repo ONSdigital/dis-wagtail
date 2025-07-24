@@ -591,7 +591,7 @@ class StatisticalArticlePage(BundledPageMixin, RoutablePageMixin, BasePage):  # 
 
         values = {
             "pageTitle": self.get_full_display_title(),
-            "contentType": "statistical-articles",
+            "contentType": "statistical-articles",  # TODO does this need to be statistical-analysis to match legacy?
             "contentGroup": parent_topic.slug,
             "outputSeries": parent_series.slug,
             "outputEdition": self.slug,
