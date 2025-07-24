@@ -50,31 +50,19 @@ Feature: CMS users can draft, edit, and publish release pages
       | Confirmed  |
       | Cancelled  |
 
-  Scenario Outline: Validation error with invalid release date text input
+  Scenario Outline: Validation error with invalid release date inputs
     When the user clicks "Add child page" to create a new draft release page
     And the user enters some example content on the page
-    And the user adds an invalid <ReleaseDate> text
+    And the user adds <input>
     And the user clicks "Publish"
-    Then an error message is displayed describing invalid <ReleaseDate> text input
+    Then the user sees a validation error message about the <Error>
 
     Examples:
-      | ReleaseDate       |
-      | release date      |
-      | next release date |
-
-  Scenario: Validation error when next release date is before the release date
-    When the user clicks "Add child page" to create a new draft release page
-    And the user enters some example content on the page
-    And adds the next release date before the release date
-    And the user clicks "Publish"
-    Then an error validation is raised to say next release date cannot be before release date
-
-  Scenario: Validation error when next release date and next release date text is entered
-    When the user clicks "Add child page" to create a new draft release page
-    And the user enters some example content on the page
-    And the user enters both next release date and next release date text
-    And the user clicks "Publish"
-    Then an error message says you cannot enter a next release date and a next release date text at the same time
+      | input                                             | Error                                           |
+      | an invalid release date text                      | invalid release date text input                 |
+      | an invalid next release date text                 | invalid next release date text input            |
+      | the next release date before the release date     | next release date cannot be before release date |
+      | both next release date and next release date text | next release date and next release date text    |
 
 # Preview modes
 
@@ -122,7 +110,7 @@ Feature: CMS users can draft, edit, and publish release pages
       | pre-release access information |
 # Cancelled notice
 
-  Scenario Outline: Validation error when cancelled page is published without notice
+  Scenario: Validation error when cancelled page is published without notice
     When the user clicks "Add child page" to create a new draft release page
     And the user enters some example content on the page
     And the user sets the page status to "Cancelled"
@@ -137,13 +125,13 @@ Feature: CMS users can draft, edit, and publish release pages
     And <Feature> <is/are> added under pre-release access
     And the user clicks the "Save Draft" button
     Then an error message is displayed to say page could not be saved
-    And the user sees a validation error message about the <Problem>
+    And the user sees a validation error message about the <Error>
     Examples:
-    |Feature                             |is/are |Problem           |
-    |multiple descriptions               |are    |descriptions      |
-    |multiple tables                     |are    |maximum tables    |
-    |table with no table header selected |is     |unselected options|
-    |empty table                         |is     |empty table       |
+      | Feature                             |is/are | Error             |
+      | multiple descriptions               |are    | descriptions      |
+      | multiple tables                     |are    | maximum tables    |
+      | table with no table header selected |is     | unselected options|
+      | empty table                         |is     | empty table       |
  
 
 # Changes to release date

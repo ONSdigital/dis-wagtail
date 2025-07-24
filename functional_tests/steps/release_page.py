@@ -123,13 +123,13 @@ def user_inputs_invalid_next_release_date_text(context: Context):
     context.page.get_by_role("textbox", name="Or, next release date text").fill("Invalid 6444")
 
 
-@then("an error message is displayed describing invalid next release date text input")
+@then("the user sees a validation error message about the invalid next release date text input")
 def error_invalid_next_release_date_text(context: Context):
     expect(context.page.get_by_text("The next release date text")).to_be_visible()
     expect(context.page.get_by_text("Format: 'DD Month YYYY Time'")).to_be_visible()
 
 
-@then("an error message is displayed describing invalid release date text input")
+@then("the user sees a validation error message about the invalid release date text input")
 def error_invalid_release_date_text(context: Context):
     expect(context.page.get_by_text("The release date text must be")).to_be_visible()
     expect(context.page.get_by_text("Override release date for")).to_be_visible()
@@ -140,19 +140,19 @@ def check_date_text_field(context: Context):
     expect(context.page.get_by_text("Or, release date text")).not_to_be_visible()
 
 
-@when("adds the next release date before the release date")
+@when("the user adds the next release date before the release date")
 def user_adds_next_release_date_before_release_date(context: Context):
     context.page.get_by_role("textbox", name="Release date*").fill("2024-12-25")
     context.page.locator("#id_next_release_date").fill("2023-12-25")
 
 
-@when("the user enters both next release date and next release date text")
+@when("the user adds both next release date and next release date text")
 def user_adds_both_next_and_release_date(context: Context):
     context.page.locator("#id_next_release_date").fill("2025-12-25")
     context.page.locator("#id_next_release_date_text").fill("December 2025")
 
 
-@then("an error message says you cannot enter a next release date and a next release date text at the same time")
+@then("the user sees a validation error message about the next release date and next release date text")
 def error_cannot_have_both_next_release_date_and_text(context: Context):
     expect(context.page.get_by_text("The page could not be created")).to_be_visible()
     expect(
@@ -167,7 +167,7 @@ def error_cannot_have_both_next_release_date_and_text(context: Context):
     ).to_be_visible()
 
 
-@then("an error validation is raised to say next release date cannot be before release date")
+@then("the user sees a validation error message about the next release date cannot be before release date")
 def error_next_release_date_before_release_date(context: Context):
     expect(context.page.get_by_text("The page could not be created")).to_be_visible()
     expect(context.page.get_by_text("The next release date must be")).to_be_visible()
@@ -179,11 +179,6 @@ def check_that_default_status_is_provisional_and_release_date_text_is_visible(
 ):
     expect(context.page.get_by_label("Status*")).to_have_value("PROVISIONAL")
     expect(context.page.get_by_text("Or, release date text")).to_be_visible()
-
-
-@when('the user changes preview mode to "{page_status}"')
-def user_changes_preview_mode(context: Context, page_status: str):
-    context.page.get_by_label("Preview mode").select_option(page_status)
 
 
 # Page creation, status and preview modes
@@ -265,7 +260,7 @@ def display_cancelled_page(context: Context):
 
 
 @when("the user adds related link")
-def user_adds_related_links(context: Context):
+def user_adds_related_link(context: Context):
     context.page.locator("#panel-child-content-related_links-content").get_by_role(
         "button", name="Insert a block"
     ).click()
@@ -274,7 +269,7 @@ def user_adds_related_links(context: Context):
 
 
 @then("related link is displayed in the preview tab")
-def displayed_related_links(context: Context):
+def displayed_related_link(context: Context):
     page = context.preview_tab
     expect(page.get_by_role("heading", name="You might also be interested")).to_be_visible()
     expect(page.locator("#links").get_by_role("link", name="Home")).to_be_visible()
@@ -319,17 +314,6 @@ def user_adds_pre_release_access(context: Context):
     page.get_by_role("region", name="Description *").get_by_role("textbox").fill("Description")
 
 
-@when("empty table is added under pre-release access")
-def user_adds_empty_table_pre_release_access(context: Context):
-    page = context.page
-    # Table
-    page.locator("#panel-child-content-pre_release_access-content").get_by_role("button", name="Insert a block").click()
-    page.get_by_text("Basic table").click()
-    page.get_by_label("Table headers").select_option("column")
-    page.get_by_role("textbox", name="Table caption").click()
-    page.get_by_role("textbox", name="Table caption").fill("Caption")
-
-
 @then("pre-release access information is displayed in the preview tab")
 def displayed_pre_release_access(context: Context):
     page = context.preview_tab
@@ -337,6 +321,22 @@ def displayed_pre_release_access(context: Context):
     expect(page.get_by_text("first")).to_be_visible()
     expect(page.get_by_text("second")).to_be_visible()
     expect(page.get_by_text("Description")).to_be_visible()
+
+
+@when("empty table is added under pre-release access")
+def user_adds_empty_table_pre_release_access(context: Context):
+    page = context.page
+    # Empty Table
+    page.locator("#panel-child-content-pre_release_access-content").get_by_role("button", name="Insert a block").click()
+    page.get_by_text("Basic table").click()
+    page.get_by_label("Table headers").select_option("column")
+    page.get_by_role("textbox", name="Table caption").click()
+    page.get_by_role("textbox", name="Table caption").fill("Caption")
+
+
+@then("the user sees a validation error message about the empty table")
+def error_empty_table(context: Context):
+    expect(context.page.get_by_text("The table cannot be empty")).to_be_visible()
 
 
 @when("multiple descriptions are added under pre-release access")
@@ -381,7 +381,7 @@ def error_page_not_saved(context: Context):
 @when("table with no table header selected is added under pre-release access")
 def user_adds_no_table_header_table_pre_release_access(context: Context):
     page = context.page
-    # Table
+    # no table header Table
     page.locator("#panel-child-content-pre_release_access-content").get_by_role("button", name="Insert a block").click()
     page.get_by_text("Basic table").click()
     page.get_by_role("textbox", name="Table caption").click()
@@ -391,11 +391,6 @@ def user_adds_no_table_header_table_pre_release_access(context: Context):
 @then("the user sees a validation error message about the unselected options")
 def error_unpicked_table_option(context: Context):
     expect(context.page.get_by_text("Select an option for Table")).to_be_visible()
-
-
-@then("the user sees a validation error message about the empty table")
-def error_empty_table(context: Context):
-    expect(context.page.get_by_text("The table cannot be empty")).to_be_visible()
 
 
 # Release date changes
