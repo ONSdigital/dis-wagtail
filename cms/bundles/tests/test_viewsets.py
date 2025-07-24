@@ -137,6 +137,18 @@ class BundleViewSetAddTestCase(BundleViewSetTestCaseBase):
                 self.assertRedirects(response, "/admin/")
                 self.assertContains(response, "Sorry, you do not have permission to access this area.")
 
+    def test_date_placeholder(self):
+        """Test that the date input field displays date placeholder."""
+        response = self.client.get(self.bundle_add_url, follow=True)
+
+        datetime_placeholder = "YYYY-MM-DD HH:MM"
+        self.assertContains(
+            response,
+            '<input type="text" name="publication_date" autocomplete="off"'
+            f'placeholder="{datetime_placeholder}" id="id_publication_date">',
+            html=True,
+        )
+
 
 class BundleViewSetEditTestCase(BundleViewSetTestCaseBase):
     def test_bundle_edit_view(self):
