@@ -33,7 +33,23 @@ def click_the_given_button(context: Context, button_text: str) -> None:
 
 @when("the user opens the preview in a new tab")
 def open_preview_in_new_tab(context: Context) -> None:
+    click_the_given_button(context, "Preview")
     context.page.get_by_role("link", name="Preview in new tab").click()
+
+    with context.page.expect_popup() as page1_info:
+        context.page.get_by_role("link", name="Preview in new tab").click()
+    # use context.preview_tab to reference pop-up tab
+    context.preview_tab = page1_info.value
+
+
+@when('the user opens the preview in a new tab with a preview mode of "{preview_mode}"')
+def open_preview_new_tab_with_preview_mode(context: Context, preview_mode: str):
+    click_the_given_button(context, "Preview")
+    context.page.get_by_label("Preview mode").select_option(preview_mode)
+    context.page.get_by_role("link", name="Preview in new tab").click()
+    with context.page.expect_popup() as page1_info:
+        context.page.get_by_role("link", name="Preview in new tab").click()
+    context.preview_tab = page1_info.value
 
 
 @when("the user edits the {page} page")
