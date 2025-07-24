@@ -37,7 +37,8 @@ class BundleAdminForm(WagtailAdminModelForm):
         - disabled/hide the approved at/by fields
         """
         super().__init__(*args, **kwargs)
-        # hide the "Released" status choice
+        # hide the status field, and exclude the "Released" status choice
+        self.fields["status"].widget = forms.HiddenInput()
         if self.instance.status in EDITABLE_BUNDLE_STATUSES:
             self.fields["status"].choices = ACTIVE_BUNDLE_STATUS_CHOICES
         elif self.instance.status == BundleStatus.APPROVED.value:
@@ -204,11 +205,15 @@ class BundleAdminForm(WagtailAdminModelForm):
             self.add_error("release_calendar_page", error)
             self.add_error("publication_date", error)
 
-        if release_calendar_page and release_calendar_page.release_date < timezone.now():
+        if (
+            release_calendar_page
+            and release_calendar_page.release_date < timezone.now()
+            and not self.instance.can_be_manually_published
+        ):
             error = "The release date on the release calendar page cannot be in the past."
             raise ValidationError({"release_calendar_page": error})
 
-        if publication_date and publication_date < timezone.now():
+        if publication_date and publication_date < timezone.now() and not self.instance.can_be_manually_published:
             raise ValidationError({"publication_date": "The release date cannot be in the past."})
 
     def clean_publication_date(self) -> datetime | None:

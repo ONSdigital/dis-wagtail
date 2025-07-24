@@ -1033,3 +1033,9 @@ SESSION_RENEWAL_OFFSET_SECONDS = env.get("SESSION_RENEWAL_OFFSET_SECONDS", 60 * 
 ONS_BUNDLE_API_ENABLED = False
 
 ONS_DATA_ADMIN_URL = "https://publishing.ons.gov.uk/data-admin/"
+
+# Contact Us URL for error pages
+CONTACT_US_URL = env.get("CONTACT_US_URL", "/aboutus/contactus/generalandstatisticalenquiries")
+
+# Backup site URL
+BACKUP_SITE_URL = env.get("BACKUP_SITE_URL", "https://backup.ons.gov.uk")
