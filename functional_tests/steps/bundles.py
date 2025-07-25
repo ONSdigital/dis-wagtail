@@ -16,6 +16,7 @@ from cms.release_calendar.enums import ReleaseStatus
 from cms.release_calendar.tests.factories import ReleaseCalendarPageFactory
 from cms.teams.models import Team
 from cms.users.tests.factories import UserFactory
+from cms.workflows.tests.utils import mark_page_as_ready_to_publish
 from functional_tests.step_helpers.users import create_user
 
 
@@ -212,11 +213,10 @@ def multiple_statistical_analysis(context: Context, no_statistical_analysis: str
     context.statistical_article_pages = []
     if no_statistical_analysis.isdigit():
         for statistical_analysis_index in range(int(no_statistical_analysis)):
-            context.statistical_article_pages.append(
-                StatisticalArticlePageFactory(
-                    parent=ArticleSeriesPageFactory(title="PSF" + str(statistical_analysis_index))
-                )
-            )
+            article  = StatisticalArticlePageFactory(
+                parent=ArticleSeriesPageFactory(title="PSF" + str(statistical_analysis_index)))
+            mark_page_as_ready_to_publish(article, UserFactory())
+            context.statistical_article_pages.append(article)
 
 
 @given("there is a {user_role} user")
@@ -229,10 +229,15 @@ def create_user_by_role(context: Context, user_role: str) -> None:
 
 @given("the {user_role} is a member of the Preview teams")
 def add_user_to_preview_teams(context: Context, user_role : str) -> None:
-    if any([d for d in context.users if d['role'] == user_role]):
-        user = [d for d in context.users if d['role'] == user_role][0]['user']['user']
+    for user in [d for d in context.users if d['role'] == user_role]:
+        tmp_user =user['user']['user']
+        print("user before", user['user'])
         for team in context.teams:
-            user.teams.add(team)
+            print("team before", team)
+            tmp_user.teams.add(team)
+            print("team after", team)
+        print("user After", user['user'])
+
 
 # Bundles UI Triggers
 @when("the {user_role} logs in")
@@ -296,9 +301,82 @@ def can_edit_bundle(context: Context) -> None:
         context.page.get_by_role("checkbox", name=context.teams[0].name).check()
         context.page.get_by_role("button", name="Confirm selection").click()
 
-@step("the user can preview a bundle")
-def can_preview_bundle(context: Context) -> None:
-    context.page.get_by_role("link", name=context.bundles[0].name).click()
+@step("the {user_role} can preview a bundle")
+def can_preview_bundle(context: Context, user_role: str) -> None:
+    # for user in context.users:
+    #     print("User", user)
+    # for team in context.teams:
+    #     print("preview teams", team)
+    # for article in context.statistical_article_pages:
+    #     print("articles", article)
+    # for release in context.release_calendar_pages:
+    #     print("calendar release", release)
+    # for bundle in context.bundles:
+    #     print("bundles", bundle.name)
+
+    expect(context.page.get_by_text("Bundles ready for preview")).to_be_visible()
+    expect(context.page.get_by_role("link", name=context.bundles[0].name)).to_be_visible()
+    # context.page.get_by_role("link", name=context.bundles[0].name).click()
+    # expect(context.page.get_by_role("link", name="Inspect : " + context.bundles[0].name)).to_be_visible()
+    # expect(page.get_by_text("Name")).to_be_visible()
+    # expect(page.get_by_text("Created at")).to_be_visible()
+    # expect(page.get_by_text("Created by")).to_be_visible()
+    # expect(page.get_by_text("Scheduled publication")).to_be_visible()
+    # expect(page.get_by_text("Associated release calendar")).to_be_visible()
+    # expect(page.get_by_text("Pages")).to_be_visible()
+    # page.get_by_text("Pages").dblclick()
+    # expect(page.get_by_role("link", name="July")).to_be_visible()
+    # expect(page.get_by_text("Pages")).to_be_visible()
+    # expect(page.get_by_role("cell", name="Title", exact=True)).to_be_visible()
+    # expect(page.get_by_text("PFM Series Title: June")).to_be_visible()
+    # expect(page.get_by_role("cell", name="Type")).to_be_visible()
+    # expect(page.get_by_role("cell", name="Statistical article page")).to_be_visible()
+    # expect(page.get_by_role("cell", name="Actions")).to_be_visible()
+    # expect(page.get_by_role("link", name="Preview")).to_be_visible()
+    # expect(page.get_by_text("Datasets", exact=True)).to_be_visible()
+    # expect(page.get_by_text("No datasets in bundle")).to_be_visible()
+    # page.get_by_role("link", name="Preview").click()
+
+
+
+
+    # if user_role == "Viewer":
+    #     expect(context.page.get_by_text("Bundles ready for preview")).to_be_visible()
+    #     expect(context.page.get_by_role("cell", name="Name")).to_be_visible()
+    #     expect(context.page.get_by_role("cell", name="Scheduled for")).to_be_visible()
+    #     expect(context.page.get_by_role("cell", name=context.bundles[0].name)).to_be_visible()
+    # else:
+    #     expect(context.page.get_by_text("Latest active bundles")).to_be_visible()
+    #     expect(context.page.get_by_role("cell", name="Name")).to_be_visible()
+    #     context.page.locator("#latest-bundles-content").get_by_role("cell", name="Status").click()
+    #     expect(context.page.get_by_role("cell", name=context.bundles[0].name)).to_be_visible()
+    #     context.page.get_by_role("link", name=context.bundles[0].name).click()
+    #     context.page.locator("#w-slim-header-buttons").get_by_role("button", name="Actions").click()
+    #     context.page.get_by_role("link", name="Inspect").click()
+    #     expect(context.page.get_by_role("link", name="Inspect : PFM Bundle 12345")).to_be_visible()
+    #     expect(context.page.get_by_text("Name")).to_be_visible()
+    #     expect(context.page.get_by_role("definition").filter(has_text=context.bundles[0].name)).to_be_visible()
+    #     expect(context.page.get_by_text("In Preview")).to_be_visible()
+    #     expect(context.page.get_by_text("Created at")).to_be_visible()
+    #     expect(context.page.get_by_text("Created by")).to_be_visible()
+    #     expect(context.page.get_by_text("Approval status")).to_be_visible()
+    #     expect(context.page.get_by_text("Pending approval")).to_be_visible()
+    #     expect(context.page.get_by_text("Associated release calendar")).to_be_visible()
+    #     expect(context.page.get_by_text("Teams", exact=True)).to_be_visible()
+        # expect(context.page.get_by_role("link", name="PFM Series Title: June").nth(1)).to_be_visible()
+        # with context.page.expect_popup() as page1_info:
+        #     context.page.get_by_role("link", name="July").click()
+        # page1 = page1_info.value
+        # expect(page1.get_by_role("heading", name="July")).to_be_visible()
+        # context.page.get_by_role("link", name="PFM Series Title: June").first.click()
+        # expect(context.page.get_by_role("link", name="PFM Series Title: June")).to_be_visible()
+        # context.page.goto("http://localhost:8000/admin/bundle/inspect/1/")
+        # context.page.get_by_role("link", name="PFM Series Title: June").nth(1).click()
+        # expect(context.page.get_by_role("link", name="PFM Series Title: June")).to_be_visible()
+        # context.page.goto("http://localhost:8000/admin/bundle/inspect/1/")
+
+
+
 
 
 @step("the user cannot approve the known bundle")
@@ -308,3 +386,17 @@ def cannot_approve_bundle(context: Context) -> None:
 @step("the user can approve the known bundle")
 def can_approve_bundle(context: Context) -> None:
     pass
+
+
+@then("the {creator_role} can inspect the Preview teams")
+def step_impl(context, creator_role) -> None:
+    print(next((item for item in context.users if item["role"] == creator_role), False)['user'])
+    print(next((item for item in context.users if item["role"] == 'Viewer'), False)['user'])
+
+    next((item for item in context.users if item["role"] == creator_role), False)
+    context.page.get_by_role("link", name="Preview teams").click()
+    context.page.get_by_role("link", name=context.teams[0].name).click()
+    # context.page.get_by_text("Ann-Viewer").click()
+    # context.page.get_by_role("button", name="Save").click()
+    # expect(context.page.get_by_text("Ann-Admin")).to_be_visible()
+    # expect(context.page.locator("#id_users div").filter(has_text="Ann-Viewer")).to_be_visible()
