@@ -160,7 +160,7 @@ jobs:
       - name: Create cache table
         run: poetry run ./manage.py createcachetable
       - name: Run migrations to work around Django bug (#35967)
-        run: poetry run ./manage.py migrate --noinput
+        run: poetry run ./manage.py locked_migrate
       - name: Compile translations
         run: make compilemessages
       - name: Test
