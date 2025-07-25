@@ -9,3 +9,4 @@ class BundlesAppConfig(AppConfig):
 
     def ready(self) -> None:
         import cms.bundles.signal_handlers  # noqa # pylint: disable=unused-import, import-outside-toplevel
+        import cms.bundles.checks  # noqa # pylint: disable=import-outside-toplevel
