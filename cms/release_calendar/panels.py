@@ -1,13 +1,18 @@
+from datetime import datetime
 from typing import TYPE_CHECKING, Any, Union
 
 from django.urls import reverse
 from django.utils.html import format_html
-from wagtail.admin.panels import HelpPanel
+from django.utils.timezone import is_aware, localtime
+from wagtail.admin.panels import FieldPanel, HelpPanel
 
 from cms.bundles.permissions import user_can_manage_bundles
 
 if TYPE_CHECKING:
+    from typing import Optional
+
     from django.utils.safestring import SafeString
+    from laces.typing import RenderContext
 
 
 class ReleaseCalendarBundleNotePanel(HelpPanel):
@@ -54,3 +59,31 @@ class ReleaseCalendarBundleNotePanel(HelpPanel):
                 bundle.name,
                 bundle.get_status_display(),
             )
+
+
+class ChangesToReleaseDateFieldPanel(FieldPanel):
+    """A panel for injecting previous release date data into the admin interface."""
+
+    class BoundPanel(FieldPanel.BoundPanel):
+        template_name = "wagtailadmin/panels/previous_release_date_data.html"
+
+        def get_context_data(self, parent_context: "Optional[RenderContext]" = None) -> "Optional[RenderContext]":
+            from cms.release_calendar.models import (  # pylint: disable=cyclic-import,import-outside-toplevel
+                ReleaseCalendarPage,
+            )
+
+            context = super().get_context_data(parent_context)
+            try:
+                release_calendar_page = ReleaseCalendarPage.objects.get(pk=self.instance.pk)
+                release_date = release_calendar_page.release_date
+                if release_date:
+                    if isinstance(release_date, datetime) and is_aware(release_date):
+                        release_date = localtime(release_date)
+                    context["previous_release_date"] = release_date.strftime("%Y-%m-%d %H:%M")
+                else:
+                    context["previous_release_date"] = None
+
+            except ReleaseCalendarPage.DoesNotExist:
+                context["previous_release_date"] = None
+
+            return context
