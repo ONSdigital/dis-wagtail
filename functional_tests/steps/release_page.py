@@ -78,9 +78,9 @@ def add_release_date_with_text(context: Context):
     context.page.get_by_label("Or, release date text").fill("March 2025 to August 2025")
 
 
-@then("the release date text is displayed")
-def release_date_text_is_displayed(context: Context):
-    expect(context.page.get_by_text("March 2025 to August 2025")).to_be_visible()
+@then("a release date text is displayed in the preview tab")
+def preview_release_date_text_is_displayed(context: Context):
+    expect(context.preview_tab.get_by_text("March 2025 to August 2025")).to_be_visible()
 
 
 @step("the user adds a next release date text")
@@ -129,14 +129,16 @@ def user_inputs_invalid_next_release_date_text(context: Context):
     context.page.get_by_role("textbox", name="Or, next release date text").fill("Invalid 6444")
 
 
-@then("the user sees a validation error message about the invalid next release date text input")
+@then("the user sees a validation error message: invalid next release date text input")
 def error_invalid_next_release_date_text(context: Context):
+    expect(context.page.get_by_text("The page could not be created")).to_be_visible()
     expect(context.page.get_by_text("The next release date text")).to_be_visible()
     expect(context.page.get_by_text("Format: 'DD Month YYYY Time'")).to_be_visible()
 
 
-@then("the user sees a validation error message about the invalid release date text input")
+@then("the user sees a validation error message: invalid release date text input")
 def error_invalid_release_date_text(context: Context):
+    expect(context.page.get_by_text("The page could not be created")).to_be_visible()
     expect(context.page.get_by_text("The release date text must be")).to_be_visible()
     expect(context.page.get_by_text("Override release date for")).to_be_visible()
 
@@ -146,7 +148,7 @@ def check_date_text_field(context: Context):
     expect(context.page.get_by_text("Or, release date text")).not_to_be_visible()
 
 
-@when("the user adds the next release date before the release date")
+@when("the user adds the next release date to be before the release date")
 def user_adds_next_release_date_before_release_date(context: Context):
     context.page.get_by_role("textbox", name="Release date*").fill("2024-12-25")
     context.page.locator("#id_next_release_date").fill("2023-12-25")
@@ -158,7 +160,7 @@ def user_adds_both_next_and_release_date(context: Context):
     context.page.locator("#id_next_release_date_text").fill("December 2025")
 
 
-@then("the user sees a validation error message about the next release date and next release date text")
+@then("the user sees a validation error message: cannot have both next release date and next release date text")
 def error_cannot_have_both_next_release_date_and_text(context: Context):
     expect(context.page.get_by_text("The page could not be created")).to_be_visible()
     expect(
@@ -173,7 +175,7 @@ def error_cannot_have_both_next_release_date_and_text(context: Context):
     ).to_be_visible()
 
 
-@then("the user sees a validation error message about the next release date cannot be before release date")
+@then("the user sees a validation error message: next release date cannot be before release date")
 def error_next_release_date_before_release_date(context: Context):
     expect(context.page.get_by_text("The page could not be created")).to_be_visible()
     expect(context.page.get_by_text("The next release date must be")).to_be_visible()
@@ -371,7 +373,7 @@ def user_adds_a_release_date_change(context: Context):
     change_to_release_date_section.get_by_label("Reason for change*").fill("Updated due to data availability")
 
 
-@then("the release date change is displayed in the preview tab")
+@then("a release date change is displayed in the preview tab")
 def displayed_date_change_log(context: Context):
     expect(context.preview_tab.get_by_text("Updated due to data availability")).to_be_visible()
 
@@ -379,10 +381,17 @@ def displayed_date_change_log(context: Context):
 @step("the user adds another release date change")
 def user_adds_another_release_date_change(context: Context):
     page = context.page
+    user_adds_a_release_date_change(page)
     change_to_release_date_section = page.locator("#panel-child-content-changes_to_release_date-section")
     change_to_release_date_section.get_by_role("button", name="Insert a block").nth(1).click()
     change_to_release_date_section.get_by_label("Previous date*").nth(1).fill("2024-12-19 12:15")
     change_to_release_date_section.get_by_label("Reason for change*").nth(1).fill("New update to release schedule")
+
+
+@when("the user adds multiple release date changes")
+def user_adds_multiple_release_date_changes(context: Context):
+    user_adds_a_release_date_change(context)
+    user_adds_another_release_date_change(context)
 
 
 @then("the user cannot delete the release date change")
@@ -394,7 +403,7 @@ def user_cannot_delete_the_release_date_change(context: Context):
     ).to_be_hidden()
 
 
-@then("the user sees a validation error message about adding multiple release date changes")
+@then("the user sees a validation error message about the multiple release date changes")
 def user_sees_validation_error_for_multiple_changes(context: Context):
     expect(
         context.page.get_by_text("Only one 'Changes to release date' entry can be added per release date change.")
@@ -413,12 +422,12 @@ def release_calendar_page_is_successfully_published(context: Context):
     expect(page.get_by_text("Page 'My Release' has been published.")).to_be_visible()
 
 
-@when("the user edits this to have a different release date")
+@when("the user adds release date change with no date change log")
 def user_enters_different_release_date(context: Context):
     context.page.get_by_role("textbox", name="Release date*").fill("2025-01-25")
 
 
-@then("an error message is displayed describing that a date change log is needed")
+@then("the user sees a validation error message about the release date change with no date change log")
 def error_release_date_change_message(context: Context):
     expect(context.page.get_by_text("The page could not be saved")).to_be_visible()
     expect(context.page.get_by_text("If a confirmed calendar entry")).to_be_visible()
