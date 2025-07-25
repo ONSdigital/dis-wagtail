@@ -15,6 +15,7 @@ from cms.bundles.tests.factories import BundleFactory, BundlePageFactory
 from cms.bundles.viewsets.bundle_chooser import BundleChooserWidget
 from cms.datasets.tests.factories import DatasetFactory
 from cms.release_calendar.tests.factories import ReleaseCalendarPageFactory
+from cms.teams.tests.factories import TeamFactory
 from cms.users.tests.factories import UserFactory
 from cms.workflows.tests.utils import mark_page_as_ready_to_publish
 
@@ -200,6 +201,34 @@ class BundleAdminFormTestCase(TestCase):
 
         self.assertEqual(self.bundle.bundled_pages.count(), 1)
 
+    def test_clean__removes_duplicate_datasets(self):
+        dataset = DatasetFactory(id=123)
+        self.assertEqual(self.bundle.bundled_datasets.count(), 0)
+
+        raw_data = self.raw_form_data()
+        raw_data["bundled_datasets"] = inline_formset([{"dataset": dataset.pk}, {"dataset": dataset.pk}])
+
+        form = self.form_class(instance=self.bundle, data=nested_form_data(raw_data))
+        self.assertTrue(form.is_valid())
+
+        form.save()
+
+        self.assertEqual(self.bundle.bundled_datasets.count(), 1)
+
+    def test_clean__removes_duplicate_teams(self):
+        team = TeamFactory()
+        self.assertEqual(self.bundle.teams.count(), 0)
+
+        raw_data = self.raw_form_data()
+        raw_data["teams"] = inline_formset([{"team": team.pk}, {"team": team.pk}])
+
+        form = self.form_class(instance=self.bundle, data=nested_form_data(raw_data))
+        self.assertTrue(form.is_valid())
+
+        form.save()
+
+        self.assertEqual(self.bundle.teams.count(), 1)
+
     def test_clean_validates_release_calendar_page_date_is_future(self):
         release_calendar_page = ReleaseCalendarPageFactory(release_date=timezone.now() - timedelta(hours=2))
         data = self.form_data
@@ -240,9 +269,9 @@ class BundleAdminFormTestCase(TestCase):
         self.assertTrue(form.is_valid())
 
     def test_clean_validates_the_bundle_has_datasets(self):
-        DatasetFactory(id=123)
+        dataset = DatasetFactory(id=123)
         raw_data = self.raw_form_data()
-        raw_data["bundled_datasets"] = inline_formset([{"dataset": 123}])
+        raw_data["bundled_datasets"] = inline_formset([{"dataset": dataset.pk}])
         form = self.form_class(instance=self.bundle, data=nested_form_data(raw_data))
 
         self.assertTrue(form.is_valid())
