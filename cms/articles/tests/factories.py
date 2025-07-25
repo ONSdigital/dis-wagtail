@@ -5,11 +5,8 @@ import factory
 import wagtail_factories
 from django.utils import timezone
 
-from cms.articles.models import ArticleSeriesPage, StatisticalArticlePage
-from cms.core.tests.factories import (
-    ContactDetailsFactory,
-    SectionContentBlockFactory,
-)
+from cms.articles.models import ArticleSeriesPage, ArticlesIndexPage, StatisticalArticlePage
+from cms.core.tests.factories import ContactDetailsFactory, SectionContentBlockFactory
 from cms.topics.tests.factories import TopicPageFactory
 
 
@@ -21,14 +18,22 @@ class HeadlineFigureBlockFactory(wagtail_factories.StructBlockFactory):
     trend = wagtail_factories.CharBlockFactory()
 
 
+class ArticlesIndexPageFactory(wagtail_factories.PageFactory):
+    class Meta:
+        model = ArticlesIndexPage
+
+    parent = factory.SubFactory(TopicPageFactory)
+    title = factory.Faker("sentence", nb_words=4)
+
+
 class ArticleSeriesPageFactory(wagtail_factories.PageFactory):
     """Factory for ArticleSeriesPage."""
 
     class Meta:
         model = ArticleSeriesPage
 
+    parent = factory.SubFactory(ArticlesIndexPageFactory)
     title = factory.Faker("sentence", nb_words=4)
-    parent = factory.SubFactory(TopicPageFactory)
 
 
 class StatisticalArticlePageFactory(wagtail_factories.PageFactory):
@@ -38,8 +43,8 @@ class StatisticalArticlePageFactory(wagtail_factories.PageFactory):
         model = StatisticalArticlePage
         django_get_or_create: ClassVar[list[str]] = ["slug", "parent"]
 
-    title = factory.Faker("sentence", nb_words=4)
     parent = factory.SubFactory(ArticleSeriesPageFactory)
+    title = factory.Faker("sentence", nb_words=4)
 
     summary = factory.Faker("text", max_nb_chars=100)
     news_headline = factory.Faker("text", max_nb_chars=50)

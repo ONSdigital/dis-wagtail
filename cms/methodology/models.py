@@ -4,6 +4,7 @@ from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.db import models
 from django.http import HttpRequest
+from django.shortcuts import redirect
 from django.utils.functional import cached_property
 from django.utils.translation import gettext_lazy as _
 from modelcluster.fields import ParentalKey
@@ -24,9 +25,30 @@ from cms.taxonomy.mixins import GenericTaxonomyMixin
 if TYPE_CHECKING:
     import datetime
 
+    from django.http import HttpResponse
     from django_stubs_ext import StrPromise
     from wagtail.admin.panels import Panel
     from wagtail.query import PageQuerySet
+
+
+class MethodologyIndexPage(BasePage):  # type: ignore[django-manager-missing]
+    max_count_per_parent = 1
+    parent_page_types: ClassVar[list[str]] = ["topics.TopicPage"]
+    page_description = "A place for all methodologies."
+    preview_modes: ClassVar[list[str]] = []  # Disabling the preview mode as this redirects away
+
+    def clean(self) -> None:
+        self.slug = "methodologies"
+        super().clean()
+
+    def minimal_clean(self) -> None:
+        # ensure the slug is always set to "methodologies", even for saving drafts, where minimal_clean is used
+        self.slug = "methodologies"
+        super().minimal_clean()
+
+    def serve(self, request: "HttpRequest", *args: Any, **kwargs: Any) -> "HttpResponse":
+        # FIXME: redirect to the publications listing for the topic
+        return redirect(self.get_parent().get_url(request=request))
 
 
 class MethodologyRelatedPage(Orderable):
@@ -44,7 +66,7 @@ class MethodologyRelatedPage(Orderable):
 
 class MethodologyPage(BundledPageMixin, GenericTaxonomyMixin, BasePage):  # type: ignore[django-manager-missing]
     base_form_class = PageWithEquationsAdminForm
-    parent_page_types: ClassVar[list[str]] = ["topics.TopicPage"]
+    parent_page_types: ClassVar[list[str]] = ["MethodologyIndexPage"]
     search_index_content_type: ClassVar[str] = "static_methodology"
     template = "templates/pages/methodology_page.html"
     label = _("Methodology")  # type: ignore[assignment]
