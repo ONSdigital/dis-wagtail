@@ -16,16 +16,27 @@ class ReleaseDateChangeBlockDefinition extends ReadonlyStructBlockDefinition {
   render(placeholder, prefix, initialState, initialError) {
     const block = super.render(placeholder, prefix, initialState, initialError);
 
-    if (this.previous_date) {
-      const previousDateInput = document.querySelector(
-        `input[type="text"]#${prefix}-previous_date`,
-      );
-      if (previousDateInput.value === '') {
-        previousDateInput.value = this.previous_date || '';
-      }
-      // previousDateInput.disabled = true;
-      // previousDateInput.readOnly = true;
+    if (!this.previous_date) {
+      return block;
     }
+
+    const previousDateDiv = document.querySelector(
+      `div[data-contentpath="previous_date"]:has(label[for="${prefix}-previous_date"])`,
+    );
+
+    const previousDateLabel = previousDateDiv.querySelector(`label[for="${prefix}-previous_date"]`);
+
+    const previousDateInput = previousDateDiv.querySelector(
+      `input[type="text"]#${prefix}-previous_date`,
+    );
+
+    if (previousDateInput.value === '') {
+      previousDateInput.value = this.previous_date || '';
+    }
+
+    previousDateInput.readOnly = true; // disable text input
+    previousDateInput.style.pointerEvents = 'none'; // disable date picker
+    previousDateLabel.style.pointerEvents = 'none'; // disable date picker
 
     return block;
   }
