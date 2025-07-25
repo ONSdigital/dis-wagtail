@@ -62,7 +62,9 @@ class ReleaseCalendarBundleNotePanel(HelpPanel):
 
 
 class ChangesToReleaseDateFieldPanel(FieldPanel):
-    """A panel for injecting previous release date data into the admin interface."""
+    """FieldPanel that injects the current release_date from the database into the template
+    as previous_release_date, allowing the field to be auto-populated on the client side.
+    """
 
     class BoundPanel(FieldPanel.BoundPanel):
         template_name = "wagtailadmin/panels/previous_release_date_data.html"
