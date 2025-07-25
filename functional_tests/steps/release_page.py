@@ -5,6 +5,12 @@ from playwright.sync_api import expect
 
 from cms.core.custom_date_format import ons_default_datetime
 from cms.release_calendar.tests.factories import ReleaseCalendarPageFactory
+from functional_tests.step_helpers.footer_menu_helpers import choose_page_link
+from functional_tests.step_helpers.pre_release_access_helpers import (
+    add_basic_table,
+    add_description_block,
+    insert_block,
+)
 
 
 @given("a Release Calendar page with a published notice exists")
@@ -264,8 +270,7 @@ def user_adds_related_link(context: Context):
     context.page.locator("#panel-child-content-related_links-content").get_by_role(
         "button", name="Insert a block"
     ).click()
-    context.page.get_by_role("button", name="Choose a page").click()
-    context.page.get_by_role("link", name="Home").click()
+    choose_page_link(context.page, page_name="Home")
 
 
 @then("related link is displayed in the preview tab")
@@ -294,24 +299,8 @@ def error_cancelled_notice_must_be_added(context: Context):
 
 @when("the user adds pre-release access information")
 def user_adds_pre_release_access(context: Context):
-    page = context.page
-    # Table
-    page.locator("#panel-child-content-pre_release_access-content").get_by_role("button", name="Insert a block").click()
-    page.get_by_text("Basic table").click()
-    page.get_by_label("Table headers").select_option("column")
-    page.get_by_role("textbox", name="Table caption").click()
-    page.get_by_role("textbox", name="Table caption").fill("Caption")
-    page.locator("td").first.click()
-    page.keyboard.type("first")
-    page.locator("td:nth-child(2)").first.click()
-    page.keyboard.type("second")
-
-    # Description
-    page.locator("#panel-child-content-pre_release_access-content").get_by_role("button", name="Insert a block").nth(
-        1
-    ).click()
-    page.get_by_role("option", name="Description").click()
-    page.get_by_role("region", name="Description *").get_by_role("textbox").fill("Description")
+    add_basic_table(context)
+    add_description_block(context, index=1)
 
 
 @then("pre-release access information is displayed in the preview tab")
@@ -325,13 +314,7 @@ def displayed_pre_release_access(context: Context):
 
 @when("empty table is added under pre-release access")
 def user_adds_empty_table_pre_release_access(context: Context):
-    page = context.page
-    # Empty Table
-    page.locator("#panel-child-content-pre_release_access-content").get_by_role("button", name="Insert a block").click()
-    page.get_by_text("Basic table").click()
-    page.get_by_label("Table headers").select_option("column")
-    page.get_by_role("textbox", name="Table caption").click()
-    page.get_by_role("textbox", name="Table caption").fill("Caption")
+    add_basic_table(context, data=False)
 
 
 @then("the user sees a validation error message about the empty table")
@@ -341,14 +324,8 @@ def error_empty_table(context: Context):
 
 @when("multiple descriptions are added under pre-release access")
 def user_adds_multiple_descriptions_to_pre_release_access(context: Context):
-    context.page.locator("#panel-child-content-pre_release_access-content").get_by_role(
-        "button", name="Insert a block"
-    ).click()
-    context.page.get_by_role("option", name="Description").click()
-    context.page.locator("#panel-child-content-pre_release_access-content").get_by_role(
-        "button", name="Insert a block"
-    ).nth(2).click()
-    context.page.get_by_role("option", name="Description").click()
+    add_description_block(context)
+    insert_block(context, block_name="Description", index=2)
 
 
 @then("the user sees a validation error message about the descriptions")
@@ -358,14 +335,8 @@ def error_multiple_description(context: Context):
 
 @when("multiple tables are added under pre-release access")
 def user_adds_multiple_tables_to_pre_release_access(context: Context):
-    context.page.locator("#panel-child-content-pre_release_access-content").get_by_role(
-        "button", name="Insert a block"
-    ).click()
-    context.page.get_by_text("Basic table").click()
-    context.page.locator("#panel-child-content-pre_release_access-content").get_by_role(
-        "button", name="Insert a block"
-    ).nth(1).click()
-    context.page.locator("#downshift-7-item-1").get_by_text("Basic table").click()
+    insert_block(context, block_name="Basic table", index=0)
+    insert_block(context, block_name="Basic table", index=1)
 
 
 @then("the user sees a validation error message about the maximum tables")
@@ -380,12 +351,7 @@ def error_page_not_saved(context: Context):
 
 @when("table with no table header selected is added under pre-release access")
 def user_adds_no_table_header_table_pre_release_access(context: Context):
-    page = context.page
-    # no table header Table
-    page.locator("#panel-child-content-pre_release_access-content").get_by_role("button", name="Insert a block").click()
-    page.get_by_text("Basic table").click()
-    page.get_by_role("textbox", name="Table caption").click()
-    page.get_by_role("textbox", name="Table caption").fill("Caption")
+    add_basic_table(context, header=False)
 
 
 @then("the user sees a validation error message about the unselected options")
