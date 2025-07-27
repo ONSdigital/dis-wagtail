@@ -20,7 +20,6 @@ def user_navigates_to_snippets_admin_page(context: Context, menu_item: str) -> N
 @then("the user can inspect bundle details")
 def the_user_can_see_the_bundle_details(context: Context) -> None:
     context.page.get_by_role("link", name="Bundles", exact=True).click()
-    context.page.get_by_role("button", name=f"More options for '{context.bundle.name}'").click()
     context.page.get_by_role("link", name=f"Inspect '{context.bundle.name}'").click()
 
 

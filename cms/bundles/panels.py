@@ -13,6 +13,19 @@ if TYPE_CHECKING:
     from wagtail.models import Page
 
 
+class BundleStatusPanel(HelpPanel):
+    class BoundPanel(HelpPanel.BoundPanel):
+        def __init__(self, **kwargs: Any) -> None:
+            super().__init__(**kwargs)
+            self.content = self._content_for_instance(self.instance)
+
+        def _content_for_instance(self, instance: "Model") -> Union[str, "SafeString"]:
+            if not hasattr(instance, "status"):
+                return ""
+
+            return format_html("<p>{}</p>", instance.get_status_display())  # type: ignore[attr-defined]
+
+
 class BundleNotePanel(HelpPanel):
     """An extended HelpPanel class."""
 

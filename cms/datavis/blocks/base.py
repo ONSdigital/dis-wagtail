@@ -1,14 +1,20 @@
 from collections.abc import Sequence
 from contextlib import suppress
-from typing import Any, ClassVar, Optional, cast
+from typing import TYPE_CHECKING, Any, ClassVar, Optional, cast
 
+from django.conf import settings
 from django.forms.widgets import RadioSelect
+from django.utils.translation import gettext_lazy as _
 from wagtail import blocks
 from wagtail.blocks.struct_block import StructValue
 
 from cms.datavis.blocks.chart_options import AspectRatioBlock
 from cms.datavis.blocks.table import SimpleTableBlock
 from cms.datavis.constants import AxisType, HighChartsChartType, HighchartsTheme
+
+if TYPE_CHECKING:
+    from django.utils.functional import _StrOrPromise
+
 
 AnnotationsList = list[dict[str, Any]]
 AnnotationsReturn = tuple[AnnotationsList, AnnotationsList, AnnotationsList]
@@ -21,6 +27,7 @@ class BaseVisualisationBlock(blocks.StructBlock):
         required=True, help_text="An overview of what the chart shows for screen readers."
     )
     caption = blocks.CharBlock(required=False)
+    footnotes = blocks.RichTextBlock(required=False, features=settings.RICH_TEXT_BASIC)
 
     class Meta:
         template = "templates/components/streamfield/datavis/base_highcharts_chart_block.html"
@@ -128,6 +135,7 @@ class BaseChartBlock(BaseVisualisationBlock):
             "series": series,
             "useStackedLayout": value.get("use_stacked_layout"),
             "download": self.get_download_config(value),
+            "footnotes": self.get_footnotes_config(value),
         }
 
         point_annotations, range_annotations, line_annotations = self.get_annotations_config(value)
@@ -296,3 +304,8 @@ class BaseChartBlock(BaseVisualisationBlock):
                 },
             ],
         }
+
+    def get_footnotes_config(self, value: "StructValue") -> dict["_StrOrPromise", Any]:
+        if footnotes := value.get("footnotes"):
+            return {"title": _("Footnotes"), "content": str(footnotes)}
+        return {}

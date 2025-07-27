@@ -1,0 +1,15 @@
+{% load i18n wagtailadmin_tags %}
+<button
+    type="submit"
+    name="{{ name }}"
+    value="{{ name }}"
+    class="button button-longrunning"
+    data-controller="w-progress{% if use_shortcut %} w-kbd{% endif %}"
+    data-action="w-progress#activate"
+    data-w-progress-active-value="{{ label_progress }}"
+    {% if use_shortcut %}data-w-kbd-key-value="mod+s" data-w-kbd-scope-value="global"{% endif %}
+>
+    {% if icon_name %}{% icon name=icon_name classname="button-longrunning__icon" %}{% endif %}
+    {% icon name="spinner" %}
+    <em data-w-progress-target="label">{{ label }}</em>
+</button>

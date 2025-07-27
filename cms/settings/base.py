@@ -1028,3 +1028,9 @@ ID_TOKEN_COOKIE_NAME = "id_token"  # noqa: S105
 WAGTAILADMIN_HOME_PATH = env.get("WAGTAILADMIN_HOME_PATH", "admin/")
 DJANGO_ADMIN_HOME_PATH = env.get("DJANGO_ADMIN_HOME_PATH", "django-admin/")
 SESSION_RENEWAL_OFFSET_SECONDS = env.get("SESSION_RENEWAL_OFFSET_SECONDS", 60 * 5)  # 5 minutes
+
+# Contact Us URL for error pages
+CONTACT_US_URL = env.get("CONTACT_US_URL", "/aboutus/contactus/generalandstatisticalenquiries")
+
+# Backup site URL
+BACKUP_SITE_URL = env.get("BACKUP_SITE_URL", "https://backup.ons.gov.uk")

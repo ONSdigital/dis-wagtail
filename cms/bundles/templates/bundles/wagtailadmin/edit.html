@@ -1,12 +1,4 @@
 {% extends "wagtailadmin/generic/form.html" %}
-{% load wagtailadmin_tags %}
-
-{% block extra_actions %}
-    {% if show_save_and_approve %}
-        <button type="submit" name="action-save-and-approve" value="save-and-approve" class="button button--icon">{% icon "check" %} Save and Approve</button>
-    {% elif show_publish %}
-        <button type="submit" name="action-publish" value="publish" class="button button--icon">{% icon "upload" %} Publish</button>
-    {% elif show_unschedule %}
-        <button type="submit" name="action-unschedule" value="unschedule" class="button button--icon">{% icon "download" %} Unschedule</button>
-    {% endif %}
+{% block actions %}
+    {{ action_menu.render_html }}
 {% endblock %}

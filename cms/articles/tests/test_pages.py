@@ -841,6 +841,56 @@ class StatisticalArticlePageTests(WagtailPageTestCase):
 
                 self.assertEqual(actual_jsonld["description"], description_case["expected_description"])
 
+    def test_chart_block_with_footnotes(self):
+        self.page.content = [
+            {
+                "type": "section",
+                "value": {
+                    "content": [
+                        {
+                            "type": "line_chart",
+                            "value": {
+                                "annotations": [],
+                                "audio_description": "desc",
+                                "caption": "",
+                                "footnotes": "This is a lovely footnote",
+                                "options": [],
+                                "show_legend": True,
+                                "show_markers": False,
+                                "subtitle": "subtitle",
+                                "table": {
+                                    "table_data": '{"data": [["Foo","Bar"],["1234","1337"],["",""],["",""],["",""]]}',
+                                    "table_type": "table",
+                                },
+                                "theme": "primary",
+                                "title": "line chart",
+                                "x_axis": {"tick_interval_desktop": None, "tick_interval_mobile": None, "title": ""},
+                                "y_axis": {
+                                    "custom_reference_line": None,
+                                    "end_on_tick": True,
+                                    "max": None,
+                                    "min": None,
+                                    "start_on_tick": True,
+                                    "tick_interval_desktop": None,
+                                    "tick_interval_mobile": None,
+                                    "title": "",
+                                },
+                            },
+                        },
+                    ],
+                    "title": "section",
+                },
+            }
+        ]
+        self.page.save_revision().publish()
+        response = self.client.get(self.page.url)
+        self.assertContains(response, "Footnotes")
+        self.assertContains(response, "This is a lovely footnote")
+        self.assertContains(response, "Foo")
+        self.assertContains(response, "Bar")
+        self.assertContains(response, "1234")
+        self.assertContains(response, "1337")
+
 
 class DatePlaceholderTests(WagtailPageTestCase):
     @classmethod

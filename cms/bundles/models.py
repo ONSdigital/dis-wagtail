@@ -6,6 +6,7 @@ from django.db.models import Case, F, QuerySet, Value, When
 from django.db.models.fields import CharField
 from django.db.models.functions import Coalesce
 from django.urls import reverse
+from django.utils import timezone
 from django.utils.functional import cached_property
 from modelcluster.fields import ParentalKey
 from modelcluster.models import ClusterableModel
@@ -21,7 +22,7 @@ from cms.workflows.utils import is_page_ready_to_preview, is_page_ready_to_publi
 
 from .enums import ACTIVE_BUNDLE_STATUSES, EDITABLE_BUNDLE_STATUSES, PREVIEWABLE_BUNDLE_STATUSES, BundleStatus
 from .forms import BundleAdminForm
-from .panels import PageChooserWithStatusPanel
+from .panels import BundleStatusPanel, PageChooserWithStatusPanel
 
 if TYPE_CHECKING:
     import datetime
@@ -160,7 +161,7 @@ class Bundle(index.Indexed, ClusterableModel, models.Model):  # type: ignore[dja
             heading="Scheduling",
             icon="calendar",
         ),
-        "status",
+        BundleStatusPanel(heading="Status"),
         InlinePanel("bundled_pages", heading="Bundled pages", icon="doc-empty", label="Page"),
         MultipleChooserPanel(
             "bundled_datasets", heading="Data API datasets", label="Dataset", chooser_field_name="dataset"
@@ -169,6 +170,7 @@ class Bundle(index.Indexed, ClusterableModel, models.Model):  # type: ignore[dja
             "teams", heading="Preview teams", icon="user", label="Preview team", chooser_field_name="team"
         ),
         # these are handled by the form
+        FieldPanel("status", classname="hidden w-hidden"),
         FieldPanel("approved_by", classname="hidden w-hidden"),
         FieldPanel("approved_at", classname="hidden w-hidden"),
     ]
@@ -208,6 +210,16 @@ class Bundle(index.Indexed, ClusterableModel, models.Model):  # type: ignore[dja
     @property
     def is_ready_to_be_published(self) -> bool:
         return self.status == BundleStatus.APPROVED
+
+    @property
+    def can_be_manually_published(self) -> bool:
+        if not self.is_ready_to_be_published:
+            return False
+
+        if not self.scheduled_publication_date:
+            return True
+
+        return self.scheduled_publication_date < timezone.now()
 
     @property
     def full_inspect_url(self) -> str:
