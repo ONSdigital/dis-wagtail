@@ -121,7 +121,7 @@ class LatestBundlesPanel(Component):
         """Returns the latest 10 bundles if the panel is shown."""
         queryset: QuerySet[Bundle] = Bundle.objects.none()
         if self.is_shown:
-            queryset = Bundle.objects.active()[: self.num_bundles]
+            queryset = Bundle.objects.active().order_by("name")[: self.num_bundles]
 
         return queryset
 
@@ -139,10 +139,15 @@ class BundlesInReviewPanel(Component):
     name = "bundles_in_review"
     order = 150
     template_name = "bundles/wagtailadmin/panels/bundles_in_review.html"
+    num_bundles = 10
 
     def __init__(self, request: "HttpRequest") -> None:
         self.request = request
         self.permission_policy = ModelPermissionPolicy(Bundle)
+
+    @cached_property
+    def _can_manage(self) -> bool:
+        return self.permission_policy.user_has_any_permission(self.request.user, {"add", "change", "delete"})
 
     @cached_property
     def is_shown(self) -> bool:
@@ -151,32 +156,29 @@ class BundlesInReviewPanel(Component):
             return True
 
         has_view_permission = self.permission_policy.user_has_permission(self.request.user, "view")
-        if not has_view_permission:
-            return False
+        return has_view_permission or self._can_manage
 
-        has_manage_permissions: bool = self.permission_policy.user_has_any_permission(
-            self.request.user, {"add", "change", "delete"}
-        )
-        return not has_manage_permissions
-
-    def get_bundles(self) -> QuerySet[Bundle]:
+    @cached_property
+    def bundles(self) -> QuerySet[Bundle]:
         """Returns the latest 10 bundles if the panel is shown."""
-        queryset: QuerySet[Bundle] = Bundle.objects.none()
-        if self.is_shown:
-            queryset = (
-                Bundle.objects.previewable()
-                .filter(teams__team__in=self.request.user.active_team_ids)  # type: ignore[union-attr]
-                .distinct()
-            )
+        if not self.is_shown:
+            return Bundle.objects.none()
 
-        return queryset
+        queryset: QuerySet[Bundle] = Bundle.objects.previewable().order_by("name")
+        if self._can_manage:
+            # show all "in preview" for users that can manage.
+            return queryset
+
+        # for everyone else, only bundles in the same preview team they are in
+        return queryset.filter(teams__team__in=self.request.user.active_team_ids).distinct()
 
     def get_context_data(self, parent_context: "Optional[RenderContext]" = None) -> "Optional[RenderContext]":
         """Adds the request, the latest bundles and whether the panel is shown to the panel context."""
         context = super().get_context_data(parent_context)
         context["request"] = self.request
-        context["bundles"] = self.get_bundles()
+        context["bundles"] = self.bundles[: self.num_bundles]
         context["is_shown"] = self.is_shown
+        context["more_link"] = len(self.bundles) > self.num_bundles
         return context
 
 

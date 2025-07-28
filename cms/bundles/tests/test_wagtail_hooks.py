@@ -79,7 +79,7 @@ class WagtailHooksTestCase(WagtailTestUtils, TestCase):
         cases = [
             (self.generic_user, 0),
             (self.bundle_viewer, 1),
-            (self.publishing_officer, 0),
+            (self.publishing_officer, 1),
             (self.superuser, 1),
         ]
         for user, shown in cases:
@@ -120,10 +120,12 @@ class WagtailHooksTestCase(WagtailTestUtils, TestCase):
         self.assertNotContains(response, self.draft_bundle.name)
         self.assertNotContains(response, self.published_bundle.name)
 
+        self.assertContains(response, reverse("bundle:index") + "?status=IN_REVIEW")
+
     def test_add_to_bundle_buttons(self):
         """Tests that the 'Add to Bundle' button appears in appropriate contexts."""
         # Test both header and listing contexts
-        contexts = [(self.article_edit_url, "header"), (self.article_parent_url, "listing")]
+        contexts = [(self.article_edit_url, "edit page"), (self.article_parent_url, "listing")]
 
         for user in [self.generic_user, self.bundle_viewer]:
             for url, context in contexts:
@@ -134,17 +136,17 @@ class WagtailHooksTestCase(WagtailTestUtils, TestCase):
                     self.assertContains(response, "Sorry, you do not have permission to access this area.")
 
         cases_with_access = [
-            (self.publishing_officer, 1),  # Has all permissions, should see button
-            (self.superuser, 1),  # Has all permissions, should see button
+            (self.publishing_officer, {"edit page": 2, "listing": 1}),  # Has all permissions, num buttons
+            (self.superuser, {"edit page": 2, "listing": 1}),  # Has all permissions, num buttons
         ]
         for user, expected_count in cases_with_access:
             for url, context in contexts:
-                with self.subTest(user=user.username, context=context, expected=expected_count):
+                with self.subTest(user=user.username, context=context, expected=expected_count[context]):
                     self.client.force_login(user)
                     response = self.client.get(url)
 
                     # Check if button appears in response
-                    self.assertContains(response, "Add to Bundle", count=expected_count)
+                    self.assertContains(response, "Add to Bundle", count=expected_count[context])
                     self.assertContains(response, "boxes-stacked")  # icon name
                     self.assertContains(response, self.add_to_bundle_url)
 
