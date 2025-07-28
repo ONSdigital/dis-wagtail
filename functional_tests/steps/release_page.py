@@ -43,7 +43,7 @@ def enter_example_release_content(context: Context):
     page = context.page
     page.get_by_placeholder("Page title*").fill("My Release")
 
-    page.get_by_role("textbox", name="Release date*").fill("2024-12-25")
+    page.get_by_role("textbox", name="Release date*").fill("2024-12-25 09:30")
     page.get_by_role("textbox", name="Release date*").press("Enter")
 
     page.get_by_role("region", name="Summary*").get_by_role("textbox").fill("My example release page")
@@ -178,7 +178,7 @@ def user_adds_a_release_date_change(context: Context):
     page = context.page
     change_to_release_date_section = page.locator("#panel-child-content-changes_to_release_date-section")
     change_to_release_date_section.get_by_role("button", name="Insert a block").click()
-    change_to_release_date_section.get_by_label("Previous date*").fill("2024-12-20 14:30")
+    # change_to_release_date_section.get_by_label("Previous date*").fill("2024-12-20 14:30")
     change_to_release_date_section.get_by_label("Reason for change*").fill("Updated due to data availability")
 
 
@@ -187,7 +187,7 @@ def user_adds_another_release_date_change(context: Context):
     page = context.page
     change_to_release_date_section = page.locator("#panel-child-content-changes_to_release_date-section")
     change_to_release_date_section.get_by_role("button", name="Insert a block").nth(1).click()
-    change_to_release_date_section.get_by_label("Previous date*").nth(1).fill("2024-12-19 12:15")
+    # change_to_release_date_section.get_by_label("Previous date*").nth(1).fill("2024-12-19 12:15")
     change_to_release_date_section.get_by_label("Reason for change*").nth(1).fill("New update to release schedule")
 
 
@@ -217,3 +217,20 @@ def release_calendar_page_is_successfully_updated(context: Context):
 def release_calendar_page_is_successfully_published(context: Context):
     page = context.page
     expect(page.get_by_text("Page 'My Release' has been published.")).to_be_visible()
+
+
+@then("the previous release date field is not editable")
+def previous_release_date_field_is_not_editable(context: Context):
+    changes_to_release_date_section = context.page.locator("#panel-child-content-changes_to_release_date-section")
+    expect(changes_to_release_date_section.get_by_label("Previous date*")).not_to_be_editable()
+
+
+@when("the user changes the release date to a new date")
+def user_changes_release_date_to_new_date(context: Context):
+    context.page.get_by_role("textbox", name="Release date*").fill("2024-12-21 15:00")
+
+
+@then("the previous release date field is pre-populated with the old release date")
+def previous_release_date_field_is_pre_populated(context: Context):
+    changes_to_release_date_section = context.page.locator("#panel-child-content-changes_to_release_date-section")
+    expect(changes_to_release_date_section.get_by_label("Previous date*")).to_have_value("2024-12-25 09:30")
