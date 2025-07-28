@@ -381,7 +381,6 @@ def displayed_date_change_log(context: Context):
 @step("the user adds another release date change")
 def user_adds_another_release_date_change(context: Context):
     page = context.page
-    user_adds_a_release_date_change(page)
     change_to_release_date_section = page.locator("#panel-child-content-changes_to_release_date-section")
     change_to_release_date_section.get_by_role("button", name="Insert a block").nth(1).click()
     change_to_release_date_section.get_by_label("Previous date*").nth(1).fill("2024-12-19 12:15")
@@ -413,13 +412,13 @@ def user_sees_validation_error_for_multiple_changes(context: Context):
 @then("the release calendar page is successfully updated")
 def release_calendar_page_is_successfully_updated(context: Context):
     page = context.page
-    expect(page.get_by_text("Page 'My Release' has been updated.")).to_be_visible()
+    expect(page.get_by_text(f"Page '{context.release_calendar_page.title}' has been updated.")).to_be_visible()
 
 
 @then("the release calendar page is successfully published")
 def release_calendar_page_is_successfully_published(context: Context):
     page = context.page
-    expect(page.get_by_text("Page 'My Release' has been published.")).to_be_visible()
+    expect(page.get_by_text(f"Page '{context.release_calendar_page.title}' has been published.")).to_be_visible()
 
 
 @when("the user adds release date change with no date change log")
@@ -429,5 +428,5 @@ def user_enters_different_release_date(context: Context):
 
 @then("the user sees a validation error message about the release date change with no date change log")
 def error_release_date_change_message(context: Context):
-    expect(context.page.get_by_text("The page could not be saved")).to_be_visible()
+    error_page_not_saved(context)
     expect(context.page.get_by_text("If a confirmed calendar entry")).to_be_visible()
