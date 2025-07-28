@@ -120,6 +120,10 @@ class WagtailHooksTestCase(WagtailTestUtils, TestCase):
         self.assertNotContains(response, self.draft_bundle.name)
         self.assertNotContains(response, self.published_bundle.name)
 
+    def test_bundles_in_preview_more_link_rendered(self):
+        BundleFactory.create_batch(10, approved=True)  # + self.in_review_bundle
+        self.client.force_login(self.publishing_officer)
+        response = self.client.get(self.dashboard_url)
         self.assertContains(response, reverse("bundle:index") + "?status=IN_REVIEW")
 
     def test_add_to_bundle_buttons(self):
