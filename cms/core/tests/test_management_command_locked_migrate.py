@@ -10,23 +10,21 @@ from django.test import TestCase
 
 class LockedMigrateCommandIntegrationTest(TestCase):
     def setUp(self):
-        self.buffer = StringIO()
         patcher = patch("cms.core.management.commands.locked_migrate.call_command", autospec=True)
         self.mock_call_command = patcher.start()
         self.addCleanup(patcher.stop)
 
-    def assert_lock_acquired(self, output_buffer=None):
-        buffer = output_buffer or self.buffer
-        output = buffer.getvalue().strip()
+    def assert_lock_acquired(self, stdout_buffer):
+        output = stdout_buffer.getvalue().strip()
         self.assertIn("Acquiring lock", output)
         self.assertIn("Lock acquired - running migrations", output)
 
-    def call_locked(self, timeout, skip_unapplied_check=True, stdout_buffer=None):
+    def call_locked(self, *, timeout, stdout_buffer, skip_unapplied_check=True):
         args = ["--timeout", str(timeout)]
         if skip_unapplied_check:
             args.append("--skip-unapplied-check")
 
-        call_command("locked_migrate", *args, stdout=stdout_buffer or self.buffer)
+        call_command("locked_migrate", *args, stdout=stdout_buffer)
 
     def _setup_lock_side_effect(self):
         """Configure the mock to signal when the lock is held and simulate migration time."""
@@ -41,8 +39,9 @@ class LockedMigrateCommandIntegrationTest(TestCase):
 
     def test_skip_unapplied_check_acquires_lock_and_runs_migrations(self):
         """When skipping unapplied check, it should always acquire the lock and run migrations."""
-        self.call_locked(timeout=1, skip_unapplied_check=True)
-        self.assert_lock_acquired()
+        stdout_buffer = StringIO()
+        self.call_locked(timeout=1, stdout_buffer=stdout_buffer, skip_unapplied_check=True)
+        self.assert_lock_acquired(stdout_buffer)
 
     @patch("cms.core.management.commands.locked_migrate.Command._has_unapplied_migrations")
     def test_has_unapplied_migration(self, mock_has_unapplied):
@@ -51,11 +50,11 @@ class LockedMigrateCommandIntegrationTest(TestCase):
             with self.subTest(has_pending=has_pending):
                 mock_has_unapplied.return_value = has_pending
                 self.mock_call_command.reset_mock()
-                self.buffer = StringIO()
+                stdout_buffer = StringIO()
 
-                self.call_locked(timeout=1, skip_unapplied_check=False)
+                self.call_locked(timeout=1, stdout_buffer=stdout_buffer, skip_unapplied_check=False)
                 if has_pending:
-                    self.assert_lock_acquired()
+                    self.assert_lock_acquired(stdout_buffer=stdout_buffer)
                 else:
                     self.mock_call_command.assert_not_called()
 
@@ -67,7 +66,7 @@ class LockedMigrateCommandIntegrationTest(TestCase):
         lock_held = self._setup_lock_side_effect()
 
         # Start thread1 and wait until it grabs the lock
-        thread1 = threading.Thread(target=lambda: self.call_locked(5, stdout_buffer=thread_1_output))
+        thread1 = threading.Thread(target=lambda: self.call_locked(timeout=5, stdout_buffer=thread_1_output))
         thread1.start()
         lock_held.wait(timeout=1)
 
@@ -95,10 +94,10 @@ class LockedMigrateCommandIntegrationTest(TestCase):
         lock_held = self._setup_lock_side_effect()
 
         with ThreadPoolExecutor(max_workers=2) as executor:
-            first_call = executor.submit(lambda: self.call_locked(5, stdout_buffer=thread_1_output))
+            first_call = executor.submit(lambda: self.call_locked(timeout=5, stdout_buffer=thread_1_output))
             # Wait until thread 1 has acquired the lock
             lock_held.wait(timeout=1)
-            second_call = executor.submit(lambda: self.call_locked(5, stdout_buffer=thread_2_output))
+            second_call = executor.submit(lambda: self.call_locked(timeout=5, stdout_buffer=thread_2_output))
 
             first_call.result()
             second_call.result()
