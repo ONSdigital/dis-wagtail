@@ -246,9 +246,12 @@ def user_adds_a_notice(context: Context):
 @step("the user adds an accordion section with title and content")
 def user_adds_accordion_section(context: Context):
     page = context.page
+    context.page.wait_for_timeout(250)
     page.get_by_label("Content ()").get_by_title("Insert a block").nth(3).click()
+    page.wait_for_timeout(50)  # added to allow JS to be ready
     page.get_by_text("Accordion").click()
     page.get_by_label("Title*").fill("Test Accordion Section")
+    page.wait_for_timeout(50)  # added to allow JS to be ready
     page.get_by_role("region", name="Content*").get_by_role("textbox").nth(3).fill("Test accordion content")
     context.page.wait_for_timeout(500)  # Wait for JS to process
 
