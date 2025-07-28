@@ -4,7 +4,7 @@ from typing import TYPE_CHECKING, Any, Union
 from django.urls import reverse
 from django.utils.html import format_html
 from django.utils.timezone import is_aware, localtime
-from wagtail.admin.panels import FieldPanel, HelpPanel
+from wagtail.admin.panels import HelpPanel, Panel
 
 from cms.bundles.permissions import user_can_manage_bundles
 
@@ -61,12 +61,12 @@ class ReleaseCalendarBundleNotePanel(HelpPanel):
             )
 
 
-class ChangesToReleaseDateFieldPanel(FieldPanel):
+class ChangesToReleaseDateFieldPanel(Panel):
     """FieldPanel that injects the current release_date from the database into the template
     as previous_release_date, allowing the field to be auto-populated on the client side.
     """
 
-    class BoundPanel(FieldPanel.BoundPanel):
+    class BoundPanel(Panel.BoundPanel):
         template_name = "wagtailadmin/panels/previous_release_date_data.html"
 
         def get_context_data(self, parent_context: "Optional[RenderContext]" = None) -> "Optional[RenderContext]":

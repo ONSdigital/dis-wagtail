@@ -33,7 +33,7 @@ class ReadonlyStructBlockDefinition extends window.wagtailStreamField.blocks.Str
       document.querySelector(`${parent} [data-contentpath="${field}"]:has(#${prefix}-${field})`);
 
     const frozenCheckbox = getFieldContainer('frozen');
-    frozenCheckbox.style.display = 'none'; // Hide the checkbox in the form that is automatically generated for the `frozen` field for each StructBlock.
+    frozenCheckbox.style.display = 'none';
 
     this.hiddenFields.forEach((field) => {
       const fieldContainer = getFieldContainer(field);

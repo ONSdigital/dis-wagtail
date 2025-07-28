@@ -178,7 +178,6 @@ def user_adds_a_release_date_change(context: Context):
     page = context.page
     change_to_release_date_section = page.locator("#panel-child-content-changes_to_release_date-section")
     change_to_release_date_section.get_by_role("button", name="Insert a block").click()
-    # change_to_release_date_section.get_by_label("Previous date*").fill("2024-12-20 14:30")
     change_to_release_date_section.get_by_label("Reason for change*").fill("Updated due to data availability")
 
 
@@ -187,7 +186,6 @@ def user_adds_another_release_date_change(context: Context):
     page = context.page
     change_to_release_date_section = page.locator("#panel-child-content-changes_to_release_date-section")
     change_to_release_date_section.get_by_role("button", name="Insert a block").nth(1).click()
-    # change_to_release_date_section.get_by_label("Previous date*").nth(1).fill("2024-12-19 12:15")
     change_to_release_date_section.get_by_label("Reason for change*").nth(1).fill("New update to release schedule")
 
 
