@@ -41,22 +41,19 @@ class BundleNotePanel(HelpPanel):
                 return ""
 
             can_manage = user_can_manage_bundles(self.request.user)
+
             if bundle := instance.active_bundle:
+                html = "<p>This page is in the following bundle: {} (Status: {})</p>"
                 if can_manage:
-                    return format_html(
-                        "<p>This page is in the following bundle: "
-                        '<a href="{}" target="_blank" title="Manage bundle">{}</a> (Status: {})</p>',
+                    link = format_html(
+                        '<a href="{}" target="_blank" title="Manage bundle">{}</a>',
                         reverse("bundle:edit", args=[bundle.pk]),
                         bundle.name,
-                        bundle.get_status_display(),
                     )
-                return format_html(
-                    "<p>This page is in the following bundle: {} (Status: {})</p>",
-                    bundle.name,
-                    bundle.get_status_display(),
-                )
+                    return format_html(html, link, bundle.get_status_display())
+                return format_html(html, bundle.name, bundle.get_status_display())
 
-            if can_manage:
+            if can_manage and instance.pk:
                 return format_html(
                     "<p>This page is not part of any bundles. "
                     '<a href="{}" class="button button-small button-secondary">Add to Bundle</a></p>',
