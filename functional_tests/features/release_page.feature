@@ -47,7 +47,8 @@ Feature: CMS users can draft, edit, and publish release pages
     And the user enters some example content on the page
     And the user adds <Input>
     And the user clicks "Publish"
-    Then the user sees a validation error message: <Error>
+    Then an error message is displayed to say page could not be saved
+    And the user sees a validation error message: <Error>
 
     Examples:
       | Input                                               | Error                                                         |
@@ -110,7 +111,8 @@ Feature: CMS users can draft, edit, and publish release pages
     And the user sets the page status to "Cancelled"
     And the user enters some example content on the page
     And the user clicks "Publish"
-    Then an error message is displayed describing notice must be added
+    Then an error message is displayed to say page could not be saved
+    And an error message is displayed describing notice must be added
 
 # Prerelease Access
 

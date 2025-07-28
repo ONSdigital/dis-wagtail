@@ -131,14 +131,12 @@ def user_inputs_invalid_next_release_date_text(context: Context):
 
 @then("the user sees a validation error message: invalid next release date text input")
 def error_invalid_next_release_date_text(context: Context):
-    expect(context.page.get_by_text("The page could not be created")).to_be_visible()
     expect(context.page.get_by_text("The next release date text")).to_be_visible()
     expect(context.page.get_by_text("Format: 'DD Month YYYY Time'")).to_be_visible()
 
 
 @then("the user sees a validation error message: invalid release date text input")
 def error_invalid_release_date_text(context: Context):
-    expect(context.page.get_by_text("The page could not be created")).to_be_visible()
     expect(context.page.get_by_text("The release date text must be")).to_be_visible()
     expect(context.page.get_by_text("Override release date for")).to_be_visible()
 
@@ -162,7 +160,6 @@ def user_adds_both_next_and_release_date(context: Context):
 
 @then("the user sees a validation error message: cannot have both next release date and next release date text")
 def error_cannot_have_both_next_release_date_and_text(context: Context):
-    expect(context.page.get_by_text("The page could not be created")).to_be_visible()
     expect(
         context.page.locator(
             "#panel-child-content-child-metadata-child-panel1-child-next_release_date-errors"
@@ -177,7 +174,6 @@ def error_cannot_have_both_next_release_date_and_text(context: Context):
 
 @then("the user sees a validation error message: next release date cannot be before release date")
 def error_next_release_date_before_release_date(context: Context):
-    expect(context.page.get_by_text("The page could not be created")).to_be_visible()
     expect(context.page.get_by_text("The next release date must be")).to_be_visible()
 
 
@@ -292,7 +288,6 @@ def check_notice_field_disabled(context: Context):
 
 @then("an error message is displayed describing notice must be added")
 def error_cancelled_notice_must_be_added(context: Context):
-    expect(context.page.get_by_text("The page could not be created")).to_be_visible()
     expect(context.page.get_by_text("The notice field is required")).to_be_visible()
 
 
