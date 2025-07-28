@@ -1,4 +1,6 @@
 import io
+import logging
+from collections.abc import Iterable
 from datetime import date, datetime
 from threading import Lock
 from typing import TYPE_CHECKING, Any, Optional, TypedDict, Union
@@ -16,6 +18,9 @@ from cms.core.enums import RelatedContentType
 matplotlib_lock = Lock()
 
 FORMULA_INDICATOR = "$$"
+IS_EXTERNAL_KEY = "is_external"
+
+logger = logging.getLogger(__name__)
 
 mpl.rcParams.update(
     {
@@ -34,13 +39,59 @@ if TYPE_CHECKING:
 
 
 class DocumentListItem(TypedDict):
-    title: dict[str, str]
+    title: dict[str, "StrOrPromise"]
     metadata: dict[str, Any]
-    description: str
+    description: "StrOrPromise"
+
+
+# Type aliases for cleaner function signatures
+PageData = Union["Page", dict[str, Any]]
+PageDataCollection = Union[QuerySet["Page"], Iterable[PageData]]
+
+
+def _format_external_link(page_dict: dict[str, Any]) -> DocumentListItem:
+    """Format external link dictionary into DocumentListItem."""
+    return {
+        "title": {
+            "text": page_dict["title"],
+            "url": page_dict["url"],
+        },
+        "metadata": {
+            "object": {"text": _("Article")},
+        },
+        "description": page_dict.get("description", ""),
+    }
+
+
+def _format_page_object(page: "Page", request: Optional["HttpRequest"] = None) -> DocumentListItem:
+    """Format page object into DocumentListItem."""
+    page_datum: DocumentListItem = {
+        "title": {
+            "text": getattr(page, "display_title", page.title),
+            "url": page.get_url(request=request),
+        },
+        "metadata": {
+            "object": {"text": getattr(page, "label", _("Page"))},
+        },
+        "description": getattr(page, "listing_summary", "") or getattr(page, "summary", ""),
+    }
+    if release_date := getattr(page, "release_date", None):
+        page_datum["metadata"]["date"] = get_document_metadata_date(release_date)
+    return page_datum
+
+
+def _format_fallback_item(page: Any) -> DocumentListItem:
+    """Format unknown page type with proper logging."""
+    logger.warning("Unexpected page type in get_formatted_pages_list: %s", type(page))
+    return {
+        "title": {"text": _("Content unavailable"), "url": "#"},
+        "metadata": {"object": {"text": _("Page")}},
+        "description": _("This content is temporarily unavailable."),
+    }
 
 
 def get_formatted_pages_list(
-    pages: Union[list["Page"], list[dict], list[Union["Page", dict]], QuerySet["Page"]],
+    pages: PageDataCollection,
     request: Optional["HttpRequest"] = None,
 ) -> list[DocumentListItem]:
     """Returns a formatted list of page data for the documentList DS macro.
@@ -49,39 +100,12 @@ def get_formatted_pages_list(
     """
     data = []
     for page in pages:
-        if isinstance(page, dict) and page.get("is_external"):
-            datum: DocumentListItem = {
-                "title": {
-                    "text": page["title"],
-                    "url": page["url"],
-                },
-                "metadata": {
-                    "object": {"text": _("Article")},
-                },
-                "description": page.get("description", ""),
-            }
-        # Handle page objects
+        if isinstance(page, dict) and page.get(IS_EXTERNAL_KEY):
+            datum = _format_external_link(page)
         elif hasattr(page, "get_url") and not isinstance(page, dict):
-            page_datum: DocumentListItem = {
-                "title": {
-                    "text": getattr(page, "display_title", page.title),
-                    "url": page.get_url(request=request),
-                },
-                "metadata": {
-                    "object": {"text": getattr(page, "label", _("Page"))},
-                },
-                "description": getattr(page, "listing_summary", "") or getattr(page, "summary", ""),
-            }
-            if release_date := getattr(page, "release_date", None):
-                page_datum["metadata"]["date"] = get_document_metadata_date(release_date)
-            datum = page_datum
+            datum = _format_page_object(page, request)
         else:
-            # Fallback for QuerySet items - shouldn't happen in normal use
-            datum = {
-                "title": {"text": "Unknown", "url": "#"},
-                "metadata": {"object": {"text": _("Page")}},
-                "description": "",
-            }
+            datum = _format_fallback_item(page)
         data.append(datum)
     return data
 

@@ -206,7 +206,8 @@ class TopicPage(BundledPageMixin, ExclusiveTaxonomyMixin, BasePage):  # type: ig
         manual_articles = []
         highlighted_page_pks = []
 
-        for related in self.related_articles.all():
+        # Optimize database queries by using select_related
+        for related in self.related_articles.select_related("page").all():
             if related.page:
                 page = related.page.specific  # type: ignore[attr-defined]
                 if page.live:
