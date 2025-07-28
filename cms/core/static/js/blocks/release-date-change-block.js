@@ -16,22 +16,21 @@ class ReleaseDateChangeBlockDefinition extends ReadonlyStructBlockDefinition {
   render(placeholder, prefix, initialState, initialError) {
     const block = super.render(placeholder, prefix, initialState, initialError);
 
-    if (!this.previous_date) {
-      return block;
-    }
-
     const previousDateDiv = document.querySelector(
       `div[data-contentpath="previous_date"]:has(label[for="${prefix}-previous_date"])`,
     );
-
     const previousDateLabel = previousDateDiv.querySelector(`label[for="${prefix}-previous_date"]`);
-
     const previousDateInput = previousDateDiv.querySelector(
       `input[type="text"]#${prefix}-previous_date`,
     );
+    const helpText = previousDateDiv.querySelector(`div#${prefix}-previous_date-helptext`);
 
     if (previousDateInput.value === '') {
-      previousDateInput.value = this.previous_date || '';
+      if (this.previous_date) {
+        previousDateInput.value = this.previous_date;
+      } else {
+        helpText.innerHTML = 'This field will be auto-populated once the page is saved.';
+      }
     }
 
     previousDateInput.readOnly = true; // disable text input
