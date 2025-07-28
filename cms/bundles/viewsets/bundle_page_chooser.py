@@ -65,7 +65,7 @@ class PagesWithDraftsMixin:
         return [
             title_column,
             Column("parent", label="Parent", accessor="get_parent"),
-            LocaleColumn(),
+            LocaleColumn(classname="w-text-16 w-w-[120px]"),  # w-w-[120px] is used to adjust the width
             DateColumn(
                 "updated",
                 label="Updated",

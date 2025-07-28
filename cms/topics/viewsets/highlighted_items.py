@@ -55,7 +55,7 @@ class HighlightedChildPageChooseViewMixin:
         title_column.accessor = "get_admin_display_title"
         return [
             title_column,
-            LocaleColumn(),
+            LocaleColumn(classname="w-text-16 w-w-[120px]"),  # w-w-[120px] is used to adjust the width
             Column(
                 "release_date",
                 label="Release date",
