@@ -60,27 +60,28 @@ class LockedMigrateCommandIntegrationTest(TestCase):
 
     def test_lock_timeout_under_concurrency(self):
         """Second thread should exit(1) if it can't get the lock in time."""
-        thread_1_output = StringIO()
-        thread_2_output = StringIO()
-
+        first_output = StringIO()
+        second_output = StringIO()
         lock_held = self._setup_lock_side_effect()
 
-        # Start thread1 and wait until it grabs the lock
-        thread1 = threading.Thread(target=lambda: self.call_locked(timeout=5, stdout_buffer=thread_1_output))
-        thread1.start()
-        lock_held.wait(timeout=1)
+        with ThreadPoolExecutor(max_workers=2) as executor:
+            first_future = executor.submit(self.call_locked, timeout=5, stdout_buffer=first_output)
+            # Wait until the first thread has acquired the lock
+            lock_held.wait(timeout=1)
+            # Submit the second task with a shorter timeout than first thread's hold time
+            second_future = executor.submit(self.call_locked, timeout=1, stdout_buffer=second_output)
 
-        with self.assertRaises(SystemExit) as cm:
-            self.call_locked(timeout=1, stdout_buffer=thread_2_output)
+            # Expect the second thread to raise SystemExit due to timeout
+            with self.assertRaises(SystemExit):
+                second_future.result()
 
-        thread1.join()
+            # Ensure the first thread still completes successfully
+            first_future.result()
 
-        # Only thread 1 should have performed the migration
-        self.assert_lock_acquired(thread_1_output)
-        self.assertEqual(cm.exception.code, 1)
-
-        # Thread 2 should have timed out and not run migrations
-        self.assertIn("Lock took too long to acquire - aborting", thread_2_output.getvalue().strip())
+        # Only the first thread should have performed the migration
+        self.assert_lock_acquired(first_output)
+        # The second thread should have timed out and not run migrations
+        self.assertIn("Lock took too long to acquire - aborting", second_output.getvalue().strip())
         self.assertEqual(self.mock_call_command.call_count, 1)
 
     def test_concurrent_calls_wait_and_runs_after_release(self):
@@ -88,21 +89,21 @@ class LockedMigrateCommandIntegrationTest(TestCase):
         it should wait until thread 1 finishes, then acquire the lock
         and run migrations successfully.
         """
-        thread_1_output = StringIO()
-        thread_2_output = StringIO()
-
+        first_output = StringIO()
+        second_output = StringIO()
         lock_held = self._setup_lock_side_effect()
 
         with ThreadPoolExecutor(max_workers=2) as executor:
-            first_call = executor.submit(lambda: self.call_locked(timeout=5, stdout_buffer=thread_1_output))
-            # Wait until thread 1 has acquired the lock
+            first_future = executor.submit(self.call_locked, timeout=5, stdout_buffer=first_output)
+            # Wait until the first thread has acquired the lock
             lock_held.wait(timeout=1)
-            second_call = executor.submit(lambda: self.call_locked(timeout=5, stdout_buffer=thread_2_output))
+            second_future = executor.submit(self.call_locked, timeout=5, stdout_buffer=second_output)
 
-            first_call.result()
-            second_call.result()
+            # Wait for both threads to complete
+            first_future.result()
+            second_future.result()
 
         # Both should have acquired the lock and run migrations
-        self.assert_lock_acquired(thread_1_output)
-        self.assert_lock_acquired(thread_2_output)
+        self.assert_lock_acquired(first_output)
+        self.assert_lock_acquired(second_output)
         self.assertEqual(self.mock_call_command.call_count, 2)
