@@ -7,7 +7,7 @@ from django.db.models import OuterRef, Subquery
 from django.utils.functional import cached_property
 from django.utils.translation import gettext_lazy as _
 from modelcluster.fields import ParentalKey
-from wagtail.admin.panels import FieldPanel, InlinePanel
+from wagtail.admin.panels import FieldPanel, InlinePanel, MultiFieldPanel
 from wagtail.fields import RichTextField
 from wagtail.models import Orderable, Page
 from wagtail.search import index
@@ -43,13 +43,53 @@ class TopicPageRelatedArticle(Orderable):
         "wagtailcore.Page",
         on_delete=models.CASCADE,
         related_name="+",
+        null=True,
+        blank=True,
+        help_text="Select an internal Wagtail page. If you want to link to an external page, use the fields below.",
+    )
+    external_url: models.URLField = models.URLField(
+        blank=True,
+        verbose_name="External URL",
+        help_text="URL of the external page. Leave blank if you selected an internal page.",
+    )
+    title: models.CharField = models.CharField(
+        max_length=255,
+        blank=True,
+        help_text="Title for the external link. Required if an external URL is provided.",
+    )
+    short_description: models.TextField = models.TextField(
+        blank=True,
+        help_text="A short description for the external link.",
     )
 
-    panels: ClassVar[list[FieldPanel]] = [
-        FieldPanel(
-            "page", widget=HighlightedArticlePageChooserWidget(linked_fields={"topic_page_id": "#id_topic_page_id"})
-        )
+    panels: ClassVar[list["Panel"]] = [
+        MultiFieldPanel(
+            [
+                FieldPanel(
+                    "page",
+                    widget=HighlightedArticlePageChooserWidget(linked_fields={"topic_page_id": "#id_topic_page_id"}),
+                ),
+            ],
+            heading="Internal Link",
+        ),
+        MultiFieldPanel(
+            [
+                FieldPanel("external_url"),
+                FieldPanel("title"),
+                FieldPanel("short_description"),
+            ],
+            heading="External Link",
+        ),
     ]
+
+    def clean(self) -> None:
+        super().clean()
+        if self.page and self.external_url:
+            raise ValidationError("Please select either an internal page or provide an external URL, not both.")
+        if not self.page and not self.external_url:
+            raise ValidationError("You must select an internal page or provide an external URL.")
+        if self.external_url and not self.title:
+            raise ValidationError({"title": "This field is required when providing an external URL."})
 
 
 class TopicPageRelatedMethodology(Orderable):
@@ -159,46 +199,57 @@ class TopicPage(BundledPageMixin, ExclusiveTaxonomyMixin, BasePage):  # type: ig
         return None
 
     @cached_property
-    def processed_articles(self) -> list[ArticleSeriesPage]:
-        """Returns the latest articles in the series relevant for this topic.
-        TODO: extend when Taxonomy is in.
+    def processed_articles(self) -> list[Page | dict]:
+        """Returns a list of pages and/or dictionaries representing related articles.
+        Manually added articles (both internal and external) are prioritized.
         """
-        # check if any statistical articles were highlighted. if so, fetch in the order they were added.
-        highlighted_page_pks = list(self.related_articles.values_list("page_id", flat=True))
-        highlighted_pages = list(
-            order_by_pk_position(
-                StatisticalArticlePage.objects.live().public().defer_streamfields(),
-                pks=highlighted_page_pks,
-                exclude_non_matches=True,
-            )
-        )
+        manual_articles = []
+        highlighted_page_pks = []
 
-        num_highlighted_pages = len(highlighted_pages)
-        if num_highlighted_pages > MAX_ITEMS_PER_SECTION - 1:
-            return highlighted_pages
+        for related in self.related_articles.all():
+            if related.page:
+                page = related.page.specific  # type: ignore[attr-defined]
+                if page.live:
+                    manual_articles.append(page)
+                    highlighted_page_pks.append(page.pk)
+            elif related.external_url:
+                manual_articles.append(
+                    {
+                        "url": related.external_url,
+                        "title": related.title,
+                        "description": related.short_description,
+                        "is_external": True,
+                    }
+                )
 
-        # supplement with the latest per series.
+        num_manual_articles = len(manual_articles)
+        if num_manual_articles >= MAX_ITEMS_PER_SECTION:
+            return manual_articles[:MAX_ITEMS_PER_SECTION]
+
         newest_qs = (
             StatisticalArticlePage.objects.live()
             .public()
             .filter(path__startswith=OuterRef("path"), depth__gte=OuterRef("depth"))
+            .order_by("-release_date")
         )
-        newest_qs = newest_qs.order_by("-release_date")
         latest_by_series = (
             ArticleSeriesPage.objects.child_of(self)
             .annotate(latest_child_page=Subquery(newest_qs.values("pk")[:1]))
             .values_list("latest_child_page", flat=True)
         )
+
+        remaining_slots = MAX_ITEMS_PER_SECTION - num_manual_articles
+
         latest_articles = list(
             StatisticalArticlePage.objects.filter(pk__in=latest_by_series)
-            .exclude(pk__in=highlighted_pages)
+            .exclude(pk__in=highlighted_page_pks)
             .live()
             .public()
             .defer_streamfields()
-            .order_by("-release_date")[: MAX_ITEMS_PER_SECTION - num_highlighted_pages]
+            .order_by("-release_date")[:remaining_slots]
         )
 
-        return highlighted_pages + latest_articles
+        return manual_articles + latest_articles
 
     @cached_property
     def processed_methodologies(self) -> list[MethodologyPage]:

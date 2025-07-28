@@ -1,7 +1,7 @@
 import io
 from datetime import date, datetime
 from threading import Lock
-from typing import TYPE_CHECKING, Any, Optional, TypedDict
+from typing import TYPE_CHECKING, Any, Optional, TypedDict, Union
 
 import matplotlib as mpl
 from django.conf import settings
@@ -40,7 +40,8 @@ class DocumentListItem(TypedDict):
 
 
 def get_formatted_pages_list(
-    pages: list["Page"] | QuerySet["Page"], request: Optional["HttpRequest"] = None
+    pages: Union[list["Page"], list[dict], list[Union["Page", dict]], QuerySet["Page"]],
+    request: Optional["HttpRequest"] = None,
 ) -> list[DocumentListItem]:
     """Returns a formatted list of page data for the documentList DS macro.
 
@@ -48,18 +49,39 @@ def get_formatted_pages_list(
     """
     data = []
     for page in pages:
-        datum: DocumentListItem = {
-            "title": {
-                "text": getattr(page, "display_title", page.title),
-                "url": page.get_url(request=request),
-            },
-            "metadata": {
-                "object": {"text": getattr(page, "label", _("Page"))},
-            },
-            "description": getattr(page, "listing_summary", "") or getattr(page, "summary", ""),
-        }
-        if release_date := page.release_date:
-            datum["metadata"]["date"] = get_document_metadata_date(release_date)
+        if isinstance(page, dict) and page.get("is_external"):
+            datum: DocumentListItem = {
+                "title": {
+                    "text": page["title"],
+                    "url": page["url"],
+                },
+                "metadata": {
+                    "object": {"text": _("Article")},
+                },
+                "description": page.get("description", ""),
+            }
+        # Handle page objects
+        elif hasattr(page, "get_url") and not isinstance(page, dict):
+            page_datum: DocumentListItem = {
+                "title": {
+                    "text": getattr(page, "display_title", page.title),
+                    "url": page.get_url(request=request),
+                },
+                "metadata": {
+                    "object": {"text": getattr(page, "label", _("Page"))},
+                },
+                "description": getattr(page, "listing_summary", "") or getattr(page, "summary", ""),
+            }
+            if release_date := getattr(page, "release_date", None):
+                page_datum["metadata"]["date"] = get_document_metadata_date(release_date)
+            datum = page_datum
+        else:
+            # Fallback for QuerySet items - shouldn't happen in normal use
+            datum = {
+                "title": {"text": "Unknown", "url": "#"},
+                "metadata": {"object": {"text": _("Page")}},
+                "description": "",
+            }
         data.append(datum)
     return data
 
