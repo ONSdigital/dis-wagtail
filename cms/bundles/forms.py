@@ -143,9 +143,9 @@ class BundleAdminForm(DeduplicateInlinePanelAdminForm):
         self._validate_publication_date()
 
         # deduplicate entries
-        self.deduplicate_formset("bundled_pages", "page")
-        self.deduplicate_formset("bundled_datasets", "dataset")
-        self.deduplicate_formset("teams", "team")
+        self.deduplicate_formset(formset="bundled_pages", target_field="page")
+        self.deduplicate_formset(formset="bundled_datasets", target_field="dataset")
+        self.deduplicate_formset(formset="teams", target_field="team")
 
         self._validate_bundled_pages()
 

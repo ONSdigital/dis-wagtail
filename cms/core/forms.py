@@ -17,13 +17,13 @@ LATEX_VALIDATION_ERROR = "The equation is not valid LaTeX. Please check the synt
 
 
 class DeduplicateInlinePanelAdminForm(WagtailAdminPageForm):
-    def deduplicate_formset(self, formset: str, target_field: str) -> None:
+    def deduplicate_formset(self, *, formset: str, target_field: str) -> None:
         """Deduplicate InlinePanel chosen items.
 
         Wagtail choosers currently do not have the ability to remove already selected values.
         so the same item can be selected multiple times, so this method helps with deduplication.
 
-        Revisit once https://github.com/wagtail/wagtail/issues/10496 is fixed.
+        TODO: Revisit once https://github.com/wagtail/wagtail/issues/10496 is fixed.
         """
         if not (hasattr(self, "formsets") and formset in self.formsets):
             return None
@@ -48,7 +48,7 @@ class DeduplicateTopicsAdminForm(DeduplicateInlinePanelAdminForm):
     def clean(self) -> dict[str, Any] | None:
         cleaned_data: dict[str, Any] | None = super().clean()
 
-        self.deduplicate_formset("topics", "topic")
+        self.deduplicate_formset(formset="topics", target_field="topic")
 
         return cleaned_data
 
