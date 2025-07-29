@@ -6,8 +6,13 @@ from wagtail.test.utils.form_data import nested_form_data, rich_text, streamfiel
 from wagtail.test.utils.wagtail_tests import WagtailTestUtils
 
 from cms.articles.tests.factories import StatisticalArticlePageFactory
+from cms.bundles.enums import BundleStatus
+from cms.bundles.tests.factories import BundlePageFactory
 from cms.users.tests.factories import UserFactory
-from cms.workflows.tests.utils import mark_page_as_ready_for_review
+from cms.workflows.tests.utils import (
+    mark_page_as_ready_for_review,
+    progress_page_workflow,
+)
 from cms.workflows.utils import is_page_ready_to_publish
 
 
@@ -41,6 +46,27 @@ class WorkflowTweaksTestCase(WagtailTestUtils, TestCase):
         self.assertContains(response, 'data-workflow-action-name="approve"')
         self.assertContains(response, "Approve")
         self.assertContains(response, "Approve with comment")
+
+    def test_cancel_workflow_action_menu_item(self):
+        # Log in as first_user (who was the last editor)
+        self.client.force_login(self.first_user)
+
+        # Mark the page as ready for review
+        workflow_state = mark_page_as_ready_for_review(self.page, self.first_user)
+
+        response = self.client.get(self.edit_url)
+        self.assertContains(response, 'name="action-cancel-workflow"')
+
+        # ready to publish, but not in a bundle
+        progress_page_workflow(workflow_state)
+        response = self.client.get(self.edit_url)
+        self.assertContains(response, 'name="action-cancel-workflow"')
+
+        # add to bundle, ready to publish
+        BundlePageFactory(parent__status=BundleStatus.APPROVED, page=self.page)
+
+        response = self.client.get(self.edit_url)
+        self.assertNotContains(response, 'name="action-cancel-workflow"')
 
     def test_before_edit_page(self):
         """Test that users cannot self-approve their changes."""
