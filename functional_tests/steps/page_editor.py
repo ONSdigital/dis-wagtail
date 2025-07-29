@@ -52,6 +52,11 @@ def open_preview_new_tab_with_preview_mode(context: Context, preview_mode: str):
     context.preview_tab = page1_info.value
 
 
+@then("the user closes the preview tab")
+def close(context: Context):
+    context.preview_tab.close()
+
+
 @when("the user edits the {page} page")
 def the_user_edits_a_page(context: Context, page: str) -> None:
     the_page = page.lower().replace(" ", "_")
