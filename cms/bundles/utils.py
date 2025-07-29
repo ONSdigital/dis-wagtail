@@ -1,13 +1,20 @@
+import logging
+import time
 import uuid
 from functools import cache
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, cast
 
 from django.urls import reverse
 from wagtail.coreutils import resolve_model_string
+from wagtail.log_actions import log
 from wagtail.models import Page, get_page_models
 
-from cms.bundles.enums import ACTIVE_BUNDLE_STATUSES
+from cms.bundles.enums import ACTIVE_BUNDLE_STATUSES, BundleStatus
 from cms.bundles.permissions import user_can_manage_bundles
+from cms.core.fields import StreamField
+from cms.release_calendar.enums import ReleaseStatus
+
+logger = logging.getLogger(__name__)
 
 if TYPE_CHECKING:
     from django.contrib.auth.models import AnonymousUser
@@ -170,3 +177,74 @@ def get_page_title_with_workflow_status(page: Page) -> str:
         return f"{title} ({workflow_state.current_task_state.task.name})"
 
     return f"{title} (Draft)"
+
+
+def update_bundle_linked_release_calendar_page(bundle: "Bundle") -> None:
+    """Updates the release calendar page related to the bundle with the pages in the bundle."""
+    page = bundle.release_calendar_page
+    if page:  # To satisfy mypy, ensure page is not None
+        content = serialize_bundle_content_for_published_release_calendar_page(bundle)
+        datasets = serialize_datasets_for_release_calendar_page(bundle)
+
+        page.content = cast(StreamField, content)
+        page.datasets = cast(StreamField, datasets)
+        page.status = ReleaseStatus.PUBLISHED
+        revision = page.save_revision(log_action=True)
+        revision.publish()
+
+
+def publish_bundle(bundle: "Bundle", *, update_status: bool = True) -> None:
+    """Publishes a given bundle.
+
+    This means it publishes the related pages, as well as updates the linked release calendar.
+    """
+    # Note: imported inline to avoid circular imports
+    # pylint: disable=import-outside-toplevel
+    from cms.bundles.notifications.slack import notify_slack_of_publication_start, notify_slack_of_publish_end
+
+    logger.info(
+        "Publishing Bundle",
+        extra={
+            "bundle_id": bundle.pk,
+            "event": "publishing_bundle",
+        },
+    )
+    start_time = time.time()
+    notify_slack_of_publication_start(bundle, url=bundle.full_inspect_url)
+    for page in bundle.get_bundled_pages().specific(defer=True).select_related("latest_revision"):
+        if workflow_state := page.current_workflow_state:
+            # finish the workflow
+            workflow_state.current_task_state.approve()
+        elif page.latest_revision:
+            # just run publish
+            page.latest_revision.publish(log_action="wagtail.publish.scheduled")
+        else:
+            logger.error(
+                "Did not publish page as it is not in a workflow or has no revisions",
+                extra={
+                    "bundle_id": bundle.pk,
+                    "page_id": page.pk,
+                    "event": "publish_page_failed",
+                },
+            )
+
+    # update the related release calendar and publish
+    if bundle.release_calendar_page_id:
+        update_bundle_linked_release_calendar_page(bundle)
+
+    if update_status:
+        bundle.status = BundleStatus.PUBLISHED
+        bundle.save()
+    publish_duration = time.time() - start_time
+    logger.info(
+        "Published bundle",
+        extra={
+            "bundle_id": bundle.pk,
+            "duration": round(publish_duration * 1000, 3),
+            "event": "published_bundle",
+        },
+    )
+
+    notify_slack_of_publish_end(bundle, publish_duration, url=bundle.full_inspect_url)
+
+    log(action="wagtail.publish.scheduled", instance=bundle)
