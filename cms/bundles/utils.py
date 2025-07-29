@@ -198,9 +198,10 @@ def publish_bundle(bundle: "Bundle", *, update_status: bool = True) -> None:
 
     This means it publishes the related pages, as well as updates the linked release calendar.
     """
-    # Note: imported inline to avoid circular imports
-    # pylint: disable=import-outside-toplevel
-    from cms.bundles.notifications.slack import notify_slack_of_publication_start, notify_slack_of_publish_end
+    # using this rather than inline import to placate pyright complaining about cyclic imports
+    notifications = __import__(
+        "cms.bundles.notifications.slack", fromlist=["notify_slack_of_publication_start", "notify_slack_of_publish_end"]
+    )
 
     logger.info(
         "Publishing Bundle",
@@ -210,7 +211,7 @@ def publish_bundle(bundle: "Bundle", *, update_status: bool = True) -> None:
         },
     )
     start_time = time.time()
-    notify_slack_of_publication_start(bundle, url=bundle.full_inspect_url)
+    notifications.notify_slack_of_publication_start(bundle, url=bundle.full_inspect_url)
     for page in bundle.get_bundled_pages().specific(defer=True).select_related("latest_revision"):
         if workflow_state := page.current_workflow_state:
             # finish the workflow
@@ -245,6 +246,6 @@ def publish_bundle(bundle: "Bundle", *, update_status: bool = True) -> None:
         },
     )
 
-    notify_slack_of_publish_end(bundle, publish_duration, url=bundle.full_inspect_url)
+    notifications.notify_slack_of_publish_end(bundle, publish_duration, url=bundle.full_inspect_url)
 
     log(action="wagtail.publish.scheduled", instance=bundle)
