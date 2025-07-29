@@ -42,7 +42,6 @@ Feature: CMS users can draft, edit, and publish release pages
       | Cancelled   |
 
 # Preview modes
-@smoke
  Scenario Outline: A CMS user can use preview modes to preview the page at different statuses
     When the user clicks "Add child page" to create a new draft release page
     And the user enters "<PreviewMode>" page content
@@ -57,7 +56,7 @@ Feature: CMS users can draft, edit, and publish release pages
       | Confirmed   |
       | Published   |
       | Cancelled   |
-@smoke
+
   Scenario Outline: A CMS User can publish a release page with different page feature
     When the user clicks "Add child page" to create a new draft release page
     And the user enters some example content on the page
@@ -91,13 +90,12 @@ Feature: CMS users can draft, edit, and publish release pages
       | Confirmed  |
       | Cancelled  |
 
-#orderd ^^
   Scenario Outline: Validation errors are raised when invalid release dates are entered
     When the user clicks "Add child page" to create a new draft release page
     And the user enters some example content on the page
     And the user adds <Input>
     And the user clicks "Publish"
-    Then an error message is displayed to say page could not be saved
+    Then an error message is displayed to say page could not be created
     And the user sees a validation error message: <Error>
 
     Examples:
@@ -115,7 +113,7 @@ Feature: CMS users can draft, edit, and publish release pages
     And the user sets the page status to "Cancelled"
     And the user enters some example content on the page
     And the user clicks "Publish"
-    Then an error message is displayed to say page could not be saved
+    Then an error message is displayed to say page could not be created
     And the user sees a validation error message: a notice must be added
 
 # Prerelease Access
@@ -124,7 +122,7 @@ Feature: CMS users can draft, edit, and publish release pages
     And the user enters some example content on the page
     And <Feature> <is/are> added under pre-release access
     And the user clicks the "Save Draft" button
-    Then an error message is displayed to say page could not be saved
+    Then an error message is displayed to say page could not be created 
     And the user sees a validation error message about the <Error>
     Examples:
       | Feature                               | is/are | Error                        |

@@ -134,7 +134,7 @@ def set_page_status(context: Context, page_status: str):
 @then('the "{page_status}" page is displayed')
 def display_published_page_status_page(context: Context, page_status: str):
     if page_status in ("Provisional", "Confirmed"):
-        expect(context.page.get_by_text("This release is not yet")).to_be_visible()
+        expect(context.page.get_by_text("This release is not yet published")).to_be_visible()
     elif page_status == "Cancelled":
         expect(context.page.get_by_text("Cancelled", exact=True)).to_be_visible()
         expect(context.page.get_by_text("Notice cancelled")).to_be_visible()
@@ -224,7 +224,6 @@ def check_date_text_field(context: Context):
     expect(context.page.get_by_text("Or, release date text")).not_to_be_visible()
 
 
-# To do: maybe add on "add feature" step
 @when("the user adds an invalid release date text")
 def user_inputs_invalid_release_date_text(context: Context):
     context.page.get_by_label("Or, release date text").fill("Invalid 4356")
@@ -247,10 +246,9 @@ def user_adds_both_next_and_release_date(context: Context):
     context.page.locator("#id_next_release_date_text").fill("December 2025")
 
 
-# To do: make text more accurate
-@then("an error message is displayed to say page could not be saved")
+@then("an error message is displayed to say page could not be created")
 def error_page_not_saved(context: Context):
-    expect(context.page.get_by_text("The page could not be")).to_be_visible()
+    expect(context.page.get_by_text("The page could not be created due to validation errors")).to_be_visible()
 
 
 @then("the user sees a validation error message: {error}")
@@ -267,18 +265,18 @@ def error_release_date_input(context: Context, error: str):
     elif error == "cannot have both next release date and next release date text":
         expect(
             page.locator("#panel-child-content-child-metadata-child-panel1-child-next_release_date-errors").get_by_text(
-                "Please enter the next release"
+                "Please enter the next release date or the next release date text, not both."
             )
         ).to_be_visible()
         expect(
             page.locator(
                 "#panel-child-content-child-metadata-child-panel1-child-next_release_date_text-errors"
-            ).get_by_text("Please enter the next release")
+            ).get_by_text("Please enter the next release date or the next release date text, not both.")
         ).to_be_visible()
 
     # non release date change
     elif error == "a notice must be added":
-        expect(context.page.get_by_text("The notice field is required")).to_be_visible()
+        expect(context.page.get_by_text("The notice field is required when the release is cancelled")).to_be_visible()
     else:
         raise ValueError(f"Unsupported page feature: {error}")
 
@@ -305,11 +303,11 @@ def pre_release_access_input(context: Context, feature: str):
 @then("the user sees a validation error message about the {error}")
 def pre_release_access_error(context: Context, error: str):
     if error == "maximum descriptions allowed":
-        expect(context.page.get_by_text("Description: The maximum")).to_be_visible()
+        expect(context.page.get_by_text("Description: The maximum number of items is 1")).to_be_visible()
     elif error == "maximum tables allowed":
-        expect(context.page.get_by_text("Basic table: The maximum")).to_be_visible()
+        expect(context.page.get_by_text("Basic table: The maximum number of items is 1")).to_be_visible()
     elif error == "unselected options":
-        expect(context.page.get_by_text("Select an option for Table")).to_be_visible()
+        expect(context.page.get_by_text("Select an option for Table headers")).to_be_visible()
     elif error == "empty table":
         expect(context.page.get_by_text("The table cannot be empty")).to_be_visible()
     # release date changes
@@ -318,8 +316,13 @@ def pre_release_access_error(context: Context, error: str):
             context.page.get_by_text("Only one 'Changes to release date' entry can be added per release date change.")
         ).to_be_visible()
     elif error == "release date change with no date change log":
-        error_page_not_saved(context)
-        expect(context.page.get_by_text("If a confirmed calendar entry")).to_be_visible()
+        expect(context.page.get_by_text("The page could not be saved due to validation errors")).to_be_visible()
+        expect(
+            context.page.get_by_text(
+                "If a confirmed calendar entry needs to be rescheduled, the 'Changes to release date field must be "
+                "filled out."
+            )
+        ).to_be_visible()
     else:
         raise ValueError(f"Unsupported error: {error}")
 
