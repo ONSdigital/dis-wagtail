@@ -197,15 +197,17 @@ class TopicPage(BundledPageMixin, ExclusiveTaxonomyMixin, BasePage):  # type: ig
     def processed_articles(self) -> list[Page | dict]:
         """Returns a list of pages and/or dictionaries representing related articles.
         Manually added articles (both internal and external) are prioritized.
+
+        TODO: extend when Taxonomy is in.
         """
         manual_articles = []
         highlighted_page_pks = []
 
-        # Optimize database queries by using select_related
         for related in self.related_articles.select_related("page").all():
             if related.page:
+                # Satisfy mypy
                 page = related.page.specific  # type: ignore[attr-defined]
-                if page.live:
+                if page.live and not page.get_view_restrictions().exists():
                     manual_articles.append(page)
                     highlighted_page_pks.append(page.pk)
             elif related.external_url:
