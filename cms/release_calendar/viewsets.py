@@ -35,7 +35,7 @@ class FutureReleaseCalendarMixin:
     def columns(self) -> list[Column]:
         return [
             self.title_column,  # type: ignore[attr-defined]
-            LocaleColumn(),
+            LocaleColumn(classname="w-text-16 w-w-[120px]"),  # w-w-[120px] is used to adjust the width
             Column("release_date"),
             Column("release_status", label="Status", accessor="get_status_display"),
             DateColumn(
