@@ -1,6 +1,7 @@
 from datetime import UTC, datetime, timedelta
 from http import HTTPStatus
 from unittest import mock
+from unittest.mock import patch
 
 import time_machine
 from django.db.models import F, OrderBy
@@ -71,7 +72,9 @@ class BundleViewSetTestCaseBase(WagtailTestUtils, TestCase):
 
     def setUp(self):
         self.bundle = BundleFactory(name="Original bundle", created_by=self.publishing_officer)
-        self.statistical_article_page = StatisticalArticlePageFactory(title="The article", parent__title="PSF")
+        self.statistical_article_page = StatisticalArticlePageFactory(
+            title="The article", parent__title="PSF", live=False
+        )
 
         self.edit_url = reverse("bundle:edit", args=[self.bundle.id])
         self.inspect_url = reverse("bundle:inspect", args=[self.bundle.id])
@@ -274,6 +277,33 @@ class BundleViewSetEditTestCase(BundleViewSetTestCaseBase):
         self.bundle.publication_date = timezone.now()
         self.bundle.save(update_fields=["status", "publication_date"])
         self.post_with_action_and_test("action-publish", BundleStatus.PUBLISHED, self.bundle_index_url)
+
+    @override_settings(SLACK_NOTIFICATIONS_WEBHOOK_URL="https://slack.example.com")
+    @patch("cms.bundles.notifications.slack.notify_slack_of_publication_start")
+    @patch("cms.bundles.notifications.slack.notify_slack_of_publish_end")
+    def test_bundle_edit_view__manual_publish__happy_path__when_linked_with_past_release_calendar_entry(
+        self, mock_notify_end, mock_notify_start
+    ):
+        self.assertFalse(self.statistical_article_page.live)
+
+        BundlePageFactory(parent=self.bundle, page=self.statistical_article_page)
+        release_calendar_page = ReleaseCalendarPageFactory(title="Past Release Calendar Page")
+        self.bundle.release_calendar_page = release_calendar_page
+        self.bundle.publication_date = None
+        self.bundle.status = BundleStatus.APPROVED
+        self.bundle.save(update_fields=["release_calendar_page", "publication_date", "status"])
+
+        self.post_with_action_and_test("action-publish", BundleStatus.PUBLISHED, self.bundle_index_url)
+
+        self.assertTrue(mock_notify_start.called)
+        self.assertTrue(mock_notify_end.called)
+
+        response = self.client.get(release_calendar_page.url)
+        self.assertContains(response, self.statistical_article_page.display_title)
+
+        self.statistical_article_page.refresh_from_db()
+        self.assertTrue(self.statistical_article_page.live)
+        self.assertIsNone(self.statistical_article_page.current_workflow_state)
 
     def test_bundle_edit_view__manual_publish__happy_path(self):
         self.bundle.status = BundleStatus.APPROVED
