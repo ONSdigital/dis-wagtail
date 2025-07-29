@@ -11,6 +11,7 @@ from django.utils.html import strip_tags
 from django.utils.translation import gettext_lazy as _
 from wagtail.admin.panels import FieldPanel, FieldRowPanel, HelpPanel, MultiFieldPanel, TitleFieldPanel
 from wagtail.contrib.routable_page.models import RoutablePageMixin, path
+from wagtail.coreutils import resolve_model_string
 from wagtail.fields import RichTextField
 from wagtail.models import Page
 from wagtail.search import index
@@ -431,6 +432,11 @@ class StatisticalArticlePage(BundledPageMixin, RoutablePageMixin, BasePage):  # 
         if self.dataset_sorting == SortingChoices.ALPHABETIC:
             dataset_documents = sorted(dataset_documents, key=lambda d: d["title"]["text"])
         return dataset_documents
+
+    @cached_property
+    def parent_for_choosers(self) -> Page:
+        topic_page_class = resolve_model_string("topics.TopicPage")
+        return topic_page_class.objects.ancestor_of(self).first().specific_deferred
 
     @path("related-data/")
     def related_data(self, request: "HttpRequest") -> "TemplateResponse":

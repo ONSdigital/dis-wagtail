@@ -25,6 +25,7 @@ from cms.release_calendar.tests.factories import ReleaseCalendarPageFactory
 from cms.release_calendar.viewsets import FutureReleaseCalendarChooserWidget
 from cms.standard_pages.tests.factories import InformationPageFactory
 from cms.teams.models import Team
+from cms.topics.models import TopicPage
 from cms.topics.tests.factories import TopicPageFactory
 from cms.users.tests.factories import GroupFactory, UserFactory
 from cms.workflows.tests.utils import (
@@ -695,6 +696,8 @@ class BundlePageChooserViewsetTestCase(WagtailTestUtils, TestCase):
             locale=Locale.objects.get(language_code="cy"), copy_parents=True
         )
         welsh_page_draft.save_revision()
+        information_page = InformationPageFactory(title="An information page")
+        information_page.save_revision()
 
         response = self.client.get(self.chooser_url)
 
@@ -703,6 +706,10 @@ class BundlePageChooserViewsetTestCase(WagtailTestUtils, TestCase):
 
         self.assertContains(response, self.page_draft.get_admin_display_title(), 2)  # en + cy
         self.assertContains(response, self.page_live_plus_draft.get_admin_display_title(), 1)
+        self.assertContains(response, self.page_live_plus_draft.get_parent().title, 1)  # as part of the article
+        self.assertContains(response, TopicPage.objects.ancestor_of(self.page_live_plus_draft).first().title, 1)
+        self.assertContains(response, information_page.title, 1)
+        self.assertContains(response, information_page.get_parent(), 1)
         self.assertNotContains(response, self.page_live.get_admin_display_title())
         self.assertNotContains(response, self.page_draft_in_bundle.get_admin_display_title())
 

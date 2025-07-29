@@ -68,7 +68,7 @@ class PagesWithDraftsMixin:
 
         return [
             title_column,
-            Column("parent", label="Parent", accessor="get_parent"),
+            Column("parent", label="Parent", accessor=lambda p: getattr(p, "parent_for_choosers", p.get_parent())),
             LocaleColumn(classname="w-text-16 w-w-[120px]"),  # w-w-[120px] is used to adjust the width
             DateColumn(
                 "updated",
