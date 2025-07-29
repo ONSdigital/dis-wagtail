@@ -1,5 +1,4 @@
 import io
-import logging
 from collections.abc import Iterable
 from datetime import date, datetime
 from threading import Lock
@@ -19,8 +18,6 @@ matplotlib_lock = Lock()
 
 FORMULA_INDICATOR = "$$"
 IS_EXTERNAL_KEY = "is_external"
-
-logger = logging.getLogger(__name__)
 
 mpl.rcParams.update(
     {
