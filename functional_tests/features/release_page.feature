@@ -26,6 +26,54 @@ Feature: CMS users can draft, edit, and publish release pages
       | am                |
       | pm                |
 
+
+  Scenario Outline: A CMS user can create and publish a release calendar page with different statuses
+    When the user clicks "Add child page" to create a new draft release page
+    And the user sets the page status to "<PageStatus>"
+    And the user enters "<PageStatus>" page content
+    And the user clicks "Publish"
+    And the user clicks "View Live" on the publish confirmation banner
+    Then the "<PageStatus>" page is displayed
+
+    Examples:
+      | PageStatus  |
+      | Provisional |
+      | Confirmed   |
+      | Cancelled   |
+
+# Preview modes
+
+ Scenario Outline: A CMS user can use preview modes to preview the page at different statuses
+    When the user clicks "Add child page" to create a new draft release page
+    And the user enters "<PreviewMode>" page content
+    And the user clicks the "Save Draft" button
+    And the user opens the preview in a new tab, using the "<PreviewMode>" preview mode
+    Then the "<PreviewMode>" page is displayed in the preview tab
+
+    Examples:
+      | PreviewMode |
+      | Provisional |
+      | Confirmed   |
+      | Published   |
+      | Cancelled   |
+
+  Scenario Outline: A CMS User can publish a release page with different page feature
+    When the user clicks "Add child page" to create a new draft release page
+    And the user enters some example content on the page
+    And the user adds <Feature> to the release calendar page
+    And the user clicks the "Save Draft" button
+    And the user opens the preview in a new tab, using the "Published" preview mode
+    Then the example content is displayed in the preview tab
+    And <Feature> is displayed in the release calendar page preview tab
+
+    Examples:
+      | Feature                        |
+      | a release date text            |
+      | a next release date text       |
+      | a related link                 |
+      | pre-release access information |
+      | a release date change          | 
+
 # Release date and next release date validations
 
   Scenario: A CMS user can see release date text field for a provisional release page
@@ -42,6 +90,7 @@ Feature: CMS users can draft, edit, and publish release pages
       | Confirmed  |
       | Cancelled  |
 
+#orderd ^^
   Scenario Outline: Validation errors are raised when invalid release dates are entered
     When the user clicks "Add child page" to create a new draft release page
     And the user enters some example content on the page
@@ -57,62 +106,16 @@ Feature: CMS users can draft, edit, and publish release pages
       | the next release date to be before the release date | next release date cannot be before release date               |
       | both next release date and next release date text   | cannot have both next release date and next release date text |
 
-# Preview modes
-
- Scenario Outline: A CMS user can use preview modes to preview the page at different statuses
-    When the user clicks "Add child page" to create a new draft release page
-    And the user enters "<PreviewMode>" page content
-    And the user clicks the "Save Draft" button
-    And the user opens the preview in a new tab with a preview mode of "<PreviewMode>"
-    Then the "<PreviewMode>" page is displayed in the preview tab
-
-    Examples:
-      | PreviewMode |
-      | Provisional |
-      | Confirmed   |
-      | Published   |
-      | Cancelled   |
-
-# Publishing with statuses
-
-  Scenario Outline: A CMS user can create and publish a release calendar page with different statuses
-    When the user clicks "Add child page" to create a new draft release page
-    And the user sets the page status to "<PageStatus>"
-    And the user enters "<PageStatus>" page content
-    And the user clicks "Publish"
-    And the user clicks "View Live" on the publish confirmation banner
-    Then the "<PageStatus>" page is displayed
-
-    Examples:
-      | PageStatus  |
-      | Provisional |
-      | Confirmed   |
-      | Cancelled   |
-
-  Scenario Outline: A CMS User can publish a release page with different page feature
-    Given a Release Calendar page with a published notice exists
-    When the user navigates to the published release calendar page
-    And the user adds <Feature>
-    And the user clicks the "Save Draft" button
-    And the user opens the preview in a new tab with a preview mode of "Published"
-    Then <Feature> is displayed in the preview tab
-
-    Examples:
-      | Feature                        |
-      | a release date change          | 
-      | a release date text            |
-      | related link                   |
-      | pre-release access information |
 
 # Cancelled notice
 
-  Scenario: Validation error is raised when a cancelled page is published without notice
+  Scenario: Validation error is raised when a cancelled page is published without a notice
     When the user clicks "Add child page" to create a new draft release page
     And the user sets the page status to "Cancelled"
     And the user enters some example content on the page
     And the user clicks "Publish"
     Then an error message is displayed to say page could not be saved
-    And an error message is displayed describing notice must be added
+    And the user sees a validation error message: a notice must be added
 
 # Prerelease Access
 
@@ -124,20 +127,20 @@ Feature: CMS users can draft, edit, and publish release pages
     Then an error message is displayed to say page could not be saved
     And the user sees a validation error message about the <Error>
     Examples:
-      | Feature                             |is/are | Error             |
-      | multiple descriptions               |are    | descriptions      |
-      | multiple tables                     |are    | maximum tables    |
-      | table with no table header selected |is     | unselected options|
-      | empty table                         |is     | empty table       |
+      | Feature                               | is/are | Error                        |
+      | multiple descriptions                 | are    | maximum descriptions allowed |
+      | multiple tables                       | are    | maximum tables allowed       |
+      | a table with no table header selected | is     | unselected options           |
+      | an empty table                        | is     | empty table                  |
  
 
 # Changes to release date
   Scenario: A CMS user cannot delete a release date change once the release page is published
     Given a Release Calendar page with a published notice exists
     When the user navigates to the published release calendar page
-    And the user adds a release date change
+    And the user adds a release date change to the release calendar page
     And the user clicks "Publish"
-    And the user returns to editing the release page
+    And the user returns to editing the published page
     Then the user cannot delete the release date change
 
   Scenario: Validation Errors are raised when multiple release date changes are added
@@ -160,9 +163,9 @@ Feature: CMS users can draft, edit, and publish release pages
   Scenario: A CMS user can add another release date change after the first one is published
     Given a Release Calendar page with a published notice exists
     When the user navigates to the published release calendar page
-    And the user adds a release date change
+    And the user adds a release date change to the release calendar page
     And the user clicks "Publish"
-    And the user returns to editing the release page
+    And the user returns to editing the published page
     And the user adds another release date change
     And the user clicks the "Save Draft" button
     Then the release calendar page is successfully updated
