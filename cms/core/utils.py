@@ -80,16 +80,6 @@ def _format_page_object(page: "Page", request: Optional["HttpRequest"] = None) -
     return page_datum
 
 
-def _format_fallback_item(page: Any) -> DocumentListItem:
-    """Format unknown page type with proper logging."""
-    logger.warning("Unexpected page type in get_formatted_pages_list: %s", type(page))
-    return {
-        "title": {"text": _("Content unavailable"), "url": "#"},
-        "metadata": {"object": {"text": _("Page")}},
-        "description": _("This content is temporarily unavailable."),
-    }
-
-
 def get_formatted_pages_list(
     pages: PageDataCollection,
     request: Optional["HttpRequest"] = None,
@@ -105,7 +95,8 @@ def get_formatted_pages_list(
         elif hasattr(page, "get_url") and not isinstance(page, dict):
             datum = _format_page_object(page, request)
         else:
-            datum = _format_fallback_item(page)
+            # This should not happen in production but is a safeguard for unexpected data types
+            continue
         data.append(datum)
     return data
 
