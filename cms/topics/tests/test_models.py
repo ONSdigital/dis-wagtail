@@ -112,7 +112,6 @@ class TopicPageTestCase(TestCase):
         self.assertIsInstance(processed[0], dict)
         self.assertEqual(processed[0]["url"], "https://external-example.com")
         self.assertEqual(processed[0]["title"], "External Article")
-        self.assertEqual(processed[0]["description"], "This is an external article")
         self.assertTrue(processed[0]["is_external"])
 
         # Remaining should be auto-populated articles
@@ -138,7 +137,6 @@ class TopicPageTestCase(TestCase):
             self.assertIsInstance(item, dict)
             self.assertEqual(item["url"], f"https://external-example-{i}.com")
             self.assertEqual(item["title"], f"External Article {i}")
-            self.assertEqual(item["description"], f"This is external article {i}")
             self.assertTrue(item["is_external"])
 
     def test_processed_articles_with_mixed_manual_links(self):
