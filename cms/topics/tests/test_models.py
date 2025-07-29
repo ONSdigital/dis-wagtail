@@ -103,7 +103,6 @@ class TopicPageTestCase(TestCase):
             page=None,
             external_url="https://external-example.com",
             title="External Article",
-            short_description="This is an external article",
         )
 
         processed = self.topic_page.processed_articles
@@ -129,7 +128,6 @@ class TopicPageTestCase(TestCase):
                 page=None,
                 external_url=f"https://external-example-{i}.com",
                 title=f"External Article {i}",
-                short_description=f"This is external article {i}",
             )
 
         processed = self.topic_page.processed_articles
@@ -161,7 +159,6 @@ class TopicPageTestCase(TestCase):
             page=None,
             external_url="https://external-example.com",
             title="External Article",
-            short_description="This is an external article",
         )
 
         processed = self.topic_page.processed_articles

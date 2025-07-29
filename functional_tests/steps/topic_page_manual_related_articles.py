@@ -47,9 +47,6 @@ def user_has_added_one_external_related_article(context: Context):
         "https://example.com/test-article"
     )
     context.page.locator(f"#id_related_articles-{context.manual_article_index}-title").fill("Test External Article")
-    context.page.locator(f"#id_related_articles-{context.manual_article_index}-short_description").fill(
-        "A test external article description"
-    )
     context.manual_article_index += 1
 
     # Publish the page
@@ -70,11 +67,9 @@ def user_adds_external_related_article(context: Context, title: str):
     # Fill the fields using the dynamic index
     url_field = f"#id_related_articles-{context.manual_article_index}-external_url"
     title_field = f"#id_related_articles-{context.manual_article_index}-title"
-    description_field = f"#id_related_articles-{context.manual_article_index}-short_description"
 
     context.page.locator(url_field).fill(f"https://example.com/{title.lower().replace(' ', '-')}")
     context.page.locator(title_field).fill(title)
-    context.page.locator(description_field).fill(f"Description for {title}")
 
     # Increment the counter
     context.manual_article_index += 1

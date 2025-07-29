@@ -57,10 +57,6 @@ class TopicPageRelatedArticle(Orderable):
         blank=True,
         help_text="Title for the external link. Required if an external URL is provided.",
     )
-    short_description: models.TextField = models.TextField(
-        blank=True,
-        help_text="A short description for the external link.",
-    )
 
     panels: ClassVar[list["Panel"]] = [
         MultiFieldPanel(
@@ -76,7 +72,6 @@ class TopicPageRelatedArticle(Orderable):
             [
                 FieldPanel("external_url"),
                 FieldPanel("title"),
-                FieldPanel("short_description"),
             ],
             heading="External Link",
         ),
@@ -218,7 +213,7 @@ class TopicPage(BundledPageMixin, ExclusiveTaxonomyMixin, BasePage):  # type: ig
                     {
                         "url": related.external_url,
                         "title": related.title,
-                        "description": related.short_description,
+                        "description": "",
                         "is_external": True,
                     }
                 )
