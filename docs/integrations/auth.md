@@ -22,7 +22,7 @@ TODO: add details about the middleware, auth.js, ONSLogoutView and the team sync
 
 ## Local testing
 
-- [How to Integrate with existing Auth](https://confluence.ons.gov.uk/display/DIS/How+to+integrate+with+auth)
+- [How to Integrate with existing Auth](https://officefornationalstatistics.atlassian.net/wiki/spaces/DIS/pages/60786164/How+to+integrate+with+auth)
 - [AWS Cognito Documentation](https://docs.aws.amazon.com/cognito/latest/developerguide/cognito-user-pools.html)
 - [JWT](https://jwt.io/)
 
