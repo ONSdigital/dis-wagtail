@@ -278,7 +278,7 @@ class BundleAdminForm(WagtailAdminModelForm):
                 logger.info("Created bundle %s in Dataset API with ID: %s", bundle.pk, bundle.bundle_api_id)
 
                 # Now add the datasets to the bundle via the /contents endpoint
-                for bundled_dataset in bundle.bundled_datasets.all():
+                for bundled_dataset in bundle.bundled_datasets.all().select_related("dataset"):
                     content_item = build_content_item_for_dataset(bundled_dataset.dataset)
                     response = client.add_content_to_bundle(bundle.bundle_api_id, content_item)
 
