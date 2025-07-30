@@ -145,12 +145,12 @@ class BundleViewSetAddTestCase(BundleViewSetTestCaseBase):
         """Test that the date input field displays date placeholder."""
         response = self.client.get(self.bundle_add_url, follow=True)
 
+        content = response.content.decode(encoding="utf-8")
         datetime_placeholder = "YYYY-MM-DD HH:MM"
-        self.assertContains(
-            response,
+        self.assertInHTML(
             '<input type="text" name="publication_date" autocomplete="off"'
             f'placeholder="{datetime_placeholder}" id="id_publication_date">',
-            html=True,
+            content,
         )
 
     def test_bundle_form_uses_release_calendar_chooser_widget(self):

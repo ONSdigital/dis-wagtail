@@ -64,7 +64,7 @@ class BundleAdminForm(DeduplicateInlinePanelAdminForm):
 
     def _has_datasets(self) -> bool:
         has_datasets = False
-        if "bundled_pages" not in self.formsets:
+        if "bundled_datasets" not in self.formsets:
             return False
         for form in self.formsets["bundled_datasets"].forms:
             if not form.is_valid() or form.cleaned_data["DELETE"]:

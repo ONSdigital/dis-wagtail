@@ -22,14 +22,12 @@ class PageInBundleReadyToBePublishedLock(BaseLock):
         )
 
     def get_message(self, user: "User") -> Union[str, "SafeString"]:
-        lock_message = ""
         if user_can_manage_bundles(user):
             return format_html(
                 "This page is included in a bundle that is ready to be published. You must revert the bundle "
                 "to <strong>Draft</strong> or <strong>In preview</strong> in order to make further changes. "
                 '<span class="buttons">'
                 '<a type="button" class="button button-small button-secondary" href="{url}">Manage bundle</a></span>',
-                base_message=lock_message,
                 url=reverse("bundle:edit", args=(self.object.active_bundle.pk,)),
             )
         return format_html(
