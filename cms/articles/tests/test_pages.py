@@ -65,7 +65,7 @@ class StatisticalArticlePageTests(WagtailPageTestCase):
     @classmethod
     def setUpTestData(cls):
         cls.series = ArticleSeriesPageFactory()
-        cls.page = StatisticalArticlePageFactory(parent=cls.series)
+        cls.page = StatisticalArticlePageFactory(parent=cls.series, summary="This is the summary")
         # TODO: Fix the factory to generate headline_figures correctly
         cls.page.headline_figures = [
             {
