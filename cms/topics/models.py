@@ -49,7 +49,7 @@ class TopicPageRelatedArticle(Orderable):
     )
     external_url: models.URLField = models.URLField(
         blank=True,
-        verbose_name="External URL",
+        verbose_name="URL",
         help_text="URL of the external page. Leave blank if you selected an internal page.",
     )
     title: models.CharField = models.CharField(
@@ -79,8 +79,11 @@ class TopicPageRelatedArticle(Orderable):
 
     def clean(self) -> None:
         super().clean()
-        if self.page and self.external_url:
-            raise ValidationError("Please select either an internal page or provide an external URL, not both.")
+        if self.page:
+            if self.external_url:
+                raise ValidationError("Please select either an internal page or provide an external URL, not both.")
+            if self.title:
+                raise ValidationError("Title is not required for internal pages.")
         if not self.page and not self.external_url:
             raise ValidationError("You must select an internal page or provide an external URL.")
         if self.external_url and not self.title:
@@ -204,21 +207,25 @@ class TopicPage(BundledPageMixin, ExclusiveTaxonomyMixin, BasePage):  # type: ig
         highlighted_page_pks = []
 
         for related in self.related_articles.select_related("page").all():
-            if related.page:
-                # Satisfy mypy
-                page = related.page.specific  # type: ignore[attr-defined]
-                if page.live and not page.get_view_restrictions().exists():
-                    manual_articles.append(page)
-                    highlighted_page_pks.append(page.pk)
-            elif related.external_url:
-                manual_articles.append(
-                    {
-                        "url": related.external_url,
-                        "title": related.title,
-                        "description": "",
-                        "is_external": True,
-                    }
-                )
+            if not related.page:
+                if related.external_url:
+                    manual_articles.append(
+                        {
+                            "url": related.external_url,
+                            "title": related.title,
+                            "description": "",
+                            "is_external": True,
+                        }
+                    )
+                continue
+
+            page = related.page.specific  # type: ignore[attr-defined]
+
+            if not page.live or page.get_view_restrictions().exists():
+                continue
+
+            manual_articles.append(page)
+            highlighted_page_pks.append(page.pk)
 
         num_manual_articles = len(manual_articles)
         if num_manual_articles >= MAX_ITEMS_PER_SECTION:

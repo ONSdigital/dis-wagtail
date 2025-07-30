@@ -317,6 +317,14 @@ class TopicPageRelatedArticleValidationTests(TestCase):
         ):
             related_article.clean()
 
+    def test_validation_error_page_and_title(self):
+        """Test that ValidationError is raised if both page and external_url are provided."""
+        related_article = TopicPageRelatedArticleFactory.build(
+            parent=self.topic_page, page=self.article, external_url="", title="External Title"
+        )
+        with self.assertRaisesRegex(ValidationError, "Title is not required for internal pages."):
+            related_article.clean()
+
     def test_validation_error_neither_page_nor_external_url_provided(self):
         """Test that ValidationError is raised if neither page nor external_url is provided."""
         related_article = TopicPageRelatedArticleFactory.build(
