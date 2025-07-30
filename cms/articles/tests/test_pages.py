@@ -7,6 +7,7 @@ from django.test import override_settings
 from django.urls import reverse
 from django.utils.html import strip_tags
 from wagtail.blocks import StreamValue
+from wagtail.coreutils import get_dummy_request
 from wagtail.models import Locale
 from wagtail.test.utils import WagtailPageTestCase
 
@@ -90,6 +91,9 @@ class StatisticalArticlePageTests(WagtailPageTestCase):
         cls.page.save_revision().publish()
         cls.user = cls.create_superuser("admin")
 
+    def setUp(self):
+        self.dummy_request = get_dummy_request()
+
     def test_default_route(self):
         self.assertPageIsRoutable(self.page)
 
@@ -122,9 +126,9 @@ class StatisticalArticlePageTests(WagtailPageTestCase):
         self.assertEqual(response.status_code, HTTPStatus.NOT_FOUND)
 
     def test_correction_routes(self):
-        self.assertPageIsRoutable(self.page, "versions/v1/")
-        self.assertPageIsRoutable(self.page, "versions/v2/")
-        self.assertPageIsRoutable(self.page, "versions/v3/")
+        self.assertPageIsRoutable(self.page, "versions/1/")
+        self.assertPageIsRoutable(self.page, "versions/2/")
+        self.assertPageIsRoutable(self.page, "versions/3/")
 
     def test_can_add_correction(self):  # pylint: disable=too-many-statements # noqa
         response = self.client.get(self.page.url)
@@ -168,7 +172,7 @@ class StatisticalArticlePageTests(WagtailPageTestCase):
         self.assertNotContains(response, original_summary)
         self.assertContains(response, "Corrected summary")
 
-        v1_response = self.client.get(self.page.url + "versions/v1/")
+        v1_response = self.client.get(self.page.url + "versions/1/")
 
         # The old version should not contain corrections
         self.assertNotContains(v1_response, "Corrections")
@@ -176,7 +180,7 @@ class StatisticalArticlePageTests(WagtailPageTestCase):
         self.assertContains(v1_response, original_summary)
 
         # V2 doesn't exist yet, should return 404
-        v2_response = self.client.get(self.page.url + "versions/v2/")
+        v2_response = self.client.get(self.page.url + "versions/2/")
         self.assertEqual(v2_response.status_code, HTTPStatus.NOT_FOUND)
 
         second_correction = {
@@ -212,7 +216,7 @@ class StatisticalArticlePageTests(WagtailPageTestCase):
         self.assertContains(response, "Second corrected summary")
 
         # V2 now exists
-        v2_response = self.client.get(self.page.url + "versions/v2/")
+        v2_response = self.client.get(self.page.url + "versions/2/")
         self.assertEqual(v2_response.status_code, HTTPStatus.OK)
 
         self.assertContains(v2_response, "Corrections")
@@ -220,7 +224,7 @@ class StatisticalArticlePageTests(WagtailPageTestCase):
         self.assertNotContains(v2_response, "Second correction text")
 
         # V3 doesn't exist yet, should return 404
-        v3_response = self.client.get(self.page.url + "versions/v3/")
+        v3_response = self.client.get(self.page.url + "versions/3/")
         self.assertEqual(v3_response.status_code, HTTPStatus.NOT_FOUND)
 
         third_correction = {
@@ -259,7 +263,7 @@ class StatisticalArticlePageTests(WagtailPageTestCase):
         self.assertContains(response, "Third corrected summary")
 
         # V3 now exists
-        v3_response = self.client.get(self.page.url + "versions/v3/")
+        v3_response = self.client.get(self.page.url + "versions/3/")
         self.assertEqual(v3_response.status_code, HTTPStatus.OK)
 
         self.assertContains(v3_response, "Corrections")
@@ -268,13 +272,12 @@ class StatisticalArticlePageTests(WagtailPageTestCase):
         self.assertNotContains(v3_response, "Third correction text")
 
         # Check that at this stage all other versions are still correct
-
-        v1_response = self.client.get(self.page.url + "versions/v1/")
+        v1_response = self.client.get(self.page.url + "versions/1/")
         self.assertNotContains(v1_response, "Corrections")
         self.assertNotContains(v1_response, "View superseded version")
         self.assertContains(v1_response, original_summary)
 
-        v2_response = self.client.get(self.page.url + "versions/v2/")
+        v2_response = self.client.get(self.page.url + "versions/2/")
         self.assertContains(v2_response, "Corrections")
         self.assertContains(v2_response, "First correction text")
         self.assertNotContains(v2_response, "Second correction text")
@@ -310,7 +313,7 @@ class StatisticalArticlePageTests(WagtailPageTestCase):
         self.assertContains(live_response, "New title")
         self.assertNotContains(live_response, old_title)
 
-        v1_response = self.client.get(self.page.url + "versions/v1/")
+        v1_response = self.client.get(self.page.url + "versions/1/")
 
         self.assertNotContains(v1_response, "New title")
         self.assertContains(v1_response, old_title)
@@ -373,7 +376,7 @@ class StatisticalArticlePageTests(WagtailPageTestCase):
             page_content,
         )
 
-        v1_response = self.client.get(self.page.url + "versions/v1/")
+        v1_response = self.client.get(self.page.url + "versions/1/")
 
         page_content = v1_response.content.decode(encoding="utf-8")
 
@@ -688,6 +691,7 @@ class StatisticalArticlePageTests(WagtailPageTestCase):
         self.assertContains(
             response, f'<link rel="canonical" href="{self.series.get_full_url(request=self.dummy_request)}" />'
         )
+        self.client.get({self.page.get_url(request=self.dummy_request)})
 
     def test_translated_welsh_page_canonical_url(self):
         """Test that a translated article has the correct language coded canonical URL."""
@@ -729,7 +733,7 @@ class StatisticalArticlePageTests(WagtailPageTestCase):
 
         self.page.save_revision().publish()
 
-        v1_response = self.client.get(self.page.get_url(request=self.dummy_request) + "versions/v1/")
+        v1_response = self.client.get(self.page.get_url(request=self.dummy_request) + "versions/1/")
         self.assertContains(v1_response, '<meta name="robots" content="noindex" />')
 
     def test_schema_org_data(self):

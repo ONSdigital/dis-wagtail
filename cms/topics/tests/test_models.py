@@ -2,16 +2,20 @@ from datetime import datetime
 
 from django.core.exceptions import ValidationError
 from django.test import TestCase, override_settings
+from django.urls import reverse
 from django.utils.translation import gettext_lazy as _
 from wagtail.blocks import StreamValue
 from wagtail.coreutils import get_dummy_request
 from wagtail.models import Locale
+from wagtail.test.utils import WagtailTestUtils
+from wagtail.test.utils.form_data import inline_formset, nested_form_data, rich_text, streamfield
 
 from cms.articles.tests.factories import ArticleSeriesPageFactory, StatisticalArticlePageFactory
 from cms.datasets.blocks import DatasetStoryBlock
 from cms.home.models import HomePage
 from cms.methodology.tests.factories import MethodologyPageFactory
 from cms.taxonomy.tests.factories import TopicFactory
+from cms.topics.models import TopicPage
 from cms.topics.tests.factories import (
     TopicPageFactory,
     TopicPageRelatedArticleFactory,
@@ -19,9 +23,10 @@ from cms.topics.tests.factories import (
 )
 
 
-class TopicPageTestCase(TestCase):
+class TopicPageTestCase(WagtailTestUtils, TestCase):
     @classmethod
     def setUpTestData(cls):
+        cls.superuser = cls.create_superuser(username="superuser")
         cls.home_page = HomePage.objects.first()
         cls.topic_page = TopicPageFactory(title="Test Topic")
 
@@ -220,3 +225,43 @@ class TopicPageTestCase(TestCase):
                 ),
             )
             self.topic_page.clean()
+
+    def test_cannot_add_children_once_articles_and_methodologies_index_are_created(self):
+        self.assertEqual(TopicPage.objects.count(), 1)
+        self.client.force_login(self.superuser)
+        response = self.client.post(
+            reverse("wagtailadmin_pages:add", args=("topics", "topicpage", self.home_page.pk)),
+            nested_form_data(
+                {
+                    "title": "Fresh topic",
+                    "slug": "new-topic",
+                    "summary": rich_text("Summary"),
+                    "featured_series": "",
+                    "related_articles": inline_formset([]),
+                    "related_methodologies": inline_formset([]),
+                    "explore_more": streamfield([]),
+                    "headline_figures": streamfield([]),
+                    "datasets": streamfield([]),
+                    "topic": TopicFactory().pk,
+                }
+            ),
+        )
+        topics_qs = TopicPage.objects.child_of(self.home_page)
+        self.assertEqual(topics_qs.count(), 2)
+        new_topic_page = topics_qs.filter(title="Fresh topic").first()
+
+        self.assertFalse(new_topic_page.permissions_for_user(self.superuser).can_add_subpage())
+
+        response = self.client.get(reverse("wagtailadmin_explore", args=[new_topic_page.pk]))
+        self.assertContains(response, "/new-topic/articles/")
+        self.assertContains(response, "/new-topic/methodologies/")
+
+        # Should have 2 "add child page" links, one each for articles and methodologies index
+        self.assertContains(response, "Add child page", 2)
+        self.assertNotContains(response, reverse("wagtailadmin_pages:add_subpage", args=[new_topic_page.pk]))
+
+        new_topic_page.get_children().first().delete()
+        self.assertTrue(new_topic_page.permissions_for_user(self.superuser).can_add_subpage())
+        response = self.client.get(reverse("wagtailadmin_explore", args=[new_topic_page.pk]))
+        self.assertContains(response, "Add child page", 3)
+        self.assertContains(response, reverse("wagtailadmin_pages:add_subpage", args=[new_topic_page.pk]))

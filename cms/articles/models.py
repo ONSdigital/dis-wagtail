@@ -54,6 +54,8 @@ class ArticlesIndexPage(BasePage):  # type: ignore[django-manager-missing]
         *Page.content_panels,
         HelpPanel(content="This is a container for articles and article series for URL structure purposes."),
     ]
+    # disables the "Promote" tab as we control the slug, and the page redirects
+    promote_panels: ClassVar[list["Panel"]] = []
 
     def clean(self) -> None:
         self.slug = "articles"
@@ -82,10 +84,12 @@ class ArticleSeriesPage(RoutablePageMixin, GenericTaxonomyMixin, BasePage):  # t
         *Page.content_panels,
         HelpPanel(
             content=(
-                "This is a container for article series. It provides the <code>/latest</code>,"
-                "<code>/previous-releases</code> evergreen paths, "
-                "as well as the actual statistical article pages. "
-                "Add a new Statistical article page under this container."
+                "<p>This is a container for article series.</p>"
+                "<p>It provides the following evergreen paths: <br>- <code>series-slug/</code> "
+                "(for the latest article in series. Previously <code>series-slug/latest</code>)<br>"
+                "- <code>series-slug/editions</code> (previously <code>series-slug/previous-releases</code>)</br>"
+                "as well as the actual statistical article pages.</p>"
+                "<p>Add a new Statistical article page under this container.</p>"
             )
         ),
     ]
@@ -135,7 +139,7 @@ class ArticleSeriesPage(RoutablePageMixin, GenericTaxonomyMixin, BasePage):  # t
     def release_related_data(self, request: "HttpRequest", slug: str) -> "HttpResponse":
         return cast("HttpResponse", self.release(request, slug, related_data=True))
 
-    @path("editions/<str:slug>/versions/v<int:version>/")
+    @path("editions/<str:slug>/versions/<int:version>/")
     def release_with_versions(self, request: "HttpRequest", slug: str, version: int) -> "HttpResponse":
         return cast("HttpResponse", self.release(request, slug, version=version))
 
@@ -558,7 +562,7 @@ class StatisticalArticlePage(BundledPageMixin, RoutablePageMixin, BasePage):  # 
                 return cast("TemplateResponse", topic_page.serve(request, featured_item=self))
         return cast("TemplateResponse", super().serve_preview(request, mode_name))
 
-    @path("versions/v<int:version>/")
+    @path("versions/<int:version>/")
     def previous_version(self, request: "HttpRequest", version: int) -> "TemplateResponse":
         if version <= 0 or not self.corrections:
             raise Http404
@@ -654,7 +658,7 @@ class StatisticalArticlePage(BundledPageMixin, RoutablePageMixin, BasePage):  # 
             return cast("HttpResponse", super().serve(request, view=view, args=args, kwargs=serve_kwargs))
 
         if version := kwargs.pop("version", None):
-            view, _view_args, view_kwargs = self.resolve_subpage(f"/versions/v{version}/")
+            view, _view_args, view_kwargs = self.resolve_subpage(f"/versions/{version}/")
             serve_kwargs = {**kwargs, **view_kwargs}
             return cast("HttpResponse", super().serve(request, view=view, args=args, kwargs=serve_kwargs))
 

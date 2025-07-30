@@ -58,6 +58,7 @@ def before_delete_page(request: "HttpRequest", page: "Page") -> HttpResponseRedi
 def after_create_topic_page(request: "HttpRequest", topic_page: "TopicPage") -> "HttpResponse | None":
     articles_index = ArticlesIndexPage(title="Articles")
     topic_page.add_child(instance=articles_index)
+    # We publish a live version for the methodologies index page. This is acceptable since its URL redirects
     articles_index.save_revision().publish()
 
     for fn in hooks.get_hooks("after_create_page"):

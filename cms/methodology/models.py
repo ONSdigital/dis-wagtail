@@ -8,7 +8,7 @@ from django.shortcuts import redirect
 from django.utils.functional import cached_property
 from django.utils.translation import gettext_lazy as _
 from modelcluster.fields import ParentalKey
-from wagtail.admin.panels import FieldPanel, FieldRowPanel, InlinePanel, MultiFieldPanel, PageChooserPanel
+from wagtail.admin.panels import FieldPanel, FieldRowPanel, HelpPanel, InlinePanel, MultiFieldPanel, PageChooserPanel
 from wagtail.fields import RichTextField
 from wagtail.models import Orderable, Page
 from wagtail.search import index
@@ -36,6 +36,13 @@ class MethodologyIndexPage(BasePage):  # type: ignore[django-manager-missing]
     parent_page_types: ClassVar[list[str]] = ["topics.TopicPage"]
     page_description = "A place for all methodologies."
     preview_modes: ClassVar[list[str]] = []  # Disabling the preview mode as this redirects away
+
+    content_panels: ClassVar[list["Panel"]] = [
+        *Page.content_panels,
+        HelpPanel(content="This is a container for methodology pages for URL structure purposes."),
+    ]
+    # disables the "Promote" tab as we control the slug, and the page redirects
+    promote_panels: ClassVar[list["Panel"]] = []
 
     def clean(self) -> None:
         self.slug = "methodologies"

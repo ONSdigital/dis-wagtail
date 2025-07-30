@@ -1,6 +1,6 @@
 {% extends "templates/base_page.html" %}
-
 {% from "components/hero/_macro.njk" import onsHero %}
+{% from "components/document-list/_macro.njk" import onsDocumentList %}
 
 {% block header_area %}
     {%- set hero_topic = _("Browse") -%}
@@ -14,9 +14,15 @@
             "wide": true,
             "breadcrumbs": {
                 "ariaLabel": breadcrumbs_aria_label,
-                "itemsList": breadcrumbs(page),
+                "itemsList": page.get_breadcrumbs(request=request),
             }
         })
     }}
     {# fmt:on #}
+{% endblock %}
+
+{% block main %}
+    {% if formatted_items %}
+        {{ onsDocumentList({"documents": formatted_items}) }}
+    {% endif %}
 {% endblock %}
