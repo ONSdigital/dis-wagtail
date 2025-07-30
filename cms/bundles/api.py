@@ -317,9 +317,9 @@ def extract_content_id_from_bundle_response(response: dict[str, Any], dataset: A
 def get_data_admin_action_url(
     action: Literal["edit", "preview"], dataset_id: str, edition_id: str, version_id: str
 ) -> str:
-    """Generate a URL for dataset actions in the ONS Data Admin interface.
+    """Generate a relative URL for dataset actions in the ONS Data Admin interface.
 
-    This function constructs URLs for dataset operations in the ONS Data Admin
+    This function constructs relative URLs for dataset operations in the ONS Data Admin
     system, which is used for editing and previewing datasets.
 
     Args:
@@ -329,10 +329,10 @@ def get_data_admin_action_url(
         version_id: The version identifier for the dataset
 
     Returns:
-        A complete URL string for the specified dataset action
+        A relative URL string for the specified dataset action
 
     Example:
         >>> get_data_admin_action_url("edit", "cpih", "time-series", "1")
-        "https://publishing.ons.gov.uk/data-admin/edit/datasets/cpih/editions/time-series/versions/1"
+        "/edit/datasets/cpih/editions/time-series/versions/1"
     """
-    return f"{settings.ONS_DATA_ADMIN_URL}{action}/datasets/{dataset_id}/editions/{edition_id}/versions/{version_id}"
+    return f"/{action}/datasets/{dataset_id}/editions/{edition_id}/versions/{version_id}"

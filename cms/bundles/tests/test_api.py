@@ -180,14 +180,8 @@ class BundleAPIClientTests(TestCase):
                         "version_id": "1",
                     },
                     "links": {
-                        "edit": (
-                            "https://publishing.ons.gov.uk/data-admin/edit/datasets/cpih/"
-                            "editions/time-series/versions/1"
-                        ),
-                        "preview": (
-                            "https://publishing.ons.gov.uk/data-admin/preview/datasets/cpih/"
-                            "editions/time-series/versions/1"
-                        ),
+                        "edit": "/edit/datasets/cpih/editions/time-series/versions/1",
+                        "preview": "/preview/datasets/cpih/editions/time-series/versions/1",
                     },
                 },
                 {
@@ -200,14 +194,8 @@ class BundleAPIClientTests(TestCase):
                         "version_id": "2",
                     },
                     "links": {
-                        "edit": (
-                            "https://publishing.ons.gov.uk/data-admin/edit/datasets/inflation/"
-                            "editions/time-series/versions/2"
-                        ),
-                        "preview": (
-                            "https://publishing.ons.gov.uk/data-admin/preview/datasets/inflation/"
-                            "editions/time-series/versions/2"
-                        ),
+                        "edit": "/edit/datasets/inflation/editions/time-series/versions/2",
+                        "preview": "/preview/datasets/inflation/editions/time-series/versions/2",
                     },
                 },
             ]
@@ -416,18 +404,8 @@ class GetDataAdminActionUrlTests(TestCase):
         actions: Literal["edit", "preview"] = ["edit", "preview"]
         for action in actions:
             url = get_data_admin_action_url(action, dataset_id, edition_id, version_id)
-            expected = (
-                f"https://publishing.ons.gov.uk/data-admin/{action}/datasets/{dataset_id}/"
-                f"editions/{edition_id}/versions/{version_id}"
-            )
+            expected = f"/{action}/datasets/{dataset_id}/editions/{edition_id}/versions/{version_id}"
             self.assertEqual(url, expected)
-
-    @override_settings(ONS_DATA_ADMIN_URL="https://custom.example.com/admin/")
-    def test_get_data_admin_action_url_custom_base_url(self):
-        """Test that custom base URL from settings is used correctly."""
-        url = get_data_admin_action_url("edit", "cpih", "time-series", "1")
-        expected = "https://custom.example.com/admin/edit/datasets/cpih/editions/time-series/versions/1"
-        self.assertEqual(url, expected)
 
 
 class ContentItemUtilityTests(TestCase):
@@ -445,7 +423,6 @@ class ContentItemUtilityTests(TestCase):
             },
         )()
 
-    @override_settings(ONS_DATA_ADMIN_URL="https://publishing.ons.gov.uk/data-admin/")
     def test_build_content_item_for_dataset(self):
         """Test that build_content_item_for_dataset creates the correct structure."""
         content_item = build_content_item_for_dataset(self.dataset)
@@ -458,10 +435,8 @@ class ContentItemUtilityTests(TestCase):
                 "version_id": "1",
             },
             "links": {
-                "edit": ("https://publishing.ons.gov.uk/data-admin/edit/datasets/cpih/editions/time-series/versions/1"),
-                "preview": (
-                    "https://publishing.ons.gov.uk/data-admin/preview/datasets/cpih/editions/time-series/versions/1"
-                ),
+                "edit": "/edit/datasets/cpih/editions/time-series/versions/1",
+                "preview": "/preview/datasets/cpih/editions/time-series/versions/1",
             },
         }
 
