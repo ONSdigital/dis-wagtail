@@ -72,6 +72,13 @@ test:  ## Run the tests and check coverage.
 	poetry run coverage combine
 	poetry run coverage report --fail-under=90
 
+.PHONY: test-no-parallel
+test-no-parallel:  ## Run the tests without parallel execution.
+	poetry run coverage erase
+	COVERAGE_CORE=sysmon  poetry run coverage run ./manage.py test --settings=cms.settings.test --shuffle
+	poetry run coverage combine
+	poetry run coverage report --fail-under=90
+
 .PHONY: mypy
 mypy:  ## Run mypy.
 	poetry run mypy cms/ .github/*.py
