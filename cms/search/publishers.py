@@ -63,7 +63,8 @@ class IAMKafkaTokenProvider(AbstractTokenProvider):
 
     # Generating the token does a request, so cache it for slightly less than the expiration.
     @memory_cache(
-        MSKAuthTokenProvider.DEFAULT_TOKEN_EXPIRY_SECONDS - 5, key_generator_callable=lambda self: self.__qualname__
+        MSKAuthTokenProvider.DEFAULT_TOKEN_EXPIRY_SECONDS - 5,
+        key_generator_callable=lambda self: f"{__name__}.{type(self).__qualname__}",
     )
     def token(self) -> str:
         token, _ = MSKAuthTokenProvider.generate_auth_token(settings.AWS_REGION)
