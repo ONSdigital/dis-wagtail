@@ -11,6 +11,7 @@ from functional_tests.step_helpers.pre_release_access_helpers import (
     add_description_block,
     insert_block,
 )
+from functional_tests.steps.page_editor import user_clicks_publish
 
 
 @given("a Release Calendar page with a published notice exists")
@@ -28,9 +29,6 @@ def navigate_to_release_page(context: Context):
     context.page.get_by_role("link", name="Release calendar", exact=True).click()
 
 
-# Notice
-
-
 @then("the notice field is disabled")
 def check_notice_field_disabled(context: Context):
     expect(context.page.locator('[name="notice"]')).to_be_disabled()
@@ -41,14 +39,10 @@ def click_add_child_page(context: Context):
     context.page.get_by_label("Add child page").click()
 
 
-# To do: revisit when adding create page step
 @when("the user navigates to the published release calendar page")
 def navigate_to_published_release_page(context: Context):
     edit_url = reverse("wagtailadmin_pages:edit", args=(context.release_calendar_page.id,))
     context.page.goto(f"{context.base_url}{edit_url}")
-
-
-# Time input features
 
 
 @then("the default release date time is today's date and 9:30 AM")
@@ -121,7 +115,6 @@ def user_enters_example_release_content(context: Context, page_status: str | Non
 
     page.get_by_label("Accredited Official Statistics").check()
 
-    # Contact details
     page.get_by_role("button", name="Choose contact details").click()
     page.get_by_role("link", name=context.contact_details_snippet.name).click()
 
@@ -224,6 +217,7 @@ def check_date_text_field(context: Context):
     expect(context.page.get_by_text("Or, release date text")).not_to_be_visible()
 
 
+# to do: add all whens to same step add feature
 @when("the user adds an invalid release date text")
 def user_inputs_invalid_release_date_text(context: Context):
     context.page.get_by_label("Or, release date text").fill("Invalid 4356")
@@ -265,23 +259,20 @@ def error_release_date_input(context: Context, error: str):
     elif error == "cannot have both next release date and next release date text":
         expect(
             page.locator("#panel-child-content-child-metadata-child-panel1-child-next_release_date-errors").get_by_text(
-                "Please enter the next release date or the next release date text, not both."
+                "Please enter the next release date or the next release text, not both."
             )
         ).to_be_visible()
         expect(
             page.locator(
                 "#panel-child-content-child-metadata-child-panel1-child-next_release_date_text-errors"
-            ).get_by_text("Please enter the next release date or the next release date text, not both.")
+            ).get_by_text("Please enter the next release date or the next release text, not both.")
         ).to_be_visible()
 
-    # non release date change
+    # Notice error
     elif error == "a notice must be added":
         expect(context.page.get_by_text("The notice field is required when the release is cancelled")).to_be_visible()
     else:
         raise ValueError(f"Unsupported page feature: {error}")
-
-
-# Pre-release access
 
 
 @when("{feature} added under pre-release access")
@@ -319,24 +310,19 @@ def pre_release_access_error(context: Context, error: str):
         expect(context.page.get_by_text("The page could not be saved due to validation errors")).to_be_visible()
         expect(
             context.page.get_by_text(
-                "If a confirmed calendar entry needs to be rescheduled, the 'Changes to release date field must be "
-                "filled out."
+                "If a confirmed calendar entry needs to be rescheduled, the 'Changes to release date'"
+                " field must be filled out."
             )
         ).to_be_visible()
     else:
         raise ValueError(f"Unsupported error: {error}")
 
 
-# Release date changes
-
-
-@step("the user adds another release date change")
-def user_adds_another_release_date_change(context: Context):
-    page = context.page
-    change_to_release_date_section = page.locator("#panel-child-content-changes_to_release_date-section")
-    change_to_release_date_section.get_by_role("button", name="Insert a block").nth(1).click()
-    change_to_release_date_section.get_by_label("Previous date*").nth(1).fill("2024-12-19 12:15")
-    change_to_release_date_section.get_by_label("Reason for change*").nth(1).fill("New update to release schedule")
+@when("the user publishes a page with example content")
+def user_publishes_release_page_with_example_content(context: Context):
+    click_add_child_page(context)
+    user_enters_example_release_content(context)
+    user_clicks_publish(context)
 
 
 @then("the user cannot delete the release date change")
@@ -348,6 +334,7 @@ def user_cannot_delete_the_release_date_change(context: Context):
     ).to_be_hidden()
 
 
+# to do: add all whens to same step add feature
 @when("the user adds multiple release date changes")
 def user_adds_multiple_release_date_changes(context: Context):
     add_feature(context, "a release date change")
@@ -359,13 +346,22 @@ def user_enters_different_release_date(context: Context):
     context.page.get_by_role("textbox", name="Release date*").fill("2025-01-25")
 
 
+@step("the user adds another release date change")
+def user_adds_another_release_date_change(context: Context):
+    page = context.page
+    change_to_release_date_section = page.locator("#panel-child-content-changes_to_release_date-section")
+    change_to_release_date_section.get_by_role("button", name="Insert a block").nth(1).click()
+    change_to_release_date_section.get_by_label("Previous date*").nth(1).fill("2024-12-19 12:15")
+    change_to_release_date_section.get_by_label("Reason for change*").nth(1).fill("New update to release schedule")
+
+
 @then("the release calendar page is successfully updated")
 def release_calendar_page_is_successfully_updated(context: Context):
     page = context.page
-    expect(page.get_by_text(f"Page '{context.release_calendar_page.title}' has been updated.")).to_be_visible()
+    expect(page.get_by_text("Page 'My Release' has been updated.")).to_be_visible()
 
 
 @then("the release calendar page is successfully published")
 def release_calendar_page_is_successfully_published(context: Context):
     page = context.page
-    expect(page.get_by_text(f"Page '{context.release_calendar_page.title}' has been published.")).to_be_visible()
+    expect(page.get_by_text("Page 'My Release' has been published.")).to_be_visible()

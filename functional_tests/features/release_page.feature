@@ -134,33 +134,33 @@ Feature: CMS users can draft, edit, and publish release pages
 
 # Changes to release date
   Scenario: A CMS user cannot delete a release date change once the release page is published
-    Given a Release Calendar page with a published notice exists
-    When the user navigates to the published release calendar page
+    When the user publishes a page with example content
+    And the user returns to editing the published page
     And the user adds a release date change to the release calendar page
     And the user clicks "Publish"
     And the user returns to editing the published page
     Then the user cannot delete the release date change
 
   Scenario: Validation Errors are raised when multiple release date changes are added
-    Given a Release Calendar page with a published notice exists
-    When the user navigates to the published release calendar page
-    And the user adds multiple release date changes 
+    When the user publishes a page with example content
+    And the user returns to editing the published page
+    And the user adds multiple release date changes
     And the user clicks "Publish"
     Then the user sees a validation error message about the multiple release date changes
 
   Scenario: Validation Errors are raised when there is a release date change with no date change log added to a confirmed page
-    Given a Release Calendar page with a published notice exists
-    When the user navigates to the published release calendar page
+    When the user publishes a page with example content
+    And the user returns to editing the published page
     And the user sets the page status to "Confirmed"
     And the user clicks "Publish"
-    When the user navigates to the published release calendar page
+    When the user returns to editing the published page
     And the user adds release date change with no date change log
     And the user clicks "Publish"
     Then the user sees a validation error message about the release date change with no date change log
 
   Scenario: A CMS user can add another release date change after the first one is published
-    Given a Release Calendar page with a published notice exists
-    When the user navigates to the published release calendar page
+    When the user publishes a page with example content
+    And the user returns to editing the published page
     And the user adds a release date change to the release calendar page
     And the user clicks "Publish"
     And the user returns to editing the published page
