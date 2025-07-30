@@ -9,9 +9,9 @@ Feature: CMS users can draft, edit, and publish release pages
 
   Scenario: A CMS user has several datetime features available when editing the release calendar page
     When the user clicks "Add child page" to create a new draft release page
-    Then the default release date time is today's date and 9:30 AM
-    And the date placeholder, "YYYY-MM-DD HH:MM", is displayed in the date input textboxes
-    And the time selection options are in 30 minute intervals
+    Then the default release date is today's date and 9:30 AM
+    And the datetime placeholder, "YYYY-MM-DD HH:MM", is displayed in the release date input field
+    And in the datetime selector, the time selection options are in 30 minute intervals
 
   Scenario Outline: When a CMS user inputs a datetime on a release calendar page, the correct period is displayed
     When the user clicks "Add child page" to create a new draft release page
@@ -48,6 +48,7 @@ Feature: CMS users can draft, edit, and publish release pages
     And the user clicks the "Save Draft" button
     And the user opens the preview in a new tab, using the "<PreviewMode>" preview mode
     Then the "<PreviewMode>" page is displayed in the preview tab
+    # Can put in after scenario function instead of step
     And the user closes the preview tab
 
     Examples:
@@ -57,7 +58,7 @@ Feature: CMS users can draft, edit, and publish release pages
       | Published   |
       | Cancelled   |
 
-  Scenario Outline: A CMS User can publish a release page with different page feature
+  Scenario Outline: A CMS user can add a feature on a release calendar page and the feature is displayed in the "Published" preview tab
     When the user clicks "Add child page" to create a new draft release page
     And the user enters some example content on the page
     And the user adds <Feature> to the release calendar page
@@ -95,7 +96,7 @@ Feature: CMS users can draft, edit, and publish release pages
     And the user enters some example content on the page
     And the user adds <Input>
     And the user clicks "Publish"
-    Then an error message is displayed to say page could not be created
+    Then an error message is displayed to say the page could not be created
     And the user sees a validation error message: <Error>
 
     Examples:
@@ -113,16 +114,16 @@ Feature: CMS users can draft, edit, and publish release pages
     And the user sets the page status to "Cancelled"
     And the user enters some example content on the page
     And the user clicks "Publish"
-    Then an error message is displayed to say page could not be created
+    Then an error message is displayed to say the page could not be created
     And the user sees a validation error message: a notice must be added
 
 # Prerelease Access
-  Scenario Outline: Validation errors are raised when invalid data is input for pre-release Access
+  Scenario Outline: Validation errors are raised when invalid data is input for pre-release access
     When the user clicks "Add child page" to create a new draft release page
     And the user enters some example content on the page
     And <Feature> <is/are> added under pre-release access
-    And the user clicks the "Save Draft" button
-    Then an error message is displayed to say page could not be created 
+    And the user clicks the "Publish" button
+    Then an error message is displayed to say the page could not be created 
     And the user sees a validation error message about the <Error>
     Examples:
       | Feature                               | is/are | Error                        |
@@ -133,7 +134,8 @@ Feature: CMS users can draft, edit, and publish release pages
  
 
 # Changes to release date
-  Scenario: A CMS user cannot delete a release date change once the release page is published
+
+  Scenario: A CMS user cannot delete a release date change once the release calendar page is published
     When the user publishes a page with example content
     And the user returns to editing the published page
     And the user adds a release date change to the release calendar page
@@ -141,22 +143,28 @@ Feature: CMS users can draft, edit, and publish release pages
     And the user returns to editing the published page
     Then the user cannot delete the release date change
 
-  Scenario: Validation Errors are raised when multiple release date changes are added
+  Scenario: Validation error is raised when multiple release date changes are added
     When the user publishes a page with example content
     And the user returns to editing the published page
     And the user adds multiple release date changes
     And the user clicks "Publish"
-    Then the user sees a validation error message about the multiple release date changes
+    Then an error message is displayed to say the page could not be saved
+    And the user sees a validation error message about the multiple release date changes
 
-  Scenario: Validation Errors are raised when there is a release date change with no date change log added to a confirmed page
-    When the user publishes a page with example content
-    And the user returns to editing the published page
-    And the user sets the page status to "Confirmed"
-    And the user clicks "Publish"
-    When the user returns to editing the published page
-    And the user adds release date change with no date change log
-    And the user clicks "Publish"
-    Then the user sees a validation error message about the release date change with no date change log
+
+  Scenario Outline: Validation errors are raised when release date and date change log fields are inconsistent on a confirmed page
+  When the user publishes a "Confirmed" page with example content
+  And the user returns to editing the published page
+  And the user adds <Input>
+  And the user clicks "Publish"
+  Then an error message is displayed to say the page could not be saved
+  And the user sees a validation error message about the <Error>
+
+Examples:
+  | Input                                          | Error                                        |
+  | a release date change with no date change log  | release date change with no date change log  |
+  | a date change log but no release date change   | date change log with no release date change  |
+
 
   Scenario: A CMS user can add another release date change after the first one is published
     When the user publishes a page with example content
