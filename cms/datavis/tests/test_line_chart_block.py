@@ -200,3 +200,17 @@ class LineChartBlockTestCase(BaseChartBlockTestCase):
         self.block.clean(self.get_value())
         y_axis_config = self.get_value().block.get_component_config(self.get_value())["yAxis"]
         self.assertEqual(100, y_axis_config["customReferenceLineValue"])
+
+    def test_footnotes_configuration(self):
+        config = self.get_component_config()
+        self.assertEqual(config["footnotes"], {})
+
+        self.raw_data["footnotes"] = "some notes"
+        config = self.get_component_config()
+        self.assertEqual(
+            config["footnotes"],
+            {
+                "title": "Footnotes",
+                "content": '<div class="rich-text">some notes</div>',
+            },
+        )

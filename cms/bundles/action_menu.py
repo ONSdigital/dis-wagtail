@@ -20,7 +20,8 @@ if TYPE_CHECKING:
 class ActionMenuItem(Component):
     """Defines an item in the actions drop-up on the bundles add/edit view.
 
-    Inspired by the core page/snippet ActionMenuItem
+    Inspired by the core page/snippet ActionMenuItem.
+    TODO: Revisit once https://github.com/wagtail/wagtail/issues/12422 is fixed
     """
 
     order: int = 100  # default order index if one is not specified on init

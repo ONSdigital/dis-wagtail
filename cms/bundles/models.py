@@ -10,7 +10,7 @@ from django.utils import timezone
 from django.utils.functional import cached_property
 from modelcluster.fields import ParentalKey
 from modelcluster.models import ClusterableModel
-from wagtail.admin.panels import FieldPanel, FieldRowPanel, InlinePanel, MultipleChooserPanel
+from wagtail.admin.panels import FieldPanel, FieldRowPanel, MultipleChooserPanel
 from wagtail.models import Orderable, Page
 from wagtail.search import index
 
@@ -164,7 +164,9 @@ class Bundle(index.Indexed, ClusterableModel, models.Model):  # type: ignore[dja
             icon="calendar",
         ),
         BundleStatusPanel(heading="Status"),
-        InlinePanel("bundled_pages", heading="Bundled pages", icon="doc-empty", label="Page"),
+        MultipleChooserPanel(
+            "bundled_pages", heading="Bundled pages", icon="doc-empty", label="Page", chooser_field_name="page"
+        ),
         MultipleChooserPanel(
             "bundled_datasets", heading="Data API datasets", label="Dataset", chooser_field_name="dataset"
         ),

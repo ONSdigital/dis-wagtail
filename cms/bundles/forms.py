@@ -6,7 +6,6 @@ from django import forms
 from django.core.exceptions import ValidationError
 from django.template.defaultfilters import pluralize
 from django.utils import timezone
-from wagtail.admin.forms import WagtailAdminModelForm
 
 from cms.bundles.api import (
     BundleAPIClient,
@@ -17,6 +16,7 @@ from cms.bundles.api import (
 from cms.bundles.decorators import ons_bundle_api_enabled
 from cms.bundles.enums import ACTIVE_BUNDLE_STATUS_CHOICES, EDITABLE_BUNDLE_STATUSES, BundleStatus
 from cms.bundles.utils import build_bundle_data_for_api
+from cms.core.forms import DeduplicateInlinePanelAdminForm
 from cms.workflows.models import ReadyToPublishGroupTask
 
 logger = logging.getLogger(__name__)
@@ -25,7 +25,7 @@ if TYPE_CHECKING:
     from .models import Bundle
 
 
-class BundleAdminForm(WagtailAdminModelForm):
+class BundleAdminForm(DeduplicateInlinePanelAdminForm):
     """The Bundle admin form used in the add/edit interface."""
 
     instance: "Bundle"
@@ -137,28 +137,12 @@ class BundleAdminForm(WagtailAdminModelForm):
             )
 
     def _validate_bundled_pages(self) -> None:
-        """Validates and tidies up related pages.
-
-        - if we have an empty page reference, remove it form the form data
-        - ensure the selected page is not in another active bundle.
-        """
-        chosen = []
-        for idx, form in enumerate(self.formsets["bundled_pages"].forms):
+        """Validates related pages to ensure the selected page is not in another active bundle."""
+        for form in self.formsets["bundled_pages"].forms:
             if not form.is_valid():
                 continue
 
             page = form.clean().get("page")
-            if page is None:
-                # tidy up in case the page reference is empty
-                self.formsets["bundled_pages"].forms[idx].cleaned_data["DELETE"] = True
-                continue
-
-            if page in chosen:
-                # we saw this already, mark for removal to avoid duplicates.
-                self.formsets["bundled_pages"].forms[idx].cleaned_data["DELETE"] = True
-                continue
-
-            chosen.append(page)
 
             if not form.cleaned_data["DELETE"]:
                 page = page.specific
@@ -231,6 +215,11 @@ class BundleAdminForm(WagtailAdminModelForm):
         cleaned_data: dict[str, Any] = super().clean()
 
         self._validate_publication_date()
+
+        # deduplicate entries
+        self.deduplicate_formset(formset="bundled_pages", target_field="page")
+        self.deduplicate_formset(formset="bundled_datasets", target_field="dataset")
+        self.deduplicate_formset(formset="teams", target_field="team")
 
         self._validate_bundled_pages()
 
