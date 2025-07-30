@@ -12,10 +12,9 @@ from wagtailschemaorg.models import PageLDMixin
 from wagtailschemaorg.utils import extend
 
 from cms.core.cache import get_default_cache_control_decorator
+from cms.core.forms import DeduplicateTopicsAdminForm, ONSCopyForm
 from cms.core.query import order_by_pk_position
-from cms.taxonomy.forms import DeduplicateTopicsAdminForm
 
-from ..forms import ONSCopyForm
 from .mixins import ListingFieldsMixin, SocialFieldsMixin
 
 if TYPE_CHECKING:
