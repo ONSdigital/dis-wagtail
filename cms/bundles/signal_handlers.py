@@ -154,11 +154,14 @@ def _sync_preview_teams_with_bundle_api(bundle: Bundle) -> None:
         client = BundleAPIClient()
         client.update_bundle(bundle_id=bundle.bundle_api_id, bundle_data=payload)
         logger.info(
-            "Successfully synced preview teams for bundle %s.",
+            "Successfully synced preview teams for bundle %s (Wagtail ID: %s).",
             bundle.bundle_api_id,
+            bundle.pk,
         )
     except BundleAPIClientError as e:
-        logger.error("Failed to sync preview teams for bundle %s: %s", bundle.bundle_api_id, e)
+        logger.error(
+            "Failed to sync preview teams for bundle %s (Wagtail ID: %s): %s", bundle.bundle_api_id, bundle.pk, e
+        )
         # Don't raise the exception to avoid breaking the application
 
 
