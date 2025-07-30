@@ -352,7 +352,7 @@ class StatisticalArticlePageTestCase(WagtailTestUtils, TestCase):
         self.assertEqual(ordered_dataset_titles, ["c", "b", "a"], "Expect the datasets to be in the given order")
 
     def test_parent_for_choosers(self):
-        self.assertEqual(self.page.parent_for_choosers, TopicPage.objects.ancestor_of(self.page).first().title)
+        self.assertEqual(self.page.parent_for_choosers, TopicPage.objects.ancestor_of(self.page).first())
 
 
 class StatisticalArticlePageRenderTestCase(WagtailTestUtils, TestCase):
