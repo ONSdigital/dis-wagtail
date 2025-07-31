@@ -79,7 +79,7 @@ class TopicPageRelatedArticle(Orderable):
 
     def clean(self) -> None:
         super().clean()
-        if self.page:
+        if self.page_id:
             if self.external_url:
                 raise ValidationError("Please select either an internal page or provide an external URL, not both.")
             if self.title:
