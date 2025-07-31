@@ -3,6 +3,7 @@ from behave.runner import Context
 from django.urls import reverse
 from playwright.sync_api import expect
 
+from cms.themes.models import ThemeIndexPage
 from cms.themes.tests.factories import ThemeIndexPageFactory
 
 
@@ -47,10 +48,15 @@ def the_user_edits_a_page(context: Context, page: str) -> None:
 
 @when("the user tries to create a new theme page")
 def user_tries_to_create_new_theme_page(context: Context) -> None:
-    theme_index = ThemeIndexPageFactory(title="Browse")
+    if not hasattr(context, "theme_index_page"):
+        try:
+            theme_index_page = ThemeIndexPage.objects.get()
+        except ThemeIndexPage.DoesNotExist:
+            theme_index_page = ThemeIndexPageFactory(title="Browse")
+        context.theme_index_page = theme_index_page
     context.page.get_by_role("button", name="Pages").click()
     context.page.get_by_role("link", name="View child pages of 'Home'").click()
-    context.page.get_by_role("link", name=theme_index.title, exact=True).click()
+    context.page.get_by_role("link", name=context.theme_index_page.title, exact=True).click()
     context.page.get_by_role("link", name="Add child page").click()
 
 
