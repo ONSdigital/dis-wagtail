@@ -219,7 +219,7 @@ class TopicPage(BundledPageMixin, ExclusiveTaxonomyMixin, BasePage):  # type: ig
                     )
                 continue
 
-            page = related.page.specific  # type: ignore[attr-defined]
+            page = related.page.specific_deferred  # type: ignore[attr-defined]
 
             if not page.live or page.get_view_restrictions().exists():
                 continue
