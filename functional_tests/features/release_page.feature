@@ -118,11 +118,12 @@ Feature: CMS users can draft, edit, and publish release pages
     And the user sees a validation error message: a notice must be added
 
 # Prerelease Access
+@smoke
   Scenario Outline: Validation errors are raised when invalid data is input for pre-release access
     When the user clicks "Add child page" to create a new draft release page
     And the user enters some example content on the page
     And <Feature> <is/are> added under pre-release access
-    And the user clicks the "Publish" button
+    And the user clicks "Publish"
     Then an error message is displayed to say the page could not be created 
     And the user sees a validation error message about the <Error>
     Examples:
