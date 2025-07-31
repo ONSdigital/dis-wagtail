@@ -21,13 +21,13 @@ from cms.articles.forms import StatisticalArticlePageAdminForm
 from cms.articles.panels import HeadlineFiguresFieldPanel
 from cms.articles.utils import serialize_correction_or_notice
 from cms.bundles.mixins import BundledPageMixin
+from cms.core.analytics import add_table_of_contents_gtm_attributes, format_date_for_gtm
 from cms.core.blocks.headline_figures import HeadlineFiguresItemBlock
 from cms.core.blocks.panels import CorrectionBlock, NoticeBlock
 from cms.core.blocks.stream_blocks import SectionStoryBlock
 from cms.core.custom_date_format import ons_date_format
 from cms.core.fields import StreamField
 from cms.core.models import BasePage
-from cms.core.utils import google_analytics_date_format
 from cms.core.widgets import date_widget
 from cms.datasets.blocks import DatasetStoryBlock
 from cms.datasets.utils import format_datasets_as_document_list
@@ -357,6 +357,7 @@ class StatisticalArticlePage(BundledPageMixin, RoutablePageMixin, BasePage):  # 
             items += [{"url": "#cite-this-page", "text": _("Cite this article")}]
         if self.contact_details_id:
             items += [{"url": "#contact-details", "text": _("Contact details")}]
+        add_table_of_contents_gtm_attributes(items)
         return items
 
     @property
@@ -595,14 +596,14 @@ class StatisticalArticlePage(BundledPageMixin, RoutablePageMixin, BasePage):  # 
             "contentGroup": parent_topic.slug,
             "outputSeries": parent_series.slug,
             "outputEdition": self.slug,
-            "releaseDate": google_analytics_date_format(self.release_date),
+            "releaseDate": format_date_for_gtm(self.release_date),
             "latestRelease": self.is_latest,
             "wordCount": "755",  # TODO implement word count calculation
             "contentTheme": "Business, Industry and Trade",  # TODO what is this? The top parent of the taxonomy topic?
         }
 
         if self.next_release_date:
-            values["nextReleaseDate"] = google_analytics_date_format(self.next_release_date)
+            values["nextReleaseDate"] = format_date_for_gtm(self.next_release_date)
         return super().cached_analytics_values | values
 
     def get_analytics_values(self, request: "HttpRequest") -> dict[str, str | bool]:

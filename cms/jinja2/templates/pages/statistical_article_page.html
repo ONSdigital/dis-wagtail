@@ -1,4 +1,4 @@
-{% extends "templates/base_page.html" %}
+`   {% extends "templates/base_page.html" %}
 
 {% from "components/details/_macro.njk" import onsDetails %}
 {% from "components/panel/_macro.njk" import onsPanel %}
@@ -213,11 +213,6 @@
                                 "relatedLinks": related_links,
                                 "button": {
                                     "text": _("Save or print this page")
-                                },
-                                "attributes": {
-                                    data-gtm-event: 'navigation-onpage',
-                                    data-gtm-interactionType: 'table-of-contents',
-                                    data-gtm-sectionTitle: toc_title,
                                 },
                             })
                         }}

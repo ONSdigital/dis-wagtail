@@ -17,6 +17,7 @@ class NavigationItem(TypedDict, total=False):
     url: str
     description: str
     groupItems: list["NavigationItem"]
+    attributes: dict[str, str]
 
 
 class ColumnData(TypedDict):
@@ -37,15 +38,30 @@ def _extract_item(
     """Extracts text/url from the StructValue.
     If include_description=True, also extracts the description field.
     """
-    item: NavigationItem = {}
+    item: NavigationItem = {
+        "attributes": {
+            "data-gtm-event": "navigation-click",
+            "data-gtm-navigation-type": "top-navigation",  # TODO make dynamic
+        }
+    }
 
     if value["external_url"]:
         item[text_key] = value["title"]
         item["url"] = value["external_url"]
+        item["attributes"]["data-gtm-link-text"] = value["title"]
+        item["attributes"]["data-gtm-click-path"] = value["external_url"]
 
     elif value["page"] and value["page"].live:
         item[text_key] = value["title"] or value["page"].title
         item["url"] = value["page"].get_url(request=request)
+        item["attributes"]["data-gtm-link-text"] = item[text_key]
+        item["attributes"]["data-gtm-click-path"] = item["url"]
+        item["attributes"]["data-gtm-click-content-type"] = value["page"].cached_analytics_values.get(
+            "contentType", "page"
+        )
+        item["attributes"]["data-gtm-click-content-group"] = value["page"].cached_analytics_values.get(
+            "contentGroup", "page"
+        )
 
     if include_description and "description" in value:
         item["description"] = value["description"]

@@ -135,6 +135,8 @@ class TopicPage(BundledPageMixin, ExclusiveTaxonomyMixin, BasePage):  # type: ig
 
     search_fields: ClassVar[list[index.BaseField]] = [*BasePage.search_fields, index.SearchField("summary")]
 
+    gtm_content_type: ClassVar[str] = "topic-pages"
+
     def get_context(self, request: "HttpRequest", *args: Any, **kwargs: Any) -> dict:
         """Additional context for the template."""
         context: dict = super().get_context(request, *args, **kwargs)
@@ -267,7 +269,7 @@ class TopicPage(BundledPageMixin, ExclusiveTaxonomyMixin, BasePage):  # type: ig
     def cached_analytics_values(self) -> dict[str, str | bool]:
         """Return a dictionary of cachable analytics values for this page."""
         values = super().cached_analytics_values
-        values["contentType"] = "topic-pages"
+        values["contentType"] = self.gtm_content_type
         values["contentGroup"] = self.slug
         values["contentTheme"] = "???"  # TODO what is contentTheme?
         return values

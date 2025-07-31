@@ -13,12 +13,12 @@ from wagtail.models import Orderable, Page
 from wagtail.search import index
 
 from cms.bundles.mixins import BundledPageMixin
+from cms.core.analytics import format_date_for_gtm
 from cms.core.blocks.stream_blocks import SectionStoryBlock
 from cms.core.fields import StreamField
 from cms.core.forms import PageWithEquationsAdminForm
 from cms.core.models import BasePage
 from cms.core.query import order_by_pk_position
-from cms.core.utils import google_analytics_date_format
 from cms.core.widgets import date_widget
 from cms.taxonomy.mixins import GenericTaxonomyMixin
 
@@ -94,6 +94,8 @@ class MethodologyPage(BundledPageMixin, GenericTaxonomyMixin, BasePage):  # type
         index.SearchField("content"),
     ]
 
+    gtm_content_type: ClassVar[str] = "methodologies"
+
     def clean(self) -> None:
         """Additional validation on save."""
         super().clean()
@@ -160,9 +162,9 @@ class MethodologyPage(BundledPageMixin, GenericTaxonomyMixin, BasePage):  # type
     @cached_property
     def cached_analytics_values(self) -> dict[str, str | bool]:
         values = super().cached_analytics_values
-        values["contentType"] = "methodologies"
+        values["contentType"] = self.gtm_content_type
         values["contentGroup"] = self.get_parent().slug
-        values["releaseDate"] = google_analytics_date_format(self.publication_date)
+        values["releaseDate"] = format_date_for_gtm(self.publication_date)
         if self.last_revised_date:
-            values["lastUpdatedDate"] = google_analytics_date_format(self.last_revised_date)
+            values["lastUpdatedDate"] = format_date_for_gtm(self.last_revised_date)
         return values

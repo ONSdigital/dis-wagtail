@@ -142,8 +142,3 @@ def latex_formula_to_svg(latex: str, *, fontsize: int = 18, transparent: bool = 
         svg_string = "\n".join(svg_string.split("\n")[3:])
 
     return svg_string
-
-
-def google_analytics_date_format(value: date | datetime) -> str:
-    """Formats a date or datetime object to the Google Analytics date format (YYYYMMDD)."""
-    return value.strftime("%Y%m%d")

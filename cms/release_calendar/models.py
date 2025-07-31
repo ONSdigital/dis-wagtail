@@ -15,10 +15,10 @@ from cms.bundles.mixins import BundledPageMixin
 from cms.core.custom_date_format import ons_date_format, ons_default_datetime
 from cms.core.fields import StreamField
 from cms.core.models import BasePage
-from cms.core.utils import google_analytics_date_format
 from cms.core.widgets import ONSAdminDateTimeInput
 from cms.datasets.blocks import DatasetStoryBlock
 
+from ..core.analytics import format_date_for_gtm
 from .blocks import (
     ReleaseCalendarChangesStoryBlock,
     ReleaseCalendarPreReleaseAccessStoryBlock,
@@ -301,7 +301,7 @@ class ReleaseCalendarPage(BundledPageMixin, BasePage):  # type: ignore[django-ma
         values = super().cached_analytics_values
         values["contentType"] = "release-calendars"  # TODO agree in spec
         values["contentGroup"] = self.get_parent().slug
-        values["releaseDate"] = google_analytics_date_format(self.publication_date)
+        values["releaseDate"] = format_date_for_gtm(self.publication_date)
         if self.next_release_date:
-            values["nextReleaseDate"] = google_analytics_date_format(self.next_release_date)
+            values["nextReleaseDate"] = format_date_for_gtm(self.next_release_date)
         return values

@@ -1,5 +1,5 @@
 from datetime import date, datetime
-from typing import Any
+from typing import Any, Optional
 
 from django.core.exceptions import ValidationError
 from django.forms.utils import ErrorList
@@ -13,6 +13,8 @@ from wagtail.blocks import (
     URLBlock,
 )
 
+from cms.core.analytics import get_page_gtm_content_group
+from cms.core.models import BasePage
 from cms.core.utils import get_content_type_for_page, get_document_metadata_date, get_related_content_type_label
 
 
@@ -49,6 +51,8 @@ class LinkBlockStructValue(StructValue):
         if not value:
             return None
 
+        value["attributes"] = self.get_gtm_attributes_for_link_value(value, target_page=self.get("page"))
+
         if content_type := self.get("content_type"):
             content_type_label = get_related_content_type_label(content_type)
 
@@ -82,8 +86,48 @@ class LinkBlockStructValue(StructValue):
             if metadata := link.get("metadata"):
                 related_link["metadata"] = metadata
 
+            if attributes := link.get("attributes"):
+                related_link["attributes"] = attributes
+                related_link["attributes"]["data-gtm-section-title"] = "Related links"
+
             return related_link
         return None
+
+    @staticmethod
+    def get_gtm_attributes_for_link_value(
+        link_value: dict[str, str], target_page: Optional["BasePage"] = None
+    ) -> dict[str, str]:
+        attributes = {
+            "data-gtm-event": "navigation-click",
+            "data-gtm-navigation-type": "links-within-content",
+            "data-gtm-click-path": link_value["url"],
+            "data-gtm-link-text": link_value["text"],
+            "data-gtm-section-title": "",
+        }
+
+        if not target_page:
+            return attributes
+
+        target_page = target_page.specific_deferred
+
+        attributes.update(
+            {
+                "data-gtm-click-content-type": target_page.gtm_content_type,
+                "data-gtm-click-content-group": get_page_gtm_content_group(target_page),
+            }
+        )
+
+        if (
+            str(type(target_page)) == "StatisticalArticlePage"
+        ):  # TODO better way to check type without circular imports?
+            attributes.update(
+                {
+                    "data-gtm-click-output-series": target_page.cached_analytics_values["outputSeries"],
+                    "data-gtm-click-output-edition": target_page.cached_analytics_values["outputEdition"],
+                    "data-gtm-click-release-date": target_page.cached_analytics_values["releaseDate"],
+                }
+            )
+        return attributes
 
     @cached_property
     def link(self) -> dict | None:

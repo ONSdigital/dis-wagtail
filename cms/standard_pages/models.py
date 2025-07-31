@@ -8,12 +8,13 @@ from wagtail.fields import RichTextField
 from wagtail.search import index
 
 from cms.bundles.mixins import BundledPageMixin
+from cms.core.analytics import format_date_for_gtm
 from cms.core.blocks.related import RelatedContentBlock
 from cms.core.blocks.stream_blocks import CoreStoryBlock
 from cms.core.fields import StreamField
 from cms.core.forms import PageWithEquationsAdminForm
 from cms.core.models import BasePage
-from cms.core.utils import get_content_type_for_page, get_document_metadata, google_analytics_date_format
+from cms.core.utils import get_content_type_for_page, get_document_metadata
 from cms.core.widgets import date_widget
 from cms.taxonomy.mixins import GenericTaxonomyMixin
 
@@ -36,6 +37,8 @@ class InformationPage(BundledPageMixin, GenericTaxonomyMixin, BasePage):  # type
     last_updated = models.DateField(blank=True, null=True)
     content = StreamField(CoreStoryBlock())
 
+    gtm_content_type: ClassVar[str] = "information-pages"
+
     content_panels: ClassVar[list["Panel"]] = [
         *BundledPageMixin.panels,
         *BasePage.content_panels,
@@ -54,9 +57,9 @@ class InformationPage(BundledPageMixin, GenericTaxonomyMixin, BasePage):  # type
     @cached_property
     def cached_analytics_values(self) -> dict[str, str | bool]:
         values = super().cached_analytics_values
-        values["releaseDate"] = google_analytics_date_format(self.publication_date)
+        values["releaseDate"] = format_date_for_gtm(self.publication_date)
         if self.last_updated:
-            values["lastUpdatedDate"] = google_analytics_date_format(self.last_updated)
+            values["lastUpdatedDate"] = format_date_for_gtm(self.last_updated)
         return values
 
 
@@ -91,6 +94,8 @@ class IndexPage(BundledPageMixin, BasePage):  # type: ignore[django-manager-miss
         index.SearchField("summary"),
         index.SearchField("content"),
     ]
+
+    gtm_content_type: ClassVar[str] = "index-pages"
 
     def get_formatted_items(self, request: "HttpRequest") -> list[dict[str, str | dict[str, str]]]:
         """Returns a formatted list of Featured items

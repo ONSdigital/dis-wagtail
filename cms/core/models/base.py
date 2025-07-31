@@ -225,6 +225,11 @@ class BasePage(PageLDMixin, ListingFieldsMixin, SocialFieldsMixin, Page):  # typ
         """Return a dictionary of analytics values for this page."""
         return self.cached_analytics_values
 
+    @cached_property
+    def gtm_content_type(self) -> str:
+        """Return the Google Tag Manager content type for this page."""
+        return "pages"  # TODO agree on a default content type, or remove this default so all pages must override it
+
 
 class BaseSiteSetting(WagtailBaseSiteSetting):
     """A customized site setting.
