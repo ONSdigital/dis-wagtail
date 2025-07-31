@@ -67,7 +67,7 @@ class ChangesToReleaseDateFieldPanel(FieldPanel):
     """
 
     class BoundPanel(FieldPanel.BoundPanel):
-        template_name = "release_calendar/wagtailadmin/panels/previous_release_date_data.html"
+        template_name = "wagtailadmin/panels/previous_release_date_data.html"
 
         def get_context_data(self, parent_context: "Optional[RenderContext]" = None) -> "Optional[RenderContext]":
             from cms.release_calendar.models import (  # pylint: disable=cyclic-import,import-outside-toplevel
@@ -75,17 +75,21 @@ class ChangesToReleaseDateFieldPanel(FieldPanel):
             )
 
             context = super().get_context_data(parent_context)
-            try:
-                release_calendar_page = ReleaseCalendarPage.objects.get(pk=self.instance.pk)
-                release_date = release_calendar_page.release_date
-                if release_date:
-                    if isinstance(release_date, datetime) and is_aware(release_date):
-                        release_date = localtime(release_date)
-                    context["previous_release_date"] = release_date.strftime("%Y-%m-%d %H:%M")
-                else:
-                    context["previous_release_date"] = None
 
-            except ReleaseCalendarPage.DoesNotExist:
-                context["previous_release_date"] = None
+            context["previous_release_date"] = None
 
+            if not self.instance.pk:
+                return context
+
+            release_date = (
+                ReleaseCalendarPage.objects.filter(pk=self.instance.pk).values_list("release_date", flat=True).first()
+            )
+
+            if not release_date:
+                return context
+
+            if isinstance(release_date, datetime) and is_aware(release_date):
+                release_date = localtime(release_date)
+
+            context["previous_release_date"] = release_date.strftime("%Y-%m-%d %H:%M")
             return context
