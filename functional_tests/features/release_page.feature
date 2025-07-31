@@ -54,6 +54,13 @@ Feature: CMS users can draft, edit, and publish release pages
     And the user changes the release date to a new date
     And the user adds a release date change
     Then the previous release date field is pre-populated with the old release date
+    And the help text is not visible
+  
+  Scenario: The previous release date field in the Date change block is empty when creating a new page
+    When the user clicks "Add child page" to create a new draft release page
+    And the user adds a release date change
+    Then the previous release date in date change block is empty
+    And the help text is visible
 
   Scenario: The previous release date field in Release date change block is uneditable
     When the user clicks "Add child page" to create a new draft release page
@@ -99,4 +106,3 @@ Scenario: A CMS user can add another release date change after the first one is 
     Then the release calendar page is successfully updated
     When the user clicks "Publish"
     Then the release calendar page is successfully published
-

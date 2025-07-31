@@ -232,3 +232,25 @@ def user_changes_release_date_to_new_date(context: Context):
 def previous_release_date_field_is_pre_populated(context: Context):
     changes_to_release_date_section = context.page.locator("#panel-child-content-changes_to_release_date-section")
     expect(changes_to_release_date_section.get_by_label("Previous date*")).to_have_value("2024-12-25 09:30")
+
+
+@then("the previous release date in date change block is empty")
+def previous_release_date_in_date_change_block_is_empty(context: Context):
+    changes_to_release_date_section = context.page.locator("#panel-child-content-changes_to_release_date-section")
+    expect(changes_to_release_date_section.get_by_label("Previous date*")).to_have_value("")
+
+
+@then("the help text is not visible")
+def help_text_is_not_visible(context: Context):
+    changes_to_release_date_section = context.page.locator("#panel-child-content-changes_to_release_date-section")
+    expect(
+        changes_to_release_date_section.get_by_text("This field will be auto-populated once the page is saved.")
+    ).not_to_be_visible()
+
+
+@then("the help text is visible")
+def help_text_is_visible(context: Context):
+    changes_to_release_date_section = context.page.locator("#panel-child-content-changes_to_release_date-section")
+    expect(
+        changes_to_release_date_section.get_by_text("This field will be auto-populated once the page is saved.")
+    ).to_be_visible()

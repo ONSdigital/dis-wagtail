@@ -68,7 +68,7 @@ lint-migrations: ## Run django-migration-linter
 .PHONY: test
 test:  ## Run the tests and check coverage.
 	poetry run coverage erase
-	COVERAGE_CORE=sysmon  poetry run coverage run ./manage.py test --parallel --settings=cms.settings.test --shuffle
+	COVERAGE_CORE=sysmon  poetry run coverage run ./manage.py test --settings=cms.settings.test --shuffle
 	poetry run coverage combine
 	poetry run coverage report --fail-under=90
 

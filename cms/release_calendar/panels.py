@@ -21,7 +21,7 @@ class ReleaseCalendarBundleNotePanel(HelpPanel):
     def __init__(
         self,
         content: str = "",
-        template: str = "release_calendar/wagtailadmin/panels/bundle_note_help_panel.html",
+        template: str = "wagtailadmin/panels/bundle_note_help_panel.html",
         **kwargs: Any,
     ) -> None:
         super().__init__(content=content, template=template, **kwargs)

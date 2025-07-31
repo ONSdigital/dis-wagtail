@@ -30,7 +30,7 @@ class BundleNotePanelTestCase(WagtailTestUtils, TestCase):
         return self.panel.bind_to_model(page._meta.model).get_bound_panel(instance=page, request=self.request)
 
     def test_panel_template(self):
-        self.assertEqual(self.panel.template, "release_calendar/wagtailadmin/panels/bundle_note_help_panel.html")
+        self.assertEqual(self.panel.template, "wagtailadmin/panels/bundle_note_help_panel.html")
 
     def test_panel__is_shown(self):
         self.assertTrue(self.get_bound_panel(self.page).is_shown())
