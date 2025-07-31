@@ -106,9 +106,11 @@ class TestNotifications(TestCase):
         user = UserFactory(is_staff=True, is_superuser=True)
         self.client.force_login(user)
 
+        page = StatisticalArticlePageFactory()
+        page.save_revision()
         bundle = BundleFactory(status=BundleStatus.APPROVED, name="Approved Bundle")
         BundleTeam.objects.create(parent=bundle, team=self.preview_team)
-        bundle_page = BundlePageFactory(parent=bundle, page=StatisticalArticlePageFactory())
+        bundle_page = BundlePageFactory(parent=bundle, page=page)
 
         response = self.client.post(
             reverse("bundle:edit", args=[bundle.pk]),

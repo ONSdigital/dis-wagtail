@@ -10,7 +10,7 @@ from django.utils import timezone
 from django.utils.functional import cached_property
 from modelcluster.fields import ParentalKey
 from modelcluster.models import ClusterableModel
-from wagtail.admin.panels import FieldPanel, FieldRowPanel, MultipleChooserPanel
+from wagtail.admin.panels import FieldPanel, FieldRowPanel
 from wagtail.models import Orderable, Page
 from wagtail.search import index
 
@@ -22,7 +22,7 @@ from cms.workflows.utils import is_page_ready_to_preview, is_page_ready_to_publi
 
 from .enums import ACTIVE_BUNDLE_STATUSES, EDITABLE_BUNDLE_STATUSES, PREVIEWABLE_BUNDLE_STATUSES, BundleStatus
 from .forms import BundleAdminForm
-from .panels import BundleStatusPanel, PageChooserWithStatusPanel
+from .panels import BundleFieldPanel, BundleMultipleChooserPanel, BundleStatusPanel, PageChooserWithStatusPanel
 
 if TYPE_CHECKING:
     import datetime
@@ -42,7 +42,7 @@ class BundlePage(Orderable):
     )
 
     panels: ClassVar[list["Panel"]] = [
-        PageChooserWithStatusPanel("page"),
+        PageChooserWithStatusPanel("page", accessor="parent"),
     ]
 
     def __str__(self) -> str:
@@ -56,7 +56,7 @@ class BundleDataset(Orderable):
     )
     content_api_id: models.CharField = models.CharField(max_length=255, blank=True, null=True)
 
-    panels: ClassVar[list["Panel"]] = ["dataset"]
+    panels: ClassVar[list["Panel"]] = [BundleFieldPanel("dataset", accessor="parent")]
 
     def __str__(self) -> str:
         return f"BundleDataset: dataset {self.dataset_id} in bundle {self.parent_id}"
@@ -66,6 +66,8 @@ class BundleTeam(Orderable):
     parent = ParentalKey("Bundle", on_delete=models.CASCADE, related_name="teams")
     team: "models.ForeignKey[Team]" = models.ForeignKey("teams.Team", on_delete=models.CASCADE)
     preview_notification_sent = models.BooleanField(default=False, editable=False)  # type: ignore[var-annotated]
+
+    panels: ClassVar[list["Panel"]] = [BundleFieldPanel("team", accessor="parent")]
 
     def __str__(self) -> str:
         return f"BundleTeam: {self.pk} bundle {self.parent_id} team: {self.team_id}"
@@ -150,28 +152,39 @@ class Bundle(index.Indexed, ClusterableModel, models.Model):  # type: ignore[dja
     objects = BundleManager()
 
     panels: ClassVar[list["Panel"]] = [
-        FieldPanel("name"),
+        BundleFieldPanel("name"),
         FieldRowPanel(
             [
-                FieldPanel(
+                BundleFieldPanel(
                     "release_calendar_page",
                     heading="Release Calendar page",
                     widget=FutureReleaseCalendarChooserWidget,
                 ),
-                FieldPanel("publication_date", widget=ONSAdminDateTimeInput(), heading="or Publication date"),
+                BundleFieldPanel("publication_date", widget=ONSAdminDateTimeInput(), heading="or Publication date"),
             ],
             heading="Scheduling",
             icon="calendar",
         ),
         BundleStatusPanel(heading="Status"),
-        MultipleChooserPanel(
-            "bundled_pages", heading="Bundled pages", icon="doc-empty", label="Page", chooser_field_name="page"
+        BundleMultipleChooserPanel(
+            "bundled_pages",
+            heading="Bundled pages",
+            icon="doc-empty",
+            label="Page",
+            chooser_field_name="page",
         ),
-        MultipleChooserPanel(
-            "bundled_datasets", heading="Data API datasets", label="Dataset", chooser_field_name="dataset"
+        BundleMultipleChooserPanel(
+            "bundled_datasets",
+            heading="Data API datasets",
+            label="Dataset",
+            chooser_field_name="dataset",
         ),
-        MultipleChooserPanel(
-            "teams", heading="Preview teams", icon="user", label="Preview team", chooser_field_name="team"
+        BundleMultipleChooserPanel(
+            "teams",
+            heading="Preview teams",
+            icon="user",
+            label="Preview team",
+            chooser_field_name="team",
         ),
         # these are handled by the form
         FieldPanel("status", classname="hidden w-hidden"),
