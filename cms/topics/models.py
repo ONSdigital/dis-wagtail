@@ -84,7 +84,7 @@ class TopicPageRelatedArticle(Orderable):
                 raise ValidationError("Please select either an internal page or provide an external URL, not both.")
             if self.title:
                 raise ValidationError("Title is not required for internal pages.")
-        if not self.page and not self.external_url:
+        if not self.page_id and not self.external_url:
             raise ValidationError("You must select an internal page or provide an external URL.")
         if self.external_url and not self.title:
             raise ValidationError({"title": "This field is required when providing an external URL."})
