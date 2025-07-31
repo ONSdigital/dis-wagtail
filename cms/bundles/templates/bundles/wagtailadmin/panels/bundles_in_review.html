@@ -28,6 +28,13 @@
                             <td>{% if bundle.updated_at %}{% human_readable_date bundle.updated_at %}{% endif %}</td>
                         </tr>
                     {% endfor %}
+                    {% if more_link %}
+                        <tr>
+                            <td colspan="3">
+                                <a href="{% url 'bundle:index' %}{% querystring status="IN_REVIEW" %}" class="button button-secondary button-small">View all bundles ready for preview</a>
+                            </td>
+                        </tr>
+                    {% endif %}
                 </tbody>
             </table>
         {% else %}
