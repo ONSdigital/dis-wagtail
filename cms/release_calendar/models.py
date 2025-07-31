@@ -27,7 +27,7 @@ from .blocks import (
 from .enums import NON_PROVISIONAL_STATUSES, ReleaseStatus
 from .forms import ReleaseCalendarPageAdminForm
 from .locks import ReleasePageInBundleReadyToBePublishedLock
-from .panels import ReleaseCalendarBundleNotePanel
+from .panels import ChangesToReleaseDateFieldPanel, ReleaseCalendarBundleNotePanel
 
 if TYPE_CHECKING:
     from django.http import HttpRequest
