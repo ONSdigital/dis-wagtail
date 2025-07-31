@@ -2,14 +2,14 @@ import io
 from collections.abc import Iterable
 from datetime import date, datetime
 from threading import Lock
-from typing import TYPE_CHECKING, Any, Optional, TypedDict, Union
+from typing import TYPE_CHECKING, Any, Optional, TypedDict
 
 import matplotlib as mpl
 from django.conf import settings
-from django.db.models import QuerySet
 from django.utils.formats import date_format
 from django.utils.translation import gettext_lazy as _
 from matplotlib.figure import Figure
+from wagtail.models import Page
 
 from cms.core.custom_date_format import ons_date_format
 from cms.core.enums import RelatedContentType
@@ -17,7 +17,6 @@ from cms.core.enums import RelatedContentType
 matplotlib_lock = Lock()
 
 FORMULA_INDICATOR = "$$"
-IS_EXTERNAL_KEY = "is_external"
 
 mpl.rcParams.update(
     {
@@ -32,7 +31,6 @@ mpl.rcParams.update(
 if TYPE_CHECKING:
     from django.http import HttpRequest
     from django_stubs_ext import StrOrPromise
-    from wagtail.models import Page
 
 
 class DocumentListItem(TypedDict):
@@ -41,9 +39,8 @@ class DocumentListItem(TypedDict):
     description: "StrOrPromise"
 
 
-# Type aliases for cleaner function signatures
-PageData = Union["Page", dict[str, Any]]
-PageDataCollection = Union[QuerySet["Page"], Iterable[PageData]]
+# Type alias for cleaner function signatures
+PageDataCollection = Iterable[dict[str, Any]]
 
 
 def _format_external_link(page_dict: dict[str, Any]) -> DocumentListItem:
@@ -60,11 +57,13 @@ def _format_external_link(page_dict: dict[str, Any]) -> DocumentListItem:
     }
 
 
-def _format_page_object(page: "Page", request: Optional["HttpRequest"] = None) -> DocumentListItem:
+def _format_page_object(
+    page: "Page", request: Optional["HttpRequest"] = None, custom_title: Optional[str] = None
+) -> DocumentListItem:
     """Format page object into DocumentListItem."""
     page_datum: DocumentListItem = {
         "title": {
-            "text": getattr(page, "display_title", page.title),
+            "text": custom_title or getattr(page, "display_title", page.title),
             "url": page.get_url(request=request),
         },
         "metadata": {
@@ -87,10 +86,13 @@ def get_formatted_pages_list(
     """
     data = []
     for page in pages:
-        if isinstance(page, dict) and page.get(IS_EXTERNAL_KEY):
+        if page.get("is_external", False):
             datum = _format_external_link(page)
-        elif hasattr(page, "get_url") and not isinstance(page, dict):
-            datum = _format_page_object(page, request)
+        elif "internal_page" in page:
+            # Handle dict format with internal_page and optional title
+            internal_page = page["internal_page"]
+            custom_title = page.get("title")
+            datum = _format_page_object(internal_page, request, custom_title)
         else:
             # This should not happen in production but is a safeguard for unexpected data types
             continue

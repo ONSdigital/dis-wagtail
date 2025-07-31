@@ -55,7 +55,10 @@ class TopicPageRelatedArticle(Orderable):
     title: models.CharField = models.CharField(
         max_length=255,
         blank=True,
-        help_text="Title for the external link. Required if an external URL is provided.",
+        help_text=(
+            "Populate when adding an external link. "
+            "When choosing a page, you can leave it blank to use the page's own title."
+        ),
     )
 
     panels: ClassVar[list["Panel"]] = [
@@ -79,11 +82,8 @@ class TopicPageRelatedArticle(Orderable):
 
     def clean(self) -> None:
         super().clean()
-        if self.page_id:
-            if self.external_url:
-                raise ValidationError("Please select either an internal page or provide an external URL, not both.")
-            if self.title:
-                raise ValidationError("Title is not required for internal pages.")
+        if self.page_id and self.external_url:
+            raise ValidationError("Please select either an internal page or provide an external URL, not both.")
         if not self.page_id and not self.external_url:
             raise ValidationError("You must select an internal page or provide an external URL.")
         if self.external_url and not self.title:
@@ -197,8 +197,9 @@ class TopicPage(BundledPageMixin, ExclusiveTaxonomyMixin, BasePage):  # type: ig
         return None
 
     @cached_property
-    def processed_articles(self) -> list[Page | dict]:
-        """Returns a list of pages and/or dictionaries representing related articles.
+    def processed_articles(self) -> list[dict]:
+        """Returns a list of dictionaries representing related articles.
+        Each dict has 'internal_page' pointing to a Page (or None for external) and optional 'title'.
         Manually added articles (both internal and external) are prioritized.
 
         TODO: extend when Taxonomy is in.
@@ -224,7 +225,11 @@ class TopicPage(BundledPageMixin, ExclusiveTaxonomyMixin, BasePage):  # type: ig
             if not page.live or page.get_view_restrictions().exists():
                 continue
 
-            manual_articles.append(page)
+            article_dict = {"internal_page": page}
+            if related.title:
+                article_dict["title"] = related.title
+
+            manual_articles.append(article_dict)
             highlighted_page_pks.append(page.pk)
 
         num_manual_articles = len(manual_articles)
@@ -254,11 +259,15 @@ class TopicPage(BundledPageMixin, ExclusiveTaxonomyMixin, BasePage):  # type: ig
             .order_by("-release_date")[:remaining_slots]
         )
 
-        return manual_articles + latest_articles
+        # Convert latest articles to dict format
+        auto_articles = [{"internal_page": page} for page in latest_articles]
+
+        return manual_articles + auto_articles
 
     @cached_property
-    def processed_methodologies(self) -> list[MethodologyPage]:
-        """Returns the latest methodologies relevant for this topic.
+    def processed_methodologies(self) -> list[dict]:
+        """Returns a list of dictionaries representing methodologies relevant for this topic.
+        Each dict has 'internal_page' pointing to a MethodologyPage.
         TODO: extend when Taxonomy is in.
         """
         # check if any methodologies were highlighted. if so, fetch in the order they were added.
@@ -275,7 +284,7 @@ class TopicPage(BundledPageMixin, ExclusiveTaxonomyMixin, BasePage):  # type: ig
 
         num_highlighted_pages = len(highlighted_pages)
         if num_highlighted_pages > MAX_ITEMS_PER_SECTION - 1:
-            return highlighted_pages
+            return [{"internal_page": page} for page in highlighted_pages]
 
         # supplement the remaining slots.
         pages = list(
@@ -285,7 +294,8 @@ class TopicPage(BundledPageMixin, ExclusiveTaxonomyMixin, BasePage):  # type: ig
             .public()
             .order_by("-last_revised_date")[: MAX_ITEMS_PER_SECTION - num_highlighted_pages]
         )
-        return highlighted_pages + pages
+        all_pages = highlighted_pages + pages
+        return [{"internal_page": page} for page in all_pages]
 
     @cached_property
     def table_of_contents(self) -> list[dict[str, str | object]]:

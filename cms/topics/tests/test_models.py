@@ -59,9 +59,12 @@ class TopicPageTestCase(TestCase):
         )
 
         TopicPageRelatedArticleFactory(parent=self.topic_page, page=self.older_article)
-        self.assertListEqual(
-            self.topic_page.processed_articles, [self.older_article, article_in_other_series, self.article]
-        )
+        expected = [
+            {"internal_page": self.older_article},
+            {"internal_page": article_in_other_series},
+            {"internal_page": self.article},
+        ]
+        self.assertListEqual(self.topic_page.processed_articles, expected)
 
     def test_processed_articles_combines_highlighted_and_latest_in_series_but_not_if_same(self):
         # Create additional articles
@@ -72,7 +75,8 @@ class TopicPageTestCase(TestCase):
         )
 
         TopicPageRelatedArticleFactory(parent=self.topic_page, page=self.article)
-        self.assertListEqual(self.topic_page.processed_articles, [self.article, article_in_other_series])
+        expected = [{"internal_page": self.article}, {"internal_page": article_in_other_series}]
+        self.assertListEqual(self.topic_page.processed_articles, expected)
 
     def test_processed_articles_shows_only_highlighted_if_all_selected(self):
         # Create additional articles
@@ -86,7 +90,12 @@ class TopicPageTestCase(TestCase):
         TopicPageRelatedArticleFactory(parent=self.topic_page, page=self.older_article)
         TopicPageRelatedArticleFactory(parent=self.topic_page, page=new_article)
         TopicPageRelatedArticleFactory(parent=self.topic_page, page=self.article)
-        self.assertListEqual(self.topic_page.processed_articles, [self.older_article, new_article, self.article])
+        expected = [
+            {"internal_page": self.older_article},
+            {"internal_page": new_article},
+            {"internal_page": self.article},
+        ]
+        self.assertListEqual(self.topic_page.processed_articles, expected)
 
     def test_processed_articles_with_one_external_link(self):
         """Test that external link appears first, followed by auto-populated articles."""
@@ -115,8 +124,8 @@ class TopicPageTestCase(TestCase):
         self.assertTrue(processed[0]["is_external"])
 
         # Remaining should be auto-populated articles
-        self.assertEqual(processed[1], article_in_other_series)
-        self.assertEqual(processed[2], self.article)
+        self.assertEqual(processed[1], {"internal_page": article_in_other_series})
+        self.assertEqual(processed[2], {"internal_page": self.article})
 
     def test_processed_articles_with_three_external_links(self):
         """Test that only the three manually added external links are returned."""
@@ -163,7 +172,7 @@ class TopicPageTestCase(TestCase):
         self.assertEqual(len(processed), 3)
 
         # First should be the internal page
-        self.assertEqual(processed[0], self.older_article)
+        self.assertEqual(processed[0], {"internal_page": self.older_article})
 
         # Second should be the external link
         self.assertIsInstance(processed[1], dict)
@@ -172,15 +181,31 @@ class TopicPageTestCase(TestCase):
         self.assertTrue(processed[1]["is_external"])
 
         # Third should be auto-populated (not self.article since older_article was manually selected)
-        self.assertEqual(processed[2], article_in_other_series)
+        self.assertEqual(processed[2], {"internal_page": article_in_other_series})
+
+    def test_processed_articles_with_custom_title(self):
+        """Test that custom title is included when provided for internal pages."""
+        TopicPageRelatedArticleFactory(parent=self.topic_page, page=self.older_article, title="Custom Article Title")
+
+        processed = self.topic_page.processed_articles
+        self.assertEqual(len(processed), 2)
+
+        # First should be the highlighted article with custom title
+        expected_first = {"internal_page": self.older_article, "title": "Custom Article Title"}
+        self.assertEqual(processed[0], expected_first)
+
+        # Second should be auto-populated without custom title
+        self.assertEqual(processed[1], {"internal_page": self.article})
 
     def test_processed_methodologies_combines_highlighted_and_child_pages(self):
-        self.assertListEqual(self.topic_page.processed_methodologies, [self.another_methodology, self.methodology])
+        expected = [{"internal_page": self.another_methodology}, {"internal_page": self.methodology}]
+        self.assertListEqual(self.topic_page.processed_methodologies, expected)
 
         del self.topic_page.processed_methodologies
         TopicPageRelatedMethodologyFactory(parent=self.topic_page, page=self.methodology)
 
-        self.assertListEqual(self.topic_page.processed_methodologies, [self.methodology, self.another_methodology])
+        expected_with_highlight = [{"internal_page": self.methodology}, {"internal_page": self.another_methodology}]
+        self.assertListEqual(self.topic_page.processed_methodologies, expected_with_highlight)
 
     def test_processed_methodologies_shows_only_highlighted_if_all_selected(self):
         new_methodology = MethodologyPageFactory(parent=self.topic_page, publication_date=datetime(2024, 2, 1))
@@ -190,9 +215,12 @@ class TopicPageTestCase(TestCase):
         TopicPageRelatedMethodologyFactory(parent=self.topic_page, page=new_methodology2)
         TopicPageRelatedMethodologyFactory(parent=self.topic_page, page=new_methodology)
 
-        self.assertListEqual(
-            self.topic_page.processed_methodologies, [self.methodology, new_methodology2, new_methodology]
-        )
+        expected = [
+            {"internal_page": self.methodology},
+            {"internal_page": new_methodology2},
+            {"internal_page": new_methodology},
+        ]
+        self.assertListEqual(self.topic_page.processed_methodologies, expected)
 
     def test_table_of_contents_includes_all_sections(self):
         manual_dataset = {"title": "test manual", "description": "manual description", "url": "https://example.com"}
@@ -315,14 +343,6 @@ class TopicPageRelatedArticleValidationTests(TestCase):
         with self.assertRaisesRegex(
             ValidationError, "Please select either an internal page or provide an external URL, not both."
         ):
-            related_article.clean()
-
-    def test_validation_error_page_and_title(self):
-        """Test that ValidationError is raised if both page and external_url are provided."""
-        related_article = TopicPageRelatedArticleFactory.build(
-            parent=self.topic_page, page=self.article, external_url="", title="External Title"
-        )
-        with self.assertRaisesRegex(ValidationError, "Title is not required for internal pages."):
             related_article.clean()
 
     def test_validation_error_neither_page_nor_external_url_provided(self):

@@ -148,3 +148,47 @@ def related_articles_section_contains_auto_populated_articles(context: Context):
     # Check that all three auto-populated articles are present
     for article in context.statistical_articles:
         expect(related_articles_section.get_by_role("link", name=article.display_title)).to_be_visible()
+
+
+@when('the user adds an internal related article with custom title "{custom_title}"')
+def user_adds_internal_related_article_with_custom_title(context: Context, custom_title: str):
+    """Add an internal related article with a custom title."""
+    # Initialize counter if this is the first article being added in the scenario
+    if not hasattr(context, "manual_article_index"):
+        context.manual_article_index = 0
+
+    # Store the custom title and selected article for later verification
+    context.custom_title = custom_title
+    context.selected_article = context.statistical_articles[0]  # We'll select the first available article
+
+    # Click the main "Add" button
+    context.page.locator("#id_related_articles-ADD").click()
+
+    # Select an internal page - look for the "Choose a page" button
+    context.page.get_by_role("button", name="Choose Article page").click()
+    context.page.wait_for_timeout(250)  # Wait for the modal to open
+
+    # Click on the article in the chooser modal
+    modal = context.page.locator("#search-results")
+    article_link = modal.locator("[data-chooser-modal-choice]").nth(0)
+    article_link.click()
+
+    # Fill in the custom title
+    title_field = f"#id_related_articles-{context.manual_article_index}-title"
+    context.page.locator(title_field).fill(custom_title)
+
+    # Increment the counter
+    context.manual_article_index += 1
+
+
+@then("the custom title overrides the page's original title")
+def custom_title_overrides_original_title(context: Context):
+    """Assert that the custom title is displayed instead of the page's original title."""
+    related_articles_section = context.page.locator("section#related-articles")
+
+    # Check that the custom title is visible
+    expect(related_articles_section.get_by_role("link", name=context.custom_title)).to_be_visible()
+
+    # Check that the original title is not visible in the first position
+    first_article = related_articles_section.locator("li.ons-document-list__item").first
+    expect(first_article.get_by_role("link", name=context.selected_article.display_title)).not_to_be_visible()

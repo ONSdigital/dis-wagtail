@@ -53,3 +53,11 @@ Feature: A CMS user can manually manage related articles on a Topic Page
         And publishes the page
         And the user visits the topic page
         Then the related articles section contains 3 auto-populated articles
+
+    Scenario: A user can add an internal page with a custom title
+        When the user edits the topic page
+        And the user adds an internal related article with custom title "Custom Article Title"
+        And publishes the page
+        And the user visits the topic page
+        Then the user can see "Custom Article Title" in the related articles section
+        And the custom title overrides the page's original title
