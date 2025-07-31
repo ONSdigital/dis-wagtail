@@ -437,6 +437,16 @@ class StatisticalArticlePage(BundledPageMixin, RoutablePageMixin, BasePage):  # 
             dataset_documents = sorted(dataset_documents, key=lambda d: d["title"]["text"])
         return dataset_documents
 
+    @cached_property
+    def parent_for_choosers(self) -> Page:
+        """Used in the bundle page chooser.
+
+        Return the Topic page as the parent because the chooser already includes the
+        series title as part of the admin display title.
+        """
+        topic_page_class = resolve_model_string("topics.TopicPage")
+        return topic_page_class.objects.ancestor_of(self).first().specific_deferred
+
     def get_serialized_corrections_and_notices(
         self, request: "HttpRequest"
     ) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
