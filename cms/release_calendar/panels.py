@@ -21,7 +21,7 @@ class ReleaseCalendarBundleNotePanel(HelpPanel):
     def __init__(
         self,
         content: str = "",
-        template: str = "release_calendar/bundle_note_help_panel.html",
+        template: str = "release_calendar/wagtailadmin/panels/bundle_note_help_panel.html",
         **kwargs: Any,
     ) -> None:
         super().__init__(content=content, template=template, **kwargs)
@@ -67,7 +67,7 @@ class ChangesToReleaseDateFieldPanel(FieldPanel):
     """
 
     class BoundPanel(FieldPanel.BoundPanel):
-        template_name = "wagtailadmin/panels/previous_release_date_data.html"
+        template_name = "release_calendar/wagtailadmin/panels/previous_release_date_data.html"
 
         def get_context_data(self, parent_context: "Optional[RenderContext]" = None) -> "Optional[RenderContext]":
             from cms.release_calendar.models import (  # pylint: disable=cyclic-import,import-outside-toplevel
