@@ -588,18 +588,14 @@ class StatisticalArticlePage(BundledPageMixin, RoutablePageMixin, BasePage):  # 
     @cached_property
     def cached_analytics_values(self) -> dict[str, str | bool]:
         parent_series = self.get_parent()
-        parent_topic = parent_series.get_parent()  # TODO needs updating after URL restructure
 
         values = {
             "pageTitle": self.get_full_display_title(),
-            "contentType": "statistical-articles",  # TODO does this need to be statistical-analysis to match legacy?
-            "contentGroup": parent_topic.slug,
             "outputSeries": parent_series.slug,
             "outputEdition": self.slug,
             "releaseDate": format_date_for_gtm(self.release_date),
             "latestRelease": self.is_latest,
             "wordCount": "755",  # TODO implement word count calculation
-            "contentTheme": "Business, Industry and Trade",  # TODO what is this? The top parent of the taxonomy topic?
         }
 
         if self.next_release_date:

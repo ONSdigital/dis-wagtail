@@ -162,8 +162,7 @@ class MethodologyPage(BundledPageMixin, GenericTaxonomyMixin, BasePage):  # type
     @cached_property
     def cached_analytics_values(self) -> dict[str, str | bool]:
         values = super().cached_analytics_values
-        values["contentType"] = self.gtm_content_type
-        values["contentGroup"] = self.get_parent().slug
+
         values["releaseDate"] = format_date_for_gtm(self.publication_date)
         if self.last_revised_date:
             values["lastUpdatedDate"] = format_date_for_gtm(self.last_revised_date)

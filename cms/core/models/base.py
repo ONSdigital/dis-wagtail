@@ -219,7 +219,13 @@ class BasePage(PageLDMixin, ListingFieldsMixin, SocialFieldsMixin, Page):  # typ
     @cached_property
     def cached_analytics_values(self) -> dict[str, str | bool]:
         """Return a dictionary of cachable analytics values for this page."""
-        return {"pageTitle": self.title}
+        values = {
+            "pageTitle": self.title,
+            "contentType": self.gtm_content_type,
+        }
+        if content_group := self.gtm_content_group:
+            values["contentGroup"] = content_group
+        return values
 
     def get_analytics_values(self, request: "HttpRequest") -> dict[str, str | bool]:
         """Return a dictionary of analytics values for this page."""
@@ -229,6 +235,18 @@ class BasePage(PageLDMixin, ListingFieldsMixin, SocialFieldsMixin, Page):  # typ
     def gtm_content_type(self) -> str:
         """Return the Google Tag Manager content type for this page."""
         return "pages"  # TODO agree on a default content type, or remove this default so all pages must override it
+
+    @cached_property
+    def gtm_content_group(self) -> str | None:
+        """Returns the GTM content group for a page, if it has one.
+        This is the slug of the topic associated with the page, for a theme or topic page this will be it's own slug,
+        otherwise it will be the slug of the parent topic page if it exists.
+        """
+        for ancestor in self.get_ancestors(inclusive=True):
+            if str(type(ancestor)) == "TopicPage" or str(type(ancestor)) == "ThemePage":
+                return ancestor.slug
+
+        return None
 
 
 class BaseSiteSetting(WagtailBaseSiteSetting):

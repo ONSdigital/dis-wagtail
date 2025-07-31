@@ -264,12 +264,3 @@ class TopicPage(BundledPageMixin, ExclusiveTaxonomyMixin, BasePage):  # type: ig
             figure_ids = [figure.value["figure_id"] for figure in self.headline_figures]  # pylint: disable=not-an-iterable
             if len(figure_ids) != len(set(figure_ids)):
                 raise ValidationError({"headline_figures": "Duplicate headline figures are not allowed."})
-
-    @cached_property
-    def cached_analytics_values(self) -> dict[str, str | bool]:
-        """Return a dictionary of cachable analytics values for this page."""
-        values = super().cached_analytics_values
-        values["contentType"] = self.gtm_content_type
-        values["contentGroup"] = self.slug
-        values["contentTheme"] = "???"  # TODO what is contentTheme?
-        return values

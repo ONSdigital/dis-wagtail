@@ -13,7 +13,6 @@ from wagtail.blocks import (
     URLBlock,
 )
 
-from cms.core.analytics import get_page_gtm_content_group
 from cms.core.models import BasePage
 from cms.core.utils import get_content_type_for_page, get_document_metadata_date, get_related_content_type_label
 
@@ -110,12 +109,9 @@ class LinkBlockStructValue(StructValue):
 
         target_page = target_page.specific_deferred
 
-        attributes.update(
-            {
-                "data-gtm-click-content-type": target_page.gtm_content_type,
-                "data-gtm-click-content-group": get_page_gtm_content_group(target_page),
-            }
-        )
+        attributes["data-gtm-click-content-type"] = target_page.gtm_content_type
+        if content_group := target_page.gtm_content_group:
+            attributes["data-gtm-click-content-group"] = content_group
 
         if (
             str(type(target_page)) == "StatisticalArticlePage"
