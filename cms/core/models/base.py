@@ -242,8 +242,8 @@ class BasePage(PageLDMixin, ListingFieldsMixin, SocialFieldsMixin, Page):  # typ
         This is the slug of the topic associated with the page, for a theme or topic page this will be it's own slug,
         otherwise it will be the slug of the parent topic page if it exists.
         """
-        for ancestor in self.get_ancestors(inclusive=True):
-            if str(type(ancestor)) == "TopicPage" or str(type(ancestor)) == "ThemePage":
+        for ancestor in self.get_ancestors(inclusive=True).reverse():
+            if ancestor.specific_deferred.__class__.__name__ in ("TopicPage", "ThemePage"):
                 return ancestor.slug
 
         return None
