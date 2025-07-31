@@ -137,7 +137,7 @@ def display_published_page_for_correct_page_status(context: Context, page_status
 
 @then("the example content is displayed in the preview tab")
 def display_example_content_release_page_in_preview_tab(context: Context):
-    page = context.preview_tab
+    page = context.page
     expect(page.get_by_role("heading", name="My Release")).to_be_visible()
     expect(page.get_by_role("heading", name="My Example Content Link")).to_be_visible()
     expect(page.locator("#my-example-content-link").get_by_role("link", name="Release calendar")).to_be_visible()
@@ -149,7 +149,7 @@ def display_example_content_release_page_in_preview_tab(context: Context):
 
 @then('the "{preview_mode}" page is displayed in the preview tab')
 def display_release_page_in_preview_mode_in_preview_tab(context: Context, preview_mode: str):
-    page = context.preview_tab
+    page = context.page
     if preview_mode in ("Provisional", "Confirmed"):
         expect(page.get_by_text("This release is not yet")).to_be_visible()
     elif preview_mode == "Cancelled":
@@ -184,7 +184,7 @@ def add_feature(context: Context, feature: str):
 
 @then("{feature} is displayed in the release calendar page preview tab")
 def display_features_in_preview_tab(context: Context, feature: str):
-    page = context.preview_tab
+    page = context.page
     if feature == "a release date text":
         expect(page.get_by_text("March 2025 to August 2025")).to_be_visible()
     elif feature == "a next release date text":
@@ -199,7 +199,7 @@ def display_features_in_preview_tab(context: Context, feature: str):
         expect(page.get_by_text("second")).to_be_visible()
         expect(page.get_by_text("Description")).to_be_visible()
     elif feature == "a release date change":
-        expect(context.preview_tab.get_by_text("Updated due to data availability")).to_be_visible()
+        expect(page.get_by_text("Updated due to data availability")).to_be_visible()
     else:
         raise ValueError(f"Unsupported page feature: {feature}")
 

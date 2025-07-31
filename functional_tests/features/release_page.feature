@@ -42,14 +42,14 @@ Feature: CMS users can draft, edit, and publish release pages
       | Cancelled   |
 
 # Preview modes
+
  Scenario Outline: A CMS user can use preview modes to preview the page at different statuses
     When the user clicks "Add child page" to create a new draft release page
     And the user enters "<PreviewMode>" page content
     And the user clicks the "Save Draft" button
     And the user opens the preview in a new tab, using the "<PreviewMode>" preview mode
     Then the "<PreviewMode>" page is displayed in the preview tab
-    # Can put in after scenario function instead of step
-    And the user closes the preview tab
+
 
     Examples:
       | PreviewMode |
@@ -57,6 +57,7 @@ Feature: CMS users can draft, edit, and publish release pages
       | Confirmed   |
       | Published   |
       | Cancelled   |
+
 
   Scenario Outline: A CMS user can add a feature on a release calendar page and the feature is displayed in the "Published" preview tab
     When the user clicks "Add child page" to create a new draft release page
@@ -118,7 +119,7 @@ Feature: CMS users can draft, edit, and publish release pages
     And the user sees a validation error message: a notice must be added
 
 # Prerelease Access
-@smoke
+
   Scenario Outline: Validation errors are raised when invalid data is input for pre-release access
     When the user clicks "Add child page" to create a new draft release page
     And the user enters some example content on the page
@@ -167,7 +168,7 @@ Examples:
   | a date change log but no release date change   | date change log with no release date change  |
 
 
-  Scenario: A CMS user can add another release date change after the first one is published
+Scenario: A CMS user can add another release date change after the first one is published
     When the user publishes a page with example content
     And the user returns to editing the published page
     And the user adds a release date change to the release calendar page
