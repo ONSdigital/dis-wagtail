@@ -1,6 +1,7 @@
 from datetime import UTC, datetime, timedelta
 from http import HTTPStatus
 from unittest import mock
+from unittest.mock import patch
 
 import time_machine
 from django.db.models import F, OrderBy
@@ -24,6 +25,7 @@ from cms.release_calendar.tests.factories import ReleaseCalendarPageFactory
 from cms.release_calendar.viewsets import FutureReleaseCalendarChooserWidget
 from cms.standard_pages.tests.factories import InformationPageFactory
 from cms.teams.models import Team
+from cms.topics.models import TopicPage
 from cms.topics.tests.factories import TopicPageFactory
 from cms.users.tests.factories import GroupFactory, UserFactory
 from cms.workflows.tests.utils import (
@@ -71,16 +73,14 @@ class BundleViewSetTestCaseBase(WagtailTestUtils, TestCase):
 
     def setUp(self):
         self.bundle = BundleFactory(name="Original bundle", created_by=self.publishing_officer)
-        self.statistical_article_page = StatisticalArticlePageFactory(title="PSF")
+        self.statistical_article_page = StatisticalArticlePageFactory(
+            title="The article", parent__title="PSF", live=False
+        )
 
         self.edit_url = reverse("bundle:edit", args=[self.bundle.id])
         self.inspect_url = reverse("bundle:inspect", args=[self.bundle.id])
 
         self.client.force_login(self.publishing_officer)
-
-
-class BundleViewSetTestCase(BundleViewSetTestCaseBase):
-    """Test Bundle viewset functionality."""
 
     def get_base_form_data(self):
         return nested_form_data(
@@ -92,6 +92,8 @@ class BundleViewSetTestCase(BundleViewSetTestCaseBase):
             }
         )
 
+
+class BundleViewSetAddTestCase(BundleViewSetTestCaseBase):
     def test_bundle_add_view(self):
         """Test bundle creation."""
         self.assertFalse(Bundle.objects.filter(name="A New Bundle").exists())
@@ -139,6 +141,39 @@ class BundleViewSetTestCase(BundleViewSetTestCaseBase):
                 self.assertRedirects(response, "/admin/")
                 self.assertContains(response, "Sorry, you do not have permission to access this area.")
 
+    def test_date_placeholder(self):
+        """Test that the date input field displays date placeholder."""
+        response = self.client.get(self.bundle_add_url, follow=True)
+
+        content = response.content.decode(encoding="utf-8")
+        datetime_placeholder = "YYYY-MM-DD HH:MM"
+        self.assertInHTML(
+            '<input type="text" name="publication_date" autocomplete="off"'
+            f'placeholder="{datetime_placeholder}" id="id_publication_date">',
+            content,
+        )
+
+    def test_bundle_form_uses_release_calendar_chooser_widget(self):
+        form_class = get_edit_handler(Bundle).get_form_class()
+        form = form_class(instance=self.bundle)
+
+        self.assertIn("release_calendar_page", form.fields)
+        chooser_widget = form.fields["release_calendar_page"].widget
+        self.assertIsInstance(chooser_widget, FutureReleaseCalendarChooserWidget)
+
+        self.assertEqual(
+            chooser_widget.get_chooser_modal_url(),
+            # the admin path + the chooser namespace
+            reverse("wagtailadmin_home") + "release_calendar_chooser/",
+        )
+
+        response = self.client.get(
+            self.bundle_add_url,
+        )
+        self.assertContains(response, "Choose Release Calendar page")
+
+
+class BundleViewSetEditTestCase(BundleViewSetTestCaseBase):
     def test_bundle_edit_view(self):
         """Test bundle editing."""
         response = self.client.post(
@@ -244,6 +279,33 @@ class BundleViewSetTestCase(BundleViewSetTestCaseBase):
         self.bundle.save(update_fields=["status", "publication_date"])
         self.post_with_action_and_test("action-publish", BundleStatus.PUBLISHED, self.bundle_index_url)
 
+    @override_settings(SLACK_NOTIFICATIONS_WEBHOOK_URL="https://slack.example.com")
+    @patch("cms.bundles.notifications.slack.notify_slack_of_publication_start")
+    @patch("cms.bundles.notifications.slack.notify_slack_of_publish_end")
+    def test_bundle_edit_view__manual_publish__happy_path__when_linked_with_past_release_calendar_entry(
+        self, mock_notify_end, mock_notify_start
+    ):
+        self.assertFalse(self.statistical_article_page.live)
+
+        BundlePageFactory(parent=self.bundle, page=self.statistical_article_page)
+        release_calendar_page = ReleaseCalendarPageFactory(title="Past Release Calendar Page")
+        self.bundle.release_calendar_page = release_calendar_page
+        self.bundle.publication_date = None
+        self.bundle.status = BundleStatus.APPROVED
+        self.bundle.save(update_fields=["release_calendar_page", "publication_date", "status"])
+
+        self.post_with_action_and_test("action-publish", BundleStatus.PUBLISHED, self.bundle_index_url)
+
+        self.assertTrue(mock_notify_start.called)
+        self.assertTrue(mock_notify_end.called)
+
+        response = self.client.get(release_calendar_page.url)
+        self.assertContains(response, self.statistical_article_page.display_title)
+
+        self.statistical_article_page.refresh_from_db()
+        self.assertTrue(self.statistical_article_page.live)
+        self.assertIsNone(self.statistical_article_page.current_workflow_state)
+
     def test_bundle_edit_view__manual_publish__happy_path(self):
         self.bundle.status = BundleStatus.APPROVED
         self.bundle.save(update_fields=["status"])
@@ -305,25 +367,29 @@ class BundleViewSetTestCase(BundleViewSetTestCaseBase):
 
         self.assertFalse(mock_notify_slack.called)
 
-    def test_bundle_form_uses_release_calendar_chooser_widget(self):
-        form_class = get_edit_handler(Bundle).get_form_class()
-        form = form_class(instance=self.bundle)
-
-        self.assertIn("release_calendar_page", form.fields)
-        chooser_widget = form.fields["release_calendar_page"].widget
-        self.assertIsInstance(chooser_widget, FutureReleaseCalendarChooserWidget)
-
-        self.assertEqual(
-            chooser_widget.get_chooser_modal_url(),
-            # the admin path + the chooser namespace
-            reverse("wagtailadmin_home") + "release_calendar_chooser/",
-        )
-
-        response = self.client.get(
-            self.bundle_add_url,
-        )
+    def test_bundle_edit_view__non_readonly(self):
+        response = self.client.get(self.edit_url)
         self.assertContains(response, "Choose Release Calendar page")
+        self.assertContains(response, "Add page")
+        self.assertContains(response, "Add dataset")
+        self.assertContains(response, "Add preview team")
 
+    def test_bundle_edit_view__readonly_when_bundle_approved(self):
+        self.bundle.status = BundleStatus.IN_REVIEW
+        self.bundle.save(update_fields=["status"])
+        self.post_with_action_and_test("action-approve", BundleStatus.APPROVED, self.inspect_url)
+
+        response = self.client.get(self.edit_url)
+        self.assertNotContains(response, "Choose Release Calendar page")
+        self.assertNotContains(response, "Add page")
+        self.assertNotContains(response, "Add dataset")
+        self.assertNotContains(response, "Add preview team")
+
+        self.assertContains(response, "Statistical article page")
+        self.assertContains(response, self.statistical_article_page.get_admin_display_title())
+
+
+class BundleViewSetInspectTestCase(BundleViewSetTestCaseBase):
     def test_inspect_view__previewers__access(self):
         self.client.force_login(self.bundle_viewer)
 
@@ -630,6 +696,8 @@ class BundlePageChooserViewsetTestCase(WagtailTestUtils, TestCase):
             locale=Locale.objects.get(language_code="cy"), copy_parents=True
         )
         welsh_page_draft.save_revision()
+        information_page = InformationPageFactory(title="An information page")
+        information_page.save_revision()
 
         response = self.client.get(self.chooser_url)
 
@@ -638,6 +706,10 @@ class BundlePageChooserViewsetTestCase(WagtailTestUtils, TestCase):
 
         self.assertContains(response, self.page_draft.get_admin_display_title(), 2)  # en + cy
         self.assertContains(response, self.page_live_plus_draft.get_admin_display_title(), 1)
+        self.assertContains(response, self.page_live_plus_draft.get_parent().title, 1)  # as part of the article
+        self.assertContains(response, TopicPage.objects.ancestor_of(self.page_live_plus_draft).first().title, 1)
+        self.assertContains(response, information_page.title, 1)
+        self.assertContains(response, information_page.get_parent(), 1)
         self.assertNotContains(response, self.page_live.get_admin_display_title())
         self.assertNotContains(response, self.page_draft_in_bundle.get_admin_display_title())
 
@@ -760,9 +832,37 @@ class BundlePageChooserViewsetTestCase(WagtailTestUtils, TestCase):
         self.assertContains(response, topic_page_draft.get_admin_display_title())
         self.assertNotContains(response, self.page_live.get_admin_display_title())
 
-    def test_featured_series_viewset_configuration(self):
+    def test_chooser_viewset_configuration(self):
         self.assertFalse(bundle_page_chooser_viewset.register_widget)
         self.assertEqual(bundle_page_chooser_viewset.model, Page)
         self.assertEqual(bundle_page_chooser_viewset.choose_one_text, "Choose a page")
         self.assertEqual(bundle_page_chooser_viewset.choose_another_text, "Choose another page")
         self.assertEqual(bundle_page_chooser_viewset.edit_item_text, "Edit this page")
+
+    def test_chosen(self):
+        response = self.client.get(
+            reverse(
+                bundle_page_chooser_viewset.get_url_name("chosen"),
+                args=[self.page_draft.pk],
+            )
+        )
+        response_json = response.json()
+
+        self.assertEqual(response_json["result"]["id"], str(self.page_draft.pk))
+        self.assertEqual(response_json["result"]["title"], f"{self.page_draft.get_admin_display_title()} (Draft)")
+
+    def test_chosen_multiple(self):
+        mark_page_as_ready_for_review(self.page_draft)
+        response = self.client.get(
+            reverse(
+                bundle_page_chooser_viewset.get_url_name("chosen"),
+                args=[self.page_draft.pk],
+                query={"multiple": True},
+            )
+        )
+        response_json = response.json()
+
+        self.assertEqual(response_json["result"][0]["id"], str(self.page_draft.pk))
+        self.assertEqual(
+            response_json["result"][0]["title"], f"{self.page_draft.get_admin_display_title()} (In Preview)"
+        )

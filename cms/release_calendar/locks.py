@@ -12,7 +12,7 @@ if TYPE_CHECKING:
     from cms.users.models import User
 
 
-class PageInBundleReadyToBePublishedLock(BaseLock):
+class ReleasePageInBundleReadyToBePublishedLock(BaseLock):
     """A lock that is enabled when the release calendar page is in a bundle that is ready to be published."""
 
     def for_user(self, user: "User") -> bool:
