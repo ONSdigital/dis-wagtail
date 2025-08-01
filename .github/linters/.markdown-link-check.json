@@ -7,5 +7,6 @@
   ],
   "retryOn429": true,
   "retryCount": 3,
-  "fallbackRetryDelay": "30s"
+  "fallbackRetryDelay": "30s",
+  "aliveCodes": [200, 301, 302, 303, 307, 308, 0]
 }
