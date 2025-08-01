@@ -9,7 +9,7 @@ from django.utils.translation import gettext_lazy as _
 from modelcluster.fields import ParentalKey
 from wagtail.admin.panels import FieldPanel, InlinePanel
 from wagtail.fields import RichTextField
-from wagtail.models import Orderable, Page
+from wagtail.models import Orderable, Page, PagePermissionTester
 from wagtail.search import index
 
 from cms.articles.models import ArticleSeriesPage, StatisticalArticlePage
@@ -33,6 +33,8 @@ from cms.topics.viewsets import (
 if TYPE_CHECKING:
     from django.http import HttpRequest
     from wagtail.admin.panels import Panel
+
+    from cms.users.models import User
 
 MAX_ITEMS_PER_SECTION = 3
 
@@ -67,13 +69,33 @@ class TopicPageRelatedMethodology(Orderable):
     ]
 
 
+class TopicPagePermissionTester(PagePermissionTester):
+    def can_add_subpage(self) -> bool:
+        """Overrides the core can_add_subpage to consider max_count_per_parent.
+
+        TODO: remove when https://github.com/wagtail/wagtail/issues/13286 is fixed
+        """
+        if not self.user.is_active:
+            return False
+        if (specific_class := self.page.specific_class) is None:
+            return False
+        creatable_subpage_models = [
+            page_model
+            for page_model in specific_class.creatable_subpage_models()
+            if page_model.can_create_at(self.page)
+        ]
+        if specific_class is None or not creatable_subpage_models:
+            return False
+        return self.user.is_superuser or ("add" in self.permissions)
+
+
 class TopicPage(BundledPageMixin, ExclusiveTaxonomyMixin, BasePage):  # type: ignore[django-manager-missing]
     """The Topic page model."""
 
     base_form_class = TopicPageAdminForm
     template = "templates/pages/topic_page.html"
-    parent_page_types: ClassVar[list[str]] = ["themes.ThemePage"]
-    subpage_types: ClassVar[list[str]] = ["articles.ArticleSeriesPage", "methodology.MethodologyPage"]
+    parent_page_types: ClassVar[list[str]] = ["home.HomePage"]
+    subpage_types: ClassVar[list[str]] = ["articles.ArticlesIndexPage", "methodology.MethodologyIndexPage"]
     page_description = "A specific topic page. e.g. 'Public sector finance' or 'Inflation and price indices'."
     label = _("Topic")  # type: ignore[assignment]
 
@@ -185,7 +207,7 @@ class TopicPage(BundledPageMixin, ExclusiveTaxonomyMixin, BasePage):  # type: ig
         )
         newest_qs = newest_qs.order_by("-release_date")
         latest_by_series = (
-            ArticleSeriesPage.objects.child_of(self)
+            ArticleSeriesPage.objects.descendant_of(self)
             .annotate(latest_child_page=Subquery(newest_qs.values("pk")[:1]))
             .values_list("latest_child_page", flat=True)
         )
@@ -223,7 +245,7 @@ class TopicPage(BundledPageMixin, ExclusiveTaxonomyMixin, BasePage):  # type: ig
 
         # supplement the remaining slots.
         pages = list(
-            MethodologyPage.objects.child_of(self)
+            MethodologyPage.objects.descendant_of(self)
             .exclude(pk__in=highlighted_pages)
             .live()
             .public()
@@ -262,3 +284,11 @@ class TopicPage(BundledPageMixin, ExclusiveTaxonomyMixin, BasePage):  # type: ig
             figure_ids = [figure.value["figure_id"] for figure in self.headline_figures]  # pylint: disable=not-an-iterable
             if len(figure_ids) != len(set(figure_ids)):
                 raise ValidationError({"headline_figures": "Duplicate headline figures are not allowed."})
+
+    def permissions_for_user(self, user: "User") -> PagePermissionTester:
+        """Overrides the core permissions_for_user to use our permission tester.
+
+        TopicPagePermissionTester.can_add_subpage() takes into account max_count / max_count_per_parent.
+        TODO: replaces when https://github.com/wagtail/wagtail/issues/13286 is fixed.
+        """
+        return TopicPagePermissionTester(user, self)
