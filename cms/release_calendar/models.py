@@ -26,7 +26,7 @@ from .blocks import (
 )
 from .enums import NON_PROVISIONAL_STATUSES, ReleaseStatus
 from .forms import ReleaseCalendarPageAdminForm
-from .locks import PageInBundleReadyToBePublishedLock
+from .locks import ReleasePageInBundleReadyToBePublishedLock
 from .panels import ReleaseCalendarBundleNotePanel
 
 if TYPE_CHECKING:
@@ -291,6 +291,6 @@ class ReleaseCalendarPage(BundledPageMixin, BasePage):  # type: ignore[django-ma
 
     def get_lock(self) -> Optional["BaseLock"]:
         if self.active_bundle and self.active_bundle.is_ready_to_be_published:
-            return PageInBundleReadyToBePublishedLock(self)
+            return ReleasePageInBundleReadyToBePublishedLock(self)
 
         return super().get_lock()
