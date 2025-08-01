@@ -31,7 +31,7 @@ class FeaturedSeriesPageChooseViewMixin:
         return [
             self.title_column,  # type: ignore[attr-defined]
             Column("parent", label="Topic", accessor="get_parent"),
-            LocaleColumn(),
+            LocaleColumn(classname="w-text-16 w-w-[120px]"),  # w-w-[120px] is used to adjust the width
             DateColumn(
                 "updated",
                 label="Updated",

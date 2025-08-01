@@ -9,11 +9,11 @@ from django.utils.text import get_text_list
 from django.views.generic import FormView
 from wagtail.admin import messages
 from wagtail.models import Page
-from wagtail.permission_policies import ModelPermissionPolicy
 
 from cms.bundles.admin_forms import AddToBundleForm
 from cms.bundles.mixins import BundledPageMixin
 from cms.bundles.models import Bundle, BundlePage
+from cms.bundles.permissions import user_can_manage_bundles
 
 if TYPE_CHECKING:
     from django.http import HttpRequest, HttpResponseBase, HttpResponseRedirect
@@ -35,12 +35,10 @@ class AddToBundleView(FormView):
             raise Http404("Cannot add this page type to a bundle")
 
         page_perms = self.page_to_add.permissions_for_user(request.user)  # type: ignore[attr-defined]
-        # TODO: add the relevant permission checks
         if not (page_perms.can_edit() or page_perms.can_publish()):
             raise PermissionDenied
 
-        permission_policy = ModelPermissionPolicy(Bundle)
-        if not permission_policy.user_has_permission(request.user, "change"):
+        if not user_can_manage_bundles(request.user):
             raise PermissionDenied
 
         self.goto_next = None

@@ -6,6 +6,7 @@ from django.templatetags.static import static
 from django.utils.html import format_html
 from wagtail import hooks
 from wagtail.admin import messages
+from wagtail.admin.action_menu import CancelWorkflowMenuItem
 
 from cms.bundles.mixins import BundledPageMixin
 
@@ -27,6 +28,10 @@ def amend_page_action_menu_items(menu_items: list["ActionMenuItem"], request: "H
     if page.latest_revision and page.latest_revision.user_id == request.user.pk:  # type: ignore[attr-defined]
         # hide the "approve" action items if the current user was the last editor
         menu_items[:] = [item for item in menu_items if item.name != "approve"]
+
+    if (bundle := getattr(page, "active_bundle", None)) and bundle.is_ready_to_be_published:
+        # remove the cancel workflow menu item from available actions if the page is in a bundle ready to be published
+        menu_items[:] = [item for item in menu_items if not isinstance(item, CancelWorkflowMenuItem)]
 
 
 @hooks.register("before_edit_page")

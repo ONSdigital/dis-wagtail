@@ -16,7 +16,7 @@ from cms.core.models import ContactDetails
 from cms.datasets.blocks import DatasetStoryBlock
 from cms.datasets.models import Dataset
 from cms.release_calendar.enums import ReleaseStatus
-from cms.release_calendar.locks import PageInBundleReadyToBePublishedLock
+from cms.release_calendar.locks import ReleasePageInBundleReadyToBePublishedLock
 from cms.release_calendar.models import ReleaseCalendarIndex
 from cms.release_calendar.tests.factories import ReleaseCalendarPageFactory
 
@@ -234,7 +234,7 @@ class ReleaseCalendarPageModelTestCase(WagtailTestUtils, TestCase):
 
     def test_get_lock_when_linked_with_bundle_ready_to_be_published(self):
         BundleFactory(release_calendar_page=self.page, status=BundleStatus.APPROVED)
-        self.assertIsInstance(self.page.get_lock(), PageInBundleReadyToBePublishedLock)
+        self.assertIsInstance(self.page.get_lock(), ReleasePageInBundleReadyToBePublishedLock)
 
 
 class ReleaseCalendarPageAdminTests(WagtailTestUtils, TestCase):

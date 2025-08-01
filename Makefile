@@ -161,7 +161,7 @@ collectstatic:  ## Collect static files from all Django apps
 
 .PHONY: migrate
 migrate: ## Apply the database migrations
-	poetry run python ./manage.py migrate
+	poetry run python ./manage.py locked_migrate
 
 .PHONY: createsuperuser
 createsuperuser: ## Create a super user with a default username and password

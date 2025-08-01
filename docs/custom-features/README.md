@@ -8,3 +8,4 @@ The following are project-specific features:
 - [Migration-friendly StreamFields](migration_friendly_streamfields.md)
 - [Deployment environments](deployment-environments.md)
 - [DB read replica](db-read-replica.md)
+- [Locked migrate](locked-migrate.md)

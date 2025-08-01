@@ -9,12 +9,48 @@ from wagtail.blocks.stream_block import StreamValue
 from wagtail.models import PageLogEntry
 
 from cms.core.utils import FORMULA_INDICATOR, latex_formula_to_svg
-from cms.taxonomy.forms import DeduplicateTopicsAdminForm
 
 logger = logging.getLogger(__name__)
 
 
 LATEX_VALIDATION_ERROR = "The equation is not valid LaTeX. Please check the syntax and try again."
+
+
+class DeduplicateInlinePanelAdminForm(WagtailAdminPageForm):
+    def deduplicate_formset(self, *, formset: str, target_field: str) -> None:
+        """Deduplicate InlinePanel chosen items.
+
+        Wagtail choosers currently do not have the ability to remove already selected values.
+        so the same item can be selected multiple times, so this method helps with deduplication.
+
+        TODO: Revisit once https://github.com/wagtail/wagtail/issues/10496 is fixed.
+        """
+        if not (hasattr(self, "formsets") and formset in self.formsets):
+            return None
+
+        chosen = set()
+
+        for idx, form in enumerate(self.formsets[formset].forms):
+            if not form.is_valid():
+                continue
+            item = form.clean().get(target_field)
+            if item is None or item in chosen:
+                # tidy up in case the page reference is empty or we saw this already
+                self.formsets[formset].forms[idx].cleaned_data["DELETE"] = True
+                continue
+
+            chosen.add(item)
+
+        return None
+
+
+class DeduplicateTopicsAdminForm(DeduplicateInlinePanelAdminForm):
+    def clean(self) -> dict[str, Any] | None:
+        cleaned_data: dict[str, Any] | None = super().clean()
+
+        self.deduplicate_formset(formset="topics", target_field="topic")
+
+        return cleaned_data
 
 
 class PageWithCorrectionsAdminForm(DeduplicateTopicsAdminForm):

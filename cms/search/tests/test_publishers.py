@@ -7,7 +7,7 @@ from wagtail.test.utils import WagtailTestUtils
 from cms.articles.tests.factories import StatisticalArticlePageFactory
 from cms.methodology.tests.factories import MethodologyPageFactory
 from cms.release_calendar.tests.factories import ReleaseCalendarPageFactory
-from cms.search.publishers import BasePublisher, KafkaPublisher, LogPublisher
+from cms.search.publishers import BasePublisher, IAMKafkaTokenProvider, KafkaPublisher, LogPublisher
 from cms.search.tests.helpers import ResourceDictAssertions
 from cms.standard_pages.tests.factories import IndexPageFactory, InformationPageFactory
 
@@ -133,6 +133,22 @@ class KafkaPublisherTests(TestCase, ResourceDictAssertions):
         self.assertEqual(message_called["uri"], page.url_path)
 
         mock_future.get.assert_called_once_with(timeout=10)
+
+    def test_token_provider_cache_key(self):
+        token_provider = IAMKafkaTokenProvider()
+        self.assertEqual(
+            token_provider.token.get_cache_key(token_provider), "cms.search.publishers.IAMKafkaTokenProvider"
+        )
+
+    @patch("cms.search.publishers.MSKAuthTokenProvider.generate_auth_token")
+    def test_token_provider(self, mock_generate_auth_token):
+        mock_generate_auth_token.return_value = ("msk-token", None)
+        token_provider = IAMKafkaTokenProvider()
+
+        self.assertEqual(token_provider.token(), "msk-token")
+        self.assertEqual(token_provider.token(), "msk-token")
+
+        mock_generate_auth_token.assert_called_once()
 
 
 class LogPublisherTests(TestCase, ResourceDictAssertions):
