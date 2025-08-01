@@ -20,10 +20,8 @@ class ReleaseDateChangeBlockDefinition extends ReadonlyStructBlockDefinition {
       `div[data-contentpath="previous_date"]:has(label[for="${prefix}-previous_date"])`,
     );
     const previousDateLabel = previousDateDiv.querySelector(`label[for="${prefix}-previous_date"]`);
-    const previousDateInput = previousDateDiv.querySelector(
-      `input[type="text"]#${prefix}-previous_date`,
-    );
-    const helpText = previousDateDiv.querySelector(`div#${prefix}-previous_date-helptext`);
+    const previousDateInput = document.getElementById(`${prefix}-previous_date`);
+    const helpText = previousDateDiv.querySelector(`${prefix}-previous_date-helptext`);
 
     if (previousDateInput.value === '') {
       if (this.previous_date) {
