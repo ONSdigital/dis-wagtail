@@ -1,0 +1,5 @@
+{% include "wagtailadmin/panels/field_panel.html" %}
+{# We need to pass this data to our JavaScript, used in release-date-change-block.js #}
+{% if previous_release_date %}
+    {{ previous_release_date|json_script:"previous-release-date" }}
+{% endif %}

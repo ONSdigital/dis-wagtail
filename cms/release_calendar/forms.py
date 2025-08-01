@@ -33,6 +33,10 @@ class ReleaseCalendarPageAdminForm(WagtailAdminPageForm):
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
 
+        if not self.instance.pk:
+            # Remove the field from the form as there's no previous release date to reference
+            del self.fields["changes_to_release_date"]
+
         # Get the live version of the page for validation comparisons
         self.live_page: "ReleaseCalendarPage | None" = None  # noqa: UP037
         if self.instance and self.instance.pk:
