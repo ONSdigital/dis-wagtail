@@ -5,7 +5,6 @@ Feature: CMS users can draft, edit, and publish release pages
     And a superuser logs into the admin site
     And the user navigates to the release calendar page
 
-# Time input features
 
   Scenario: A CMS user has several datetime features available when editing the release calendar page
     When the user clicks "Add child page" to create a new draft release page
@@ -41,7 +40,6 @@ Feature: CMS users can draft, edit, and publish release pages
       | Confirmed   |
       | Cancelled   |
 
-# Preview modes
 
  Scenario Outline: A CMS user can use preview modes to preview the page at different statuses
     When the user clicks "Add child page" to create a new draft release page
@@ -76,7 +74,6 @@ Feature: CMS users can draft, edit, and publish release pages
       | pre-release access information |
       | a release date change          | 
 
-# Release date and next release date validations
 
   Scenario: A CMS user can see release date text field for a provisional release page
     When the user clicks "Add child page" to create a new draft release page
@@ -95,7 +92,7 @@ Feature: CMS users can draft, edit, and publish release pages
   Scenario Outline: Validation errors are raised when invalid release dates are entered
     When the user clicks "Add child page" to create a new draft release page
     And the user enters some example content on the page
-    And the user adds <Input>
+    And the user adds <Input> to the release calendar page
     And the user clicks "Publish"
     Then an error message is displayed to say the page could not be created
     And the user sees a validation error message: <Error>
@@ -108,7 +105,6 @@ Feature: CMS users can draft, edit, and publish release pages
       | both next release date and next release date text   | cannot have both next release date and next release date text |
 
 
-# Cancelled notice
 
   Scenario: Validation error is raised when a cancelled page is published without a notice
     When the user clicks "Add child page" to create a new draft release page
@@ -118,7 +114,6 @@ Feature: CMS users can draft, edit, and publish release pages
     Then an error message is displayed to say the page could not be created
     And the user sees a validation error message: a notice must be added
 
-# Prerelease Access
 
   Scenario Outline: Validation errors are raised when invalid data is input for pre-release access
     When the user clicks "Add child page" to create a new draft release page
@@ -126,7 +121,7 @@ Feature: CMS users can draft, edit, and publish release pages
     And <Feature> <is/are> added under pre-release access
     And the user clicks "Publish"
     Then an error message is displayed to say the page could not be created 
-    And the user sees a validation error message about the <Error>
+    And under pre-release access, the user sees a validation error message: <Error>
     Examples:
       | Feature                               | is/are | Error                        |
       | multiple descriptions                 | are    | maximum descriptions allowed |
@@ -135,7 +130,6 @@ Feature: CMS users can draft, edit, and publish release pages
       | an empty table                        | is     | empty table                  |
  
 
-# Changes to release date
 
   Scenario: A CMS user cannot delete a release date change once the release calendar page is published
     When the user publishes a page with example content
@@ -148,19 +142,19 @@ Feature: CMS users can draft, edit, and publish release pages
   Scenario: Validation error is raised when multiple release date changes are added
     When the user publishes a page with example content
     And the user returns to editing the published page
-    And the user adds multiple release date changes
+    And the user adds multiple release date changes under changes to release date
     And the user clicks "Publish"
     Then an error message is displayed to say the page could not be saved
-    And the user sees a validation error message about the multiple release date changes
+    And under changes to release date, the user sees a validation error message: multiple release date changes
 
 
   Scenario Outline: Validation errors are raised when release date and date change log fields are inconsistent on a confirmed page
   When the user publishes a "Confirmed" page with example content
   And the user returns to editing the published page
-  And the user adds <Input>
+  And the user adds <Input> under changes to release date
   And the user clicks "Publish"
   Then an error message is displayed to say the page could not be saved
-  And the user sees a validation error message about the <Error>
+  And under changes to release date, the user sees a validation error message: <Error>
 
 Examples:
   | Input                                          | Error                                        |
@@ -174,7 +168,7 @@ Scenario: A CMS user can add another release date change after the first one is 
     And the user adds a release date change to the release calendar page
     And the user clicks "Publish"
     And the user returns to editing the published page
-    And the user adds another release date change
+    And the user adds another release date change under changes to release date
     And the user clicks the "Save Draft" button
     Then the release calendar page is successfully updated
     # Done twice on purpose to check validation is working

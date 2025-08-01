@@ -178,6 +178,18 @@ def add_feature(context: Context, feature: str):
         change_to_release_date_section.get_by_role("button", name="Insert a block").click()
         change_to_release_date_section.get_by_label("Previous date*").fill("2024-12-20 14:30")
         change_to_release_date_section.get_by_label("Reason for change*").fill("Updated due to data availability")
+
+    elif feature == "an invalid release date text":
+        context.page.get_by_label("Or, release date text").fill("Invalid 4356")
+    elif feature == "an invalid next release date text":
+        context.page.get_by_role("textbox", name="Or, next release date text").fill("Invalid 6444")
+    elif feature == "the next release date to be before the release date":
+        context.page.get_by_role("textbox", name="Release date*").fill("2024-12-25")
+        context.page.locator("#id_next_release_date").fill("2023-12-25")
+    elif feature == "both next release date and next release date text":
+        context.page.locator("#id_next_release_date").fill("2025-12-25")
+        context.page.locator("#id_next_release_date_text").fill("December 2025")
+
     else:
         raise ValueError(f"Unsupported page feature: {feature}")
 
@@ -199,6 +211,7 @@ def display_features_in_preview_tab(context: Context, feature: str):
         expect(page.get_by_text("second")).to_be_visible()
         expect(page.get_by_text("Description")).to_be_visible()
     elif feature == "a release date change":
+        # add date
         expect(page.get_by_text("Updated due to data availability")).to_be_visible()
     else:
         raise ValueError(f"Unsupported page feature: {feature}")
@@ -215,29 +228,6 @@ def check_that_default_status_is_provisional_and_release_date_text_is_visible(
 @then("the date text field is not visible")
 def check_date_text_field(context: Context):
     expect(context.page.get_by_text("Or, release date text")).not_to_be_visible()
-
-
-# to do: add all whens to same step add feature
-@when("the user adds an invalid release date text")
-def user_inputs_invalid_release_date_text(context: Context):
-    context.page.get_by_label("Or, release date text").fill("Invalid 4356")
-
-
-@when("the user adds an invalid next release date text")
-def user_inputs_invalid_next_release_date_text(context: Context):
-    context.page.get_by_role("textbox", name="Or, next release date text").fill("Invalid 6444")
-
-
-@when("the user adds the next release date to be before the release date")
-def user_adds_next_release_date_to_be_before_release_date(context: Context):
-    context.page.get_by_role("textbox", name="Release date*").fill("2024-12-25")
-    context.page.locator("#id_next_release_date").fill("2023-12-25")
-
-
-@when("the user adds both next release date and next release date text")
-def user_adds_both_next_and_release_date(context: Context):
-    context.page.locator("#id_next_release_date").fill("2025-12-25")
-    context.page.locator("#id_next_release_date_text").fill("December 2025")
 
 
 @then("an error message is displayed to say the page could not be created")
@@ -271,6 +261,7 @@ def error_invalid_release_calendar_page_input(context: Context, error: str):
     # Notice error
     elif error == "a notice must be added":
         expect(context.page.get_by_text("The notice field is required when the release is cancelled")).to_be_visible()
+
     else:
         raise ValueError(f"Unsupported page feature: {error}")
 
@@ -292,8 +283,8 @@ def add_pre_release_access_info(context: Context, feature: str):
 
 
 # could combine with other error messages
-@then("the user sees a validation error message about the {error}")
-def error_invalid_info(context: Context, error: str):
+@then("under pre-release access, the user sees a validation error message: {error}")
+def error_invalid_pre_release_access(context: Context, error: str):
     if error == "maximum descriptions allowed":
         expect(context.page.get_by_text("Description: The maximum number of items is 1")).to_be_visible()
     elif error == "maximum tables allowed":
@@ -302,27 +293,6 @@ def error_invalid_info(context: Context, error: str):
         expect(context.page.get_by_text("Select an option for Table headers")).to_be_visible()
     elif error == "empty table":
         expect(context.page.get_by_text("The table cannot be empty")).to_be_visible()
-    # release date changes
-    elif error == "multiple release date changes":
-        expect(
-            context.page.get_by_text("Only one 'Changes to release date' entry can be added per release date change.")
-        ).to_be_visible()
-    elif error == "release date change with no date change log":
-        expect(
-            context.page.get_by_text(
-                "If a confirmed calendar entry needs to be rescheduled, the 'Changes to release date'"
-                " field must be filled out."
-            )
-        ).to_be_visible()
-    elif error == "date change log with no release date change":
-        expect(
-            context.page.get_by_text(
-                "You have added a 'Changes to release date' entry, but the release date is the same"
-                " as the published version."
-            )
-        ).to_be_visible()
-    else:
-        raise ValueError(f"Unsupported error: {error}")
 
 
 @when("the user publishes a page with example content")
@@ -349,11 +319,24 @@ def user_publishes_confirmed_release_page_with_example_content(context: Context)
     user_clicks_publish(context)
 
 
-# to do: add all whens to same step add feature
-@when("the user adds multiple release date changes")
-def user_adds_multiple_release_date_changes(context: Context):
-    add_feature(context, "a release date change")
-    user_adds_another_release_date_change(context)
+@when("the user adds {feature} under changes to release date")
+def add_changes_to_release_date_info(context: Context, feature: str):
+    page = context.page
+    if feature == "multiple release date changes":
+        add_feature(context, "a release date change")
+        add_changes_to_release_date_info(context, "another release date change")
+    elif feature == "a release date change with no date change log":
+        page.get_by_role("textbox", name="Release date*").fill("2025-01-25")
+
+    elif feature == "a date change log but no release date change":
+        add_feature(context, "a release date change")
+    elif feature == "another release date change":
+        change_to_release_date_section = page.locator("#panel-child-content-changes_to_release_date-section")
+        change_to_release_date_section.get_by_role("button", name="Insert a block").nth(1).click()
+        change_to_release_date_section.get_by_label("Previous date*").nth(1).fill("2024-12-19 12:15")
+        change_to_release_date_section.get_by_label("Reason for change*").nth(1).fill("New update to release schedule")
+    else:
+        raise ValueError(f"Unsupported feature: {feature}")
 
 
 @then("an error message is displayed to say the page could not be saved")
@@ -361,24 +344,28 @@ def error_page_not_saved(context: Context):
     expect(context.page.get_by_text("The page could not be saved due to validation errors")).to_be_visible()
 
 
-@when("the user adds a release date change with no date change log")
-def user_enters_different_release_date(context: Context):
-    context.page.get_by_role("textbox", name="Release date*").fill("2025-01-25")
-
-
-# to edit
-@when("the user adds a date change log but no release date change")
-def user_enters_date_change_log(context: Context):
-    add_feature(context, "a release date change")
-
-
-@step("the user adds another release date change")
-def user_adds_another_release_date_change(context: Context):
-    page = context.page
-    change_to_release_date_section = page.locator("#panel-child-content-changes_to_release_date-section")
-    change_to_release_date_section.get_by_role("button", name="Insert a block").nth(1).click()
-    change_to_release_date_section.get_by_label("Previous date*").nth(1).fill("2024-12-19 12:15")
-    change_to_release_date_section.get_by_label("Reason for change*").nth(1).fill("New update to release schedule")
+@then("under changes to release date, the user sees a validation error message: {error}")
+def error_invalid_changes_to_release_date(context: Context, error: str):
+    if error == "multiple release date changes":
+        expect(
+            context.page.get_by_text("Only one 'Changes to release date' entry can be added per release date change.")
+        ).to_be_visible()
+    elif error == "release date change with no date change log":
+        expect(
+            context.page.get_by_text(
+                "If a confirmed calendar entry needs to be rescheduled, the 'Changes to release date'"
+                " field must be filled out."
+            )
+        ).to_be_visible()
+    elif error == "date change log with no release date change":
+        expect(
+            context.page.get_by_text(
+                "You have added a 'Changes to release date' entry, but the release date is the same"
+                " as the published version."
+            )
+        ).to_be_visible()
+    else:
+        raise ValueError(f"Unsupported error: {error}")
 
 
 @then("the release calendar page is successfully updated")
