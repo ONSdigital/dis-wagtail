@@ -43,9 +43,9 @@ def _extract_item(
         item[text_key] = value["title"]
         item["url"] = value["external_url"]
 
-    elif value["page"] and value["page"].live:
-        item[text_key] = value["title"] or value["page"].title
-        item["url"] = value["page"].get_url(request=request)
+    elif (page := value.get("page")) and page.live:
+        item[text_key] = value["title"] or getattr(page.specific_deferred, "display_title", page.title)
+        item["url"] = page.get_url(request=request)
 
     if include_description and "description" in value:
         item["description"] = value["description"]
