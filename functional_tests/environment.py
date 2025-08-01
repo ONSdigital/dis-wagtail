@@ -1,3 +1,6 @@
+import datetime
+import importlib
+import json
 import os
 from pathlib import Path
 
@@ -24,8 +27,41 @@ os.environ["DJANGO_ALLOW_ASYNC_UNSAFE"] = "True"
 # but that happens too late to solve import time issues.
 django.setup()
 
-import importlib
-import base64
+# Import auth utilities after Django setup
+
+
+from cms.auth import utils as auth_utils
+
+
+class CognitoTestSettings:
+    """Cognito authentication test settings."""
+
+    @staticmethod
+    def get_override_settings() -> dict:
+        """Get Django settings overrides for Cognito tests."""
+        return {
+            # Core settings
+            "DEBUG": True,  # Enable debug for better error messages
+            "AWS_COGNITO_LOGIN_ENABLED": True,
+            "AWS_COGNITO_APP_CLIENT_ID": "test-client-id",
+            "AWS_REGION": "eu-west-2",
+            "AWS_COGNITO_USER_POOL_ID": "test-pool",
+            "IDENTITY_API_BASE_URL": "https://cognito-idp.eu-west-2.amazonaws.com/test-pool",
+            # Cookie settings
+            "ACCESS_TOKEN_COOKIE_NAME": "access_token",
+            "ID_TOKEN_COOKIE_NAME": "id",
+            "CSRF_COOKIE_NAME": "csrftoken",
+            "CSRF_HEADER_NAME": "HTTP_X_CSRFTOKEN",
+            # Auth settings
+            "AUTH_TOKEN_REFRESH_URL": "/refresh/",
+            "SESSION_RENEWAL_OFFSET_SECONDS": 60,
+            "WAGTAIL_CORE_ADMIN_LOGIN_ENABLED": True,
+            "WAGTAILADMIN_HOME_PATH": "admin/",
+            # Group names
+            "PUBLISHING_ADMIN_GROUP_NAME": "Publishing Admins",
+            "PUBLISHING_OFFICER_GROUP_NAME": "Publishing Officers",
+            "VIEWERS_GROUP_NAME": "Viewers",
+        }
 
 
 def before_all(context: Context):
@@ -111,10 +147,37 @@ def before_scenario(context: Context, scenario: Scenario):
         # Otherwise use the default context
         context.playwright_context = context.browser_context
 
+    # Set up request capture BEFORE creating the page
+    context._requests = []
+
+    def capture_request(route, request):
+        context._requests.append(request)
+
+        # Mock the refresh endpoint for PUT or POST requests
+        if request.url.endswith("/refresh/") and request.method in ["POST", "PUT"]:
+            print(f"[CAPTURED] {request.method} to {request.url}")
+            # Mock successful refresh response
+            route.fulfill(
+                status=200,
+                content_type="application/json",
+                body=json.dumps(
+                    {"expirationTime": int((datetime.datetime.now() + datetime.timedelta(hours=1)).timestamp() * 1000)}
+                ),
+            )
+        elif request.url.endswith("/extend-session/") and request.method == "POST":
+            print(f"[CAPTURED] POST to extend-session: {request.url}")
+            route.fulfill(
+                status=200,
+                content_type="application/json",
+                body=json.dumps({"status": "success", "message": "Session extended."}),
+            )
+        else:
+            route.continue_()
+
+    context.playwright_context.route("**/*", capture_request)
+
     context.page = context.playwright_context.new_page()
 
-    # Set the page to the context so it can be used in steps and it can help with debugging auth.js errors
-    # and dis-authorisation-client-js library errors
     context.page.on("console", lambda msg: print(f"[PAGE][{msg.type}] {msg.text}"))
 
     if context.playwright_trace:
@@ -140,87 +203,24 @@ def after_scenario(context: Context, scenario: Scenario):
 
 
 def before_tag(context: Context, tag: str):
+    """Handle tag-specific setup."""
     if tag == "cognito_enabled":
-        print("\n=== ENABLING COGNITO ===")
-
-        # Import after Django setup
-        from cms.auth import utils as auth_utils
-        from cms.auth.tests.helpers import generate_rsa_keypair
-
-        # Apply settings
-        context.aws_override = override_settings(
-            # Core settings
-            DEBUG=True,  # Enable debug for better error messages
-            AWS_COGNITO_LOGIN_ENABLED=True,
-            AWS_COGNITO_APP_CLIENT_ID="test-client-id",
-            AWS_REGION="eu-west-2",
-            AWS_COGNITO_USER_POOL_ID="test-pool",
-            IDENTITY_API_BASE_URL="https://cognito-idp.eu-west-2.amazonaws.com/test-pool",
-            ACCESS_TOKEN_COOKIE_NAME="access_token",
-            ID_TOKEN_COOKIE_NAME="id",
-            AUTH_TOKEN_REFRESH_URL="/refresh/",
-            SESSION_RENEWAL_OFFSET_SECONDS=3,
-            WAGTAIL_CORE_ADMIN_LOGIN_ENABLED=True,
-            WAGTAILADMIN_HOME_PATH="admin/",
-            CSRF_COOKIE_NAME="csrftoken",
-            CSRF_HEADER_NAME="HTTP_X_CSRFTOKEN",
-            PUBLISHING_ADMIN_GROUP_NAME="Publishing Admins",
-            PUBLISHING_OFFICER_GROUP_NAME="Publishing Officers",
-            VIEWERS_GROUP_NAME="Viewers",
-        )
+        # Apply Cognito test settings
+        settings = CognitoTestSettings.get_override_settings()
+        context.aws_override = override_settings(**settings)
         context.aws_override.enable()
-
-        # FORCE HOOK REGISTRATION
-        # Since the hook registration is conditional on AWS_COGNITO_LOGIN_ENABLED,
-        # and that was False at import time, we need to manually register the hook
-        from wagtail import hooks as wagtail_hooks
-        from django.utils.html import format_html, json_script
-        from django_jinja.builtins.filters import static
-        from cms.auth.utils import get_auth_config
-
-        # Define the hook function directly
-        @wagtail_hooks.register("insert_global_admin_js")
-        def global_admin_auth_js() -> str:
-            """Insert a safe JSON payload and defer-loaded bundle into the Wagtail admin."""
-            config_tag = json_script(get_auth_config(), element_id="auth-config")
-            return format_html(
-                '{}<script src="{}" defer></script>',
-                config_tag,
-                static("js/auth.js"),
-            )
-
-        print("Manually registered global_admin_auth_js hook")
-
-        print("Settings applied:")
-        print(f"  AWS_COGNITO_LOGIN_ENABLED: {django.conf.settings.AWS_COGNITO_LOGIN_ENABLED}")
-        print(f"  AWS_COGNITO_APP_CLIENT_ID: {django.conf.settings.AWS_COGNITO_APP_CLIENT_ID}")
-
-        # Generate test keypair
-        context.test_keypair = generate_rsa_keypair()
-        public_b64 = base64.b64encode(context.test_keypair.public_der).decode()
-        context.test_jwks = {context.test_keypair.kid: public_b64}
-
-        print(f"Generated keypair with KID: {context.test_keypair.kid}")
-
-        # Mock get_jwks
-        importlib.reload(auth_utils)
-        context.original_get_jwks = auth_utils.get_jwks
-        auth_utils.get_jwks = lambda: context.test_jwks
-        print("Mocked get_jwks function")
 
 
 def after_tag(context: Context, tag: str):
+    """Handle tag-specific cleanup."""
     if tag == "cognito_enabled" and hasattr(context, "aws_override"):
-        print("\n=== DISABLING COGNITO ===")
-
-        from cms.auth import utils as auth_utils
-
+        # Disable settings override
         context.aws_override.disable()
 
+        # Restore original get_jwks if it was mocked
         if hasattr(context, "original_get_jwks"):
             auth_utils.get_jwks = context.original_get_jwks
+            delattr(context, "original_get_jwks")
 
-        importlib.reload(auth_utils)  # functional_tests/environment_debug.py
-
-
-# Minimal environment for debugging auth issues
+        # Reload auth utils to ensure clean state
+        importlib.reload(auth_utils)
