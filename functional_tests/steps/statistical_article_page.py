@@ -252,6 +252,9 @@ def user_adds_accordion_section(context: Context):
     page.get_by_label("Title*").fill("Test Accordion Section")
     page.get_by_role("region", name="Content*").get_by_role("textbox").nth(3).fill("Test accordion content")
     context.page.wait_for_timeout(500)  # Wait for JS to process
+    page.locator(
+        "#panel-child-content-bundle-heading"
+    ).scroll_into_view_if_needed()  # Scroll to the top to avoid overlap with the "Save as draft" button
 
 
 @then("the published statistical article page has the added correction")
