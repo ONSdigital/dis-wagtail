@@ -1,14 +1,15 @@
 import io
+from collections.abc import Iterable
 from datetime import date, datetime
 from threading import Lock
 from typing import TYPE_CHECKING, Any, Optional, TypedDict
 
 import matplotlib as mpl
 from django.conf import settings
-from django.db.models import QuerySet
 from django.utils.formats import date_format
 from django.utils.translation import gettext_lazy as _
 from matplotlib.figure import Figure
+from wagtail.models import Page
 
 from cms.core.custom_date_format import ons_date_format
 from cms.core.enums import RelatedContentType
@@ -30,17 +31,54 @@ mpl.rcParams.update(
 if TYPE_CHECKING:
     from django.http import HttpRequest
     from django_stubs_ext import StrOrPromise
-    from wagtail.models import Page
 
 
 class DocumentListItem(TypedDict):
-    title: dict[str, str]
+    title: dict[str, "StrOrPromise"]
     metadata: dict[str, Any]
-    description: str
+    description: "StrOrPromise"
+
+
+# Type alias for cleaner function signatures
+PageDataCollection = Iterable[dict[str, Any]]
+
+
+def _format_external_link(page_dict: dict[str, Any]) -> DocumentListItem:
+    """Format external link dictionary into DocumentListItem."""
+    return {
+        "title": {
+            "text": page_dict["title"],
+            "url": page_dict["url"],
+        },
+        "metadata": {
+            "object": {"text": _("Article")},
+        },
+        "description": page_dict.get("description", ""),
+    }
+
+
+def _format_page_object(
+    page: "Page", request: Optional["HttpRequest"] = None, custom_title: Optional[str] = None
+) -> DocumentListItem:
+    """Format page object into DocumentListItem."""
+    page_datum: DocumentListItem = {
+        "title": {
+            "text": custom_title or getattr(page, "display_title", page.title),
+            "url": page.get_url(request=request),
+        },
+        "metadata": {
+            "object": {"text": getattr(page, "label", _("Page"))},
+        },
+        "description": getattr(page, "listing_summary", "") or getattr(page, "summary", ""),
+    }
+    if release_date := getattr(page, "release_date", None):
+        page_datum["metadata"]["date"] = get_document_metadata_date(release_date)
+    return page_datum
 
 
 def get_formatted_pages_list(
-    pages: list["Page"] | QuerySet["Page"], request: Optional["HttpRequest"] = None
+    pages: PageDataCollection,
+    request: Optional["HttpRequest"] = None,
 ) -> list[DocumentListItem]:
     """Returns a formatted list of page data for the documentList DS macro.
 
@@ -48,18 +86,16 @@ def get_formatted_pages_list(
     """
     data = []
     for page in pages:
-        datum: DocumentListItem = {
-            "title": {
-                "text": getattr(page, "display_title", page.title),
-                "url": page.get_url(request=request),
-            },
-            "metadata": {
-                "object": {"text": getattr(page, "label", _("Page"))},
-            },
-            "description": getattr(page, "listing_summary", "") or getattr(page, "summary", ""),
-        }
-        if release_date := page.release_date:
-            datum["metadata"]["date"] = get_document_metadata_date(release_date)
+        if page.get("is_external", False):
+            datum = _format_external_link(page)
+        elif "internal_page" in page:
+            # Handle dict format with internal_page and optional title
+            internal_page = page["internal_page"]
+            custom_title = page.get("title")
+            datum = _format_page_object(internal_page, request, custom_title)
+        else:
+            # This should not happen in production but is a safeguard for unexpected data types
+            continue
         data.append(datum)
     return data
 

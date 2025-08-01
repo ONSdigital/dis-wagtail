@@ -24,6 +24,8 @@ class TopicPageRelatedArticleFactory(factory.django.DjangoModelFactory):
 
     parent = factory.SubFactory(TopicPageFactory)
     page = factory.SubFactory("cms.articles.tests.factories.StatisticalArticlePageFactory")
+    external_url = ""
+    title = ""
     sort_order = factory.Sequence(lambda n: n)
 
 
