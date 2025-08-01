@@ -10,7 +10,8 @@ Feature: Users can tag pages with topics
 
         Examples:
             | page  |
-            | theme |
+            # TODO: day 2, uncomment when we re-allow creating themes
+            # | theme |
             | topic |
 
     Scenario Outline: Theme and Topic pages have exclusive, one to one topic tags
@@ -22,9 +23,10 @@ Feature: Users can tag pages with topics
 
         Examples:
             | existing page | new page |
-            | theme         | theme    |
-            | theme         | topic    |
-            | topic         | theme    |
+            # TODO: day 2, uncomment when we re-allow creating themes
+            # | theme         | theme    |
+            # | theme         | topic    |
+            # | topic         | theme    |
             | topic         | topic    |
 
     Scenario: Other page types, for example the information page, can be tagged with multiple topics
