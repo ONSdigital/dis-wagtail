@@ -211,7 +211,10 @@ def display_features_in_preview_tab(context: Context, feature: str):
         expect(page.get_by_text("second")).to_be_visible()
         expect(page.get_by_text("Description")).to_be_visible()
     elif feature == "a release date change":
-        # add date
+        expect(page.get_by_text("Changes to this release date")).to_be_visible()
+        expect(page.get_by_text("Previous date")).to_be_visible()
+        expect(page.get_by_text("20 December 2024 2:30pm")).to_be_visible()
+        expect(page.get_by_text("Reason for change")).to_be_visible()
         expect(page.get_by_text("Updated due to data availability")).to_be_visible()
     else:
         raise ValueError(f"Unsupported page feature: {feature}")
@@ -282,17 +285,20 @@ def add_pre_release_access_info(context: Context, feature: str):
         raise ValueError(f"Unsupported feature: {feature}")
 
 
-# could combine with other error messages
 @then("under pre-release access, the user sees a validation error message: {error}")
 def error_invalid_pre_release_access(context: Context, error: str):
-    if error == "maximum descriptions allowed":
-        expect(context.page.get_by_text("Description: The maximum number of items is 1")).to_be_visible()
-    elif error == "maximum tables allowed":
-        expect(context.page.get_by_text("Basic table: The maximum number of items is 1")).to_be_visible()
-    elif error == "unselected options":
-        expect(context.page.get_by_text("Select an option for Table headers")).to_be_visible()
-    elif error == "empty table":
-        expect(context.page.get_by_text("The table cannot be empty")).to_be_visible()
+    error_messages = {
+        "maximum descriptions allowed": "Description: The maximum number of items is 1",
+        "maximum tables allowed": "Basic table: The maximum number of items is 1",
+        "unselected options": "Select an option for Table headers",
+        "empty table": "The table cannot be empty",
+    }
+
+    message = error_messages.get(error)
+    if message:
+        expect(context.page.get_by_text(message)).to_be_visible()
+    else:
+        raise ValueError(f"Unsupported error: {error}")
 
 
 @when("the user publishes a page with example content")
@@ -346,24 +352,23 @@ def error_page_not_saved(context: Context):
 
 @then("under changes to release date, the user sees a validation error message: {error}")
 def error_invalid_changes_to_release_date(context: Context, error: str):
-    if error == "multiple release date changes":
-        expect(
-            context.page.get_by_text("Only one 'Changes to release date' entry can be added per release date change.")
-        ).to_be_visible()
-    elif error == "release date change with no date change log":
-        expect(
-            context.page.get_by_text(
-                "If a confirmed calendar entry needs to be rescheduled, the 'Changes to release date'"
-                " field must be filled out."
-            )
-        ).to_be_visible()
-    elif error == "date change log with no release date change":
-        expect(
-            context.page.get_by_text(
-                "You have added a 'Changes to release date' entry, but the release date is the same"
-                " as the published version."
-            )
-        ).to_be_visible()
+    error_messages = {
+        "multiple release date changes": (
+            "Only one 'Changes to release date' entry can be added per release date change."
+        ),
+        "release date change with no date change log": (
+            "If a confirmed calendar entry needs to be rescheduled, the 'Changes to release date'"
+            " field must be filled out."
+        ),
+        "date change log with no release date change": (
+            "You have added a 'Changes to release date' entry, but the release date is the same"
+            " as the published version."
+        ),
+    }
+
+    message = error_messages.get(error)
+    if message:
+        expect(context.page.get_by_text(message)).to_be_visible()
     else:
         raise ValueError(f"Unsupported error: {error}")
 

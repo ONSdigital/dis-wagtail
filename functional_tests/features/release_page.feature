@@ -130,7 +130,6 @@ Feature: CMS users can draft, edit, and publish release pages
       | an empty table                        | is     | empty table                  |
  
 
-
   Scenario: A CMS user cannot delete a release date change once the release calendar page is published
     When the user publishes a page with example content
     And the user returns to editing the published page
