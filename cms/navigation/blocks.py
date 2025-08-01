@@ -6,8 +6,7 @@ from cms.core.blocks.base import LinkBlock
 
 
 class ThemeLinkBlock(LinkBlock):
-    # TODO: day 2, uncomment when we allow Theme page creation
-    page = PageChooserBlock(required=False, page_type="themes.ThemePage", classname="hidden")
+    page = PageChooserBlock(required=False, page_type="themes.ThemePage")
 
     # TODO: day 2, remove external_url, title overrides when allowing Theme page creation
     external_url = URLBlock(required=True, label="External Link")
