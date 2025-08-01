@@ -4,7 +4,8 @@ from cms.core.blocks.base import LinkBlock
 
 
 class ThemeLinkBlock(LinkBlock):
-    page = PageChooserBlock(required=False, page_type="themes.ThemePage")
+    # TODO: day 2, uncomment when we allow creating Theme pages
+    # page = PageChooserBlock(required=False, page_type="themes.ThemePage")
 
     class Meta:
         label = "Theme Link"

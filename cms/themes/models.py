@@ -17,8 +17,11 @@ if TYPE_CHECKING:
 class ThemeIndexPage(BasePage):  # type: ignore[django-manager-missing]
     template = "templates/pages/theme_index_page.html"
     max_count_per_parent = 1
-    parent_page_types: ClassVar[list[str]] = ["home.HomePage"]
-    subpage_types: ClassVar[list[str]] = ["ThemePage"]
+    # TODO: for day 2, remove the following 2 attributes and uncomment the ones below to enable the Browse/Index page
+    parent_page_types: ClassVar[list[str]] = []
+    subpage_types: ClassVar[list[str]] = []
+    # parent_page_types: ClassVar[list[str]] = ["home.HomePage"]
+    # subpage_types: ClassVar[list[str]] = ["ThemePage"]
     page_description = "A container for the list of themes."
     label = "Themes"
 

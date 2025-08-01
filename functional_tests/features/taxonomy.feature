@@ -22,9 +22,10 @@ Feature: Users can tag pages with topics
 
         Examples:
             | existing page | new page |
-            | theme         | theme    |
-            | theme         | topic    |
-            | topic         | theme    |
+            # TODO: uncomment when we re-allow creating themes
+            # | theme         | theme    |
+            # | theme         | topic    |
+            # | topic         | theme    |
             | topic         | topic    |
 
     Scenario: Other page types, for example the information page, can be tagged with multiple topics
