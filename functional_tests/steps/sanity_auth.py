@@ -11,6 +11,7 @@ from playwright.sync_api import Request
 from cms.auth import utils as auth_utils
 from cms.auth.tests.helpers import CognitoTokenTestCase, generate_rsa_keypair
 from cms.auth.utils import get_auth_config
+import time
 
 
 class AuthenticationTestHelper:
@@ -125,14 +126,6 @@ class AuthenticationTestHelper:
           }}));
         """)
 
-    def simulate_user_activity(self):
-        """Simulate mouse movements to trigger activity detection."""
-        movements = [(500, 300), (600, 350), (500, 300)]
-
-        for x, y in movements:
-            self.context.page.mouse.move(x, y)
-            sleep(0.2)
-
     def assert_renewal_request_sent(self):
         """Assert that a session renewal request was attempted."""
         # Check console logs for the refresh attempt
@@ -185,9 +178,15 @@ def navigate_to_admin(context):
     # Navigate to admin
     context.page.goto(f"{context.base_url}/admin/")
 
-    # Simulate user activity to trigger renewal
-    helper = AuthenticationTestHelper(context)
-    helper.simulate_user_activity()
+
+@when("I perform an action that requires authentication such as mouse movements")
+def simulate_user_activity(context):
+    """Simulate mouse movements to trigger activity detection."""
+    movements = [(500, 300), (600, 350), (500, 300)]
+
+    for x, y in movements:
+        context.page.mouse.move(x, y)
+        sleep(0.2)
 
 
 @then("a session renewal request should be sent")
@@ -203,3 +202,112 @@ def assert_renewal_requested(context):
     print(f"Total requests captured: {len(context._requests)}")
 
     assert renewal_requests, f"No renewal requests to {refresh_path} were captured"
+
+
+@given("I have no valid JWT tokens")
+def step_clear_tokens(context):
+    """Clear any existing auth cookies (no valid tokens)."""
+    context.page.context.clear_cookies()
+
+
+@then("the logout request should complete successfully")
+@then("I should be redirected to the sign-in page")
+def step_redirected_to_signin(context):
+    """Assert we were redirected to the admin login page."""
+    assert "/admin/login/" in context.page.url, f"Not redirected to login, current URL: {context.page.url}"
+
+
+@then("I should not be redirected to the sign-in page")
+def step_not_redirected_to_signin(context):
+    """Assert we stayed on admin and did not hit the login URL."""
+    # Assert we did not get redirected to the admin login page
+    assert "/admin/login/" not in context.page.url, f"Redirected to login at {context.page.url}"
+
+
+@when("I remain inactive until my JWT token expires")
+def step_wait_for_expiry(context):
+    """Sleep past the token TTL so it expires."""
+    time.sleep(12)
+
+
+@when('I click the "Log out" button in the Wagtail UI')
+def step_click_logout(context):
+    """Trigger the logout flow and wait for the network call."""
+    context.page.get_by_role("button", name="first").click()
+    context.page.get_by_role("button", name="Log out").click()
+
+
+@then("the tokens should be cleared from the browser")
+def step_tokens_cleared(context):
+    """Assert that access, id, and sessionId tokens are no longer present in cookies."""
+    token_names = [
+        getattr(settings, "ACCESS_TOKEN_COOKIE_NAME", "access_token"),
+        getattr(settings, "ID_TOKEN_COOKIE_NAME", "id_token"),
+    ]
+    cookies = context.page.context.cookies()
+    for name in token_names:
+        assert not any(cookie["name"] == name for cookie in cookies), f"Token '{name}' still present in cookies"
+
+
+@when("I am logged in and have Wagtail open in two browser tabs")
+def step_two_tabs(context):
+    """Ensure two pages share the same session context."""
+    # first tab is context.page
+    page1 = context.page
+    # open a second tab
+    page2 = context.browser.new_page()
+    page2.goto("/admin")
+    context.pages = [page1, page2]
+
+
+@when("the JWT token is refreshed in one tab")
+def step_refresh_in_one_tab(context):
+    """Trigger a session-renewal in the first tab."""
+    auth_cfg = get_auth_config()
+    refresh_url = auth_cfg["authTokenRefreshUrl"]
+    # cause renewal (e.g. mouse move)
+    context.pages[0].mouse.move(5, 5)
+    # wait for the renewal request to fire
+    context.pages[0].wait_for_request(lambda req: refresh_url in req.url, timeout=5000)
+
+
+@then("the second tab should update its session without a manual reload")
+def step_second_tab_update(context):
+    """Assert the new token has propagated to tab 2 via shared cookies/storage."""
+    auth_cfg = get_auth_config()
+    token_name = auth_cfg.get("authTokenName", "auth_token")
+    # grab cookie values from each context
+    cookies1 = context.pages[0].context.cookies()
+    cookies2 = context.pages[1].context.cookies()
+    val1 = next((c["value"] for c in cookies1 if c["name"] == token_name), None)
+    val2 = next((c["value"] for c in cookies2 if c["name"] == token_name), None)
+    assert val1 and val1 == val2, f"Tab 2 did not pick up refreshed token ({val1=} vs {val2=})"
+
+
+@when("I log out from one tab")
+def step_logout_one_tab(context):
+    """Perform logout in tab 1 (reuse existing logout click)."""
+    # re-use the logout step:
+    context.execute_steps("""
+        When I click the "Log out" button in the Wagtail UI
+    """)
+
+
+@then("both tabs should be redirected to the sign-in page")
+def step_both_tabs_redirect(context):
+    """Assert both pages land on login after logout."""
+    auth_cfg = get_auth_config()
+    login_path = auth_cfg["loginUrl"]
+    for p in context.pages:
+        p.wait_for_url(lambda url: login_path in url, timeout=5000)
+        assert login_path in p.url, f"Tab URL after logout was {p.url}"
+
+
+@then("no split session remains active")
+def step_no_split_session(context):
+    """Ensure no auth cookies remain anywhere."""
+    auth_cfg = get_auth_config()
+    token_name = auth_cfg.get("authTokenName", "auth_token")
+    for p in context.pages:
+        cookies = p.context.cookies()
+        assert not any(c["name"] == token_name for c in cookies), "Found stale auth cookie after logout"

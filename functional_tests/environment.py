@@ -49,7 +49,7 @@ class CognitoTestSettings:
             "IDENTITY_API_BASE_URL": "https://cognito-idp.eu-west-2.amazonaws.com/test-pool",
             # Cookie settings
             "ACCESS_TOKEN_COOKIE_NAME": "access_token",
-            "ID_TOKEN_COOKIE_NAME": "id",
+            "ID_TOKEN_COOKIE_NAME": "id_token",
             "CSRF_COOKIE_NAME": "csrftoken",
             "CSRF_HEADER_NAME": "HTTP_X_CSRFTOKEN",
             # Auth settings
