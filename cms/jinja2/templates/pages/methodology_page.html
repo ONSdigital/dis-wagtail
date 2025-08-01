@@ -65,7 +65,6 @@
             "title": page.title,
             "variants": 'grey',
             "text": page.summary|richtext(),
-            "wide": true,
             "detailsColumns": 12,
             "descriptionList": {
                 "descriptionListLabel": "",
@@ -103,14 +102,6 @@
         </div>
 
         <div class="ons-grid__col ons-col-8@m">
-            {# if there are no contact details on the page, we don't want the last
-            streamfield block to have a bottom margin. last_flush is used in stream_block.html #}
-            {% if page.contact_details %}
-                {% set last_flush = False %}
-            {% else %}
-                {% set last_flush = True %}
-            {% endif %}
-
             {% include_block page.content %}
 
             {% if page.show_cite_this_page %}
