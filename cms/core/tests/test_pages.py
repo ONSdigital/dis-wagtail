@@ -5,6 +5,7 @@ from django.conf import settings
 from django.template import TemplateDoesNotExist
 from django.template.loader import get_template as original_get_template
 from django.test.utils import override_settings
+from django.utils import translation
 from wagtail.models import Locale
 from wagtail.test.utils import WagtailPageTestCase
 
@@ -13,6 +14,12 @@ from cms.standard_pages.tests.factories import IndexPageFactory, InformationPage
 
 
 class HomePageTests(WagtailPageTestCase):
+    def tearDown(self):
+        # Reset the translation to the default language after each test to avoid
+        # test contamination issues.
+        translation.activate(settings.LANGUAGE_CODE)
+        return super().tearDown()
+
     def test_home_page_can_be_served(self):
         """Test that the home page can be served."""
         response = self.client.get("/")
@@ -73,6 +80,12 @@ class PageCanonicalUrlTests(WagtailPageTestCase):
     @classmethod
     def setUpTestData(cls):
         cls.page = InformationPageFactory()
+
+    def tearDown(self):
+        # Reset the translation to the default language after each test to avoid
+        # test contamination issues.
+        translation.activate(settings.LANGUAGE_CODE)
+        return super().tearDown()
 
     def test_page_canonical_url(self):
         """Test that the home page has the correct canonical URL."""
@@ -197,6 +210,12 @@ class SocialMetaTests(WagtailPageTestCase):
 
 
 class ErrorPageTests(WagtailPageTestCase):
+    def tearDown(self):
+        # Reset the translation to the default language after each test to avoid
+        # test contamination issues.
+        translation.activate(settings.LANGUAGE_CODE)
+        return super().tearDown()
+
     def get_template_side_effect(self, template_name, *args, **kwargs):
         """Side effect function to simulate template loading failures."""
         if template_name == "templates/pages/errors/500.html":

@@ -5,6 +5,7 @@ from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.test import override_settings
 from django.urls import reverse
+from django.utils import translation
 from django.utils.html import strip_tags
 from wagtail.blocks import StreamValue
 from wagtail.models import Locale
@@ -91,6 +92,12 @@ class StatisticalArticlePageTests(WagtailPageTestCase):
         cls.page.headline_figures_figure_ids = "figurexyz,figureabc"
         cls.page.save_revision().publish()
         cls.user = cls.create_superuser("admin")
+
+    def tearDown(self):
+        # Reset the translation to the default language after each test to avoid
+        # test contamination issues.
+        translation.activate(settings.LANGUAGE_CODE)
+        return super().tearDown()
 
     def test_default_route(self):
         self.assertPageIsRoutable(self.page)
