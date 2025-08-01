@@ -109,7 +109,7 @@ class LinkBlock(StructBlock):
     def clean(self, value: LinkBlockStructValue) -> LinkBlockStructValue:
         """Validate that either a page or external link is provided, and that external links have a title."""
         value = super().clean(value)
-        page = value["page"]
+        page = value.get("page")
         external_url = value["external_url"]
         errors = {}
         non_block_errors = ErrorList()

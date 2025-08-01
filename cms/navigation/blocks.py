@@ -1,11 +1,24 @@
-from wagtail.blocks import CharBlock, ListBlock, PageChooserBlock, StructBlock
+from typing import Any
+
+from wagtail.blocks import CharBlock, ListBlock, PageChooserBlock, StructBlock, URLBlock
 
 from cms.core.blocks.base import LinkBlock
 
 
 class ThemeLinkBlock(LinkBlock):
-    # TODO: day 2, uncomment when we allow creating Theme pages
-    # page = PageChooserBlock(required=False, page_type="themes.ThemePage")
+    # TODO: day 2, uncomment when we allow Theme page creation
+    page = PageChooserBlock(required=False, page_type="themes.ThemePage", classname="hidden")
+
+    # TODO: day 2, remove external_url, title overrides when allowing Theme page creation
+    external_url = URLBlock(required=True, label="External Link")
+    title = CharBlock(required=True)
+
+    # TODO: day 2, remove this __init__ when we allow creating Theme pages
+    def __init__(self, **kwargs: Any) -> None:
+        if "page" in self.base_blocks:  # pylint: disable=no-member
+            del self.base_blocks["page"]  # pylint: disable=no-member
+
+        super().__init__(**kwargs)
 
     class Meta:
         label = "Theme Link"

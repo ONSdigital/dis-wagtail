@@ -1,4 +1,5 @@
 import uuid
+from unittest import expectedFailure
 
 from django.test import TestCase
 from wagtail.admin.panels import get_edit_handler
@@ -73,7 +74,7 @@ class BaseMainMenuTestCase(TestCase):
                 (
                     "section",
                     self.create_section(
-                        theme_page_pk=item["theme_page_pk"],
+                        theme_page_pk=item.get("theme_page_pk"),
                         theme_title=item["theme_title"],
                         external_url=item.get("theme_external_url", ""),
                         links=[
@@ -165,9 +166,9 @@ class ColumnTests(BaseMainMenuTestCase):
         """Checks that different pages across columns, sections, and topics do not raise errors."""
         section_data = [
             {
-                "theme_page_pk": self.theme_page_1.pk,
+                "theme_page_pk": None,
                 "theme_title": "Theme Page #1",
-                "theme_external_url": "",
+                "theme_external_url": "https://ons.gov.uk",
                 "links": [
                     {
                         "topic_page_pk": self.topic_page_1.pk,
@@ -177,9 +178,9 @@ class ColumnTests(BaseMainMenuTestCase):
                 ],
             },
             {
-                "theme_page_pk": self.theme_page_2.pk,
+                "theme_page_pk": None,
                 "theme_title": "Theme Page #2",
-                "theme_external_url": "",
+                "theme_external_url": "https://www.ons.gov.uk",
                 "links": [
                     {
                         "topic_page_pk": self.topic_page_2.pk,
@@ -233,6 +234,8 @@ class ColumnTests(BaseMainMenuTestCase):
         form = self.form_class(instance=self.menu, data=nested_form_data(raw_data))
         self.assertTrue(form.is_valid(), msg=form.errors.as_json())
 
+    # TODO: day 2, remove @expectedFailure when allowing creation of Theme pages
+    @expectedFailure
     def test_columns_duplicate_section_page_across_columns(self):
         """Checks that using the same section page in two different sections
         (across columns) raises a duplicate error.
@@ -309,9 +312,9 @@ class TopicTests(BaseMainMenuTestCase):
         """Checks that different topic pages across columns do not raise errors."""
         section_data = [
             {
-                "theme_page_pk": self.theme_page_1.pk,
+                "theme_page_pk": None,
                 "theme_title": "Theme Page #1",
-                "theme_external_url": "",
+                "theme_external_url": "https://ons.gov.uk",
                 "links": [
                     {
                         "topic_page_pk": self.topic_page_1.pk,
@@ -321,9 +324,9 @@ class TopicTests(BaseMainMenuTestCase):
                 ],
             },
             {
-                "theme_page_pk": self.theme_page_2.pk,
+                "theme_page_pk": None,
                 "theme_title": "Theme Page #2",
-                "theme_external_url": "",
+                "theme_external_url": "https://www.ons.gov.uk",
                 "links": [
                     {
                         "topic_page_pk": self.topic_page_2.pk,
@@ -351,9 +354,9 @@ class TopicTests(BaseMainMenuTestCase):
         """Checks that different external URLs across columns do not raise errors."""
         section_data = [
             {
-                "theme_page_pk": self.theme_page_1.pk,
+                "theme_page_pk": None,
                 "theme_title": "Theme Page #1",
-                "theme_external_url": "",
+                "theme_external_url": "https://ons.gov.uk",
                 "links": [
                     {
                         "topic_page_pk": None,
@@ -363,9 +366,9 @@ class TopicTests(BaseMainMenuTestCase):
                 ],
             },
             {
-                "theme_page_pk": self.theme_page_2.pk,
+                "theme_page_pk": None,
                 "theme_title": "Theme Page #2",
-                "theme_external_url": "",
+                "theme_external_url": "https://www.ons.gov.uk",
                 "links": [
                     {
                         "topic_page_pk": None,
@@ -393,9 +396,9 @@ class TopicTests(BaseMainMenuTestCase):
         """Checks that using the same topic page in two different columns raises a duplicate error."""
         section_data = [
             {
-                "theme_page_pk": self.theme_page_1.pk,
+                "theme_page_pk": None,
                 "theme_title": "Theme Page #1",
-                "theme_external_url": "",
+                "theme_external_url": "https://ons.gov.uk",
                 "links": [
                     {
                         "topic_page_pk": self.topic_page_2.pk,
@@ -405,9 +408,9 @@ class TopicTests(BaseMainMenuTestCase):
                 ],
             },
             {
-                "theme_page_pk": self.theme_page_2.pk,
+                "theme_page_pk": None,
                 "theme_title": "Theme Page #2",
-                "theme_external_url": "",
+                "theme_external_url": "https://www.ons.gov.uk",
                 "links": [
                     {
                         "topic_page_pk": self.topic_page_2.pk,
@@ -447,9 +450,8 @@ class TopicTests(BaseMainMenuTestCase):
         """Checks that using the same external URL in two different columns raises a duplicate error."""
         section_data = [
             {
-                "theme_page_pk": self.theme_page_1.pk,
                 "theme_title": "Theme Page #1",
-                "theme_external_url": "",
+                "theme_external_url": "https://ons.gov.uk",
                 "links": [
                     {
                         "topic_page_pk": None,
@@ -459,9 +461,8 @@ class TopicTests(BaseMainMenuTestCase):
                 ],
             },
             {
-                "theme_page_pk": self.theme_page_2.pk,
                 "theme_title": "Theme Page #2",
-                "theme_external_url": "",
+                "theme_external_url": "https://www.ons.gov.uk",
                 "links": [
                     {
                         "topic_page_pk": None,
@@ -497,6 +498,8 @@ class TopicTests(BaseMainMenuTestCase):
             "Duplicate URL. Please add a different one.",
         )
 
+    # TODO: day 2, remove @expectedFailure when we allow creating Theme pages
+    @expectedFailure
     def test_columns_no_duplicate_section_page(self):
         """Checks that different section pages within the same column do not raise errors."""
         section_data = [
@@ -553,6 +556,8 @@ class TopicTests(BaseMainMenuTestCase):
         form = self.form_class(instance=self.menu, data=nested_form_data(raw_data))
         self.assertTrue(form.is_valid(), msg=form.errors.as_json())
 
+    # TODO: day 2, remove @expectedFailure when we allow creating Theme pages
+    @expectedFailure
     def test_columns_duplicate_section_page(self):
         """Checks that using the same section page in the same column raises a duplicate error."""
         section_data = [
@@ -633,9 +638,9 @@ class TopicTests(BaseMainMenuTestCase):
         """Checks that different topics within the same section do not raise errors."""
         section_data = [
             {
-                "theme_page_pk": self.theme_page_1.pk,
+                "theme_page_pk": None,
                 "theme_title": "Theme Page #1",
-                "theme_external_url": "",
+                "theme_external_url": "https://ons.gov.uk",
                 "links": [
                     {
                         "topic_page_pk": self.topic_page_1.pk,
@@ -666,9 +671,9 @@ class TopicTests(BaseMainMenuTestCase):
         """Checks that different external URLs within the same section do not raise errors."""
         section_data = [
             {
-                "theme_page_pk": self.theme_page_1.pk,
+                "theme_page_pk": None,
                 "theme_title": "Theme Page #1",
-                "theme_external_url": "",
+                "theme_external_url": "https://ons.gov.uk",
                 "links": [
                     {
                         "topic_page_pk": None,
@@ -699,9 +704,9 @@ class TopicTests(BaseMainMenuTestCase):
         """Checks that using the same topic page multiple times within the same section triggers a duplicate error."""
         section_data = [
             {
-                "theme_page_pk": self.theme_page_1.pk,
+                "theme_page_pk": None,
                 "theme_title": "Section Page #1",
-                "theme_external_url": "",
+                "theme_external_url": "https://ons.gov.uk",
                 "links": [
                     {
                         "topic_page_pk": self.topic_page_1.pk,
@@ -745,9 +750,9 @@ class TopicTests(BaseMainMenuTestCase):
         """Checks that using the same external URL multiple times within the same section triggers a duplicate error."""
         section_data = [
             {
-                "theme_page_pk": self.theme_page_1.pk,
+                "theme_page_pk": None,
                 "theme_title": "Section Page #1",
-                "theme_external_url": "",
+                "theme_external_url": "https://ons.gov.uk",
                 "links": [
                     {
                         "topic_page_pk": None,
