@@ -56,11 +56,9 @@ Feature: CMS users can draft, edit, and publish release pages
     Then the previous release date field is pre-populated with the old release date
     And the help text is not visible
   
-  Scenario: The previous release date field in the Date change block is empty when creating a new page
+  Scenario: The Changes to release date block is not shown when creating a new page
     When the user clicks "Add child page" to create a new draft release page
-    And the user adds a release date change
-    Then the previous release date in date change block is empty
-    And the help text is visible
+    Then the Changes to release date block is not visible
 
   Scenario: The previous release date field in Release date change block is uneditable
     When the user clicks "Add child page" to create a new draft release page

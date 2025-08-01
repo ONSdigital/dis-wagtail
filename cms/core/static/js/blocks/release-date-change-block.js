@@ -21,14 +21,10 @@ class ReleaseDateChangeBlockDefinition extends ReadonlyStructBlockDefinition {
     );
     const previousDateLabel = previousDateDiv.querySelector(`label[for="${prefix}-previous_date"]`);
     const previousDateInput = document.getElementById(`${prefix}-previous_date`);
-    const helpText = document.getElementById(`${prefix}-previous_date-helptext`);
 
     if (previousDateInput.value === '') {
       if (this.previous_date) {
         previousDateInput.value = this.previous_date;
-      } else {
-        // Indicate that the empty read-only field will be auto-populated after saving
-        helpText.innerHTML = 'This field will be auto-populated once the page is saved.';
       }
     }
 

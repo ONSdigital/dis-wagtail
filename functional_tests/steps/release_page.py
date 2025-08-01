@@ -234,10 +234,9 @@ def previous_release_date_field_is_pre_populated(context: Context):
     expect(changes_to_release_date_section.get_by_label("Previous date*")).to_have_value("2024-12-25 09:30")
 
 
-@then("the previous release date in date change block is empty")
+@then("the Changes to release date block is not visible")
 def previous_release_date_in_date_change_block_is_empty(context: Context):
-    changes_to_release_date_section = context.page.locator("#panel-child-content-changes_to_release_date-section")
-    expect(changes_to_release_date_section.get_by_label("Previous date*")).to_have_value("")
+    expect(context.page.locator("#panel-child-content-changes_to_release_date-section")).not_to_be_visible()
 
 
 @then("the help text is not visible")

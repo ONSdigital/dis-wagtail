@@ -64,6 +64,8 @@ class ReleaseCalendarBundleNotePanel(HelpPanel):
 class ChangesToReleaseDateFieldPanel(FieldPanel):
     """FieldPanel that injects the current release_date from the database into the template
     as previous_release_date, allowing the field to be auto-populated on the client side.
+
+    Note: This panel is only displayed in the form after the page has been initially saved.
     """
 
     class BoundPanel(FieldPanel.BoundPanel):
@@ -77,9 +79,6 @@ class ChangesToReleaseDateFieldPanel(FieldPanel):
             context = super().get_context_data(parent_context)
 
             context["previous_release_date"] = None
-
-            if not self.instance.pk:
-                return context
 
             release_date = (
                 ReleaseCalendarPage.objects.filter(pk=self.instance.pk).values_list("release_date", flat=True).first()
