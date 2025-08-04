@@ -1,10 +1,12 @@
 from datetime import datetime
 from typing import TYPE_CHECKING, Any, Union
 
+from django.conf import settings
 from django.urls import reverse
 from django.utils.html import format_html
 from django.utils.timezone import is_aware, localtime
 from wagtail.admin.panels import FieldPanel, HelpPanel
+from wagtail.admin.widgets.datetime import DEFAULT_DATETIME_FORMAT
 
 from cms.bundles.permissions import user_can_manage_bundles
 
@@ -90,5 +92,8 @@ class ChangesToReleaseDateFieldPanel(FieldPanel):
             if isinstance(release_date, datetime) and is_aware(release_date):
                 release_date = localtime(release_date)
 
-            context["previous_release_date"] = release_date.strftime("%Y-%m-%d %H:%M")
+            # Convert the release date to the format required by the form in Wagtail
+            context["previous_release_date"] = release_date.strftime(
+                getattr(settings, "WAGTAIL_DATETIME_FORMAT", DEFAULT_DATETIME_FORMAT)
+            )
             return context
