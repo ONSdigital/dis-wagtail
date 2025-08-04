@@ -20,7 +20,12 @@ class ContactDetailsChooseColumnsMixin:
     def columns(self) -> list[Column]:
         title_column = self.title_column  # type: ignore[attr-defined]
         title_column.label = "Name"
-        return [title_column, LocaleColumn(), Column("email"), Column("phone")]
+        return [
+            title_column,
+            LocaleColumn(classname="w-text-16 w-w-[120px]"),  # w-w-[120px] is used to adjust the width
+            Column("email"),
+            Column("phone"),
+        ]
 
 
 class ContactDetailsChooseView(ContactDetailsChooseColumnsMixin, SnippetChooseView): ...
@@ -68,7 +73,12 @@ class GlossaryTermsChooseColumnsMixin:
     def columns(self) -> list[Column]:
         title_column = self.title_column  # type: ignore[attr-defined]
         title_column.label = "Name"
-        return [title_column, LocaleColumn(), UpdatedAtColumn(), UserColumn("updated_by")]
+        return [
+            title_column,
+            LocaleColumn(classname="w-text-16 w-w-[120px]"),  # w-w-[120px] is used to adjust the width
+            UpdatedAtColumn(),
+            UserColumn("updated_by"),
+        ]
 
     def get_object_list(self) -> QuerySet[GlossaryTerm]:
         queryset = GlossaryTerm.objects.select_related(

@@ -4,8 +4,7 @@ from typing import Any
 from wagtail.blocks.stream_block import StreamValue
 from wagtail.models import Page
 
-from cms.core.forms import PageWithCorrectionsAdminForm, PageWithEquationsAdminForm
-from cms.taxonomy.forms import DeduplicateTopicsAdminForm
+from cms.core.forms import DeduplicateTopicsAdminForm, PageWithCorrectionsAdminForm, PageWithEquationsAdminForm
 
 
 class PageWithHeadlineFiguresAdminForm(DeduplicateTopicsAdminForm):

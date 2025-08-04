@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, Any, Union
+from typing import TYPE_CHECKING, Any, Union, cast
 
 from django.db.models import QuerySet
 from django.urls import include, path
@@ -129,7 +129,7 @@ class LatestBundlesPanel(Component):
         """Adds the request, the latest bundles and whether the panel is shown to the panel context."""
         context = super().get_context_data(parent_context)
         context["request"] = self.request
-        context["bundles"] = self.get_latest_bundles()
+        context["bundles"] = sorted(self.get_latest_bundles(), key=lambda b: b.name)
         context["is_shown"] = self.is_shown
         context["num_bundles"] = self.num_bundles
         return context
@@ -139,10 +139,15 @@ class BundlesInReviewPanel(Component):
     name = "bundles_in_review"
     order = 150
     template_name = "bundles/wagtailadmin/panels/bundles_in_review.html"
+    num_bundles = 10
 
     def __init__(self, request: "HttpRequest") -> None:
         self.request = request
         self.permission_policy = ModelPermissionPolicy(Bundle)
+
+    @cached_property
+    def _can_manage(self) -> bool:
+        return bool(self.permission_policy.user_has_any_permission(self.request.user, {"add", "change", "delete"}))
 
     @cached_property
     def is_shown(self) -> bool:
@@ -151,32 +156,29 @@ class BundlesInReviewPanel(Component):
             return True
 
         has_view_permission = self.permission_policy.user_has_permission(self.request.user, "view")
-        if not has_view_permission:
-            return False
+        return has_view_permission or self._can_manage
 
-        has_manage_permissions: bool = self.permission_policy.user_has_any_permission(
-            self.request.user, {"add", "change", "delete"}
-        )
-        return not has_manage_permissions
-
-    def get_bundles(self) -> QuerySet[Bundle]:
+    @cached_property
+    def bundles(self) -> QuerySet[Bundle]:
         """Returns the latest 10 bundles if the panel is shown."""
-        queryset: QuerySet[Bundle] = Bundle.objects.none()
-        if self.is_shown:
-            queryset = (
-                Bundle.objects.previewable()
-                .filter(teams__team__in=self.request.user.active_team_ids)  # type: ignore[union-attr]
-                .distinct()
-            )
+        if not self.is_shown:
+            return cast(QuerySet[Bundle], Bundle.objects.none())
 
-        return queryset
+        queryset: QuerySet[Bundle] = Bundle.objects.previewable().order_by("approved_at")
+        if self._can_manage:
+            # show all "in preview" for users that can manage.
+            return queryset
+
+        # for everyone else, only bundles in the same preview team they are in
+        return queryset.filter(teams__team__in=self.request.user.active_team_ids).distinct()  # type: ignore[union-attr]
 
     def get_context_data(self, parent_context: "Optional[RenderContext]" = None) -> "Optional[RenderContext]":
         """Adds the request, the latest bundles and whether the panel is shown to the panel context."""
         context = super().get_context_data(parent_context)
         context["request"] = self.request
-        context["bundles"] = self.get_bundles()
+        context["bundles"] = sorted(self.bundles[: self.num_bundles], key=lambda b: b.name)
         context["is_shown"] = self.is_shown
+        context["more_link"] = len(self.bundles) > self.num_bundles
         return context
 
 

@@ -2,29 +2,33 @@
 
 <!-- TOC -->
 
-- [Structure](#structure)
-- [Dependencies](#dependencies)
-    - [App Instance For Test Development](#app-instance-for-test-development)
-    - [Clearing and Initialising the Functional Test Development Database](#clearing-and-initialising-the-functional-test-development-database)
-- [Running the Tests](#running-the-tests)
-    - [Playwright Options](#playwright-options)
-- [Developing Tests](#developing-tests)
-    - [Useful Documentation](#useful-documentation)
-- [Viewing Failure Traces](#viewing-failure-traces)
-    - [Viewing the Failure Trace from GitHub Actions](#viewing-the-failure-trace-from-github-actions)
-- [Test Code Standards and Style Guide](#test-code-standards-and-style-guide)
-    - [Context Use](#context-use)
-    - [Sharing Code Between Steps](#sharing-code-between-steps)
-    - [Step wording](#step-wording)
-    - [Assertions](#assertions)
-    - [Step parameter types](#step-parameter-types)
-- [How the Tests Work](#how-the-tests-work)
-    - [Django Test Runner and Test Case](#django-test-runner-and-test-case)
-    - [Database Snapshot and Restore](#database-snapshot-and-restore)
-    - [Playwright](#playwright)
-- [Why Aren't We Using Existing Django Testing Modules?](#why-arent-we-using-existing-django-testing-modules)
-    - [Pytest-BDD](#pytest-bdd)
-    - [Behave-Django](#behave-django)
+- [Functional Tests](#functional-tests)
+    - [Structure](#structure)
+    - [Dependencies](#dependencies)
+        - [App Instance For Test Development](#app-instance-for-test-development)
+        - [Clearing and Initialising the Functional Test Development Database](#clearing-and-initialising-the-functional-test-development-database)
+            - [Using DSLR Snapshots for Development](#using-dslr-snapshots-for-development)
+    - [Running the Tests](#running-the-tests)
+        - [Playwright Options](#playwright-options)
+    - [Developing Tests](#developing-tests)
+        - [Useful Documentation](#useful-documentation)
+    - [Viewing Failure Traces](#viewing-failure-traces)
+        - [Viewing the Failure Trace from GitHub Actions](#viewing-the-failure-trace-from-github-actions)
+    - [Test Data Setup](#test-data-setup)
+    - [Test Code Standards and Style Guide](#test-code-standards-and-style-guide)
+        - [Context Use](#context-use)
+            - [Only step functions and environment hooks should interact with the context attributes](#only-step-functions-and-environment-hooks-should-interact-with-the-context-attributes)
+        - [Sharing Code Between Steps](#sharing-code-between-steps)
+        - [Step wording](#step-wording)
+        - [Assertions](#assertions)
+        - [Step parameter types](#step-parameter-types)
+    - [How the Tests Work](#how-the-tests-work)
+        - [Django Test Runner and Test Case](#django-test-runner-and-test-case)
+        - [Database Snapshot and Restore](#database-snapshot-and-restore)
+        - [Playwright](#playwright)
+    - [Why Aren't We Using Existing Django Testing Modules?](#why-arent-we-using-existing-django-testing-modules)
+        - [Pytest-BDD](#pytest-bdd)
+        - [Behave-Django](#behave-django)
 
 <!-- TOC -->
 
@@ -89,7 +93,7 @@ wiping your normal local development environment.
 
 ```shell
 poetry run python manage.py reset_db --settings=cms.settings.functional_test
-poetry run python manage.py migrate --settings=cms.settings.functional_test
+poetry run python manage.py locked_migrate --settings=cms.settings.functional_test
 ```
 
 Then for logging into the CMS, create a superuser with
@@ -145,8 +149,8 @@ Some links to particularly useful parts of documentation
 - [Playwright Locators](https://playwright.dev/python/docs/locators): Locating and selecting page elements in Playwright
 - [Playwright Assertions](https://playwright.dev/python/docs/test-assertions): Making assertions using Playwright
 - [Playwright Codegen](https://playwright.dev/python/docs/codegen-intro): The Playwright code generator tool
-- [Behave Command Line Arguments](https://behave.readthedocs.io/en/stable/behave.html#command-line-arguments): Options running the tests from the command line
-- [Behave API Reference](https://behave.readthedocs.io/en/stable/api.html): Reference documentation for the Behave framework API
+- [Behave Command Line Arguments](https://behave.readthedocs.io/en/stable/behave#command-line-arguments): Options running the tests from the command line
+- [Behave API Reference](https://behave.readthedocs.io/en/stable/api): Reference documentation for the Behave framework API
 
 ## Viewing Failure Traces
 
@@ -185,7 +189,7 @@ then they can make use of [factory traits](https://factoryboy.readthedocs.io/en/
 
 ### Context Use
 
-We make use of the [Behave Context](https://behave.readthedocs.io/en/stable/tutorial.html#context) object to store data
+We make use of the [Behave Context](https://behave.readthedocs.io/en/stable/tutorial#context) object to store data
 that is needed across multiple steps of a scenario.
 
 To prevent the context from becoming cluttered and confusing to use, we define some rules for how we interact with it:
@@ -257,9 +261,9 @@ be more robust than attempting to retrieve data from the page and make plain pyt
 
 ### Step parameter types
 
-Where we need [step parameters](https://behave.readthedocs.io/en/stable/tutorial.html#step-parameters) to include more
+Where we need [step parameters](https://behave.readthedocs.io/en/stable/tutorial#step-parameters) to include more
 complex data than single strings or the other basic types supported by the default parser, we
-use [custom registered types](https://behave.readthedocs.io/en/stable/api.html#behave.register_type). These are
+use [custom registered types](https://behave.readthedocs.io/en/stable/api#behave.register_type). These are
 registered in the [environment.py](environment.py) so they are available to all steps.
 
 ## How the Tests Work

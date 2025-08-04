@@ -39,6 +39,10 @@ format-html:  ## Format the HTML code
 format-frontend:  ## Format front-end files (CSS, JS, YAML, MD)
 	npm run format
 
+.PHONY: npm-build
+npm-build: ## Build the front-end assets
+	. $$HOME/.nvm/nvm.sh; nvm use; npm run build
+
 .PHONY: lint
 lint: lint-py lint-html lint-frontend lint-migrations ## Run all linters (python, html, front-end, migrations)
 
@@ -74,10 +78,12 @@ mypy:  ## Run mypy.
 
 .PHONY: install
 install:  ## Install the dependencies excluding dev.
+	npm install --production
 	poetry install --only main --no-root
 
 .PHONY: install-dev
 install-dev:  ## Install the dependencies including dev.
+	npm ci
 	poetry install --no-root
 
 .PHONY: megalint
@@ -155,7 +161,7 @@ collectstatic:  ## Collect static files from all Django apps
 
 .PHONY: migrate
 migrate: ## Apply the database migrations
-	poetry run python ./manage.py migrate
+	poetry run python ./manage.py locked_migrate
 
 .PHONY: createsuperuser
 createsuperuser: ## Create a super user with a default username and password
@@ -166,7 +172,7 @@ runserver: ## Run the Django application locally
 	poetry run python ./manage.py runserver 0:8000
 
 .PHONY: dev-init
-dev-init: load-design-system-templates collectstatic compilemessages makemigrations migrate load-topics createsuperuser  ## Run the pre-run setup scripts
+dev-init: load-design-system-templates npm-build collectstatic compilemessages makemigrations migrate load-topics createsuperuser ## Run the pre-run setup scripts
 	## Set all Wagtail sites to our development port of 8000
 	poetry run python manage.py shell -c "from wagtail.models import Site; Site.objects.all().update(port=8000)"
 
