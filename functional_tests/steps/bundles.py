@@ -7,11 +7,9 @@ from django.utils import timezone
 from playwright.sync_api import expect
 
 from cms.articles.tests.factories import ArticleSeriesPageFactory, StatisticalArticlePageFactory
-from wagtail.test.utils.form_data import inline_formset, nested_form_data
-
 from cms.bundles.enums import BundleStatus
-from cms.bundles.models import BundleTeam, BundlePage
-from cms.bundles.tests.factories import BundleFactory, BundlePageFactory
+from cms.bundles.models import BundlePage, BundleTeam
+from cms.bundles.tests.factories import BundleFactory
 from cms.release_calendar.enums import ReleaseStatus
 from cms.release_calendar.tests.factories import ReleaseCalendarPageFactory
 from cms.teams.models import Team
@@ -195,22 +193,7 @@ def multiple_bundles_create(context: Context, no_bundles: str, creator_role: str
     context.bundles = []
     if no_bundles.isdigit():
         for __ in range(int(no_bundles)):
-            if not any([d for d in context.users if d['role'] == creator_role]):
-                create_user_by_role(context, creator_role)
-            bundle_creator = [d for d in context.users if d['role'] == creator_role][0]['user']['user']
-            bundle_status = BundleStatus.DRAFT
-            bundle_approved = False
-            if status == "Approved":
-                bundle_status = BundleStatus.APPROVED
-                bundle_approved = True
-            if status == "In_Review":
-                bundle_status = BundleStatus.IN_REVIEW
-
-            bundle = BundleFactory(created_by=bundle_creator,
-                                   status=bundle_status,
-                                   approved=bundle_approved,
-                                   )
-            context.bundles.append(bundle)
+            create_bundle(context, creator_role, status)
 
     if bool(teams) and hasattr(context, "teams"):
         for team in context.teams:
@@ -228,8 +211,25 @@ def multiple_bundles_create(context: Context, no_bundles: str, creator_role: str
                 BundlePage.objects.create(parent=bundle, page=page)
 
 
-# Bundles UI Triggers
+def create_bundle(context, creator_role, status):
+    if not any([d for d in context.users if d['role'] == creator_role]):
+        create_user_by_role(context, creator_role)
+    bundle_creator = [d for d in context.users if d['role'] == creator_role][0]['user']['user']
+    bundle_status = BundleStatus.DRAFT
+    bundle_approved = False
+    if status == "Approved":
+        bundle_status = BundleStatus.APPROVED
+        bundle_approved = True
+    if status == "In_Review":
+        bundle_status = BundleStatus.IN_REVIEW
+    bundle = BundleFactory(created_by=bundle_creator,
+                           status=bundle_status,
+                           approved=bundle_approved,
+                           )
+    context.bundles.append(bundle)
 
+
+# Bundles UI Triggers
 @when("the {user_role} logs in")
 def log_in_user_by_role(context: Context, user_role: str) -> None:
     user = [d for d in context.users if d['role'] == user_role][0]['user']
@@ -238,9 +238,7 @@ def log_in_user_by_role(context: Context, user_role: str) -> None:
     context.page.get_by_placeholder("Enter password").fill(user["password"])
     context.page.get_by_role("button", name="Sign in").click()
 
-
 # Bundles UI Consequences
-
 @then("the user can create a bundle")
 def add_bundle_details(context: Context) -> None:
     bundle_name = "Bundle UI Test 1"
@@ -309,8 +307,10 @@ def can_preview_bundle(context: Context, user_role: str) -> None:
         expect(context.page.get_by_text("Latest active bundles")).to_be_visible()
         expect(context.page.get_by_role("link", name=context.bundles[0].name)).to_be_visible()
         expect(context.page.get_by_role("cell", name="In Preview")).to_be_visible()
-        expect(context.page.get_by_role("row", name=context.bundles[0].name + " Actions").get_by_label("Actions")).to_be_visible()
-        context.page.get_by_role("row", name=context.bundles[0].name + " Actions").get_by_label("Actions").click()
+        expect(context.page.get_by_role("row", name=context.bundles[0].name + " Actions")
+               .get_by_label("Actions")).to_be_visible()
+        (context.page.get_by_role("row", name=context.bundles[0].name + " Actions")
+         .get_by_label("Actions").click())
         context.page.get_by_role("link", name="View", exact=True).click()
 
     expect(context.page.locator("header")).to_contain_text(context.bundles[0].name)
@@ -327,9 +327,10 @@ def can_preview_bundle(context: Context, user_role: str) -> None:
 
 
 @step("the {user_role} cannot preview a bundle")
-def can_preview_bundle(context: Context, user_role: str) -> None:
+def cannot_preview_bundle(context: Context, user_role: str) -> None:
         context.page.get_by_role("link", name="Bundles", exact=True).click()
-        expect(context.page.get_by_role("button", name=f"More options for '{context.bundles[0].name}'")).not_to_be_visible()
+        expect(context.page.get_by_role("button",
+                                        name=f"More options for '{context.bundles[0].name}'")).not_to_be_visible()
 
 @step("the {user_role} cannot approve a bundle")
 def cannot_approve_bundle(context: Context, user_role: str) -> None:
