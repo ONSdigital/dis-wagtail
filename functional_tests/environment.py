@@ -58,7 +58,7 @@ def before_all(context: Context):
 def configure_and_launch_playwright_browser(context: Context) -> None:
     """Configures and launches a playwright browser and browser context for use in the tests."""
     browser_type = os.getenv("PLAYWRIGHT_BROWSER", "chromium")
-    headless = str_to_bool(os.getenv("PLAYWRIGHT_HEADLESS", "False"))
+    headless = str_to_bool(os.getenv("PLAYWRIGHT_HEADLESS", "True"))
     slow_mo = int(os.getenv("PLAYWRIGHT_SLOW_MO", "0"))
     default_browser_timeout = int(os.getenv("PLAYWRIGHT_DEFAULT_BROWSER_TIMEOUT", "5_000"))
 
