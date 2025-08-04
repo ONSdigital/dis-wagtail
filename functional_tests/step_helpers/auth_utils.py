@@ -4,6 +4,7 @@ import json
 import uuid
 from typing import Any, Optional
 
+from behave.runner import Context
 from django.conf import settings
 
 from cms.auth import utils as auth_utils
@@ -14,7 +15,7 @@ from cms.auth.utils import get_auth_config
 class AuthenticationTestHelper:
     """Helper class for managing authentication test setup and assertions."""
 
-    def __init__(self, context) -> None:
+    def __init__(self, context: Context) -> None:
         self.context = context
         self.captured_requests: list = []
 
@@ -30,8 +31,6 @@ class AuthenticationTestHelper:
         # Mock get_jwks to return our test JWKS
         auth_utils.get_jwks = lambda: self.context.test_jwks
 
-        # print(f"Test keypair configured with KID: {self.context.test_keypair.kid}")
-
     def generate_test_tokens(self, groups: Optional[list[str]] = None) -> tuple[str, str]:
         """Generate test JWT tokens with specified groups."""
         if groups is None:
@@ -39,7 +38,6 @@ class AuthenticationTestHelper:
 
         # Create unique user UUID
         self.context.user_uuid = str(uuid.uuid4())
-        # print(f"Generated User UUID: {self.context.user_uuid}")
 
         # Create helper instance with our test keypair
         token_helper = CognitoTokenTestCase()
@@ -52,10 +50,6 @@ class AuthenticationTestHelper:
         # Store tokens in context
         self.context.access_token = access_token
         self.context.id_token = id_token
-
-        # Debug output
-        # print(f"Access Token (first 50 chars): {access_token[:50]}...")
-        # print(f"ID Token (first 50 chars): {id_token[:50]}...")
 
         return access_token, id_token
 
@@ -113,9 +107,6 @@ class AuthenticationTestHelper:
         session_ms = exp_seconds * 1000
         refresh_ms = session_ms - (offset_seconds * 1000)
 
-        # print(f"Session expiry time: {session_ms} ms")
-        # print(f"Refresh trigger time: {refresh_ms} ms")
-
         self.context.page.context.add_init_script(f"""
             window.localStorage.setItem('dis_auth_client_state', JSON.stringify({{
             session_expiry_time: {session_ms},
@@ -159,7 +150,6 @@ def capture_request(context):
 
         # Mock the refresh endpoint for PUT or POST requests
         if request.url.endswith("/refresh/") and request.method in ["POST", "PUT"]:
-            # print(f"[CAPTURED] {request.method} to {request.url}")
             # Mock successful refresh response
             route.fulfill(
                 status=200,
@@ -169,7 +159,6 @@ def capture_request(context):
                 ),
             )
         elif request.url.endswith("/extend-session/") and request.method == "POST":
-            # print(f"[CAPTURED] POST to extend-session: {request.url}")
             route.fulfill(
                 status=200,
                 content_type="application/json",

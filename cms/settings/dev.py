@@ -128,7 +128,6 @@ MIGRATION_LINTER_OPTIONS = {
         "0004_make_release_date_mandatory_and_rename_next_release_text",  # Ignoring NOT NULL and RENAMING constraints
         "0004_statisticalarticlepage_headline_figures_figure_ids",
         "0006_statisticalarticlepage_dataset_sorting_and_more",  # Ignoring NOT NULL constraint
-        "0005_user_remove_uuid_null",  # Ignoring NOT NULL constraint
         "0006_topicpage_datasets",  # Ignoring NOT NULL constraint
         "0004_bundleteam_preview_notification_sent",  # Ignoring NOT NULL constraint
         "0005_bundle_updated_at",  # Ignoring NOT NULL constraint

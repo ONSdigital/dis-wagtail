@@ -10,7 +10,7 @@ from django.test.utils import override_settings
 from playwright.sync_api import sync_playwright
 
 from functional_tests.behave_fixtures import django_test_case, django_test_runner
-from functional_tests.step_helpers.utilities import str_to_bool
+from functional_tests.step_helpers.utils import str_to_bool
 
 # Ensure the correct Django settings module is used
 os.environ["DJANGO_SETTINGS_MODULE"] = "cms.settings.functional_test"
@@ -59,7 +59,7 @@ def configure_and_launch_playwright_browser(context: Context) -> None:
     """Configures and launches a playwright browser and browser context for use in the tests."""
     browser_type = os.getenv("PLAYWRIGHT_BROWSER", "chromium")
     headless = str_to_bool(os.getenv("PLAYWRIGHT_HEADLESS", "False"))
-    slow_mo = int(os.getenv("PLAYWRIGHT_SLOW_MO", "500"))
+    slow_mo = int(os.getenv("PLAYWRIGHT_SLOW_MO", "0"))
     default_browser_timeout = int(os.getenv("PLAYWRIGHT_DEFAULT_BROWSER_TIMEOUT", "5_000"))
 
     browser_kwargs = {
@@ -120,6 +120,8 @@ def before_scenario(context: Context, scenario: Scenario):
 
     context.page = context.playwright_context.new_page()
 
+    # For debugging purposes, log all console messages from the page;
+    # this can be useful to see errors from the dis-authorisation-client-js library
     context.page.on("console", lambda msg: print(f"[PAGE][{msg.type}] {msg.text}"))
 
     if context.playwright_trace:

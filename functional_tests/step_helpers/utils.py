@@ -9,7 +9,7 @@ def str_to_bool(bool_string: str) -> bool:
     raise ValueError(f"Invalid input: {bool_string}")
 
 
-def require_request(requests, predicate, description):
+def require_request(requests: list[str], predicate: callable, description: str) -> None:
     """Return the first request matching predicate or raise AssertionError."""
     reqs = list(requests)
     for req in reqs:

@@ -1,3 +1,4 @@
+import json
 import re
 import time
 
@@ -8,7 +9,7 @@ from playwright.sync_api import expect
 
 from cms.auth.utils import get_auth_config
 from functional_tests.step_helpers.auth_utils import AuthenticationTestHelper
-from functional_tests.step_helpers.utilities import require_request
+from functional_tests.step_helpers.utils import require_request
 
 
 @given("I am authenticated")
@@ -18,8 +19,6 @@ def create_valid_tokens(context: Context) -> None:
     helper.setup_test_keypair()
     helper.generate_test_tokens(groups=["role-admin"])
     cookies = helper.create_auth_cookies()
-    # for cookie in cookies:
-    # print(f"Setting cookie: {cookie['name']} = {cookie['value'][:50]}...")
     context.page.context.add_cookies(cookies)
     helper.setup_session_renewal_timing()
 
@@ -43,7 +42,7 @@ def simulate_user_activity(context: Context) -> None:
 
 
 @then("a session renewal request should be sent")
-def verify_renewal_requested(context):
+def verify_renewal_requested(context: Context) -> None:
     auth_config = get_auth_config()
     refresh_path = auth_config["authTokenRefreshUrl"]
 
@@ -98,7 +97,7 @@ def step_refresh_page(context: Context) -> None:
 
 @when('I click the "Log out" button in the Wagtail UI')
 def step_click_logout(context: Context) -> None:
-    """Trigger the logout flow and wait for the network call."""
+    """Trigger the logout flow."""
     context.page.get_by_role("button", name="first").click()
     context.page.get_by_role("button", name="Log out").click()
 
@@ -135,20 +134,20 @@ def step_refresh_in_one_tab(context: Context) -> None:
     """Trigger renewal in Tab 1, sync state into Tab 2, and capture both expiries."""
     tab1_logs, tab2_logs = [], []
 
-    # 1. Listen on BOTH pages before we do anything
+    # Listen on both pages before we do anything
     context.pages[0].on("console", lambda msg: tab1_logs.append(msg.text))
     context.pages[1].on("console", lambda msg: tab2_logs.append(msg.text))
 
-    # 2. Wiggle the mouse in Tab 1 to kick off the activity-based renewal
+    # Kick off the activity-based renewal
     movements = [(500, 300), (600, 350), (500, 300)]
     for x, y in movements:
         context.pages[0].mouse.move(x, y)
         time.sleep(3)
 
-    # Give your library a moment to log the result
+    # Give the library a moment to log the result
     time.sleep(1)
 
-    # 3. Extract Tab 1's “new expiration time”
+    # Extract Tab 1's “new expiration time”
     for text in tab1_logs:
         print(f"Tab 1 log: {text}")
         m = re.search(r"new expiration time: (\d+)", text)
@@ -158,24 +157,24 @@ def step_refresh_in_one_tab(context: Context) -> None:
     else:
         raise AssertionError("No renewal log in Tab 1; saw:\n  " + "\n  ".join(tab1_logs))
 
-    # # 4. Pull the fresh state from Tab 1's localStorage
-    # state = context.pages[0].evaluate("localStorage.getItem('dis_auth_client_state')")
+    # Pull the fresh state from Tab 1's localStorage
+    state = context.pages[0].evaluate("localStorage.getItem('dis_auth_client_state')")
 
-    # #    Copy that into Tab 2 and fire a StorageEvent so its listener runs
-    # context.pages[1].evaluate(
-    #     f"""
-    #     localStorage.setItem('dis_auth_client_state', {json.dumps(state)});
-    #     window.dispatchEvent(new StorageEvent('storage', {{
-    #         key: 'dis_auth_client_state',
-    #         newValue: {json.dumps(state)}
-    #     }}));
-    #     """
-    # )
+    #    Copy that into Tab 2 and fire a StorageEvent so its listener runs
+    context.pages[1].evaluate(
+        f"""
+        localStorage.setItem('dis_auth_client_state', {json.dumps(state)});
+        window.dispatchEvent(new StorageEvent('storage', {{
+            key: 'dis_auth_client_state',
+            newValue: {json.dumps(state)}
+        }}));
+        """
+    )
 
     # Let Tab 2's listener fire and log
     time.sleep(1)
 
-    # 5. Extract Tab 2's “new expiration time”
+    # Extract Tab 2's “new expiration time”
     for text in tab2_logs:
         m = re.search(r"new expiration time: (\d+)", text)
         print(f"Tab 2 log: {text}")
@@ -207,23 +206,24 @@ def step_both_tabs_redirect(context: Context) -> None:
     expected_path = "/admin/login/"
 
     # Check Tab 1
-    tab1 = context.pages[0]
-    tab1.wait_for_url(lambda url: expected_path in url, timeout=5000)
-    if expected_path not in tab1.url:
-        raise AssertionError(f"Tab 1 was not redirected to login; URL is {tab1.url}")
+    tab_1 = context.pages[0]
+    tab_1.wait_for_url(lambda url: expected_path in url, timeout=5000)
+    if expected_path not in tab_1.url:
+        raise AssertionError(f"Tab 1 was not redirected to login; URL is {tab_1.url}")
 
     # Refresh and check Tab 2
-    tab2 = context.pages[1]
-    tab2.reload()
-    tab2.wait_for_url(lambda url: expected_path in url, timeout=5000)
-    if expected_path not in tab2.url:
-        raise AssertionError(f"Tab 2 was not redirected to login after reload; URL is {tab2.url}")
+    tab_2 = context.pages[1]
+    tab_2.reload()
+    tab_2.wait_for_url(lambda url: expected_path in url, timeout=5000)
+    if expected_path not in tab_2.url:
+        raise AssertionError(f"Tab 2 was not redirected to login after reload; URL is {tab_2.url}")
 
 
 @when("I am editing page")
 def step_navigate_iframe(context: Context) -> None:
-    """Navigate to the admin page within an iframe."""
+    """Navigate to the a information page to simulate editing."""
     context.page.goto(f"{context.base_url}/admin/")
+
     context.page.get_by_role("button", name="Pages").click()
     context.page.get_by_role("link", name="Home English").click()
     context.page.get_by_role("link", name="Add child page").click()
