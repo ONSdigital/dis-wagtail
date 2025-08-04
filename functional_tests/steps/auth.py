@@ -40,6 +40,8 @@ def simulate_user_activity(context: Context) -> None:
         context.page.mouse.move(x, y)
         time.sleep(3)
 
+    time.sleep(5)  # Allow time for any session renewal logic to run
+
 
 @then("a session renewal request should be sent")
 def verify_renewal_requested(context: Context) -> None:
