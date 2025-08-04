@@ -15,6 +15,7 @@ def user_clicks_action_menu_toggle(context: Context):
 @when('the user clicks "Publish"')
 @when("publishes the page")
 def user_clicks_publish(context: Context) -> None:
+    # Focus on the Status button to prevent overlap when trying to click the Publish button
     context.page.locator('[data-w-tooltip-content-value="Status"]').focus()
     context.page.get_by_role("button", name="More actions").click()
     context.page.get_by_role("button", name="Publish").click()
@@ -27,6 +28,7 @@ def user_clicks_view_live_on_publish_confirmation_banner(context: Context) -> No
 
 @step('the user clicks the "{button_text}" button')
 def click_the_given_button(context: Context, button_text: str) -> None:
+    # Focus on the Status button to prevent overlap when trying to click the button
     context.page.locator('[data-w-tooltip-content-value="Status"]').focus()
     if button_text in ("Save Draft", "Preview"):
         # add a small delay to allow any client-side JS to initialise.
