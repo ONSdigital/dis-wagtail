@@ -17,7 +17,11 @@ logger = logging.getLogger("cms.bundles")
 
 
 def notify_slack_of_status_change(
-    bundle: Bundle, old_status: "_StrOrPromise", user: Optional["User"] = None, url: str | None = None
+    bundle: Bundle,
+    old_status: "_StrOrPromise",
+    user: Optional["User"] = None,
+    url: str | None = None,
+    context_message: str | None = None,
 ) -> None:
     """Sends a Slack notification for Bundle status changes."""
     if (webhook_url := settings.SLACK_NOTIFICATIONS_WEBHOOK_URL) is None:
@@ -31,6 +35,9 @@ def notify_slack_of_status_change(
         {"title": "Old status", "value": old_status, "short": True},
         {"title": "New status", "value": bundle.get_status_display(), "short": True},
     ]
+    if context_message:
+        fields.append({"title": "Context", "value": context_message})
+
     if url:
         fields.append(
             {"title": "Link", "value": url, "short": False},

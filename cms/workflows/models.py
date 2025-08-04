@@ -26,10 +26,6 @@ class ReadyToPublishGroupTask(AbstractGroupApprovalTask):
     """Placeholder task model to use in the Bundle approval logic."""
 
     def locked_for_user(self, obj: "Model", user: "User") -> bool:
-        # TODO: update lock message (needs PR to core)
-        if user.is_superuser:
-            return False
-
         if getattr(obj, "active_bundle", None) is not None:
             return True
 

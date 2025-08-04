@@ -13,11 +13,11 @@ from cms.standard_pages.models import IndexPage, InformationPage
 class IndexPageFactory(wagtail_factories.PageFactory):
     """Factory for IndexPage."""
 
-    parent = factory.LazyFunction(lambda: HomePage.objects.first())  # pylint: disable=unnecessary-lambda
-
     class Meta:
         model = IndexPage
 
+    parent = factory.LazyFunction(lambda: HomePage.objects.first())  # pylint: disable=unnecessary-lambda
+    title = factory.Faker("sentence", nb_words=4)
     summary = factory.Faker("text", max_nb_chars=100)
 
     featured_items = wagtail_factories.StreamFieldFactory(
@@ -34,11 +34,11 @@ class IndexPageFactory(wagtail_factories.PageFactory):
 class InformationPageFactory(wagtail_factories.PageFactory):
     """Factory for InformationPage."""
 
-    parent = factory.SubFactory(IndexPageFactory)
-
     class Meta:
         model = InformationPage
 
+    parent = factory.SubFactory(IndexPageFactory)
+    title = factory.Faker("sentence", nb_words=4)
     summary = factory.Faker("text", max_nb_chars=100)
     last_updated = factory.LazyFunction(lambda: timezone.now().date())
     content = wagtail_factories.StreamFieldFactory({"section": factory.SubFactory(SectionBlockFactory)})
