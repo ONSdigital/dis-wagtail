@@ -1,3 +1,5 @@
+import json
+from json import loads
 from datetime import timedelta
 
 from behave import given, step, then, when  # pylint: disable=no-name-in-module
@@ -135,7 +137,7 @@ def bundle_inspect_show(context: Context) -> None:
 def create_user_by_role(context: Context, user_role: str) -> None:
     if 'users' not in context:
         context.users = []
-    if not any([d for d in context.users if d['role'] == user_role]):
+    if not next(d for d in context.users if d['role'] == user_role):
         user_data = create_user(user_role)
         context.users.append({'role': user_role, 'user': user_data})
 
@@ -186,35 +188,35 @@ def add_user_to_preview_teams(context: Context, user_role : str) -> None:
             tmp_user.teams.add(team)
 
 
-@given("there are {no_bundles} bundles created by {creator_role} with status {status} "
-       "Preview Teams {teams} Release Calendar {add_rel_cal} Pages {add_stat_page}")
-def multiple_bundles_create(context: Context, no_bundles: str, creator_role: str,
-                            status: str, teams: str, add_rel_cal: str, add_stat_page: str) -> None:
+@given("there are {no_bundles} bundles with {bundle_details}")
+def multiple_bundles_create(context: Context, no_bundles: str, bundle_details: str) -> None:
+    bundles_details = json.loads(bundle_details)
     context.bundles = []
+
     if no_bundles.isdigit():
         for __ in range(int(no_bundles)):
-            create_bundle(context, creator_role, status)
+            create_bundle(context, bundles_details["creator_role"], bundles_details["status"])
 
-    if bool(teams) and hasattr(context, "teams"):
+    if bool(bundles_details["preview_teams"]) and hasattr(context, "teams"):
         for team in context.teams:
             for bundle in context.bundles:
                 BundleTeam.objects.create(parent=bundle, team=team)
 
-    if bool(add_rel_cal) and hasattr(context, "release_calendar_pages"):
+    if bool(bundles_details["add_rel_cal"]) and hasattr(context, "release_calendar_pages"):
         for page in context.release_calendar_pages:
             for bundle in context.bundles:
                 BundlePage.objects.create(parent=bundle, page=page)
 
-    if bool(add_stat_page) and hasattr(context, "statistical_article_pages"):
+    if bool(bundles_details["add_stat_page"]) and hasattr(context, "statistical_article_pages"):
         for page in context.statistical_article_pages:
             for bundle in context.bundles:
                 BundlePage.objects.create(parent=bundle, page=page)
 
 
 def create_bundle(context, creator_role, status):
-    if not any([d for d in context.users if d['role'] == creator_role]):
+    if not next(d for d in context.users if d['role'] == creator_role):
         create_user_by_role(context, creator_role)
-    bundle_creator = [d for d in context.users if d['role'] == creator_role][0]['user']['user']
+    bundle_creator = next(d for d in context.users if d['role'] == creator_role)[0]['user']['user']
     bundle_status = BundleStatus.DRAFT
     bundle_approved = False
     if status == "Approved":
@@ -232,7 +234,7 @@ def create_bundle(context, creator_role, status):
 # Bundles UI Triggers
 @when("the {user_role} logs in")
 def log_in_user_by_role(context: Context, user_role: str) -> None:
-    user = [d for d in context.users if d['role'] == user_role][0]['user']
+    user = next(d for d in context.users if d['role'] == user_role)[0]['user']
     context.page.goto(f"{context.base_url}/admin/login/")
     context.page.get_by_placeholder("Enter your username").fill(user["username"])
     context.page.get_by_placeholder("Enter password").fill(user["password"])
