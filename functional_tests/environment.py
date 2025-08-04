@@ -6,6 +6,7 @@ from behave import use_fixture
 from behave.model import Scenario
 from behave.model_core import Status
 from behave.runner import Context
+from django.test.utils import override_settings
 from playwright.sync_api import sync_playwright
 
 from functional_tests.behave_fixtures import django_test_case, django_test_runner
@@ -22,6 +23,11 @@ os.environ["DJANGO_ALLOW_ASYNC_UNSAFE"] = "True"
 # This will get called again during the test runner setup in the before_all hook,
 # but that happens too late to solve import time issues.
 django.setup()
+
+from functional_tests.step_helpers.auth_utils import (  # noqa: E402 # pylint: disable=wrong-import-position
+    capture_request,
+    get_override_settings,
+)
 
 
 def before_all(context: Context):
@@ -52,8 +58,8 @@ def before_all(context: Context):
 def configure_and_launch_playwright_browser(context: Context) -> None:
     """Configures and launches a playwright browser and browser context for use in the tests."""
     browser_type = os.getenv("PLAYWRIGHT_BROWSER", "chromium")
-    headless = str_to_bool(os.getenv("PLAYWRIGHT_HEADLESS", "True"))
-    slow_mo = int(os.getenv("PLAYWRIGHT_SLOW_MO", "0"))
+    headless = str_to_bool(os.getenv("PLAYWRIGHT_HEADLESS", "False"))
+    slow_mo = int(os.getenv("PLAYWRIGHT_SLOW_MO", "500"))
     default_browser_timeout = int(os.getenv("PLAYWRIGHT_DEFAULT_BROWSER_TIMEOUT", "5_000"))
 
     browser_kwargs = {
@@ -107,7 +113,14 @@ def before_scenario(context: Context, scenario: Scenario):
         # Otherwise use the default context
         context.playwright_context = context.browser_context
 
+    # Only set up request capture and mocking for scenarios tagged with 'cognito_enabled'
+    if "cognito_enabled" in scenario.tags:
+        context._requests = []  # pylint: disable=protected-access
+        context.playwright_context.route("**/*", capture_request(context))
+
     context.page = context.playwright_context.new_page()
+
+    context.page.on("console", lambda msg: print(f"[PAGE][{msg.type}] {msg.text}"))
 
     if context.playwright_trace:
         # Start a new tracing chunk to capture each scenario separately
@@ -129,3 +142,19 @@ def after_scenario(context: Context, scenario: Scenario):
         context.playwright_context.tracing.stop_chunk()
 
     context.page.close()
+
+
+def before_tag(context: Context, tag: str):
+    """Handle tag-specific setup."""
+    if tag == "cognito_enabled":
+        # Apply Cognito test settings
+        settings = get_override_settings()
+        context.aws_override = override_settings(**settings)
+        context.aws_override.enable()
+
+
+def after_tag(context: Context, tag: str):
+    """Handle tag-specific cleanup."""
+    if tag == "cognito_enabled" and hasattr(context, "aws_override"):
+        # Disable settings override
+        context.aws_override.disable()

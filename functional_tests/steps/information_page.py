@@ -12,7 +12,7 @@ def user_creates_information_page(context: Context) -> None:
     context.page.get_by_role("link", name="Information page", exact=True).click()
 
 
-@when("the user adds content to the new information page")
+@step("the user adds content to the new information page")
 def user_adds_info_page_contents(context: Context) -> None:
     context.page.get_by_placeholder("Page title*").fill("Test Info Page")
 
