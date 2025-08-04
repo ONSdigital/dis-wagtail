@@ -20,13 +20,9 @@ logger = logging.getLogger(__name__)
 
 def _parse_der_public_key(b64_der_key: str) -> RSAPublicKey:
     """Parses a Base64 encoded DER public key and returns the public key object."""
-    try:
-        der = base64.b64decode(b64_der_key)
-        key = serialization.load_der_public_key(der, backend=default_backend())
-        return cast(RSAPublicKey, key)
-    except Exception:
-        logger.exception("Failed to parse DER public key")
-        raise
+    der = base64.b64decode(b64_der_key)
+    key = serialization.load_der_public_key(der, backend=default_backend())
+    return cast(RSAPublicKey, key)
 
 
 @memory_cache(60 * 30)
@@ -56,7 +52,7 @@ def validate_jwt(token: str, token_type: str) -> dict | None:
     except InvalidTokenError:
         logger.exception("Invalid token", extra={"token_type": token_type})
     except Exception:  # pylint: disable=broad-except
-        logger.exception("Error decoding token", extra={"token_type": token_type})
+        logger.exception("Error decoding token or parsing DER public key", extra={"token_type": token_type})
     return None
 
 
