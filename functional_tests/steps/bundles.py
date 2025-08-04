@@ -1,5 +1,4 @@
 import json
-from json import loads
 from datetime import timedelta
 
 from behave import given, step, then, when  # pylint: disable=no-name-in-module
