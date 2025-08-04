@@ -3,7 +3,8 @@ from behave.runner import Context
 from django.urls import reverse
 from playwright.sync_api import expect
 
-from cms.themes.tests.factories import ThemePageFactory
+from cms.themes.models import ThemeIndexPage
+from cms.themes.tests.factories import ThemeIndexPageFactory
 
 
 @when("the user clicks the action button toggle")
@@ -47,18 +48,23 @@ def the_user_edits_a_page(context: Context, page: str) -> None:
 
 @when("the user tries to create a new theme page")
 def user_tries_to_create_new_theme_page(context: Context) -> None:
+    if not hasattr(context, "theme_index_page"):
+        try:
+            theme_index_page = ThemeIndexPage.objects.get()
+        except ThemeIndexPage.DoesNotExist:
+            theme_index_page = ThemeIndexPageFactory(title="Browse")
+        context.theme_index_page = theme_index_page
     context.page.get_by_role("button", name="Pages").click()
-    context.page.get_by_role("link", name="Home English", exact=True).click()
+    context.page.get_by_role("link", name="View child pages of 'Home'").click()
+    context.page.get_by_role("link", name=context.theme_index_page.title, exact=True).click()
     context.page.get_by_role("link", name="Add child page").click()
-    context.page.get_by_role("link", name="Theme page . A theme page,").click()
 
 
 @when("the user tries to create a new topic page")
 def user_tries_to_create_new_topic_page(context: Context) -> None:
-    topic_theme = ThemePageFactory()
     context.page.get_by_role("button", name="Pages").click()
     context.page.get_by_role("link", name="Home English", exact=True).click()
-    context.page.get_by_role("link", name=f"Add a child page to '{topic_theme.title}'").click()
+    context.page.get_by_role("link", name="Add child page").click()
     context.page.get_by_role("link", name="Topic page . A specific topic").click()
 
 
@@ -162,16 +168,16 @@ def the_user_can_lock_and_unlock_a_page(context: Context):
     expect(context.page.get_by_text("Page 'Test Info Page' is now unlocked.")).to_be_visible()
 
 
-@step("the user can bulk delete the Theme page and its children")
+@step("the user can bulk delete the topic page and its children")
 def the_user_can_bulk_delete_a_theme_page_and_its_children(context: Context):
     context.page.get_by_role("button", name="Pages").click()
     context.page.get_by_role("link", name="Home English", exact=True).click()
-    context.page.get_by_role("button", name=f"More options for '{context.theme_page.title}'").click()
-    context.page.get_by_role("link", name=f"Delete page '{context.theme_page.title}'").click()
-    expect(context.page.get_by_role("link", name="This theme page is referenced")).to_be_visible()
+    context.page.get_by_role("button", name=f"More options for '{context.topic_page.title}'").click()
+    context.page.get_by_role("link", name=f"Delete page '{context.topic_page.title}'").click()
+    expect(context.page.get_by_role("link", name="This topic page is referenced")).to_be_visible()
     expect(context.page.get_by_text("Are you sure you want to")).to_be_visible()
     context.page.get_by_role("button", name="Yes, delete it").click()
-    expect(context.page.get_by_text(f"Page '{context.theme_page.title}' deleted.")).to_be_visible()
+    expect(context.page.get_by_text(f"Page '{context.topic_page.title}' deleted.")).to_be_visible()
 
 
 @when('the user clicks "Save" to save the Snippet')
