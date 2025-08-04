@@ -576,3 +576,18 @@ class ReleaseCalendarPageAdminFormTestCase(WagtailTestUtils, TestCase):
         self.assertTrue(form.is_valid())
 
         self.assertEqual(form.cleaned_data["release_date"].second, 0)
+
+    def test_changes_to_release_date_is_removed_from_the_form_on_page_creation(self):
+        """Check that the changes_to_release_date field is not present when creating a new page."""
+        unsaved_page = ReleaseCalendarPageFactory.build()
+        form = self.form_class(instance=unsaved_page, data=self.form_data)
+
+        self.assertTrue(form.is_valid())
+        self.assertNotIn("changes_to_release_date", form.fields)
+
+    def test_changes_to_release_date_is_present_when_editing_an_existing_page(self):
+        """Check that the changes_to_release_date field is present when editing an existing page."""
+        form = self.form_class(instance=self.page, data=self.form_data)
+
+        self.assertTrue(form.is_valid())
+        self.assertIn("changes_to_release_date", form.fields)
