@@ -44,7 +44,7 @@ class BundleAPIClient:
         method: str,
         endpoint: str,
         data: Optional[dict[str, Any]] = None,
-        params: Optional[dict[str, int | str]] = None,
+        params: Optional[dict[str, str]] = None,
     ) -> dict[str, Any]:
         """Make a request to the API and handle common errors.
 
@@ -198,16 +198,24 @@ class BundleAPIClient:
         """
         return self._make_request("DELETE", f"/bundles/{bundle_id}/contents/{content_id}")
 
-    def get_bundle_contents(self, bundle_id: str) -> dict[str, Any]:
+    def get_bundle_contents(self, bundle_id: str, limit: int = 20, offset: int = 0) -> dict[str, Any]:
         """Get the list of contents for a specific bundle.
 
         Args:
             bundle_id: The ID of the bundle to get contents for.
+            limit: The maximum number of items to return. Defaults to 20.
+            offset: The starting index of the items to return. Defaults to 0.
 
         Returns:
             API response data containing the list of contents.
         """
-        return self._make_request("GET", f"/bundles/{bundle_id}/contents")
+        if limit <= 0:
+            raise ValueError("limit must be a positive integer")
+        if offset < 0:
+            raise ValueError("offset must be a non-negative integer")
+
+        params: dict[str, str] = {"limit": str(limit), "offset": str(offset)}
+        return self._make_request("GET", f"/bundles/{bundle_id}/contents", params=params)
 
     def delete_bundle(self, bundle_id: str) -> dict[str, Any]:
         """Delete a bundle via the API.
@@ -225,14 +233,19 @@ class BundleAPIClient:
         """Get a list of all bundles.
 
         Args:
-            limit: The maximum number of items to return.
-            offset: The starting index of the items to return.
+            limit: The maximum number of items to return. Defaults to 20.
+            offset: The starting index of the items to return. Defaults to 0.
             publish_date: Filter bundles by their scheduled publication date.
 
         Returns:
             API response data containing a list of bundles.
         """
-        params: dict[str, str | int] = {"limit": limit, "offset": offset}
+        if limit <= 0:
+            raise ValueError("limit must be a positive integer")
+        if offset < 0:
+            raise ValueError("offset must be a non-negative integer")
+
+        params: dict[str, str] = {"limit": str(limit), "offset": str(offset)}
         if publish_date:
             params["publish_date"] = publish_date
         return self._make_request("GET", "/bundles", params=params)
