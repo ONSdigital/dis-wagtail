@@ -67,6 +67,7 @@ INSTALLED_APPS = [
     "cms.datasets",
     "cms.datavis",
     "cms.documents",
+    "cms.locale",
     "cms.home",
     "cms.images",
     "cms.private_media",
@@ -132,7 +133,7 @@ MIDDLEWARE = [
     # SecurityMiddleware.
     # http://whitenoise.evans.io/en/stable/#quickstart-for-django-apps
     "cms.core.whitenoise.CMSWhiteNoiseMiddleware",
-    "django.middleware.locale.LocaleMiddleware",
+    "cms.locale.middleware.SubdomainLocaleMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
@@ -1037,3 +1038,6 @@ CONTACT_US_URL = env.get("CONTACT_US_URL", "/aboutus/contactus/generalandstatist
 
 # Backup site URL
 BACKUP_SITE_URL = env.get("BACKUP_SITE_URL", "https://backup.ons.gov.uk")
+
+# Domain-based locale configuration
+CMS_USE_SUBDOMAIN_LOCALES = env.get("CMS_USE_SUBDOMAIN_LOCALES", "false").lower() == "true"

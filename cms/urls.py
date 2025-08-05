@@ -151,11 +151,15 @@ urlpatterns = (
             name="wagtailimages_serve",
         ),
     ]
-    + i18n_patterns(
+)
+
+if getattr(settings, "CMS_USE_SUBDOMAIN_LOCALES", True):
+    urlpatterns += [path("", include(wagtail_urls))]
+else:
+    urlpatterns += i18n_patterns(
         path("", include(wagtail_urls)),
         prefix_default_language=False,
     )
-)
 
 # Error handlers
 handler404 = "cms.core.views.page_not_found"
