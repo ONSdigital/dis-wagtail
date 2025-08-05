@@ -239,7 +239,7 @@ class BundleAPIClient:
 
     # Note: Currently unused, but kept for future use
     def get_bundle(self, bundle_id: str) -> dict[str, Any]:
-        """Get a single bundle by its ID.
+        """Get a specific bundle by its ID.
 
         Args:
             bundle_id: The ID of the bundle to retrieve.
