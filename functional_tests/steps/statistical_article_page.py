@@ -570,6 +570,7 @@ def user_selects_featured_chart_preview_mode(context: Context):
     preview_mode_select.select_option(value="featured_article")
     context.page.wait_for_timeout(250)
 
+    # Open preview in new tab for more reliable testing
     browser_context = context.playwright_context
     with browser_context.expect_page() as preview_page:
         context.page.get_by_role("link", name="Preview in new tab").click()
