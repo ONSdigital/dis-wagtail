@@ -44,7 +44,8 @@ class GetFormattedPagesListTests(TestCase):
         # When no listing_summary and release_date, should use summary for description,
         # and use the default label.
         page = DummyPage(title="Test Page", summary="Test summary", listing_summary="")
-        result = get_formatted_pages_list([page])
+        page_dict = {"internal_page": page}
+        result = get_formatted_pages_list([page_dict])
         expected = {
             "title": {"text": "Test Page", "url": "https://ons.gov.uk"},
             "metadata": {"object": {"text": "Page"}},
@@ -56,7 +57,8 @@ class GetFormattedPagesListTests(TestCase):
     def test_with_listing_summary_overrides_summary(self):
         # When listing_summary is provided, that should be used as description.
         page = DummyPage(title="Test Page", summary="Test summary", listing_summary="Listing summary")
-        result = get_formatted_pages_list([page])
+        page_dict = {"internal_page": page}
+        result = get_formatted_pages_list([page_dict])
         expected = {
             "title": {"text": "Test Page", "url": "https://ons.gov.uk"},
             "metadata": {"object": {"text": "Page"}},
@@ -68,7 +70,8 @@ class GetFormattedPagesListTests(TestCase):
     def test_with_custom_label(self):
         # When a custom label is defined, it should be used in metadata.
         page = DummyPageWithNoReleaseDate(title="Test Page", summary="Test summary", listing_summary="")
-        result = get_formatted_pages_list([page])
+        page_dict = {"internal_page": page}
+        result = get_formatted_pages_list([page_dict])
         expected = {
             "title": {"text": "Test Page", "url": "https://ons.gov.uk"},
             "metadata": {"object": {"text": "Dummy Page"}},
@@ -81,7 +84,8 @@ class GetFormattedPagesListTests(TestCase):
         # When release_date is provided, metadata should include date formatting.
         test_date = datetime(2024, 1, 1, 12, 30)
         page = DummyPage(title="Test Page", summary="Test summary", listing_summary="", release_date=test_date)
-        result = get_formatted_pages_list([page])
+        page_dict = {"internal_page": page}
+        result = get_formatted_pages_list([page_dict])
 
         expected_iso = date_format(test_date, "c")
         expected_short = ons_date_format(test_date, "DATE_FORMAT")
@@ -107,7 +111,7 @@ class GetFormattedPagesListTests(TestCase):
         test_date = datetime(2024, 1, 1, 12, 30)
         page1 = DummyPage(title="Page One", summary="Summary One", listing_summary="", release_date=test_date)
         page2 = DummyPageWithNoReleaseDate(title="Page Two", summary="Summary Two", listing_summary="Listing Two")
-        pages = [page1, page2]
+        pages = [{"internal_page": page1}, {"internal_page": page2}]
         result = get_formatted_pages_list(pages)
 
         expected_iso = date_format(test_date, "c")
@@ -134,6 +138,34 @@ class GetFormattedPagesListTests(TestCase):
         self.assertEqual(len(result), 2)
         self.assertDictEqual(result[0], expected_page1)
         self.assertDictEqual(result[1], expected_page2)
+
+    def test_internal_page_dict_format(self):
+        """Test processing dict with internal_page key."""
+        page = DummyPage(title="Test Page", summary="Test summary")
+        page_dict = {"internal_page": page}
+        result = get_formatted_pages_list([page_dict])
+
+        expected = {
+            "title": {"text": "Test Page", "url": "https://ons.gov.uk"},
+            "metadata": {"object": {"text": "Page"}},
+            "description": "Test summary",
+        }
+        self.assertEqual(len(result), 1)
+        self.assertDictEqual(result[0], expected)
+
+    def test_internal_page_dict_format_with_custom_title(self):
+        """Test processing dict with internal_page and custom title."""
+        page = DummyPage(title="Original Title", summary="Test summary")
+        page_dict = {"internal_page": page, "title": "Custom Title"}
+        result = get_formatted_pages_list([page_dict])
+
+        expected = {
+            "title": {"text": "Custom Title", "url": "https://ons.gov.uk"},
+            "metadata": {"object": {"text": "Page"}},
+            "description": "Test summary",
+        }
+        self.assertEqual(len(result), 1)
+        self.assertDictEqual(result[0], expected)
 
 
 class ClientIPTestCase(SimpleTestCase):
