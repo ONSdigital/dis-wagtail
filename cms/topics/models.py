@@ -242,10 +242,10 @@ class TopicPage(BundledPageMixin, ExclusiveTaxonomyMixin, BasePage):  # type: ig
                     )
                 continue
 
-            if not related.page.live or related.page.get_view_restrictions().exists():
-                continue
-
             page = related.page.specific_deferred  # type: ignore[attr-defined]
+
+            if not page.live or page.get_view_restrictions().exists():
+                continue
 
             article_dict = {"internal_page": page}
             if related.title:
