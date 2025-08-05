@@ -271,7 +271,6 @@ class BundleAPIClient:
         return self._make_request("GET", "/health")
 
 
-
 def build_content_item_for_dataset(dataset: Any) -> dict[str, Any]:
     """Build a content item dict for a dataset following Bundle API swagger spec.
 

@@ -238,7 +238,6 @@ class BundleAPIClientTests(TestCase):
         self.assertIn("HTTP 404 error", str(context.exception))
         self.assertIn("Not Found", str(context.exception))
 
-
     @patch("cms.bundles.api.requests.Session")
     def test_http_error_handling(self, mock_session_class):
         mock_response = Mock()
