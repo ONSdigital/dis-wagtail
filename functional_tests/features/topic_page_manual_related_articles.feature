@@ -2,7 +2,7 @@ Feature: A CMS user can manually manage related articles on a Topic Page
 
     Background:
         Given a superuser logs into the admin site
-        And a topic page exists under a theme page
+        And a topic page exists under the homepage
         And the topic page has at least 3 series with a statistical article
 
     Scenario: A user can add an external related article
