@@ -238,17 +238,6 @@ class BundleAPIClientTests(TestCase):
         self.assertIn("HTTP 404 error", str(context.exception))
         self.assertIn("Not Found", str(context.exception))
 
-    @patch("cms.bundles.api.requests.Session")
-    def test_get_bundle_status_success(self, mock_session_class):
-        mock_response = self._create_mock_response(HTTPStatus.OK, {"id": "test-bundle-123", "status": "DRAFT"})
-        mock_session = self._create_mock_session(mock_response)
-        mock_session_class.return_value = mock_session
-
-        client = BundleAPIClient(base_url=self.base_url)
-        result = client.get_bundle_status("test-bundle-123")
-
-        mock_session.request.assert_called_once_with("GET", f"{self.base_url}/bundles/test-bundle-123/status")
-        self.assertEqual(result, {"id": "test-bundle-123", "status": "DRAFT"})
 
     @patch("cms.bundles.api.requests.Session")
     def test_http_error_handling(self, mock_session_class):
@@ -385,9 +374,6 @@ class BundleAPIClientDisabledTests(TestCase):
         self.assertEqual(result, {"status": "disabled", "message": "Bundle API is disabled"})
 
         result = client.get_bundle_contents("test-bundle-123")
-        self.assertEqual(result, {"status": "disabled", "message": "Bundle API is disabled"})
-
-        result = client.get_bundle_status("test-bundle-123")
         self.assertEqual(result, {"status": "disabled", "message": "Bundle API is disabled"})
 
 

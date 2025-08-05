@@ -270,16 +270,6 @@ class BundleAPIClient:
         """
         return self._make_request("GET", "/health")
 
-    def get_bundle_status(self, bundle_id: str) -> dict[str, Any]:
-        """Get the status of a bundle via the API.
-
-        Args:
-            bundle_id: The ID of the bundle to check
-
-        Returns:
-            API response data containing bundle status
-        """
-        return self._make_request("GET", f"/bundles/{bundle_id}/status")
 
 
 def build_content_item_for_dataset(dataset: Any) -> dict[str, Any]:
