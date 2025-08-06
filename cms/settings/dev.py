@@ -133,6 +133,7 @@ MIGRATION_LINTER_OPTIONS = {
         "0005_bundle_updated_at",  # Ignoring NOT NULL constraint
         "0007_statisticalarticlepage_featured_chart_content_and_more",  # Ignoring NOT NULL constraint
         "0008_delete_systemmessagessettings",  # Ignoring dropping table
+        "0007_topicpagerelatedarticle_external_url_and_more",  # Ignoring NOT NULL constraint
         "0007_topicpage_time_series",  # Ignoring NOT NULL constraint
     ],
 }

@@ -29,7 +29,7 @@ Scenario: The Glossary Term raise validation errors when name is duplicated
     Then a validation error is displayed
 
 Scenario: The user can add the Glossary Terms in a section of a page
-    Given a topic page exists under a theme page
+    Given a topic page exists under the homepage
     And a superuser logs into the admin site
     And a Glossary Terms snippet exists
     When the user creates a methodology page as a child of the existing topic page

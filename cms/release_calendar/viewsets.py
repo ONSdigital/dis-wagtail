@@ -11,7 +11,7 @@ from cms.release_calendar.models import ReleaseCalendarPage
 
 
 class FutureReleaseCalendarMixin:
-    results_template_name = "release_calendar/future_release_calendar_page_chooser_results.html"
+    results_template_name = "wagtailadmin/panels/future_release_calendar_page_chooser_results.html"
 
     def get_object_list(self) -> QuerySet[ReleaseCalendarPage]:
         # note: using this method to allow search to work without adding the bundle data in the index
