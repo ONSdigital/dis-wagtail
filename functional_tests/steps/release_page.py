@@ -5,10 +5,19 @@ from playwright.sync_api import expect
 
 from cms.core.custom_date_format import ons_default_datetime
 from cms.release_calendar.tests.factories import ReleaseCalendarPageFactory
-from functional_tests.step_helpers.footer_menu_helpers import choose_page_link
-from functional_tests.step_helpers.pre_release_access_helpers import (
+from functional_tests.step_helpers.release_page_helpers import (
     add_basic_table,
     add_description_block,
+    add_release_date_change,
+    check_error_message,
+    handle_both_next_release_dates,
+    handle_invalid_next_release_date,
+    handle_invalid_release_date,
+    handle_next_release_date_text,
+    handle_next_to_be_before_release_date,
+    handle_pre_release_access_info,
+    handle_related_link,
+    handle_release_date_text,
     insert_block,
 )
 from functional_tests.steps.page_editor import user_clicks_publish
@@ -151,7 +160,7 @@ def display_example_content_release_page_in_preview_tab(context: Context):
 def display_release_page_in_preview_mode_in_preview_tab(context: Context, preview_mode: str):
     page = context.page
     if preview_mode in ("Provisional", "Confirmed"):
-        expect(page.get_by_text("This release is not yet")).to_be_visible()
+        expect(page.get_by_text("This release is not yet published")).to_be_visible()
     elif preview_mode == "Cancelled":
         expect(page.get_by_text("Cancelled", exact=True)).to_be_visible()
     elif preview_mode == "Published":
@@ -162,36 +171,20 @@ def display_release_page_in_preview_mode_in_preview_tab(context: Context, previe
 
 @step("the user adds {feature} to the release calendar page")
 def add_feature(context: Context, feature: str):
-    page = context.page
-    if feature == "a release date text":
-        page.get_by_label("Or, release date text").fill("March 2025 to August 2025")
-    elif feature == "a next release date text":
-        page.get_by_label("Or, next release date text").fill("To be confirmed")
-    elif feature == "a related link":
-        page.locator("#panel-child-content-related_links-content").get_by_role("button", name="Insert a block").click()
-        choose_page_link(page, page_name="Home")
-    elif feature == "pre-release access information":
-        add_basic_table(context)
-        add_description_block(context, index=1)
-    elif feature == "a release date change":
-        change_to_release_date_section = page.locator("#panel-child-content-changes_to_release_date-section")
-        change_to_release_date_section.get_by_role("button", name="Insert a block").click()
-        change_to_release_date_section.get_by_label("Previous date*").fill("2024-12-20 14:30")
-        change_to_release_date_section.get_by_label("Reason for change*").fill("Updated due to data availability")
-
-    elif feature == "an invalid release date text":
-        context.page.get_by_label("Or, release date text").fill("Invalid 4356")
-    elif feature == "an invalid next release date text":
-        context.page.get_by_role("textbox", name="Or, next release date text").fill("Invalid 6444")
-    elif feature == "the next release date to be before the release date":
-        context.page.get_by_role("textbox", name="Release date*").fill("2024-12-25")
-        context.page.locator("#id_next_release_date").fill("2023-12-25")
-    elif feature == "both next release date and next release date text":
-        context.page.locator("#id_next_release_date").fill("2025-12-25")
-        context.page.locator("#id_next_release_date_text").fill("December 2025")
-
-    else:
+    feature_handlers = {
+        "a release date text": handle_release_date_text,
+        "a next release date text": handle_next_release_date_text,
+        "a related link": handle_related_link,
+        "pre-release access information": handle_pre_release_access_info,
+        "a release date change": add_release_date_change,
+        "an invalid release date text": handle_invalid_release_date,
+        "an invalid next release date text": handle_invalid_next_release_date,
+        "the next release date to be before the release date": handle_next_to_be_before_release_date,
+        "both next release date and next release date text": handle_both_next_release_dates,
+    }
+    if feature not in feature_handlers:
         raise ValueError(f"Unsupported page feature: {feature}")
+    feature_handlers[feature](context)
 
 
 @then("{feature} is displayed in the release calendar page preview tab")
@@ -294,11 +287,7 @@ def error_invalid_pre_release_access(context: Context, error: str):
         "empty table": "The table cannot be empty",
     }
 
-    message = error_messages.get(error)
-    if message:
-        expect(context.page.get_by_text(message)).to_be_visible()
-    else:
-        raise ValueError(f"Unsupported error: {error}")
+    check_error_message(context, error, error_messages)
 
 
 @when("the user publishes a page with example content")
@@ -366,11 +355,7 @@ def error_invalid_changes_to_release_date(context: Context, error: str):
         ),
     }
 
-    message = error_messages.get(error)
-    if message:
-        expect(context.page.get_by_text(message)).to_be_visible()
-    else:
-        raise ValueError(f"Unsupported error: {error}")
+    check_error_message(context, error, error_messages)
 
 
 @then("the release calendar page is successfully updated")
