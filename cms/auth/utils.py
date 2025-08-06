@@ -30,6 +30,7 @@ def get_jwks() -> dict[str, str]:
     """Retrieves and caches JSON Web Key Sets (JWKS) for token verification."""
     jwks_url = f"{settings.IDENTITY_API_BASE_URL}/jwt-keys"
 
+    # Jake comment 3
     response = requests.get(jwks_url, timeout=5)
     response.raise_for_status()
     return cast(dict[str, str], response.json())
@@ -52,6 +53,7 @@ def validate_jwt(token: str, token_type: str) -> dict | None:
     except InvalidTokenError:
         logger.exception("Invalid token", extra={"token_type": token_type})
     except Exception:  # pylint: disable=broad-except
+        #  Jake comment 3
         logger.exception("Error decoding token or parsing DER public key", extra={"token_type": token_type})
     return None
 

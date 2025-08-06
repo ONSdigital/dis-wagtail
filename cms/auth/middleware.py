@@ -134,6 +134,7 @@ class ONSAuthMiddleware(AuthenticationMiddleware):
                 "AWS Cognito is disabled; logging out external user",
                 extra={"external_user_id": request.user.external_user_id},
             )
+            # Jake comment 1
             logout(request)
 
     @staticmethod

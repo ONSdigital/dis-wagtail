@@ -26,6 +26,7 @@ class ONSLogoutViewTests(TestCase, WagtailTestUtils):
         SessionMiddleware(lambda r: None).process_request(req)
         req.session.save()
 
+        # Jake comment 2
         # attach a real FallbackStorage
         storage = FallbackStorage(req)
         req._messages = storage  # pylint: disable=protected-access
