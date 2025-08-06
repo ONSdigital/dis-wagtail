@@ -333,7 +333,7 @@ class StatisticalArticlePage(BundledPageMixin, RoutablePageMixin, BasePage):  # 
                     raise ValidationError(
                         {
                             "headline_figures": f"Figure ID {headline_figure} cannot "
-                            f"be removed as it is referenced in a topic page.",
+                            "be removed as it is referenced in a topic page.",
                         }
                     )
 
