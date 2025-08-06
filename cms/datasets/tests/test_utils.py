@@ -87,7 +87,7 @@ class TestUtils(TestCase):
         expected = {
             "title": {"text": title, "url": url},
             "metadata": {"object": {"text": "Time series"}},
-            "description": f'<p><div class="rich-text">{page_summary}</div></p>',
+            "description": f"<p>{page_summary}</p>",
         }
 
         self.assertEqual(len(formatted_time_series), 1)
