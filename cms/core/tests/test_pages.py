@@ -40,7 +40,7 @@ class HomePageTests(WagtailPageTestCase):
 
     def test_welsh_home_page_template(self):
         response = self.client.get("/cy/")
-        self.assertContains(response, "Mae'r holl gynnwys ar gael o dan delerau'r")
+        self.assertContains(response, "Mae'r holl gynnwys ar gael o dan y")
 
     @override_settings(IS_EXTERNAL_ENV=False, WAGTAIL_CORE_ADMIN_LOGIN_ENABLED=True, AWS_COGNITO_LOGIN_ENABLED=True)
     def test_both_login_buttons_are_displayed(self):
