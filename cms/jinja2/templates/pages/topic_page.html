@@ -108,6 +108,19 @@
                 </section>
             {% endif %}
 
+            {% if page.time_series_document_list %}
+                <section id="time-series" class="spacing">
+                    <h2>{{ _("Time Series") }}</h2>
+                    {# fmt:off #}
+                        {{ onsDocumentList({
+                                "headingLevel": 3,
+                                "documents": page.time_series_document_list
+                            })
+                        }}
+                    {# fmt:on #}
+                </section>
+            {% endif %}
+
             {% if page.explore_more %}
                 <section id="explore-more">
                     <h2>{{ _("Explore more") }}</h2>
