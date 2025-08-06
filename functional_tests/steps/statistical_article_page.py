@@ -247,9 +247,12 @@ def user_adds_a_notice(context: Context):
 @step("the user adds an accordion section with title and content")
 def user_adds_accordion_section(context: Context):
     page = context.page
+    context.page.wait_for_timeout(250)
     page.get_by_label("Content ()").get_by_title("Insert a block").nth(3).click()
+    page.wait_for_timeout(50)  # added to allow JS to be ready
     page.get_by_text("Accordion").click()
     page.get_by_label("Title*").fill("Test Accordion Section")
+    page.wait_for_timeout(50)  # added to allow JS to be ready
     page.get_by_role("region", name="Content*").get_by_role("textbox").nth(3).fill("Test accordion content")
     context.page.wait_for_timeout(500)  # Wait for JS to process
 
@@ -565,18 +568,23 @@ def user_selects_featured_chart_preview_mode(context: Context):
     context.page.wait_for_timeout(500)
     preview_mode_select = context.page.locator("#id_preview_mode")
     preview_mode_select.select_option(value="featured_article")
+    context.page.wait_for_timeout(250)
+
+    # Open preview in new tab for more reliable testing
+    browser_context = context.playwright_context
+    with browser_context.expect_page() as preview_page:
+        context.page.get_by_role("link", name="Preview in new tab").click()
+    context.preview_page = preview_page.value
 
 
 @step("the user sees a preview of the containing Topic page")
 def user_sees_a_preview_of_the_published_topic_page(context: Context):
-    context.preview_frame = context.page.frame_locator('iframe[title="Preview"][id="w-preview-iframe"]')
-    context.page.wait_for_timeout(500)
-    expect(context.preview_frame.get_by_role("heading", name=context.topic_page.title)).to_be_visible()
+    expect(context.preview_page.get_by_role("heading", name=context.topic_page.title)).to_be_visible()
 
 
 @step("the topic page preview contains the featured article component")
 def the_topic_page_preview_contains_the_featured_article_component(context: Context):
-    context.featured_article_component = context.preview_frame.locator("#featured")
+    context.featured_article_component = context.preview_page.locator("#featured")
     expect(
         context.featured_article_component.get_by_role("link", name=context.statistical_article_page.display_title)
     ).to_be_visible()
