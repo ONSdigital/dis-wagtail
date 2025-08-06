@@ -132,13 +132,13 @@ def the_user_adds_a_time_series_page_link(context: Context):
 @then("the time series section is displayed on the page")
 def the_time_series_page_link_is_displayed_on_the_page(context: Context):
     page = context.page
-    context.page.wait_for_timeout(500)
-    page.get_by_role("heading", name="Time Series", exact=True).scroll_into_view_if_needed()
 
-    expect(page.get_by_role("heading", name="Time Series", exact=True)).to_be_visible()  # Section heading
-    expect(page.get_by_role("link", name="Page title")).to_be_visible()
-    expect(page.get_by_text("Time series", exact=True)).to_be_visible()
-    expect(page.get_by_text("Summary")).to_be_visible()
+    expect(
+        page.locator("#time-series").get_by_role("heading", name="Time Series", exact=True)
+    ).to_be_visible()  # Section heading
+    expect(page.locator("#time-series").get_by_role("link", name="Page title")).to_be_visible()
+    expect(page.locator("#time-series").get_by_text("Time series", exact=True)).to_be_visible()  # Content type label
+    expect(page.locator("#time-series").get_by_text("Summary")).to_be_visible()
 
 
 @then("the time series item appears in the table of contents")
