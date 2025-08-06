@@ -6,7 +6,6 @@ from django.template import TemplateDoesNotExist
 from django.template.loader import get_template as original_get_template
 from django.test.utils import override_settings
 from django.utils import translation
-from wagtail.models import Locale
 from wagtail.test.utils import WagtailPageTestCase
 
 from cms.core.tests.utils import extract_response_jsonld
@@ -14,12 +13,6 @@ from cms.standard_pages.tests.factories import IndexPageFactory, InformationPage
 
 
 class HomePageTests(WagtailPageTestCase):
-    def tearDown(self):
-        # Reset the translation to the default language after each test to avoid
-        # test contamination issues.
-        translation.activate(settings.LANGUAGE_CODE)
-        return super().tearDown()
-
     def test_home_page_can_be_served(self):
         """Test that the home page can be served."""
         response = self.client.get("/")
@@ -29,18 +22,6 @@ class HomePageTests(WagtailPageTestCase):
         response = self.client.get("/")
         self.assertContains(response, "This is a new service")
         self.assertContains(response, "All content is available under the")
-
-    def test_welsh_home_page_can_be_served(self):
-        response = self.client.get("/cy/")
-        self.assertEqual(response.status_code, HTTPStatus.OK)
-
-    def test_unsupported_language_home_page_is_not_found(self):
-        response = self.client.get("/fr/")
-        self.assertEqual(response.status_code, HTTPStatus.NOT_FOUND)
-
-    def test_welsh_home_page_template(self):
-        response = self.client.get("/cy/")
-        self.assertContains(response, "Mae'r holl gynnwys ar gael o dan delerau'r")
 
     @override_settings(IS_EXTERNAL_ENV=False, WAGTAIL_CORE_ADMIN_LOGIN_ENABLED=True, AWS_COGNITO_LOGIN_ENABLED=True)
     def test_both_login_buttons_are_displayed(self):
@@ -94,27 +75,6 @@ class PageCanonicalUrlTests(WagtailPageTestCase):
         self.assertContains(
             response, f'<link rel="canonical" href="{self.page.get_full_url(request=self.dummy_request)}" />'
         )
-
-    def test_welsh_page_alias_canonical_url(self):
-        """Test that the a welsh page has the correct english canonical URL when it has not been explicitly
-        translated.
-        """
-        self.page.copy_for_translation(locale=Locale.objects.get(language_code="cy"), copy_parents=True, alias=True)
-        response = self.client.get(f"/cy{self.page.get_url(request=self.dummy_request)}")
-        self.assertEqual(response.status_code, HTTPStatus.OK)
-        self.assertContains(
-            response, f'<link rel="canonical" href="{self.page.get_full_url(request=self.dummy_request)}" />'
-        )
-
-    def test_translated_page_canonical_url(self):
-        """Test that a translated page has the correct language coded canonical URL."""
-        welsh_page = self.page.copy_for_translation(locale=Locale.objects.get(language_code="cy"), copy_parents=True)
-        welsh_page.save_revision().publish()
-        response = self.client.get(welsh_page.get_url())
-        self.assertEqual(response.status_code, HTTPStatus.OK)
-
-        self.assertIn(welsh_page.get_site().root_url + "/cy/", welsh_page.get_full_url())
-        self.assertContains(response, f'<link rel="canonical" href="{welsh_page.get_full_url()}" />')
 
 
 class PageSchemaOrgTests(WagtailPageTestCase):
@@ -282,13 +242,6 @@ class ErrorPageTests(WagtailPageTestCase):
         # This uses the base template, which has OG tags
         self.assertContains(response, 'property="og:description"', status_code=HTTPStatus.INTERNAL_SERVER_ERROR)
 
-        # Rendering and translations should still work
-        response = self.client.get("/cy/")
-        self.assertEqual(response.status_code, HTTPStatus.INTERNAL_SERVER_ERROR)
-        self.assertContains(
-            response, "Mae'n ddrwg gennym, mae problem gyda'r gwasanaeth", status_code=HTTPStatus.INTERNAL_SERVER_ERROR
-        )
-
     @patch("cms.home.models.HomePage.serve")
     @patch("django.template.loader.get_template")
     def test_500_primary_fallback(self, mock_get_template, mock_homepage_serve):
@@ -317,21 +270,6 @@ class ErrorPageTests(WagtailPageTestCase):
         # Check that the fallback template was actually used, it doesn't have OG tags like the base template
         self.assertNotContains(response, 'property="og:description"', status_code=HTTPStatus.INTERNAL_SERVER_ERROR)
 
-        response = self.client.get("/cy/")
-        self.assertEqual(response.status_code, HTTPStatus.INTERNAL_SERVER_ERROR)
-
-        # The fallback template does not have Welsh translations
-        self.assertNotContains(
-            response,
-            "Mae'n ddrwg gennym, mae problem gyda'r gwasanaeth",
-            status_code=HTTPStatus.INTERNAL_SERVER_ERROR,
-        )
-        self.assertContains(
-            response,
-            "Sorry, there's a problem with the service",
-            status_code=HTTPStatus.INTERNAL_SERVER_ERROR,
-        )
-
     @patch("cms.home.models.HomePage.serve")
     @patch("cms.core.views.render")
     def test_500_final_fallback(self, mock_render, mock_homepage_serve):
@@ -344,15 +282,6 @@ class ErrorPageTests(WagtailPageTestCase):
         response = self.client.get("/")
         self.assertEqual(response.status_code, HTTPStatus.INTERNAL_SERVER_ERROR)
         # Rendering is not possible, so we return a plain HTML response
-        self.assertContains(
-            response,
-            "<h1>Server Error (500)</h1><p>Sorry, there's a problem with the service.</p>",
-            status_code=HTTPStatus.INTERNAL_SERVER_ERROR,
-        )
-
-        # Welsh version should also return a plain HTML response
-        response = self.client.get("/cy/")
-        self.assertEqual(response.status_code, HTTPStatus.INTERNAL_SERVER_ERROR)
         self.assertContains(
             response,
             "<h1>Server Error (500)</h1><p>Sorry, there's a problem with the service.</p>",

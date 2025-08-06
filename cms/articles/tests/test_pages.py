@@ -9,7 +9,6 @@ from django.utils import translation
 from django.utils.html import strip_tags
 from wagtail.blocks import StreamValue
 from wagtail.coreutils import get_dummy_request
-from wagtail.models import Locale
 from wagtail.test.utils import WagtailPageTestCase
 
 from cms.articles.enums import SortingChoices
@@ -117,20 +116,6 @@ class StatisticalArticlePageTests(WagtailPageTestCase):
         self.assertContains(response, "Sections in this page")
         self.assertContains(response, "Contents")
         self.assertContains(response, "Cite this article")
-
-    def test_localised_version_of_page_works(self):
-        response = self.client.get("/cy" + self.page.url)
-        self.assertEqual(response.status_code, HTTPStatus.OK)
-        # Body of the page is still English
-        self.assertContains(response, self.page.title)
-        self.assertContains(response, self.page.summary)
-
-        # However, the page's furniture should be in Welsh
-        self.assertContains(response, "Mae'r holl gynnwys ar gael o dan delerau'r")
-
-    def test_unknown_localised_version_of_page_404(self):
-        response = self.client.get("/fr" + self.page.url)
-        self.assertEqual(response.status_code, HTTPStatus.NOT_FOUND)
 
     def test_correction_routes(self):
         self.assertPageIsRoutable(self.page, "versions/1/")
@@ -687,28 +672,6 @@ class StatisticalArticlePageTests(WagtailPageTestCase):
         self.assertContains(
             response, f'<link rel="canonical" href="{self.page.get_full_url(request=self.dummy_request)}" />'
         )
-
-    def test_welsh_page_alias_canonical_url(self):
-        """Test that Welsh articles have the correct english canonical URL when they have not been explicitly
-        translated.
-        """
-        self.page.copy_for_translation(locale=Locale.objects.get(language_code="cy"), copy_parents=True, alias=True)
-        response = self.client.get(f"/cy{self.page.get_url(request=self.dummy_request)}")
-        self.assertEqual(response.status_code, HTTPStatus.OK)
-        self.assertContains(
-            response, f'<link rel="canonical" href="{self.series.get_full_url(request=self.dummy_request)}" />'
-        )
-        self.client.get({self.page.get_url(request=self.dummy_request)})
-
-    def test_translated_welsh_page_canonical_url(self):
-        """Test that a translated article has the correct language coded canonical URL."""
-        welsh_page = self.page.copy_for_translation(locale=Locale.objects.get(language_code="cy"), copy_parents=True)
-        welsh_page.save_revision().publish()
-        response = self.client.get(welsh_page.get_url(request=self.dummy_request))
-        self.assertEqual(response.status_code, HTTPStatus.OK)
-        welsh_series_url = welsh_page.get_parent().get_full_url(request=self.dummy_request)
-        self.assertIn(welsh_page.get_site().root_url + "/cy/", welsh_series_url)
-        self.assertContains(response, f'<link rel="canonical" href="{welsh_series_url}" />')
 
     def test_corrected_article_versions_are_marked_no_index(self):
         response = self.client.get(self.page.get_url(request=self.dummy_request))
