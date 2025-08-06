@@ -49,7 +49,7 @@ class PathBasedLocalisationTests(WagtailPageTestCase):
     def test_welsh_home_page_can_be_served(self):
         response = self.client.get("/cy/")
         self.assertEqual(response.status_code, HTTPStatus.OK)
-        self.assertContains(response, "Mae'r holl gynnwys ar gael o dan delerau'r")
+        self.assertContains(response, "Mae'r holl gynnwys ar gael o dan y")
 
     def test_localised_version_of_page_works(self):
         response = self.client.get("/cy" + self.statistical_article_page.url)
@@ -59,7 +59,7 @@ class PathBasedLocalisationTests(WagtailPageTestCase):
         self.assertContains(response, self.statistical_article_page.summary)
 
         # However, the page's furniture should be in Welsh
-        self.assertContains(response, "Mae'r holl gynnwys ar gael o dan delerau'r")
+        self.assertContains(response, "Mae'r holl gynnwys ar gael o dan y")
 
     def test_unknown_localised_version_of_page_404(self):
         response = self.client.get("/fr" + self.statistical_article_page.url)
