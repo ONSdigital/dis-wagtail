@@ -28,12 +28,12 @@ def get_mapped_site_root_paths(host: str | None = None) -> list[SiteRootPath]:
     - expands to handle one Site with localized roots, like Site.get_site_root_paths
     - checks and replaces the base URL if the request is from one of the alternatives.
     """
-    cache_key = f"cms-{SITE_ROOT_PATHS_CACHE_KEY}"
+    swap_domains: bool = host is not None and host in settings.CMS_HOSTNAME_ALTERNATIVES.values()
+    cache_key = f"cms-{swap_domains}-{SITE_ROOT_PATHS_CACHE_KEY}"
     result = cache.get(cache_key, version=SITE_ROOT_PATHS_CACHE_VERSION)
 
     if result is None:
         result = []
-        swap_domains: bool = host is not None and host in settings.CMS_HOSTNAME_ALTERNATIVES.values()
         site = None
 
         for site in Site.objects.select_related("root_page", "root_page__locale").order_by(
@@ -48,7 +48,7 @@ def get_mapped_site_root_paths(host: str | None = None) -> list[SiteRootPath]:
                 )
             )
 
-        if len(result) == 1:
+        if len(result) == 1 and site:
             # If we have only one site, expand to include the translated root pages as alternatives
             for root_page in site.root_page.get_translations(inclusive=False).select_related("locale"):
                 result.append(
