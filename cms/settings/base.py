@@ -1040,4 +1040,30 @@ CONTACT_US_URL = env.get("CONTACT_US_URL", "/aboutus/contactus/generalandstatist
 BACKUP_SITE_URL = env.get("BACKUP_SITE_URL", "https://backup.ons.gov.uk")
 
 # Domain-based locale configuration
-CMS_USE_SUBDOMAIN_LOCALES = env.get("CMS_USE_SUBDOMAIN_LOCALES", "false").lower() == "true"
+CMS_USE_SUBDOMAIN_LOCALES = env.get("CMS_USE_SUBDOMAIN_LOCALES", "true").lower() == "true"
+CMS_HOSTNAME_LOCALE_MAP = {}  # helps determine the locale for a hostname when using subdomain locales.
+
+# Used to generate full URLs for language alternatives when using one of the alternative domains.
+# Wagtail's Sites are configured with the main domains, but we need to handle the internal ones too.
+CMS_HOSTNAME_ALTERNATIVES = {}
+if CMS_USE_SUBDOMAIN_LOCALES and (config_string := env.get("CMS_HOSTNAME_LOCALE_MAP", "")):
+    # The env var is expected to have the following format:
+    # en:default_domain,alternative_domain|cy:default_domain,alternative_domain
+    # Which then gets converted to dict in the form of {domain: lang_code}
+    for locale_config in config_string.strip().split("|"):
+        if not locale_config.strip():
+            continue
+
+        # Split lang_code from domains
+        lang_code, domains_str = locale_config.strip().split(":", 1)
+        domains = [d.strip() for d in domains_str.split(",") if d.strip()]
+
+        if domains:
+            default_domain = domains[0]
+            for domain in domains:
+                CMS_HOSTNAME_LOCALE_MAP[domain] = lang_code
+
+            # there should be only one domain, but guard for cases where there is no alternate, or there multiple
+            alternative_domains = domains[1:]
+            if len(alternative_domains) == 1:
+                CMS_HOSTNAME_ALTERNATIVES[default_domain] = alternative_domains[0]

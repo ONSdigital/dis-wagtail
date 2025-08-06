@@ -44,16 +44,24 @@ class SubdomainLocaleMiddleware(LocaleMiddleware):
 
         return super().process_response(request, response)
 
+    def _get_language_from_language_code(self, lang_code: str) -> str | None:
+        try:
+            return get_supported_language_variant(lang_code)
+        except LookupError:
+            return None
+
     def _get_language_from_host(self, request: "HttpRequest") -> str | None:
         if request.path.startswith(f"/{settings.WAGTAILADMIN_HOME_PATH.lstrip('/')}"):
             return None
 
-        # Extract the language code from the subdomain
+        host = request.get_host()
+        if host in settings.CMS_HOSTNAME_LOCALE_MAP:
+            lang_code = settings.CMS_HOSTNAME_LOCALE_MAP[host]
+            return self._get_language_from_language_code(lang_code)
+
+        # If nothing was found in mapping, fallback to extracting the language code from the subdomain
         regex_match = language_subdomain_prefix_re.match(request.get_host())
         if not regex_match:
             return None
 
-        try:
-            return get_supported_language_variant(regex_match[1])
-        except LookupError:
-            return None
+        return self._get_language_from_language_code(regex_match[1])
