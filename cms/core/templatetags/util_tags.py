@@ -88,7 +88,7 @@ def _build_locale_urls(context: jinja2.runtime.Context) -> list[LocaleURLsDict]:
     variants = {variant.locale_id: variant for variant in page.get_translations(inclusive=True).defer_streamfields()}
     default_page = variants.get(default_locale.pk)
 
-    use_subdomain_locale = getattr(settings, "CMS_USE_SUBDOMAIN_LOCALES", False)
+    use_subdomain_locale = settings.CMS_USE_SUBDOMAIN_LOCALES
     results: list[LocaleURLsDict] = []
     for locale in Locale.objects.all().order_by("pk"):
         variant = variants.get(locale.pk, default_page)
@@ -99,12 +99,15 @@ def _build_locale_urls(context: jinja2.runtime.Context) -> list[LocaleURLsDict]:
         # If there's no real translation in this locale, prepend
         # the locale code to the default page's URL so that strings in
         # templates can be localized:
+        if use_subdomain_locale:
+            # use the full URL to handle locale subdomains
+            url = variant.get_full_url(request=context["request"])
+        else:
+            url = variant.get_url(request=context["request"])
+
         if variant == default_page and locale.pk != variant.locale_id and not use_subdomain_locale:
             url = variant.get_url(request=context["request"])
             url = f"/{locale.language_code}{url}"
-        else:
-            # use the full URL to handle locale subdomains
-            url = variant.get_full_url(request=context["request"])
 
         results.append(
             {

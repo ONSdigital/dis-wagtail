@@ -153,7 +153,7 @@ urlpatterns = (
     ]
 )
 
-if getattr(settings, "CMS_USE_SUBDOMAIN_LOCALES", True):
+if settings.CMS_USE_SUBDOMAIN_LOCALES:
     urlpatterns += [path("", include(wagtail_urls))]
 else:
     urlpatterns += i18n_patterns(

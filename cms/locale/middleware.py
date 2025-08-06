@@ -14,7 +14,7 @@ language_subdomain_prefix_re = _lazy_re_compile(r"^(\w+([@-]\w+){0,2})\.")
 
 class SubdomainLocaleMiddleware(LocaleMiddleware):
     def __init__(self, get_response: Any) -> None:
-        self.use_locale_subdomain = getattr(settings, "CMS_USE_SUBDOMAIN_LOCALES", True)
+        self.use_locale_subdomain = settings.CMS_USE_SUBDOMAIN_LOCALES
         super().__init__(get_response)
 
     def process_request(self, request: "HttpRequest") -> None:

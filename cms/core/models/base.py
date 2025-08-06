@@ -217,7 +217,7 @@ class BasePage(PageLDMixin, ListingFieldsMixin, SocialFieldsMixin, Page):  # typ
 
     def _get_site_root_paths(self, request: Optional["HttpRequest"] = None) -> list["SiteRootPath"]:
         """Extends the core Page._get_site_root_paths to account for alternative domains."""
-        if not getattr(settings, "CMS_USE_SUBDOMAIN_LOCALES", False):
+        if not settings.CMS_USE_SUBDOMAIN_LOCALES:
             return cast(list["SiteRootPath"], super()._get_site_root_paths(request=request))
 
         from cms.locale.utils import get_mapped_site_root_paths  # pylint: disable=import-outside-toplevel
