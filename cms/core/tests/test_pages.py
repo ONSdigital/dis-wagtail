@@ -277,7 +277,7 @@ class ErrorPageTests(WagtailPageTestCase):
 
         self.assertEqual(response.status_code, HTTPStatus.INTERNAL_SERVER_ERROR)
         self.assertContains(
-            response, "Sorry, there's a problem with the service", status_code=HTTPStatus.INTERNAL_SERVER_ERROR
+            response, "Sorry, there’s a problem with the service", status_code=HTTPStatus.INTERNAL_SERVER_ERROR
         )
         # This uses the base template, which has OG tags
         self.assertContains(response, 'property="og:description"', status_code=HTTPStatus.INTERNAL_SERVER_ERROR)
@@ -303,7 +303,7 @@ class ErrorPageTests(WagtailPageTestCase):
         self.assertEqual(response.status_code, HTTPStatus.INTERNAL_SERVER_ERROR)
         self.assertContains(
             response,
-            "Sorry, there's a problem with the service",
+            "Sorry, there’s a problem with the service",
             status_code=HTTPStatus.INTERNAL_SERVER_ERROR,
         )
 
@@ -328,7 +328,7 @@ class ErrorPageTests(WagtailPageTestCase):
         )
         self.assertContains(
             response,
-            "Sorry, there's a problem with the service",
+            "Sorry, there’s a problem with the service",
             status_code=HTTPStatus.INTERNAL_SERVER_ERROR,
         )
 
@@ -346,7 +346,7 @@ class ErrorPageTests(WagtailPageTestCase):
         # Rendering is not possible, so we return a plain HTML response
         self.assertContains(
             response,
-            "<h1>Server Error (500)</h1><p>Sorry, there's a problem with the service.</p>",
+            "<h1>Server Error (500)</h1><p>Sorry, there’s a problem with the service.</p>",
             status_code=HTTPStatus.INTERNAL_SERVER_ERROR,
         )
 
@@ -355,6 +355,6 @@ class ErrorPageTests(WagtailPageTestCase):
         self.assertEqual(response.status_code, HTTPStatus.INTERNAL_SERVER_ERROR)
         self.assertContains(
             response,
-            "<h1>Server Error (500)</h1><p>Sorry, there's a problem with the service.</p>",
+            "<h1>Server Error (500)</h1><p>Sorry, there’s a problem with the service.</p>",
             status_code=HTTPStatus.INTERNAL_SERVER_ERROR,
         )
