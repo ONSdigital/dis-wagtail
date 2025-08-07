@@ -89,26 +89,6 @@ def thirty_minute_interval_for_time_selection(context: Context):
         expect(time_picker.get_by_text(f"{hour}:30").nth(1)).to_be_visible()
 
 
-@when("the user inputs a {meridiem_indicator} datetime")
-def add_datetime(context: Context, meridiem_indicator: str):
-    if meridiem_indicator == "am":
-        context.page.get_by_role("textbox", name="Release date*").fill("2025-3-1 10:00")
-    elif meridiem_indicator == "pm":
-        context.page.get_by_role("textbox", name="Release date*").fill("2025-3-1 17:00")
-    else:
-        raise ValueError(f"Unsupported MeridiemIndicator: {meridiem_indicator}")
-
-
-@then('the datetime is displayed with "{meridiem_indicator}"')
-def display_datetime_with_meridiem(context: Context, meridiem_indicator: str):
-    if meridiem_indicator == "am":
-        expect(context.page.get_by_text("March 2025 10:00am")).to_be_visible()
-    elif meridiem_indicator == "pm":
-        expect(context.page.get_by_text("March 2025 5:00pm")).to_be_visible()
-    else:
-        raise ValueError(f"Unsupported MeridiemIndicator: {meridiem_indicator}")
-
-
 @when('the user enters "{page_status}" page content')
 @when("the user enters some example content on the page")
 def user_enters_example_content_on_release_page(context: Context, page_status: str | None = None):
@@ -133,6 +113,26 @@ def user_enters_example_content_on_release_page(context: Context, page_status: s
 
     page.get_by_role("button", name="Choose contact details").click()
     page.get_by_role("link", name=context.contact_details_snippet.name).click()
+
+
+@when("the user inputs a {meridiem_indicator} datetime")
+def add_datetime(context: Context, meridiem_indicator: str):
+    if meridiem_indicator == "am":
+        context.page.get_by_role("textbox", name="Release date*").fill("2025-3-1 10:00")
+    elif meridiem_indicator == "pm":
+        context.page.get_by_role("textbox", name="Release date*").fill("2025-3-1 17:00")
+    else:
+        raise ValueError(f"Unsupported MeridiemIndicator: {meridiem_indicator}")
+
+
+@then('the datetime is displayed with "{meridiem_indicator}"')
+def display_datetime_with_meridiem(context: Context, meridiem_indicator: str):
+    if meridiem_indicator == "am":
+        expect(context.page.get_by_text("March 2025 10:00am")).to_be_visible()
+    elif meridiem_indicator == "pm":
+        expect(context.page.get_by_text("March 2025 5:00pm")).to_be_visible()
+    else:
+        raise ValueError(f"Unsupported MeridiemIndicator: {meridiem_indicator}")
 
 
 @step('the user sets the page status to "{page_status}"')
@@ -299,21 +299,41 @@ def add_pre_release_access_info(context: Context, feature: str):
         raise ValueError(f"Unsupported feature: {feature}")
 
 
-@when("user navigates to edit page")
-def user_edits_published_page(context: Context):
-    page = context.page
-    page.get_by_role("link", name="My Release", exact=True).click()
-    page.get_by_role("button", name="Pages").click()
-    page.get_by_role("link", name="View child pages of 'Home'").first.click()
-    page.get_by_role("link", name="View child pages of 'Release").click()
-    page.get_by_role("link", name="Edit 'My Release'").click()
-
-
 @when("the user publishes a page with example content")
 def user_publishes_release_page_with_example_content(context: Context):
     click_add_child_page(context)
     user_enters_example_content_on_release_page(context)
     user_clicks_publish(context)
+
+
+@when("the user changes the release date to a new date")
+def user_changes_release_date_to_new_date(context: Context):
+    context.page.get_by_role("textbox", name="Release date*").fill("2024-12-21 15:00")
+
+
+@then("the previous release date field is pre-populated with the old release date")
+def previous_release_date_field_is_pre_populated(context: Context):
+    changes_to_release_date_section = context.page.locator("#panel-child-content-changes_to_release_date-section")
+    expect(changes_to_release_date_section.get_by_label("Previous date*")).to_have_value("2024-12-25 09:30")
+
+
+@then("the help text is not visible")
+def help_text_is_not_visible(context: Context):
+    changes_to_release_date_section = context.page.locator("#panel-child-content-changes_to_release_date-section")
+    expect(
+        changes_to_release_date_section.get_by_text("This field will be auto-populated once the page is saved.")
+    ).not_to_be_visible()
+
+
+@then("the Changes to release date block is not visible")
+def previous_release_date_in_date_change_block_is_empty(context: Context):
+    expect(context.page.locator("#panel-child-content-changes_to_release_date-section")).not_to_be_visible()
+
+
+@then("the previous release date field is not editable")
+def previous_release_date_field_is_not_editable(context: Context):
+    changes_to_release_date_section = context.page.locator("#panel-child-content-changes_to_release_date-section")
+    expect(changes_to_release_date_section.get_by_label("Previous date*")).not_to_be_editable()
 
 
 @then("the user cannot delete the release date change")
@@ -325,12 +345,9 @@ def user_cannot_delete_the_release_date_change(context: Context):
     ).to_be_hidden()
 
 
-@when('the user publishes a "Confirmed" page with example content')
-def user_publishes_confirmed_release_page_with_example_content(context: Context):
-    click_add_child_page(context)
-    set_page_status(context, "Confirmed")
-    user_enters_example_content_on_release_page(context)
-    user_clicks_publish(context)
+@then("an error message is displayed to say the page could not be saved")
+def error_page_not_saved(context: Context):
+    expect(context.page.get_by_text("The page could not be saved due to validation errors")).to_be_visible()
 
 
 @when("the user adds {feature} under changes to release date")
@@ -357,9 +374,12 @@ def add_changes_to_release_date_info(context: Context, feature: str):
         raise ValueError(f"Unsupported feature: {feature}")
 
 
-@then("an error message is displayed to say the page could not be saved")
-def error_page_not_saved(context: Context):
-    expect(context.page.get_by_text("The page could not be saved due to validation errors")).to_be_visible()
+@when('the user publishes a "Confirmed" page with example content')
+def user_publishes_confirmed_release_page_with_example_content(context: Context):
+    click_add_child_page(context)
+    set_page_status(context, "Confirmed")
+    user_enters_example_content_on_release_page(context)
+    user_clicks_publish(context)
 
 
 @then("the release calendar page is successfully updated")
@@ -372,41 +392,3 @@ def release_calendar_page_is_successfully_updated(context: Context):
 def release_calendar_page_is_successfully_published(context: Context):
     page = context.page
     expect(page.get_by_text("Page 'My Release' has been published.")).to_be_visible()
-
-
-@then("the previous release date field is not editable")
-def previous_release_date_field_is_not_editable(context: Context):
-    changes_to_release_date_section = context.page.locator("#panel-child-content-changes_to_release_date-section")
-    expect(changes_to_release_date_section.get_by_label("Previous date*")).not_to_be_editable()
-
-
-@when("the user changes the release date to a new date")
-def user_changes_release_date_to_new_date(context: Context):
-    context.page.get_by_role("textbox", name="Release date*").fill("2024-12-21 15:00")
-
-
-@then("the previous release date field is pre-populated with the old release date")
-def previous_release_date_field_is_pre_populated(context: Context):
-    changes_to_release_date_section = context.page.locator("#panel-child-content-changes_to_release_date-section")
-    expect(changes_to_release_date_section.get_by_label("Previous date*")).to_have_value("2024-12-25 09:30")
-
-
-@then("the Changes to release date block is not visible")
-def previous_release_date_in_date_change_block_is_empty(context: Context):
-    expect(context.page.locator("#panel-child-content-changes_to_release_date-section")).not_to_be_visible()
-
-
-@then("the help text is not visible")
-def help_text_is_not_visible(context: Context):
-    changes_to_release_date_section = context.page.locator("#panel-child-content-changes_to_release_date-section")
-    expect(
-        changes_to_release_date_section.get_by_text("This field will be auto-populated once the page is saved.")
-    ).not_to_be_visible()
-
-
-@then("the help text is visible")
-def help_text_is_visible(context: Context):
-    changes_to_release_date_section = context.page.locator("#panel-child-content-changes_to_release_date-section")
-    expect(
-        changes_to_release_date_section.get_by_text("This field will be auto-populated once the page is saved.")
-    ).to_be_visible()

@@ -3,6 +3,11 @@ from playwright.sync_api import expect
 
 from functional_tests.step_helpers.footer_menu_helpers import choose_page_link
 
+RELEASE_DATE = "#id_release_date"
+RELEASE_DATE_TEXT = "#id_release_date_text"
+NEXT_RELEASE_DATE = "#id_next_release_date"
+NEXT_RELEASE_DATE_TEXT = "#id_next_release_date_text"
+
 
 def fill_locator(context: Context, locator: str, text: str):
     context.page.locator(locator).fill(text)
@@ -17,12 +22,6 @@ def expect_text(context: Context, error: str, error_messages: dict[str, list[str
             expect(context.page.get_by_text(message)).to_be_visible()
         else:
             raise ValueError(f"Unsupported error: {error}")
-
-
-RELEASE_DATE = "#id_release_date"
-RELEASE_DATE_TEXT = "#id_release_date_text"
-NEXT_RELEASE_DATE = "#id_next_release_date"
-NEXT_RELEASE_DATE_TEXT = "#id_next_release_date_text"
 
 
 def add_release_date_change(context: Context):
