@@ -208,7 +208,7 @@ def display_features_in_preview_tab(context: Context, feature: str):
         "a release date change": [
             "Changes to this release date",
             "Previous date",
-            "20 December 2024 2:30pm",
+            "21 December 2024 3:00pm",
             "Reason for change",
             "Updated due to data availability",
         ],
@@ -262,7 +262,7 @@ def error_invalid_release_calendar_page_input(context: Context, error: str):
         "maximum descriptions allowed": "Description: The maximum number of items is 1",
         "maximum tables allowed": "Basic table: The maximum number of items is 1",
         "unselected options": "Select an option for Table headers",
-        "empty table": "The table cannot be empty",
+        "empty tables are not allowed": "The table cannot be empty",
         "release date change with no date change log": (
             "If a confirmed calendar entry needs to be rescheduled, the 'Changes to release date'"
             " field must be filled out."

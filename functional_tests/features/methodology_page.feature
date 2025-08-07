@@ -21,7 +21,7 @@ Feature: A general use of Methodology Page
         Then the article is displayed correctly under the Related publication section
 
     Scenario: A CMS user can add a Contact Details snippet on the Methodology page
-        Given a topic page exists under a theme page
+        Given a topic page exists under the homepage
         And a contact detail snippet exists
         And a superuser logs into the admin site
         When the user creates a methodology page as a child of the existing topic page
