@@ -83,6 +83,7 @@ def _build_locale_urls(context: jinja2.runtime.Context) -> list[LocaleURLsDict]:
     if not page:
         return []
 
+    # TODO: if request.is_preview -> use view_draft URLs
     default_locale = Locale.get_default()
 
     variants = {variant.locale_id: variant for variant in page.get_translations(inclusive=True).defer_streamfields()}
