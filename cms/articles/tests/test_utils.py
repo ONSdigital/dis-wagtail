@@ -17,11 +17,12 @@ class SerializeCorrectionOrNoticeTests(TestCase):
 
         expected = {
             "text": "Correction",
-            "date": {"iso": "2023-10-26T10:30:00", "short": "26 October 2023"},
+            "date": {"iso": "2023-10-26T10:30:00", "short": "26 October 2023 10:30am"},
             "description": "This is a test correction description.",
             "url": "https://example.com/",
             "urlText": "View superseded version",
         }
+        self.assertDictEqual(result, expected)
 
         mock_stream_child.value["text"] = "This is a test notice description."
 

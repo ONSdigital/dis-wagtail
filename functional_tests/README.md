@@ -149,8 +149,8 @@ Some links to particularly useful parts of documentation
 - [Playwright Locators](https://playwright.dev/python/docs/locators): Locating and selecting page elements in Playwright
 - [Playwright Assertions](https://playwright.dev/python/docs/test-assertions): Making assertions using Playwright
 - [Playwright Codegen](https://playwright.dev/python/docs/codegen-intro): The Playwright code generator tool
-- [Behave Command Line Arguments](https://behave.readthedocs.io/en/stable/behave.html#command-line-arguments): Options running the tests from the command line
-- [Behave API Reference](https://behave.readthedocs.io/en/stable/api.html): Reference documentation for the Behave framework API
+- [Behave Command Line Arguments](https://behave.readthedocs.io/en/stable/behave#command-line-arguments): Options running the tests from the command line
+- [Behave API Reference](https://behave.readthedocs.io/en/stable/api): Reference documentation for the Behave framework API
 
 ## Viewing Failure Traces
 
@@ -189,7 +189,7 @@ then they can make use of [factory traits](https://factoryboy.readthedocs.io/en/
 
 ### Context Use
 
-We make use of the [Behave Context](https://behave.readthedocs.io/en/stable/tutorial.html#context) object to store data
+We make use of the [Behave Context](https://behave.readthedocs.io/en/stable/tutorial#context) object to store data
 that is needed across multiple steps of a scenario.
 
 To prevent the context from becoming cluttered and confusing to use, we define some rules for how we interact with it:
@@ -261,9 +261,9 @@ be more robust than attempting to retrieve data from the page and make plain pyt
 
 ### Step parameter types
 
-Where we need [step parameters](https://behave.readthedocs.io/en/stable/tutorial.html#step-parameters) to include more
+Where we need [step parameters](https://behave.readthedocs.io/en/stable/tutorial#step-parameters) to include more
 complex data than single strings or the other basic types supported by the default parser, we
-use [custom registered types](https://behave.readthedocs.io/en/stable/api.html#behave.register_type). These are
+use [custom registered types](https://behave.readthedocs.io/en/stable/api#behave.register_type). These are
 registered in the [environment.py](environment.py) so they are available to all steps.
 
 ## How the Tests Work

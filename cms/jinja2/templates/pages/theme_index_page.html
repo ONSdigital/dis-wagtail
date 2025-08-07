@@ -1,9 +1,9 @@
 {% extends "templates/base_page.html" %}
-
 {% from "components/hero/_macro.njk" import onsHero %}
+{% from "components/document-list/_macro.njk" import onsDocumentList %}
 
 {% block header_area %}
-    {%- set hero_topic = _("Theme") -%}
+    {%- set hero_topic = _("Browse") -%}
     {%- set breadcrumbs_aria_label = _("Breadcrumbs") -%}
     {# fmt:off #}
     {{
@@ -11,7 +11,7 @@
             "topic": hero_topic,
             "title": page.title,
             "variants": 'pale-blue',
-            "text": page.summary|richtext(),
+            "wide": true,
             "breadcrumbs": {
                 "ariaLabel": breadcrumbs_aria_label,
                 "itemsList": page.get_breadcrumbs(request=request),
@@ -19,4 +19,10 @@
         })
     }}
     {# fmt:on #}
+{% endblock %}
+
+{% block main %}
+    {% if formatted_items %}
+        {{ onsDocumentList({"documents": formatted_items}) }}
+    {% endif %}
 {% endblock %}

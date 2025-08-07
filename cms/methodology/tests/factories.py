@@ -9,19 +9,25 @@ from cms.core.tests.factories import (
     ContactDetailsFactory,
     SectionContentBlockFactory,
 )
-from cms.methodology.models import MethodologyPage, MethodologyRelatedPage
+from cms.methodology.models import MethodologyIndexPage, MethodologyPage, MethodologyRelatedPage
 from cms.topics.tests.factories import TopicPageFactory
+
+
+class MethodologyIndexPageFactory(wagtail_factories.PageFactory):
+    class Meta:
+        model = MethodologyIndexPage
+
+    parent = factory.SubFactory(TopicPageFactory)
 
 
 class MethodologyPageFactory(wagtail_factories.PageFactory):
     """Factory for MethodologyPage."""
 
-    parent = factory.SubFactory(TopicPageFactory)
-
     class Meta:
         model = MethodologyPage
         django_get_or_create: ClassVar[list[str]] = ["slug", "parent"]
 
+    parent = factory.SubFactory(MethodologyIndexPageFactory)
     title = factory.Faker("sentence", nb_words=4)
 
     summary = factory.Faker("text", max_nb_chars=100)

@@ -117,7 +117,7 @@ def user_enters_example_content_on_release_page(context: Context, page_status: s
     page = context.page
     page.get_by_placeholder("Page title*").fill("My Release")
 
-    page.get_by_role("textbox", name="Release date*").fill("2024-12-25")
+    page.get_by_role("textbox", name="Release date*").fill("2024-12-25 09:30")
     page.get_by_role("textbox", name="Release date*").press("Enter")
 
     page.get_by_role("region", name="Summary*").get_by_role("textbox").fill("My example release page")
@@ -307,6 +307,39 @@ def error_invalid_pre_release_access(context: Context, error: str):
     expect_text(context, error, error_messages)
 
 
+@when("user navigates to edit page")
+def user_edits_published_page(context: Context):
+    page = context.page
+    page.get_by_role("link", name="My Release", exact=True).click()
+    page.get_by_role("button", name="Pages").click()
+    page.get_by_role("link", name="View child pages of 'Home'").first.click()
+    page.get_by_role("link", name="View child pages of 'Release").click()
+    page.get_by_role("link", name="Edit 'My Release'").click()
+
+
+@step("the user returns to editing the release page")
+def user_returns_to_editing_the_release_page(context: Context):
+    context.page.get_by_role("link", name="Edit").click()
+
+
+@step("the user adds a release date change")
+def user_adds_a_release_date_change(context: Context):
+    page = context.page
+    change_to_release_date_section = page.locator("#panel-child-content-changes_to_release_date-section")
+    change_to_release_date_section.get_by_role("button", name="Insert a block").click()
+    change_to_release_date_section.get_by_label("Previous date*").fill("2024-12-20 14:30")
+    change_to_release_date_section.get_by_label("Reason for change*").fill("Updated due to data availability")
+
+
+@step("the user adds another release date change")
+def user_adds_another_release_date_change(context: Context):
+    page = context.page
+    change_to_release_date_section = page.locator("#panel-child-content-changes_to_release_date-section")
+    change_to_release_date_section.get_by_role("button", name="Insert a block").nth(1).click()
+    change_to_release_date_section.get_by_label("Previous date*").nth(1).fill("2024-12-19 12:15")
+    change_to_release_date_section.get_by_label("Reason for change*").nth(1).fill("New update to release schedule")
+
+
 @when("the user publishes a page with example content")
 def user_publishes_release_page_with_example_content(context: Context):
     click_add_child_page(context)
@@ -370,3 +403,41 @@ def release_calendar_page_is_successfully_updated(context: Context):
 def release_calendar_page_is_successfully_published(context: Context):
     page = context.page
     expect(page.get_by_text("Page 'My Release' has been published.")).to_be_visible()
+
+
+@then("the previous release date field is not editable")
+def previous_release_date_field_is_not_editable(context: Context):
+    changes_to_release_date_section = context.page.locator("#panel-child-content-changes_to_release_date-section")
+    expect(changes_to_release_date_section.get_by_label("Previous date*")).not_to_be_editable()
+
+
+@when("the user changes the release date to a new date")
+def user_changes_release_date_to_new_date(context: Context):
+    context.page.get_by_role("textbox", name="Release date*").fill("2024-12-21 15:00")
+
+
+@then("the previous release date field is pre-populated with the old release date")
+def previous_release_date_field_is_pre_populated(context: Context):
+    changes_to_release_date_section = context.page.locator("#panel-child-content-changes_to_release_date-section")
+    expect(changes_to_release_date_section.get_by_label("Previous date*")).to_have_value("2024-12-25 09:30")
+
+
+@then("the Changes to release date block is not visible")
+def previous_release_date_in_date_change_block_is_empty(context: Context):
+    expect(context.page.locator("#panel-child-content-changes_to_release_date-section")).not_to_be_visible()
+
+
+@then("the help text is not visible")
+def help_text_is_not_visible(context: Context):
+    changes_to_release_date_section = context.page.locator("#panel-child-content-changes_to_release_date-section")
+    expect(
+        changes_to_release_date_section.get_by_text("This field will be auto-populated once the page is saved.")
+    ).not_to_be_visible()
+
+
+@then("the help text is visible")
+def help_text_is_visible(context: Context):
+    changes_to_release_date_section = context.page.locator("#panel-child-content-changes_to_release_date-section")
+    expect(
+        changes_to_release_date_section.get_by_text("This field will be auto-populated once the page is saved.")
+    ).to_be_visible()
