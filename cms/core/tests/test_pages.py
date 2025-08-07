@@ -286,7 +286,7 @@ class ErrorPageTests(WagtailPageTestCase):
         response = self.client.get("/cy/")
         self.assertEqual(response.status_code, HTTPStatus.INTERNAL_SERVER_ERROR)
         self.assertContains(
-            response, "Mae’n ddrwg gennym, mae problem gyda'r gwasanaeth", status_code=HTTPStatus.INTERNAL_SERVER_ERROR
+            response, "Mae’n ddrwg gennym, mae problem gyda’r gwasanaeth", status_code=HTTPStatus.INTERNAL_SERVER_ERROR
         )
 
     @patch("cms.home.models.HomePage.serve")
@@ -323,7 +323,7 @@ class ErrorPageTests(WagtailPageTestCase):
         # The fallback template does not have Welsh translations
         self.assertNotContains(
             response,
-            "Mae’n ddrwg gennym, mae problem gyda'r gwasanaeth",
+            "Mae’n ddrwg gennym, mae problem gyda’r gwasanaeth",
             status_code=HTTPStatus.INTERNAL_SERVER_ERROR,
         )
         self.assertContains(

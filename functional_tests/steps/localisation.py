@@ -105,7 +105,7 @@ def check_page_furniture_is_displayed_in_welsh(context: Context) -> None:
 def check_message_is_displayed(context: Context) -> None:
     expect(
         context.page.get_by_text(
-            "Nid yw'r dudalen hon ar gael yn y Gymraeg ar hyn o bryd. Fe'i harddangosir yn ei hiaith wreiddiol."
+            "Nid yw’r dudalen hon ar gael yn y Gymraeg ar hyn o bryd. Fe’i harddangosir yn ei hiaith wreiddiol."
         )
     ).to_be_visible()
 
