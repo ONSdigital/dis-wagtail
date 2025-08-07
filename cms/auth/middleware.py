@@ -135,6 +135,7 @@ class ONSAuthMiddleware(AuthenticationMiddleware):
                 extra={"external_user_id": request.user.external_user_id},
             )
             # Jake comment 1
+            # This will redirect to the Florence login screen, so no need for additional user messages.
             logout(request)
 
     @staticmethod
