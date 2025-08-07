@@ -28,7 +28,6 @@ NEXT_RELEASE_DATE_TEXT = "#id_next_release_date_text"
 def add_release_date_change(context: Context):
     change_to_release_date_section = context.page.locator("#panel-child-content-changes_to_release_date-section")
     change_to_release_date_section.get_by_role("button", name="Insert a block").click()
-    change_to_release_date_section.get_by_label("Previous date*").fill("2024-12-20 14:30")
     change_to_release_date_section.get_by_label("Reason for change*").fill("Updated due to data availability")
 
 
@@ -141,5 +140,4 @@ def handle_release_date_change_no_log(context: Context):
 def handle_another_release_date_change(context: Context):
     section = context.page.locator("#panel-child-content-changes_to_release_date-section")
     section.get_by_role("button", name="Insert a block").nth(1).click()
-    section.get_by_label("Previous date*").nth(1).fill("2024-12-19 12:15")
     section.get_by_label("Reason for change*").nth(1).fill("New update to release schedule")

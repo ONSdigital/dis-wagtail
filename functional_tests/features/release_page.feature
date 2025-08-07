@@ -12,6 +12,7 @@ Feature: CMS users can draft, edit, and publish release pages
     And the datetime placeholder, "YYYY-MM-DD HH:MM", is displayed in the release date input field
     And in the datetime selector, the time selection options are in 30 minute intervals
 
+
   Scenario Outline: When a CMS user inputs a datetime on a release calendar page, the correct period is displayed
     When the user clicks "Add child page" to create a new draft release page
     And the user enters some example content on the page
@@ -25,26 +26,29 @@ Feature: CMS users can draft, edit, and publish release pages
       | am                |
       | pm                |
 
+
   Scenario: The previous release date in Release date change block is pre-populated 
     When the user clicks "Add child page" to create a new draft release page
     And the user enters some example content on the page
     And the user clicks "Publish"
-    And the user returns to editing the release page
+    And the user returns to editing the published page
     And the user changes the release date to a new date
-    And the user adds a release date change
+    And the user adds a release date change to the release calendar page
     Then the previous release date field is pre-populated with the old release date
     And the help text is not visible
   
+
   Scenario: The Changes to release date block is not shown when creating a new page
     When the user clicks "Add child page" to create a new draft release page
     Then the Changes to release date block is not visible
-
+  
+@smoke
   Scenario: The previous release date field in Release date change block is uneditable
     When the user clicks "Add child page" to create a new draft release page
     And the user enters some example content on the page
     And the user clicks "Publish"
-    And the user returns to editing the release page
-    And the user adds a release date change
+    And the user returns to editing the published page
+    And the user adds a release date change to the release calendar page
     Then the previous release date field is not editable
 
 
@@ -78,7 +82,7 @@ Feature: CMS users can draft, edit, and publish release pages
       | Published   |
       | Cancelled   |
 
-
+@smoke
   Scenario Outline: A CMS user can add a feature on a release calendar page and the feature is displayed in the "Published" preview tab
     When the user clicks "Add child page" to create a new draft release page
     And the user enters some example content on the page
@@ -143,7 +147,7 @@ Feature: CMS users can draft, edit, and publish release pages
     And <Feature> <is/are> added under pre-release access
     And the user clicks "Publish"
     Then an error message is displayed to say the page could not be created 
-    And under pre-release access, the user sees a validation error message: <Error>
+    And the user sees a validation error message: <Error>
     Examples:
       | Feature                               | is/are | Error                        |
       | multiple descriptions                 | are    | maximum descriptions allowed |
