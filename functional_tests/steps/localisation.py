@@ -97,8 +97,8 @@ def check_page_furniture_is_displayed_in_english(context: Context) -> None:
 
 @then("the page furniture is displayed in Welsh")
 def check_page_furniture_is_displayed_in_welsh(context: Context) -> None:
-    context.page.get_by_text("Mae'r holl gynnwys ar gael o dan delerau'r").scroll_into_view_if_needed()
-    expect(context.page.get_by_text("Mae'r holl gynnwys ar gael o dan delerau'r")).to_be_visible()
+    context.page.get_by_text("Mae'r holl gynnwys ar gael o dan y").scroll_into_view_if_needed()
+    expect(context.page.get_by_text("Mae'r holl gynnwys ar gael o dan y")).to_be_visible()
 
 
 @then("a message is displayed explaining that the content is not translated")
