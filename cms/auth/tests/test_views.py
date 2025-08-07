@@ -1,11 +1,12 @@
 from unittest import mock
 
+from django.conf import settings
 from django.contrib import messages
-from django.contrib.messages.storage.fallback import FallbackStorage
 from django.contrib.sessions.middleware import SessionMiddleware
 from django.middleware import csrf
 from django.test import Client, RequestFactory, TestCase, override_settings
 from django.urls import reverse
+from django.utils.module_loading import import_string
 from wagtail.test.utils import WagtailTestUtils
 
 from cms.auth.views import ONSLogoutView, extend_session
@@ -26,9 +27,11 @@ class ONSLogoutViewTests(TestCase, WagtailTestUtils):
         SessionMiddleware(lambda r: None).process_request(req)
         req.session.save()
 
-        # attach a real FallbackStorage
-        storage = FallbackStorage(req)
-        req._messages = storage  # pylint: disable=protected-access
+        # Attach a message storage backend to the request (typically FallbackStorage)
+        backend_cls = import_string(settings.MESSAGE_STORAGE)
+        storage = backend_cls(req)
+        req._messages = storage  # pylint: disable=protected-access # attach to the request for messages.add_message()
+
         return storage
 
     @override_settings(AWS_COGNITO_LOGIN_ENABLED=False, LOGOUT_REDIRECT_URL="/")
