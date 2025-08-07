@@ -1,4 +1,3 @@
-from importlib import import_module
 from unittest import mock
 
 from django.conf import settings
@@ -7,6 +6,7 @@ from django.contrib.sessions.middleware import SessionMiddleware
 from django.middleware import csrf
 from django.test import Client, RequestFactory, TestCase, override_settings
 from django.urls import reverse
+from django.utils.module_loading import import_string
 from wagtail.test.utils import WagtailTestUtils
 
 from cms.auth.views import ONSLogoutView, extend_session
@@ -29,12 +29,7 @@ class ONSLogoutViewTests(TestCase, WagtailTestUtils):
 
         # Jake comment 2
         # Attach a message storage backend to the request (typically FallbackStorage)
-        backend_path = settings.MESSAGE_STORAGE  # e.g. "django.contrib.messages.storage.fallback.FallbackStorage"
-        module_path, class_name = backend_path.rsplit(".", 1)
-
-        backend_module = import_module(module_path)
-        backend_cls = getattr(backend_module, class_name)
-
+        backend_cls = import_string(settings.MESSAGE_STORAGE)
         storage = backend_cls(req)
         req._messages = storage  # pylint: disable=protected-access # attach to the request for messages.add_message()
 
