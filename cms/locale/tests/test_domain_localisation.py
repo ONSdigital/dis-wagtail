@@ -3,7 +3,6 @@ from django.utils import translation
 from wagtail.coreutils import get_dummy_request
 from wagtail.models import Locale, Site
 from wagtail.test.utils import WagtailPageTestCase
-from wagtail_factories import SiteFactory
 
 from cms.home.models import HomePage
 from cms.standard_pages.tests.factories import InformationPageFactory
@@ -26,13 +25,16 @@ class SubdomainLocalisationTests(WagtailPageTestCase):
         cls.welsh_locale = Locale.objects.get(language_code="cy")
 
         cls.home = HomePage.objects.first()
-        cls.welsh_home = cls.home.copy_for_translation(cls.welsh_locale, alias=True)
+        cls.welsh_home = cls.home.aliases.first()
 
-        cls.english_site = Site.objects.get()
+        cls.english_site = Site.objects.get(is_default_site=True)
         cls.english_site.hostname = "ons.localhost"
-        cls.english_site.root_page = cls.home
-        cls.english_site.save(update_fields=["hostname"])
-        cls.welsh_site = SiteFactory(hostname="cy.ons.localhost", port=80, root_page=cls.welsh_home)
+        cls.english_site.port = 80
+        cls.english_site.save(update_fields=["hostname", "port"])
+        cls.welsh_site = Site.objects.get(root_page=cls.welsh_home)
+        cls.welsh_site.hostname = "cy.ons.localhost"
+        cls.welsh_site.port = 80
+        cls.welsh_site.save(update_fields=["hostname", "port"])
 
         cls.page = InformationPageFactory(parent=cls.home, slug="about")
         cls.welsh_page = cls.page.copy_for_translation(cls.welsh_locale, alias=True)
@@ -63,7 +65,7 @@ class SubdomainLocalisationTests(WagtailPageTestCase):
         request = RequestFactory(SERVER_NAME="cy.ons.localhost").get("/", SERVER_PORT=80)
         response = self.client.get(self.welsh_page.get_full_url(request=request), headers={"host": "cy.ons.localhost"})
         self.assertEqual(translation.get_language(), self.welsh_locale.language_code)
-        self.assertContains(response, "Mae'r holl gynnwys ar gael o dan delerau'r")
+        self.assertContains(response, "Mae'r holl gynnwys ar gael o dan y")
 
     def test_accessing_welsh_alternate_domain_activates_welsh(self):
         translation.deactivate()
@@ -72,4 +74,4 @@ class SubdomainLocalisationTests(WagtailPageTestCase):
             self.welsh_page.get_full_url(request=request), headers={"host": "cy.pub.ons.localhost"}
         )
         self.assertEqual(translation.get_language(), self.welsh_locale.language_code)
-        self.assertContains(response, "Mae'r holl gynnwys ar gael o dan delerau'r")
+        self.assertContains(response, "Mae'r holl gynnwys ar gael o dan y")

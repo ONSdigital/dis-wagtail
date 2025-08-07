@@ -6,7 +6,7 @@ from django.template.loader import get_template as original_get_template
 from django.test import override_settings
 from django.utils import translation
 from wagtail.coreutils import get_dummy_request
-from wagtail.models import Locale
+from wagtail.models import Locale, Site
 from wagtail.test.utils import WagtailPageTestCase
 
 from cms.articles.tests.factories import ArticleSeriesPageFactory, StatisticalArticlePageFactory
@@ -18,14 +18,19 @@ from cms.standard_pages.tests.factories import InformationPageFactory
 class PathBasedLocalisationTests(WagtailPageTestCase):
     @classmethod
     def setUpTestData(cls):
+        cls.user = cls.create_superuser("admin")
+        cls.welsh_locale = Locale.objects.get(language_code="cy")
+
         cls.information_page = InformationPageFactory()
         cls.article_series = ArticleSeriesPageFactory()
         cls.statistical_article_page = StatisticalArticlePageFactory(
             parent=cls.article_series, summary="This is the summary"
         )
         cls.statistical_article_page.save_revision().publish()
-        cls.user = cls.create_superuser("admin")
-        cls.welsh_locale = Locale.objects.get(language_code="cy")
+        cls.statistical_article_page.copy_for_translation(locale=cls.welsh_locale, copy_parents=True, alias=True)
+
+        # remove all but the default site
+        Site.objects.filter(is_default_site=False).delete()
 
     def setUp(self):
         self.dummy_request = get_dummy_request()
@@ -49,11 +54,14 @@ class PathBasedLocalisationTests(WagtailPageTestCase):
     def test_welsh_home_page_can_be_served(self):
         response = self.client.get("/cy/")
         self.assertEqual(response.status_code, HTTPStatus.OK)
+        self.assertEqual(translation.get_language(), self.welsh_locale.language_code)
         self.assertContains(response, "Mae'r holl gynnwys ar gael o dan y")
 
     def test_localised_version_of_page_works(self):
         response = self.client.get("/cy" + self.statistical_article_page.url)
         self.assertEqual(response.status_code, HTTPStatus.OK)
+        self.assertEqual(translation.get_language(), self.welsh_locale.language_code)
+
         # Body of the page is still English
         self.assertContains(response, self.statistical_article_page.title)
         self.assertContains(response, self.statistical_article_page.summary)
@@ -69,7 +77,6 @@ class PathBasedLocalisationTests(WagtailPageTestCase):
         """Test that the Welsh page has the correct English canonical URL when it has not been explicitly
         translated.
         """
-        self.information_page.copy_for_translation(locale=self.welsh_locale, copy_parents=True, alias=True)
         response = self.client.get(f"/cy{self.information_page.get_url(request=self.dummy_request)}")
         self.assertEqual(response.status_code, HTTPStatus.OK)
         self.assertContains(
@@ -79,7 +86,8 @@ class PathBasedLocalisationTests(WagtailPageTestCase):
 
     def test_translated_page_canonical_url(self):
         """Test that a translated page has the correct language coded canonical URL."""
-        welsh_page = self.information_page.copy_for_translation(locale=self.welsh_locale, copy_parents=True)
+        welsh_page = self.information_page.aliases.first()
+        welsh_page.alias_of = None
         welsh_page.save_revision().publish()
         response = self.client.get(welsh_page.get_url())
         self.assertEqual(response.status_code, HTTPStatus.OK)
@@ -91,7 +99,6 @@ class PathBasedLocalisationTests(WagtailPageTestCase):
         """Test that Welsh articles have the correct english canonical URL when they have not been explicitly
         translated.
         """
-        self.statistical_article_page.copy_for_translation(locale=self.welsh_locale, copy_parents=True, alias=True)
         response = self.client.get(f"/cy{self.statistical_article_page.get_url(request=self.dummy_request)}")
         self.assertEqual(response.status_code, HTTPStatus.OK)
         self.assertContains(
@@ -101,7 +108,8 @@ class PathBasedLocalisationTests(WagtailPageTestCase):
 
     def test_translated_welsh_statistical_article_page_canonical_url(self):
         """Test that a translated article has the correct language coded canonical URL."""
-        welsh_page = self.statistical_article_page.copy_for_translation(locale=self.welsh_locale, copy_parents=True)
+        welsh_page = self.information_page.aliases.first()
+        welsh_page.alias_of = None
         welsh_page.save_revision().publish()
         response = self.client.get(welsh_page.get_url(request=self.dummy_request))
         self.assertEqual(response.status_code, HTTPStatus.OK)

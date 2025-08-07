@@ -2,7 +2,6 @@ from unittest.mock import patch
 
 from django.test import TestCase, override_settings
 from wagtail.models import Locale, Site, SiteRootPath
-from wagtail_factories import SiteFactory
 
 from cms.home.models import HomePage
 from cms.locale.utils import get_mapped_site_root_paths, replace_hostname
@@ -25,13 +24,16 @@ class LocaleUtilsTestCase(TestCase):
         cls.welsh_locale = Locale.objects.get(language_code="cy")
 
         cls.home = HomePage.objects.first()
-        cls.welsh_home = cls.home.copy_for_translation(cls.welsh_locale, alias=True)
+        cls.welsh_home = cls.home.aliases.first()
 
-        cls.english_site = Site.objects.get()
+        cls.english_site = Site.objects.get(is_default_site=True)
         cls.english_site.hostname = "ons.localhost"
-        cls.english_site.root_page = cls.home
-        cls.english_site.save(update_fields=["hostname"])
-        cls.welsh_site = SiteFactory(hostname="cy.ons.localhost", port=80, root_page=cls.welsh_home)
+        cls.english_site.port = 80
+        cls.english_site.save(update_fields=["hostname", "port"])
+        cls.welsh_site = Site.objects.get(root_page=cls.welsh_home)
+        cls.welsh_site.hostname = "cy.ons.localhost"
+        cls.welsh_site.port = 80
+        cls.welsh_site.save(update_fields=["hostname", "port"])
 
     def test_replace_hostname(self):
         # Test with URL that has no hostname
