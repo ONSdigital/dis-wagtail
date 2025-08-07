@@ -138,13 +138,14 @@ Feature: CMS users can draft, edit, and publish release pages
     And the user returns to editing the published page
     Then the user cannot delete the release date change
 
+
   Scenario: Validation error is raised when multiple release date changes are added
     When the user publishes a page with example content
     And the user returns to editing the published page
     And the user adds multiple release date changes under changes to release date
     And the user clicks "Publish"
     Then an error message is displayed to say the page could not be saved
-    And under changes to release date, the user sees a validation error message: multiple release date changes
+    And the user sees a validation error message: multiple release date changes
 
 
   Scenario Outline: Validation errors are raised when release date and date change log fields are inconsistent on a confirmed page
@@ -153,7 +154,7 @@ Feature: CMS users can draft, edit, and publish release pages
   And the user adds <Input> under changes to release date
   And the user clicks "Publish"
   Then an error message is displayed to say the page could not be saved
-  And under changes to release date, the user sees a validation error message: <Error>
+  And the user sees a validation error message: <Error>
 
 Examples:
   | Input                                          | Error                                        |
