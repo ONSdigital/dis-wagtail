@@ -1,5 +1,6 @@
 from typing import TYPE_CHECKING, Any, ClassVar, Optional, cast
 
+from bs4 import BeautifulSoup
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.core.paginator import EmptyPage, PageNotAnInteger, Paginator
@@ -595,7 +596,7 @@ class StatisticalArticlePage(BundledPageMixin, RoutablePageMixin, BasePage):  # 
             "outputEdition": self.slug,
             "releaseDate": format_date_for_gtm(self.release_date),
             "latestRelease": self.is_latest,
-            "wordCount": "755",  # TODO implement word count calculation
+            "wordCount": self.word_count,
         }
 
         if self.next_release_date:
@@ -609,3 +610,17 @@ class StatisticalArticlePage(BundledPageMixin, RoutablePageMixin, BasePage):  # 
             # then include the evergreen latest URL (the parent series URL) in the analytics values.
             values["pageURL"] = self.get_parent().get_full_url(request)
         return values
+
+    @cached_property
+    def word_count(self) -> int:
+        """Returns the word count for the page, including the tite, summary and content."""
+        html_content = self.content.render_as_block()
+
+        # Strip all the HTML tags
+        soup_content = BeautifulSoup(str(html_content), "html.parser")
+        stripped_content = soup_content.text
+
+        word_count = (
+            len(str(stripped_content).split()) + len(self.display_title.split()) + len(strip_tags(self.summary).split())
+        )
+        return word_count

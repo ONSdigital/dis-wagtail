@@ -113,16 +113,16 @@ class LinkBlockStructValue(StructValue):
         if content_group := target_page.gtm_content_group:
             attributes["data-gtm-click-content-group"] = content_group
 
-        if (
-            str(type(target_page)) == "StatisticalArticlePage"
-        ):  # TODO better way to check type without circular imports?
+        if target_page.__class__.__name__ == "StatisticalArticlePage":
+            analytics_values = target_page.cached_analytics_values
             attributes.update(
                 {
-                    "data-gtm-click-output-series": target_page.cached_analytics_values["outputSeries"],
-                    "data-gtm-click-output-edition": target_page.cached_analytics_values["outputEdition"],
-                    "data-gtm-click-release-date": target_page.cached_analytics_values["releaseDate"],
+                    "data-gtm-click-output-series": analytics_values.get("outputSeries", ""),
+                    "data-gtm-click-output-edition": analytics_values.get("outputEdition", ""),
+                    "data-gtm-click-release-date": analytics_values.get("releaseDate", ""),
                 }
             )
+
         return attributes
 
     @cached_property
