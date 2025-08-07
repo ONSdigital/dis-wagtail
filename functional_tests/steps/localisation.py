@@ -6,7 +6,7 @@ from playwright.sync_api import expect
 @given("a CMS user edits the home page")
 def user_goes_to_edit_home_page(context: Context) -> None:
     context.page.get_by_role("button", name="Pages").click()
-    context.page.get_by_role("link", name="Edit 'Home'").click()
+    context.page.get_by_role("link", name="Edit 'Home'").first.click()
 
 
 @step("the user creates a Welsh version of the home page")

@@ -21,7 +21,6 @@ Feature: Users can create localised content in the CMS
         And the page furniture is displayed in Welsh
 
     Scenario: The user is able to switch between different language versions of a page
-        And the user creates a Welsh version of the home page
         When the user creates an information page as a child of the home page
         And the user adds content to the new information page
         And the user clicks "Publish"
