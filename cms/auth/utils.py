@@ -2,12 +2,11 @@ import base64
 import json
 import logging
 from collections.abc import Iterable
-from typing import Any, Optional, cast
+from typing import TYPE_CHECKING, Any, Optional, cast
 
 import requests
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import serialization
-from cryptography.hazmat.primitives.asymmetric.rsa import RSAPublicKey
 from django.conf import settings
 from jwt import InvalidTokenError, get_unverified_header
 from jwt import decode as jwt_decode
@@ -15,15 +14,18 @@ from jwt.exceptions import ExpiredSignatureError
 
 from cms.core.cache import memory_cache
 
+if TYPE_CHECKING:
+    from cryptography.hazmat.primitives.asymmetric.rsa import RSAPublicKey
+
+
 logger = logging.getLogger(__name__)
 
 
-def _parse_der_public_key(b64_der_key: str) -> RSAPublicKey:
+def _parse_der_public_key(b64_der_key: str) -> "RSAPublicKey":
     """Parses a Base64 encoded DER public key and returns the public key object."""
-    # Jake comment 3
     der = base64.b64decode(b64_der_key)
     key = serialization.load_der_public_key(der, backend=default_backend())
-    return cast(RSAPublicKey, key)
+    return cast("RSAPublicKey", key)
 
 
 @memory_cache(60 * 30)
@@ -53,7 +55,6 @@ def validate_jwt(token: str, token_type: str) -> dict | None:
     except InvalidTokenError:
         logger.exception("Invalid token", extra={"token_type": token_type})
     except Exception:  # pylint: disable=broad-except
-        #  Jake comment 3
         logger.exception("Error decoding token or parsing DER public key", extra={"token_type": token_type})
     return None
 

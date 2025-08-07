@@ -42,7 +42,6 @@ class SyncTeamsCommandTests(TestCase):
 
     def _call_command(self, *, dry_run=False):
         argv = ["--dry-run"] if dry_run else []
-        # Jake comment 4
         with open(os.devnull, "w", encoding="utf-8") as stdout:
             management.call_command("sync_teams", *argv, stdout=stdout)
 

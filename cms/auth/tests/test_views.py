@@ -27,7 +27,6 @@ class ONSLogoutViewTests(TestCase, WagtailTestUtils):
         SessionMiddleware(lambda r: None).process_request(req)
         req.session.save()
 
-        # Jake comment 2
         # Attach a message storage backend to the request (typically FallbackStorage)
         backend_cls = import_string(settings.MESSAGE_STORAGE)
         storage = backend_cls(req)
