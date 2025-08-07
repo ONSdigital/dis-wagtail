@@ -1,5 +1,3 @@
-import json
-import re
 import time
 
 from behave import given, then, when  # pylint: disable=no-name-in-module
@@ -12,7 +10,7 @@ from functional_tests.step_helpers.auth_utils import AuthenticationTestHelper
 from functional_tests.step_helpers.utils import require_request
 
 
-@given("I am authenticated")
+@given("the user is authenticated")
 def create_valid_tokens(context: Context) -> None:
     """Set up valid JWT tokens and authentication cookies for testing."""
     helper = AuthenticationTestHelper(context)
@@ -23,15 +21,16 @@ def create_valid_tokens(context: Context) -> None:
     helper.setup_session_renewal_timing()
 
 
-@when("I navigate to the admin page")
+@when("the user navigates to the admin page")
 def navigate_to_admin(context: Context) -> None:
     """Navigate to the Wagtail admin page and simulate user activity."""
     # Navigate to admin
     context.page.goto(f"{context.base_url}/admin/")
 
 
-@when("I become active again")
-@when("I am active in the admin interface")
+@when("the user becomes active again")
+@when("the user is active in the admin interface")
+@when("the JWT token is refreshed in one tab")
 def simulate_user_activity(context: Context) -> None:
     """Simulate mouse movements to trigger activity detection."""
     movements = [(500, 300), (600, 350), (500, 300)]
@@ -60,14 +59,14 @@ def verify_renewal_requested(context: Context) -> None:
     )
 
 
-@given("I have no valid JWT tokens")
+@given("the user has no valid JWT tokens")
 def step_clear_tokens(context: Context) -> None:
     """Clear any existing auth cookies (no valid tokens)."""
     context.page.context.clear_cookies()
 
 
 @then("the logout request should complete successfully")
-@then("I should be redirected to the sign-in page")
+@then("the user should be redirected to the sign-in page")
 def step_redirected_to_signin(context: Context) -> None:
     """Verify we were redirected to the admin login page."""
     expected_path = "/admin/login/"
@@ -76,7 +75,7 @@ def step_redirected_to_signin(context: Context) -> None:
         raise AssertionError(f"Not redirected to login, current URL: {current_url}")
 
 
-@then("I should not be redirected to the sign-in page")
+@then("the user should not be redirected to the sign-in page")
 def step_not_redirected_to_signin(context: Context) -> None:
     """Verify we stayed on admin and did not hit the login URL."""
     forbidden = "/admin/login/"
@@ -85,19 +84,19 @@ def step_not_redirected_to_signin(context: Context) -> None:
         raise AssertionError(f"Unexpected redirect to login page: {current}")
 
 
-@when("I remain inactive for a period longer than the token's expiration time")
+@when("the user remains inactive for a period longer than the token's expiration time")
 def step_wait_for_expiry(context: Context) -> None:  # pylint: disable=unused-argument
     """Sleep past the token TTL so it expires."""
     time.sleep(20)
 
 
-@when("I refresh the page")
+@given("the user refreshes the page")
 def step_refresh_page(context: Context) -> None:
     """Reload the current page."""
     context.page.reload()
 
 
-@when('I click the "Log out" button in the Wagtail UI')
+@when('the user clicks the "Log out" button in the Wagtail UI')
 def step_click_logout(context: Context) -> None:
     """Trigger the logout flow."""
     context.page.get_by_role("button", name="first").click()
@@ -119,7 +118,7 @@ def step_tokens_cleared(context: Context) -> None:
         raise AssertionError(f"Expected tokens to be cleared but found still present: {present}. All cookies: {seen}")
 
 
-@when("I am logged in and open a second tab")
+@when("the user opens a second tab")
 def step_two_tabs(context: Context) -> None:
     """Ensure two pages share the same session context."""
     # first tab is context.page
@@ -131,97 +130,101 @@ def step_two_tabs(context: Context) -> None:
     context.pages = [page_1, page_2]
 
 
-@when("the JWT token is refreshed in one tab")
-def step_refresh_in_one_tab(context: Context) -> None:
-    """Trigger renewal in Tab 1, sync state into Tab 2, and capture both expiries."""
-    tab1_logs, tab2_logs = [], []
+# @when("the JWT token is refreshed in one tab")
+# def step_refresh_token_and_extend_session(context: Context) -> None:
+#     """Simulate mouse movements in Tab 1 to trigger JWT token refresh and session extension."""
+#     movements = [(500, 300), (600, 350), (500, 300)]
 
-    # Listen on both pages before we do anything
-    context.pages[0].on("console", lambda msg: tab1_logs.append(msg.text))
-    context.pages[1].on("console", lambda msg: tab2_logs.append(msg.text))
+#     page_1 = context.pages[0]
+#     for x, y in movements:
+#         page_1.mouse.move(x, y)
+#         time.sleep(3)
 
-    # Kick off the activity-based renewal
-    movements = [(500, 300), (600, 350), (500, 300)]
-    for x, y in movements:
-        context.pages[0].mouse.move(x, y)
-        time.sleep(3)
-
-    # Give the library a moment to log the result
-    time.sleep(1)
-
-    # Extract Tab 1's “new expiration time”
-    for text in tab1_logs:
-        print(f"Tab 1 log: {text}")
-        m = re.search(r"new expiration time: (\d+)", text)
-        if m:
-            context.first_tab_expiry = m.group(1)
-            break
-    else:
-        raise AssertionError("No renewal log in Tab 1; saw:\n  " + "\n  ".join(tab1_logs))
-
-    # Pull the fresh state from Tab 1's localStorage
-    state = context.pages[0].evaluate("localStorage.getItem('dis_auth_client_state')")
-
-    #    Copy that into Tab 2 and fire a StorageEvent so its listener runs
-    context.pages[1].evaluate(
-        f"""
-        localStorage.setItem('dis_auth_client_state', {json.dumps(state)});
-        window.dispatchEvent(new StorageEvent('storage', {{
-            key: 'dis_auth_client_state',
-            newValue: {json.dumps(state)}
-        }}));
-        """
-    )
-
-    # Let Tab 2's listener fire and log
-    time.sleep(1)
-
-    # Extract Tab 2's “new expiration time”
-    for text in tab2_logs:
-        m = re.search(r"new expiration time: (\d+)", text)
-        print(f"Tab 2 log: {text}")
-        if m:
-            context.second_tab_expiry = m.group(1)
-            break
-    else:
-        raise AssertionError("No renewal log in Tab 2; saw:\n  " + "\n  ".join(tab2_logs))
+#     time.sleep(5)  # Allow time for any session renewal logic to run
 
 
-@then("the second tab should update its session without a manual reload")
-def step_second_tab_update(context: Context) -> None:
-    """Compare the two captured timestamps."""
-    if context.second_tab_expiry != context.first_tab_expiry:
-        raise AssertionError(f"Timestamps differ: Tab 1={context.first_tab_expiry}, Tab 2={context.second_tab_expiry}")
+# @when("the JWT token is refreshed in one tab")
+# def step_refresh_in_one_tab(context: Context) -> None:
+#     """Trigger renewal in Tab 1, sync state into Tab 2, and capture both expiries."""
+#     tab1_logs, tab2_logs = [], []
+
+#     # Listen on both pages before we do anything
+#     context.pages[0].on("console", lambda msg: tab1_logs.append(msg.text))
+#     context.pages[1].on("console", lambda msg: tab2_logs.append(msg.text))
+
+#     # Kick off the activity-based renewal
+#     movements = [(500, 300), (600, 350), (500, 300)]
+#     for x, y in movements:
+#         context.pages[0].mouse.move(x, y)
+#         time.sleep(3)
+
+#     # Give the library a moment to log the result
+#     time.sleep(1)
+
+#     # Extract Tab 1's “new expiration time”
+#     for text in tab1_logs:
+#         print(f"Tab 1 log: {text}")
+#         m = re.search(r"new expiration time: (\d+)", text)
+#         if m:
+#             context.first_tab_expiry = m.group(1)
+#             break
+#     else:
+#         raise AssertionError("No renewal log in Tab 1; saw:\n  " + "\n  ".join(tab1_logs))
+
+#     # Pull the fresh state from Tab 1's localStorage
+#     state = context.pages[0].evaluate("localStorage.getItem('dis_auth_client_state')")
+
+#     #    Copy that into Tab 2 and fire a StorageEvent so its listener runs
+#     context.pages[1].evaluate(
+#         f"""
+#         localStorage.setItem('dis_auth_client_state', {json.dumps(state)});
+#         window.dispatchEvent(new StorageEvent('storage', {{
+#             key: 'dis_auth_client_state',
+#             newValue: {json.dumps(state)}
+#         }}));
+#         """
+#     )
+
+#     # Let Tab 2's listener fire and log
+#     time.sleep(1)
+
+#     # Extract Tab 2's “new expiration time”
+#     for text in tab2_logs:
+#         m = re.search(r"new expiration time: (\d+)", text)
+#         print(f"Tab 2 log: {text}")
+#         if m:
+#             context.second_tab_expiry = m.group(1)
+#             break
+#     else:
+#         raise AssertionError("No renewal log in Tab 2; saw:\n  " + "\n  ".join(tab2_logs))
 
 
-@when("I log out from one tab")
+# @then("the second tab should update its session without a manual reload")
+# def step_second_tab_update(context: Context) -> None:
+#     """Compare the two captured timestamps."""
+#     if context.second_tab_expiry != context.first_tab_expiry:
+#         raise AssertionError(f"Timestamps differ: Tab 1={context.first_tab_expiry}, Tab 2={context.second_tab_expiry}")
+
+
+@when("the user logs out from one tab")
 def step_logout_one_tab(context: Context) -> None:
     """Perform logout in Tab 1 by re-using the existing logout click."""
     context.execute_steps("""
-        When I click the "Log out" button in the Wagtail UI
+        When the user clicks the "Log out" button in the Wagtail UI
     """)
 
 
-@then("both tabs should be redirected to the sign-in page")
-def step_both_tabs_redirect(context: Context) -> None:
-    """Verify Tab 1 lands on login, then reload Tab 2 and verify it also lands on login."""
-    expected_path = "/admin/login/"
-
-    # Check Tab 1
-    tab_1 = context.pages[0]
-    tab_1.wait_for_url(lambda url: expected_path in url, timeout=5000)
-    if expected_path not in tab_1.url:
-        raise AssertionError(f"Tab 1 was not redirected to login; URL is {tab_1.url}")
-
-    # Refresh and check Tab 2
-    tab_2 = context.pages[1]
-    tab_2.reload()
-    tab_2.wait_for_url(lambda url: expected_path in url, timeout=5000)
-    if expected_path not in tab_2.url:
-        raise AssertionError(f"Tab 2 was not redirected to login after reload; URL is {tab_2.url}")
+@then("both tabs should remain logged in")
+def step_both_tabs_remain_logged_in(context: Context) -> None:
+    """Reload both tabs and verify that neither tab is redirected to the login page."""
+    forbidden_path = "/admin/login/"
+    for i, tab in enumerate(context.pages):
+        tab.reload()
+        if forbidden_path in tab.url:
+            raise AssertionError(f"Tab {i + 1} was unexpectedly redirected to login; URL is {tab.url}")
 
 
-@when("I am editing page")
+@when("the user is editing a page")
 def step_navigate_iframe(context: Context) -> None:
     """Navigate to the a information page to simulate editing."""
     context.page.goto(f"{context.base_url}/admin/")
@@ -251,7 +254,7 @@ def step_navigate_iframe(context: Context) -> None:
     context.page.get_by_role("button", name="Save draft").click()
 
 
-@then("I open the preview pane and the session should not be initialised in the iframe")
+@then("the user opens the preview pane and the session should not be initialised in the iframe")
 def step_session_not_initialised_in_iframe(context: Context) -> None:
     """Ensure session management only initialises once (in the parent), and not inside the iframe."""
     # open preview

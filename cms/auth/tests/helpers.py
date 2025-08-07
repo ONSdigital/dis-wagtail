@@ -37,7 +37,7 @@ def build_jwt(pair: RSAKeyPair, *, token_use: str, **extra) -> str:
     now = datetime.now(tz=UTC)
     payload = {
         "iss": "https://cognito-idp.eu-west-2.amazonaws.com/test-pool",
-        "exp": int((now + timedelta(seconds=15)).timestamp()),
+        "exp": int((now + timedelta(seconds=30)).timestamp()),
         "iat": int(now.timestamp()),
         "jti": f"jti-{token_use}",
         "token_use": token_use,
