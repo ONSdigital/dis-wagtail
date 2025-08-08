@@ -1,6 +1,9 @@
 from django.test import TestCase
+from wagtail.blocks import StreamBlockValidationError
+from wagtail.blocks.stream_block import StreamValue
 from wagtail.images.tests.utils import get_test_image_file
 
+from cms.datasets.blocks import TimeSeriesPageStoryBlock
 from cms.home.models import HomePage
 from cms.images.models import CustomImage
 from cms.themes.tests.factories import ThemePageFactory
@@ -104,3 +107,24 @@ class ExploreMoreBlocksTestCase(TestCase):
 
         self.assertEqual(formatted_items[1]["title"]["text"], self.theme_page.title)
         self.assertEqual(formatted_items[1]["description"], self.theme_page.listing_summary)
+
+
+class TimeSeriesPageStoryBlockTestCase(TestCase):
+    def test_time_series_page_link_block_validation_fails_on_duplicated_links(self):
+        block = TimeSeriesPageStoryBlock()
+        stream_value = StreamValue(
+            block,
+            [
+                (
+                    "time_series_page_link",
+                    {"title": "Link 1", "url": "https://example.com/1", "page_summary": "Summary 1"},
+                ),
+                (
+                    "time_series_page_link",
+                    {"title": "Link 2", "url": "https://example.com/1", "page_summary": "Summary 2"},
+                ),
+            ],
+        )
+
+        with self.assertRaises(StreamBlockValidationError):
+            block.clean(stream_value)
