@@ -67,5 +67,5 @@ Feature: Wagtail Admin JWT Authentication and Session Management
     @cognito_enabled
     Scenario: Ensure session is not initialised in the iframe
         Given the user is authenticated
-        When the user is editing a page
+        When the user creates and saves an information page
         Then the user opens the preview pane and the session should not be initialised in the iframe

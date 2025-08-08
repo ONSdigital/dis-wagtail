@@ -1,5 +1,3 @@
-import time
-
 from behave import given, then, when  # pylint: disable=no-name-in-module
 from behave.runner import Context
 from django.conf import settings
@@ -37,9 +35,9 @@ def simulate_user_activity(context: Context) -> None:
 
     for x, y in movements:
         context.page.mouse.move(x, y)
-        time.sleep(3)
+        context.page.wait_for_timeout(3000)
 
-    time.sleep(5)  # Allow time for any session renewal logic to run
+    context.page.wait_for_timeout(5000)  # Allow time for any session renewal logic to run
 
 
 @then("a session renewal request should be sent")
@@ -87,7 +85,7 @@ def step_not_redirected_to_signin(context: Context) -> None:
 @when("the user remains inactive for a period longer than the token's expiration time")
 def step_wait_for_expiry(context: Context) -> None:  # pylint: disable=unused-argument
     """Sleep past the token TTL so it expires."""
-    time.sleep(20)
+    context.page.wait_for_timeout(20000)
 
 
 @given("the user refreshes the page")
@@ -130,82 +128,6 @@ def step_two_tabs(context: Context) -> None:
     context.pages = [page_1, page_2]
 
 
-# @when("the JWT token is refreshed in one tab")
-# def step_refresh_token_and_extend_session(context: Context) -> None:
-#     """Simulate mouse movements in Tab 1 to trigger JWT token refresh and session extension."""
-#     movements = [(500, 300), (600, 350), (500, 300)]
-
-#     page_1 = context.pages[0]
-#     for x, y in movements:
-#         page_1.mouse.move(x, y)
-#         time.sleep(3)
-
-#     time.sleep(5)  # Allow time for any session renewal logic to run
-
-
-# @when("the JWT token is refreshed in one tab")
-# def step_refresh_in_one_tab(context: Context) -> None:
-#     """Trigger renewal in Tab 1, sync state into Tab 2, and capture both expiries."""
-#     tab1_logs, tab2_logs = [], []
-
-#     # Listen on both pages before we do anything
-#     context.pages[0].on("console", lambda msg: tab1_logs.append(msg.text))
-#     context.pages[1].on("console", lambda msg: tab2_logs.append(msg.text))
-
-#     # Kick off the activity-based renewal
-#     movements = [(500, 300), (600, 350), (500, 300)]
-#     for x, y in movements:
-#         context.pages[0].mouse.move(x, y)
-#         time.sleep(3)
-
-#     # Give the library a moment to log the result
-#     time.sleep(1)
-
-#     # Extract Tab 1's “new expiration time”
-#     for text in tab1_logs:
-#         print(f"Tab 1 log: {text}")
-#         m = re.search(r"new expiration time: (\d+)", text)
-#         if m:
-#             context.first_tab_expiry = m.group(1)
-#             break
-#     else:
-#         raise AssertionError("No renewal log in Tab 1; saw:\n  " + "\n  ".join(tab1_logs))
-
-#     # Pull the fresh state from Tab 1's localStorage
-#     state = context.pages[0].evaluate("localStorage.getItem('dis_auth_client_state')")
-
-#     #    Copy that into Tab 2 and fire a StorageEvent so its listener runs
-#     context.pages[1].evaluate(
-#         f"""
-#         localStorage.setItem('dis_auth_client_state', {json.dumps(state)});
-#         window.dispatchEvent(new StorageEvent('storage', {{
-#             key: 'dis_auth_client_state',
-#             newValue: {json.dumps(state)}
-#         }}));
-#         """
-#     )
-
-#     # Let Tab 2's listener fire and log
-#     time.sleep(1)
-
-#     # Extract Tab 2's “new expiration time”
-#     for text in tab2_logs:
-#         m = re.search(r"new expiration time: (\d+)", text)
-#         print(f"Tab 2 log: {text}")
-#         if m:
-#             context.second_tab_expiry = m.group(1)
-#             break
-#     else:
-#         raise AssertionError("No renewal log in Tab 2; saw:\n  " + "\n  ".join(tab2_logs))
-
-
-# @then("the second tab should update its session without a manual reload")
-# def step_second_tab_update(context: Context) -> None:
-#     """Compare the two captured timestamps."""
-#     if context.second_tab_expiry != context.first_tab_expiry:
-#         raise AssertionError(f"Timestamps differ: Tab 1={context.first_tab_expiry}, Tab 2={context.second_tab_expiry}")
-
-
 @when("the user logs out from one tab")
 def step_logout_one_tab(context: Context) -> None:
     """Perform logout in Tab 1 by re-using the existing logout click."""
@@ -224,9 +146,9 @@ def step_both_tabs_remain_logged_in(context: Context) -> None:
             raise AssertionError(f"Tab {i + 1} was unexpectedly redirected to login; URL is {tab.url}")
 
 
-@when("the user is editing a page")
-def step_navigate_iframe(context: Context) -> None:
-    """Navigate to the a information page to simulate editing."""
+@when("the user creates and saves an information page")
+def step_create_and_save_information_page(context: Context) -> None:
+    """Create and save an information page with filled content for preview."""
     context.page.goto(f"{context.base_url}/admin/")
 
     context.page.get_by_role("button", name="Pages").click()
@@ -263,13 +185,12 @@ def step_session_not_initialised_in_iframe(context: Context) -> None:
     expect(iframe.get_by_text("Info page", exact=True)).to_be_visible()
 
     # small pause for any stray logs
-    time.sleep(1)
+    context.page.wait_for_timeout(1000)
 
     # now assert we only saw one init-log total
-    init_msg = "Initialising session management with config"
     count = len(context.session_init_logs)
     if count != 1:
         raise AssertionError(
-            f"Expected exactly one console message “{init_msg}” (in parent only), "
+            f'Expected exactly one console message "Initialising session management with config" (in parent only), '
             f"but found {count}: {context.session_init_logs}"
         )
