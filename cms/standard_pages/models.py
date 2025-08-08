@@ -37,7 +37,7 @@ class InformationPage(BundledPageMixin, GenericTaxonomyMixin, BasePage):  # type
     last_updated = models.DateField(blank=True, null=True)
     content = StreamField(CoreStoryBlock())
 
-    gtm_content_type: ClassVar[str] = "information-pages"
+    gtm_content_type: ClassVar[str] = "information"
 
     content_panels: ClassVar[list["Panel"]] = [
         *BundledPageMixin.panels,

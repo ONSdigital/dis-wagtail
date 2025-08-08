@@ -268,6 +268,8 @@ class StatisticalArticlePage(BundledPageMixin, RoutablePageMixin, BasePage):  # 
         index.AutocompleteField("news_headline"),
     ]
 
+    gtm_content_type = "statistical-articles"
+
     def clean(self) -> None:
         """Additional validation on save."""
         super().clean()
@@ -613,13 +615,14 @@ class StatisticalArticlePage(BundledPageMixin, RoutablePageMixin, BasePage):  # 
 
     @cached_property
     def word_count(self) -> int:
-        """Returns the word count for the page, including the tite, summary and content."""
+        """Returns the total word count for the article page's display title, summary and content."""
         # Render the content as HTML and get the text without HTML tags so we can count words
         html_content = self.content.render_as_block()
         soup_content = BeautifulSoup(str(html_content), "html.parser")
         stripped_content = soup_content.text
+        content_word_count = len(str(stripped_content).split())
 
-        word_count = (
-            len(str(stripped_content).split()) + len(self.display_title.split()) + len(strip_tags(self.summary).split())
-        )
-        return word_count
+        title_word_count = len(self.display_title.split())
+        summary_word_count = len(strip_tags(self.summary).split())
+
+        return title_word_count + summary_word_count + content_word_count

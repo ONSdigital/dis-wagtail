@@ -36,5 +36,5 @@ class ThemePage(ExclusiveTaxonomyMixin, BasePage):  # type: ignore[django-manage
     def gtm_content_type(self) -> str:
         """Return the Google Tag Manager content type for this page."""
         if isinstance(self.get_parent().specific_deferred, ThemePage):
-            return "sub-theme-pages"
-        return "theme-pages"
+            return "sub-themes"
+        return "themes"

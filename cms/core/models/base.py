@@ -14,6 +14,7 @@ from wagtailschemaorg.utils import extend
 from cms.core.cache import get_default_cache_control_decorator
 from cms.core.query import order_by_pk_position
 from cms.taxonomy.forms import DeduplicateTopicsAdminForm
+from cms.taxonomy.mixins import ExclusiveTaxonomyMixin
 
 from ..forms import ONSCopyForm
 from .mixins import ListingFieldsMixin, SocialFieldsMixin
@@ -77,6 +78,8 @@ class BasePage(PageLDMixin, ListingFieldsMixin, SocialFieldsMixin, Page):  # typ
     ]
 
     additional_panel_tabs: ClassVar[list[tuple[list["FieldPanel"], str]]] = []
+
+    gtm_content_type: ClassVar[str | None] = None
 
     @cached_classmethod
     def get_edit_handler(cls) -> TabbedInterface:  # pylint: disable=no-self-argument
@@ -219,12 +222,13 @@ class BasePage(PageLDMixin, ListingFieldsMixin, SocialFieldsMixin, Page):  # typ
     @cached_property
     def cached_analytics_values(self) -> dict[str, str | bool]:
         """Return a dictionary of cachable analytics values for this page."""
-        values = {
-            "pageTitle": self.title,
-            "contentType": self.gtm_content_type,
-        }
+        values = {"pageTitle": self.title}
+        if content_type := self.gtm_content_type:
+            values["contentType"] = content_type
         if content_group := self.gtm_content_group:
             values["contentGroup"] = content_group
+        if content_theme := self.gtm_content_theme:
+            values["contentTheme"] = content_theme
         return values
 
     def get_analytics_values(self, request: "HttpRequest") -> dict[str, str | bool]:
@@ -232,9 +236,12 @@ class BasePage(PageLDMixin, ListingFieldsMixin, SocialFieldsMixin, Page):  # typ
         return self.cached_analytics_values
 
     @cached_property
-    def gtm_content_type(self) -> str:
-        """Return the Google Tag Manager content type for this page."""
-        return "pages"  # TODO agree on a default content type, or remove this default so all pages must override it
+    def parent_topic_or_theme(self) -> "BasePage | None":
+        """Returns the first parent topic or theme page of this page, if one exists."""
+        for ancestor in self.get_ancestors(inclusive=True).reverse():
+            if ancestor.specific_deferred.__class__.__name__ in ("TopicPage", "ThemePage"):
+                return ancestor.specific_deferred
+        return None
 
     @cached_property
     def gtm_content_group(self) -> str | None:
@@ -242,11 +249,22 @@ class BasePage(PageLDMixin, ListingFieldsMixin, SocialFieldsMixin, Page):  # typ
         This is the slug of the topic associated with the page, for a theme or topic page this will be it's own slug,
         otherwise it will be the slug of the parent topic page if it exists.
         """
-        for ancestor in self.get_ancestors(inclusive=True).reverse():
-            if ancestor.specific_deferred.__class__.__name__ in ("TopicPage", "ThemePage"):
-                return ancestor.slug
-
+        if parent_topic_or_theme := self.parent_topic_or_theme:
+            return parent_topic_or_theme.slug
         return None
+
+    @cached_property
+    def gtm_content_theme(self) -> str | None:
+        """Returns the title of the top ancestor taxonomic topic for the pages parent topic or theme page,
+        if one exists.
+        """
+        if not self.parent_topic_or_theme:
+            return None
+        parent_topic_or_theme = cast(ExclusiveTaxonomyMixin, self.parent_topic_or_theme)
+        page_topic = parent_topic_or_theme.topic
+
+        parent_theme = page_topic.get_ancestors()[0]
+        return parent_theme.title
 
 
 class BaseSiteSetting(WagtailBaseSiteSetting):
