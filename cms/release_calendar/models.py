@@ -18,6 +18,7 @@ from cms.core.models import BasePage
 from cms.core.widgets import ONSAdminDateTimeInput
 from cms.datasets.blocks import DatasetStoryBlock
 
+from ..core.analytics import format_date_for_gtm
 from .blocks import (
     ReleaseCalendarChangesStoryBlock,
     ReleaseCalendarPreReleaseAccessStoryBlock,
@@ -180,6 +181,8 @@ class ReleaseCalendarPage(BundledPageMixin, BasePage):  # type: ignore[django-ma
         index.FilterField("release_date"),
     ]
 
+    gtm_content_type: ClassVar[str] = "release-calendars"  # TODO agree in spec
+
     def get_template(self, request: "HttpRequest", *args: Any, **kwargs: Any) -> str:
         """Select the correct template based on status."""
         template_by_status = {
@@ -294,3 +297,12 @@ class ReleaseCalendarPage(BundledPageMixin, BasePage):  # type: ignore[django-ma
             return ReleasePageInBundleReadyToBePublishedLock(self)
 
         return super().get_lock()
+
+    @cached_property
+    def cached_analytics_values(self) -> dict[str, str | bool]:
+        values = super().cached_analytics_values
+
+        values["releaseDate"] = format_date_for_gtm(self.publication_date)
+        if self.next_release_date:
+            values["nextReleaseDate"] = format_date_for_gtm(self.next_release_date)
+        return values

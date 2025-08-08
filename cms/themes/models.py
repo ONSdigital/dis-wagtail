@@ -1,6 +1,7 @@
 from typing import TYPE_CHECKING, Any, ClassVar
 
 from django.conf import settings
+from django.utils.functional import cached_property
 from wagtail.admin.panels import HelpPanel
 from wagtail.fields import RichTextField
 from wagtail.models import PanelPlaceholder
@@ -91,3 +92,18 @@ class ThemePage(ExclusiveTaxonomyMixin, BasePage):  # type: ignore[django-manage
     summary = RichTextField(features=settings.RICH_TEXT_BASIC)
 
     content_panels: ClassVar[list["Panel"]] = [*BasePage.content_panels, "summary"]
+
+    @cached_property
+    def cached_analytics_values(self) -> dict[str, str | bool]:
+        """Return a dictionary of cachable analytics values for this page."""
+        values = super().cached_analytics_values
+
+        values["contentTheme"] = self.slug
+        return values
+
+    @cached_property
+    def gtm_content_type(self) -> str:
+        """Return the Google Tag Manager content type for this page."""
+        if isinstance(self.get_parent().specific_deferred, ThemePage):
+            return "sub-themes"
+        return "themes"
