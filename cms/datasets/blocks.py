@@ -1,5 +1,4 @@
 from collections import defaultdict
-from urllib.parse import urlparse
 
 from django.core.exceptions import ValidationError
 from wagtail.blocks import (
@@ -26,7 +25,6 @@ class ManualDatasetBlock(StructBlock):
 
     class Meta:
         icon = "link"
-        template = "templates/components/streamfield/dataset_link_block.html"
 
 
 class TimeSeriesPageLinkBlock(StructBlock):
@@ -36,7 +34,6 @@ class TimeSeriesPageLinkBlock(StructBlock):
 
     class Meta:
         icon = "link"
-        template = "templates/components/streamfield/time_series_link.html"
 
 
 class TimeSeriesPageStoryBlock(StreamBlock):
@@ -65,16 +62,11 @@ class TimeSeriesPageStoryBlock(StreamBlock):
 
 
 class DatasetStoryBlock(StreamBlock):
-    dataset_lookup = DatasetChooserBlock(
-        label="Lookup Dataset", template="templates/components/streamfield/dataset_link_block.html"
-    )
+    dataset_lookup = DatasetChooserBlock(label="Lookup Dataset")
     manual_link = ManualDatasetBlock(
         required=False,
         label="Manually Linked Dataset",
     )
-
-    class Meta:
-        template = "templates/components/streamfield/datasets_block.html"
 
     def clean(self, value: StreamValue, ignore_required_constraints: bool = False) -> StreamValue:
         cleaned_value = super().clean(value)
@@ -85,9 +77,7 @@ class DatasetStoryBlock(StreamBlock):
         # For each dataset URL path, record the indices of the blocks it appears in
         url_paths = defaultdict(set)
         for block_index, block in enumerate(cleaned_value):
-            url_path = (
-                block.value.url_path if block.block_type == "dataset_lookup" else urlparse(block.value["url"]).path
-            )
+            url_path = block.value.website_url if block.block_type == "dataset_lookup" else block.value["url"]
             url_paths[url_path].add(block_index)
 
         block_errors = {}
