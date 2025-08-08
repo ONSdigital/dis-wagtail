@@ -614,9 +614,8 @@ class StatisticalArticlePage(BundledPageMixin, RoutablePageMixin, BasePage):  # 
     @cached_property
     def word_count(self) -> int:
         """Returns the word count for the page, including the tite, summary and content."""
+        # Render the content as HTML and get the text without HTML tags so we can count words
         html_content = self.content.render_as_block()
-
-        # Strip all the HTML tags
         soup_content = BeautifulSoup(str(html_content), "html.parser")
         stripped_content = soup_content.text
 
