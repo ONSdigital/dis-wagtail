@@ -246,7 +246,7 @@ class ReleaseCalendarPageAdminFormTestCase(WagtailTestUtils, TestCase):
             ("12 Tachwedd 2024 12:00pm", True),
             ("Tach 2024", False),
             ("Tachwedd 24", False),
-            ("I'w gadarnhau", True),
+            ("I’w gadarnhau", True),
             ("Lorem ipsum", False),
         ]
         for text, is_valid in cases:
@@ -261,7 +261,7 @@ class ReleaseCalendarPageAdminFormTestCase(WagtailTestUtils, TestCase):
                         "next_release_date_text",
                         [
                             'The next release date text must be in the "DD Month YYYY Time" format or say '
-                            '"I\'w gadarnhau" in Welsh.'
+                            '"I’w gadarnhau" in Welsh.'
                         ],
                     )
 
