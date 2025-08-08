@@ -1,7 +1,11 @@
 from http import HTTPStatus
+from unittest.mock import patch
 
 from django.conf import settings
+from django.template import TemplateDoesNotExist
+from django.template.loader import get_template as original_get_template
 from django.test.utils import override_settings
+from django.utils import translation
 from wagtail.models import Locale
 from wagtail.test.utils import WagtailPageTestCase
 
@@ -10,6 +14,12 @@ from cms.standard_pages.tests.factories import IndexPageFactory, InformationPage
 
 
 class HomePageTests(WagtailPageTestCase):
+    def tearDown(self):
+        # Reset the translation to the default language after each test to avoid
+        # test contamination issues.
+        translation.activate(settings.LANGUAGE_CODE)
+        return super().tearDown()
+
     def test_home_page_can_be_served(self):
         """Test that the home page can be served."""
         response = self.client.get("/")
@@ -30,7 +40,7 @@ class HomePageTests(WagtailPageTestCase):
 
     def test_welsh_home_page_template(self):
         response = self.client.get("/cy/")
-        self.assertContains(response, "Mae'r holl gynnwys ar gael o dan delerau'r")
+        self.assertContains(response, "Mae’r holl gynnwys ar gael o dan y")
 
     @override_settings(IS_EXTERNAL_ENV=False, WAGTAIL_CORE_ADMIN_LOGIN_ENABLED=True, AWS_COGNITO_LOGIN_ENABLED=True)
     def test_both_login_buttons_are_displayed(self):
@@ -70,6 +80,12 @@ class PageCanonicalUrlTests(WagtailPageTestCase):
     @classmethod
     def setUpTestData(cls):
         cls.page = InformationPageFactory()
+
+    def tearDown(self):
+        # Reset the translation to the default language after each test to avoid
+        # test contamination issues.
+        translation.activate(settings.LANGUAGE_CODE)
+        return super().tearDown()
 
     def test_page_canonical_url(self):
         """Test that the home page has the correct canonical URL."""
@@ -190,4 +206,155 @@ class SocialMetaTests(WagtailPageTestCase):
         self.assertContains(
             response,
             f'<meta property="og:image" content="{settings.DEFAULT_OG_IMAGE_URL}" />',
+        )
+
+
+class ErrorPageTests(WagtailPageTestCase):
+    def tearDown(self):
+        # Reset the translation to the default language after each test to avoid
+        # test contamination issues.
+        translation.activate(settings.LANGUAGE_CODE)
+        return super().tearDown()
+
+    def get_template_side_effect(self, template_name, *args, **kwargs):
+        """Side effect function to simulate template loading failures."""
+        if template_name == "templates/pages/errors/500.html":
+            raise TemplateDoesNotExist("Forced failure to find primary 500 template")
+
+        # For any other template (like our fallback), use the real get_template function
+        return original_get_template(template_name, *args, **kwargs)
+
+    def test_404_page(self):
+        """Test that the 404 page can be served."""
+        e404_urls = [
+            "/non-existent-page/",
+            "/nested/non-existent-page/",
+            "/non-existent-page/?with_query=string",
+        ]
+        for url in e404_urls:
+            with self.subTest(url=url):
+                response = self.client.get(url)
+                self.assertEqual(response.status_code, HTTPStatus.NOT_FOUND)
+                self.assertIn("Page not found", response.content.decode("utf-8"))
+                self.assertIn("If you entered a web address, check it is correct.", response.content.decode("utf-8"))
+
+    def test_301_before_404_page(self):
+        """Test that a 301 redirect is returned before the 404 page is served when necessary."""
+        # The lack of a trailing slash on the URL should result in a 301 redirect,
+        # even if the page does not exist.
+        response = self.client.get("/non-existent-page-with-no-trailing-slash")
+        self.assertEqual(response.status_code, HTTPStatus.MOVED_PERMANENTLY)
+
+        # Follow the redirect
+        response = self.client.get(response["Location"])
+        self.assertEqual(response.status_code, HTTPStatus.NOT_FOUND)
+        self.assertIn("Page not found", response.content.decode("utf-8"))
+        self.assertIn("If you entered a web address, check it is correct.", response.content.decode("utf-8"))
+
+    def test_404_page_uses_contact_us_setting(self):
+        """Test that the 404 page uses the CONTACT_US_URL setting for the contact link."""
+        response = self.client.get("/non-existent-page/")
+        self.assertEqual(response.status_code, HTTPStatus.NOT_FOUND)
+        self.assertContains(response, f'href="{settings.CONTACT_US_URL}"', status_code=HTTPStatus.NOT_FOUND)
+
+    @override_settings(CONTACT_US_URL="/custom/contact-path/")
+    def test_404_page_uses_custom_contact_us_setting(self):
+        """Test that the 404 page uses a custom CONTACT_US_URL setting when configured."""
+        response = self.client.get("/non-existent-page/")
+        self.assertEqual(response.status_code, HTTPStatus.NOT_FOUND)
+        self.assertContains(response, 'href="/custom/contact-path/"', status_code=HTTPStatus.NOT_FOUND)
+
+    @patch("cms.home.models.HomePage.serve")
+    def test_500_page(self, mock_homepage_serve):
+        """Test that the 500 page can be served."""
+        self.client.raise_request_exception = False
+
+        # Mock the HomePage serve method to raise an exception, simulating something
+        # going wrong in the view logic.
+        mock_homepage_serve.side_effect = ValueError("Deliberate test error")
+
+        response = self.client.get("/")
+
+        self.assertEqual(response.status_code, HTTPStatus.INTERNAL_SERVER_ERROR)
+        self.assertContains(
+            response, "Sorry, there’s a problem with the service", status_code=HTTPStatus.INTERNAL_SERVER_ERROR
+        )
+        # This uses the base template, which has OG tags
+        self.assertContains(response, 'property="og:description"', status_code=HTTPStatus.INTERNAL_SERVER_ERROR)
+
+        # Rendering and translations should still work
+        response = self.client.get("/cy/")
+        self.assertEqual(response.status_code, HTTPStatus.INTERNAL_SERVER_ERROR)
+        self.assertContains(
+            response, "Mae’n ddrwg gennym, mae problem gyda’r gwasanaeth", status_code=HTTPStatus.INTERNAL_SERVER_ERROR
+        )
+
+    @patch("cms.home.models.HomePage.serve")
+    @patch("django.template.loader.get_template")
+    def test_500_primary_fallback(self, mock_get_template, mock_homepage_serve):
+        """Test that the 500 page falls back to a basic HTML response."""
+        self.client.raise_request_exception = False
+        mock_homepage_serve.side_effect = ValueError("Deliberate test error")
+        # The side effect will raise TemplateDoesNotExist for the primary 500 template, but in general
+        # any issue with rendering the main 500 template should trigger the fallback.
+        mock_get_template.side_effect = self.get_template_side_effect
+
+        response = self.client.get("/")
+        self.assertEqual(response.status_code, HTTPStatus.INTERNAL_SERVER_ERROR)
+        self.assertContains(
+            response,
+            "Sorry, there’s a problem with the service",
+            status_code=HTTPStatus.INTERNAL_SERVER_ERROR,
+        )
+
+        templates_called = [call.args[0] for call in mock_get_template.call_args_list]
+
+        # Rendering still works, but it should have used the fallback template
+        self.assertListEqual(
+            templates_called, ["templates/pages/errors/500.html", "templates/pages/errors/500_fallback.html"]
+        )
+
+        # Check that the fallback template was actually used, it doesn't have OG tags like the base template
+        self.assertNotContains(response, 'property="og:description"', status_code=HTTPStatus.INTERNAL_SERVER_ERROR)
+
+        response = self.client.get("/cy/")
+        self.assertEqual(response.status_code, HTTPStatus.INTERNAL_SERVER_ERROR)
+
+        # The fallback template does not have Welsh translations
+        self.assertNotContains(
+            response,
+            "Mae’n ddrwg gennym, mae problem gyda’r gwasanaeth",
+            status_code=HTTPStatus.INTERNAL_SERVER_ERROR,
+        )
+        self.assertContains(
+            response,
+            "Sorry, there’s a problem with the service",
+            status_code=HTTPStatus.INTERNAL_SERVER_ERROR,
+        )
+
+    @patch("cms.home.models.HomePage.serve")
+    @patch("cms.core.views.render")
+    def test_500_final_fallback(self, mock_render, mock_homepage_serve):
+        """Test that the 500 page falls back to a basic HTML response."""
+        self.client.raise_request_exception = False
+        mock_homepage_serve.side_effect = ValueError("Deliberate test error")
+        # Mock the render function to raise an exception, so that no rendering works
+        mock_render.side_effect = Exception("Deliberate render error")
+
+        response = self.client.get("/")
+        self.assertEqual(response.status_code, HTTPStatus.INTERNAL_SERVER_ERROR)
+        # Rendering is not possible, so we return a plain HTML response
+        self.assertContains(
+            response,
+            "<h1>Server Error (500)</h1><p>Sorry, there’s a problem with the service.</p>",
+            status_code=HTTPStatus.INTERNAL_SERVER_ERROR,
+        )
+
+        # Welsh version should also return a plain HTML response
+        response = self.client.get("/cy/")
+        self.assertEqual(response.status_code, HTTPStatus.INTERNAL_SERVER_ERROR)
+        self.assertContains(
+            response,
+            "<h1>Server Error (500)</h1><p>Sorry, there’s a problem with the service.</p>",
+            status_code=HTTPStatus.INTERNAL_SERVER_ERROR,
         )

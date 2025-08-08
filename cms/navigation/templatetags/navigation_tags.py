@@ -51,9 +51,9 @@ def _extract_item(
         item["attributes"]["data-gtm-link-text"] = value["title"]
         item["attributes"]["data-gtm-click-path"] = value["external_url"]
 
-    elif value["page"] and value["page"].live:
-        item[text_key] = value["title"] or value["page"].title
-        item["url"] = value["page"].get_url(request=request)
+    elif (page := value.get("page")) and page.live:
+        item[text_key] = value["title"] or getattr(page.specific_deferred, "display_title", page.title)
+        item["url"] = page.get_url(request=request)
         item["attributes"]["data-gtm-link-text"] = item[text_key]
         item["attributes"]["data-gtm-click-path"] = item["url"]
         item["attributes"]["data-gtm-click-content-type"] = value["page"].cached_analytics_values.get(

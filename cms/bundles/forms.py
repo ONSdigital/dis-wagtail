@@ -5,16 +5,16 @@ from django import forms
 from django.core.exceptions import ValidationError
 from django.template.defaultfilters import pluralize
 from django.utils import timezone
-from wagtail.admin.forms import WagtailAdminModelForm
 
 from cms.bundles.enums import ACTIVE_BUNDLE_STATUS_CHOICES, EDITABLE_BUNDLE_STATUSES, BundleStatus
+from cms.core.forms import DeduplicateInlinePanelAdminForm
 from cms.workflows.models import ReadyToPublishGroupTask
 
 if TYPE_CHECKING:
     from .models import Bundle
 
 
-class BundleAdminForm(WagtailAdminModelForm):
+class BundleAdminForm(DeduplicateInlinePanelAdminForm):
     """The Bundle admin form used in the add/edit interface."""
 
     instance: "Bundle"
@@ -26,7 +26,8 @@ class BundleAdminForm(WagtailAdminModelForm):
         - disabled/hide the approved at/by fields
         """
         super().__init__(*args, **kwargs)
-        # hide the "Released" status choice
+        # hide the status field, and exclude the "Released" status choice
+        self.fields["status"].widget = forms.HiddenInput()
         if self.instance.status in EDITABLE_BUNDLE_STATUSES:
             self.fields["status"].choices = ACTIVE_BUNDLE_STATUS_CHOICES
         elif self.instance.status == BundleStatus.APPROVED.value:
@@ -37,9 +38,21 @@ class BundleAdminForm(WagtailAdminModelForm):
                 elif self.instance.publication_date:
                     fields_to_exclude_from_being_disabled.append("publication_date")
 
+            # disable all direct fields
             for field_name in self.fields:
                 if field_name not in fields_to_exclude_from_being_disabled:
                     self.fields[field_name].disabled = True
+
+            if "data" in kwargs and kwargs["data"].get("status") != BundleStatus.APPROVED.value:
+                # the form is initialised in a POST request, and the status has changed
+                # drop the InlinePanel formsets (bundle_pages, bundle_datasets, teams) so
+                # no changes are made
+                self.formsets: dict[str, Any] = {}
+            else:
+                # we're initializing the form with GET, tell th InlinePanel formsets they cannot
+                # add more items, so the "Add X" button is not shown
+                for formset in self.formsets.values():
+                    formset.max_num = len(formset.forms)
 
         # fully hide and disable the approved_at/by fields to prevent form tampering
         self.fields["approved_at"].disabled = True
@@ -51,6 +64,8 @@ class BundleAdminForm(WagtailAdminModelForm):
 
     def _has_datasets(self) -> bool:
         has_datasets = False
+        if "bundled_datasets" not in self.formsets:
+            return False
         for form in self.formsets["bundled_datasets"].forms:
             if not form.is_valid() or form.cleaned_data["DELETE"]:
                 continue
@@ -62,28 +77,14 @@ class BundleAdminForm(WagtailAdminModelForm):
         return has_datasets
 
     def _validate_bundled_pages(self) -> None:
-        """Validates and tidies up related pages.
-
-        - if we have an empty page reference, remove it form the form data
-        - ensure the selected page is not in another active bundle.
-        """
-        chosen = []
-        for idx, form in enumerate(self.formsets["bundled_pages"].forms):
+        """Validates related pages to ensure the selected page is not in another active bundle."""
+        if "bundled_pages" not in self.formsets:
+            return
+        for form in self.formsets["bundled_pages"].forms:
             if not form.is_valid():
                 continue
 
             page = form.clean().get("page")
-            if page is None:
-                # tidy up in case the page reference is empty
-                self.formsets["bundled_pages"].forms[idx].cleaned_data["DELETE"] = True
-                continue
-
-            if page in chosen:
-                # we saw this already, mark for removal to avoid duplicates.
-                self.formsets["bundled_pages"].forms[idx].cleaned_data["DELETE"] = True
-                continue
-
-            chosen.append(page)
 
             if not form.cleaned_data["DELETE"]:
                 page = page.specific
@@ -130,11 +131,15 @@ class BundleAdminForm(WagtailAdminModelForm):
             self.add_error("release_calendar_page", error)
             self.add_error("publication_date", error)
 
-        if release_calendar_page and release_calendar_page.release_date < timezone.now():
+        if (
+            release_calendar_page
+            and release_calendar_page.release_date < timezone.now()
+            and not self.instance.can_be_manually_published
+        ):
             error = "The release date on the release calendar page cannot be in the past."
             raise ValidationError({"release_calendar_page": error})
 
-        if publication_date and publication_date < timezone.now():
+        if publication_date and publication_date < timezone.now() and not self.instance.can_be_manually_published:
             raise ValidationError({"publication_date": "The release date cannot be in the past."})
 
     def clean_publication_date(self) -> datetime | None:
@@ -152,6 +157,11 @@ class BundleAdminForm(WagtailAdminModelForm):
         cleaned_data: dict[str, Any] = super().clean()
 
         self._validate_publication_date()
+
+        # deduplicate entries
+        self.deduplicate_formset(formset="bundled_pages", target_field="page")
+        self.deduplicate_formset(formset="bundled_datasets", target_field="dataset")
+        self.deduplicate_formset(formset="teams", target_field="team")
 
         self._validate_bundled_pages()
 

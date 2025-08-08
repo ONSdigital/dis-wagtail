@@ -12,11 +12,10 @@ from wagtailschemaorg.models import PageLDMixin
 from wagtailschemaorg.utils import extend
 
 from cms.core.cache import get_default_cache_control_decorator
+from cms.core.forms import DeduplicateTopicsAdminForm, ONSCopyForm
 from cms.core.query import order_by_pk_position
-from cms.taxonomy.forms import DeduplicateTopicsAdminForm
 from cms.taxonomy.mixins import ExclusiveTaxonomyMixin
 
-from ..forms import ONSCopyForm
 from .mixins import ListingFieldsMixin, SocialFieldsMixin
 
 if TYPE_CHECKING:
@@ -263,7 +262,7 @@ class BasePage(PageLDMixin, ListingFieldsMixin, SocialFieldsMixin, Page):  # typ
         parent_topic_or_theme = cast(ExclusiveTaxonomyMixin, self.parent_topic_or_theme)
         page_topic = parent_topic_or_theme.topic
 
-        parent_theme = page_topic.get_ancestors()[0]
+        parent_theme = page_topic.get_top_parent()
         return parent_theme.title
 
 

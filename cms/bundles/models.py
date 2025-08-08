@@ -2,13 +2,15 @@ from typing import TYPE_CHECKING, ClassVar, Optional, Self
 
 from django.conf import settings
 from django.db import models
-from django.db.models import F, QuerySet
+from django.db.models import Case, F, QuerySet, Value, When
+from django.db.models.fields import CharField
 from django.db.models.functions import Coalesce
 from django.urls import reverse
+from django.utils import timezone
 from django.utils.functional import cached_property
 from modelcluster.fields import ParentalKey
 from modelcluster.models import ClusterableModel
-from wagtail.admin.panels import FieldPanel, FieldRowPanel, InlinePanel, MultipleChooserPanel
+from wagtail.admin.panels import FieldPanel, FieldRowPanel
 from wagtail.models import Orderable, Page
 from wagtail.search import index
 
@@ -20,7 +22,7 @@ from cms.workflows.utils import is_page_ready_to_preview, is_page_ready_to_publi
 
 from .enums import ACTIVE_BUNDLE_STATUSES, EDITABLE_BUNDLE_STATUSES, PREVIEWABLE_BUNDLE_STATUSES, BundleStatus
 from .forms import BundleAdminForm
-from .panels import PageChooserWithStatusPanel
+from .panels import BundleFieldPanel, BundleMultipleChooserPanel, BundleStatusPanel, PageChooserWithStatusPanel
 
 if TYPE_CHECKING:
     import datetime
@@ -40,7 +42,7 @@ class BundlePage(Orderable):
     )
 
     panels: ClassVar[list["Panel"]] = [
-        PageChooserWithStatusPanel("page"),
+        PageChooserWithStatusPanel("page", accessor="parent"),
     ]
 
     def __str__(self) -> str:
@@ -53,7 +55,7 @@ class BundleDataset(Orderable):
         "datasets.Dataset", blank=True, null=True, on_delete=models.SET_NULL
     )
 
-    panels: ClassVar[list["Panel"]] = ["dataset"]
+    panels: ClassVar[list["Panel"]] = [BundleFieldPanel("dataset", accessor="parent")]
 
     def __str__(self) -> str:
         return f"BundleDataset: dataset {self.dataset_id} in bundle {self.parent_id}"
@@ -63,6 +65,8 @@ class BundleTeam(Orderable):
     parent = ParentalKey("Bundle", on_delete=models.CASCADE, related_name="teams")
     team: "models.ForeignKey[Team]" = models.ForeignKey("teams.Team", on_delete=models.CASCADE)
     preview_notification_sent = models.BooleanField(default=False, editable=False)  # type: ignore[var-annotated]
+
+    panels: ClassVar[list["Panel"]] = [BundleFieldPanel("team", accessor="parent")]
 
     def __str__(self) -> str:
         return f"BundleTeam: {self.pk} bundle {self.parent_id} team: {self.team_id}"
@@ -82,6 +86,15 @@ class BundlesQuerySet(QuerySet):
 
     def annotate_release_date(self) -> "BundlesQuerySet":
         return self.annotate(release_date=models.F("release_date"))  # type: ignore[no-any-return]
+
+    def annotate_status_label(self) -> "BundlesQuerySet":
+        """Annotates the queryset with the status label, rather than the value saved in the db."""
+        return self.annotate(  # type: ignore[no-any-return]
+            status_label=Case(
+                *[When(status=choice[0], then=Value(choice[1])) for choice in BundleStatus.choices],
+                output_field=CharField(),
+            )
+        )
 
 
 # note: mypy doesn't cope with dynamic base classes and fails with:
@@ -112,6 +125,8 @@ class Bundle(index.Indexed, ClusterableModel, models.Model):  # type: ignore[dja
     # See https://docs.wagtail.org/en/stable/advanced_topics/reference_index.html
     created_by.wagtail_reference_index_ignore = True  # type: ignore[attr-defined]
 
+    updated_at = models.DateTimeField(auto_now=True)
+
     approved_at = models.DateTimeField(blank=True, null=True)
     approved_by = models.ForeignKey(
         "users.User",
@@ -135,28 +150,42 @@ class Bundle(index.Indexed, ClusterableModel, models.Model):  # type: ignore[dja
     objects = BundleManager()
 
     panels: ClassVar[list["Panel"]] = [
-        FieldPanel("name"),
+        BundleFieldPanel("name"),
         FieldRowPanel(
             [
-                FieldPanel(
+                BundleFieldPanel(
                     "release_calendar_page",
                     heading="Release Calendar page",
                     widget=FutureReleaseCalendarChooserWidget,
                 ),
-                FieldPanel("publication_date", widget=ONSAdminDateTimeInput(), heading="or Publication date"),
+                BundleFieldPanel("publication_date", widget=ONSAdminDateTimeInput(), heading="or Publication date"),
             ],
             heading="Scheduling",
             icon="calendar",
         ),
-        "status",
-        InlinePanel("bundled_pages", heading="Bundled pages", icon="doc-empty", label="Page"),
-        MultipleChooserPanel(
-            "bundled_datasets", heading="Data API datasets", label="Dataset", chooser_field_name="dataset"
+        BundleStatusPanel(heading="Status"),
+        BundleMultipleChooserPanel(
+            "bundled_pages",
+            heading="Bundled pages",
+            icon="doc-empty",
+            label="Page",
+            chooser_field_name="page",
         ),
-        MultipleChooserPanel(
-            "teams", heading="Preview teams", icon="user", label="Preview team", chooser_field_name="team"
+        BundleMultipleChooserPanel(
+            "bundled_datasets",
+            heading="Data API datasets",
+            label="Dataset",
+            chooser_field_name="dataset",
+        ),
+        BundleMultipleChooserPanel(
+            "teams",
+            heading="Preview teams",
+            icon="user",
+            label="Preview team",
+            chooser_field_name="team",
         ),
         # these are handled by the form
+        FieldPanel("status", classname="hidden w-hidden"),
         FieldPanel("approved_by", classname="hidden w-hidden"),
         FieldPanel("approved_at", classname="hidden w-hidden"),
     ]
@@ -196,6 +225,16 @@ class Bundle(index.Indexed, ClusterableModel, models.Model):  # type: ignore[dja
     @property
     def is_ready_to_be_published(self) -> bool:
         return self.status == BundleStatus.APPROVED
+
+    @property
+    def can_be_manually_published(self) -> bool:
+        if not self.is_ready_to_be_published:
+            return False
+
+        if not self.scheduled_publication_date:
+            return True
+
+        return self.scheduled_publication_date < timezone.now()
 
     @property
     def full_inspect_url(self) -> str:

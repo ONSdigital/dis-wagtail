@@ -11,7 +11,7 @@ from cms.release_calendar.models import ReleaseCalendarPage
 
 
 class FutureReleaseCalendarMixin:
-    results_template_name = "release_calendar/future_release_calendar_page_chooser_results.html"
+    results_template_name = "wagtailadmin/panels/future_release_calendar_page_chooser_results.html"
 
     def get_object_list(self) -> QuerySet[ReleaseCalendarPage]:
         # note: using this method to allow search to work without adding the bundle data in the index
@@ -35,7 +35,7 @@ class FutureReleaseCalendarMixin:
     def columns(self) -> list[Column]:
         return [
             self.title_column,  # type: ignore[attr-defined]
-            LocaleColumn(),
+            LocaleColumn(classname="w-text-16 w-w-[120px]"),  # w-w-[120px] is used to adjust the width
             Column("release_date"),
             Column("release_status", label="Status", accessor="get_status_display"),
             DateColumn(

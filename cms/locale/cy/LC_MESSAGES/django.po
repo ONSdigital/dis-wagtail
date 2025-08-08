@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-06-24 10:12+0100\n"
+"POT-Creation-Date: 2025-08-06 13:07+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -19,83 +19,141 @@ msgstr ""
 "Plural-Forms: nplurals=4; plural=(n==1) ? 0 : (n==2) ? 1 : (n != 8 && n != "
 "11) ? 2 : 3;\n"
 
-#: cms/articles/models.py:115
-#: cms/jinja2/templates/components/featured/featured-article.html:11
+#: cms/articles/models.py:162 cms/core/enums.py:8 cms/core/utils.py:54
 msgid "Article"
-msgstr ""
+msgstr "Erthygl"
 
-#: cms/articles/models.py:326
+#: cms/articles/models.py:392
 msgid "Cite this article"
-msgstr ""
+msgstr "Dyfynnwch yr erthygl hon"
 
-#: cms/articles/models.py:328
-#: cms/jinja2/templates/components/contact_details/contact_details.html:5
-#: cms/methodology/models.py:156 cms/release_calendar/models.py:214
+#: cms/articles/models.py:394
+#: cms/jinja2/templates/components/contact_details/contact_details.html:6
+#: cms/methodology/models.py:185 cms/release_calendar/models.py:238
 msgid "Contact details"
-msgstr ""
+msgstr "Manylion cyswllt"
 
-#: cms/core/blocks/related.py:25
+#: cms/articles/models.py:486
+#, fuzzy
+#| msgid "Release date:"
+msgid "Release date"
+msgstr "Dyddiad y datganiad"
+
+#: cms/articles/utils.py:24
+msgid "Correction"
+msgstr "Cywiriad"
+
+#: cms/articles/utils.py:24
+msgid "Notice"
+msgstr "Hysbysiad"
+
+#: cms/articles/utils.py:34
+msgid "View superseded version"
+msgstr "Gweld fersiwn wedi’i disodli"
+
+#: cms/core/blocks/accordion.py:41
+msgid "Show all"
+msgstr "Dangos popeth"
+
+#: cms/core/blocks/accordion.py:42
+msgid "Hide all"
+msgstr "Cuddio popeth"
+
+#: cms/core/blocks/related.py:60
 msgid "Related links"
+msgstr "Dolenni cysylltiedig"
+
+#: cms/core/enums.py:9
+msgid "Dataset"
 msgstr ""
 
-#: cms/core/utils.py:52
+#: cms/core/enums.py:10 cms/methodology/models.py:79
+msgid "Methodology"
+msgstr "Methodoleg"
+
+#: cms/core/enums.py:11
+msgid "Time series"
+msgstr ""
+
+#: cms/core/enums.py:12 cms/jinja2/templates/pages/topic_page.html:7
+#: cms/topics/models.py:138
+msgid "Topic"
+msgstr "Pwnc"
+
+#: cms/core/models/base.py:163
+#: cms/jinja2/templates/components/navigation/breadcrumbs.html:9
+msgid "Home"
+msgstr "Cartref"
+
+#: cms/core/utils.py:70
 msgid "Page"
-msgstr ""
+msgstr "Tudalen"
 
-#: cms/core/utils.py:58
-#: cms/jinja2/templates/components/featured/featured-article.html:7
-#: cms/jinja2/templates/pages/statistical_article_page--previous-releases.html:39
+#: cms/core/utils.py:106
+#: cms/jinja2/templates/pages/statistical_article_page--previous-releases.html:38
 msgid "Released"
-msgstr ""
+msgstr "Rhyddhawyd"
 
-#: cms/jinja2/templates/base.html:29
-msgid "Beta"
-msgstr ""
+#: cms/datavis/blocks/base.py:310
+#: cms/jinja2/templates/components/streamfield/table_block.html:12
+msgid "Footnotes"
+msgstr "Troednodiadau"
+
+#: cms/datavis/blocks/table.py:57
+#: cms/jinja2/templates/components/streamfield/datasets_block.html:2
+#: cms/jinja2/templates/pages/topic_page.html:99
+#: cms/release_calendar/models.py:227 cms/topics/models.py:335
+msgid "Data"
+msgstr "Data"
 
 #: cms/jinja2/templates/base.html:30
-msgid "This is a new service."
-msgstr ""
+msgid "Beta"
+msgstr "Beta"
 
 #: cms/jinja2/templates/base.html:31
-msgid "Menu"
-msgstr ""
+msgid "This is a new service."
+msgstr "Mae hwn yn wasanaeth newydd"
 
 #: cms/jinja2/templates/base.html:32
-msgid "Main menu"
-msgstr ""
+msgid "Menu"
+msgstr "Dewislen"
 
 #: cms/jinja2/templates/base.html:33
+msgid "Main menu"
+msgstr "Prif ddewislen"
+
+#: cms/jinja2/templates/base.html:34
 msgid "Toggle main menu"
-msgstr ""
+msgstr "Togl y brif ddewislen"
 
-#: cms/jinja2/templates/base.html:35
+#: cms/jinja2/templates/base.html:36
 msgid "All content is available under the"
-msgstr "Mae'r holl gynnwys ar gael o dan delerau'r"
+msgstr "Mae’r holl gynnwys ar gael o dan y"
 
-#: cms/jinja2/templates/base.html:38
+#: cms/jinja2/templates/base.html:39
 msgid ", except where otherwise stated"
 msgstr ", ac eithrio lle y nodir fel arall"
 
-#: cms/jinja2/templates/base_page.html:50
+#: cms/jinja2/templates/base_page.html:64
 msgid "in English"
-msgstr ""
+msgstr "yn Saesneg"
 
-#: cms/jinja2/templates/base_page.html:51
+#: cms/jinja2/templates/base_page.html:65
 msgid "in Welsh"
 msgstr "yn y Gymraeg"
 
-#: cms/jinja2/templates/base_page.html:58
+#: cms/jinja2/templates/base_page.html:72
 #, python-format
 msgid ""
 "This page is currently not available %(in_language)s. It is displayed in its "
 "original language."
 msgstr ""
-"Nid yw'r dudalen hon ar gael %(in_language)s ar hyn o bryd. Fe'i "
+"Nid yw’r dudalen hon ar gael %(in_language)s ar hyn o bryd. Fe’i "
 "harddangosir yn ei hiaith wreiddiol."
 
 #: cms/jinja2/templates/components/accredited/accredited-information.html:7
 msgid "Accredited Official Statistics"
-msgstr ""
+msgstr "Ystadegau Swyddogol Achrededig"
 
 #: cms/jinja2/templates/components/accredited/accredited-logo.html:2
 msgid ""
@@ -105,25 +163,22 @@ msgstr ""
 
 #: cms/jinja2/templates/components/census/census-information.html:6
 msgid "This release includes data from Census 2021"
+msgstr "Mae’r datganiad hwn yn cynnwys data o Gyfrifiad 2021"
+
+#: cms/jinja2/templates/components/contact_details/contact_details.html:9
+msgid "Contact details for a person, team or organisation"
 msgstr ""
 
-#: cms/jinja2/templates/components/navigation/breadcrumbs.html:9
-#: cms/navigation/templatetags/navigation_tags.py:142
-msgid "Home"
-msgstr "Hafan"
-
-#: cms/jinja2/templates/components/streamfield/correction_block.html:3
-msgid "Correction"
+#: cms/jinja2/templates/components/contact_details/contact_details.html:10
+msgid "Name"
 msgstr ""
 
-#: cms/jinja2/templates/components/streamfield/correction_block.html:9
-msgid "View superseded version"
+#: cms/jinja2/templates/components/contact_details/contact_details.html:11
+msgid "Email"
 msgstr ""
 
-#: cms/jinja2/templates/components/streamfield/datasets_block.html:2
-#: cms/jinja2/templates/pages/topic_page.html:86
-#: cms/release_calendar/models.py:208 cms/topics/models.py:247
-msgid "Data"
+#: cms/jinja2/templates/components/contact_details/contact_details.html:17
+msgid "Telephone"
 msgstr ""
 
 #: cms/jinja2/templates/components/streamfield/glossary_section_block.html:4
@@ -134,154 +189,171 @@ msgstr ""
 msgid "Hide all glossary terms"
 msgstr ""
 
-#: cms/jinja2/templates/components/streamfield/notice_block.html:3
-msgid "Notice"
-msgstr ""
-
 #: cms/jinja2/templates/components/streamfield/release_date_change_block.html:2
 msgid "Previous date"
-msgstr ""
+msgstr "Dyddiad blaenorol"
 
 #: cms/jinja2/templates/components/streamfield/release_date_change_block.html:4
 msgid "Reason for change"
-msgstr ""
+msgstr "Rheswm dros newid"
 
 #: cms/jinja2/templates/components/streamfield/table_block.html:8
 msgid "Source"
-msgstr ""
-
-#: cms/jinja2/templates/components/streamfield/table_block.html:12
-msgid "Footnotes"
-msgstr ""
+msgstr "Ffynhonnell"
 
 #: cms/jinja2/templates/pages/defender/lockout.html:6
 #: cms/jinja2/templates/pages/defender/lockout.html:8
-#: cms/jinja2/templates/pages/errors/500.html:8
-#: cms/jinja2/templates/pages/errors/500.html:30
 msgid "Internal Server Error (500)"
+msgstr "Gwall Gweinydd Mewnol (500)"
+
+#: cms/jinja2/templates/pages/errors/404.html:2
+msgid "Page not found"
 msgstr ""
+
+#: cms/jinja2/templates/pages/errors/404.html:5
+#: cms/jinja2/templates/pages/errors/500.html:5
+msgid "If you entered a web address, check it is correct."
+msgstr ""
+
+#: cms/jinja2/templates/pages/errors/404.html:6
+msgid "If you pasted the web address, check you copied the whole address."
+msgstr ""
+
+#: cms/jinja2/templates/pages/errors/404.html:7
+#: cms/jinja2/templates/pages/errors/500.html:7
+#, python-format
+msgid ""
+"If the web address is correct, or you selected a link or button, <a "
+"href=\"%(contact_url)s\">contact us</a>."
+msgstr ""
+
+#: cms/jinja2/templates/pages/errors/500.html:2
+msgid "Sorry, there’s a problem with the service"
+msgstr "Mae’n ddrwg gennym, mae problem gyda’r gwasanaeth"
 
 #: cms/jinja2/templates/pages/errors/500.html:6
-msgid "Internal Server Error"
-msgstr ""
-
-#: cms/jinja2/templates/pages/errors/500.html:29
-msgid "We’re sorry! Our server is acting up right now. Please try again soon."
+#, python-format
+msgid ""
+"Our scheduled publications can also be found on our <a "
+"href=\"%(backup_url)s\">backup site</a>."
 msgstr ""
 
 #: cms/jinja2/templates/pages/information_page.html:8
 msgid "Last updated"
-msgstr ""
+msgstr "Diweddarwyd Diwethaf"
 
+#: cms/jinja2/templates/pages/information_page.html:52
 #: cms/jinja2/templates/pages/information_page.html:53
-#: cms/jinja2/templates/pages/information_page.html:54
 msgid "Related content"
 msgstr ""
 
 #: cms/jinja2/templates/pages/login_page.html:10
 #: cms/jinja2/templates/pages/login_page.html:15
 msgid "Log in"
-msgstr ""
+msgstr "Mewngofnod"
 
 #: cms/jinja2/templates/pages/methodology_page.html:8
 msgid "Last revised:"
-msgstr ""
+msgstr "Diwygiwyd ddiwethaf"
 
 #: cms/jinja2/templates/pages/methodology_page.html:9
 msgid "Published:"
-msgstr ""
+msgstr "Cyhoeddwyd"
 
 #: cms/jinja2/templates/pages/methodology_page.html:10
 #: cms/jinja2/templates/pages/release_calendar/release_calendar_page--cancelled.html:7
 #: cms/jinja2/templates/pages/release_calendar/release_calendar_page--confirmed.html:6
 #: cms/jinja2/templates/pages/release_calendar/release_calendar_page--provisional.html:6
-#: cms/jinja2/templates/pages/release_calendar/release_calendar_page.html:8
+#: cms/jinja2/templates/pages/release_calendar/release_calendar_page.html:10
 #: cms/jinja2/templates/pages/statistical_article_page--previous-releases.html:14
 #: cms/jinja2/templates/pages/statistical_article_page--related_data.html:9
-#: cms/jinja2/templates/pages/statistical_article_page.html:13
-#: cms/jinja2/templates/pages/statistical_article_page.html:20
+#: cms/jinja2/templates/pages/statistical_article_page.html:14
+#: cms/jinja2/templates/pages/statistical_article_page.html:21
+#: cms/jinja2/templates/pages/theme_index_page.html:7
 #: cms/jinja2/templates/pages/theme_page.html:7
 #: cms/jinja2/templates/pages/topic_page.html:8
 msgid "Breadcrumbs"
-msgstr ""
+msgstr "Briwsion bara"
 
 #: cms/jinja2/templates/pages/methodology_page.html:11
-#: cms/jinja2/templates/pages/statistical_article_page.html:9
-#: cms/jinja2/templates/pages/statistical_article_page.html:14
+#: cms/jinja2/templates/pages/statistical_article_page.html:10
+#: cms/jinja2/templates/pages/statistical_article_page.html:15
 msgid "Contact:"
-msgstr ""
+msgstr "Cyswllt"
 
-#: cms/jinja2/templates/pages/methodology_page.html:88
-#: cms/jinja2/templates/pages/statistical_article_page.html:237
-#: cms/jinja2/templates/pages/topic_page.html:40
+#: cms/jinja2/templates/pages/methodology_page.html:87
+#: cms/jinja2/templates/pages/statistical_article_page.html:205
+#: cms/jinja2/templates/pages/topic_page.html:41
 msgid "Contents"
-msgstr ""
+msgstr "Cynnwys"
 
-#: cms/jinja2/templates/pages/methodology_page.html:88
-#: cms/jinja2/templates/pages/statistical_article_page.html:237
-#: cms/jinja2/templates/pages/topic_page.html:40
+#: cms/jinja2/templates/pages/methodology_page.html:87
+#: cms/jinja2/templates/pages/statistical_article_page.html:205
+#: cms/jinja2/templates/pages/topic_page.html:41
 msgid "Sections in this page"
-msgstr ""
+msgstr "Adrannau ar y dudalen hon"
 
-#: cms/jinja2/templates/pages/methodology_page.html:118
-#: cms/methodology/models.py:154
+#: cms/jinja2/templates/pages/methodology_page.html:109
+#: cms/methodology/models.py:183
 msgid "Cite this methodology"
-msgstr ""
+msgstr "Dyfynnwch y fethodoleg hon"
 
-#: cms/jinja2/templates/pages/methodology_page.html:124
+#: cms/jinja2/templates/pages/methodology_page.html:115
 #, python-format
 msgid ""
 "Office for National Statistics (ONS), last revised "
 "%(latest_date_formatted)s, ONS website, methodology, %(cite_link)s"
 msgstr ""
+"Y Swyddfa Ystadegau Gwladol (SYG), diwygiwyd ddiwethaf "
+"%(latest_date_formatted)s, Gwefan SYG, %(cite_link)s"
 
 #: cms/jinja2/templates/pages/release_calendar/release_calendar_page--cancelled.html:6
 #: cms/jinja2/templates/pages/release_calendar/release_calendar_page--confirmed.html:5
 #: cms/jinja2/templates/pages/release_calendar/release_calendar_page--provisional.html:5
-#: cms/jinja2/templates/pages/release_calendar/release_calendar_page.html:7
+#: cms/jinja2/templates/pages/release_calendar/release_calendar_page.html:9
 msgid "Release"
-msgstr ""
+msgstr "Rhyddhau"
 
 #: cms/jinja2/templates/pages/release_calendar/release_calendar_page--cancelled.html:8
 #: cms/jinja2/templates/pages/release_calendar/release_calendar_page--confirmed.html:7
 #: cms/jinja2/templates/pages/release_calendar/release_calendar_page--provisional.html:7
-#: cms/jinja2/templates/pages/release_calendar/release_calendar_page.html:9
-#: cms/jinja2/templates/pages/statistical_article_page.html:11
-#: cms/jinja2/templates/pages/statistical_article_page.html:18
+#: cms/jinja2/templates/pages/release_calendar/release_calendar_page.html:11
+#: cms/jinja2/templates/pages/statistical_article_page.html:12
+#: cms/jinja2/templates/pages/statistical_article_page.html:19
 msgid "Release date:"
-msgstr "Dyddiad y datganiad"
+msgstr "Dyddiad rhyddhau"
 
 #: cms/jinja2/templates/pages/release_calendar/release_calendar_page--cancelled.html:9
 msgid "Cancelled"
-msgstr ""
+msgstr "Wedi’i ganslo"
 
 #: cms/jinja2/templates/pages/release_calendar/release_calendar_page--cancelled.html:50
 #: cms/jinja2/templates/pages/release_calendar/release_calendar_page--confirmed.html:48
-#: cms/jinja2/templates/pages/release_calendar/release_calendar_page.html:96
-#: cms/release_calendar/models.py:211
+#: cms/jinja2/templates/pages/release_calendar/release_calendar_page.html:98
+#: cms/release_calendar/models.py:233
 msgid "Changes to this release date"
-msgstr ""
+msgstr "Newidiadau i’r dyddiad rhyddhau hwn"
 
 #: cms/jinja2/templates/pages/release_calendar/release_calendar_page--confirmed.html:39
 #: cms/jinja2/templates/pages/release_calendar/release_calendar_page--provisional.html:39
 msgid "This release is not yet published"
-msgstr ""
+msgstr "Nid yw’r datganiad hwn wedi’i gyhoeddi eto"
 
-#: cms/jinja2/templates/pages/release_calendar/release_calendar_page.html:10
+#: cms/jinja2/templates/pages/release_calendar/release_calendar_page.html:12
 msgid "Next release date:"
-msgstr "Cyhoeddiad nesaf"
+msgstr "Rhyddhad nesaf"
 
-#: cms/jinja2/templates/pages/release_calendar/release_calendar_page.html:79
-#: cms/release_calendar/models.py:201
+#: cms/jinja2/templates/pages/release_calendar/release_calendar_page.html:81
+#: cms/release_calendar/models.py:220
 msgid "Summary"
-msgstr ""
+msgstr "Crynodeb"
 
-#: cms/jinja2/templates/pages/release_calendar/release_calendar_page.html:107
-#: cms/release_calendar/models.py:218
+#: cms/jinja2/templates/pages/release_calendar/release_calendar_page.html:109
+#: cms/release_calendar/models.py:242
 msgid "About the data"
-msgstr ""
+msgstr "Ynglyn â’r data"
 
-#: cms/jinja2/templates/pages/release_calendar/release_calendar_page.html:118
+#: cms/jinja2/templates/pages/release_calendar/release_calendar_page.html:120
 msgid ""
 "These are accredited official statistics. They have been independently "
 "reviewed by the Office for Statistics Regulation (OSR) and found to comply "
@@ -289,185 +361,189 @@ msgid ""
 "href=\"https://code.statisticsauthority.gov.uk/the-code/\">Code of Practice "
 "for Statistics</a>. This broadly means that the statistics:"
 msgstr ""
-
-#: cms/jinja2/templates/pages/release_calendar/release_calendar_page.html:123
-msgid "meet user needs"
-msgstr ""
-
-#: cms/jinja2/templates/pages/release_calendar/release_calendar_page.html:124
-msgid "are presented clearly and accessibly"
-msgstr ""
+"Mae’r rhain yn ystadegau swyddogol achrededig. Adolygwyd yn annibynnol gan y "
+"Swyddfa Rheoleiddio Ystadegau (OSR) ac a ganfuwyd ei fod yn cydymffurfio "
+"gyda safonau dibynadwyedd, ansawdd a gwerth yn y <a href='https://code."
+"statisticsauthority.gov.uk/the-code/'>Cod Ymarfer ar gyfer Ystadegau</a>. "
+"Mae hyn yn golygu yn fras bod yr ystadegau:"
 
 #: cms/jinja2/templates/pages/release_calendar/release_calendar_page.html:125
-msgid "are produced using appropriate data and sound methods"
-msgstr ""
+msgid "meet user needs"
+msgstr "diwallu anghenion defnyddwyr"
 
 #: cms/jinja2/templates/pages/release_calendar/release_calendar_page.html:126
+msgid "are presented clearly and accessibly"
+msgstr "yn cael eu cyflwyno’n glir ac yn hygyrch"
+
+#: cms/jinja2/templates/pages/release_calendar/release_calendar_page.html:127
+msgid "are produced using appropriate data and sound methods"
+msgstr "yn cael eu cynhyrchu gan ddefnyddio data priodol a dulliau cadarn"
+
+#: cms/jinja2/templates/pages/release_calendar/release_calendar_page.html:128
 msgid "are managed impartially and objectively in the public interest"
-msgstr ""
+msgstr "yn cael eu rheoli yn ddiduedd ac yn wrthrychol er budd y cyhoedd"
 
-#: cms/jinja2/templates/pages/release_calendar/release_calendar_page.html:135
-#: cms/release_calendar/models.py:223
+#: cms/jinja2/templates/pages/release_calendar/release_calendar_page.html:137
+#: cms/release_calendar/models.py:247
 msgid "Pre-release access list"
-msgstr ""
+msgstr "Rhestr mynediad cyn rhyddhau"
 
-#: cms/jinja2/templates/pages/release_calendar/release_calendar_page.html:142
-#: cms/release_calendar/models.py:227
+#: cms/jinja2/templates/pages/release_calendar/release_calendar_page.html:144
+#: cms/release_calendar/models.py:251
 msgid "You might also be interested in"
-msgstr ""
+msgstr "Efallai y bydd gennych ddiddordeb yn"
 
 #: cms/jinja2/templates/pages/statistical_article_page--previous-releases.html:8
 #, python-format
 msgid "Previous releases for %(title)s"
-msgstr ""
+msgstr "Datganiadau blaenorol am %(title)s"
 
 #: cms/jinja2/templates/pages/statistical_article_page--previous-releases.html:12
 msgid "Previous Releases"
-msgstr ""
+msgstr "Datganiadau Blaenorol"
 
 #: cms/jinja2/templates/pages/statistical_article_page--previous-releases.html:13
 msgid "Statistical articles"
 msgstr ""
 
-#: cms/jinja2/templates/pages/statistical_article_page--previous-releases.html:44
-#: cms/jinja2/templates/pages/statistical_article_page.html:29
+#: cms/jinja2/templates/pages/statistical_article_page--previous-releases.html:43
+#: cms/jinja2/templates/pages/statistical_article_page.html:30
 msgid "Latest release"
 msgstr "Cyhoeddiad nesaf"
 
-#: cms/jinja2/templates/pages/statistical_article_page--previous-releases.html:73
+#: cms/jinja2/templates/pages/statistical_article_page--previous-releases.html:72
 msgid "There are currently no releases"
-msgstr ""
+msgstr "Ar hyn o bryd nid oes unrhyw ddatganiadau"
 
 #: cms/jinja2/templates/pages/statistical_article_page--related_data.html:8
 msgid "Related data"
 msgstr "Dyddiad y datganiad"
 
-#: cms/jinja2/templates/pages/statistical_article_page.html:10
-#: cms/jinja2/templates/pages/statistical_article_page.html:17
+#: cms/jinja2/templates/pages/statistical_article_page.html:11
+#: cms/jinja2/templates/pages/statistical_article_page.html:18
 msgid "Statistical article"
-msgstr ""
+msgstr "Erthygl ystadegol"
 
-#: cms/jinja2/templates/pages/statistical_article_page.html:12
-#: cms/jinja2/templates/pages/statistical_article_page.html:19
+#: cms/jinja2/templates/pages/statistical_article_page.html:13
+#: cms/jinja2/templates/pages/statistical_article_page.html:20
 msgid "Next release:"
 msgstr "Cyhoeddiad nesaf"
 
-#: cms/jinja2/templates/pages/statistical_article_page.html:24
+#: cms/jinja2/templates/pages/statistical_article_page.html:25
 msgid "This version has been amended since publication"
 msgstr ""
 
-#: cms/jinja2/templates/pages/statistical_article_page.html:25
+#: cms/jinja2/templates/pages/statistical_article_page.html:26
 msgid "View amended version"
 msgstr ""
 
-#: cms/jinja2/templates/pages/statistical_article_page.html:30
+#: cms/jinja2/templates/pages/statistical_article_page.html:31
 msgid "View previous releases"
-msgstr ""
+msgstr "Gweld datganiadau blaenorol"
 
-#: cms/jinja2/templates/pages/statistical_article_page.html:35
+#: cms/jinja2/templates/pages/statistical_article_page.html:36
 msgid "Not the latest release"
 msgstr "Cyhoeddiad nesaf"
 
-#: cms/jinja2/templates/pages/statistical_article_page.html:36
+#: cms/jinja2/templates/pages/statistical_article_page.html:37
 msgid "View latest release"
-msgstr ""
+msgstr "Gweld y datganiad diweddaraf"
 
-#: cms/jinja2/templates/pages/statistical_article_page.html:70
+#: cms/jinja2/templates/pages/statistical_article_page.html:71
 msgid "To be announced"
-msgstr ""
+msgstr "I’w gyhoeddi"
 
-#: cms/jinja2/templates/pages/statistical_article_page.html:139
-msgid "Corrections and notices"
-msgstr ""
-
-#: cms/jinja2/templates/pages/statistical_article_page.html:141
-msgid "Notices"
-msgstr ""
-
-#: cms/jinja2/templates/pages/statistical_article_page.html:143
-msgid "Corrections"
-msgstr ""
-
-#: cms/jinja2/templates/pages/statistical_article_page.html:152
+#: cms/jinja2/templates/pages/statistical_article_page.html:137
 msgid "Show detail"
+msgstr "Dangos manylion"
+
+#: cms/jinja2/templates/pages/statistical_article_page.html:138
+msgid "Hide detail"
 msgstr ""
 
-#: cms/jinja2/templates/pages/statistical_article_page.html:165
-msgid "Close detail"
-msgstr ""
+#: cms/jinja2/templates/pages/statistical_article_page.html:140
+msgid "Corrections and notices"
+msgstr "Corrections and notices"
 
-#: cms/jinja2/templates/pages/statistical_article_page.html:196
-#: cms/jinja2/templates/pages/topic_page.html:27
+#: cms/jinja2/templates/pages/statistical_article_page.html:142
+msgid "Notices"
+msgstr "Hysbysiada"
+
+#: cms/jinja2/templates/pages/statistical_article_page.html:144
+msgid "Corrections"
+msgstr "Cywiriada"
+
+#: cms/jinja2/templates/pages/statistical_article_page.html:162
+#: cms/jinja2/templates/pages/topic_page.html:26
 msgid "Headline facts and figures"
 msgstr ""
 
-#: cms/jinja2/templates/pages/statistical_article_page.html:217
+#: cms/jinja2/templates/pages/statistical_article_page.html:185
 msgid "Explore Data"
 msgstr ""
 
-#: cms/jinja2/templates/pages/statistical_article_page.html:218
+#: cms/jinja2/templates/pages/statistical_article_page.html:186
 msgid "View data used in this article"
 msgstr ""
 
-#: cms/jinja2/templates/pages/statistical_article_page.html:259
+#: cms/jinja2/templates/pages/statistical_article_page.html:227
 msgid "Cite this analysis"
-msgstr ""
+msgstr "Dyfynnwch y dadansoddiad hwn"
 
-#: cms/jinja2/templates/pages/statistical_article_page.html:264
+#: cms/jinja2/templates/pages/statistical_article_page.html:232
 #, python-format
 msgid ""
 "Office for National Statistics (ONS), released %(release_date)s, ONS "
 "website, statistical article, %(cite_link)s"
 msgstr ""
+"Y Swyddfa Ystadegau Gwladol (SYG), wedi’i ryddhau %(release_date)s, SYG "
+"gwefan, erthygl ystadegol, %(cite_link)s"
+
+#: cms/jinja2/templates/pages/theme_index_page.html:6
+msgid "Browse"
+msgstr ""
 
 #: cms/jinja2/templates/pages/theme_page.html:6
 msgid "Theme"
-msgstr ""
+msgstr "Thema"
 
-#: cms/jinja2/templates/pages/topic_page.html:7 cms/topics/models.py:78
-msgid "Topic"
-msgstr ""
-
-#: cms/jinja2/templates/pages/topic_page.html:62 cms/topics/models.py:239
+#: cms/jinja2/templates/pages/topic_page.html:63 cms/topics/models.py:327
 msgid "Featured"
-msgstr ""
+msgstr "Dan Sylw"
 
-#: cms/jinja2/templates/pages/topic_page.html:72 cms/topics/models.py:241
+#: cms/jinja2/templates/pages/topic_page.html:73 cms/topics/models.py:329
 msgid "Related articles"
-msgstr ""
+msgstr "Erthyglau cysylltiedig"
 
-#: cms/jinja2/templates/pages/topic_page.html:79 cms/topics/models.py:243
+#: cms/jinja2/templates/pages/topic_page.html:86 cms/topics/models.py:331
 msgid "Methods and quality information"
-msgstr ""
+msgstr "Dulliau a gwybodaeth o ansawdd"
 
-#: cms/jinja2/templates/pages/topic_page.html:93 cms/topics/models.py:245
-#: cms/topics/tests/test_models.py:140
+#: cms/jinja2/templates/pages/topic_page.html:112 cms/topics/models.py:333
+#: cms/topics/tests/test_models.py:265
 msgid "Explore more"
-msgstr ""
+msgstr "Archwilio mwy"
 
 #: cms/jinja2/templates/pages/wagtail/password_required.html:40
 msgid "Continue"
-msgstr ""
+msgstr "Parhau"
 
-#: cms/methodology/models.py:50
-msgid "Methodology"
-msgstr "Methodoleg"
-
-#: cms/methodology/models.py:142 cms/methodology/models.py:152
+#: cms/methodology/models.py:171 cms/methodology/models.py:181
 msgid "Related publications"
 msgstr ""
 
-#: cms/settings/base.py:357
-msgid "English"
-msgstr ""
+#: cms/release_calendar/forms.py:227
+msgid "To be confirmed"
+msgstr "I’w gadarnhau"
 
-#: cms/settings/base.py:358
+#: cms/settings/base.py:365
+msgid "English"
+msgstr "Saesneg"
+
+#: cms/settings/base.py:366
 msgid "Welsh"
 msgstr "Cymraeg"
 
-#: cms/settings/base.py:359
+#: cms/settings/base.py:367
 msgid "Ukrainian"
-msgstr ""
-
-msgid "To be confirmed"
-msgstr "I'w gadarnhau"
+msgstr "Wcreineg"

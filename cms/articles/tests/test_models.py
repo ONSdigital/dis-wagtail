@@ -1,5 +1,6 @@
 import math
 from datetime import datetime
+from http import HTTPStatus
 from urllib.parse import urlparse
 
 from django.conf import settings
@@ -18,6 +19,7 @@ from cms.core.tests.factories import ContactDetailsFactory
 from cms.datasets.blocks import DatasetStoryBlock
 from cms.datasets.models import Dataset
 from cms.datavis.tests.factories import TableDataFactory
+from cms.topics.models import TopicPage
 
 
 class ArticleSeriesTestCase(WagtailTestUtils, TestCase):
@@ -30,24 +32,7 @@ class ArticleSeriesTestCase(WagtailTestUtils, TestCase):
     def test_index_redirect_404_with_no_subpages(self):
         """Test index path redirects to latest."""
         response = self.client.get(self.series.url)
-        self.assertRedirects(
-            response, self.series.url + self.series.reverse_subpage("latest_release"), target_status_code=404
-        )
-
-    def test_index_redirects_to_latest(self):
-        """Checks that the series will redirect to /latest."""
-        StatisticalArticlePageFactory(parent=self.series)
-        response = self.client.get(self.series.url)
-        self.assertRedirects(response, self.series.url + self.series.reverse_subpage("latest_release"))
-
-    def test_index_redirects_to_latest_in_external_env(self):
-        """Checks that the series will redirect to /latest in external env."""
-        StatisticalArticlePageFactory(parent=self.series)
-
-        with override_settings(IS_EXTERNAL_ENV=True):
-            response = self.client.get(self.series.url)
-
-        self.assertRedirects(response, self.series.url + self.series.reverse_subpage("latest_release"))
+        self.assertEqual(response.status_code, HTTPStatus.NOT_FOUND)
 
     def test_get_latest_no_subpages(self):
         """Test get_latest returns None when no pages exist."""
@@ -64,13 +49,13 @@ class ArticleSeriesTestCase(WagtailTestUtils, TestCase):
 
     def test_latest_release_404(self):
         """Test latest_release returns 404 when no pages exist."""
-        response = self.client.get(self.series.url + "latest/")
+        response = self.client.get(self.series.url)
         self.assertEqual(response.status_code, 404)
 
     def test_latest_release_success(self):
         """Test latest_release returns the latest page."""
         article_page = StatisticalArticlePageFactory(parent=self.series)
-        series_response = self.client.get(self.series.url + "latest/")
+        series_response = self.client.get(self.series.url)
         self.assertEqual(series_response.status_code, 200)
 
         article_page_response = self.client.get(article_page.url)
@@ -83,7 +68,7 @@ class ArticleSeriesTestCase(WagtailTestUtils, TestCase):
         StatisticalArticlePageFactory(parent=self.series)
 
         with override_settings(IS_EXTERNAL_ENV=True):
-            series_response = self.client.get(self.series.url + "latest/")
+            series_response = self.client.get(self.series.url)
 
         self.assertEqual(series_response.status_code, 200)
 
@@ -350,6 +335,9 @@ class StatisticalArticlePageTestCase(WagtailTestUtils, TestCase):
         ordered_dataset_titles = [d["title"]["text"] for d in ordered_datasets]
         self.assertEqual(ordered_dataset_titles, ["c", "b", "a"], "Expect the datasets to be in the given order")
 
+    def test_parent_for_choosers(self):
+        self.assertEqual(self.page.parent_for_choosers, TopicPage.objects.ancestor_of(self.page).first())
+
 
 class StatisticalArticlePageRenderTestCase(WagtailTestUtils, TestCase):
     def setUp(self):
@@ -505,7 +493,7 @@ class StatisticalArticlePageRenderTestCase(WagtailTestUtils, TestCase):
 
     def test_figures_used_by_ancestors(self):
         """Test that the figures used by ancestors are returned correctly."""
-        topic = self.page.get_parent().get_parent()
+        topic = TopicPage.objects.ancestor_of(self.page).first()
         topic.headline_figures.extend(
             [
                 (
@@ -531,7 +519,7 @@ class StatisticalArticlePageRenderTestCase(WagtailTestUtils, TestCase):
     def test_cannot_be_deleted_if_ancestor_uses_headline_figures(self):
         """Test that the page cannot be deleted if an ancestor uses the headline figures."""
         self.client.force_login(self.user)
-        topic = self.page.get_parent().get_parent()
+        topic = TopicPage.objects.ancestor_of(self.page).first()
         topic.headline_figures.extend(
             [
                 (

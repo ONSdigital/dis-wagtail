@@ -975,12 +975,15 @@ WAGTAILSIMPLETRANSLATION_SYNC_PAGE_TREE = True
 SEARCH_INDEX_PUBLISHER_BACKEND = os.getenv("SEARCH_INDEX_PUBLISHER_BACKEND")
 KAFKA_SERVERS = os.getenv("KAFKA_SERVERS", "").split(",")
 KAFKA_USE_IAM_AUTH = os.getenv("KAFKA_USE_IAM_AUTH", "false").lower() == "true"
-KAFKA_API_VERSION = tuple(map(int, os.getenv("KAFKA_API_VERSION", "3,5,1").split(",")))
+KAFKA_API_VERSION = tuple(map(int, os.getenv("KAFKA_API_VERSION", "3.5.1").split(".")))
 
 SEARCH_INDEX_EXCLUDED_PAGE_TYPES = (
     "HomePage",
+    "ArticlesIndexPage",
     "ArticleSeriesPage",
+    "MethodologyIndexPage",
     "ReleaseCalendarIndex",
+    "ThemeIndexPage",
     "ThemePage",
     "TopicPage",
     "Page",
@@ -1028,3 +1031,9 @@ ID_TOKEN_COOKIE_NAME = "id_token"  # noqa: S105
 WAGTAILADMIN_HOME_PATH = env.get("WAGTAILADMIN_HOME_PATH", "admin/")
 DJANGO_ADMIN_HOME_PATH = env.get("DJANGO_ADMIN_HOME_PATH", "django-admin/")
 SESSION_RENEWAL_OFFSET_SECONDS = env.get("SESSION_RENEWAL_OFFSET_SECONDS", 60 * 5)  # 5 minutes
+
+# Contact Us URL for error pages
+CONTACT_US_URL = env.get("CONTACT_US_URL", "/aboutus/contactus/generalandstatisticalenquiries")
+
+# Backup site URL
+BACKUP_SITE_URL = env.get("BACKUP_SITE_URL", "https://backup.ons.gov.uk")

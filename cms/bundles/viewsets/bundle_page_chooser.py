@@ -4,12 +4,16 @@ from django import forms
 from wagtail.admin.forms.choosers import BaseFilterForm, LocaleFilterMixin, SearchFilterMixin
 from wagtail.admin.ui.tables import Column, DateColumn, LocaleColumn
 from wagtail.admin.ui.tables.pages import PageStatusColumn
-from wagtail.admin.views.generic.chooser import ChooseResultsView, ChooseView
+from wagtail.admin.views.generic.chooser import ChooseResultsView, ChooseView, ChosenMultipleView, ChosenView
 from wagtail.admin.viewsets.chooser import ChooserViewSet
 from wagtail.admin.widgets import BaseChooser
 from wagtail.models import Page
 
-from cms.bundles.utils import get_bundleable_page_types, get_pages_in_active_bundles
+from cms.bundles.utils import (
+    get_bundleable_page_types,
+    get_page_title_with_workflow_status,
+    get_pages_in_active_bundles,
+)
 
 if TYPE_CHECKING:
     from wagtail.query import PageQuerySet
@@ -45,11 +49,14 @@ class PagesWithDraftsMixin:
         - have unpublished changes
         - are not in another active bundle
         """
+        pre_filter_q = Page.objects.type(*get_bundleable_page_types()).filter(
+            has_unpublished_changes=True, alias_of__isnull=True
+        )
         return (
             Page.objects.specific(defer=True)
-            # using pk_in because the direct has_unpublished_changes=True filter
-            # requires Page to have has_unpublished_changes added to search fields which we cannot do
-            .filter(pk__in=Page.objects.type(*get_bundleable_page_types()).filter(has_unpublished_changes=True))
+            # using pk_in because the direct has_unpublished_changes and alias_of filter
+            # requires Page to have them added to search fields which we cannot do
+            .filter(pk__in=pre_filter_q)
             .exclude(pk__in=get_pages_in_active_bundles())
             .order_by("-latest_revision_created_at")
         )
@@ -61,18 +68,16 @@ class PagesWithDraftsMixin:
 
         return [
             title_column,
-            Column("parent", label="Parent", accessor="get_parent"),
-            LocaleColumn(),
+            Column("parent", label="Parent", accessor=lambda p: getattr(p, "parent_for_choosers", p.get_parent())),
+            LocaleColumn(classname="w-text-16 w-w-[120px]"),  # w-w-[120px] is used to adjust the width
             DateColumn(
                 "updated",
                 label="Updated",
-                width="12%",
                 accessor="latest_revision_created_at",
             ),
             Column(
                 "type",
                 label="Type",
-                width="12%",
                 accessor="page_type_display_name",
             ),
             PageStatusColumn("status", label="Status", width="12%"),
@@ -85,10 +90,23 @@ class PagesWithDraftsForBundleChooseView(PagesWithDraftsMixin, ChooseView): ...
 class PagesWithDraftsForBundleChooseResultsView(PagesWithDraftsMixin, ChooseResultsView): ...
 
 
+class BundlePagesChosenMixin:
+    def get_display_title(self, instance: Page) -> str:
+        return get_page_title_with_workflow_status(instance)
+
+
+class BundlePagesChosenView(BundlePagesChosenMixin, ChosenView): ...
+
+
+class BundlePagesChosenMultipleView(BundlePagesChosenMixin, ChosenMultipleView): ...
+
+
 class PagesWithDraftsForBundleChooserViewSet(ChooserViewSet):
     model = Page
     choose_view_class = PagesWithDraftsForBundleChooseView
     choose_results_view_class = PagesWithDraftsForBundleChooseResultsView
+    chosen_view_class = BundlePagesChosenView
+    chosen_multiple_view_class = BundlePagesChosenMultipleView
     preserve_url_parameters: ClassVar[list[str]] = ["multiple", "bundle_id"]
     register_widget = False
 

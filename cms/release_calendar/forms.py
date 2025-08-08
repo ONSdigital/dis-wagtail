@@ -4,6 +4,7 @@ from typing import TYPE_CHECKING, Any
 from django.core.exceptions import ValidationError
 from django.urls import reverse
 from django.utils.html import format_html
+from django.utils.translation import gettext_lazy as _
 from wagtail.admin.forms import WagtailAdminPageForm
 from wagtail.blocks.stream_block import StreamValue
 from wagtail.models import Locale
@@ -31,6 +32,10 @@ class ReleaseCalendarPageAdminForm(WagtailAdminPageForm):
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
+
+        if not self.instance.pk:
+            # Remove the field from the form as there's no previous release date to reference
+            del self.fields["changes_to_release_date"]
 
         # Get the live version of the page for validation comparisons
         self.live_page: "ReleaseCalendarPage | None" = None  # noqa: UP037
@@ -216,7 +221,10 @@ class ReleaseCalendarPageAdminForm(WagtailAdminPageForm):
         if parsed_date is not None and cleaned_data.get("release_date") and parsed_date <= cleaned_data["release_date"]:
             raise ValidationError({"next_release_date_text": "The next release date must be after the release date."})
 
-        to_be_confirmed_text = get_translated_string("To be confirmed", self.instance.locale.language_code)
+        to_be_confirmed_text = get_translated_string(
+            "To be confirmed",
+            self.instance.locale.language_code,
+        ) or _("To be confirmed")  # This line ensures makemessages picks up the string
 
         if parsed_date is None and to_be_confirmed_text != next_release_date_text:
             raise ValidationError(

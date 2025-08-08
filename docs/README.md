@@ -24,3 +24,7 @@ To work on this project, see the [README](../README.md).
     - [Media privacy](custom-features/media_privacy.md)
     - [Bundles](custom-features/bundles.md)
     - [Scheduled jobs](custom-features/scheduled-jobs.md)
+    - [Locked migrate](custom-features/locked-migrate.md)
+
+- Troubleshooting
+    - [Troubleshooting guide](troubleshooting.md)

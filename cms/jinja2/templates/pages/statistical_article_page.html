@@ -36,7 +36,7 @@
         {%- set infoPanelText = _("Not the latest release") -%}
         {%- set releases_text = _("View latest release") -%}
         {%- set infoPanelType = 'ons-orange' -%}
-        {%- set releases_url = routablepageurl(page.get_parent().specific, "latest_release") -%}
+        {%- set releases_url = routablepageurl(page.get_parent().specific, "index_route") -%}
     {% endif %}
 
     {# fmt:off #}
@@ -110,7 +110,6 @@
             "text": page.summary,
             "officialStatisticsBadge": page.is_accredited,
             "officialStatisticsBadgeUrl": "https://uksa.statisticsauthority.gov.uk/about-the-authority/uk-statistical-system/types-of-official-statistics/",
-            "wide": true,
             "informationPanel":{
                 "panelText": infoPanelText,
                 "panelType": infoPanelType,

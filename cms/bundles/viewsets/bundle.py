@@ -1,27 +1,29 @@
 import time
-from typing import TYPE_CHECKING, Any, ClassVar
+from typing import TYPE_CHECKING, Any, ClassVar, cast
 
 from django.conf import settings
 from django.core.exceptions import PermissionDenied
+from django.db.models import F
 from django.http import HttpRequest
 from django.shortcuts import redirect
 from django.urls import reverse
 from django.utils import timezone
 from django.utils.functional import cached_property
 from django.utils.html import format_html, format_html_join
-from wagtail.admin.ui.tables import Column, DateColumn, UpdatedAtColumn, UserColumn
+from wagtail.admin.ui.tables import Column, DateColumn
 from wagtail.admin.views.generic import CreateView, EditView, IndexView, InspectView
 from wagtail.admin.viewsets.model import ModelViewSet
+from wagtail.admin.widgets import HeaderButton, ListingButton
 from wagtail.log_actions import log
 
+from cms.bundles.action_menu import BundleActionMenu
 from cms.bundles.enums import BundleStatus
 from cms.bundles.models import Bundle
 from cms.bundles.notifications.slack import (
-    notify_slack_of_publication_start,
-    notify_slack_of_publish_end,
     notify_slack_of_status_change,
 )
 from cms.bundles.permissions import user_can_manage_bundles, user_can_preview_bundle
+from cms.bundles.utils import publish_bundle
 from cms.core.custom_date_format import ons_date_format
 from cms.datasets.models import Dataset
 
@@ -38,6 +40,8 @@ if TYPE_CHECKING:
 class BundleCreateView(CreateView):
     """The Bundle create view class."""
 
+    template_name = "bundles/wagtailadmin/edit.html"
+
     def save_instance(self) -> Bundle:
         """Automatically set the creating user on Bundle creation."""
         instance: Bundle = super().save_instance()
@@ -45,11 +49,28 @@ class BundleCreateView(CreateView):
         instance.save(update_fields=["created_by"])
         return instance
 
+    def get_success_url(self) -> str:
+        return cast(str, self.get_edit_url())
+
+    def get_success_message(self, instance: Bundle) -> str:
+        return "Bundle successfully created."
+
+    def get_success_buttons(self) -> list:
+        return []
+
+    def get_context_data(self, **kwargs: Any) -> dict[str, Any]:
+        context: dict[str, Any] = super().get_context_data(**kwargs)
+
+        # initialise the action menu
+        action_menu = BundleActionMenu(self.request, bundle=None)
+        context["media"] += action_menu.media
+        context["action_menu"] = action_menu
+        return context
+
 
 class BundleEditView(EditView):
     """The Bundle edit view class."""
 
-    actions: ClassVar[list[str]] = ["edit", "save-and-approve", "publish", "unschedule"]
     template_name = "bundles/wagtailadmin/edit.html"
     has_content_changes: bool = False
     start_time: float | None = None
@@ -58,6 +79,10 @@ class BundleEditView(EditView):
         if (instance := self.get_object()) and instance.status == BundleStatus.PUBLISHED:
             return redirect(self.index_url_name)
 
+        if request.method == "POST" and self.get_action(request) not in self.get_available_actions():
+            # someone's trying to POST with an action that is not available, so bail out early
+            raise PermissionDenied
+
         response: HttpResponseBase = super().dispatch(request, *args, **kwargs)
         return response
 
@@ -65,17 +90,22 @@ class BundleEditView(EditView):
         kwargs: dict = super().get_form_kwargs()
         if self.request.method == "POST":
             data = self.request.POST.copy()
-            if "action-save-and-approve" in self.request.POST:
+            if "action-save-to-preview" in self.request.POST:
+                data["status"] = BundleStatus.IN_REVIEW.value
+            elif "action-approve" in self.request.POST:
                 data["status"] = BundleStatus.APPROVED.value
                 data["approved_at"] = timezone.now()
                 data["approved_by"] = self.request.user
-                kwargs["data"] = data
-            elif "action-unschedule" in self.request.POST:
+            elif "action-return-to-draft" in self.request.POST:
                 data["status"] = BundleStatus.DRAFT.value
-                kwargs["data"] = data
+            elif "action-return-to-preview" in self.request.POST:
+                data["status"] = BundleStatus.IN_REVIEW.value
             elif "action-publish" in self.request.POST:
                 data["status"] = BundleStatus.PUBLISHED.value
-                kwargs["data"] = data
+            else:
+                data["status"] = self.get_object().status
+
+            kwargs["data"] = data
         return kwargs
 
     def save_instance(self) -> Bundle:
@@ -121,17 +151,58 @@ class BundleEditView(EditView):
     def run_after_hook(self) -> None:
         """This method allows calling hooks or additional logic after an action has been executed.
 
-        In our case, we want to send a Slack notification if manually published, and approve any of the
-        related pages that are in a Wagtail workflow.
+        In our case, we want to replicate the scheduled publication (send Slack notification, publish pages, update RC).
         """
         if self.action == "publish" or (self.action == "edit" and self.object.status == BundleStatus.PUBLISHED):
-            notify_slack_of_publication_start(self.object, user=self.request.user)
-            start_time = self.start_time or time.time()
-            for page in self.object.get_bundled_pages():
-                if page.current_workflow_state:
-                    page.current_workflow_state.current_task_state.approve(user=self.request.user)
+            publish_bundle(self.object, update_status=False)
 
-            notify_slack_of_publish_end(self.object, time.time() - start_time, user=self.request.user)
+    def get_action(self, request: "HttpRequest") -> str:
+        """Determine the POST action."""
+        for action in self.get_available_actions():
+            if request.POST.get(f"action-{action}"):
+                return action
+        # EditView.get_action falls back to "edit". We want to prevent that in order to enforce
+        # the available actions depending on the bundle status
+        return "invalid"
+
+    def get_available_actions(self) -> list[str]:
+        """Determines the valid actions for the edit form depending on the bundle state."""
+        bundle = self.get_object()
+
+        match bundle.status:
+            case BundleStatus.DRAFT:
+                return ["edit", "save-to-preview"]
+            case BundleStatus.IN_REVIEW:
+                return ["edit", "return-to-draft", "approve"]
+            case BundleStatus.APPROVED:
+                actions = ["return-to-draft", "return-to-preview"]
+                if bundle.can_be_manually_published:
+                    actions += ["publish"]
+                return actions
+            case _:
+                return []
+
+    def get_success_url(self) -> str:
+        match self.object.status:
+            case BundleStatus.IN_REVIEW:
+                url = self.get_edit_url() if "action-edit" in self.request.POST else self.get_inspect_url()
+            case BundleStatus.APPROVED:
+                url = self.get_inspect_url()
+            case BundleStatus.PUBLISHED:
+                url = reverse(self.index_url_name)
+            case _:
+                url = self.get_edit_url()
+        return cast(str, url)
+
+    def get_success_buttons(self) -> list:
+        # only include the edit button when not staying on the edit page.
+        if "action-edit" in self.request.POST:
+            return []
+
+        if self.object.status in [BundleStatus.IN_REVIEW, BundleStatus.APPROVED]:
+            return cast(list, super().get_success_buttons())
+
+        return []
 
     def get_context_data(self, **kwargs: Any) -> dict:
         """Updates the template context.
@@ -141,13 +212,10 @@ class BundleEditView(EditView):
         """
         context: dict = super().get_context_data(**kwargs)
 
-        context["show_save_and_approve"] = self.object.can_be_approved
-        context["show_publish"] = (
-            self.object.status == BundleStatus.APPROVED and not self.object.scheduled_publication_date
-        )
-        context["show_unschedule"] = (
-            self.object.status == BundleStatus.APPROVED and self.object.scheduled_publication_date
-        )
+        # initialise the action menu
+        action_menu = BundleActionMenu(self.request, bundle=self.get_object())
+        context["media"] += action_menu.media
+        context["action_menu"] = action_menu
 
         return context
 
@@ -363,15 +431,37 @@ class BundleIndexView(IndexView):
     """
 
     model = Bundle
+    default_ordering = "name"
 
     def get_base_queryset(self) -> "BundlesQuerySet":
-        """Modifies the Bundle queryset with the related created_by ForeignKey selected to avoid N+1 queries."""
+        """Modifies the Bundle queryset to vary results based on the user capabilities."""
         queryset: BundlesQuerySet = super().get_base_queryset()
 
         if not self.can_manage:
             queryset = queryset.previewable().filter(teams__team__in=self.request.user.active_team_ids).distinct()
 
-        return queryset.select_related("created_by").prefetch_related("teams__team")
+        return queryset
+
+    def filter_queryset(self, queryset: "BundlesQuerySet") -> "BundlesQuerySet":
+        # automatically filter out published bundles if the status filter is not applied
+        if not self.request.GET.get("status"):
+            queryset = queryset.exclude(status=BundleStatus.PUBLISHED)
+
+        return cast("BundlesQuerySet", super().filter_queryset(queryset))
+
+    def order_queryset(self, queryset: "BundlesQuerySet") -> "BundlesQuerySet":
+        if self.ordering in ["status", "-status", "scheduled_publication_date", "-scheduled_publication_date"]:
+            match self.ordering:
+                case "scheduled_publication_date":
+                    return queryset.annotate_release_date().order_by(F("release_date").asc(nulls_last=True))
+                case "-scheduled_publication_date":
+                    return queryset.annotate_release_date().order_by(F("release_date").desc(nulls_last=True))
+                case "status":
+                    return queryset.annotate_status_label().order_by(F("status_label").asc())
+                case "-status":
+                    return queryset.annotate_status_label().order_by(F("status_label").desc())
+
+        return cast("BundlesQuerySet", super().order_queryset(queryset))
 
     def get_edit_url(self, instance: Bundle) -> str | None:
         """Override the default edit url to disable the edit URL for released bundles."""
@@ -388,27 +478,59 @@ class BundleIndexView(IndexView):
     def can_manage(self) -> bool:
         return user_can_manage_bundles(self.request.user)
 
+    def get_header_buttons(self) -> list[HeaderButton]:
+        if not self.can_manage:
+            return []
+
+        buttons = self.header_buttons
+        filtered_url = f"{self.get_index_url()}?status={BundleStatus.APPROVED}"
+        buttons.append(
+            HeaderButton(
+                label='View "Ready to publish"',
+                url=filtered_url,
+                icon_name="check",
+                attrs={
+                    "data-controller": "w-tooltip",
+                    "data-w-tooltip-content-value": "View bundles that are ready to publish",
+                    "aria-label": "View bundles that are ready to publish",
+                },
+            )
+        )
+
+        return sorted(buttons)
+
+    def get_list_buttons(self, instance: Bundle) -> list[ListingButton]:
+        buttons = []
+        if edit_url := self.get_edit_url(instance):
+            buttons.append(
+                ListingButton(
+                    "Edit",
+                    url=edit_url,
+                    icon_name="edit",
+                    attrs={"aria-label": f"Edit '{instance!s}'"},
+                    priority=10,
+                )
+            )
+        if inspect_url := self.get_inspect_url(instance):
+            buttons.append(
+                ListingButton(
+                    "Inspect",
+                    url=inspect_url,
+                    icon_name="info-circle",
+                    attrs={"aria-label": f"Inspect '{instance!s}'"},
+                    priority=20,
+                )
+            )
+        return buttons
+
     @cached_property
     def columns(self) -> list[Column]:
         """Defines the list of desired columns in the listing."""
-        if self.can_manage:
-            return [
-                self._get_title_column("__str__"),
-                Column("scheduled_publication_date", label="Scheduled for"),
-                Column("get_status_display", label="Status"),
-                UpdatedAtColumn(),
-                DateColumn(name="created_at", label="Added", sort_key="created_at"),
-                UserColumn("created_by", label="Added by"),
-                Column(name="teams", accessor="get_teams_display", label="Preview teams"),
-                DateColumn(name="approved_at", label="Approved at", sort_key="approved_at"),
-                UserColumn("approved_by"),
-            ]
-
         return [
-            self._get_title_column("__str__"),
-            Column("scheduled_publication_date", label="Scheduled for"),
-            DateColumn(name="created_at", label="Added", sort_key="created_at"),
-            UserColumn("created_by", label="Added by"),
+            self._get_title_column("name"),
+            Column("scheduled_publication_date", label="Scheduled for", sort_key="scheduled_publication_date"),
+            Column("get_status_display", label="Status", sort_key="status"),
+            DateColumn(name="updated_at", sort_key="updated_at"),
         ]
 
 

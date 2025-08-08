@@ -9,10 +9,9 @@
                 <col width="15%"/>
                 <thead>{# add class="w-sr-only" to make this visible for screen readers only #}
                     <tr>
-                        <th class="title">Title</th>
-                        <th>Scheduled publication date</th>
-                        <th>Added</th>
-                        <th>Added by</th>
+                        <th class="title">Name</th>
+                        <th>Scheduled for</th>
+                        <th>Updated</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -26,10 +25,16 @@
                             <td>
                                 {{ bundle.scheduled_publication_date|default_if_none:"" }}
                             </td>
-                            <td>{% human_readable_date bundle.created_at %}</td>
-                            <td>{% if bundle.created_by %}{% include "wagtailadmin/shared/user_avatar.html" with user=bundle.created_by username=bundle.created_by.get_full_name|default:bundle.created_by.get_username %}{% endif %}</td>
+                            <td>{% if bundle.updated_at %}{% human_readable_date bundle.updated_at %}{% endif %}</td>
                         </tr>
                     {% endfor %}
+                    {% if more_link %}
+                        <tr>
+                            <td colspan="3">
+                                <a href="{% url 'bundle:index' %}{% querystring status="IN_REVIEW" %}" class="button button-secondary button-small">View all bundles ready for preview</a>
+                            </td>
+                        </tr>
+                    {% endif %}
                 </tbody>
             </table>
         {% else %}
