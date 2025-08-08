@@ -98,7 +98,7 @@ class LinkBlock(StructBlock):
     external_url = URLBlock(required=False, label="or External Link")
     title = CharBlock(
         help_text="Populate when adding an external link. "
-        "When choosing a page, you can leave it blank to use the page's own title",
+        "When choosing a page, you can leave it blank to use the page’s own title",
         required=False,
     )
 
