@@ -83,7 +83,7 @@ def step_not_redirected_to_signin(context: Context) -> None:
 
 
 @when("the user remains inactive for a period longer than the token's expiration time")
-def step_wait_for_expiry(context: Context) -> None:  # pylint: disable=unused-argument
+def step_wait_for_expiry(context: Context) -> None:
     """Sleep past the token TTL so it expires."""
     context.page.wait_for_timeout(20000)
 
