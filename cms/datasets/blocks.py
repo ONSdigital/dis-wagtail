@@ -26,7 +26,6 @@ class ManualDatasetBlock(StructBlock):
 
     class Meta:
         icon = "link"
-        template = "templates/components/streamfield/dataset_link_block.html"
 
 
 class TimeSeriesPageLinkBlock(StructBlock):
@@ -36,7 +35,6 @@ class TimeSeriesPageLinkBlock(StructBlock):
 
     class Meta:
         icon = "link"
-        template = "templates/components/streamfield/time_series_link.html"
 
 
 class TimeSeriesPageStoryBlock(StreamBlock):
@@ -65,16 +63,11 @@ class TimeSeriesPageStoryBlock(StreamBlock):
 
 
 class DatasetStoryBlock(StreamBlock):
-    dataset_lookup = DatasetChooserBlock(
-        label="Lookup Dataset", template="templates/components/streamfield/dataset_link_block.html"
-    )
+    dataset_lookup = DatasetChooserBlock(label="Lookup Dataset")
     manual_link = ManualDatasetBlock(
         required=False,
         label="Manually Linked Dataset",
     )
-
-    class Meta:
-        template = "templates/components/streamfield/datasets_block.html"
 
     def clean(self, value: StreamValue, ignore_required_constraints: bool = False) -> StreamValue:
         cleaned_value = super().clean(value)
