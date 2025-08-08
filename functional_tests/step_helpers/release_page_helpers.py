@@ -13,15 +13,13 @@ def fill_locator(context: Context, locator: str, text: str):
     context.page.locator(locator).fill(text)
 
 
-def expect_text(context: Context, error: str, error_messages: dict[str, list[str]] | dict[str, str]):
-    messages = error_messages.get(error)
+def expect_text(context: Context, text: str, messages: dict[str, list[str]] | dict[str, str]):
+    messages = messages.get(text)
     if isinstance(messages, str):
         messages = [messages]
     for message in messages:
         if message:
             expect(context.page.get_by_text(message)).to_be_visible()
-        else:
-            raise ValueError(f"Unsupported error: {error}")
 
 
 def add_release_date_change(context: Context):
