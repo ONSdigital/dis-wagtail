@@ -126,7 +126,7 @@ class StatisticalArticlePageTests(WagtailPageTestCase):
         self.assertContains(response, self.page.summary)
 
         # However, the page's furniture should be in Welsh
-        self.assertContains(response, "Mae'r holl gynnwys ar gael o dan y")
+        self.assertContains(response, "Mae’r holl gynnwys ar gael o dan y")
 
     def test_unknown_localised_version_of_page_404(self):
         response = self.client.get("/fr" + self.page.url)
