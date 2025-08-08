@@ -1,3 +1,4 @@
+import logging
 from datetime import datetime
 from typing import TYPE_CHECKING, Any
 
@@ -6,9 +7,19 @@ from django.core.exceptions import ValidationError
 from django.template.defaultfilters import pluralize
 from django.utils import timezone
 
+from cms.bundles.api import (
+    BundleAPIClient,
+    BundleAPIClientError,
+    build_content_item_for_dataset,
+    extract_content_id_from_bundle_response,
+)
+from cms.bundles.decorators import ons_bundle_api_enabled
 from cms.bundles.enums import ACTIVE_BUNDLE_STATUS_CHOICES, EDITABLE_BUNDLE_STATUSES, BundleStatus
+from cms.bundles.utils import build_bundle_data_for_api
 from cms.core.forms import DeduplicateInlinePanelAdminForm
 from cms.workflows.models import ReadyToPublishGroupTask
+
+logger = logging.getLogger(__name__)
 
 if TYPE_CHECKING:
     from .models import Bundle
@@ -75,6 +86,69 @@ class BundleAdminForm(DeduplicateInlinePanelAdminForm):
                 break
 
         return has_datasets
+
+    def _get_dataset_title_from_form_data(self, dataset_id: str) -> str:
+        """Get dataset title from form data based on dataset ID."""
+        for form in self.formsets["bundled_datasets"].forms:
+            if (
+                form.is_valid()
+                and not form.cleaned_data.get("DELETE")
+                and (dataset := form.cleaned_data.get("dataset"))
+                and dataset.namespace == dataset_id
+            ):
+                return str(dataset.title)
+        return dataset_id
+
+    def _check_bundle_contents_approval_status(self) -> list[str]:
+        """Check bundle contents and return list of non-approved datasets."""
+        client = BundleAPIClient()
+        datasets_not_approved: list[str] = []
+
+        # Ensure bundle_api_id is not None
+        if not self.instance.bundle_api_id:
+            return datasets_not_approved
+
+        try:
+            response = client.get_bundle_contents(self.instance.bundle_api_id)
+
+            # Check each content item in the bundle
+            for item in response.get("contents", []):
+                item_state = item.get("state", "unknown")
+
+                if item_state != BundleStatus.APPROVED.value:
+                    # Find the corresponding dataset title from the metadata
+                    metadata = item.get("metadata", {})
+                    dataset_id = metadata.get("dataset_id", "unknown")
+                    dataset_title = self._get_dataset_title_from_form_data(dataset_id)
+                    datasets_not_approved.append(f"{dataset_title} (state: {item_state})")
+
+        except BundleAPIClientError as e:
+            logger.error("Failed to check bundle contents for bundle %s: %s", self.instance.bundle_api_id, e)
+            datasets_not_approved.append("Bundle content validation failed")
+
+        return datasets_not_approved
+
+    @ons_bundle_api_enabled
+    def _validate_bundled_datasets_status(self) -> None:
+        """Validate that all bundled datasets are approved when bundle is set to approved status."""
+        if not self._has_datasets():
+            return
+
+        # Skip validation if bundle doesn't have an API ID yet
+        if not self.instance.bundle_api_id:
+            return
+
+        datasets_not_approved = self._check_bundle_contents_approval_status()
+
+        if datasets_not_approved:
+            # Return the original status
+            self.cleaned_data["status"] = self.instance.status
+            dataset_list = ", ".join(datasets_not_approved)
+            num_not_approved = len(datasets_not_approved)
+            raise ValidationError(
+                f"Cannot approve the bundle with {num_not_approved} dataset{pluralize(num_not_approved)} "
+                f"not ready to be published: {dataset_list}"
+            )
 
     def _validate_bundled_pages(self) -> None:
         """Validates related pages to ensure the selected page is not in another active bundle."""
@@ -172,6 +246,9 @@ class BundleAdminForm(DeduplicateInlinePanelAdminForm):
                 # ensure all bundled pages are ready to publish
                 self._validate_bundled_pages_status()
 
+                # ensure all bundled datasets are approved (the function will check if the API is enabled)
+                self._validate_bundled_datasets_status()
+
                 cleaned_data["approved_at"] = timezone.now()
                 cleaned_data["approved_by"] = self.for_user
             elif self.instance.status == BundleStatus.APPROVED:
@@ -186,3 +263,57 @@ class BundleAdminForm(DeduplicateInlinePanelAdminForm):
                     cleaned_data["publication_date"] = self.instance.publication_date
 
         return cleaned_data
+
+    @ons_bundle_api_enabled
+    def _check_and_push_to_dataset_api(self, bundle: "Bundle") -> None:
+        """Check if the bundle has datasets and push it to the Dataset API if it does."""
+        # No need to do anything if there are no datasets in the bundle or if the bundle already has an API ID.
+        if not self._has_datasets() or bundle.bundle_api_id:
+            return
+
+        client = BundleAPIClient()
+        try:
+            # Create the bundle in the API with the correct payload
+            bundle_data = build_bundle_data_for_api(bundle)
+            response = client.create_bundle(bundle_data)
+
+            if "id" in response:
+                bundle.bundle_api_id = str(response["id"])
+                bundle.save(update_fields=["bundle_api_id"])
+                logger.info("Created bundle %s in Dataset API with ID: %s", bundle.pk, bundle.bundle_api_id)
+
+                # Now add the datasets to the bundle via the /contents endpoint
+                for bundled_dataset in bundle.bundled_datasets.all().select_related("dataset"):
+                    content_item = build_content_item_for_dataset(bundled_dataset.dataset)
+                    response = client.add_content_to_bundle(bundle.bundle_api_id, content_item)
+
+                    # Extract and store the content_api_id from the response
+                    content_id = extract_content_id_from_bundle_response(response, bundled_dataset.dataset)
+
+                    if content_id:
+                        bundled_dataset.content_api_id = content_id
+                        bundled_dataset.save(update_fields=["content_api_id"])
+                    logger.info(
+                        "Added content %s to bundle %s in Dataset API",
+                        bundled_dataset.dataset.namespace,
+                        bundle.bundle_api_id,
+                    )
+
+            else:
+                logger.warning("Bundle %s created in API but no ID returned", bundle.pk)
+
+        except BundleAPIClientError as e:
+            logger.error("Failed to create bundle %s in Dataset API: %s", bundle.pk, e)
+            # Don't raise the exception to avoid breaking the admin interface
+            # The bundle will still be saved locally
+
+    def save(self, commit: bool = True) -> "Bundle":
+        """Save the bundle and create in API if it has datasets but no API ID."""
+        # Use the standard save behavior first. This handles new/existing objects
+        # and m2m relations if commit=True.
+        bundle: Bundle = super().save(commit=commit)
+
+        if commit:
+            self._check_and_push_to_dataset_api(bundle)
+
+        return bundle
