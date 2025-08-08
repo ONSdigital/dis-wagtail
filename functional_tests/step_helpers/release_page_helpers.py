@@ -18,8 +18,7 @@ def expect_text(context: Context, text: str, messages: dict[str, list[str]] | di
     if isinstance(messages, str):
         messages = [messages]
     for message in messages:
-        if message:
-            expect(context.page.get_by_text(message)).to_be_visible()
+        expect(context.page.get_by_text(message)).to_be_visible()
 
 
 def add_release_date_change(context: Context):
