@@ -1,5 +1,4 @@
 from collections import defaultdict
-from urllib.parse import urlparse
 
 from django.core.exceptions import ValidationError
 from wagtail.blocks import (
@@ -78,9 +77,7 @@ class DatasetStoryBlock(StreamBlock):
         # For each dataset URL path, record the indices of the blocks it appears in
         url_paths = defaultdict(set)
         for block_index, block in enumerate(cleaned_value):
-            url_path = (
-                block.value.url_path if block.block_type == "dataset_lookup" else urlparse(block.value["url"]).path
-            )
+            url_path = block.value.website_url if block.block_type == "dataset_lookup" else block.value["url"]
             url_paths[url_path].add(block_index)
 
         block_errors = {}
