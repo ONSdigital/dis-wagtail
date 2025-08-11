@@ -47,7 +47,7 @@ def server_error(request: "HttpRequest", template_name: str = "templates/pages/e
             # As a last resort, if even the basic template fails, return a short, plain response.
             logger.critical("FATAL: Could not render the basic 500 page: %s", final_e)
             return HttpResponseServerError(
-                "<h1>Server Error (500)</h1><p>Sorry, there's a problem with the service.</p>", content_type="text/html"
+                "<h1>Server Error (500)</h1><p>Sorry, there’s a problem with the service.</p>", content_type="text/html"
             )
 
 
