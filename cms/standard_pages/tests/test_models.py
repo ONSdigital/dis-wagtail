@@ -1,6 +1,7 @@
 from datetime import datetime
 
 from django.test import TestCase, override_settings
+from wagtail.coreutils import get_dummy_request
 from wagtail.test.utils import WagtailTestUtils
 
 from cms.articles.tests.factories import StatisticalArticlePageFactory
@@ -21,7 +22,10 @@ class IndexPageTestCase(WagtailTestUtils, TestCase):
             related_links=None,
         )
 
-        cls.page_url = cls.index_page.url
+        cls.page_url = cls.index_page.get_url(request=get_dummy_request())
+
+    def setUp(self):
+        self.dummy_request = get_dummy_request()
 
     def test_no_featured_items_displayed_when_no_children_and_no_custom_featured_items_selected(self):
         """Test that the Featured Items block isn't displayed when the Index Page has no child pages
@@ -44,7 +48,7 @@ class IndexPageTestCase(WagtailTestUtils, TestCase):
         self.assertEqual(response.status_code, 200)
 
         self.assertContains(response, child_page.title)
-        self.assertContains(response, child_page.url)
+        self.assertContains(response, child_page.get_url(request=self.dummy_request))
         self.assertContains(response, child_page.summary)
 
     def test_children_displayed_as_featured_items_with_listing_info_when_no_custom_featured_items_selected(self):
@@ -65,7 +69,7 @@ class IndexPageTestCase(WagtailTestUtils, TestCase):
         self.assertEqual(response.status_code, 200)
 
         self.assertContains(response, child_page_listing_info.listing_title)
-        self.assertContains(response, child_page_listing_info.url)
+        self.assertContains(response, child_page_listing_info.get_url(request=self.dummy_request))
         self.assertContains(response, child_page_listing_info.listing_summary)
 
         self.assertNotContains(response, child_page_listing_info.title)
@@ -117,14 +121,14 @@ class IndexPageTestCase(WagtailTestUtils, TestCase):
         self.assertEqual(response.status_code, 200)
 
         self.assertContains(response, internal_page.display_title)
-        self.assertContains(response, internal_page.url)
+        self.assertContains(response, internal_page.get_url(request=self.dummy_request))
         self.assertContains(response, featured_item_internal_page["value"]["description"])
         self.assertContains(response, "Released")
         self.assertContains(response, "1 January 2025")
         self.assertContains(response, "Article")
 
         self.assertNotContains(response, child_page.title)
-        self.assertNotContains(response, child_page.url)
+        self.assertNotContains(response, child_page.get_url(request=self.dummy_request))
         self.assertNotContains(response, child_page.summary)
 
     def test_get_formatted_related_links_list_works_for_internal_pages(self):
@@ -135,9 +139,10 @@ class IndexPageTestCase(WagtailTestUtils, TestCase):
 
         self.index_page.related_links = [{"type": "related_link", "value": {"page": internal_page.id}}]
 
-        formatted_related_links = self.index_page.get_formatted_related_links_list()
-
-        self.assertEqual(formatted_related_links, [{"title": internal_page.title, "url": internal_page.url}])
+        self.assertEqual(
+            self.index_page.get_formatted_related_links_list(),
+            [{"title": internal_page.title, "url": internal_page.url}],
+        )
 
     def test_get_formatted_related_links_list_works_for_external_pages(self):
         """Test that the links to external pages are returned
@@ -165,7 +170,7 @@ class InformationPageTestCase(WagtailTestUtils, TestCase):
     def setUpTestData(cls):
         cls.page = InformationPageFactory(title="Test Information Page")
 
-        cls.page_url = cls.page.url
+        cls.page_url = cls.page.get_url(request=get_dummy_request())
 
     def test_page_loads(self):
         """Test that the Information Page loads correctly."""

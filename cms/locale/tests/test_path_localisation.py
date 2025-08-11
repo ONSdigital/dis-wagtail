@@ -21,13 +21,18 @@ class PathBasedLocalisationTests(WagtailPageTestCase):
         cls.user = cls.create_superuser("admin")
         cls.welsh_locale = Locale.objects.get(language_code="cy")
 
-        cls.information_page = InformationPageFactory()
-        cls.article_series = ArticleSeriesPageFactory()
+        cls.information_page = InformationPageFactory(title="The information page")
+        cls.welsh_information_page_alias = cls.information_page.copy_for_translation(
+            locale=cls.welsh_locale, copy_parents=True, alias=True
+        )
+        cls.article_series = ArticleSeriesPageFactory(title="PSF")
         cls.statistical_article_page = StatisticalArticlePageFactory(
-            parent=cls.article_series, summary="This is the summary"
+            title="August 2025", parent=cls.article_series, summary="This is the summary"
         )
         cls.statistical_article_page.save_revision().publish()
-        cls.statistical_article_page.copy_for_translation(locale=cls.welsh_locale, copy_parents=True, alias=True)
+        cls.welsh_article_page_alias = cls.statistical_article_page.copy_for_translation(
+            locale=cls.welsh_locale, copy_parents=True, alias=True
+        )
 
         # remove all but the default site
         Site.objects.filter(is_default_site=False).delete()
@@ -51,14 +56,24 @@ class PathBasedLocalisationTests(WagtailPageTestCase):
         # For any other template (like our fallback), use the real get_template function
         return original_get_template(template_name, *args, **kwargs)
 
+    def test_urls(self):
+        self.assertEqual(
+            self.welsh_information_page_alias.get_url(request=self.dummy_request),
+            f"/cy{self.information_page.get_url(request=self.dummy_request)}",
+        )
+        self.assertEqual(
+            self.welsh_article_page_alias.get_url(request=self.dummy_request),
+            f"/cy{self.statistical_article_page.get_url(request=self.dummy_request)}",
+        )
+
     def test_welsh_home_page_can_be_served(self):
         response = self.client.get("/cy/")
         self.assertEqual(response.status_code, HTTPStatus.OK)
         self.assertEqual(translation.get_language(), self.welsh_locale.language_code)
-        self.assertContains(response, "Mae'r holl gynnwys ar gael o dan y")
+        self.assertContains(response, "Mae’r holl gynnwys ar gael o dan y")
 
     def test_localised_version_of_page_works(self):
-        response = self.client.get("/cy" + self.statistical_article_page.url)
+        response = self.client.get(self.welsh_article_page_alias.get_url(request=self.dummy_request))
         self.assertEqual(response.status_code, HTTPStatus.OK)
         self.assertEqual(translation.get_language(), self.welsh_locale.language_code)
 
@@ -67,7 +82,7 @@ class PathBasedLocalisationTests(WagtailPageTestCase):
         self.assertContains(response, self.statistical_article_page.summary)
 
         # However, the page's furniture should be in Welsh
-        self.assertContains(response, "Mae'r holl gynnwys ar gael o dan y")
+        self.assertContains(response, "Mae’r holl gynnwys ar gael o dan y")
 
     def test_unknown_localised_version_of_page_404(self):
         response = self.client.get("/fr" + self.statistical_article_page.url)
@@ -77,7 +92,7 @@ class PathBasedLocalisationTests(WagtailPageTestCase):
         """Test that the Welsh page has the correct English canonical URL when it has not been explicitly
         translated.
         """
-        response = self.client.get(f"/cy{self.information_page.get_url(request=self.dummy_request)}")
+        response = self.client.get(self.welsh_information_page_alias.get_url(request=self.dummy_request))
         self.assertEqual(response.status_code, HTTPStatus.OK)
         self.assertContains(
             response,
@@ -86,7 +101,7 @@ class PathBasedLocalisationTests(WagtailPageTestCase):
 
     def test_translated_page_canonical_url(self):
         """Test that a translated page has the correct language coded canonical URL."""
-        welsh_page = self.information_page.aliases.first()
+        welsh_page = self.welsh_information_page_alias
         welsh_page.alias_of = None
         welsh_page.save_revision().publish()
         response = self.client.get(welsh_page.get_url())
@@ -99,7 +114,7 @@ class PathBasedLocalisationTests(WagtailPageTestCase):
         """Test that Welsh articles have the correct english canonical URL when they have not been explicitly
         translated.
         """
-        response = self.client.get(f"/cy{self.statistical_article_page.get_url(request=self.dummy_request)}")
+        response = self.client.get(self.welsh_article_page_alias.get_url(request=self.dummy_request))
         self.assertEqual(response.status_code, HTTPStatus.OK)
         self.assertContains(
             response, f'<link rel="canonical" href="{self.article_series.get_full_url(request=self.dummy_request)}" />'
@@ -108,7 +123,7 @@ class PathBasedLocalisationTests(WagtailPageTestCase):
 
     def test_translated_welsh_statistical_article_page_canonical_url(self):
         """Test that a translated article has the correct language coded canonical URL."""
-        welsh_page = self.information_page.aliases.first()
+        welsh_page = self.welsh_article_page_alias
         welsh_page.alias_of = None
         welsh_page.save_revision().publish()
         response = self.client.get(welsh_page.get_url(request=self.dummy_request))
@@ -127,7 +142,6 @@ class PathBasedLocalisationTests(WagtailPageTestCase):
         mock_homepage_serve.side_effect = ValueError("Deliberate test error")
 
         response = self.client.get("/cy/")
-
         self.assertEqual(response.status_code, HTTPStatus.INTERNAL_SERVER_ERROR)
         self.assertNotContains(
             response, "Sorry, there’s a problem with the service", status_code=HTTPStatus.INTERNAL_SERVER_ERROR

@@ -4,6 +4,7 @@ from unittest import TestCase
 
 from bs4 import BeautifulSoup
 from django.conf import settings
+from django.conf.urls.i18n import is_language_prefix_patterns_used
 from django.core.files.base import ContentFile
 from django.urls import clear_url_caches
 
@@ -35,3 +36,5 @@ def reset_url_caches():
         modules_to_delete = [mod for mod in sys.modules if mod.startswith(root_urlconf + ".")]
         for mod in modules_to_delete:
             del sys.modules[mod]
+
+    is_language_prefix_patterns_used.cache_clear()

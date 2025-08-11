@@ -61,14 +61,12 @@ class SubdomainLocalisationTests(WagtailPageTestCase):
         self.assertEqual(self.welsh_page.get_full_url(request=request), "http://cy.ons.localhost/about/")
 
     def test_accessing_welsh_subdomain_activates_welsh(self):
-        translation.deactivate()
         request = RequestFactory(SERVER_NAME="cy.ons.localhost").get("/", SERVER_PORT=80)
         response = self.client.get(self.welsh_page.get_full_url(request=request), headers={"host": "cy.ons.localhost"})
         self.assertEqual(translation.get_language(), self.welsh_locale.language_code)
         self.assertContains(response, "Mae’r holl gynnwys ar gael o dan y")
 
     def test_accessing_welsh_alternate_domain_activates_welsh(self):
-        translation.deactivate()
         request = RequestFactory(SERVER_NAME="cy.pub.ons.localhost").get("/", SERVER_PORT=80)
         response = self.client.get(
             self.welsh_page.get_full_url(request=request), headers={"host": "cy.pub.ons.localhost"}
