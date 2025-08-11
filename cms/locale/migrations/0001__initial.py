@@ -21,7 +21,7 @@ def create_welsh_homepage(apps, schema_editor):
     HomePage.objects.create(
         title="Home",
         draft_title="Home",
-        slug="home",
+        slug="home-cy",
         content_type=homepage_content_type,
         alias_of=default_homepage,
         translation_key=default_homepage.translation_key,

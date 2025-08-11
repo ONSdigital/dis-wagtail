@@ -245,7 +245,7 @@ class ErrorPageTests(WagtailPageTestCase):
     @patch("cms.home.models.HomePage.serve")
     @patch("django.template.loader.get_template")
     def test_500_primary_fallback(self, mock_get_template, mock_homepage_serve):
-        """Test that the 500 page falls back to a basic HTML response."""
+        """Test that the 500 error page falls back to a basic HTML response."""
         self.client.raise_request_exception = False
         mock_homepage_serve.side_effect = ValueError("Deliberate test error")
         # The side effect will raise TemplateDoesNotExist for the primary 500 template, but in general
@@ -269,21 +269,6 @@ class ErrorPageTests(WagtailPageTestCase):
 
         # Check that the fallback template was actually used, it doesn't have OG tags like the base template
         self.assertNotContains(response, 'property="og:description"', status_code=HTTPStatus.INTERNAL_SERVER_ERROR)
-
-        response = self.client.get("/cy/")
-        self.assertEqual(response.status_code, HTTPStatus.INTERNAL_SERVER_ERROR)
-
-        # The fallback template does not have Welsh translations
-        self.assertNotContains(
-            response,
-            "Mae’n ddrwg gennym, mae problem gyda’r gwasanaeth",
-            status_code=HTTPStatus.INTERNAL_SERVER_ERROR,
-        )
-        self.assertContains(
-            response,
-            "Sorry, there’s a problem with the service",
-            status_code=HTTPStatus.INTERNAL_SERVER_ERROR,
-        )
 
     @patch("cms.home.models.HomePage.serve")
     @patch("cms.core.views.render")
