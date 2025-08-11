@@ -144,7 +144,7 @@ jobs:
           make install-dev
           sudo apt-get install -y --no-install-recommends gettext cm-super texlive-latex-extra
 
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v5
         with:
           name: static
           path: cms/static_compiled/
@@ -233,7 +233,7 @@ jobs:
       - name: Playwright Install
         run: poetry run python -m playwright install --with-deps ${{ matrix.browser }}
 
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v5
         with:
           name: static
           path: cms/static_compiled/
