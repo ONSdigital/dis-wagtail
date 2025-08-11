@@ -63,8 +63,10 @@ Feature: Wagtail Admin JWT Authentication and Session Management
         When the user logs out from one tab
         Then both tabs should be redirected to the sign-in page
 
+    @smoke
     @cognito_enabled
     Scenario: Ensure session is not initialised in the iframe
         Given the user is authenticated
-        When the user creates and saves an information page
+        When the user navigates to the admin page
+        And the user creates and saves an information page
         Then the user opens the preview pane and the session should not be initialised in the iframe
