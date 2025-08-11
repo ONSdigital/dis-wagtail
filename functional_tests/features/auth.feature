@@ -47,6 +47,7 @@ Feature: Wagtail Admin JWT Authentication and Session Management
         Then the logout request should complete successfully
         And the tokens should be cleared from the browser
 
+    @smoke
     @cognito_enabled
     Scenario: Keep multiple tabs in sync on token refresh
         Given the user is authenticated
@@ -63,7 +64,6 @@ Feature: Wagtail Admin JWT Authentication and Session Management
         When the user logs out from one tab
         Then both tabs should be redirected to the sign-in page
 
-    @smoke
     @cognito_enabled
     Scenario: Ensure session is not initialised in the iframe
         Given the user is authenticated

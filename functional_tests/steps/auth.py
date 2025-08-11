@@ -31,11 +31,11 @@ def navigate_to_admin(context: Context) -> None:
 @when("the JWT token is refreshed in one tab")
 def simulate_user_activity(context: Context) -> None:
     """Simulate mouse movements to trigger activity detection."""
-    movements = [(500, 300), (600, 350), (500, 300)]
+    movements = [(500, 300), (600, 350), (500, 300), (400, 250)]
 
     for x, y in movements:
         context.page.mouse.move(x, y)
-        context.page.wait_for_timeout(4000)
+        context.page.wait_for_timeout(3000)
 
     context.page.wait_for_timeout(1000)  # Allow time for any session renewal logic to run
 
