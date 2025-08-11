@@ -26,7 +26,7 @@ def the_user_has_featured_the_series(context: Context):
 
 @when("the user visits the topic page")
 def visit_topic_page(context: Context):
-    context.page.goto(f"{context.base_url}{context.topic_page.url}")
+    context.page.goto(context.topic_page.full_url)
 
 
 @when("the user selects the article series")
@@ -42,7 +42,7 @@ def user_edits_the_ancestor_topic(context: Context):
 
 @step("the user views the topic page")
 def user_views_the_topic_page(context: Context):
-    context.page.goto(f"{context.base_url}{context.topic_page.url}")
+    context.page.goto(context.topic_page.full_url)
 
 
 @step("the user clicks to add headline figures to the topic page")
