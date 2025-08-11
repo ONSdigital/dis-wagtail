@@ -26,8 +26,8 @@ from .blocks import (
 )
 from .enums import NON_PROVISIONAL_STATUSES, ReleaseStatus
 from .forms import ReleaseCalendarPageAdminForm
-from .locks import PageInBundleReadyToBePublishedLock
-from .panels import ReleaseCalendarBundleNotePanel
+from .locks import ReleasePageInBundleReadyToBePublishedLock
+from .panels import ChangesToReleaseDateFieldPanel, ReleaseCalendarBundleNotePanel
 
 if TYPE_CHECKING:
     from django.http import HttpRequest
@@ -169,7 +169,7 @@ class ReleaseCalendarPage(BundledPageMixin, BasePage):  # type: ignore[django-ma
             heading="About the data",
             icon="info-circle",
         ),
-        FieldPanel("changes_to_release_date", icon="comment"),
+        ChangesToReleaseDateFieldPanel("changes_to_release_date", icon="comment"),
         FieldPanel("pre_release_access", icon="key"),
         FieldPanel("related_links", icon="link"),
     ]
@@ -291,6 +291,6 @@ class ReleaseCalendarPage(BundledPageMixin, BasePage):  # type: ignore[django-ma
 
     def get_lock(self) -> Optional["BaseLock"]:
         if self.active_bundle and self.active_bundle.is_ready_to_be_published:
-            return PageInBundleReadyToBePublishedLock(self)
+            return ReleasePageInBundleReadyToBePublishedLock(self)
 
         return super().get_lock()

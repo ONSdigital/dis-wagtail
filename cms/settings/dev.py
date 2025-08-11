@@ -86,6 +86,8 @@ if AWS_COGNITO_LOGIN_ENABLED:  # noqa: F405
     WAGTAILADMIN_LOGIN_URL = env.get("WAGTAILADMIN_LOGIN_URL", f"{AUTH_STUB_URL}/florence/login")
     LOGOUT_REDIRECT_URL = env.get("LOGOUT_REDIRECT_URL", f"{AUTH_STUB_URL}/florence/logout")
     AWS_REGION = "eu-west-2"
+else:
+    SESSION_COOKIE_AGE = 60 * 60 * 24  # 1 day in seconds
 
 # Set auth stub as a trusted origin
 CSRF_TRUSTED_ORIGINS = env.get("CSRF_TRUSTED_ORIGINS", AUTH_STUB_URL).split(",")
@@ -131,6 +133,7 @@ MIGRATION_LINTER_OPTIONS = {
         "0005_bundle_updated_at",  # Ignoring NOT NULL constraint
         "0007_statisticalarticlepage_featured_chart_content_and_more",  # Ignoring NOT NULL constraint
         "0008_delete_systemmessagessettings",  # Ignoring dropping table
+        "0007_topicpagerelatedarticle_external_url_and_more",  # Ignoring NOT NULL constraint
     ],
 }
 

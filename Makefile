@@ -68,7 +68,7 @@ lint-migrations: ## Run django-migration-linter
 .PHONY: test
 test:  ## Run the tests and check coverage.
 	poetry run coverage erase
-	COVERAGE_CORE=sysmon  poetry run coverage run ./manage.py test --parallel --settings=cms.settings.test --shuffle
+	COVERAGE_CORE=sysmon poetry run coverage run ./manage.py test --parallel --settings=cms.settings.test --shuffle
 	poetry run coverage combine
 	poetry run coverage report --fail-under=90
 
@@ -161,7 +161,7 @@ collectstatic:  ## Collect static files from all Django apps
 
 .PHONY: migrate
 migrate: ## Apply the database migrations
-	poetry run python ./manage.py migrate
+	poetry run python ./manage.py locked_migrate
 
 .PHONY: createsuperuser
 createsuperuser: ## Create a super user with a default username and password

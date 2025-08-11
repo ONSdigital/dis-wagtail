@@ -5,6 +5,7 @@ from django.conf import settings
 from django.template import TemplateDoesNotExist
 from django.template.loader import get_template as original_get_template
 from django.test.utils import override_settings
+from django.utils import translation
 from wagtail.models import Locale
 from wagtail.test.utils import WagtailPageTestCase
 
@@ -13,6 +14,12 @@ from cms.standard_pages.tests.factories import IndexPageFactory, InformationPage
 
 
 class HomePageTests(WagtailPageTestCase):
+    def tearDown(self):
+        # Reset the translation to the default language after each test to avoid
+        # test contamination issues.
+        translation.activate(settings.LANGUAGE_CODE)
+        return super().tearDown()
+
     def test_home_page_can_be_served(self):
         """Test that the home page can be served."""
         response = self.client.get("/")
@@ -33,7 +40,7 @@ class HomePageTests(WagtailPageTestCase):
 
     def test_welsh_home_page_template(self):
         response = self.client.get("/cy/")
-        self.assertContains(response, "Mae'r holl gynnwys ar gael o dan delerau'r")
+        self.assertContains(response, "Mae’r holl gynnwys ar gael o dan y")
 
     @override_settings(IS_EXTERNAL_ENV=False, WAGTAIL_CORE_ADMIN_LOGIN_ENABLED=True, AWS_COGNITO_LOGIN_ENABLED=True)
     def test_both_login_buttons_are_displayed(self):
@@ -73,6 +80,12 @@ class PageCanonicalUrlTests(WagtailPageTestCase):
     @classmethod
     def setUpTestData(cls):
         cls.page = InformationPageFactory()
+
+    def tearDown(self):
+        # Reset the translation to the default language after each test to avoid
+        # test contamination issues.
+        translation.activate(settings.LANGUAGE_CODE)
+        return super().tearDown()
 
     def test_page_canonical_url(self):
         """Test that the home page has the correct canonical URL."""
@@ -197,6 +210,12 @@ class SocialMetaTests(WagtailPageTestCase):
 
 
 class ErrorPageTests(WagtailPageTestCase):
+    def tearDown(self):
+        # Reset the translation to the default language after each test to avoid
+        # test contamination issues.
+        translation.activate(settings.LANGUAGE_CODE)
+        return super().tearDown()
+
     def get_template_side_effect(self, template_name, *args, **kwargs):
         """Side effect function to simulate template loading failures."""
         if template_name == "templates/pages/errors/500.html":
@@ -258,7 +277,7 @@ class ErrorPageTests(WagtailPageTestCase):
 
         self.assertEqual(response.status_code, HTTPStatus.INTERNAL_SERVER_ERROR)
         self.assertContains(
-            response, "Sorry, there's a problem with the service", status_code=HTTPStatus.INTERNAL_SERVER_ERROR
+            response, "Sorry, there’s a problem with the service", status_code=HTTPStatus.INTERNAL_SERVER_ERROR
         )
         # This uses the base template, which has OG tags
         self.assertContains(response, 'property="og:description"', status_code=HTTPStatus.INTERNAL_SERVER_ERROR)
@@ -267,7 +286,7 @@ class ErrorPageTests(WagtailPageTestCase):
         response = self.client.get("/cy/")
         self.assertEqual(response.status_code, HTTPStatus.INTERNAL_SERVER_ERROR)
         self.assertContains(
-            response, "Mae'n ddrwg gennym, mae problem gyda'r gwasanaeth", status_code=HTTPStatus.INTERNAL_SERVER_ERROR
+            response, "Mae’n ddrwg gennym, mae problem gyda’r gwasanaeth", status_code=HTTPStatus.INTERNAL_SERVER_ERROR
         )
 
     @patch("cms.home.models.HomePage.serve")
@@ -284,7 +303,7 @@ class ErrorPageTests(WagtailPageTestCase):
         self.assertEqual(response.status_code, HTTPStatus.INTERNAL_SERVER_ERROR)
         self.assertContains(
             response,
-            "Sorry, there's a problem with the service",
+            "Sorry, there’s a problem with the service",
             status_code=HTTPStatus.INTERNAL_SERVER_ERROR,
         )
 
@@ -304,12 +323,12 @@ class ErrorPageTests(WagtailPageTestCase):
         # The fallback template does not have Welsh translations
         self.assertNotContains(
             response,
-            "Mae'n ddrwg gennym, mae problem gyda'r gwasanaeth",
+            "Mae’n ddrwg gennym, mae problem gyda’r gwasanaeth",
             status_code=HTTPStatus.INTERNAL_SERVER_ERROR,
         )
         self.assertContains(
             response,
-            "Sorry, there's a problem with the service",
+            "Sorry, there’s a problem with the service",
             status_code=HTTPStatus.INTERNAL_SERVER_ERROR,
         )
 
@@ -327,7 +346,7 @@ class ErrorPageTests(WagtailPageTestCase):
         # Rendering is not possible, so we return a plain HTML response
         self.assertContains(
             response,
-            "<h1>Server Error (500)</h1><p>Sorry, there's a problem with the service.</p>",
+            "<h1>Server Error (500)</h1><p>Sorry, there’s a problem with the service.</p>",
             status_code=HTTPStatus.INTERNAL_SERVER_ERROR,
         )
 
@@ -336,6 +355,6 @@ class ErrorPageTests(WagtailPageTestCase):
         self.assertEqual(response.status_code, HTTPStatus.INTERNAL_SERVER_ERROR)
         self.assertContains(
             response,
-            "<h1>Server Error (500)</h1><p>Sorry, there's a problem with the service.</p>",
+            "<h1>Server Error (500)</h1><p>Sorry, there’s a problem with the service.</p>",
             status_code=HTTPStatus.INTERNAL_SERVER_ERROR,
         )

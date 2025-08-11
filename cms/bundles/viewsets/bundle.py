@@ -20,11 +20,10 @@ from cms.bundles.action_menu import BundleActionMenu
 from cms.bundles.enums import BundleStatus
 from cms.bundles.models import Bundle
 from cms.bundles.notifications.slack import (
-    notify_slack_of_publication_start,
-    notify_slack_of_publish_end,
     notify_slack_of_status_change,
 )
 from cms.bundles.permissions import user_can_manage_bundles, user_can_preview_bundle
+from cms.bundles.utils import publish_bundle
 from cms.core.custom_date_format import ons_date_format
 from cms.datasets.models import Dataset
 
@@ -152,17 +151,10 @@ class BundleEditView(EditView):
     def run_after_hook(self) -> None:
         """This method allows calling hooks or additional logic after an action has been executed.
 
-        In our case, we want to send a Slack notification if manually published, and approve any of the
-        related pages that are in a Wagtail workflow.
+        In our case, we want to replicate the scheduled publication (send Slack notification, publish pages, update RC).
         """
         if self.action == "publish" or (self.action == "edit" and self.object.status == BundleStatus.PUBLISHED):
-            notify_slack_of_publication_start(self.object, user=self.request.user)
-            start_time = self.start_time or time.time()
-            for page in self.object.get_bundled_pages():
-                if page.current_workflow_state:
-                    page.current_workflow_state.current_task_state.approve(user=self.request.user)
-
-            notify_slack_of_publish_end(self.object, time.time() - start_time, user=self.request.user)
+            publish_bundle(self.object, update_status=False)
 
     def get_action(self, request: "HttpRequest") -> str:
         """Determine the POST action."""

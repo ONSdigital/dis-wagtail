@@ -44,6 +44,7 @@ aws-msk-iam-sasl-signer-python = "^1.0.2"
 wagtailtables = "^0.2.2"
 pyjwt = "^2.10.1"
 cryptography = "^45.0.4"
+django-pglock = "^1.7.2"
 wagtail-schema-org = "^4.1.1"
 
 [tool.poetry.group.dev.dependencies]
@@ -105,6 +106,8 @@ select = [
     # It is enabled here to take advantage of the ruff's speed.
     "PL",
 ]
+# Allow smart quotes
+allowed-confusables = ["’", "‘", "“", "”"]
 
 ignore = [
     # Conflicts with Google docstring style
