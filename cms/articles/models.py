@@ -148,7 +148,7 @@ class ArticleSeriesPage(RoutablePageMixin, GenericTaxonomyMixin, BasePage):  # t
 class StatisticalArticlePage(BundledPageMixin, RoutablePageMixin, BasePage):  # type: ignore[django-manager-missing]
     """The statistical article page model.
 
-    Previously known as statistical statistical_article, statistical analysis article, analysis page.
+    Previously known as statistical bulletin, statistical analysis article, analysis page.
     """
 
     base_form_class = StatisticalArticlePageAdminForm
