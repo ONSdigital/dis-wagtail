@@ -35,9 +35,9 @@ def simulate_user_activity(context: Context) -> None:
 
     for x, y in movements:
         context.page.mouse.move(x, y)
-        context.page.wait_for_timeout(3000)
+        context.page.wait_for_timeout(4000)
 
-    context.page.wait_for_timeout(5000)  # Allow time for any session renewal logic to run
+    context.page.wait_for_timeout(1000)  # Allow time for any session renewal logic to run
 
 
 @then("a session renewal request should be sent")
@@ -149,19 +149,25 @@ def step_both_tabs_remain_logged_in(context: Context) -> None:
 @when("the user creates and saves an information page")
 def step_create_and_save_information_page(context: Context) -> None:
     """Create and save an information page with filled content for preview."""
-    context.page.goto(f"{context.base_url}/admin/")
+    # context.page.goto(f"{context.base_url}/admin/")
 
-    context.page.get_by_role("button", name="Pages").click()
-    context.page.get_by_role("link", name="Home English").click()
-    context.page.get_by_role("link", name="Add child page").click()
-    context.page.get_by_role("link", name="Information page", exact=True).click()
-    context.page.get_by_role("textbox", name="Title*").click()
-    context.page.get_by_role("textbox", name="Title*").fill("Info page")
-    context.page.locator("#panel-child-content-summary-content").get_by_role("textbox").locator("div").nth(2).click()
-    context.page.get_by_role("region", name="Summary*").get_by_role("textbox").fill("Info page summary")
-    context.page.get_by_title("Insert a block").click()
-    context.page.get_by_text("Section heading").click()
-    context.page.locator("#content-0-value").fill("Heading")
+    # context.page.get_by_role("button", name="Pages").click()
+    # context.page.get_by_role("link", name="Home English").click()
+    # context.page.get_by_role("link", name="Add child page").click()
+    # context.page.get_by_role("link", name="Information page", exact=True).click()
+    # context.page.get_by_role("textbox", name="Title*").click()
+    # context.page.get_by_role("textbox", name="Title*").fill("Info page")
+    # context.page.locator("#panel-child-content-summary-content").get_by_role("textbox").locator("div").nth(2).click()
+    # context.page.get_by_role("region", name="Summary*").get_by_role("textbox").fill("Info page summary")
+    # context.page.get_by_title("Insert a block").click()
+    # context.page.get_by_text("Section heading").click()
+    # context.page.locator("#content-0-value").fill("Heading")
+    context.execute_steps("""
+        When the user creates an information page as a child of the home page
+    """)
+    context.execute_steps("""
+        When the user adds content to the new information page
+    """)
 
     context.session_init_logs = []
     context.page.on(
