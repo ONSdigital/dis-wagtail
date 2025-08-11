@@ -1,3 +1,4 @@
+import os
 from datetime import UTC, datetime, timedelta
 from unittest import mock
 
@@ -41,7 +42,7 @@ class SyncTeamsCommandTests(TestCase):
 
     def _call_command(self, *, dry_run=False):
         argv = ["--dry-run"] if dry_run else []
-        with open("/dev/null", "w", encoding="utf-8") as stdout:
+        with open(os.devnull, "w", encoding="utf-8") as stdout:
             management.call_command("sync_teams", *argv, stdout=stdout)
 
     def assert_command_failure_message(self, cm):

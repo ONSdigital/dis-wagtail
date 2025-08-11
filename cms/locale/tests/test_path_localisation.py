@@ -130,12 +130,12 @@ class PathBasedLocalisationTests(WagtailPageTestCase):
 
         self.assertEqual(response.status_code, HTTPStatus.INTERNAL_SERVER_ERROR)
         self.assertNotContains(
-            response, "Sorry, there's a problem with the service", status_code=HTTPStatus.INTERNAL_SERVER_ERROR
+            response, "Sorry, there’s a problem with the service", status_code=HTTPStatus.INTERNAL_SERVER_ERROR
         )
         # This uses the base template, which has OG tags
         self.assertContains(response, 'property="og:description"', status_code=HTTPStatus.INTERNAL_SERVER_ERROR)
         self.assertContains(
-            response, "Mae'n ddrwg gennym, mae problem gyda'r gwasanaeth", status_code=HTTPStatus.INTERNAL_SERVER_ERROR
+            response, "Mae’n ddrwg gennym, mae problem gyda’r gwasanaeth", status_code=HTTPStatus.INTERNAL_SERVER_ERROR
         )
 
     @patch("cms.home.models.HomePage.serve")
@@ -164,12 +164,12 @@ class PathBasedLocalisationTests(WagtailPageTestCase):
         # The fallback template does not have Welsh translations
         self.assertNotContains(
             response,
-            "Mae'n ddrwg gennym, mae problem gyda'r gwasanaeth",
+            "Mae’n ddrwg gennym, mae problem gyda’r gwasanaeth",
             status_code=HTTPStatus.INTERNAL_SERVER_ERROR,
         )
         self.assertContains(
             response,
-            "Sorry, there's a problem with the service",
+            "Sorry, there’s a problem with the service",
             status_code=HTTPStatus.INTERNAL_SERVER_ERROR,
         )
 
@@ -187,6 +187,6 @@ class PathBasedLocalisationTests(WagtailPageTestCase):
         self.assertEqual(response.status_code, HTTPStatus.INTERNAL_SERVER_ERROR)
         self.assertContains(
             response,
-            "<h1>Server Error (500)</h1><p>Sorry, there's a problem with the service.</p>",
+            "<h1>Server Error (500)</h1><p>Sorry, there’s a problem with the service.</p>",
             status_code=HTTPStatus.INTERNAL_SERVER_ERROR,
         )

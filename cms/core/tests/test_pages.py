@@ -237,7 +237,7 @@ class ErrorPageTests(WagtailPageTestCase):
 
         self.assertEqual(response.status_code, HTTPStatus.INTERNAL_SERVER_ERROR)
         self.assertContains(
-            response, "Sorry, there's a problem with the service", status_code=HTTPStatus.INTERNAL_SERVER_ERROR
+            response, "Sorry, there’s a problem with the service", status_code=HTTPStatus.INTERNAL_SERVER_ERROR
         )
         # This uses the base template, which has OG tags
         self.assertContains(response, 'property="og:description"', status_code=HTTPStatus.INTERNAL_SERVER_ERROR)
@@ -256,7 +256,7 @@ class ErrorPageTests(WagtailPageTestCase):
         self.assertEqual(response.status_code, HTTPStatus.INTERNAL_SERVER_ERROR)
         self.assertContains(
             response,
-            "Sorry, there's a problem with the service",
+            "Sorry, there’s a problem with the service",
             status_code=HTTPStatus.INTERNAL_SERVER_ERROR,
         )
 
@@ -269,6 +269,21 @@ class ErrorPageTests(WagtailPageTestCase):
 
         # Check that the fallback template was actually used, it doesn't have OG tags like the base template
         self.assertNotContains(response, 'property="og:description"', status_code=HTTPStatus.INTERNAL_SERVER_ERROR)
+
+        response = self.client.get("/cy/")
+        self.assertEqual(response.status_code, HTTPStatus.INTERNAL_SERVER_ERROR)
+
+        # The fallback template does not have Welsh translations
+        self.assertNotContains(
+            response,
+            "Mae’n ddrwg gennym, mae problem gyda’r gwasanaeth",
+            status_code=HTTPStatus.INTERNAL_SERVER_ERROR,
+        )
+        self.assertContains(
+            response,
+            "Sorry, there’s a problem with the service",
+            status_code=HTTPStatus.INTERNAL_SERVER_ERROR,
+        )
 
     @patch("cms.home.models.HomePage.serve")
     @patch("cms.core.views.render")
@@ -284,6 +299,6 @@ class ErrorPageTests(WagtailPageTestCase):
         # Rendering is not possible, so we return a plain HTML response
         self.assertContains(
             response,
-            "<h1>Server Error (500)</h1><p>Sorry, there's a problem with the service.</p>",
+            "<h1>Server Error (500)</h1><p>Sorry, there’s a problem with the service.</p>",
             status_code=HTTPStatus.INTERNAL_SERVER_ERROR,
         )
