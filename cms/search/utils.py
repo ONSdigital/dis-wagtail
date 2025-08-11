@@ -16,12 +16,14 @@ def build_standard_resource_dict(page: "Page") -> dict:
     """Returns a dict with the standard resource fields.
     This covers the non-release case (and also forms the base of the release case).
     """
+    title = page.display_title if page.search_index_content_type == "statistical_article" else page.title
+
     return {
         "uri": build_page_uri(page),
         "content_type": page.search_index_content_type,
         "release_date": (page.release_date.isoformat() if getattr(page, "release_date", None) else None),
         "summary": get_text_for_indexing(force_str(page.summary)),
-        "title": page.title,
+        "title": title,
         "topics": getattr(page, "topic_ids", []),
         "language": force_str(get_locales_display_names().get(page.locale_id)),
     }
