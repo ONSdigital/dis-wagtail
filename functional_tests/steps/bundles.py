@@ -137,9 +137,7 @@ def bundle_inspect_show(context: Context) -> None:
 def create_user_by_role(context: Context, user_role: str) -> None:
     if "users" not in context:
         context.users = []
-    if not next(d for d in context.users if d["role"] == user_role):
-        user_data = create_user(user_role)
-        context.users.append({"role": user_role, "user": user_data})
+    create_not_existing_role(context, user_role)
 
 
 @given("there are {no_statistical_analysis} Statistical Analysis pages")
@@ -183,63 +181,67 @@ def multiple_preview_teams_create(context: Context, no_preview_teams: str) -> No
 
 @given("the {user_role} is a member of the Preview teams")
 def add_user_to_preview_teams(context: Context, user_role: str) -> None:
-    for user in [d for d in context.users if d["role"] == user_role]:
-        tmp_user = user["user"]["user"]
-        for team in context.teams:
-            tmp_user.teams.add(team)
+    create_not_existing_role(context, user_role)
+    next((item for item in context.users if item["role"] == user_role), None)["user"]["user"].teams.add(*context.teams)
 
+@given("there are {Number_of_Bundles} bundles with {bundle_details}")
+def multiple_bundles_create(context: Context, Number_of_Bundles: str, bundle_details: str) -> None:
+    bundles_details =  json_str_to_dict(bundle_details)
 
-@given("there are {no_bundles} bundles with {bundle_details}")
-def multiple_bundles_create(context: Context, no_bundles: str, bundle_details: str) -> None:
-    bundles_details = json.loads(bundle_details)
     context.bundles = []
 
-    if no_bundles.isdigit():
-        for __ in range(int(no_bundles)):
-            create_bundle(context, bundles_details["creator_role"], bundles_details["status"])
+    if Number_of_Bundles.isdigit():
+        for __ in range(int(Number_of_Bundles)):
+            # create_bundle(context, bundles_details["Creator Role"], bundles_details["status"])
 
-    if bool(bundles_details["preview_teams"]) and hasattr(context, "teams"):
-        for team in context.teams:
-            for bundle in context.bundles:
-                BundleTeam.objects.create(parent=bundle, team=team)
+            if not next((item for item in context.users if item["role"] == bundles_details["Creator Role"]), False):
+                create_user_by_role(context, bundles_details["Creator Role"])
 
-    if bool(bundles_details["add_rel_cal"]) and hasattr(context, "release_calendar_pages"):
-        for page in context.release_calendar_pages:
-            for bundle in context.bundles:
-                BundlePage.objects.create(parent=bundle, page=page)
+            bundle_creator = next((item for item in context.users if item["role"] == bundles_details["Creator Role"]), None)['user']["user"]
+            bundle_status = BundleStatus.DRAFT
+            bundle_approved = False
+            if bundles_details["status"] == "Approved":
+                bundle_status = BundleStatus.APPROVED
+                bundle_approved = True
+            if bundles_details["status"] == "In_Review":
+                bundle_status = BundleStatus.IN_REVIEW
+            bundle = BundleFactory(
+                created_by=bundle_creator,
+                status=bundle_status,
+                approved=bundle_approved,
+            )
+            context.bundles.append(bundle)
 
-    if bool(bundles_details["add_stat_page"]) and hasattr(context, "statistical_article_pages"):
-        for page in context.statistical_article_pages:
-            for bundle in context.bundles:
-                BundlePage.objects.create(parent=bundle, page=page)
+            if bool(bundles_details["preview_teams"]) and hasattr(context, "teams"):
+                for team in context.teams:
+                    for bundle in context.bundles:
+                        BundleTeam.objects.create(parent=bundle, team=team)
+
+            if bool(bundles_details["add_rel_cal"]) and hasattr(context, "release_calendar_pages"):
+                for page in context.release_calendar_pages:
+                    for bundle in context.bundles:
+                        BundlePage.objects.create(parent=bundle, page=page)
+
+            if bool(bundles_details["add_stat_page"]) and hasattr(context, "statistical_article_pages"):
+                for page in context.statistical_article_pages:
+                    for bundle in context.bundles:
+                        BundlePage.objects.create(parent=bundle, page=page)
 
 
-def create_bundle(context, creator_role, status):
-    if not next(d for d in context.users if d["role"] == creator_role):
-        create_user_by_role(context, creator_role)
-    bundle_creator = next(d for d in context.users if d["role"] == creator_role)[0]["user"]["user"]
-    bundle_status = BundleStatus.DRAFT
-    bundle_approved = False
-    if status == "Approved":
-        bundle_status = BundleStatus.APPROVED
-        bundle_approved = True
-    if status == "In_Review":
-        bundle_status = BundleStatus.IN_REVIEW
-    bundle = BundleFactory(
-        created_by=bundle_creator,
-        status=bundle_status,
-        approved=bundle_approved,
-    )
-    context.bundles.append(bundle)
+def json_str_to_dict(bundle_details):
+    try:
+        return json.loads(bundle_details)
+    except ValueError as e:
+        return False
 
 
 # Bundles UI Triggers
 @when("the {user_role} logs in")
 def log_in_user_by_role(context: Context, user_role: str) -> None:
-    user = next(d for d in context.users if d["role"] == user_role)[0]["user"]
+    user = next((item for item in context.users if item["role"] == user_role), None)["user"]["user"]
     context.page.goto(f"{context.base_url}/admin/login/")
-    context.page.get_by_placeholder("Enter your username").fill(user["username"])
-    context.page.get_by_placeholder("Enter password").fill(user["password"])
+    context.page.get_by_placeholder("Enter your username").fill(user.username)
+    context.page.get_by_placeholder("Enter password").fill(user.password)
     context.page.get_by_role("button", name="Sign in").click()
 
 
@@ -260,44 +262,50 @@ def the_user_cannot_add_bundles(context: Context) -> None:
 
 @step("the {user_role} can edit a bundle")
 def can_edit_bundle(context: Context, user_role: str) -> None:
-    context.page.get_by_role("textbox", name="Search term").click()
-    context.page.get_by_role("textbox", name="Search term").fill(context.bundles[0].name)
-    context.page.get_by_role("link", name=context.bundles[0].name).click()
+
+    print(context.bundles[0].name)
+
+    if user_role != "Viewer":
+        expect(context.page.locator("#latest-bundles-heading")).to_contain_text("Latest active bundles")
+        expect(context.page.locator("#latest-bundles-content")).to_contain_text("PFM Bundle July 2025")
+        context.page.get_by_role("row", name=context.bundles[0].name + " Actions").get_by_label("Actions").click()
+        context.page.get_by_role("link", name="Edit", exact=True).click()
+
+
 
     # add Release Calendar
-    if hasattr(context, "search_release_calendar"):
-        expect(context.page.get_by_role("button", name="Choose Release Calendar page")).to_be_visible()
-        context.page.get_by_role("button", name="Choose Release Calendar page").click()
-        context.page.get_by_role("textbox", name="Search term").click()
-        context.page.get_by_role("textbox", name="Search term").fill(context.release_calendar_pages[0].title().title())
-        expect(context.page.get_by_role("link", name=context.release_calendar_pages[0].title())).to_be_visible()
-        context.page.get_by_role("row", name=context.release_calendar_pages[0].title()).get_by_role("link").click()
-        context.page.get_by_role("link", name=context.release_calendar_pages[0].title()).click()
+        if hasattr(context, "search_release_calendar"):
+            expect(context.page.get_by_role("button", name="Choose Release Calendar page")).to_be_visible()
+            context.page.get_by_role("button", name="Choose Release Calendar page").click()
+            context.page.get_by_role("textbox", name="Search term").click()
+            context.page.get_by_role("textbox", name="Search term").fill(context.release_calendar_pages[0].title().title())
+            expect(context.page.get_by_role("link", name=context.release_calendar_pages[0].title())).to_be_visible()
+            context.page.get_by_role("row", name=context.release_calendar_pages[0].title()).get_by_role("link").click()
+            context.page.get_by_role("link", name=context.release_calendar_pages[0].title()).click()
 
-    # add Article
-    if hasattr(context, "statistical_article_pages"):
-        expect(context.page.get_by_role("heading", name="Bundled pages").locator("span")).to_be_visible()
-        expect(context.page.get_by_role("button", name="Add page")).to_be_visible()
-        expect(context.get_by_role("button", name="Add page")).click()
-        context.page.get_by_role("button", name="Add page").click()
-        expect(context.page.get_by_role("button", name="Choose a page")).to_be_visible()
-        context.page.get_by_role("button", name="Choose a page").click()
-        context.page.get_by_role("cell", name="Type").click()
-        context.page.get_by_label("Page type").select_option("StatisticalArticlePage")
-        expect(context.page.get_by_role("link", name=context.statistical_article_pages[0].title)).to_be_visible()
-        context.page.get_by_role("link", name=context.statistical_article_pages[0].title).click()
-        context.page.get_by_role("button", name="Save").click()
+        # add Article
+        if hasattr(context, "statistical_article_pages"):
+            expect(context.page.get_by_role("heading", name="Bundled pages").locator("span")).to_be_visible()
+            expect(context.page.get_by_role("button", name="Add page")).to_be_visible()
+            context.page.get_by_role("button", name="Add page").click()
+            expect(context.page.get_by_role("button", name="Choose a page")).to_be_visible()
+            context.page.get_by_role("button", name="Choose a page").click()
+            context.page.get_by_role("cell", name="Type").click()
+            context.page.get_by_label("Page type").select_option("StatisticalArticlePage")
+            expect(context.page.get_by_role("link", name=context.statistical_article_pages[0].title)).to_be_visible()
+            context.page.get_by_role("link", name=context.statistical_article_pages[0].title).click()
+            context.page.get_by_role("button", name="Save").click()
 
     # modify status
-    context.page.locator("#id_status").select_option("IN_REVIEW")
+            context.page.locator("#id_status").select_option("IN_REVIEW")
 
-    # add preview team
-    if hasattr(context, "teams"):
-        context.page.locator("#panel-preview_teams-content div").filter(has_text="Add preview team").click()
-        context.page.get_by_role("button", name="Add preview team").click()
-        context.page.get_by_role("textbox", name="Search term").fill(context.teams[0].name)
-        context.page.get_by_role("checkbox", name=context.teams[0].name).check()
-        context.page.get_by_role("button", name="Confirm selection").click()
+            # add preview team
+            if hasattr(context, "teams"):
+                context.page.locator("#panel-preview_teams-content div").filter(has_text="Add preview team").click()
+                context.page.get_by_role("button", name="Add preview team").click()
+                context.page.get_by_role("textbox", name="Search term").fill(context.teams[0].name)
+                context.page.get_by_role("checkbox", name=context.teams[0].name).check()
+                context.page.get_by_role("button", name="Confirm selection").click()
 
 
 @step("the {user_role} can preview a bundle")
@@ -356,3 +364,9 @@ def can_approve_bundle(context: Context, user_role: str) -> None:
     context.page.get_by_role("link", name="Edit", exact=True).click()
     context.page.locator("#id_status").select_option("APPROVED")
     context.page.get_by_role("button", name="Save").click()
+
+
+def create_not_existing_role(context, user_role):
+    if not next((item for item in context.users if item["role"] == user_role), False):
+        user_data = create_user(user_role)
+        context.users.append({"role": user_role, "user": user_data})
