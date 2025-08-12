@@ -63,7 +63,7 @@ class TimeSeriesPageStoryBlock(StreamBlock):
         # For each dataset URL path, record the indices of the blocks it appears in
         url_paths = defaultdict(set)
         for block_index, block in enumerate(cleaned_value):
-            block.value["url"].rstrip("/")
+            block.value["url"] = block.value["url"].rstrip("/")
             url_paths[block.value["url"]].add(block_index)
 
         block_errors = {}
