@@ -62,9 +62,9 @@ def handle_bundle_dataset_api_sync(instance: Bundle, **kwargs: Any) -> None:
     update_fields = kwargs.get("update_fields")
 
     try:
-        if instance.bundle_api_id and (update_fields is None or "bundle_api_id" not in update_fields):
+        if instance.bundle_api_content_id and (update_fields is None or "bundle_api_content_id" not in update_fields):
             # This is likely a status update or other field change
-            client.update_bundle_state(instance.bundle_api_id, instance.status)
+            client.update_bundle_state(instance.bundle_api_content_id, instance.status)
             logger.info("Updated bundle %s status to %s in Dataset API", instance.pk, instance.status)
 
     except BundleAPIClientError as e:
@@ -77,8 +77,9 @@ def handle_bundle_dataset_api_sync(instance: Bundle, **kwargs: Any) -> None:
 @ons_bundle_api_enabled
 def handle_bundle_dataset_added(instance: BundleDataset, created: bool, **kwargs: Any) -> None:
     """Handle when a dataset is added to a bundle."""
-    # Only proceed if the dataset is being created (i.e. is not getting updated) and the bundle has a bundle_api_id
-    if not created or not instance.parent.bundle_api_id:
+    # Only proceed if the dataset is being created (i.e. is not getting updated) and
+    # the bundle has a bundle_api_content_id
+    if not created or not instance.parent.bundle_api_content_id:
         return
 
     client = BundleAPIClient()
@@ -87,14 +88,14 @@ def handle_bundle_dataset_added(instance: BundleDataset, created: bool, **kwargs
         # Add the content item to the bundle
         content_item = build_content_item_for_dataset(instance.dataset)
 
-        response = client.add_content_to_bundle(instance.parent.bundle_api_id, content_item)
+        response = client.add_content_to_bundle(instance.parent.bundle_api_content_id, content_item)
 
         # Extract content_id from the response
         content_id = extract_content_id_from_bundle_response(response, instance.dataset)
 
         if content_id:
-            instance.content_api_id = content_id
-            instance.save(update_fields=["content_api_id"])
+            instance.bundle_api_content_id = content_id
+            instance.save(update_fields=["bundle_api_content_id"])
             logger.info(
                 "Added content %s to bundle %s in Dataset API with ID %s",
                 instance.dataset.namespace,
@@ -112,14 +113,14 @@ def handle_bundle_dataset_added(instance: BundleDataset, created: bool, **kwargs
 @ons_bundle_api_enabled
 def handle_bundle_dataset_removed(instance: BundleDataset, **kwargs: Any) -> None:
     """Handle when a dataset is removed from a bundle."""
-    if not instance.parent.bundle_api_id or not instance.content_api_id:
+    if not instance.parent.bundle_api_content_id or not instance.bundle_api_content_id:
         return
 
     client = BundleAPIClient()
 
     try:
-        content_id = instance.content_api_id
-        client.delete_content_from_bundle(instance.parent.bundle_api_id, content_id)
+        content_id = instance.bundle_api_content_id
+        client.delete_content_from_bundle(instance.parent.bundle_api_content_id, content_id)
         logger.info("Deleted content %s from bundle %s in Dataset API", content_id, instance.parent.pk)
     except BundleAPIClientError as e:
         logger.error("Failed to delete content %s from bundle %s in Dataset API: %s", content_id, instance.parent.pk, e)
@@ -130,11 +131,11 @@ def handle_bundle_dataset_removed(instance: BundleDataset, **kwargs: Any) -> Non
 @ons_bundle_api_enabled
 def handle_bundle_deletion(instance: Bundle, **kwargs: Any) -> None:
     """Handle when a bundle is deleted."""
-    if instance.bundle_api_id:
+    if instance.bundle_api_content_id:
         client = BundleAPIClient()
 
         try:
-            client.delete_bundle(instance.bundle_api_id)
+            client.delete_bundle(instance.bundle_api_content_id)
             logger.info("Deleted bundle %s from Dataset API", instance.pk)
 
         except BundleAPIClientError as e:
@@ -143,7 +144,7 @@ def handle_bundle_deletion(instance: Bundle, **kwargs: Any) -> None:
 
 def _sync_preview_teams_with_bundle_api(bundle: Bundle) -> None:
     """Helper function to sync a bundle's preview teams with the Bundle API."""
-    if not bundle.bundle_api_id:
+    if not bundle.bundle_api_content_id:
         # This happens when no datasets have been added to the bundle yet
         logger.info("Bundle %s does not have an API ID. Skipping preview team sync.", bundle.pk)
         return
@@ -152,15 +153,18 @@ def _sync_preview_teams_with_bundle_api(bundle: Bundle) -> None:
 
     try:
         client = BundleAPIClient()
-        client.update_bundle(bundle_id=bundle.bundle_api_id, bundle_data=payload)
+        client.update_bundle(bundle_id=bundle.bundle_api_content_id, bundle_data=payload)
         logger.info(
             "Successfully synced preview teams for bundle %s (Wagtail ID: %s).",
-            bundle.bundle_api_id,
+            bundle.bundle_api_content_id,
             bundle.pk,
         )
     except BundleAPIClientError as e:
         logger.error(
-            "Failed to sync preview teams for bundle %s (Wagtail ID: %s): %s", bundle.bundle_api_id, bundle.pk, e
+            "Failed to sync preview teams for bundle %s (Wagtail ID: %s): %s",
+            bundle.bundle_api_content_id,
+            bundle.pk,
+            e,
         )
         # Don't raise the exception to avoid breaking the application
 

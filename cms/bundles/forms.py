@@ -104,12 +104,12 @@ class BundleAdminForm(DeduplicateInlinePanelAdminForm):
         client = BundleAPIClient()
         datasets_not_approved: list[str] = []
 
-        # Ensure bundle_api_id is not None
-        if not self.instance.bundle_api_id:
+        # Ensure bundle_api_content_id is not None
+        if not self.instance.bundle_api_content_id:
             return datasets_not_approved
 
         try:
-            response = client.get_bundle_contents(self.instance.bundle_api_id)
+            response = client.get_bundle_contents(self.instance.bundle_api_content_id)
 
             # Check each content item in the bundle
             for item in response.get("contents", []):
@@ -123,7 +123,7 @@ class BundleAdminForm(DeduplicateInlinePanelAdminForm):
                     datasets_not_approved.append(f"{dataset_title} (state: {item_state})")
 
         except BundleAPIClientError as e:
-            logger.error("Failed to check bundle contents for bundle %s: %s", self.instance.bundle_api_id, e)
+            logger.error("Failed to check bundle contents for bundle %s: %s", self.instance.bundle_api_content_id, e)
             datasets_not_approved.append("Bundle content validation failed")
 
         return datasets_not_approved
@@ -135,7 +135,7 @@ class BundleAdminForm(DeduplicateInlinePanelAdminForm):
             return
 
         # Skip validation if bundle doesn't have an API ID yet
-        if not self.instance.bundle_api_id:
+        if not self.instance.bundle_api_content_id:
             return
 
         datasets_not_approved = self._check_bundle_contents_approval_status()
@@ -268,7 +268,7 @@ class BundleAdminForm(DeduplicateInlinePanelAdminForm):
     def _check_and_push_to_dataset_api(self, bundle: "Bundle") -> None:
         """Check if the bundle has datasets and push it to the Dataset API if it does."""
         # No need to do anything if there are no datasets in the bundle or if the bundle already has an API ID.
-        if not self._has_datasets() or bundle.bundle_api_id:
+        if not self._has_datasets() or bundle.bundle_api_content_id:
             return
 
         client = BundleAPIClient()
@@ -278,25 +278,25 @@ class BundleAdminForm(DeduplicateInlinePanelAdminForm):
             response = client.create_bundle(bundle_data)
 
             if "id" in response:
-                bundle.bundle_api_id = str(response["id"])
-                bundle.save(update_fields=["bundle_api_id"])
-                logger.info("Created bundle %s in Dataset API with ID: %s", bundle.pk, bundle.bundle_api_id)
+                bundle.bundle_api_content_id = str(response["id"])
+                bundle.save(update_fields=["bundle_api_content_id"])
+                logger.info("Created bundle %s in Dataset API with ID: %s", bundle.pk, bundle.bundle_api_content_id)
 
                 # Now add the datasets to the bundle via the /contents endpoint
                 for bundled_dataset in bundle.bundled_datasets.all().select_related("dataset"):
                     content_item = build_content_item_for_dataset(bundled_dataset.dataset)
-                    response = client.add_content_to_bundle(bundle.bundle_api_id, content_item)
+                    response = client.add_content_to_bundle(bundle.bundle_api_content_id, content_item)
 
-                    # Extract and store the content_api_id from the response
+                    # Extract and store the bundle_api_content_id from the response
                     content_id = extract_content_id_from_bundle_response(response, bundled_dataset.dataset)
 
                     if content_id:
-                        bundled_dataset.content_api_id = content_id
-                        bundled_dataset.save(update_fields=["content_api_id"])
+                        bundled_dataset.bundle_api_content_id = content_id
+                        bundled_dataset.save(update_fields=["bundle_api_content_id"])
                     logger.info(
                         "Added content %s to bundle %s in Dataset API",
                         bundled_dataset.dataset.namespace,
-                        bundle.bundle_api_id,
+                        bundle.bundle_api_content_id,
                     )
 
             else:
