@@ -113,7 +113,7 @@ class DatasetChosenMultipleViewMixin(ChosenMultipleViewMixin):
         for namespace, edition, version in lookup_criteria:
             existing_query |= Q(namespace=namespace, edition=edition, version=version)
 
-        existing_datasets_map: dict[tuple[str, str, str], Dataset] = {
+        existing_datasets_map: dict[tuple[str, str, int], Dataset] = {
             (ds.namespace, ds.edition, ds.version): ds for ds in Dataset.objects.filter(existing_query)
         }
 
