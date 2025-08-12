@@ -35,11 +35,11 @@ def _fetch_all_topics() -> list[dict[str, str]]:
     """
     topics = []
 
-    if not settings.ONS_API_BASE_URL:
-        raise ImproperlyConfigured('"ONS_API_BASE_URL" must be set')
+    if not settings.TOPIC_BASE_API_URL:
+        raise ImproperlyConfigured('"TOPIC_BASE_API_URL" must be set')
 
     # Build a stack of topics URLs and parent IDs
-    request_stack: list[tuple[str, str | None]] = [(f"{settings.ONS_API_BASE_URL}/topics", None)]
+    request_stack: list[tuple[str, str | None]] = [(settings.TOPIC_BASE_API_URL, None)]
 
     # Use the stack of subtopic URls to iterate through, fetching all the subtopics
     while request_stack:

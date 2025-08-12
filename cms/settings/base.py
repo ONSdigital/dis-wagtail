@@ -965,7 +965,8 @@ SLACK_NOTIFICATIONS_WEBHOOK_URL = env.get("SLACK_NOTIFICATIONS_WEBHOOK_URL")
 
 # API bases
 ONS_API_BASE_URL = env.get("ONS_API_BASE_URL", "https://api.beta.ons.gov.uk/v1")
-DATASETS_BASE_API_URL = env.get("DATASETS_BASE_API_URL", f"{ONS_API_BASE_URL}/datasets")
+DATASETS_BASE_API_URL = env.get("DATASETS_BASE_API_URL", f"{ONS_API_BASE_URL}/datasets")  # used for dataset choosers
+TOPIC_BASE_API_URL = env.get("TOPIC_BASE_API_URL", f"{ONS_API_BASE_URL}/topics")  # used to sync topics
 
 
 ONS_WEBSITE_BASE_URL = env.get("ONS_WEBSITE_BASE_URL", "https://www.ons.gov.uk")
