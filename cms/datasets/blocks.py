@@ -15,6 +15,7 @@ from wagtail.blocks import (
     URLBlock,
 )
 
+from cms.core.utils import matches_domain
 from cms.datasets.views import dataset_chooser_viewset
 
 DatasetChooserBlock = dataset_chooser_viewset.get_block_class(
@@ -35,7 +36,11 @@ class ManualDatasetBlock(StructBlock):
 class TimeSeriesPageLinkBlock(StructBlock):
     title = CharBlock(required=True)
     description = TextBlock(required=True)
-    url = URLBlock(required=True)
+    url = URLBlock(
+        required=True,
+        help_text="The URL must start with 'https://' "
+        f"and match one of the allowed domains or their subdomains: {', '.join(settings.ONS_ALLOWED_LINK_DOMAINS)}",
+    )
 
     class Meta:
         icon = "link"
@@ -44,9 +49,21 @@ class TimeSeriesPageLinkBlock(StructBlock):
     def clean(self, value: "StructValue") -> "StructValue":
         """Checks that the given time series page URL matches the allowed domain."""
         errors = {}
+        parsed_url = urlparse(value["url"])
 
-        if not value["url"].startswith(settings.ONS_WEBSITE_BASE_URL):
-            errors["url"] = ValidationError(f"The time series page URL must start with {settings.ONS_WEBSITE_BASE_URL}")
+        print(f"HOSTNAME: {parsed_url.hostname}, SCHEME: {parsed_url.scheme}")
+
+        if not parsed_url.hostname or parsed_url.scheme != "https":
+            errors["url"] = ValidationError(
+                "Please enter a valid URL. It should start with 'https://' and contain a valid domain name."
+            )
+        elif not any(
+            matches_domain(parsed_url.hostname, allowed_domain) for allowed_domain in settings.ONS_ALLOWED_LINK_DOMAINS
+        ):
+            patterns_str = " or ".join(settings.ONS_ALLOWED_LINK_DOMAINS)
+            errors["url"] = ValidationError(
+                f"The URL hostname is not in the list of allowed domains or their subdomains: {patterns_str}"
+            )
 
         if errors:
             raise StructBlockValidationError(block_errors=errors)

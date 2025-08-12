@@ -178,3 +178,8 @@ def latex_formula_to_svg(latex: str, *, fontsize: int = 18, transparent: bool = 
         svg_string = "\n".join(svg_string.split("\n")[3:])
 
     return svg_string
+
+
+def matches_domain(hostname: str, allowed_domain: str) -> bool:
+    """Check if the hostname matches the allowed domain or its subdomains."""
+    return hostname and (hostname == allowed_domain or hostname.endswith(f".{allowed_domain}"))
