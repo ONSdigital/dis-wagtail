@@ -15,14 +15,14 @@ from cms.bundles.clients.api import (
 )
 from cms.bundles.decorators import ons_bundle_api_enabled
 from cms.bundles.enums import ACTIVE_BUNDLE_STATUS_CHOICES, EDITABLE_BUNDLE_STATUSES, BundleStatus
-from cms.bundles.utils import build_bundle_data_for_api
+from cms.bundles.utils import build_bundle_data_for_api, get_preview_teams_for_bundle
 from cms.core.forms import DeduplicateInlinePanelAdminForm
 from cms.workflows.models import ReadyToPublishGroupTask
 
 logger = logging.getLogger(__name__)
 
 if TYPE_CHECKING:
-    from .models import Bundle
+    from .models import Bundle, BundleDataset
 
 
 class BundleAdminForm(DeduplicateInlinePanelAdminForm):
@@ -72,6 +72,9 @@ class BundleAdminForm(DeduplicateInlinePanelAdminForm):
         self.fields["approved_by"].widget = forms.HiddenInput()
 
         self.original_status = self.instance.status
+
+        self.original_datasets = set(self.instance.bundled_datasets.all().order_by("id").select_related("dataset"))
+        self.original_teams = set(self.instance.teams.all().order_by("id").select_related("team"))
 
     def _has_datasets(self) -> bool:
         has_datasets = False
@@ -132,11 +135,8 @@ class BundleAdminForm(DeduplicateInlinePanelAdminForm):
     @ons_bundle_api_enabled
     def _validate_bundled_datasets_status(self) -> None:
         """Validate that all bundled datasets are approved when bundle is set to approved status."""
-        if not self._has_datasets():
-            return
-
-        # Skip validation if bundle doesn't have an API ID yet
-        if not self.instance.bundle_api_content_id:
+        # Skip validation if bundle doesn't have an API ID yet, or it doesn't have any datasets
+        if not self.instance.bundle_api_content_id and not self._has_datasets():
             return
 
         datasets_not_approved = self._check_bundle_contents_approval_status()
@@ -266,47 +266,139 @@ class BundleAdminForm(DeduplicateInlinePanelAdminForm):
         return cleaned_data
 
     @ons_bundle_api_enabled
-    def _check_and_push_to_dataset_api(self, bundle: "Bundle") -> None:
-        """Check if the bundle has datasets and push it to the Dataset API if it does."""
-        # No need to do anything if there are no datasets in the bundle or if the bundle already has an API ID.
-        if not self._has_datasets() or bundle.bundle_api_content_id:
-            return
-
-        client = BundleAPIClient()
+    def _push_bundle_to_dataset_api(self, client: BundleAPIClient, bundle: "Bundle") -> "Bundle":
+        """Pushes the bundle to the Dataset API if it does."""
         try:
             # Create the bundle in the API with the correct payload
             bundle_data = build_bundle_data_for_api(bundle)
             response = client.create_bundle(bundle_data)
 
-            if "id" in response:
-                bundle.bundle_api_content_id = str(response["id"])
-                bundle.save(update_fields=["bundle_api_content_id"])
-                logger.info("Created bundle %s in Dataset API with ID: %s", bundle.pk, bundle.bundle_api_content_id)
+            bundle.bundle_api_content_id = str(response["id"])
+            bundle.save(update_fields=["bundle_api_content_id"])
+            logger.info("Created bundle %s in Dataset API with ID: %s", bundle.pk, bundle.bundle_api_content_id)
+            return bundle
 
-                # Now add the datasets to the bundle via the /contents endpoint
-                for bundled_dataset in bundle.bundled_datasets.all().select_related("dataset"):
-                    content_item = build_content_item_for_dataset(bundled_dataset.dataset)
-                    response = client.add_content_to_bundle(bundle.bundle_api_content_id, content_item)
-
-                    # Extract and store the bundle_api_content_id from the response
-                    content_id = extract_content_id_from_bundle_response(response, bundled_dataset.dataset)
-
-                    if content_id:
-                        bundled_dataset.bundle_api_content_id = content_id
-                        bundled_dataset.save(update_fields=["bundle_api_content_id"])
-                    logger.info(
-                        "Added content %s to bundle %s in Dataset API",
-                        bundled_dataset.dataset.namespace,
-                        bundle.bundle_api_content_id,
-                    )
-
-            else:
-                logger.warning("Bundle %s created in API but no ID returned", bundle.pk)
-
-        except BundleAPIClientError as e:
+        except (BundleAPIClientError, KeyError) as e:
             logger.error("Failed to create bundle %s in Dataset API: %s", bundle.pk, e)
-            # Don't raise the exception to avoid breaking the admin interface
-            # The bundle will still be saved locally
+            raise ValidationError("Could not communicate with the Dataset API") from e
+
+    @ons_bundle_api_enabled
+    def _sync_bundle_status_with_dataset_api(self, client: BundleAPIClient, bundle: "Bundle") -> None:
+        if not bundle.bundle_api_content_id:
+            return
+
+        try:
+            client.update_bundle_state(bundle.bundle_api_content_id, bundle.status)
+            logger.info("Updated bundle %s status to %s in Dataset API", bundle.pk, bundle.status)
+        except BundleAPIClientError as e:
+            logger.error("Failed to sync bundle %s with Dataset API: %s", bundle.pk, e)
+            raise ValidationError("Could not communicate with the Dataset API") from e
+
+    @ons_bundle_api_enabled
+    def _sync_datasets_with_dataset_api(
+        self, client: BundleAPIClient, bundle: "Bundle", current_datasets: set["BundleDataset"]
+    ) -> None:
+        """Sync dataset changes to the API."""
+        if not bundle.bundle_api_content_id:
+            return
+
+        if not current_datasets:
+            # If we have no more dataset, remove the bundle from the API
+            try:
+                client.delete_bundle(bundle.bundle_api_content_id)
+                logger.info("Deleted bundle %s from Dataset API", bundle.pk)
+                bundle.bundle_api_content_id = None
+                bundle.save(update_fields=["bundle_api_content_id"])
+            except BundleAPIClientError as e:
+                logger.error("Failed to delete bundle %s from Dataset API: %s", bundle.pk, e)
+                raise ValidationError("Could not communicate with the Dataset API") from e
+            return
+
+        # Handle addition and removals.
+        added = {d for d in current_datasets - self.original_datasets if not d.bundle_api_content_id}
+        removed = {d for d in self.original_datasets - current_datasets if d.bundle_api_content_id}
+        common_but_not_linked = {d for d in self.original_datasets & current_datasets if not d.bundle_api_content_id}
+
+        try:
+            for item in added | common_but_not_linked:
+                content_item = build_content_item_for_dataset(item.dataset)
+                response = client.add_content_to_bundle(bundle.bundle_api_content_id, content_item)
+
+                # Extract content_id from the response
+                if content_id := extract_content_id_from_bundle_response(response, item.dataset):
+                    item.bundle_api_content_id = content_id
+                    item.save(update_fields=["bundle_api_content_id"])
+                    logger.info(
+                        "Added content %s to bundle %s in Dataset API with ID %s",
+                        item.dataset.namespace,
+                        bundle.pk,
+                        content_id,
+                    )
+                else:
+                    logger.error("Could not find content_id in response for bundle %s", bundle.pk)
+        except BundleAPIClientError as e:
+            logger.error("Failed to add content to bundle %s in Dataset API: %s", bundle.pk, e)
+            raise ValidationError("Could not communicate with the Dataset API") from e
+
+        for item in removed:
+            try:
+                content_id = item.bundle_api_content_id
+                client.delete_content_from_bundle(bundle.bundle_api_content_id, content_id)
+                logger.info("Deleted content %s from bundle %s in Dataset API", content_id, bundle.pk)
+            except BundleAPIClientError as e:
+                logger.error("Failed to delete content %s from bundle %s in Dataset API: %s", content_id, bundle.pk, e)
+                raise ValidationError("Could not communicate with the Dataset API") from e
+
+    @ons_bundle_api_enabled
+    def _sync_teams_with_dataset_api(self, client: BundleAPIClient, bundle: "Bundle") -> None:
+        if not bundle.bundle_api_content_id:
+            return
+
+        payload = {"preview_teams": get_preview_teams_for_bundle(bundle)}
+
+        try:
+            client.update_bundle(bundle_id=bundle.bundle_api_content_id, bundle_data=payload)
+            logger.info(
+                "Successfully synced preview teams for bundle %s (Wagtail ID: %s).",
+                bundle.bundle_api_content_id,
+                bundle.pk,
+            )
+        except BundleAPIClientError as e:
+            logger.error(
+                "Failed to sync preview teams for bundle %s (Wagtail ID: %s): %s",
+                bundle.bundle_api_content_id,
+                bundle.pk,
+                e,
+            )
+            raise ValidationError("Could not communicate with the Dataset API") from e
+
+    @ons_bundle_api_enabled
+    def _check_and_sync_with_dataset_api(self, bundle: "Bundle") -> None:
+        should_push_bundle_to_api = not bundle.bundle_api_content_id and self._has_datasets()
+        status_has_changed = bundle.bundle_api_content_id and self.original_status != bundle.status
+
+        current_datasets = set(bundle.bundled_datasets.all().select_related("dataset").order_by("id"))
+        should_push_dataset_changes_to_api = self.original_datasets != current_datasets
+        should_push_team_changes_to_api = self.original_teams != set(
+            bundle.teams.all().select_related("team").order_by("id")
+        )
+
+        if (
+            should_push_bundle_to_api
+            or status_has_changed
+            or should_push_dataset_changes_to_api
+            or should_push_team_changes_to_api
+        ):
+            client = BundleAPIClient()
+            if should_push_bundle_to_api:
+                # The bundle should be created in the API if it has datasets, and it doesn't have an API ID.
+                bundle = self._push_bundle_to_dataset_api(client, bundle)
+            if status_has_changed:
+                self._sync_bundle_status_with_dataset_api(client, bundle)
+            if should_push_dataset_changes_to_api:
+                self._sync_datasets_with_dataset_api(client, bundle, current_datasets)
+            if should_push_team_changes_to_api:
+                self._sync_teams_with_dataset_api(client, bundle)
 
     def save(self, commit: bool = True) -> "Bundle":
         """Save the bundle and create in API if it has datasets but no API ID."""
@@ -315,6 +407,5 @@ class BundleAdminForm(DeduplicateInlinePanelAdminForm):
         bundle: Bundle = super().save(commit=commit)
 
         if commit:
-            self._check_and_push_to_dataset_api(bundle)
-
+            self._check_and_sync_with_dataset_api(bundle)
         return bundle

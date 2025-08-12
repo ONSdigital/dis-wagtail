@@ -1,8 +1,10 @@
+import logging
 import time
-from typing import TYPE_CHECKING, Any, ClassVar, cast
+from typing import TYPE_CHECKING, Any, ClassVar, Optional, cast
 
 from django.conf import settings
-from django.core.exceptions import PermissionDenied
+from django.core.exceptions import PermissionDenied, ValidationError
+from django.db import transaction
 from django.db.models import F
 from django.http import HttpRequest
 from django.shortcuts import redirect
@@ -10,13 +12,16 @@ from django.urls import reverse
 from django.utils import timezone
 from django.utils.functional import cached_property
 from django.utils.html import format_html, format_html_join
+from wagtail.admin import messages
 from wagtail.admin.ui.tables import Column, DateColumn
-from wagtail.admin.views.generic import CreateView, EditView, IndexView, InspectView
+from wagtail.admin.views.generic import CreateView, DeleteView, EditView, IndexView, InspectView
 from wagtail.admin.viewsets.model import ModelViewSet
 from wagtail.admin.widgets import HeaderButton, ListingButton
 from wagtail.log_actions import log
 
 from cms.bundles.action_menu import BundleActionMenu
+from cms.bundles.clients.api import BundleAPIClient, BundleAPIClientError
+from cms.bundles.decorators import ons_bundle_api_enabled
 from cms.bundles.enums import BundleStatus
 from cms.bundles.models import Bundle
 from cms.bundles.notifications.slack import (
@@ -34,13 +39,37 @@ if TYPE_CHECKING:
     from django.utils.safestring import SafeString
     from wagtail.models import Page
 
+    from cms.bundles.forms import BundleAdminForm
     from cms.bundles.models import BundlesQuerySet
+
+
+logger = logging.getLogger(__name__)
 
 
 class BundleCreateView(CreateView):
     """The Bundle create view class."""
 
     template_name = "bundles/wagtailadmin/edit.html"
+
+    def form_valid(self, form: "BundleAdminForm") -> "HttpResponseBase":
+        self.form = form  # pylint: disable=attribute-defined-outside-init
+        try:
+            with transaction.atomic():
+                self.object = self.save_instance()  # pylint: disable=attribute-defined-outside-init
+        except Exception as e:  # pylint: disable=broad-exception-caught
+            error = getattr(e, "message", str(e))
+            error_message = f"Could not create the bundle due to one or more Dataset API errors: {error}"
+            messages.validation_error(self.request, error_message, form)
+            error_response: HttpResponseBase = self.render_to_response(self.get_context_data(form=form))
+            return error_response
+
+        response: HttpResponseBase = self.save_action()
+
+        hook_response: Optional[HttpResponseBase] = self.run_after_hook()
+        if hook_response is not None:
+            return hook_response
+
+        return response
 
     def save_instance(self) -> Bundle:
         """Automatically set the creating user on Bundle creation."""
@@ -108,6 +137,25 @@ class BundleEditView(EditView):
             kwargs["data"] = data
         return kwargs
 
+    def form_valid(self, form: "BundleAdminForm") -> "HttpResponseBase":
+        self.form = form  # pylint: disable=attribute-defined-outside-init
+        try:
+            with transaction.atomic():
+                self.object = self.save_instance()  # pylint: disable=attribute-defined-outside-init
+        except Exception as e:  # pylint: disable=broad-exception-caught
+            error_message = f"Could not update bundle due to one or more errors: {getattr(e, 'message', str(e))}"
+            messages.validation_error(self.request, error_message, form)
+            error_response: HttpResponseBase = self.render_to_response(self.get_context_data(form=form))
+            return error_response
+
+        response: HttpResponseBase = self.save_action()
+
+        hook_response: Optional[HttpResponseBase] = self.run_after_hook()
+        if hook_response is not None:
+            return hook_response
+
+        return response
+
     def save_instance(self) -> Bundle:
         instance: Bundle = self.form.save()
         self.has_content_changes = self.form.has_changed()
@@ -148,7 +196,7 @@ class BundleEditView(EditView):
 
         return instance
 
-    def run_after_hook(self) -> None:
+    def run_after_hook(self) -> Optional["HttpResponseBase"]:
         """This method allows calling hooks or additional logic after an action has been executed.
 
         In our case, we want to replicate the scheduled publication (send Slack notification, publish pages, update RC).
@@ -424,6 +472,42 @@ class BundleInspectView(InspectView):
         return "No datasets in bundle"
 
 
+class BundleDeleteView(DeleteView):
+    has_errors = False
+
+    @ons_bundle_api_enabled
+    def sync_bundle_deletion_with_dataset_api(self, instance: Bundle) -> None:
+        """Handle when a bundle is deleted."""
+        if not instance.bundle_api_content_id:
+            return
+
+        client = BundleAPIClient()
+
+        try:
+            client.delete_bundle(instance.bundle_api_content_id)
+            logger.info("Deleted bundle %s from Dataset API", instance.pk)
+
+        except BundleAPIClientError as e:
+            logger.error("Failed to delete bundle %s from Dataset API: %s", instance.pk, e)
+            raise ValidationError("Could not communicate with the Dataset API") from e
+
+    def delete_action(self) -> None:
+        with transaction.atomic():
+            bundle = self.object
+            log(instance=self.object, action="wagtail.delete")
+            self.object.delete()
+            self.sync_bundle_deletion_with_dataset_api(bundle)
+
+    def form_valid(self, form: "BundleAdminForm") -> "HttpResponseBase":
+        try:
+            response: HttpResponseBase = super().form_valid(form)
+            return response
+        except ValidationError as e:
+            error_message = f"Could not delete bundle due to one or more errors: {getattr(e, 'message', str(e))}"
+            messages.error(self.request, error_message)
+            return redirect(reverse(self.index_url_name))
+
+
 class BundleIndexView(IndexView):
     """The Bundle index view class.
 
@@ -545,6 +629,7 @@ class BundleViewSet(ModelViewSet):
     icon = "boxes-stacked"
     add_view_class = BundleCreateView
     edit_view_class = BundleEditView
+    delete_view_class = BundleDeleteView
     inspect_view_class = BundleInspectView
     index_view_class = BundleIndexView
     list_filter: ClassVar[list[str]] = ["status", "created_by"]
