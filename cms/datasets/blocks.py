@@ -51,8 +51,6 @@ class TimeSeriesPageLinkBlock(StructBlock):
         errors = {}
         parsed_url = urlparse(value["url"])
 
-        print(f"HOSTNAME: {parsed_url.hostname}, SCHEME: {parsed_url.scheme}")
-
         if not parsed_url.hostname or parsed_url.scheme != "https":
             errors["url"] = ValidationError(
                 "Please enter a valid URL. It should start with 'https://' and contain a valid domain name."
