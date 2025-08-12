@@ -16,7 +16,7 @@ def build_standard_resource_dict(page: "Page") -> dict:
     """Returns a dict with the standard resource fields.
     This covers the non-release case (and also forms the base of the release case).
     """
-    title = page.display_title if page.search_index_content_type == "statistical_article" else page.title
+    title = getattr(page, "display_title", page.title)
 
     return {
         "uri": build_page_uri(page),

@@ -34,7 +34,8 @@ class ResourceDictAssertions(SimpleTestCase):
         self.assertIn("language", payload)
 
         self.assertEqual(payload["uri"], build_page_uri(page))
-        self.assertEqual(payload["title"], page.title)
+        title = getattr(page, "display_title", page.title)
+        self.assertEqual(payload["title"], title)
         self.assertEqual(payload["summary"], page.summary)
 
         expected_ct = EXPECTED_CONTENT_TYPES[type(page).__name__]

@@ -37,7 +37,7 @@ class SearchResourcesViewTests(TestCase, ResourceDictAssertions, ExternalAPITest
             InformationPageFactory(),
             MethodologyPageFactory(),
             ReleaseCalendarPageFactory(),
-            StatisticalArticlePageFactory(),
+            StatisticalArticlePageFactory(news_headline=""),
             IndexPageFactory(slug="custom-slug-1"),
         ]
 
