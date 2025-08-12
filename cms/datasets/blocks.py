@@ -45,10 +45,8 @@ class TimeSeriesPageLinkBlock(StructBlock):
         """Checks that the given time series page URL matches the allowed domain."""
         errors = {}
 
-        if not value["url"].startswith(settings.TIME_SERIES_PAGE_ALLOWED_DOMAIN):
-            errors["url"] = ValidationError(
-                f"The time series page URL must start with {settings.TIME_SERIES_PAGE_ALLOWED_DOMAIN}"
-            )
+        if not value["url"].startswith(settings.ONS_WEBSITE_BASE_URL):
+            errors["url"] = ValidationError(f"The time series page URL must start with {settings.ONS_WEBSITE_BASE_URL}")
 
         if errors:
             raise StructBlockValidationError(block_errors=errors)

@@ -994,9 +994,6 @@ IFRAME_VISUALISATION_ALLOWED_DOMAINS = env.get(
     "IFRAME_VISUALISATION_ALLOWED_DOMAINS", "ons.gov.uk,onsdigital.uk"
 ).split(",")
 
-# Allowed prefixes for time series page URLs
-TIME_SERIES_PAGE_ALLOWED_DOMAIN = env.get("TIME_SERIES_PAGE_ALLOWED_DOMAIN", "https://ons.gov.uk")
-
 # FIXME: remove before going live
 ENFORCE_EXCLUSIVE_TAXONOMY = env.get("ENFORCE_EXCLUSIVE_TAXONOMY", "true").lower() == "true"
 ALLOW_TEAM_MANAGEMENT = env.get("ALLOW_TEAM_MANAGEMENT", "false").lower() == "true"

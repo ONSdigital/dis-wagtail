@@ -145,5 +145,5 @@ class TimeSeriesPageLinkBlockTestCase(TestCase):
 
         self.assertEqual(
             info.exception.block_errors["url"].message,
-            f"The time series page URL must start with {settings.TIME_SERIES_PAGE_ALLOWED_DOMAIN}",
+            f"The time series page URL must start with {settings.ONS_WEBSITE_BASE_URL}",
         )
