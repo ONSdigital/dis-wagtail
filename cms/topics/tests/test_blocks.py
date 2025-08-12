@@ -1,9 +1,10 @@
+from django.conf import settings
 from django.test import TestCase
-from wagtail.blocks import StreamBlockValidationError
+from wagtail.blocks import StreamBlockValidationError, StructBlockValidationError
 from wagtail.blocks.stream_block import StreamValue
 from wagtail.images.tests.utils import get_test_image_file
 
-from cms.datasets.blocks import TimeSeriesPageStoryBlock
+from cms.datasets.blocks import TimeSeriesPageLinkBlock, TimeSeriesPageStoryBlock
 from cms.home.models import HomePage
 from cms.images.models import CustomImage
 from cms.themes.tests.factories import ThemePageFactory
@@ -128,3 +129,21 @@ class TimeSeriesPageStoryBlockTestCase(TestCase):
 
         with self.assertRaises(StreamBlockValidationError):
             block.clean(stream_value)
+
+
+class TimeSeriesPageLinkBlockTestCase(TestCase):
+    def test_time_series_page_link_block_validation_fails_on_invalid_domain(self):
+        block = TimeSeriesPageLinkBlock()
+        value = {
+            "title": "Invalid Link",
+            "description": "This link is invalid",
+            "url": "https://invalid-domain.com/time-series",
+        }
+
+        with self.assertRaises(StructBlockValidationError) as info:
+            block.clean(value)
+
+        self.assertEqual(
+            info.exception.block_errors["url"].message,
+            f"The time series page URL must start with {settings.TIME_SERIES_PAGE_ALLOWED_DOMAIN}",
+        )

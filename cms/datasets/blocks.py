@@ -1,6 +1,7 @@
 from collections import defaultdict
 from urllib.parse import urlparse
 
+from django.conf import settings
 from django.core.exceptions import ValidationError
 from wagtail.blocks import (
     CharBlock,
@@ -8,6 +9,8 @@ from wagtail.blocks import (
     StreamBlockValidationError,
     StreamValue,
     StructBlock,
+    StructBlockValidationError,
+    StructValue,
     TextBlock,
     URLBlock,
 )
@@ -37,6 +40,20 @@ class TimeSeriesPageLinkBlock(StructBlock):
     class Meta:
         icon = "link"
         template = "templates/components/streamfield/time_series_link.html"
+
+    def clean(self, value: "StructValue") -> "StructValue":
+        """Checks that the given time series page URL matches the allowed domain."""
+        errors = {}
+
+        if not value["url"].startswith(settings.TIME_SERIES_PAGE_ALLOWED_DOMAIN):
+            errors["url"] = ValidationError(
+                f"The time series page URL must start with {settings.TIME_SERIES_PAGE_ALLOWED_DOMAIN}"
+            )
+
+        if errors:
+            raise StructBlockValidationError(block_errors=errors)
+
+        return super().clean(value)
 
 
 class TimeSeriesPageStoryBlock(StreamBlock):
