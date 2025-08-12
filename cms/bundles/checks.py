@@ -6,7 +6,7 @@ from django.conf import settings
 from django.core.checks import CheckMessage, Info, register
 from django.core.checks import Warning as DjangoWarning
 
-from cms.bundles.api import BundleAPIClient, BundleAPIClientError
+from cms.bundles.clients.api import BundleAPIClient, BundleAPIClientError
 
 
 @register()

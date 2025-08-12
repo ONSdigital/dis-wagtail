@@ -4,8 +4,8 @@ from django.core.checks import Info
 from django.core.checks import Warning as DjangoWarning
 from django.test import TestCase, override_settings
 
-from cms.bundles.api import BundleAPIClientError
 from cms.bundles.checks import check_bundle_api_health
+from cms.bundles.clients.api import BundleAPIClientError
 
 
 class BundleAPIHealthCheckTests(TestCase):

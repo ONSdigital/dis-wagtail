@@ -7,7 +7,7 @@ from django.core.exceptions import ValidationError
 from django.template.defaultfilters import pluralize
 from django.utils import timezone
 
-from cms.bundles.api import (
+from cms.bundles.clients.api import (
     BundleAPIClient,
     BundleAPIClientError,
     build_content_item_for_dataset,

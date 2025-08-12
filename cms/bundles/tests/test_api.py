@@ -5,7 +5,7 @@ from unittest.mock import Mock, patch
 import requests
 from django.test import TestCase, override_settings
 
-from cms.bundles.api import (
+from cms.bundles.clients.api import (
     BundleAPIClient,
     BundleAPIClientError,
     build_content_item_for_dataset,

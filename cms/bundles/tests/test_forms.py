@@ -10,7 +10,7 @@ from wagtail.test.utils.form_data import inline_formset, nested_form_data
 
 from cms.articles.tests.factories import ArticleSeriesPageFactory, StatisticalArticlePageFactory
 from cms.bundles.admin_forms import AddToBundleForm
-from cms.bundles.api import BundleAPIClientError
+from cms.bundles.clients.api import BundleAPIClientError
 from cms.bundles.enums import ACTIVE_BUNDLE_STATUS_CHOICES, BundleStatus
 from cms.bundles.models import Bundle
 from cms.bundles.tests.factories import BundleFactory, BundlePageFactory
