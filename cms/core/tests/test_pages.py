@@ -6,14 +6,19 @@ from django.template import TemplateDoesNotExist
 from django.template.loader import get_template as original_get_template
 from django.test.utils import override_settings
 from django.utils import translation
+from wagtail.coreutils import get_dummy_request
 from wagtail.models import Locale
 from wagtail.test.utils import WagtailPageTestCase
 
-from cms.core.tests.utils import extract_response_jsonld
+from cms.core.tests.utils import extract_datalayer_pushed_values, extract_response_jsonld
+from cms.home.models import HomePage
 from cms.standard_pages.tests.factories import IndexPageFactory, InformationPageFactory
 
 
 class HomePageTests(WagtailPageTestCase):
+    def setUp(self):
+        self.page = HomePage.objects.first()
+
     def tearDown(self):
         # Reset the translation to the default language after each test to avoid
         # test contamination issues.
@@ -74,6 +79,18 @@ class HomePageTests(WagtailPageTestCase):
         self.assertNotContains(response, "To access the administrative interface, please use the following option(s):")
         self.assertNotContains(response, "Wagtail Core Default Login")
         self.assertNotContains(response, "Florence Login")
+
+    @override_settings(GOOGLE_TAG_MANAGER_CONTAINER_ID="GTM-XXXXXX")
+    def test_page_gtm_attributes(self):
+        response = self.client.get("/")
+
+        self.assertEqual(response.status_code, 200)
+
+        datalayer_values = extract_datalayer_pushed_values(response.text)
+        self.assertEqual(datalayer_values["product"], "wagtail")
+        for key, value in self.page.get_analytics_values(get_dummy_request(path="/")).items():
+            self.assertIn(key, datalayer_values)
+            self.assertEqual(datalayer_values[key], value)
 
 
 class PageCanonicalUrlTests(WagtailPageTestCase):

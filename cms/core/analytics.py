@@ -17,3 +17,8 @@ def add_table_of_contents_gtm_attributes(items: Iterable[dict[str, Any]]) -> Non
             "data-gtm-label": item["text"],
             "data-gtm-section-number": section_number,
         }
+
+
+def bool_to_yes_no(value: bool) -> str:
+    """Converts a boolean True or False value to 'yes' or 'no' respectively."""
+    return "yes" if value else "no"

@@ -23,7 +23,7 @@ from cms.articles.forms import StatisticalArticlePageAdminForm
 from cms.articles.panels import HeadlineFiguresFieldPanel
 from cms.articles.utils import serialize_correction_or_notice
 from cms.bundles.mixins import BundledPageMixin
-from cms.core.analytics import add_table_of_contents_gtm_attributes, format_date_for_gtm
+from cms.core.analytics import add_table_of_contents_gtm_attributes, bool_to_yes_no, format_date_for_gtm
 from cms.core.blocks.headline_figures import HeadlineFiguresItemBlock
 from cms.core.blocks.panels import CorrectionBlock, NoticeBlock
 from cms.core.blocks.stream_blocks import SectionStoryBlock
@@ -687,7 +687,7 @@ class StatisticalArticlePage(BundledPageMixin, RoutablePageMixin, BasePage):  # 
             "outputSeries": parent_series.slug,
             "outputEdition": self.slug,
             "releaseDate": format_date_for_gtm(self.release_date),
-            "latestRelease": self.is_latest,
+            "latestRelease": bool_to_yes_no(self.is_latest),
             "wordCount": self.word_count,
         }
 
@@ -708,7 +708,7 @@ class StatisticalArticlePage(BundledPageMixin, RoutablePageMixin, BasePage):  # 
         """Returns the total word count for the article page's display title, summary and content."""
         # Render the content as HTML and get the text without HTML tags so we can count words
         html_content = self.content.render_as_block()
-        soup_content = BeautifulSoup(str(html_content), "html.parser")
+        soup_content = BeautifulSoup(str(html_content), "html5lib")
         stripped_content = soup_content.text
         content_word_count = len(str(stripped_content).split())
 
