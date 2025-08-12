@@ -147,7 +147,11 @@ class TimeSeriesPageStoryBlockTestCase(TestCase):
         )
 
         with self.assertRaises(StreamBlockValidationError):
-            block.clean(stream_value)
+            cleaned_value = block.clean(stream_value)
+
+            self.assertEqual(
+                cleaned_value[0].value["url"], "https://example.com/1"
+            )  # Ensure that the trailing slash has been removed
 
 
 class TimeSeriesPageLinkBlockTestCase(TestCase):
