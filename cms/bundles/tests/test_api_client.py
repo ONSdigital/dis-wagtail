@@ -274,10 +274,11 @@ class BundleAPIClientTests(TestCase):
         responses.post(f"{self.base_url}/bundles", body="Invalid JSON response", status=HTTPStatus.OK)
 
         client = BundleAPIClient(base_url=self.base_url)
-        result = client.create_bundle({"title": "Test"})
 
-        # Should return success message when JSON parsing fails
-        self.assertEqual(result, {"status": "success", "message": "Operation completed successfully"})
+        with self.assertRaises(BundleAPIClientError) as context:
+            client.create_bundle({"title": "Test"})
+
+        self.assertIn("Expecting value: line 1 column 1 (char 0)", str(context.exception))
 
     def test_client_initialization_with_default_url(self):
         client = BundleAPIClient()

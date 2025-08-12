@@ -110,13 +110,7 @@ class BundleAPIClient:
         if response.status_code == HTTPStatus.NO_CONTENT:
             return {"status": "success", "message": BundleAPIMessage.OPERATION_SUCCESS}
 
-        # Try to parse JSON response
-        try:
-            json_data: dict[str, Any] = response.json()
-            return json_data
-        except ValueError:
-            # Request was successful but returned non-JSON response - handle gracefully
-            return {"status": "success", "message": BundleAPIMessage.OPERATION_SUCCESS}
+        return response.json()
 
     def _format_http_error(self, error: requests.exceptions.HTTPError, method: str, url: str) -> str:
         """Format HTTP error messages with appropriate context.
