@@ -791,3 +791,16 @@ class AccordionBlockTestCase(TestCase):
         context = self.accordion_block.get_context(value)
 
         self.assertEqual(len(context["accordion_sections"]), 0)
+
+    def test_accordion_section_heading_attributes(self):
+        """Test that AccordionSectionBlock includes correct attributes for GTM tracking."""
+        test_data = [{"title": "Test Section", "content": "Test content"}]
+        value = self.accordion_block.to_python(test_data)
+        context = self.accordion_block.get_context(value)
+
+        self.assertIn("headingAttributes", context["accordion_sections"][0])
+        heading_attributes = context["accordion_sections"][0]["headingAttributes"]
+        self.assertEqual(heading_attributes["data-ga-event"], "interaction")
+        self.assertEqual(heading_attributes["data-ga-interaction-type"], "accordion")
+        self.assertEqual(heading_attributes["data-ga-interaction-label"], "Test Section")
+        self.assertEqual(heading_attributes["data-ga-click-position"], 1)
