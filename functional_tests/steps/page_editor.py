@@ -36,9 +36,16 @@ def click_the_given_button(context: Context, button_text: str) -> None:
     context.page.get_by_role("button", name=button_text).click()
 
 
-@when("the user opens the preview in a new tab")
-def open_preview_in_new_tab(context: Context) -> None:
-    context.page.get_by_role("link", name="Preview in new tab").click()
+@step('The user opens the preview in a new tab, using the "{preview_mode}" preview mode')
+def open_preview_new_tab_with_preview_mode(context: Context, preview_mode: str):
+    click_the_given_button(context, "Preview")
+    context.page.get_by_label("Preview mode").select_option(preview_mode)
+    with context.page.expect_popup() as preview_tab:
+        context.page.get_by_role("link", name="Preview in new tab").click()
+    # closes context.page (admin page)
+    context.page.close()
+    # assigns context.page to the pop up tab
+    context.page = preview_tab.value
 
 
 @when("the user edits the {page} page")
@@ -192,3 +199,8 @@ def user_saves_in_navigation_settings(context: Context):
 @when("the user clicks toggle preview")
 def user_clicks_view_live(context: Context):
     context.page.get_by_role("button", name="Toggle preview").click()
+
+
+@step("the user returns to editing the published page")
+def user_returns_to_editing_the_published_page(context: Context):
+    context.page.get_by_role("link", name="Edit").click()
