@@ -77,7 +77,12 @@ class DatasetStoryBlock(StreamBlock):
         # For each dataset URL path, record the indices of the blocks it appears in
         url_paths = defaultdict(set)
         for block_index, block in enumerate(cleaned_value):
-            url_path = block.value.website_url if block.block_type == "dataset_lookup" else block.value["url"]
+            if block.block_type == "dataset_lookup":
+                # For dataset lookup blocks, use the website URL
+                url_path = block.value.website_url
+            else:
+                block.value["url"] = block.value["url"].rstrip("/")
+                url_path = block.value["url"]
             url_paths[url_path].add(block_index)
 
         block_errors = {}
