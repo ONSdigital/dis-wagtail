@@ -305,7 +305,7 @@ def extract_content_id_from_bundle_response(response: dict[str, Any], dataset: A
     if (
         metadata.get("dataset_id") == dataset.namespace
         and metadata.get("edition_id") == dataset.edition
-        and metadata.get("version_id") == int(dataset.version)
+        and metadata.get("version_id") == dataset.version
     ):
         content_id = response.get("id")
         return content_id if content_id is not None else None

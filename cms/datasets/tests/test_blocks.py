@@ -11,7 +11,7 @@ class TestDatasetStoryBlock(TestCase):
         self.lookup_dataset = Dataset.objects.create(
             namespace="1",
             edition="test1_edition",
-            version="test_version",
+            version=1,
             title="test_title",
             description="test_description",
         )
@@ -53,7 +53,7 @@ class TestDatasetStoryBlock(TestCase):
         second_dataset = Dataset.objects.create(
             namespace="2",
             edition="test_edition_2",
-            version="test_version_2",
+            version=2,
             title="test_title_2",
             description="test description 2",
         )

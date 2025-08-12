@@ -70,7 +70,7 @@ class Dataset(models.Model):  # type: ignore[django-manager-missing]
     title = models.CharField(max_length=255)
     description = models.TextField()
     edition = models.CharField(max_length=255)
-    version = models.CharField(max_length=255)
+    version = models.IntegerField()
 
     class Meta:
         constraints: ClassVar[list[models.BaseConstraint]] = [

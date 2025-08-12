@@ -563,7 +563,7 @@ class ReleaseCalendarPageRenderTestCase(TestCase):
         lookup_dataset = Dataset.objects.create(
             namespace="LOOKUP",
             edition="lookup_edition",
-            version="lookup_version",
+            version=1,
             title="test lookup",
             description="lookup description",
         )
