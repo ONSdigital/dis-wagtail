@@ -161,7 +161,7 @@ class TestNotifications(TestCase):
         self.assertEqual(len(mail.outbox), 0)
 
 
-@override_settings(ONS_BUNDLE_API_ENABLED=True)
+@override_settings(DIS_DATASETS_BUNDLE_API_ENABLED=True)
 @responses.activate
 class TestBundleAPISignalHandlers(TestCase):
     def test_bundle_creation_does_not_call_api(self):
@@ -605,7 +605,7 @@ class TestBundleAPISignalHandlers(TestCase):
         self.assertTrue(bundle.teams.filter(team=team).exists())
 
 
-@override_settings(ONS_BUNDLE_API_ENABLED=False)
+@override_settings(DIS_DATASETS_BUNDLE_API_ENABLED=False)
 class TestBundleAPISignalHandlersDisabled(TestCase):
     def setUp(self):
         """Set up the test case."""

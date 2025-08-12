@@ -26,9 +26,9 @@ class BundleAPIClient:
         Args:
             base_url: The base URL for the API. If not provided, uses settings.ONS_API_BASE_URL
         """
-        self.base_url = base_url or settings.ONS_API_BASE_URL
+        self.base_url = base_url or settings.DIS_DATASETS_BUNDLE_BASE_API_URL
         self.session = requests.Session()
-        self.is_enabled = getattr(settings, "ONS_BUNDLE_API_ENABLED", False)
+        self.is_enabled = getattr(settings, "DIS_DATASETS_BUNDLE_API_ENABLED", False)
 
         # Set default headers
         self.session.headers.update(
@@ -63,7 +63,7 @@ class BundleAPIClient:
         url = f"{self.base_url}/{endpoint.lstrip('/')}"
 
         if not self.is_enabled:
-            logger.info("Skipping API call to '%s' because ONS_BUNDLE_API_ENABLED is False", url)
+            logger.info("Skipping API call to '%s' because DIS_DATASETS_BUNDLE_API_ENABLED is False", url)
             return {"status": "disabled", "message": "Bundle API is disabled"}
 
         try:

@@ -326,7 +326,7 @@ class BundleAdminFormTestCase(TestCase):
         self.assertEqual(form.cleaned_data["publication_date"], self.bundle.publication_date)
 
 
-@override_settings(ONS_BUNDLE_API_ENABLED=True)
+@override_settings(DIS_DATASETS_BUNDLE_API_ENABLED=True)
 class BundleDatasetValidationTestCase(TestCase):
     """Test cases for dataset validation in the BundleAdminForm."""
 
@@ -630,7 +630,7 @@ class BundleDatasetValidationTestCase(TestCase):
         self.mock_client.get_bundle_contents.assert_called_once_with("test-bundle-123")
 
 
-@override_settings(ONS_BUNDLE_API_ENABLED=False)
+@override_settings(DIS_DATASETS_BUNDLE_API_ENABLED=False)
 class BundleDatasetValidationDisabledTestCase(TestCase):
     """Test cases for dataset validation when API is disabled."""
 
@@ -649,7 +649,7 @@ class BundleDatasetValidationDisabledTestCase(TestCase):
         self.patcher.stop()
 
     def test_dataset_validation_skipped_when_api_disabled(self):
-        """Test that dataset validation is skipped when ONS_BUNDLE_API_ENABLED is False."""
+        """Test that dataset validation is skipped when DIS_DATASETS_BUNDLE_API_ENABLED is False."""
         dataset = DatasetFactory(id=123, title="Test Dataset")
 
         raw_data = {
@@ -667,7 +667,7 @@ class BundleDatasetValidationDisabledTestCase(TestCase):
         self.mock_client.get_bundle_contents.assert_not_called()
 
 
-@override_settings(ONS_BUNDLE_API_ENABLED=True)
+@override_settings(DIS_DATASETS_BUNDLE_API_ENABLED=True)
 class BundleFormSaveTestCase(TestCase):
     """Test cases for the BundleAdminForm save method."""
 
@@ -873,7 +873,7 @@ class BundleFormSaveTestCase(TestCase):
         self.assertEqual(bundle.bundle_api_id, "existing-api-id")
 
 
-@override_settings(ONS_BUNDLE_API_ENABLED=False)
+@override_settings(DIS_DATASETS_BUNDLE_API_ENABLED=False)
 class BundleFormSaveDisabledTestCase(TestCase):
     """Test cases for the BundleAdminForm save method when API is disabled."""
 

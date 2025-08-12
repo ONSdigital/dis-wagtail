@@ -966,8 +966,11 @@ SLACK_NOTIFICATIONS_WEBHOOK_URL = env.get("SLACK_NOTIFICATIONS_WEBHOOK_URL")
 # API bases
 ONS_API_BASE_URL = env.get("ONS_API_BASE_URL", "https://api.beta.ons.gov.uk/v1")
 DATASETS_BASE_API_URL = env.get("DATASETS_BASE_API_URL", f"{ONS_API_BASE_URL}/datasets")  # used for dataset choosers
+DIS_DATASETS_BUNDLE_BASE_API_URL = env.get("DIS_DATASETS_BUNDLE_BASE_API_URL", ONS_API_BASE_URL)
 TOPIC_BASE_API_URL = env.get("TOPIC_BASE_API_URL", f"{ONS_API_BASE_URL}/topics")  # used to sync topics
 
+# Feature flag to enable/disable interaction with the ONS Bundle API
+DIS_DATASETS_BUNDLE_API_ENABLED = env.get("DIS_DATASETS_BUNDLE_API_ENABLED", "false").lower() == "true"
 
 ONS_WEBSITE_BASE_URL = env.get("ONS_WEBSITE_BASE_URL", "https://www.ons.gov.uk")
 ONS_ORGANISATION_NAME = env.get("ONS_ORGANISATION_NAME", "Office for National Statistics")
@@ -1036,9 +1039,6 @@ ID_TOKEN_COOKIE_NAME = "id_token"  # noqa: S105
 WAGTAILADMIN_HOME_PATH = env.get("WAGTAILADMIN_HOME_PATH", "admin/")
 DJANGO_ADMIN_HOME_PATH = env.get("DJANGO_ADMIN_HOME_PATH", "django-admin/")
 SESSION_RENEWAL_OFFSET_SECONDS = env.get("SESSION_RENEWAL_OFFSET_SECONDS", 60 * 5)  # 5 minutes
-
-# Feature flag to enable/disable interaction with the ONS Bundle API
-ONS_BUNDLE_API_ENABLED = False
 
 # Contact Us URL for error pages
 CONTACT_US_URL = env.get("CONTACT_US_URL", "/aboutus/contactus/generalandstatisticalenquiries")

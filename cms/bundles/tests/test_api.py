@@ -14,7 +14,7 @@ from cms.bundles.api import (
 )
 
 
-@override_settings(ONS_BUNDLE_API_ENABLED=True)
+@override_settings(DIS_DATASETS_BUNDLE_API_ENABLED=True)
 class BundleAPIClientTests(TestCase):
     def setUp(self):
         self.base_url = "https://test-api.example.com"
@@ -348,7 +348,7 @@ class BundleAPIClientTests(TestCase):
             self.assertEqual(client.base_url, "https://api.beta.ons.gov.uk/v1")
 
 
-@override_settings(ONS_BUNDLE_API_ENABLED=False)
+@override_settings(DIS_DATASETS_BUNDLE_API_ENABLED=False)
 class BundleAPIClientDisabledTests(TestCase):
     def setUp(self):
         self.base_url = "https://test-api.example.com"

@@ -14,7 +14,7 @@ class OnsBundleApiEnabledDecoratorTest(TestCase):
 
         decorated_func = ons_bundle_api_enabled(mock_func)
 
-        with self.settings(ONS_BUNDLE_API_ENABLED=True):
+        with self.settings(DIS_DATASETS_BUNDLE_API_ENABLED=True):
             decorated_func("foo", kwarg1="bar")
 
         # Assert that our mock function was called exactly once with the correct arguments
@@ -28,7 +28,7 @@ class OnsBundleApiEnabledDecoratorTest(TestCase):
 
         decorated_func = ons_bundle_api_enabled(mock_func)
 
-        with self.settings(ONS_BUNDLE_API_ENABLED=False):
+        with self.settings(DIS_DATASETS_BUNDLE_API_ENABLED=False):
             result = decorated_func("foo", kwarg1="bar")
 
         # Assert that our mock function was never called

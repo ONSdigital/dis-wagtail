@@ -15,7 +15,7 @@ def check_bundle_api_health(app_configs: Optional[Sequence[AppConfig]], **kwargs
     errors: list[CheckMessage] = []
 
     # Only check if Bundle API is enabled
-    if not getattr(settings, "ONS_BUNDLE_API_ENABLED", False):
+    if not getattr(settings, "DIS_DATASETS_BUNDLE_API_ENABLED", False):
         return errors
 
     try:
@@ -24,7 +24,7 @@ def check_bundle_api_health(app_configs: Optional[Sequence[AppConfig]], **kwargs
 
         # Check if the response indicates healthy status
         if response.get("status") == "disabled":
-            # API is disabled, which is expected when ONS_BUNDLE_API_ENABLED is False
+            # API is disabled, which is expected when DIS_DATASETS_BUNDLE_API_ENABLED is False
             return errors
 
         # If we got here, the API responded, which is good
