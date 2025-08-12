@@ -979,8 +979,11 @@ KAFKA_API_VERSION = tuple(map(int, os.getenv("KAFKA_API_VERSION", "3.5.1").split
 
 SEARCH_INDEX_EXCLUDED_PAGE_TYPES = (
     "HomePage",
+    "ArticlesIndexPage",
     "ArticleSeriesPage",
+    "MethodologyIndexPage",
     "ReleaseCalendarIndex",
+    "ThemeIndexPage",
     "ThemePage",
     "TopicPage",
     "Page",

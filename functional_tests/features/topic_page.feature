@@ -2,7 +2,7 @@ Feature: CMS users can draft, edit, and publish topic pages
 
     Scenario: A CMS user can feature an article series
         Given a superuser logs into the admin site
-        And a topic page exists under a theme page
+        And a topic page exists under the homepage
         And the topic page has a statistical article in a series
         When the user edits the topic page
         And the user clicks the "Choose Article Series page" button
@@ -13,7 +13,7 @@ Feature: CMS users can draft, edit, and publish topic pages
         And the user can see the topic page featured article
 
     Scenario: The featured series on a topic page displays the latest article
-        Given a topic page exists under a theme page
+        Given a topic page exists under the homepage
         And the user has created a statistical article in a series
         And the user has featured the series
         When the user creates a new statistical article in the series
@@ -22,7 +22,7 @@ Feature: CMS users can draft, edit, and publish topic pages
 
     Scenario: The translated version of the topic page uses the same taxonomy
         Given a superuser logs into the admin site
-        And a topic page exists under a theme page
+        And a topic page exists under the homepage
         And the user creates a Welsh version of the home page
         When the user edits the topic page
         And the user switches to the Welsh locale
@@ -88,7 +88,7 @@ Feature: CMS users can draft, edit, and publish topic pages
 
     Scenario: A CMS user can add datasets to a topic page
         Given a superuser logs into the admin site
-        And a topic page exists under a theme page
+        And a topic page exists under the homepage
         When the user edits the topic page
         And looks up and selects a dataset
         And the user clicks "Publish"

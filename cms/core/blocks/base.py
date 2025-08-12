@@ -36,15 +36,16 @@ class LinkBlockStructValue(StructValue):
                 value["description"] = desc
 
         if (page := self.get("page")) and page.live:
+            page = page.specific_deferred
             value = {
                 "url": page.get_url(request=context.get("request") if context else None),
-                "text": title or getattr(page.specific_deferred, "display_title", page.title),
+                "text": title or getattr(page, "display_title", page.title),
             }
             if has_description:
-                value["description"] = desc or getattr(page.specific_deferred, "summary", "")
+                value["description"] = desc or getattr(page, "summary", "")
 
             content_type_label = get_content_type_for_page(page)
-            page_release_date = page.specific_deferred.publication_date
+            page_release_date = page.publication_date
 
         if not value:
             return None
@@ -97,7 +98,7 @@ class LinkBlock(StructBlock):
     external_url = URLBlock(required=False, label="or External Link")
     title = CharBlock(
         help_text="Populate when adding an external link. "
-        "When choosing a page, you can leave it blank to use the page's own title",
+        "When choosing a page, you can leave it blank to use the page’s own title",
         required=False,
     )
 
@@ -108,7 +109,7 @@ class LinkBlock(StructBlock):
     def clean(self, value: LinkBlockStructValue) -> LinkBlockStructValue:
         """Validate that either a page or external link is provided, and that external links have a title."""
         value = super().clean(value)
-        page = value["page"]
+        page = value.get("page")
         external_url = value["external_url"]
         errors = {}
         non_block_errors = ErrorList()

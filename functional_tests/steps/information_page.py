@@ -58,10 +58,11 @@ def check_information_page_content(context: Context, default_language=True) -> N
     page = context.page
     expect(page.get_by_role("heading", name="Test Info Page")).to_be_visible()
     expect(page.get_by_text("My test information page")).to_be_visible()
-    expect(page.get_by_text("Last updated")).to_be_visible()
     if default_language:
+        expect(page.get_by_text("Last updated")).to_be_visible()
         expect(context.page.get_by_text("1 January 2024")).to_be_visible()
     else:
+        expect(page.get_by_text("Diweddarwyd Diwethaf")).to_be_visible()
         expect(context.page.get_by_text("1 Ionawr 2024")).to_be_visible()
 
     expect(page.get_by_role("heading", name="Some example rich text content")).to_be_visible()
