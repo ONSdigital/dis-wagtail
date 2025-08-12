@@ -3,8 +3,7 @@ from contextlib import contextmanager
 from typing import Any
 
 import responses
-
-from cms.datasets.models import DATASETS_BASE_API_URL
+from django.conf import settings
 
 
 @contextmanager
@@ -32,7 +31,7 @@ def mock_datasets_responses(datasets: list[Mapping[str, Any]]) -> responses.Requ
     with responses.RequestsMock(assert_all_requests_are_fired=False) as mock_responses:
         mock_responses.add(
             responses.GET,
-            DATASETS_BASE_API_URL,
+            settings.DATASETS_BASE_API_URL,
             json={
                 "items": datasets,
                 "total_count": len(datasets),
@@ -41,7 +40,7 @@ def mock_datasets_responses(datasets: list[Mapping[str, Any]]) -> responses.Requ
         for dataset in datasets:
             mock_responses.add(
                 responses.GET,
-                f"{DATASETS_BASE_API_URL}/{dataset['id']}",
+                f"{settings.DATASETS_BASE_API_URL}/{dataset['id']}",
                 json=dataset,
             )
 

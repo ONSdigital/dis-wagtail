@@ -963,7 +963,11 @@ START_TIME = datetime.datetime.now(tz=datetime.UTC)
 
 SLACK_NOTIFICATIONS_WEBHOOK_URL = env.get("SLACK_NOTIFICATIONS_WEBHOOK_URL")
 
+# API bases
 ONS_API_BASE_URL = env.get("ONS_API_BASE_URL", "https://api.beta.ons.gov.uk/v1")
+DATASETS_BASE_API_URL = env.get("DATASETS_BASE_API_URL", f"{ONS_API_BASE_URL}/datasets")
+
+
 ONS_WEBSITE_BASE_URL = env.get("ONS_WEBSITE_BASE_URL", "https://www.ons.gov.uk")
 ONS_ORGANISATION_NAME = env.get("ONS_ORGANISATION_NAME", "Office for National Statistics")
 
