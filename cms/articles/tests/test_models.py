@@ -103,20 +103,67 @@ class StatisticalArticlePageTestCase(WagtailTestUtils, TestCase):
             {"type": "section", "value": {"title": "Test Section", "content": [{"type": "rich_text", "value": "text"}]}}
         ]
 
-        self.assertListEqual(self.page.table_of_contents, [{"url": "#test-section", "text": "Test Section"}])
+        toc = self.page.table_of_contents
+        self.assertEqual(len(toc), 1)
+        self.assertEqual(toc[0]["url"], "#test-section")
+        self.assertEqual(toc[0]["text"], "Test Section")
 
     def test_table_of_contents_with_cite_this_page(self):
         """Test table_of_contents includes cite this page when enabled."""
         self.page.show_cite_this_page = True
 
         toc = self.page.table_of_contents
-        self.assertIn({"url": "#cite-this-page", "text": "Cite this article"}, toc)
+        self.assertEqual(len(toc), 1)
+        self.assertEqual(toc[0]["url"], "#cite-this-page")
+        self.assertEqual(toc[0]["text"], "Cite this article")
 
     def test_table_of_contents_with_contact_details(self):
         """Test table_of_contents includes contact details when present."""
         self.page.contact_details = ContactDetailsFactory()
         toc = self.page.table_of_contents
-        self.assertIn({"url": "#contact-details", "text": "Contact details"}, toc)
+        self.assertEqual(len(toc), 1)
+        self.assertEqual(
+            toc[0]["url"],
+            "#contact-details",
+        )
+        self.assertEqual(toc[0]["text"], "Contact details")
+
+    def test_table_of_contents_with_no_content(self):
+        """Test table_of_contents returns empty list when no content."""
+        self.page.content = []
+        self.assertListEqual(self.page.table_of_contents, [])
+
+    def test_table_of_contents_with_multiple_sections(self):
+        """Test table_of_contents with multiple content sections."""
+        self.page.content = [
+            {"type": "section", "value": {"title": "Section 1", "content": [{"type": "rich_text", "value": "text"}]}},
+            {"type": "section", "value": {"title": "Section 2", "content": [{"type": "rich_text", "value": "text"}]}},
+        ]
+
+        toc = self.page.table_of_contents
+        self.assertEqual(len(toc), 2)
+        self.assertEqual(toc[0]["text"], "Section 1")
+        self.assertEqual(toc[0]["url"], "#section-1")
+        self.assertEqual(toc[1]["text"], "Section 2")
+        self.assertEqual(toc[1]["url"], "#section-2")
+
+    def test_table_of_contents_attributes(self):
+        """Test table_of_contents returns correct attributes."""
+        self.page.content = [
+            {"type": "section", "value": {"title": "Section 1", "content": [{"type": "rich_text", "value": "text"}]}},
+            {"type": "section", "value": {"title": "Section 2", "content": [{"type": "rich_text", "value": "text"}]}},
+        ]
+        self.page.show_cite_this_page = True
+        self.page.contact_details = ContactDetailsFactory()
+
+        toc = self.page.table_of_contents
+        self.assertEqual(len(toc), 4)
+        expected_attribute_labels = ["Section 1", "Section 2", "Cite this article", "Contact details"]
+        for idx, toc_item in enumerate(toc):
+            self.assertEqual(toc_item["attributes"]["data-ga-label"], expected_attribute_labels[idx])
+            self.assertEqual(toc_item["attributes"]["data-ga-section-number"], idx + 1)
+            self.assertEqual(toc_item["attributes"]["data-ga-event"], "table-of-contents-click")
+            self.assertEqual(toc_item["attributes"]["data-ga-interactionType"], "table-of-contents")
 
     def test_is_latest(self):
         """Test is_latest returns True for most recent page."""

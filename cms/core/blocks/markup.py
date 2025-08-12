@@ -39,9 +39,9 @@ class HeadingBlock(blocks.CharBlock):
                 "url": "#" + slugify(value),
                 "text": value,
                 "attributes": {
-                    "data-gtm-event": "navigation-onpage",
-                    "data-gtm-interactionType": "table-of-contents",
-                    "data-gtm-sectionTitle": value,
+                    "data-ga-event": "navigation-onpage",
+                    "data-ga-interactionType": "table-of-contents",
+                    "data-ga-sectionTitle": value,
                 },
             }
         ]

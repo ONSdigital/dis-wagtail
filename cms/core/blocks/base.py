@@ -88,7 +88,7 @@ class LinkBlockStructValue(StructValue):
 
             if attributes := link.get("attributes"):
                 related_link["attributes"] = attributes
-                related_link["attributes"]["data-gtm-section-title"] = "Related links"
+                related_link["attributes"]["data-ga-section-title"] = "Related links"
 
             return related_link
         return None
@@ -98,11 +98,11 @@ class LinkBlockStructValue(StructValue):
         link_value: dict[str, str], target_page: Optional["BasePage"] = None
     ) -> dict[str, str]:
         attributes = {
-            "data-gtm-event": "navigation-click",
-            "data-gtm-navigation-type": "links-within-content",
-            "data-gtm-click-path": link_value["url"],
-            "data-gtm-link-text": link_value["text"],
-            "data-gtm-section-title": "",
+            "data-ga-event": "navigation-click",
+            "data-ga-navigation-type": "links-within-content",
+            "data-ga-click-path": link_value["url"],
+            "data-ga-link-text": link_value["text"],
+            "data-ga-section-title": "",
         }
 
         if not target_page:
@@ -110,17 +110,17 @@ class LinkBlockStructValue(StructValue):
 
         target_page = target_page.specific_deferred
 
-        attributes["data-gtm-click-content-type"] = target_page.gtm_content_type
+        attributes["data-ga-click-content-type"] = target_page.gtm_content_type
         if content_group := target_page.gtm_content_group:
-            attributes["data-gtm-click-content-group"] = content_group
+            attributes["data-ga-click-content-group"] = content_group
 
         if target_page.__class__.__name__ == "StatisticalArticlePage":
             analytics_values = target_page.cached_analytics_values
             attributes.update(
                 {
-                    "data-gtm-click-output-series": analytics_values.get("outputSeries", ""),
-                    "data-gtm-click-output-edition": analytics_values.get("outputEdition", ""),
-                    "data-gtm-click-release-date": analytics_values.get("releaseDate", ""),
+                    "data-ga-click-output-series": analytics_values.get("outputSeries", ""),
+                    "data-ga-click-output-edition": analytics_values.get("outputEdition", ""),
+                    "data-ga-click-release-date": analytics_values.get("releaseDate", ""),
                 }
             )
 

@@ -40,26 +40,26 @@ def _extract_item(
     """
     item: NavigationItem = {
         "attributes": {
-            "data-gtm-event": "navigation-click",
-            "data-gtm-navigation-type": "top-navigation",  # TODO make dynamic
+            "data-ga-event": "navigation-click",
+            "data-ga-navigation-type": "top-navigation",  # TODO make dynamic
         }
     }
 
     if value["external_url"]:
         item[text_key] = value["title"]
         item["url"] = value["external_url"]
-        item["attributes"]["data-gtm-link-text"] = value["title"]
-        item["attributes"]["data-gtm-click-path"] = value["external_url"]
+        item["attributes"]["data-ga-link-text"] = value["title"]
+        item["attributes"]["data-ga-click-path"] = value["external_url"]
 
     elif (page := value.get("page")) and page.live:
         item[text_key] = value["title"] or getattr(page.specific_deferred, "display_title", page.title)
         item["url"] = page.get_url(request=request)
-        item["attributes"]["data-gtm-link-text"] = item[text_key]
-        item["attributes"]["data-gtm-click-path"] = item["url"]
-        item["attributes"]["data-gtm-click-content-type"] = value["page"].cached_analytics_values.get(
+        item["attributes"]["data-ga-link-text"] = item[text_key]
+        item["attributes"]["data-ga-click-path"] = item["url"]
+        item["attributes"]["data-ga-click-content-type"] = value["page"].cached_analytics_values.get(
             "contentType", "page"
         )
-        item["attributes"]["data-gtm-click-content-group"] = value["page"].cached_analytics_values.get(
+        item["attributes"]["data-ga-click-content-group"] = value["page"].cached_analytics_values.get(
             "contentGroup", "page"
         )
 
