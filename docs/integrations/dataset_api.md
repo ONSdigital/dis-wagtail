@@ -5,8 +5,8 @@ logic.
 
 ## Environment variables
 
-| Var                | Notes                                               |
-| ------------------ |-----------------------------------------------------|
+| Var                     | Notes                                               |
+| ----------------------- | --------------------------------------------------- |
 | `DATASETS_BASE_API_URL` | Defaults to https://api.beta.ons.gov.uk/v1/datasets |
 
 ## Next
