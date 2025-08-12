@@ -381,24 +381,15 @@ class ContentItemUtilityTests(TestCase):
     def test_extract_content_id_from_bundle_response_found(self):
         """Test extracting content_id when the dataset is found in the response."""
         response = {
-            "contents": [
-                {
-                    "id": "content-123",
-                    "metadata": {
-                        "dataset_id": "cpih",
-                        "edition_id": "time-series",
-                        "version_id": "1",
-                    },
-                },
-                {
-                    "id": "content-456",
-                    "metadata": {
-                        "dataset_id": "other-dataset",
-                        "edition_id": "time-series",
-                        "version_id": "2",
-                    },
-                },
-            ]
+            "bundle_id": "9e4e3628-fc85-48cd-80ad-e005d9d283ff",
+            "content_type": "DATASET",
+            "metadata": {
+                "dataset_id": "cpih",
+                "edition_id": "time-series",
+                "title": "Consumer Prices Index",
+                "version_id": 1,
+            },
+            "id": "content-123",
         }
 
         content_id = extract_content_id_from_bundle_response(response, self.dataset)
@@ -407,16 +398,15 @@ class ContentItemUtilityTests(TestCase):
     def test_extract_content_id_from_bundle_response_not_found(self):
         """Test extracting content_id when the dataset is not found in the response."""
         response = {
-            "contents": [
-                {
-                    "id": "content-456",
-                    "metadata": {
-                        "dataset_id": "other-dataset",
-                        "edition_id": "time-series",
-                        "version_id": "2",
-                    },
-                },
-            ]
+            "bundle_id": "9e4e3628-fc85-48cd-80ad-e005d9d283ff",
+            "content_type": "DATASET",
+            "metadata": {
+                "dataset_id": "other-dataset",
+                "edition_id": "time-series",
+                "title": "Consumer Prices Index",
+                "version_id": 1,
+            },
+            "id": "content-456",
         }
 
         content_id = extract_content_id_from_bundle_response(response, self.dataset)
@@ -424,14 +414,5 @@ class ContentItemUtilityTests(TestCase):
 
     def test_extract_content_id_from_bundle_response_empty_contents(self):
         """Test extracting content_id when the response has no contents."""
-        response = {"contents": []}
-
-        content_id = extract_content_id_from_bundle_response(response, self.dataset)
-        self.assertIsNone(content_id)
-
-    def test_extract_content_id_from_bundle_response_missing_contents(self):
-        """Test extracting content_id when the response has no contents key."""
-        response = {}
-
-        content_id = extract_content_id_from_bundle_response(response, self.dataset)
+        content_id = extract_content_id_from_bundle_response({}, self.dataset)
         self.assertIsNone(content_id)

@@ -18,7 +18,10 @@ class BundleAPIClientError(Exception):
 
 
 class BundleAPIClient:
-    """Client for interacting with the ONS Dataset API bundle endpoints."""
+    """Client for interacting with the ONS Dataset API bundle endpoints.
+
+    https://github.com/ONSdigital/dis-bundle-api/blob/bd5e75290f3f1595d496902a73744e2084056944/swagger.yaml
+    """
 
     def __init__(self, base_url: Optional[str] = None):
         """Initialize the client with the base URL.
@@ -292,21 +295,21 @@ def extract_content_id_from_bundle_response(response: dict[str, Any], dataset: A
     """Extract content_id from Bundle API response for a specific dataset.
 
     Args:
-        response: Bundle API response containing contents array
+        response: Bundle API response
         dataset: Dataset instance to find in the response
 
     Returns:
         The content_id if found, None otherwise
     """
-    for item in response.get("contents", []):
-        metadata = item.get("metadata", {})
-        if (
-            metadata.get("dataset_id") == dataset.namespace
-            and metadata.get("edition_id") == dataset.edition
-            and metadata.get("version_id") == dataset.version
-        ):
-            content_id = item.get("id")
-            return content_id if content_id is not None else None
+    metadata = response.get("metadata", {})
+    if (
+        metadata.get("dataset_id") == dataset.namespace
+        and metadata.get("edition_id") == dataset.edition
+        and metadata.get("version_id") == int(dataset.version)
+    ):
+        content_id = response.get("id")
+        return content_id if content_id is not None else None
+
     return None
 
 
