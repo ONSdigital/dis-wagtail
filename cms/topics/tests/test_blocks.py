@@ -130,6 +130,25 @@ class TimeSeriesPageStoryBlockTestCase(TestCase):
         with self.assertRaises(StreamBlockValidationError):
             block.clean(stream_value)
 
+    def test_identical_links_with_trailing_slash_are_considered_duplicates(self):
+        block = TimeSeriesPageStoryBlock()
+        stream_value = StreamValue(
+            block,
+            [
+                (
+                    "time_series_page_link",
+                    {"title": "Link 1", "url": "https://example.com/1/", "description": "Summary 1"},
+                ),
+                (
+                    "time_series_page_link",
+                    {"title": "Link 2", "url": "https://example.com/1", "description": "Summary 2"},
+                ),
+            ],
+        )
+
+        with self.assertRaises(StreamBlockValidationError):
+            block.clean(stream_value)
+
 
 class TimeSeriesPageLinkBlockTestCase(TestCase):
     def test_time_series_page_link_block_validation_fails_on_invalid_domain(self):
