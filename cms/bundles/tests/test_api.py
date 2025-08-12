@@ -361,19 +361,29 @@ class BundleAPIClientDisabledTests(TestCase):
         bundle_data = {"title": "Test Bundle", "content": []}
 
         result = client.create_bundle(bundle_data)
-        self.assertEqual(result, {"status": "disabled", "message": "Bundle API is disabled"})
+        self.assertEqual(
+            result, {"status": "disabled", "message": "The CMS integration with the Bundle API is disabled"}
+        )
 
         result = client.update_bundle("test-bundle-123", bundle_data)
-        self.assertEqual(result, {"status": "disabled", "message": "Bundle API is disabled"})
+        self.assertEqual(
+            result, {"status": "disabled", "message": "The CMS integration with the Bundle API is disabled"}
+        )
 
         result = client.update_bundle_state("test-bundle-123", "APPROVED")
-        self.assertEqual(result, {"status": "disabled", "message": "Bundle API is disabled"})
+        self.assertEqual(
+            result, {"status": "disabled", "message": "The CMS integration with the Bundle API is disabled"}
+        )
 
         result = client.delete_bundle("test-bundle-123")
-        self.assertEqual(result, {"status": "disabled", "message": "Bundle API is disabled"})
+        self.assertEqual(
+            result, {"status": "disabled", "message": "The CMS integration with the Bundle API is disabled"}
+        )
 
         result = client.get_bundle_contents("test-bundle-123")
-        self.assertEqual(result, {"status": "disabled", "message": "Bundle API is disabled"})
+        self.assertEqual(
+            result, {"status": "disabled", "message": "The CMS integration with the Bundle API is disabled"}
+        )
 
 
 class GetDataAdminActionUrlTests(TestCase):

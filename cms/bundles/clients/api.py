@@ -64,7 +64,7 @@ class BundleAPIClient:
 
         if not self.is_enabled:
             logger.info("Skipping API call to '%s' because DIS_DATASETS_BUNDLE_API_ENABLED is False", url)
-            return {"status": "disabled", "message": "Bundle API is disabled"}
+            return {"status": "disabled", "message": "The CMS integration with the Bundle API is disabled"}
 
         try:
             request_kwargs: dict[str, Any] = {}
