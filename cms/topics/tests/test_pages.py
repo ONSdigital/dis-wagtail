@@ -178,11 +178,11 @@ class TopicPageTests(WagtailPageTestCase):
     def test_topic_page_displays_time_series(self):
         title = "Test Time Series"
         url = "https://example.com/dataset"
-        page_summary = "This is a Time Series page summary."
+        description = "This is a Time Series page summary."
 
         self.page.time_series = StreamValue(
             TimeSeriesPageStoryBlock(),
-            stream_data=[("time_series_page_link", {"title": title, "url": url, "page_summary": page_summary})],
+            stream_data=[("time_series_page_link", {"title": title, "url": url, "description": description})],
         )
         self.page.save_revision().publish()
 
@@ -193,4 +193,4 @@ class TopicPageTests(WagtailPageTestCase):
 
         self.assertContains(response, title)
         self.assertContains(response, url)
-        self.assertContains(response, page_summary)
+        self.assertContains(response, description)

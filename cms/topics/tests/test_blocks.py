@@ -117,11 +117,11 @@ class TimeSeriesPageStoryBlockTestCase(TestCase):
             [
                 (
                     "time_series_page_link",
-                    {"title": "Link 1", "url": "https://example.com/1", "page_summary": "Summary 1"},
+                    {"title": "Link 1", "url": "https://example.com/1", "description": "Summary 1"},
                 ),
                 (
                     "time_series_page_link",
-                    {"title": "Link 2", "url": "https://example.com/1", "page_summary": "Summary 2"},
+                    {"title": "Link 2", "url": "https://example.com/1", "description": "Summary 2"},
                 ),
             ],
         )

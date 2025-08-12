@@ -71,9 +71,9 @@ class TestUtils(TestCase):
     def test_format_time_series_as_document_list(self):
         title = "Test Time Series"
         url = "https://example.com/dataset"
-        page_summary = "This is a Time Series page summary."
+        description = "This is a Time Series page summary."
 
-        block_value = {"title": title, "url": url, "page_summary": page_summary}
+        block_value = {"title": title, "url": url, "description": description}
 
         time_series_data = StreamValue(
             TimeSeriesPageStoryBlock(),
@@ -87,7 +87,7 @@ class TestUtils(TestCase):
         expected = {
             "title": {"text": title, "url": url},
             "metadata": {"object": {"text": "Time series"}},
-            "description": f"<p>{page_summary}</p>",
+            "description": f"<p>{description}</p>",
         }
 
         self.assertEqual(len(formatted_time_series), 1)
