@@ -119,8 +119,9 @@ class BundleAdminForm(DeduplicateInlinePanelAdminForm):
                     # Find the corresponding dataset title from the metadata
                     metadata = item.get("metadata", {})
                     dataset_id = metadata.get("dataset_id", "unknown")
+                    dataset_edition = metadata.get("edition_id", "unknown")
                     dataset_title = self._get_dataset_title_from_form_data(dataset_id)
-                    datasets_not_approved.append(f"{dataset_title} (state: {item_state})")
+                    datasets_not_approved.append(f"{dataset_title} (Edition: {dataset_edition}, Status: {item_state})")
 
         except BundleAPIClientError as e:
             logger.error("Failed to check bundle contents for bundle %s: %s", self.instance.bundle_api_content_id, e)

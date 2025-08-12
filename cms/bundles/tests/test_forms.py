@@ -407,7 +407,10 @@ class BundleDatasetValidationTestCase(TestCase):
         self.assertFormError(
             form,
             None,
-            ["Cannot approve the bundle with 1 dataset not ready to be published: Test Dataset (state: DRAFT)"],
+            [
+                "Cannot approve the bundle with 1 dataset not ready to be published: "
+                f"Test Dataset (Edition: {dataset.edition}, Status: DRAFT)"
+            ],
         )
 
     def test_dataset_validation_multiple_datasets_mixed_statuses(self):
@@ -454,7 +457,10 @@ class BundleDatasetValidationTestCase(TestCase):
         self.assertFormError(
             form,
             None,
-            ["Cannot approve the bundle with 1 dataset not ready to be published: Draft Dataset (state: DRAFT)"],
+            [
+                "Cannot approve the bundle with 1 dataset not ready to be published: "
+                f"Draft Dataset (Edition: {dataset2.edition}, Status: DRAFT)"
+            ],
         )
 
     def test_dataset_validation_multiple_datasets_not_ready(self):
@@ -503,7 +509,8 @@ class BundleDatasetValidationTestCase(TestCase):
             None,
             [
                 "Cannot approve the bundle with 2 datasets not ready to be published: "
-                "Draft Dataset 1 (state: DRAFT), Draft Dataset 2 (state: DRAFT)"
+                f"Draft Dataset 1 (Edition: {dataset1.edition}, Status: DRAFT), "
+                f"Draft Dataset 2 (Edition: {dataset2.edition}, Status: DRAFT)"
             ],
         )
 
