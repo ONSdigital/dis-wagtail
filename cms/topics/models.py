@@ -184,7 +184,7 @@ class TopicPage(BundledPageMixin, ExclusiveTaxonomyMixin, BasePage):  # type: ig
         ),
         FieldPanel(
             "time_series",
-            help_text=f"Select up to {MAX_ITEMS_PER_SECTION} time series pages related to this topic.",
+            help_text=f"Add up to {MAX_ITEMS_PER_SECTION} time series pages related to this topic.",
             icon="chart-line",
         ),
         InlinePanel(
