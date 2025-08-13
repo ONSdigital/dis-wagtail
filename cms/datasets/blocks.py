@@ -71,10 +71,10 @@ class DatasetStoryBlock(StreamBlock):
     def clean(self, value: StreamValue, ignore_required_constraints: bool = False) -> StreamValue:
         cleaned_value = super().clean(value)
 
-        # Validate there are no duplicate datasets, including between manual and looked up datasets referencing the same
-        # URL path
+        # Validate there are no duplicate datasets,
+        # including between manual and looked up datasets referencing the same URL
 
-        # For each dataset URL path, record the indices of the blocks it appears in
+        # For each dataset URL, record the indices of the blocks it appears in
         url_paths = defaultdict(set)
         for block_index, block in enumerate(cleaned_value):
             if block.block_type == "dataset_lookup":
@@ -87,8 +87,8 @@ class DatasetStoryBlock(StreamBlock):
 
         block_errors = {}
         for block_indices in url_paths.values():
-            # Add a block error for any index which contains a duplicate a URL path, so that the validation error
-            # messages appear on the actual duplicate entries
+            # Add a block error for any index which contains a duplicate URL,
+            # so that the validation error messages appear on the actual duplicate entries
             if len(block_indices) > 1:
                 for index in block_indices:
                     block_errors[index] = ValidationError("Duplicate datasets are not allowed")
