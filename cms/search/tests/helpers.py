@@ -12,7 +12,7 @@ from cms.search.utils import build_page_uri
 
 EXPECTED_CONTENT_TYPES = {
     "ReleaseCalendarPage": "release",
-    "StatisticalArticlePage": "bulletin",
+    "StatisticalArticlePage": "statistical_article",
     "InformationPage": "static_page",
     "IndexPage": "static_landing_page",
     "MethodologyPage": "static_methodology",
