@@ -75,18 +75,17 @@ class DatasetStoryBlock(StreamBlock):
         # including between manual and looked up datasets referencing the same URL
 
         # For each dataset URL, record the indices of the blocks it appears in
-        url_paths = defaultdict(set)
+        urls = defaultdict(set)
         for block_index, block in enumerate(cleaned_value):
             if block.block_type == "dataset_lookup":
                 # For dataset lookup blocks, use the website URL
-                url_path = block.value.website_url
+                url = block.value.website_url
             else:
-                block.value["url"] = block.value["url"].rstrip("/")
-                url_path = block.value["url"]
-            url_paths[url_path].add(block_index)
+                url = block.value["url"].rstrip("/")  # Treat URLs with and without trailing slashes as equivalent
+            urls[url].add(block_index)
 
         block_errors = {}
-        for block_indices in url_paths.values():
+        for block_indices in urls.values():
             # Add a block error for any index which contains a duplicate URL,
             # so that the validation error messages appear on the actual duplicate entries
             if len(block_indices) > 1:
