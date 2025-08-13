@@ -380,6 +380,14 @@ class TopicPageTestCase(WagtailTestUtils, TestCase):
         self.assertContains(response, "Add child page", 3)
         self.assertContains(response, reverse("wagtailadmin_pages:add_subpage", args=[new_topic_page.pk]))
 
+    def test_get_analytics_values(self):
+        analytics_values = self.topic_page.get_analytics_values(get_dummy_request())
+        self.assertEqual(analytics_values["pageTitle"], self.topic_page.title)
+        self.assertEqual(analytics_values["contentType"], self.topic_page.gtm_content_type)
+        self.assertEqual(analytics_values["contentGroup"], self.topic_page.gtm_content_group)
+        self.assertEqual(analytics_values["contentTheme"], self.topic_page.gtm_content_theme)
+        self.assertEqual(analytics_values["contentTheme"], self.topic_page.gtm_content_theme)
+
 
 class TopicPageRelatedArticleValidationTests(TestCase):
     @classmethod

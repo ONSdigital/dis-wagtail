@@ -721,7 +721,6 @@ class StatisticalArticlePageRenderTestCase(WagtailTestUtils, TestCase):
         response = self.client.get(self.basic_page_url)
         self.assertEqual(response.status_code, 200)
 
-    @override_settings(GOOGLE_TAG_MANAGER_CONTAINER_ID="GTM-XXXXXX")
     def test_page_gtm_attributes(self):
         response = self.client.get(self.page_url)
 

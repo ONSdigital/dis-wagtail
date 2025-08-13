@@ -80,7 +80,6 @@ class HomePageTests(WagtailPageTestCase):
         self.assertNotContains(response, "Wagtail Core Default Login")
         self.assertNotContains(response, "Florence Login")
 
-    @override_settings(GOOGLE_TAG_MANAGER_CONTAINER_ID="GTM-XXXXXX")
     def test_page_gtm_attributes(self):
         response = self.client.get("/")
 
@@ -281,7 +280,6 @@ class ErrorPageTests(WagtailPageTestCase):
         self.assertEqual(response.status_code, HTTPStatus.NOT_FOUND)
         self.assertContains(response, 'href="/custom/contact-path/"', status_code=HTTPStatus.NOT_FOUND)
 
-    @override_settings(GOOGLE_TAG_MANAGER_CONTAINER_ID="GTM-XXXXXX")
     def test_404_page_gtm_attributes(self):
         response = self.client.get("/non-existent-page/")
         self.assertEqual(response.status_code, HTTPStatus.NOT_FOUND)
