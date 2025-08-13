@@ -990,7 +990,7 @@ SEARCH_INDEX_EXCLUDED_PAGE_TYPES = (
 )
 
 # Allowed domains for linking to other parts of the ONS website (for datasets or time series)
-ONS_ALLOWED_LINK_DOMAINS = env.get("ONS_ALLOWED_LINK_DOMAINS", "www.ons.gov.uk").split(",")
+ONS_ALLOWED_LINK_DOMAINS = env.get("ONS_ALLOWED_LINK_DOMAINS", "ons.gov.uk").split(",")
 
 # Allowed prefixes for iframe visualisations
 if "IFRAME_VISUALISATION_ALLOWED_DOMAINS" in env:

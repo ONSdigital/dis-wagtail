@@ -166,7 +166,9 @@ class TimeSeriesPageLinkBlockTestCase(TestCase):
         with self.assertRaises(StructBlockValidationError) as info:
             block.clean(value)
 
+        patterns_str = " or ".join(settings.ONS_ALLOWED_LINK_DOMAINS)
+
         self.assertEqual(
             info.exception.block_errors["url"].message,
-            f"The time series page URL must start with {settings.ONS_WEBSITE_BASE_URL}",
+            f"The URL hostname is not in the list of allowed domains or their subdomains: {patterns_str}",
         )
