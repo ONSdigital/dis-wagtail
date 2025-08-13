@@ -8,7 +8,7 @@ from wagtail.fields import RichTextField
 from wagtail.search import index
 
 from cms.bundles.mixins import BundledPageMixin
-from cms.core.analytics import format_date_for_gtm
+from cms.core.analytics_utils import format_date_for_gtm
 from cms.core.blocks.related import RelatedContentBlock
 from cms.core.blocks.stream_blocks import CoreStoryBlock
 from cms.core.fields import StreamField

@@ -14,7 +14,7 @@ from wagtail.models import Orderable, Page
 from wagtail.search import index
 
 from cms.bundles.mixins import BundledPageMixin
-from cms.core.analytics import format_date_for_gtm
+from cms.core.analytics_utils import add_table_of_contents_gtm_attributes, format_date_for_gtm
 from cms.core.blocks.stream_blocks import SectionStoryBlock
 from cms.core.fields import StreamField
 from cms.core.forms import PageWithEquationsAdminForm
@@ -186,6 +186,7 @@ class MethodologyPage(BundledPageMixin, GenericTaxonomyMixin, BasePage):  # type
             items += [{"url": "#cite-this-page", "text": _("Cite this methodology")}]
         if self.contact_details_id:
             items += [{"url": "#contact-details", "text": _("Contact details")}]
+        add_table_of_contents_gtm_attributes(items)
         return items
 
     @cached_property

@@ -281,6 +281,15 @@ class ErrorPageTests(WagtailPageTestCase):
         self.assertEqual(response.status_code, HTTPStatus.NOT_FOUND)
         self.assertContains(response, 'href="/custom/contact-path/"', status_code=HTTPStatus.NOT_FOUND)
 
+    @override_settings(GOOGLE_TAG_MANAGER_CONTAINER_ID="GTM-XXXXXX")
+    def test_404_page_gtm_attributes(self):
+        response = self.client.get("/non-existent-page/")
+        self.assertEqual(response.status_code, HTTPStatus.NOT_FOUND)
+        datalayer_values = extract_datalayer_pushed_values(response.text)
+        self.assertEqual(datalayer_values["product"], "wagtail")
+        self.assertEqual(datalayer_values["contentType"], "404-pages")
+        self.assertEqual(datalayer_values["contentGroup"], "404-pages")
+
     @patch("cms.home.models.HomePage.serve")
     def test_500_page(self, mock_homepage_serve):
         """Test that the 500 page can be served."""

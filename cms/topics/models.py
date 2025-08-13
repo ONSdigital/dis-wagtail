@@ -14,6 +14,7 @@ from wagtail.search import index
 
 from cms.articles.models import ArticleSeriesPage, StatisticalArticlePage
 from cms.bundles.mixins import BundledPageMixin
+from cms.core.analytics_utils import add_table_of_contents_gtm_attributes
 from cms.core.fields import StreamField
 from cms.core.models import BasePage
 from cms.core.query import order_by_pk_position
@@ -335,6 +336,7 @@ class TopicPage(BundledPageMixin, ExclusiveTaxonomyMixin, BasePage):  # type: ig
             items += [{"url": "#explore-more", "text": _("Explore more")}]
         if self.dataset_document_list:
             items += [{"url": "#data", "text": _("Data")}]
+        add_table_of_contents_gtm_attributes(items)
         return items
 
     @cached_property

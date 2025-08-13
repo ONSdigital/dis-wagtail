@@ -2,13 +2,15 @@
 {% set page_title = _("Page not found") %}
 
 {% block head %}
-    {{ block.super() }}
-    <script>
-        dataLayer.push({
-            "contentType": "404-pages",
-            "contentGroup": "404-pages",
-        });
-    </script>
+    {{ super() }}
+    {% if GOOGLE_TAG_MANAGER_CONTAINER_ID and not request.is_preview %}
+        <script>
+            dataLayer.push({
+                "contentType": "404-pages",
+                "contentGroup": "404-pages"
+            });
+        </script>
+    {% endif %}
 {% endblock %}
 
 {% block error_content %}

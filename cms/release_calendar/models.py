@@ -18,7 +18,7 @@ from cms.core.models import BasePage
 from cms.core.widgets import ONSAdminDateTimeInput
 from cms.datasets.blocks import DatasetStoryBlock
 
-from ..core.analytics import format_date_for_gtm
+from ..core.analytics_utils import add_table_of_contents_gtm_attributes, format_date_for_gtm
 from .blocks import (
     ReleaseCalendarChangesStoryBlock,
     ReleaseCalendarPreReleaseAccessStoryBlock,
@@ -252,7 +252,7 @@ class ReleaseCalendarPage(BundledPageMixin, BasePage):  # type: ignore[django-ma
 
             if self.related_links:
                 items += [{"url": "#links", "text": _("You might also be interested in")}]
-
+        add_table_of_contents_gtm_attributes(items)
         return items
 
     @cached_property
