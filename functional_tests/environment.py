@@ -24,6 +24,11 @@ os.environ["DJANGO_ALLOW_ASYNC_UNSAFE"] = "True"
 # but that happens too late to solve import time issues.
 django.setup()
 
+
+# Importing auth_utils after django.setup() is required because auth_utils (and its dependencies)
+# import Django models and use ORM features. If imported before django.setup(), it will cause
+# "AppRegistryNotReady: Apps aren't loaded yet." errors, since the Django app registry is not initialised.
+# Always call django.setup() before importing any modules that depend on Django models or ORM.
 from functional_tests.step_helpers.auth_utils import (  # noqa: E402 # pylint: disable=wrong-import-position
     capture_request,
     get_overridden_settings,
