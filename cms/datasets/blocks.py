@@ -78,7 +78,7 @@ class TimeSeriesPageStoryBlock(StreamBlock):
         # For each dataset URL, record the indices of the blocks it appears in
         urls = defaultdict(set)
         for block_index, block in enumerate(cleaned_value):
-            url = block.value["url"].rstrip("/") # Treat URLs with and without trailing slashes as equivalent           
+            url = block.value["url"].rstrip("/")  # Treat URLs with and without trailing slashes as equivalent
             urls[url].add(block_index)
 
         block_errors = {}
