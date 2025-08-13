@@ -115,7 +115,7 @@ class AuthenticationTestHelper:
         """)
 
 
-def get_override_settings() -> dict:
+def get_overridden_settings() -> dict:
     """Get Django settings overrides for Cognito tests."""
     return {
         # Core settings
@@ -135,10 +135,6 @@ def get_override_settings() -> dict:
         "SESSION_RENEWAL_OFFSET_SECONDS": 5,
         "WAGTAIL_CORE_ADMIN_LOGIN_ENABLED": True,
         "WAGTAILADMIN_HOME_PATH": "admin/",
-        # Group names
-        "PUBLISHING_ADMIN_GROUP_NAME": "Publishing Admins",
-        "PUBLISHING_OFFICER_GROUP_NAME": "Publishing Officers",
-        "VIEWERS_GROUP_NAME": "Viewers",
     }
 
 

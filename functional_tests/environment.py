@@ -26,7 +26,7 @@ django.setup()
 
 from functional_tests.step_helpers.auth_utils import (  # noqa: E402 # pylint: disable=wrong-import-position
     capture_request,
-    get_override_settings,
+    get_overridden_settings,
 )
 
 
@@ -150,7 +150,7 @@ def before_tag(context: Context, tag: str):
     """Handle tag-specific setup."""
     if tag == "cognito_enabled":
         # Apply Cognito test settings
-        settings = get_override_settings()
+        settings = get_overridden_settings()
         context.aws_override = override_settings(**settings)
         context.aws_override.enable()
 
