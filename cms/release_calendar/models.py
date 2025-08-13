@@ -17,6 +17,7 @@ from cms.core.fields import StreamField
 from cms.core.models import BasePage
 from cms.core.widgets import ONSAdminDateTimeInput
 from cms.datasets.blocks import DatasetStoryBlock
+from cms.datasets.utils import format_datasets_as_document_list
 
 from .blocks import (
     ReleaseCalendarChangesStoryBlock,
@@ -215,6 +216,10 @@ class ReleaseCalendarPage(BundledPageMixin, BasePage):  # type: ignore[django-ma
         return None
 
     @cached_property
+    def dataset_document_list(self) -> list[dict[str, Any]]:
+        return format_datasets_as_document_list(self.datasets)
+
+    @cached_property
     def table_of_contents(self) -> list[dict[str, str | object]]:
         """Table of contents formatted to Design System specs."""
         items = [{"url": "#summary", "text": _("Summary")}]
@@ -223,7 +228,7 @@ class ReleaseCalendarPage(BundledPageMixin, BasePage):  # type: ignore[django-ma
             for block in self.content:
                 items += block.block.to_table_of_contents_items(block.value)
 
-            if self.datasets:
+            if self.dataset_document_list:
                 items += [{"url": "#datasets", "text": _("Data")}]
 
         if self.status in NON_PROVISIONAL_STATUSES and self.changes_to_release_date:
