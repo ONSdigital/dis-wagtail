@@ -51,6 +51,11 @@ class BundleCreateView(CreateView):
 
     template_name = "bundles/wagtailadmin/edit.html"
 
+    def get_form_kwargs(self) -> dict:
+        kwargs: dict = super().get_form_kwargs()
+        kwargs["access_token"] = self.request.COOKIES.get(settings.ACCESS_TOKEN_COOKIE_NAME)
+        return kwargs
+
     def form_valid(self, form: "BundleAdminForm") -> "HttpResponseBase":
         self.form = form  # pylint: disable=attribute-defined-outside-init
         try:
@@ -117,6 +122,8 @@ class BundleEditView(EditView):
 
     def get_form_kwargs(self) -> dict:
         kwargs: dict = super().get_form_kwargs()
+        kwargs["access_token"] = self.request.COOKIES.get(settings.ACCESS_TOKEN_COOKIE_NAME)
+
         if self.request.method == "POST":
             data = self.request.POST.copy()
             if "action-save-to-preview" in self.request.POST:

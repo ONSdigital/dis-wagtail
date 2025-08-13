@@ -1,6 +1,6 @@
 import logging
 from http import HTTPStatus
-from typing import Any, Literal, Optional
+from typing import Any, Literal
 
 import requests
 from django.conf import settings
@@ -23,31 +23,33 @@ class BundleAPIClient:
     https://github.com/ONSdigital/dis-bundle-api/blob/bd5e75290f3f1595d496902a73744e2084056944/swagger.yaml
     """
 
-    def __init__(self, base_url: Optional[str] = None):
+    def __init__(self, *, base_url: str | None = None, access_token: str | None = None):
         """Initialize the client with the base URL.
 
         Args:
             base_url: The base URL for the API. If not provided, uses settings.ONS_API_BASE_URL
+            access_token: The authorisation token, as provided by Florent/DIS auth and stored
+                          in the COOKIES[settings.ACCESS_TOKEN_COOKIE_NAME]
         """
         self.base_url = base_url or settings.DIS_DATASETS_BUNDLE_BASE_API_URL
         self.session = requests.Session()
         self.is_enabled = getattr(settings, "DIS_DATASETS_BUNDLE_API_ENABLED", False)
 
         # Set default headers
-        self.session.headers.update(
-            {
-                "Content-Type": "application/json",
-                "Accept": "application/json",
-            }
-            # TODO: Add authentication headers
-        )
+        headers = {
+            "Content-Type": "application/json",
+            "Accept": "application/json",
+        }
+        if access_token is not None:
+            headers["Authorization"] = access_token
+        self.session.headers.update(headers)
 
     def _make_request(
         self,
         method: str,
         endpoint: str,
-        data: Optional[dict[str, Any]] = None,
-        params: Optional[dict[str, str]] = None,
+        data: dict[str, Any] | None = None,
+        params: dict[str, str] | None = None,
     ) -> dict[str, Any]:
         """Make a request to the API and handle common errors.
 

@@ -36,6 +36,8 @@ class BundleAdminForm(DeduplicateInlinePanelAdminForm):
         - Hides the "Released" status choice as that happens on publish
         - disabled/hide the approved at/by fields
         """
+        self.dataset_api_access_token = kwargs.pop("access_token", None)
+
         super().__init__(*args, **kwargs)
         # hide the status field, and exclude the "Released" status choice
         self.fields["status"].widget = forms.HiddenInput()
@@ -104,7 +106,7 @@ class BundleAdminForm(DeduplicateInlinePanelAdminForm):
 
     def _check_bundle_contents_approval_status(self) -> list[str]:
         """Check bundle contents and return list of non-approved datasets."""
-        client = BundleAPIClient()
+        client = BundleAPIClient(access_token=self.dataset_api_access_token)
         datasets_not_approved: list[str] = []
 
         # Ensure bundle_api_content_id is not None
@@ -389,7 +391,7 @@ class BundleAdminForm(DeduplicateInlinePanelAdminForm):
             or should_push_dataset_changes_to_api
             or should_push_team_changes_to_api
         ):
-            client = BundleAPIClient()
+            client = BundleAPIClient(access_token=self.dataset_api_access_token)
             if should_push_bundle_to_api:
                 # The bundle should be created in the API if it has datasets, and it doesn't have an API ID.
                 bundle = self._push_bundle_to_dataset_api(client, bundle)

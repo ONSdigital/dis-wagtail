@@ -20,6 +20,10 @@ class BundleAPIClientTests(TestCase):
     def setUp(self):
         self.base_url = "https://test-api.example.com"
 
+    def test_init_with_access_token_adds_it_to_session_headers(self):
+        client = BundleAPIClient(access_token="test")
+        self.assertEqual(client.session.headers["Authorization"], "test")
+
     @responses.activate
     def test_create_bundle_success(self):
         # Mock response following Bundle API swagger spec
@@ -355,7 +359,7 @@ class ContentItemUtilityTests(TestCase):
             {
                 "namespace": "cpih",
                 "edition": "time-series",
-                "version": "1",
+                "version": 1,
             },
         )()
 
