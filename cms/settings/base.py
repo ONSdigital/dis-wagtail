@@ -66,6 +66,7 @@ INSTALLED_APPS = [
     "cms.core",
     "cms.datasets",
     "cms.datavis",
+    "cms.demo",
     "cms.documents",
     "cms.home",
     "cms.images",
