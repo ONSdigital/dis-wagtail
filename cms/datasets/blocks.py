@@ -75,16 +75,16 @@ class TimeSeriesPageStoryBlock(StreamBlock):
     def clean(self, value: StreamValue, ignore_required_constraints: bool = False) -> StreamValue:
         cleaned_value = super().clean(value)
 
-        # For each dataset URL path, record the indices of the blocks it appears in
-        url_paths = defaultdict(set)
+        # For each dataset URL, record the indices of the blocks it appears in
+        urls = defaultdict(set)
         for block_index, block in enumerate(cleaned_value):
-            block.value["url"] = block.value["url"].rstrip("/")
-            url_paths[block.value["url"]].add(block_index)
+            url = block.value["url"].rstrip("/") # Treat URLs with and without trailing slashes as equivalent           
+            urls[url].add(block_index)
 
         block_errors = {}
-        for block_indices in url_paths.values():
-            # Add a block error for any index which contains a duplicate a URL path, so that the validation error
-            # messages appear on the actual duplicate entries
+        for block_indices in urls.values():
+            # Add a block error for any index which contains a duplicate URL,
+            # so that the validation error messages appear on the actual duplicate entries
             if len(block_indices) > 1:
                 for index in block_indices:
                     block_errors[index] = ValidationError("Duplicate time series links are not allowed")
