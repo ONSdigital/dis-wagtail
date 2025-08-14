@@ -104,7 +104,7 @@ class BundleAdminForm(DeduplicateInlinePanelAdminForm):
                 return str(dataset.title)
         return dataset_id
 
-    def _check_bundle_contents_approval_status(self) -> list[str]:
+    def _get_unapproved_bundle_contents(self) -> list[str]:
         """Check bundle contents and return list of non-approved datasets."""
         datasets_not_approved: list[str] = []
 
@@ -147,7 +147,7 @@ class BundleAdminForm(DeduplicateInlinePanelAdminForm):
         if not self.instance.bundle_api_content_id and not self._has_datasets():
             return
 
-        datasets_not_approved = self._check_bundle_contents_approval_status()
+        datasets_not_approved = self._get_unapproved_bundle_contents()
 
         if datasets_not_approved:
             # Return the original status
