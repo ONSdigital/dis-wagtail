@@ -191,6 +191,7 @@ def build_bundle_data_for_api(bundle: "Bundle") -> dict[str, Any]:
         "managed_by": "WAGTAIL",
         "preview_teams": preview_teams,
         "scheduled_at": bundle.scheduled_publication_date.isoformat() if bundle.scheduled_publication_date else None,
+        "e_tag": bundle.bundle_api_etag,
     }
 
 

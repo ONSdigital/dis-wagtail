@@ -44,12 +44,13 @@ class BundleAPIClient:
             headers["Authorization"] = access_token
         self.session.headers.update(headers)
 
-    def _make_request(
+    def _make_request(  # pylint: disable=too-many-arguments,too-many-positional-arguments
         self,
         method: str,
         endpoint: str,
         data: dict[str, Any] | None = None,
         params: dict[str, str] | None = None,
+        etag: str | None = None,
     ) -> dict[str, Any]:
         """Make a request to the API and handle common errors.
 
@@ -58,6 +59,7 @@ class BundleAPIClient:
             endpoint: API endpoint relative to base_url
             data: Request data for POST/PUT requests. Can be a dict (for JSON) or a string.
             params: URL parameters for GET requests
+            etag: The bundle ETag
 
         Returns:
             Response data as dictionary
@@ -79,6 +81,9 @@ class BundleAPIClient:
             if params is not None:
                 # Params like pagination from get_bundles() etc.
                 request_kwargs["params"] = params
+
+            if etag is not None:
+                self.session.headers["If-Match"] = etag
 
             response = self.session.request(method, url, **request_kwargs)
             response.raise_for_status()
@@ -116,6 +121,8 @@ class BundleAPIClient:
             return {"status": "success", "message": BundleAPIMessage.OPERATION_SUCCESS}
 
         json_data: dict[str, Any] = response.json()
+        # ETag is usually returned as a header, so inject it in the response JSON
+        json_data["etag_header"] = response.headers.get("etag", "")
         return json_data
 
     def _format_http_error(self, error: requests.exceptions.HTTPError, method: str, url: str) -> str:
@@ -149,42 +156,45 @@ class BundleAPIClient:
         """
         return self._make_request("POST", "/bundles", data=bundle_data)
 
-    def update_bundle(self, bundle_id: str, bundle_data: dict[str, Any]) -> dict[str, Any]:
+    def update_bundle(self, bundle_id: str, bundle_data: dict[str, Any], etag: str) -> dict[str, Any]:
         """Update an existing bundle via the API.
 
         Args:
             bundle_id: The ID of the bundle to update
             bundle_data: Updated bundle data
+            etag: The bundle ETag
 
         Returns:
             API response data
         """
-        return self._make_request("PUT", f"/bundles/{bundle_id}", data=bundle_data)
+        return self._make_request("PUT", f"/bundles/{bundle_id}", data=bundle_data, etag=etag)
 
-    def update_bundle_state(self, bundle_id: str, state: str) -> dict[str, Any]:
+    def update_bundle_state(self, bundle_id: str, state: str, etag: str) -> dict[str, Any]:
         """Update the state of a bundle via the API.
 
         Args:
             bundle_id: The ID of the bundle to update
             state: New state for the bundle (DRAFT, IN_REVIEW, APPROVED, PUBLISHED)
+            etag: The bundle ETag
 
         Returns:
             API response data
         """
         # The swagger spec expects a JSON object with a 'state' field
-        return self._make_request("PUT", f"/bundles/{bundle_id}/state", data={"state": state})
+        return self._make_request("PUT", f"/bundles/{bundle_id}/state", data={"state": state}, etag=etag)
 
-    def add_content_to_bundle(self, bundle_id: str, content_item: dict[str, Any]) -> dict[str, Any]:
+    def add_content_to_bundle(self, bundle_id: str, content_item: dict[str, Any], etag: str) -> dict[str, Any]:
         """Add a content item to a bundle.
 
         Args:
             bundle_id: The ID of the bundle to add content to.
             content_item: The content item to add.
+            etag: The bundle ETag
 
         Returns:
             API response data
         """
-        return self._make_request("POST", f"/bundles/{bundle_id}/contents", data=content_item)
+        return self._make_request("POST", f"/bundles/{bundle_id}/contents", data=content_item, etag=etag)
 
     def delete_content_from_bundle(self, bundle_id: str, content_id: str) -> dict[str, Any]:
         """Delete a content item from a bundle.

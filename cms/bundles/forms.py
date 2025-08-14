@@ -15,7 +15,7 @@ from cms.bundles.clients.api import (
 )
 from cms.bundles.decorators import ons_bundle_api_enabled
 from cms.bundles.enums import ACTIVE_BUNDLE_STATUS_CHOICES, EDITABLE_BUNDLE_STATUSES, BundleStatus
-from cms.bundles.utils import build_bundle_data_for_api, get_preview_teams_for_bundle
+from cms.bundles.utils import build_bundle_data_for_api
 from cms.core.forms import DeduplicateInlinePanelAdminForm
 from cms.workflows.models import ReadyToPublishGroupTask
 
@@ -106,18 +106,22 @@ class BundleAdminForm(DeduplicateInlinePanelAdminForm):
 
     def _check_bundle_contents_approval_status(self) -> list[str]:
         """Check bundle contents and return list of non-approved datasets."""
-        client = BundleAPIClient(access_token=self.dataset_api_access_token)
         datasets_not_approved: list[str] = []
 
         # Ensure bundle_api_content_id is not None
         if not self.instance.bundle_api_content_id:
             return datasets_not_approved
 
+        client = BundleAPIClient(access_token=self.dataset_api_access_token)
         try:
             response = client.get_bundle_contents(self.instance.bundle_api_content_id)
 
+            # update the etag value
+            self.instance.bundle_api_etag = response["etag_header"]
+            self.instance.save(update_fields=["bundle_api_etag"])
+
             # Check each content item in the bundle
-            for item in response.get("contents", []):
+            for item in response.get("items", []):
                 item_state = item.get("state", "unknown")
 
                 if item_state != BundleStatus.APPROVED.value:
@@ -276,7 +280,8 @@ class BundleAdminForm(DeduplicateInlinePanelAdminForm):
             response = client.create_bundle(bundle_data)
 
             bundle.bundle_api_content_id = str(response["id"])
-            bundle.save(update_fields=["bundle_api_content_id"])
+            bundle.bundle_api_etag = response["etag_header"]
+            bundle.save(update_fields=["bundle_api_content_id", "bundle_api_etag"])
             logger.info("Created bundle %s in Dataset API with ID: %s", bundle.pk, bundle.bundle_api_content_id)
             return bundle
 
@@ -290,7 +295,10 @@ class BundleAdminForm(DeduplicateInlinePanelAdminForm):
             return
 
         try:
-            client.update_bundle_state(bundle.bundle_api_content_id, bundle.status)
+            response = client.update_bundle_state(bundle.bundle_api_content_id, bundle.status, bundle.bundle_api_etag)
+
+            bundle.bundle_api_etag = response["etag_header"]
+            bundle.save(update_fields=["bundle_api_etag"])
             logger.info("Updated bundle %s status to %s in Dataset API", bundle.pk, bundle.status)
         except BundleAPIClientError as e:
             logger.error("Failed to sync bundle %s with Dataset API: %s", bundle.pk, e)
@@ -309,7 +317,7 @@ class BundleAdminForm(DeduplicateInlinePanelAdminForm):
             try:
                 client.delete_bundle(bundle.bundle_api_content_id)
                 logger.info("Deleted bundle %s from Dataset API", bundle.pk)
-                bundle.bundle_api_content_id = None
+                bundle.bundle_api_content_id = ""
                 bundle.save(update_fields=["bundle_api_content_id"])
             except BundleAPIClientError as e:
                 logger.error("Failed to delete bundle %s from Dataset API: %s", bundle.pk, e)
@@ -322,9 +330,13 @@ class BundleAdminForm(DeduplicateInlinePanelAdminForm):
         common_but_not_linked = {d for d in self.original_datasets & current_datasets if not d.bundle_api_content_id}
 
         try:
+            etag = None
             for item in added | common_but_not_linked:
                 content_item = build_content_item_for_dataset(item.dataset)
-                response = client.add_content_to_bundle(bundle.bundle_api_content_id, content_item)
+                response = client.add_content_to_bundle(
+                    bundle.bundle_api_content_id, content_item, bundle.bundle_api_etag
+                )
+                etag = response["etag_header"]
 
                 # Extract content_id from the response
                 if content_id := extract_content_id_from_bundle_response(response, item.dataset):
@@ -338,6 +350,10 @@ class BundleAdminForm(DeduplicateInlinePanelAdminForm):
                     )
                 else:
                     logger.error("Could not find content_id in response for bundle %s", bundle.pk)
+
+            if etag is not None:
+                bundle.bundle_api_etag = etag
+                bundle.save(update_fields=["bundle_api_etag"])
         except BundleAPIClientError as e:
             logger.error("Failed to add content to bundle %s in Dataset API: %s", bundle.pk, e)
             raise ValidationError("Could not communicate with the Dataset API") from e
@@ -356,10 +372,14 @@ class BundleAdminForm(DeduplicateInlinePanelAdminForm):
         if not bundle.bundle_api_content_id:
             return
 
-        payload = {"preview_teams": get_preview_teams_for_bundle(bundle)}
+        bundle_data = build_bundle_data_for_api(bundle)
 
         try:
-            client.update_bundle(bundle_id=bundle.bundle_api_content_id, bundle_data=payload)
+            response = client.update_bundle(
+                bundle_id=bundle.bundle_api_content_id, bundle_data=bundle_data, etag=bundle.bundle_api_etag
+            )
+            bundle.bundle_api_etag = response["etag_header"]
+            bundle.save(update_fields=["bundle_api_etag"])
             logger.info(
                 "Successfully synced preview teams for bundle %s (Wagtail ID: %s).",
                 bundle.bundle_api_content_id,
@@ -384,7 +404,6 @@ class BundleAdminForm(DeduplicateInlinePanelAdminForm):
         should_push_team_changes_to_api = self.original_teams != set(
             bundle.teams.all().select_related("team").order_by("id")
         )
-
         if (
             should_push_bundle_to_api
             or status_has_changed

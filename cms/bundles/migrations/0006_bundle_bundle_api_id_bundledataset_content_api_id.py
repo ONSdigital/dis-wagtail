@@ -12,11 +12,16 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name="bundle",
             name="bundle_api_content_id",
-            field=models.CharField(blank=True, editable=False, max_length=255, null=True),
+            field=models.CharField(blank=True, editable=False, max_length=255),
+        ),
+        migrations.AddField(
+            model_name="bundle",
+            name="bundle_api_etag",
+            field=models.CharField(blank=True, editable=False, max_length=255),
         ),
         migrations.AddField(
             model_name="bundledataset",
             name="bundle_api_content_id",
-            field=models.CharField(blank=True, max_length=255, null=True),
+            field=models.CharField(blank=True, max_length=255, editable=False),
         ),
     ]

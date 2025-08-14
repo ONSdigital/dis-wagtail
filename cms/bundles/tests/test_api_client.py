@@ -34,10 +34,20 @@ class BundleAPIClientTests(TestCase):
             "preview_teams": [{"id": "team-uuid-1"}],
             "state": "DRAFT",
             "created_at": "2025-07-14T10:30:00.000Z",
-            "created_by": "user-uuid-1",
-            "contents": [],
+            "created_by": {"email": "publisher@ons.gov.uk"},
+            "updated_at": "2025-04-04T07:00:00.000Z",
+            "last_updated_by": {"email": "publisher@ons.gov.uk"},
+            "scheduled_at": "",
+            "managed_by": "WAGTAIL",
+            "e_tag": "c7e4b9a2f813d6e5f0a9d3c1e7f8b4a5d6c7e9f0",
+            "etag_header": "bundle-etag",
         }
-        responses.post(f"{self.base_url}/bundles", json=mock_response_data, status=HTTPStatus.CREATED)
+        responses.post(
+            f"{self.base_url}/bundles",
+            json=mock_response_data,
+            status=HTTPStatus.CREATED,
+            headers={"ETag": "bundle-etag"},
+        )
 
         client = BundleAPIClient(base_url=self.base_url)
         # Bundle data following Bundle API swagger spec
@@ -89,7 +99,8 @@ class BundleAPIClientTests(TestCase):
             "state": "DRAFT",
             "created_at": "2025-07-14T10:30:00.000Z",
             "created_by": "user-uuid-1",
-            "contents": [],
+            "items": [],
+            "etag_header": "updated-etag-123",
         }
         responses.put(
             f"{self.base_url}/bundles/test-bundle-123",
@@ -106,7 +117,7 @@ class BundleAPIClientTests(TestCase):
             "preview_teams": [{"id": "team-uuid-1"}],
         }
 
-        result = client.update_bundle("test-bundle-123", bundle_data)
+        result = client.update_bundle("test-bundle-123", bundle_data, "etag")
 
         self.assertEqual(result, mock_response_data)
 
@@ -120,8 +131,13 @@ class BundleAPIClientTests(TestCase):
             "preview_teams": [{"id": "team-uuid-1"}],
             "state": "APPROVED",
             "created_at": "2025-07-14T10:30:00.000Z",
-            "created_by": "user-uuid-1",
-            "contents": [],
+            "created_by": {"email": "publisher@ons.gov.uk"},
+            "last_updated_by": {"email": "publisher@ons.gov.uk"},
+            "scheduled_at": "2025-04-04T07:00:00.000Z",
+            "updated_at": "2025-04-04T07:00:00.000Z",
+            "managed_by": "WAGTAIL",
+            "e_tag": "c7e4b9a2f813d6e5f0a9d3c1e7f8b4a5d6c7e9f0",
+            "etag_header": "state-updated-etag-123",
         }
         endpoint = f"{self.base_url}/bundles/test-bundle-123/state"
         responses.put(
@@ -129,7 +145,7 @@ class BundleAPIClientTests(TestCase):
         )
 
         client = BundleAPIClient(base_url=self.base_url)
-        result = client.update_bundle_state("test-bundle-123", "APPROVED")
+        result = client.update_bundle_state("test-bundle-123", "APPROVED", "etag")
 
         self.assertEqual(result, mock_response_data)
         self.assertTrue(responses.assert_call_count(endpoint, 1))
@@ -146,7 +162,7 @@ class BundleAPIClientTests(TestCase):
     @responses.activate
     def test_get_bundle_contents_success(self):
         mock_response_data = {
-            "contents": [
+            "items": [
                 {
                     "id": "content-123",
                     "content_type": "DATASET",
@@ -154,7 +170,7 @@ class BundleAPIClientTests(TestCase):
                     "metadata": {
                         "dataset_id": "cpih",
                         "edition_id": "time-series",
-                        "version_id": "1",
+                        "version_id": 1,
                     },
                     "links": {
                         "edit": "/edit/datasets/cpih/editions/time-series/versions/1",
@@ -168,17 +184,21 @@ class BundleAPIClientTests(TestCase):
                     "metadata": {
                         "dataset_id": "inflation",
                         "edition_id": "time-series",
-                        "version_id": "2",
+                        "version_id": 2,
                     },
                     "links": {
                         "edit": "/edit/datasets/inflation/editions/time-series/versions/2",
                         "preview": "/preview/datasets/inflation/editions/time-series/versions/2",
                     },
                 },
-            ]
+            ],
+            "etag_header": "bundle-etag",
         }
         responses.get(
-            f"{self.base_url}/bundles/test-bundle-123/contents", json=mock_response_data, status=HTTPStatus.OK
+            f"{self.base_url}/bundles/test-bundle-123/contents",
+            json=mock_response_data,
+            status=HTTPStatus.OK,
+            headers={"ETag": "bundle-etag"},
         )
 
         client = BundleAPIClient(base_url=self.base_url)
@@ -188,7 +208,7 @@ class BundleAPIClientTests(TestCase):
 
     @responses.activate
     def test_get_bundle_contents_empty(self):
-        mock_response_data = {"contents": []}
+        mock_response_data = {"items": [], "etag_header": ""}
         responses.get(
             f"{self.base_url}/bundles/empty-bundle-123/contents", json=mock_response_data, status=HTTPStatus.OK
         )
@@ -196,7 +216,7 @@ class BundleAPIClientTests(TestCase):
         client = BundleAPIClient(base_url=self.base_url)
         result = client.get_bundle_contents("empty-bundle-123")
 
-        self.assertEqual(result, {"contents": []})
+        self.assertEqual(result, mock_response_data)
 
     @responses.activate
     def test_get_bundle_contents_not_found(self):
@@ -310,12 +330,12 @@ class BundleAPIClientDisabledTests(TestCase):
             result, {"status": "disabled", "message": "The CMS integration with the Bundle API is disabled"}
         )
 
-        result = client.update_bundle("test-bundle-123", bundle_data)
+        result = client.update_bundle("test-bundle-123", bundle_data, "etag")
         self.assertEqual(
             result, {"status": "disabled", "message": "The CMS integration with the Bundle API is disabled"}
         )
 
-        result = client.update_bundle_state("test-bundle-123", "APPROVED")
+        result = client.update_bundle_state("test-bundle-123", "APPROVED", "etag")
         self.assertEqual(
             result, {"status": "disabled", "message": "The CMS integration with the Bundle API is disabled"}
         )
@@ -372,7 +392,7 @@ class ContentItemUtilityTests(TestCase):
             "metadata": {
                 "dataset_id": "cpih",
                 "edition_id": "time-series",
-                "version_id": "1",
+                "version_id": 1,
             },
             "links": {
                 "edit": "/edit/datasets/cpih/editions/time-series/versions/1",
