@@ -50,7 +50,6 @@ def _extract_item(
         item[text_key] = value["title"]
         item["url"] = value["external_url"]
         item["attributes"]["data-ga-link-text"] = value["title"]
-        item["attributes"]["data-ga-click-path"] = value["external_url"]
 
     elif (page := value.get("page")) and page.live:
         item[text_key] = value["title"] or getattr(page.specific_deferred, "display_title", page.title)
