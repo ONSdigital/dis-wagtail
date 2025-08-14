@@ -133,7 +133,9 @@ class BundleAdminForm(DeduplicateInlinePanelAdminForm):
                     datasets_not_approved.append(f"{dataset_title} (Edition: {dataset_edition}, Status: {item_state})")
 
         except BundleAPIClientError as e:
-            logger.error("Failed to check bundle contents for bundle %s: %s", self.instance.bundle_api_content_id, e)
+            logger.exception(
+                "Failed to check bundle contents for bundle %s: %s", self.instance.bundle_api_content_id, e
+            )
             datasets_not_approved.append("Bundle content validation failed")
 
         return datasets_not_approved
@@ -286,7 +288,7 @@ class BundleAdminForm(DeduplicateInlinePanelAdminForm):
             return bundle
 
         except (BundleAPIClientError, KeyError) as e:
-            logger.error("Failed to create bundle %s in Dataset API: %s", bundle.pk, e)
+            logger.exception("Failed to create bundle %s in Dataset API: %s", bundle.pk, e)
             raise ValidationError("Could not communicate with the Dataset API") from e
 
     @ons_bundle_api_enabled
@@ -301,7 +303,7 @@ class BundleAdminForm(DeduplicateInlinePanelAdminForm):
             bundle.save(update_fields=["bundle_api_etag"])
             logger.info("Updated bundle %s status to %s in Dataset API", bundle.pk, bundle.status)
         except BundleAPIClientError as e:
-            logger.error("Failed to sync bundle %s with Dataset API: %s", bundle.pk, e)
+            logger.exception("Failed to sync bundle %s with Dataset API: %s", bundle.pk, e)
             raise ValidationError("Could not communicate with the Dataset API") from e
 
     @ons_bundle_api_enabled
@@ -320,7 +322,7 @@ class BundleAdminForm(DeduplicateInlinePanelAdminForm):
                 bundle.bundle_api_content_id = ""
                 bundle.save(update_fields=["bundle_api_content_id"])
             except BundleAPIClientError as e:
-                logger.error("Failed to delete bundle %s from Dataset API: %s", bundle.pk, e)
+                logger.exception("Failed to delete bundle %s from Dataset API: %s", bundle.pk, e)
                 raise ValidationError("Could not communicate with the Dataset API") from e
             return
 
@@ -349,13 +351,13 @@ class BundleAdminForm(DeduplicateInlinePanelAdminForm):
                         content_id,
                     )
                 else:
-                    logger.error("Could not find content_id in response for bundle %s", bundle.pk)
+                    logger.exception("Could not find content_id in response for bundle %s", bundle.pk)
 
             if etag is not None:
                 bundle.bundle_api_etag = etag
                 bundle.save(update_fields=["bundle_api_etag"])
         except BundleAPIClientError as e:
-            logger.error("Failed to add content to bundle %s in Dataset API: %s", bundle.pk, e)
+            logger.exception("Failed to add content to bundle %s in Dataset API: %s", bundle.pk, e)
             raise ValidationError("Could not communicate with the Dataset API") from e
 
         for item in removed:
@@ -364,7 +366,9 @@ class BundleAdminForm(DeduplicateInlinePanelAdminForm):
                 client.delete_content_from_bundle(bundle.bundle_api_content_id, content_id)
                 logger.info("Deleted content %s from bundle %s in Dataset API", content_id, bundle.pk)
             except BundleAPIClientError as e:
-                logger.error("Failed to delete content %s from bundle %s in Dataset API: %s", content_id, bundle.pk, e)
+                logger.exception(
+                    "Failed to delete content %s from bundle %s in Dataset API: %s", content_id, bundle.pk, e
+                )
                 raise ValidationError("Could not communicate with the Dataset API") from e
 
     @ons_bundle_api_enabled
@@ -386,7 +390,7 @@ class BundleAdminForm(DeduplicateInlinePanelAdminForm):
                 bundle.pk,
             )
         except BundleAPIClientError as e:
-            logger.error(
+            logger.exception(
                 "Failed to sync preview teams for bundle %s (Wagtail ID: %s): %s",
                 bundle.bundle_api_content_id,
                 bundle.pk,

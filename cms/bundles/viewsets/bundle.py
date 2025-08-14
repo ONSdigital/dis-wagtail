@@ -495,7 +495,7 @@ class BundleDeleteView(DeleteView):
             logger.info("Deleted bundle %s from Dataset API", instance.pk)
 
         except BundleAPIClientError as e:
-            logger.error("Failed to delete bundle %s from Dataset API: %s", instance.pk, e)
+            logger.exception("Failed to delete bundle %s from Dataset API: %s", instance.pk, e)
             raise ValidationError("Could not communicate with the Dataset API") from e
 
     def delete_action(self) -> None:
