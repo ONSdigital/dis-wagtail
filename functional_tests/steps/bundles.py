@@ -138,7 +138,7 @@ def a_user_exists_by_role(context: Context, user_role: str) -> None:
     if not hasattr(context, "users"):
         context.users = []
     context.user_data = create_user(user_role)
-    context.users.append({user_role :context.user_data})
+    context.users.append({user_role: context.user_data})
 
 
 @given("there are {no_statistical_analysis} Statistical Analysis pages")
@@ -257,7 +257,8 @@ def json_str_to_dict(bundle_details):
 def log_in_user_by_role(context: Context, user_role: str) -> None:
     context.page.goto(f"{context.base_url}/admin/login/")
     context.page.get_by_placeholder("Enter your username").fill(
-        next(d.get(user_role)["username"] for d in context.users))
+        next(d.get(user_role)["username"] for d in context.users)
+    )
     context.page.get_by_placeholder("Enter password").fill(next(d.get(user_role)["password"] for d in context.users))
     context.page.get_by_role("button", name="Sign in").click()
 
@@ -274,7 +275,6 @@ def add_bundle_details(context: Context) -> None:
     context.page.get_by_role("link", name="Dashboard").click()
     expect(context.page.get_by_text("Latest active bundles")).to_be_visible()
     expect(context.page.get_by_role("link", name=bundle_name)).to_be_visible()
-
 
 
 @then("the user cannot create a bundle")
