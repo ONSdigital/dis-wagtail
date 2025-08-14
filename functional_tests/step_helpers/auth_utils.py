@@ -115,7 +115,7 @@ class AuthenticationTestHelper:
         """)
 
 
-def get_overridden_settings() -> dict:
+def get_cognito_overridden_settings() -> dict:
     """Get Django settings overrides for Cognito tests."""
     return {
         # Core settings

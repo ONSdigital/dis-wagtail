@@ -25,13 +25,10 @@ os.environ["DJANGO_ALLOW_ASYNC_UNSAFE"] = "True"
 django.setup()
 
 
-# Importing auth_utils after django.setup() is required because auth_utils (and its dependencies)
-# import Django models and use ORM features. If imported before django.setup(), it will cause
-# "AppRegistryNotReady: Apps aren't loaded yet." errors, since the Django app registry is not initialised.
-# Always call django.setup() before importing any modules that depend on Django models or ORM.
+# Imported after django.setup() as auth_utils import Django models and requires Django to be initialised.
 from functional_tests.step_helpers.auth_utils import (  # noqa: E402 # pylint: disable=wrong-import-position
     capture_request,
-    get_overridden_settings,
+    get_cognito_overridden_settings,
 )
 
 
@@ -155,7 +152,7 @@ def before_tag(context: Context, tag: str):
     """Handle tag-specific setup."""
     if tag == "cognito_enabled":
         # Apply Cognito test settings
-        settings = get_overridden_settings()
+        settings = get_cognito_overridden_settings()
         context.aws_override = override_settings(**settings)
         context.aws_override.enable()
 
