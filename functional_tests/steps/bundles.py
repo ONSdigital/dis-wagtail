@@ -134,10 +134,11 @@ def bundle_inspect_show(context: Context) -> None:
 
 
 @given("there is a {user_role} user")
-def create_user_by_role(context: Context, user_role: str) -> None:
-    if "users" not in context:
+def a_user_exists_by_role(context: Context, user_role: str) -> None:
+    if not hasattr(context, "users"):
         context.users = []
-    create_not_existing_role(context, user_role)
+    context.user_data = create_user(user_role)
+    context.users.append({user_role :context.user_data})
 
 
 @given("there are {no_statistical_analysis} Statistical Analysis pages")
@@ -181,7 +182,7 @@ def multiple_preview_teams_create(context: Context, no_preview_teams: str) -> No
 
 @given("the {user_role} is a member of the Preview teams")
 def add_user_to_preview_teams(context: Context, user_role: str) -> None:
-    create_not_existing_role(context, user_role)
+    create_user_by_role(context, user_role)
     next((item for item in context.users if item["role"] == user_role), None)["user"]["user"].teams.add(*context.teams)
 
 
@@ -254,10 +255,9 @@ def json_str_to_dict(bundle_details):
 # Bundles UI Triggers
 @when("the {user_role} logs in")
 def log_in_user_by_role(context: Context, user_role: str) -> None:
-    user = next((item for item in context.users if item["role"] == user_role), None)["user"]["user"]
     context.page.goto(f"{context.base_url}/admin/login/")
-    context.page.get_by_placeholder("Enter your username").fill(user.username)
-    context.page.get_by_placeholder("Enter password").fill(user.password)
+    context.page.get_by_placeholder("Enter your username").fill([d.get(user_role) for d in context.users][0]["username"])
+    context.page.get_by_placeholder("Enter password").fill([d.get(user_role) for d in context.users][0]["password"])
     context.page.get_by_role("button", name="Sign in").click()
 
 
@@ -265,15 +265,22 @@ def log_in_user_by_role(context: Context, user_role: str) -> None:
 @then("the user can create a bundle")
 def add_bundle_details(context: Context) -> None:
     bundle_name = "Bundle UI Test 1"
+    expect(context.page.locator("#latest-bundles-content")).to_contain_text("Add bundle")
     context.page.get_by_role("link", name="Add bundle").click()
+    context.page.get_by_role("textbox", name="Name*").click()
     context.page.get_by_role("textbox", name="Name*").fill(bundle_name)
-    context.page.get_by_role("button", name="Create").click()
+    context.page.get_by_role("button", name="Save as draft").click()
+    context.page.get_by_role("link", name="Dashboard").click()
+    expect(context.page.get_by_text("Latest active bundles")).to_be_visible()
+    expect(context.page.get_by_role("link", name=bundle_name)).to_be_visible()
+
 
 
 @then("the user cannot create a bundle")
 def the_user_cannot_add_bundles(context: Context) -> None:
     expect(context.page.get_by_role("link", name="Add bundle")).not_to_be_visible()
-    expect(context.page.get_by_text("There are no bundles to")).to_be_visible()
+    expect(context.page.get_by_text("Bundles ready for preview")).to_be_visible()
+    expect(context.page.get_by_text("There are currently no")).to_be_visible()
 
 
 @step("the {user_role} can edit a bundle")
@@ -380,7 +387,7 @@ def can_approve_bundle(context: Context) -> None:
     context.page.get_by_role("button", name="Save").click()
 
 
-def create_not_existing_role(context, user_role):
+def create_user_by_role(context, user_role):
+    context.user_data = create_user(user_role)
     if not next((item for item in context.users if item["role"] == user_role), False):
-        user_data = create_user(user_role)
-        context.users.append({"role": user_role, "user": user_data})
+        context.users.append({"role": user_role, "user": context.user_data})
