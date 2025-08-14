@@ -23,6 +23,7 @@ Feature: Wagtail Admin JWT Authentication and Session Management
         Then the user should be redirected to the sign-in page
 
     @cognito_enabled
+    @short_expiry
     Scenario: Automatic logout on token expiration
         Given the user is authenticated
         When the user navigates to the admin page
@@ -32,6 +33,7 @@ Feature: Wagtail Admin JWT Authentication and Session Management
 
     # TODO: This test will need to be updated in the near future where once the JWT token expires, the user will be redirected to the sign-in page when active again
     @cognito_enabled
+    @short_expiry
     Scenario: No logout on token expiration
         Given the user is authenticated
         When the user navigates to the admin page
@@ -46,8 +48,9 @@ Feature: Wagtail Admin JWT Authentication and Session Management
         And the user clicks the "Log out" button in the Wagtail UI
         Then the logout request should complete successfully
         And the tokens should be cleared from the browser
-
+    
     @cognito_enabled
+    @long_expiry
     Scenario: Keep multiple tabs in sync on token refresh
         Given the user is authenticated
         When the user navigates to the admin page

@@ -1,3 +1,5 @@
+from datetime import UTC, datetime, timedelta
+
 from behave import given, then, when  # pylint: disable=no-name-in-module
 from behave.runner import Context
 from django.conf import settings
@@ -13,7 +15,23 @@ def create_valid_tokens(context: Context) -> None:
     """Set up valid JWT tokens and authentication cookies for testing."""
     helper = AuthenticationTestHelper(context)
     helper.setup_test_keypair()
-    helper.generate_test_tokens(groups=["role-admin"])
+
+    # Check for scenario tag
+    tags = set()
+    if hasattr(context, "tags"):
+        tags = set(context.tags)
+    elif hasattr(context, "scenario") and hasattr(context.scenario, "tags"):
+        tags = set(context.scenario.tags)
+
+    expiry = {
+        "short_expiry": 5,
+        "long_expiry": 30,
+    }.get(next((tag for tag in ("short_expiry", "long_expiry") if tag in tags), None), 20)
+
+    now = datetime.now(tz=UTC)
+    exp = int((now + timedelta(seconds=expiry)).timestamp())
+    helper.generate_test_tokens(groups=["role-admin"], exp=exp)
+
     cookies = helper.create_auth_cookies()
     context.page.context.add_cookies(cookies)
     helper.setup_session_renewal_timing()
@@ -85,7 +103,7 @@ def step_not_redirected_to_signin(context: Context) -> None:
 @when("the user remains inactive for a period longer than the token's expiration time")
 def step_wait_for_expiry(context: Context) -> None:
     """Sleep past the token TTL so it expires."""
-    context.page.wait_for_timeout(20000)
+    context.page.wait_for_timeout(5000)
 
 
 @given("the user refreshes the page")

@@ -31,7 +31,7 @@ class AuthenticationTestHelper:
         # Mock get_jwks to return our test JWKS
         auth_utils.get_jwks = lambda: self.context.test_jwks
 
-    def generate_test_tokens(self, groups: Optional[list[str]] = None) -> tuple[str, str]:
+    def generate_test_tokens(self, groups: Optional[list[str]] = None, **jwt_overrides) -> tuple[str, str]:
         """Generate test JWT tokens with specified groups."""
         if groups is None:
             groups = ["role-admin"]
@@ -45,7 +45,7 @@ class AuthenticationTestHelper:
         token_helper.user_uuid = self.context.user_uuid
 
         # Generate tokens
-        access_token, id_token = token_helper.generate_tokens(groups=groups)
+        access_token, id_token = token_helper.generate_tokens(groups=groups, **jwt_overrides)
 
         # Store tokens in context
         self.context.access_token = access_token
