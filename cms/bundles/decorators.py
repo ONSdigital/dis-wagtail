@@ -5,7 +5,7 @@ from typing import Any
 from django.conf import settings
 
 
-def ons_bundle_api_enabled(func: Callable) -> Callable:
+def datasets_bundle_api_enabled(func: Callable) -> Callable:
     """Decorator that only executes the function if the DIS_DATASETS_BUNDLE_API_ENABLED
     setting is True.
     """

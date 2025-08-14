@@ -23,7 +23,7 @@ def look_up_and_select_dataset(context: Context):
     dataset_displayed_fields = {
         "title": mock_dataset["title"],
         "description": mock_dataset["description"],
-        "url": settings.DATASETS_BASE_API_URL + mock_dataset["links"]["latest_version"]["href"],
+        "url": settings.DATASETS_API_BASE_URL + mock_dataset["links"]["latest_version"]["href"],
     }
 
     context.selected_datasets = [*getattr(context, "selected_datasets", []), dataset_displayed_fields]

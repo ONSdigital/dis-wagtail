@@ -21,7 +21,7 @@ from wagtail.log_actions import log
 
 from cms.bundles.action_menu import BundleActionMenu
 from cms.bundles.clients.api import BundleAPIClient, BundleAPIClientError
-from cms.bundles.decorators import ons_bundle_api_enabled
+from cms.bundles.decorators import datasets_bundle_api_enabled
 from cms.bundles.enums import BundleStatus
 from cms.bundles.models import Bundle
 from cms.bundles.notifications.slack import (
@@ -482,7 +482,7 @@ class BundleInspectView(InspectView):
 class BundleDeleteView(DeleteView):
     has_errors = False
 
-    @ons_bundle_api_enabled
+    @datasets_bundle_api_enabled
     def sync_bundle_deletion_with_dataset_api(self, instance: Bundle) -> None:
         """Handle when a bundle is deleted."""
         if not instance.bundle_api_content_id:

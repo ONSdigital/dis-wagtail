@@ -306,7 +306,7 @@ class BundleAPIClientTests(TestCase):
 
     def test_client_initialization_with_default_url(self):
         client = BundleAPIClient()
-        self.assertEqual(client.base_url, settings.DIS_DATASETS_BUNDLE_BASE_API_URL)
+        self.assertEqual(client.base_url, settings.DIS_DATASETS_BUNDLE_API_BASE_URL)
 
     def test_client_initialization_with_custom_url(self):
         client = BundleAPIClient(base_url="https://custom-api.example.com")

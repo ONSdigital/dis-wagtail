@@ -2,7 +2,7 @@ from unittest.mock import MagicMock
 
 from django.test import TestCase
 
-from cms.bundles.decorators import ons_bundle_api_enabled
+from cms.bundles.decorators import datasets_bundle_api_enabled
 
 
 class OnsBundleApiEnabledDecoratorTest(TestCase):
@@ -12,7 +12,7 @@ class OnsBundleApiEnabledDecoratorTest(TestCase):
         mock_func = MagicMock()
         mock_func.__name__ = "mock_func"
 
-        decorated_func = ons_bundle_api_enabled(mock_func)
+        decorated_func = datasets_bundle_api_enabled(mock_func)
 
         with self.settings(DIS_DATASETS_BUNDLE_API_ENABLED=True):
             decorated_func("foo", kwarg1="bar")
@@ -26,7 +26,7 @@ class OnsBundleApiEnabledDecoratorTest(TestCase):
         mock_func = MagicMock()
         mock_func.__name__ = "mock_func_api_disabled"
 
-        decorated_func = ons_bundle_api_enabled(mock_func)
+        decorated_func = datasets_bundle_api_enabled(mock_func)
 
         with self.settings(DIS_DATASETS_BUNDLE_API_ENABLED=False):
             result = decorated_func("foo", kwarg1="bar")

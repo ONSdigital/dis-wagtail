@@ -175,11 +175,11 @@ class BundleViewSetAddTestCase(BundleViewSetTestCaseBase):
 
     def test_add_view_passes_access_token_to_form(self):
         response = self.client.get(self.bundle_add_url)
-        self.assertIsNone(response.context["form"].dataset_api_access_token)
+        self.assertIsNone(response.context["form"].datasets_bundle_api_user_access_token)
 
         self.client.cookies[settings.ACCESS_TOKEN_COOKIE_NAME] = "the-access-token"
         response = self.client.get(self.bundle_add_url)
-        self.assertEqual(response.context["form"].dataset_api_access_token, "the-access-token")
+        self.assertEqual(response.context["form"].datasets_bundle_api_user_access_token, "the-access-token")
 
 
 class BundleViewSetEditTestCase(BundleViewSetTestCaseBase):
@@ -399,11 +399,11 @@ class BundleViewSetEditTestCase(BundleViewSetTestCaseBase):
 
     def test_view_passes_access_token_to_form(self):
         response = self.client.get(self.edit_url)
-        self.assertIsNone(response.context["form"].dataset_api_access_token)
+        self.assertIsNone(response.context["form"].datasets_bundle_api_user_access_token)
 
         self.client.cookies[settings.ACCESS_TOKEN_COOKIE_NAME] = "the-access-token"
         response = self.client.get(self.edit_url)
-        self.assertEqual(response.context["form"].dataset_api_access_token, "the-access-token")
+        self.assertEqual(response.context["form"].datasets_bundle_api_user_access_token, "the-access-token")
 
 
 class BundleViewSetInspectTestCase(BundleViewSetTestCaseBase):

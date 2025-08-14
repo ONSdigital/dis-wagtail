@@ -13,7 +13,7 @@ from cms.bundles.clients.api import (
     build_content_item_for_dataset,
     extract_content_id_from_bundle_response,
 )
-from cms.bundles.decorators import ons_bundle_api_enabled
+from cms.bundles.decorators import datasets_bundle_api_enabled
 from cms.bundles.enums import ACTIVE_BUNDLE_STATUS_CHOICES, EDITABLE_BUNDLE_STATUSES, BundleStatus
 from cms.bundles.utils import build_bundle_data_for_api
 from cms.core.forms import DeduplicateInlinePanelAdminForm
@@ -36,7 +36,7 @@ class BundleAdminForm(DeduplicateInlinePanelAdminForm):
         - Hides the "Released" status choice as that happens on publish
         - disabled/hide the approved at/by fields
         """
-        self.dataset_api_access_token = kwargs.pop("access_token", None)
+        self.datasets_bundle_api_user_access_token = kwargs.pop("access_token", None)
 
         super().__init__(*args, **kwargs)
         # hide the status field, and exclude the "Released" status choice
@@ -112,7 +112,7 @@ class BundleAdminForm(DeduplicateInlinePanelAdminForm):
         if not self.instance.bundle_api_content_id:
             return datasets_not_approved
 
-        client = BundleAPIClient(access_token=self.dataset_api_access_token)
+        client = BundleAPIClient(access_token=self.datasets_bundle_api_user_access_token)
         try:
             response = client.get_bundle_contents(self.instance.bundle_api_content_id)
 
@@ -140,7 +140,7 @@ class BundleAdminForm(DeduplicateInlinePanelAdminForm):
 
         return datasets_not_approved
 
-    @ons_bundle_api_enabled
+    @datasets_bundle_api_enabled
     def _validate_bundled_datasets_status(self) -> None:
         """Validate that all bundled datasets are approved when bundle is set to approved status."""
         # Skip validation if bundle doesn't have an API ID yet, or it doesn't have any datasets
@@ -273,7 +273,7 @@ class BundleAdminForm(DeduplicateInlinePanelAdminForm):
 
         return cleaned_data
 
-    @ons_bundle_api_enabled
+    @datasets_bundle_api_enabled
     def _push_bundle_to_dataset_api(self, client: BundleAPIClient, bundle: "Bundle") -> "Bundle":
         """Pushes the bundle to the Dataset API if it does."""
         try:
@@ -291,7 +291,7 @@ class BundleAdminForm(DeduplicateInlinePanelAdminForm):
             logger.exception("Failed to create bundle %s in Dataset API: %s", bundle.pk, e)
             raise ValidationError("Could not communicate with the Dataset API") from e
 
-    @ons_bundle_api_enabled
+    @datasets_bundle_api_enabled
     def _sync_bundle_status_with_dataset_api(self, client: BundleAPIClient, bundle: "Bundle") -> None:
         if not bundle.bundle_api_content_id:
             return
@@ -306,7 +306,7 @@ class BundleAdminForm(DeduplicateInlinePanelAdminForm):
             logger.exception("Failed to sync bundle %s with Dataset API: %s", bundle.pk, e)
             raise ValidationError("Could not communicate with the Dataset API") from e
 
-    @ons_bundle_api_enabled
+    @datasets_bundle_api_enabled
     def _sync_datasets_with_dataset_api(
         self, client: BundleAPIClient, bundle: "Bundle", current_datasets: set["BundleDataset"]
     ) -> None:
@@ -371,7 +371,7 @@ class BundleAdminForm(DeduplicateInlinePanelAdminForm):
                 )
                 raise ValidationError("Could not communicate with the Dataset API") from e
 
-    @ons_bundle_api_enabled
+    @datasets_bundle_api_enabled
     def _sync_teams_with_dataset_api(self, client: BundleAPIClient, bundle: "Bundle") -> None:
         if not bundle.bundle_api_content_id:
             return
@@ -398,7 +398,7 @@ class BundleAdminForm(DeduplicateInlinePanelAdminForm):
             )
             raise ValidationError("Could not communicate with the Dataset API") from e
 
-    @ons_bundle_api_enabled
+    @datasets_bundle_api_enabled
     def _check_and_sync_with_dataset_api(self, bundle: "Bundle") -> None:
         should_push_bundle_to_api = not bundle.bundle_api_content_id and self._has_datasets()
         status_has_changed = bundle.bundle_api_content_id and self.original_status != bundle.status
@@ -414,7 +414,7 @@ class BundleAdminForm(DeduplicateInlinePanelAdminForm):
             or should_push_dataset_changes_to_api
             or should_push_team_changes_to_api
         ):
-            client = BundleAPIClient(access_token=self.dataset_api_access_token)
+            client = BundleAPIClient(access_token=self.datasets_bundle_api_user_access_token)
             if should_push_bundle_to_api:
                 # The bundle should be created in the API if it has datasets, and it doesn't have an API ID.
                 bundle = self._push_bundle_to_dataset_api(client, bundle)

@@ -30,7 +30,7 @@ class BundleFormSaveWithDatasetAPITestCase(TestCase):
         cls.bundle_api_id = "api-bundle-123"
         cls.bundle = BundleFactory(bundle_api_content_id=cls.bundle_api_id)
 
-        cls.base_api_url = settings.DIS_DATASETS_BUNDLE_BASE_API_URL
+        cls.base_api_url = settings.DIS_DATASETS_BUNDLE_API_BASE_URL
         cls.bundle_endpoint = f"{cls.base_api_url}/bundles"
         cls.update_bundle_endpoint = f"{cls.base_api_url}/bundles/{cls.bundle_api_id}"
         cls.delete_endpoint = f"{cls.base_api_url}/bundles/{cls.bundle_api_id}"

@@ -18,7 +18,7 @@ class BundleAPIClientError(Exception):
 
 
 class BundleAPIClient:
-    """Client for interacting with the ONS Dataset API bundle endpoints.
+    """Client for interacting with the ONS Dataset Bundle API endpoints.
 
     https://github.com/ONSdigital/dis-bundle-api/blob/bd5e75290f3f1595d496902a73744e2084056944/swagger.yaml
     """
@@ -27,11 +27,11 @@ class BundleAPIClient:
         """Initialize the client with the base URL.
 
         Args:
-            base_url: The base URL for the API. If not provided, uses settings.ONS_API_BASE_URL
-            access_token: The authorisation token, as provided by Florent/DIS auth and stored
+            base_url: The base URL for the API. If not provided, uses settings.DIS_DATASETS_BUNDLE_API_BASE_URL
+            access_token: The user authorisation token, as provided by Florence/DIS auth and stored
                           in the COOKIES[settings.ACCESS_TOKEN_COOKIE_NAME]
         """
-        self.base_url = base_url or settings.DIS_DATASETS_BUNDLE_BASE_API_URL
+        self.base_url = base_url or settings.DIS_DATASETS_BUNDLE_API_BASE_URL
         self.session = requests.Session()
         self.is_enabled = getattr(settings, "DIS_DATASETS_BUNDLE_API_ENABLED", False)
 

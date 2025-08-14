@@ -30,7 +30,7 @@ def mock_datasets_responses(datasets: list[Mapping[str, Any]]) -> responses.Requ
     """
     with responses.RequestsMock(assert_all_requests_are_fired=False) as mock_responses:
         mock_responses.get(
-            settings.DATASETS_BASE_API_URL,
+            settings.DATASETS_API_BASE_URL,
             json={
                 "items": datasets,
                 "total_count": len(datasets),
@@ -38,7 +38,7 @@ def mock_datasets_responses(datasets: list[Mapping[str, Any]]) -> responses.Requ
         )
         for dataset in datasets:
             mock_responses.get(
-                f"{settings.DATASETS_BASE_API_URL}/{dataset['id']}",
+                f"{settings.DATASETS_API_BASE_URL}/{dataset['id']}",
                 json=dataset,
             )
 

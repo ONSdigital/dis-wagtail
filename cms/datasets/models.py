@@ -34,8 +34,8 @@ class ONSDataset(APIModel):
     search_fields: ClassVar[list[str]] = ["title", "version", "formatted_edition"]
 
     class Meta:
-        base_url: str = settings.DATASETS_BASE_API_URL
-        detail_url: str = f"{settings.DATASETS_BASE_API_URL}/%s"
+        base_url: str = settings.DATASETS_API_BASE_URL
+        detail_url: str = f"{settings.DATASETS_API_BASE_URL}/%s"
         fields: ClassVar = ["id", "description", "title", "version", "edition"]
         pagination_style = "offset-limit"
         verbose_name_plural = "ONS Datasets"
