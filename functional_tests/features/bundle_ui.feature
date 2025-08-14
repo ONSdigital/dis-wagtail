@@ -50,9 +50,9 @@ Feature: UI Bundle Happy Paths
         Examples: bundles
            | Number_of_Bundles | Role                       | Creator Role        | Bundle_Details                                                                                                                                                         |
            | 1                 | "Publishing Admin"         | Publishing Admin    | {"Role":"Publishing Admin","Creator Role":"Publishing Admin","status":"Draft","preview_teams":false,"add_rel_cal":false,"add_stat_page":false} |
-           | 1                 | '{"Role": "Publishing Officer", "Creator Role": "Publishing Officer",  "status": "Draft", "preview_teams":"False",  "add_rel_cal": "False",  "add_stat_page": "False"}' |
-           | 1                 | '{"Role": "Publishing Admin", "Creator Role": "Publishing Officer",  "status": "Draft", "preview_teams":"False",  "add_rel_cal": "False",  "add_stat_page": "False"}' |
-           | 1                 | '{"Role": "Publishing Officer", "Creator Role": "Publishing Admin",  "status": "Draft", "preview_teams":"False",  "add_rel_cal": "False",  "add_stat_page": "False"}' |
+           | 1                 | "Publishing Admin"         | Publishing Admin    | {"Role": "Publishing Officer", "Creator Role": "Publishing Officer",  "status": "Draft", "preview_teams":"False",  "add_rel_cal": "False",  "add_stat_page": "False"}' |
+           | 1                 | "Publishing Admin"         | Publishing Admin    | {"Role": "Publishing Admin", "Creator Role": "Publishing Officer",  "status": "Draft", "preview_teams":"False",  "add_rel_cal": "False",  "add_stat_page": "False"}' |
+           | 1                 | "Publishing Admin"         | Publishing Admin    | {"Role": "Publishing Officer", "Creator Role": "Publishing Admin",  "status": "Draft", "preview_teams":"False",  "add_rel_cal": "False",  "add_stat_page": "False"}' |
 
 
 #---- Bundle Preview UI Tests -----
