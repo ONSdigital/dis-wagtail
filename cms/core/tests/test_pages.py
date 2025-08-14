@@ -80,7 +80,7 @@ class HomePageTests(WagtailPageTestCase):
         self.assertNotContains(response, "Wagtail Core Default Login")
         self.assertNotContains(response, "Florence Login")
 
-    def test_page_gtm_attributes(self):
+    def test_page_analytics_values(self):
         response = self.client.get("/")
 
         self.assertEqual(response.status_code, 200)
@@ -280,7 +280,7 @@ class ErrorPageTests(WagtailPageTestCase):
         self.assertEqual(response.status_code, HTTPStatus.NOT_FOUND)
         self.assertContains(response, 'href="/custom/contact-path/"', status_code=HTTPStatus.NOT_FOUND)
 
-    def test_404_page_gtm_attributes(self):
+    def test_404_page_analytics_values(self):
         response = self.client.get("/non-existent-page/")
         self.assertEqual(response.status_code, HTTPStatus.NOT_FOUND)
         datalayer_values = extract_datalayer_pushed_values(response.text)

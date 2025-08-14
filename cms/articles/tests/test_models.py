@@ -460,9 +460,9 @@ class StatisticalArticlePageTestCase(WagtailTestUtils, TestCase):
     def test_get_analytics_values(self):
         analytics_values = self.page.get_analytics_values(get_dummy_request())
         self.assertEqual(analytics_values.get("pageTitle"), self.page.get_full_display_title())
-        self.assertEqual(analytics_values.get("contentType"), self.page.gtm_content_type)
-        self.assertEqual(analytics_values.get("contentGroup"), self.page.gtm_content_group)
-        self.assertEqual(analytics_values.get("contentTheme"), self.page.gtm_content_theme)
+        self.assertEqual(analytics_values.get("contentType"), self.page.analytics_content_type)
+        self.assertEqual(analytics_values.get("contentGroup"), self.page.analytics_content_group)
+        self.assertEqual(analytics_values.get("contentTheme"), self.page.analytics_content_theme)
         self.assertEqual(analytics_values.get("outputSeries"), self.page.get_parent().slug)
         self.assertEqual(analytics_values.get("latestRelease"), "yes")
         self.assertEqual(analytics_values.get("releaseDate"), format_date_for_gtm(self.page.release_date))
@@ -728,9 +728,9 @@ class StatisticalArticlePageRenderTestCase(WagtailTestUtils, TestCase):
 
         datalayer_values = extract_datalayer_pushed_values(response.text)
         self.assertEqual(datalayer_values["product"], "wagtail")
-        self.assertEqual(datalayer_values["contentType"], self.page.gtm_content_type)
-        self.assertEqual(datalayer_values["contentGroup"], self.page.gtm_content_group)
-        self.assertEqual(datalayer_values["contentTheme"], self.page.gtm_content_theme)
+        self.assertEqual(datalayer_values["contentType"], self.page.analytics_content_type)
+        self.assertEqual(datalayer_values["contentGroup"], self.page.analytics_content_group)
+        self.assertEqual(datalayer_values["contentTheme"], self.page.analytics_content_theme)
         for key, value in self.page.get_analytics_values(get_dummy_request(path=self.page_url)).items():
             self.assertIn(key, datalayer_values)
             self.assertEqual(datalayer_values[key], value)

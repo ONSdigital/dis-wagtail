@@ -37,7 +37,7 @@ class InformationPage(BundledPageMixin, GenericTaxonomyMixin, BasePage):  # type
     last_updated = models.DateField(blank=True, null=True)
     content = StreamField(CoreStoryBlock())
 
-    gtm_content_type: ClassVar[str] = "information"
+    analytics_content_type: ClassVar[str] = "information"
 
     content_panels: ClassVar[list["Panel"]] = [
         *BundledPageMixin.panels,
@@ -57,7 +57,6 @@ class InformationPage(BundledPageMixin, GenericTaxonomyMixin, BasePage):  # type
     @cached_property
     def cached_analytics_values(self) -> dict[str, str | bool]:
         values = super().cached_analytics_values
-        values["releaseDate"] = format_date_for_gtm(self.publication_date)
         if self.last_updated:
             values["lastUpdatedDate"] = format_date_for_gtm(self.last_updated)
         return values
@@ -95,7 +94,7 @@ class IndexPage(BundledPageMixin, BasePage):  # type: ignore[django-manager-miss
         index.SearchField("content"),
     ]
 
-    gtm_content_type: ClassVar[str] = "index-pages"
+    analytics_content_type: ClassVar[str] = "index-pages"
 
     def get_formatted_items(self, request: "HttpRequest") -> list[dict[str, str | dict[str, str]]]:
         """Returns a formatted list of Featured items

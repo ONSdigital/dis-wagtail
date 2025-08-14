@@ -94,16 +94,10 @@ class ThemePage(ExclusiveTaxonomyMixin, BasePage):  # type: ignore[django-manage
     content_panels: ClassVar[list["Panel"]] = [*BasePage.content_panels, "summary"]
 
     @cached_property
-    def cached_analytics_values(self) -> dict[str, str | bool]:
-        """Return a dictionary of cachable analytics values for this page."""
-        values = super().cached_analytics_values
-
-        values["contentTheme"] = self.slug
-        return values
-
-    @cached_property
-    def gtm_content_type(self) -> str:
-        """Return the Google Tag Manager content type for this page."""
+    def analytics_content_type(self) -> str:
+        """Return the Google Tag Manager content type for this page, which should be "themes" for top-level theme
+        pages and "sub-themes" for theme pages under other theme pages.
+        """
         if isinstance(self.get_parent().specific_deferred, ThemePage):
             return "sub-themes"
         return "themes"

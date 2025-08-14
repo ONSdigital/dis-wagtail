@@ -107,11 +107,11 @@ class LinkBlockStructValue(StructValue):
 
         target_page = target_page.specific_deferred
 
-        attributes["data-ga-click-content-type"] = target_page.gtm_content_type
-        if content_group := target_page.gtm_content_group:
+        attributes["data-ga-click-content-type"] = target_page.analytics_content_type
+        if content_group := target_page.analytics_content_group:
             attributes["data-ga-click-content-group"] = content_group
 
-        if content_theme := target_page.gtm_content_theme:
+        if content_theme := target_page.analytics_content_theme:
             attributes["data-ga-click-content-theme"] = content_theme
 
         if target_page.__class__.__name__ == "StatisticalArticlePage":

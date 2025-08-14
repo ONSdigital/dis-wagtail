@@ -181,7 +181,7 @@ class ReleaseCalendarPage(BundledPageMixin, BasePage):  # type: ignore[django-ma
         index.FilterField("release_date"),
     ]
 
-    gtm_content_type: ClassVar[str] = "release-calendars"  # TODO agree in spec
+    analytics_content_type: ClassVar[str] = "release-calendars"  # TODO agree in spec
 
     def get_template(self, request: "HttpRequest", *args: Any, **kwargs: Any) -> str:
         """Select the correct template based on status."""
@@ -301,8 +301,6 @@ class ReleaseCalendarPage(BundledPageMixin, BasePage):  # type: ignore[django-ma
     @cached_property
     def cached_analytics_values(self) -> dict[str, str | bool]:
         values = super().cached_analytics_values
-
-        values["releaseDate"] = format_date_for_gtm(self.publication_date)
         if self.next_release_date:
             values["nextReleaseDate"] = format_date_for_gtm(self.next_release_date)
         return values

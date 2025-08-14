@@ -5,7 +5,11 @@ from wagtail.test.utils.wagtail_tests import WagtailTestUtils
 
 from cms.articles.tests.factories import ArticleSeriesPageFactory, StatisticalArticlePageFactory
 from cms.core.models import ContactDetails
+from cms.home.models import HomePage
 from cms.standard_pages.tests.factories import InformationPageFactory
+from cms.taxonomy.models import Topic
+from cms.themes.tests.factories import ThemePageFactory
+from cms.topics.tests.factories import TopicPageFactory
 
 
 class ContactDetailsTestCase(WagtailTestUtils, TestCase):
@@ -117,3 +121,60 @@ class CanonicalFullUrlsTestCase(TestCase):
         canonical_url = self.information_page.get_canonical_url(self.dummy_request)
 
         self.assertEqual(canonical_url, self.information_page.get_full_url(self.dummy_request))
+
+
+class AnalyticsValuesTestCase(TestCase):
+    def test_parent_topic_or_theme(self):
+        """Test the parent_topic_or_theme property returns the parent topic page for an InformationPage."""
+        topic_page = TopicPageFactory()
+        information_page = InformationPageFactory(parent=topic_page)
+
+        self.assertEqual(information_page.parent_topic_or_theme, topic_page)
+
+    def test_parent_topic_or_theme_none(self):
+        """Test that the parent_topic_or_theme property returns None for a HomePage (which has no parent topic)."""
+        home_page = HomePage.objects.get()
+        self.assertIsNone(home_page.parent_topic_or_theme)
+
+    def test_parent_topic_or_theme_for_topic_page(self):
+        """Test that the parent_topic_or_theme property returns self TopicPage."""
+        topic_page = TopicPageFactory()
+        self.assertEqual(topic_page.parent_topic_or_theme, topic_page)
+
+    def test_parent_topic_or_theme_for_theme_page(self):
+        """Test that the parent_topic_or_theme property returns self ThemePage."""
+        theme_page = ThemePageFactory()
+        self.assertEqual(theme_page.parent_topic_or_theme, theme_page)
+
+    def test_analytics_content_group(self):
+        """Test that the analytics content group is the slug of the parent topic page."""
+        topic_page = TopicPageFactory()
+        information_page = InformationPageFactory(parent=topic_page)
+
+        content_group = information_page.analytics_content_group
+
+        self.assertEqual(content_group, topic_page.slug)
+
+    def test_analytics_content_theme(self):
+        """Test that the analytics content theme is the title of the top level topic associated with the parent topic
+        page.
+        """
+        top_level_topic = Topic(id=1111, title="Test Analytics Theme", description="test")
+        Topic.save_new(top_level_topic)
+        topic = Topic(id=1112, title="Test Topic", description="test 2")
+        Topic.save_new(topic, parent_topic=top_level_topic)
+        topic_page = TopicPageFactory(topic=topic)
+        information_page = InformationPageFactory(parent=topic_page)
+
+        content_theme = information_page.analytics_content_theme
+        self.assertEqual(content_theme, top_level_topic.title)
+
+    def test_default_analytics_values(self):
+        """Test that the analytics values are correctly set for a page."""
+        information_page = InformationPageFactory()
+        analytics_values = information_page.cached_analytics_values
+
+        self.assertEqual(analytics_values.get("pageTitle"), information_page.title)
+        self.assertEqual(analytics_values.get("contentType"), information_page.analytics_content_type)
+        self.assertEqual(analytics_values.get("contentGroup"), information_page.analytics_content_group)
+        self.assertEqual(analytics_values.get("contentTheme"), information_page.analytics_content_theme)

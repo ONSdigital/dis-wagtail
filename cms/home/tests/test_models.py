@@ -26,4 +26,4 @@ class HomePageTestCase(TestCase):
     def test_get_analytics_values(self):
         analytics_values = self.home_page.get_analytics_values(get_dummy_request())
         self.assertEqual(analytics_values["pageTitle"], self.home_page.title)
-        self.assertEqual(analytics_values["contentType"], self.home_page.gtm_content_type)
+        self.assertEqual(analytics_values["contentType"], self.home_page.analytics_content_type)

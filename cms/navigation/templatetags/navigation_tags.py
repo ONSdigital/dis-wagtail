@@ -32,6 +32,7 @@ class FooterColumnData(TypedDict):
 def _extract_item(
     value: "StructValue",
     text_key: Literal["text", "heading"],
+    navigation_type: str,
     request: Optional["HttpRequest"] = None,
     include_description: bool = False,
 ) -> NavigationItem:
@@ -41,7 +42,7 @@ def _extract_item(
     item: NavigationItem = {
         "attributes": {
             "data-ga-event": "navigation-click",
-            "data-ga-navigation-type": "top-navigation",  # TODO make dynamic
+            "data-ga-navigation-type": navigation_type,
         }
     }
 
@@ -79,7 +80,11 @@ def main_menu_highlights(
     highlights = []
     for highlight in main_menu.highlights:
         highlight_data = _extract_item(
-            highlight.value, request=context.get("request"), include_description=True, text_key="heading"
+            highlight.value,
+            text_key="heading",
+            navigation_type="top-navigation",
+            request=context.get("request"),
+            include_description=True,
         )
         if highlight_data:
             highlights.append(highlight_data)
@@ -94,14 +99,20 @@ def main_menu_columns(context: jinja2.runtime.Context, main_menu: Optional["Main
 
     def extract_section_data(section: "StructValue", request: Optional["HttpRequest"] = None) -> NavigationItem | None:
         section_data = _extract_item(
-            section["section_link"], request=request, include_description=False, text_key="heading"
+            section["section_link"],
+            text_key="heading",
+            navigation_type="top-navigation",
+            request=request,
+            include_description=False,
         )
         if not section_data:
             return None
 
         children = []
         for link in section["links"]:
-            link_data = _extract_item(link, request=request, include_description=False, text_key="text")
+            link_data = _extract_item(
+                link, text_key="text", navigation_type="top-navigation", request=request, include_description=False
+            )
             if link_data:
                 children.append(link_data)
 
@@ -136,7 +147,9 @@ def footer_menu_columns(
 
         links_list = []
         for link_struct in column_value.get("links", []):
-            link_data = _extract_item(link_struct, request=context.get("request"), text_key="text")
+            link_data = _extract_item(
+                link_struct, text_key="text", navigation_type="footer-navigation", request=context.get("request")
+            )
             if link_data:
                 links_list.append(link_data)
 

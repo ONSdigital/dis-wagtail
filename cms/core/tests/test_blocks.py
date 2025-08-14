@@ -418,9 +418,13 @@ class CoreBlocksTestCase(TestCase):
 
         # Attributes specific to internal links
         self.assertEqual(related_link["attributes"]["data-ga-click-path"], article_page.get_url())
-        self.assertEqual(related_link["attributes"]["data-ga-click-content-type"], article_page.gtm_content_type)
-        self.assertEqual(related_link["attributes"]["data-ga-click-content-group"], article_page.gtm_content_group)
-        self.assertEqual(related_link["attributes"]["data-ga-click-content-theme"], article_page.gtm_content_theme)
+        self.assertEqual(related_link["attributes"]["data-ga-click-content-type"], article_page.analytics_content_type)
+        self.assertEqual(
+            related_link["attributes"]["data-ga-click-content-group"], article_page.analytics_content_group
+        )
+        self.assertEqual(
+            related_link["attributes"]["data-ga-click-content-theme"], article_page.analytics_content_theme
+        )
 
         # Attributes specific to articles
         self.assertEqual(
@@ -461,7 +465,9 @@ class CoreBlocksTestCase(TestCase):
 
         # Attributes specific to internal links
         self.assertEqual(related_link["attributes"]["data-ga-click-path"], self.home_page.get_url())
-        self.assertEqual(related_link["attributes"]["data-ga-click-content-type"], self.home_page.gtm_content_type)
+        self.assertEqual(
+            related_link["attributes"]["data-ga-click-content-type"], self.home_page.analytics_content_type
+        )
 
     def test_relatedlinksblock__external_link_attributes(self):
         block = RelatedLinksBlock(add_heading=True)

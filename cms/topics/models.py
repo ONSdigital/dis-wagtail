@@ -196,7 +196,7 @@ class TopicPage(BundledPageMixin, ExclusiveTaxonomyMixin, BasePage):  # type: ig
 
     search_fields: ClassVar[list[index.BaseField]] = [*BasePage.search_fields, index.SearchField("summary")]
 
-    gtm_content_type: ClassVar[str] = "topics"
+    analytics_content_type: ClassVar[str] = "topics"
 
     def get_context(self, request: "HttpRequest", *args: Any, **kwargs: Any) -> dict:
         """Additional context for the template."""
