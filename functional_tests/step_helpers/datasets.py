@@ -19,7 +19,7 @@ def mock_datasets_responses(datasets: list[Mapping[str, Any]]) -> responses.Requ
         "id": "example1",
         "description": "Example dataset for functional testing",
         "title": "Looked Up Dataset",
-        "version": "1",
+        "version": 1,
         "links": {
             "latest_version": {
                 "href": "/datasets/example1/editions/example-dataset-1/versions/1",
@@ -29,8 +29,7 @@ def mock_datasets_responses(datasets: list[Mapping[str, Any]]) -> responses.Requ
     }]
     """
     with responses.RequestsMock(assert_all_requests_are_fired=False) as mock_responses:
-        mock_responses.add(
-            responses.GET,
+        mock_responses.get(
             settings.DATASETS_BASE_API_URL,
             json={
                 "items": datasets,
@@ -38,8 +37,7 @@ def mock_datasets_responses(datasets: list[Mapping[str, Any]]) -> responses.Requ
             },
         )
         for dataset in datasets:
-            mock_responses.add(
-                responses.GET,
+            mock_responses.get(
                 f"{settings.DATASETS_BASE_API_URL}/{dataset['id']}",
                 json=dataset,
             )

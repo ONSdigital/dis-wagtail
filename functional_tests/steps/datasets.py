@@ -12,18 +12,18 @@ def look_up_and_select_dataset(context: Context):
         "id": "example1",
         "description": "Example dataset for functional testing",
         "title": "Looked Up Dataset",
-        "version": "1",
+        "version": 1,
         "links": {
             "latest_version": {
                 "href": "/datasets/example1/editions/example-dataset-1/versions/1",
-                "id": "example1",
+                "id": 1,
             },
         },
     }
     dataset_displayed_fields = {
         "title": mock_dataset["title"],
         "description": mock_dataset["description"],
-        "url": settings.ONS_WEBSITE_DATASET_BASE_URL + mock_dataset["links"]["latest_version"]["href"],
+        "url": settings.DATASETS_BASE_API_URL + mock_dataset["links"]["latest_version"]["href"],
     }
 
     context.selected_datasets = [*getattr(context, "selected_datasets", []), dataset_displayed_fields]
@@ -63,7 +63,7 @@ def the_user_selects_multiple_datasets(context: Context) -> None:
         "id": "example1",
         "description": "Example dataset for functional testing",
         "title": "Looked Up Dataset",
-        "version": "1",
+        "version": 1,
         "links": {
             "latest_version": {
                 "href": "/datasets/example1/editions/example-dataset-1/versions/1",
@@ -76,7 +76,7 @@ def the_user_selects_multiple_datasets(context: Context) -> None:
         "id": "example2",
         "description": "Second example dataset for functional testing",
         "title": "Personal well-being estimates by local authority",
-        "version": "1",
+        "version": 1,
         "links": {
             "latest_version": {
                 "href": "/datasets/example2/editions/example-dataset-2/versions/1",
@@ -89,7 +89,7 @@ def the_user_selects_multiple_datasets(context: Context) -> None:
         "id": "example3",
         "description": "Third example dataset for functional testing",
         "title": "Deaths registered weekly in England and Wales by region",
-        "version": "1",
+        "version": 1,
         "links": {
             "latest_version": {
                 "href": "/datasets/example3/editions/example-dataset-3/versions/1",

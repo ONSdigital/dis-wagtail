@@ -39,7 +39,7 @@ class TestONSDataset(TestCase):
             "id": "test1",
             "description": "test 1 description",
             "title": "test 1 title",
-            "version": "1",
+            "version": 1,
             "links": {
                 "latest_version": {
                     "href": "/datasets/test1/editions/test1_edition/versions/1",
