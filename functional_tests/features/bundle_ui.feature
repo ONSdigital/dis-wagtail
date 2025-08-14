@@ -33,24 +33,24 @@ Feature: UI Bundle Happy Paths
         Examples: bundles
            | role     |
            | Viewer   |
-#
-##---- Bundle Edit UI Tests -----
-#
-#    Scenario Outline: A User can edit a bundle
-#        Given there is a <Role> user
-#        And there is a <Creator Role> user
-#        And there are 1 Statistical Analysis pages
-#        And there are 1 release calendar pages
-#        And there are 1 Preview teams
-#        And the <Role> is a member of the Preview teams
-#        And there are <number_of_bundles> bundles with <Bundle_Details>
-#        When the <Role> logs in
-#        Then the <Role> can edit a bundle
-#
-#        Examples: bundles
-#           | number_of_bundles | Role                       | Creator Role        | Bundle_Details                                                                                                                                                         |
-#           | 1                 | "Publishing Admin"         | Publishing Admin    | {"Role":"Publishing Admin","Creator Role":"Publishing Admin","status":"Draft","preview_teams":false,"add_rel_cal":false,"add_stat_page":false} |
-#           | 1                 | "Publishing Admin"         | Publishing Admin    | {"Role": "Publishing Officer", "Creator Role": "Publishing Officer",  "status": "Draft", "preview_teams":"False",  "add_rel_cal": "False",  "add_stat_page": "False"}' |
+
+#---- Bundle Edit UI Tests -----
+
+    Scenario Outline: A User can edit a bundle
+        Given there is a <Role> user
+        And there is a <Creator Role> user
+        And there are 1 Statistical Analysis pages
+        And there are 1 release calendar pages
+        And there are 1 Preview teams
+        And the <Role> is a member of the Preview teams
+        And there are <number_of_bundles> bundles with <Bundle_Details>
+        When the <Role> logs in
+        Then the <Role> can edit a bundle
+
+        Examples: bundles
+           | number_of_bundles | Role                       | Creator Role        | Bundle_Details                                                                                                                                                         |
+           | 1                 | Publishing Admin        | Publishing Admin    | {"Role":"Publishing Admin","Creator Role":"Publishing Admin","status":"Draft","preview_teams":false,"add_rel_cal":false,"add_stat_page":false} |
+#           | 1                 | Publishing Officer         | Publishing Admin    | {"Role": "Publishing Officer", "Creator Role": "Publishing Officer",  "status": "Draft", "preview_teams":"False",  "add_rel_cal": "False",  "add_stat_page": "False"}' |
 #           | 1                 | "Publishing Admin"         | Publishing Admin    | {"Role": "Publishing Admin", "Creator Role": "Publishing Officer",  "status": "Draft", "preview_teams":"False",  "add_rel_cal": "False",  "add_stat_page": "False"}' |
 #           | 1                 | "Publishing Admin"         | Publishing Admin    | {"Role": "Publishing Officer", "Creator Role": "Publishing Admin",  "status": "Draft", "preview_teams":"False",  "add_rel_cal": "False",  "add_stat_page": "False"}' |
 #
