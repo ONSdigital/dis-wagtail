@@ -47,7 +47,6 @@ Feature: Wagtail Admin JWT Authentication and Session Management
         Then the logout request should complete successfully
         And the tokens should be cleared from the browser
 
-    @smoke
     @cognito_enabled
     Scenario: Keep multiple tabs in sync on token refresh
         Given the user is authenticated
@@ -68,5 +67,7 @@ Feature: Wagtail Admin JWT Authentication and Session Management
     Scenario: Ensure session is not initialised in the iframe
         Given the user is authenticated
         When the user navigates to the admin page
-        And the user creates and saves an information page
+        And the user creates an information page as a child of the home page
+        And the user adds content to the new information page
+        And the user saves the information page
         Then the user opens the preview pane and the session should not be initialised in the iframe

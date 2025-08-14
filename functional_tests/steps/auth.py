@@ -155,22 +155,8 @@ def step_both_tabs_redirected_to_signin(context: Context) -> None:
         if expected_path not in tab.url:
             raise AssertionError(f"Tab {i + 1} was not redirected to login; URL is {tab.url}")
 
-
-@when("the user creates and saves an information page")
+@when("the user saves the information page")
 def step_create_and_save_information_page(context: Context) -> None:
-    """Create and save an information page with filled content for preview."""
-    context.execute_steps("""
-        When the user creates an information page as a child of the home page
-    """)
-
-    context.page.get_by_role("textbox", name="Title*").click()
-    context.page.get_by_role("textbox", name="Title*").fill("Info page")
-    context.page.locator("#panel-child-content-summary-content").get_by_role("textbox").locator("div").nth(2).click()
-    context.page.get_by_role("region", name="Summary*").get_by_role("textbox").fill("Info page summary")
-    context.page.get_by_title("Insert a block").click()
-    context.page.get_by_text("Section heading").click()
-    context.page.locator("#content-0-value").fill("Heading")
-
     context.session_init_logs = []
     context.page.on(
         "console",
@@ -181,7 +167,10 @@ def step_create_and_save_information_page(context: Context) -> None:
         ),
     )
 
-    context.page.get_by_role("button", name="Save draft").click()
+    context.execute_steps("""
+        When the user clicks the "Save Draft" button
+    """)
+
 
 
 @then("the user opens the preview pane and the session should not be initialised in the iframe")
@@ -190,7 +179,7 @@ def step_session_not_initialised_in_iframe(context: Context) -> None:
     # open preview
     context.page.get_by_role("button", name="Toggle preview").click()
     iframe = context.page.frame_locator("#w-preview-iframe")
-    expect(iframe.get_by_text("Info page", exact=True)).to_be_visible()
+    expect(iframe.get_by_text("Test Info Page", exact=True)).to_be_visible()
 
     # small pause for any stray logs
     context.page.wait_for_timeout(1000)
