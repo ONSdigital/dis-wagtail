@@ -155,6 +155,7 @@ def step_both_tabs_redirected_to_signin(context: Context) -> None:
         if expected_path not in tab.url:
             raise AssertionError(f"Tab {i + 1} was not redirected to login; URL is {tab.url}")
 
+
 @when("the user saves the information page")
 def step_create_and_save_information_page(context: Context) -> None:
     context.session_init_logs = []
@@ -170,7 +171,6 @@ def step_create_and_save_information_page(context: Context) -> None:
     context.execute_steps("""
         When the user clicks the "Save Draft" button
     """)
-
 
 
 @then("the user opens the preview pane and the session should not be initialised in the iframe")
