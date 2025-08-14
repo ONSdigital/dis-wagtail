@@ -256,8 +256,8 @@ def json_str_to_dict(bundle_details):
 @when("the {user_role} logs in")
 def log_in_user_by_role(context: Context, user_role: str) -> None:
     context.page.goto(f"{context.base_url}/admin/login/")
-    context.page.get_by_placeholder("Enter your username").fill([d.get(user_role) for d in context.users][0]["username"])
-    context.page.get_by_placeholder("Enter password").fill([d.get(user_role) for d in context.users][0]["password"])
+    context.page.get_by_placeholder("Enter your username").fill(next(d.get(user_role)["username"] for d in context.users))
+    context.page.get_by_placeholder("Enter password").fill(next(d.get(user_role)["password"] for d in context.users))
     context.page.get_by_role("button", name="Sign in").click()
 
 
