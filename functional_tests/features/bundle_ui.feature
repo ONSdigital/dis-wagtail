@@ -43,12 +43,12 @@ Feature: UI Bundle Happy Paths
         And there are 1 release calendar pages
         And there are 1 Preview teams
         And the <Role> is a member of the Preview teams
-        And there are <Number_of_Bundles> bundles with <Bundle_Details>
+        And there are <number_of_bundles> bundles with <Bundle_Details>
         When the <Role> logs in
         Then the <Role> can edit a bundle
 
         Examples: bundles
-           | Number_of_Bundles | Role                       | Creator Role        | Bundle_Details                                                                                                                                                         |
+           | number_of_bundles | Role                       | Creator Role        | Bundle_Details                                                                                                                                                         |
            | 1                 | "Publishing Admin"         | Publishing Admin    | {"Role":"Publishing Admin","Creator Role":"Publishing Admin","status":"Draft","preview_teams":false,"add_rel_cal":false,"add_stat_page":false} |
            | 1                 | "Publishing Admin"         | Publishing Admin    | {"Role": "Publishing Officer", "Creator Role": "Publishing Officer",  "status": "Draft", "preview_teams":"False",  "add_rel_cal": "False",  "add_stat_page": "False"}' |
            | 1                 | "Publishing Admin"         | Publishing Admin    | {"Role": "Publishing Admin", "Creator Role": "Publishing Officer",  "status": "Draft", "preview_teams":"False",  "add_rel_cal": "False",  "add_stat_page": "False"}' |
@@ -64,12 +64,12 @@ Feature: UI Bundle Happy Paths
         And there are 1 release calendar pages
         And there are 1 Preview teams
         And the <role> is a member of the Preview teams
-        And there are <Number_of_Bundles> bundles with <Bundle_Details>
+        And there are <number_of_bundles> bundles with <Bundle_Details>
         When the <role> logs in
         Then the <role> can preview a bundle
 
       Examples: bundles
-           | Number_of_Bundles | Bundle_Details                                                                                                                                                         |
+           | number_of_bundles | Bundle_Details                                                                                                                                                         |
            | 1                 | '{"Role": "Publishing Admin", "Creator_Role": "Publishing Admin",  "status": "In_Review", "preview_teams":"True"  "add_rel_cal":"True", "add_stat_page": "True"}'       |
            | 1                 | '{"Role": "Publishing Officer", "Creator_Role": "Publishing Admin",  "status": "In_Review", "preview_teams":"True"  "add_rel_cal": "True",  "add_stat_page": "True"}' |
            | 1                 | '{"Role": "Viewer", "Creator_Role": "Publishing Admin",  "status": "In_Review", "preview_teams":"True"  "add_rel_cal": "True",  "add_stat_page": "True"}' |
@@ -83,12 +83,12 @@ Feature: UI Bundle Happy Paths
         And there are 1 Statistical Analysis pages
         And there are 1 release calendar pages
         And there are 1 Preview teams
-        And there are <Number_of_Bundles> bundles with <Bundle_Details>
+        And there are <number_of_bundles> bundles with <Bundle_Details>
         When the <role> logs in
         Then the <role> cannot preview a bundle
 
          Examples: bundles
-           | Number_of_Bundles | Bundle_Details                                                                                                                                                         |
+           | number_of_bundles | Bundle_Details                                                                                                                                                         |
            | 1                 | '{"Role": "Viewer", "Creator_Role": "Publishing Admin",  "status": "In_Review", "preview_teams":"False"  "add_rel_cal":"True", "add_stat_page": "True"}'       |
 
 
@@ -98,12 +98,12 @@ Feature: UI Bundle Happy Paths
         And there are 1 release calendar pages
         And there are 1 Preview teams
         And the <role> is a member of the Preview teams
-        And there are <Number_of_Bundles> bundles with <Bundle_Details>
+        And there are <number_of_bundles> bundles with <Bundle_Details>
         When the <role> logs in
         Then the <role> can approve a bundle
 
         Examples: bundles
-           | Number_of_Bundles | Bundle_Details                                                                                                                                                         |
+           | number_of_bundles | Bundle_Details                                                                                                                                                         |
            | 1                 | '{"Role": "Publishing Admin", "Creator_Role": "Publishing Admin",  "status": "In_Review", "preview_teams":"True",  "add_rel_cal":"True", "add_stat_page": "True"}'       |
            | 1                 | '{"Role": "Publishing Admin", "Creator_Role": "Publishing Officer",  "status": "In_Review", "preview_teams":"True", "add_rel_cal":"True", "add_stat_page": "True"}'       |
            | 1                 | '{"Role": "Publishing Officer", "Creator_Role": "Publishing Admin",  "status": "In_Review", "preview_teams":"True", "add_rel_cal": "True",  "add_stat_page": "True"}' |
@@ -116,12 +116,12 @@ Feature: UI Bundle Happy Paths
         And there are 1 release calendar pages
         And there are 1 Preview teams
         And the <role> is a member of the Preview teams
-        And there are <Number_of_Bundles> bundles with <Bundle_Details>
+        And there are <number_of_bundles> bundles with <Bundle_Details>
         When the <role> logs in
         Then the <role> cannot approve a bundle
 
         Examples: bundles
-           | Number_of_Bundles | Bundle_Details                                                                                                                                                         |
+           | number_of_bundles | Bundle_Details                                                                                                                                                         |
            | 1                 | '{"Role": "Viewer", "Creator_Role": "Publishing Admin",  "status": "In_Review", "preview_teams":"True"  "add_rel_cal":"True", "add_stat_page": "True"}'       |
 
 

@@ -184,26 +184,29 @@ def add_user_to_preview_teams(context: Context, user_role: str) -> None:
     create_not_existing_role(context, user_role)
     next((item for item in context.users if item["role"] == user_role), None)["user"]["user"].teams.add(*context.teams)
 
-@given("there are {Number_of_Bundles} bundles with {bundle_details}")
-def multiple_bundles_create(context: Context, Number_of_Bundles: str, bundle_details: str) -> None:
-    bundles_details =  json_str_to_dict(bundle_details)
+
+@given("there are {number_of_bundles} bundles with {bundle_details}")
+def multiple_bundles_create(context: Context, number_of_bundles: str, bundle_details: str) -> None:
+    bundle_dets = {}
+    if json_str_to_dict(bundle_details):
+        bundle_dets = json.loads(bundle_details)
 
     context.bundles = []
 
-    if Number_of_Bundles.isdigit():
-        for __ in range(int(Number_of_Bundles)):
-            # create_bundle(context, bundles_details["Creator Role"], bundles_details["status"])
+    if number_of_bundles.isdigit():
+        for __ in range(int(number_of_bundles)):
+            if not next((item for item in context.users if item["role"] == bundle_dets["Creator Role"]), False):
+                create_user_by_role(context, bundle_dets["Creator Role"])
 
-            if not next((item for item in context.users if item["role"] == bundles_details["Creator Role"]), False):
-                create_user_by_role(context, bundles_details["Creator Role"])
-
-            bundle_creator = next((item for item in context.users if item["role"] == bundles_details["Creator Role"]), None)['user']["user"]
+            bundle_creator = next(
+                (item for item in context.users if item["role"] == bundle_dets["Creator Role"]), None
+            )["user"]["user"]
             bundle_status = BundleStatus.DRAFT
             bundle_approved = False
-            if bundles_details["status"] == "Approved":
+            if bundle_dets["status"] == "Approved":
                 bundle_status = BundleStatus.APPROVED
                 bundle_approved = True
-            if bundles_details["status"] == "In_Review":
+            if bundle_dets["status"] == "In_Review":
                 bundle_status = BundleStatus.IN_REVIEW
             bundle = BundleFactory(
                 created_by=bundle_creator,
@@ -212,26 +215,39 @@ def multiple_bundles_create(context: Context, Number_of_Bundles: str, bundle_det
             )
             context.bundles.append(bundle)
 
-            if bool(bundles_details["preview_teams"]) and hasattr(context, "teams"):
-                for team in context.teams:
-                    for bundle in context.bundles:
-                        BundleTeam.objects.create(parent=bundle, team=team)
+            if bool(bundle_dets["preview_teams"]) and hasattr(context, "teams"):
+                add_teams(context)
 
-            if bool(bundles_details["add_rel_cal"]) and hasattr(context, "release_calendar_pages"):
-                for page in context.release_calendar_pages:
-                    for bundle in context.bundles:
-                        BundlePage.objects.create(parent=bundle, page=page)
+            if bool(bundle_dets["add_rel_cal"]) and hasattr(context, "release_calendar_pages"):
+                add_release_calendar(context)
 
-            if bool(bundles_details["add_stat_page"]) and hasattr(context, "statistical_article_pages"):
-                for page in context.statistical_article_pages:
-                    for bundle in context.bundles:
-                        BundlePage.objects.create(parent=bundle, page=page)
+            if bool(bundle_dets["add_stat_page"]) and hasattr(context, "statistical_article_pages"):
+                add_article_pages(context)
+
+
+def add_article_pages(context):
+    for page in context.statistical_article_pages:
+        for bundle in context.bundles:
+            BundlePage.objects.create(parent=bundle, page=page)
+
+
+def add_release_calendar(context):
+    for page in context.release_calendar_pages:
+        for bundle in context.bundles:
+            BundlePage.objects.create(parent=bundle, page=page)
+
+
+def add_teams(context):
+    for team in context.teams:
+        for bundle in context.bundles:
+            BundleTeam.objects.create(parent=bundle, team=team)
 
 
 def json_str_to_dict(bundle_details):
     try:
         return json.loads(bundle_details)
     except ValueError as e:
+        print(e)
         return False
 
 
@@ -262,7 +278,6 @@ def the_user_cannot_add_bundles(context: Context) -> None:
 
 @step("the {user_role} can edit a bundle")
 def can_edit_bundle(context: Context, user_role: str) -> None:
-
     print(context.bundles[0].name)
 
     if user_role != "Viewer":
@@ -271,14 +286,12 @@ def can_edit_bundle(context: Context, user_role: str) -> None:
         context.page.get_by_role("row", name=context.bundles[0].name + " Actions").get_by_label("Actions").click()
         context.page.get_by_role("link", name="Edit", exact=True).click()
 
-
-
-    # add Release Calendar
+        # add Release Calendar
         if hasattr(context, "search_release_calendar"):
             expect(context.page.get_by_role("button", name="Choose Release Calendar page")).to_be_visible()
             context.page.get_by_role("button", name="Choose Release Calendar page").click()
             context.page.get_by_role("textbox", name="Search term").click()
-            context.page.get_by_role("textbox", name="Search term").fill(context.release_calendar_pages[0].title().title())
+            context.page.get_by_role("textbox", name="Search term").fill(context.release_calendar_pages[0].title())
             expect(context.page.get_by_role("link", name=context.release_calendar_pages[0].title())).to_be_visible()
             context.page.get_by_role("row", name=context.release_calendar_pages[0].title()).get_by_role("link").click()
             context.page.get_by_role("link", name=context.release_calendar_pages[0].title()).click()
@@ -296,7 +309,7 @@ def can_edit_bundle(context: Context, user_role: str) -> None:
             context.page.get_by_role("link", name=context.statistical_article_pages[0].title).click()
             context.page.get_by_role("button", name="Save").click()
 
-    # modify status
+            # modify status
             context.page.locator("#id_status").select_option("IN_REVIEW")
 
             # add preview team
@@ -339,21 +352,22 @@ def can_preview_bundle(context: Context, user_role: str) -> None:
 
 
 @step("the {user_role} cannot preview a bundle")
-def cannot_preview_bundle(context: Context, user_role: str) -> None:
+# def cannot_preview_bundle(context: Context, user_role: str) -> None:
+def cannot_preview_bundle(context: Context) -> None:
     context.page.get_by_role("link", name="Bundles", exact=True).click()
     expect(context.page.get_by_role("button", name=f"More options for '{context.bundles[0].name}'")).not_to_be_visible()
 
 
 @step("the {user_role} cannot approve a bundle")
-def cannot_approve_bundle(context: Context, user_role: str) -> None:
-    if user_role == "Viewer":
-        print(user_role)
-    else:
-        print(user_role)
+# def cannot_approve_bundle(context: Context, user_role: str) -> None:
+def cannot_approve_bundle(context: Context) -> None:
+    context.page.get_by_role("link", name="Bundles", exact=True).click()
+    expect(context.page.get_by_role("button", name=f"More options for '{context.bundles[0].name}'")).not_to_be_visible()
 
 
 @step("the {user_role} can approve a bundle")
-def can_approve_bundle(context: Context, user_role: str) -> None:
+# def can_approve_bundle(context: Context, user_role: str) -> None:
+def can_approve_bundle(context: Context) -> None:
     expect(context.page.get_by_text("Latest active bundles")).to_be_visible()
     expect(context.page.get_by_role("link", name=context.bundles[0].name)).to_be_visible()
     expect(context.page.get_by_role("cell", name="In Preview")).to_be_visible()
