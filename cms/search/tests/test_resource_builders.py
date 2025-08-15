@@ -238,5 +238,15 @@ class ResourceBuildersTestCase(TestCase, ResourceDictAssertions):
         """
         article_data = build_resource_dict(self.article_page)
 
-        self.assert_base_fields(article_data, self.article_page)
+        self.assert_base_fields(article_data, self.article_page, title=self.article_page.get_full_display_title())
         self.assertEqual(article_data["topics"], [self.topic_a.id, self.topic_b.id])
+
+    def test_article_page_with_custom_title_negative(self):
+        """Negative test: build_resource_dict should NOT use news_headline as title for StatisticalArticlePage."""
+        # StatisticalArticlePageFactory sets the news headline
+        article_data = build_resource_dict(self.article_page)
+
+        # The title in the result should NOT match the news headline
+        self.assertNotEqual(article_data["title"], self.article_page.display_title)
+        # The title should match the full title
+        self.assertEqual(article_data["title"], self.article_page.get_full_display_title())
