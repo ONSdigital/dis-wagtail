@@ -46,7 +46,6 @@ pyjwt = "^2.10.1"
 cryptography = "^45.0.4"
 django-pglock = "^1.7.2"
 wagtail-schema-org = "^4.1.1"
-html5lib = "==1.1"
 
 [tool.poetry.group.dev.dependencies]
 # :TODO: Remove pylint when ruff supports all pylint rules

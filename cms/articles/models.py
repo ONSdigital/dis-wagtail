@@ -708,7 +708,7 @@ class StatisticalArticlePage(BundledPageMixin, RoutablePageMixin, BasePage):  # 
         """Returns the total word count for the article page's display title, summary and content."""
         # Render the content as HTML and get the text without HTML tags so we can count words
         html_content = self.content.render_as_block()
-        soup_content = BeautifulSoup(str(html_content), "html5lib")
+        soup_content = BeautifulSoup(str(html_content), "html.parser")
         stripped_content = soup_content.text
         content_word_count = len(str(stripped_content).split())
 
