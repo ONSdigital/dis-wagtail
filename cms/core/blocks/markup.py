@@ -34,7 +34,17 @@ class HeadingBlock(blocks.CharBlock):
 
     def to_table_of_contents_items(self, value: Any) -> list[dict]:
         """Convert the value to the table of contents component macro format."""
-        return [{"url": "#" + slugify(value), "text": value}]
+        return [
+            {
+                "url": "#" + slugify(value),
+                "text": value,
+                "attributes": {
+                    "data-ga-event": "navigation-onpage",
+                    "data-ga-interactionType": "table-of-contents",
+                    "data-ga-sectionTitle": value,
+                },
+            }
+        ]
 
 
 class QuoteBlock(blocks.StructBlock):
