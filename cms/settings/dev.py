@@ -135,6 +135,7 @@ MIGRATION_LINTER_OPTIONS = {
         "0008_delete_systemmessagessettings",  # Ignoring dropping table
         "0007_topicpagerelatedarticle_external_url_and_more",  # Ignoring NOT NULL constraint
         "0006_bundle_bundle_api_id_bundledataset_content_api_id",  # Ignoring NOT NULL constraint
+        "0002_alter_dataset_version",
     ],
 }
 
