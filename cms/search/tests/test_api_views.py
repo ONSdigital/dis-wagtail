@@ -37,6 +37,7 @@ class SearchResourcesViewTests(TestCase, ResourceDictAssertions, ExternalAPITest
             InformationPageFactory(),
             MethodologyPageFactory(),
             ReleaseCalendarPageFactory(),
+            StatisticalArticlePageFactory(),
             StatisticalArticlePageFactory(news_headline=""),
             IndexPageFactory(slug="custom-slug-1"),
         ]
@@ -57,7 +58,8 @@ class SearchResourcesViewTests(TestCase, ResourceDictAssertions, ExternalAPITest
         for page in self.included_pages:
             matching = self.get_page_dict(data, page)
             self.assertIsNotNone(matching, f"Expected page with URI {build_page_uri(page)} to be present in the items")
-            self.assert_base_fields(matching, page)
+            title = page.get_full_display_title() if type(page).__name__ == "StatisticalArticlePage" else page.title
+            self.assert_base_fields(matching, page, title=title)
 
     def test_resources_excludes_non_indexable_pages(self):
         """Non-indexable pages (ArticleSeries, Home, ReleaseCalendarIndex, Theme, Topic)

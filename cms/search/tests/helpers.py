@@ -25,7 +25,7 @@ class ResourceDictAssertions(SimpleTestCase):
     mixin as a runnable test case.
     """
 
-    def assert_base_fields(self, payload: dict, page: Page) -> None:
+    def assert_base_fields(self, payload: dict, page: Page, title=None) -> None:
         self.assertIn("uri", payload)
         self.assertIn("title", payload)
         self.assertIn("summary", payload)
@@ -34,8 +34,8 @@ class ResourceDictAssertions(SimpleTestCase):
         self.assertIn("language", payload)
 
         self.assertEqual(payload["uri"], build_page_uri(page))
-        title = page.get_full_display_title() if hasattr(page, "get_full_display_title") else page.title
-        self.assertEqual(payload["title"], title)
+        expected_title = title if title is not None else page.title
+        self.assertEqual(payload["title"], expected_title)
         self.assertEqual(payload["summary"], page.summary)
 
         expected_ct = EXPECTED_CONTENT_TYPES[type(page).__name__]
