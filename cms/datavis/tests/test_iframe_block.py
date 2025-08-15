@@ -39,8 +39,7 @@ class IframeBlockTestCase(BaseVisualisationBlockTestCase):
         invalid_data = self.raw_data.copy()
 
         cases = {
-            "https://www.random.url.com": "The URL hostname is not in the list of allowed domains: "
-            "ons.gov.uk or onsdigital.uk",
+            "https://www.random.url.com": "The URL hostname is not in the list of allowed domains: ons.gov.uk",
             "http://ons.gov.uk": "Please enter a valid URL. "
             "It should start with 'https://' and contain a valid domain name.",
         }

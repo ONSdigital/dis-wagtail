@@ -20,6 +20,7 @@ def post_page_add_form_to_create_topic_page(client: "Client", homepage_id: int) 
             "summary": rich_text("test"),
             "headline_figures": streamfield([]),
             "datasets": streamfield([]),
+            "time_series": streamfield([]),
             "related_articles": inline_formset([]),
             "related_methodologies": inline_formset([]),
             "explore_more": streamfield([]),
