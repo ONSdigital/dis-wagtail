@@ -37,7 +37,7 @@ class InformationPage(BundledPageMixin, GenericTaxonomyMixin, BasePage):  # type
     last_updated = models.DateField(blank=True, null=True)
     content = StreamField(CoreStoryBlock())
 
-    analytics_content_type: ClassVar[str] = "information"
+    _analytics_content_type: ClassVar[str] = "information"
 
     content_panels: ClassVar[list["Panel"]] = [
         *BundledPageMixin.panels,
@@ -94,7 +94,7 @@ class IndexPage(BundledPageMixin, BasePage):  # type: ignore[django-manager-miss
         index.SearchField("content"),
     ]
 
-    analytics_content_type: ClassVar[str] = "index-pages"
+    _analytics_content_type: ClassVar[str] = "index-pages"
 
     def get_formatted_items(self, request: "HttpRequest") -> list[dict[str, str | dict[str, str]]]:
         """Returns a formatted list of Featured items

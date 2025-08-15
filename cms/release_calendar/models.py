@@ -181,7 +181,7 @@ class ReleaseCalendarPage(BundledPageMixin, BasePage):  # type: ignore[django-ma
         index.FilterField("release_date"),
     ]
 
-    analytics_content_type: ClassVar[str] = "release-calendars"  # TODO agree in spec
+    _analytics_content_type: ClassVar[str] = "release-calendars"  # TODO agree in spec
 
     def get_template(self, request: "HttpRequest", *args: Any, **kwargs: Any) -> str:
         """Select the correct template based on status."""

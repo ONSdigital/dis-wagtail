@@ -305,7 +305,7 @@ class StatisticalArticlePage(BundledPageMixin, RoutablePageMixin, BasePage):  # 
         index.AutocompleteField("news_headline"),
     ]
 
-    analytics_content_type = "statistical-articles"
+    _analytics_content_type = "statistical-articles"
 
     def clean(self) -> None:
         """Additional validation on save."""

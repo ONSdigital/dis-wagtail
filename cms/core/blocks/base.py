@@ -91,8 +91,8 @@ class LinkBlockStructValue(StructValue):
 
     @staticmethod
     def get_gtm_attributes_for_link_value(
-        link_value: dict[str, str], target_page: Optional["BasePage"] = None
-    ) -> dict[str, str]:
+        link_value: dict[str, Any], target_page: Optional["BasePage"] = None
+    ) -> dict[str, Any]:
         attributes = {
             "data-ga-event": "navigation-click",
             "data-ga-navigation-type": "links-within-content",

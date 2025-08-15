@@ -123,7 +123,7 @@ class MethodologyPage(BundledPageMixin, GenericTaxonomyMixin, BasePage):  # type
         index.SearchField("content"),
     ]
 
-    analytics_content_type: ClassVar[str] = "methodologies"
+    _analytics_content_type: ClassVar[str] = "methodologies"
 
     def clean(self) -> None:
         """Additional validation on save."""

@@ -79,7 +79,7 @@ class BasePage(PageLDMixin, ListingFieldsMixin, SocialFieldsMixin, Page):  # typ
 
     additional_panel_tabs: ClassVar[list[tuple[list["FieldPanel"], str]]] = []
 
-    analytics_content_type: ClassVar[str | None] = None
+    _analytics_content_type: ClassVar[str | None] = None
 
     @cached_classmethod
     def get_edit_handler(cls) -> TabbedInterface:  # pylint: disable=no-self-argument
@@ -247,8 +247,13 @@ class BasePage(PageLDMixin, ListingFieldsMixin, SocialFieldsMixin, Page):  # typ
         """
         for ancestor in self.get_ancestors(inclusive=True).reverse():
             if ancestor.specific_deferred.__class__.__name__ in ("TopicPage", "ThemePage"):
-                return ancestor.specific_deferred
+                return cast("BasePage", ancestor.specific_deferred)
         return None
+
+    @property
+    def analytics_content_type(self) -> str | None:
+        """Returns the GTM content type for a page, if it has one."""
+        return self._analytics_content_type
 
     @cached_property
     def analytics_content_group(self) -> str | None:
@@ -257,7 +262,7 @@ class BasePage(PageLDMixin, ListingFieldsMixin, SocialFieldsMixin, Page):  # typ
         otherwise it will be the slug of the parent topic page if it exists.
         """
         if parent_topic_or_theme := self.parent_topic_or_theme:
-            return parent_topic_or_theme.slug
+            return cast(str, parent_topic_or_theme.slug)
         return None
 
     @cached_property
@@ -269,9 +274,11 @@ class BasePage(PageLDMixin, ListingFieldsMixin, SocialFieldsMixin, Page):  # typ
             return None
         parent_topic_or_theme = cast(ExclusiveTaxonomyMixin, self.parent_topic_or_theme)
         page_topic = parent_topic_or_theme.topic
+        if not page_topic:
+            return None
 
         parent_theme = page_topic.get_top_parent()
-        return parent_theme.title
+        return cast(str, parent_theme.title)
 
 
 class BaseSiteSetting(WagtailBaseSiteSetting):
