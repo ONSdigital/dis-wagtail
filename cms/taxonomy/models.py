@@ -78,8 +78,10 @@ class Topic(index.Indexed, MP_Node):
             return None
         return typing.cast(Optional[Topic], super().get_parent(*args, **kwargs))
 
-    def get_top_parent(self) -> "Topic":
-        """Return the topmost parent topic in the hierarchy."""
+    def get_base_parent(self) -> "Topic":
+        """Return the base level parent topic (top level, with no parent topics), or self if this topic is base depth
+        (Excluding the dummy root topic).
+        """
         if self.depth == BASE_TOPIC_DEPTH:
             return self
         return typing.cast("Topic", self.get_ancestors().first())

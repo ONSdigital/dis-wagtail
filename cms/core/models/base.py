@@ -277,7 +277,7 @@ class BasePage(PageLDMixin, ListingFieldsMixin, SocialFieldsMixin, Page):  # typ
         if not page_topic:
             return None
 
-        parent_theme = page_topic.get_top_parent()
+        parent_theme = page_topic.get_base_parent()
         return cast(str, parent_theme.title)
 
 
