@@ -29,6 +29,10 @@ class TestDatasetStoryBlock(TestCase):
                 ("dataset_lookup", self.lookup_dataset.id),
                 ("manual_link", {"url": dataset_duplicate_url}),
             ],
+            [  # Check that the trailing slash is ignored
+                ("dataset_lookup", self.lookup_dataset.id),
+                ("manual_link", {"url": dataset_duplicate_url + "/"}),
+            ],
             [
                 ("manual_link", {"url": dataset_duplicate_url}),
                 ("manual_link", {"url": dataset_duplicate_url}),
