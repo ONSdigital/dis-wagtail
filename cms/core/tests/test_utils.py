@@ -6,7 +6,13 @@ from django.utils.formats import date_format
 from cms.articles.tests.factories import StatisticalArticlePageFactory
 from cms.core.custom_date_format import ons_date_format
 from cms.core.models.base import BasePage
-from cms.core.utils import get_client_ip, get_content_type_for_page, get_formatted_pages_list, latex_formula_to_svg
+from cms.core.utils import (
+    get_client_ip,
+    get_content_type_for_page,
+    get_formatted_pages_list,
+    latex_formula_to_svg,
+    matches_domain,
+)
 from cms.methodology.tests.factories import MethodologyPageFactory
 from cms.topics.tests.factories import TopicPageFactory
 
@@ -261,3 +267,28 @@ class TestContentTypeForPage(TestCase):
         page = MethodologyPageFactory(title="Test Methodology")
         content_type = get_content_type_for_page(page)
         self.assertEqual(content_type, "Methodology")
+
+
+class TestMatchesDomain(TestCase):
+    def test_positive_cases_matches_domain(self):
+        test_cases = [
+            ("example.com", "example.com"),
+            ("sub.example.com", "example.com"),
+            ("another.subdomain.example.com", "example.com"),
+        ]
+
+        for domains in test_cases:
+            with self.subTest(domains=domains):
+                self.assertTrue(matches_domain(*domains))
+
+    def test_negative_cases_matches_domain(self):
+        test_cases = [
+            ("example.domain.com", "example.com"),
+            ("other.com", "example.com"),
+            ("", "example.com"),
+            ("example.com", ""),
+        ]
+
+        for domains in test_cases:
+            with self.subTest(domains=domains):
+                self.assertFalse(matches_domain(*domains))
