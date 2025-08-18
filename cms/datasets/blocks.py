@@ -79,6 +79,7 @@ class TimeSeriesPageStoryBlock(StreamBlock):
         urls = defaultdict(set)
         for block_index, block in enumerate(cleaned_value):
             url = block.value["url"].rstrip("/")  # Treat URLs with and without trailing slashes as equivalent
+            url = url.replace("www.", "")  # Normalize URLs by removing 'www.'
             urls[url].add(block_index)
 
         block_errors = {}

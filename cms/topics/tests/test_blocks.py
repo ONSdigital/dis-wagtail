@@ -127,10 +127,11 @@ class TimeSeriesPageStoryBlockTestCase(TestCase):
             ],
         )
 
-        with self.assertRaises(StreamBlockValidationError):
+        with self.assertRaises(StreamBlockValidationError) as error_context:
             block.clean(stream_value)
+            self.assertEqual(error_context.exception.message, "Duplicate time series links are not allowed")
 
-    def test_identical_links_with_trailing_slash_are_considered_duplicates(self):
+    def test_identical_links_one_with_trailing_slash_are_considered_duplicates(self):
         block = TimeSeriesPageStoryBlock()
         stream_value = StreamValue(
             block,
@@ -146,12 +147,35 @@ class TimeSeriesPageStoryBlockTestCase(TestCase):
             ],
         )
 
-        with self.assertRaises(StreamBlockValidationError):
+        with self.assertRaises(StreamBlockValidationError) as error_context:
             cleaned_value = block.clean(stream_value)
+
+            self.assertEqual(error_context.exception.message, "Duplicate time series links are not allowed")
 
             self.assertEqual(
                 cleaned_value[0].value["url"], "https://example.com/1"
             )  # Ensure that the trailing slash has been removed
+
+    def test_identical_links_one_with_www_are_considered_duplicated(self):
+        block = TimeSeriesPageStoryBlock()
+        stream_value = StreamValue(
+            block,
+            [
+                (
+                    "time_series_page_link",
+                    {"title": "Link 1", "url": "https://www.example.com/1", "description": "Summary 1"},
+                ),
+                (
+                    "time_series_page_link",
+                    {"title": "Link 2", "url": "https://example.com/1", "description": "Summary 2"},
+                ),
+            ],
+        )
+
+        with self.assertRaises(StreamBlockValidationError) as error_context:
+            block.clean(stream_value)
+
+            self.assertEqual(error_context.exception.message, "Duplicate time series links are not allowed")
 
 
 class TimeSeriesPageLinkBlockTestCase(TestCase):
