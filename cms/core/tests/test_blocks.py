@@ -115,7 +115,7 @@ class CoreBlocksTestCase(TestCase):
                     "text": "The Heading",
                     "attributes": {
                         "data-ga-event": "navigation-onpage",
-                        "data-ga-interactionType": "table-of-contents",
+                        "data-ga-navigation-type": "table-of-contents",
                         "data-ga-section-title": "The Heading",
                     },
                 }

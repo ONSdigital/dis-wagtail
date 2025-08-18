@@ -246,7 +246,7 @@ class TopicPageTestCase(WagtailTestUtils, TestCase):
                     "text": "Featured",
                     "attributes": {
                         "data-ga-event": "navigation-onpage",
-                        "data-ga-interactionType": "table-of-contents",
+                        "data-ga-navigation-type": "table-of-contents",
                         "data-ga-section-title": "Featured",
                     },
                 },
@@ -255,7 +255,7 @@ class TopicPageTestCase(WagtailTestUtils, TestCase):
                     "text": "Related articles",
                     "attributes": {
                         "data-ga-event": "navigation-onpage",
-                        "data-ga-interactionType": "table-of-contents",
+                        "data-ga-navigation-type": "table-of-contents",
                         "data-ga-section-title": "Related articles",
                     },
                 },
@@ -264,7 +264,7 @@ class TopicPageTestCase(WagtailTestUtils, TestCase):
                     "text": "Methods and quality information",
                     "attributes": {
                         "data-ga-event": "navigation-onpage",
-                        "data-ga-interactionType": "table-of-contents",
+                        "data-ga-navigation-type": "table-of-contents",
                         "data-ga-section-title": "Methods and quality information",
                     },
                 },
@@ -273,7 +273,7 @@ class TopicPageTestCase(WagtailTestUtils, TestCase):
                     "text": "Data",
                     "attributes": {
                         "data-ga-event": "navigation-onpage",
-                        "data-ga-interactionType": "table-of-contents",
+                        "data-ga-navigation-type": "table-of-contents",
                         "data-ga-section-title": "Data",
                     },
                 },
@@ -300,7 +300,7 @@ class TopicPageTestCase(WagtailTestUtils, TestCase):
                 "text": _("Explore more"),
                 "attributes": {
                     "data-ga-event": "navigation-onpage",
-                    "data-ga-interactionType": "table-of-contents",
+                    "data-ga-navigation-type": "table-of-contents",
                     "data-ga-section-title": _("Explore more"),
                 },
             },

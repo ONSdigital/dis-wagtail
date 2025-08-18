@@ -78,7 +78,7 @@ class ReleaseCalendarPageModelTestCase(WagtailTestUtils, TestCase):
                         "text": "Summary",
                         "attributes": {
                             "data-ga-event": "navigation-onpage",
-                            "data-ga-interactionType": "table-of-contents",
+                            "data-ga-navigation-type": "table-of-contents",
                             "data-ga-section-title": "Summary",
                         },
                     }
@@ -115,7 +115,7 @@ class ReleaseCalendarPageModelTestCase(WagtailTestUtils, TestCase):
                         "text": "Summary",
                         "attributes": {
                             "data-ga-event": "navigation-onpage",
-                            "data-ga-interactionType": "table-of-contents",
+                            "data-ga-navigation-type": "table-of-contents",
                             "data-ga-section-title": "Summary",
                         },
                     },
@@ -124,7 +124,7 @@ class ReleaseCalendarPageModelTestCase(WagtailTestUtils, TestCase):
                         "text": "About the data",
                         "attributes": {
                             "data-ga-event": "navigation-onpage",
-                            "data-ga-interactionType": "table-of-contents",
+                            "data-ga-navigation-type": "table-of-contents",
                             "data-ga-section-title": "About the data",
                         },
                     },
@@ -157,7 +157,7 @@ class ReleaseCalendarPageModelTestCase(WagtailTestUtils, TestCase):
                         "text": "Summary",
                         "attributes": {
                             "data-ga-event": "navigation-onpage",
-                            "data-ga-interactionType": "table-of-contents",
+                            "data-ga-navigation-type": "table-of-contents",
                             "data-ga-section-title": "Summary",
                         },
                     },
@@ -166,7 +166,7 @@ class ReleaseCalendarPageModelTestCase(WagtailTestUtils, TestCase):
                         "text": "About the data",
                         "attributes": {
                             "data-ga-event": "navigation-onpage",
-                            "data-ga-interactionType": "table-of-contents",
+                            "data-ga-navigation-type": "table-of-contents",
                             "data-ga-section-title": "About the data",
                         },
                     },
@@ -199,7 +199,7 @@ class ReleaseCalendarPageModelTestCase(WagtailTestUtils, TestCase):
                     "text": "Summary",
                     "attributes": {
                         "data-ga-event": "navigation-onpage",
-                        "data-ga-interactionType": "table-of-contents",
+                        "data-ga-navigation-type": "table-of-contents",
                         "data-ga-section-title": "Summary",
                     },
                 },
@@ -208,7 +208,7 @@ class ReleaseCalendarPageModelTestCase(WagtailTestUtils, TestCase):
                     "text": "Publications",
                     "attributes": {
                         "data-ga-event": "navigation-onpage",
-                        "data-ga-interactionType": "table-of-contents",
+                        "data-ga-navigation-type": "table-of-contents",
                         "data-ga-section-title": "Publications",
                     },
                 },
@@ -238,7 +238,7 @@ class ReleaseCalendarPageModelTestCase(WagtailTestUtils, TestCase):
                     "text": "Changes to this release date",
                     "attributes": {
                         "data-ga-event": "navigation-onpage",
-                        "data-ga-interactionType": "table-of-contents",
+                        "data-ga-navigation-type": "table-of-contents",
                         "data-ga-section-title": "Changes to this release date",
                     },
                 }
@@ -265,7 +265,7 @@ class ReleaseCalendarPageModelTestCase(WagtailTestUtils, TestCase):
                     "text": "Contact details",
                     "attributes": {
                         "data-ga-event": "navigation-onpage",
-                        "data-ga-interactionType": "table-of-contents",
+                        "data-ga-navigation-type": "table-of-contents",
                         "data-ga-section-title": "Contact details",
                     },
                 }
@@ -286,7 +286,7 @@ class ReleaseCalendarPageModelTestCase(WagtailTestUtils, TestCase):
             "text": "Pre-release access list",
             "attributes": {
                 "data-ga-event": "navigation-onpage",
-                "data-ga-interactionType": "table-of-contents",
+                "data-ga-navigation-type": "table-of-contents",
                 "data-ga-section-title": "Pre-release access list",
             },
         }
@@ -311,7 +311,7 @@ class ReleaseCalendarPageModelTestCase(WagtailTestUtils, TestCase):
                     "text": "Summary",
                     "attributes": {
                         "data-ga-event": "navigation-onpage",
-                        "data-ga-interactionType": "table-of-contents",
+                        "data-ga-navigation-type": "table-of-contents",
                         "data-ga-section-title": "Summary",
                     },
                 },
@@ -320,7 +320,7 @@ class ReleaseCalendarPageModelTestCase(WagtailTestUtils, TestCase):
                     "text": "You might also be interested in",
                     "attributes": {
                         "data-ga-event": "navigation-onpage",
-                        "data-ga-interactionType": "table-of-contents",
+                        "data-ga-navigation-type": "table-of-contents",
                         "data-ga-section-title": "You might also be interested in",
                     },
                 },

@@ -40,7 +40,7 @@ class HeadingBlock(blocks.CharBlock):
                 "text": value,
                 "attributes": {
                     "data-ga-event": "navigation-onpage",
-                    "data-ga-interactionType": "table-of-contents",
+                    "data-ga-navigation-type": "table-of-contents",
                     "data-ga-section-title": value,
                 },
             }

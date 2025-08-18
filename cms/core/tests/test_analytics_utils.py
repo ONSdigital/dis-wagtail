@@ -30,4 +30,4 @@ class AnalyticsUtilsTestCase(SimpleTestCase):
             self.assertIn("attributes", item)
             self.assertEqual(item["attributes"]["data-ga-section-title"], item["text"])
             self.assertEqual(item["attributes"]["data-ga-event"], "navigation-onpage")
-            self.assertEqual(item["attributes"]["data-ga-interactionType"], "table-of-contents")
+            self.assertEqual(item["attributes"]["data-ga-navigation-type"], "table-of-contents")

@@ -13,7 +13,7 @@ def add_table_of_contents_gtm_attributes(items: Iterable[dict[str, Any]]) -> Non
     for item in items:
         item["attributes"] = {
             "data-ga-event": "navigation-onpage",
-            "data-ga-interactionType": "table-of-contents",
+            "data-ga-navigation-type": "table-of-contents",
             "data-ga-section-title": item["text"],
         }
 

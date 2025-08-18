@@ -162,7 +162,7 @@ class StatisticalArticlePageTestCase(WagtailTestUtils, TestCase):
         for idx, toc_item in enumerate(toc):
             self.assertEqual(toc_item["attributes"]["data-ga-section-title"], expected_attribute_labels[idx])
             self.assertEqual(toc_item["attributes"]["data-ga-event"], "navigation-onpage")
-            self.assertEqual(toc_item["attributes"]["data-ga-interactionType"], "table-of-contents")
+            self.assertEqual(toc_item["attributes"]["data-ga-navigation-type"], "table-of-contents")
 
     def test_is_latest(self):
         """Test is_latest returns True for most recent page."""
