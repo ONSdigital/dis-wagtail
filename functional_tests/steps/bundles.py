@@ -182,8 +182,7 @@ def multiple_preview_teams_create(context: Context, no_preview_teams: str) -> No
 
 @given("the {user_role} is a member of the Preview teams")
 def add_user_to_preview_teams(context: Context, user_role: str) -> None:
-    create_user_by_role(context, user_role)
-    next((item[user_role]['user'] for item in context.users if item[user_role]), None).teams.add(*context.teams)
+    next((item[user_role]["user"] for item in context.users if item[user_role]), None).teams.add(*context.teams)
 
 
 @given("there are {number_of_bundles} bundles with {bundle_details}")
@@ -196,11 +195,19 @@ def multiple_bundles_create(context: Context, number_of_bundles: str, bundle_det
 
     if number_of_bundles.isdigit():
         for __ in range(int(number_of_bundles)):
-            if not next((item[bundle_dets["Creator Role"]] for item in context.users if item[bundle_dets["Creator Role"]]), False):
+            if not next(
+                (item[bundle_dets["Creator Role"]] for item in context.users if item[bundle_dets["Creator Role"]]),
+                False,
+            ):
                 create_user_by_role(context, bundle_dets["Creator Role"])
 
             bundle_creator = next(
-                (item[bundle_dets["Creator Role"]]['user'] for item in context.users if item[bundle_dets["Creator Role"]]), None
+                (
+                    item[bundle_dets["Creator Role"]]["user"]
+                    for item in context.users
+                    if item[bundle_dets["Creator Role"]]
+                ),
+                None,
             )
             bundle_status = BundleStatus.DRAFT
             bundle_approved = False
@@ -286,7 +293,6 @@ def the_user_cannot_add_bundles(context: Context) -> None:
 
 @step("the {user_role} can edit a bundle")
 def can_edit_bundle(context: Context, user_role: str) -> None:
-
     if user_role != "Viewer":
         expect(context.page.locator("#latest-bundles-heading")).to_contain_text("Latest active bundles")
         expect(context.page.locator("#latest-bundles-content")).to_contain_text(context.bundles[0].name)
@@ -298,34 +304,38 @@ def can_edit_bundle(context: Context, user_role: str) -> None:
             expect(context.page.get_by_role("button", name="Choose Release Calendar page")).to_be_visible()
             context.page.get_by_role("button", name="Choose Release Calendar page").click()
             context.page.get_by_role("textbox", name="Search term").click()
-            context.page.get_by_role("textbox", name="Search term").fill(context.release_calendar_pages[0].title())
-            expect(context.page.get_by_role("link", name=context.release_calendar_pages[0].title())).to_be_visible()
-            context.page.get_by_role("row", name=context.release_calendar_pages[0].title()).get_by_role("link").click()
-            context.page.get_by_role("link", name=context.release_calendar_pages[0].title()).click()
+            context.page.get_by_role("textbox", name="Search term").fill(context.release_calendar_pages[0].title)
+            expect(context.page.get_by_role("link", name=context.release_calendar_pages[0].title)).to_be_visible()
+            context.page.get_by_role("row", name=context.release_calendar_pages[0].title).get_by_role("link").click()
+            context.page.get_by_role("link", name=context.release_calendar_pages[0].title).click()
 
         # add Article
         if hasattr(context, "statistical_article_pages"):
             expect(context.page.get_by_role("heading", name="Bundled pages").locator("span")).to_be_visible()
             expect(context.page.get_by_role("button", name="Add page")).to_be_visible()
             context.page.get_by_role("button", name="Add page").click()
-            expect(context.page.get_by_role("button", name="Choose a page")).to_be_visible()
-            context.page.get_by_role("button", name="Choose a page").click()
-            context.page.get_by_role("cell", name="Type").click()
-            context.page.get_by_label("Page type").select_option("StatisticalArticlePage")
-            expect(context.page.get_by_role("link", name=context.statistical_article_pages[0].title)).to_be_visible()
-            context.page.get_by_role("link", name=context.statistical_article_pages[0].title).click()
-            context.page.get_by_role("button", name="Save").click()
+            expect(context.page.get_by_role("heading", name="Choose a page")).to_be_visible()
 
-            # modify status
-            context.page.locator("#id_status").select_option("IN_REVIEW")
+            expect(context.page.get_by_text("Page type", exact=True)).to_be_visible()
+            expect(context.page.get_by_label("Page type")).to_be_visible()
+            context.page.get_by_label("Page type").select_option("StatisticalArticlePage")
+
+            expect(context.page.get_by_text(context.statistical_article_pages[0].title)).to_be_visible()
+            context.page.get_by_role("checkbox", name=context.statistical_article_pages[0].title).check()
+            context.page.get_by_role("button", name="Confirm selection").click()
+
+        context.page.get_by_role("button", name="Save").click()
 
             # add preview team
-            if hasattr(context, "teams"):
-                context.page.locator("#panel-preview_teams-content div").filter(has_text="Add preview team").click()
-                context.page.get_by_role("button", name="Add preview team").click()
-                context.page.get_by_role("textbox", name="Search term").fill(context.teams[0].name)
-                context.page.get_by_role("checkbox", name=context.teams[0].name).check()
-                context.page.get_by_role("button", name="Confirm selection").click()
+        if hasattr(context, "teams"):
+            context.page.locator("#panel-preview_teams-content div").filter(has_text="Add preview team").click()
+            context.page.get_by_role("button", name="Add preview team").click()
+            context.page.get_by_role("textbox", name="Search term").fill(context.teams[0].name)
+            context.page.get_by_role("checkbox", name=context.teams[0].name).check()
+            context.page.get_by_role("button", name="Confirm selection").click()
+
+        context.page.get_by_role("button", name="More actions").click()
+        context.page.get_by_role("button", name="Save to preview").click()
 
 
 @step("the {user_role} can preview a bundle")
