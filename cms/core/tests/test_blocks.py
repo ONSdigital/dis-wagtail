@@ -349,6 +349,8 @@ class CoreBlocksTestCase(TestCase):
                     "data-ga-event": "navigation-click",
                     "data-ga-link-text": "Example 2",
                     "data-ga-navigation-type": "links-within-content",
+                    "data-ga-click-path": "/",
+                    "data-ga-click-content-type": "homepage",
                 },
             },
         )
@@ -369,6 +371,8 @@ class CoreBlocksTestCase(TestCase):
                     "data-ga-event": "navigation-click",
                     "data-ga-link-text": self.home_page.title,
                     "data-ga-navigation-type": "links-within-content",
+                    "data-ga-click-path": "/",
+                    "data-ga-click-content-type": "homepage",
                 },
             },
         )
