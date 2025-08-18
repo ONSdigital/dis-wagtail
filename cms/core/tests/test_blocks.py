@@ -109,7 +109,17 @@ class CoreBlocksTestCase(TestCase):
 
         self.assertListEqual(
             block.to_table_of_contents_items(block.to_python("The Heading")),
-            [{"url": "#the-heading", "text": "The Heading"}],
+            [
+                {
+                    "url": "#the-heading",
+                    "text": "The Heading",
+                    "attributes": {
+                        "data-ga-event": "navigation-onpage",
+                        "data-ga-interactionType": "table-of-contents",
+                        "data-ga-section-title": "The Heading",
+                    },
+                }
+            ],
         )
 
     def test_onsemebedblock__clean(self):
@@ -300,7 +310,7 @@ class CoreBlocksTestCase(TestCase):
         value = block.to_python(
             {
                 "external_url": "https://ons.gov.uk",
-                "title": "Example",
+                "title": "Example 1",
                 "description": "A link",
                 "content_type": "ARTICLE",
             }
@@ -309,16 +319,21 @@ class CoreBlocksTestCase(TestCase):
         self.assertDictEqual(
             value.get_related_link(),
             {
-                "title": {"url": "https://ons.gov.uk", "text": "Example"},
+                "title": {"url": "https://ons.gov.uk", "text": "Example 1"},
                 "description": "A link",
                 "metadata": {"object": {"text": "Article"}},
+                "attributes": {
+                    "data-ga-event": "navigation-click",
+                    "data-ga-link-text": "Example 1",
+                    "data-ga-navigation-type": "links-within-content",
+                },
             },
         )
 
         value = block.to_python(
             {
                 "page": self.home_page.pk,
-                "title": "Example",
+                "title": "Example 2",
                 "description": "A link",
                 "content_type": "TIME_SERIES",
             }
@@ -327,9 +342,14 @@ class CoreBlocksTestCase(TestCase):
         self.assertDictEqual(
             value.get_related_link(),
             {
-                "title": {"url": self.home_page.url, "text": "Example"},
+                "title": {"url": self.home_page.url, "text": "Example 2"},
                 "description": "A link",
                 "metadata": {"object": {"text": "Time series"}},
+                "attributes": {
+                    "data-ga-event": "navigation-click",
+                    "data-ga-link-text": "Example 2",
+                    "data-ga-navigation-type": "links-within-content",
+                },
             },
         )
 
@@ -345,6 +365,11 @@ class CoreBlocksTestCase(TestCase):
             {
                 "title": {"url": self.home_page.url, "text": self.home_page.title},
                 "metadata": {"object": {"text": "Dataset"}},
+                "attributes": {
+                    "data-ga-event": "navigation-click",
+                    "data-ga-link-text": self.home_page.title,
+                    "data-ga-navigation-type": "links-within-content",
+                },
             },
         )
 
@@ -372,6 +397,13 @@ class CoreBlocksTestCase(TestCase):
                     "title": {"url": "https://ons.gov.uk", "text": "Example"},
                     "description": "A link",
                     "metadata": {"object": {"text": "Article"}},
+                    "attributes": {
+                        "data-ga-click-position": 1,
+                        "data-ga-event": "navigation-click",
+                        "data-ga-link-text": "Example",
+                        "data-ga-navigation-type": "links-within-content",
+                        "data-ga-section-title": "Related links",
+                    },
                 },
             ],
         )

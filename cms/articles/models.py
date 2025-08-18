@@ -683,7 +683,7 @@ class StatisticalArticlePage(BundledPageMixin, RoutablePageMixin, BasePage):  # 
         parent_series = self.get_parent()
 
         values = {
-            "pageTitle": self.get_full_display_title(),
+            "pageTitle": self.display_title,
             "outputSeries": parent_series.slug,
             "outputEdition": self.slug,
             "releaseDate": format_date_for_gtm(self.release_date),

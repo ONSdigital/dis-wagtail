@@ -160,9 +160,8 @@ class StatisticalArticlePageTestCase(WagtailTestUtils, TestCase):
         self.assertEqual(len(toc), 4)
         expected_attribute_labels = ["Section 1", "Section 2", "Cite this article", "Contact details"]
         for idx, toc_item in enumerate(toc):
-            self.assertEqual(toc_item["attributes"]["data-ga-label"], expected_attribute_labels[idx])
-            self.assertEqual(toc_item["attributes"]["data-ga-section-number"], idx + 1)
-            self.assertEqual(toc_item["attributes"]["data-ga-event"], "table-of-contents-click")
+            self.assertEqual(toc_item["attributes"]["data-ga-section-title"], expected_attribute_labels[idx])
+            self.assertEqual(toc_item["attributes"]["data-ga-event"], "navigation-onpage")
             self.assertEqual(toc_item["attributes"]["data-ga-interactionType"], "table-of-contents")
 
     def test_is_latest(self):

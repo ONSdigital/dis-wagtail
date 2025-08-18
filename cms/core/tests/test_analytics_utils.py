@@ -26,9 +26,8 @@ class AnalyticsUtilsTestCase(SimpleTestCase):
         ]
         add_table_of_contents_gtm_attributes(items)
 
-        for i, item in enumerate(items, start=1):
+        for item in items:
             self.assertIn("attributes", item)
-            self.assertEqual(item["attributes"]["data-ga-section-number"], i)
-            self.assertEqual(item["attributes"]["data-ga-label"], item["text"])
-            self.assertEqual(item["attributes"]["data-ga-event"], "table-of-contents-click")
+            self.assertEqual(item["attributes"]["data-ga-section-title"], item["text"])
+            self.assertEqual(item["attributes"]["data-ga-event"], "navigation-onpage")
             self.assertEqual(item["attributes"]["data-ga-interactionType"], "table-of-contents")

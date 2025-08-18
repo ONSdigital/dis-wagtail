@@ -91,6 +91,13 @@ class HomePageTests(WagtailPageTestCase):
             self.assertIn(key, datalayer_values)
             self.assertEqual(datalayer_values[key], value)
 
+    @override_settings(GOOGLE_TAG_MANAGER_CONTAINER_ID="")
+    def test_page_analytics_values_disabled(self):
+        """Test that no analytics values are pushed to the datalayer when GTM is not configured."""
+        response = self.client.get("/")
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(len(extract_datalayer_pushed_values(response.text)), 0)
+
 
 class PageCanonicalUrlTests(WagtailPageTestCase):
     @classmethod
