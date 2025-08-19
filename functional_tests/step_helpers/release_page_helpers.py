@@ -1,3 +1,5 @@
+from collections.abc import Callable
+
 from behave.runner import Context
 from playwright.sync_api import expect
 
@@ -11,35 +13,6 @@ NEXT_RELEASE_DATE_TEXT = "#id_next_release_date_text"
 
 def fill_locator(context: Context, locator: str, text: str):
     context.page.locator(locator).fill(text)
-
-
-def expect_text(context: Context, text: str, messages: dict[str, list[str]] | dict[str, str]):
-    messages = messages.get(text)
-    if isinstance(messages, str):
-        messages = [messages]
-    for message in messages:
-        expect(context.page.get_by_text(message)).to_be_visible()
-
-
-def add_release_date_change(context: Context):
-    change_to_release_date_section = context.page.locator("#panel-child-content-changes_to_release_date-section")
-    change_to_release_date_section.get_by_role("button", name="Insert a block").click()
-    change_to_release_date_section.get_by_label("Reason for change*").fill("Updated due to data availability")
-
-
-def handle_release_date_text(context: Context):
-    fill_locator(context, RELEASE_DATE_TEXT, "March 2025 to August 2025")
-
-
-def handle_next_release_date_text(context: Context):
-    fill_locator(context, NEXT_RELEASE_DATE_TEXT, "To be confirmed")
-
-
-def handle_related_link(context: Context):
-    context.page.locator("#panel-child-content-related_links-content").get_by_role(
-        "button", name="Insert a block"
-    ).first.click()
-    choose_page_link(context.page, page_name="Home")
 
 
 def insert_block(context: Context, block_name: str, index: int = 0):
@@ -70,25 +43,54 @@ def add_description_block(context: Context, index=0):
     context.page.get_by_role("region", name="Description *").get_by_role("textbox").fill("Description")
 
 
-def handle_pre_release_access_info(context: Context):
+def expect_text(context: Context, text: str, messages: dict[str, list[str]] | dict[str, str]):
+    messages = messages.get(text)
+    if isinstance(messages, str):
+        messages = [messages]
+    for message in messages:
+        expect(context.page.get_by_text(message)).to_be_visible()
+
+
+def add_release_date_change(context: Context):
+    change_to_release_date_section = context.page.locator("#panel-child-content-changes_to_release_date-section")
+    change_to_release_date_section.get_by_role("button", name="Insert a block").click()
+    change_to_release_date_section.get_by_label("Reason for change*").fill("Updated due to data availability")
+
+
+def add_release_date_text(context: Context):
+    fill_locator(context, RELEASE_DATE_TEXT, "March 2025 to August 2025")
+
+
+def add_next_release_date_text(context: Context):
+    fill_locator(context, NEXT_RELEASE_DATE_TEXT, "To be confirmed")
+
+
+def add_related_link(context: Context):
+    context.page.locator("#panel-child-content-related_links-content").get_by_role(
+        "button", name="Insert a block"
+    ).first.click()
+    choose_page_link(context.page, page_name="Home")
+
+
+def add_pre_release_access_info(context: Context):
     add_basic_table(context)
     add_description_block(context, index=1)
 
 
-def handle_invalid_release_date(context: Context):
+def add_invalid_release_date_text(context: Context):
     fill_locator(context, RELEASE_DATE_TEXT, "Invalid 5555")
 
 
-def handle_invalid_next_release_date(context: Context):
+def add_invalid_next_release_date_text(context: Context):
     fill_locator(context, NEXT_RELEASE_DATE_TEXT, "Invalid 5555")
 
 
-def handle_next_to_be_before_release_date(context: Context):
+def add_next_release_before_release(context: Context):
     fill_locator(context, RELEASE_DATE, "2025-12-25")
     fill_locator(context, NEXT_RELEASE_DATE, "2024-12-25")
 
 
-def handle_both_next_release_dates(context: Context):
+def add_both_next_release_dates(context: Context):
     fill_locator(context, NEXT_RELEASE_DATE, "2025-12-25")
     fill_locator(context, NEXT_RELEASE_DATE_TEXT, "December 2024")
 
@@ -111,29 +113,151 @@ def expect_not_both_dates_error(context: Context):
     ).to_be_visible()
 
 
-def handle_multiple_descriptions(context: Context):
+def add_multiple_descriptions(context: Context):
     add_description_block(context)
     insert_block(context, block_name="Description", index=2)
 
 
-def handle_multiple_tables(context: Context):
+def add_multiple_tables(context: Context):
     insert_block(context, block_name="Basic table", index=0)
     insert_block(context, block_name="Basic table", index=1)
 
 
-def handle_table_no_header(context: Context):
+def add_table_no_header(context: Context):
     add_basic_table(context, header=False)
 
 
-def handle_empty_table(context: Context):
+def add_empty_table(context: Context):
     add_basic_table(context, data=False)
 
 
-def handle_release_date_change_no_log(context: Context):
+def add_release_date_change_no_log(context: Context):
     context.page.get_by_role("textbox", name="Release date*").fill("2025-01-25")
 
 
-def handle_another_release_date_change(context: Context):
+def add_another_release_date_change(context: Context):
     section = context.page.locator("#panel-child-content-changes_to_release_date-section")
     section.get_by_role("button", name="Insert a block").nth(1).click()
     section.get_by_label("Reason for change*").nth(1).fill("New update to release schedule")
+
+
+# Dispatcher mapping
+FEATURE_ACTIONS: dict[str, Callable[[Context], None]] = {
+    "a release date text": add_release_date_text,
+    "a next release date text": add_next_release_date_text,
+    "a related link": add_related_link,
+    "pre-release access information": add_pre_release_access_info,
+    "a release date change": add_release_date_change,
+    "an invalid release date text": add_invalid_release_date_text,
+    "an invalid next release date text": add_invalid_next_release_date_text,
+    "the next release date to be before the release date": add_next_release_before_release,
+    "both next release date and next release date text": add_both_next_release_dates,
+}
+
+
+# Preview display logic for features
+def display_feature_in_preview_tab(context: Context, feature: str):
+    preview_texts: dict[str, list[str] | str] = {
+        "a release date text": "March 2025 to August 2025",
+        "a next release date text": ["Next release date:", "To be confirmed"],
+        "pre-release access information": [
+            "Pre-release access list",
+            "first",
+            "second",
+            "Description",
+        ],
+        "a release date change": [
+            "Changes to this release date",
+            "Previous date",
+            "21 December 2024 3:00pm",
+            "Reason for change",
+            "Updated due to data availability",
+        ],
+    }
+
+    custom_handlers: dict[str, Callable[[Context], None]] = {
+        "a related link": expect_related_links,
+    }
+
+    if feature in custom_handlers:
+        custom_handlers[feature](context)
+    elif feature in preview_texts:
+        expect_text(context, feature, preview_texts)
+    else:
+        raise ValueError(f"Unsupported feature: {feature}")
+
+
+# Error message and handler logic for release calendar page validation errors
+def handle_release_calendar_page_errors(context, error):
+    error_messages = {
+        "invalid release date text input": (
+            "The release date text must be in the 'Month YYYY' or 'Month YYYY to Month YYYY' format in English."
+        ),
+        "invalid next release date text input": (
+            'The next release date text must be in the "DD Month YYYY Time" format or say "To be confirmed" in English'
+        ),
+        "next release date cannot be before release date": ("The next release date must be after the release date."),
+        "cannot have both next release date and next release date text": None,
+        "a cancellation notice must be added": "The notice field is required when the release is cancelled",
+        "multiple release date changes": (
+            "Only one 'Changes to release date' entry can be added per release date change."
+        ),
+        "maximum descriptions allowed": "Description: The maximum number of items is 1",
+        "maximum tables allowed": "Basic table: The maximum number of items is 1",
+        "unselected options": "Select an option for Table headers",
+        "empty tables are not allowed": "The table cannot be empty",
+        "release date change with no date change log": (
+            "If a confirmed calendar entry needs to be rescheduled, the 'Changes to release date' "
+            "field must be filled out."
+        ),
+        "date change log with no release date change": (
+            "You have added a 'Changes to release date' entry, but the release date is the same "
+            "as the published version."
+        ),
+    }
+
+    custom_handlers = {
+        "cannot have both next release date and next release date text": expect_not_both_dates_error,
+    }
+
+    if error in custom_handlers:
+        custom_handlers[error](context)
+    elif error in error_messages:
+        expect_text(context, error, error_messages)
+    else:
+        raise ValueError(f"Unsupported error: {error}")
+
+
+def handle_pre_release_access_feature(context, feature):
+    """Handle adding features under pre-release access, mapping feature strings to their respective actions."""
+    handlers = {
+        "multiple descriptions are": add_multiple_descriptions,
+        "multiple tables are": add_multiple_tables,
+        "a table with no table header selected is": add_table_no_header,
+        "an empty table is": add_empty_table,
+    }
+
+    handler = handlers.get(feature)
+    if handler:
+        handler(context)
+    else:
+        raise ValueError(f"Unsupported feature: {feature}")
+
+
+def handle_changes_to_release_date_feature(context, feature, add_feature):
+    """Handle adding features under changes to release date, mapping feature strings to their respective actions."""
+    handlers = {
+        "multiple release date changes": lambda ctx: (
+            add_feature(ctx, "a release date change"),
+            add_another_release_date_change(ctx),
+        ),
+        "a release date change with no date change log": add_release_date_change_no_log,
+        "a date change log but no release date change": lambda ctx: add_feature(ctx, "a release date change"),
+        "another release date change": add_another_release_date_change,
+    }
+
+    handler = handlers.get(feature)
+    if handler:
+        handler(context)
+    else:
+        raise ValueError(f"Unsupported feature: {feature}")

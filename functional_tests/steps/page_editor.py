@@ -40,6 +40,7 @@ def click_the_given_button(context: Context, button_text: str) -> None:
 def open_preview_new_tab_with_preview_mode(context: Context, preview_mode: str):
     click_the_given_button(context, "Preview")
     context.page.get_by_label("Preview mode").select_option(preview_mode)
+
     with context.page.expect_popup() as preview_tab:
         context.page.get_by_role("link", name="Preview in new tab").click()
     # closes context.page (admin page)
@@ -51,6 +52,7 @@ def open_preview_new_tab_with_preview_mode(context: Context, preview_mode: str):
 @when("the user edits the {page} page")
 def the_user_edits_a_page(context: Context, page: str) -> None:
     the_page = page.lower().replace(" ", "_")
+
     if not the_page.endswith("_page"):
         the_page += "_page"
     edit_url = reverse("wagtailadmin_pages:edit", args=[getattr(context, the_page).pk])
@@ -65,6 +67,7 @@ def user_tries_to_create_new_theme_page(context: Context) -> None:
         except ThemeIndexPage.DoesNotExist:
             theme_index_page = ThemeIndexPageFactory(title="Browse")
         context.theme_index_page = theme_index_page
+
     context.page.get_by_role("button", name="Pages").click()
     context.page.get_by_role("link", name="View child pages of 'Home'").click()
     context.page.get_by_role("link", name=context.theme_index_page.title, exact=True).click()
@@ -171,10 +174,8 @@ def the_user_can_publish_a_page(context: Context):
 @step("the user can lock and unlock a page")
 def the_user_can_lock_and_unlock_a_page(context: Context):
     context.page.get_by_role("button", name="Toggle status").click()
-
     context.page.get_by_text("Lock", exact=True).click()
     expect(context.page.get_by_text("'Test Info Page' was locked by you")).to_be_visible()
-
     context.page.get_by_text("Lock", exact=True).click()
     expect(context.page.get_by_text("Page 'Test Info Page' is now unlocked.")).to_be_visible()
 

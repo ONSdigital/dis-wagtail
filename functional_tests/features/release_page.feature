@@ -1,20 +1,18 @@
-Feature: CMS users can draft, edit, and publish release pages
+Feature: CMS users can create, configure, and manage release calendar pages, including handling edge cases and validation for invalid or incomplete input data
 
   Background:
     Given a contact detail snippet exists
     And a superuser logs into the admin site
     And the user navigates to the release calendar page
 
-
-  Scenario: A CMS user has several datetime features available when editing the release calendar page
-    When the user clicks "Add child page" to create a new draft release page
-    Then the default release date is today's date and 9:30 AM
+  Scenario: A CMS user sees default release date, time placeholder, and 30-minute intervals when editing a release calendar page
+    When the user clicks "Add child page" to create a new draft release calendar page
+    Then today's date and 9:30 AM are set as the default in the release date input field
     And the datetime placeholder, "YYYY-MM-DD HH:MM", is displayed in the release date input field
-    And in the datetime selector, the time selection options are in 30 minute intervals
+    And the time selection dropdown displays options in 30-minute intervals
 
-
-  Scenario Outline: When a CMS user inputs a datetime on a release calendar page, the correct period is displayed
-    When the user clicks "Add child page" to create a new draft release page
+  Scenario Outline: A CMS user inputs a datetime on a release calendar page, the correct period is displayed
+    When the user clicks "Add child page" to create a new draft release calendar page
     And the user enters some example content on the page
     And the user inputs a <MeridiemIndicator> datetime
     And the user clicks "Publish"
@@ -26,9 +24,8 @@ Feature: CMS users can draft, edit, and publish release pages
       | am                |
       | pm                |
 
-
   Scenario Outline: A CMS user can create and publish a release calendar page with different statuses
-    When the user clicks "Add child page" to create a new draft release page
+    When the user clicks "Add child page" to create a new draft release calendar page
     And the user sets the page status to "<PageStatus>"
     And the user enters "<PageStatus>" page content
     And the user clicks "Publish"
@@ -41,24 +38,22 @@ Feature: CMS users can draft, edit, and publish release pages
       | Confirmed   |
       | Cancelled   |
 
+  Scenario Outline: A CMS user can use preview modes to preview the page at different statuses
+      When the user clicks "Add child page" to create a new draft release calendar page
+      And the user enters "<PageStatus>" page content
+      And the user clicks the "Save Draft" button
+      And the user opens the preview in a new tab, using the "<PageStatus>" preview mode
+      Then the "<PageStatus>" page is displayed in the preview tab
 
- Scenario Outline: A CMS user can use preview modes to preview the page at different statuses
-    When the user clicks "Add child page" to create a new draft release page
-    And the user enters "<PreviewMode>" page content
-    And the user clicks the "Save Draft" button
-    And the user opens the preview in a new tab, using the "<PreviewMode>" preview mode
-    Then the "<PreviewMode>" page is displayed in the preview tab
+      Examples:
+        | PageStatus |
+        | Provisional |
+        | Confirmed   |
+        | Published   |
+        | Cancelled   |
 
-    Examples:
-      | PreviewMode |
-      | Provisional |
-      | Confirmed   |
-      | Published   |
-      | Cancelled   |
-
-
-  Scenario Outline: A CMS user can add a feature on a release calendar page and the feature is displayed in the Published preview tab
-    When the user clicks "Add child page" to create a new draft release page
+  Scenario Outline: A CMS user adds different types of content to a release calendar page and verifies their display in the Published preview tab
+    When the user clicks "Add child page" to create a new draft release calendar page
     And the user enters some example content on the page
     And the user adds <Feature> to the release calendar page
     And the user clicks the "Save Draft" button
@@ -73,14 +68,12 @@ Feature: CMS users can draft, edit, and publish release pages
       | a related link                 |
       | pre-release access information |
 
-
-  Scenario: A CMS user can see release date text field for a provisional release page
-    When the user clicks "Add child page" to create a new draft release page
+  Scenario: A CMS user can see release date text field for a provisional release calendar page
+    When the user clicks "Add child page" to create a new draft release calendar page
     Then the page status is set to "Provisional" and the release date text field is visible
 
-
   Scenario Outline: Release date text field is hidden for non-provisional releases
-    When the user clicks "Add child page" to create a new draft release page
+    When the user clicks "Add child page" to create a new draft release calendar page
     And the user sets the page status to "<PageStatus>"
     Then the date text field is not visible
 
@@ -89,9 +82,8 @@ Feature: CMS users can draft, edit, and publish release pages
       | Confirmed  |
       | Cancelled  |
 
-
-  Scenario Outline: Validation errors are raised when invalid release dates are entered
-    When the user clicks "Add child page" to create a new draft release page
+  Scenario Outline: Validation errors are shown when a user enters invalid release date information
+    When the user clicks "Add child page" to create a new draft release calendar page
     And the user enters some example content on the page
     And the user adds <Input> to the release calendar page
     And the user clicks "Publish"
@@ -105,18 +97,16 @@ Feature: CMS users can draft, edit, and publish release pages
       | the next release date to be before the release date | next release date cannot be before release date               |
       | both next release date and next release date text   | cannot have both next release date and next release date text |
 
-
-  Scenario: Validation error is raised when a cancelled page is published without a notice
-    When the user clicks "Add child page" to create a new draft release page
+  Scenario: Validation error is shown when publishing a cancelled release calendar page without a cancellation notice
+    When the user clicks "Add child page" to create a new draft release calendar page
     And the user sets the page status to "Cancelled"
     And the user enters some example content on the page
     And the user clicks "Publish"
     Then an error message is displayed to say the page could not be created
-    And the user sees a validation error message: a notice must be added
+    And the user sees a validation error message: a cancellation notice must be added
 
-
-  Scenario Outline: Validation errors are raised when invalid data is input for pre-release access
-    When the user clicks "Add child page" to create a new draft release page
+  Scenario Outline: Validation errors are shown when invalid pre-release access information is provided
+    When the user clicks "Add child page" to create a new draft release calendar page
     And the user enters some example content on the page
     And <Feature> <is/are> added under pre-release access
     And the user clicks "Publish"
@@ -128,7 +118,6 @@ Feature: CMS users can draft, edit, and publish release pages
       | multiple tables                       | are    | maximum tables allowed       |
       | a table with no table header selected | is     | unselected options           |
       | an empty table                        | is     | empty tables are not allowed |
-  
 
   Scenario: A CMS user can add a change to release date and preview it in the Published preview tab
     When the user publishes a page with example content
@@ -139,7 +128,6 @@ Feature: CMS users can draft, edit, and publish release pages
     Then the example content is displayed in the preview tab
     And a release date change is displayed in the release calendar page preview tab
 
-
   Scenario: The previous release date in Release date change block is pre-populated 
     When the user publishes a page with example content
     And the user returns to editing the published page
@@ -148,20 +136,17 @@ Feature: CMS users can draft, edit, and publish release pages
     Then the previous release date field is pre-populated with the old release date
     And the help text is not visible
 
-
   Scenario: The Changes to release date block is not shown when creating a new page
-    When the user clicks "Add child page" to create a new draft release page
+    When the user clicks "Add child page" to create a new draft release calendar page
     Then the Changes to release date block is not visible
   
-
   Scenario: The previous release date field in Release date change block is uneditable
-    When the user clicks "Add child page" to create a new draft release page
+    When the user clicks "Add child page" to create a new draft release calendar page
     And the user enters some example content on the page
     And the user clicks "Publish"
     And the user returns to editing the published page
     And the user adds a release date change to the release calendar page
     Then the previous release date field is not editable
-
 
   Scenario: A CMS user cannot delete a release date change once the release calendar page is published
     When the user publishes a page with example content
@@ -171,7 +156,6 @@ Feature: CMS users can draft, edit, and publish release pages
     And the user returns to editing the published page
     Then the user cannot delete the release date change
 
-
   Scenario: Validation error is raised when multiple release date changes are added
     When the user publishes a page with example content
     And the user returns to editing the published page
@@ -179,7 +163,6 @@ Feature: CMS users can draft, edit, and publish release pages
     And the user clicks "Publish"
     Then an error message is displayed to say the page could not be saved
     And the user sees a validation error message: multiple release date changes
-
 
   Scenario Outline: Validation errors are raised when release date and date change log fields are inconsistent on a confirmed page
   When the user publishes a "Confirmed" page with example content
@@ -193,7 +176,6 @@ Examples:
   | Input                                          | Error                                        |
   | a release date change with no date change log  | release date change with no date change log  |
   | a date change log but no release date change   | date change log with no release date change  |
-
 
 Scenario: A CMS user can add another release date change after the first one is published
     When the user publishes a page with example content
