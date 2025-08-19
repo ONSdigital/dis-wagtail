@@ -7,7 +7,7 @@ from cms.articles.tests.factories import StatisticalArticlePageFactory
 from cms.core.custom_date_format import ons_date_format
 from cms.core.models.base import BasePage
 from cms.core.utils import (
-    format_document_list_element,
+    format_as_document_list_item,
     get_client_ip,
     get_content_type_for_page,
     get_formatted_pages_list,
@@ -296,14 +296,14 @@ class TestIsHostnameInDomain(TestCase):
 
 
 class TestUtils(TestCase):
-    def test_format_document_list_element(self):
+    def test_format_as_document_list_item(self):
         """Test helper function to format data to match the ONS Document List design system component."""
         title = "Element"
         url = "https://example.com/"
         content_type = "Data type"
         description = "This is a description."
 
-        formatted_element = format_document_list_element(
+        formatted_element = format_as_document_list_item(
             title=title, url=url, content_type=content_type, description=description
         )
 

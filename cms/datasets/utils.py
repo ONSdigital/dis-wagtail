@@ -2,7 +2,7 @@ from typing import Any
 
 from wagtail.blocks import StreamValue
 
-from cms.core.utils import format_document_list_element
+from cms.core.utils import format_as_document_list_item
 
 
 def format_datasets_as_document_list(datasets: StreamValue) -> list[dict[str, Any]]:
@@ -16,14 +16,14 @@ def format_datasets_as_document_list(datasets: StreamValue) -> list[dict[str, An
     for dataset in datasets:
         block_value = dataset.value
         if dataset.block_type == "manual_link":
-            dataset_document = format_document_list_element(
+            dataset_document = format_as_document_list_item(
                 title=block_value["title"],
                 url=block_value["url"],
                 content_type="Dataset",
                 description=block_value["description"],
             )
         else:
-            dataset_document = format_document_list_element(
+            dataset_document = format_as_document_list_item(
                 title=block_value.title,
                 url=block_value.website_url,
                 content_type="Dataset",

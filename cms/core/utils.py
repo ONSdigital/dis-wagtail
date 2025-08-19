@@ -43,7 +43,7 @@ class DocumentListItem(TypedDict):
 PageDataCollection = Iterable[dict[str, Any]]
 
 
-def format_document_list_element(title: str, url: str, content_type: str, description: str) -> DocumentListItem:
+def format_as_document_list_item(title: str, url: str, content_type: str, description: str) -> DocumentListItem:
     """Formats an object as a list element to be used in the ONS DocumentList design system component."""
     return {
         "title": {"text": title, "url": url},
@@ -54,7 +54,7 @@ def format_document_list_element(title: str, url: str, content_type: str, descri
 
 def _format_external_link(page_dict: dict[str, Any]) -> DocumentListItem:
     """Format external link dictionary into DocumentListItem."""
-    return format_document_list_element(
+    return format_as_document_list_item(
         title=page_dict["title"],
         url=page_dict["url"],
         content_type=_("Article"),
@@ -66,7 +66,7 @@ def _format_page_object(
     page: "Page", request: Optional["HttpRequest"] = None, custom_title: Optional[str] = None
 ) -> DocumentListItem:
     """Format page object into DocumentListItem."""
-    page_datum: DocumentListItem = format_document_list_element(
+    page_datum: DocumentListItem = format_as_document_list_item(
         title=custom_title or getattr(page, "display_title", page.title),
         url=page.get_url(request=request),
         content_type=getattr(page, "label", _("Page")),
@@ -184,4 +184,4 @@ def latex_formula_to_svg(latex: str, *, fontsize: int = 18, transparent: bool = 
 
 def is_hostname_in_domain(hostname: str, allowed_domain: str) -> bool:
     """Check if the hostname matches the allowed domain or its subdomains."""
-    return bool(hostname) and (hostname == allowed_domain or hostname.endswith(f".{allowed_domain}"))
+    return hostname == allowed_domain or hostname.endswith(f".{allowed_domain}")
