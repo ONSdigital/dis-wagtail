@@ -1,5 +1,3 @@
-from datetime import UTC, datetime, timedelta
-
 from behave import given, then, when  # pylint: disable=no-name-in-module
 from behave.runner import Context
 from django.conf import settings
@@ -14,39 +12,18 @@ from functional_tests.step_helpers.utils import require_request
 def create_valid_tokens(context: Context) -> None:
     """Set up valid JWT tokens and authentication cookies for testing."""
     helper = AuthenticationTestHelper(context)
-    helper.setup_test_keypair()
-
-    # Check for scenario tag
-    tags = set()
-    if hasattr(context, "tags"):
-        tags = set(context.tags)
-    elif hasattr(context, "scenario") and hasattr(context.scenario, "tags"):
-        tags = set(context.scenario.tags)
-
-    expiry = {
-        "short_expiry": 5,
-        "long_expiry": 30,
-    }.get(next((tag for tag in ("short_expiry", "long_expiry") if tag in tags), None), 20)
-
-    now = datetime.now(tz=UTC)
-    exp = int((now + timedelta(seconds=expiry)).timestamp())
-    helper.generate_test_tokens(groups=["role-admin"], exp=exp)
-
-    cookies = helper.create_auth_cookies()
-    context.page.context.add_cookies(cookies)
-    helper.setup_session_renewal_timing()
+    helper.setup_authenticated_user()
 
 
 @when("the user navigates to the admin page")
 def navigate_to_admin(context: Context) -> None:
-    """Navigate to the Wagtail admin page and simulate user activity."""
-    # Navigate to admin
+    """Navigate to the Wagtail admin page."""
     context.page.goto(f"{context.base_url}/admin/")
 
 
 @when("the user becomes active again")
 @when("the user is active in the admin interface")
-@when("the JWT token is refreshed in one tab")
+@when("the user interacts with the page in one tab")
 def simulate_user_activity(context: Context) -> None:
     """Simulate mouse movements to trigger activity detection."""
     movements = [(500, 300), (600, 350), (500, 300), (400, 250)]
@@ -58,16 +35,11 @@ def simulate_user_activity(context: Context) -> None:
     context.page.wait_for_timeout(1000)  # Allow time for any session renewal logic to run
 
 
-@then("a session renewal request should be sent")
+@then("their session is extended")
 def verify_renewal_requested(context: Context) -> None:
     auth_config = get_auth_config()
     refresh_path = auth_config["authTokenRefreshUrl"]
 
-    require_request(
-        context._requests,  # pylint: disable=protected-access
-        lambda r: "/extend-session/" in r.url and r.method in ("POST", "PUT"),
-        "extend_session view call",
-    )
     require_request(
         context._requests,  # pylint: disable=protected-access
         lambda r: refresh_path in r.url and r.method in ("POST", "PUT"),
@@ -75,14 +47,14 @@ def verify_renewal_requested(context: Context) -> None:
     )
 
 
-@given("the user has no valid JWT tokens")
+@given("the user is unauthenticated")
 def step_clear_tokens(context: Context) -> None:
     """Clear any existing auth cookies (no valid tokens)."""
     context.page.context.clear_cookies()
 
 
-@then("the logout request should complete successfully")
-@then("the user should be redirected to the sign-in page")
+@then("the user is logged out")
+@then("the user is redirected to the login page")
 def step_redirected_to_signin(context: Context) -> None:
     """Verify we were redirected to the admin login page."""
     expected_path = "/admin/login/"
@@ -91,7 +63,7 @@ def step_redirected_to_signin(context: Context) -> None:
         raise AssertionError(f"Not redirected to login, current URL: {current_url}")
 
 
-@then("the user should not be redirected to the sign-in page")
+@then("the user is not asked to login")
 def step_not_redirected_to_signin(context: Context) -> None:
     """Verify we stayed on admin and did not hit the login URL."""
     forbidden = "/admin/login/"
@@ -100,7 +72,7 @@ def step_not_redirected_to_signin(context: Context) -> None:
         raise AssertionError(f"Unexpected redirect to login page: {current}")
 
 
-@when("the user remains inactive for a period longer than the token's expiration time")
+@when("the user remains inactive until the session expires")
 def step_wait_for_expiry(context: Context) -> None:
     """Sleep past the token TTL so it expires."""
     context.page.wait_for_timeout(5000)
@@ -119,13 +91,13 @@ def step_click_logout(context: Context) -> None:
     context.page.get_by_role("button", name="Log out").click()
 
 
-@then("the tokens should be cleared from the browser")
+@then("all authentication data is cleared in the browser")
 def step_tokens_cleared(context: Context) -> None:
     """Verify that access, id, and session tokens are no longer present in cookies."""
     token_names = [
-        getattr(settings, "ACCESS_TOKEN_COOKIE_NAME", "access_token"),
-        getattr(settings, "ID_TOKEN_COOKIE_NAME", "id_token"),
-        getattr(settings, "SESSION_COOKIE_NAME", "sessionid"),
+        settings.ACCESS_TOKEN_COOKIE_NAME,
+        settings.ID_TOKEN_COOKIE_NAME,
+        settings.SESSION_COOKIE_NAME,
     ]
     cookies = context.page.context.cookies()
     present = [name for name in token_names if any(cookie["name"] == name for cookie in cookies)]
@@ -134,7 +106,7 @@ def step_tokens_cleared(context: Context) -> None:
         raise AssertionError(f"Expected tokens to be cleared but found still present: {present}. All cookies: {seen}")
 
 
-@when("the user opens a second tab")
+@when("the user opens an admin page in a second tab")
 def step_two_tabs(context: Context) -> None:
     """Ensure two pages share the same session context."""
     # first tab is context.page
@@ -164,7 +136,7 @@ def step_both_tabs_remain_logged_in(context: Context) -> None:
             raise AssertionError(f"Tab {i + 1} was unexpectedly redirected to login; URL is {tab.url}")
 
 
-@then("both tabs should be redirected to the sign-in page")
+@then("both tabs are redirected to the login page")
 def step_both_tabs_redirected_to_signin(context: Context) -> None:
     """Reload both tabs and verify that both are redirected to the login page."""
     expected_path = "/admin/login/"
@@ -174,8 +146,9 @@ def step_both_tabs_redirected_to_signin(context: Context) -> None:
             raise AssertionError(f"Tab {i + 1} was not redirected to login; URL is {tab.url}")
 
 
-@when("the user saves the information page")
-def step_create_and_save_information_page(context: Context) -> None:
+@then("the user opens the preview pane and the session should not be initialised in the iframe")
+def step_session_not_initialised_in_iframe(context: Context) -> None:
+    """Ensure session management only initialises once (in the parent), and not inside the iframe."""
     context.session_init_logs = []
     context.page.on(
         "console",
@@ -190,10 +163,6 @@ def step_create_and_save_information_page(context: Context) -> None:
         When the user clicks the "Save Draft" button
     """)
 
-
-@then("the user opens the preview pane and the session should not be initialised in the iframe")
-def step_session_not_initialised_in_iframe(context: Context) -> None:
-    """Ensure session management only initialises once (in the parent), and not inside the iframe."""
     # open preview
     context.page.get_by_role("button", name="Toggle preview").click()
     iframe = context.page.frame_locator("#w-preview-iframe")

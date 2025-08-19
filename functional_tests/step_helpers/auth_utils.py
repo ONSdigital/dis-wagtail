@@ -1,7 +1,7 @@
 import base64
-import datetime
 import json
 import uuid
+from datetime import UTC, datetime, timedelta
 from typing import Any, Optional
 
 from behave.runner import Context
@@ -9,7 +9,6 @@ from django.conf import settings
 
 from cms.auth import utils as auth_utils
 from cms.auth.tests.helpers import CognitoTokenTestCase, generate_rsa_keypair
-from cms.auth.utils import get_auth_config
 
 
 class AuthenticationTestHelper:
@@ -17,7 +16,7 @@ class AuthenticationTestHelper:
 
     def __init__(self, context: Context) -> None:
         self.context = context
-        self.captured_requests: list = []
+        self.setup_test_keypair()
 
     def setup_test_keypair(self) -> None:
         """Generate and configure test keypair for JWT validation."""
@@ -31,7 +30,7 @@ class AuthenticationTestHelper:
         # Mock get_jwks to return our test JWKS
         auth_utils.get_jwks = lambda: self.context.test_jwks
 
-    def generate_test_tokens(self, groups: Optional[list[str]] = None, **jwt_overrides) -> tuple[str, str]:
+    def generate_and_set_tokens(self, groups: Optional[list[str]] = None, **jwt_overrides) -> None:
         """Generate test JWT tokens with specified groups."""
         if groups is None:
             groups = ["role-admin"]
@@ -50,8 +49,6 @@ class AuthenticationTestHelper:
         # Store tokens in context
         self.context.access_token = access_token
         self.context.id_token = id_token
-
-        return access_token, id_token
 
     def create_auth_cookies(self) -> list[dict[str, str | bool]]:
         """Create authentication cookies configuration."""
@@ -85,6 +82,27 @@ class AuthenticationTestHelper:
             },
         ]
 
+    def setup_authenticated_user(self) -> None:
+        # Check for scenario tag
+        tags = set()
+        if hasattr(self.context, "tags"):
+            tags = set(self.context.tags)
+        elif hasattr(self.context, "scenario") and hasattr(self.context.scenario, "tags"):
+            tags = set(self.context.scenario.tags)
+
+        expiry = {
+            "short_expiry": 5,
+            "long_expiry": 30,
+        }.get(next((tag for tag in ("short_expiry", "long_expiry") if tag in tags), None), 20)
+
+        now = datetime.now(tz=UTC)
+        exp = int((now + timedelta(seconds=expiry)).timestamp())
+        self.generate_and_set_tokens(groups=["role-admin"], exp=exp)
+
+        cookies = self.create_auth_cookies()
+        self.context.page.context.add_cookies(cookies)
+        self.setup_session_renewal_timing()
+
     def decode_jwt_payload(self, token: str) -> dict[str, Any]:
         """Decode JWT payload to extract claims."""
         payload_b64 = token.split(".")[1]
@@ -99,14 +117,18 @@ class AuthenticationTestHelper:
         payload = self.decode_jwt_payload(self.context.access_token)
         exp_seconds = payload["exp"]  # UNIX seconds when token expires
 
-        # Get auth configuration
-        auth_config = get_auth_config()
-        offset_seconds = auth_config["sessionRenewalOffsetSeconds"]
-
         # Calculate millisecond timestamps
         session_ms = exp_seconds * 1000
-        refresh_ms = session_ms - (offset_seconds * 1000)
 
+        # The refresh token expiry is typically much longer (e.g., 12 hours from now)
+        refresh_expiry_seconds = int((datetime.now() + timedelta(hours=12)).timestamp())
+        refresh_ms = refresh_expiry_seconds * 1000
+
+        # This will be done by the upstream service prior to navigating to Wagtail.
+        # The upstream authentication service is responsible for setting the 'dis_auth_client_state' value in
+        # localStorage before the user is redirected or navigates to Wagtail.
+        # This manual step is only required in tests to simulate the authenticated state
+        # that would normally be established by the upstream service.
         self.context.page.context.add_init_script(f"""
             window.localStorage.setItem('dis_auth_client_state', JSON.stringify({{
             session_expiry_time: {session_ms},
@@ -119,17 +141,11 @@ def get_cognito_overridden_settings() -> dict:
     """Get Django settings overrides for Cognito tests."""
     return {
         # Core settings
-        "DEBUG": True,  # Enable debug for better error messages
         "AWS_COGNITO_LOGIN_ENABLED": True,
         "AWS_COGNITO_APP_CLIENT_ID": "test-client-id",
         "AWS_REGION": "eu-west-2",
         "AWS_COGNITO_USER_POOL_ID": "test-pool",
         "IDENTITY_API_BASE_URL": "https://cognito-idp.eu-west-2.amazonaws.com/test-pool",
-        # Cookie settings
-        "ACCESS_TOKEN_COOKIE_NAME": "access_token",
-        "ID_TOKEN_COOKIE_NAME": "id_token",
-        "CSRF_COOKIE_NAME": "csrftoken",
-        "CSRF_HEADER_NAME": "HTTP_X_CSRFTOKEN",
         # Auth settings
         "AUTH_TOKEN_REFRESH_URL": "/refresh/",
         "SESSION_RENEWAL_OFFSET_SECONDS": 5,
@@ -151,14 +167,11 @@ def capture_request(context):
                 status=200,
                 content_type="application/json",
                 body=json.dumps(
-                    {"expirationTime": int((datetime.datetime.now() + datetime.timedelta(hours=1)).timestamp() * 1000)}
+                    {
+                        "expirationTime": int((datetime.now() + timedelta(minutes=15)).timestamp() * 1000),
+                        "refreshTokenExpirationTime": int((datetime.now() + timedelta(minutes=15)).timestamp() * 1000),
+                    }
                 ),
-            )
-        elif request.url.endswith("/extend-session/") and request.method == "POST":
-            route.fulfill(
-                status=200,
-                content_type="application/json",
-                body=json.dumps({"status": "success", "message": "Session extended."}),
             )
         else:
             route.continue_()

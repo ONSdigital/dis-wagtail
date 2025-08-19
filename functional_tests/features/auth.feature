@@ -1,76 +1,67 @@
-Feature: Wagtail Admin JWT Authentication and Session Management
+@cognito_enabled
+Feature: Wagtail Admin Cognito Authentication and Session Management
     As an authenticated user
-    I want to ensure that JWT-based authentication and session management work correctly
+    I want my session to behave predictably
     So that I can securely access and manage the Wagtail admin interface
 
-    @cognito_enabled
-    Scenario: Session renewal fires on user activity
+    Scenario: Session extends when the user is active
         Given the user is authenticated
         When the user navigates to the admin page
         And the user is active in the admin interface
-        Then a session renewal request should be sent
+        Then their session is extended
 
-    @cognito_enabled
-    Scenario: Access Wagtail with valid JWT tokens
+    Scenario: Access Wagtail with a valid session
         Given the user is authenticated
         When the user navigates to the admin page
-        Then the user should not be redirected to the sign-in page
+        Then the user is not asked to login
 
-    @cognito_enabled
-    Scenario: Block access with invalid JWT tokens
-        Given the user has no valid JWT tokens
+    Scenario: Redirect to login page when no valid session
+        Given the user is unauthenticated
         When the user navigates to the admin page
-        Then the user should be redirected to the sign-in page
+        Then the user is redirected to the login page
 
-    @cognito_enabled
     @short_expiry
-    Scenario: Automatic logout on token expiration
+    Scenario: User is logged out after session expiry
         Given the user is authenticated
         When the user navigates to the admin page
-        And the user remains inactive for a period longer than the token's expiration time
+        And the user remains inactive until the session expires
         And the user refreshes the page
-        Then the user should be redirected to the sign-in page
+        Then the user is redirected to the login page
 
     # TODO: This test will need to be updated in the near future where once the JWT token expires, the user will be redirected to the sign-in page when active again
-    @cognito_enabled
     @short_expiry
     Scenario: No logout on token expiration
         Given the user is authenticated
         When the user navigates to the admin page
-        And the user remains inactive for a period longer than the token's expiration time
+        And the user remains inactive until the session expires
         And the user becomes active again
-        Then the user should not be redirected to the sign-in page
+        Then the user is not asked to login
 
-    @cognito_enabled
-    Scenario: Clear tokens on logout
+    Scenario: Logging out clears the session
         Given the user is authenticated
         When the user navigates to the admin page
         And the user clicks the "Log out" button in the Wagtail UI
-        Then the logout request should complete successfully
-        And the tokens should be cleared from the browser
+        Then the user is logged out
+        And all authentication data is cleared in the browser
     
-    @cognito_enabled
     @long_expiry
-    Scenario: Keep multiple tabs in sync on token refresh
+    Scenario: Session refresh keeps multiple tabs logged in
         Given the user is authenticated
         When the user navigates to the admin page
-        And the user opens a second tab
-        When the JWT token is refreshed in one tab
+        And the user opens an admin page in a second tab
+        When the user interacts with the page in one tab
         Then both tabs should remain logged in
 
-    @cognito_enabled
-    Scenario: Keep multiple tabs in sync on logout
+    Scenario: Logging out in one tab logs out the others
         Given the user is authenticated
         When the user navigates to the admin page
-        And the user opens a second tab
+        And the user opens an admin page in a second tab
         When the user logs out from one tab
-        Then both tabs should be redirected to the sign-in page
+        Then both tabs are redirected to the login page
 
-    @cognito_enabled
-    Scenario: Ensure session is not initialised in the iframe
+    Scenario: Preview iframe does not start separate session management
         Given the user is authenticated
         When the user navigates to the admin page
         And the user creates an information page as a child of the home page
         And the user adds content to the new information page
-        And the user saves the information page
         Then the user opens the preview pane and the session should not be initialised in the iframe
