@@ -8,7 +8,7 @@ from django.core.exceptions import ValidationError
 from django.forms import widgets
 from wagtail import blocks
 
-from cms.core.utils import matches_domain
+from cms.core.utils import is_hostname_in_domain
 from cms.datavis.blocks.annotations import (
     LineAnnotationBarColumnBlock,
     LineAnnotationCategoricalBlock,
@@ -732,7 +732,7 @@ class IframeBlock(BaseVisualisationBlock):
                 "Please enter a valid URL. It should start with 'https://' and contain a valid domain name."
             )
         elif not any(
-            matches_domain(parsed_url.hostname, allowed_domain)
+            is_hostname_in_domain(parsed_url.hostname, allowed_domain)
             for allowed_domain in settings.IFRAME_VISUALISATION_ALLOWED_DOMAINS
         ):
             patterns_str = " or ".join(settings.IFRAME_VISUALISATION_ALLOWED_DOMAINS)

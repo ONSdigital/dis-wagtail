@@ -15,7 +15,7 @@ from wagtail.blocks import (
     URLBlock,
 )
 
-from cms.core.utils import matches_domain
+from cms.core.utils import is_hostname_in_domain
 from cms.datasets.views import dataset_chooser_viewset
 
 DatasetChooserBlock = dataset_chooser_viewset.get_block_class(
@@ -56,7 +56,8 @@ class TimeSeriesPageLinkBlock(StructBlock):
                 "Please enter a valid URL. It should start with 'https://' and contain a valid domain name."
             )
         elif not any(
-            matches_domain(parsed_url.hostname, allowed_domain) for allowed_domain in settings.ONS_ALLOWED_LINK_DOMAINS
+            is_hostname_in_domain(parsed_url.hostname, allowed_domain)
+            for allowed_domain in settings.ONS_ALLOWED_LINK_DOMAINS
         ):
             patterns_str = " or ".join(settings.ONS_ALLOWED_LINK_DOMAINS)
             errors["url"] = ValidationError(

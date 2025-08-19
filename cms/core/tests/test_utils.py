@@ -10,8 +10,8 @@ from cms.core.utils import (
     get_client_ip,
     get_content_type_for_page,
     get_formatted_pages_list,
+    is_hostname_in_domain,
     latex_formula_to_svg,
-    matches_domain,
 )
 from cms.methodology.tests.factories import MethodologyPageFactory
 from cms.topics.tests.factories import TopicPageFactory
@@ -269,19 +269,19 @@ class TestContentTypeForPage(TestCase):
         self.assertEqual(content_type, "Methodology")
 
 
-class TestMatchesDomain(TestCase):
-    def test_positive_cases_matches_domain(self):
+class TestIsHostnameInDomain(TestCase):
+    def tests_hostname_in_domain_positive_cases(self):
         test_cases = [
             ("example.com", "example.com"),
             ("sub.example.com", "example.com"),
             ("another.subdomain.example.com", "example.com"),
         ]
 
-        for domains in test_cases:
-            with self.subTest(domains=domains):
-                self.assertTrue(matches_domain(*domains))
+        for hostname_domain_pair in test_cases:
+            with self.subTest():
+                self.assertTrue(is_hostname_in_domain(*hostname_domain_pair))
 
-    def test_negative_cases_matches_domain(self):
+    def test_is_hostname_in_domain_negative_cases(self):
         test_cases = [
             ("example.domain.com", "example.com"),
             ("other.com", "example.com"),
@@ -289,6 +289,6 @@ class TestMatchesDomain(TestCase):
             ("example.com", ""),
         ]
 
-        for domains in test_cases:
-            with self.subTest(domains=domains):
-                self.assertFalse(matches_domain(*domains))
+        for hostname_domain_pair in test_cases:
+            with self.subTest():
+                self.assertFalse(is_hostname_in_domain(*hostname_domain_pair))
