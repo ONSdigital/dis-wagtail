@@ -184,4 +184,4 @@ def latex_formula_to_svg(latex: str, *, fontsize: int = 18, transparent: bool = 
 
 def is_hostname_in_domain(hostname: str, allowed_domain: str) -> bool:
     """Check if the hostname matches the allowed domain or its subdomains."""
-    return hostname and (hostname == allowed_domain or hostname.endswith(f".{allowed_domain}"))
+    return bool(hostname) and (hostname == allowed_domain or hostname.endswith(f".{allowed_domain}"))
