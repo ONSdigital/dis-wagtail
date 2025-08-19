@@ -49,19 +49,19 @@ def _extract_item(
     if value["external_url"]:
         item[text_key] = value["title"]
         item["url"] = value["external_url"]
+
         item["attributes"]["data-ga-link-text"] = value["title"]
 
     elif (page := value.get("page")) and page.live:
         item[text_key] = value["title"] or getattr(page.specific_deferred, "display_title", page.title)
         item["url"] = page.get_url(request=request)
+
         item["attributes"]["data-ga-link-text"] = item[text_key]
         item["attributes"]["data-ga-click-path"] = item["url"]
-        item["attributes"]["data-ga-click-content-type"] = value["page"].cached_analytics_values.get(
-            "contentType", "page"
-        )
-        item["attributes"]["data-ga-click-content-group"] = value["page"].cached_analytics_values.get(
-            "contentGroup", "page"
-        )
+        if content_type := page.cached_analytics_values.get("contentType"):
+            item["attributes"]["data-ga-click-content-type"] = content_type
+        if content_group := page.cached_analytics_values.get("contentGroup"):
+            item["attributes"]["data-ga-click-content-group"] = content_group
 
     if include_description and "description" in value:
         item["description"] = value["description"]
