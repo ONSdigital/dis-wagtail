@@ -30,6 +30,7 @@ class BasePublisherTests(TestCase, WagtailTestUtils, ResourceDictAssertions):
             MethodologyPageFactory(),
             ReleaseCalendarPageFactory(),
             StatisticalArticlePageFactory(),
+            StatisticalArticlePageFactory(news_headline=""),
             IndexPageFactory(slug="custom-slug-1"),
         ]
 
@@ -46,7 +47,8 @@ class BasePublisherTests(TestCase, WagtailTestUtils, ResourceDictAssertions):
             channel_called, message_called = mock_method.call_args[0]
 
             self.assertEqual(channel_called, "search-content-updated")
-            self.assert_base_fields(message_called, page)
+            title = page.get_full_display_title() if type(page).__name__ == "StatisticalArticlePage" else page.title
+            self.assert_base_fields(message_called, page, title=title)
 
             mock_method.reset_mock()
 
