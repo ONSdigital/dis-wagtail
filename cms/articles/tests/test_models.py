@@ -10,6 +10,7 @@ from django.urls import reverse
 from django.utils import timezone
 from django.utils.formats import date_format
 from wagtail.blocks import StreamValue
+from wagtail.coreutils import get_dummy_request
 from wagtail.test.utils import WagtailTestUtils
 from wagtail.test.utils.form_data import nested_form_data, rich_text, streamfield
 
@@ -593,7 +594,7 @@ class StatisticalArticlePageFeaturedArticleTestCase(WagtailTestUtils, TestCase):
         self.assertIn("url", data["title"])
         parsed = urlparse(data["title"]["url"])
         self.assertEqual(parsed.netloc, "", "URL should be relative")
-        self.assertEqual(parsed.path, self.page.url)
+        self.assertEqual(parsed.path, self.page.get_url(request=get_dummy_request()))
 
         self.assertEqual(data["metadata"]["text"], "Article")
         self.assertEqual(data["metadata"]["date"]["prefix"], "Release date")
@@ -657,7 +658,12 @@ class PreviousReleasesWithoutPaginationTestCase(TestCase):
     def setUpTestData(cls):
         cls.article_series = ArticleSeriesPageFactory(title="Article Series")
         cls.articles = StatisticalArticlePageFactory.create_batch(9, parent=cls.article_series)
-        cls.previous_releases_url = cls.article_series.url + cls.article_series.reverse_subpage("previous_releases")
+        cls.previous_releases_url = cls.article_series.get_url(
+            get_dummy_request()
+        ) + cls.article_series.reverse_subpage("previous_releases")
+
+    def setUp(self):
+        self.dummy_request = get_dummy_request()
 
     def test_breadcrumb_does_contains_series_url(self):
         response = self.client.get(self.previous_releases_url)
@@ -677,7 +683,7 @@ class PreviousReleasesWithoutPaginationTestCase(TestCase):
         for article in self.articles:
             with self.subTest(article=article):
                 self.assertContains(response, article.get_admin_display_title())
-                self.assertContains(response, article.url)
+                self.assertContains(response, article.get_url(request=self.dummy_request))
         self.assertContains(response, 'class="ons-document-list__item"', count=self.total_batch)
         self.assertContains(response, "Latest release", count=1)
 

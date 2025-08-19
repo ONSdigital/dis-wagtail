@@ -86,3 +86,11 @@ AWS_ACCESS_KEY_ID = "testing"
 AWS_SECRET_ACCESS_KEY = "testing"  # noqa: S105
 AWS_SESSION_TOKEN = "testing"  # noqa: S105
 AWS_EC2_METADATA_DISABLED = True
+
+CMS_HOSTNAME_LOCALE_MAP = {
+    "ons.localhost": "en-gb",
+    "pub.ons.localhost": "en-gb",
+    "cy.ons.localhost": "cy",
+    "cy.pub.ons.localhost": "cy",
+}
+CMS_HOSTNAME_ALTERNATIVES = {"ons.localhost": "pub.ons.localhost", "cy.ons.localhost": "cy.pub.ons.localhost"}
