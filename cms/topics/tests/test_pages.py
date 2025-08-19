@@ -5,8 +5,9 @@ from wagtail.blocks import StreamValue
 from wagtail.test.utils import WagtailPageTestCase
 
 from cms.articles.tests.factories import ArticleSeriesPageFactory, StatisticalArticlePageFactory
-from cms.datasets.blocks import DatasetStoryBlock, TimeSeriesPageStoryBlock
+from cms.datasets.blocks import DatasetStoryBlock
 from cms.datasets.models import Dataset
+from cms.topics.blocks import TimeSeriesPageStoryBlock
 from cms.topics.tests.factories import TopicPageFactory
 
 

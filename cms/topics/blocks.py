@@ -226,8 +226,12 @@ class TimeSeriesPageStoryBlock(StreamBlock):
         # For each dataset URL, record the indices of the blocks it appears in
         urls = defaultdict(set)
         for block_index, block in enumerate(cleaned_value):
-            url = block.value["url"].rstrip("/")  # Treat URLs with and without trailing slashes as equivalent
-            url = url.replace("www.", "")  # Normalize URLs by removing 'www.'
+            url = block.value["url"].lower().rstrip("/")  # Treat URLs with and without trailing slashes as equivalent
+
+            parsed_url = urlparse(url)
+            parsed_url.hostname = parsed_url.hostname.replace("www.", "")  # Normalize URLs by removing 'www.'
+            url = parsed_url.geturl()
+
             urls[url].add(block_index)
 
         block_errors = {}
