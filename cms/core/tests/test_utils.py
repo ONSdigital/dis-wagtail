@@ -7,6 +7,7 @@ from cms.articles.tests.factories import StatisticalArticlePageFactory
 from cms.core.custom_date_format import ons_date_format
 from cms.core.models.base import BasePage
 from cms.core.utils import (
+    format_document_list_element,
     get_client_ip,
     get_content_type_for_page,
     get_formatted_pages_list,
@@ -292,3 +293,24 @@ class TestIsHostnameInDomain(TestCase):
         for hostname_domain_pair in test_cases:
             with self.subTest():
                 self.assertFalse(is_hostname_in_domain(*hostname_domain_pair))
+
+
+class TestUtils(TestCase):
+    def test_format_document_list_element(self):
+        """Test helper function to format data to match the ONS Document List design system component."""
+        title = "Element"
+        url = "https://example.com/"
+        content_type = "Data type"
+        description = "This is a description."
+
+        formatted_element = format_document_list_element(
+            title=title, url=url, content_type=content_type, description=description
+        )
+
+        expected = {
+            "title": {"text": title, "url": url},
+            "metadata": {"object": {"text": content_type}},
+            "description": f"<p>{description}</p>",
+        }
+
+        self.assertEqual(formatted_element, expected)

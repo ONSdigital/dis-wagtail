@@ -18,12 +18,13 @@ from cms.core.fields import StreamField
 from cms.core.models import BasePage
 from cms.core.query import order_by_pk_position
 from cms.core.utils import get_formatted_pages_list
-from cms.datasets.blocks import DatasetStoryBlock, TimeSeriesPageStoryBlock
-from cms.datasets.utils import format_datasets_as_document_list, format_time_series_as_document_list
+from cms.datasets.blocks import DatasetStoryBlock
+from cms.datasets.utils import format_datasets_as_document_list
 from cms.methodology.models import MethodologyPage
 from cms.taxonomy.mixins import ExclusiveTaxonomyMixin
-from cms.topics.blocks import ExploreMoreStoryBlock, TopicHeadlineFigureBlock
+from cms.topics.blocks import ExploreMoreStoryBlock, TimeSeriesPageStoryBlock, TopicHeadlineFigureBlock
 from cms.topics.forms import TopicPageAdminForm
+from cms.topics.utils import format_time_series_as_document_list
 from cms.topics.viewsets import (
     FeaturedSeriesPageChooserWidget,
     HighlightedArticlePageChooserWidget,

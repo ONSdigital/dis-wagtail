@@ -4,11 +4,16 @@ from wagtail.blocks import StreamBlockValidationError, StructBlockValidationErro
 from wagtail.blocks.stream_block import StreamValue
 from wagtail.images.tests.utils import get_test_image_file
 
-from cms.datasets.blocks import TimeSeriesPageLinkBlock, TimeSeriesPageStoryBlock
 from cms.home.models import HomePage
 from cms.images.models import CustomImage
 from cms.themes.tests.factories import ThemePageFactory
-from cms.topics.blocks import ExploreMoreExternalLinkBlock, ExploreMoreInternalLinkBlock, ExploreMoreStoryBlock
+from cms.topics.blocks import (
+    ExploreMoreExternalLinkBlock,
+    ExploreMoreInternalLinkBlock,
+    ExploreMoreStoryBlock,
+    TimeSeriesPageLinkBlock,
+    TimeSeriesPageStoryBlock,
+)
 from cms.topics.tests.factories import TopicPageFactory
 
 
