@@ -12,5 +12,5 @@ class DatasetFactory(factory.django.DjangoModelFactory):
     namespace = factory.Sequence(lambda n: f"namespace-{n}")
     title = factory.Faker("sentence", nb_words=4)
     description = factory.Faker("sentence", nb_words=16)
-    version = factory.Sequence(lambda n: f"Version {n}")
+    version = factory.Sequence(lambda n: n)
     edition = factory.Sequence(lambda n: f"Edition {n}")

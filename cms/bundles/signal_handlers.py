@@ -1,3 +1,4 @@
+import logging
 from typing import Any
 
 from django.db.models.signals import post_save
@@ -6,6 +7,8 @@ from django.dispatch import receiver
 from cms.bundles.enums import BundleStatus
 from cms.bundles.models import Bundle, BundleTeam
 from cms.bundles.notifications.email import send_bundle_in_review_email, send_bundle_published_email
+
+logger = logging.getLogger(__name__)
 
 
 @receiver(post_save, sender=BundleTeam)
@@ -39,3 +42,5 @@ def handle_bundle_publication(instance: Bundle, **kwargs: Any) -> None:
         ]
         for bundle_team in active_bundle_teams:
             send_bundle_published_email(bundle_team=bundle_team)
+
+        # @TODO: Publish the datasets when endpoint available?

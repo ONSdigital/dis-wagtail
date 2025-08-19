@@ -11,7 +11,6 @@ from queryish.rest import APIModel, APIQuerySet
 logger = logging.getLogger(__name__)
 
 EDITIONS_PATTERN = re.compile(r"/editions/([^/]+)/")
-DATASETS_BASE_API_URL = f"{settings.ONS_API_BASE_URL}/datasets"
 
 
 # TODO: This needs a revisit. Consider caching + fewer requests
@@ -35,8 +34,8 @@ class ONSDataset(APIModel):
     search_fields: ClassVar[list[str]] = ["title", "version", "formatted_edition"]
 
     class Meta:
-        base_url: str = DATASETS_BASE_API_URL
-        detail_url: str = f"{DATASETS_BASE_API_URL}/%s"
+        base_url: str = settings.DATASETS_API_BASE_URL
+        detail_url: str = f"{settings.DATASETS_API_BASE_URL}/%s"
         fields: ClassVar = ["id", "description", "title", "version", "edition"]
         pagination_style = "offset-limit"
         verbose_name_plural = "ONS Datasets"
@@ -70,8 +69,8 @@ class Dataset(models.Model):  # type: ignore[django-manager-missing]
     namespace = models.CharField(max_length=255)
     title = models.CharField(max_length=255)
     description = models.TextField()
-    version = models.CharField(max_length=255)
     edition = models.CharField(max_length=255)
+    version = models.IntegerField()
 
     class Meta:
         constraints: ClassVar[list[models.BaseConstraint]] = [
