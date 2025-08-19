@@ -128,7 +128,7 @@ msgstr "Togl y brif ddewislen"
 
 #: cms/jinja2/templates/base.html:36
 msgid "All content is available under the"
-msgstr "Mae'r holl gynnwys ar gael o dan y"
+msgstr "Mae’r holl gynnwys ar gael o dan y"
 
 #: cms/jinja2/templates/base.html:39
 msgid ", except where otherwise stated"
@@ -148,7 +148,7 @@ msgid ""
 "This page is currently not available %(in_language)s. It is displayed in its "
 "original language."
 msgstr ""
-"Nid yw'r dudalen hon ar gael %(in_language)s ar hyn o bryd. Fe'i "
+"Nid yw’r dudalen hon ar gael %(in_language)s ar hyn o bryd. Fe’i "
 "harddangosir yn ei hiaith wreiddiol."
 
 #: cms/jinja2/templates/components/accredited/accredited-information.html:7
@@ -228,8 +228,8 @@ msgid ""
 msgstr ""
 
 #: cms/jinja2/templates/pages/errors/500.html:2
-msgid "Sorry, there's a problem with the service"
-msgstr "Mae'n ddrwg gennym, mae problem gyda'r gwasanaeth"
+msgid "Sorry, there’s a problem with the service"
+msgstr "Mae’n ddrwg gennym, mae problem gyda’r gwasanaeth"
 
 #: cms/jinja2/templates/pages/errors/500.html:6
 #, python-format
@@ -332,7 +332,7 @@ msgstr "Wedi’i ganslo"
 #: cms/jinja2/templates/pages/release_calendar/release_calendar_page.html:98
 #: cms/release_calendar/models.py:233
 msgid "Changes to this release date"
-msgstr "Newidiadau i'r dyddiad rhyddhau hwn"
+msgstr "Newidiadau i’r dyddiad rhyddhau hwn"
 
 #: cms/jinja2/templates/pages/release_calendar/release_calendar_page--confirmed.html:39
 #: cms/jinja2/templates/pages/release_calendar/release_calendar_page--provisional.html:39
@@ -361,7 +361,7 @@ msgid ""
 "href=\"https://code.statisticsauthority.gov.uk/the-code/\">Code of Practice "
 "for Statistics</a>. This broadly means that the statistics:"
 msgstr ""
-"Mae'r rhain yn ystadegau swyddogol achrededig. Adolygwyd yn annibynnol gan y "
+"Mae’r rhain yn ystadegau swyddogol achrededig. Adolygwyd yn annibynnol gan y "
 "Swyddfa Rheoleiddio Ystadegau (OSR) ac a ganfuwyd ei fod yn cydymffurfio "
 "gyda safonau dibynadwyedd, ansawdd a gwerth yn y <a href='https://code."
 "statisticsauthority.gov.uk/the-code/'>Cod Ymarfer ar gyfer Ystadegau</a>. "
@@ -373,7 +373,7 @@ msgstr "diwallu anghenion defnyddwyr"
 
 #: cms/jinja2/templates/pages/release_calendar/release_calendar_page.html:126
 msgid "are presented clearly and accessibly"
-msgstr "yn cael eu cyflwyno'n glir ac yn hygyrch"
+msgstr "yn cael eu cyflwyno’n glir ac yn hygyrch"
 
 #: cms/jinja2/templates/pages/release_calendar/release_calendar_page.html:127
 msgid "are produced using appropriate data and sound methods"
@@ -451,7 +451,7 @@ msgstr "Gweld y datganiad diweddaraf"
 
 #: cms/jinja2/templates/pages/statistical_article_page.html:71
 msgid "To be announced"
-msgstr "I'w gyhoeddi"
+msgstr "I’w gyhoeddi"
 
 #: cms/jinja2/templates/pages/statistical_article_page.html:137
 msgid "Show detail"
@@ -496,7 +496,7 @@ msgid ""
 "Office for National Statistics (ONS), released %(release_date)s, ONS "
 "website, statistical article, %(cite_link)s"
 msgstr ""
-"Y Swyddfa Ystadegau Gwladol (SYG), wedi'i ryddhau %(release_date)s, SYG "
+"Y Swyddfa Ystadegau Gwladol (SYG), wedi’i ryddhau %(release_date)s, SYG "
 "gwefan, erthygl ystadegol, %(cite_link)s"
 
 #: cms/jinja2/templates/pages/theme_index_page.html:6
@@ -534,7 +534,7 @@ msgstr ""
 
 #: cms/release_calendar/forms.py:227
 msgid "To be confirmed"
-msgstr "I'w gadarnhau"
+msgstr "I’w gadarnhau"
 
 #: cms/settings/base.py:365
 msgid "English"
