@@ -223,7 +223,7 @@ class TimeSeriesPageStoryBlock(StreamBlock):
     def clean(self, value: "StreamValue", ignore_required_constraints: bool = False) -> "StreamValue":
         cleaned_value = super().clean(value)
 
-        # For each dataset URL, record the indices of the blocks it appears in
+        # For each time series URL, record the indices of the blocks it appears in
         urls = defaultdict(set)
         for block_index, block in enumerate(cleaned_value):
             url = block.value["url"].lower().rstrip("/")  # Treat URLs with and without trailing slashes as equivalent

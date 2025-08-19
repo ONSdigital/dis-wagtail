@@ -176,6 +176,8 @@ class TopicPageTests(WagtailPageTestCase):
         self.assertContains(response, manual_dataset["description"])
         self.assertContains(response, manual_dataset["url"])
 
+        self.assertIn({"url": "#data", "text": "Data"}, self.page.table_of_contents)
+
     def test_topic_page_displays_time_series(self):
         title = "Test Time Series"
         url = "https://example.com/dataset"
@@ -195,3 +197,5 @@ class TopicPageTests(WagtailPageTestCase):
         self.assertContains(response, title)
         self.assertContains(response, url)
         self.assertContains(response, description)
+
+        self.assertIn({"url": "#time-series", "text": "Time series"}, self.page.table_of_contents)
