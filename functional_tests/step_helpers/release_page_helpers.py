@@ -15,6 +15,9 @@ def fill_locator(context: Context, locator: str, text: str):
     context.page.locator(locator).fill(text)
 
 
+# The following functions use an 'index' parameter when inserting blocks.
+# This is necessary because when multiple blocks are inserted in succession, the position of the "Insert a block"
+# button may shift, causing inconsistent increments in the block indices (e.g. add_multiple_descriptions)
 def insert_block(context: Context, block_name: str, index: int = 0):
     """Inserts new empty block under pre-release access."""
     content_panel = context.page.locator("#panel-child-content-pre_release_access-content")
@@ -23,9 +26,9 @@ def insert_block(context: Context, block_name: str, index: int = 0):
     context.page.get_by_role("option", name=block_name).click()
 
 
-def add_basic_table(context: Context, data=True, header=True, index=0):
+def add_basic_table(context: Context, data: bool = True, header: bool = True):
     """Inserts a table block and fills with content."""
-    insert_block(context, block_name="Basic table", index=index)
+    insert_block(context, block_name="Basic table")
     if header:
         context.page.get_by_label("Table headers").select_option("column")
     context.page.get_by_role("textbox", name="Table caption").fill("Caption")
@@ -37,7 +40,7 @@ def add_basic_table(context: Context, data=True, header=True, index=0):
         context.page.keyboard.type("second")
 
 
-def add_description_block(context: Context, index=0):
+def add_description_block(context: Context, index: int = 0):
     """Inserts description and fills with text under pre-release access."""
     insert_block(context, block_name="Description", index=index)
     context.page.get_by_role("region", name="Description *").get_by_role("textbox").fill("Description")
@@ -119,7 +122,7 @@ def add_multiple_descriptions(context: Context):
 
 
 def add_multiple_tables(context: Context):
-    insert_block(context, block_name="Basic table", index=0)
+    insert_block(context, block_name="Basic table")
     insert_block(context, block_name="Basic table", index=1)
 
 

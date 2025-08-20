@@ -68,6 +68,7 @@ Feature: CMS users can create, configure, and manage release calendar pages, inc
       | a related link                 |
       | pre-release access information |
 
+# Checks visibility of release date text field based on page status (Provisional vs. others) in the admin interface.
   Scenario: A CMS user can see release date text field for a provisional release calendar page
     When the user clicks "Add child page" to create a new draft release calendar page
     Then the page status is set to "Provisional" and the release date text field is visible
