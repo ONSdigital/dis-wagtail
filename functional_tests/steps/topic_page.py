@@ -1,5 +1,6 @@
 from behave import given, step, then, when  # pylint: disable=no-name-in-module
 from behave.runner import Context
+from django.conf import settings
 from django.urls import reverse
 from playwright.sync_api import expect
 
@@ -125,8 +126,8 @@ def the_user_adds_a_time_series_page_link(context: Context):
     page = context.page
     page.locator("#panel-child-content-time_series-content").get_by_role("button", name="Insert a block").click()
     page.get_by_role("region", name="Time series page link").get_by_label("Title*").fill("Page title")
-    page.get_by_role("textbox", name="Url*").fill("example-time-series.com")
-    page.get_by_role("textbox", name="Page summary*").fill("Page summary for time series example")
+    page.get_by_role("textbox", name="Url*").fill(settings.ONS_WEBSITE_BASE_URL + "/time-series/")
+    page.get_by_role("textbox", name="Description*").fill("Page summary for time series example")
 
 
 @then("the time series section is displayed on the page")

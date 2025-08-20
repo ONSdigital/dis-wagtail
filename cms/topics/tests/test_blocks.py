@@ -1,13 +1,19 @@
+from django.conf import settings
 from django.test import TestCase
-from wagtail.blocks import StreamBlockValidationError
+from wagtail.blocks import StreamBlockValidationError, StructBlockValidationError
 from wagtail.blocks.stream_block import StreamValue
 from wagtail.images.tests.utils import get_test_image_file
 
-from cms.datasets.blocks import TimeSeriesPageStoryBlock
 from cms.home.models import HomePage
 from cms.images.models import CustomImage
 from cms.themes.tests.factories import ThemePageFactory
-from cms.topics.blocks import ExploreMoreExternalLinkBlock, ExploreMoreInternalLinkBlock, ExploreMoreStoryBlock
+from cms.topics.blocks import (
+    ExploreMoreExternalLinkBlock,
+    ExploreMoreInternalLinkBlock,
+    ExploreMoreStoryBlock,
+    TimeSeriesPageLinkBlock,
+    TimeSeriesPageStoryBlock,
+)
 from cms.topics.tests.factories import TopicPageFactory
 
 
@@ -117,14 +123,101 @@ class TimeSeriesPageStoryBlockTestCase(TestCase):
             [
                 (
                     "time_series_page_link",
-                    {"title": "Link 1", "url": "https://example.com/1", "page_summary": "Summary 1"},
+                    {"title": "Link 1", "url": "https://example.com/1", "description": "Summary 1"},
                 ),
                 (
                     "time_series_page_link",
-                    {"title": "Link 2", "url": "https://example.com/1", "page_summary": "Summary 2"},
+                    {"title": "Link 2", "url": "https://example.com/1", "description": "Summary 2"},
                 ),
             ],
         )
 
-        with self.assertRaises(StreamBlockValidationError):
+        with self.assertRaises(StreamBlockValidationError) as error_context:
             block.clean(stream_value)
+            self.assertEqual(error_context.exception.message, "Duplicate time series links are not allowed")
+
+    def test_identical_links_with_and_without_trailing_slash_are_considered_duplicates(self):
+        block = TimeSeriesPageStoryBlock()
+        stream_value = StreamValue(
+            block,
+            [
+                (
+                    "time_series_page_link",
+                    {"title": "Link 1", "url": "https://example.com/1/", "description": "Summary 1"},
+                ),
+                (
+                    "time_series_page_link",
+                    {"title": "Link 2", "url": "https://example.com/1", "description": "Summary 2"},
+                ),
+            ],
+        )
+
+        with self.assertRaises(StreamBlockValidationError) as error_context:
+            cleaned_value = block.clean(stream_value)
+
+            self.assertEqual(error_context.exception.message, "Duplicate time series links are not allowed")
+
+            self.assertEqual(
+                cleaned_value[0].value["url"], "https://example.com/1"
+            )  # Ensure that the trailing slash has been removed
+
+    def test_identical_links_with_and_without_www_are_considered_duplicates(self):
+        block = TimeSeriesPageStoryBlock()
+        stream_value = StreamValue(
+            block,
+            [
+                (
+                    "time_series_page_link",
+                    {"title": "Link 1", "url": "https://www.example.com/1", "description": "Summary 1"},
+                ),
+                (
+                    "time_series_page_link",
+                    {"title": "Link 2", "url": "https://example.com/1", "description": "Summary 2"},
+                ),
+            ],
+        )
+
+        with self.assertRaises(StreamBlockValidationError) as error_context:
+            block.clean(stream_value)
+
+            self.assertEqual(error_context.exception.message, "Duplicate time series links are not allowed")
+
+    def test_identical_links_with_uppercase_and_lowercase_are_considered_duplicates(self):
+        block = TimeSeriesPageStoryBlock()
+        stream_value = StreamValue(
+            block,
+            [
+                (
+                    "time_series_page_link",
+                    {"title": "Link 1", "url": "https://EXAMPLE.com/1", "description": "Summary 1"},
+                ),
+                (
+                    "time_series_page_link",
+                    {"title": "Link 2", "url": "https://example.com/1", "description": "Summary 2"},
+                ),
+            ],
+        )
+
+        with self.assertRaises(StreamBlockValidationError) as error_context:
+            block.clean(stream_value)
+            self.assertEqual(error_context.exception.message, "Duplicate time series links are not allowed")
+
+
+class TimeSeriesPageLinkBlockTestCase(TestCase):
+    def test_time_series_page_link_block_validation_fails_on_invalid_domain(self):
+        block = TimeSeriesPageLinkBlock()
+        value = {
+            "title": "Invalid Link",
+            "description": "This link is invalid",
+            "url": "https://invalid-domain.com/time-series",
+        }
+
+        with self.assertRaises(StructBlockValidationError) as info:
+            block.clean(value)
+
+        patterns_str = " or ".join(settings.ONS_ALLOWED_LINK_DOMAINS)
+
+        self.assertEqual(
+            info.exception.block_errors["url"].message,
+            f"The URL hostname is not in the list of allowed domains or their subdomains: {patterns_str}",
+        )
