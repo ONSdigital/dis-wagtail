@@ -399,6 +399,7 @@ class TopicPageTestCase(WagtailTestUtils, TestCase):
                     "explore_more": streamfield([]),
                     "headline_figures": streamfield([]),
                     "datasets": streamfield([]),
+                    "time_series": streamfield([]),
                     "topic": TopicFactory().pk,
                 }
             ),
