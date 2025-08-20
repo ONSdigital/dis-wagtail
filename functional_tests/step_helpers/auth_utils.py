@@ -169,7 +169,7 @@ def capture_request(context):
                 body=json.dumps(
                     {
                         "expirationTime": int((datetime.now() + timedelta(minutes=15)).timestamp() * 1000),
-                        "refreshTokenExpirationTime": int((datetime.now() + timedelta(minutes=15)).timestamp() * 1000),
+                        "refreshTokenExpirationTime": int((datetime.now() + timedelta(hours=12)).timestamp() * 1000),
                     }
                 ),
             )
