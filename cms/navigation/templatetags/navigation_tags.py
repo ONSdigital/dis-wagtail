@@ -58,9 +58,9 @@ def _extract_item(
 
         item["attributes"]["data-ga-link-text"] = item[text_key]
         item["attributes"]["data-ga-click-path"] = item["url"]
-        if content_type := page.cached_analytics_values.get("contentType"):
+        if content_type := page.specific_deferred.cached_analytics_values.get("contentType"):
             item["attributes"]["data-ga-click-content-type"] = content_type
-        if content_group := page.cached_analytics_values.get("contentGroup"):
+        if content_group := page.specific_deferred.cached_analytics_values.get("contentGroup"):
             item["attributes"]["data-ga-click-content-group"] = content_group
 
     if include_description and "description" in value:
