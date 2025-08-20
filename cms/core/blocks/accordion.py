@@ -31,8 +31,14 @@ class AccordionBlock(blocks.ListBlock):
             {
                 "title": section.get("title", ""),
                 "content": section.get("content", ""),
+                "headingAttributes": {
+                    "data-ga-event": "interaction",
+                    "data-ga-interaction-type": "accordion",
+                    "data-ga-interaction-label": section.get("title", ""),
+                    "data-ga-click-position": position,
+                },
             }
-            for section in value
+            for position, section in enumerate(value, start=1)
         ]
 
         context.update(
