@@ -1,5 +1,4 @@
 from collections import defaultdict
-from urllib.parse import urlparse
 
 from django.core.exceptions import ValidationError
 from wagtail.blocks import (
@@ -26,39 +25,65 @@ class ManualDatasetBlock(StructBlock):
 
     class Meta:
         icon = "link"
-        template = "templates/components/streamfield/dataset_link_block.html"
 
 
-class DatasetStoryBlock(StreamBlock):
-    dataset_lookup = DatasetChooserBlock(
-        label="Lookup Dataset", template="templates/components/streamfield/dataset_link_block.html"
-    )
-    manual_link = ManualDatasetBlock(
-        required=False,
-        label="Manually Linked Dataset",
-    )
+class TimeSeriesPageLinkBlock(StructBlock):
+    title = CharBlock(required=True)
+    url = URLBlock(required=True)
+    description = TextBlock(required=True)
 
     class Meta:
-        template = "templates/components/streamfield/datasets_block.html"
+        icon = "link"
+
+
+class TimeSeriesPageStoryBlock(StreamBlock):
+    time_series_page_link = TimeSeriesPageLinkBlock()
 
     def clean(self, value: StreamValue, ignore_required_constraints: bool = False) -> StreamValue:
         cleaned_value = super().clean(value)
 
-        # Validate there are no duplicate datasets, including between manual and looked up datasets referencing the same
-        # URL path
-
         # For each dataset URL path, record the indices of the blocks it appears in
         url_paths = defaultdict(set)
         for block_index, block in enumerate(cleaned_value):
-            url_path = (
-                block.value.url_path if block.block_type == "dataset_lookup" else urlparse(block.value["url"]).path
-            )
-            url_paths[url_path].add(block_index)
+            url_paths[block.value["url"]].add(block_index)
 
         block_errors = {}
         for block_indices in url_paths.values():
             # Add a block error for any index which contains a duplicate a URL path, so that the validation error
             # messages appear on the actual duplicate entries
+            if len(block_indices) > 1:
+                for index in block_indices:
+                    block_errors[index] = ValidationError("Duplicate time series links are not allowed")
+
+        if block_errors:
+            raise StreamBlockValidationError(block_errors=block_errors)
+
+        return cleaned_value
+
+
+class DatasetStoryBlock(StreamBlock):
+    dataset_lookup = DatasetChooserBlock(label="Lookup Dataset")
+    manual_link = ManualDatasetBlock(
+        required=False,
+        label="Manually Linked Dataset",
+    )
+
+    def clean(self, value: StreamValue, ignore_required_constraints: bool = False) -> StreamValue:
+        cleaned_value = super().clean(value)
+
+        # Validate there are no duplicate datasets,
+        # including between manual and looked up datasets referencing the same URL
+
+        # For each dataset URL, record the indices of the blocks it appears in
+        urls = defaultdict(set)
+        for block_index, block in enumerate(cleaned_value):
+            url = block.value.website_url if block.block_type == "dataset_lookup" else block.value["url"]
+            urls[url.rstrip("/")].add(block_index)  # Treat URLs with and without trailing slashes as equivalent
+
+        block_errors = {}
+        for block_indices in urls.values():
+            # Add a block error for any index which contains a duplicate URL,
+            # so that the validation error messages appear on the actual duplicate entries
             if len(block_indices) > 1:
                 for index in block_indices:
                     block_errors[index] = ValidationError("Duplicate datasets are not allowed")
