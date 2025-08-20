@@ -56,7 +56,7 @@ class GetFormattedPagesListTests(TestCase):
         expected = {
             "title": {"text": "Test Page", "url": "https://ons.gov.uk"},
             "metadata": {"object": {"text": "Page"}},
-            "description": "Test summary",
+            "description": "<p>Test summary</p>",
         }
         self.assertEqual(len(result), 1)
         self.assertDictEqual(result[0], expected)
@@ -82,7 +82,7 @@ class GetFormattedPagesListTests(TestCase):
         expected = {
             "title": {"text": "Test Page", "url": "https://ons.gov.uk"},
             "metadata": {"object": {"text": "Dummy Page"}},
-            "description": "Test summary",
+            "description": "<p>Test summary</p>",
         }
         self.assertEqual(len(result), 1)
         self.assertDictEqual(result[0], expected)
@@ -108,7 +108,7 @@ class GetFormattedPagesListTests(TestCase):
                     "short": expected_short,
                 },
             },
-            "description": "Test summary",
+            "description": "<p>Test summary</p>",
         }
         self.assertEqual(len(result), 1)
         self.assertDictEqual(result[0], expected)
@@ -155,7 +155,7 @@ class GetFormattedPagesListTests(TestCase):
         expected = {
             "title": {"text": "Test Page", "url": "https://ons.gov.uk"},
             "metadata": {"object": {"text": "Page"}},
-            "description": "Test summary",
+            "description": "<p>Test summary</p>",
         }
         self.assertEqual(len(result), 1)
         self.assertDictEqual(result[0], expected)
@@ -169,7 +169,7 @@ class GetFormattedPagesListTests(TestCase):
         expected = {
             "title": {"text": "Custom Title", "url": "https://ons.gov.uk"},
             "metadata": {"object": {"text": "Page"}},
-            "description": "Test summary",
+            "description": "<p>Test summary</p>",
         }
         self.assertEqual(len(result), 1)
         self.assertDictEqual(result[0], expected)
