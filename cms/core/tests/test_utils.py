@@ -69,7 +69,7 @@ class GetFormattedPagesListTests(TestCase):
         expected = {
             "title": {"text": "Test Page", "url": "https://ons.gov.uk"},
             "metadata": {"object": {"text": "Page"}},
-            "description": "Listing summary",
+            "description": "<p>Listing summary</p>",
         }
         self.assertEqual(len(result), 1)
         self.assertDictEqual(result[0], expected)
@@ -135,12 +135,12 @@ class GetFormattedPagesListTests(TestCase):
                     "short": expected_short,
                 },
             },
-            "description": "Summary One",
+            "description": "<p>Summary One</p>",
         }
         expected_page2 = {
             "title": {"text": "Page Two", "url": "https://ons.gov.uk"},
             "metadata": {"object": {"text": "Dummy Page"}},
-            "description": "Listing Two",
+            "description": "<p>Listing Two</p>",
         }
         self.assertEqual(len(result), 2)
         self.assertDictEqual(result[0], expected_page1)
