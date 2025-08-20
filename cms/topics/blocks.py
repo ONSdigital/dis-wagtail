@@ -1,7 +1,7 @@
 from collections import defaultdict
 from collections.abc import Callable, Sequence
 from typing import TYPE_CHECKING, Any, ClassVar
-from urllib.parse import urlparse, urlunparse
+from urllib.parse import urlparse
 
 from django import forms
 from django.conf import settings
@@ -228,9 +228,7 @@ class TimeSeriesPageStoryBlock(StreamBlock):
         for block_index, block in enumerate(cleaned_value):
             url = block.value["url"].lower().rstrip("/")  # Treat URLs with and without trailing slashes as equivalent
 
-            parsed_url = urlparse(url)
-            netloc = parsed_url.netloc.replace("www.", "")  # Normalize URLs by removing 'www.'
-            url = urlunparse(parsed_url._replace(netloc=netloc))
+            url = url.removeprefix("https://").removeprefix("www.")  # Normalize the URL
 
             urls[url].add(block_index)
 

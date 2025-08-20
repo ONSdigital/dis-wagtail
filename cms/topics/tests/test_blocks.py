@@ -136,7 +136,7 @@ class TimeSeriesPageStoryBlockTestCase(TestCase):
             block.clean(stream_value)
             self.assertEqual(error_context.exception.message, "Duplicate time series links are not allowed")
 
-    def test_identical_links_one_with_trailing_slash_are_considered_duplicates(self):
+    def test_identical_links_with_and_without_trailing_slash_are_considered_duplicates(self):
         block = TimeSeriesPageStoryBlock()
         stream_value = StreamValue(
             block,
@@ -161,7 +161,7 @@ class TimeSeriesPageStoryBlockTestCase(TestCase):
                 cleaned_value[0].value["url"], "https://example.com/1"
             )  # Ensure that the trailing slash has been removed
 
-    def test_identical_links_one_with_www_are_considered_duplicates(self):
+    def test_identical_links_with_and_without_www_are_considered_duplicates(self):
         block = TimeSeriesPageStoryBlock()
         stream_value = StreamValue(
             block,

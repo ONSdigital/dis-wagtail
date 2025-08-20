@@ -43,7 +43,9 @@ class DocumentListItem(TypedDict):
 PageDataCollection = Iterable[dict[str, Any]]
 
 
-def format_as_document_list_item(title: str, url: str, content_type: str, description: str) -> DocumentListItem:
+def format_as_document_list_item(
+    title: str, url: str, content_type: "StrOrPromise", description: str
+) -> DocumentListItem:
     """Formats an object as a list element to be used in the ONS DocumentList design system component."""
     return {
         "title": {"text": title, "url": url},
