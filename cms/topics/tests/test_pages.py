@@ -176,7 +176,18 @@ class TopicPageTests(WagtailPageTestCase):
         self.assertContains(response, manual_dataset["description"])
         self.assertContains(response, manual_dataset["url"])
 
-        self.assertIn({"url": "#data", "text": "Data"}, self.page.table_of_contents)
+        self.assertIn(
+            {
+                "url": "#data",
+                "text": "Data",
+                "attributes": {
+                    "data-ga-event": "navigation-onpage",
+                    "data-ga-navigation-type": "table-of-contents",
+                    "data-ga-section-title": "Data",
+                },
+            },
+            self.page.table_of_contents,
+        )
 
     def test_topic_page_displays_time_series(self):
         title = "Test Time Series"
