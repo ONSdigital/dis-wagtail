@@ -46,8 +46,9 @@ def add_description_block(context: Context, index: int = 0):
     context.page.get_by_role("region", name="Description *").get_by_role("textbox").fill("Description")
 
 
-def expect_text(context: Context, text: str, messages: dict[str, list[str]] | dict[str, str]):
-    messages = messages.get(text)
+def expect_text(context: Context, text: str | None, messages: dict[str, list[str]] | dict[str, str]):
+    if text:
+        messages = messages.get(text)
     if isinstance(messages, str):
         messages = [messages]
     for message in messages:
@@ -116,6 +117,18 @@ def expect_not_both_dates_error(context: Context):
     ).to_be_visible()
 
 
+def expect_changes_to_release_date(context: Context):
+    preview_texts: list[str] = [
+        "Previous date",
+        "25 December 2024 9:30am",
+        "Reason for change",
+        "Updated due to data availability",
+    ]
+    expect_text(context, None, preview_texts)
+    expect(context.page.get_by_role("link", name="Changes to this release date")).to_be_visible()
+    expect(context.page.get_by_role("heading", name="Changes to this release date")).to_be_visible()
+
+
 def add_multiple_descriptions(context: Context):
     add_description_block(context)
     insert_block(context, block_name="Description", index=2)
@@ -169,17 +182,11 @@ def display_feature_in_preview_tab(context: Context, feature: str):
             "second",
             "Description",
         ],
-        "a release date change": [
-            "Changes to this release date",
-            "Previous date",
-            "25 December 2024 9:30am",
-            "Reason for change",
-            "Updated due to data availability",
-        ],
     }
 
     custom_handlers: dict[str, Callable[[Context], None]] = {
         "a related link": expect_related_links,
+        "a release date change": expect_changes_to_release_date,
     }
 
     if feature in custom_handlers:
