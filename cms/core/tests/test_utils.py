@@ -6,7 +6,14 @@ from django.utils.formats import date_format
 from cms.articles.tests.factories import StatisticalArticlePageFactory
 from cms.core.custom_date_format import ons_date_format
 from cms.core.models.base import BasePage
-from cms.core.utils import get_client_ip, get_content_type_for_page, get_formatted_pages_list, latex_formula_to_svg
+from cms.core.utils import (
+    format_as_document_list_item,
+    get_client_ip,
+    get_content_type_for_page,
+    get_formatted_pages_list,
+    is_hostname_in_domain,
+    latex_formula_to_svg,
+)
 from cms.methodology.tests.factories import MethodologyPageFactory
 from cms.topics.tests.factories import TopicPageFactory
 
@@ -49,7 +56,7 @@ class GetFormattedPagesListTests(TestCase):
         expected = {
             "title": {"text": "Test Page", "url": "https://ons.gov.uk"},
             "metadata": {"object": {"text": "Page"}},
-            "description": "Test summary",
+            "description": "<p>Test summary</p>",
         }
         self.assertEqual(len(result), 1)
         self.assertDictEqual(result[0], expected)
@@ -62,7 +69,7 @@ class GetFormattedPagesListTests(TestCase):
         expected = {
             "title": {"text": "Test Page", "url": "https://ons.gov.uk"},
             "metadata": {"object": {"text": "Page"}},
-            "description": "Listing summary",
+            "description": "<p>Listing summary</p>",
         }
         self.assertEqual(len(result), 1)
         self.assertDictEqual(result[0], expected)
@@ -75,7 +82,7 @@ class GetFormattedPagesListTests(TestCase):
         expected = {
             "title": {"text": "Test Page", "url": "https://ons.gov.uk"},
             "metadata": {"object": {"text": "Dummy Page"}},
-            "description": "Test summary",
+            "description": "<p>Test summary</p>",
         }
         self.assertEqual(len(result), 1)
         self.assertDictEqual(result[0], expected)
@@ -101,7 +108,7 @@ class GetFormattedPagesListTests(TestCase):
                     "short": expected_short,
                 },
             },
-            "description": "Test summary",
+            "description": "<p>Test summary</p>",
         }
         self.assertEqual(len(result), 1)
         self.assertDictEqual(result[0], expected)
@@ -128,12 +135,12 @@ class GetFormattedPagesListTests(TestCase):
                     "short": expected_short,
                 },
             },
-            "description": "Summary One",
+            "description": "<p>Summary One</p>",
         }
         expected_page2 = {
             "title": {"text": "Page Two", "url": "https://ons.gov.uk"},
             "metadata": {"object": {"text": "Dummy Page"}},
-            "description": "Listing Two",
+            "description": "<p>Listing Two</p>",
         }
         self.assertEqual(len(result), 2)
         self.assertDictEqual(result[0], expected_page1)
@@ -148,7 +155,7 @@ class GetFormattedPagesListTests(TestCase):
         expected = {
             "title": {"text": "Test Page", "url": "https://ons.gov.uk"},
             "metadata": {"object": {"text": "Page"}},
-            "description": "Test summary",
+            "description": "<p>Test summary</p>",
         }
         self.assertEqual(len(result), 1)
         self.assertDictEqual(result[0], expected)
@@ -162,7 +169,7 @@ class GetFormattedPagesListTests(TestCase):
         expected = {
             "title": {"text": "Custom Title", "url": "https://ons.gov.uk"},
             "metadata": {"object": {"text": "Page"}},
-            "description": "Test summary",
+            "description": "<p>Test summary</p>",
         }
         self.assertEqual(len(result), 1)
         self.assertDictEqual(result[0], expected)
@@ -261,3 +268,49 @@ class TestContentTypeForPage(TestCase):
         page = MethodologyPageFactory(title="Test Methodology")
         content_type = get_content_type_for_page(page)
         self.assertEqual(content_type, "Methodology")
+
+
+class TestIsHostnameInDomain(TestCase):
+    def tests_hostname_in_domain_positive_cases(self):
+        test_cases = [
+            ("example.com", "example.com"),
+            ("sub.example.com", "example.com"),
+            ("another.subdomain.example.com", "example.com"),
+        ]
+
+        for hostname_domain_pair in test_cases:
+            with self.subTest():
+                self.assertTrue(is_hostname_in_domain(*hostname_domain_pair))
+
+    def test_is_hostname_in_domain_negative_cases(self):
+        test_cases = [
+            ("example.domain.com", "example.com"),
+            ("other.com", "example.com"),
+            ("", "example.com"),
+            ("example.com", ""),
+        ]
+
+        for hostname_domain_pair in test_cases:
+            with self.subTest():
+                self.assertFalse(is_hostname_in_domain(*hostname_domain_pair))
+
+
+class TestUtils(TestCase):
+    def test_format_as_document_list_item(self):
+        """Test helper function to format data to match the ONS Document List design system component."""
+        title = "Element"
+        url = "https://example.com/"
+        content_type = "Data type"
+        description = "This is a description."
+
+        formatted_element = format_as_document_list_item(
+            title=title, url=url, content_type=content_type, description=description
+        )
+
+        expected = {
+            "title": {"text": title, "url": url},
+            "metadata": {"object": {"text": content_type}},
+            "description": f"<p>{description}</p>",
+        }
+
+        self.assertEqual(formatted_element, expected)

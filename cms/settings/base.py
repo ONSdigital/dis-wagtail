@@ -989,10 +989,14 @@ SEARCH_INDEX_EXCLUDED_PAGE_TYPES = (
     "Page",
 )
 
+# Allowed domains for linking to other parts of the ONS website (for datasets or time series)
+ONS_ALLOWED_LINK_DOMAINS = env.get("ONS_ALLOWED_LINK_DOMAINS", "ons.gov.uk").split(",")
+
 # Allowed prefixes for iframe visualisations
-IFRAME_VISUALISATION_ALLOWED_DOMAINS = env.get(
-    "IFRAME_VISUALISATION_ALLOWED_DOMAINS", "ons.gov.uk,onsdigital.uk"
-).split(",")
+if "IFRAME_VISUALISATION_ALLOWED_DOMAINS" in env:
+    IFRAME_VISUALISATION_ALLOWED_DOMAINS = env["IFRAME_VISUALISATION_ALLOWED_DOMAINS"].split(",")
+else:  # Default to ONS allowed link domains if not set
+    IFRAME_VISUALISATION_ALLOWED_DOMAINS = ONS_ALLOWED_LINK_DOMAINS
 
 # FIXME: remove before going live
 ENFORCE_EXCLUSIVE_TAXONOMY = env.get("ENFORCE_EXCLUSIVE_TAXONOMY", "true").lower() == "true"
