@@ -91,7 +91,7 @@ class AuthenticationTestHelper:
             tags = set(self.context.scenario.tags)
 
         expiry = {
-            "short_expiry": 5,
+            "short_expiry": 10,
             "long_expiry": 30,
         }.get(next((tag for tag in ("short_expiry", "long_expiry") if tag in tags), None), 20)
 
