@@ -30,7 +30,7 @@ class ManualDatasetBlock(StructBlock):
 class TimeSeriesPageLinkBlock(StructBlock):
     title = CharBlock(required=True)
     url = URLBlock(required=True)
-    page_summary = TextBlock(required=True)
+    description = TextBlock(required=True)
 
     class Meta:
         icon = "link"
