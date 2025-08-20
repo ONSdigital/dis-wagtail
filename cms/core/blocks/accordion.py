@@ -36,7 +36,6 @@ class AccordionBlock(blocks.ListBlock):
                     "data-ga-interaction-type": "accordion",
                     "data-ga-interaction-label": section.get("title", ""),
                     "data-ga-click-position": position,
-                    # "data-ga-section-title": ,  # TODO this should be the title of the surrounding section
                 },
             }
             for position, section in enumerate(value, start=1)
