@@ -51,7 +51,7 @@ def expect_text(context: Context, text: str, messages: dict[str, list[str]] | di
         expect(context.page.get_by_text(message)).to_be_visible()
 
 
-def add_release_date_change(context: Context):
+def add_date_change_log(context: Context):
     change_to_release_date_section = context.page.locator("#panel-child-content-changes_to_release_date-section")
     change_to_release_date_section.get_by_role("button", name="Insert a block").click()
     change_to_release_date_section.get_by_label("Reason for change*").fill("Updated due to data availability")
@@ -147,7 +147,7 @@ FEATURE_ACTIONS: dict[str, Callable[[Context], None]] = {
     "a next release date text": add_next_release_date_text,
     "a related link": add_related_link,
     "pre-release access information": add_pre_release_access_info,
-    "a release date change": add_release_date_change,
+    "a date change log": add_date_change_log,
     "an invalid release date text": add_invalid_release_date_text,
     "an invalid next release date text": add_invalid_next_release_date_text,
     "the next release date to be before the release date": add_next_release_before_release,
@@ -169,7 +169,7 @@ def display_feature_in_preview_tab(context: Context, feature: str):
         "a release date change": [
             "Changes to this release date",
             "Previous date",
-            "21 December 2024 3:00pm",
+            "25 December 2024 9:30am",
             "Reason for change",
             "Updated due to data availability",
         ],
@@ -199,7 +199,7 @@ def handle_release_calendar_page_errors(context, error):
         "next release date cannot be before release date": ("The next release date must be after the release date."),
         "cannot have both next release date and next release date text": None,
         "a cancellation notice must be added": "The notice field is required when the release is cancelled",
-        "multiple release date changes": (
+        "multiple release date change logs": (
             "Only one 'Changes to release date' entry can be added per release date change."
         ),
         "maximum descriptions allowed": "Description: The maximum number of items is 1",
@@ -247,13 +247,13 @@ def handle_pre_release_access_feature(context, feature):
 def handle_changes_to_release_date_feature(context, feature, add_feature):
     """Handle adding features under changes to release date, mapping feature strings to their respective actions."""
     handlers = {
-        "multiple release date changes": lambda ctx: (
-            add_feature(ctx, "a release date change"),
+        "multiple date change logs": lambda ctx: (
+            add_feature(ctx, "a date change log"),
             add_another_release_date_change(ctx),
         ),
         "a release date change with no date change log": add_release_date_change_no_log,
-        "a date change log but no release date change": lambda ctx: add_feature(ctx, "a release date change"),
-        "another release date change": add_another_release_date_change,
+        "a date change log with no release date change": lambda ctx: add_feature(ctx, "a date change log"),
+        "another date change log": add_another_release_date_change,
     }
 
     handler = handlers.get(feature)

@@ -214,18 +214,15 @@ def user_changes_release_date_to_new_date(context: Context):
     context.page.get_by_role("textbox", name="Release date*").fill("2024-12-21 15:00")
 
 
-@then("the previous release date field is pre-populated with the old release date")
+@when("the user changes the release date to a new date again")
+def user_changes_release_date_to_new_date_again(context: Context):
+    context.page.get_by_role("textbox", name="Release date*").fill("2025-01-21 15:00")
+
+
+@then("the previous date field is pre-populated with the old release date")
 def previous_release_date_field_is_pre_populated(context: Context):
     changes_to_release_date_section = context.page.locator("#panel-child-content-changes_to_release_date-section")
     expect(changes_to_release_date_section.get_by_label("Previous date*")).to_have_value("2024-12-25 09:30")
-
-
-@then("the help text is not visible")
-def help_text_is_not_visible(context: Context):
-    changes_to_release_date_section = context.page.locator("#panel-child-content-changes_to_release_date-section")
-    expect(
-        changes_to_release_date_section.get_by_text("This field will be auto-populated once the page is saved.")
-    ).not_to_be_visible()
 
 
 @then("the Changes to release date block is not visible")
@@ -239,7 +236,7 @@ def previous_release_date_field_is_not_editable(context: Context):
     expect(changes_to_release_date_section.get_by_label("Previous date*")).not_to_be_editable()
 
 
-@then("the user cannot delete the release date change")
+@then("the user cannot delete the date change log")
 def user_cannot_delete_the_release_date_change(context: Context):
     context.page.wait_for_timeout(500)  # added to allow JS to be ready
     expect(

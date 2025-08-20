@@ -112,6 +112,7 @@ Feature: CMS users can create, configure, and manage release calendar pages, inc
     And the user clicks "Publish"
     Then an error message is displayed to say the page could not be created 
     And the user sees a validation error message: <Error>
+
     Examples:
       | Feature                               | is/are | Error                        |
       | multiple descriptions                 | are    | maximum descriptions allowed |
@@ -119,71 +120,72 @@ Feature: CMS users can create, configure, and manage release calendar pages, inc
       | a table with no table header selected | is     | unselected options           |
       | an empty table                        | is     | empty tables are not allowed |
 
-  Scenario: A CMS user can add a change to release date and preview it in the Published preview tab
-    When the user publishes a page with example content
+  Scenario: A CMS user can add a date change log, under changes to release date, and preview it in the published preview tab
+    When the user publishes a "Confirmed" page with example content
     And the user returns to editing the published page
     And the user changes the release date to a new date
-    And the user adds a release date change to the release calendar page
+    And the user adds a date change log to the release calendar page
     And the user opens the preview in a new tab, using the "Published" preview mode
     Then the example content is displayed in the preview tab
     And a release date change is displayed in the release calendar page preview tab
 
-  Scenario: The previous release date in Release date change block is pre-populated 
-    When the user publishes a page with example content
+  Scenario: The previous date in the date change log block is pre-populated 
+    When the user publishes a "Confirmed" page with example content
     And the user returns to editing the published page
     And the user changes the release date to a new date
-    And the user adds a release date change to the release calendar page
-    Then the previous release date field is pre-populated with the old release date
-    And the help text is not visible
+    And the user adds a date change log to the release calendar page
+    Then the previous date field is pre-populated with the old release date
 
   Scenario: The Changes to release date block is not shown when creating a new page
     When the user clicks "Add child page" to create a new draft release calendar page
     Then the Changes to release date block is not visible
-  
-  Scenario: The previous release date field in Release date change block is uneditable
-    When the user clicks "Add child page" to create a new draft release calendar page
-    And the user enters some example content on the page
-    And the user clicks "Publish"
+
+  Scenario: The previous date field in the date change log block is uneditable
+    When the user publishes a "Confirmed" page with example content
     And the user returns to editing the published page
-    And the user adds a release date change to the release calendar page
+    And the user adds a date change log to the release calendar page
     Then the previous release date field is not editable
 
-  Scenario: A CMS user cannot delete a release date change once the release calendar page is published
-    When the user publishes a page with example content
+  Scenario: A CMS user cannot delete a date change log that has been published
+    When the user publishes a "Confirmed" page with example content
     And the user returns to editing the published page
-    And the user adds a release date change to the release calendar page
+    And the user changes the release date to a new date
+    And the user adds a date change log to the release calendar page
     And the user clicks "Publish"
     And the user returns to editing the published page
-    Then the user cannot delete the release date change
+    Then the user cannot delete the date change log
 
-  Scenario: Validation error is raised when multiple release date changes are added
-    When the user publishes a page with example content
+  Scenario: Validation error is raised when multiple date change logs are added
+    When the user publishes a "Confirmed" page with example content
     And the user returns to editing the published page
-    And the user adds multiple release date changes under changes to release date
+    And the user changes the release date to a new date
+    And the user adds multiple date change logs under changes to release date
     And the user clicks "Publish"
     Then an error message is displayed to say the page could not be saved
-    And the user sees a validation error message: multiple release date changes
+    And the user sees a validation error message: multiple release date change logs
 
-  Scenario Outline: Validation errors are raised when release date and date change log fields are inconsistent on a confirmed page
-  When the user publishes a "Confirmed" page with example content
-  And the user returns to editing the published page
-  And the user adds <Input> under changes to release date
-  And the user clicks "Publish"
-  Then an error message is displayed to say the page could not be saved
-  And the user sees a validation error message: <Error>
-
-Examples:
-  | Input                                          | Error                                        |
-  | a release date change with no date change log  | release date change with no date change log  |
-  | a date change log but no release date change   | date change log with no release date change  |
-
-Scenario: A CMS user can add another release date change after the first one is published
-    When the user publishes a page with example content
+  Scenario Outline: Validation errors are raised when release date changes and date change log fields are inconsistent on a confirmed page
+    When the user publishes a "Confirmed" page with example content
     And the user returns to editing the published page
-    And the user adds a release date change to the release calendar page
+    And the user adds a <DateChangeLogValidationError> under changes to release date
+    And the user clicks "Publish"
+    Then an error message is displayed to say the page could not be saved
+    And the user sees a validation error message: <DateChangeLogValidationError>
+
+    Examples:
+      | DateChangeLogValidationError                 |
+      | release date change with no date change log  |
+      | date change log with no release date change  |
+
+Scenario: A CMS user can add another date change log after the first one is published
+    When the user publishes a "Confirmed" page with example content
+    And the user returns to editing the published page
+    And the user changes the release date to a new date
+    And the user adds a date change log to the release calendar page
     And the user clicks "Publish"
     And the user returns to editing the published page
-    And the user adds another release date change under changes to release date
+    And the user changes the release date to a new date again
+    And the user adds another date change log under changes to release date
     And the user clicks the "Save Draft" button
     Then the release calendar page is successfully updated
     # Done twice on purpose to check validation is working
