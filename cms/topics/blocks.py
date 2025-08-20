@@ -1,14 +1,28 @@
+from collections import defaultdict
 from collections.abc import Callable, Sequence
 from typing import TYPE_CHECKING, Any, ClassVar
+from urllib.parse import urlparse
 
 from django import forms
+from django.conf import settings
+from django.core.exceptions import ValidationError
 from django.utils.functional import cached_property
-from wagtail.blocks import CharBlock, PageChooserBlock, StreamBlock, StructBlock, URLBlock
+from wagtail.blocks import (
+    CharBlock,
+    PageChooserBlock,
+    StreamBlock,
+    StreamBlockValidationError,
+    StructBlock,
+    StructBlockValidationError,
+    TextBlock,
+    URLBlock,
+)
 from wagtail.blocks.struct_block import StructBlockAdapter
 from wagtail.images.blocks import ImageChooserBlock
 from wagtail.telepath import register
 
 from cms.articles.models import ArticleSeriesPage
+from cms.core.utils import is_hostname_in_domain
 
 from .viewsets import series_with_headline_figures_chooser_viewset
 
@@ -164,3 +178,69 @@ class SeriesWithHeadlineChooserAdapter(StructBlockAdapter):
 
 
 register(SeriesWithHeadlineChooserAdapter(), TopicHeadlineFigureBlock)
+
+
+class TimeSeriesPageLinkBlock(StructBlock):
+    title = CharBlock(required=True)
+    description = TextBlock(required=True)
+    url = URLBlock(
+        required=True,
+        help_text="The URL must start with 'https://' "
+        f"and match one of the allowed domains or their subdomains: {', '.join(settings.ONS_ALLOWED_LINK_DOMAINS)}",
+    )
+
+    class Meta:
+        icon = "link"
+        template = "templates/components/streamfield/time_series_link.html"
+
+    def clean(self, value: "StructValue") -> "StructValue":
+        """Checks that the given time series page URL matches the allowed domain."""
+        errors = {}
+        parsed_url = urlparse(value["url"])
+
+        if not parsed_url.hostname or parsed_url.scheme != "https":
+            errors["url"] = ValidationError(
+                "Please enter a valid URL. It should start with 'https://' and contain a valid domain name."
+            )
+        elif not any(
+            is_hostname_in_domain(parsed_url.hostname, allowed_domain)
+            for allowed_domain in settings.ONS_ALLOWED_LINK_DOMAINS
+        ):
+            patterns_str = " or ".join(settings.ONS_ALLOWED_LINK_DOMAINS)
+            errors["url"] = ValidationError(
+                f"The URL hostname is not in the list of allowed domains or their subdomains: {patterns_str}"
+            )
+
+        if errors:
+            raise StructBlockValidationError(block_errors=errors)
+
+        return super().clean(value)
+
+
+class TimeSeriesPageStoryBlock(StreamBlock):
+    time_series_page_link = TimeSeriesPageLinkBlock()
+
+    def clean(self, value: "StreamValue", ignore_required_constraints: bool = False) -> "StreamValue":
+        cleaned_value = super().clean(value)
+
+        # For each time series URL, record the indices of the blocks it appears in
+        urls = defaultdict(set)
+        for block_index, block in enumerate(cleaned_value):
+            url = block.value["url"].lower().rstrip("/")  # Treat URLs with and without trailing slashes as equivalent
+
+            url = url.removeprefix("https://").removeprefix("www.")  # Normalize the URL
+
+            urls[url].add(block_index)
+
+        block_errors = {}
+        for block_indices in urls.values():
+            # Add a block error for any index which contains a duplicate URL,
+            # so that the validation error messages appear on the actual duplicate entries
+            if len(block_indices) > 1:
+                for index in block_indices:
+                    block_errors[index] = ValidationError("Duplicate time series links are not allowed")
+
+        if block_errors:
+            raise StreamBlockValidationError(block_errors=block_errors)
+
+        return cleaned_value

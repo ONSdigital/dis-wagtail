@@ -1,5 +1,6 @@
 from behave import given, step, then, when  # pylint: disable=no-name-in-module
 from behave.runner import Context
+from django.conf import settings
 from django.urls import reverse
 from playwright.sync_api import expect
 
@@ -118,3 +119,29 @@ def the_headline_figures_on_the_topic_page_link_to_the_statistical_page(context:
     page.go_back()
     page.get_by_text("Second headline figure").click()
     expect(page.get_by_role("heading", name="The article page")).to_be_visible()
+
+
+@when("the user adds a time series page link")
+def the_user_adds_a_time_series_page_link(context: Context):
+    page = context.page
+    page.locator("#panel-child-content-time_series-content").get_by_role("button", name="Insert a block").click()
+    page.get_by_role("region", name="Time series page link").get_by_label("Title*").fill("Page title")
+    page.get_by_role("textbox", name="Url*").fill(settings.ONS_WEBSITE_BASE_URL + "/time-series/")
+    page.get_by_role("textbox", name="Description*").fill("Page summary for time series example")
+
+
+@then("the time series section is displayed on the page")
+def the_time_series_page_link_is_displayed_on_the_page(context: Context):
+    page = context.page
+
+    expect(
+        page.locator("#time-series").get_by_role("heading", name="Time Series", exact=True)
+    ).to_be_visible()  # Section heading
+    expect(page.locator("#time-series").get_by_role("link", name="Page title")).to_be_visible()
+    expect(page.locator("#time-series").get_by_text("Time series", exact=True)).to_be_visible()  # Content type label
+    expect(page.locator("#time-series").get_by_text("Summary")).to_be_visible()
+
+
+@then("the time series item appears in the table of contents")
+def the_time_series_item_appears_in_the_table_of_contents(context: Context):
+    expect(context.page.get_by_role("heading", name="Time Series")).to_be_visible()
