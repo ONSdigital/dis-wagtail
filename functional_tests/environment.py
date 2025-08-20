@@ -116,7 +116,7 @@ def before_scenario(context: Context, scenario: Scenario):
         context.playwright_context = context.browser_context
 
     # Only set up request capture and mocking for scenarios tagged with 'cognito_enabled'
-    if "cognito_enabled" in scenario.tags:
+    if "cognito_enabled" in scenario.tags or "cognito_enabled" in getattr(scenario.feature, "tags", []):
         context._requests = []  # pylint: disable=protected-access
         context.playwright_context.route("**/*", capture_request(context))
 
