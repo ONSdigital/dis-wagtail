@@ -43,34 +43,38 @@ class DocumentListItem(TypedDict):
 PageDataCollection = Iterable[dict[str, Any]]
 
 
+def format_as_document_list_item(
+    title: str, url: str, content_type: "StrOrPromise", description: str
+) -> DocumentListItem:
+    """Formats an object as a list element to be used in the ONS DocumentList design system component."""
+    return {
+        "title": {"text": title, "url": url},
+        "metadata": {"object": {"text": content_type}},
+        "description": f"<p>{description}</p>",
+    }
+
+
 def _format_external_link(page_dict: dict[str, Any]) -> DocumentListItem:
     """Format external link dictionary into DocumentListItem."""
-    return {
-        "title": {
-            "text": page_dict["title"],
-            "url": page_dict["url"],
-        },
-        "metadata": {
-            "object": {"text": _("Article")},
-        },
-        "description": page_dict.get("description", ""),
-    }
+    return format_as_document_list_item(
+        title=page_dict["title"],
+        url=page_dict["url"],
+        content_type=_("Article"),
+        description=page_dict.get("description", ""),
+    )
 
 
 def _format_page_object(
     page: "Page", request: Optional["HttpRequest"] = None, custom_title: Optional[str] = None
 ) -> DocumentListItem:
     """Format page object into DocumentListItem."""
-    page_datum: DocumentListItem = {
-        "title": {
-            "text": custom_title or getattr(page, "display_title", page.title),
-            "url": page.get_url(request=request),
-        },
-        "metadata": {
-            "object": {"text": getattr(page, "label", _("Page"))},
-        },
-        "description": getattr(page, "listing_summary", "") or getattr(page, "summary", ""),
-    }
+    page_datum: DocumentListItem = format_as_document_list_item(
+        title=custom_title or getattr(page, "display_title", page.title),
+        url=page.get_url(request=request),
+        content_type=getattr(page, "label", _("Page")),
+        description=getattr(page, "listing_summary", "") or getattr(page, "summary", ""),
+    )
+
     if release_date := getattr(page, "release_date", None):
         page_datum["metadata"]["date"] = get_document_metadata_date(release_date)
     return page_datum
@@ -178,3 +182,8 @@ def latex_formula_to_svg(latex: str, *, fontsize: int = 18, transparent: bool = 
         svg_string = "\n".join(svg_string.split("\n")[3:])
 
     return svg_string
+
+
+def is_hostname_in_domain(hostname: str, allowed_domain: str) -> bool:
+    """Check if the hostname matches the allowed domain or its subdomains."""
+    return hostname == allowed_domain or hostname.endswith(f".{allowed_domain}")
