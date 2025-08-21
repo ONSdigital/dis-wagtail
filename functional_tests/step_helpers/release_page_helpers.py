@@ -15,9 +15,8 @@ def fill_locator(context: Context, locator: str, text: str):
     context.page.locator(locator).fill(text)
 
 
-# The following functions use an 'index' parameter when inserting blocks.
-# This is necessary because when multiple blocks are inserted in succession, the position of the "Insert a block"
-# button may shift, causing inconsistent increments in the block indices (e.g. add_multiple_descriptions)
+# 'index' parameter is used when inserting blocks because when multiple blocks are inserted,
+# button may shift causing inconsistent increments in the block indices (e.g. add_multiple_descriptions)
 def insert_block(context: Context, block_name: str, index: int = 0):
     """Inserts new empty block under pre-release access."""
     content_panel = context.page.locator("#panel-child-content-pre_release_access-content")
