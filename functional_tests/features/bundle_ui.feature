@@ -121,7 +121,7 @@ Feature: UI Bundle Happy Paths
         And the <Role> is a member of the Preview teams
         And there are <number_of_bundles> bundles with <Bundle_Details>
         When the <Role> logs in
-        Then the <Role> cannot approve a bundle
+        Then the user cannot approve a bundle
 
         Examples: bundles
             | number_of_bundles | Role                       | Creator Role        | Bundle_Details                                                                                                                                      |

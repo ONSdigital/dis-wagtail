@@ -346,8 +346,8 @@ def add_reslease_calendar_in_edit(context: Context) -> None:
         context.page.get_by_role("link", name=context.release_calendar_pages[0].title).click()
 
 
-@step("the {user_role} can preview a bundle")
-def can_preview_bundle(context: Context, user_role: str) -> None:
+@step("the user can preview a bundle")
+def can_preview_bundle(context: Context) -> None:
     expect(context.page.get_by_text("Latest active bundles")).to_be_visible()
     expect(context.page.get_by_role("link", name=context.bundles[0].name)).to_be_visible()
     expect(context.page.get_by_role("cell", name="In Preview")).to_be_visible()
