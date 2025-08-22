@@ -281,7 +281,7 @@ def the_user_cannot_add_bundles(context: Context) -> None:
     expect(context.page.get_by_text("There are currently no")).to_be_visible()
 
 
-@step("the {user_role} can edit a bundle")
+@step("the user can edit a bundle")
 def can_edit_bundle(context: Context) -> None:
     expect(context.page.locator("#latest-bundles-heading")).to_contain_text("Latest active bundles")
     expect(context.page.locator("#latest-bundles-content")).to_contain_text(context.bundles[0].name)
@@ -348,20 +348,14 @@ def add_reslease_calendar_in_edit(context: Context) -> None:
 
 @step("the {user_role} can preview a bundle")
 def can_preview_bundle(context: Context, user_role: str) -> None:
-    if user_role == "Viewer":
-        expect(context.page.get_by_text("Bundles ready for preview")).to_be_visible()
-        expect(context.page.get_by_role("link", name=context.bundles[0].name)).to_be_visible()
-        context.page.get_by_role("link", name=context.bundles[0].name).click()
-
-    else:
-        expect(context.page.get_by_text("Latest active bundles")).to_be_visible()
-        expect(context.page.get_by_role("link", name=context.bundles[0].name)).to_be_visible()
-        expect(context.page.get_by_role("cell", name="In Preview")).to_be_visible()
-        expect(
-            context.page.get_by_role("row", name=context.bundles[0].name + " Actions").get_by_label("Actions")
-        ).to_be_visible()
-        (context.page.get_by_role("row", name=context.bundles[0].name + " Actions").get_by_label("Actions").click())
-        context.page.get_by_role("link", name="View", exact=True).click()
+    expect(context.page.get_by_text("Latest active bundles")).to_be_visible()
+    expect(context.page.get_by_role("link", name=context.bundles[0].name)).to_be_visible()
+    expect(context.page.get_by_role("cell", name="In Preview")).to_be_visible()
+    expect(
+        context.page.get_by_role("row", name=context.bundles[0].name + " Actions").get_by_label("Actions")
+    ).to_be_visible()
+    (context.page.get_by_role("row", name=context.bundles[0].name + " Actions").get_by_label("Actions").click())
+    context.page.get_by_role("link", name="View", exact=True).click()
 
     expect(context.page.locator("header")).to_contain_text(context.bundles[0].name)
     expect(context.page.get_by_text("Name")).to_be_visible()
@@ -376,19 +370,19 @@ def can_preview_bundle(context: Context, user_role: str) -> None:
     expect(context.page.get_by_role("heading", name="Statistical article")).to_be_visible()
 
 
-@step("the {user_role} cannot preview a bundle")
+@step("the user cannot preview a bundle")
 def cannot_preview_bundle(context: Context) -> None:
     context.page.get_by_role("link", name="Bundles", exact=True).click()
     expect(context.page.get_by_role("button", name=f"More options for '{context.bundles[0].name}'")).not_to_be_visible()
 
 
-@step("the {user_role} cannot approve a bundle")
+@step("the user cannot approve a bundle")
 def cannot_approve_bundle(context: Context) -> None:
     context.page.get_by_role("link", name="Bundles", exact=True).click()
     expect(context.page.get_by_role("button", name=f"More options for '{context.bundles[0].name}'")).not_to_be_visible()
 
 
-@step("the {user_role} can approve a bundle")
+@step("the user can approve a bundle")
 def can_approve_bundle(context: Context) -> None:
     expect(context.page.get_by_text("Latest active bundles")).to_be_visible()
     expect(context.page.get_by_role("link", name=context.bundles[0].name)).to_be_visible()
