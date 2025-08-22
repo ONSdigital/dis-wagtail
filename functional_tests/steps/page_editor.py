@@ -37,7 +37,7 @@ def click_the_given_button(context: Context, button_text: str) -> None:
 
 
 @step('The user opens the preview in a new tab, using the "{preview_mode}" preview mode')
-def open_preview_new_tab_with_preview_mode(context: Context, preview_mode: str):
+def open_new_preview_tab_with_preview_mode(context: Context, preview_mode: str) -> None:
     click_the_given_button(context, "Preview")
     context.page.get_by_label("Preview mode").select_option(preview_mode)
 

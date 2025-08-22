@@ -92,11 +92,11 @@ Feature: CMS users can create, configure, and manage release calendar pages, inc
     And the user sees a validation error message: <Error>
 
     Examples:
-      | Input                                               | Error                                                         |
-      | an invalid release date text                        | invalid release date text input                               |
-      | an invalid next release date text                   | invalid next release date text input                          |
-      | the next release date to be before the release date | next release date cannot be before release date               |
-      | both next release date and next release date text   | cannot have both next release date and next release date text |
+      | Input                                                                | Error                                                         |
+      | an invalid release date text                                         | invalid release date text input                               |
+      | an invalid next release date text                                    | invalid next release date text input                          |
+      | the next release date is set to a date earlier than the release date | next release date cannot be before release date               |
+      | both next release date and next release date text                    | cannot have both next release date and next release date text |
 
   Scenario: Validation error is shown when publishing a cancelled release calendar page without a cancellation notice
     When the user clicks "Add child page" to create a new draft release calendar page
