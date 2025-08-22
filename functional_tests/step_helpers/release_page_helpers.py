@@ -103,7 +103,7 @@ def add_next_release_date_to_be_earlier_than_release_date(context: Context) -> N
     fill_locator(context, NEXT_RELEASE_DATE, "2024-12-25")
 
 
-def add_both_next_release_dates(context: Context) -> None:
+def add_both_next_release_date_and_text(context: Context) -> None:
     fill_locator(context, NEXT_RELEASE_DATE, "2025-12-25")
     fill_locator(context, NEXT_RELEASE_DATE_TEXT, "December 2024")
 
@@ -156,7 +156,7 @@ def add_empty_table(context: Context) -> None:
     add_basic_table_block_under_pre_release_access(context, data=False)
 
 
-def add_release_date(context: Context) -> None:
+def add_new_release_date(context: Context) -> None:
     context.page.get_by_role("textbox", name="Release date*").fill("2025-01-25")
 
 
@@ -178,7 +178,7 @@ FEATURE_ACTIONS: dict[str, Callable[[Context], None]] = {
     (
         "the next release date is set to a date earlier than the release date"
     ): add_next_release_date_to_be_earlier_than_release_date,
-    "both next release date and next release date text": add_both_next_release_dates,
+    "both next release date and next release date text": add_both_next_release_date_and_text,
 }
 
 
@@ -276,7 +276,7 @@ def handle_changes_to_release_date_feature(
             add_feature(ctx, "a date change log"),
             add_another_release_date_change(ctx),
         ),
-        "a release date change with no date change log": add_release_date,
+        "a release date change with no date change log": add_new_release_date,
         "a date change log with no release date change": lambda ctx: add_feature(ctx, "a date change log"),
         "another date change log": add_another_release_date_change,
     }
