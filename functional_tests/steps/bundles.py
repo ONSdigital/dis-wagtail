@@ -195,11 +195,10 @@ def multiple_bundles_create(context: Context, number_of_bundles: str, bundle_det
 
     if number_of_bundles.isdigit():
         for __ in range(int(number_of_bundles)):
-
-            if not next(item for item in context.users if bundle_dets["Creator Role"] in item.keys()):
+            if not next(item for item in context.users if bundle_dets["Creator Role"] in item):
                 context.users.append({bundle_dets["Creator Role"]: create_user(bundle_dets["Creator Role"])})
 
-            bundle_creator = next(item for item in context.users if bundle_dets["Creator Role"] in item.keys())
+            bundle_creator = next(item for item in context.users if bundle_dets["Creator Role"] in item)
             bundle_status = BundleStatus.DRAFT
             bundle_approved = False
             if bundle_dets["status"] == "Approved":
@@ -208,7 +207,7 @@ def multiple_bundles_create(context: Context, number_of_bundles: str, bundle_det
             if bundle_dets["status"] == "In_Review":
                 bundle_status = BundleStatus.IN_REVIEW
             bundle = BundleFactory(
-                created_by=bundle_creator.get('user'),
+                created_by=bundle_creator.get("user"),
                 status=bundle_status,
                 approved=bundle_approved,
             )
@@ -283,7 +282,7 @@ def the_user_cannot_add_bundles(context: Context) -> None:
 
 
 @step("the {user_role} can edit a bundle")
-def can_edit_bundle(context: Context, user_role: str) -> None:
+def can_edit_bundle(context: Context) -> None:
     expect(context.page.locator("#latest-bundles-heading")).to_contain_text("Latest active bundles")
     expect(context.page.locator("#latest-bundles-content")).to_contain_text(context.bundles[0].name)
     context.page.get_by_role("row", name=context.bundles[0].name + " Actions").get_by_label("Actions").click()
