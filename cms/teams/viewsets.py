@@ -37,6 +37,7 @@ class TeamsIndexView(IndexView):
 
 class TeamsViewSet(ModelViewSet):
     model = Team
+    queryset = Team.objects.active()
     index_view_class = TeamsIndexView
     menu_label = "Preview teams"
     icon = "group"
@@ -56,10 +57,6 @@ class TeamsViewSet(ModelViewSet):
 
     def get_form_class(self, for_update: bool = False) -> type[TeamAdminForm]:
         return TeamAdminForm
-
-    @property
-    def queryset(self) -> "TeamQuerySet":
-        return cast("TeamQuerySet", Team.objects.active())
 
     @property
     def permission_policy(self) -> ViewOnlyModelPermissionPolicy:
