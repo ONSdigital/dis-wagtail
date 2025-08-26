@@ -47,7 +47,6 @@ class TeamsViewSetTestCase(WagtailTestUtils, TestCase):
         self.assertContains(response, "Name")
         self.assertContains(response, "Identifier")
         self.assertContains(response, "Last Updated")
-        self.assertContains(response, "Active?")
         self.assertContains(response, self.active_team.name)
         self.assertContains(response, self.active_team.identifier)
         self.assertContains(response, self.another_active_team.name)

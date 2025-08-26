@@ -79,7 +79,6 @@ class TeamChooseMixin:
                 label="Last Updated",
                 width="12%",
             ),
-            Column("is_active", label="Active?", width="10%"),
         ]
 
     def get_object_list(self) -> "TeamQuerySet":
