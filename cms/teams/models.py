@@ -7,7 +7,7 @@ from wagtail.admin.utils import get_user_display_name
 from wagtail.search import index
 
 
-class TeamQuerySet(models.QuerySet):
+class TeamQuerySet(models.QuerySet["Team"]):
     def active(self) -> "TeamQuerySet":
         """Returns only active teams."""
         return self.filter(is_active=True)
@@ -25,7 +25,7 @@ class Team(index.Indexed, models.Model):  # type: ignore[django-manager-missing]
     updated_at = models.DateTimeField(default=timezone.now)
     is_active = models.BooleanField(default=True)
 
-    objects = TeamManager()
+    objects: TeamManager = TeamManager()
 
     search_fields: ClassVar[list[index.BaseField]] = [
         index.SearchField("name"),
