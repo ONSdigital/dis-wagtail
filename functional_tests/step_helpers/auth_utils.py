@@ -173,6 +173,12 @@ def capture_request(context):
                     }
                 ),
             )
+        elif request.url.endswith("/extend-session/") and request.method == "POST":
+            route.fulfill(
+                status=200,
+                content_type="application/json",
+                body=json.dumps({"status": "success", "message": "Session extended."}),
+            )
         else:
             route.continue_()
 
