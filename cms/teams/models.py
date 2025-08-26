@@ -30,6 +30,7 @@ class Team(index.Indexed, models.Model):  # type: ignore[django-manager-missing]
     search_fields: ClassVar[list[index.BaseField]] = [
         index.SearchField("name"),
         index.AutocompleteField("name"),
+        index.FilterField("is_active"),
     ]
 
     class Meta:
