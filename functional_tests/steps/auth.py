@@ -72,10 +72,11 @@ def step_not_redirected_to_signin(context: Context) -> None:
         raise AssertionError(f"Unexpected redirect to login page: {current}")
 
 
+@when("the user remains inactive until the refresh token expires")
 @when("the user remains inactive until the session expires")
 def step_wait_for_expiry(context: Context) -> None:
     """Sleep past the token TTL so it expires."""
-    context.page.wait_for_timeout(10000)
+    context.page.wait_for_timeout(5000)
 
 
 @given("the user refreshes the page")

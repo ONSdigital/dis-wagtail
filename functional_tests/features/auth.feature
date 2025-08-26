@@ -52,6 +52,15 @@ Feature: Wagtail Admin Cognito Authentication and Session Management
         When the user interacts with the page in one tab
         Then both tabs should remain logged in
 
+    @refresh_expiry
+    @short_expiry
+    Scenario: User is logged out when refresh token expires
+        Given the user is authenticated
+        When the user navigates to the admin page
+        And the user remains inactive until the refresh token expires
+        And the user becomes active again
+        Then the user is redirected to the login page
+
     Scenario: Logging out in one tab logs out the others
         Given the user is authenticated
         When the user navigates to the admin page

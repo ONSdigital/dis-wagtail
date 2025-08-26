@@ -90,18 +90,20 @@ class AuthenticationTestHelper:
         elif hasattr(self.context, "scenario") and hasattr(self.context.scenario, "tags"):
             tags = set(self.context.scenario.tags)
 
-        expiry = {
-            "short_expiry": 10,
-            "long_expiry": 30,
-        }.get(next((tag for tag in ("short_expiry", "long_expiry") if tag in tags), None), 20)
+        refresh_expiry_seconds = 5 if "refresh_expiry" in tags else None
 
         now = datetime.now(tz=UTC)
+        expiry = {
+            "short_expiry": 5,
+            "long_expiry": 30,
+        }.get(next((tag for tag in ("short_expiry", "long_expiry") if tag in tags), None), 20)
         exp = int((now + timedelta(seconds=expiry)).timestamp())
+
         self.generate_and_set_tokens(groups=["role-admin"], exp=exp)
 
         cookies = self.create_auth_cookies()
         self.context.page.context.add_cookies(cookies)
-        self.setup_session_renewal_timing()
+        self.setup_session_renewal_timing(refresh_expiry=refresh_expiry_seconds)
 
     def decode_jwt_payload(self, token: str) -> dict[str, Any]:
         """Decode JWT payload to extract claims."""
@@ -111,7 +113,7 @@ class AuthenticationTestHelper:
         decoded = base64.urlsafe_b64decode(payload_b64)
         return json.loads(decoded)
 
-    def setup_session_renewal_timing(self) -> None:
+    def setup_session_renewal_timing(self, refresh_expiry=None) -> None:
         """Configure session renewal timing based on JWT expiration."""
         # Decode the expiration time from JWT
         payload = self.decode_jwt_payload(self.context.access_token)
@@ -121,8 +123,14 @@ class AuthenticationTestHelper:
         session_ms = exp_seconds * 1000
 
         # The refresh token expiry is typically much longer (e.g., 12 hours from now)
-        refresh_expiry_seconds = int((datetime.now() + timedelta(hours=12)).timestamp())
+        if refresh_expiry is not None:
+            refresh_expiry_seconds = int((datetime.now() + timedelta(seconds=refresh_expiry)).timestamp())
+        else:
+            refresh_expiry_seconds = int((datetime.now() + timedelta(hours=12)).timestamp())
         refresh_ms = refresh_expiry_seconds * 1000
+
+        # Store in context for use in the mock
+        self.context.refresh_expiry_time = refresh_ms
 
         # This will be done by the upstream service prior to navigating to Wagtail.
         # The upstream authentication service is responsible for setting the 'dis_auth_client_state' value in
@@ -162,23 +170,36 @@ def capture_request(context):
 
         # Mock the refresh endpoint for PUT or POST requests
         if request.url.endswith("/refresh/") and request.method in ["POST", "PUT"]:
-            # Mock successful refresh response
-            route.fulfill(
-                status=200,
-                content_type="application/json",
-                body=json.dumps(
-                    {
-                        "expirationTime": int((datetime.now() + timedelta(minutes=15)).timestamp() * 1000),
-                        "refreshTokenExpirationTime": int((datetime.now() + timedelta(hours=12)).timestamp() * 1000),
-                    }
-                ),
-            )
+            refresh_expiry_time = getattr(context, "refresh_expiry_time", None)
+            now_ms = int(datetime.now().timestamp() * 1000)
+
+            if refresh_expiry_time and now_ms > refresh_expiry_time:
+                # Simulate expired refresh token
+                route.fulfill(
+                    status=401,
+                    content_type="application/json",
+                    body=json.dumps({"error": "Refresh token expired"}),
+                )
+            else:
+                # Mock successful refresh response
+                route.fulfill(
+                    status=200,
+                    content_type="application/json",
+                    body=json.dumps(
+                        {
+                            "expirationTime": int((datetime.now() + timedelta(minutes=15)).timestamp() * 1000),
+                            "refreshExpiryTime": int((datetime.now() + timedelta(hours=12)).timestamp() * 1000),
+                        }
+                    ),
+                )
+
         elif request.url.endswith("/extend-session/") and request.method == "POST":
             route.fulfill(
                 status=200,
                 content_type="application/json",
                 body=json.dumps({"status": "success", "message": "Session extended."}),
             )
+
         else:
             route.continue_()
 
