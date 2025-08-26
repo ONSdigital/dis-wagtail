@@ -34,10 +34,13 @@ class ViewOnlyModelPermissionPolicy(ModelPermissionPolicy):
 class TeamsIndexView(IndexView):
     page_title = "Preview teams"
 
+    def get_base_queryset(self) -> "TeamQuerySet":
+        """Return only active teams."""
+        return cast("TeamQuerySet", Team.objects.active())
+
 
 class TeamsViewSet(ModelViewSet):
     model = Team
-    queryset = Team.objects.active()
     index_view_class = TeamsIndexView
     menu_label = "Preview teams"
     icon = "group"
