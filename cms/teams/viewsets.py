@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, ClassVar
+from typing import TYPE_CHECKING, ClassVar, cast
 
 from django.conf import settings
 from wagtail.admin.ui.tables import Column, DateColumn
@@ -13,6 +13,8 @@ from .models import Team
 
 if TYPE_CHECKING:
     from cms.users.models import User
+
+    from .models import TeamQuerySet
 
 
 class ViewOnlyModelPermissionPolicy(ModelPermissionPolicy):
@@ -56,6 +58,10 @@ class TeamsViewSet(ModelViewSet):
         return TeamAdminForm
 
     @property
+    def queryset(self) -> "TeamQuerySet":
+        return cast("TeamQuerySet", Team.objects.active())
+
+    @property
     def permission_policy(self) -> ViewOnlyModelPermissionPolicy:
         return ViewOnlyModelPermissionPolicy(self.model)
 
@@ -78,6 +84,10 @@ class TeamChooseMixin:
             ),
             Column("is_active", label="Active?", width="10%"),
         ]
+
+    def get_object_list(self) -> "TeamQuerySet":
+        """Return only active teams."""
+        return cast("TeamQuerySet", Team.objects.active())
 
 
 class TeamChooseView(TeamChooseMixin, ChooseView): ...
