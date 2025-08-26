@@ -147,7 +147,7 @@ def multiple_statistical_analysis(context: Context, no_statistical_analysis: str
     if no_statistical_analysis.isdigit():
         for statistical_analysis_index in range(int(no_statistical_analysis)):
             article = StatisticalArticlePageFactory(
-                parent=ArticleSeriesPageFactory(title="PSF" + str(statistical_analysis_index))
+                parent=ArticleSeriesPageFactory(title=f"PSF {statistical_analysis_index}")
             )
             mark_page_as_ready_to_publish(article, UserFactory())
             context.statistical_article_pages.append(article)
@@ -162,7 +162,7 @@ def multiple_release_calendar(context: Context, no_release_calendar: str) -> Non
             context.release_calendar_pages.append(
                 ReleaseCalendarPageFactory(
                     release_date=nowish,
-                    title="Release Calendar Page" + str(release_calendar_index),
+                    title=f"Release Calendar Page {release_calendar_index}",
                     status=ReleaseStatus.CONFIRMED,
                 )
             )
@@ -195,12 +195,6 @@ def multiple_bundles_create(context: Context, number_of_bundles: str, bundle_det
 
     if number_of_bundles.isdigit():
         for __ in range(int(number_of_bundles)):
-            # print(context.users)
-            # print(bundle_dets)
-            # print(bundle_dets["Creator Role"])
-            # for user in context.users:
-            #     print(user, bundle_dets["Creator Role"])
-
             if not next(item for item in context.users if bundle_dets["Creator Role"] in item):
                 context.users.append({bundle_dets["Creator Role"]: create_user(bundle_dets["Creator Role"])})
 
