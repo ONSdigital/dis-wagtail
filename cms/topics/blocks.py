@@ -198,10 +198,6 @@ class TimeSeriesPageLinkBlock(StructBlock):
         errors = {}
         parsed_url = urlparse(value["url"])
 
-        for field in ("title", "description", "url"):
-            if not value.get(field):
-                errors[field] = ValidationError("This field is required.")
-
         if not parsed_url.hostname or parsed_url.scheme != "https":
             errors["url"] = ValidationError(
                 "Please enter a valid URL. It should start with 'https://' and contain a valid domain name."
@@ -214,6 +210,10 @@ class TimeSeriesPageLinkBlock(StructBlock):
             errors["url"] = ValidationError(
                 f"The URL hostname is not in the list of allowed domains or their subdomains: {patterns_str}"
             )
+
+        for field in ("title", "description", "url"):
+            if not value.get(field):
+                errors[field] = ValidationError("This field is required.")
 
         if errors:
             raise StructBlockValidationError(block_errors=errors)

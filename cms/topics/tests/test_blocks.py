@@ -221,3 +221,39 @@ class TimeSeriesPageLinkBlockTestCase(TestCase):
             info.exception.block_errors["url"].message,
             f"The URL hostname is not in the list of allowed domains or their subdomains: {patterns_str}",
         )
+
+    def test_raises_errors_for_empty_mandatory_fields(self):
+        block = TimeSeriesPageLinkBlock()
+        value = {
+            "title": "",
+            "description": "",
+            "url": "",
+        }
+
+        with self.assertRaises(StructBlockValidationError) as info:
+            block.clean(value)
+
+        self.assertEqual(info.exception.block_errors["title"].message, "This field is required.")
+        self.assertEqual(info.exception.block_errors["description"].message, "This field is required.")
+        self.assertEqual(info.exception.block_errors["url"].message, "This field is required.")
+
+    def test_raises_error_even_when_only_some_mandatory_fields_are_absent(self):
+        """This is to check that the relevant fields are marked as mandatory during validation,
+        despite custom validation for the block, which returns before StructBlock's clean method is called.
+        """
+        block = TimeSeriesPageLinkBlock()
+        value = {
+            "title": "",
+            "description": "",
+            "url": "https://invalid-domain.com/time-series",
+        }
+
+        with self.assertRaises(StructBlockValidationError) as info:
+            block.clean(value)
+
+        patterns_str = " or ".join(settings.ONS_ALLOWED_LINK_DOMAINS)
+
+        self.assertEqual(
+            info.exception.block_errors["url"].message,
+            f"The URL hostname is not in the list of allowed domains or their subdomains: {patterns_str}",
+        )
