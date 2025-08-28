@@ -430,7 +430,6 @@ class TopicPageTestCase(WagtailTestUtils, TestCase):
         self.assertEqual(analytics_values["contentType"], self.topic_page.analytics_content_type)
         self.assertEqual(analytics_values["contentGroup"], self.topic_page.analytics_content_group)
         self.assertEqual(analytics_values["contentTheme"], self.topic_page.analytics_content_theme)
-        self.assertEqual(analytics_values["contentTheme"], self.topic_page.analytics_content_theme)
 
 
 class TopicPageRelatedArticleValidationTests(TestCase):
