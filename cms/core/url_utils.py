@@ -9,7 +9,7 @@ def is_hostname_in_domain(hostname: str, allowed_domain: str) -> bool:
     return hostname == allowed_domain or hostname.endswith(f".{allowed_domain}")
 
 
-def validate_ons_url(url):
+def validate_ons_url(url: str) -> dict[str, ValidationError]:
     """Checks that the given URL matches the allowed ONS domain,
     otherwise return a dict holding a ValidationError to be used in the clean method of a StructBlock.
     """
@@ -32,7 +32,7 @@ def validate_ons_url(url):
     return errors
 
 
-def normalise_url(url):
+def normalise_url(url: str) -> str:
     """Normalise functionally equivalent URLs for comparison
     when checking for duplicates across StreamValue entities.
     """
