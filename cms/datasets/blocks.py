@@ -7,10 +7,12 @@ from wagtail.blocks import (
     StreamBlockValidationError,
     StreamValue,
     StructBlock,
+    StructValue,
     TextBlock,
     URLBlock,
 )
 
+from cms.core.utils import validate_ons_url
 from cms.datasets.views import dataset_chooser_viewset
 
 DatasetChooserBlock = dataset_chooser_viewset.get_block_class(
@@ -25,6 +27,12 @@ class ManualDatasetBlock(StructBlock):
 
     class Meta:
         icon = "link"
+
+    def clean(self, value: "StructValue") -> "StructValue":
+        errors = validate_ons_url(value["url"])
+        if errors:
+            raise ValidationError(errors)
+        return value
 
 
 class DatasetStoryBlock(StreamBlock):

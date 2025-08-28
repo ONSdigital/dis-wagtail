@@ -1,5 +1,6 @@
 from datetime import datetime
 
+from django.forms import ValidationError
 from django.test import RequestFactory, SimpleTestCase, TestCase, override_settings
 from django.utils.formats import date_format
 
@@ -13,6 +14,7 @@ from cms.core.utils import (
     get_formatted_pages_list,
     is_hostname_in_domain,
     latex_formula_to_svg,
+    validate_ons_url,
 )
 from cms.methodology.tests.factories import MethodologyPageFactory
 from cms.topics.tests.factories import TopicPageFactory
@@ -295,7 +297,7 @@ class TestIsHostnameInDomain(TestCase):
                 self.assertFalse(is_hostname_in_domain(*hostname_domain_pair))
 
 
-class TestUtils(TestCase):
+class TestFormatAsDocumentListItem(TestCase):
     def test_format_as_document_list_item(self):
         """Test helper function to format data to match the ONS Document List design system component."""
         title = "Element"
@@ -314,3 +316,33 @@ class TestUtils(TestCase):
         }
 
         self.assertEqual(formatted_element, expected)
+
+
+class TestValidateONSUrl(TestCase):
+    @override_settings(ONS_ALLOWED_LINK_DOMAINS=["example.com"])
+    def test_valid_ons_url(self):
+        url = "https://example.com/page"
+        errors = validate_ons_url(url)
+        self.assertEqual(errors, {})
+
+    @override_settings(ONS_ALLOWED_LINK_DOMAINS=["example.com"])
+    def test_url_on_disallowed_domain(self):
+        url = "https://not-allowed-domain.com/page"
+        errors = validate_ons_url(url)
+        self.assertIn("url", errors)
+        self.assertIsInstance(errors["url"], ValidationError)
+        self.assertEqual(
+            errors["url"].message,
+            "The URL hostname is not in the list of allowed domains or their subdomains: example.com",
+        )
+
+    @override_settings(ONS_ALLOWED_LINK_DOMAINS=["example.com"])
+    def test_url_no_https_in_url(self):
+        url = "http://example.com/page"
+        errors = validate_ons_url(url)
+        self.assertIn("url", errors)
+        self.assertIsInstance(errors["url"], ValidationError)
+        self.assertEqual(
+            errors["url"].message,
+            "Please enter a valid URL. It should start with 'https://' and contain a valid domain name.",
+        )
