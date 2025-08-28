@@ -59,8 +59,7 @@ def step_redirected_to_signin(context: Context) -> None:
     """Verify we were redirected to the admin login page."""
     expected_path = "/admin/login/"
     current_url = context.page.url
-    if expected_path not in current_url:
-        raise AssertionError(f"Not redirected to login, current URL: {current_url}")
+    assert expected_path in current_url, f"Not redirected to login, current URL: {current_url}"
 
 
 @then("the user is not asked to login")
@@ -68,8 +67,7 @@ def step_not_redirected_to_signin(context: Context) -> None:
     """Verify we stayed on admin and did not hit the login URL."""
     forbidden = "/admin/login/"
     current = context.page.url
-    if forbidden in current:
-        raise AssertionError(f"Unexpected redirect to login page: {current}")
+    assert forbidden not in current, f"Unexpected redirect to login page: {current}"
 
 
 @when("the user remains inactive until the refresh token expires")
@@ -102,9 +100,8 @@ def step_tokens_cleared(context: Context) -> None:
     ]
     cookies = context.page.context.cookies()
     present = [name for name in token_names if any(cookie["name"] == name for cookie in cookies)]
-    if present:
-        seen = ", ".join(f"{c['name']}={c.get('value', '')}" for c in cookies)
-        raise AssertionError(f"Expected tokens to be cleared but found still present: {present}. All cookies: {seen}")
+    seen = ", ".join(f"{c['name']}={c.get('value', '')}" for c in cookies)
+    assert not present, f"Expected tokens to be cleared but found still present: {present}. All cookies: {seen}"
 
 
 @when("the user opens an admin page in a second tab")
@@ -133,8 +130,7 @@ def step_both_tabs_remain_logged_in(context: Context) -> None:
     forbidden_path = "/admin/login/"
     for i, tab in enumerate(context.pages):
         tab.reload()
-        if forbidden_path in tab.url:
-            raise AssertionError(f"Tab {i + 1} was unexpectedly redirected to login; URL is {tab.url}")
+        assert forbidden_path not in tab.url, f"Tab {i + 1} was unexpectedly redirected to login; URL is {tab.url}"
 
 
 @then("both tabs are redirected to the login page")
@@ -143,8 +139,7 @@ def step_both_tabs_redirected_to_signin(context: Context) -> None:
     expected_path = "/admin/login/"
     for i, tab in enumerate(context.pages):
         tab.reload()
-        if expected_path not in tab.url:
-            raise AssertionError(f"Tab {i + 1} was not redirected to login; URL is {tab.url}")
+        assert expected_path in tab.url, f"Tab {i + 1} was not redirected to login; URL is {tab.url}"
 
 
 @then("the user opens the preview pane and the session should not be initialised in the iframe")
@@ -174,8 +169,7 @@ def step_session_not_initialised_in_iframe(context: Context) -> None:
 
     # now assert we only saw one init-log total
     count = len(context.session_init_logs)
-    if count != 1:
-        raise AssertionError(
-            f'Expected exactly one console message "Initialising session management with config" (in parent only), '
-            f"but found {count}: {context.session_init_logs}"
-        )
+    assert count == 1, (
+        f'Expected exactly one console message "Initialising session management with config" (in parent only), '
+        f"but found {count}: {context.session_init_logs}"
+    )
