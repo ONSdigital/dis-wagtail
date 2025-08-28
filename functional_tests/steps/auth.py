@@ -159,7 +159,7 @@ def step_session_not_initialised_in_iframe(context: Context) -> None:
         "console",
         lambda msg: (
             context.session_init_logs.append(msg.text)
-            if "Initialising session management with configggg" in (msg.text or "")
+            if "Initialising session management with config" in (msg.text or "")
             else None
         ),
     )
