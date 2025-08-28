@@ -238,7 +238,7 @@ class TimeSeriesPageLinkBlockTestCase(TestCase):
         self.assertEqual(info.exception.block_errors["url"].message, "This field is required.")
 
     def test_raises_error_even_when_only_some_mandatory_fields_are_absent(self):
-        """Check that all mandatory fields are present before running the custom URL validation."""
+        """Check that the validation error is raised correctly when only some mandatory fields aren't present."""
         block = TimeSeriesPageLinkBlock()
         value = {
             "title": "",
@@ -246,15 +246,19 @@ class TimeSeriesPageLinkBlockTestCase(TestCase):
             "url": "https://invalid-domain.com/time-series",
         }
 
+        allowed_domains = " or ".join(settings.ONS_ALLOWED_LINK_DOMAINS)
+
         with self.assertRaises(StructBlockValidationError) as info:
             block.clean(value)
 
         self.assertEqual(info.exception.block_errors["title"].message, "This field is required.")
         self.assertEqual(info.exception.block_errors["description"].message, "This field is required.")
-        self.assertNotIn("url", info.exception.block_errors)
+        self.assertEqual(
+            info.exception.block_errors["url"].message,
+            f"The URL hostname is not in the list of allowed domains or their subdomains: {allowed_domains}",
+        )
 
-        # Now, run validation on non-empty title and description but (the same) invalid URL
-
+        # Now, run validation on non-empty title and description and (the same) invalid URL
         value = {
             "title": "Title",
             "description": "Description",
@@ -264,11 +268,9 @@ class TimeSeriesPageLinkBlockTestCase(TestCase):
         with self.assertRaises(StructBlockValidationError) as info:
             block.clean(value)
 
-        patterns_str = " or ".join(settings.ONS_ALLOWED_LINK_DOMAINS)
-
         self.assertNotIn("title", info.exception.block_errors)
         self.assertNotIn("description", info.exception.block_errors)
         self.assertEqual(
             info.exception.block_errors["url"].message,
-            f"The URL hostname is not in the list of allowed domains or their subdomains: {patterns_str}",
+            f"The URL hostname is not in the list of allowed domains or their subdomains: {allowed_domains}",
         )
