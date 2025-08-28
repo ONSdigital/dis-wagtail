@@ -56,43 +56,13 @@ def expect_text(
     key: str | None,
     texts: Sequence[str] | dict[str, str] | Mapping[str, str | Sequence[str]],
 ) -> None:
+    """Checks that one or more expected texts are visible on the page."""
     if key:
         texts = texts.get(key)
     if isinstance(texts, str):
         texts = [texts]
     for text in texts:
         expect(context.page.get_by_text(text)).to_be_visible()
-
-
-def add_date_change_log(context: Context) -> None:
-    change_to_release_date_section = context.page.locator("#panel-child-content-changes_to_release_date-section")
-    change_to_release_date_section.get_by_role("button", name="Insert a block").click()
-    change_to_release_date_section.get_by_label("Reason for change*").fill("Updated due to data availability")
-
-
-def add_related_link(context: Context) -> None:
-    context.page.locator("#panel-child-content-related_links-content").get_by_role(
-        "button", name="Insert a block"
-    ).first.click()
-    choose_page_link(context.page, page_name="Home")
-
-
-def expect_related_links(context: Context) -> None:
-    expect(context.page.get_by_role("heading", name="You might also be interested")).to_be_visible()
-    expect(context.page.locator("#links").get_by_role("link", name="Home")).to_be_visible()
-
-
-def expect_either_release_date_or_next_release_date(context: Context) -> None:
-    expect(
-        context.page.locator(
-            "#panel-child-content-child-metadata-child-panel1-child-next_release_date-errors"
-        ).get_by_text("Please enter the next release date or the next release text, not both.")
-    ).to_be_visible()
-    expect(
-        context.page.locator(
-            "#panel-child-content-child-metadata-child-panel1-child-next_release_date_text-errors"
-        ).get_by_text("Please enter the next release date or the next release text, not both.")
-    ).to_be_visible()
 
 
 def expect_changes_to_release_date(context: Context) -> None:
@@ -117,12 +87,24 @@ def add_another_release_date_change(context: Context) -> None:
 FEATURE_ACTIONS: dict[str, Callable[[Context], None]] = {
     "a release date text": lambda ctx: fill_locator(ctx, RELEASE_DATE_TEXT, "March 2025 to August 2025"),
     "a next release date text": lambda context: fill_locator(context, NEXT_RELEASE_DATE_TEXT, "To be confirmed"),
-    "a related link": add_related_link,
+    "a related link": lambda ctx: (
+        ctx.page.locator("#panel-child-content-related_links-content")
+        .get_by_role("button", name="Insert a block")
+        .first.click(),
+        choose_page_link(ctx.page, page_name="Home"),
+    ),
     "pre-release access information": lambda ctx: (
         add_basic_table_block_under_pre_release_access(ctx),
         add_description_block_under_pre_release_access(ctx, index=1),
     ),
-    "a date change log": add_date_change_log,
+    "a date change log": lambda ctx: (
+        ctx.page.locator("#panel-child-content-changes_to_release_date-section")
+        .get_by_role("button", name="Insert a block")
+        .click(),
+        ctx.page.locator("#panel-child-content-changes_to_release_date-section")
+        .get_by_label("Reason for change*")
+        .fill("Updated due to data availability"),
+    ),
     "an invalid release date text": lambda ctx: fill_locator(ctx, RELEASE_DATE_TEXT, "Invalid 5555"),
     "an invalid next release date text": lambda ctx: fill_locator(ctx, NEXT_RELEASE_DATE_TEXT, "Invalid 5555"),
     ("the next release date is set to a date earlier than the release date"): lambda ctx: (
@@ -151,7 +133,10 @@ def display_feature_in_preview_tab(context: Context, feature: str) -> None:
     }
 
     custom_handlers: dict[str, Callable[[Context], None]] = {
-        "a related link": expect_related_links,
+        "a related link": lambda ctx: (
+            expect(ctx.page.get_by_role("heading", name="You might also be interested")).to_be_visible(),
+            expect(ctx.page.locator("#links").get_by_role("link", name="Home")).to_be_visible(),
+        ),
         "a release date change": expect_changes_to_release_date,
     }
 
@@ -192,9 +177,18 @@ def handle_release_calendar_page_errors(context: Context, error: str) -> None:
     }
 
     custom_handlers: dict[str, Callable[[Context], None]] = {
-        (
-            "cannot have both next release date and next release date text"
-        ): expect_either_release_date_or_next_release_date,
+        ("cannot have both next release date and next release date text"): lambda ctx: (
+            expect(
+                ctx.page.locator(
+                    "#panel-child-content-child-metadata-child-panel1-child-next_release_date-errors"
+                ).get_by_text("Please enter the next release date or the next release text, not both.")
+            ).to_be_visible(),
+            expect(
+                ctx.page.locator(
+                    "#panel-child-content-child-metadata-child-panel1-child-next_release_date_text-errors"
+                ).get_by_text("Please enter the next release date or the next release text, not both.")
+            ).to_be_visible(),
+        ),
     }
 
     if error in custom_handlers:
