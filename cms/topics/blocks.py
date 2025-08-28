@@ -228,9 +228,7 @@ class TimeSeriesPageStoryBlock(StreamBlock):
         # For each time series URL, record the indices of the blocks it appears in
         urls = defaultdict(set)
         for block_index, block in enumerate(cleaned_value):
-            url = (
-                block.cleaned_value["url"].lower().rstrip("/")
-            )  # Treat URLs with and without trailing slashes as equivalent
+            url = block.value["url"].lower().rstrip("/")  # Treat URLs with and without trailing slashes as equivalent
 
             url = url.removeprefix("https://").removeprefix("www.")  # Normalize the URL
 
