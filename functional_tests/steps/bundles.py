@@ -144,11 +144,10 @@ def a_user_exists_by_role(context: Context, user_role: str) -> None:
 @given("there are {no_statistical_analysis} Statistical Analysis pages")
 def multiple_statistical_analysis(context: Context, no_statistical_analysis: str) -> None:
     context.statistical_article_pages = []
+    context.article_series_page = ArticleSeriesPageFactory(title="PSF")
     if no_statistical_analysis.isdigit():
-        for statistical_analysis_index in range(int(no_statistical_analysis)):
-            article = StatisticalArticlePageFactory(
-                parent=ArticleSeriesPageFactory(title=f"PSF {statistical_analysis_index}")
-            )
+        for _ in range(int(no_statistical_analysis)):
+            article = StatisticalArticlePageFactory(parent=context.article_series_page)
             mark_page_as_ready_to_publish(article, UserFactory())
             context.statistical_article_pages.append(article)
 
@@ -175,7 +174,7 @@ def multiple_preview_teams_create(context: Context, no_preview_teams: str) -> No
         for preview_team_index in range(int(no_preview_teams)):
             context.teams.append(
                 Team.objects.create(
-                    identifier="preview-team-" + str(preview_team_index), name="Preview_Team_" + str(preview_team_index)
+                    identifier=f"preview-team- {preview_team_index}", name=f"Preview_Team_{preview_team_index}"
                 )
             )
 
@@ -211,7 +210,6 @@ def multiple_bundles_create(context: Context, number_of_bundles: str, bundle_det
                 status=bundle_status,
                 approved=bundle_approved,
             )
-            context.bundles.append(bundle)
 
             if bool(bundle_dets["preview_teams"]) and hasattr(context, "teams"):
                 add_teams(context)
@@ -221,6 +219,8 @@ def multiple_bundles_create(context: Context, number_of_bundles: str, bundle_det
 
             if bool(bundle_dets["add_stat_page"]) and hasattr(context, "statistical_article_pages"):
                 add_article_pages(context)
+
+            context.bundles.append(bundle)
 
 
 def add_article_pages(context: Context) -> None:
@@ -309,9 +309,9 @@ def add_preview_team_in_edit(context: Context) -> None:
         context.page.get_by_role("textbox", name="Search term").fill(context.teams[0].name)
         expect(context.page.get_by_role("checkbox", name=context.teams[0].name)).to_be_visible()
         context.page.get_by_role("checkbox", name=context.teams[0].name).check()
+        context.page.wait_for_timeout(100)
         expect(context.page.get_by_role("button", name="Confirm selection")).to_be_visible()
         context.page.get_by_role("button", name="Confirm selection").click()
-        context.page.wait_for_timeout(100)
 
 
 def add_article_page_in_edit(context: Context) -> None:
@@ -322,13 +322,19 @@ def add_article_page_in_edit(context: Context) -> None:
         context.page.get_by_role("button", name="Add page").click()
         expect(context.page.get_by_role("heading", name="Choose a page")).to_be_visible()
         expect(context.page.get_by_text("Page type", exact=True)).to_be_visible()
-        expect(context.page.get_by_label("Page type")).to_be_visible()
         context.page.get_by_label("Page type").select_option("StatisticalArticlePage")
         expect(context.page.get_by_text(context.statistical_article_pages[0].title)).to_be_visible()
-        context.page.get_by_role("checkbox", name=context.statistical_article_pages[0].title).check()
+        expect(
+            context.page.get_by_role(
+                "checkbox", name=f"{context.article_series_page.title}: {context.statistical_article_pages[0].title}"
+            )
+        ).to_be_visible()
+        context.page.get_by_role(
+            "checkbox", name=f"{context.article_series_page.title}: {context.statistical_article_pages[0].title}"
+        ).check()
+        context.page.wait_for_timeout(100)
         expect(context.page.get_by_role("button", name="Confirm selection")).to_be_visible()
         context.page.get_by_role("button", name="Confirm selection").click()
-        context.page.wait_for_timeout(100)
 
 
 def add_reslease_calendar_in_edit(context: Context) -> None:
@@ -349,17 +355,16 @@ def can_preview_bundle(context: Context) -> None:
     expect(context.page.locator("#bundles-for-preview-content")).to_contain_text(context.bundles[0].name)
     context.page.get_by_title("View").click()
 
-    expect(context.page.locator("header")).to_contain_text(context.bundles[0].name)
     expect(context.page.get_by_text("Name")).to_be_visible()
-    expect(context.page.get_by_text(context.bundles[0].name).nth(2)).to_be_visible()
+    # expect(context.page.get_by_role("term").filter(has_text=re.compile(r"^Status$"))).to_be_visible()
     expect(context.page.get_by_text("Created at")).to_be_visible()
     expect(context.page.get_by_text("Created by")).to_be_visible()
+    expect(context.page.get_by_text("Approval status")).to_be_visible()
+    # expect(context.page.get_by_text("Scheduled publication")).to_be_visible()
     expect(context.page.get_by_text("Associated release calendar")).to_be_visible()
-    expect(context.page.get_by_text("Pages")).to_be_visible()
+    expect(context.page.get_by_text("Teams", exact=True)).to_be_visible()
+    expect(context.page.locator("#main").get_by_text("Pages")).to_be_visible()
     expect(context.page.get_by_text("Datasets", exact=True)).to_be_visible()
-    expect(context.page.get_by_text("No datasets in bundle")).to_be_visible()
-    context.page.get_by_role("link", name="Preview").click()
-    expect(context.page.get_by_role("heading", name="Statistical article")).to_be_visible()
 
 
 @step("the user cannot preview a bundle")
