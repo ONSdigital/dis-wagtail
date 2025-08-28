@@ -12,7 +12,7 @@ from wagtail.blocks import (
     URLBlock,
 )
 
-from cms.core.utils import normalise_url, validate_ons_url
+from cms.core.url_utils import normalise_url, validate_ons_url
 from cms.datasets.views import dataset_chooser_viewset
 
 DatasetChooserBlock = dataset_chooser_viewset.get_block_class(

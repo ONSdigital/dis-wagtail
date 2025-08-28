@@ -21,7 +21,7 @@ from wagtail.images.blocks import ImageChooserBlock
 from wagtail.telepath import register
 
 from cms.articles.models import ArticleSeriesPage
-from cms.core.utils import normalise_url, validate_ons_url
+from cms.core.url_utils import normalise_url, validate_ons_url
 
 from .viewsets import series_with_headline_figures_chooser_viewset
 
