@@ -14,6 +14,7 @@ from cms.core.utils import (
     get_formatted_pages_list,
     is_hostname_in_domain,
     latex_formula_to_svg,
+    normalise_url,
     validate_ons_url,
 )
 from cms.methodology.tests.factories import MethodologyPageFactory
@@ -346,3 +347,15 @@ class TestValidateONSUrl(TestCase):
             errors["url"].message,
             "Please enter a valid URL. It should start with 'https://' and contain a valid domain name.",
         )
+
+
+class TestNormaliseUrl(TestCase):
+    def test_strips_trailing_slash(self):
+        url_with_slash = "https://example.com/"
+        url_without_slash = "https://example.com"
+        self.assertEqual(normalise_url(url_with_slash), normalise_url(url_without_slash))
+
+    def test_removes_https_and_www_prefixes(self):
+        url_with_prefixes = "https://www.example.com"
+        url_without_prefixes = "example.com"
+        self.assertEqual(normalise_url(url_with_prefixes), normalise_url(url_without_prefixes))

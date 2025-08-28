@@ -212,3 +212,12 @@ def validate_ons_url(url):
         )
 
     return errors
+
+
+def normalise_url(url):
+    """Normalise functionally equivalent URLs for comparison
+    when checking for duplicates across StreamValue entities.
+    """
+    url = url.lower().rstrip("/")  # Treat URLs with and without trailing slashes as equivalent
+    url = url.removeprefix("https://").removeprefix("www.")  # Normalise the URL
+    return url

@@ -21,7 +21,7 @@ from wagtail.images.blocks import ImageChooserBlock
 from wagtail.telepath import register
 
 from cms.articles.models import ArticleSeriesPage
-from cms.core.utils import validate_ons_url
+from cms.core.utils import normalise_url, validate_ons_url
 
 from .viewsets import series_with_headline_figures_chooser_viewset
 
@@ -210,9 +210,7 @@ class TimeSeriesPageStoryBlock(StreamBlock):
         # For each time series URL, record the indices of the blocks it appears in
         urls = defaultdict(set)
         for block_index, block in enumerate(cleaned_value):
-            url = block.value["url"].lower().rstrip("/")  # Treat URLs with and without trailing slashes as equivalent
-
-            url = url.removeprefix("https://").removeprefix("www.")  # Normalize the URL
+            url = normalise_url(block.value["url"])
 
             urls[url].add(block_index)
 

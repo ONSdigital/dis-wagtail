@@ -12,7 +12,7 @@ from wagtail.blocks import (
     URLBlock,
 )
 
-from cms.core.utils import validate_ons_url
+from cms.core.utils import normalise_url, validate_ons_url
 from cms.datasets.views import dataset_chooser_viewset
 
 DatasetChooserBlock = dataset_chooser_viewset.get_block_class(
@@ -52,7 +52,8 @@ class DatasetStoryBlock(StreamBlock):
         urls = defaultdict(set)
         for block_index, block in enumerate(cleaned_value):
             url = block.value.website_url if block.block_type == "dataset_lookup" else block.value["url"]
-            urls[url.rstrip("/")].add(block_index)  # Treat URLs with and without trailing slashes as equivalent
+            url = normalise_url(url)
+            urls[url].add(block_index)
 
         block_errors = {}
         for block_indices in urls.values():
