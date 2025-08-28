@@ -195,8 +195,10 @@ class TimeSeriesPageLinkBlock(StructBlock):
 
     def clean(self, value: "StructValue") -> "StructValue":
         """Checks that the given time series page URL matches the allowed domain."""
+        cleaned_value = super().clean(value)
+
         errors = {}
-        parsed_url = urlparse(value["url"])
+        parsed_url = urlparse(cleaned_value["url"])
 
         if not parsed_url.hostname or parsed_url.scheme != "https":
             errors["url"] = ValidationError(
@@ -211,14 +213,10 @@ class TimeSeriesPageLinkBlock(StructBlock):
                 f"The URL hostname is not in the list of allowed domains or their subdomains: {patterns_str}"
             )
 
-        for field in ("title", "description", "url"):
-            if not value.get(field):
-                errors[field] = ValidationError("This field is required.")
-
         if errors:
             raise StructBlockValidationError(block_errors=errors)
 
-        return super().clean(value)
+        return cleaned_value
 
 
 class TimeSeriesPageStoryBlock(StreamBlock):
@@ -230,7 +228,9 @@ class TimeSeriesPageStoryBlock(StreamBlock):
         # For each time series URL, record the indices of the blocks it appears in
         urls = defaultdict(set)
         for block_index, block in enumerate(cleaned_value):
-            url = block.value["url"].lower().rstrip("/")  # Treat URLs with and without trailing slashes as equivalent
+            url = (
+                block.cleaned_value["url"].lower().rstrip("/")
+            )  # Treat URLs with and without trailing slashes as equivalent
 
             url = url.removeprefix("https://").removeprefix("www.")  # Normalize the URL
 
@@ -247,4 +247,4 @@ class TimeSeriesPageStoryBlock(StreamBlock):
         if block_errors:
             raise StreamBlockValidationError(block_errors=block_errors)
 
-        return super().clean(value)
+        return cleaned_value
