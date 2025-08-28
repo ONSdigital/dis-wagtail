@@ -16,7 +16,7 @@ class TestDatasetStoryBlock(TestCase):
             description="test_description",
         )
 
-    @override_settings(ONS_WEBSITE_BASE_URL="https://example.com")
+    @override_settings(ONS_WEBSITE_BASE_URL="https://example.com", ONS_ALLOWED_LINK_DOMAINS=["example.com"])
     def test_validation_fails_on_duplicate_datasets(self):
         block = DatasetStoryBlock()
         dataset_duplicate_url = f"https://example.com/datasets/{self.lookup_dataset.namespace}"
@@ -53,6 +53,7 @@ class TestDatasetStoryBlock(TestCase):
                 for error in validation_error.exception.block_errors.values():
                     self.assertEqual(error.message, "Duplicate datasets are not allowed")
 
+    @override_settings(ONS_ALLOWED_LINK_DOMAINS=["example.com"])
     def test_successful_validation(self):
         block = DatasetStoryBlock()
         second_dataset = Dataset.objects.create(
