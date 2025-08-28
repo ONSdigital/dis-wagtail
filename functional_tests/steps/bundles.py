@@ -307,9 +307,9 @@ def add_preview_team_in_edit(context: Context) -> None:
         expect(context.page.get_by_role("textbox", name="Search term")).to_be_visible()
         context.page.get_by_role("textbox", name="Search term").click()
         context.page.get_by_role("textbox", name="Search term").fill(context.teams[0].name)
+        context.page.wait_for_timeout(200)
         expect(context.page.get_by_role("checkbox", name=context.teams[0].name)).to_be_visible()
         context.page.get_by_role("checkbox", name=context.teams[0].name).check()
-        context.page.wait_for_timeout(100)
         expect(context.page.get_by_role("button", name="Confirm selection")).to_be_visible()
         context.page.get_by_role("button", name="Confirm selection").click()
 
@@ -324,6 +324,7 @@ def add_article_page_in_edit(context: Context) -> None:
         expect(context.page.get_by_text("Page type", exact=True)).to_be_visible()
         context.page.get_by_label("Page type").select_option("StatisticalArticlePage")
         expect(context.page.get_by_text(context.statistical_article_pages[0].title)).to_be_visible()
+        context.page.wait_for_timeout(200)
         expect(
             context.page.get_by_role(
                 "checkbox", name=f"{context.article_series_page.title}: {context.statistical_article_pages[0].title}"
