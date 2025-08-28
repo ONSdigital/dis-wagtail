@@ -215,11 +215,11 @@ class TimeSeriesPageLinkBlockTestCase(TestCase):
         with self.assertRaises(StructBlockValidationError) as info:
             block.clean(value)
 
-        patterns_str = " or ".join(settings.ONS_ALLOWED_LINK_DOMAINS)
+        allowed_domains = " or ".join(settings.ONS_ALLOWED_LINK_DOMAINS)
 
         self.assertEqual(
             info.exception.block_errors["url"].message,
-            f"The URL hostname is not in the list of allowed domains or their subdomains: {patterns_str}",
+            f"The URL hostname is not in the list of allowed domains or their subdomains: {allowed_domains}",
         )
 
     def test_raises_errors_for_empty_mandatory_fields(self):

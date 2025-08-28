@@ -208,9 +208,9 @@ class TimeSeriesPageLinkBlock(StructBlock):
             is_hostname_in_domain(parsed_url.hostname, allowed_domain)
             for allowed_domain in settings.ONS_ALLOWED_LINK_DOMAINS
         ):
-            patterns_str = " or ".join(settings.ONS_ALLOWED_LINK_DOMAINS)
+            allowed_domains = " or ".join(settings.ONS_ALLOWED_LINK_DOMAINS)
             errors["url"] = ValidationError(
-                f"The URL hostname is not in the list of allowed domains or their subdomains: {patterns_str}"
+                f"The URL hostname is not in the list of allowed domains or their subdomains: {allowed_domains}"
             )
 
         if errors:
