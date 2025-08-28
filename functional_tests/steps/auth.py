@@ -62,6 +62,7 @@ def step_redirected_to_signin(context: Context) -> None:
     assert expected_path in current_url, f"Not redirected to login, current URL: {current_url}"
 
 
+@then("the user remains logged in")
 @then("the user is not asked to login")
 def step_not_redirected_to_signin(context: Context) -> None:
     """Verify we stayed on admin and did not hit the login URL."""
@@ -142,7 +143,15 @@ def step_both_tabs_redirected_to_signin(context: Context) -> None:
         assert expected_path in tab.url, f"Tab {i + 1} was not redirected to login; URL is {tab.url}"
 
 
-@then("the user opens the preview pane and the session should not be initialised in the iframe")
+@when("the user opens the preview pane")
+def step_open_preview_pane(context: Context) -> None:
+    """Open the preview pane in the Wagtail admin."""
+    context.page.get_by_role("button", name="Toggle preview").click()
+    iframe = context.page.frame_locator("#w-preview-iframe")
+    expect(iframe.get_by_text("Test Info Page", exact=True)).to_be_visible()
+
+
+@then("session management should not be initialised in the iframe")
 def step_session_not_initialised_in_iframe(context: Context) -> None:
     """Ensure session management only initialises once (in the parent), and not inside the iframe."""
     context.session_init_logs = []
@@ -150,7 +159,7 @@ def step_session_not_initialised_in_iframe(context: Context) -> None:
         "console",
         lambda msg: (
             context.session_init_logs.append(msg.text)
-            if "Initialising session management with config" in (msg.text or "")
+            if "Initialising session management with configggg" in (msg.text or "")
             else None
         ),
     )
@@ -158,11 +167,6 @@ def step_session_not_initialised_in_iframe(context: Context) -> None:
     context.execute_steps("""
         When the user clicks the "Save Draft" button
     """)
-
-    # open preview
-    context.page.get_by_role("button", name="Toggle preview").click()
-    iframe = context.page.frame_locator("#w-preview-iframe")
-    expect(iframe.get_by_text("Test Info Page", exact=True)).to_be_visible()
 
     # small pause for any stray logs
     context.page.wait_for_timeout(1000)

@@ -9,6 +9,7 @@ Feature: Wagtail Admin Cognito Authentication and Session Management
         When the user navigates to the admin page
         And the user is active in the admin interface
         Then their session is extended
+        And the user remains logged in
 
     Scenario: Access Wagtail with a valid session
         Given the user is authenticated
@@ -35,7 +36,8 @@ Feature: Wagtail Admin Cognito Authentication and Session Management
         When the user navigates to the admin page
         And the user remains inactive until the session expires
         And the user becomes active again
-        Then the user is not asked to login
+        Then their session is extended
+        And the user is not asked to login
 
     Scenario: Logging out clears the session
         Given the user is authenticated
@@ -73,4 +75,5 @@ Feature: Wagtail Admin Cognito Authentication and Session Management
         When the user navigates to the admin page
         And the user creates an information page as a child of the home page
         And the user adds content to the new information page
-        Then the user opens the preview pane and the session should not be initialised in the iframe
+        And the user opens the preview pane
+        Then session management should not be initialised in the iframe
