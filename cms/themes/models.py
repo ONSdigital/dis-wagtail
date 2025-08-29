@@ -5,8 +5,9 @@ from wagtail.admin.panels import HelpPanel
 from wagtail.fields import RichTextField
 from wagtail.models import PanelPlaceholder
 
+from cms.core.formatting_utils import get_document_metadata
 from cms.core.models import BasePage, ListingFieldsMixin, SocialFieldsMixin
-from cms.core.utils import get_content_type_for_page, get_document_metadata
+from cms.core.utils import get_content_type_for_page
 from cms.taxonomy.mixins import ExclusiveTaxonomyMixin
 
 if TYPE_CHECKING:

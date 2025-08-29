@@ -13,7 +13,8 @@ from wagtail.blocks import (
     URLBlock,
 )
 
-from cms.core.utils import get_content_type_for_page, get_document_metadata_date, get_related_content_type_label
+from cms.core.formatting_utils import get_document_metadata_date
+from cms.core.utils import get_content_type_for_page, get_related_content_type_label
 
 
 class LinkBlockStructValue(StructValue):

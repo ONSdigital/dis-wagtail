@@ -8,7 +8,7 @@ from django.core.exceptions import ValidationError
 from django.forms import widgets
 from wagtail import blocks
 
-from cms.core.utils import is_hostname_in_domain
+from cms.core.url_utils import is_hostname_in_domain
 from cms.datavis.blocks.annotations import (
     LineAnnotationBarColumnBlock,
     LineAnnotationCategoricalBlock,
