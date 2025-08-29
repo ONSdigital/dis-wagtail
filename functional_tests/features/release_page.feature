@@ -1,7 +1,7 @@
 Feature: CMS users can create, configure, and manage release calendar pages, including handling edge cases and validation for invalid or incomplete input data
 
   Background:
-    Given a contact detail snippet exists
+    Given contact details snippet exists
     And a superuser logs into the admin site
     And the user navigates to the release calendar page
 
