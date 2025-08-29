@@ -1041,3 +1041,5 @@ CONTACT_US_URL = env.get("CONTACT_US_URL", "/aboutus/contactus/generalandstatist
 
 # Backup site URL
 BACKUP_SITE_URL = env.get("BACKUP_SITE_URL", "https://backup.ons.gov.uk")
+
+CMS_RESOURCES_ENDPOINT_ENABLED = env.get("CMS_RESOURCES_ENDPOINT_ENABLED", "false").lower() == "true"
