@@ -1,5 +1,7 @@
 from typing import TYPE_CHECKING
 
+from django.conf import settings
+from django.http import Http404
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from wagtail.models import Page
@@ -18,6 +20,12 @@ class ResourceListView(APIView):
     """Provides the list of indexable Wagtail resources."""
 
     pagination_class = CustomLimitOffsetPagination
+
+    def dispatch(self, request: "HttpRequest", *args: tuple, **kwargs: dict) -> Response:
+        if not settings.CMS_RESOURCES_ENDPOINT_ENABLED:
+            raise Http404
+
+        return super().dispatch(request, *args, **kwargs)
 
     def get(self, request: "HttpRequest", *args: tuple, **kwargs: dict) -> Response:
         queryset = self.get_queryset()

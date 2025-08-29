@@ -9,8 +9,8 @@ and 'search-content-deleted' (deleted) events, aligning with the `StandardPayloa
 - [Search metadata contract](https://github.com/ONSdigital/dis-search-upstream-stub/blob/main/docs/contract/resource_metadata.yml)
 - [Search upstream service endpoints spec](https://github.com/ONSdigital/dis-search-upstream-stub/blob/main/specification.yml)
 
-The CMS also provides a paginated Resource API endpoint with all published pages at `/v1/resources/`. This is
-used by the search service for reindexing.
+The CMS also provides a paginated Resource API endpoint with all published pages at `/v1/resources/` if `CMS_RESOURCES_ENDPOINT_ENABLED` is set to `true`.
+This is used by the search service for reindexing.
 
 ## Environment variables
 
