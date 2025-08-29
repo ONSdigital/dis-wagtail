@@ -186,41 +186,39 @@ def add_user_to_preview_teams(context: Context, user_role: str) -> None:
 
 @given("there are {number_of_bundles} bundles with {bundle_details}")
 def multiple_bundles_create(context: Context, number_of_bundles: str, bundle_details: str) -> None:
-    bundle_dets = {}
-    if json_str_to_dict(bundle_details):
-        bundle_dets = json.loads(bundle_details)
+    bundle_dets = json_str_to_dict(bundle_details)
+    if bundle_dets:
+        context.bundles = []
 
-    context.bundles = []
+        if number_of_bundles.isdigit():
+            for __ in range(int(number_of_bundles)):
+                if not next(item for item in context.users if bundle_dets["Creator Role"] in item):
+                    context.users.append({bundle_dets["Creator Role"]: create_user(bundle_dets["Creator Role"])})
 
-    if number_of_bundles.isdigit():
-        for __ in range(int(number_of_bundles)):
-            if not next(item for item in context.users if bundle_dets["Creator Role"] in item):
-                context.users.append({bundle_dets["Creator Role"]: create_user(bundle_dets["Creator Role"])})
+                bundle_creator = next(item for item in context.users if bundle_dets["Creator Role"] in item)
+                bundle_status = BundleStatus.DRAFT
+                bundle_approved = False
+                if bundle_dets["status"] == "Approved":
+                    bundle_status = BundleStatus.APPROVED
+                    bundle_approved = True
+                if bundle_dets["status"] == "In_Review":
+                    bundle_status = BundleStatus.IN_REVIEW
+                bundle = BundleFactory(
+                    created_by=bundle_creator.get("user"),
+                    status=bundle_status,
+                    approved=bundle_approved,
+                )
 
-            bundle_creator = next(item for item in context.users if bundle_dets["Creator Role"] in item)
-            bundle_status = BundleStatus.DRAFT
-            bundle_approved = False
-            if bundle_dets["status"] == "Approved":
-                bundle_status = BundleStatus.APPROVED
-                bundle_approved = True
-            if bundle_dets["status"] == "In_Review":
-                bundle_status = BundleStatus.IN_REVIEW
-            bundle = BundleFactory(
-                created_by=bundle_creator.get("user"),
-                status=bundle_status,
-                approved=bundle_approved,
-            )
+                if bool(bundle_dets["preview_teams"]) and hasattr(context, "teams"):
+                    add_teams(context)
 
-            if bool(bundle_dets["preview_teams"]) and hasattr(context, "teams"):
-                add_teams(context)
+                if bool(bundle_dets["add_rel_cal"]) and hasattr(context, "release_calendar_pages"):
+                    add_release_calendar(context)
 
-            if bool(bundle_dets["add_rel_cal"]) and hasattr(context, "release_calendar_pages"):
-                add_release_calendar(context)
+                if bool(bundle_dets["add_stat_page"]) and hasattr(context, "statistical_article_pages"):
+                    add_article_pages(context)
 
-            if bool(bundle_dets["add_stat_page"]) and hasattr(context, "statistical_article_pages"):
-                add_article_pages(context)
-
-            context.bundles.append(bundle)
+                context.bundles.append(bundle)
 
 
 def add_article_pages(context: Context) -> None:
@@ -264,12 +262,13 @@ def log_in_user_by_role(context: Context, user_role: str) -> None:
 @then("the user can create a bundle")
 def add_bundle_details(context: Context) -> None:
     bundle_name = "Bundle UI Test 1"
-    expect(context.page.locator("#latest-bundles-content")).to_contain_text("Add bundle")
     context.page.get_by_role("link", name="Add bundle").click()
     context.page.get_by_role("textbox", name="Name*").click()
     context.page.get_by_role("textbox", name="Name*").fill(bundle_name)
     context.page.get_by_role("button", name="Save as draft").click()
     context.page.get_by_role("link", name="Dashboard").click()
+
+    expect(context.page.locator("#latest-bundles-content")).to_contain_text("Add bundle")
     expect(context.page.get_by_text("Latest active bundles")).to_be_visible()
     expect(context.page.get_by_role("link", name=bundle_name)).to_be_visible()
 
@@ -357,11 +356,9 @@ def can_preview_bundle(context: Context) -> None:
     context.page.get_by_title("View").click()
 
     expect(context.page.get_by_text("Name")).to_be_visible()
-    # expect(context.page.get_by_role("term").filter(has_text=re.compile(r"^Status$"))).to_be_visible()
     expect(context.page.get_by_text("Created at")).to_be_visible()
     expect(context.page.get_by_text("Created by")).to_be_visible()
     expect(context.page.get_by_text("Approval status")).to_be_visible()
-    # expect(context.page.get_by_text("Scheduled publication")).to_be_visible()
     expect(context.page.get_by_text("Associated release calendar")).to_be_visible()
     expect(context.page.get_by_text("Teams", exact=True)).to_be_visible()
     expect(context.page.locator("#main").get_by_text("Pages")).to_be_visible()
@@ -382,11 +379,18 @@ def cannot_approve_bundle(context: Context) -> None:
 
 @step("the user can approve a bundle")
 def can_approve_bundle(context: Context) -> None:
-    expect(context.page.locator("#latest-bundles-heading")).to_contain_text("Latest active bundles")
-    expect(context.page.locator("#latest-bundles-content")).to_contain_text(context.bundles[0].name)
-    context.page.get_by_title("Edit this bundle").click()
-    context.page.get_by_role("button", name="More actions").click()
-    context.page.locator("#panel-status-content").click()
+    if len(context.bundles) == 1:
+        expect(context.page.locator("#latest-bundles-heading")).to_contain_text("Latest active bundles")
+        expect(context.page.locator("#latest-bundles-content")).to_contain_text(context.bundles[0].name)
+        context.page.get_by_title("Edit this bundle").click()
+        context.page.get_by_role("button", name="More actions").click()
+        context.page.get_by_role("button", name="Approve").click()
+    else:
+        expect(context.page.locator("#latest-bundles-heading")).to_contain_text("Latest active bundles")
+        expect(context.page.locator("#latest-bundles-content")).to_contain_text("no documents")
+        context.page.get_by_role("row", name="no documents Actions 31").get_by_role("link").click()
+        context.page.get_by_role("button", name="More actions").click()
+        context.page.get_by_role("button", name="Approve").click()
 
 
 def create_user_by_role(context, user_role):

@@ -72,10 +72,10 @@ Feature: UI Bundle Happy Paths
            | number_of_bundles | Role                       | Creator Role        | Bundle_Details                                                                                                                                              |
            | 1                 | Publishing Admin           | Publishing Admin    | {"Role": "Publishing Admin",   "Creator Role": "Publishing Admin",   "status": "In_Review", "preview_teams": true,  "add_rel_cal": true, "add_stat_page": true} |
            | 1                 | Publishing Officer         | Publishing Admin    | {"Role": "Publishing Officer", "Creator Role": "Publishing Admin",   "status": "In_Review", "preview_teams": true,  "add_rel_cal": true, "add_stat_page": true} |
-#           | 1                 | Viewer                     | Publishing Admin    | {"Role": "Publishing Admin",   "Creator Role": "Publishing Admin",   "status": "In_Review", "preview_teams": true,  "add_rel_cal": true, "add_stat_page": true} |
+# TODO          | 1                 | Viewer                     | Publishing Admin    | {"Role": "Publishing Admin",   "Creator Role": "Publishing Admin",   "status": "In_Review", "preview_teams": true,  "add_rel_cal": true, "add_stat_page": true} |
            | 1                 | Publishing Admin           | Publishing Officer  | {"Role": "Publishing Admin",   "Creator Role": "Publishing Officer", "status": "In_Review", "preview_teams": true,  "add_rel_cal": true, "add_stat_page": true} |
            | 1                 | Publishing Officer         | Publishing Officer  | {"Role": "Publishing Officer", "Creator Role": "Publishing Officer", "status": "In_Review", "preview_teams": true,  "add_rel_cal": true, "add_stat_page": true} |
-#           | 1                 | Viewer                     | Publishing Officer  | {"Role": "Viewer",             "Creator Role": "Publishing Officer", "status": "In_Review", "preview_teams": true,  "add_rel_cal": true, "add_stat_page": true} |
+# TODO         | 1                 | Viewer                     | Publishing Officer  | {"Role": "Viewer",             "Creator Role": "Publishing Officer", "status": "In_Review", "preview_teams": true,  "add_rel_cal": true, "add_stat_page": true} |
 
 
       Scenario Outline: A User cannot preview a bundle
