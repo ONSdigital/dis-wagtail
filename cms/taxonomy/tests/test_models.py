@@ -126,6 +126,20 @@ class TopicModelTest(TestCase):
 
         self.assertEqual(t3.display_parent_topics, "Topic → Subtopic")
 
+    def test_get_base_parent(self):
+        base_topic = Topic(id="1", title="Base Topic")
+        Topic.save_new(base_topic)
+
+        sub_topic = Topic(id="2", title="Sub Topic")
+        Topic.save_new(sub_topic, parent_topic=base_topic)
+
+        sub_sub_topic = Topic(id="3", title="Sub Sub Topic")
+        Topic.save_new(sub_sub_topic, parent_topic=sub_topic)
+
+        self.assertEqual(base_topic.get_base_parent(), base_topic)
+        self.assertEqual(sub_topic.get_base_parent(), base_topic)
+        self.assertEqual(sub_sub_topic.get_base_parent(), base_topic)
+
 
 class GenericPageToTaxonomyTopicModelTest(TestCase):
     def setUp(self):
