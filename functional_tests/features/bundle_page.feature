@@ -19,4 +19,3 @@ Feature: Publishing Officer can draft, edit, and publish bundles
         And the bundle has creator removed
         When the user goes to the bundle inspect page
         Then the user can inspect Bundle details and Created by is empty
-
