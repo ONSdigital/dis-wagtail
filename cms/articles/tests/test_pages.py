@@ -38,7 +38,7 @@ class ArticleSeriesPageTests(WagtailPageTestCase):
 
     def test_default_route_renders_latest_article(self):
         article = StatisticalArticlePageFactory(parent=self.page, title="Latest Article")
-        response = self.client.get(self.page.url)
+        response = self.client.get(self.page.url, follow=True)
         self.assertEqual(response.status_code, HTTPStatus.OK)
         self.assertContains(response, article.title)
 
@@ -108,7 +108,7 @@ class StatisticalArticlePageTests(WagtailPageTestCase):
         self.assertPageIsRenderable(self.page)
 
     def test_page_content(self):
-        response = self.client.get(self.page.url)
+        response = self.client.get(self.page.url, follow=True)
         self.assertEqual(response.status_code, HTTPStatus.OK)
         self.assertContains(response, self.page.title)
         self.assertContains(response, self.page.summary)
@@ -138,7 +138,7 @@ class StatisticalArticlePageTests(WagtailPageTestCase):
         self.assertPageIsRoutable(self.page, "versions/3/")
 
     def test_can_add_correction(self):  # pylint: disable=too-many-statements # noqa
-        response = self.client.get(self.page.url)
+        response = self.client.get(self.page.url, follow=True)
         self.assertNotContains(response, "Corrections")
         self.assertNotContains(response, "Notices")
         self.assertNotContains(response, "View superseded version")
@@ -170,7 +170,7 @@ class StatisticalArticlePageTests(WagtailPageTestCase):
 
         second_revision_id = self.page.get_latest_revision().id
 
-        response = self.client.get(self.page.url)
+        response = self.client.get(self.page.url, follow=True)
 
         self.assertContains(response, "Corrections")
         self.assertContains(response, "First correction text")
@@ -215,7 +215,7 @@ class StatisticalArticlePageTests(WagtailPageTestCase):
 
         third_revision_id = self.page.get_latest_revision().id
 
-        response = self.client.get(self.page.url)
+        response = self.client.get(self.page.url, follow=True)
 
         self.assertContains(response, "Corrections")
         self.assertContains(response, "First correction text")
@@ -261,7 +261,7 @@ class StatisticalArticlePageTests(WagtailPageTestCase):
 
         self.page.save_revision().publish()
 
-        response = self.client.get(self.page.url)
+        response = self.client.get(self.page.url, follow=True)
 
         self.assertContains(response, "Corrections")
         self.assertContains(response, "First correction text")
@@ -316,7 +316,7 @@ class StatisticalArticlePageTests(WagtailPageTestCase):
 
         self.page.save_revision().publish()
 
-        live_response = self.client.get(self.page.url)
+        live_response = self.client.get(self.page.url, follow=True)
         self.assertContains(live_response, "New title")
         self.assertNotContains(live_response, old_title)
 
@@ -334,7 +334,7 @@ class StatisticalArticlePageTests(WagtailPageTestCase):
         ]
         self.page.save_revision().publish()
 
-        response = self.client.get(self.page.url)
+        response = self.client.get(self.page.url, follow=True)
 
         self.assertContains(response, "Precorrection title")
 
@@ -371,7 +371,7 @@ class StatisticalArticlePageTests(WagtailPageTestCase):
 
         self.page.save_revision().publish()
 
-        response = self.client.get(self.page.url)
+        response = self.client.get(self.page.url, follow=True)
 
         self.assertContains(response, "Postcorrection title")
         self.assertNotContains(response, "Precorrection title")
@@ -398,7 +398,7 @@ class StatisticalArticlePageTests(WagtailPageTestCase):
         )
 
     def test_hero_rendering(self):
-        response = self.client.get(self.page.url)
+        response = self.client.get(self.page.url, follow=True)
 
         # Breadcrumbs
         content = response.content.decode(encoding="utf-8")
@@ -422,7 +422,7 @@ class StatisticalArticlePageTests(WagtailPageTestCase):
         self.page.is_census = True
         self.page.save_revision().publish()
 
-        response = self.client.get(self.page.url)
+        response = self.client.get(self.page.url, follow=True)
         self.assertContains(response, "ons-hero__census-logo")
 
         # Accreditation badge
@@ -430,7 +430,7 @@ class StatisticalArticlePageTests(WagtailPageTestCase):
 
         self.page.is_accredited = True
         self.page.save_revision().publish()
-        response = self.client.get(self.page.url)
+        response = self.client.get(self.page.url, follow=True)
 
         self.assertContains(response, "ons-hero__badge")
 
@@ -438,7 +438,7 @@ class StatisticalArticlePageTests(WagtailPageTestCase):
         self.page.release_date = "2025-01-01"
         self.page.next_release_date = None
         self.page.save_revision().publish()
-        response = self.client.get(self.page.url)
+        response = self.client.get(self.page.url, follow=True)
         content = response.content.decode(encoding="utf-8")
 
         self.assertInHTML(
@@ -452,7 +452,7 @@ class StatisticalArticlePageTests(WagtailPageTestCase):
 
         self.page.next_release_date = "2025-02-03"
         self.page.save_revision().publish()
-        response = self.client.get(self.page.url)
+        response = self.client.get(self.page.url, follow=True)
         content = response.content.decode(encoding="utf-8")
 
         self.assertInHTML(
@@ -577,7 +577,7 @@ class StatisticalArticlePageTests(WagtailPageTestCase):
             ],
         )
         self.page.save_revision().publish()
-        response = self.client.get(self.page.url)
+        response = self.client.get(self.page.url, follow=True)
         content = response.content.decode(encoding="utf-8")
 
         self.assertIn("Explore Data", content)
@@ -585,7 +585,7 @@ class StatisticalArticlePageTests(WagtailPageTestCase):
 
     def test_related_data_link_not_present(self):
         """Test that the related data link is not rendered when there is no related data for the article."""
-        response = self.client.get(self.page.url)
+        response = self.client.get(self.page.url, follow=True)
         content = response.content.decode(encoding="utf-8")
 
         self.assertNotIn("Explore Data", content)
@@ -891,7 +891,7 @@ class StatisticalArticlePageTests(WagtailPageTestCase):
             }
         ]
         self.page.save_revision().publish()
-        response = self.client.get(self.page.url)
+        response = self.client.get(self.page.url, follow=True)
         self.assertContains(response, "Footnotes")
         self.assertContains(response, "This is a lovely footnote")
         self.assertContains(response, "Foo")
