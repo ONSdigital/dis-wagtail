@@ -88,7 +88,7 @@ class SearchResourcesViewTests(TestCase, ResourceDictAssertions, ExternalAPITest
         self.assertEqual(response.status_code, 404)
 
     @override_settings(CMS_RESOURCES_ENDPOINT_ENABLED=False)
-    @override_settings(IS_EXTERNAL_ENV=False)
+    @override_settings(IS_EXTERNAL_ENV=True)
     def test_resources_endpoint_disabled_external_env_returns_404(self):
         """When CMS_RESOURCES_ENDPOINT_ENABLED is False, endpoint should return 404 regardless of IS_EXTERNAL_ENV."""
         response = self.call_view_as_external(RESOURCE_ENDPOINT)
