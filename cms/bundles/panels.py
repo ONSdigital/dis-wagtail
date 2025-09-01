@@ -7,7 +7,9 @@ from wagtail.admin.panels import FieldPanel, HelpPanel, MultipleChooserPanel
 
 from cms.bundles.permissions import user_can_manage_bundles
 from cms.bundles.utils import get_page_title_with_workflow_status
-from cms.bundles.viewsets.bundle_page_chooser import PagesWithDraftsForBundleChooserWidget
+from cms.bundles.viewsets.bundle_page_chooser import (
+    PagesWithDraftsForBundleChooserWidget,
+)
 
 if TYPE_CHECKING:
     from django.db.models import Model
@@ -57,7 +59,11 @@ class BundleNotePanel(HelpPanel):
                 return format_html(
                     "<p>This page is not part of any bundles. "
                     '<a href="{}" class="button button-small button-secondary">Add to Bundle</a></p>',
-                    reverse("bundles:add_to_bundle", args=(instance.pk,), query={"next": self.request.path}),
+                    reverse(
+                        "bundles:add_to_bundle",
+                        args=(instance.pk,),
+                        query={"next": self.request.path},
+                    ),
                 )
             return format_html("<p>{}</p>", "This page is not part of any bundles.")
 

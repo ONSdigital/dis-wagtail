@@ -1,6 +1,7 @@
 from datetime import date, datetime
 
 from django.utils.translation import gettext, override
+from wagtail.models import Page
 
 FULL_ENGLISH_MONTHS = [
     "January",
@@ -91,3 +92,14 @@ def get_translated_string(string_to_translate: str, language_code: str) -> str:
     with override(language_code):
         translated_string = gettext(string_to_translate)
     return translated_string
+
+
+def get_release_calendar_page_title_with_status_and_release_date(
+    release_calendar_page: "Page",
+) -> str:
+    """Returns the release page title, status and release date."""
+    title: str = release_calendar_page.specific_deferred.get_admin_display_title()
+    release_date: str = release_calendar_page.specific_deferred.release_date_value
+
+    status: str = release_calendar_page.specific_deferred.get_status()
+    return f"{title} ({status}) ({release_date})"
