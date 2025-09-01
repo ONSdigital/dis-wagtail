@@ -149,7 +149,7 @@ def add_feature(context: Context, feature: str) -> None:
         action = FEATURE_ACTIONS[feature]
     except KeyError as exc:
         raise ValueError(f"Unsupported page feature: {feature!r}") from exc
-    action(context)
+    action(context.page)
 
 
 @then("the example content is displayed in the preview tab")
@@ -167,7 +167,7 @@ def display_example_content_release_page_in_preview_tab(context: Context) -> Non
 
 @then("{feature} is displayed in the release calendar page preview tab")
 def display_features_in_preview_tab(context: Context, feature: str) -> None:
-    display_feature_in_preview_tab(context, feature)
+    display_feature_in_preview_tab(context.page, feature)
 
 
 @then('the page status is set to "Provisional" and the release date text field is visible')
@@ -190,7 +190,7 @@ def error_page_not_created(context: Context) -> None:
 
 @then("the user sees a validation error message: {error}")
 def error_invalid_release_calendar_page_input(context: Context, error: str) -> None:
-    handle_release_calendar_page_errors(context, error)
+    handle_release_calendar_page_errors(context.page, error)
 
 
 @then("the notice field is disabled")
@@ -206,7 +206,7 @@ def navigate_to_published_release_calendar_page(context: Context) -> None:
 
 @when("{feature} added under pre-release access")
 def pre_release_access_info(context: Context, feature: str) -> None:
-    handle_pre_release_access_feature(context, feature)
+    handle_pre_release_access_feature(context.page, feature)
 
 
 @when("the user changes the release date to a new date")
