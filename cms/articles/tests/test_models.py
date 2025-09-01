@@ -657,7 +657,9 @@ class PreviousReleasesWithoutPaginationTestCase(TestCase):
     def setUpTestData(cls):
         cls.article_series = ArticleSeriesPageFactory(title="Article Series")
         cls.articles = StatisticalArticlePageFactory.create_batch(9, parent=cls.article_series)
-        cls.previous_releases_url = cls.article_series.url + cls.article_series.reverse_subpage("previous_releases")
+        cls.previous_releases_url = (
+            f"{cls.article_series.url}/{cls.article_series.reverse_subpage('previous_releases')}"
+        )
 
     def test_breadcrumb_does_contains_series_url(self):
         response = self.client.get(self.previous_releases_url)
@@ -696,8 +698,8 @@ class PreviousReleasesWithPaginationPagesTestCase(TestCase):
     def setUpTestData(cls):
         cls.article_series = ArticleSeriesPageFactory(title="Article Series")
         cls.articles = StatisticalArticlePageFactory.create_batch(cls.total_batch, parent=cls.article_series)
-        cls.previous_releases_base_url = cls.article_series.url + cls.article_series.reverse_subpage(
-            "previous_releases"
+        cls.previous_releases_base_url = (
+            f"{cls.article_series.url}/{cls.article_series.reverse_subpage('previous_releases')}"
         )
 
     def assert_pagination(self, page_number, expected_contains, expected_not_contains):
