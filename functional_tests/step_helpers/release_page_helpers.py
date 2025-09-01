@@ -1,6 +1,5 @@
-from collections.abc import Callable, Mapping, Sequence
+from collections.abc import Callable, Sequence
 
-from behave.runner import Context
 from playwright.sync_api import Page, expect
 
 from functional_tests.step_helpers.footer_menu_helpers import choose_page_link
@@ -51,7 +50,7 @@ def add_description_block_under_pre_release_access(page: Page, index: int = 0) -
     page.get_by_role("region", name="Description *").get_by_role("textbox").fill("Description")
 
 
-def expect_text(
+def expect_texts(
     page: Page,
     texts: str | Sequence[str],
 ) -> None:
@@ -62,12 +61,6 @@ def expect_text(
         expect(page.get_by_text(text)).to_be_visible()
 
 
-def expect_texts_by_key(page: Page, key: str, texts: dict[str, str] | Mapping[str, str]):
-    """Looks up `key` in dict/mapping and checks that the corresponding text(s) are visible on the page."""
-    expected = texts[key]
-    expect_text(page, expected)
-
-
 def expect_changes_to_release_date(page: Page) -> None:
     preview_texts: list[str] = [
         "Previous date",
@@ -75,50 +68,56 @@ def expect_changes_to_release_date(page: Page) -> None:
         "Reason for change",
         "Updated due to data availability",
     ]
-    expect_text(page, texts=preview_texts)
+    expect_texts(page, preview_texts)
     expect(page.get_by_role("link", name="Changes to this release date")).to_be_visible()
     expect(page.get_by_role("heading", name="Changes to this release date")).to_be_visible()
 
 
-def add_another_release_date_change(context: Context) -> None:
-    section = context.page.locator("#panel-child-content-changes_to_release_date-section")
+def add_another_release_date_change(page: Page) -> None:
+    section = page.locator("#panel-child-content-changes_to_release_date-section")
     section.get_by_role("button", name="Insert a block").nth(1).click()
     section.get_by_label("Reason for change*").nth(1).fill("New update to release schedule")
 
 
-# Dispatcher mapping
-FEATURE_ACTIONS: dict[str, Callable[[Page], None]] = {
-    "a release date text": lambda page: fill_locator(page, RELEASE_DATE_TEXT, "March 2025 to August 2025"),
-    "a next release date text": lambda page: fill_locator(page, NEXT_RELEASE_DATE_TEXT, "To be confirmed"),
-    "a related link": lambda page: (
-        page.locator("#panel-child-content-related_links-content")
-        .get_by_role("button", name="Insert a block")
-        .first.click(),
-        choose_page_link(page, page_name="Home"),
-    ),
-    "pre-release access information": lambda page: (
-        add_basic_table_block_under_pre_release_access(page),
-        add_description_block_under_pre_release_access(page, index=1),
-    ),
-    "a date change log": lambda page: (
-        page.locator("#panel-child-content-changes_to_release_date-section")
-        .get_by_role("button", name="Insert a block")
-        .click(),
-        page.locator("#panel-child-content-changes_to_release_date-section")
-        .get_by_label("Reason for change*")
-        .fill("Updated due to data availability"),
-    ),
-    "an invalid release date text": lambda page: fill_locator(page, RELEASE_DATE_TEXT, "Invalid 5555"),
-    "an invalid next release date text": lambda page: fill_locator(page, NEXT_RELEASE_DATE_TEXT, "Invalid 5555"),
-    ("the next release date is set to a date earlier than the release date"): lambda page: (
-        fill_locator(page, RELEASE_DATE, "2025-12-25"),
-        fill_locator(page, NEXT_RELEASE_DATE, "2024-12-25"),
-    ),
-    "both next release date and next release date text": lambda page: (
-        fill_locator(page, NEXT_RELEASE_DATE, "2025-12-25"),
-        fill_locator(page, NEXT_RELEASE_DATE_TEXT, "December 2024"),
-    ),
-}
+def add_feature(page: Page, feature: str) -> None:
+    # Dispatcher mapping
+    feature_actions: dict[str, Callable[[Page], None]] = {
+        "a release date text": lambda page: fill_locator(page, RELEASE_DATE_TEXT, "March 2025 to August 2025"),
+        "a next release date text": lambda page: fill_locator(page, NEXT_RELEASE_DATE_TEXT, "To be confirmed"),
+        "a related link": lambda page: (
+            page.locator("#panel-child-content-related_links-content")
+            .get_by_role("button", name="Insert a block")
+            .first.click(),
+            choose_page_link(page, page_name="Home"),
+        ),
+        "pre-release access information": lambda page: (
+            add_basic_table_block_under_pre_release_access(page),
+            add_description_block_under_pre_release_access(page, index=1),
+        ),
+        "a date change log": lambda page: (
+            page.locator("#panel-child-content-changes_to_release_date-section")
+            .get_by_role("button", name="Insert a block")
+            .click(),
+            page.locator("#panel-child-content-changes_to_release_date-section")
+            .get_by_label("Reason for change*")
+            .fill("Updated due to data availability"),
+        ),
+        "an invalid release date text": lambda page: fill_locator(page, RELEASE_DATE_TEXT, "Invalid 5555"),
+        "an invalid next release date text": lambda page: fill_locator(page, NEXT_RELEASE_DATE_TEXT, "Invalid 5555"),
+        ("the next release date is set to a date earlier than the release date"): lambda page: (
+            fill_locator(page, RELEASE_DATE, "2025-12-25"),
+            fill_locator(page, NEXT_RELEASE_DATE, "2024-12-25"),
+        ),
+        "both next release date and next release date text": lambda page: (
+            fill_locator(page, NEXT_RELEASE_DATE, "2025-12-25"),
+            fill_locator(page, NEXT_RELEASE_DATE_TEXT, "December 2024"),
+        ),
+    }
+    try:
+        action = feature_actions[feature]
+    except KeyError as exc:
+        raise ValueError(f"Unsupported page feature: {feature!r}") from exc
+    action(page)
 
 
 # Preview display logic for features
@@ -146,7 +145,7 @@ def display_feature_in_preview_tab(page: Page, feature: str) -> None:
     if feature in custom_handlers:
         custom_handlers[feature](page)
     elif feature in preview_texts:
-        expect_texts_by_key(page, feature, preview_texts)
+        expect_texts(page, preview_texts[feature])
     else:
         raise ValueError(f"Unsupported feature: {feature}")
 
@@ -197,7 +196,7 @@ def handle_release_calendar_page_errors(page: Page, error: str) -> None:
     if error in custom_handlers:
         custom_handlers[error](page)
     elif error in error_messages:
-        expect_texts_by_key(page, error, error_messages)
+        expect_texts(page, error_messages[error])
     else:
         raise ValueError(f"Unsupported error: {error}")
 
@@ -226,23 +225,21 @@ def handle_pre_release_access_feature(page: Page, feature: str) -> None:
         raise ValueError(f"Unsupported feature: {feature}")
 
 
-def handle_changes_to_release_date_feature(
-    context: Context, feature: str, add_feature: Callable[[Context], None]
-) -> None:
+def handle_changes_to_release_date_feature(page: Page, feature: str) -> None:
     """Handle adding features under changes to release date, mapping feature strings to their respective actions."""
     handlers = {
-        "multiple date change logs": lambda ctx: (
-            add_feature(ctx, "a date change log"),
-            add_another_release_date_change(ctx),
+        "multiple date change logs": lambda page: (
+            add_feature(page, "a date change log"),
+            add_another_release_date_change(page),
         ),
-        "a release date change with no date change log": lambda ctx: ctx.page.get_by_role(
+        "a release date change with no date change log": lambda page: page.get_by_role(
             "textbox", name="Release date*"
         ).fill("2025-01-25"),
-        "a date change log with no release date change": lambda ctx: add_feature(ctx, "a date change log"),
+        "a date change log with no release date change": lambda page: add_feature(page, "a date change log"),
         "another date change log": add_another_release_date_change,
     }
     handler = handlers.get(feature)
     if handler:
-        handler(context)
+        handler(page)
     else:
         raise ValueError(f"Unsupported feature: {feature}")

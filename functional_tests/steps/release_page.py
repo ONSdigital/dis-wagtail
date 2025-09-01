@@ -6,7 +6,7 @@ from playwright.sync_api import expect
 from cms.core.custom_date_format import ons_default_datetime
 from cms.release_calendar.tests.factories import ReleaseCalendarPageFactory
 from functional_tests.step_helpers.release_page_helpers import (
-    FEATURE_ACTIONS,
+    add_feature,
     display_feature_in_preview_tab,
     handle_changes_to_release_date_feature,
     handle_pre_release_access_feature,
@@ -144,12 +144,8 @@ def display_release_page_by_status_or_mode(context: Context, status_or_mode: str
 
 
 @step("the user adds {feature} to the release calendar page")
-def add_feature(context: Context, feature: str) -> None:
-    try:
-        action = FEATURE_ACTIONS[feature]
-    except KeyError as exc:
-        raise ValueError(f"Unsupported page feature: {feature!r}") from exc
-    action(context.page)
+def add_feature_to_release_calendar_page(context: Context, feature: str) -> None:
+    add_feature(context.page, feature)
 
 
 @then("the example content is displayed in the preview tab")
@@ -251,7 +247,7 @@ def error_page_not_saved(context: Context) -> None:
 
 @when("the user adds {feature} under changes to release date")
 def add_changes_to_release_date_info(context: Context, feature: str) -> None:
-    handle_changes_to_release_date_feature(context, feature, add_feature)
+    handle_changes_to_release_date_feature(context.page, feature)
 
 
 @when('the user publishes a "Confirmed" page with example content')
