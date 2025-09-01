@@ -101,13 +101,10 @@ def get_document_metadata(
     prefix: "StrOrPromise | None" = None,
 ) -> dict[str, Any]:
     """Returns a dictionary with formatted metadata information for the DS document component."""
-    metadata = (
-        {
-            "object": {"text": content_type},
-        }
-        if content_type
-        else {}
-    )
+    metadata: dict[str, Any] = {}
+
+    if content_type:
+        metadata["object"] = {"text": content_type}
 
     if date_value:
         metadata["date"] = get_document_metadata_date(date_value, prefix=prefix)

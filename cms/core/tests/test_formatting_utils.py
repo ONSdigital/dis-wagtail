@@ -4,7 +4,7 @@ from django.test import TestCase
 from django.utils.formats import date_format
 
 from cms.core.custom_date_format import ons_date_format
-from cms.core.formatting_utils import format_as_document_list_item, get_formatted_pages_list
+from cms.core.formatting_utils import format_as_document_list_item, get_document_metadata, get_formatted_pages_list
 from cms.core.models.base import BasePage
 
 
@@ -184,3 +184,55 @@ class TestFormatAsDocumentListItem(TestCase):
         }
 
         self.assertEqual(formatted_element, expected)
+
+
+class TestDocumentMetadataFormatting(TestCase):
+    def test_get_document_metadata_without_content_type_and_date(self):
+        metadata = get_document_metadata(None, None)
+
+        self.assertEqual(metadata, {})
+
+    def test_get_document_metadata_without_date(self):
+        content_type = "Test content type"
+
+        metadata = get_document_metadata(content_type, None)
+
+        expected = {
+            "object": {"text": content_type},
+        }
+
+        self.assertEqual(metadata, expected)
+
+    def test_get_document_metadata_with_date_and_no_prefix(self):
+        content_type = "Test content type"
+        test_date = datetime(2024, 1, 1, 12, 30)
+
+        metadata = get_document_metadata(content_type, test_date)
+
+        self.assertEqual(metadata["object"], {"text": content_type})
+
+        expected_date = {
+            "prefix": "Released",
+            "showPrefix": True,
+            "iso": date_format(test_date, "c"),
+            "short": ons_date_format(test_date, "DATE_FORMAT"),
+        }
+
+        self.assertEqual(metadata["date"], expected_date)
+
+    def test_get_document_metadata_with_date_and_custom_prefix(self):
+        content_type = "Test content type"
+        test_date = datetime(2024, 1, 1, 12, 30)
+
+        metadata = get_document_metadata(content_type, test_date, prefix="Custom Prefix")
+
+        self.assertEqual(metadata["object"], {"text": content_type})
+
+        expected_date = {
+            "prefix": "Custom Prefix",
+            "showPrefix": True,
+            "iso": date_format(test_date, "c"),
+            "short": ons_date_format(test_date, "DATE_FORMAT"),
+        }
+
+        self.assertEqual(metadata["date"], expected_date)
