@@ -197,9 +197,9 @@ class TimeSeriesPageLinkBlock(StructBlock):
         """Checks that the given time series page URL matches the allowed domain."""
         errors = {}
 
-        for field in ("title", "description", "url"):
-            if not value.get(field):
-                errors[field] = ValidationError("This field is required.")
+        for child_block in self.child_blocks.values():
+            if child_block.required and not value.get(child_block.name):
+                errors[child_block.name] = ValidationError("This field is required.")
 
         if value["url"]:
             parsed_url = urlparse(value["url"])
