@@ -30,11 +30,15 @@ class ManualDatasetBlock(StructBlock):
         icon = "link"
 
     def clean(self, value: "StructValue") -> "StructValue":
-        cleaned_value = super().clean(value)
-        errors = validate_ons_url(cleaned_value["url"])
+        errors = validate_ons_url(value["url"])
+
+        for child_block in self.child_blocks.values():
+            if child_block.required and not value.get(child_block.name):
+                errors[child_block.name] = ValidationError("This field is required.")
+
         if errors:
             raise StructBlockValidationError(errors)
-        return cleaned_value
+        return super().clean(value)
 
 
 class DatasetStoryBlock(StreamBlock):
