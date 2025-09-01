@@ -27,15 +27,15 @@ class TestDatasetStoryBlock(TestCase):
             ],
             [
                 ("dataset_lookup", self.lookup_dataset.id),
-                ("manual_link", {"url": dataset_duplicate_url}),
+                ("manual_link", {"title": "Dataset Title", "url": dataset_duplicate_url}),
             ],
             [  # Check that the trailing slash is ignored
                 ("dataset_lookup", self.lookup_dataset.id),
-                ("manual_link", {"url": dataset_duplicate_url + "/"}),
+                ("manual_link", {"title": "Dataset Title", "url": dataset_duplicate_url + "/"}),
             ],
             [
-                ("manual_link", {"url": dataset_duplicate_url}),
-                ("manual_link", {"url": dataset_duplicate_url}),
+                ("manual_link", {"title": "Dataset Title", "url": dataset_duplicate_url}),
+                ("manual_link", {"title": "Dataset Title", "url": dataset_duplicate_url}),
             ],
         ]
 
@@ -73,14 +73,26 @@ class TestDatasetStoryBlock(TestCase):
             ],
             [
                 ("dataset_lookup", self.lookup_dataset.id),
-                ("manual_link", {"url": "https://example.com/datasets/foo/editions/bar/versions/1"}),
+                (
+                    "manual_link",
+                    {"title": "Dataset Title", "url": "https://example.com/datasets/foo/editions/bar/versions/1"},
+                ),
             ],
             [
-                ("manual_link", {"url": "https://example.com/datasets/foo/editions/bar/versions/1"}),
+                (
+                    "manual_link",
+                    {"title": "Dataset Title", "url": "https://example.com/datasets/foo/editions/bar/versions/1"},
+                ),
             ],
             [
-                ("manual_link", {"url": "https://example.com/datasets/foo/editions/bar/versions/1"}),
-                ("manual_link", {"url": "https://example.com/datasets/spam/editions/eggs/versions/1"}),
+                (
+                    "manual_link",
+                    {"title": "Dataset Title", "url": "https://example.com/datasets/foo/editions/bar/versions/1"},
+                ),
+                (
+                    "manual_link",
+                    {"title": "Dataset Title", "url": "https://example.com/datasets/spam/editions/eggs/versions/1"},
+                ),
             ],
         ]
 
