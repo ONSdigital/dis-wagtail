@@ -14,12 +14,13 @@ used by the search service for reindexing.
 
 ## Environment variables
 
-| Var                              | Notes                                                                 |
-| -------------------------------- | --------------------------------------------------------------------- |
-| `SEARCH_INDEX_PUBLISHER_BACKEND` | Set to `kafka` to enable send data to the Search service Kafka broker |
-| `KAFKA_SERVERS`                  | A comma-separated list of Kafka broker URLs.                          |
-| `KAFKA_API_VERSION`              | Defaults to "3.5.1"                                                   |
-| `KAFKA_USE_IAM_AUTH`             | Defaults to `false`. Set to `true` to enable IAM authentication.      |
+| Var                                        | Notes                                                                                       |
+| ------------------------------------------ | ------------------------------------------------------------------------------------------- |
+| `SEARCH_INDEX_PUBLISHER_BACKEND`           | Set to `kafka` to enable send data to the Search service Kafka broker                       |
+| `KAFKA_SERVERS`                            | A comma-separated list of Kafka broker URLs.                                                |
+| `KAFKA_API_VERSION`                        | Defaults to "3.5.1"                                                                         |
+| `KAFKA_USE_IAM_AUTH`                       | Defaults to `false`. Set to `true` to enable IAM authentication.                            |
+| `CMS_SEARCH_NOTIFY_ON_DELETE_OR_UNPUBLISH` | Defaults to `true`. Set to `false` to disable firing kafka events on deletion or unpublish. |
 
 ## Developer notes
 
