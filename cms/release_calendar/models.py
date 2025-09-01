@@ -200,6 +200,12 @@ class ReleaseCalendarPage(BundledPageMixin, BasePage):  # type: ignore[django-ma
         context["table_of_contents"] = self.table_of_contents
         return context
 
+    def get_status(self) -> str:
+        return self.status
+
+    def get_date(self) -> str:
+        return str(self.release_date)
+
     @property
     def release_date_value(self) -> str:
         if self.release_date_text and self.status == ReleaseStatus.PROVISIONAL:

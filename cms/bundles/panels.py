@@ -7,7 +7,9 @@ from wagtail.admin.panels import FieldPanel, HelpPanel, MultipleChooserPanel
 
 from cms.bundles.permissions import user_can_manage_bundles
 from cms.bundles.utils import get_page_title_with_workflow_status
-from cms.bundles.viewsets.bundle_page_chooser import PagesWithDraftsForBundleChooserWidget
+from cms.bundles.viewsets.bundle_page_chooser import (
+    PagesWithDraftsForBundleChooserWidget,
+)
 
 if TYPE_CHECKING:
     from django.db.models import Model
@@ -57,7 +59,11 @@ class BundleNotePanel(HelpPanel):
                 return format_html(
                     "<p>This page is not part of any bundles. "
                     '<a href="{}" class="button button-small button-secondary">Add to Bundle</a></p>',
-                    reverse("bundles:add_to_bundle", args=(instance.pk,), query={"next": self.request.path}),
+                    reverse(
+                        "bundles:add_to_bundle",
+                        args=(instance.pk,),
+                        query={"next": self.request.path},
+                    ),
                 )
             return format_html("<p>{}</p>", "This page is not part of any bundles.")
 
@@ -148,3 +154,34 @@ class PageChooserWithStatusPanel(BundleFieldPanel):
             super().__init__(**kwargs)
             if page := self.instance.page:
                 self.heading = page.specific_deferred.get_verbose_name()
+
+
+def get_release_calendar_page_title_with_status_and_release_date(
+    release_calendar_page: "Page",
+) -> str:
+    title: str = release_calendar_page.specific_deferred.get_admin_display_title()
+    date: str = release_calendar_page.specific_deferred.get_date()
+    status: str = release_calendar_page.specific_deferred.get_status()
+    return f"{title} ({status}) ({date})"
+
+
+class CustomReleaseCalendarPageChooser(PagesWithDraftsForBundleChooserWidget):
+    def get_display_title(self, instance: "Page") -> str:
+        return get_release_calendar_page_title_with_status_and_release_date(instance)
+
+
+class ReleaseCalendarPageChooserWithStatusAndReleaseDate(BundleFieldPanel):
+    """A custom page chooser panel that includes the page status and release date."""
+
+    def get_form_options(self) -> dict[str, list | dict]:
+        opts: dict[str, list | dict] = super().get_form_options()
+
+        widgets = opts.setdefault("widgets", {})
+        widgets[self.field_name] = CustomReleaseCalendarPageChooser()
+
+        return opts
+
+    def format_value_for_display(self, value: Any) -> str:
+        if value is None:
+            return ""
+        return get_release_calendar_page_title_with_status_and_release_date(value)
