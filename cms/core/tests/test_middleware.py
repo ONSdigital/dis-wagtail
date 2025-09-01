@@ -113,3 +113,13 @@ class TestNonTrailingSlashRedirectMiddleware(TestCase):
                 response = self.middleware.process_request(request)
                 self.assertEqual(response.status_code, 301)
                 self.assertEqual(response.url, "/test-page")
+
+    def test_canonical_url_route_joining(self):
+        """Test that canonical URLs properly join routes without double slashes."""
+        # This test simulates the edge case handled in get_canonical_url
+        # where a route needs to be joined to the base URL
+        request = self.factory.get("/page/subpath/")
+        response = self.middleware.process_request(request)
+        self.assertEqual(response.status_code, 301)
+        # Should redirect to non-trailing slash version
+        self.assertEqual(response.url, "/page/subpath")

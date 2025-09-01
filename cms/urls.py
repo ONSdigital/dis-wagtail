@@ -16,9 +16,9 @@ from cms.private_media import views as private_media_views
 
 # Internal URLs are not intended for public use.
 internal_urlpatterns = [
-    path("readiness/", core_views.ready, name="readiness"),
-    path("liveness/", core_views.liveness, name="liveness"),
-    path("health/", core_views.health, name="health"),
+    path("readiness", core_views.ready, name="readiness"),
+    path("liveness", core_views.liveness, name="liveness"),
+    path("health", core_views.health, name="health"),
 ]
 
 # Private URLs are not meant to be cached.
@@ -26,7 +26,7 @@ private_urlpatterns = [
     path("-/", include((internal_urlpatterns, "internal"))),
     path("health", core_views.health, name="health"),
     path(
-        "documents/authenticate_with_password/<int:restriction_id>/",
+        "documents/authenticate_with_password/<int:restriction_id>",
         authenticate_with_password,
         name="wagtaildocs_authenticate_with_password",
     ),
@@ -89,15 +89,15 @@ if settings.DEBUG:
     debug_urlpatterns += [
         # Add views for testing 404 and 500 templates
         path(
-            "test404/",
+            "test404",
             TemplateView.as_view(template_name="templates/pages/errors/404.html"),
         ),
         path(
-            "test403/",
+            "test403",
             TemplateView.as_view(template_name="templates/pages/errors/403.html"),
         ),
         path(
-            "test500/",
+            "test500",
             TemplateView.as_view(template_name="templates/pages/errors/500.html"),
         ),
     ]

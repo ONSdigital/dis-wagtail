@@ -2,6 +2,7 @@
 
 import os
 
+from django.conf import settings
 from django.http import HttpRequest, HttpResponsePermanentRedirect
 from django.utils.deprecation import MiddlewareMixin
 
@@ -11,7 +12,13 @@ class NonTrailingSlashRedirectMiddleware(MiddlewareMixin):
 
     def process_request(self, request: HttpRequest) -> HttpResponsePermanentRedirect | None:
         """Redirects requests with a trailing slash."""
-        if request.path.endswith("/") and request.path != "/":
+        # Ignore admin URLs and root URL
+        if (
+            request.path.endswith("/")
+            and request.path != "/"
+            and not request.path[1:].startswith(settings.DJANGO_ADMIN_HOME_PATH)
+            and not request.path[1:].startswith(settings.WAGTAILADMIN_HOME_PATH)
+        ):
             # Remove trailing slash to check for extension
             path_without_slash = request.path.rstrip("/")
             _, extension = os.path.splitext(path_without_slash)
