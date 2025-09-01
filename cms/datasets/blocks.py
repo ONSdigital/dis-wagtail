@@ -7,6 +7,7 @@ from wagtail.blocks import (
     StreamBlockValidationError,
     StreamValue,
     StructBlock,
+    StructBlockValidationError,
     StructValue,
     TextBlock,
     URLBlock,
@@ -29,10 +30,11 @@ class ManualDatasetBlock(StructBlock):
         icon = "link"
 
     def clean(self, value: "StructValue") -> "StructValue":
-        errors = validate_ons_url(value["url"])
+        cleaned_value = super().clean(value)
+        errors = validate_ons_url(cleaned_value["url"])
         if errors:
-            raise ValidationError(errors)
-        return value
+            raise StructBlockValidationError(errors)
+        return cleaned_value
 
 
 class DatasetStoryBlock(StreamBlock):
