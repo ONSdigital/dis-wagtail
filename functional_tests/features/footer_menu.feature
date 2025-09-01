@@ -80,5 +80,3 @@ Feature: CMS users can manage footer menus via the Wagtail admin interface
         And the user selects "More options for Footer Menu"
         And the user clicks "Delete Footer Menu"
         Then a banner confirming the deletion is displayed
-
-
