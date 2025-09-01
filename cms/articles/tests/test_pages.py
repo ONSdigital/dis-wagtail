@@ -43,10 +43,10 @@ class ArticleSeriesPageTests(WagtailPageTestCase):
         self.assertContains(response, article.title)
 
     def test_previous_releases_route(self):
-        self.assertPageIsRoutable(self.page, "editions/")
+        self.assertPageIsRoutable(self.page, "editions")
 
     def test_previous_releases_route_rendering(self):
-        self.assertPageIsRenderable(self.page, "editions/")
+        self.assertPageIsRenderable(self.page, "editions")
 
     def test_previous_releases_article_list(self):
         response = self.client.get(f"{self.page.url.rstrip('/')}/editions")
