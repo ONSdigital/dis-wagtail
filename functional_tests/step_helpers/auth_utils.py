@@ -30,7 +30,7 @@ class AuthenticationTestHelper:
         # Mock get_jwks to return our test JWKS
         auth_utils.get_jwks = lambda: self.context.test_jwks
 
-    def generate_and_set_tokens(self, groups: Optional[list[str]] = None, **jwt_overrides) -> None:
+    def generate_and_set_tokens(self, groups: Optional[list[str]] = None, **jwt_overrides: dict[str, Any]) -> None:
         """Generate test JWT tokens with specified groups."""
         if groups is None:
             groups = ["role-admin"]
@@ -96,7 +96,10 @@ class AuthenticationTestHelper:
         expiry = {
             "short_expiry": 5,
             "long_expiry": 30,
-        }.get(next((tag for tag in ("short_expiry", "long_expiry") if tag in tags), None), 20)
+        }.get(
+            next((tag for tag in ("short_expiry", "long_expiry") if tag in tags), None),
+            20,
+        )
         exp = int((now + timedelta(seconds=expiry)).timestamp())
 
         self.generate_and_set_tokens(groups=["role-admin"], exp=exp)
@@ -113,7 +116,7 @@ class AuthenticationTestHelper:
         decoded = base64.urlsafe_b64decode(payload_b64)
         return json.loads(decoded)
 
-    def setup_session_renewal_timing(self, refresh_expiry=None) -> None:
+    def setup_session_renewal_timing(self, refresh_expiry: Any | None = None) -> None:
         """Configure session renewal timing based on JWT expiration."""
         # Decode the expiration time from JWT
         payload = self.decode_jwt_payload(self.context.access_token)
@@ -137,12 +140,14 @@ class AuthenticationTestHelper:
         # localStorage before the user is redirected or navigates to Wagtail.
         # This manual step is only required in tests to simulate the authenticated state
         # that would normally be established by the upstream service.
-        self.context.page.context.add_init_script(f"""
+        self.context.page.context.add_init_script(
+            f"""
             window.localStorage.setItem('dis_auth_client_state', JSON.stringify({{
             session_expiry_time: {session_ms},
             refresh_expiry_time: {refresh_ms}
           }}));
-        """)
+        """
+        )
 
 
 def get_cognito_overridden_settings() -> dict:
@@ -162,10 +167,10 @@ def get_cognito_overridden_settings() -> dict:
     }
 
 
-def capture_request(context):
+def capture_request(context: Context) -> None:
     """Capture requests and mock specific endpoints for Cognito-enabled scenarios."""
 
-    def _capture(route, request):
+    def _capture(route: Any, request: Any) -> None:
         context._requests.append(request)  # pylint: disable=protected-access
 
         # Mock the refresh endpoint for PUT or POST requests
