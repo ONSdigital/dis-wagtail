@@ -10,7 +10,9 @@ def is_hostname_in_domain(hostname: str, allowed_domain: str) -> bool:
     return hostname == allowed_domain or hostname.endswith(f".{allowed_domain}")
 
 
-def validate_ons_url_struct_block(value: StructValue, child_blocks: list[FieldBlock]) -> dict[str, ValidationError]:
+def validate_ons_url_struct_block(
+    value: StructValue, child_blocks: dict[str, FieldBlock]
+) -> dict[str, ValidationError]:
     """Custom validation for StructBlocks containing a URLBlock restricted to ONS domains.
 
     Note: Checks for the presence of the required fields are included here
@@ -28,7 +30,7 @@ def validate_ons_url_struct_block(value: StructValue, child_blocks: list[FieldBl
     return errors
 
 
-def validate_ons_url(url: str) -> ValidationError:
+def validate_ons_url(url: str) -> ValidationError | None:
     """Checks that the given URL matches the allowed ONS domain,
     otherwise return a dict holding a ValidationError to be used in the clean method of a StructBlock.
     """
