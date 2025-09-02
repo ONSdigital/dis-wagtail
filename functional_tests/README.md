@@ -248,6 +248,12 @@ reusable across any steps.
 Note that it is also perfectly valid to annotate the same step function with multiple different step wordings, for example to have multiple different wordings
 of the step to make better grammatical sense in different scenarios.
 
+### Sharing Code between Steps and Step Helpers
+
+Step helpers should not import code from step files. Instead, factor shared logic into standalone helper functions. These helpers should take only the minimal inputs they need (e.g. context.page) rather than depending on context or other steps.
+
+This avoids creating hidden dependencies between steps and will make the test suite easier to maintain.
+
 ### Step wording
 
 Steps should be written in full and concise sentences, avoiding unnecessary abbreviations and shorthand. They should be
