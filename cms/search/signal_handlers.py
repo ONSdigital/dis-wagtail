@@ -34,7 +34,10 @@ def on_page_unpublished(sender: "Page", instance: "Page", **kwargs: dict) -> Non
     """Called whenever a Wagtail Page is unpublished (UI or code).
     instance is the unpublished Page object.
     """
-    if instance.specific_class.__name__ not in SEARCH_INDEX_EXCLUDED_PAGE_TYPES:
+    if (
+        settings.CMS_SEARCH_NOTIFY_ON_DELETE_OR_UNPUBLISH
+        and instance.specific_class.__name__ not in SEARCH_INDEX_EXCLUDED_PAGE_TYPES
+    ):
         get_publisher().publish_deleted(instance)
 
 
@@ -44,5 +47,9 @@ def on_page_deleted(sender: "Page", instance: "Page", **kwargs: dict) -> None:  
     Only fires if the page is published and not in SEARCH_INDEX_EXCLUDED_PAGE_TYPES.
     """
     # Only proceed if `sender` is a subclass of Wagtail Page and the page is published
-    if instance.live and instance.specific_class.__name__ not in SEARCH_INDEX_EXCLUDED_PAGE_TYPES:
+    if (
+        settings.CMS_SEARCH_NOTIFY_ON_DELETE_OR_UNPUBLISH
+        and instance.live
+        and instance.specific_class.__name__ not in SEARCH_INDEX_EXCLUDED_PAGE_TYPES
+    ):
         get_publisher().publish_deleted(instance)

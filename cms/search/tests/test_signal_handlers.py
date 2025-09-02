@@ -1,7 +1,7 @@
 from unittest.mock import patch
 
 from django.db.models.signals import post_delete
-from django.test import TestCase
+from django.test import TestCase, override_settings
 from wagtail.models import Page
 from wagtail.signals import page_published, page_unpublished
 
@@ -15,6 +15,7 @@ from cms.themes.tests.factories import ThemePageFactory
 from cms.topics.tests.factories import TopicPageFactory
 
 
+@override_settings(CMS_SEARCH_NOTIFY_ON_DELETE_OR_UNPUBLISH=True)
 class SearchSignalsTest(TestCase):
     @classmethod
     def setUpTestData(cls):
@@ -75,7 +76,7 @@ class SearchSignalsTest(TestCase):
         """Excluded pages should not trigger publish_deleted on delete."""
         for page in self.excluded_pages:
             # Fire the Django post_delete signal for a Wagtail Page
-            post_delete.send(sender=type(page), instance=page)
+            post_delete.send(sender=Page, instance=page)
             self.mock_publisher.publish_deleted.assert_not_called()
 
     def test_on_page_deleted_included_page_type(self):
@@ -93,5 +94,19 @@ class SearchSignalsTest(TestCase):
             page.save()
 
             # Fire the Django post_delete signal for a Wagtail Page
+            post_delete.send(sender=Page, instance=page)
+            self.mock_publisher.publish_deleted.assert_not_called()
+
+    @override_settings(CMS_SEARCH_NOTIFY_ON_DELETE_OR_UNPUBLISH=False)
+    def test_no_kafka_event_on_unpublish_when_flag_off(self):
+        """Test that no Kafka event is sent on unpublish when the flag is off."""
+        for page in self.included_pages:
+            page_unpublished.send(sender=type(page), instance=page)
+            self.mock_publisher.publish_deleted.assert_not_called()
+
+    @override_settings(CMS_SEARCH_NOTIFY_ON_DELETE_OR_UNPUBLISH=False)
+    def test_no_kafka_event_on_delete_when_flag_off(self):
+        """Test that no Kafka event is sent on delete when the flag is off."""
+        for page in self.included_pages:
             post_delete.send(sender=Page, instance=page)
             self.mock_publisher.publish_deleted.assert_not_called()
