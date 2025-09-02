@@ -196,20 +196,25 @@ class TimeSeriesPageLinkBlock(StructBlock):
     def clean(self, value: "StructValue") -> "StructValue":
         """Checks that the given time series page URL matches the allowed domain."""
         errors = {}
-        parsed_url = urlparse(value["url"])
 
-        if not parsed_url.hostname or parsed_url.scheme != "https":
-            errors["url"] = ValidationError(
-                "Please enter a valid URL. It should start with 'https://' and contain a valid domain name."
-            )
-        elif not any(
-            is_hostname_in_domain(parsed_url.hostname, allowed_domain)
-            for allowed_domain in settings.ONS_ALLOWED_LINK_DOMAINS
-        ):
-            patterns_str = " or ".join(settings.ONS_ALLOWED_LINK_DOMAINS)
-            errors["url"] = ValidationError(
-                f"The URL hostname is not in the list of allowed domains or their subdomains: {patterns_str}"
-            )
+        for child_block in self.child_blocks.values():
+            if child_block.required and not value.get(child_block.name):
+                errors[child_block.name] = ValidationError("This field is required.")
+
+        if value["url"]:
+            parsed_url = urlparse(value["url"])
+            if not parsed_url.hostname or parsed_url.scheme != "https":
+                errors["url"] = ValidationError(
+                    "Please enter a valid URL. It should start with 'https://' and contain a valid domain name."
+                )
+            elif not any(
+                is_hostname_in_domain(parsed_url.hostname, allowed_domain)
+                for allowed_domain in settings.ONS_ALLOWED_LINK_DOMAINS
+            ):
+                allowed_domains = " or ".join(settings.ONS_ALLOWED_LINK_DOMAINS)
+                errors["url"] = ValidationError(
+                    f"The URL hostname is not in the list of allowed domains or their subdomains: {allowed_domains}"
+                )
 
         if errors:
             raise StructBlockValidationError(block_errors=errors)
