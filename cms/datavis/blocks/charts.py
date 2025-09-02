@@ -735,9 +735,9 @@ class IframeBlock(BaseVisualisationBlock):
             is_hostname_in_domain(parsed_url.hostname, allowed_domain)
             for allowed_domain in settings.IFRAME_VISUALISATION_ALLOWED_DOMAINS
         ):
-            patterns_str = " or ".join(settings.IFRAME_VISUALISATION_ALLOWED_DOMAINS)
+            allowed_domains = " or ".join(settings.IFRAME_VISUALISATION_ALLOWED_DOMAINS)
             errors["iframe_source_url"] = ValidationError(
-                f"The URL hostname is not in the list of allowed domains: {patterns_str}"
+                f"The URL hostname is not in the list of allowed domains: {allowed_domains}"
             )
 
         if errors:

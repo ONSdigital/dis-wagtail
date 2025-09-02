@@ -2,11 +2,30 @@ from urllib.parse import urlparse
 
 from django.conf import settings
 from django.core.exceptions import ValidationError
+from wagtail.blocks import StructValue
 
 
 def is_hostname_in_domain(hostname: str, allowed_domain: str) -> bool:
     """Check if the hostname matches the allowed domain or its subdomains."""
     return hostname == allowed_domain or hostname.endswith(f".{allowed_domain}")
+
+
+def validate_ons_url_block(value: StructValue, child_blocks) -> dict[str, ValidationError]:
+    """Custom validation for StructBlocks containing a URLBlock restricted to ONS domains.
+
+    Note: Checks for the presence of the required fields are included here
+    so that missing required field errors and custom URL validation errors can be raised simultaneously.
+    """
+    errors = {}
+
+    for child_block in child_blocks.values():
+        if child_block.required and not value.get(child_block.name):
+            errors[child_block.name] = ValidationError("This field is required.")
+
+    if not errors["url"]:
+        errors.update(validate_ons_url(value["url"]))
+
+    return errors
 
 
 def validate_ons_url(url: str) -> dict[str, ValidationError]:
