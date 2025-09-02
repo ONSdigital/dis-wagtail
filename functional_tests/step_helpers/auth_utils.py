@@ -116,7 +116,7 @@ class AuthenticationTestHelper:
         decoded = base64.urlsafe_b64decode(payload_b64)
         return json.loads(decoded)
 
-    def setup_session_renewal_timing(self, refresh_expiry: Any | None = None) -> None:
+    def setup_session_renewal_timing(self, refresh_expiry: int | None = None) -> None:
         """Configure session renewal timing based on JWT expiration."""
         # Decode the expiration time from JWT
         payload = self.decode_jwt_payload(self.context.access_token)
