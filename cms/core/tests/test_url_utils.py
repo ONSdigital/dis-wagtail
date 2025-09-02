@@ -34,28 +34,27 @@ class TestValidateONSUrl(TestCase):
     @override_settings(ONS_ALLOWED_LINK_DOMAINS=["example.com"])
     def test_valid_ons_url(self):
         url = "https://example.com/page"
-        errors = validate_ons_url(url)
-        self.assertEqual(errors, {})
+        error = validate_ons_url(url)
+        self.assertEqual(error, None)
 
     @override_settings(ONS_ALLOWED_LINK_DOMAINS=["example.com"])
     def test_url_on_disallowed_domain(self):
         url = "https://not-allowed-domain.com/page"
-        errors = validate_ons_url(url)
-        self.assertIn("url", errors)
-        self.assertIsInstance(errors["url"], ValidationError)
+        error = validate_ons_url(url)
+
+        self.assertIsInstance(error, ValidationError)
         self.assertEqual(
-            errors["url"].message,
+            error.message,
             "The URL hostname is not in the list of allowed domains or their subdomains: example.com",
         )
 
     @override_settings(ONS_ALLOWED_LINK_DOMAINS=["example.com"])
     def test_url_no_https_in_url(self):
         url = "http://example.com/page"
-        errors = validate_ons_url(url)
-        self.assertIn("url", errors)
-        self.assertIsInstance(errors["url"], ValidationError)
+        error = validate_ons_url(url)
+        self.assertIsInstance(error, ValidationError)
         self.assertEqual(
-            errors["url"].message,
+            error.message,
             "Please enter a valid URL. It should start with 'https://' and contain a valid domain name.",
         )
 
