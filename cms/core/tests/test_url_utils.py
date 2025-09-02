@@ -1,7 +1,8 @@
 from django.forms import ValidationError
 from django.test import TestCase, override_settings
+from wagtail.blocks import CharBlock, StructBlock, URLBlock
 
-from cms.core.url_utils import is_hostname_in_domain, normalise_url, validate_ons_url
+from cms.core.url_utils import is_hostname_in_domain, normalise_url, validate_ons_url, validate_ons_url_struct_block
 
 
 class TestIsHostnameInDomain(TestCase):
@@ -57,6 +58,52 @@ class TestValidateONSUrl(TestCase):
             errors["url"].message,
             "Please enter a valid URL. It should start with 'https://' and contain a valid domain name.",
         )
+
+
+class TestValidateONSUrlBlock(TestCase):
+    """Test validation of a StructBlock that contains a URL field which is restricted to ONS domain."""
+
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+
+        class TestBlock(StructBlock):
+            title = CharBlock(required=True)
+            url = URLBlock(required=True)
+
+        cls.TestBlock = TestBlock
+
+    def test_missing_required_fields(self):
+        block = self.TestBlock()
+        value = {"title": "", "url": "https://example.com"}
+
+        errors = validate_ons_url_struct_block(value, block.child_blocks)
+
+        self.assertIn("title", errors)
+        self.assertIsInstance(errors["title"], ValidationError)
+        self.assertEqual(errors["title"].message, "This field is required.")
+
+    def test_incorrect_ons_url(self):
+        block = self.TestBlock()
+        value = {"title": "Test Title", "url": "incorrect url"}
+
+        errors = validate_ons_url_struct_block(value, block.child_blocks)
+
+        self.assertIn("url", errors)
+        self.assertIsInstance(errors["url"], ValidationError)
+        self.assertEqual(
+            errors["url"].message,
+            "Please enter a valid URL. It should start with 'https://' and contain a valid domain name.",
+        )
+
+    @override_settings(ONS_ALLOWED_LINK_DOMAINS=["example.com"])
+    def test_happy_path(self):
+        block = self.TestBlock()
+        value = {"title": "Test Title", "url": "https://example.com"}
+
+        errors = validate_ons_url_struct_block(value, block.child_blocks)
+
+        self.assertEqual(errors, {})
 
 
 class TestNormaliseUrl(TestCase):

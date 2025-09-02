@@ -21,7 +21,7 @@ from wagtail.images.blocks import ImageChooserBlock
 from wagtail.telepath import register
 
 from cms.articles.models import ArticleSeriesPage
-from cms.core.url_utils import normalise_url, validate_ons_url_block
+from cms.core.url_utils import normalise_url, validate_ons_url_struct_block
 
 from .viewsets import series_with_headline_figures_chooser_viewset
 
@@ -193,7 +193,7 @@ class TimeSeriesPageLinkBlock(StructBlock):
         template = "templates/components/streamfield/time_series_link.html"
 
     def clean(self, value: "StructValue") -> "StructValue":
-        errors = validate_ons_url_block(value, self.child_blocks)
+        errors = validate_ons_url_struct_block(value, self.child_blocks)
 
         if errors:
             raise StructBlockValidationError(errors)

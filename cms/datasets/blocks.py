@@ -13,7 +13,7 @@ from wagtail.blocks import (
     URLBlock,
 )
 
-from cms.core.url_utils import normalise_url, validate_ons_url_block
+from cms.core.url_utils import normalise_url, validate_ons_url_struct_block
 from cms.datasets.views import dataset_chooser_viewset
 
 DatasetChooserBlock = dataset_chooser_viewset.get_block_class(
@@ -30,7 +30,7 @@ class ManualDatasetBlock(StructBlock):
         icon = "link"
 
     def clean(self, value: "StructValue") -> "StructValue":
-        errors = validate_ons_url_block(value, self.child_blocks)
+        errors = validate_ons_url_struct_block(value, self.child_blocks)
 
         if errors:
             raise StructBlockValidationError(errors)

@@ -2,7 +2,7 @@ from urllib.parse import urlparse
 
 from django.conf import settings
 from django.core.exceptions import ValidationError
-from wagtail.blocks import StructValue
+from wagtail.blocks import FieldBlock, StructValue
 
 
 def is_hostname_in_domain(hostname: str, allowed_domain: str) -> bool:
@@ -10,7 +10,7 @@ def is_hostname_in_domain(hostname: str, allowed_domain: str) -> bool:
     return hostname == allowed_domain or hostname.endswith(f".{allowed_domain}")
 
 
-def validate_ons_url_block(value: StructValue, child_blocks) -> dict[str, ValidationError]:
+def validate_ons_url_struct_block(value: StructValue, child_blocks: list[FieldBlock]) -> dict[str, ValidationError]:
     """Custom validation for StructBlocks containing a URLBlock restricted to ONS domains.
 
     Note: Checks for the presence of the required fields are included here
@@ -22,21 +22,21 @@ def validate_ons_url_block(value: StructValue, child_blocks) -> dict[str, Valida
         if child_block.required and not value.get(child_block.name):
             errors[child_block.name] = ValidationError("This field is required.")
 
-    if not errors["url"]:
-        errors.update(validate_ons_url(value["url"]))
+    if not errors.get("url") and (error := validate_ons_url(value["url"])):
+        errors["url"] = error
 
     return errors
 
 
-def validate_ons_url(url: str) -> dict[str, ValidationError]:
+def validate_ons_url(url: str) -> ValidationError:
     """Checks that the given URL matches the allowed ONS domain,
     otherwise return a dict holding a ValidationError to be used in the clean method of a StructBlock.
     """
-    errors = {}
+    error = None
     parsed_url = urlparse(url)
 
     if not parsed_url.hostname or parsed_url.scheme != "https":
-        errors["url"] = ValidationError(
+        error = ValidationError(
             "Please enter a valid URL. It should start with 'https://' and contain a valid domain name."
         )
     elif not any(
@@ -44,11 +44,11 @@ def validate_ons_url(url: str) -> dict[str, ValidationError]:
         for allowed_domain in settings.ONS_ALLOWED_LINK_DOMAINS
     ):
         patterns_str = " or ".join(settings.ONS_ALLOWED_LINK_DOMAINS)
-        errors["url"] = ValidationError(
+        error = ValidationError(
             f"The URL hostname is not in the list of allowed domains or their subdomains: {patterns_str}"
         )
 
-    return errors
+    return error
 
 
 def normalise_url(url: str) -> str:
