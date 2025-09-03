@@ -387,13 +387,3 @@ class TopicPage(BundledPageMixin, ExclusiveTaxonomyMixin, BasePage):  # type: ig
         topic_slugs = [slugify(title).replace("-", "") for title in topic_titles]
 
         return "/".join(topic_slugs)
-
-    # @cached_property
-    # def has_child_articles(self):
-    #     """Return True if the topic has child articles."""
-    #     return self.get_children().filter(content_type=StatisticalArticlePage).exists()
-
-    # @cached_property
-    # def has_child_methodologies(self):
-    #     """Return True if the topic has child methodologies."""
-    #     return self.get_children().filter(content_type=MethodologyPage).exists()
