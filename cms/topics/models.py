@@ -5,6 +5,7 @@ from django.core.exceptions import ValidationError
 from django.db import models
 from django.db.models import OuterRef, Subquery
 from django.utils.functional import cached_property
+from django.utils.text import slugify
 from django.utils.translation import gettext_lazy as _
 from modelcluster.fields import ParentalKey
 from wagtail.admin.panels import FieldPanel, InlinePanel, MultiFieldPanel
@@ -371,3 +372,28 @@ class TopicPage(BundledPageMixin, ExclusiveTaxonomyMixin, BasePage):  # type: ig
         TODO: replaces when https://github.com/wagtail/wagtail/issues/13286 is fixed.
         """
         return TopicPagePermissionTester(user, self)
+
+    @cached_property
+    def topic_tag_path(self):
+        """Return the path from the parent taxonomy topic to the topic of this page."""
+        topic = self.topic
+        topic_titles = []
+
+        while topic:
+            topic_titles.append(topic.title)
+            topic = topic.get_parent()
+
+        topic_titles.reverse()
+        topic_slugs = [slugify(title).replace("-", "") for title in topic_titles]
+
+        return "/".join(topic_slugs)
+
+    # @cached_property
+    # def has_child_articles(self):
+    #     """Return True if the topic has child articles."""
+    #     return self.get_children().filter(content_type=StatisticalArticlePage).exists()
+
+    # @cached_property
+    # def has_child_methodologies(self):
+    #     """Return True if the topic has child methodologies."""
+    #     return self.get_children().filter(content_type=MethodologyPage).exists()

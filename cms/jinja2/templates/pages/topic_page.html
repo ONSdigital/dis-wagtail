@@ -78,6 +78,10 @@
                             })
                         }}
                     {# fmt:on #}
+                    {% if page.topic.is_used_for_article_series %}
+                        {% set related_publications_url = ONS_WEBSITE_BASE_URL+"/"+page.topic_tag_path+"/publications" %}
+                        <a href="{{ related_publications_url }}">View all related publications</a>
+                    {% endif %}
                 </section>
             {% endif %}
 
@@ -91,6 +95,12 @@
                             })
                         }}
                     {# fmt:on #}
+
+                    {% if page.topic.is_used_for_methodologies %}
+                        {% set related_methodologies = ONS_WEBSITE_BASE_URL+"/"+page.topic_tag_path+"/topicspecificmethodology" %}
+                        <a href="{{ related_methodologies }}">View all related methodologies</a>
+                    {% endif %}
+
                 </section>
             {% endif %}
 
@@ -104,6 +114,8 @@
                             })
                         }}
                     {# fmt:on #}
+                    {% set related_data_url = ONS_WEBSITE_BASE_URL+"/"+page.topic_tag_path+"/datalist" %}
+                    <a href="{{ related_data_url }}">View all related data</a>
                 </section>
             {% endif %}
 
@@ -117,6 +129,8 @@
                             })
                         }}
                     {# fmt:on #}
+                    {% set related_time_series_url = ONS_WEBSITE_BASE_URL+"/timeseriestool?topic="+page.topic_tag_path %}
+                    <a href="{{ related_time_series_url }}">View all related time series</a>
                 </section>
             {% endif %}
 

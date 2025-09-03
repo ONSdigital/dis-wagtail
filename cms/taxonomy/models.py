@@ -92,6 +92,18 @@ class Topic(index.Indexed, MP_Node):
             return " → ".join(ancestors)
         return ""
 
+    @property
+    def is_used_for_live_article_series(self):
+        from cms.articles.models import ArticleSeriesPage  # pylint: disable=import-outside-toplevel
+
+        return ArticleSeriesPage.objects.filter(topics__topic_id=self.id, live=True).exists()
+
+    @property
+    def is_used_for_live_methodologies(self):
+        from cms.methodology.models import MethodologyPage  # pylint: disable=import-outside-toplevel
+
+        return MethodologyPage.objects.filter(topics__topic_id=self.id, live=True).exists()
+
 
 class GenericPageToTaxonomyTopic(models.Model):
     """This model enables many-to-many relationships between pages and topics."""
