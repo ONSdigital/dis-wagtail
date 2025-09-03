@@ -2,7 +2,7 @@ from typing import Any
 
 from wagtail.blocks import StreamValue
 
-from cms.core.utils import format_as_document_list_item
+from cms.core.formatting_utils import format_as_document_list_item
 
 
 def format_time_series_as_document_list(time_series: StreamValue) -> list[dict[str, Any]]:
