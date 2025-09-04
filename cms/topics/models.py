@@ -209,7 +209,7 @@ class TopicPage(BundledPageMixin, ExclusiveTaxonomyMixin, BasePage):  # type: ig
         context["featured_item"] = kwargs.get("featured_item", self.latest_article_in_featured_series)
         context["formatted_articles"] = get_formatted_pages_list(self.processed_articles, request=request)
         context["formatted_methodologies"] = get_formatted_pages_list(self.processed_methodologies, request=request)
-        context["topic_tag_path"] = self.topic.topic_tag_path
+        context["topic_tag_path"] = self.topic.topic_tag_path if self.topic else None
         return context
 
     @cached_property

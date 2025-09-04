@@ -95,11 +95,11 @@ class Topic(index.Indexed, MP_Node):
         return ""
 
     @cached_property
-    def topic_tag_path(self):
+    def topic_tag_path(self) -> str:
         """Return the URL-like path from the root to this topic
         Used for linking to search listing pages.
         """
-        topic = self
+        topic: Topic | None = self
         topic_titles = []
 
         while topic:
@@ -112,14 +112,14 @@ class Topic(index.Indexed, MP_Node):
         return "/".join(topic_slugs)
 
     @property
-    def is_used_for_live_article_series(self):
-        from cms.articles.models import ArticleSeriesPage  # pylint: disable=import-outside-toplevel
+    def is_used_for_live_article_series(self) -> bool:
+        from cms.articles.models import ArticleSeriesPage  # pylint: disable=import-outside-toplevel, cyclic-import
 
         return ArticleSeriesPage.objects.filter(topics__topic_id=self.id, live=True).exists()
 
     @property
-    def is_used_for_live_methodologies(self):
-        from cms.methodology.models import MethodologyPage  # pylint: disable=import-outside-toplevel
+    def is_used_for_live_methodologies(self) -> bool:
+        from cms.methodology.models import MethodologyPage  # pylint: disable=import-outside-toplevel, cyclic-import
 
         return MethodologyPage.objects.filter(topics__topic_id=self.id, live=True).exists()
 
