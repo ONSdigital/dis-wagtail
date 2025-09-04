@@ -16,8 +16,8 @@ class NonTrailingSlashRedirectMiddleware(MiddlewareMixin):
         if (
             request.path.endswith("/")
             and request.path != "/"
-            and not request.path[1:].startswith(settings.DJANGO_ADMIN_HOME_PATH)
-            and not request.path[1:].startswith(settings.WAGTAILADMIN_HOME_PATH)
+            and not request.path.lstrip("/").startswith(settings.DJANGO_ADMIN_HOME_PATH.lstrip("/"))
+            and not request.path.lstrip("/").startswith(settings.WAGTAILADMIN_HOME_PATH.lstrip("/"))
         ):
             # Remove trailing slash to check for extension
             path_without_slash = request.path.rstrip("/")
@@ -29,5 +29,4 @@ class NonTrailingSlashRedirectMiddleware(MiddlewareMixin):
                 if query:
                     path_without_slash = f"{path_without_slash}?{query}"
                 return HttpResponsePermanentRedirect(path_without_slash)
-
         return None

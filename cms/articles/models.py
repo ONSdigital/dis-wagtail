@@ -10,7 +10,7 @@ from django.utils.functional import cached_property
 from django.utils.html import strip_tags
 from django.utils.translation import gettext_lazy as _
 from wagtail.admin.panels import FieldPanel, FieldRowPanel, HelpPanel, MultiFieldPanel, TitleFieldPanel
-from wagtail.contrib.routable_page.models import RoutablePageMixin, path
+from wagtail.contrib.routable_page.models import path
 from wagtail.coreutils import WAGTAIL_APPEND_SLASH, resolve_model_string
 from wagtail.fields import RichTextField
 from wagtail.models import Page
@@ -150,7 +150,11 @@ class ArticleSeriesPage(  # type: ignore[django-manager-missing]
 
 
 # pylint: disable=too-many-public-methods
-class StatisticalArticlePage(BundledPageMixin, RoutablePageMixin, BasePage):  # type: ignore[django-manager-missing]
+class StatisticalArticlePage(  # type: ignore[django-manager-missing]
+    BundledPageMixin,
+    NoTrailingSlashRoutablePageMixin,
+    BasePage,
+):
     """The statistical article page model.
 
     Previously known as statistical bulletin, statistical analysis article, analysis page.
@@ -455,7 +459,7 @@ class StatisticalArticlePage(BundledPageMixin, RoutablePageMixin, BasePage):  # 
         self, request: "HttpRequest"
     ) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
         """Returns a list of corrections and notices for the page."""
-        base_url = self.get_url(request)
+        base_url = self.get_url(request) or ""
         corrections = (
             [
                 serialize_correction_or_notice(
@@ -582,7 +586,7 @@ class StatisticalArticlePage(BundledPageMixin, RoutablePageMixin, BasePage):  # 
             raise Http404
 
         # Find correction by version
-        for correction in self.corrections:  # pylint: disable=not-an-iterable
+        for correction in self.corrections:
             if correction.value["version_id"] == version:
                 break
         else:
@@ -672,12 +676,12 @@ class StatisticalArticlePage(BundledPageMixin, RoutablePageMixin, BasePage):  # 
                 return redirect(page_url)
 
         if kwargs.pop("related_data", None):
-            view, _view_args, view_kwargs = self.resolve_subpage("/related-data")
+            view, _view_args, view_kwargs = self.resolve_subpage("/related-data/")
             serve_kwargs = {**kwargs, **view_kwargs}
             return cast("HttpResponse", super().serve(request, view=view, args=args, kwargs=serve_kwargs))
 
         if version := kwargs.pop("version", None):
-            view, _view_args, view_kwargs = self.resolve_subpage(f"/versions/{version}")
+            view, _view_args, view_kwargs = self.resolve_subpage(f"/versions/{version}/")
             serve_kwargs = {**kwargs, **view_kwargs}
             return cast("HttpResponse", super().serve(request, view=view, args=args, kwargs=serve_kwargs))
 
