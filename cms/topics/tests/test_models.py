@@ -14,8 +14,10 @@ from cms.articles.tests.factories import ArticleSeriesPageFactory, StatisticalAr
 from cms.datasets.blocks import DatasetStoryBlock
 from cms.home.models import HomePage
 from cms.methodology.tests.factories import MethodologyPageFactory
+from cms.taxonomy.models import GenericPageToTaxonomyTopic
 from cms.taxonomy.tests.factories import TopicFactory
-from cms.topics.models import TopicPage
+from cms.topics.blocks import TimeSeriesPageStoryBlock
+from cms.topics.models import TopicPage, TopicPageRelatedArticle, TopicPageRelatedMethodology
 from cms.topics.tests.factories import (
     TopicPageFactory,
     TopicPageRelatedArticleFactory,
@@ -430,3 +432,203 @@ class TopicPageRelatedArticleValidationTests(TestCase):
         )
         # Should not raise ValidationError
         related_article.clean()
+
+
+class TopicPageSearchListingPagesTests(WagtailTestUtils, TestCase):
+    @classmethod
+    def setUpTestData(cls):
+        cls.topic_tag = TopicFactory()
+        cls.topic_page = TopicPageFactory(topic=cls.topic_tag)
+        cls.article_series = ArticleSeriesPageFactory()
+        cls.article = StatisticalArticlePageFactory(parent=cls.article_series)
+        cls.methodology = MethodologyPageFactory()
+
+    # Related publications (statistical articles)
+
+    def test_related_publications_comes_up_when_there_are_article_series_tagged_to_topic(self):
+        """Test that the 'View all related publications' links appears
+        when there are ArticleSeriesPages tagged to the same topic.
+        """
+        # Tag ArticleSeriesPage to the same topic as the TopicPage
+        GenericPageToTaxonomyTopic.objects.create(page=self.article_series, topic=self.topic_tag)
+
+        # Assign the StatisticalArticlePage to the TopicPage's related articles
+        TopicPageRelatedArticle.objects.create(parent=self.topic_page, page=self.article)
+
+        self.assertEqual(True, self.topic_page.topic.is_used_for_live_article_series)
+        self.assertEqual(self.topic_page.processed_articles[0]["internal_page"], self.article)
+
+        response = self.client.get(self.topic_page.url)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Related articles")
+        self.assertContains(response, self.article.display_title)
+        self.assertContains(response, "View all related publications")
+
+    def test_related_publications_does_not_come_up_when_no_article_series_tagged_to_topic(self):
+        """Test that the 'View all related publications' links does not appear
+        when there are no ArticleSeriesPages tagged to the same topic.
+        """
+        # Note: We don't tag the ArticleSeriesPage to the topic here
+
+        # Assign the StatisticalArticlePage to the TopicPage's related articles
+        TopicPageRelatedArticle.objects.create(parent=self.topic_page, page=self.article)
+
+        self.assertEqual(False, self.topic_page.topic.is_used_for_live_article_series)
+
+        response = self.client.get(self.topic_page.url)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Related articles")
+        self.assertContains(response, self.article.display_title)
+        self.assertNotContains(response, "View all related publications")
+
+    def test_related_publications_does_not_come_up_when_related_articles_section_not_present(self):
+        """Test that the 'View all related publications' links does not appear
+        when there are no related articles selected on the topic page.
+        """
+        # Tag ArticleSeriesPage to the same topic as the TopicPage
+        GenericPageToTaxonomyTopic.objects.create(page=self.article_series, topic=self.topic_tag)
+
+        # Note: We don't assign any StatisticalArticlePage to the TopicPage's related articles here
+
+        self.assertEqual(True, self.topic_page.topic.is_used_for_live_article_series)
+
+        response = self.client.get(self.topic_page.url)
+        self.assertEqual(response.status_code, 200)
+        self.assertNotContains(response, "Related articles")
+        self.assertNotContains(response, self.article.display_title)
+        self.assertNotContains(response, "View all related publications")
+
+    # Related methodologies
+
+    def test_related_methodologies_comes_up_when_there_are_methodology_pages_tagged_to_topic(self):
+        """Test that the 'See more related methodologies' links appears
+        when there are MethodologyPages tagged to the same topic.
+        """
+        # Tag MethodologyPage to the same topic as the TopicPage
+        GenericPageToTaxonomyTopic.objects.create(page=self.methodology, topic=self.topic_tag)
+
+        # Assign the MethodologyPage to the TopicPage's related methodologies
+        TopicPageRelatedMethodology.objects.create(parent=self.topic_page, page=self.methodology)
+
+        self.assertEqual(True, self.topic_page.topic.is_used_for_live_methodologies)
+        self.assertEqual(self.topic_page.processed_methodologies[0]["internal_page"], self.methodology)
+
+        response = self.client.get(self.topic_page.url)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Methods and quality information")
+        self.assertContains(response, self.methodology.title)
+        self.assertContains(response, "View all related methodologies")
+
+    def test_related_methodologies_does_not_come_up_when_no_methodology_pages_tagged_to_topic(self):
+        """Test that the 'See more related methodologies' links does not appear
+        when there are no MethodologyPages tagged with the same topic.
+        """
+        # Note: We don't tag the MethodologyPage with the topic here
+
+        # Assign the MethodologyPage to the TopicPage's related methodologies
+        TopicPageRelatedMethodology.objects.create(parent=self.topic_page, page=self.methodology)
+
+        self.assertEqual(False, self.topic_page.topic.is_used_for_live_methodologies)
+        self.assertEqual(self.topic_page.processed_methodologies[0]["internal_page"], self.methodology)
+
+        response = self.client.get(self.topic_page.url)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Methods and quality information")
+        self.assertContains(response, self.methodology.title)
+        self.assertNotContains(response, "View all related methodologies")
+
+    def test_related_methodologies_does_not_come_up_when_related_methodologies_section_not_present(self):
+        """Test that the 'See more related methodologies' links does not appear
+        when there are no related methodologies selected on the topic page.
+        """
+        # Tag MethodologyPage to the same topic as the TopicPage
+        GenericPageToTaxonomyTopic.objects.create(page=self.methodology, topic=self.topic_tag)
+
+        # Note: We don't assign any MethodologyPage to the TopicPage's related methodologies here
+
+        response = self.client.get(self.topic_page.url)
+        self.assertEqual(response.status_code, 200)
+        self.assertNotContains(response, "Methods and quality information")
+        self.assertNotContains(response, self.methodology.title)
+        self.assertNotContains(response, "View all related methodologies")
+
+    # Related datasets
+
+    def test_related_dataset_link_comes_up_when_dataset_section_is_present(self):
+        """Test that the 'See more related datasets' links appears
+        when there is at least one dataset in the datasets section.
+        """
+        self.topic_page.datasets = StreamValue(
+            DatasetStoryBlock(),
+            stream_data=[
+                (
+                    "manual_link",
+                    {
+                        "title": "Test dataset",
+                        "description": "Test description",
+                        "url": "https://example.com",
+                    },
+                )
+            ],
+        )
+        self.topic_page.save()
+
+        response = self.client.get(self.topic_page.url)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Data")
+        self.assertContains(response, "Test dataset")
+        self.assertContains(response, "View all related data")
+
+    def test_related_dataset_link_does_not_come_up_when_datasets_section_not_present(self):
+        """Test that the 'See more related datasets' links does not appear
+        when there are no datasets in the datasets section.
+        """
+        self.topic_page.datasets = None
+        self.topic_page.save()
+        response = self.client.get(self.topic_page.url)
+        self.assertEqual(response.status_code, 200)
+        self.assertNotContains(response, "Data")
+        self.assertNotContains(response, "View all related data")
+
+    # Related time series
+
+    def test_related_time_series_link_comes_up_when_time_series_section_is_present(self):
+        """Test that the 'See more related time series' links appears
+        when there is at least one time series in the time series section.
+        """
+        self.topic_page.time_series = StreamValue(
+            TimeSeriesPageStoryBlock(),
+            stream_data=[
+                (
+                    "time_series_page_link",
+                    {
+                        "title": "Test time series",
+                        "description": "Test description",
+                        "url": "https://example.com",
+                    },
+                )
+            ],
+        )
+        self.topic_page.save()
+        response = self.client.get(self.topic_page.url)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Time Series")
+        self.assertContains(response, "Test time series")
+        self.assertContains(response, "View all related time series")
+
+        response = self.client.get(self.topic_page.url)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Time series")
+        self.assertContains(response, "Test time series")
+        self.assertContains(response, "View all related time series")
+
+    def test_related_time_series_link_does_not_come_up_when_time_series_section_not_present(self):
+        """Test that the 'See more related time series' links does not appear
+        when there are no time series in the time series section.
+        """
+        self.topic_page.time_series = None
+        self.topic_page.save()
+        response = self.client.get(self.topic_page.url)
+        self.assertEqual(response.status_code, 200)
+        self.assertNotContains(response, "Time Series")
+        self.assertNotContains(response, "View all related time series")
