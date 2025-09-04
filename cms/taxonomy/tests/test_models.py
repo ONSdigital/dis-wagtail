@@ -2,6 +2,8 @@ from django.db import IntegrityError
 from django.test import TestCase
 from wagtail.models import Page
 
+from cms.articles.tests.factories import ArticleSeriesPageFactory
+from cms.methodology.tests.factories import MethodologyPageFactory
 from cms.taxonomy.models import GenericPageToTaxonomyTopic, Topic
 
 
@@ -125,6 +127,78 @@ class TopicModelTest(TestCase):
         Topic.save_new(t3, parent_topic=t2)
 
         self.assertEqual(t3.display_parent_topics, "Topic → Subtopic")
+
+    def test_topic_tag_path(self):
+        # Create a top-level topic first
+        parent_topic = Topic(id="parent-topic", title="Parent Topic")
+        Topic.save_new(parent_topic)
+
+        # Create a child under 'parent_topic'
+        child_topic = Topic(id="child-topic", title="Child Topic")
+        Topic.save_new(child_topic, parent_topic=parent_topic)
+
+        # Assert the tag path is correct
+        self.assertEqual(child_topic.topic_tag_path, "parenttopic/childtopic")
+
+    def test_is_used_for_live_article_series(self):
+        topic = Topic(id="article-topic", title="Series Topic")
+        Topic.save_new(topic)
+
+        article_series = ArticleSeriesPageFactory()
+
+        GenericPageToTaxonomyTopic.objects.create(page=article_series, topic=topic)
+
+        self.assertTrue(article_series.live)
+        self.assertTrue(topic.is_used_for_live_article_series)
+
+    def test_is_used_for_live_article_series_with_unpublished_series(self):
+        topic = Topic(id="article-topic", title="Series Topic")
+        Topic.save_new(topic)
+
+        article_series = ArticleSeriesPageFactory(live=False)
+
+        GenericPageToTaxonomyTopic.objects.create(page=article_series, topic=topic)
+
+        self.assertFalse(article_series.live)
+        self.assertFalse(topic.is_used_for_live_article_series)
+
+    def test_is_used_for_live_article_series_not_tagged(self):
+        topic = Topic(id="article-topic", title="Series Topic")
+        Topic.save_new(topic)
+
+        # Note: We don't assign any ArticleSeriesPages to the Topic here
+
+        self.assertFalse(topic.is_used_for_live_article_series)
+
+    def test_is_used_for_live_methodologies(self):
+        topic = Topic(id="methodology-topic", title="Methodology Topic")
+        Topic.save_new(topic)
+
+        methodology_page = MethodologyPageFactory()
+
+        GenericPageToTaxonomyTopic.objects.create(page=methodology_page, topic=topic)
+
+        self.assertTrue(methodology_page.live)
+        self.assertTrue(topic.is_used_for_live_methodologies)
+
+    def test_is_used_for_live_methodologies_with_unpublished_methodology(self):
+        topic = Topic(id="methodology-topic", title="Methodology Topic")
+        Topic.save_new(topic)
+
+        methodology_page = MethodologyPageFactory(live=False)
+
+        GenericPageToTaxonomyTopic.objects.create(page=methodology_page, topic=topic)
+
+        self.assertFalse(methodology_page.live)
+        self.assertFalse(topic.is_used_for_live_methodologies)
+
+    def test_is_used_for_live_methodologies_not_tagged(self):
+        topic = Topic(id="methodology-topic", title="Methodology Topic")
+        Topic.save_new(topic)
+
+        # Note: We don't assign any MethodologyPages to the Topic here
+
+        self.assertFalse(topic.is_used_for_live_methodologies)
 
 
 class GenericPageToTaxonomyTopicModelTest(TestCase):

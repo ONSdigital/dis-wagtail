@@ -455,7 +455,7 @@ class TopicPageSearchListingPagesTests(WagtailTestUtils, TestCase):
         # Assign the StatisticalArticlePage to the TopicPage's related articles
         TopicPageRelatedArticle.objects.create(parent=self.topic_page, page=self.article)
 
-        self.assertEqual(True, self.topic_page.topic.is_used_for_live_article_series)
+        self.assertTrue(self.topic_page.topic.is_used_for_live_article_series)
         self.assertEqual(self.topic_page.processed_articles[0]["internal_page"], self.article)
 
         response = self.client.get(self.topic_page.url)
@@ -472,8 +472,7 @@ class TopicPageSearchListingPagesTests(WagtailTestUtils, TestCase):
 
         # Assign the StatisticalArticlePage to the TopicPage's related articles
         TopicPageRelatedArticle.objects.create(parent=self.topic_page, page=self.article)
-
-        self.assertEqual(False, self.topic_page.topic.is_used_for_live_article_series)
+        self.assertFalse(self.topic_page.topic.is_used_for_live_article_series)
 
         response = self.client.get(self.topic_page.url)
         self.assertEqual(response.status_code, 200)
@@ -490,7 +489,7 @@ class TopicPageSearchListingPagesTests(WagtailTestUtils, TestCase):
 
         # Note: We don't assign any StatisticalArticlePage to the TopicPage's related articles here
 
-        self.assertEqual(True, self.topic_page.topic.is_used_for_live_article_series)
+        self.assertTrue(self.topic_page.topic.is_used_for_live_article_series)
 
         response = self.client.get(self.topic_page.url)
         self.assertEqual(response.status_code, 200)
@@ -510,7 +509,7 @@ class TopicPageSearchListingPagesTests(WagtailTestUtils, TestCase):
         # Assign the MethodologyPage to the TopicPage's related methodologies
         TopicPageRelatedMethodology.objects.create(parent=self.topic_page, page=self.methodology)
 
-        self.assertEqual(True, self.topic_page.topic.is_used_for_live_methodologies)
+        self.assertTrue(self.topic_page.topic.is_used_for_live_methodologies)
         self.assertEqual(self.topic_page.processed_methodologies[0]["internal_page"], self.methodology)
 
         response = self.client.get(self.topic_page.url)
@@ -528,7 +527,7 @@ class TopicPageSearchListingPagesTests(WagtailTestUtils, TestCase):
         # Assign the MethodologyPage to the TopicPage's related methodologies
         TopicPageRelatedMethodology.objects.create(parent=self.topic_page, page=self.methodology)
 
-        self.assertEqual(False, self.topic_page.topic.is_used_for_live_methodologies)
+        self.assertFalse(self.topic_page.topic.is_used_for_live_methodologies)
         self.assertEqual(self.topic_page.processed_methodologies[0]["internal_page"], self.methodology)
 
         response = self.client.get(self.topic_page.url)
