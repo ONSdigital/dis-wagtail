@@ -12,6 +12,7 @@ from wagtail.utils.urlpatterns import decorate_urlpatterns
 from cms.auth.views import ONSLogoutView, extend_session
 from cms.core import views as core_views
 from cms.core.cache import get_default_cache_control_decorator
+from cms.home.views import serve_localized_homepage
 from cms.private_media import views as private_media_views
 
 # Internal URLs are not intended for public use.
@@ -134,11 +135,27 @@ urlpatterns = decorate_urlpatterns(
     vary_on_headers("Cookie", "X-Requested-With", "X-Forwarded-Proto", "Accept-Encoding"),
 )
 
+# Add localized homepage patterns for non-default languages at the root level.
+# This is to deal with the fact that i18n_patterns will create URLs like /cy/ instead of /cy.
+non_default_languages = [lang[0] for lang in settings.LANGUAGES if lang[0] != settings.LANGUAGE_CODE]
+LANGUADE_CODES_PATTERN = "|".join(non_default_languages)  # e.g., 'cy|uk'
+
+localized_homepage_urlpatterns = []
+if LANGUADE_CODES_PATTERN:
+    localized_homepage_urlpatterns = [
+        re_path(
+            rf"^(?P<lang_code>{LANGUADE_CODES_PATTERN})$",
+            serve_localized_homepage,
+            name="localized_homepage",
+        )
+    ]
+
 # Join private and public URLs.
 urlpatterns = (
     private_urlpatterns
     + debug_urlpatterns
     + urlpatterns
+    + localized_homepage_urlpatterns
     + [
         re_path(
             r"^documents/(\d+)/(.*)$",

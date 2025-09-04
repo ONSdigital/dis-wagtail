@@ -217,7 +217,7 @@ class BasePage(PageLDMixin, ListingFieldsMixin, SocialFieldsMixin, Page):  # typ
 
     def get_url(self, request: Optional["HttpRequest"] = None, current_site: Optional["Site"] = None) -> Optional[str]:
         """Override get_url to return URLs without trailing slashes."""
-        url = super().get_url(request, current_site)
+        url: str = super().get_url(request, current_site)
         if url and url != "/":
             return url.rstrip("/")
         return url

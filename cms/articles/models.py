@@ -11,7 +11,7 @@ from django.utils.html import strip_tags
 from django.utils.translation import gettext_lazy as _
 from wagtail.admin.panels import FieldPanel, FieldRowPanel, HelpPanel, MultiFieldPanel, TitleFieldPanel
 from wagtail.contrib.routable_page.models import RoutablePageMixin, path
-from wagtail.coreutils import resolve_model_string
+from wagtail.coreutils import WAGTAIL_APPEND_SLASH, resolve_model_string
 from wagtail.fields import RichTextField
 from wagtail.models import Page
 from wagtail.search import index
@@ -28,6 +28,7 @@ from cms.core.blocks.stream_blocks import SectionStoryBlock
 from cms.core.custom_date_format import ons_date_format
 from cms.core.fields import StreamField
 from cms.core.models import BasePage
+from cms.core.models.mixins import NoTrailingSlashRoutablePageMixin
 from cms.core.widgets import date_widget
 from cms.datasets.blocks import DatasetStoryBlock
 from cms.datasets.utils import format_datasets_as_document_list
@@ -71,7 +72,11 @@ class ArticlesIndexPage(BasePage):  # type: ignore[django-manager-missing]
         return redirect(self.get_parent().get_url(request=request))
 
 
-class ArticleSeriesPage(RoutablePageMixin, GenericTaxonomyMixin, BasePage):  # type: ignore[django-manager-missing]
+class ArticleSeriesPage(  # type: ignore[django-manager-missing]
+    NoTrailingSlashRoutablePageMixin,
+    GenericTaxonomyMixin,
+    BasePage,
+):
     """The article series model."""
 
     parent_page_types: ClassVar[list[str]] = ["ArticlesIndexPage"]
@@ -646,6 +651,9 @@ class StatisticalArticlePage(BundledPageMixin, RoutablePageMixin, BasePage):  # 
         split.insert(-1, "editions")
         page_path = "/".join(["", *split, ""])
 
+        if not WAGTAIL_APPEND_SLASH and page_path != "/":
+            page_path = page_path.rstrip("/")
+
         return site_id, root_url, page_path
 
     def serve(self, request: "HttpRequest", *args: Any, **kwargs: Any) -> "HttpResponse":
@@ -658,16 +666,18 @@ class StatisticalArticlePage(BundledPageMixin, RoutablePageMixin, BasePage):  # 
             # if for some reason we're getting the non-editioned path
             # redirect to the path with the /edition/ slug
             page_url = self.get_url(request=request)
+            if not page_url:
+                raise Http404
             if page_url != request.path:
                 return redirect(page_url)
 
         if kwargs.pop("related_data", None):
-            view, _view_args, view_kwargs = self.resolve_subpage("/related-data/")
+            view, _view_args, view_kwargs = self.resolve_subpage("/related-data")
             serve_kwargs = {**kwargs, **view_kwargs}
             return cast("HttpResponse", super().serve(request, view=view, args=args, kwargs=serve_kwargs))
 
         if version := kwargs.pop("version", None):
-            view, _view_args, view_kwargs = self.resolve_subpage(f"/versions/{version}/")
+            view, _view_args, view_kwargs = self.resolve_subpage(f"/versions/{version}")
             serve_kwargs = {**kwargs, **view_kwargs}
             return cast("HttpResponse", super().serve(request, view=view, args=args, kwargs=serve_kwargs))
 

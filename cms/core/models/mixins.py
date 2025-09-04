@@ -4,6 +4,8 @@ from django.core.paginator import EmptyPage, Paginator
 from django.db import models
 from django.http import Http404
 from wagtail.admin.panels import MultiFieldPanel
+from wagtail.contrib.routable_page.models import RoutablePageMixin
+from wagtail.coreutils import WAGTAIL_APPEND_SLASH
 
 if TYPE_CHECKING:
     from django.core.paginator import Page
@@ -98,3 +100,16 @@ class SubpageMixin:
         context: dict = super().get_context(request, *args, **kwargs)  # type: ignore[misc]
         context["subpages"] = self.get_paginator_page(request)
         return context
+
+
+class NoTrailingSlashRoutablePageMixin(RoutablePageMixin):
+    """A mixin to remove trailing slashes from RoutablePage routes.
+    This ensures that the output of routablepageurl and reverse_subpage does not
+    include a trailing slash.
+    """
+
+    def reverse_subpage(self, name: str, args: list[str] | None = None, kwargs: dict[str, Any] | None = None) -> str:
+        result: str = super().reverse_subpage(name, args, kwargs)
+        if not WAGTAIL_APPEND_SLASH and result.endswith("/"):
+            result = result[:-1]
+        return result

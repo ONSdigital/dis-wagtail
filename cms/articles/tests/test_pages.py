@@ -133,9 +133,9 @@ class StatisticalArticlePageTests(WagtailPageTestCase):
         self.assertEqual(response.status_code, HTTPStatus.NOT_FOUND)
 
     def test_correction_routes(self):
-        self.assertPageIsRoutable(self.page, "versions/1/")
-        self.assertPageIsRoutable(self.page, "versions/2/")
-        self.assertPageIsRoutable(self.page, "versions/3/")
+        self.assertPageIsRoutable(self.page, "versions/1")
+        self.assertPageIsRoutable(self.page, "versions/2")
+        self.assertPageIsRoutable(self.page, "versions/3")
 
     def test_can_add_correction(self):  # pylint: disable=too-many-statements # noqa
         response = self.client.get(self.page.url)
@@ -740,7 +740,7 @@ class StatisticalArticlePageTests(WagtailPageTestCase):
 
         self.page.save_revision().publish()
 
-        v1_response = self.client.get(self.page.get_url(request=self.dummy_request) + "versions/1/")
+        v1_response = self.client.get(self.page.get_url(request=self.dummy_request) + "/versions/1")
         self.assertContains(v1_response, '<meta name="robots" content="noindex" />')
 
     def test_schema_org_data(self):
