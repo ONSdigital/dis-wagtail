@@ -111,5 +111,5 @@ class NoTrailingSlashRoutablePageMixin(RoutablePageMixin):
     def reverse_subpage(self, name: str, args: list[str] | None = None, kwargs: dict[str, Any] | None = None) -> str:
         result: str = super().reverse_subpage(name, args, kwargs)
         if not WAGTAIL_APPEND_SLASH and result.endswith("/"):
-            result = result[:-1]
+            result = result.rstrip("/")
         return result
