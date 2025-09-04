@@ -3,6 +3,7 @@ from behave.runner import Context
 from django.conf import settings
 from playwright.sync_api import expect
 
+from cms.settings.base import ONS_ALLOWED_LINK_DOMAINS
 from functional_tests.step_helpers.datasets import mock_datasets_responses
 
 
@@ -51,7 +52,7 @@ def manually_enter_dataset_link(context: Context) -> None:
     manual_dataset = {
         "title": "Manual Dataset",
         "description": "Manually entered test dataset",
-        "url": "https://example.com",
+        "url": f"https://{ONS_ALLOWED_LINK_DOMAINS[0]}/manual-dataset",
     }
     context.selected_datasets = [
         *getattr(context, "selected_datasets", []),

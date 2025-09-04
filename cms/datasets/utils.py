@@ -2,7 +2,7 @@ from typing import Any
 
 from wagtail.blocks import StreamValue
 
-from cms.core.utils import format_as_document_list_item
+from cms.core.formatting_utils import format_as_document_list_item
 
 
 def format_datasets_as_document_list(datasets: StreamValue) -> list[dict[str, Any]]:
