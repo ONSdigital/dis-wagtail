@@ -40,7 +40,6 @@
         <div class="ons-grid__col ons-grid__col--sticky@m ons-col-4@m">
             {% with toc_title=_("Contents"), toc_aria_label=_("Sections in this page") %}
 
-                {# TODO: Add 'view all related publications & data' to related links once available #}
                 {# fmt:off #}
                 {{-
                     onsTableOfContents({
@@ -78,8 +77,8 @@
                             })
                         }}
                     {# fmt:on #}
-                    {% if page.topic.is_used_for_article_series %}
-                        {% set related_publications_url = ONS_WEBSITE_BASE_URL+"/"+page.topic_tag_path+"/publications" %}
+                    {% if page.topic.is_used_for_live_article_series %}
+                        {% set related_publications_url = ONS_WEBSITE_BASE_URL+"/"+topic_tag_path+"/publications" %}
                         <a href="{{ related_publications_url }}">View all related publications</a>
                     {% endif %}
                 </section>
@@ -96,8 +95,8 @@
                         }}
                     {# fmt:on #}
 
-                    {% if page.topic.is_used_for_methodologies %}
-                        {% set related_methodologies = ONS_WEBSITE_BASE_URL+"/"+page.topic_tag_path+"/topicspecificmethodology" %}
+                    {% if page.topic.is_used_for_live_methodologies %}
+                        {% set related_methodologies = ONS_WEBSITE_BASE_URL+"/"+topic_tag_path+"/topicspecificmethodology" %}
                         <a href="{{ related_methodologies }}">View all related methodologies</a>
                     {% endif %}
 
@@ -114,7 +113,7 @@
                             })
                         }}
                     {# fmt:on #}
-                    {% set related_data_url = ONS_WEBSITE_BASE_URL+"/"+page.topic_tag_path+"/datalist" %}
+                    {% set related_data_url = ONS_WEBSITE_BASE_URL+"/"+topic_tag_path+"/datalist" %}
                     <a href="{{ related_data_url }}">View all related data</a>
                 </section>
             {% endif %}
@@ -129,7 +128,7 @@
                             })
                         }}
                     {# fmt:on #}
-                    {% set related_time_series_url = ONS_WEBSITE_BASE_URL+"/timeseriestool?topic="+page.topic_tag_path %}
+                    {% set related_time_series_url = ONS_WEBSITE_BASE_URL+"/timeseriestool?topic="+topic_tag_path %}
                     <a href="{{ related_time_series_url }}">View all related time series</a>
                 </section>
             {% endif %}

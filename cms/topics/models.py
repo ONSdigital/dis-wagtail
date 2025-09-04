@@ -5,7 +5,6 @@ from django.core.exceptions import ValidationError
 from django.db import models
 from django.db.models import OuterRef, Subquery
 from django.utils.functional import cached_property
-from django.utils.text import slugify
 from django.utils.translation import gettext_lazy as _
 from modelcluster.fields import ParentalKey
 from wagtail.admin.panels import FieldPanel, InlinePanel, MultiFieldPanel
@@ -210,6 +209,7 @@ class TopicPage(BundledPageMixin, ExclusiveTaxonomyMixin, BasePage):  # type: ig
         context["featured_item"] = kwargs.get("featured_item", self.latest_article_in_featured_series)
         context["formatted_articles"] = get_formatted_pages_list(self.processed_articles, request=request)
         context["formatted_methodologies"] = get_formatted_pages_list(self.processed_methodologies, request=request)
+        context["topic_tag_path"] = self.topic.topic_tag_path
         return context
 
     @cached_property
@@ -372,18 +372,3 @@ class TopicPage(BundledPageMixin, ExclusiveTaxonomyMixin, BasePage):  # type: ig
         TODO: replaces when https://github.com/wagtail/wagtail/issues/13286 is fixed.
         """
         return TopicPagePermissionTester(user, self)
-
-    @cached_property
-    def topic_tag_path(self):
-        """Return the path from the parent taxonomy topic to the topic of this page."""
-        topic = self.topic
-        topic_titles = []
-
-        while topic:
-            topic_titles.append(topic.title)
-            topic = topic.get_parent()
-
-        topic_titles.reverse()
-        topic_slugs = [slugify(title).replace("-", "") for title in topic_titles]
-
-        return "/".join(topic_slugs)
