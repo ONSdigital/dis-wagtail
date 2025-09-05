@@ -1,7 +1,6 @@
 from collections import defaultdict
 from collections.abc import Callable, Sequence
 from typing import TYPE_CHECKING, Any, ClassVar
-from urllib.parse import urlparse
 
 from django import forms
 from django.conf import settings
@@ -22,7 +21,7 @@ from wagtail.images.blocks import ImageChooserBlock
 from wagtail.telepath import register
 
 from cms.articles.models import ArticleSeriesPage
-from cms.core.utils import is_hostname_in_domain
+from cms.core.url_utils import normalise_url, validate_ons_url_struct_block
 
 from .viewsets import series_with_headline_figures_chooser_viewset
 
@@ -194,25 +193,10 @@ class TimeSeriesPageLinkBlock(StructBlock):
         template = "templates/components/streamfield/time_series_link.html"
 
     def clean(self, value: "StructValue") -> "StructValue":
-        """Checks that the given time series page URL matches the allowed domain."""
-        errors = {}
-        parsed_url = urlparse(value["url"])
-
-        if not parsed_url.hostname or parsed_url.scheme != "https":
-            errors["url"] = ValidationError(
-                "Please enter a valid URL. It should start with 'https://' and contain a valid domain name."
-            )
-        elif not any(
-            is_hostname_in_domain(parsed_url.hostname, allowed_domain)
-            for allowed_domain in settings.ONS_ALLOWED_LINK_DOMAINS
-        ):
-            patterns_str = " or ".join(settings.ONS_ALLOWED_LINK_DOMAINS)
-            errors["url"] = ValidationError(
-                f"The URL hostname is not in the list of allowed domains or their subdomains: {patterns_str}"
-            )
+        errors = validate_ons_url_struct_block(value, self.child_blocks)
 
         if errors:
-            raise StructBlockValidationError(block_errors=errors)
+            raise StructBlockValidationError(errors)
 
         return super().clean(value)
 
@@ -226,9 +210,7 @@ class TimeSeriesPageStoryBlock(StreamBlock):
         # For each time series URL, record the indices of the blocks it appears in
         urls = defaultdict(set)
         for block_index, block in enumerate(cleaned_value):
-            url = block.value["url"].lower().rstrip("/")  # Treat URLs with and without trailing slashes as equivalent
-
-            url = url.removeprefix("https://").removeprefix("www.")  # Normalize the URL
+            url = normalise_url(block.value["url"])
 
             urls[url].add(block_index)
 

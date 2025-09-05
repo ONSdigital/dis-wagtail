@@ -1,5 +1,5 @@
 from datetime import date, datetime
-from typing import Any, Optional
+from typing import TYPE_CHECKING, Any, Optional
 
 from django.core.exceptions import ValidationError
 from django.forms.utils import ErrorList
@@ -13,8 +13,11 @@ from wagtail.blocks import (
     URLBlock,
 )
 
-from cms.core.models import BasePage
-from cms.core.utils import get_content_type_for_page, get_document_metadata_date, get_related_content_type_label
+from cms.core.formatting_utils import get_document_metadata_date
+from cms.core.utils import get_content_type_for_page, get_related_content_type_label
+
+if TYPE_CHECKING:
+    from cms.core.models import BasePage
 
 
 class LinkBlockStructValue(StructValue):

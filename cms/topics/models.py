@@ -16,9 +16,9 @@ from cms.articles.models import ArticleSeriesPage, StatisticalArticlePage
 from cms.bundles.mixins import BundledPageMixin
 from cms.core.analytics_utils import add_table_of_contents_gtm_attributes
 from cms.core.fields import StreamField
+from cms.core.formatting_utils import get_formatted_pages_list
 from cms.core.models import BasePage
 from cms.core.query import order_by_pk_position
-from cms.core.utils import get_formatted_pages_list
 from cms.datasets.blocks import DatasetStoryBlock
 from cms.datasets.utils import format_datasets_as_document_list
 from cms.methodology.models import MethodologyPage
