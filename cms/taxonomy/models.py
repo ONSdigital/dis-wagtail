@@ -3,6 +3,8 @@ from typing import Any, ClassVar, Optional
 
 from django.db import IntegrityError, models
 from django.db.models import QuerySet, UniqueConstraint
+from django.utils.functional import cached_property
+from django.utils.text import slugify
 from modelcluster.fields import ParentalKey
 from treebeard.mp_tree import MP_Node
 from wagtail.admin.panels import FieldPanel
@@ -91,6 +93,35 @@ class Topic(index.Indexed, MP_Node):
         if ancestors := [topic.title for topic in self.get_ancestors()]:
             return " → ".join(ancestors)
         return ""
+
+    @cached_property
+    def topic_tag_path(self) -> str:
+        """Return the URL-like path from the root to this topic
+        Used for linking to search listing pages.
+        """
+        topic: Topic | None = self
+        topic_titles = []
+
+        while topic:
+            topic_titles.append(topic.title)
+            topic = topic.get_parent()
+
+        topic_titles.reverse()
+        topic_slugs = [slugify(title).replace("-", "") for title in topic_titles]
+
+        return "/".join(topic_slugs)
+
+    @property
+    def is_used_for_live_article_series(self) -> bool:
+        from cms.articles.models import ArticleSeriesPage  # pylint: disable=import-outside-toplevel, cyclic-import
+
+        return ArticleSeriesPage.objects.filter(topics__topic_id=self.id, live=True).exists()
+
+    @property
+    def is_used_for_live_methodologies(self) -> bool:
+        from cms.methodology.models import MethodologyPage  # pylint: disable=import-outside-toplevel, cyclic-import
+
+        return MethodologyPage.objects.filter(topics__topic_id=self.id, live=True).exists()
 
 
 class GenericPageToTaxonomyTopic(models.Model):
