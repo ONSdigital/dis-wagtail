@@ -19,6 +19,12 @@ def the_user_creates_theme_and_topic_pages(context: Context) -> None:
     context.topic_page = TopicPageFactory(title="Public Sector Finance")
 
 
+# @given("a statistical article exists under a different topic page")
+# def a_statistical_article_exists_under_a_different_topic_page(context: Context) -> None:
+#     context.article_series_page = ArticleSeriesPageFactory(title="PSF")
+#     context.first_statistical_article_page = StatisticalArticlePageFactory(parent=context.article_series_page)
+
+
 @given("the topic page has a statistical article in a series")
 def the_topic_page_has_a_statistical_article_in_a_series(context: Context) -> None:
     context.article_index_page = ArticlesIndexPageFactory(parent=context.topic_page)
@@ -93,8 +99,9 @@ def the_topic_page_with_example_content(context: Context) -> None:
 @then("the user can see the topic page featured article")
 def user_sees_featured_article(context: Context) -> None:
     expect(context.page.get_by_role("heading", name="Featured")).to_be_visible()
-    expect(context.page.get_by_text(context.first_statistical_article_page.display_title)).to_be_visible()
-    expect(context.page.get_by_text(context.first_statistical_article_page.main_points_summary)).to_be_visible()
+    featured_section = context.page.locator("#featured")
+    expect(featured_section.get_by_text(context.first_statistical_article_page.display_title)).to_be_visible()
+    expect(featured_section.get_by_text(context.first_statistical_article_page.main_points_summary)).to_be_visible()
 
 
 @then("the user can see the newly created article in featured spot")
