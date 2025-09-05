@@ -1,4 +1,5 @@
 from datetime import datetime
+from urllib.parse import urlparse
 
 from django.conf import settings
 from django.test import TestCase
@@ -55,6 +56,15 @@ class CoreBlocksTestCase(TestCase):
                         "fileSize": "25\xa0bytes",
                     }
                 },
+                "attributes": {
+                    "data-ga-event": "file-download",
+                    "data-ga-file-extension": self.document.file_extension.lower(),
+                    "data-ga-file-mime": self.document.title,
+                    "data-ga-link-text": "The block document",
+                    "data-ga-link-url": self.document.url,
+                    "data-ga-link-domain": urlparse(self.document.url).hostname,
+                    "data-ga-file-size": "0.025",  # KB
+                },
             },
         )
 
@@ -90,6 +100,15 @@ class CoreBlocksTestCase(TestCase):
                             "fileType": "TXT",
                             "fileSize": "25\xa0bytes",
                         }
+                    },
+                    "attributes": {
+                        "data-ga-event": "file-download",
+                        "data-ga-file-extension": self.document.file_extension.lower(),
+                        "data-ga-file-mime": self.document.title,
+                        "data-ga-link-text": "The block document",
+                        "data-ga-link-url": self.document.url,
+                        "data-ga-link-domain": urlparse(self.document.url).hostname,
+                        "data-ga-file-size": "0.025",  # KB
                     },
                 }
             ],

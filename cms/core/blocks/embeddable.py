@@ -43,6 +43,15 @@ class DocumentBlockStructValue(blocks.StructValue):
                     "fileSize": filesizeformat(self["document"].get_file_size()),
                 }
             },
+            "attributes": {
+                "data-ga-event": "file-download",
+                "data-ga-file-extension": self["document"].file_extension.lower(),
+                "data-ga-file-mime": self["document"].title,
+                "data-ga-link-text": self["title"] or self["document"].title,
+                "data-ga-link-url": self["document"].url,
+                "data-ga-link-domain": urlparse(self["document"].url).hostname,
+                "data-ga-file-size": str(self["document"].get_file_size() / 1000),  # Convert from Bytes to KB
+            },
         }
 
 
