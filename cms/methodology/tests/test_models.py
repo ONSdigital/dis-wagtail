@@ -29,17 +29,28 @@ class MethodologyPageTestCase(WagtailTestUtils, TestCase):
             {"type": "section", "value": {"title": "Test Section", "content": [{"type": "rich_text", "value": "text"}]}}
         ]
 
-        self.assertIn({"url": "#test-section", "text": "Test Section"}, self.page.table_of_contents)
+        toc = self.page.table_of_contents
+        self.assertEqual(len(toc), 1)
+        toc_item = toc[0]
+        self.assertEqual(toc_item["url"], "#test-section")
+        self.assertEqual(toc_item["text"], "Test Section")
 
     def test_table_of_contents_with_contact_details(self):
         """Test table_of_contents includes contact details when present."""
         self.page.contact_details = ContactDetailsFactory()
         toc = self.page.table_of_contents
-        self.assertIn({"url": "#contact-details", "text": "Contact details"}, toc)
+        self.assertEqual(len(toc), 1)
+        toc_item = toc[0]
+        self.assertEqual(toc_item["url"], "#contact-details")
+        self.assertEqual(toc_item["text"], "Contact details")
 
     def test_table_of_contents_without_related_publications(self):
         MethodologyRelatedPageFactory(parent=self.page)
-        self.assertIn({"url": "#related-publications", "text": "Related publications"}, self.page.table_of_contents)
+        toc = self.page.table_of_contents
+        self.assertEqual(len(toc), 1)
+        toc_item = toc[0]
+        self.assertEqual(toc_item["url"], "#related-publications")
+        self.assertEqual(toc_item["text"], "Related publications")
 
     def test_cite_this_page_is_not_shown_when_unticked(self):
         """Test for the cite this page block not present in the template."""

@@ -78,6 +78,14 @@ class Topic(index.Indexed, MP_Node):
             return None
         return typing.cast(Optional[Topic], super().get_parent(*args, **kwargs))
 
+    def get_base_parent(self) -> "Topic":
+        """Return the base level parent topic (top level, with no parent topics), or self if this topic is base depth
+        (Excluding the dummy root topic).
+        """
+        if self.depth == BASE_TOPIC_DEPTH:
+            return self
+        return typing.cast("Topic", self.get_ancestors().first())
+
     def move(self, target: Optional["Topic"] = None, pos: str = "sorted-child") -> None:
         """Move the topic to underneath the target parent. If no target is passed, move it underneath our root."""
         target_parent = target or Topic.objects.root_topic()

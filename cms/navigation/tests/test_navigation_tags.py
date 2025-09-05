@@ -65,8 +65,22 @@ class MainMenuTemplateTagTests(TestCase):
                     {
                         "heading": section["section_link"]["title"],
                         "url": section["section_link"]["external_url"],
+                        "attributes": {
+                            "data-ga-event": "navigation-click",
+                            "data-ga-navigation-type": "top-navigation",
+                            "data-ga-link-text": section["section_link"]["title"],
+                        },
                         "groupItems": [
-                            {"text": link["title"], "url": link["external_url"]} for link in section["links"]
+                            {
+                                "text": link["title"],
+                                "url": link["external_url"],
+                                "attributes": {
+                                    "data-ga-event": "navigation-click",
+                                    "data-ga-navigation-type": "top-navigation",
+                                    "data-ga-link-text": link["title"],
+                                },
+                            }
+                            for link in section["links"]
                         ],
                     }
                     for section in column.value["sections"]
@@ -117,6 +131,11 @@ class FooterMenuTemplateTagTests(TestCase):
                     {
                         "text": item["title"],
                         "url": item["external_url"],
+                        "attributes": {
+                            "data-ga-event": "navigation-click",
+                            "data-ga-navigation-type": "footer-navigation",
+                            "data-ga-link-text": item["title"],
+                        },
                     }
                     for item in column.value["links"]
                 ],

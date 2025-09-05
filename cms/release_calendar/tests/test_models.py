@@ -72,7 +72,17 @@ class ReleaseCalendarPageModelTestCase(WagtailTestUtils, TestCase):
                     }
                 ]
 
-                expected = [{"url": "#summary", "text": "Summary"}]
+                expected = [
+                    {
+                        "url": "#summary",
+                        "text": "Summary",
+                        "attributes": {
+                            "data-ga-event": "navigation-onpage",
+                            "data-ga-navigation-type": "table-of-contents",
+                            "data-ga-section-title": "Summary",
+                        },
+                    }
+                ]
 
                 self.assertListEqual(self.page.table_of_contents, expected)
                 self.assertListEqual(self.page.get_context(self.request)["table_of_contents"], expected)
@@ -100,8 +110,24 @@ class ReleaseCalendarPageModelTestCase(WagtailTestUtils, TestCase):
                 ]
 
                 expected = [
-                    {"url": "#summary", "text": "Summary"},
-                    {"url": "#about-the-data", "text": "About the data"},
+                    {
+                        "url": "#summary",
+                        "text": "Summary",
+                        "attributes": {
+                            "data-ga-event": "navigation-onpage",
+                            "data-ga-navigation-type": "table-of-contents",
+                            "data-ga-section-title": "Summary",
+                        },
+                    },
+                    {
+                        "url": "#about-the-data",
+                        "text": "About the data",
+                        "attributes": {
+                            "data-ga-event": "navigation-onpage",
+                            "data-ga-navigation-type": "table-of-contents",
+                            "data-ga-section-title": "About the data",
+                        },
+                    },
                 ]
 
                 self.page.is_census = True
@@ -126,8 +152,24 @@ class ReleaseCalendarPageModelTestCase(WagtailTestUtils, TestCase):
                 ]
 
                 expected = [
-                    {"url": "#summary", "text": "Summary"},
-                    {"url": "#about-the-data", "text": "About the data"},
+                    {
+                        "url": "#summary",
+                        "text": "Summary",
+                        "attributes": {
+                            "data-ga-event": "navigation-onpage",
+                            "data-ga-navigation-type": "table-of-contents",
+                            "data-ga-section-title": "Summary",
+                        },
+                    },
+                    {
+                        "url": "#about-the-data",
+                        "text": "About the data",
+                        "attributes": {
+                            "data-ga-event": "navigation-onpage",
+                            "data-ga-navigation-type": "table-of-contents",
+                            "data-ga-section-title": "About the data",
+                        },
+                    },
                 ]
 
                 self.page.is_census = False
@@ -152,8 +194,24 @@ class ReleaseCalendarPageModelTestCase(WagtailTestUtils, TestCase):
         self.assertListEqual(
             self.page.table_of_contents,
             [
-                {"url": "#summary", "text": "Summary"},
-                {"url": "#publications", "text": "Publications"},
+                {
+                    "url": "#summary",
+                    "text": "Summary",
+                    "attributes": {
+                        "data-ga-event": "navigation-onpage",
+                        "data-ga-navigation-type": "table-of-contents",
+                        "data-ga-section-title": "Summary",
+                    },
+                },
+                {
+                    "url": "#publications",
+                    "text": "Publications",
+                    "attributes": {
+                        "data-ga-event": "navigation-onpage",
+                        "data-ga-navigation-type": "table-of-contents",
+                        "data-ga-section-title": "Publications",
+                    },
+                },
             ],
         )
 
@@ -175,7 +233,15 @@ class ReleaseCalendarPageModelTestCase(WagtailTestUtils, TestCase):
                     }
                 ]
 
-                expected = {"url": "#changes-to-release-date", "text": "Changes to this release date"}
+                expected = {
+                    "url": "#changes-to-release-date",
+                    "text": "Changes to this release date",
+                    "attributes": {
+                        "data-ga-event": "navigation-onpage",
+                        "data-ga-navigation-type": "table-of-contents",
+                        "data-ga-section-title": "Changes to this release date",
+                    },
+                }
                 self.assertEqual(expected in self.page.table_of_contents, is_shown)
                 del self.page.table_of_contents  # clear the cached property
 
@@ -194,7 +260,15 @@ class ReleaseCalendarPageModelTestCase(WagtailTestUtils, TestCase):
             with self.subTest(status=status, is_shown=is_shown):
                 self.page.status = status
 
-                expected = {"url": "#contact-details", "text": "Contact details"}
+                expected = {
+                    "url": "#contact-details",
+                    "text": "Contact details",
+                    "attributes": {
+                        "data-ga-event": "navigation-onpage",
+                        "data-ga-navigation-type": "table-of-contents",
+                        "data-ga-section-title": "Contact details",
+                    },
+                }
                 self.assertEqual(expected in self.page.table_of_contents, is_shown)
                 del self.page.table_of_contents  # clear the cached property
 
@@ -207,7 +281,15 @@ class ReleaseCalendarPageModelTestCase(WagtailTestUtils, TestCase):
             (ReleaseStatus.CANCELLED, False),
         ]
         self.page.pre_release_access = [{"type": "description", "value": "pre-release access notes"}]
-        expected = {"url": "#pre-release-access-list", "text": "Pre-release access list"}
+        expected = {
+            "url": "#pre-release-access-list",
+            "text": "Pre-release access list",
+            "attributes": {
+                "data-ga-event": "navigation-onpage",
+                "data-ga-navigation-type": "table-of-contents",
+                "data-ga-section-title": "Pre-release access list",
+            },
+        }
 
         for status, is_shown in cases:
             with self.subTest(status=status, is_shown=is_shown):
@@ -223,7 +305,26 @@ class ReleaseCalendarPageModelTestCase(WagtailTestUtils, TestCase):
 
         self.assertListEqual(
             self.page.table_of_contents,
-            [{"url": "#summary", "text": "Summary"}, {"url": "#links", "text": "You might also be interested in"}],
+            [
+                {
+                    "url": "#summary",
+                    "text": "Summary",
+                    "attributes": {
+                        "data-ga-event": "navigation-onpage",
+                        "data-ga-navigation-type": "table-of-contents",
+                        "data-ga-section-title": "Summary",
+                    },
+                },
+                {
+                    "url": "#links",
+                    "text": "You might also be interested in",
+                    "attributes": {
+                        "data-ga-event": "navigation-onpage",
+                        "data-ga-navigation-type": "table-of-contents",
+                        "data-ga-section-title": "You might also be interested in",
+                    },
+                },
+            ],
         )
 
     def test_get_lock(self):

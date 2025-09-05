@@ -1,5 +1,5 @@
 from datetime import date, datetime
-from typing import Any
+from typing import TYPE_CHECKING, Any, Optional
 
 from django.core.exceptions import ValidationError
 from django.forms.utils import ErrorList
@@ -15,6 +15,9 @@ from wagtail.blocks import (
 
 from cms.core.formatting_utils import get_document_metadata_date
 from cms.core.utils import get_content_type_for_page, get_related_content_type_label
+
+if TYPE_CHECKING:
+    from cms.core.models import BasePage
 
 
 class LinkBlockStructValue(StructValue):
@@ -84,8 +87,47 @@ class LinkBlockStructValue(StructValue):
             if metadata := link.get("metadata"):
                 related_link["metadata"] = metadata
 
+            related_link["attributes"] = self.get_gtm_attributes_for_link_value(link, target_page=self.get("page"))
+
             return related_link
         return None
+
+    @staticmethod
+    def get_gtm_attributes_for_link_value(
+        link_value: dict[str, Any], target_page: Optional["BasePage"] = None
+    ) -> dict[str, Any]:
+        attributes = {
+            "data-ga-event": "navigation-click",
+            "data-ga-navigation-type": "links-within-content",
+            "data-ga-link-text": link_value["text"],
+        }
+
+        if not target_page:
+            return attributes
+
+        # Add the link path for internal page links (external links have their own tracking in GA)
+        attributes["data-ga-click-path"] = link_value["url"]
+
+        target_page = target_page.specific_deferred
+
+        attributes["data-ga-click-content-type"] = target_page.analytics_content_type
+        if content_group := target_page.analytics_content_group:
+            attributes["data-ga-click-content-group"] = content_group
+
+        if content_theme := target_page.analytics_content_theme:
+            attributes["data-ga-click-content-theme"] = content_theme
+
+        if target_page.__class__.__name__ == "StatisticalArticlePage":
+            analytics_values = target_page.cached_analytics_values
+            attributes.update(
+                {
+                    "data-ga-click-output-series": analytics_values.get("outputSeries", ""),
+                    "data-ga-click-output-edition": analytics_values.get("outputEdition", ""),
+                    "data-ga-click-release-date": analytics_values.get("releaseDate", ""),
+                }
+            )
+
+        return attributes
 
     @cached_property
     def link(self) -> dict | None:
