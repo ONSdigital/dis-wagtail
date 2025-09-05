@@ -29,12 +29,16 @@ def a_glossary_terms_snippet_exists(context: Context) -> None:
 
 
 @then("a validation error is displayed")
-def validation_error_is_displayed_for_duplicated_glossary_terms(context: Context) -> None:
+def validation_error_is_displayed_for_duplicated_glossary_terms(
+    context: Context,
+) -> None:
     expect(context.page.get_by_text("The glossary term could not be created due to errors.")).to_be_visible()
 
 
 @then("the Glossary Term is added to the list")
-def glossary_item_is_visible_in_index_view_with_the_required_columns(context: Context) -> None:
+def glossary_item_is_visible_in_index_view_with_the_required_columns(
+    context: Context,
+) -> None:
     expect(context.page.get_by_role("row", name="Name").get_by_role("cell").nth(1)).to_contain_text("Name")
     expect(context.page.get_by_role("row", name="Term").get_by_role("cell").nth(1)).to_contain_text("Term")
 
@@ -86,14 +90,14 @@ def the_past_revisions_are_visible(context: Context) -> None:
 
 
 @then("the user can see the Glossary Term in the preview tab")
-def the_glossary_term_is_visible_in_preview_tab(context: Context):
+def the_glossary_term_is_visible_in_preview_tab(context: Context) -> None:
     iframe_locator = context.page.frame_locator("#w-preview-iframe")
     expect(iframe_locator.get_by_role("link", name="Term")).to_be_visible()
     expect(iframe_locator.get_by_text("Definition", exact=True)).to_be_hidden()
 
 
 @then("the user can click the Glossary Term to see the definition in the preview tab")
-def the_glossary_term_definition_is_visible_in_preview_tab(context: Context):
+def the_glossary_term_definition_is_visible_in_preview_tab(context: Context) -> None:
     iframe_locator = context.page.frame_locator("#w-preview-iframe")
     iframe_locator.get_by_role("link", name="Term").click()
     expect(iframe_locator.get_by_text("Definition", exact=True)).to_be_visible()
@@ -106,6 +110,6 @@ def the_user_can_see_the_preview_of_the_glossary_term(context: Context) -> None:
 
 
 @then("the user can click the Glossary Term to see the definition")
-def the_user_clicks_the_glossary_term_to_see_the_definition(context: Context):
+def the_user_clicks_the_glossary_term_to_see_the_definition(context: Context) -> None:
     context.page.get_by_role("link", name="Term").click()
     expect(context.page.get_by_text("Definition", exact=True)).to_be_visible()
