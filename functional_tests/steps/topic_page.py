@@ -6,8 +6,11 @@ from playwright.sync_api import expect
 
 from cms.articles.tests.factories import (
     ArticleSeriesPageFactory,
+    ArticlesIndexPageFactory,
     StatisticalArticlePageFactory,
 )
+from cms.methodology.tests.factories import MethodologyIndexPageFactory, MethodologyPageFactory
+from cms.taxonomy.models import GenericPageToTaxonomyTopic
 from cms.topics.tests.factories import TopicPageFactory
 
 
@@ -18,8 +21,15 @@ def the_user_creates_theme_and_topic_pages(context: Context) -> None:
 
 @given("the topic page has a statistical article in a series")
 def the_topic_page_has_a_statistical_article_in_a_series(context: Context) -> None:
-    context.article_series_page = ArticleSeriesPageFactory(title="PSF")
+    context.article_index_page = ArticlesIndexPageFactory(parent=context.topic_page)
+    context.article_series_page = ArticleSeriesPageFactory(parent=context.article_index_page, title="PSF")
     context.first_statistical_article_page = StatisticalArticlePageFactory(parent=context.article_series_page)
+
+
+@given("the topic page has a child methodology page")
+def the_topic_page_has_a_child_methodology_page(context: Context) -> None:
+    context.methodology_index_page = MethodologyIndexPageFactory(parent=context.topic_page)
+    context.methodology_page = MethodologyPageFactory(parent=context.methodology_index_page)
 
 
 @given("the user has featured the series")
@@ -152,3 +162,18 @@ def the_time_series_page_link_is_displayed_on_the_page(context: Context) -> None
 @then("the time series item appears in the table of contents")
 def the_time_series_item_appears_in_the_table_of_contents(context: Context) -> None:
     expect(context.page.get_by_role("heading", name="Time Series")).to_be_visible()
+
+
+@given("the statistical article is tagged to the same taxonomy topic as the topic page")
+def the_statistical_article_is_tagged_to_the_same_taxonomy_topic_as_the_topic_page(context: Context) -> None:
+    GenericPageToTaxonomyTopic.objects.create(page=context.article_series_page, topic=context.topic_page.topic)
+
+
+@given("the methodology page is tagged to the same taxonomy topic as the topic page")
+def the_methodology_page_is_tagged_to_the_same_taxonomy_topic_as_the_topic_page(context: Context) -> None:
+    GenericPageToTaxonomyTopic.objects.create(page=context.methodology_page, topic=context.topic_page.topic)
+
+
+@then("the user sees the '{link_text}' link")
+def user_can_see_link(context: Context, link_text: str) -> None:
+    expect(context.page.get_by_role("link", name=link_text)).to_be_visible()
