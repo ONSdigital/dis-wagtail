@@ -709,7 +709,7 @@ class StatisticalArticlePage(BundledPageMixin, RoutablePageMixin, BasePage):  # 
         # Render the content as HTML and get the text without HTML tags so we can count words
         html_content = self.content.render_as_block()
         soup_content = BeautifulSoup(str(html_content), "html.parser")
-        stripped_content = soup_content.text
+        stripped_content = soup_content.get_text()
         content_word_count = len(str(stripped_content).split())
 
         title_word_count = len(self.display_title.split())

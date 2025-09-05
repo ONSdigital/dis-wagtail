@@ -11,12 +11,12 @@ from wagtail.utils.decorators import cached_classmethod
 from wagtailschemaorg.models import PageLDMixin
 from wagtailschemaorg.utils import extend
 
+from cms.core.analytics_utils import format_date_for_gtm
 from cms.core.cache import get_default_cache_control_decorator
 from cms.core.forms import DeduplicateTopicsAdminForm, ONSCopyForm
 from cms.core.query import order_by_pk_position
 from cms.taxonomy.mixins import ExclusiveTaxonomyMixin
 
-from ..analytics_utils import format_date_for_gtm
 from .mixins import ListingFieldsMixin, SocialFieldsMixin
 
 if TYPE_CHECKING:
