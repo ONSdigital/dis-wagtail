@@ -136,6 +136,7 @@ MIDDLEWARE = [
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    "cms.core.middleware.NonTrailingSlashRedirectMiddleware",
     "wagtail.contrib.redirects.middleware.RedirectMiddleware",
 ]
 
@@ -856,6 +857,10 @@ if ENABLE_DJANGO_DEFENDER:
 
 # This name is displayed in the Wagtail admin.
 WAGTAIL_SITE_NAME = "Office for National Statistics"
+
+# Enforce non-trailing slash URLs
+APPEND_SLASH = False
+WAGTAIL_APPEND_SLASH = False
 
 # Base URL to use when formatting absolute URLs within the Wagtail admin in
 # contexts without a request, e.g. in notification emails. Don't include '/admin'
