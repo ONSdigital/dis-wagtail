@@ -1050,3 +1050,6 @@ BACKUP_SITE_URL = env.get("BACKUP_SITE_URL", "https://backup.ons.gov.uk")
 CMS_RESOURCES_ENDPOINT_ENABLED = env.get("CMS_RESOURCES_ENDPOINT_ENABLED", "false").lower() == "true"
 
 USE_I18N_ROOT_NO_TRAILING_SLASH = env.get("USE_I18N_ROOT_NO_TRAILING_SLASH", "false").lower() == "true"
+
+# Allow to override but default to enabled
+CMS_SEARCH_NOTIFY_ON_DELETE_OR_UNPUBLISH = env.get("CMS_SEARCH_NOTIFY_ON_DELETE_OR_UNPUBLISH", "true").lower() == "true"
