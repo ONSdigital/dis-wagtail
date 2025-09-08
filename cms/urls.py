@@ -135,20 +135,22 @@ urlpatterns = decorate_urlpatterns(
     vary_on_headers("Cookie", "X-Requested-With", "X-Forwarded-Proto", "Accept-Encoding"),
 )
 
-# Add localized homepage patterns for non-default languages at the root level.
-# This is to deal with the fact that i18n_patterns will create URLs like /cy/ instead of /cy.
-non_default_languages = [lang[0] for lang in settings.LANGUAGES if lang[0] != settings.LANGUAGE_CODE]
-LANGUADE_CODES_PATTERN = "|".join(non_default_languages)  # e.g., 'cy|uk'
-
 localized_homepage_urlpatterns = []
-if LANGUADE_CODES_PATTERN:
-    localized_homepage_urlpatterns = [
-        re_path(
-            rf"^(?P<lang_code>{LANGUADE_CODES_PATTERN})$",
-            serve_localized_homepage,
-            name="localized_homepage",
-        )
-    ]
+
+if settings.USE_I18N_ROOT_NO_TRAILING_SLASH:
+    # Add localized homepage patterns for non-default languages at the root level.
+    # This is to deal with the fact that i18n_patterns will create URLs like /cy/ instead of /cy.
+    non_default_languages = [lang[0] for lang in settings.LANGUAGES if lang[0] != settings.LANGUAGE_CODE]
+    LANGUAGE_CODES_PATTERN = "|".join(non_default_languages)  # e.g., 'cy|uk'
+
+    if LANGUAGE_CODES_PATTERN:
+        localized_homepage_urlpatterns = [
+            re_path(
+                rf"^(?P<lang_code>{LANGUAGE_CODES_PATTERN})$",
+                serve_localized_homepage,
+                name="localized_homepage",
+            )
+        ]
 
 # Join private and public URLs.
 urlpatterns = (
