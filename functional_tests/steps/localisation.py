@@ -20,7 +20,7 @@ def user_creates_welsh_version_of_home_page(context: Context) -> None:
 
 
 @then("the user can see the option to add a translation")
-def user_can_see_the_option_to_add_a_translation(context) -> None:
+def user_can_see_the_option_to_add_a_translation(context: Context) -> None:
     context.page.get_by_role("button", name="Actions", exact=True).click()
     expect(context.page.get_by_role("link", name="Translate")).to_be_visible()
 
@@ -78,7 +78,9 @@ def user_switches_page_language_to_welsh(context: Context) -> None:
 
 
 @step("the user returns to editing the Welsh information page")
-def user_returns_to_editing_the_welsh_statistical_article_page(context: Context):
+def user_returns_to_editing_the_welsh_statistical_article_page(
+    context: Context,
+) -> None:
     context.page.get_by_role("link", name="Tudalen Gwybodaeth Profi", exact=True).click()
 
 

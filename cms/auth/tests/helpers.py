@@ -103,7 +103,7 @@ class CognitoTokenTestCase(TestCase):
         username: str | None = None,
         groups: list[str] | None = None,
         client_id: str | None = None,
-        **jwt_overrides,
+        **jwt_overrides: dict[str, Any],
     ) -> tuple[str, str]:
         username = username or self.user_uuid
         client_id = client_id or settings.AWS_COGNITO_APP_CLIENT_ID
