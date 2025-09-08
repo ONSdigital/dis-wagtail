@@ -21,7 +21,7 @@ This is used by the search service for reindexing and is meant to be only access
 | `KAFKA_API_VERSION`                        | Defaults to "3.5.1"                                                                         |
 | `KAFKA_USE_IAM_AUTH`                       | Defaults to `false`. Set to `true` to enable IAM authentication.                            |
 | `CMS_SEARCH_NOTIFY_ON_DELETE_OR_UNPUBLISH` | Defaults to `true`. Set to `false` to disable firing kafka events on deletion or unpublish. |
-| `CMS_RESOURCES_ENDPOINT_ENABLED` | Set to `true` to enable the Resource API endpoint.                    |
+| `CMS_RESOURCES_ENDPOINT_ENABLED`           | Set to `true` to enable the Resource API endpoint.                                          |
 
 ## Developer notes
 
