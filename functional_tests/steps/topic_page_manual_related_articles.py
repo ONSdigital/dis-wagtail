@@ -3,7 +3,10 @@ from behave.runner import Context
 from django.urls import reverse
 from playwright.sync_api import expect
 
-from cms.articles.tests.factories import ArticleSeriesPageFactory, StatisticalArticlePageFactory
+from cms.articles.tests.factories import (
+    ArticleSeriesPageFactory,
+    StatisticalArticlePageFactory,
+)
 from functional_tests.step_helpers.users import create_user
 
 
@@ -18,7 +21,9 @@ def superuser_logs_into_admin_site(context: Context) -> None:
 
 
 @given("the topic page has at least 3 series with a statistical article")
-def the_topic_page_has_at_least_3_statistical_articles_in_a_series(context: Context):
+def the_topic_page_has_at_least_3_statistical_articles_in_a_series(
+    context: Context,
+) -> None:
     """Create 3 article series with statistical articles."""
     article_series_page_alpha = ArticleSeriesPageFactory(parent=context.topic_page, title="Alpha Series")
     article_series_page_beta = ArticleSeriesPageFactory(parent=context.topic_page, title="Beta Series")
@@ -32,7 +37,7 @@ def the_topic_page_has_at_least_3_statistical_articles_in_a_series(context: Cont
 
 
 @given("the user has added one external related article to the topic page")
-def user_has_added_one_external_related_article(context: Context):
+def user_has_added_one_external_related_article(context: Context) -> None:
     """Setup step where user has already added one external related article."""
     # Navigate to edit page
     edit_url = reverse("wagtailadmin_pages:edit", args=(context.topic_page.id,))
@@ -55,7 +60,7 @@ def user_has_added_one_external_related_article(context: Context):
 
 
 @when('the user adds an external related article with title "{title}" and a short description')
-def user_adds_external_related_article(context: Context, title: str):
+def user_adds_external_related_article(context: Context, title: str) -> None:
     """Add an external related article with the given title."""
     # Initialize counter if this is the first article being added in the scenario
     if not hasattr(context, "manual_article_index"):
@@ -76,21 +81,21 @@ def user_adds_external_related_article(context: Context, title: str):
 
 
 @when("the user removes the first manually added related article")
-def user_removes_first_manually_added_related_article(context: Context):
+def user_removes_first_manually_added_related_article(context: Context) -> None:
     """Remove the first manually added related article."""
     # Use the precise selector for the delete button of the first item
     context.page.locator("#id_related_articles-0-DELETE-button").click()
 
 
 @then('the user can see "{title}" in the related articles section')
-def user_can_see_title_in_related_articles_section(context: Context, title: str):
+def user_can_see_title_in_related_articles_section(context: Context, title: str) -> None:
     """Assert that the given title is visible in the related articles section."""
     related_articles_section = context.page.locator("section#related-articles")
     expect(related_articles_section.get_by_role("link", name=title)).to_be_visible()
 
 
 @then('the related article "{title}" appears at the top of the list')
-def related_article_appears_at_top_of_list(context: Context, title: str):
+def related_article_appears_at_top_of_list(context: Context, title: str) -> None:
     """Assert that the given title appears first in the related articles list."""
     related_articles_section = context.page.locator("section#related-articles")
     first_article = related_articles_section.locator("li.ons-document-list__item").first
@@ -98,7 +103,7 @@ def related_article_appears_at_top_of_list(context: Context, title: str):
 
 
 @then("the related articles section contains {count:d} articles")
-def related_articles_section_contains_count_articles(context: Context, count: int):
+def related_articles_section_contains_count_articles(context: Context, count: int) -> None:
     """Assert that the related articles section contains the expected number of articles."""
     related_articles_section = context.page.locator("section#related-articles")
     articles = related_articles_section.locator("li.ons-document-list__item")
@@ -106,7 +111,7 @@ def related_articles_section_contains_count_articles(context: Context, count: in
 
 
 @then('the related article "{title}" is the first in the list')
-def related_article_is_first_in_list(context: Context, title: str):
+def related_article_is_first_in_list(context: Context, title: str) -> None:
     """Assert that the given title is the first article in the list."""
     related_articles_section = context.page.locator("section#related-articles")
     first_article = related_articles_section.locator("li.ons-document-list__item").first
@@ -114,7 +119,7 @@ def related_article_is_first_in_list(context: Context, title: str):
 
 
 @then('the related article "{title}" is the second in the list')
-def related_article_is_second_in_list(context: Context, title: str):
+def related_article_is_second_in_list(context: Context, title: str) -> None:
     """Assert that the given title is the second article in the list."""
     related_articles_section = context.page.locator("section#related-articles")
     second_article = related_articles_section.locator("li.ons-document-list__item").nth(1)
@@ -122,7 +127,9 @@ def related_article_is_second_in_list(context: Context, title: str):
 
 
 @then("the related articles section contains only the 3 manually added articles")
-def related_articles_section_contains_only_manually_added_articles(context: Context):
+def related_articles_section_contains_only_manually_added_articles(
+    context: Context,
+) -> None:
     """Assert that the related articles section contains only manually added articles (no auto-populated ones)."""
     related_articles_section = context.page.locator("section#related-articles")
     articles = related_articles_section.locator("li.ons-document-list__item")
@@ -139,7 +146,7 @@ def related_articles_section_contains_only_manually_added_articles(context: Cont
 
 
 @then("the related articles section contains 3 auto-populated articles")
-def related_articles_section_contains_auto_populated_articles(context: Context):
+def related_articles_section_contains_auto_populated_articles(context: Context) -> None:
     """Assert that the related articles section contains only auto-populated articles."""
     related_articles_section = context.page.locator("section#related-articles")
     articles = related_articles_section.locator("li.ons-document-list__item")
@@ -151,7 +158,7 @@ def related_articles_section_contains_auto_populated_articles(context: Context):
 
 
 @when('the user adds an internal related article with custom title "{custom_title}"')
-def user_adds_internal_related_article_with_custom_title(context: Context, custom_title: str):
+def user_adds_internal_related_article_with_custom_title(context: Context, custom_title: str) -> None:
     """Add an internal related article with a custom title."""
     # Initialize counter if this is the first article being added in the scenario
     if not hasattr(context, "manual_article_index"):
@@ -182,7 +189,7 @@ def user_adds_internal_related_article_with_custom_title(context: Context, custo
 
 
 @then("the custom title overrides the page's original title")
-def custom_title_overrides_original_title(context: Context):
+def custom_title_overrides_original_title(context: Context) -> None:
     """Assert that the custom title is displayed instead of the page's original title."""
     related_articles_section = context.page.locator("section#related-articles")
 
