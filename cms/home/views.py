@@ -2,6 +2,7 @@
 
 from typing import Any
 
+from django.conf import settings
 from django.http import Http404, HttpRequest
 from django.utils.translation import activate
 from wagtail.models import Locale, Site
@@ -14,6 +15,9 @@ def serve_localized_homepage(request: HttpRequest, lang_code: str) -> Any:
     This is necessary because using i18n_patterns would create URLs like /cy/
     which is not the desired behavior for the homepage.
     """
+    if not settings.USE_I18N_ROOT_NO_TRAILING_SLASH:
+        raise Http404()
+
     # Activate the language for this request.
     activate(lang_code)
 
