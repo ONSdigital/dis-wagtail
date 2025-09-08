@@ -460,6 +460,9 @@ class StatisticalArticlePage(  # type: ignore[django-manager-missing]
     ) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
         """Returns a list of corrections and notices for the page."""
         base_url = self.get_url(request) or ""
+        if not WAGTAIL_APPEND_SLASH:
+            # Add the trailing slash as this will be concatenated
+            base_url += "/"
         corrections = (
             [
                 serialize_correction_or_notice(
