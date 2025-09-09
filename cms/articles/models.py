@@ -1,5 +1,6 @@
 from typing import TYPE_CHECKING, Any, ClassVar, Optional, cast
 
+from bs4 import BeautifulSoup
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.core.paginator import EmptyPage, PageNotAnInteger, Paginator
@@ -22,6 +23,7 @@ from cms.articles.forms import StatisticalArticlePageAdminForm
 from cms.articles.panels import HeadlineFiguresFieldPanel
 from cms.articles.utils import serialize_correction_or_notice
 from cms.bundles.mixins import BundledPageMixin
+from cms.core.analytics_utils import add_table_of_contents_gtm_attributes, bool_to_yes_no, format_date_for_gtm
 from cms.core.blocks.headline_figures import HeadlineFiguresItemBlock
 from cms.core.blocks.panels import CorrectionBlock, NoticeBlock
 from cms.core.blocks.stream_blocks import SectionStoryBlock
@@ -312,6 +314,8 @@ class StatisticalArticlePage(  # type: ignore[django-manager-missing]
         index.AutocompleteField("news_headline"),
     ]
 
+    _analytics_content_type = "statistical-articles"
+
     def clean(self) -> None:
         """Additional validation on save."""
         super().clean()
@@ -401,6 +405,7 @@ class StatisticalArticlePage(  # type: ignore[django-manager-missing]
             items += [{"url": "#cite-this-page", "text": _("Cite this article")}]
         if self.contact_details_id:
             items += [{"url": "#contact-details", "text": _("Contact details")}]
+        add_table_of_contents_gtm_attributes(items)
         return items
 
     @property
@@ -689,3 +694,42 @@ class StatisticalArticlePage(  # type: ignore[django-manager-missing]
             return cast("HttpResponse", super().serve(request, view=view, args=args, kwargs=serve_kwargs))
 
         return cast("HttpResponse", super().serve(request, *args, **kwargs))
+
+    @cached_property
+    def cached_analytics_values(self) -> dict[str, str | bool]:
+        parent_series = self.get_parent()
+
+        values = {
+            "pageTitle": self.display_title,
+            "outputSeries": parent_series.slug,
+            "outputEdition": self.slug,
+            "releaseDate": format_date_for_gtm(self.release_date),
+            "latestRelease": bool_to_yes_no(self.is_latest),
+            "wordCount": self.word_count,
+        }
+
+        if self.next_release_date:
+            values["nextReleaseDate"] = format_date_for_gtm(self.next_release_date)
+        return super().cached_analytics_values | values
+
+    def get_analytics_values(self, request: "HttpRequest") -> dict[str, str | bool]:
+        values = self.cached_analytics_values
+        if self.is_latest and request.path == self.get_url(request):
+            # If this is the latest release, but the request path is the full page URL, not the evergreen latest,
+            # then include the evergreen latest URL (the parent series URL) in the analytics values.
+            values["pageURL"] = self.get_parent().get_full_url(request)
+        return values
+
+    @cached_property
+    def word_count(self) -> int:
+        """Returns the total word count for the article page's display title, summary and content."""
+        # Render the content as HTML and get the text without HTML tags so we can count words
+        html_content = self.content.render_as_block()
+        soup_content = BeautifulSoup(str(html_content), "html.parser")
+        stripped_content = soup_content.get_text()
+        content_word_count = len(str(stripped_content).split())
+
+        title_word_count = len(self.display_title.split())
+        summary_word_count = len(strip_tags(self.summary).split())
+
+        return title_word_count + summary_word_count + content_word_count
