@@ -107,7 +107,7 @@ def _sync_with_fetched_topics(fetched_topics: Iterable[Mapping[str, str]]) -> No
         if not fetched_topic.get("slug"):
             # Do not create or keep topics with no slug, as the relevant search pages won't be reachable
             # Note that this is just a safeguard, realistically we expect all topics to have slugs
-            logger.warning("Attempted to create a topic with no slug - aborting", extra={"topic": fetched_topic.id})
+            logger.warning("Attempted to create a topic with no slug - aborting", extra={"topic": fetched_topic["id"]})
             Topic.objects.filter(id=fetched_topic["id"]).delete()  # Remove if exists
             continue
         if existing_topic := _get_topic(fetched_topic["id"]):

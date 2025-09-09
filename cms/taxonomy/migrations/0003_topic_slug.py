@@ -18,7 +18,7 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name="topic",
             name="slug",
-            field=models.SlugField(max_length=500, null=True, blank=True),
+            field=models.SlugField(max_length=100, null=True, blank=True),
         ),
         # 2. Populate it with a temporary value for existing rows
         migrations.RunPython(set_temp_slugs, migrations.RunPython.noop),
@@ -26,6 +26,6 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name="topic",
             name="slug",
-            field=models.SlugField(max_length=500, null=False),
+            field=models.SlugField(max_length=100, null=False),
         ),
     ]
