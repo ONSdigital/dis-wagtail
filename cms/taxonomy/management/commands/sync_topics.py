@@ -185,7 +185,7 @@ def _create_topic(fetched_topic: Mapping[str, str]) -> None:
     new_topic = Topic(
         id=fetched_topic["id"],
         title=fetched_topic["title"],
-        slug=fetched_topic["slug"],
+        slug=fetched_topic.get("slug"),
         description=fetched_topic.get("description"),
     )
     if parent_id := fetched_topic.get("parent_id"):
