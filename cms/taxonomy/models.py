@@ -41,6 +41,7 @@ class Topic(index.Indexed, MP_Node):
 
     id = models.CharField(max_length=100, primary_key=True)  # type: ignore[var-annotated]
     title = models.CharField(max_length=100)  # type: ignore[var-annotated]
+    slug = models.SlugField(max_length=500)  # type: ignore[var-annotated]
     description = models.TextField(blank=True, null=True)  # type: ignore[var-annotated]
     removed = models.BooleanField(default=False)  # type: ignore[var-annotated]
 
