@@ -14,6 +14,7 @@ from wagtail.models import Orderable, Page
 from wagtail.search import index
 
 from cms.bundles.mixins import BundledPageMixin
+from cms.core.analytics_utils import add_table_of_contents_gtm_attributes, format_date_for_gtm
 from cms.core.blocks.stream_blocks import SectionStoryBlock
 from cms.core.fields import StreamField
 from cms.core.forms import PageWithEquationsAdminForm
@@ -122,6 +123,8 @@ class MethodologyPage(BundledPageMixin, GenericTaxonomyMixin, BasePage):  # type
         index.SearchField("content"),
     ]
 
+    _analytics_content_type: ClassVar[str] = "methodologies"
+
     def clean(self) -> None:
         """Additional validation on save."""
         super().clean()
@@ -183,4 +186,12 @@ class MethodologyPage(BundledPageMixin, GenericTaxonomyMixin, BasePage):  # type
             items += [{"url": "#cite-this-page", "text": _("Cite this methodology")}]
         if self.contact_details_id:
             items += [{"url": "#contact-details", "text": _("Contact details")}]
+        add_table_of_contents_gtm_attributes(items)
         return items
+
+    @cached_property
+    def cached_analytics_values(self) -> dict[str, str | bool]:
+        values = super().cached_analytics_values
+        if self.last_revised_date:
+            values["lastUpdatedDate"] = format_date_for_gtm(self.last_revised_date)
+        return values
