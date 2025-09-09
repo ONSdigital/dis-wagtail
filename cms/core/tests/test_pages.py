@@ -288,7 +288,7 @@ class ErrorPageTests(WagtailPageTestCase):
         self.assertContains(response, 'href="/custom/contact-path"', status_code=HTTPStatus.NOT_FOUND)
 
     def test_404_page_analytics_values(self):
-        response = self.client.get("/non-existent-page/")
+        response = self.client.get("/non-existent-page")
         self.assertEqual(response.status_code, HTTPStatus.NOT_FOUND)
         datalayer_values = extract_datalayer_pushed_values(response.text)
         self.assertEqual(datalayer_values["product"], "wagtail")
