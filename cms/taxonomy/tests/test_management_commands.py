@@ -67,6 +67,10 @@ class SyncTopicsTests(TestCase):
         topic = create_topic("1234", include_description=False)
         self.template_test_sync_one_valid_topic(topic)
 
+    def test_sync_valid_topic_no_slug(self):
+        topic = create_topic("1234", include_slug=False)
+        self.template_test_sync_one_valid_topic(topic)
+
     def test_sync_valid_topic_empty_description(self):
         topic = Topic(id="1234", title="Test Empty Description", description="")
         self.template_test_sync_one_valid_topic(topic)
@@ -460,14 +464,14 @@ class SyncTopicsTests(TestCase):
         self.assertRaises(RuntimeError, sync_topics.Command().handle)
 
 
-def create_topic(topic_id: str, include_description: bool = True) -> Topic:
+def create_topic(topic_id: str, include_description: bool = True, include_slug: bool = True) -> Topic:
     """Create a topic (without saving it to the database)."""
     topic = Topic(
         id=topic_id,
         title=f"Topic {topic_id}",
     )
-    if include_description:
-        topic.description = f"Description {topic_id}"
+    topic.description = f"Description {topic_id}" if include_description else None
+    topic.slug = f"topic-{topic_id}" if include_slug else None
     return topic
 
 
