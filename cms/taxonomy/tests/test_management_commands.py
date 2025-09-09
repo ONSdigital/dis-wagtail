@@ -4,6 +4,7 @@ from unittest.mock import Mock, patch
 
 import requests
 from django.core.management import call_command
+from django.db.utils import IntegrityError
 from django.test import TestCase
 from requests import HTTPError
 
@@ -68,8 +69,18 @@ class SyncTopicsTests(TestCase):
         self.template_test_sync_one_valid_topic(topic)
 
     def test_sync_valid_topic_no_slug(self):
-        topic = create_topic("1234", include_slug=False)
-        self.template_test_sync_one_valid_topic(topic)
+        """Check that when we attempt to sync a Topic without a slug from the API,
+        then an IntegrityError is raised and a warning is logged.
+        """
+        topic = create_topic(topic_id="123", include_slug=False)
+
+        with self.assertLogs("cms.taxonomy", level="WARNING") as logs, self.assertRaises(IntegrityError):
+            self.template_test_sync_one_valid_topic(topic)
+
+            self.assertEqual(logs.records[0].message, "Cannot create topic: missing slug.")
+            self.assertEqual(logs.records[0].topic, topic.id)
+
+            self.assertListEqual(list(Topic.objects.all()), [])
 
     def test_sync_valid_topic_empty_description(self):
         topic = Topic(id="1234", title="Test Empty Description", description="")
@@ -94,6 +105,7 @@ class SyncTopicsTests(TestCase):
                 {
                     "id": topic.id,
                     "title": topic.title,
+                    "slug": topic.slug,
                     "description": topic.description,
                     "subtopics_ids": [],
                     "links": {
@@ -493,6 +505,7 @@ def build_topic_api_json(topic: Topic, subtopics: Iterable[Topic] = ()) -> dict[
         "id": topic.id,
         "title": topic.title,
         "description": topic.description,
+        "slug": topic.slug,
         "links": links,
         "subtopics_ids": subtopics_ids,
     }
