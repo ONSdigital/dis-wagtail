@@ -56,7 +56,7 @@ def _fetch_all_topics() -> list[dict[str, str]]:
                     "title",
                     "id",
                     "slug",
-                    "descricption",
+                    "description",
                 }
             }
             for raw_topic in raw_topics
