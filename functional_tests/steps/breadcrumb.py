@@ -1,4 +1,4 @@
-from behave import then  # pylint: disable=no-name-in-module
+from behave import then
 from behave.runner import Context
 from playwright.sync_api import expect
 
