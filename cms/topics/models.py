@@ -229,7 +229,7 @@ class TopicPage(BundledPageMixin, ExclusiveTaxonomyMixin, BasePage):  # type: ig
     def processed_articles(self) -> list[dict]:
         """Returns a list of dictionaries representing related articles.
         Each dict has 'internal_page' pointing to a Page (or None for external) and optional 'title'.
-        Manually added articles (both internal and external) are prioritized.
+        Manually added articles (both internal and external) are prioritised.
 
         TODO: extend when Taxonomy is in.
         """
@@ -271,11 +271,10 @@ class TopicPage(BundledPageMixin, ExclusiveTaxonomyMixin, BasePage):  # type: ig
             .filter(path__startswith=OuterRef("path"), depth__gte=OuterRef("depth"))
             .order_by("-release_date")
         )
-        latest_by_series = (
-            ArticleSeriesPage.objects.descendant_of(self)
-            .annotate(latest_child_page=Subquery(newest_qs.values("pk")[:1]))
-            .values_list("latest_child_page", flat=True)
-        )
+        current_series_qs = ArticleSeriesPage.objects.descendant_of(self)
+        latest_by_series = current_series_qs.annotate(
+            latest_child_page=Subquery(newest_qs.values("pk")[:1])
+        ).values_list("latest_child_page", flat=True)
 
         remaining_slots = MAX_ITEMS_PER_SECTION - num_manual_articles
 
@@ -291,7 +290,44 @@ class TopicPage(BundledPageMixin, ExclusiveTaxonomyMixin, BasePage):  # type: ig
         # Convert latest articles to dict format
         auto_articles = [{"internal_page": page} for page in latest_articles]
 
-        return manual_articles + auto_articles
+        total_articles = manual_articles + auto_articles
+
+        # If we still have slots, pull from other topic pages with the same topic(s)
+        slots_left = MAX_ITEMS_PER_SECTION - len(total_articles)
+        if slots_left > 0:
+            # Get the single topic ID for this topic page (ExclusiveTaxonomyMixin)
+            topic_ids = [self.topic_id] if self.topic_id else []
+
+            # Get all article series tagged with the same topic(s), excluding those under this topic page
+            other_series = (
+                ArticleSeriesPage.objects.live()
+                .public()
+                .filter(topics__topic_id__in=topic_ids)
+                .filter(locale=self.locale)  # Only this locale
+                .exclude(pk__in=current_series_qs.values_list("pk", flat=True))
+                .distinct()
+            )
+
+            # For each series, get the latest article
+            other_latest_by_series = other_series.annotate(
+                latest_child_page=Subquery(newest_qs.values("pk")[:1])
+            ).values_list("latest_child_page", flat=True)
+
+            # Get the latest articles, excluding already highlighted
+            other_latest_articles = list(
+                StatisticalArticlePage.objects.filter(pk__in=other_latest_by_series)
+                .filter(locale=self.locale)  # Only this locale
+                .exclude(pk__in=highlighted_page_pks)
+                .exclude(pk__in=[a["internal_page"].pk for a in auto_articles if "internal_page" in a])
+                .live()
+                .public()
+                .defer_streamfields()
+                .order_by("-release_date")[:slots_left]
+            )
+
+            total_articles += [{"internal_page": page} for page in other_latest_articles]
+
+        return total_articles[:MAX_ITEMS_PER_SECTION]
 
     @cached_property
     def processed_methodologies(self) -> list[dict]:
