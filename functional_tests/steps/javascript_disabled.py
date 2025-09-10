@@ -4,7 +4,9 @@ from playwright.sync_api import expect
 
 
 @given("the user has Javascript disabled")
-def the_user_has_javascript_disabled(context: Context):  # pylint: disable=unused-argument
+def the_user_has_javascript_disabled(
+    context: Context,  # pylint: disable=unused-argument
+) -> None:
     # This step just exists for scenario readability.
     # The actual disabling of JavaScript is done in the before_scenario step
     # when the scenario is tagged with @no_javascript.
@@ -12,14 +14,16 @@ def the_user_has_javascript_disabled(context: Context):  # pylint: disable=unuse
 
 
 @given("the user has Javascript enabled")
-def the_user_has_javascript_enabled(context: Context):  # pylint: disable=unused-argument
+def the_user_has_javascript_enabled(
+    context: Context,  # pylint: disable=unused-argument
+) -> None:
     # This step just exists for scenario readability.
     # JavaScript is enabled by default, so no action is needed.
     pass
 
 
 @then("the user can see the equation fallback")
-def the_user_can_see_the_equation_fallback(context: Context):
+def the_user_can_see_the_equation_fallback(context: Context) -> None:
     # Article created in a_statistical_article_page_with_equations_exists()
     context.page.goto(context.statistical_article_page.full_url)
     expect(context.page.locator("#svgfallback")).to_be_visible()

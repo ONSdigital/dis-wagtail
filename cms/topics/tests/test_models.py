@@ -241,10 +241,42 @@ class TopicPageTestCase(WagtailTestUtils, TestCase):
         self.assertListEqual(
             self.topic_page.table_of_contents,
             [
-                {"url": "#featured", "text": "Featured"},
-                {"url": "#related-articles", "text": "Related articles"},
-                {"url": "#related-methods", "text": "Methods and quality information"},
-                {"url": "#data", "text": "Data"},
+                {
+                    "url": "#featured",
+                    "text": "Featured",
+                    "attributes": {
+                        "data-ga-event": "navigation-onpage",
+                        "data-ga-navigation-type": "table-of-contents",
+                        "data-ga-section-title": "Featured",
+                    },
+                },
+                {
+                    "url": "#related-articles",
+                    "text": "Related articles",
+                    "attributes": {
+                        "data-ga-event": "navigation-onpage",
+                        "data-ga-navigation-type": "table-of-contents",
+                        "data-ga-section-title": "Related articles",
+                    },
+                },
+                {
+                    "url": "#related-methods",
+                    "text": "Methods and quality information",
+                    "attributes": {
+                        "data-ga-event": "navigation-onpage",
+                        "data-ga-navigation-type": "table-of-contents",
+                        "data-ga-section-title": "Methods and quality information",
+                    },
+                },
+                {
+                    "url": "#data",
+                    "text": "Data",
+                    "attributes": {
+                        "data-ga-event": "navigation-onpage",
+                        "data-ga-navigation-type": "table-of-contents",
+                        "data-ga-section-title": "Data",
+                    },
+                },
             ],
         )
 
@@ -262,7 +294,18 @@ class TopicPageTestCase(WagtailTestUtils, TestCase):
         self.topic_page.explore_more = [("external_link", {"url": "https://example.com"})]
 
         toc = self.topic_page.table_of_contents
-        self.assertIn({"url": "#explore-more", "text": _("Explore more")}, toc)
+        self.assertIn(
+            {
+                "url": "#explore-more",
+                "text": _("Explore more"),
+                "attributes": {
+                    "data-ga-event": "navigation-onpage",
+                    "data-ga-navigation-type": "table-of-contents",
+                    "data-ga-section-title": _("Explore more"),
+                },
+            },
+            toc,
+        )
 
     def test_get_context(self):
         context = self.topic_page.get_context(get_dummy_request())
@@ -356,6 +399,7 @@ class TopicPageTestCase(WagtailTestUtils, TestCase):
                     "explore_more": streamfield([]),
                     "headline_figures": streamfield([]),
                     "datasets": streamfield([]),
+                    "time_series": streamfield([]),
                     "topic": TopicFactory().pk,
                 }
             ),
@@ -379,6 +423,13 @@ class TopicPageTestCase(WagtailTestUtils, TestCase):
         response = self.client.get(reverse("wagtailadmin_explore", args=[new_topic_page.pk]))
         self.assertContains(response, "Add child page", 3)
         self.assertContains(response, reverse("wagtailadmin_pages:add_subpage", args=[new_topic_page.pk]))
+
+    def test_get_analytics_values(self):
+        analytics_values = self.topic_page.get_analytics_values(get_dummy_request())
+        self.assertEqual(analytics_values["pageTitle"], self.topic_page.title)
+        self.assertEqual(analytics_values["contentType"], self.topic_page.analytics_content_type)
+        self.assertEqual(analytics_values["contentGroup"], self.topic_page.analytics_content_group)
+        self.assertEqual(analytics_values["contentTheme"], self.topic_page.analytics_content_theme)
 
 
 class TopicPageRelatedArticleValidationTests(TestCase):

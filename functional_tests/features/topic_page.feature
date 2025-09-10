@@ -1,8 +1,10 @@
 Feature: CMS users can draft, edit, and publish topic pages
 
-    Scenario: A CMS user can feature an article series
+    Background:
         Given a superuser logs into the admin site
-        And a topic page exists under the homepage
+
+    Scenario: A CMS user can feature an article series
+        Given a topic page exists under the homepage
         And the topic page has a statistical article in a series
         When the user edits the topic page
         And the user clicks the "Choose Article Series page" button
@@ -21,15 +23,13 @@ Feature: CMS users can draft, edit, and publish topic pages
         Then the user can see the newly created article in featured spot
 
     Scenario: The translated version of the topic page uses the same taxonomy
-        Given a superuser logs into the admin site
-        And a topic page exists under the homepage
+        Given a topic page exists under the homepage
         When the user edits the topic page
         And the user switches to the Welsh locale
         And the user goes to the Taxonomy tab
         Then the user is informed that the selected topic is copied from the English version
 
     Scenario: A CMS user can choose headline figures when editing a topic
-        Given a superuser logs into the admin site
         When the user goes to add a new statistical article page
         And the user adds basic statistical article page content
         And the user adds headline figures
@@ -39,7 +39,6 @@ Feature: CMS users can draft, edit, and publish topic pages
         Then the headline figures are shown
 
     Scenario: A CMS user can add headline figures to a topic page
-        Given a superuser logs into the admin site
         When the user goes to add a new statistical article page
         And the user adds basic statistical article page content
         And the user adds headline figures
@@ -52,7 +51,6 @@ Feature: CMS users can draft, edit, and publish topic pages
         And the headline figures on the topic page link to the statistical page
 
     Scenario: A CMS user can reorder headline figures on a topic page
-        Given a superuser logs into the admin site
         When the user goes to add a new statistical article page
         And the user adds basic statistical article page content
         And the user adds headline figures
@@ -69,7 +67,6 @@ Feature: CMS users can draft, edit, and publish topic pages
         Then the published topic page has reordered headline figures
 
     Scenario: A CMS user can reorder headline figures on a Statistical Article Page without affecting the order of the figures on the topic page
-        Given a superuser logs into the admin site
         When the user goes to add a new statistical article page
         And the user adds basic statistical article page content
         And the user adds headline figures
@@ -86,10 +83,18 @@ Feature: CMS users can draft, edit, and publish topic pages
         Then the published topic page has the added headline figures in the correct order
 
     Scenario: A CMS user can add datasets to a topic page
-        Given a superuser logs into the admin site
-        And a topic page exists under the homepage
+        Given a topic page exists under the homepage
         When the user edits the topic page
         And looks up and selects a dataset
         And the user clicks "Publish"
         And the user views the topic page
         Then the selected datasets are displayed on the page
+
+    Scenario: A CMS user can add a time series section to a topic page
+        Given a topic page exists under the homepage
+        When the user edits the topic page
+        And the user adds a time series page link
+        And the user clicks "Publish"
+        And the user views the topic page
+        Then the time series section is displayed on the page
+        And the time series item appears in the table of contents

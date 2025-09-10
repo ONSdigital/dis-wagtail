@@ -68,6 +68,9 @@ class RelatedLinksBlock(ListBlock):
         if self.heading:
             context["heading"] = self.heading
             context["slug"] = self.slug
+            for position, link in enumerate(context["related_links"], start=1):
+                link["attributes"]["data-ga-section-title"] = self.heading
+                link["attributes"]["data-ga-click-position"] = position
 
         return context
 

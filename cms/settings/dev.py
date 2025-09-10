@@ -134,6 +134,7 @@ MIGRATION_LINTER_OPTIONS = {
         "0007_statisticalarticlepage_featured_chart_content_and_more",  # Ignoring NOT NULL constraint
         "0008_delete_systemmessagessettings",  # Ignoring dropping table
         "0007_topicpagerelatedarticle_external_url_and_more",  # Ignoring NOT NULL constraint
+        "0008_topicpage_time_series",  # Ignoring NOT NULL constraint
     ],
 }
 
@@ -141,3 +142,6 @@ MIGRATION_LINTER_OPTIONS = {
 BUILD_TIME = None
 GIT_COMMIT = None
 TAG = "dev"
+
+# Allow to override but default to enabled
+CMS_RESOURCES_ENDPOINT_ENABLED = env.get("CMS_RESOURCES_ENDPOINT_ENABLED", "true").lower() == "true"

@@ -21,7 +21,7 @@ def build_standard_resource_dict(page: "Page") -> dict:
         "content_type": page.search_index_content_type,
         "release_date": (page.release_date.isoformat() if getattr(page, "release_date", None) else None),
         "summary": get_text_for_indexing(force_str(page.summary)),
-        "title": page.title,
+        "title": page.get_full_display_title() if hasattr(page, "get_full_display_title") else page.title,
         "topics": getattr(page, "topic_ids", []),
         "language": force_str(get_locales_display_names().get(page.locale_id)),
     }

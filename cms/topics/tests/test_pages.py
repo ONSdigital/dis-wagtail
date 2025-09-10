@@ -7,6 +7,7 @@ from wagtail.test.utils import WagtailPageTestCase
 from cms.articles.tests.factories import ArticleSeriesPageFactory, StatisticalArticlePageFactory
 from cms.datasets.blocks import DatasetStoryBlock
 from cms.datasets.models import Dataset
+from cms.topics.blocks import TimeSeriesPageStoryBlock
 from cms.topics.tests.factories import TopicPageFactory
 
 
@@ -174,3 +175,49 @@ class TopicPageTests(WagtailPageTestCase):
         self.assertContains(response, manual_dataset["title"])
         self.assertContains(response, manual_dataset["description"])
         self.assertContains(response, manual_dataset["url"])
+
+        self.assertIn(
+            {
+                "url": "#data",
+                "text": "Data",
+                "attributes": {
+                    "data-ga-event": "navigation-onpage",
+                    "data-ga-navigation-type": "table-of-contents",
+                    "data-ga-section-title": "Data",
+                },
+            },
+            self.page.table_of_contents,
+        )
+
+    def test_topic_page_displays_time_series(self):
+        title = "Test Time Series"
+        url = "https://example.com/dataset"
+        description = "This is a Time Series page summary."
+
+        self.page.time_series = StreamValue(
+            TimeSeriesPageStoryBlock(),
+            stream_data=[("time_series_page_link", {"title": title, "url": url, "description": description})],
+        )
+        self.page.save_revision().publish()
+
+        response = self.client.get(self.page.url)
+
+        self.assertContains(response, "<h2>Time Series</h2>")
+        self.assertContains(response, '<section id="time-series"')
+
+        self.assertContains(response, title)
+        self.assertContains(response, url)
+        self.assertContains(response, description)
+
+        self.assertIn(
+            {
+                "url": "#time-series",
+                "text": "Time series",
+                "attributes": {
+                    "data-ga-event": "navigation-onpage",
+                    "data-ga-navigation-type": "table-of-contents",
+                    "data-ga-section-title": "Time series",
+                },
+            },
+            self.page.table_of_contents,
+        )

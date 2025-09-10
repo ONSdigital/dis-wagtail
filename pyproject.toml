@@ -132,6 +132,10 @@ convention = "google"
     # Allow what looks like hard-coded credentials
     "S106"
 ]
+"**/functional_tests/*" = [
+    # Allow use of assert statements in functional tests
+    "S101",
+]
 "cms/*/migrations/*" = [
     "RUF012"
 ]

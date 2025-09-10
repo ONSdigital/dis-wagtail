@@ -990,10 +990,14 @@ SEARCH_INDEX_EXCLUDED_PAGE_TYPES = (
     "Page",
 )
 
+# Allowed domains for linking to other parts of the ONS website (for datasets or time series)
+ONS_ALLOWED_LINK_DOMAINS = env.get("ONS_ALLOWED_LINK_DOMAINS", "ons.gov.uk").split(",")
+
 # Allowed prefixes for iframe visualisations
-IFRAME_VISUALISATION_ALLOWED_DOMAINS = env.get(
-    "IFRAME_VISUALISATION_ALLOWED_DOMAINS", "ons.gov.uk,onsdigital.uk"
-).split(",")
+if "IFRAME_VISUALISATION_ALLOWED_DOMAINS" in env:
+    IFRAME_VISUALISATION_ALLOWED_DOMAINS = env["IFRAME_VISUALISATION_ALLOWED_DOMAINS"].split(",")
+else:  # Default to ONS allowed link domains if not set
+    IFRAME_VISUALISATION_ALLOWED_DOMAINS = ONS_ALLOWED_LINK_DOMAINS
 
 # FIXME: remove before going live
 ENFORCE_EXCLUSIVE_TAXONOMY = env.get("ENFORCE_EXCLUSIVE_TAXONOMY", "true").lower() == "true"
@@ -1038,6 +1042,11 @@ CONTACT_US_URL = env.get("CONTACT_US_URL", "/aboutus/contactus/generalandstatist
 
 # Backup site URL
 BACKUP_SITE_URL = env.get("BACKUP_SITE_URL", "https://backup.ons.gov.uk")
+
+CMS_RESOURCES_ENDPOINT_ENABLED = env.get("CMS_RESOURCES_ENDPOINT_ENABLED", "false").lower() == "true"
+
+# Allow to override but default to enabled
+CMS_SEARCH_NOTIFY_ON_DELETE_OR_UNPUBLISH = env.get("CMS_SEARCH_NOTIFY_ON_DELETE_OR_UNPUBLISH", "true").lower() == "true"
 
 # Domain-based locale configuration
 CMS_USE_SUBDOMAIN_LOCALES = env.get("CMS_USE_SUBDOMAIN_LOCALES", "true").lower() == "true"

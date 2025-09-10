@@ -3,11 +3,12 @@ from behave.runner import Context
 from django.conf import settings
 from playwright.sync_api import expect
 
+from cms.settings.base import ONS_ALLOWED_LINK_DOMAINS
 from functional_tests.step_helpers.datasets import mock_datasets_responses
 
 
 @when("looks up and selects a dataset")
-def look_up_and_select_dataset(context: Context):
+def look_up_and_select_dataset(context: Context) -> None:
     mock_dataset = {
         "id": "example1",
         "description": "Example dataset for functional testing",
@@ -26,7 +27,10 @@ def look_up_and_select_dataset(context: Context):
         "url": settings.ONS_WEBSITE_DATASET_BASE_URL + mock_dataset["links"]["latest_version"]["href"],
     }
 
-    context.selected_datasets = [*getattr(context, "selected_datasets", []), dataset_displayed_fields]
+    context.selected_datasets = [
+        *getattr(context, "selected_datasets", []),
+        dataset_displayed_fields,
+    ]
 
     with mock_datasets_responses(datasets=[mock_dataset]):
         editor_tab = getattr(context, "editor_tab", "content")
@@ -40,7 +44,7 @@ def look_up_and_select_dataset(context: Context):
 
 
 @when("manually enters a dataset link")
-def manually_enter_dataset_link(context: Context):
+def manually_enter_dataset_link(context: Context) -> None:
     editor_tab = getattr(context, "editor_tab", "content")
     context.page.locator(get_datasets_panel_locator(editor_tab)).get_by_role(
         "button", name="Insert a block"
@@ -48,9 +52,12 @@ def manually_enter_dataset_link(context: Context):
     manual_dataset = {
         "title": "Manual Dataset",
         "description": "Manually entered test dataset",
-        "url": "https://example.com",
+        "url": f"https://{ONS_ALLOWED_LINK_DOMAINS[0]}/manual-dataset",
     }
-    context.selected_datasets = [*getattr(context, "selected_datasets", []), manual_dataset]
+    context.selected_datasets = [
+        *getattr(context, "selected_datasets", []),
+        manual_dataset,
+    ]
     context.page.get_by_role("option", name="Manually Linked Dataset").click()
     context.page.get_by_role("region", name="Datasets").get_by_label("Title*").fill(manual_dataset["title"])
     context.page.get_by_role("region", name="Datasets").get_by_label("Description").fill(manual_dataset["description"])
@@ -112,7 +119,7 @@ def get_datasets_panel_locator(editor_tab: str = "content") -> str:
 
 @then("the selected datasets are displayed on the page")
 @then("the selected dataset is displayed on the page")
-def check_selected_datasets_are_displayed(context: Context):
+def check_selected_datasets_are_displayed(context: Context) -> None:
     expect(context.page.get_by_role("heading", name="Data", exact=True)).to_be_visible()
 
     for dataset in context.selected_datasets:

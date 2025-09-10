@@ -1,12 +1,14 @@
 from typing import TYPE_CHECKING, Any, ClassVar
 
 from django.conf import settings
+from django.utils.functional import cached_property
 from wagtail.admin.panels import HelpPanel
 from wagtail.fields import RichTextField
 from wagtail.models import PanelPlaceholder
 
+from cms.core.formatting_utils import get_document_metadata
 from cms.core.models import BasePage, ListingFieldsMixin, SocialFieldsMixin
-from cms.core.utils import get_content_type_for_page, get_document_metadata
+from cms.core.utils import get_content_type_for_page
 from cms.taxonomy.mixins import ExclusiveTaxonomyMixin
 
 if TYPE_CHECKING:
@@ -91,3 +93,12 @@ class ThemePage(ExclusiveTaxonomyMixin, BasePage):  # type: ignore[django-manage
     summary = RichTextField(features=settings.RICH_TEXT_BASIC)
 
     content_panels: ClassVar[list["Panel"]] = [*BasePage.content_panels, "summary"]
+
+    @cached_property
+    def analytics_content_type(self) -> str:  # pylint: disable=invalid-overridden-method
+        """Return the Google Tag Manager content type for this page, which should be "themes" for top-level theme
+        pages and "sub-themes" for theme pages under other theme pages.
+        """
+        if isinstance(self.get_parent().specific_deferred, ThemePage):
+            return "sub-themes"
+        return "themes"

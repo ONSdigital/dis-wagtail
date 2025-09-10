@@ -12,7 +12,7 @@ from cms.search.utils import build_page_uri
 
 EXPECTED_CONTENT_TYPES = {
     "ReleaseCalendarPage": "release",
-    "StatisticalArticlePage": "bulletin",
+    "StatisticalArticlePage": "statistical_article",
     "InformationPage": "static_page",
     "IndexPage": "static_landing_page",
     "MethodologyPage": "static_methodology",
@@ -25,7 +25,7 @@ class ResourceDictAssertions(SimpleTestCase):
     mixin as a runnable test case.
     """
 
-    def assert_base_fields(self, payload: dict, page: Page) -> None:
+    def assert_base_fields(self, payload: dict, page: Page, title=None) -> None:
         self.assertIn("uri", payload)
         self.assertIn("title", payload)
         self.assertIn("summary", payload)
@@ -34,7 +34,8 @@ class ResourceDictAssertions(SimpleTestCase):
         self.assertIn("language", payload)
 
         self.assertEqual(payload["uri"], build_page_uri(page))
-        self.assertEqual(payload["title"], page.title)
+        expected_title = title if title is not None else page.title
+        self.assertEqual(payload["title"], expected_title)
         self.assertEqual(payload["summary"], page.summary)
 
         expected_ct = EXPECTED_CONTENT_TYPES[type(page).__name__]
