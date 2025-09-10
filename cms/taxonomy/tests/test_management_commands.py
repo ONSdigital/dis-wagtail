@@ -82,7 +82,7 @@ class SyncTopicsTests(TestCase):
             # When
             call_command("sync_topics")
 
-            self.assertEqual(logs.records[0].message, "Cannot create topic: missing slug.")
+            self.assertEqual(logs.records[0].message, "Cannot create or update topic: missing slug.")
             self.assertEqual(logs.records[0].topic, topic.id)
 
             self.assertListEqual(list(Topic.objects.all()), [])

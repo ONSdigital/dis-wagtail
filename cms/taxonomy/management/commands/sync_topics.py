@@ -105,7 +105,7 @@ def _sync_with_fetched_topics(fetched_topics: Iterable[Mapping[str, str]]) -> No
     created_count = 0
     for fetched_topic in fetched_topics:
         if not fetched_topic.get("slug"):
-            logger.warning("Cannot create topic: missing slug.", extra={"topic": fetched_topic["id"]})
+            logger.warning("Cannot create or update topic: missing slug.", extra={"topic": fetched_topic["id"]})
             continue
         if existing_topic := _get_topic(fetched_topic["id"]):
             if not _topic_matches(existing_topic, fetched_topic):
