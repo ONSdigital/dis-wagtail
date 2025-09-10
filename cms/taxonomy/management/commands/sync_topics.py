@@ -183,7 +183,7 @@ def _update_topic(existing_topic: Topic, fetched_topic: Mapping[str, str]) -> No
 
 
 def _create_topic(fetched_topic: Mapping[str, str]) -> None:
-    """Creates a Topic object with the given id, title, and description, and parent."""
+    """Creates a Topic object with the given id, title, slug, description, and parent."""
     logger.info("Saving new topic", extra={"topic": fetched_topic["id"]})
     new_topic = Topic(
         id=fetched_topic["id"],
