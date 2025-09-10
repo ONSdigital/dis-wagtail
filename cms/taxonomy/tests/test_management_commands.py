@@ -4,12 +4,12 @@ from unittest.mock import Mock, patch
 
 import requests
 from django.core.management import call_command
-from django.db.utils import IntegrityError
 from django.test import TestCase
 from requests import HTTPError
 
 from cms.taxonomy.management.commands import sync_topics
 from cms.taxonomy.models import Topic
+from cms.taxonomy.tests.factories import TopicFactory
 
 
 class SyncTopicsTests(TestCase):
@@ -74,8 +74,13 @@ class SyncTopicsTests(TestCase):
         """
         topic = create_topic(topic_id="123", include_slug=False)
 
-        with self.assertLogs("cms.taxonomy", level="WARNING") as logs, self.assertRaises(IntegrityError):
-            self.template_test_sync_one_valid_topic(topic)
+        with self.assertLogs("cms.taxonomy", level="WARNING") as logs:  # , self.assertRaises(IntegrityError):
+            # Given
+            mock_response = mock_successful_json_response([build_topic_api_json(topic)])
+            self.mock_requests.get.return_value = mock_response
+
+            # When
+            call_command("sync_topics")
 
             self.assertEqual(logs.records[0].message, "Cannot create topic: missing slug.")
             self.assertEqual(logs.records[0].topic, topic.id)
@@ -83,7 +88,7 @@ class SyncTopicsTests(TestCase):
             self.assertListEqual(list(Topic.objects.all()), [])
 
     def test_sync_valid_topic_empty_description(self):
-        topic = Topic(id="1234", title="Test Empty Description", description="")
+        topic = TopicFactory(id="1234", title="Test Empty Description", description="")
         self.template_test_sync_one_valid_topic(topic)
 
     def test_sync_valid_topic_long_id(self):
@@ -91,7 +96,7 @@ class SyncTopicsTests(TestCase):
         self.template_test_sync_one_valid_topic(topic)
 
     def test_sync_valid_topic_long_description(self):
-        topic = Topic(id="1234", title="Test Long Description", description="Lorem ipsum dolor sit amet" * 50)
+        topic = TopicFactory(id="1234", title="Test Long Description", description="Lorem ipsum dolor sit amet" * 50)
         self.template_test_sync_one_valid_topic(topic)
 
     def test_sync_valid_topic_with_subtopic_link_but_no_subtopics(self):
@@ -185,8 +190,8 @@ class SyncTopicsTests(TestCase):
     def test_topics_with_duplicate_titles(self):
         # Duplicate topic titles are valid and do exist
         # Given
-        root_topic = Topic(id="0001", title="Duplicated Title")
-        subtopic = Topic(id="0002", title=root_topic.title)
+        root_topic = TopicFactory(id="0001", title="Duplicated Title")
+        subtopic = TopicFactory(id="0002", title=root_topic.title)
 
         mock_root_topic_response = mock_successful_json_response(
             [
@@ -214,9 +219,13 @@ class SyncTopicsTests(TestCase):
 
     def test_update_topic_title(self):
         # Given
-        initial_topic = Topic(id="1234", title="Initial Title", description="Test")
-        Topic.save_new(initial_topic)
-        updated_topic = Topic(id=initial_topic.id, title="Updated Title", description=initial_topic.description)
+        initial_topic = TopicFactory(id="1234", title="Initial Title", description="Test")
+        updated_topic = Topic(
+            id=initial_topic.id,
+            title="Updated Title",
+            description=initial_topic.description,
+            slug=initial_topic.slug,
+        )
 
         mock_topic_response = mock_successful_json_response([build_topic_api_json(updated_topic)])
         self.mock_requests.get.return_value = mock_topic_response
@@ -232,9 +241,10 @@ class SyncTopicsTests(TestCase):
 
     def test_update_topic_description(self):
         # Given
-        initial_topic = Topic(id="1234", title="Initial Title", description="Test")
-        Topic.save_new(initial_topic)
-        updated_topic = Topic(id=initial_topic.id, title=initial_topic.title, description="Updated Description")
+        initial_topic = TopicFactory(id="1234", title="Initial Title", description="Test")
+        updated_topic = Topic(
+            id=initial_topic.id, title=initial_topic.title, description="Updated Description", slug=initial_topic.slug
+        )
 
         mock_topic_response = mock_successful_json_response([build_topic_api_json(updated_topic)])
         self.mock_requests.get.return_value = mock_topic_response
@@ -286,11 +296,11 @@ class SyncTopicsTests(TestCase):
 
     def test_reinstated_topic(self):
         # Given
-        removed_topic = Topic(id="1234", title="Topic Title", removed=True)
-        Topic.save_new(removed_topic)
+        removed_topic = TopicFactory(id="1234", title="Topic Title", removed=True, slug="topic-title")
 
         # Mock a response with the removed topic re-appearing
-        reinstated_topic = Topic(id=removed_topic.id, title=removed_topic.title, removed=False)
+        reinstated_topic = Topic(id=removed_topic.id, title=removed_topic.title, removed=False, slug=removed_topic.slug)
+
         mock_reinstated_response = mock_successful_json_response([build_topic_api_json(reinstated_topic)])
         self.mock_requests.get.return_value = mock_reinstated_response
 
@@ -300,6 +310,7 @@ class SyncTopicsTests(TestCase):
         # Then
         self.assertEqual(self.mock_requests.get.call_count, 1, "Expect 1 calls to retrieve topics")
         self.assertEqual(Topic.objects.all().count(), 1, "Expect 1 topics to be saved")
+
         saved_topic = Topic.objects.get(id=removed_topic.id)
         self.assertFalse(saved_topic.removed, "Expect topic to be marked as removed")
 
