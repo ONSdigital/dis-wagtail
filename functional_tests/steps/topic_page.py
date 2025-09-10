@@ -29,6 +29,7 @@ def the_user_has_featured_the_series(context: Context) -> None:
 
 
 @when("the user visits the topic page")
+@step("the user views the topic page")
 def visit_topic_page(context: Context):
     context.page.goto(context.topic_page.full_url)
 
@@ -42,11 +43,6 @@ def the_user_select_article_series(context: Context) -> None:
 def user_edits_the_ancestor_topic(context: Context) -> None:
     edit_url = reverse("wagtailadmin_pages:edit", args=(context.topic_page.id,))
     context.page.goto(f"{context.base_url}{edit_url}")
-
-
-@step("the user views the topic page")
-def user_views_the_topic_page(context: Context):
-    context.page.goto(f"{context.base_url}{context.topic_page.url}")
 
 
 @step("the user clicks to add headline figures to the topic page")

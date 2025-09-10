@@ -639,7 +639,7 @@ def the_statistical_article_page_is_selected_as_the_featured_article_on_its_cont
 
 
 @step("the user visits the containing topic page")
-def user_visits_the_containing_topic_page(context: Context):
+def user_visits_the_containing_topic_page(context: Context) -> None:
     context.page.goto(context.topic_page.full_url)
 
 
