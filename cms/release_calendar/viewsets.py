@@ -7,14 +7,16 @@ from wagtail.admin.views.generic.chooser import (
     ChosenView,
 )
 from wagtail.admin.viewsets.chooser import ChooserViewSet
+from wagtail.admin.widgets import BaseChooser
 from wagtail.models import Page
 from wagtail.permission_policies.pages import PagePermissionPolicy
 
 from cms.bundles.enums import ACTIVE_BUNDLE_STATUSES
+from cms.bundles.utils import (
+    get_release_calendar_page_title_with_status_and_release_date,
+)
 from cms.release_calendar.enums import ReleaseStatus
 from cms.release_calendar.models import ReleaseCalendarPage
-
-from .utils import get_release_calendar_page_title_with_status_and_release_date
 
 
 class FutureReleaseCalendarMixin:
@@ -82,4 +84,4 @@ class FutureReleaseCalendarPageChooserViewSet(ChooserViewSet):
 
 
 release_calendar_chooser_viewset = FutureReleaseCalendarPageChooserViewSet("release_calendar_chooser")
-FutureReleaseCalendarChooserWidget = release_calendar_chooser_viewset.widget_class
+FutureReleaseCalendarChooserWidget: type[BaseChooser] = release_calendar_chooser_viewset.widget_class
