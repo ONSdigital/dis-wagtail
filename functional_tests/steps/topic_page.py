@@ -19,12 +19,6 @@ def the_user_creates_theme_and_topic_pages(context: Context) -> None:
     context.topic_page = TopicPageFactory(title="Public Sector Finance")
 
 
-# @given("a statistical article exists under a different topic page")
-# def a_statistical_article_exists_under_a_different_topic_page(context: Context) -> None:
-#     context.article_series_page = ArticleSeriesPageFactory(title="PSF")
-#     context.first_statistical_article_page = StatisticalArticlePageFactory(parent=context.article_series_page)
-
-
 @given("the topic page has a statistical article in a series")
 def the_topic_page_has_a_statistical_article_in_a_series(context: Context) -> None:
     context.article_index_page = ArticlesIndexPageFactory(parent=context.topic_page)
