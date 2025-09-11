@@ -103,13 +103,23 @@ class ArticleSeriesPage(RoutablePageMixin, GenericTaxonomyMixin, BasePage):  # t
         return latest
 
     @path("")
-    def index_route(self, request: "HttpRequest", *args: Any, **kwargs: Any) -> "HttpResponse":
+    def latest_article(self, request: "HttpRequest", *args: Any, **kwargs: Any) -> "HttpResponse":
         """Serves the latest statistical article page in the series."""
         if not (latest := self.get_latest()):
             raise Http404
 
         request.is_preview = getattr(request, "is_preview", False)  # type: ignore[attr-defined]
         return latest.serve(request, *args, serve_as_edition=True, **kwargs)
+
+    @path("related-data/")
+    def latest_article_related_data(self, request: "HttpRequest", *args: Any, **kwargs: Any) -> "HttpResponse":
+        """Serves the related data for the latest statistical article page in the series."""
+        if not (latest := self.get_latest()):
+            raise Http404
+
+        request.is_preview = getattr(request, "is_preview", False)  # type: ignore[attr-defined]
+
+        return cast("HttpResponse", self.release(request, latest.slug, related_data=True))
 
     @path("editions/")
     def previous_releases(self, request: "HttpRequest") -> "TemplateResponse":
