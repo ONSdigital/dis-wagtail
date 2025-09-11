@@ -11,8 +11,8 @@ from django.utils.functional import cached_property
 from django.utils.html import strip_tags
 from django.utils.translation import gettext_lazy as _
 from wagtail.admin.panels import FieldPanel, FieldRowPanel, HelpPanel, MultiFieldPanel, TitleFieldPanel
-from wagtail.contrib.routable_page.models import RoutablePageMixin, path
-from wagtail.coreutils import resolve_model_string
+from wagtail.contrib.routable_page.models import path
+from wagtail.coreutils import WAGTAIL_APPEND_SLASH, resolve_model_string
 from wagtail.fields import RichTextField
 from wagtail.models import Page
 from wagtail.search import index
@@ -30,6 +30,7 @@ from cms.core.blocks.stream_blocks import SectionStoryBlock
 from cms.core.custom_date_format import ons_date_format
 from cms.core.fields import StreamField
 from cms.core.models import BasePage
+from cms.core.models.mixins import NoTrailingSlashRoutablePageMixin
 from cms.core.widgets import date_widget
 from cms.datasets.blocks import DatasetStoryBlock
 from cms.datasets.utils import format_datasets_as_document_list
@@ -73,7 +74,11 @@ class ArticlesIndexPage(BasePage):  # type: ignore[django-manager-missing]
         return redirect(self.get_parent().get_url(request=request))
 
 
-class ArticleSeriesPage(RoutablePageMixin, GenericTaxonomyMixin, BasePage):  # type: ignore[django-manager-missing]
+class ArticleSeriesPage(  # type: ignore[django-manager-missing]
+    NoTrailingSlashRoutablePageMixin,
+    GenericTaxonomyMixin,
+    BasePage,
+):
     """The article series model."""
 
     parent_page_types: ClassVar[list[str]] = ["ArticlesIndexPage"]
@@ -147,7 +152,11 @@ class ArticleSeriesPage(RoutablePageMixin, GenericTaxonomyMixin, BasePage):  # t
 
 
 # pylint: disable=too-many-public-methods
-class StatisticalArticlePage(BundledPageMixin, RoutablePageMixin, BasePage):  # type: ignore[django-manager-missing]
+class StatisticalArticlePage(  # type: ignore[django-manager-missing]
+    BundledPageMixin,
+    NoTrailingSlashRoutablePageMixin,
+    BasePage,
+):
     """The statistical article page model.
 
     Previously known as statistical bulletin, statistical analysis article, analysis page.
@@ -455,7 +464,10 @@ class StatisticalArticlePage(BundledPageMixin, RoutablePageMixin, BasePage):  # 
         self, request: "HttpRequest"
     ) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
         """Returns a list of corrections and notices for the page."""
-        base_url = self.get_url(request)
+        base_url = self.get_url(request) or ""
+        if not WAGTAIL_APPEND_SLASH:
+            # Add the trailing slash as this will be concatenated
+            base_url += "/"
         corrections = (
             [
                 serialize_correction_or_notice(
@@ -582,7 +594,7 @@ class StatisticalArticlePage(BundledPageMixin, RoutablePageMixin, BasePage):  # 
             raise Http404
 
         # Find correction by version
-        for correction in self.corrections:  # pylint: disable=not-an-iterable
+        for correction in self.corrections:
             if correction.value["version_id"] == version:
                 break
         else:
@@ -651,6 +663,9 @@ class StatisticalArticlePage(BundledPageMixin, RoutablePageMixin, BasePage):  # 
         split.insert(-1, "editions")
         page_path = "/".join(["", *split, ""])
 
+        if not WAGTAIL_APPEND_SLASH and page_path != "/":
+            page_path = page_path.rstrip("/")
+
         return site_id, root_url, page_path
 
     def serve(self, request: "HttpRequest", *args: Any, **kwargs: Any) -> "HttpResponse":
@@ -663,6 +678,8 @@ class StatisticalArticlePage(BundledPageMixin, RoutablePageMixin, BasePage):  # 
             # if for some reason we're getting the non-editioned path
             # redirect to the path with the /edition/ slug
             page_url = self.get_url(request=request)
+            if not page_url:
+                raise Http404
             if page_url != request.path:
                 return redirect(page_url)
 

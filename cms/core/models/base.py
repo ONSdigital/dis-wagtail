@@ -219,6 +219,13 @@ class BasePage(PageLDMixin, ListingFieldsMixin, SocialFieldsMixin, Page):  # typ
 
         return cast(str, canonical_page.get_full_url(request=request))
 
+    def get_url(self, request: Optional["HttpRequest"] = None, current_site: Optional["Site"] = None) -> Optional[str]:
+        """Override get_url to return URLs without trailing slashes."""
+        url: str = super().get_url(request, current_site)
+        if url and url != "/":
+            return url.rstrip("/")
+        return url
+
     @cached_property
     def cached_analytics_values(self) -> dict[str, str | bool]:
         """Return a dictionary of the cachable analytics values for this page."""

@@ -73,7 +73,7 @@ class JSONFormatterTestCase(TestCase):
 
     def test_formats_request_error(self):
         with self.assertLogs("django.request") as logs:
-            response = self.client.get("/does-not-exist/")
+            response = self.client.get("/does-not-exist")
             self.assertEqual(response.status_code, 404)
 
         self.assertEqual(
@@ -82,7 +82,7 @@ class JSONFormatterTestCase(TestCase):
                 "created_at": "2025-01-01T00:00:00",
                 "namespace": "django.request",
                 "severity": 2,
-                "event": "Not Found: /does-not-exist/",
+                "event": "Not Found: /does-not-exist",
                 "data": {"status_code": 404},
             },
         )
