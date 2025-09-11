@@ -1,4 +1,4 @@
-from behave import step, then
+from behave import step, then  # pylint: disable=no-name-in-module
 from behave.runner import Context
 from django.urls import reverse
 from playwright.sync_api import expect

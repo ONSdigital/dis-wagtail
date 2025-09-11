@@ -34,7 +34,6 @@ from .panels import ChangesToReleaseDateFieldPanel, ReleaseCalendarBundleNotePan
 if TYPE_CHECKING:
     from django.http import HttpRequest
     from django.template.response import TemplateResponse
-    from django_stubs_ext import StrOrPromise
     from wagtail.locks import BaseLock
 
     from cms.bundles.models import Bundle
@@ -224,9 +223,9 @@ class ReleaseCalendarPage(BundledPageMixin, BasePage):  # type: ignore[django-ma
         return format_datasets_as_document_list(self.datasets)
 
     @cached_property
-    def table_of_contents(self) -> list[dict[str, "StrOrPromise"]]:
+    def table_of_contents(self) -> list[dict[str, str | object]]:
         """Table of contents formatted to Design System specs."""
-        items: list[dict[str, StrOrPromise]] = [{"url": "#summary", "text": _("Summary")}]
+        items = [{"url": "#summary", "text": _("Summary")}]
 
         if self.status == ReleaseStatus.PUBLISHED:
             for block in self.content:

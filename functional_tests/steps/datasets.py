@@ -1,4 +1,4 @@
-from behave import step, then, when
+from behave import step, then, when  # pylint: disable=no-name-in-module
 from behave.runner import Context
 from django.conf import settings
 from playwright.sync_api import expect
