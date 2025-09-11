@@ -74,7 +74,7 @@ class SyncTopicsTests(TestCase):
         """
         topic = create_topic(topic_id="123", include_slug=False)
 
-        with self.assertLogs("cms.taxonomy", level="WARNING") as logs:  # , self.assertRaises(IntegrityError):
+        with self.assertLogs("cms.taxonomy", level="WARNING") as logs:
             # Given
             mock_response = mock_successful_json_response([build_topic_api_json(topic)])
             self.mock_requests.get.return_value = mock_response
