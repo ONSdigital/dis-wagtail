@@ -5,6 +5,7 @@ from wagtail.models import Page
 from cms.articles.tests.factories import ArticleSeriesPageFactory
 from cms.methodology.tests.factories import MethodologyPageFactory
 from cms.taxonomy.models import GenericPageToTaxonomyTopic, Topic
+from cms.taxonomy.tests.factories import TopicFactory
 
 
 class TopicModelTest(TestCase):
@@ -130,11 +131,10 @@ class TopicModelTest(TestCase):
 
     def test_topic_tag_path(self):
         # Create a top-level topic first
-        parent_topic = Topic(id="parent-topic", title="Parent Topic")
-        Topic.save_new(parent_topic)
+        parent_topic = TopicFactory(title="Parent Topic", slug="parenttopic")
 
         # Create a child under 'parent_topic'
-        child_topic = Topic(id="child-topic", title="Child Topic")
+        child_topic = Topic(title="Child Topic", slug="childtopic")
         Topic.save_new(child_topic, parent_topic=parent_topic)
 
         # Assert the tag path is correct

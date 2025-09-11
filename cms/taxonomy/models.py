@@ -4,7 +4,6 @@ from typing import Any, ClassVar, Optional
 from django.db import IntegrityError, models
 from django.db.models import QuerySet, UniqueConstraint
 from django.utils.functional import cached_property
-from django.utils.text import slugify
 from modelcluster.fields import ParentalKey
 from treebeard.mp_tree import MP_Node
 from wagtail.admin.panels import FieldPanel
@@ -109,14 +108,14 @@ class Topic(index.Indexed, MP_Node):
         Used for linking to search listing pages.
         """
         topic: Topic | None = self
-        topic_titles = []
+        topic_slugs = []
 
         while topic:
-            topic_titles.append(topic.title)
+            topic_slugs.append(topic.slug)
             topic = topic.get_parent()
 
-        topic_titles.reverse()
-        topic_slugs = [slugify(title).replace("-", "") for title in topic_titles]
+        # we're collecting slugs from leaf to root, so need to reverse to get the path
+        topic_slugs.reverse()
 
         return "/".join(topic_slugs)
 
