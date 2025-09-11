@@ -16,9 +16,6 @@ from wagtail.search import index
 
 from cms.core.widgets import ONSAdminDateTimeInput
 from cms.home.models import HomePage
-from cms.release_calendar.panels import (
-    ReleaseCalendarPageChooserWithStatusAndReleaseDatePanel,
-)
 from cms.topics.models import TopicPage
 from cms.workflows.utils import is_page_ready_to_preview, is_page_ready_to_publish
 
@@ -34,6 +31,7 @@ from .panels import (
     BundleMultipleChooserPanel,
     BundleStatusPanel,
     PageChooserWithStatusPanel,
+    ReleaseCalendarPageChooserWithStatusAndReleaseDatePanel,
 )
 
 if TYPE_CHECKING:

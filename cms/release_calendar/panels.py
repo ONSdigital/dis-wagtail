@@ -8,17 +8,13 @@ from django.utils.timezone import is_aware, localtime
 from wagtail.admin.panels import FieldPanel, HelpPanel
 from wagtail.admin.widgets.datetime import DEFAULT_DATETIME_FORMAT
 
-from cms.bundles.panels import BundleFieldPanel
 from cms.bundles.permissions import user_can_manage_bundles
-
-from .utils import get_release_calendar_page_title_with_status_and_release_date
 
 if TYPE_CHECKING:
     from typing import Optional
 
     from django.utils.safestring import SafeString
     from laces.typing import RenderContext
-    from wagtail.models import Page
 
 
 class ReleaseCalendarBundleNotePanel(HelpPanel):
@@ -100,35 +96,3 @@ class ChangesToReleaseDateFieldPanel(FieldPanel):
                 getattr(settings, "WAGTAIL_DATETIME_FORMAT", DEFAULT_DATETIME_FORMAT)
             )
             return context
-
-
-def get_custom_release_calendar_page_chooser() -> Any:
-    """Returns a custom chooser class for release calendar pages with a future date.
-    This helper defines the class and imports FutureReleaseCalendarChooserWidget inside the function
-    to avoid circular import errors.
-    """
-    # pylint: disable=import-outside-toplevel
-    from cms.release_calendar.viewsets import FutureReleaseCalendarChooserWidget
-
-    class CustomReleaseCalendarPageChooser(FutureReleaseCalendarChooserWidget):  # type: ignore[misc]
-        def get_display_title(self, instance: "Page") -> str:
-            return get_release_calendar_page_title_with_status_and_release_date(instance)
-
-    return CustomReleaseCalendarPageChooser
-
-
-class ReleaseCalendarPageChooserWithStatusAndReleaseDatePanel(BundleFieldPanel):
-    """A custom page chooser panel that includes the release calendar page status and release date."""
-
-    def get_form_options(self) -> dict[str, list | dict]:
-        opts: dict[str, list | dict] = super().get_form_options()
-
-        widgets = opts.setdefault("widgets", {})
-        widgets[self.field_name] = get_custom_release_calendar_page_chooser()
-
-        return opts
-
-    def format_value_for_display(self, value: Any) -> str:
-        if value is None:
-            return ""
-        return get_release_calendar_page_title_with_status_and_release_date(value)

@@ -41,7 +41,9 @@ def get_pages_in_active_bundles() -> list[int]:
     )
 
 
-def _create_content_dict_for_pages(pages: list[tuple[dict[str, Any], str]]) -> list[dict[str, Any]]:
+def _create_content_dict_for_pages(
+    pages: list[tuple[dict[str, Any], str]],
+) -> list[dict[str, Any]]:
     """Helper function to create content dictionary for article and methodology pages."""
     article_pages: list[dict[str, Any]] = []
     methodology_pages: list[dict[str, Any]] = []
@@ -54,9 +56,19 @@ def _create_content_dict_for_pages(pages: list[tuple[dict[str, Any], str]]) -> l
             case "MethodologyPage":
                 methodology_pages.append(serialized_page)
     if article_pages:
-        content.append({"type": "release_content", "value": {"title": "Publications", "links": article_pages}})
+        content.append(
+            {
+                "type": "release_content",
+                "value": {"title": "Publications", "links": article_pages},
+            }
+        )
     if methodology_pages:
-        content.append({"type": "release_content", "value": {"title": "Methodology", "links": methodology_pages}})
+        content.append(
+            {
+                "type": "release_content",
+                "value": {"title": "Methodology", "links": methodology_pages},
+            }
+        )
     return content
 
 
@@ -82,12 +94,14 @@ def serialize_preview_page(page: "Page", bundle_id: int, is_previewable: bool) -
             "page": None,
             "title": f"{specific_page.title} ({state})",
             "description": getattr(specific_page, "summary", ""),
-            "external_url": reverse("bundles:preview", args=[bundle_id, page.pk]) if is_previewable else "#",
+            "external_url": (reverse("bundles:preview", args=[bundle_id, page.pk]) if is_previewable else "#"),
         },
     }
 
 
-def serialize_bundle_content_for_published_release_calendar_page(bundle: "Bundle") -> list[dict[str, Any]]:
+def serialize_bundle_content_for_published_release_calendar_page(
+    bundle: "Bundle",
+) -> list[dict[str, Any]]:
     """Serializes the content of a bundle for a published release calendar page."""
     all_bundled_pages = bundle.get_bundled_pages()
     # Create a list of tuples with serialized pages and their specific class names
@@ -129,7 +143,9 @@ def serialize_bundle_content_for_preview_release_calendar_page(
     return _create_content_dict_for_pages(all_pages)
 
 
-def serialize_datasets_for_release_calendar_page(bundle: "Bundle") -> list[dict[str, Any]]:
+def serialize_datasets_for_release_calendar_page(
+    bundle: "Bundle",
+) -> list[dict[str, Any]]:
     """Serializes the datasets of a bundle for a release calendar page."""
     return [
         {"type": "dataset_lookup", "id": uuid.uuid4(), "value": dataset["dataset"]}
@@ -170,6 +186,17 @@ def get_preview_items_for_bundle(bundle: "Bundle", page_id: int, pages_in_bundle
     return preview_items
 
 
+def get_release_calendar_page_title_with_status_and_release_date(
+    release_calendar_page: "Page",
+) -> str:
+    """Returns the release page title, status and release date."""
+    title: str = release_calendar_page.specific_deferred.get_admin_display_title()
+    release_date: str = release_calendar_page.specific_deferred.release_date_value
+
+    status: str = release_calendar_page.specific_deferred.get_status()
+    return f"{title} ({status}) ({release_date})"
+
+
 def get_page_title_with_workflow_status(page: Page) -> str:
     title: str = page.specific_deferred.get_admin_display_title()
 
@@ -200,7 +227,8 @@ def publish_bundle(bundle: "Bundle", *, update_status: bool = True) -> None:
     """
     # using this rather than inline import to placate pyright complaining about cyclic imports
     notifications = __import__(
-        "cms.bundles.notifications.slack", fromlist=["notify_slack_of_publication_start", "notify_slack_of_publish_end"]
+        "cms.bundles.notifications.slack",
+        fromlist=["notify_slack_of_publication_start", "notify_slack_of_publish_end"],
     )
 
     logger.info(
