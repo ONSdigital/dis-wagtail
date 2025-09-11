@@ -332,7 +332,7 @@ class TopicPage(BundledPageMixin, ExclusiveTaxonomyMixin, BasePage):  # type: ig
     @cached_property
     def table_of_contents(self) -> list[dict[str, str | object]]:
         """Table of contents formatted to Design System specs."""
-        items = []
+        items: list[dict[str, str | object]] = []
         if self.latest_article_in_featured_series:
             items += [{"url": "#featured", "text": _("Featured")}]
         if self.processed_articles:  # pylint: disable=not-an-iterable,useless-suppression

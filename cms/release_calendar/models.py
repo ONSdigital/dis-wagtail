@@ -225,7 +225,7 @@ class ReleaseCalendarPage(BundledPageMixin, BasePage):  # type: ignore[django-ma
     @cached_property
     def table_of_contents(self) -> list[dict[str, str | object]]:
         """Table of contents formatted to Design System specs."""
-        items = [{"url": "#summary", "text": _("Summary")}]
+        items: list[dict[str, str | object]] = [{"url": "#summary", "text": _("Summary")}]
 
         if self.status == ReleaseStatus.PUBLISHED:
             for block in self.content:
