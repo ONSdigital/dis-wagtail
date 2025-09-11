@@ -1,11 +1,15 @@
-from behave import step, then  # pylint: disable=no-name-in-module
+from datetime import timedelta
+
+from behave import given, step, then  # pylint: disable=no-name-in-module
 from behave.runner import Context
 from django.urls import reverse
+from django.utils import timezone
 from playwright.sync_api import expect
 
 from cms.bundles.enums import BundleStatus
 from cms.bundles.models import BundleTeam
 from cms.bundles.tests.factories import BundleFactory
+from cms.release_calendar.tests.factories import ReleaseCalendarPageFactory
 from cms.teams.models import Team
 from cms.users.tests.factories import UserFactory
 
@@ -121,3 +125,77 @@ def the_user_can_see_the_bundle_details_with_creator(context: Context) -> None:
 def bundle_inspect_show(context: Context) -> None:
     expect(context.page.get_by_text("Created by")).to_be_visible()
     expect(context.page.get_by_text(context.bundle_creator.get_username())).not_to_be_visible()
+
+
+@given("a Release Calendar with a release date in the future exists")
+def create_future_release_calendar_page(context: Context) -> None:
+    tomorrow = timezone.now() + timedelta(days=1)
+    context.release_calendar_page = ReleaseCalendarPageFactory(
+        title="Future Release Calendar Page",
+        release_date=tomorrow,
+    )
+    context.release_calendar_page.save_revision().save()
+
+
+@step("the user adds a title to the bundle")
+def user_adds_title_to_bundle(context: Context):
+    context.page.get_by_role("textbox", name="Name*").fill("Test Bundles")
+
+
+@step("the user selects a release calendar page through the chooser")
+def user_schedules_future_release_calendar_page(context: Context) -> None:
+    the_user_selects_a_release_calendar(context)
+    context.page.get_by_text("Future Release Calendar Page").click()
+
+
+@step("the user saves the bundle")
+def user_saves_bundle(context: Context) -> None:
+    context.page.get_by_role("button", name="Save as draft").click()
+
+
+@step("the user sees the release calendar page title, status and release date")
+def release_calendar_page_panel_displays_status_and_release_date(
+    context: Context,
+) -> None:
+    expect(
+        context.page.get_by_text(
+            f"Future Release Calendar Page ({context.release_calendar_page.get_status()})"
+            f" ({context.release_calendar_page.release_date_value})"
+        )
+    )
+
+
+@then("the user changes the status of the release calendar page, after it has been selected")
+def user_changes_the_status_of_release_calendar_page(context: Context) -> None:
+    context.page.get_by_role("region", name="Scheduling").get_by_label("Actions").click()
+    with context.page.expect_popup() as edit_release_calendar_page:
+        context.page.get_by_role("link", name="Edit Release Calendar page").click()
+    # closes original bundles edit view
+    context.page.close()
+    # assigns context to new release calendar page edit view
+    context.page = edit_release_calendar_page.value
+    context.page.get_by_label("Status*").select_option("CONFIRMED")
+    context.page.get_by_role("button", name="Save draft").click()
+
+
+@step("returns to the bundle with this release calendar page assigned")
+def user_returns_to_bundle_page_release_calendar_page_was_assigned_to(
+    context: Context,
+) -> None:
+    with context.page.expect_popup() as bundle_admin_view:
+        context.page.locator("#panel-child-content-metadata-content").get_by_role("link", name="Bundle").click()
+    # closes release calendar page edit view
+    context.page.close()
+    # assigns context to new bundles edit view
+    context.page = bundle_admin_view.value
+
+
+@then("the user sees the release calendar page with the updated status")
+def release_calendar_page_panel_displays_updated_status_and_release_date(
+    context: Context,
+) -> None:
+    expect(
+        context.page.get_by_text(
+            f"Future Release Calendar Page (CONFIRMED) ({context.release_calendar_page.release_date_value}))"
+        )
+    )
