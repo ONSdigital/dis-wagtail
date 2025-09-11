@@ -168,7 +168,7 @@ class TopicModelTest(TestCase):
         self.assertFalse(topic.is_used_for_live_article_series)
 
     def test_is_used_for_live_methodologies(self):
-        topic = Topic(title="Methodology Topic")
+        topic = TopicFactory(title="Methodology Topic")
 
         methodology_page = MethodologyPageFactory()
 
@@ -178,8 +178,7 @@ class TopicModelTest(TestCase):
         self.assertTrue(topic.is_used_for_live_methodologies)
 
     def test_is_used_for_live_methodologies_with_unpublished_methodology(self):
-        topic = Topic(title="Methodology Topic")
-        Topic.save_new(topic)
+        topic = TopicFactory(title="Methodology Topic")
 
         methodology_page = MethodologyPageFactory(live=False)
 
