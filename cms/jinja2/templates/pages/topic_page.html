@@ -79,7 +79,7 @@
                     {# fmt:on #}
 
                     {% if search_page_urls and search_page_urls.related_articles %}
-                        <a href="{{ search_page_urls.related_articles }}">View all related articles</a>
+                        <a href="{{ search_page_urls.related_articles }}">View all related publications</a>
                     {% endif %}
 
                 </section>
@@ -132,8 +132,8 @@
                         }}
                     {# fmt:on #}
 
-                    {% if related_articles and related_articles.related_time_series %}
-                        <a href="{{ related_articles.related_time_series }}">View all related time series</a>
+                    {% if search_page_urls and search_page_urls.related_time_series %}
+                        <a href="{{ search_page_urls.related_time_series }}">View all related time series</a>
                     {% endif %}
 
                 </section>

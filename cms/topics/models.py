@@ -380,6 +380,17 @@ class TopicPage(BundledPageMixin, ExclusiveTaxonomyMixin, BasePage):  # type: ig
     def get_search_page_urls(self) -> dict[str, str] | None:
         """Returns a dictionary of links to search pages related to the taxonomy topic,
         or None if the topic or base ONS URL is missing.
+
+        Supported keys:
+            - 'related_articles'
+            - 'related_methodologies'
+            - 'related_data'
+            - 'related_time_series'
+
+        Note:
+            'related_articles' and 'related_methodologies' are only included
+            if there exist live pages tagged by the same topic as the topic page.
+
         """
         ons_base_url = settings.ONS_WEBSITE_BASE_URL
         topic = self.topic
