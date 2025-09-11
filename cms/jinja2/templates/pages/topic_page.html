@@ -77,10 +77,11 @@
                             })
                         }}
                     {# fmt:on #}
-                    {% if page.topic.is_used_for_live_article_series and topic_tag_path %}
-                        {% set related_publications_url = ONS_WEBSITE_BASE_URL+"/"+topic_tag_path+"/publications" %}
-                        <a href="{{ related_publications_url }}">View all related publications</a>
+
+                    {% if search_page_urls and search_page_urls.related_articles %}
+                        <a href="{{ search_page_urls.related_articles }}">View all related articles</a>
                     {% endif %}
+
                 </section>
             {% endif %}
 
@@ -95,9 +96,8 @@
                         }}
                     {# fmt:on #}
 
-                    {% if page.topic.is_used_for_live_methodologies and topic_tag_path %}
-                        {% set related_methodologies = ONS_WEBSITE_BASE_URL+"/"+topic_tag_path+"/topicspecificmethodology" %}
-                        <a href="{{ related_methodologies }}">View all related methodologies</a>
+                    {% if search_page_urls and search_page_urls.related_methodologies %}
+                        <a href="{{ search_page_urls.related_methodologies }}">View all related methodologies</a>
                     {% endif %}
 
                 </section>
@@ -113,10 +113,11 @@
                             })
                         }}
                     {# fmt:on #}
-                    {% if topic_tag_path %}
-                        {% set related_data_url = ONS_WEBSITE_BASE_URL+"/"+topic_tag_path+"/datalist" %}
-                        <a href="{{ related_data_url }}">View all related data</a>
+
+                    {% if search_page_urls and search_page_urls.related_data %}
+                        <a href="{{ search_page_urls.related_data }}">View all related data</a>
                     {% endif %}
+
                 </section>
             {% endif %}
 
@@ -130,10 +131,11 @@
                             })
                         }}
                     {# fmt:on #}
-                    {% if topic_tag_path %}
-                        {% set related_time_series_url = ONS_WEBSITE_BASE_URL+"/timeseriestool?topic="+topic_tag_path %}
-                        <a href="{{ related_time_series_url }}">View all related time series</a>
+
+                    {% if related_articles and related_articles.related_time_series %}
+                        <a href="{{ related_articles.related_time_series }}">View all related time series</a>
                     {% endif %}
+
                 </section>
             {% endif %}
 

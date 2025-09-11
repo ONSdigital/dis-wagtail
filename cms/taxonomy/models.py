@@ -103,7 +103,7 @@ class Topic(index.Indexed, MP_Node):
         return ""
 
     @cached_property
-    def topic_tag_path(self) -> str:
+    def slug_path(self) -> str:
         """Return the URL-like path from the root to this topic
         Used for linking to search listing pages.
         """

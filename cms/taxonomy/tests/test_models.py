@@ -129,7 +129,7 @@ class TopicModelTest(TestCase):
 
         self.assertEqual(t3.display_parent_topics, "Topic → Subtopic")
 
-    def test_topic_tag_path(self):
+    def test_slug_path(self):
         # Create a top-level topic first
         parent_topic = TopicFactory(title="Parent Topic", slug="parenttopic")
 
@@ -138,7 +138,7 @@ class TopicModelTest(TestCase):
         Topic.save_new(child_topic, parent_topic=parent_topic)
 
         # Assert the tag path is correct
-        self.assertEqual(child_topic.topic_tag_path, "parenttopic/childtopic")
+        self.assertEqual(child_topic.slug_path, "parenttopic/childtopic")
 
     def test_is_used_for_live_article_series(self):
         topic = TopicFactory(title="Series Topic")

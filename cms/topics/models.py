@@ -212,7 +212,7 @@ class TopicPage(BundledPageMixin, ExclusiveTaxonomyMixin, BasePage):  # type: ig
         context["featured_item"] = kwargs.get("featured_item", self.latest_article_in_featured_series)
         context["formatted_articles"] = get_formatted_pages_list(self.processed_articles, request=request)
         context["formatted_methodologies"] = get_formatted_pages_list(self.processed_methodologies, request=request)
-        context["topic_tag_path"] = self.topic.topic_tag_path if self.topic else None
+        context["search_page_urls"] = self.get_search_page_urls()
         return context
 
     @cached_property
@@ -376,3 +376,26 @@ class TopicPage(BundledPageMixin, ExclusiveTaxonomyMixin, BasePage):  # type: ig
         TODO: replaces when https://github.com/wagtail/wagtail/issues/13286 is fixed.
         """
         return TopicPagePermissionTester(user, self)
+
+    def get_search_page_urls(self) -> dict[str, str] | None:
+        """Returns a dictionary of links to search pages related to the taxonomy topic,
+        or None if the topic or base ONS URL is missing.
+        """
+        ons_base_url = settings.ONS_WEBSITE_BASE_URL
+        topic = self.topic
+
+        if not (ons_base_url and topic):
+            return None
+
+        links: dict[str, str] = {}
+
+        if topic.is_used_for_live_article_series:
+            links["related_articles"] = f"{ons_base_url}/{topic.slug_path}/publications"
+
+        if topic.is_used_for_live_methodologies:
+            links["related_methodologies"] = f"{ons_base_url}/{topic.slug_path}/topicspecificmethodology"
+
+        links["related_data"] = f"{ons_base_url}/{topic.slug_path}/datalist"
+        links["related_time_series"] = f"{ons_base_url}/timeseriestool?topic={topic.slug_path}"
+
+        return links
