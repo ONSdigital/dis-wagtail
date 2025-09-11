@@ -34,6 +34,7 @@ from cms.topics.viewsets import (
 
 if TYPE_CHECKING:
     from django.http import HttpRequest
+    from django_stubs_ext import StrOrPromise
     from wagtail.admin.panels import Panel
 
     from cms.users.models import User
@@ -330,9 +331,9 @@ class TopicPage(BundledPageMixin, ExclusiveTaxonomyMixin, BasePage):  # type: ig
         return [{"internal_page": page} for page in all_pages]
 
     @cached_property
-    def table_of_contents(self) -> list[dict[str, str | object]]:
+    def table_of_contents(self) -> list[dict[str, "StrOrPromise"]]:
         """Table of contents formatted to Design System specs."""
-        items = []
+        items: list[dict[str, StrOrPromise]] = []
         if self.latest_article_in_featured_series:
             items += [{"url": "#featured", "text": _("Featured")}]
         if self.processed_articles:  # pylint: disable=not-an-iterable,useless-suppression
