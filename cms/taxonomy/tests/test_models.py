@@ -141,8 +141,7 @@ class TopicModelTest(TestCase):
         self.assertEqual(child_topic.topic_tag_path, "parenttopic/childtopic")
 
     def test_is_used_for_live_article_series(self):
-        topic = Topic(id="article-topic", title="Series Topic")
-        Topic.save_new(topic)
+        topic = TopicFactory(title="Series Topic")
 
         article_series = ArticleSeriesPageFactory()
 
@@ -152,8 +151,7 @@ class TopicModelTest(TestCase):
         self.assertTrue(topic.is_used_for_live_article_series)
 
     def test_is_used_for_live_article_series_with_unpublished_series(self):
-        topic = Topic(id="article-topic", title="Series Topic")
-        Topic.save_new(topic)
+        topic = TopicFactory(title="Series Topic")
 
         article_series = ArticleSeriesPageFactory(live=False)
 
@@ -163,16 +161,14 @@ class TopicModelTest(TestCase):
         self.assertFalse(topic.is_used_for_live_article_series)
 
     def test_is_used_for_live_article_series_not_tagged(self):
-        topic = Topic(id="article-topic", title="Series Topic")
-        Topic.save_new(topic)
+        topic = TopicFactory(title="Series Topic")
 
         # Note: We don't assign any ArticleSeriesPages to the Topic here
 
         self.assertFalse(topic.is_used_for_live_article_series)
 
     def test_is_used_for_live_methodologies(self):
-        topic = Topic(id="methodology-topic", title="Methodology Topic")
-        Topic.save_new(topic)
+        topic = Topic(title="Methodology Topic")
 
         methodology_page = MethodologyPageFactory()
 
@@ -182,7 +178,7 @@ class TopicModelTest(TestCase):
         self.assertTrue(topic.is_used_for_live_methodologies)
 
     def test_is_used_for_live_methodologies_with_unpublished_methodology(self):
-        topic = Topic(id="methodology-topic", title="Methodology Topic")
+        topic = Topic(title="Methodology Topic")
         Topic.save_new(topic)
 
         methodology_page = MethodologyPageFactory(live=False)
@@ -193,8 +189,7 @@ class TopicModelTest(TestCase):
         self.assertFalse(topic.is_used_for_live_methodologies)
 
     def test_is_used_for_live_methodologies_not_tagged(self):
-        topic = Topic(id="methodology-topic", title="Methodology Topic")
-        Topic.save_new(topic)
+        topic = TopicFactory(title="Methodology Topic")
 
         # Note: We don't assign any MethodologyPages to the Topic here
 
