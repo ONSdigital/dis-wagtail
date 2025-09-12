@@ -107,7 +107,7 @@ class Topic(index.Indexed, MP_Node):
         """Return the URL-like path from the root to this topic.
         Used for linking to search listing pages.
         """
-        # Ancestors are ordered root to leaf. Exclude the dummy root via depth.
+        # Ancestors are ordered root to leaf.
         ancestor_slugs = list(self.get_ancestors().values_list("slug", flat=True))
         return "/".join([*ancestor_slugs, self.slug])
 
