@@ -392,21 +392,23 @@ class TopicPage(BundledPageMixin, ExclusiveTaxonomyMixin, BasePage):  # type: ig
             if there exist live pages tagged by the same topic as the topic page.
 
         """
-        ons_base_url = settings.ONS_WEBSITE_BASE_URL
-        topic = self.topic
-
-        if not (ons_base_url and topic):
+        if not (topic := self.topic):
             return None
 
         links: dict[str, str] = {}
 
         if topic.is_used_for_live_article_series:
-            links["related_articles"] = f"{ons_base_url}/{topic.slug_path}/publications"
+            links["related_articles"] = f"{settings.ONS_WEBSITE_BASE_URL}/{topic.slug_path}/publications"
 
         if topic.is_used_for_live_methodologies:
-            links["related_methodologies"] = f"{ons_base_url}/{topic.slug_path}/topicspecificmethodology"
+            links["related_methodologies"] = (
+                f"{settings.ONS_WEBSITE_BASE_URL}/{topic.slug_path}/topicspecificmethodology"
+            )
 
-        links["related_data"] = f"{ons_base_url}/{topic.slug_path}/datalist"
-        links["related_time_series"] = f"{ons_base_url}/timeseriestool?topic={topic.slug_path}"
+        if self.datasets:
+            links["related_data"] = f"{settings.ONS_WEBSITE_BASE_URL}/{topic.slug_path}/datalist"
+
+        if self.time_series:
+            links["related_time_series"] = f"{settings.ONS_WEBSITE_BASE_URL}/timeseriestool?topic={topic.slug_path}"
 
         return links

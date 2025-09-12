@@ -622,6 +622,9 @@ class TopicPageSearchListingPagesTests(WagtailTestUtils, TestCase):
         )
         self.topic_page.save()
 
+        page_context = self.topic_page.get_context(get_dummy_request())
+        self.assertIn("related_data", page_context["search_page_urls"])
+
         response = self.client.get(self.topic_page.url)
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "Data")
@@ -630,10 +633,15 @@ class TopicPageSearchListingPagesTests(WagtailTestUtils, TestCase):
 
     def test_related_dataset_link_does_not_come_up_when_datasets_section_not_present(self):
         """Test that the 'See more related datasets' links does not appear
+        and the link to search page isn't included in the context
         when there are no datasets in the datasets section.
         """
         self.topic_page.datasets = None
         self.topic_page.save()
+
+        page_context = self.topic_page.get_context(get_dummy_request())
+        self.assertNotIn("related_data", page_context["search_page_urls"])
+
         response = self.client.get(self.topic_page.url)
         self.assertEqual(response.status_code, 200)
         self.assertNotContains(response, "Data")
@@ -659,11 +667,9 @@ class TopicPageSearchListingPagesTests(WagtailTestUtils, TestCase):
             ],
         )
         self.topic_page.save()
-        response = self.client.get(self.topic_page.url)
-        self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "Time Series")
-        self.assertContains(response, "Test time series")
-        self.assertContains(response, "View all related time series")
+
+        page_context = self.topic_page.get_context(get_dummy_request())
+        self.assertIn("related_time_series", page_context["search_page_urls"])
 
         response = self.client.get(self.topic_page.url)
         self.assertEqual(response.status_code, 200)
@@ -673,10 +679,15 @@ class TopicPageSearchListingPagesTests(WagtailTestUtils, TestCase):
 
     def test_related_time_series_link_does_not_come_up_when_time_series_section_not_present(self):
         """Test that the 'See more related time series' links does not appear
+        and the link to search page isn't included in the context
         when there are no time series in the time series section.
         """
         self.topic_page.time_series = None
         self.topic_page.save()
+
+        page_context = self.topic_page.get_context(get_dummy_request())
+        self.assertNotIn("related_time_series", page_context["search_page_urls"])
+
         response = self.client.get(self.topic_page.url)
         self.assertEqual(response.status_code, 200)
         self.assertNotContains(response, "Time Series")
