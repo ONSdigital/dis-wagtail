@@ -406,7 +406,7 @@ class TopicPage(BundledPageMixin, ExclusiveTaxonomyMixin, BasePage):  # type: ig
             )
 
         if self.datasets:
-            links["related_data"] = f"{settings.ONS_WEBSITE_BASE_URL}/{topic.slug_path}/datalist"
+            links["related_data"] = f"{settings.ONS_WEBSITE_BASE_URL}/{topic.slug_path}/datalist?filter=datasets"
 
         if self.time_series:
             links["related_time_series"] = f"{settings.ONS_WEBSITE_BASE_URL}/timeseriestool?topic={topic.slug_path}"

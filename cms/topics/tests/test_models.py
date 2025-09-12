@@ -1,5 +1,6 @@
 from datetime import datetime
 
+from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.test import TestCase, override_settings
 from django.urls import reverse
@@ -486,7 +487,8 @@ class TopicPageRelatedArticleValidationTests(TestCase):
 class TopicPageSearchListingPagesTests(WagtailTestUtils, TestCase):
     @classmethod
     def setUpTestData(cls):
-        cls.topic_page = TopicPageFactory()
+        cls.topic_tag = TopicFactory(slug="testtopic")
+        cls.topic_page = TopicPageFactory(topic=cls.topic_tag)
 
     # Related publications (statistical articles)
 
@@ -503,6 +505,7 @@ class TopicPageSearchListingPagesTests(WagtailTestUtils, TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "Related articles")
         self.assertContains(response, "View all related articles")
+        self.assertContains(response, f"{settings.ONS_WEBSITE_BASE_URL}/{self.topic_tag.slug}/publications")
 
     def test_articles_search_link_comes_up_when_highlighted_articles_are_selected(self):
         """Check that the 'View all related articles' link appears when there are highlighted article pages."""
@@ -516,6 +519,7 @@ class TopicPageSearchListingPagesTests(WagtailTestUtils, TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "Related articles")
         self.assertContains(response, "View all related articles")
+        self.assertContains(response, f"{settings.ONS_WEBSITE_BASE_URL}/{self.topic_tag.slug}/publications")
 
     def test_articles_search_link_doesnt_come_up_when_no_child_or_highlighted_articles(self):
         """Check that the link to search pages for articles isn't present
@@ -530,6 +534,7 @@ class TopicPageSearchListingPagesTests(WagtailTestUtils, TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertNotContains(response, "Related articles")
         self.assertNotContains(response, "View all related articles")
+        self.assertNotContains(response, f"{settings.ONS_WEBSITE_BASE_URL}/{self.topic_tag.slug}/publications")
 
     # Related methodologies
 
@@ -547,6 +552,7 @@ class TopicPageSearchListingPagesTests(WagtailTestUtils, TestCase):
         self.assertContains(response, "Methods and quality information")
         self.assertContains(response, methodology_page.title)
         self.assertContains(response, "View all related methodology")
+        self.assertContains(response, f"{settings.ONS_WEBSITE_BASE_URL}/{self.topic_tag.slug}/topicspecificmethodology")
 
     def test_methodologies_search_link_comes_up_when_highlighted_methodologies_are_selected(self):
         """Check that the "View all related methodology" comes up when there are highlighted methodology pages."""
@@ -561,6 +567,7 @@ class TopicPageSearchListingPagesTests(WagtailTestUtils, TestCase):
         self.assertContains(response, "Methods and quality information")
         self.assertContains(response, methodology_page.title)
         self.assertContains(response, "View all related methodology")
+        self.assertContains(response, f"{settings.ONS_WEBSITE_BASE_URL}/{self.topic_tag.slug}/topicspecificmethodology")
 
     def test_methodologies_search_link_doesnt_come_up_when_no_child_or_highlighted_methodologies(self):
         """Check that the link to search pages for methodology pages isn't present
@@ -575,6 +582,9 @@ class TopicPageSearchListingPagesTests(WagtailTestUtils, TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertNotContains(response, "Methods and quality information")
         self.assertNotContains(response, "View all related methodology")
+        self.assertNotContains(
+            response, f"{settings.ONS_WEBSITE_BASE_URL}/{self.topic_tag.slug}/topicspecificmethodology"
+        )
 
     # Related datasets
 
@@ -605,6 +615,7 @@ class TopicPageSearchListingPagesTests(WagtailTestUtils, TestCase):
         self.assertContains(response, "Data")
         self.assertContains(response, "Test dataset")
         self.assertContains(response, "View all related data")
+        self.assertContains(response, f"{settings.ONS_WEBSITE_BASE_URL}/{self.topic_tag.slug}/datalist?filter=datasets")
 
     def test_related_dataset_link_does_not_come_up_when_datasets_section_not_present(self):
         """Test that the 'View all related data' links does not appear
@@ -621,6 +632,9 @@ class TopicPageSearchListingPagesTests(WagtailTestUtils, TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertNotContains(response, "Data")
         self.assertNotContains(response, "View all related data")
+        self.assertNotContains(
+            response, f"{settings.ONS_WEBSITE_BASE_URL}/{self.topic_tag.slug}/datalist?filter=datasets"
+        )
 
     # Related time series
 
@@ -651,6 +665,9 @@ class TopicPageSearchListingPagesTests(WagtailTestUtils, TestCase):
         self.assertContains(response, "Time series")
         self.assertContains(response, "Test time series")
         self.assertContains(response, "View all related time series")
+        self.assertContains(
+            response, f"{settings.ONS_WEBSITE_BASE_URL}/timeseriestool?topic={self.topic_tag.slug_path}"
+        )
 
     def test_related_time_series_link_does_not_come_up_when_time_series_section_not_present(self):
         """Test that the 'See more related time series' links does not appear
@@ -667,3 +684,6 @@ class TopicPageSearchListingPagesTests(WagtailTestUtils, TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertNotContains(response, "Time Series")
         self.assertNotContains(response, "View all related time series")
+        self.assertNotContains(
+            response, f"{settings.ONS_WEBSITE_BASE_URL}/timeseriestool?topic={self.topic_tag.slug_path}"
+        )
