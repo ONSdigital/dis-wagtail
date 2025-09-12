@@ -491,7 +491,7 @@ class TopicPageSearchListingPagesTests(WagtailTestUtils, TestCase):
     # Related publications (statistical articles)
 
     def test_articles_search_link_comes_up_when_child_articles_exist(self):
-        """Check that the 'View all related publications' link appears when there are child article pages."""
+        """Check that the 'View all related articles' link appears when there are child article pages."""
         article_series_page = ArticleSeriesPageFactory(parent=self.topic_page)
         article_page = StatisticalArticlePageFactory(parent=article_series_page)
 
@@ -502,10 +502,10 @@ class TopicPageSearchListingPagesTests(WagtailTestUtils, TestCase):
         response = self.client.get(self.topic_page.url)
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "Related articles")
-        self.assertContains(response, "View all related publications")
+        self.assertContains(response, "View all related articles")
 
     def test_articles_search_link_comes_up_when_highlighted_articles_are_selected(self):
-        """Check that the 'View all related publications' link appears when there are highlighted article pages."""
+        """Check that the 'View all related articles' link appears when there are highlighted article pages."""
         article_page = StatisticalArticlePageFactory()
         TopicPageRelatedArticle.objects.create(parent=self.topic_page, page=article_page)
 
@@ -515,7 +515,7 @@ class TopicPageSearchListingPagesTests(WagtailTestUtils, TestCase):
         response = self.client.get(self.topic_page.url)
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "Related articles")
-        self.assertContains(response, "View all related publications")
+        self.assertContains(response, "View all related articles")
 
     def test_articles_search_link_doesnt_come_up_when_no_child_or_highlighted_articles(self):
         """Check that the link to search pages for articles isn't present
@@ -534,7 +534,7 @@ class TopicPageSearchListingPagesTests(WagtailTestUtils, TestCase):
     # Related methodologies
 
     def test_methodologies_search_link_comes_up_when_child_methodologies_exist(self):
-        """Check that the "View all related methodologies" comes up when there are child methodology pages."""
+        """Check that the "View all related methodology" comes up when there are child methodology pages."""
         methodology_index_page = MethodologyIndexPageFactory(parent=self.topic_page)
         methodology_page = MethodologyPageFactory(parent=methodology_index_page)
 
@@ -546,10 +546,10 @@ class TopicPageSearchListingPagesTests(WagtailTestUtils, TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "Methods and quality information")
         self.assertContains(response, methodology_page.title)
-        self.assertContains(response, "View all related methodologies")
+        self.assertContains(response, "View all related methodology")
 
     def test_methodologies_search_link_comes_up_when_highlighted_methodologies_are_selected(self):
-        """Check that the "View all related methodologies" comes up when there are highlighted methodology pages."""
+        """Check that the "View all related methodology" comes up when there are highlighted methodology pages."""
         methodology_page = MethodologyPageFactory()
         TopicPageRelatedMethodology.objects.create(parent=self.topic_page, page=methodology_page)
 
@@ -560,7 +560,7 @@ class TopicPageSearchListingPagesTests(WagtailTestUtils, TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "Methods and quality information")
         self.assertContains(response, methodology_page.title)
-        self.assertContains(response, "View all related methodologies")
+        self.assertContains(response, "View all related methodology")
 
     def test_methodologies_search_link_doesnt_come_up_when_no_child_or_highlighted_methodologies(self):
         """Check that the link to search pages for methodology pages isn't present
@@ -574,12 +574,12 @@ class TopicPageSearchListingPagesTests(WagtailTestUtils, TestCase):
         response = self.client.get(self.topic_page.url)
         self.assertEqual(response.status_code, 200)
         self.assertNotContains(response, "Methods and quality information")
-        self.assertNotContains(response, "View all related methodologies")
+        self.assertNotContains(response, "View all related methodology")
 
     # Related datasets
 
     def test_related_dataset_link_comes_up_when_dataset_section_is_present(self):
-        """Test that the 'See more related datasets' links appears
+        """Test that the 'View all related data' links appears
         when there is at least one dataset in the datasets section.
         """
         self.topic_page.datasets = StreamValue(
@@ -607,7 +607,7 @@ class TopicPageSearchListingPagesTests(WagtailTestUtils, TestCase):
         self.assertContains(response, "View all related data")
 
     def test_related_dataset_link_does_not_come_up_when_datasets_section_not_present(self):
-        """Test that the 'See more related datasets' links does not appear
+        """Test that the 'View all related data' links does not appear
         and the link to search page isn't included in the context
         when there are no datasets in the datasets section.
         """
