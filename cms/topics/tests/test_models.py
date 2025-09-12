@@ -1,5 +1,6 @@
 from datetime import datetime
 
+from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.test import TestCase, override_settings
 from django.urls import reverse
@@ -13,9 +14,10 @@ from wagtail.test.utils.form_data import inline_formset, nested_form_data, rich_
 from cms.articles.tests.factories import ArticleSeriesPageFactory, StatisticalArticlePageFactory
 from cms.datasets.blocks import DatasetStoryBlock
 from cms.home.models import HomePage
-from cms.methodology.tests.factories import MethodologyPageFactory
+from cms.methodology.tests.factories import MethodologyIndexPageFactory, MethodologyPageFactory
 from cms.taxonomy.tests.factories import TopicFactory
-from cms.topics.models import TopicPage
+from cms.topics.blocks import TimeSeriesPageStoryBlock
+from cms.topics.models import TopicPage, TopicPageRelatedArticle, TopicPageRelatedMethodology
 from cms.topics.tests.factories import (
     TopicPageFactory,
     TopicPageRelatedArticleFactory,
@@ -480,3 +482,208 @@ class TopicPageRelatedArticleValidationTests(TestCase):
         )
         # Should not raise ValidationError
         related_article.clean()
+
+
+class TopicPageSearchListingPagesTests(WagtailTestUtils, TestCase):
+    @classmethod
+    def setUpTestData(cls):
+        cls.topic_tag = TopicFactory(slug="testtopic")
+        cls.topic_page = TopicPageFactory(topic=cls.topic_tag)
+
+    # Related publications (statistical articles)
+
+    def test_articles_search_link_comes_up_when_child_articles_exist(self):
+        """Check that the 'View all related articles' link appears when there are child article pages."""
+        article_series_page = ArticleSeriesPageFactory(parent=self.topic_page)
+        article_page = StatisticalArticlePageFactory(parent=article_series_page)
+
+        topic_page_context = self.topic_page.get_context(get_dummy_request())
+        self.assertIn("related_articles", topic_page_context["search_page_urls"])
+        self.assertEqual(self.topic_page.processed_articles[0]["internal_page"], article_page)
+
+        response = self.client.get(self.topic_page.url)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Related articles")
+        self.assertContains(response, "View all related articles")
+        self.assertContains(response, f"{settings.ONS_WEBSITE_BASE_URL}/{self.topic_tag.slug}/publications")
+
+    def test_articles_search_link_comes_up_when_highlighted_articles_are_selected(self):
+        """Check that the 'View all related articles' link appears when there are highlighted article pages."""
+        article_page = StatisticalArticlePageFactory()
+        TopicPageRelatedArticle.objects.create(parent=self.topic_page, page=article_page)
+
+        topic_page_context = self.topic_page.get_context(get_dummy_request())
+        self.assertIn("related_articles", topic_page_context["search_page_urls"])
+
+        response = self.client.get(self.topic_page.url)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Related articles")
+        self.assertContains(response, "View all related articles")
+        self.assertContains(response, f"{settings.ONS_WEBSITE_BASE_URL}/{self.topic_tag.slug}/publications")
+
+    def test_articles_search_link_doesnt_come_up_when_no_child_or_highlighted_articles(self):
+        """Check that the link to search pages for articles isn't present
+        when there are no child or highlighted articles.
+        """
+        # Note - no child or related articles
+
+        topic_page_context = self.topic_page.get_context(get_dummy_request())
+        self.assertNotIn("related_articles", topic_page_context["search_page_urls"])
+
+        response = self.client.get(self.topic_page.url)
+        self.assertEqual(response.status_code, 200)
+        self.assertNotContains(response, "Related articles")
+        self.assertNotContains(response, "View all related articles")
+        self.assertNotContains(response, f"{settings.ONS_WEBSITE_BASE_URL}/{self.topic_tag.slug}/publications")
+
+    # Related methodologies
+
+    def test_methodologies_search_link_comes_up_when_child_methodologies_exist(self):
+        """Check that the "View all related methodology" comes up when there are child methodology pages."""
+        methodology_index_page = MethodologyIndexPageFactory(parent=self.topic_page)
+        methodology_page = MethodologyPageFactory(parent=methodology_index_page)
+
+        topic_page_context = self.topic_page.get_context(get_dummy_request())
+        self.assertIn("related_methodologies", topic_page_context["search_page_urls"])
+        self.assertEqual(self.topic_page.processed_methodologies[0]["internal_page"], methodology_page)
+
+        response = self.client.get(self.topic_page.url)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Methods and quality information")
+        self.assertContains(response, methodology_page.title)
+        self.assertContains(response, "View all related methodology")
+        self.assertContains(response, f"{settings.ONS_WEBSITE_BASE_URL}/{self.topic_tag.slug}/topicspecificmethodology")
+
+    def test_methodologies_search_link_comes_up_when_highlighted_methodologies_are_selected(self):
+        """Check that the "View all related methodology" comes up when there are highlighted methodology pages."""
+        methodology_page = MethodologyPageFactory()
+        TopicPageRelatedMethodology.objects.create(parent=self.topic_page, page=methodology_page)
+
+        topic_page_context = self.topic_page.get_context(get_dummy_request())
+        self.assertIn("related_methodologies", topic_page_context["search_page_urls"])
+
+        response = self.client.get(self.topic_page.url)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Methods and quality information")
+        self.assertContains(response, methodology_page.title)
+        self.assertContains(response, "View all related methodology")
+        self.assertContains(response, f"{settings.ONS_WEBSITE_BASE_URL}/{self.topic_tag.slug}/topicspecificmethodology")
+
+    def test_methodologies_search_link_doesnt_come_up_when_no_child_or_highlighted_methodologies(self):
+        """Check that the link to search pages for methodology pages isn't present
+        when there are no child or highlighted methodology pages.
+        """
+        # Note - no child or related methodologies
+
+        topic_page_context = self.topic_page.get_context(get_dummy_request())
+        self.assertNotIn("related_methodologies", topic_page_context["search_page_urls"])
+
+        response = self.client.get(self.topic_page.url)
+        self.assertEqual(response.status_code, 200)
+        self.assertNotContains(response, "Methods and quality information")
+        self.assertNotContains(response, "View all related methodology")
+        self.assertNotContains(
+            response, f"{settings.ONS_WEBSITE_BASE_URL}/{self.topic_tag.slug}/topicspecificmethodology"
+        )
+
+    # Related datasets
+
+    def test_related_dataset_link_comes_up_when_dataset_section_is_present(self):
+        """Test that the 'View all related data' links appears
+        when there is at least one dataset in the datasets section.
+        """
+        self.topic_page.datasets = StreamValue(
+            DatasetStoryBlock(),
+            stream_data=[
+                (
+                    "manual_link",
+                    {
+                        "title": "Test dataset",
+                        "description": "Test description",
+                        "url": "https://example.com",
+                    },
+                )
+            ],
+        )
+        self.topic_page.save()
+
+        page_context = self.topic_page.get_context(get_dummy_request())
+        self.assertIn("related_data", page_context["search_page_urls"])
+
+        response = self.client.get(self.topic_page.url)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Data")
+        self.assertContains(response, "Test dataset")
+        self.assertContains(response, "View all related data")
+        self.assertContains(response, f"{settings.ONS_WEBSITE_BASE_URL}/{self.topic_tag.slug}/datalist?filter=datasets")
+
+    def test_related_dataset_link_does_not_come_up_when_datasets_section_not_present(self):
+        """Test that the 'View all related data' links does not appear
+        and the link to search page isn't included in the context
+        when there are no datasets in the datasets section.
+        """
+        self.topic_page.datasets = None
+        self.topic_page.save()
+
+        page_context = self.topic_page.get_context(get_dummy_request())
+        self.assertNotIn("related_data", page_context["search_page_urls"])
+
+        response = self.client.get(self.topic_page.url)
+        self.assertEqual(response.status_code, 200)
+        self.assertNotContains(response, "Data")
+        self.assertNotContains(response, "View all related data")
+        self.assertNotContains(
+            response, f"{settings.ONS_WEBSITE_BASE_URL}/{self.topic_tag.slug}/datalist?filter=datasets"
+        )
+
+    # Related time series
+
+    def test_related_time_series_link_comes_up_when_time_series_section_is_present(self):
+        """Test that the 'See more related time series' links appears
+        when there is at least one time series in the time series section.
+        """
+        self.topic_page.time_series = StreamValue(
+            TimeSeriesPageStoryBlock(),
+            stream_data=[
+                (
+                    "time_series_page_link",
+                    {
+                        "title": "Test time series",
+                        "description": "Test description",
+                        "url": "https://example.com",
+                    },
+                )
+            ],
+        )
+        self.topic_page.save()
+
+        page_context = self.topic_page.get_context(get_dummy_request())
+        self.assertIn("related_time_series", page_context["search_page_urls"])
+
+        response = self.client.get(self.topic_page.url)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Time series")
+        self.assertContains(response, "Test time series")
+        self.assertContains(response, "View all related time series")
+        self.assertContains(
+            response, f"{settings.ONS_WEBSITE_BASE_URL}/timeseriestool?topic={self.topic_tag.slug_path}"
+        )
+
+    def test_related_time_series_link_does_not_come_up_when_time_series_section_not_present(self):
+        """Test that the 'See more related time series' links does not appear
+        and the link to search page isn't included in the context
+        when there are no time series in the time series section.
+        """
+        self.topic_page.time_series = None
+        self.topic_page.save()
+
+        page_context = self.topic_page.get_context(get_dummy_request())
+        self.assertNotIn("related_time_series", page_context["search_page_urls"])
+
+        response = self.client.get(self.topic_page.url)
+        self.assertEqual(response.status_code, 200)
+        self.assertNotContains(response, "Time Series")
+        self.assertNotContains(response, "View all related time series")
+        self.assertNotContains(
+            response, f"{settings.ONS_WEBSITE_BASE_URL}/timeseriestool?topic={self.topic_tag.slug_path}"
+        )

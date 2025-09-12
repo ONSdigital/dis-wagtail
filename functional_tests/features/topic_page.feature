@@ -90,6 +90,7 @@ Feature: CMS users can draft, edit, and publish topic pages
         And the user clicks "Publish"
         And the user views the topic page
         Then the selected datasets are displayed on the page
+        And the user sees the 'View all related data' link
 
     Scenario: A CMS user can add a time series section to a topic page
         Given a topic page exists under the homepage
@@ -98,4 +99,19 @@ Feature: CMS users can draft, edit, and publish topic pages
         And the user clicks "Publish"
         And the user views the topic page
         Then the time series section is displayed on the page
+        And the user sees the 'View all related time series' link
         And the time series item appears in the table of contents
+
+    Scenario: The 'View all related publications' link appears on a topic page
+        Given a topic page exists under the homepage
+        And the topic page has a statistical article in a series
+        And the statistical article is tagged to the same taxonomy topic as the topic page
+        When the user visits the topic page
+        Then the user sees the 'View all related publications' link
+
+    Scenario: The 'View all related methodologies' link appears on a topic page
+        Given a topic page exists under the homepage
+        And the topic page has a child methodology page
+        And the methodology page is tagged to the same taxonomy topic as the topic page
+        When the user visits the topic page
+        Then the user sees the 'View all related methodologies' link
