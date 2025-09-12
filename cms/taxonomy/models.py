@@ -108,7 +108,7 @@ class Topic(index.Indexed, MP_Node):
         Used for linking to search listing pages.
         """
         # Ancestors are ordered root to leaf. Exclude the dummy root via depth.
-        ancestor_slugs = list(self.get_ancestors().filter(depth__gte=BASE_TOPIC_DEPTH).values_list("slug", flat=True))
+        ancestor_slugs = list(self.get_ancestors().values_list("slug", flat=True))
         return "/".join([*ancestor_slugs, self.slug])
 
 
