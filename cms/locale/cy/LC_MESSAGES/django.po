@@ -39,10 +39,8 @@ msgid "All data related to"
 msgstr ""
 
 #: cms/articles/models.py:491
-#, fuzzy
-#| msgid "Release date:"
 msgid "Release date"
-msgstr "Dyddiad y datganiad"
+msgstr ""
 
 #: cms/articles/utils.py:24
 msgid "Correction"
@@ -521,26 +519,20 @@ msgid "Related articles"
 msgstr "Erthyglau cysylltiedig"
 
 #: cms/jinja2/templates/pages/topic_page.html:82
-#, fuzzy
-#| msgid "Related articles"
 msgid "View all related articles"
-msgstr "Erthyglau cysylltiedig"
+msgstr ""
 
 #: cms/jinja2/templates/pages/topic_page.html:90 cms/topics/models.py:342
 msgid "Methods and quality information"
 msgstr "Dulliau a gwybodaeth o ansawdd"
 
 #: cms/jinja2/templates/pages/topic_page.html:100
-#, fuzzy
-#| msgid "Cite this methodology"
 msgid "View all related methodology"
-msgstr "Dyfynnwch y fethodoleg hon"
+msgstr ""
 
 #: cms/jinja2/templates/pages/topic_page.html:118
-#, fuzzy
-#| msgid "Related data"
 msgid "View all related data"
-msgstr "Dyddiad y datganiad"
+msgstr ""
 
 #: cms/jinja2/templates/pages/topic_page.html:126
 msgid "Time Series"
