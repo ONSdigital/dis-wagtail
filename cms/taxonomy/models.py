@@ -104,7 +104,7 @@ class Topic(index.Indexed, MP_Node):
 
     @cached_property
     def slug_path(self) -> str:
-        """Return the URL-like path from the root to this topic
+        """Return the URL-like path from the root to this topic.
         Used for linking to search listing pages.
         """
         # Ancestors are ordered root to leaf. Exclude the dummy root via depth.

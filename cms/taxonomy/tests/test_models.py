@@ -129,14 +129,20 @@ class TopicModelTest(TestCase):
 
     def test_slug_path(self):
         # Create a top-level topic first
-        parent_topic = TopicFactory(title="Parent Topic", slug="parenttopic")
+        grandparent_topic = TopicFactory(title="Grandparent Topic", slug="grandparenttopic")
 
-        # Create a child under 'parent_topic'
-        child_topic = Topic(title="Child Topic", slug="childtopic")
+        # Create the first level child topic
+        parent_topic = Topic(id="1", title="Parent Topic", slug="parenttopic")
+        Topic.save_new(parent_topic, parent_topic=grandparent_topic)
+
+        # Create the second level child topic
+        child_topic = Topic(id="2", title="Child Topic", slug="childtopic")
         Topic.save_new(child_topic, parent_topic=parent_topic)
 
         # Assert the tag path is correct
-        self.assertEqual(child_topic.slug_path, "parenttopic/childtopic")
+        self.assertEqual(grandparent_topic.slug_path, "grandparenttopic")
+        self.assertEqual(parent_topic.slug_path, "grandparenttopic/parenttopic")
+        self.assertEqual(child_topic.slug_path, "grandparenttopic/parenttopic/childtopic")
 
     def test_get_base_parent(self):
         base_topic = Topic(id="1", title="Base Topic")
