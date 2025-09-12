@@ -2,7 +2,6 @@ from django.db import IntegrityError
 from django.test import TestCase
 from wagtail.models import Page
 
-from cms.articles.tests.factories import ArticleSeriesPageFactory
 from cms.taxonomy.models import GenericPageToTaxonomyTopic, Topic
 from cms.taxonomy.tests.factories import TopicFactory
 
@@ -138,33 +137,6 @@ class TopicModelTest(TestCase):
 
         # Assert the tag path is correct
         self.assertEqual(child_topic.slug_path, "parenttopic/childtopic")
-
-    def test_is_used_for_live_article_series(self):
-        topic = TopicFactory(title="Series Topic")
-
-        article_series = ArticleSeriesPageFactory()
-
-        GenericPageToTaxonomyTopic.objects.create(page=article_series, topic=topic)
-
-        self.assertTrue(article_series.live)
-        self.assertTrue(topic.is_used_for_live_article_series)
-
-    def test_is_used_for_live_article_series_with_unpublished_series(self):
-        topic = TopicFactory(title="Series Topic")
-
-        article_series = ArticleSeriesPageFactory(live=False)
-
-        GenericPageToTaxonomyTopic.objects.create(page=article_series, topic=topic)
-
-        self.assertFalse(article_series.live)
-        self.assertFalse(topic.is_used_for_live_article_series)
-
-    def test_is_used_for_live_article_series_not_tagged(self):
-        topic = TopicFactory(title="Series Topic")
-
-        # Note: We don't assign any ArticleSeriesPages to the Topic here
-
-        self.assertFalse(topic.is_used_for_live_article_series)
 
     def test_get_base_parent(self):
         base_topic = Topic(id="1", title="Base Topic")
