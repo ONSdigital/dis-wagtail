@@ -3,7 +3,6 @@ from django.test import TestCase
 from wagtail.models import Page
 
 from cms.articles.tests.factories import ArticleSeriesPageFactory
-from cms.methodology.tests.factories import MethodologyPageFactory
 from cms.taxonomy.models import GenericPageToTaxonomyTopic, Topic
 from cms.taxonomy.tests.factories import TopicFactory
 
@@ -166,33 +165,6 @@ class TopicModelTest(TestCase):
         # Note: We don't assign any ArticleSeriesPages to the Topic here
 
         self.assertFalse(topic.is_used_for_live_article_series)
-
-    def test_is_used_for_live_methodologies(self):
-        topic = TopicFactory(title="Methodology Topic")
-
-        methodology_page = MethodologyPageFactory()
-
-        GenericPageToTaxonomyTopic.objects.create(page=methodology_page, topic=topic)
-
-        self.assertTrue(methodology_page.live)
-        self.assertTrue(topic.is_used_for_live_methodologies)
-
-    def test_is_used_for_live_methodologies_with_unpublished_methodology(self):
-        topic = TopicFactory(title="Methodology Topic")
-
-        methodology_page = MethodologyPageFactory(live=False)
-
-        GenericPageToTaxonomyTopic.objects.create(page=methodology_page, topic=topic)
-
-        self.assertFalse(methodology_page.live)
-        self.assertFalse(topic.is_used_for_live_methodologies)
-
-    def test_is_used_for_live_methodologies_not_tagged(self):
-        topic = TopicFactory(title="Methodology Topic")
-
-        # Note: We don't assign any MethodologyPages to the Topic here
-
-        self.assertFalse(topic.is_used_for_live_methodologies)
 
     def test_get_base_parent(self):
         base_topic = Topic(id="1", title="Base Topic")

@@ -13,8 +13,7 @@ from wagtail.test.utils.form_data import inline_formset, nested_form_data, rich_
 from cms.articles.tests.factories import ArticleSeriesPageFactory, StatisticalArticlePageFactory
 from cms.datasets.blocks import DatasetStoryBlock
 from cms.home.models import HomePage
-from cms.methodology.tests.factories import MethodologyPageFactory
-from cms.taxonomy.models import GenericPageToTaxonomyTopic
+from cms.methodology.tests.factories import MethodologyIndexPageFactory, MethodologyPageFactory
 from cms.taxonomy.tests.factories import TopicFactory
 from cms.topics.blocks import TimeSeriesPageStoryBlock
 from cms.topics.models import TopicPage, TopicPageRelatedArticle, TopicPageRelatedMethodology
@@ -487,118 +486,94 @@ class TopicPageRelatedArticleValidationTests(TestCase):
 class TopicPageSearchListingPagesTests(WagtailTestUtils, TestCase):
     @classmethod
     def setUpTestData(cls):
-        cls.topic_tag = TopicFactory()
-        cls.topic_page = TopicPageFactory(topic=cls.topic_tag)
-        cls.article_series = ArticleSeriesPageFactory()
-        cls.article = StatisticalArticlePageFactory(parent=cls.article_series)
-        cls.methodology = MethodologyPageFactory()
+        cls.topic_page = TopicPageFactory()
 
     # Related publications (statistical articles)
 
-    def test_related_publications_comes_up_when_there_are_article_series_tagged_to_topic(self):
-        """Test that the 'View all related publications' links appears
-        when there are ArticleSeriesPages tagged to the same topic.
-        """
-        # Tag ArticleSeriesPage to the same topic as the TopicPage
-        GenericPageToTaxonomyTopic.objects.create(page=self.article_series, topic=self.topic_tag)
+    def test_articles_search_link_comes_up_when_child_articles_exist(self):
+        """Check that the 'View all related publications' link appears when there are child article pages."""
+        article_series_page = ArticleSeriesPageFactory(parent=self.topic_page)
+        article_page = StatisticalArticlePageFactory(parent=article_series_page)
 
-        # Assign the StatisticalArticlePage to the TopicPage's related articles
-        TopicPageRelatedArticle.objects.create(parent=self.topic_page, page=self.article)
-
-        self.assertTrue(self.topic_page.topic.is_used_for_live_article_series)
-        self.assertEqual(self.topic_page.processed_articles[0]["internal_page"], self.article)
+        topic_page_context = self.topic_page.get_context(get_dummy_request())
+        self.assertIn("related_articles", topic_page_context["search_page_urls"])
+        self.assertEqual(self.topic_page.processed_articles[0]["internal_page"], article_page)
 
         response = self.client.get(self.topic_page.url)
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "Related articles")
-        self.assertContains(response, self.article.display_title)
         self.assertContains(response, "View all related publications")
 
-    def test_related_publications_does_not_come_up_when_no_article_series_tagged_to_topic(self):
-        """Test that the 'View all related publications' links does not appear
-        when there are no ArticleSeriesPages tagged to the same topic.
-        """
-        # Note: We don't tag the ArticleSeriesPage to the topic here
+    def test_articles_search_link_comes_up_when_highlighted_articles_are_selected(self):
+        """Check that the 'View all related publications' link appears when there are highlighted article pages."""
+        article_page = StatisticalArticlePageFactory()
+        TopicPageRelatedArticle.objects.create(parent=self.topic_page, page=article_page)
 
-        # Assign the StatisticalArticlePage to the TopicPage's related articles
-        TopicPageRelatedArticle.objects.create(parent=self.topic_page, page=self.article)
-        self.assertFalse(self.topic_page.topic.is_used_for_live_article_series)
+        topic_page_context = self.topic_page.get_context(get_dummy_request())
+        self.assertIn("related_articles", topic_page_context["search_page_urls"])
 
         response = self.client.get(self.topic_page.url)
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "Related articles")
-        self.assertContains(response, self.article.display_title)
-        self.assertNotContains(response, "View all related publications")
+        self.assertContains(response, "View all related publications")
 
-    def test_related_publications_does_not_come_up_when_related_articles_section_not_present(self):
-        """Test that the 'View all related publications' links does not appear
-        when there are no related articles selected on the topic page.
+    def test_articles_search_link_doesnt_come_up_when_no_child_or_highlighted_articles(self):
+        """Check that the link to search pages for articles isn't present
+        when there are no child or highlighted articles.
         """
-        # Tag ArticleSeriesPage to the same topic as the TopicPage
-        GenericPageToTaxonomyTopic.objects.create(page=self.article_series, topic=self.topic_tag)
+        # Note - no child or related articles
 
-        # Note: We don't assign any StatisticalArticlePage to the TopicPage's related articles here
-
-        self.assertTrue(self.topic_page.topic.is_used_for_live_article_series)
+        topic_page_context = self.topic_page.get_context(get_dummy_request())
+        self.assertNotIn("related_articles", topic_page_context["search_page_urls"])
 
         response = self.client.get(self.topic_page.url)
         self.assertEqual(response.status_code, 200)
         self.assertNotContains(response, "Related articles")
-        self.assertNotContains(response, self.article.display_title)
-        self.assertNotContains(response, "View all related publications")
+        self.assertNotContains(response, "View all related articles")
 
     # Related methodologies
 
-    def test_related_methodologies_comes_up_when_there_are_methodology_pages_tagged_to_topic(self):
-        """Test that the 'See more related methodologies' links appears
-        when there are MethodologyPages tagged to the same topic.
-        """
-        # Tag MethodologyPage to the same topic as the TopicPage
-        GenericPageToTaxonomyTopic.objects.create(page=self.methodology, topic=self.topic_tag)
+    def test_methodologies_search_link_comes_up_when_child_methodologies_exist(self):
+        """Check that the "View all related methodologies" comes up when there are child methodology pages."""
+        methodology_index_page = MethodologyIndexPageFactory(parent=self.topic_page)
+        methodology_page = MethodologyPageFactory(parent=methodology_index_page)
 
-        # Assign the MethodologyPage to the TopicPage's related methodologies
-        TopicPageRelatedMethodology.objects.create(parent=self.topic_page, page=self.methodology)
-
-        self.assertTrue(self.topic_page.topic.is_used_for_live_methodologies)
-        self.assertEqual(self.topic_page.processed_methodologies[0]["internal_page"], self.methodology)
+        topic_page_context = self.topic_page.get_context(get_dummy_request())
+        self.assertIn("related_methodologies", topic_page_context["search_page_urls"])
+        self.assertEqual(self.topic_page.processed_methodologies[0]["internal_page"], methodology_page)
 
         response = self.client.get(self.topic_page.url)
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "Methods and quality information")
-        self.assertContains(response, self.methodology.title)
+        self.assertContains(response, methodology_page.title)
         self.assertContains(response, "View all related methodologies")
 
-    def test_related_methodologies_does_not_come_up_when_no_methodology_pages_tagged_to_topic(self):
-        """Test that the 'See more related methodologies' links does not appear
-        when there are no MethodologyPages tagged with the same topic.
-        """
-        # Note: We don't tag the MethodologyPage with the topic here
+    def test_methodologies_search_link_comes_up_when_highlighted_methodologies_are_selected(self):
+        """Check that the "View all related methodologies" comes up when there are highlighted methodology pages."""
+        methodology_page = MethodologyPageFactory()
+        TopicPageRelatedMethodology.objects.create(parent=self.topic_page, page=methodology_page)
 
-        # Assign the MethodologyPage to the TopicPage's related methodologies
-        TopicPageRelatedMethodology.objects.create(parent=self.topic_page, page=self.methodology)
-
-        self.assertFalse(self.topic_page.topic.is_used_for_live_methodologies)
-        self.assertEqual(self.topic_page.processed_methodologies[0]["internal_page"], self.methodology)
+        topic_page_context = self.topic_page.get_context(get_dummy_request())
+        self.assertIn("related_methodologies", topic_page_context["search_page_urls"])
 
         response = self.client.get(self.topic_page.url)
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "Methods and quality information")
-        self.assertContains(response, self.methodology.title)
-        self.assertNotContains(response, "View all related methodologies")
+        self.assertContains(response, methodology_page.title)
+        self.assertContains(response, "View all related methodologies")
 
-    def test_related_methodologies_does_not_come_up_when_related_methodologies_section_not_present(self):
-        """Test that the 'See more related methodologies' links does not appear
-        when there are no related methodologies selected on the topic page.
+    def test_methodologies_search_link_doesnt_come_up_when_no_child_or_highlighted_methodologies(self):
+        """Check that the link to search pages for methodology pages isn't present
+        when there are no child or highlighted methodology pages.
         """
-        # Tag MethodologyPage to the same topic as the TopicPage
-        GenericPageToTaxonomyTopic.objects.create(page=self.methodology, topic=self.topic_tag)
+        # Note - no child or related methodologies
 
-        # Note: We don't assign any MethodologyPage to the TopicPage's related methodologies here
+        topic_page_context = self.topic_page.get_context(get_dummy_request())
+        self.assertNotIn("related_methodologies", topic_page_context["search_page_urls"])
 
         response = self.client.get(self.topic_page.url)
         self.assertEqual(response.status_code, 200)
         self.assertNotContains(response, "Methods and quality information")
-        self.assertNotContains(response, self.methodology.title)
         self.assertNotContains(response, "View all related methodologies")
 
     # Related datasets

@@ -111,18 +111,6 @@ class Topic(index.Indexed, MP_Node):
         ancestor_slugs = list(self.get_ancestors().filter(depth__gte=BASE_TOPIC_DEPTH).values_list("slug", flat=True))
         return "/".join([*ancestor_slugs, self.slug])
 
-    @property
-    def is_used_for_live_article_series(self) -> bool:
-        from cms.articles.models import ArticleSeriesPage  # pylint: disable=import-outside-toplevel, cyclic-import
-
-        return ArticleSeriesPage.objects.filter(topics__topic_id=self.id, live=True).exists()
-
-    @property
-    def is_used_for_live_methodologies(self) -> bool:
-        from cms.methodology.models import MethodologyPage  # pylint: disable=import-outside-toplevel, cyclic-import
-
-        return MethodologyPage.objects.filter(topics__topic_id=self.id, live=True).exists()
-
 
 class GenericPageToTaxonomyTopic(models.Model):
     """This model enables many-to-many relationships between pages and topics."""

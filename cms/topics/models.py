@@ -397,10 +397,10 @@ class TopicPage(BundledPageMixin, ExclusiveTaxonomyMixin, BasePage):  # type: ig
 
         links: dict[str, str] = {}
 
-        if topic.is_used_for_live_article_series:
+        if self.processed_articles:
             links["related_articles"] = f"{settings.ONS_WEBSITE_BASE_URL}/{topic.slug_path}/publications"
 
-        if topic.is_used_for_live_methodologies:
+        if self.processed_methodologies:
             links["related_methodologies"] = (
                 f"{settings.ONS_WEBSITE_BASE_URL}/{topic.slug_path}/topicspecificmethodology"
             )
