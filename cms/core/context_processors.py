@@ -24,5 +24,4 @@ def global_vars(request: "HttpRequest") -> dict[str, Any]:
         "DEFAULT_OG_IMAGE_URL": settings.DEFAULT_OG_IMAGE_URL,
         "CONTACT_US_URL": settings.CONTACT_US_URL,
         "BACKUP_SITE_URL": settings.BACKUP_SITE_URL,
-        "ONS_WEBSITE_BASE_URL": settings.ONS_WEBSITE_BASE_URL,
     }

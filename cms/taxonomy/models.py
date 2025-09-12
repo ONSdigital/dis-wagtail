@@ -107,17 +107,9 @@ class Topic(index.Indexed, MP_Node):
         """Return the URL-like path from the root to this topic
         Used for linking to search listing pages.
         """
-        topic: Topic | None = self
-        topic_slugs = []
-
-        while topic:
-            topic_slugs.append(topic.slug)
-            topic = topic.get_parent()
-
-        # we're collecting slugs from leaf to root, so need to reverse to get the path
-        topic_slugs.reverse()
-
-        return "/".join(topic_slugs)
+        # Ancestors are ordered root to leaf. Exclude the dummy root via depth.
+        ancestor_slugs = list(self.get_ancestors().filter(depth__gte=BASE_TOPIC_DEPTH).values_list("slug", flat=True))
+        return "/".join([*ancestor_slugs, self.slug])
 
     @property
     def is_used_for_live_article_series(self) -> bool:
