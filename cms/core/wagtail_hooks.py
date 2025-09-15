@@ -70,3 +70,11 @@ def after_edit_page(request: "HttpRequest", page: "Page") -> None:
             ],
             extra_tags="safe",
         )
+
+
+# @hooks.register("construct_settings_menu")
+# def change_groups_menu_item_url(request, menu_items):
+#     for item in menu_items:
+#         if item.name == "groups":
+#             item.url = "https://example.com"
+#             break

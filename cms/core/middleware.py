@@ -1,10 +1,10 @@
-"""Middleware for the ONS project."""
-
 import os
 
 from django.conf import settings
 from django.http import HttpRequest, HttpResponsePermanentRedirect
 from django.utils.deprecation import MiddlewareMixin
+
+NON_TRAILING_SLASH_METHODS = ["GET", "HEAD"]
 
 
 class NonTrailingSlashRedirectMiddleware(MiddlewareMixin):
@@ -12,6 +12,9 @@ class NonTrailingSlashRedirectMiddleware(MiddlewareMixin):
 
     def process_request(self, request: HttpRequest) -> HttpResponsePermanentRedirect | None:
         """Redirects requests with a trailing slash."""
+        if request.method not in NON_TRAILING_SLASH_METHODS:
+            return None
+
         # Ignore admin URLs and root URL
         if (
             request.path.endswith("/")
