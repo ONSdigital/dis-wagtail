@@ -10,7 +10,6 @@ from cms.articles.tests.factories import (
     StatisticalArticlePageFactory,
 )
 from cms.methodology.tests.factories import MethodologyIndexPageFactory, MethodologyPageFactory
-from cms.taxonomy.models import GenericPageToTaxonomyTopic
 from cms.topics.tests.factories import TopicPageFactory
 
 
@@ -163,16 +162,6 @@ def the_time_series_page_link_is_displayed_on_the_page(context: Context) -> None
 @then("the time series item appears in the table of contents")
 def the_time_series_item_appears_in_the_table_of_contents(context: Context) -> None:
     expect(context.page.get_by_role("heading", name="Time Series")).to_be_visible()
-
-
-@given("the statistical article is tagged to the same taxonomy topic as the topic page")
-def the_statistical_article_is_tagged_to_the_same_taxonomy_topic_as_the_topic_page(context: Context) -> None:
-    GenericPageToTaxonomyTopic.objects.create(page=context.article_series_page, topic=context.topic_page.topic)
-
-
-@given("the methodology page is tagged to the same taxonomy topic as the topic page")
-def the_methodology_page_is_tagged_to_the_same_taxonomy_topic_as_the_topic_page(context: Context) -> None:
-    GenericPageToTaxonomyTopic.objects.create(page=context.methodology_page, topic=context.topic_page.topic)
 
 
 @then("the user sees the '{link_text}' link")

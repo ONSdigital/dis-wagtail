@@ -22,6 +22,18 @@ Feature: CMS users can draft, edit, and publish topic pages
         And the user visits the topic page
         Then the user can see the newly created article in featured spot
 
+    Scenario: The 'View all related articles' link appears on a topic page
+        Given a topic page exists under the homepage
+        And the user has created a statistical article in a series
+        When the user visits the topic page
+        Then the user sees the 'View all related articles' link
+
+    Scenario: The 'View all related methodology' link appears on a topic page
+        Given a topic page exists under the homepage
+        And the topic page has a child methodology page
+        When the user visits the topic page
+        Then the user sees the 'View all related methodology' link
+
     Scenario: The translated version of the topic page uses the same taxonomy
         Given a topic page exists under the homepage
         And the user creates a Welsh version of the home page
@@ -101,17 +113,3 @@ Feature: CMS users can draft, edit, and publish topic pages
         Then the time series section is displayed on the page
         And the user sees the 'View all related time series' link
         And the time series item appears in the table of contents
-
-    Scenario: The 'View all related publications' link appears on a topic page
-        Given a topic page exists under the homepage
-        And the topic page has a statistical article in a series
-        And the statistical article is tagged to the same taxonomy topic as the topic page
-        When the user visits the topic page
-        Then the user sees the 'View all related publications' link
-
-    Scenario: The 'View all related methodologies' link appears on a topic page
-        Given a topic page exists under the homepage
-        And the topic page has a child methodology page
-        And the methodology page is tagged to the same taxonomy topic as the topic page
-        When the user visits the topic page
-        Then the user sees the 'View all related methodologies' link
