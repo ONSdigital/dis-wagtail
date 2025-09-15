@@ -178,6 +178,8 @@
             {% if page.datasets %}
                 {% if request.is_preview and page.pk %}
                     {% set related_data_url = url('wagtailadmin_pages:preview_on_edit', page.pk) ~ "?mode=related_data" %}
+                {% elif request.path == routablepageurl(page.get_parent().specific, "latest_article") %}
+                    {% set related_data_url = routablepageurl(page.get_parent().specific, "latest_article_related_data") %}
                 {% else %}
                     {% set related_data_url = routablepageurl(page, "related_data") %}
                 {% endif %}
