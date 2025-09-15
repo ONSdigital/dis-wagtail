@@ -105,11 +105,18 @@ class TestNonTrailingSlashRedirectMiddleware(TestCase):
 
     def test_different_http_methods(self):
         """Test that the middleware works with different HTTP methods."""
-        methods = ["GET", "POST", "PUT", "DELETE", "PATCH"]
+        affected_methods = ["GET", "HEAD"]
+        unaffected_methods = ["POST", "PUT", "DELETE", "PATCH", "OPTIONS"]
 
-        for method in methods:
+        for method in affected_methods:
             with self.subTest(method=method):
                 request = getattr(self.factory, method.lower())("/test-page/")
                 response = self.middleware.process_request(request)
                 self.assertEqual(response.status_code, 301)
                 self.assertEqual(response.url, "/test-page")
+
+        for method in unaffected_methods:
+            with self.subTest(method=method):
+                request = getattr(self.factory, method.lower())("/test-page/")
+                response = self.middleware.process_request(request)
+                self.assertIsNone(response)
