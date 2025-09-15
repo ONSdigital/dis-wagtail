@@ -12,11 +12,13 @@ from wagtail.models import Page
 from wagtail.search import index
 
 from cms.bundles.mixins import BundledPageMixin
+from cms.core.analytics_utils import add_table_of_contents_gtm_attributes, format_date_for_gtm
 from cms.core.custom_date_format import ons_date_format, ons_default_datetime
 from cms.core.fields import StreamField
 from cms.core.models import BasePage
 from cms.core.widgets import ONSAdminDateTimeInput
 from cms.datasets.blocks import DatasetStoryBlock
+from cms.datasets.utils import format_datasets_as_document_list
 
 from .blocks import (
     ReleaseCalendarChangesStoryBlock,
@@ -180,6 +182,8 @@ class ReleaseCalendarPage(BundledPageMixin, BasePage):  # type: ignore[django-ma
         index.FilterField("release_date"),
     ]
 
+    _analytics_content_type: ClassVar[str] = "release-calendars"  # TODO agree in spec
+
     def get_template(self, request: "HttpRequest", *args: Any, **kwargs: Any) -> str:
         """Select the correct template based on status."""
         template_by_status = {
@@ -218,6 +222,10 @@ class ReleaseCalendarPage(BundledPageMixin, BasePage):  # type: ignore[django-ma
         return None
 
     @cached_property
+    def dataset_document_list(self) -> list[dict[str, Any]]:
+        return format_datasets_as_document_list(self.datasets)
+
+    @cached_property
     def table_of_contents(self) -> list[dict[str, str | object]]:
         """Table of contents formatted to Design System specs."""
         items = [{"url": "#summary", "text": _("Summary")}]
@@ -226,7 +234,7 @@ class ReleaseCalendarPage(BundledPageMixin, BasePage):  # type: ignore[django-ma
             for block in self.content:
                 items += block.block.to_table_of_contents_items(block.value)
 
-            if self.datasets:
+            if self.dataset_document_list:
                 items += [{"url": "#datasets", "text": _("Data")}]
 
         if self.status in NON_PROVISIONAL_STATUSES and self.changes_to_release_date:
@@ -252,7 +260,7 @@ class ReleaseCalendarPage(BundledPageMixin, BasePage):  # type: ignore[django-ma
 
             if self.related_links:
                 items += [{"url": "#links", "text": _("You might also be interested in")}]
-
+        add_table_of_contents_gtm_attributes(items)
         return items
 
     @cached_property
@@ -297,3 +305,10 @@ class ReleaseCalendarPage(BundledPageMixin, BasePage):  # type: ignore[django-ma
             return ReleasePageInBundleReadyToBePublishedLock(self)
 
         return super().get_lock()
+
+    @cached_property
+    def cached_analytics_values(self) -> dict[str, str | bool]:
+        values = super().cached_analytics_values
+        if self.next_release_date:
+            values["nextReleaseDate"] = format_date_for_gtm(self.next_release_date)
+        return values

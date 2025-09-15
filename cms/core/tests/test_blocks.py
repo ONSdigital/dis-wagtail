@@ -1,4 +1,5 @@
 from datetime import datetime
+from urllib.parse import urlparse
 
 from django.conf import settings
 from django.test import TestCase
@@ -55,6 +56,15 @@ class CoreBlocksTestCase(TestCase):
                         "fileSize": "25\xa0bytes",
                     }
                 },
+                "attributes": {
+                    "data-ga-event": "file-download",
+                    "data-ga-file-extension": self.document.file_extension.lower(),
+                    "data-ga-file-name": self.document.title,
+                    "data-ga-link-text": "The block document",
+                    "data-ga-link-url": self.document.url,
+                    "data-ga-link-domain": urlparse(self.document.url).hostname,
+                    "data-ga-file-size": "0.025",  # KB
+                },
             },
         )
 
@@ -91,6 +101,15 @@ class CoreBlocksTestCase(TestCase):
                             "fileSize": "25\xa0bytes",
                         }
                     },
+                    "attributes": {
+                        "data-ga-event": "file-download",
+                        "data-ga-file-extension": self.document.file_extension.lower(),
+                        "data-ga-file-name": self.document.title,
+                        "data-ga-link-text": "The block document",
+                        "data-ga-link-url": self.document.url,
+                        "data-ga-link-domain": urlparse(self.document.url).hostname,
+                        "data-ga-file-size": "0.025",  # KB
+                    },
                 }
             ],
         )
@@ -109,7 +128,17 @@ class CoreBlocksTestCase(TestCase):
 
         self.assertListEqual(
             block.to_table_of_contents_items(block.to_python("The Heading")),
-            [{"url": "#the-heading", "text": "The Heading"}],
+            [
+                {
+                    "url": "#the-heading",
+                    "text": "The Heading",
+                    "attributes": {
+                        "data-ga-event": "navigation-onpage",
+                        "data-ga-navigation-type": "table-of-contents",
+                        "data-ga-section-title": "The Heading",
+                    },
+                }
+            ],
         )
 
     def test_onsemebedblock__clean(self):
@@ -300,7 +329,7 @@ class CoreBlocksTestCase(TestCase):
         value = block.to_python(
             {
                 "external_url": "https://ons.gov.uk",
-                "title": "Example",
+                "title": "Example 1",
                 "description": "A link",
                 "content_type": "ARTICLE",
             }
@@ -309,16 +338,21 @@ class CoreBlocksTestCase(TestCase):
         self.assertDictEqual(
             value.get_related_link(),
             {
-                "title": {"url": "https://ons.gov.uk", "text": "Example"},
+                "title": {"url": "https://ons.gov.uk", "text": "Example 1"},
                 "description": "A link",
                 "metadata": {"object": {"text": "Article"}},
+                "attributes": {
+                    "data-ga-event": "navigation-click",
+                    "data-ga-link-text": "Example 1",
+                    "data-ga-navigation-type": "links-within-content",
+                },
             },
         )
 
         value = block.to_python(
             {
                 "page": self.home_page.pk,
-                "title": "Example",
+                "title": "Example 2",
                 "description": "A link",
                 "content_type": "TIME_SERIES",
             }
@@ -327,9 +361,16 @@ class CoreBlocksTestCase(TestCase):
         self.assertDictEqual(
             value.get_related_link(),
             {
-                "title": {"url": self.home_page.url, "text": "Example"},
+                "title": {"url": self.home_page.url, "text": "Example 2"},
                 "description": "A link",
                 "metadata": {"object": {"text": "Time series"}},
+                "attributes": {
+                    "data-ga-event": "navigation-click",
+                    "data-ga-link-text": "Example 2",
+                    "data-ga-navigation-type": "links-within-content",
+                    "data-ga-click-path": "/",
+                    "data-ga-click-content-type": "homepage",
+                },
             },
         )
 
@@ -345,6 +386,13 @@ class CoreBlocksTestCase(TestCase):
             {
                 "title": {"url": self.home_page.url, "text": self.home_page.title},
                 "metadata": {"object": {"text": "Dataset"}},
+                "attributes": {
+                    "data-ga-event": "navigation-click",
+                    "data-ga-link-text": self.home_page.title,
+                    "data-ga-navigation-type": "links-within-content",
+                    "data-ga-click-path": "/",
+                    "data-ga-click-content-type": "homepage",
+                },
             },
         )
 
@@ -372,6 +420,13 @@ class CoreBlocksTestCase(TestCase):
                     "title": {"url": "https://ons.gov.uk", "text": "Example"},
                     "description": "A link",
                     "metadata": {"object": {"text": "Article"}},
+                    "attributes": {
+                        "data-ga-click-position": 1,
+                        "data-ga-event": "navigation-click",
+                        "data-ga-link-text": "Example",
+                        "data-ga-navigation-type": "links-within-content",
+                        "data-ga-section-title": "Related links",
+                    },
                 },
             ],
         )
@@ -390,6 +445,119 @@ class CoreBlocksTestCase(TestCase):
         self.assertEqual(
             block.to_table_of_contents_items(block.to_python([])), [{"url": "#related-links", "text": "Related links"}]
         )
+
+    def test_relatedlinksblock__internal_article_link_attributes(self):
+        article_page = StatisticalArticlePageFactory()
+
+        block = RelatedLinksBlock(add_heading=True)
+        value = block.to_python(
+            [
+                {
+                    "page": article_page.pk,
+                }
+            ]
+        )
+        context = block.get_context(value)
+
+        related_links = context["related_links"]
+        self.assertEqual(len(related_links), 1)
+        related_link = related_links[0]
+        self.assertIn("attributes", related_link)
+
+        # Attribute on all links
+        self.assertEqual(related_link["attributes"]["data-ga-section-title"], block.heading)
+        self.assertEqual(related_link["attributes"]["data-ga-event"], "navigation-click")
+        self.assertEqual(related_link["attributes"]["data-ga-link-text"], article_page.display_title)
+        self.assertEqual(related_link["attributes"]["data-ga-navigation-type"], "links-within-content")
+        self.assertEqual(related_link["attributes"]["data-ga-click-position"], 1)
+
+        # Attributes specific to internal links
+        self.assertEqual(related_link["attributes"]["data-ga-click-path"], article_page.get_url())
+        self.assertEqual(related_link["attributes"]["data-ga-click-content-type"], article_page.analytics_content_type)
+        self.assertEqual(
+            related_link["attributes"]["data-ga-click-content-group"], article_page.analytics_content_group
+        )
+        self.assertEqual(
+            related_link["attributes"]["data-ga-click-content-theme"], article_page.analytics_content_theme
+        )
+
+        # Attributes specific to articles
+        self.assertEqual(
+            related_link["attributes"]["data-ga-click-output-series"],
+            article_page.cached_analytics_values["outputSeries"],
+        )
+        self.assertEqual(
+            related_link["attributes"]["data-ga-click-output-edition"],
+            article_page.cached_analytics_values["outputEdition"],
+        )
+        self.assertEqual(
+            related_link["attributes"]["data-ga-click-release-date"],
+            article_page.cached_analytics_values["releaseDate"],
+        )
+
+    def test_relatedlinksblock__internal_link_attributes(self):
+        block = RelatedLinksBlock(add_heading=True)
+        value = block.to_python(
+            [
+                {
+                    "page": self.home_page.pk,
+                }
+            ]
+        )
+        context = block.get_context(value)
+
+        related_links = context["related_links"]
+        self.assertEqual(len(related_links), 1)
+        related_link = related_links[0]
+        self.assertIn("attributes", related_link)
+
+        # Attribute on all links
+        self.assertEqual(related_link["attributes"]["data-ga-section-title"], block.heading)
+        self.assertEqual(related_link["attributes"]["data-ga-event"], "navigation-click")
+        self.assertEqual(related_link["attributes"]["data-ga-link-text"], self.home_page.title)
+        self.assertEqual(related_link["attributes"]["data-ga-navigation-type"], "links-within-content")
+        self.assertEqual(related_link["attributes"]["data-ga-click-position"], 1)
+
+        # Attributes specific to internal links
+        self.assertEqual(related_link["attributes"]["data-ga-click-path"], self.home_page.get_url())
+        self.assertEqual(
+            related_link["attributes"]["data-ga-click-content-type"], self.home_page.analytics_content_type
+        )
+
+    def test_relatedlinksblock__external_link_attributes(self):
+        block = RelatedLinksBlock(add_heading=True)
+        value = block.to_python(
+            [
+                {
+                    "external_url": "https://example.com",
+                    "title": "Example",
+                    "description": "A link",
+                    "content_type": "ARTICLE",
+                },
+                {
+                    "external_url": "https://example.com/2",
+                    "title": "Example2",
+                    "description": "A second link",
+                    "content_type": "ARTICLE",
+                },
+            ]
+        )
+        context = block.get_context(value)
+
+        related_links = context["related_links"]
+        self.assertEqual(len(related_links), 2)
+        related_link = related_links[0]
+        self.assertIn("attributes", related_link)
+
+        self.assertEqual(related_link["attributes"]["data-ga-section-title"], block.heading)
+        self.assertEqual(related_link["attributes"]["data-ga-event"], "navigation-click")
+        self.assertEqual(related_link["attributes"]["data-ga-link-text"], "Example")
+        self.assertEqual(related_link["attributes"]["data-ga-navigation-type"], "links-within-content")
+        self.assertEqual(related_link["attributes"]["data-ga-click-position"], 1)
+
+        related_link_2 = related_links[1]
+        self.assertIn("attributes", related_link_2)
+        self.assertEqual(related_link_2["attributes"]["data-ga-click-position"], 2)
 
     def test_basictableblock__get_context(self):
         """Tests the BasicTableBlock context has DS-compatible options."""
@@ -791,3 +959,16 @@ class AccordionBlockTestCase(TestCase):
         context = self.accordion_block.get_context(value)
 
         self.assertEqual(len(context["accordion_sections"]), 0)
+
+    def test_accordion_section_heading_attributes(self):
+        """Test that AccordionSectionBlock includes correct attributes for GTM tracking."""
+        test_data = [{"title": "Test Section", "content": "Test content"}]
+        value = self.accordion_block.to_python(test_data)
+        context = self.accordion_block.get_context(value)
+
+        self.assertIn("headingAttributes", context["accordion_sections"][0])
+        heading_attributes = context["accordion_sections"][0]["headingAttributes"]
+        self.assertEqual(heading_attributes["data-ga-event"], "interaction")
+        self.assertEqual(heading_attributes["data-ga-interaction-type"], "accordion")
+        self.assertEqual(heading_attributes["data-ga-interaction-label"], "Test Section")
+        self.assertEqual(heading_attributes["data-ga-click-position"], 1)
