@@ -52,7 +52,7 @@ class HomePageTests(WagtailPageTestCase):
         response = self.client.get("/")
         self.assertContains(response, "To access the administrative interface, please use the following option(s):")
         self.assertContains(response, "Wagtail Core Default Login")
-        self.assertContains(response, 'href="/admin/login"')
+        self.assertContains(response, 'href="/admin/login/"')
         self.assertContains(response, "Florence Login")
         self.assertContains(response, 'href="/admin/"')
 
@@ -61,7 +61,7 @@ class HomePageTests(WagtailPageTestCase):
         response = self.client.get("/")
         self.assertContains(response, "To access the administrative interface, please use the following option(s):")
         self.assertContains(response, "Wagtail Core Default Login")
-        self.assertContains(response, 'href="/admin/login"')
+        self.assertContains(response, 'href="/admin/login/"')
         self.assertNotContains(response, "Florence Login")
 
     @override_settings(IS_EXTERNAL_ENV=False, WAGTAIL_CORE_ADMIN_LOGIN_ENABLED=False, AWS_COGNITO_LOGIN_ENABLED=True)
