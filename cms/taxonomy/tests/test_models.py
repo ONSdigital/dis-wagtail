@@ -3,6 +3,7 @@ from django.test import TestCase
 from wagtail.models import Page
 
 from cms.taxonomy.models import GenericPageToTaxonomyTopic, Topic
+from cms.taxonomy.tests.factories import TopicFactory
 
 
 class TopicModelTest(TestCase):
@@ -125,6 +126,23 @@ class TopicModelTest(TestCase):
         Topic.save_new(t3, parent_topic=t2)
 
         self.assertEqual(t3.display_parent_topics, "Topic → Subtopic")
+
+    def test_slug_path(self):
+        # Create a top-level topic first
+        grandparent_topic = TopicFactory(title="Grandparent Topic", slug="grandparenttopic")
+
+        # Create the first level child topic
+        parent_topic = Topic(id="1", title="Parent Topic", slug="parenttopic")
+        Topic.save_new(parent_topic, parent_topic=grandparent_topic)
+
+        # Create the second level child topic
+        child_topic = Topic(id="2", title="Child Topic", slug="childtopic")
+        Topic.save_new(child_topic, parent_topic=parent_topic)
+
+        # Assert the tag path is correct
+        self.assertEqual(grandparent_topic.slug_path, "grandparenttopic")
+        self.assertEqual(parent_topic.slug_path, "grandparenttopic/parenttopic")
+        self.assertEqual(child_topic.slug_path, "grandparenttopic/parenttopic/childtopic")
 
     def test_get_base_parent(self):
         base_topic = Topic(id="1", title="Base Topic")
