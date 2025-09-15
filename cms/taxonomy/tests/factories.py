@@ -10,6 +10,7 @@ class TopicFactory(Factory):
         strategy = factory.BUILD_STRATEGY  # To prevent Factory from trying to save the node
 
     id: str = faker.Faker("random_number", digits=50, fix_len=True)  # Use a very long ID for uniqueness
+    slug: str = faker.Faker("slug")
     title: str = faker.Faker("sentence", nb_words=3)
     description: str = faker.Faker("sentence", nb_words=10)
 

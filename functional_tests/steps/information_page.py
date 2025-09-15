@@ -50,11 +50,11 @@ def user_updates_info_page_contents(context: Context) -> None:
 
 
 @step("the user returns to editing the information page")
-def user_returns_to_editing_the_statistical_article_page(context: Context):
+def user_returns_to_editing_the_statistical_article_page(context: Context) -> None:
     context.page.get_by_role("link", name="Test Info Page", exact=True).click()
 
 
-def check_information_page_content(context: Context, default_language=True) -> None:
+def check_information_page_content(context: Context, default_language: bool = True) -> None:
     page = context.page
     expect(page.get_by_role("heading", name="Test Info Page")).to_be_visible()
     expect(page.get_by_text("My test information page")).to_be_visible()
@@ -79,16 +79,18 @@ def check_new_information_is_displayed_with_content(context: Context) -> None:
 
 
 @then("the published information page is displayed with English content")
-def check_new_information_is_displayed_with_english_content(context: Context):
+def check_new_information_is_displayed_with_english_content(context: Context) -> None:
     check_information_page_content(context, default_language=True)
 
 
 @then("the published information page is displayed with English content and Welsh livery")
-def check_new_information_is_displayed_with_english_content_and_welsh_livery(context: Context):
+def check_new_information_is_displayed_with_english_content_and_welsh_livery(
+    context: Context,
+) -> None:
     check_information_page_content(context, default_language=False)
 
 
 @step('the date placeholder "{date_format}" is displayed in the "{textbox_text}" textbox')
-def date_placeholder_is_displayed_in_date_input_field(context: Context, textbox_text: str, date_format: str):
+def date_placeholder_is_displayed_in_date_input_field(context: Context, textbox_text: str, date_format: str) -> None:
     """Check date placeholder in the textbox."""
     expect(context.page.get_by_role("textbox", name=textbox_text)).to_have_attribute("placeholder", date_format)

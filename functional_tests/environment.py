@@ -32,7 +32,7 @@ from functional_tests.step_helpers.auth_utils import (  # noqa: E402 # pylint: d
 )
 
 
-def before_all(context: Context):
+def before_all(context: Context) -> None:
     """Runs once before all tests.
     Sets up playwright browser and context to be used in all scenarios.
     """
@@ -87,7 +87,7 @@ def configure_and_launch_playwright_browser(context: Context) -> None:
     )
 
 
-def after_all(context: Context):
+def after_all(context: Context) -> None:
     """Runs once after all tests.
     Cleans up playwright objects.
     """
@@ -101,7 +101,7 @@ def after_all(context: Context):
     context.playwright.stop()
 
 
-def before_scenario(context: Context, scenario: Scenario):
+def before_scenario(context: Context, scenario: Scenario) -> None:
     """Runs before each scenario.
     Create a new playwright page to be used by the scenario, passed through the behave context.
     """
@@ -131,7 +131,7 @@ def before_scenario(context: Context, scenario: Scenario):
         context.playwright_context.tracing.start_chunk(name=scenario.name, title=scenario.name)
 
 
-def after_scenario(context: Context, scenario: Scenario):
+def after_scenario(context: Context, scenario: Scenario) -> None:
     """Runs after each scenario.
     Write out a Playwright trace if the scenario failed and trace recording is enabled, then close the playwright page.
     """
@@ -148,7 +148,7 @@ def after_scenario(context: Context, scenario: Scenario):
     context.page.close()
 
 
-def before_tag(context: Context, tag: str):
+def before_tag(context: Context, tag: str) -> None:
     """Handle tag-specific setup."""
     if tag == "cognito_enabled":
         # Apply Cognito test settings
@@ -157,7 +157,7 @@ def before_tag(context: Context, tag: str):
         context.aws_override.enable()
 
 
-def after_tag(context: Context, tag: str):
+def after_tag(context: Context, tag: str) -> None:
     """Handle tag-specific cleanup."""
     if tag == "cognito_enabled" and hasattr(context, "aws_override"):
         # Disable settings override

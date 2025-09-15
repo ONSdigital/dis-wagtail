@@ -10,3 +10,5 @@ class HomePage(BasePage):  # type: ignore[django-manager-missing]
 
     # Only allow creating HomePages at the root level
     parent_page_types: ClassVar[list[str]] = ["wagtailcore.Page"]
+
+    _analytics_content_type: ClassVar[str] = "homepage"
