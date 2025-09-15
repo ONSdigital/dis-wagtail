@@ -343,14 +343,13 @@ class BundleViewSetEditTestCase(BundleViewSetTestCaseBase):
     def test_bundle_edit_view__release_calendar_page_chooser_contain_status_and_release_date(
         self,
     ):
-        """To test when that the release calendar page is selected; it's title, status and release date are
-        displayed.
-        """
+        """To test release calendar page's title, status and release date are displayed when selected."""
         release_calendar_page = self.assign_release_calendar_page_to_bundle()
         response = self.client.get(self.edit_url)
         expected_text = (
-            f"{release_calendar_page.title} ({release_calendar_page.status})",
-            f"({release_calendar_page.release_date_value})",
+            f"{release_calendar_page.title} "
+            f"({release_calendar_page.status}) "
+            f"({release_calendar_page.release_date_value})"
         )
 
         self.assertContains(response, expected_text)
@@ -358,10 +357,16 @@ class BundleViewSetEditTestCase(BundleViewSetTestCaseBase):
     def test_bundle_edit_view__release_calendar_page_chooser_displays_updated_details(
         self,
     ):
-        """When release calendar page details are updated, this tests that the updates are reflected."""
+        """When release calendar page details are updated, this tests that the updates are reflected and checks stale
+        values are not present.
+        """
         release_calendar_page = self.assign_release_calendar_page_to_bundle()
-        # To track previous date
-        old_date = release_calendar_page.release_date_value
+        # To track previous values
+        original_text = (
+            f"{release_calendar_page.title} "
+            f"({release_calendar_page.status}) "
+            f"({release_calendar_page.release_date_value})"
+        )
         # Update release calendar page with new details
         release_calendar_page.title = "New title"
         release_calendar_page.status = ReleaseStatus.CONFIRMED
@@ -370,14 +375,10 @@ class BundleViewSetEditTestCase(BundleViewSetTestCaseBase):
         self.bundle.save()
 
         response = self.client.get(self.edit_url)
-        # Checks the old and the current page date are not the same
-        self.assertNotEqual(
-            old_date,
-            release_calendar_page.release_date_value,
-            f"Expected release date to change, but it stayed {old_date}",
-        )
+
         expected_text = f"New title (CONFIRMED) ({release_calendar_page.release_date_value})"
         self.assertContains(response, expected_text)
+        self.assertNotContains(response, original_text)
 
     def test_bundle_edit_view__page_chooser_contain_workflow_state_information(self):
         BundlePageFactory(parent=self.bundle, page=self.statistical_article_page)

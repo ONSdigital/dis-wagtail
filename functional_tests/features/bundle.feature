@@ -38,7 +38,7 @@ Feature: CMS users can manage bundles
         And the user selects a release calendar page through the chooser
         And the user saves the bundle
         And the user sees the release calendar page title, status and release date
-        Then the user changes the status of the release calendar page, after it has been selected
+        Then the user updates the release calendar page details, after it has been selected
         And returns to the bundle with this release calendar page assigned
-        And the user sees the release calendar page with the updated status
+        And the user sees the release calendar page with the updated details
  

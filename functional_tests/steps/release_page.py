@@ -79,7 +79,6 @@ def user_enters_example_content_on_release_page(context: Context, page_status: s
     context.page.get_by_placeholder("Page title*").fill("My Release")
 
     context.page.get_by_role("textbox", name="Release date*").fill("2024-12-25 09:30")
-    context.page.get_by_role("textbox", name="Release date*").press("Enter")
 
     context.page.get_by_role("region", name="Summary*").get_by_role("textbox").fill("My example release page")
 

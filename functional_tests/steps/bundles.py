@@ -138,7 +138,7 @@ def create_future_release_calendar_page(context: Context) -> None:
 
 
 @step("the user adds a title to the bundle")
-def user_adds_title_to_bundle(context: Context):
+def user_adds_title_to_bundle(context: Context) -> None:
     context.page.get_by_role("textbox", name="Name*").fill("Test Bundles")
 
 
@@ -159,14 +159,14 @@ def release_calendar_page_panel_displays_status_and_release_date(
 ) -> None:
     expect(
         context.page.get_by_text(
-            f"Future Release Calendar Page ({context.release_calendar_page.get_status()})"
+            f"Future Release Calendar Page ({context.release_calendar_page.status})"
             f" ({context.release_calendar_page.release_date_value})"
         )
     )
 
 
-@then("the user changes the status of the release calendar page, after it has been selected")
-def user_changes_the_status_of_release_calendar_page(context: Context) -> None:
+@then("the user updates the release calendar page details, after it has been selected")
+def user_updates_release_calendar_page_details(context: Context) -> None:
     context.page.get_by_role("region", name="Scheduling").get_by_label("Actions").click()
     with context.page.expect_popup() as edit_release_calendar_page:
         context.page.get_by_role("link", name="Edit Release Calendar page").click()
@@ -174,7 +174,18 @@ def user_changes_the_status_of_release_calendar_page(context: Context) -> None:
     context.page.close()
     # assigns context to new release calendar page edit view
     context.page = edit_release_calendar_page.value
+
+    # tracks original release calendar details
+    context.original_date = context.release_calendar_page.release_date_value
+    context.original_title = context.release_calendar_page.title
+    context.original_status = context.release_calendar_page.status
+
+    # enter new details
+    context.page.get_by_placeholder("Page title*").fill("New title")
     context.page.get_by_label("Status*").select_option("CONFIRMED")
+    new_date = timezone.now() + timedelta(days=1)
+    formatted_date = new_date.strftime("%Y-%m-%d %H:%M")
+    context.page.get_by_role("textbox", name="Release date*").fill(formatted_date)
     context.page.get_by_role("button", name="Save draft").click()
 
 
@@ -190,12 +201,11 @@ def user_returns_to_bundle_page_release_calendar_page_was_assigned_to(
     context.page = bundle_admin_view.value
 
 
-@then("the user sees the release calendar page with the updated status")
+@then("the user sees the release calendar page with the updated details")
 def release_calendar_page_panel_displays_updated_status_and_release_date(
     context: Context,
 ) -> None:
+    expect(context.page.get_by_text(f"New title (CONFIRMED) ({context.release_calendar_page.release_date_value}))"))
     expect(
-        context.page.get_by_text(
-            f"Future Release Calendar Page (CONFIRMED) ({context.release_calendar_page.release_date_value}))"
-        )
-    )
+        context.page.get_by_text(f"{context.original_title} ({context.original_status}) ({context.original_date})")
+    ).not_to_be_visible()
