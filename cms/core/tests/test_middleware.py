@@ -120,3 +120,21 @@ class TestNonTrailingSlashRedirectMiddleware(TestCase):
                 request = getattr(self.factory, method.lower())("/test-page/")
                 response = self.middleware.process_request(request)
                 self.assertIsNone(response)
+
+    def test_is_request_path_allowed(self):
+        """Test the is_request_path_allowed method."""
+        test_cases = [
+            ("/admin/", True),
+            ("/admin/some-page/", True),
+            ("/django-admin/", True),
+            ("/django-admin/some-page/", True),
+            ("/__debug__/", True),
+            ("/__debug__/some-page/", True),
+            ("/some-other-path/", False),
+            ("/another-path/some-page/", False),
+        ]
+
+        for path, expected in test_cases:
+            with self.subTest(path=path):
+                result = self.middleware.is_request_path_allowed(path)
+                self.assertEqual(result, expected)
