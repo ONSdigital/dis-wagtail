@@ -24,7 +24,7 @@
 
                 <p>To access the administrative interface, please use the following option(s):</p>
                 {% if WAGTAIL_CORE_ADMIN_LOGIN_ENABLED %}
-                    {% set loginUrl = adminUrl ~ 'login' %}
+                    {% set loginUrl = adminUrl ~ 'login/' %}
                     {# fmt:off #}
                     {{
                         onsButton({
