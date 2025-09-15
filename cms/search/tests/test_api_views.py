@@ -19,6 +19,7 @@ RESOURCE_ENDPOINT = "/v1/resources/"
 
 
 @override_settings(IS_EXTERNAL_ENV=False)
+@override_settings(CMS_RESOURCES_ENDPOINT_ENABLED=True)
 class SearchResourcesViewTests(TestCase, ResourceDictAssertions, ExternalAPITestMixin):
     @classmethod
     def setUpTestData(cls):
@@ -38,6 +39,7 @@ class SearchResourcesViewTests(TestCase, ResourceDictAssertions, ExternalAPITest
             MethodologyPageFactory(),
             ReleaseCalendarPageFactory(),
             StatisticalArticlePageFactory(),
+            StatisticalArticlePageFactory(news_headline=""),
             IndexPageFactory(slug="custom-slug-1"),
         ]
 
@@ -57,7 +59,8 @@ class SearchResourcesViewTests(TestCase, ResourceDictAssertions, ExternalAPITest
         for page in self.included_pages:
             matching = self.get_page_dict(data, page)
             self.assertIsNotNone(matching, f"Expected page with URI {build_page_uri(page)} to be present in the items")
-            self.assert_base_fields(matching, page)
+            title = page.get_full_display_title() if type(page).__name__ == "StatisticalArticlePage" else page.title
+            self.assert_base_fields(matching, page, title=title)
 
     def test_resources_excludes_non_indexable_pages(self):
         """Non-indexable pages (ArticleSeries, Home, ReleaseCalendarIndex, Theme, Topic)
@@ -78,8 +81,22 @@ class SearchResourcesViewTests(TestCase, ResourceDictAssertions, ExternalAPITest
         response = self.call_view_as_external(RESOURCE_ENDPOINT)
         self.assertEqual(response.status_code, 200)
 
+    @override_settings(CMS_RESOURCES_ENDPOINT_ENABLED=False)
+    def test_resources_endpoint_disabled_returns_404(self):
+        """When the CMS_RESOURCES_ENDPOINT_ENABLED setting is False, the endpoint should return 404."""
+        response = self.client.get(RESOURCE_ENDPOINT)
+        self.assertEqual(response.status_code, 404)
+
+    @override_settings(CMS_RESOURCES_ENDPOINT_ENABLED=False)
+    @override_settings(IS_EXTERNAL_ENV=True)
+    def test_resources_endpoint_disabled_external_env_returns_404(self):
+        """When CMS_RESOURCES_ENDPOINT_ENABLED is False, endpoint should return 404 regardless of IS_EXTERNAL_ENV."""
+        response = self.call_view_as_external(RESOURCE_ENDPOINT)
+        self.assertEqual(response.status_code, 404)
+
 
 @override_settings(IS_EXTERNAL_ENV=False)
+@override_settings(CMS_RESOURCES_ENDPOINT_ENABLED=True)
 class ResourceListViewPaginationTests(TestCase, ExternalAPITestMixin):
     @classmethod
     def setUpTestData(cls):
@@ -138,3 +155,9 @@ class ResourceListViewPaginationTests(TestCase, ExternalAPITestMixin):
         self.assertEqual(data["count"], 10)
         self.assertEqual(data["limit"], 10)
         self.assertEqual(data["total_count"], self.total_resources)
+
+    @override_settings(CMS_RESOURCES_ENDPOINT_ENABLED=False)
+    def test_resources_endpoint_with_parameter_disabled_returns_404(self):
+        """When the CMS_RESOURCES_ENDPOINT_ENABLED setting is False, the endpoint should return 404."""
+        response = self.client.get(f"{RESOURCE_ENDPOINT}?limit=30")
+        self.assertEqual(response.status_code, 404)

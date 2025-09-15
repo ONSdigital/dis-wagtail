@@ -55,6 +55,7 @@ def _fetch_all_topics() -> list[dict[str, str]]:
                 in {
                     "title",
                     "id",
+                    "slug",
                     "description",
                 }
             }
@@ -103,6 +104,9 @@ def _sync_with_fetched_topics(fetched_topics: Iterable[Mapping[str, str]]) -> No
     updated_count = 0
     created_count = 0
     for fetched_topic in fetched_topics:
+        if not fetched_topic.get("slug"):
+            logger.warning("Cannot create or update topic: missing slug.", extra={"topic": fetched_topic["id"]})
+            continue
         if existing_topic := _get_topic(fetched_topic["id"]):
             if not _topic_matches(existing_topic, fetched_topic):
                 _update_topic(existing_topic, fetched_topic)
@@ -138,6 +142,7 @@ def _topic_matches(existing_topic: Topic, fetched_topic: Mapping[str, str]) -> b
     return (
         fetched_topic["title"] == existing_topic.title
         and fetched_topic.get("description") == existing_topic.description
+        and fetched_topic.get("slug") == existing_topic.slug
         and not existing_topic.removed
         and existing_parent_id == fetched_topic.get("parent_id")
     )
@@ -153,6 +158,7 @@ def _update_topic(existing_topic: Topic, fetched_topic: Mapping[str, str]) -> No
     logger.info("Updating existing topic", extra={"topic": existing_topic.id, "fetched_topic": fetched_topic})
     existing_topic.title = fetched_topic.get("title")
     existing_topic.description = fetched_topic.get("description")
+    existing_topic.slug = fetched_topic.get("slug")
     existing_topic.removed = False
     existing_topic.save()
 
@@ -177,10 +183,13 @@ def _update_topic(existing_topic: Topic, fetched_topic: Mapping[str, str]) -> No
 
 
 def _create_topic(fetched_topic: Mapping[str, str]) -> None:
-    """Creates a Topic object with the given id, title, and description, and parent."""
+    """Creates a Topic object with the given id, title, slug, description, and parent."""
     logger.info("Saving new topic", extra={"topic": fetched_topic["id"]})
     new_topic = Topic(
-        id=fetched_topic["id"], title=fetched_topic["title"], description=fetched_topic.get("description")
+        id=fetched_topic["id"],
+        title=fetched_topic["title"],
+        slug=fetched_topic.get("slug"),
+        description=fetched_topic.get("description"),
     )
     if parent_id := fetched_topic.get("parent_id"):
         parent = _get_topic(parent_id)

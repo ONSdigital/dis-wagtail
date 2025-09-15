@@ -40,7 +40,6 @@
         <div class="ons-grid__col ons-grid__col--sticky@m ons-col-4@m">
             {% with toc_title=_("Contents"), toc_aria_label=_("Sections in this page") %}
 
-                {# TODO: Add 'view all related publications & data' to related links once available #}
                 {# fmt:off #}
                 {{-
                     onsTableOfContents({
@@ -78,6 +77,11 @@
                             })
                         }}
                     {# fmt:on #}
+
+                    {% if search_page_urls and search_page_urls.related_articles %}
+                        <a href="{{ search_page_urls.related_articles }}">{{ _("View all related articles") }}</a>
+                    {% endif %}
+
                 </section>
             {% endif %}
 
@@ -91,6 +95,11 @@
                             })
                         }}
                     {# fmt:on #}
+
+                    {% if search_page_urls and search_page_urls.related_methodologies %}
+                        <a href="{{ search_page_urls.related_methodologies }}">{{ _("View all related methodology") }}</a>
+                    {% endif %}
+
                 </section>
             {% endif %}
 
@@ -104,6 +113,29 @@
                             })
                         }}
                     {# fmt:on #}
+
+                    {% if search_page_urls and search_page_urls.related_data %}
+                        <a href="{{ search_page_urls.related_data }}">{{ _("View all related data") }}</a>
+                    {% endif %}
+
+                </section>
+            {% endif %}
+
+            {% if page.time_series_document_list %}
+                <section id="time-series" class="spacing">
+                    <h2>{{ _("Time Series") }}</h2>
+                    {# fmt:off #}
+                        {{ onsDocumentList({
+                                "headingLevel": 3,
+                                "documents": page.time_series_document_list
+                            })
+                        }}
+                    {# fmt:on #}
+
+                    {% if search_page_urls and search_page_urls.related_time_series %}
+                        <a href="{{ search_page_urls.related_time_series }}">{{ _("View all related time series") }}</a>
+                    {% endif %}
+
                 </section>
             {% endif %}
 

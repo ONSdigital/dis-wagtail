@@ -136,6 +136,8 @@ MIGRATION_LINTER_OPTIONS = {
         "0007_topicpagerelatedarticle_external_url_and_more",  # Ignoring NOT NULL constraint
         "0006_bundle_bundle_api_id_bundledataset_content_api_id",  # Ignoring NOT NULL constraint
         "0002_alter_dataset_version",
+        "0008_topicpage_time_series",  # Ignoring NOT NULL constraint
+        "0003_topic_slug",  # Ignoring NOT NULL constraint
     ],
 }
 
@@ -143,3 +145,6 @@ MIGRATION_LINTER_OPTIONS = {
 BUILD_TIME = None
 GIT_COMMIT = None
 TAG = "dev"
+
+# Allow to override but default to enabled
+CMS_RESOURCES_ENDPOINT_ENABLED = env.get("CMS_RESOURCES_ENDPOINT_ENABLED", "true").lower() == "true"

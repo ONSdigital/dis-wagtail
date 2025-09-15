@@ -21,12 +21,12 @@ jobs:
   lint:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Install Poetry
         run: pipx install poetry==${{ env.POETRY_VERSION }}
 
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version-file: .python-version
           cache: poetry
@@ -42,8 +42,8 @@ jobs:
   lint-front-end:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
         with:
           node-version-file: '.nvmrc'
       - name: Install npm dependencies
@@ -58,8 +58,8 @@ jobs:
   compile_static:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
         with:
           node-version-file: '.nvmrc'
       - id: node-cache
@@ -102,7 +102,7 @@ jobs:
         options: --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
 
       broker:
-        image: bitnami/kafka:3.5.1
+        image: bitnamilegacy/kafka:3.5.1
         env:
           # Enable plaintext connections for local testing.
           ALLOW_PLAINTEXT_LISTENER: 'yes'
@@ -129,12 +129,12 @@ jobs:
           - '9092:9092'
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Install Poetry
         run: pipx install poetry==${{ env.POETRY_VERSION }}
 
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version-file: .python-version
           cache: poetry
@@ -144,7 +144,7 @@ jobs:
           make install-dev
           sudo apt-get install -y --no-install-recommends gettext cm-super texlive-latex-extra
 
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v5
         with:
           name: static
           path: cms/static_compiled/
@@ -181,16 +181,16 @@ jobs:
   docker:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Build Docker Image
         run: docker build --target web -t ons .
 
   repository_checks:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version-file: .python-version
       - name: Ensure .dockerignore (mostly) matches .gitignore
@@ -215,12 +215,12 @@ jobs:
       PLAYWRIGHT_TRACE: 'true'
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Install Poetry
         run: pipx install poetry==${{ env.POETRY_VERSION }}
 
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version-file: .python-version
           cache: poetry
@@ -233,7 +233,7 @@ jobs:
       - name: Playwright Install
         run: poetry run python -m playwright install --with-deps ${{ matrix.browser }}
 
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v5
         with:
           name: static
           path: cms/static_compiled/

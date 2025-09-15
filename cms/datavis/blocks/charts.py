@@ -8,6 +8,7 @@ from django.core.exceptions import ValidationError
 from django.forms import widgets
 from wagtail import blocks
 
+from cms.core.url_utils import is_hostname_in_domain
 from cms.datavis.blocks.annotations import (
     LineAnnotationBarColumnBlock,
     LineAnnotationCategoricalBlock,
@@ -725,25 +726,19 @@ class IframeBlock(BaseVisualisationBlock):
     def clean(self, value: "StructValue") -> "StructValue":
         errors = {}
         parsed_url = urlparse(value["iframe_source_url"])
-        hostname = parsed_url.netloc
 
-        if not (value["iframe_source_url"].startswith("https://") and hostname):
+        if not (value["iframe_source_url"].startswith("https://") and parsed_url.hostname):
             errors["iframe_source_url"] = ValidationError(
                 "Please enter a valid URL. It should start with 'https://' and contain a valid domain name."
             )
-        else:
-
-            def matches_domain(domain: str, allowed_domain: str) -> bool:
-                return domain == allowed_domain or hostname.endswith(f".{allowed_domain}")
-
-            if not any(
-                matches_domain(hostname, allowed_domain)
-                for allowed_domain in settings.IFRAME_VISUALISATION_ALLOWED_DOMAINS
-            ):
-                patterns_str = " or ".join(settings.IFRAME_VISUALISATION_ALLOWED_DOMAINS)
-                errors["iframe_source_url"] = ValidationError(
-                    f"The URL hostname is not in the list of allowed domains: {patterns_str}"
-                )
+        elif not any(
+            is_hostname_in_domain(parsed_url.hostname, allowed_domain)
+            for allowed_domain in settings.IFRAME_VISUALISATION_ALLOWED_DOMAINS
+        ):
+            allowed_domains = " or ".join(settings.IFRAME_VISUALISATION_ALLOWED_DOMAINS)
+            errors["iframe_source_url"] = ValidationError(
+                f"The URL hostname is not in the list of allowed domains: {allowed_domains}"
+            )
 
         if errors:
             raise blocks.StructBlockValidationError(errors)

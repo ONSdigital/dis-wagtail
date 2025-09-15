@@ -37,7 +37,7 @@ def build_jwt(pair: RSAKeyPair, *, token_use: str, **extra) -> str:
     now = datetime.now(tz=UTC)
     payload = {
         "iss": "https://cognito-idp.eu-west-2.amazonaws.com/test-pool",
-        "exp": int((now + timedelta(minutes=5)).timestamp()),
+        "exp": int((now + timedelta(seconds=15)).timestamp()),
         "iat": int(now.timestamp()),
         "jti": f"jti-{token_use}",
         "token_use": token_use,
@@ -103,7 +103,7 @@ class CognitoTokenTestCase(TestCase):
         username: str | None = None,
         groups: list[str] | None = None,
         client_id: str | None = None,
-        **jwt_overrides,
+        **jwt_overrides: dict[str, Any],
     ) -> tuple[str, str]:
         username = username or self.user_uuid
         client_id = client_id or settings.AWS_COGNITO_APP_CLIENT_ID

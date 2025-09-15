@@ -2,6 +2,8 @@ from typing import Any
 
 from wagtail.blocks import StreamValue
 
+from cms.core.formatting_utils import format_as_document_list_item
+
 
 def format_datasets_as_document_list(datasets: StreamValue) -> list[dict[str, Any]]:
     """Takes a StreamValue of dataset blocks (the value of a StreamField of DatasetStoryBlocks).
@@ -12,18 +14,22 @@ def format_datasets_as_document_list(datasets: StreamValue) -> list[dict[str, An
     """
     dataset_documents: list = []
     for dataset in datasets:
+        block_value = dataset.value
         if dataset.block_type == "manual_link":
-            dataset_document = {
-                "title": {"text": dataset.value["title"], "url": dataset.value["url"]},
-                "metadata": {"object": {"text": "Dataset"}},
-                "description": f"<p>{dataset.value['description']}</p>",
-            }
+            dataset_document = format_as_document_list_item(
+                title=block_value["title"],
+                url=block_value["url"],
+                content_type="Dataset",
+                description=block_value["description"],
+            )
         else:
-            dataset_document = {
-                "title": {"text": dataset.value.title, "url": dataset.value.website_url},
-                "metadata": {"object": {"text": "Dataset"}},
-                "description": f"<p>{dataset.value.description}</p>",
-            }
+            dataset_document = format_as_document_list_item(
+                title=block_value.title,
+                url=block_value.website_url,
+                content_type="Dataset",
+                description=dataset.value.description,
+            )
+
         dataset_documents.append(dataset_document)
 
     return dataset_documents

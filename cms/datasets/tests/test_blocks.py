@@ -1,5 +1,5 @@
 from django.core.exceptions import ValidationError
-from django.test import TestCase
+from django.test import TestCase, override_settings
 from wagtail.blocks import StreamValue
 
 from cms.datasets.blocks import DatasetStoryBlock
@@ -16,6 +16,7 @@ class TestDatasetStoryBlock(TestCase):
             description="test_description",
         )
 
+    @override_settings(ONS_WEBSITE_BASE_URL="https://example.com", ONS_ALLOWED_LINK_DOMAINS=["example.com"])
     def test_validation_fails_on_duplicate_datasets(self):
         block = DatasetStoryBlock()
         dataset_duplicate_url = f"https://example.com/datasets/{self.lookup_dataset.namespace}"
@@ -26,11 +27,15 @@ class TestDatasetStoryBlock(TestCase):
             ],
             [
                 ("dataset_lookup", self.lookup_dataset.id),
-                ("manual_link", {"url": dataset_duplicate_url}),
+                ("manual_link", {"title": "Dataset Title", "url": dataset_duplicate_url}),
+            ],
+            [  # Check that the trailing slash is ignored
+                ("dataset_lookup", self.lookup_dataset.id),
+                ("manual_link", {"title": "Dataset Title", "url": dataset_duplicate_url + "/"}),
             ],
             [
-                ("manual_link", {"url": dataset_duplicate_url}),
-                ("manual_link", {"url": dataset_duplicate_url}),
+                ("manual_link", {"title": "Dataset Title", "url": dataset_duplicate_url}),
+                ("manual_link", {"title": "Dataset Title", "url": dataset_duplicate_url}),
             ],
         ]
 
@@ -48,6 +53,7 @@ class TestDatasetStoryBlock(TestCase):
                 for error in validation_error.exception.block_errors.values():
                     self.assertEqual(error.message, "Duplicate datasets are not allowed")
 
+    @override_settings(ONS_ALLOWED_LINK_DOMAINS=["example.com"])
     def test_successful_validation(self):
         block = DatasetStoryBlock()
         second_dataset = Dataset.objects.create(
@@ -67,14 +73,26 @@ class TestDatasetStoryBlock(TestCase):
             ],
             [
                 ("dataset_lookup", self.lookup_dataset.id),
-                ("manual_link", {"url": "https://example.com/datasets/foo/editions/bar/versions/1"}),
+                (
+                    "manual_link",
+                    {"title": "Dataset Title", "url": "https://example.com/datasets/foo/editions/bar/versions/1"},
+                ),
             ],
             [
-                ("manual_link", {"url": "https://example.com/datasets/foo/editions/bar/versions/1"}),
+                (
+                    "manual_link",
+                    {"title": "Dataset Title", "url": "https://example.com/datasets/foo/editions/bar/versions/1"},
+                ),
             ],
             [
-                ("manual_link", {"url": "https://example.com/datasets/foo/editions/bar/versions/1"}),
-                ("manual_link", {"url": "https://example.com/datasets/spam/editions/eggs/versions/1"}),
+                (
+                    "manual_link",
+                    {"title": "Dataset Title", "url": "https://example.com/datasets/foo/editions/bar/versions/1"},
+                ),
+                (
+                    "manual_link",
+                    {"title": "Dataset Title", "url": "https://example.com/datasets/spam/editions/eggs/versions/1"},
+                ),
             ],
         ]
 

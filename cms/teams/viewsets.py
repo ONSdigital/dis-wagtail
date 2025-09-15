@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, ClassVar
+from typing import TYPE_CHECKING, ClassVar, cast
 
 from django.conf import settings
 from wagtail.admin.ui.tables import Column, DateColumn
@@ -13,6 +13,8 @@ from .models import Team
 
 if TYPE_CHECKING:
     from cms.users.models import User
+
+    from .models import TeamQuerySet
 
 
 class ViewOnlyModelPermissionPolicy(ModelPermissionPolicy):
@@ -32,6 +34,10 @@ class ViewOnlyModelPermissionPolicy(ModelPermissionPolicy):
 class TeamsIndexView(IndexView):
     page_title = "Preview teams"
 
+    def get_base_queryset(self) -> "TeamQuerySet":
+        """Return only active teams."""
+        return cast("TeamQuerySet", Team.objects.active())
+
 
 class TeamsViewSet(ModelViewSet):
     model = Team
@@ -42,7 +48,7 @@ class TeamsViewSet(ModelViewSet):
     menu_order = 200
     inspect_view_enabled = True
     list_display: ClassVar[list[str]] = ["name", "identifier", "created_at", "updated_at"]
-    list_filter: ClassVar[list[str]] = ["name", "identifier", "is_active", "created_at", "updated_at"]
+    list_filter: ClassVar[list[str]] = ["name", "identifier", "created_at", "updated_at"]
     inspect_view_fields: ClassVar[list[str]] = [
         "name",
         "identifier",
@@ -76,8 +82,11 @@ class TeamChooseMixin:
                 label="Last Updated",
                 width="12%",
             ),
-            Column("is_active", label="Active?", width="10%"),
         ]
+
+    def get_object_list(self) -> "TeamQuerySet":
+        """Return only active teams."""
+        return cast("TeamQuerySet", Team.objects.active())
 
 
 class TeamChooseView(TeamChooseMixin, ChooseView): ...
