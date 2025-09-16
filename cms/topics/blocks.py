@@ -156,7 +156,7 @@ class TopicHeadlineFigureBlock(StructBlock):
             latest_article: StatisticalArticlePage | None = series_page.get_latest()
 
             if latest_article and (figure := latest_article.get_headline_figure(value["figure_id"])):
-                figure["url"] = latest_article.get_url(request=context.get("request"))
+                figure["url"] = latest_article.get_url(request=context.get("request")) or ""
                 context["figure"] = figure
 
         return context

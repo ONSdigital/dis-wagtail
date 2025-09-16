@@ -3,6 +3,7 @@ from typing import Any, ClassVar, Optional
 
 from django.db import IntegrityError, models
 from django.db.models import QuerySet, UniqueConstraint
+from django.utils.functional import cached_property
 from modelcluster.fields import ParentalKey
 from treebeard.mp_tree import MP_Node
 from wagtail.admin.panels import FieldPanel
@@ -41,6 +42,7 @@ class Topic(index.Indexed, MP_Node):
 
     id = models.CharField(max_length=100, primary_key=True)  # type: ignore[var-annotated]
     title = models.CharField(max_length=100)  # type: ignore[var-annotated]
+    slug = models.SlugField(max_length=100)  # type: ignore[var-annotated]
     description = models.TextField(blank=True, null=True)  # type: ignore[var-annotated]
     removed = models.BooleanField(default=False)  # type: ignore[var-annotated]
 
@@ -99,6 +101,15 @@ class Topic(index.Indexed, MP_Node):
         if ancestors := [topic.title for topic in self.get_ancestors()]:
             return " → ".join(ancestors)
         return ""
+
+    @cached_property
+    def slug_path(self) -> str:
+        """Return the URL-like path from the root to this topic.
+        Used for linking to search listing pages.
+        """
+        # Ancestors are ordered root to leaf.
+        ancestor_slugs = list(self.get_ancestors().values_list("slug", flat=True))
+        return "/".join([*ancestor_slugs, self.slug])
 
 
 class GenericPageToTaxonomyTopic(models.Model):

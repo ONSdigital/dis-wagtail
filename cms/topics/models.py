@@ -212,6 +212,7 @@ class TopicPage(BundledPageMixin, ExclusiveTaxonomyMixin, BasePage):  # type: ig
         context["featured_item"] = kwargs.get("featured_item", self.latest_article_in_featured_series)
         context["formatted_articles"] = get_formatted_pages_list(self.processed_articles, request=request)
         context["formatted_methodologies"] = get_formatted_pages_list(self.processed_methodologies, request=request)
+        context["search_page_urls"] = self.get_search_page_urls()
         return context
 
     @cached_property
@@ -375,3 +376,39 @@ class TopicPage(BundledPageMixin, ExclusiveTaxonomyMixin, BasePage):  # type: ig
         TODO: replaces when https://github.com/wagtail/wagtail/issues/13286 is fixed.
         """
         return TopicPagePermissionTester(user, self)
+
+    def get_search_page_urls(self) -> dict[str, str] | None:
+        """Returns a dictionary of links to search pages related to the taxonomy topic,
+        or None if the topic or base ONS URL is missing.
+
+        Supported keys:
+            - 'related_articles'
+            - 'related_methodologies'
+            - 'related_data'
+            - 'related_time_series'
+
+        Note:
+            'related_articles' and 'related_methodologies' are only included
+            if there exist live pages tagged by the same topic as the topic page.
+
+        """
+        if not (topic := self.topic):
+            return None
+
+        links: dict[str, str] = {}
+
+        if self.processed_articles:
+            links["related_articles"] = f"{settings.ONS_WEBSITE_BASE_URL}/{topic.slug_path}/publications"
+
+        if self.processed_methodologies:
+            links["related_methodologies"] = (
+                f"{settings.ONS_WEBSITE_BASE_URL}/{topic.slug_path}/topicspecificmethodology"
+            )
+
+        if self.datasets:
+            links["related_data"] = f"{settings.ONS_WEBSITE_BASE_URL}/{topic.slug_path}/datalist?filter=datasets"
+
+        if self.time_series:
+            links["related_time_series"] = f"{settings.ONS_WEBSITE_BASE_URL}/timeseriestool?topic={topic.slug_path}"
+
+        return links

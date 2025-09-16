@@ -12,13 +12,14 @@ from wagtail.utils.urlpatterns import decorate_urlpatterns
 from cms.auth.views import ONSLogoutView, extend_session
 from cms.core import views as core_views
 from cms.core.cache import get_default_cache_control_decorator
+from cms.home.views import serve_localized_homepage
 from cms.private_media import views as private_media_views
 
 # Internal URLs are not intended for public use.
 internal_urlpatterns = [
-    path("readiness/", core_views.ready, name="readiness"),
-    path("liveness/", core_views.liveness, name="liveness"),
-    path("health/", core_views.health, name="health"),
+    path("readiness", core_views.ready, name="readiness"),
+    path("liveness", core_views.liveness, name="liveness"),
+    path("health", core_views.health, name="health"),
 ]
 
 # Private URLs are not meant to be cached.
@@ -26,7 +27,7 @@ private_urlpatterns = [
     path("-/", include((internal_urlpatterns, "internal"))),
     path("health", core_views.health, name="health"),
     path(
-        "documents/authenticate_with_password/<int:restriction_id>/",
+        "documents/authenticate_with_password/<int:restriction_id>",
         authenticate_with_password,
         name="wagtaildocs_authenticate_with_password",
     ),
@@ -89,15 +90,15 @@ if settings.DEBUG:
     debug_urlpatterns += [
         # Add views for testing 404 and 500 templates
         path(
-            "test404/",
+            "test404",
             TemplateView.as_view(template_name="templates/pages/errors/404.html"),
         ),
         path(
-            "test403/",
+            "test403",
             TemplateView.as_view(template_name="templates/pages/errors/403.html"),
         ),
         path(
-            "test500/",
+            "test500",
             TemplateView.as_view(template_name="templates/pages/errors/500.html"),
         ),
     ]
@@ -134,11 +135,28 @@ urlpatterns = decorate_urlpatterns(
     vary_on_headers("Cookie", "X-Requested-With", "X-Forwarded-Proto", "Accept-Encoding"),
 )
 
+localized_homepage_urlpatterns = []
+
+# Add localized homepage patterns for non-default languages at the root level.
+# This is to deal with the fact that i18n_patterns will create URLs like /cy/ instead of /cy.
+non_default_languages = [lang[0] for lang in settings.LANGUAGES if lang[0] != settings.LANGUAGE_CODE]
+LANGUAGE_CODES_PATTERN = "|".join(non_default_languages)  # e.g., 'cy|uk'
+
+if LANGUAGE_CODES_PATTERN:
+    localized_homepage_urlpatterns = [
+        re_path(
+            rf"^(?P<lang_code>{LANGUAGE_CODES_PATTERN})$",
+            serve_localized_homepage,
+            name="localized_homepage",
+        )
+    ]
+
 # Join private and public URLs.
 urlpatterns = (
     private_urlpatterns
     + debug_urlpatterns
     + urlpatterns
+    + localized_homepage_urlpatterns
     + [
         re_path(
             r"^documents/(\d+)/(.*)$",

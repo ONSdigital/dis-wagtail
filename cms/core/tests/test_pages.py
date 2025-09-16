@@ -33,7 +33,7 @@ class HomePageTests(WagtailPageTestCase):
         response = self.client.get("/")
         self.assertContains(response, "To access the administrative interface, please use the following option(s):")
         self.assertContains(response, "Wagtail Core Default Login")
-        self.assertContains(response, 'href="/admin/login"')
+        self.assertContains(response, 'href="/admin/login/"')
         self.assertContains(response, "Florence Login")
         self.assertContains(response, 'href="/admin/"')
 
@@ -42,7 +42,7 @@ class HomePageTests(WagtailPageTestCase):
         response = self.client.get("/")
         self.assertContains(response, "To access the administrative interface, please use the following option(s):")
         self.assertContains(response, "Wagtail Core Default Login")
-        self.assertContains(response, 'href="/admin/login"')
+        self.assertContains(response, 'href="/admin/login/"')
         self.assertNotContains(response, "Florence Login")
 
     @override_settings(IS_EXTERNAL_ENV=False, WAGTAIL_CORE_ADMIN_LOGIN_ENABLED=False, AWS_COGNITO_LOGIN_ENABLED=True)
@@ -210,9 +210,9 @@ class ErrorPageTests(WagtailPageTestCase):
     def test_404_page(self):
         """Test that the 404 page can be served."""
         e404_urls = [
-            "/non-existent-page/",
-            "/nested/non-existent-page/",
-            "/non-existent-page/?with_query=string",
+            "/non-existent-page",
+            "/nested/non-existent-page",
+            "/non-existent-page?with_query=string",
         ]
         for url in e404_urls:
             with self.subTest(url=url):
@@ -225,7 +225,7 @@ class ErrorPageTests(WagtailPageTestCase):
         """Test that a 301 redirect is returned before the 404 page is served when necessary."""
         # The lack of a trailing slash on the URL should result in a 301 redirect,
         # even if the page does not exist.
-        response = self.client.get("/non-existent-page-with-no-trailing-slash")
+        response = self.client.get("/non-existent-page-with-trailing-slash/")
         self.assertEqual(response.status_code, HTTPStatus.MOVED_PERMANENTLY)
 
         # Follow the redirect
@@ -236,19 +236,19 @@ class ErrorPageTests(WagtailPageTestCase):
 
     def test_404_page_uses_contact_us_setting(self):
         """Test that the 404 page uses the CONTACT_US_URL setting for the contact link."""
-        response = self.client.get("/non-existent-page/")
+        response = self.client.get("/non-existent-page")
         self.assertEqual(response.status_code, HTTPStatus.NOT_FOUND)
         self.assertContains(response, f'href="{settings.CONTACT_US_URL}"', status_code=HTTPStatus.NOT_FOUND)
 
-    @override_settings(CONTACT_US_URL="/custom/contact-path/")
+    @override_settings(CONTACT_US_URL="/custom/contact-path")
     def test_404_page_uses_custom_contact_us_setting(self):
         """Test that the 404 page uses a custom CONTACT_US_URL setting when configured."""
-        response = self.client.get("/non-existent-page/")
+        response = self.client.get("/non-existent-page")
         self.assertEqual(response.status_code, HTTPStatus.NOT_FOUND)
-        self.assertContains(response, 'href="/custom/contact-path/"', status_code=HTTPStatus.NOT_FOUND)
+        self.assertContains(response, 'href="/custom/contact-path"', status_code=HTTPStatus.NOT_FOUND)
 
     def test_404_page_analytics_values(self):
-        response = self.client.get("/non-existent-page/")
+        response = self.client.get("/non-existent-page")
         self.assertEqual(response.status_code, HTTPStatus.NOT_FOUND)
         datalayer_values = extract_datalayer_pushed_values(response.text)
         self.assertEqual(datalayer_values["product"], "wagtail")

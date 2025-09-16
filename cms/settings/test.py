@@ -87,6 +87,8 @@ AWS_SECRET_ACCESS_KEY = "testing"  # noqa: S105
 AWS_SESSION_TOKEN = "testing"  # noqa: S105
 AWS_EC2_METADATA_DISABLED = True
 
+USE_I18N_ROOT_NO_TRAILING_SLASH = True
+
 CMS_HOSTNAME_LOCALE_MAP = {
     "ons.localhost": "en-gb",
     "pub.ons.localhost": "en-gb",

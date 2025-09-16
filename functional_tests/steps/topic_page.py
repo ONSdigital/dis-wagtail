@@ -6,8 +6,10 @@ from playwright.sync_api import expect
 
 from cms.articles.tests.factories import (
     ArticleSeriesPageFactory,
+    ArticlesIndexPageFactory,
     StatisticalArticlePageFactory,
 )
+from cms.methodology.tests.factories import MethodologyIndexPageFactory, MethodologyPageFactory
 from cms.topics.tests.factories import TopicPageFactory
 
 
@@ -18,8 +20,15 @@ def the_user_creates_theme_and_topic_pages(context: Context) -> None:
 
 @given("the topic page has a statistical article in a series")
 def the_topic_page_has_a_statistical_article_in_a_series(context: Context) -> None:
-    context.article_series_page = ArticleSeriesPageFactory(title="PSF")
+    context.article_index_page = ArticlesIndexPageFactory(parent=context.topic_page)
+    context.article_series_page = ArticleSeriesPageFactory(parent=context.article_index_page, title="PSF")
     context.first_statistical_article_page = StatisticalArticlePageFactory(parent=context.article_series_page)
+
+
+@given("the topic page has a child methodology page")
+def the_topic_page_has_a_child_methodology_page(context: Context) -> None:
+    context.methodology_index_page = MethodologyIndexPageFactory(parent=context.topic_page)
+    context.methodology_page = MethodologyPageFactory(parent=context.methodology_index_page)
 
 
 @given("the user has featured the series")
@@ -79,8 +88,9 @@ def the_topic_page_with_example_content(context: Context) -> None:
 @then("the user can see the topic page featured article")
 def user_sees_featured_article(context: Context) -> None:
     expect(context.page.get_by_role("heading", name="Featured")).to_be_visible()
-    expect(context.page.get_by_text(context.first_statistical_article_page.display_title)).to_be_visible()
-    expect(context.page.get_by_text(context.first_statistical_article_page.main_points_summary)).to_be_visible()
+    featured_section = context.page.locator("#featured")
+    expect(featured_section.get_by_text(context.first_statistical_article_page.display_title)).to_be_visible()
+    expect(featured_section.get_by_text(context.first_statistical_article_page.main_points_summary)).to_be_visible()
 
 
 @then("the user can see the newly created article in featured spot")
@@ -148,3 +158,8 @@ def the_time_series_page_link_is_displayed_on_the_page(context: Context) -> None
 @then("the time series item appears in the table of contents")
 def the_time_series_item_appears_in_the_table_of_contents(context: Context) -> None:
     expect(context.page.get_by_role("heading", name="Time Series")).to_be_visible()
+
+
+@then("the user sees the '{link_text}' link")
+def user_can_see_link(context: Context, link_text: str) -> None:
+    expect(context.page.get_by_role("link", name=link_text)).to_be_visible()
