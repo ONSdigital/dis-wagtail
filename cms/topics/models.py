@@ -269,69 +269,69 @@ class TopicPage(BundledPageMixin, ExclusiveTaxonomyMixin, BasePage):  # type: ig
         if num_manual_articles >= MAX_ITEMS_PER_SECTION:
             return manual_articles[:MAX_ITEMS_PER_SECTION]
 
+        # Find latest article that is a descendant of a given article series page
         newest_qs = (
             StatisticalArticlePage.objects.live()
             .public()
             .filter(path__startswith=OuterRef("path"), depth__gte=OuterRef("depth"))
             .order_by("-release_date")
         )
-        current_series_qs = ArticleSeriesPage.objects.descendant_of(self)
-        latest_by_series = current_series_qs.annotate(
-            latest_child_page=Subquery(newest_qs.values("pk")[:1])
-        ).values_list("latest_child_page", flat=True)
+
+        # Get latest article per series
+        latest_by_series = (
+            ArticleSeriesPage.objects.descendant_of(self)
+            .annotate(latest_child_page=Subquery(newest_qs.values("pk")[:1]))
+            .values_list("latest_child_page", flat=True)
+        )
 
         remaining_slots = MAX_ITEMS_PER_SECTION - num_manual_articles
 
+        # Get the latest articles under this topic page (topic page -> article series page -> latest stats article page),
+        # excluding those already highlighted
         latest_articles = list(
             StatisticalArticlePage.objects.filter(pk__in=latest_by_series)
             .exclude(pk__in=highlighted_page_pks)
             .live()
             .public()
             .defer_streamfields()
-            .order_by("-release_date")[:remaining_slots]
+            .order_by("-release_date")
         )
 
-        # Convert latest articles to dict format
-        auto_articles = [{"internal_page": page} for page in latest_articles]
+        # Exclude those that are descendants of this topic page
+        descendant_series_pks = set(ArticleSeriesPage.objects.descendant_of(self).values_list("pk", flat=True))
 
-        total_articles = manual_articles + auto_articles
+        # Get all other article series across the CMS that are tagged with this topic of this topic page
+        all_article_series = (
+            ArticleSeriesPage.objects.live()
+            .public()
+            .filter(topics__topic_id=self.topic_id)
+            .exclude(pk__in=descendant_series_pks)
+        )
 
-        # If we still have slots, pull from other topic pages with the same topic(s)
-        slots_left = MAX_ITEMS_PER_SECTION - len(total_articles)
-        if slots_left > 0:
-            # Get the single topic ID for this topic page (ExclusiveTaxonomyMixin)
-            topic_ids = [self.topic_id] if self.topic_id else []
+        # Get latest article per series
+        all_article_latest_by_series = all_article_series.annotate(
+            latest_child_page=Subquery(newest_qs.values("pk")[:1])
+        ).values_list("latest_child_page", flat=True)
 
-            # Get all article series tagged with the same topic(s), excluding those under this topic page
-            other_series = (
-                ArticleSeriesPage.objects.live()
-                .public()
-                .filter(topics__topic_id__in=topic_ids)
-                .filter(locale=self.locale)  # Only this locale
-                .exclude(pk__in=current_series_qs.values_list("pk", flat=True))
-                .distinct()
-            )
+        # Get the latest articles, excluding those already highlighted
+        all_latest_articles = list(
+            StatisticalArticlePage.objects.filter(pk__in=all_article_latest_by_series)
+            .filter(locale=self.locale)  # Ensure articles are in the same locale as the topic page
+            .exclude(pk__in=highlighted_page_pks)
+            .live()
+            .public()
+            .defer_streamfields()
+            .order_by("-release_date")
+        )
 
-            # For each series, get the latest article
-            other_latest_by_series = other_series.annotate(
-                latest_child_page=Subquery(newest_qs.values("pk")[:1])
-            ).values_list("latest_child_page", flat=True)
+        # Combine articles under this topic page and across the CMS, then order by release_date descending
+        combined_articles = latest_articles + all_latest_articles
+        combined_articles.sort(key=lambda page: page.release_date, reverse=True)
 
-            # Get the latest articles, excluding already highlighted
-            other_latest_articles = list(
-                StatisticalArticlePage.objects.filter(pk__in=other_latest_by_series)
-                .filter(locale=self.locale)  # Only this locale
-                .exclude(pk__in=highlighted_page_pks)
-                .exclude(pk__in=[a["internal_page"].pk for a in auto_articles if "internal_page" in a])
-                .live()
-                .public()
-                .defer_streamfields()
-                .order_by("-release_date")[:slots_left]
-            )
+        # Convert to dict format
+        auto_articles = [{"internal_page": page} for page in combined_articles[:remaining_slots]]
 
-            total_articles += [{"internal_page": page} for page in other_latest_articles]
-
-        return total_articles[:MAX_ITEMS_PER_SECTION]
+        return manual_articles + auto_articles
 
     @cached_property
     def processed_methodologies(self) -> list[dict]:
