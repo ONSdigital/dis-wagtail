@@ -148,3 +148,4 @@ TAG = "dev"
 
 # Allow to override but default to enabled
 CMS_RESOURCES_ENDPOINT_ENABLED = env.get("CMS_RESOURCES_ENDPOINT_ENABLED", "true").lower() == "true"
+USE_I18N_ROOT_NO_TRAILING_SLASH = env.get("USE_I18N_ROOT_NO_TRAILING_SLASH", "true").lower() == "true"

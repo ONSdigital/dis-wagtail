@@ -15,7 +15,7 @@ from cms.standard_pages.tests.factories import IndexPageFactory, InformationPage
 from cms.themes.tests.factories import ThemePageFactory
 from cms.topics.tests.factories import TopicPageFactory
 
-RESOURCE_ENDPOINT = "/v1/resources/"
+RESOURCE_ENDPOINT = "/v1/resources"
 
 
 @override_settings(IS_EXTERNAL_ENV=False)
