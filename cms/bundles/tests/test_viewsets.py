@@ -4,6 +4,7 @@ from unittest import mock
 from unittest.mock import patch
 
 import time_machine
+from django.conf import settings
 from django.db.models import F, OrderBy
 from django.test import TestCase, override_settings
 from django.urls import reverse
@@ -171,6 +172,14 @@ class BundleViewSetAddTestCase(BundleViewSetTestCaseBase):
             self.bundle_add_url,
         )
         self.assertContains(response, "Choose Release Calendar page")
+
+    def test_add_view_passes_access_token_to_form(self):
+        response = self.client.get(self.bundle_add_url)
+        self.assertIsNone(response.context["form"].datasets_bundle_api_user_access_token)
+
+        self.client.cookies[settings.ACCESS_TOKEN_COOKIE_NAME] = "the-access-token"
+        response = self.client.get(self.bundle_add_url)
+        self.assertEqual(response.context["form"].datasets_bundle_api_user_access_token, "the-access-token")
 
 
 class BundleViewSetEditTestCase(BundleViewSetTestCaseBase):
@@ -387,6 +396,14 @@ class BundleViewSetEditTestCase(BundleViewSetTestCaseBase):
 
         self.assertContains(response, "Statistical article page")
         self.assertContains(response, self.statistical_article_page.get_admin_display_title())
+
+    def test_view_passes_access_token_to_form(self):
+        response = self.client.get(self.edit_url)
+        self.assertIsNone(response.context["form"].datasets_bundle_api_user_access_token)
+
+        self.client.cookies[settings.ACCESS_TOKEN_COOKIE_NAME] = "the-access-token"
+        response = self.client.get(self.edit_url)
+        self.assertEqual(response.context["form"].datasets_bundle_api_user_access_token, "the-access-token")
 
 
 class BundleViewSetInspectTestCase(BundleViewSetTestCaseBase):
