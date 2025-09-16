@@ -380,7 +380,7 @@ class TopicPage(BundledPageMixin, ExclusiveTaxonomyMixin, BasePage):  # type: ig
 
         # Combine and sort by last_revised_date
         combined_auto_pages = under_topic_page_methodology_pages + across_cms_methodology_pages
-        combined_auto_pages.sort(key=lambda page: page.last_revised_date, reverse=True)
+        combined_auto_pages.sort(key=lambda page: page.last_revised_date or page.publication_date, reverse=True)
 
         # Only fill up to the remaining slots
         auto_methodologies = [{"internal_page": page} for page in combined_auto_pages[:remaining_slots]]
