@@ -190,11 +190,9 @@ def get_release_calendar_page_title_with_status_and_release_date(
     release_calendar_page: "Page",
 ) -> str:
     """Returns the release page title, status and release date."""
-    title: str = release_calendar_page.specific_deferred.get_admin_display_title()
-    release_date: str = release_calendar_page.specific_deferred.release_date_value
-
-    status: str = release_calendar_page.specific_deferred.get_status()
-    return f"{title} ({status}) ({release_date})"
+    return (
+        f"{release_calendar_page.title} ({release_calendar_page.status}) ({release_calendar_page.release_date_value})"
+    )
 
 
 def get_page_title_with_workflow_status(page: Page) -> str:
