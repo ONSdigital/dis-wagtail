@@ -4,13 +4,13 @@ from django.conf import settings
 from django.http import HttpRequest, HttpResponsePermanentRedirect
 from django.utils.deprecation import MiddlewareMixin
 
-NON_TRAILING_SLASH_METHODS = ["GET", "HEAD"]
+NON_TRAILING_SLASH_METHODS = {"GET", "HEAD"}
 
-ALLOWED_REQUEST_PATHS = [
+ALLOWED_REQUEST_PATHS = {
     settings.DJANGO_ADMIN_HOME_PATH,
     settings.WAGTAILADMIN_HOME_PATH,
     "/__debug__/",
-]
+}
 
 
 class NonTrailingSlashRedirectMiddleware(MiddlewareMixin):
