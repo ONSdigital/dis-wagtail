@@ -234,8 +234,6 @@ class TopicPage(BundledPageMixin, ExclusiveTaxonomyMixin, BasePage):  # type: ig
         """Returns a list of dictionaries representing related articles.
         Each dict has 'internal_page' pointing to a Page (or None for external) and optional 'title'.
         Manually added articles (both internal and external) are prioritised.
-
-        TODO: extend when Taxonomy is in.
         """
         manual_articles = []
         highlighted_page_pks = []
@@ -286,8 +284,8 @@ class TopicPage(BundledPageMixin, ExclusiveTaxonomyMixin, BasePage):  # type: ig
 
         remaining_slots = MAX_ITEMS_PER_SECTION - num_manual_articles
 
-        # Get the latest articles under this topic page (topic page -> article series page -> latest stats article page),
-        # excluding those already highlighted
+        # Get the latest articles under this topic page (topic page -> articles index -> article series page ->
+        # latest stats article page), excluding those already highlighted
         latest_articles = list(
             StatisticalArticlePage.objects.filter(pk__in=latest_by_series)
             .exclude(pk__in=highlighted_page_pks)
@@ -352,19 +350,42 @@ class TopicPage(BundledPageMixin, ExclusiveTaxonomyMixin, BasePage):  # type: ig
         )
 
         num_highlighted_pages = len(highlighted_pages)
-        if num_highlighted_pages > MAX_ITEMS_PER_SECTION - 1:
+        if num_highlighted_pages >= MAX_ITEMS_PER_SECTION:
             return [{"internal_page": page} for page in highlighted_pages]
 
-        # supplement the remaining slots.
-        pages = list(
+        remaining_slots = MAX_ITEMS_PER_SECTION - num_highlighted_pages
+
+        # Methodology pages under this topic page (descendants)/ (methodology index -> methodology page)
+        # that are not already highlighted
+        under_topic_page_methodology_pages = list(
             MethodologyPage.objects.descendant_of(self)
-            .exclude(pk__in=highlighted_pages)
+            .exclude(pk__in=highlighted_page_pks)
             .live()
             .public()
-            .order_by("-last_revised_date")[: MAX_ITEMS_PER_SECTION - num_highlighted_pages]
+            .order_by("-last_revised_date")
         )
-        all_pages = highlighted_pages + pages
-        return [{"internal_page": page} for page in all_pages]
+
+        # Methodology pages across the CMS tagged with this topic as the current topic page,
+        # but not descendants of this topic page and not already highlighted
+        descendant_methodology_pks = set(MethodologyPage.objects.descendant_of(self).values_list("pk", flat=True))
+        across_cms_methodology_pages = list(
+            MethodologyPage.objects.live()
+            .filter(locale=self.locale)  # Ensure articles are in the same locale as the topic page
+            .public()
+            .filter(topics__topic_id=self.topic_id)
+            .exclude(pk__in=descendant_methodology_pks)
+            .exclude(pk__in=highlighted_page_pks)
+            .order_by("-last_revised_date")
+        )
+
+        # Combine and sort by last_revised_date
+        combined_auto_pages = under_topic_page_methodology_pages + across_cms_methodology_pages
+        combined_auto_pages.sort(key=lambda page: page.last_revised_date, reverse=True)
+
+        # Only fill up to the remaining slots
+        auto_methodologies = [{"internal_page": page} for page in combined_auto_pages[:remaining_slots]]
+
+        return [{"internal_page": page} for page in highlighted_pages] + auto_methodologies
 
     @cached_property
     def table_of_contents(self) -> list[dict[str, str | object]]:
