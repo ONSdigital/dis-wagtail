@@ -159,8 +159,8 @@ def release_calendar_page_panel_displays_status_and_release_date(
 ) -> None:
     expect(
         context.page.get_by_text(
-            f"Future Release Calendar Page ({context.release_calendar_page.status})"
-            f" ({context.release_calendar_page.release_date_value})"
+            f"Future Release Calendar Page ({context.release_calendar_page.status},"
+            f" {context.release_calendar_page.release_date_value})"
         )
     )
 
@@ -205,7 +205,7 @@ def user_returns_to_bundle_page_release_calendar_page_was_assigned_to(
 def release_calendar_page_panel_displays_updated_status_and_release_date(
     context: Context,
 ) -> None:
-    expect(context.page.get_by_text(f"New title (CONFIRMED) ({context.release_calendar_page.release_date_value}))"))
+    expect(context.page.get_by_text(f"New title (CONFIRMED, {context.release_calendar_page.release_date_value}))"))
     expect(
-        context.page.get_by_text(f"{context.original_title} ({context.original_status}) ({context.original_date})")
+        context.page.get_by_text(f"{context.original_title} ({context.original_status}, {context.original_date})")
     ).not_to_be_visible()

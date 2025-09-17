@@ -348,8 +348,8 @@ class BundleViewSetEditTestCase(BundleViewSetTestCaseBase):
         response = self.client.get(self.edit_url)
         expected_text = (
             f"{release_calendar_page.title} "
-            f"({release_calendar_page.status}) "
-            f"({release_calendar_page.release_date_value})"
+            f"({release_calendar_page.status}, "
+            f"{release_calendar_page.release_date_value})"
         )
 
         self.assertContains(response, expected_text)
@@ -364,8 +364,8 @@ class BundleViewSetEditTestCase(BundleViewSetTestCaseBase):
         # To track previous values
         original_text = (
             f"{release_calendar_page.title} "
-            f"({release_calendar_page.status}) "
-            f"({release_calendar_page.release_date_value})"
+            f"({release_calendar_page.status}, "
+            f"{release_calendar_page.release_date_value})"
         )
         # Update release calendar page with new details
         release_calendar_page.title = "New title"
@@ -376,7 +376,7 @@ class BundleViewSetEditTestCase(BundleViewSetTestCaseBase):
 
         response = self.client.get(self.edit_url)
 
-        expected_text = f"New title (CONFIRMED) ({release_calendar_page.release_date_value})"
+        expected_text = f"New title (CONFIRMED, {release_calendar_page.release_date_value})"
         self.assertContains(response, expected_text)
         self.assertNotContains(response, original_text)
 
