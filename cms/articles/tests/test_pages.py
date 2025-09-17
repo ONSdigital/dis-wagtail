@@ -63,7 +63,7 @@ class ArticleSeriesPageTests(WagtailPageTestCase):
 
     def test_previous_releases_breadcrumbs(self):
         """Test that the previous releases page includes a breadcrumb for the latest article."""
-        _latest_article = StatisticalArticlePageFactory(parent=self.page, title="Latest Article")
+        StatisticalArticlePageFactory(parent=self.page, title="Latest Article")
         response = self.client.get(f"{self.page.url}/editions")
         self.assertEqual(response.status_code, HTTPStatus.OK)
 
