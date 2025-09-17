@@ -69,7 +69,7 @@ TASKS = {
 SLACK_NOTIFICATIONS_WEBHOOK_URL = None
 
 ONS_API_BASE_URL = "https://dummy_base_api"
-ONS_WEBSITE_DATASET_BASE_URL = "https://dummy_datasets/datasets"
+DATASETS_BASE_API_URL = "https://dummy_base_api/datasets"
 KAFKA_SERVERS = os.getenv("KAFKA_SERVERS", "localhost:9094").split(",")
 
 # Ignore proxy count in tests
@@ -86,3 +86,5 @@ AWS_ACCESS_KEY_ID = "testing"
 AWS_SECRET_ACCESS_KEY = "testing"  # noqa: S105
 AWS_SESSION_TOKEN = "testing"  # noqa: S105
 AWS_EC2_METADATA_DISABLED = True
+
+USE_I18N_ROOT_NO_TRAILING_SLASH = True
