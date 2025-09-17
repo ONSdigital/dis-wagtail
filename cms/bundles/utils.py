@@ -2,7 +2,7 @@ import logging
 import time
 import uuid
 from functools import cache
-from typing import TYPE_CHECKING, Any, cast
+from typing import TYPE_CHECKING, Any, Literal, cast
 
 from django.urls import reverse
 from wagtail.coreutils import resolve_model_string
@@ -184,6 +184,31 @@ def get_preview_items_for_bundle(bundle: "Bundle", page_id: int, pages_in_bundle
         )
 
     return preview_items
+
+
+def get_preview_teams_for_bundle(bundle: "Bundle") -> list[dict[Literal["id"], str]]:
+    """Get formatted preview teams for a bundle for API usage."""
+    team_identifiers = bundle.teams.values_list("team__identifier", flat=True)
+    return [{"id": identifier} for identifier in team_identifiers]
+
+
+def build_bundle_data_for_api(bundle: "Bundle") -> dict[str, Any]:
+    """Build the dictionary of bundle data for the API."""
+    # Determine bundle_type based on scheduling
+    bundle_type = "SCHEDULED" if bundle.scheduled_publication_date else "MANUAL"
+
+    # Get preview teams
+    preview_teams = get_preview_teams_for_bundle(bundle)
+
+    return {
+        "title": bundle.name,
+        "bundle_type": bundle_type,
+        "state": bundle.status,
+        "managed_by": "WAGTAIL",
+        "preview_teams": preview_teams,
+        "scheduled_at": (bundle.scheduled_publication_date.isoformat() if bundle.scheduled_publication_date else None),
+        "e_tag": bundle.bundle_api_etag,
+    }
 
 
 def get_release_calendar_page_title_with_status_and_release_date(

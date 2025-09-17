@@ -284,8 +284,8 @@ USER $USERNAME
 
 # Copy in the node_modules directory from the frontend-deps stage to initialise
 # the volume that gets mounted here
-ARG UID
-ARG GID
+ARG UID=1000
+ARG GID=1000
 COPY --chown=$UID:$GID --from=frontend-deps --link /build/node_modules ./node_modules
 
 # Install the dev dependencies (they're omitted in the base stage)

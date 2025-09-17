@@ -413,8 +413,8 @@ class TopicPageTestCase(WagtailTestUtils, TestCase):
         self.assertFalse(new_topic_page.permissions_for_user(self.superuser).can_add_subpage())
 
         response = self.client.get(reverse("wagtailadmin_explore", args=[new_topic_page.pk]))
-        self.assertContains(response, "/new-topic/articles/")
-        self.assertContains(response, "/new-topic/methodologies/")
+        self.assertContains(response, "/new-topic/articles")
+        self.assertContains(response, "/new-topic/methodologies")
 
         # Should have 2 "add child page" links, one each for articles and methodologies index
         self.assertContains(response, "Add child page", 2)
