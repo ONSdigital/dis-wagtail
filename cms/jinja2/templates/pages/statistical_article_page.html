@@ -173,6 +173,10 @@
 {% endblock %}
 
 {% block main %}
+    Request.path: {{ request.path }}
+    <br>
+    Routablepageurl: {{ routablepageurl(page.get_parent().specific, "latest_article")}}
+
     <div class="ons-grid ons-grid-flex-gap ons-grid-flex-gap--xl ons-js-toc-container">
         <div class="ons-grid__col ons-grid__col--sticky@m ons-col-4@m">
             {% if page.datasets %}
