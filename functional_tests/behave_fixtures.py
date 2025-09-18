@@ -64,6 +64,15 @@ def django_test_case(context: Context) -> None:
     # give it a shorter name since we'll need to access it in many places
     context.base_url = context.test_case_class.live_server_url
 
+    # Update the default site entry hostname and port
+    # note: importing inline as the top-level imports happen before Django is initialised
+    from wagtail.models import Site  # pylint: disable=import-outside-toplevel
+
+    site = Site.objects.get(is_default_site=True)
+    site.hostname = context.test_case_class.host
+    site.port = context.test_case_class.server_thread.port
+    site.save(update_fields=["hostname", "port"])
+
     context.test_case = context.test_case_class()
     context.test_case.setUp()
 

@@ -32,7 +32,7 @@ if TYPE_CHECKING:
     from wagtail.contrib.settings.models import (
         BaseSiteSetting as _WagtailBaseSiteSetting,
     )
-    from wagtail.models import Site
+    from wagtail.models.sites import Site, SiteRootPath
 
     class WagtailBaseSiteSetting(_WagtailBaseSiteSetting, models.Model):
         """Explicit class definition for type checking. Indicates we're inheriting from Django's model."""
@@ -288,6 +288,26 @@ class BasePage(PageLDMixin, ListingFieldsMixin, SocialFieldsMixin, Page):  # typ
 
         parent_theme = page_topic.get_base_parent()
         return cast(str, parent_theme.title)
+
+    def _get_site_root_paths(self, request: Optional["HttpRequest"] = None) -> list["SiteRootPath"]:
+        """Extends the core Page._get_site_root_paths to account for alternative domains."""
+        if not settings.CMS_USE_SUBDOMAIN_LOCALES:
+            return cast(list["SiteRootPath"], super()._get_site_root_paths(request=request))
+
+        from cms.locale.utils import get_mapped_site_root_paths  # pylint: disable=import-outside-toplevel
+
+        cache_object = request if request else self
+        try:
+            # pylint: disable=protected-access
+            cached_paths: list[SiteRootPath] = cache_object._wagtail_cached_site_root_paths  # type: ignore[union-attr]
+            # pylint: enable=protected-access
+            return cached_paths
+        except AttributeError:
+            paths = get_mapped_site_root_paths(request.get_host() if request is not None else None)
+            # pylint: disable=protected-access,attribute-defined-outside-init
+            cache_object._wagtail_cached_site_root_paths = paths  # type: ignore[union-attr]
+            # pylint: enable=protected-access,attribute-defined-outside-init
+            return paths
 
 
 class BaseSiteSetting(WagtailBaseSiteSetting):
