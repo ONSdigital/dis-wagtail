@@ -6,6 +6,7 @@ from django import template
 from django.template.loader import render_to_string
 from django.utils.html import json_script as _json_script
 from django_jinja import library
+from wagtail.contrib.routable_page.templatetags.wagtailroutablepage_tags import routablepageurl
 from wagtail.models import Locale
 
 from cms.core.custom_date_format import ons_date_format
@@ -174,3 +175,9 @@ def extend(value: list[Any], element: Any) -> None:
         # can't rely on annotations and tooling for type safety.
         raise TypeError("First argument must be a list.")
     return value.append(element)
+
+
+@register.filter(name="routablepageurl")
+def routablepageurl_no_trailing_slash(context, page, *args, **kwargs) -> str:
+    """Overwrite Wagtail's routablepageurl to remove trailing slash."""
+    return routablepageurl(context, page, *args, **kwargs).rstrip("/")

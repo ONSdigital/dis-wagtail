@@ -25,6 +25,30 @@ from cms.datavis.tests.factories import TableDataFactory
 from cms.topics.models import TopicPage
 
 
+class TestEvergreenRelatedDataPage(TestCase):
+    def test_evergreen_route_links_to_evergreen_related_data(self):
+        article_series_page = ArticleSeriesPageFactory()
+        article = StatisticalArticlePageFactory(parent=article_series_page, title="Latest Article")
+        article.datasets = StreamValue(
+            DatasetStoryBlock(),
+            stream_data=[
+                (
+                    "manual_link",
+                    {
+                        "title": "Test dataset",
+                        "description": "Test description",
+                        "url": "https://example.com",
+                    },
+                )
+            ],
+        )
+        article.save_revision().publish()
+
+        response = self.client.get(article_series_page.url, follow=True)
+        self.assertEqual(response.status_code, HTTPStatus.OK)
+        self.assertContains(response, f"{article_series_page.url}/related-data")
+
+
 class ArticleSeriesTestCase(WagtailTestUtils, TestCase):
     """Test ArticleSeriesPage model methods."""
 
