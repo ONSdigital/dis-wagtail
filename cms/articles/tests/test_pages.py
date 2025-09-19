@@ -26,51 +26,52 @@ from cms.topics.tests.utils import post_page_add_form_to_create_topic_page
 class ArticleSeriesPageTests(WagtailPageTestCase):
     @classmethod
     def setUpTestData(cls):
-        cls.page = ArticleSeriesPageFactory(title="The Article Series")
+        cls.article_series_page = ArticleSeriesPageFactory(title="The Article Series")
 
     def test_default_route(self):
-        self.assertPageIsRoutable(self.page)
+        self.assertPageIsRoutable(self.article_series_page)
 
     def test_default_route_rendering(self):
-        self.assertPageIsRenderable(self.page, accept_404=True)
-        StatisticalArticlePageFactory(parent=self.page, title="Statistical Article")
-        self.assertPageIsRenderable(self.page, accept_404=False, accept_redirect=True)
+        self.assertPageIsRenderable(self.article_series_page, accept_404=True)
+        StatisticalArticlePageFactory(parent=self.article_series_page, title="Statistical Article")
+        self.assertPageIsRenderable(self.article_series_page, accept_404=False, accept_redirect=True)
 
     def test_default_route_renders_latest_article(self):
-        article = StatisticalArticlePageFactory(parent=self.page, title="Latest Article")
-        response = self.client.get(self.page.url)
+        article = StatisticalArticlePageFactory(parent=self.article_series_page, title="Latest Article")
+        response = self.client.get(self.article_series_page.url)
         self.assertEqual(response.status_code, HTTPStatus.OK)
         self.assertContains(response, article.title)
 
     def test_previous_releases_route(self):
-        self.assertPageIsRoutable(self.page, "editions")
+        self.assertPageIsRoutable(self.article_series_page, "editions")
 
     def test_previous_releases_route_rendering(self):
-        self.assertPageIsRenderable(self.page, "editions")
+        self.assertPageIsRenderable(self.article_series_page, "editions")
 
     def test_previous_releases_article_list(self):
-        response = self.client.get(f"{self.page.url}/editions")
+        response = self.client.get(f"{self.article_series_page.url}/editions")
         self.assertEqual(response.status_code, HTTPStatus.OK)
         self.assertContains(response, "There are currently no releases")
 
-        first_article = StatisticalArticlePageFactory(parent=self.page)
-        second_article = StatisticalArticlePageFactory(parent=self.page)
+        first_article = StatisticalArticlePageFactory(parent=self.article_series_page)
+        second_article = StatisticalArticlePageFactory(parent=self.article_series_page)
 
-        response = self.client.get(f"{self.page.url}/editions")
+        response = self.client.get(f"{self.article_series_page.url}/editions")
         self.assertEqual(response.status_code, HTTPStatus.OK)
         self.assertContains(response, first_article.title)
         self.assertContains(response, second_article.title)
 
     def test_previous_releases_breadcrumbs(self):
         """Test that the previous releases page includes a breadcrumb for the latest article."""
-        StatisticalArticlePageFactory(parent=self.page, title="Latest Article")
-        response = self.client.get(f"{self.page.url}/editions")
+        StatisticalArticlePageFactory(parent=self.article_series_page, title="Latest Article")
+        response = self.client.get(f"{self.article_series_page.url}/editions")
         self.assertEqual(response.status_code, HTTPStatus.OK)
 
         # Check the breadcrumbs include the series page link, which serves the evergreen latest article
         self.assertContains(
             response,
-            f'<a class="ons-breadcrumbs__link" href="{self.page.full_url}">{self.page.title}</a>',
+            f'<a class="ons-breadcrumbs__link" href="{self.article_series_page.full_url}">'
+            f"{self.article_series_page.title}</a>",
             html=True,
         )
 
