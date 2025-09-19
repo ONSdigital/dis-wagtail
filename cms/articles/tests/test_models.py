@@ -116,7 +116,7 @@ class ArticleSeriesEvergreenUrlTestCase(WagtailTestUtils, TestCase):
     def test_evergreen_route_canonical_url(self):
         response = self.client.get(f"{self.article_series_page.url}/related-data")
         self.assertEqual(response.status_code, HTTPStatus.OK)
-        self.assertContains(response, f"{self.article_series_page.url}/related-data", html=True)
+        self.assertContains(response, f"{self.article_series_page.get_full_url()}/related-data", html=True)
 
     def test_evergreen_route_related_data_returns_404_when_no_live_editions(self):
         series_with_no_editions = ArticleSeriesPageFactory()

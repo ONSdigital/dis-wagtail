@@ -638,6 +638,8 @@ class StatisticalArticlePage(  # type: ignore[django-manager-missing]
     def related_data(self, request: "HttpRequest") -> "TemplateResponse":
         if not self.dataset_document_list:
             raise Http404
+
+        request.is_for_subpage = True  # type: ignore[attr-defined]
         paginator = Paginator(self.dataset_document_list, per_page=settings.RELATED_DATASETS_PER_PAGE)
 
         try:
