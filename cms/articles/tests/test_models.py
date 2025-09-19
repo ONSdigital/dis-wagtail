@@ -25,30 +25,6 @@ from cms.datavis.tests.factories import TableDataFactory
 from cms.topics.models import TopicPage
 
 
-class TestEvergreenRelatedDataPage(TestCase):
-    def test_evergreen_route_links_to_evergreen_related_data(self):
-        article_series_page = ArticleSeriesPageFactory()
-        article = StatisticalArticlePageFactory(parent=article_series_page, title="Latest Article")
-        article.datasets = StreamValue(
-            DatasetStoryBlock(),
-            stream_data=[
-                (
-                    "manual_link",
-                    {
-                        "title": "Test dataset",
-                        "description": "Test description",
-                        "url": "https://example.com",
-                    },
-                )
-            ],
-        )
-        article.save_revision().publish()
-
-        response = self.client.get(article_series_page.url, follow=True)
-        self.assertEqual(response.status_code, HTTPStatus.OK)
-        self.assertContains(response, f"{article_series_page.url}/related-data")
-
-
 class ArticleSeriesTestCase(WagtailTestUtils, TestCase):
     """Test ArticleSeriesPage model methods."""
 
@@ -98,6 +74,59 @@ class ArticleSeriesTestCase(WagtailTestUtils, TestCase):
             series_response = self.client.get(self.series.url)
 
         self.assertEqual(series_response.status_code, 200)
+
+
+class ArticleSeriesEvergreenUrlTestCase(WagtailTestUtils, TestCase):
+    def setUp(self):
+        self.article_series_page = ArticleSeriesPageFactory()
+        self.article_with_datasets = StatisticalArticlePageFactory(parent=self.article_series_page)
+        self.article_with_datasets.datasets = StreamValue(
+            DatasetStoryBlock(),
+            stream_data=[
+                (
+                    "manual_link",
+                    {
+                        "title": "Test dataset",
+                        "description": "Test description",
+                        "url": "https://example.com",
+                    },
+                )
+            ],
+        )
+        self.article_with_datasets.save_revision().publish()
+
+    def test_evergreen_route_links_to_evergreen_related_data(self):
+        response = self.client.get(self.article_series_page.url, follow=True)
+        self.assertEqual(response.status_code, HTTPStatus.OK)
+
+        self.assertContains(
+            response,
+            f'<a href="{self.article_series_page.url}/related-data" class="ons-list__link">'
+            + "View data used in this article</a>",
+            html=True,
+        )
+
+    def test_evergreen_route_related_data_renders_correctly(self):
+        response = self.client.get(f"{self.article_series_page.url}/related-data")
+        self.assertEqual(response.status_code, HTTPStatus.OK)
+
+        self.assertContains(response, f"All data related to {self.article_with_datasets.title}")
+        self.assertContains(response, "Test dataset")
+
+    def test_evergreen_route_canonical_url(self):
+        response = self.client.get(f"{self.article_series_page.url}/related-data")
+        self.assertEqual(response.status_code, HTTPStatus.OK)
+        self.assertContains(response, f"{self.article_series_page.url}/related-data", html=True)
+
+    def test_evergreen_route_related_data_404_when_no_datasets(self):
+        article_without_datasets = StatisticalArticlePageFactory(
+            parent=self.article_series_page, title="Latest Article"
+        )
+        article_without_datasets.datasets = None
+        article_without_datasets.save_revision().publish()
+
+        response = self.client.get(f"{self.article_series_page.url}/related-data")
+        self.assertEqual(response.status_code, HTTPStatus.NOT_FOUND)
 
 
 class StatisticalArticlePageTestCase(WagtailTestUtils, TestCase):

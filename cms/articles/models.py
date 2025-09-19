@@ -122,6 +122,7 @@ class ArticleSeriesPage(  # type: ignore[django-manager-missing]
         if not (latest := self.get_latest()):
             raise Http404
 
+        request.is_for_subpage = True  # type: ignore[attr-defined]
         request.is_preview = getattr(request, "is_preview", False)  # type: ignore[attr-defined]
 
         return cast("HttpResponse", self.release(request, latest.slug, related_data=True))
