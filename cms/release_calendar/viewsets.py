@@ -1,11 +1,20 @@
 from django.db.models import Q, QuerySet
 from django.utils import timezone
 from wagtail.admin.ui.tables import Column, DateColumn, LocaleColumn
-from wagtail.admin.views.generic.chooser import ChooseResultsView, ChooseView
+from wagtail.admin.views.generic.chooser import (
+    ChooseResultsView,
+    ChooseView,
+    ChosenView,
+)
 from wagtail.admin.viewsets.chooser import ChooserViewSet
+from wagtail.admin.widgets import BaseChooser
+from wagtail.models import Page
 from wagtail.permission_policies.pages import PagePermissionPolicy
 
 from cms.bundles.enums import ACTIVE_BUNDLE_STATUSES
+from cms.bundles.utils import (
+    get_release_calendar_page_title_with_status_and_release_date,
+)
 from cms.release_calendar.enums import ReleaseStatus
 from cms.release_calendar.models import ReleaseCalendarPage
 
@@ -53,10 +62,16 @@ class FutureReleaseCalendarPageChooseView(FutureReleaseCalendarMixin, ChooseView
 class FutureReleaseCalendarPageChooseResultsView(FutureReleaseCalendarMixin, ChooseResultsView): ...
 
 
+class ReleaseCalendarPageChosenView(ChosenView):
+    def get_display_title(self, instance: Page) -> str:
+        return get_release_calendar_page_title_with_status_and_release_date(instance)
+
+
 class FutureReleaseCalendarPageChooserViewSet(ChooserViewSet):
     model = ReleaseCalendarPage
     choose_view_class = FutureReleaseCalendarPageChooseView
     choose_results_view_class = FutureReleaseCalendarPageChooseResultsView
+    chosen_view_class = ReleaseCalendarPageChosenView
     register_widget = False
 
     icon = "calendar-check"
@@ -66,4 +81,4 @@ class FutureReleaseCalendarPageChooserViewSet(ChooserViewSet):
 
 
 release_calendar_chooser_viewset = FutureReleaseCalendarPageChooserViewSet("release_calendar_chooser")
-FutureReleaseCalendarChooserWidget = release_calendar_chooser_viewset.widget_class
+FutureReleaseCalendarChooserWidget: type[BaseChooser] = release_calendar_chooser_viewset.widget_class
