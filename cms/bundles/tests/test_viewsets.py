@@ -187,7 +187,10 @@ class BundleViewSetAddTestCase(BundleViewSetTestCaseBase):
 
         self.client.cookies[settings.ACCESS_TOKEN_COOKIE_NAME] = "the-access-token"
         response = self.client.get(self.bundle_add_url)
-        self.assertEqual(response.context["form"].datasets_bundle_api_user_access_token, "the-access-token")
+        self.assertEqual(
+            response.context["form"].datasets_bundle_api_user_access_token,
+            "the-access-token",
+        )
 
 
 class BundleViewSetEditTestCase(BundleViewSetTestCaseBase):
@@ -349,7 +352,7 @@ class BundleViewSetEditTestCase(BundleViewSetTestCaseBase):
         self.bundle.save(update_fields=["release_calendar_page"])
         return release_calendar_page
 
-    def test_bundle_edit_view__release_calendar_page_chooser_contain_status_and_release_date(
+    def test_bundle_edit_view__shows_release_calendar_title_status_date(
         self,
     ):
         """To test release calendar page's title, status and release date are displayed when selected."""
@@ -363,7 +366,7 @@ class BundleViewSetEditTestCase(BundleViewSetTestCaseBase):
 
         self.assertContains(response, expected_text)
 
-    def test_bundle_edit_view__release_calendar_page_chooser_displays_updated_details(
+    def test_bundle_edit_view__shows_updated_release_calendar_details(
         self,
     ):
         """When release calendar page details are updated, this tests that the updates are reflected and checks stale
@@ -477,7 +480,10 @@ class BundleViewSetEditTestCase(BundleViewSetTestCaseBase):
 
         self.client.cookies[settings.ACCESS_TOKEN_COOKIE_NAME] = "the-access-token"
         response = self.client.get(self.edit_url)
-        self.assertEqual(response.context["form"].datasets_bundle_api_user_access_token, "the-access-token")
+        self.assertEqual(
+            response.context["form"].datasets_bundle_api_user_access_token,
+            "the-access-token",
+        )
 
 
 class BundleViewSetInspectTestCase(BundleViewSetTestCaseBase):

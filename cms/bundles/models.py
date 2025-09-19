@@ -31,7 +31,7 @@ from .panels import (
     BundleMultipleChooserPanel,
     BundleStatusPanel,
     PageChooserWithStatusPanel,
-    ReleaseCalendarPageChooserWithStatusAndReleaseDatePanel,
+    ReleaseCalendarChooserPanel,
 )
 
 if TYPE_CHECKING:
@@ -168,7 +168,7 @@ class Bundle(index.Indexed, ClusterableModel, models.Model):  # type: ignore[dja
         BundleFieldPanel("name"),
         FieldRowPanel(
             [
-                ReleaseCalendarPageChooserWithStatusAndReleaseDatePanel(
+                ReleaseCalendarChooserPanel(
                     "release_calendar_page",
                     heading="Release Calendar page",
                 ),

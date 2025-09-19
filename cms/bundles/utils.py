@@ -213,7 +213,7 @@ def build_bundle_data_for_api(bundle: "Bundle") -> dict[str, Any]:
 
 def get_release_calendar_page_title_with_status_and_release_date(
     release_calendar_page: "Page",
-) -> str:
+) -> tuple[str, str]:
     """Returns the release page title, status and release date."""
     return (
         f"{release_calendar_page.specific_deferred.title}",

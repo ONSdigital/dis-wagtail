@@ -23,22 +23,18 @@ Feature: CMS users can manage bundles
         And the user selects multiple datasets
         Then the selected datasets are displayed in the "Data API datasets" section
     
-    Scenario: A content editor can see the release calendar page title, status and release date when a release calendar page has been selected under scheduling
-        Given a Release Calendar with a release date in the future exists
+     Scenario: A content editor can see the release calendar page title, status and release date when a release calendar page has been selected under scheduling
+        Given a release calendar page with a future release date exists
         When the user goes to the bundle creation page
-        And the user adds a title to the bundle
-        And the user selects a release calendar page through the chooser
+        And the user creates a bundle with this release calendar page
         And the user saves the bundle
         Then the user sees the release calendar page title, status and release date
-@smoke
-    Scenario: A content editor updates the release calendar status, after it has been assigned to a bundle and the change is reflected on the bundle edit page
-        Given a Release Calendar with a release date in the future exists
+
+    Scenario: A content editor updates the release calendar details and sees the changes reflected on the bundle edit page
+        Given a release calendar page with a future release date exists
         When the user goes to the bundle creation page
-        And the user adds a title to the bundle
-        And the user selects a release calendar page through the chooser
+        And the user creates a bundle with this release calendar page
         And the user saves the bundle
-        And the user sees the release calendar page title, status and release date
-        Then the user updates the release calendar page details, after it has been selected
-        And returns to the bundle with this release calendar page assigned
-        And the user sees the release calendar page with the updated details
- 
+        And the user updates the selected release calendar's title, status and release date
+        And returns to the bundle edit page
+        Then the user sees the updated release calendar page title, status and release date

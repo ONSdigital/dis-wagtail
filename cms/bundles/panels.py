@@ -169,13 +169,13 @@ def get_custom_release_calendar_page_chooser() -> "BaseChooser":
     from cms.release_calendar.viewsets import FutureReleaseCalendarChooserWidget
 
     class CustomReleaseCalendarPageChooser(FutureReleaseCalendarChooserWidget):
-        def get_display_title(self, instance: "Page") -> str:
+        def get_display_title(self, instance: "Page") -> tuple[str, str]:
             return get_release_calendar_page_title_with_status_and_release_date(instance)
 
     return CustomReleaseCalendarPageChooser
 
 
-class ReleaseCalendarPageChooserWithStatusAndReleaseDatePanel(BundleFieldPanel):
+class ReleaseCalendarChooserPanel(BundleFieldPanel):
     """A custom page chooser panel that includes the release calendar page status and release date."""
 
     def get_form_options(self) -> dict[str, list | dict]:
@@ -186,7 +186,7 @@ class ReleaseCalendarPageChooserWithStatusAndReleaseDatePanel(BundleFieldPanel):
 
         return opts
 
-    def format_value_for_display(self, value: Any) -> str:
+    def format_value_for_display(self, value: Any) -> tuple[str, str]:
         if value is None:
             return ""
         return get_release_calendar_page_title_with_status_and_release_date(value)
