@@ -161,10 +161,8 @@ def user_sees_release_calendar_title_status_release_date(
     )
 
 
-@step("the user updates the selected release calendar's title, status and release date")
-def user_updates_selected_release_calendar_title_status_release_date(
-    context: Context,
-) -> None:
+@step('the user updates the selected release calendar\'s title, release date and sets the status to "{status}"')
+def user_updates_selected_release_calendar_title_release_date_status(context: Context, status: str) -> None:
     context.page.get_by_role("region", name="Scheduling").get_by_label("Actions").click()
     with context.page.expect_popup() as edit_release_calendar_page:
         context.page.get_by_role("link", name="Edit Release Calendar page").click()
@@ -180,7 +178,7 @@ def user_updates_selected_release_calendar_title_status_release_date(
 
     # enter new details
     context.page.get_by_placeholder("Page title*").fill("New title")
-    context.page.get_by_label("Status*").select_option("CONFIRMED")
+    context.page.get_by_label("Status*").select_option((status).upper())
     new_date = timezone.now() + timedelta(days=1)
     formatted_date = new_date.strftime("%Y-%m-%d %H:%M")
     context.page.get_by_role("textbox", name="Release date*").fill(formatted_date)
@@ -199,11 +197,9 @@ def returns_to_bundle_edit_page(
     context.page = bundle_admin_view.value
 
 
-@then("the user sees the updated release calendar page title, status and release date")
-def user_sees_updated_release_calendar_details(
-    context: Context,
-) -> None:
-    expect(context.page.get_by_text(f"New title (CONFIRMED, {context.release_calendar_page.release_date_value}))"))
+@then('the user sees the updated release calendar page title, release date and the status "{status}"')
+def user_sees_updated_release_calendar_details(context: Context, status: str) -> None:
+    expect(context.page.get_by_text(f"New title ({status}, {context.release_calendar_page.release_date_value}))"))
     expect(
         context.page.get_by_text(f"{context.original_title} ({context.original_status}, {context.original_date})")
     ).not_to_be_visible()

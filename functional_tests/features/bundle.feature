@@ -1,6 +1,5 @@
 Feature: CMS users can manage bundles
 
-
     Background:
         Given a CMS user logs into the admin site
 
@@ -30,11 +29,17 @@ Feature: CMS users can manage bundles
         And the user saves the bundle
         Then the user sees the release calendar page title, status and release date
 
-    Scenario: A content editor updates the release calendar details and sees the changes reflected on the bundle edit page
+    Scenario Outline: A content editor updates the release calendar details and sees the changes reflected on the bundle edit page
         Given a release calendar page with a future release date exists
         When the user goes to the bundle creation page
         And the user creates a bundle with this release calendar page
         And the user saves the bundle
-        And the user updates the selected release calendar's title, status and release date
+        And the user updates the selected release calendar's title, release date and sets the status to "<New Status>"
         And returns to the bundle edit page
-        Then the user sees the updated release calendar page title, status and release date
+        Then the user sees the updated release calendar page title, release date and the status "<New Status>"
+
+    Examples:
+      | New Status  |
+      | Provisional |
+      | Confirmed   |
+      | Cancelled   |
