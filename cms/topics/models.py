@@ -3,7 +3,6 @@ from typing import TYPE_CHECKING, Any, ClassVar
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.db import models
-from django.db.models import OuterRef, Subquery
 from django.utils.functional import cached_property
 from django.utils.translation import gettext_lazy as _
 from modelcluster.fields import ParentalKey
@@ -12,7 +11,7 @@ from wagtail.fields import RichTextField
 from wagtail.models import Orderable, Page, PagePermissionTester
 from wagtail.search import index
 
-from cms.articles.models import ArticleSeriesPage, StatisticalArticlePage
+from cms.articles.models import StatisticalArticlePage
 from cms.bundles.mixins import BundledPageMixin
 from cms.core.analytics_utils import add_table_of_contents_gtm_attributes
 from cms.core.fields import StreamField
@@ -25,7 +24,7 @@ from cms.methodology.models import MethodologyPage
 from cms.taxonomy.mixins import ExclusiveTaxonomyMixin
 from cms.topics.blocks import ExploreMoreStoryBlock, TimeSeriesPageStoryBlock, TopicHeadlineFigureBlock
 from cms.topics.forms import TopicPageAdminForm
-from cms.topics.utils import format_time_series_as_document_list
+from cms.topics.utils import ArticleProcessor, format_time_series_as_document_list
 from cms.topics.viewsets import (
     FeaturedSeriesPageChooserWidget,
     HighlightedArticlePageChooserWidget,
@@ -235,101 +234,8 @@ class TopicPage(BundledPageMixin, ExclusiveTaxonomyMixin, BasePage):  # type: ig
         Each dict has 'internal_page' pointing to a Page (or None for external) and optional 'title'.
         Manually added articles (both internal and external) are prioritised.
         """
-        manual_articles = []
-        highlighted_page_pks = []
-
-        for related in self.related_articles.select_related("page").all():
-            if not related.page:
-                if related.external_url:
-                    manual_articles.append(
-                        {
-                            "url": related.external_url,
-                            "title": related.title,
-                            "description": "",
-                            "is_external": True,
-                        }
-                    )
-                continue
-
-            page = related.page.specific_deferred  # type: ignore[attr-defined]
-
-            if not page.live or page.get_view_restrictions().exists():
-                continue
-
-            article_dict = {"internal_page": page}
-            if related.title:
-                article_dict["title"] = related.title
-
-            manual_articles.append(article_dict)
-            highlighted_page_pks.append(page.pk)
-
-        num_manual_articles = len(manual_articles)
-        if num_manual_articles >= MAX_ITEMS_PER_SECTION:
-            return manual_articles[:MAX_ITEMS_PER_SECTION]
-
-        # Find latest article that is a descendant of a given article series page
-        newest_qs = (
-            StatisticalArticlePage.objects.live()
-            .public()
-            .filter(path__startswith=OuterRef("path"), depth__gte=OuterRef("depth"))
-            .order_by("-release_date")
-        )
-
-        # Get latest article per series
-        latest_by_series = (
-            ArticleSeriesPage.objects.descendant_of(self)
-            .annotate(latest_child_page=Subquery(newest_qs.values("pk")[:1]))
-            .values_list("latest_child_page", flat=True)
-        )
-
-        remaining_slots = MAX_ITEMS_PER_SECTION - num_manual_articles
-
-        # Get the latest articles under this topic page (topic page -> articles index -> article series page ->
-        # latest stats article page), excluding those already highlighted
-        latest_articles = list(
-            StatisticalArticlePage.objects.filter(pk__in=latest_by_series)
-            .exclude(pk__in=highlighted_page_pks)
-            .live()
-            .public()
-            .defer_streamfields()
-            .order_by("-release_date")
-        )
-
-        # Exclude those that are descendants of this topic page
-        descendant_series_pks = set(ArticleSeriesPage.objects.descendant_of(self).values_list("pk", flat=True))
-
-        # Get all other article series across the CMS that are tagged with this topic of this topic page
-        all_article_series = (
-            ArticleSeriesPage.objects.live()
-            .public()
-            .filter(topics__topic_id=self.topic_id)
-            .exclude(pk__in=descendant_series_pks)
-        )
-
-        # Get latest article per series
-        all_article_latest_by_series = all_article_series.annotate(
-            latest_child_page=Subquery(newest_qs.values("pk")[:1])
-        ).values_list("latest_child_page", flat=True)
-
-        # Get the latest articles, excluding those already highlighted
-        all_latest_articles = list(
-            StatisticalArticlePage.objects.filter(pk__in=all_article_latest_by_series)
-            .filter(locale=self.locale)  # Ensure articles are in the same locale as the topic page
-            .exclude(pk__in=highlighted_page_pks)
-            .live()
-            .public()
-            .defer_streamfields()
-            .order_by("-release_date")
-        )
-
-        # Combine articles under this topic page and across the CMS, then order by release_date descending
-        combined_articles = latest_articles + all_latest_articles
-        combined_articles.sort(key=lambda page: page.release_date, reverse=True)
-
-        # Convert to dict format
-        auto_articles = [{"internal_page": page} for page in combined_articles[:remaining_slots]]
-
-        return manual_articles + auto_articles
+        processor = ArticleProcessor(topic_page=self, max_items_per_section=MAX_ITEMS_PER_SECTION)
+        return processor.get_processed_articles()
 
     @cached_property
     def processed_methodologies(self) -> list[dict]:
