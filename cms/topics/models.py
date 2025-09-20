@@ -3,7 +3,6 @@ from typing import TYPE_CHECKING, Any, ClassVar
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.db import models
-from django.db.models import OuterRef, Subquery
 from django.utils.functional import cached_property
 from django.utils.translation import gettext_lazy as _
 from modelcluster.fields import ParentalKey
@@ -12,7 +11,7 @@ from wagtail.fields import RichTextField
 from wagtail.models import Orderable, Page, PagePermissionTester
 from wagtail.search import index
 
-from cms.articles.models import ArticleSeriesPage, StatisticalArticlePage
+from cms.articles.models import StatisticalArticlePage
 from cms.bundles.mixins import BundledPageMixin
 from cms.core.analytics_utils import add_table_of_contents_gtm_attributes
 from cms.core.fields import StreamField
@@ -25,7 +24,7 @@ from cms.methodology.models import MethodologyPage
 from cms.taxonomy.mixins import ExclusiveTaxonomyMixin
 from cms.topics.blocks import ExploreMoreStoryBlock, TimeSeriesPageStoryBlock, TopicHeadlineFigureBlock
 from cms.topics.forms import TopicPageAdminForm
-from cms.topics.utils import format_time_series_as_document_list
+from cms.topics.utils import ArticleDict, ArticleProcessor, format_time_series_as_document_list
 from cms.topics.viewsets import (
     FeaturedSeriesPageChooserWidget,
     HighlightedArticlePageChooserWidget,
@@ -230,78 +229,18 @@ class TopicPage(BundledPageMixin, ExclusiveTaxonomyMixin, BasePage):  # type: ig
         return None
 
     @cached_property
-    def processed_articles(self) -> list[dict]:
+    def processed_articles(self) -> list[ArticleDict]:
         """Returns a list of dictionaries representing related articles.
         Each dict has 'internal_page' pointing to a Page (or None for external) and optional 'title'.
-        Manually added articles (both internal and external) are prioritized.
-
-        TODO: extend when Taxonomy is in.
+        Manually added articles (both internal and external) are prioritised.
         """
-        manual_articles = []
-        highlighted_page_pks = []
-
-        for related in self.related_articles.select_related("page").all():
-            if not related.page:
-                if related.external_url:
-                    manual_articles.append(
-                        {
-                            "url": related.external_url,
-                            "title": related.title,
-                            "description": "",
-                            "is_external": True,
-                        }
-                    )
-                continue
-
-            page = related.page.specific_deferred  # type: ignore[attr-defined]
-
-            if not page.live or page.get_view_restrictions().exists():
-                continue
-
-            article_dict = {"internal_page": page}
-            if related.title:
-                article_dict["title"] = related.title
-
-            manual_articles.append(article_dict)
-            highlighted_page_pks.append(page.pk)
-
-        num_manual_articles = len(manual_articles)
-        if num_manual_articles >= MAX_ITEMS_PER_SECTION:
-            return manual_articles[:MAX_ITEMS_PER_SECTION]
-
-        newest_qs = (
-            StatisticalArticlePage.objects.live()
-            .public()
-            .filter(path__startswith=OuterRef("path"), depth__gte=OuterRef("depth"))
-            .order_by("-release_date")
-        )
-        latest_by_series = (
-            ArticleSeriesPage.objects.descendant_of(self)
-            .annotate(latest_child_page=Subquery(newest_qs.values("pk")[:1]))
-            .values_list("latest_child_page", flat=True)
-        )
-
-        remaining_slots = MAX_ITEMS_PER_SECTION - num_manual_articles
-
-        latest_articles = list(
-            StatisticalArticlePage.objects.filter(pk__in=latest_by_series)
-            .exclude(pk__in=highlighted_page_pks)
-            .live()
-            .public()
-            .defer_streamfields()
-            .order_by("-release_date")[:remaining_slots]
-        )
-
-        # Convert latest articles to dict format
-        auto_articles = [{"internal_page": page} for page in latest_articles]
-
-        return manual_articles + auto_articles
+        processor = ArticleProcessor(topic_page=self, max_items_per_section=MAX_ITEMS_PER_SECTION)
+        return processor.get_processed_articles()
 
     @cached_property
     def processed_methodologies(self) -> list[dict]:
         """Returns a list of dictionaries representing methodologies relevant for this topic.
         Each dict has 'internal_page' pointing to a MethodologyPage.
-        TODO: extend when Taxonomy is in.
         """
         # check if any methodologies were highlighted. if so, fetch in the order they were added.
         highlighted_page_pks = tuple(
@@ -316,19 +255,42 @@ class TopicPage(BundledPageMixin, ExclusiveTaxonomyMixin, BasePage):  # type: ig
         )
 
         num_highlighted_pages = len(highlighted_pages)
-        if num_highlighted_pages > MAX_ITEMS_PER_SECTION - 1:
+        if num_highlighted_pages >= MAX_ITEMS_PER_SECTION:
             return [{"internal_page": page} for page in highlighted_pages]
 
-        # supplement the remaining slots.
-        pages = list(
+        remaining_slots = MAX_ITEMS_PER_SECTION - num_highlighted_pages
+
+        # Methodology pages under this topic page (descendants)/ (methodology index -> methodology page)
+        # that are not already highlighted
+        under_topic_page_methodology_pages = list(
             MethodologyPage.objects.descendant_of(self)
-            .exclude(pk__in=highlighted_pages)
+            .exclude(pk__in=highlighted_page_pks)
             .live()
             .public()
-            .order_by("-last_revised_date")[: MAX_ITEMS_PER_SECTION - num_highlighted_pages]
+            .order_by("-last_revised_date")
         )
-        all_pages = highlighted_pages + pages
-        return [{"internal_page": page} for page in all_pages]
+
+        # Methodology pages across the CMS tagged with this topic as the current topic page,
+        # but not descendants of this topic page and not already highlighted
+        descendant_methodology_pks = set(MethodologyPage.objects.descendant_of(self).values_list("pk", flat=True))
+        across_cms_methodology_pages = list(
+            MethodologyPage.objects.live()
+            .filter(locale=self.locale)  # Ensure articles are in the same locale as the topic page
+            .public()
+            .filter(topics__topic_id=self.topic_id)
+            .exclude(pk__in=descendant_methodology_pks)
+            .exclude(pk__in=highlighted_page_pks)
+            .order_by("-last_revised_date")
+        )
+
+        # Combine and sort by last_revised_date
+        combined_auto_pages = under_topic_page_methodology_pages + across_cms_methodology_pages
+        combined_auto_pages.sort(key=lambda page: page.last_revised_date or page.publication_date, reverse=True)
+
+        # Only fill up to the remaining slots
+        auto_methodologies = [{"internal_page": page} for page in combined_auto_pages[:remaining_slots]]
+
+        return [{"internal_page": page} for page in highlighted_pages] + auto_methodologies
 
     @cached_property
     def table_of_contents(self) -> list[dict[str, str | object]]:
