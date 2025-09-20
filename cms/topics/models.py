@@ -24,7 +24,7 @@ from cms.methodology.models import MethodologyPage
 from cms.taxonomy.mixins import ExclusiveTaxonomyMixin
 from cms.topics.blocks import ExploreMoreStoryBlock, TimeSeriesPageStoryBlock, TopicHeadlineFigureBlock
 from cms.topics.forms import TopicPageAdminForm
-from cms.topics.utils import ArticleProcessor, format_time_series_as_document_list
+from cms.topics.utils import ArticleDict, ArticleProcessor, format_time_series_as_document_list
 from cms.topics.viewsets import (
     FeaturedSeriesPageChooserWidget,
     HighlightedArticlePageChooserWidget,
@@ -229,7 +229,7 @@ class TopicPage(BundledPageMixin, ExclusiveTaxonomyMixin, BasePage):  # type: ig
         return None
 
     @cached_property
-    def processed_articles(self) -> list[dict]:
+    def processed_articles(self) -> list[ArticleDict]:
         """Returns a list of dictionaries representing related articles.
         Each dict has 'internal_page' pointing to a Page (or None for external) and optional 'title'.
         Manually added articles (both internal and external) are prioritised.
@@ -241,7 +241,6 @@ class TopicPage(BundledPageMixin, ExclusiveTaxonomyMixin, BasePage):  # type: ig
     def processed_methodologies(self) -> list[dict]:
         """Returns a list of dictionaries representing methodologies relevant for this topic.
         Each dict has 'internal_page' pointing to a MethodologyPage.
-        TODO: extend when Taxonomy is in.
         """
         # check if any methodologies were highlighted. if so, fetch in the order they were added.
         highlighted_page_pks = tuple(
