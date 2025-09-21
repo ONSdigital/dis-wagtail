@@ -3,12 +3,13 @@ from typing import TYPE_CHECKING, Any, TypedDict
 from django.db.models import OuterRef, Subquery
 from wagtail.blocks import StreamValue
 
+from cms.articles.models import ArticleSeriesPage, StatisticalArticlePage
 from cms.core.formatting_utils import format_as_document_list_item
 
 if TYPE_CHECKING:
     from wagtail.query import PageQuerySet
 
-    from .models import StatisticalArticlePage, TopicPage, TopicPageRelatedArticle
+    from .models import TopicPage, TopicPageRelatedArticle
 
 
 class InternalArticleDict(TypedDict, total=False):
@@ -108,10 +109,6 @@ class ArticleProcessor:
         if not page.live or page.get_view_restrictions().exists():
             return None
 
-        # article_dict = {"internal_page": page}
-        # if related.title:
-        #     article_dict["title"] = related.title
-
         article_dict: InternalArticleDict = {"internal_page": page}
 
         if related.title:
@@ -134,12 +131,6 @@ class ArticleProcessor:
         return [{"internal_page": page} for page in combined_articles[:limit]]
 
     def _get_descendant_articles(self, excluded_pks: list[int]) -> list["StatisticalArticlePage"]:
-        # Import here to avoid circular imports
-        from cms.articles.models import (  # pylint: disable=import-outside-toplevel
-            ArticleSeriesPage,
-            StatisticalArticlePage,
-        )
-
         descendant_series = ArticleSeriesPage.objects.descendant_of(self.topic_page)
         latest_pks = self._get_latest_articles_by_series(descendant_series)
 
@@ -155,12 +146,6 @@ class ArticleProcessor:
         )
 
     def _get_topic_tagged_articles(self, excluded_pks: list[int]) -> list["StatisticalArticlePage"]:
-        # Import here to avoid circular imports
-        from cms.articles.models import (  # pylint: disable=import-outside-toplevel
-            ArticleSeriesPage,
-            StatisticalArticlePage,
-        )
-
         # Get descendant series PKs to exclude
         descendant_series_pks = set(
             ArticleSeriesPage.objects.descendant_of(self.topic_page).values_list("pk", flat=True)
@@ -190,9 +175,6 @@ class ArticleProcessor:
 
     def _get_latest_articles_by_series(self, series_qs: "PageQuerySet") -> list[int]:
         """Get the PK of the latest article for each series."""
-        # import here to avoid circular imports
-        from .models import StatisticalArticlePage  # pylint: disable=import-outside-toplevel
-
         # Subquery to find the latest article that is a descendant of each series
         newest_qs = (
             StatisticalArticlePage.objects.live()
