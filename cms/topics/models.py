@@ -17,14 +17,18 @@ from cms.core.analytics_utils import add_table_of_contents_gtm_attributes
 from cms.core.fields import StreamField
 from cms.core.formatting_utils import get_formatted_pages_list
 from cms.core.models import BasePage
-from cms.core.query import order_by_pk_position
 from cms.datasets.blocks import DatasetStoryBlock
 from cms.datasets.utils import format_datasets_as_document_list
-from cms.methodology.models import MethodologyPage
 from cms.taxonomy.mixins import ExclusiveTaxonomyMixin
 from cms.topics.blocks import ExploreMoreStoryBlock, TimeSeriesPageStoryBlock, TopicHeadlineFigureBlock
 from cms.topics.forms import TopicPageAdminForm
-from cms.topics.utils import ArticleDict, ArticleProcessor, format_time_series_as_document_list
+from cms.topics.utils import (
+    ArticleDict,
+    ArticleProcessor,
+    MethodologyDict,
+    MethodologyProcessor,
+    format_time_series_as_document_list,
+)
 from cms.topics.viewsets import (
     FeaturedSeriesPageChooserWidget,
     HighlightedArticlePageChooserWidget,
@@ -238,59 +242,12 @@ class TopicPage(BundledPageMixin, ExclusiveTaxonomyMixin, BasePage):  # type: ig
         return processor.get_processed_articles()
 
     @cached_property
-    def processed_methodologies(self) -> list[dict]:
+    def processed_methodologies(self) -> list[MethodologyDict]:
         """Returns a list of dictionaries representing methodologies relevant for this topic.
         Each dict has 'internal_page' pointing to a MethodologyPage.
         """
-        # check if any methodologies were highlighted. if so, fetch in the order they were added.
-        highlighted_page_pks = tuple(
-            page_id for page_id in self.related_methodologies.values_list("page_id", flat=True)
-        )
-        highlighted_pages = list(
-            order_by_pk_position(
-                MethodologyPage.objects.live().public().defer_streamfields(),
-                pks=highlighted_page_pks,
-                exclude_non_matches=True,
-            )
-        )
-
-        num_highlighted_pages = len(highlighted_pages)
-        if num_highlighted_pages >= MAX_ITEMS_PER_SECTION:
-            return [{"internal_page": page} for page in highlighted_pages]
-
-        remaining_slots = MAX_ITEMS_PER_SECTION - num_highlighted_pages
-
-        # Methodology pages under this topic page (descendants)/ (methodology index -> methodology page)
-        # that are not already highlighted
-        under_topic_page_methodology_pages = list(
-            MethodologyPage.objects.descendant_of(self)
-            .exclude(pk__in=highlighted_page_pks)
-            .live()
-            .public()
-            .order_by("-last_revised_date")
-        )
-
-        # Methodology pages across the CMS tagged with this topic as the current topic page,
-        # but not descendants of this topic page and not already highlighted
-        descendant_methodology_pks = set(MethodologyPage.objects.descendant_of(self).values_list("pk", flat=True))
-        across_cms_methodology_pages = list(
-            MethodologyPage.objects.live()
-            .filter(locale=self.locale)  # Ensure articles are in the same locale as the topic page
-            .public()
-            .filter(topics__topic_id=self.topic_id)
-            .exclude(pk__in=descendant_methodology_pks)
-            .exclude(pk__in=highlighted_page_pks)
-            .order_by("-last_revised_date")
-        )
-
-        # Combine and sort by last_revised_date
-        combined_auto_pages = under_topic_page_methodology_pages + across_cms_methodology_pages
-        combined_auto_pages.sort(key=lambda page: page.last_revised_date or page.publication_date, reverse=True)
-
-        # Only fill up to the remaining slots
-        auto_methodologies = [{"internal_page": page} for page in combined_auto_pages[:remaining_slots]]
-
-        return [{"internal_page": page} for page in highlighted_pages] + auto_methodologies
+        processor = MethodologyProcessor(topic_page=self, max_items_per_section=MAX_ITEMS_PER_SECTION)
+        return processor.get_processed_methodologies()
 
     @cached_property
     def table_of_contents(self) -> list[dict[str, str | object]]:
