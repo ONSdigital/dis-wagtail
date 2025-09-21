@@ -71,6 +71,7 @@ def get_formatted_pages_list(
     See the search results section in https://service-manual.ons.gov.uk/design-system/components/document-list.
     """
     data = []
+
     for page in pages:
         # Check for external article (only ExternalArticleDict has is_external=True)
         if page.get("is_external"):
@@ -82,10 +83,13 @@ def get_formatted_pages_list(
                 continue
 
             # Handle dict format with internal_page and optional title
-            internal_page = cast("InternalArticleDict", page)
+            internal_dict = cast("InternalArticleDict", page)
+            internal_page = internal_dict["internal_page"]  # Extract the actual Page object
             custom_title = page.get("title")
             datum = _format_page_object(internal_page, request, custom_title)
+
         data.append(datum)
+
     return data
 
 
