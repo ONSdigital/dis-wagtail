@@ -1,6 +1,6 @@
 from collections.abc import Iterable
 from datetime import date, datetime
-from typing import TYPE_CHECKING, Any, Optional, TypedDict
+from typing import TYPE_CHECKING, Any, Optional, TypedDict, cast
 
 from django.utils.formats import date_format
 from django.utils.translation import gettext_lazy as _
@@ -12,6 +12,8 @@ if TYPE_CHECKING:
     from django.http import HttpRequest
     from django_stubs_ext import StrOrPromise
 
+    from cms.topics.utils import ArticleDict, ExternalArticleDict, InternalArticleDict
+
 
 class DocumentListItem(TypedDict):
     title: dict[str, "StrOrPromise"]
@@ -20,7 +22,7 @@ class DocumentListItem(TypedDict):
 
 
 # Type alias for cleaner function signatures
-PageDataCollection = Iterable[dict[str, Any]]
+PageDataCollection = Iterable["ArticleDict"]
 
 
 def format_as_document_list_item(
@@ -34,7 +36,7 @@ def format_as_document_list_item(
     }
 
 
-def _format_external_link(page_dict: dict[str, Any]) -> DocumentListItem:
+def _format_external_link(page_dict: "ExternalArticleDict") -> DocumentListItem:
     """Format external link dictionary into DocumentListItem."""
     return format_as_document_list_item(
         title=page_dict["title"],
@@ -70,16 +72,19 @@ def get_formatted_pages_list(
     """
     data = []
     for page in pages:
-        if page.get("is_external", False):
-            datum = _format_external_link(page)
-        elif "internal_page" in page:
+        # Check for external article (only ExternalArticleDict has is_external=True)
+        if page.get("is_external"):
+            datum = _format_external_link(cast("ExternalArticleDict", page))
+        else:
+            # If not external, must be internal (or invalid)
+            if "internal_page" not in page:
+                # This should not happen in production but is a safeguard for unexpected data types
+                continue
+
             # Handle dict format with internal_page and optional title
-            internal_page = page["internal_page"]
+            internal_page = cast("InternalArticleDict", page)
             custom_title = page.get("title")
             datum = _format_page_object(internal_page, request, custom_title)
-        else:
-            # This should not happen in production but is a safeguard for unexpected data types
-            continue
         data.append(datum)
     return data
 
