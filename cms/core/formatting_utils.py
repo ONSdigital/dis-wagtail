@@ -1,6 +1,6 @@
 from collections.abc import Iterable
 from datetime import date, datetime
-from typing import TYPE_CHECKING, Any, Optional, TypedDict, cast
+from typing import TYPE_CHECKING, Any, Optional, TypedDict, Union, cast
 
 from django.utils.formats import date_format
 from django.utils.translation import gettext_lazy as _
@@ -12,7 +12,7 @@ if TYPE_CHECKING:
     from django.http import HttpRequest
     from django_stubs_ext import StrOrPromise
 
-    from cms.topics.utils import ArticleDict, ExternalArticleDict, InternalArticleDict
+    from cms.topics.utils import ArticleDict, ExternalArticleDict, InternalArticleDict, MethodologyDict
 
 
 class DocumentListItem(TypedDict):
@@ -22,7 +22,7 @@ class DocumentListItem(TypedDict):
 
 
 # Type alias for cleaner function signatures
-PageDataCollection = Iterable["ArticleDict"]
+PageDataCollection = Iterable[Union["ArticleDict", "MethodologyDict"]]
 
 
 def format_as_document_list_item(
