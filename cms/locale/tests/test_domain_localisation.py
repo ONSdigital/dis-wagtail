@@ -47,18 +47,18 @@ class SubdomainLocalisationTests(WagtailPageTestCase):
         translation.deactivate()
 
     def test_full_url(self):
-        self.assertEqual(self.page.get_full_url(request=self.dummy_request), "http://ons.localhost/about/")
-        self.assertEqual(self.welsh_page.get_full_url(request=self.dummy_request), "http://cy.ons.localhost/about/")
+        self.assertEqual(self.page.get_full_url(request=self.dummy_request), "http://ons.localhost/about")
+        self.assertEqual(self.welsh_page.get_full_url(request=self.dummy_request), "http://cy.ons.localhost/about")
 
     def test_full_url_from_alternate_domains(self):
         request = RequestFactory(SERVER_NAME="pub.ons.localhost").get("/", SERVER_PORT=80)
-        self.assertEqual(self.page.get_full_url(request=request), "http://pub.ons.localhost/about/")
-        self.assertEqual(self.welsh_page.get_full_url(request=request), "http://cy.pub.ons.localhost/about/")
+        self.assertEqual(self.page.get_full_url(request=request), "http://pub.ons.localhost/about")
+        self.assertEqual(self.welsh_page.get_full_url(request=request), "http://cy.pub.ons.localhost/about")
 
     def test_full_url_from_alternate_domains_not_in_mapping(self):
         request = RequestFactory(SERVER_NAME="foo.ons.localhost").get("/", SERVER_PORT=80)
-        self.assertEqual(self.page.get_full_url(request=request), "http://ons.localhost/about/")
-        self.assertEqual(self.welsh_page.get_full_url(request=request), "http://cy.ons.localhost/about/")
+        self.assertEqual(self.page.get_full_url(request=request), "http://ons.localhost/about")
+        self.assertEqual(self.welsh_page.get_full_url(request=request), "http://cy.ons.localhost/about")
 
     def test_accessing_welsh_subdomain_activates_welsh(self):
         request = RequestFactory(SERVER_NAME="cy.ons.localhost").get("/", SERVER_PORT=80)

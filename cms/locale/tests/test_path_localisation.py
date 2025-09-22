@@ -67,7 +67,7 @@ class PathBasedLocalisationTests(WagtailPageTestCase):
         )
 
     def test_welsh_home_page_can_be_served(self):
-        response = self.client.get("/cy/")
+        response = self.client.get("/cy")
         self.assertEqual(response.status_code, HTTPStatus.OK)
         self.assertEqual(translation.get_language(), self.welsh_locale.language_code)
         self.assertContains(response, "Mae’r holl gynnwys ar gael o dan y")
@@ -141,7 +141,7 @@ class PathBasedLocalisationTests(WagtailPageTestCase):
         # going wrong in the view logic.
         mock_homepage_serve.side_effect = ValueError("Deliberate test error")
 
-        response = self.client.get("/cy/")
+        response = self.client.get("/cy")
         self.assertEqual(response.status_code, HTTPStatus.INTERNAL_SERVER_ERROR)
         self.assertNotContains(
             response, "Sorry, there’s a problem with the service", status_code=HTTPStatus.INTERNAL_SERVER_ERROR
@@ -162,7 +162,7 @@ class PathBasedLocalisationTests(WagtailPageTestCase):
         # any issue with rendering the main 500 template should trigger the fallback.
         mock_get_template.side_effect = self.get_template_side_effect
 
-        response = self.client.get("/cy/")
+        response = self.client.get("/cy")
         self.assertEqual(response.status_code, HTTPStatus.INTERNAL_SERVER_ERROR)
 
         templates_called = [call.args[0] for call in mock_get_template.call_args_list]
@@ -197,7 +197,7 @@ class PathBasedLocalisationTests(WagtailPageTestCase):
         mock_render.side_effect = Exception("Deliberate render error")
 
         # Welsh version should return a plain HTML response
-        response = self.client.get("/cy/")
+        response = self.client.get("/cy")
         self.assertEqual(response.status_code, HTTPStatus.INTERNAL_SERVER_ERROR)
         self.assertContains(
             response,

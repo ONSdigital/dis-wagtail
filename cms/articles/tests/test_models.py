@@ -819,9 +819,12 @@ class PreviousReleasesWithoutPaginationTestCase(TestCase):
     def setUpTestData(cls):
         cls.article_series = ArticleSeriesPageFactory(title="Article Series")
         cls.articles = StatisticalArticlePageFactory.create_batch(9, parent=cls.article_series)
-        cls.previous_releases_url = cls.article_series.get_url(
-            get_dummy_request()
-        ) + cls.article_series.reverse_subpage("previous_releases")
+        cls.previous_releases_url = "/".join(
+            [
+                cls.article_series.get_url(get_dummy_request()),
+                cls.article_series.reverse_subpage("previous_releases"),
+            ]
+        )
 
     def setUp(self):
         self.dummy_request = get_dummy_request()

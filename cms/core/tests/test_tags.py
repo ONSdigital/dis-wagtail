@@ -59,7 +59,7 @@ class LanguageTemplateTagTests(TestCase):
         self.assertEqual(hreflangs[0]["url"], "/")
         self.assertEqual(hreflangs[0]["lang"], "en-gb")
         self.assertEqual(hreflangs[1]["lang"], "cy")
-        self.assertEqual(hreflangs[1]["url"], "/cy/")
+        self.assertEqual(hreflangs[1]["url"], "/cy")
 
     @override_settings(
         LANGUAGE_CODE="pl",
@@ -87,7 +87,7 @@ class LanguageTemplateTagTests(TestCase):
         self.assertEqual(hreflangs[0]["url"], "/")
         self.assertEqual(hreflangs[0]["lang"], "pl")
         self.assertEqual(hreflangs[1]["lang"], "cy")
-        self.assertEqual(hreflangs[1]["url"], "/cy/")
+        self.assertEqual(hreflangs[1]["url"], "/cy")
 
 
 class ExtendFunctionTest(TestCase):

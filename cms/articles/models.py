@@ -645,14 +645,14 @@ class StatisticalArticlePage(  # type: ignore[django-manager-missing]
         )
         return response
 
-    def get_url_parts(self, request: Optional["HttpRequest"] = None) -> tuple[int, str | None, str | None] | None:
+    def get_url_parts(self, request: Optional["HttpRequest"] = None) -> tuple[int, str, str]:
         url_parts = super().get_url_parts(request=request)
         if url_parts is None:
             return None
 
         site_id: int = url_parts[0]
-        root_url: str | None = url_parts[1]
-        page_path: str | None = url_parts[2]
+        root_url: str = url_parts[1]
+        page_path: str = url_parts[2]
 
         if not (root_url and page_path):
             return site_id, root_url, page_path
