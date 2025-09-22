@@ -85,7 +85,7 @@ def get_formatted_pages_list(
             # Handle dict format with internal_page and optional title
             internal_dict = cast("InternalArticleDict", page)
             internal_page = internal_dict["internal_page"]  # Extract the actual Page object
-            custom_title = page.get("title") if "title" in page else None
+            custom_title = cast(Optional[str], page.get("title") if "title" in page else None)
             datum = _format_page_object(internal_page, request, custom_title)
 
         data.append(datum)
