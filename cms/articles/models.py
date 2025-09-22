@@ -114,6 +114,7 @@ class ArticleSeriesPage(  # type: ignore[django-manager-missing]
             raise Http404
 
         request.is_preview = getattr(request, "is_preview", False)  # type: ignore[attr-defined]
+
         return latest.serve(request, *args, serve_as_edition=True, **kwargs)
 
     @path("related-data/")
@@ -125,7 +126,8 @@ class ArticleSeriesPage(  # type: ignore[django-manager-missing]
         request.is_for_subpage = True  # type: ignore[attr-defined]
         request.is_preview = getattr(request, "is_preview", False)  # type: ignore[attr-defined]
 
-        return cast("HttpResponse", self.release(request, latest.slug, related_data=True))
+        # return cast("HttpResponse", self.release(request, latest.slug, related_data=True))
+        return cast("HttpResponse", latest.related_data(request, *args, **kwargs))
 
     @path("editions/")
     def previous_releases(self, request: "HttpRequest") -> "TemplateResponse":
@@ -564,7 +566,12 @@ class StatisticalArticlePage(  # type: ignore[django-manager-missing]
         Otherwise, it will be the default canonical page URL.
         """
         canonical_page = self.alias_of.specific_deferred if self.alias_of_id else self
-        if canonical_page.is_latest and not getattr(request, "is_for_subpage", False):
+
+        if canonical_page.is_latest:
+            if getattr(request, "is_for_subpage", False) and getattr(request, "canonical_url", False):
+                # Special case for sub-routes of latest article in a series that
+                url = request.canonical_url  # type: ignore[attr-defined]
+                return cast(str, url)
             return cast(str, canonical_page.get_parent().get_full_url(request=request))
 
         return super().get_canonical_url(request=request)
@@ -641,6 +648,13 @@ class StatisticalArticlePage(  # type: ignore[django-manager-missing]
 
         request.is_for_subpage = True  # type: ignore[attr-defined]
         paginator = Paginator(self.dataset_document_list, per_page=settings.RELATED_DATASETS_PER_PAGE)
+
+        request.is_for_subpage = True  # type: ignore[attr-defined]
+
+        if self.is_latest:
+            request.canonical_url = (  # type: ignore[attr-defined]
+                self.get_parent().get_full_url(request=request) + "/related-data"
+            )
 
         try:
             paginated_datasets = paginator.page(request.GET.get("page", 1))

@@ -215,11 +215,7 @@ class BasePage(PageLDMixin, ListingFieldsMixin, SocialFieldsMixin, Page):  # typ
         """
         canonical_page = self.alias_of or self
         if getattr(request, "is_for_subpage", False) and getattr(request, "routable_resolver_match", None):
-            url = canonical_page.get_full_url(request=request)
-            if resolver_match := request.routable_resolver_match:  # type: ignore[attr-defined]
-                url = canonical_page.get_full_url(request=request) + "/" + resolver_match.route.rstrip("/")
-            return cast(str, url)
-
+            return request.build_absolute_uri(request.get_full_path())
         return cast(str, canonical_page.get_full_url(request=request))
 
     def get_url(self, request: Optional["HttpRequest"] = None, current_site: Optional["Site"] = None) -> Optional[str]:

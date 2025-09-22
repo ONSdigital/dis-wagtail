@@ -138,6 +138,7 @@ def get_hreflangs(context: jinja2.runtime.Context) -> list[HreflangDict]:
     """Returns a list of dictionaries containing URL and the full locale code.
     Typically used for HTML 'hreflang' tags.
     """
+    # TODO make aware of subpage routing!
     base_urls = _build_locale_urls(context)
     hreflangs: list[HreflangDict] = [{"url": item["url"], "lang": item["locale"].language_code} for item in base_urls]
     return hreflangs
@@ -178,6 +179,6 @@ def extend(value: list[Any], element: Any) -> None:
 
 
 @register.filter(name="routablepageurl")
-def routablepageurl_no_trailing_slash(context: jinja2.runtime.Context, page: "Page", *args, **kwargs) -> str:
+def routablepageurl_no_trailing_slash(context: jinja2.runtime.Context, page: "Page", *args, **kwargs) -> Any:
     """Overwrite Wagtail's routablepageurl to remove trailing slash."""
     return routablepageurl(context, page, *args, **kwargs).rstrip("/")
