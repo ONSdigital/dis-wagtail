@@ -126,7 +126,6 @@ class ArticleSeriesPage(  # type: ignore[django-manager-missing]
         request.is_for_subpage = True  # type: ignore[attr-defined]
         request.is_preview = getattr(request, "is_preview", False)  # type: ignore[attr-defined]
 
-        # return cast("HttpResponse", self.release(request, latest.slug, related_data=True))
         return cast("HttpResponse", latest.related_data(request, *args, **kwargs))
 
     @path("editions/")
@@ -569,7 +568,7 @@ class StatisticalArticlePage(  # type: ignore[django-manager-missing]
 
         if canonical_page.is_latest:
             if getattr(request, "is_for_subpage", False) and getattr(request, "canonical_url", False):
-                # Special case for sub-routes of latest article in a series that
+                # Special case for sub-routes of latest article in a series
                 url = request.canonical_url  # type: ignore[attr-defined]
                 return cast(str, url)
             return cast(str, canonical_page.get_parent().get_full_url(request=request))

@@ -113,11 +113,12 @@ class ArticleSeriesEvergreenUrlTestCase(WagtailTestUtils, TestCase):
         self.assertEqual(response.status_code, HTTPStatus.NOT_FOUND)
 
     def test_evergreen_route_related_data_returns_404_when_no_datasets(self):
-        article_without_datasets = StatisticalArticlePageFactory(
-            parent=self.article_series_page, title="Latest Article"
+        latest_article_without_datasets = StatisticalArticlePageFactory(
+            parent=self.article_series_page,
+            release_date=self.article_with_datasets.release_date + timezone.timedelta(days=1),
         )
-        article_without_datasets.datasets = None
-        article_without_datasets.save_revision().publish()
+
+        self.assertTrue(latest_article_without_datasets.is_latest)
 
         response = self.client.get(f"{self.article_series_page.url}/related-data")
         self.assertEqual(response.status_code, HTTPStatus.NOT_FOUND)
