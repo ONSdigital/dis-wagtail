@@ -11,10 +11,15 @@ from wagtail.models import Locale
 from wagtail.test.utils import WagtailTestUtils
 from wagtail.test.utils.form_data import inline_formset, nested_form_data, rich_text, streamfield
 
-from cms.articles.tests.factories import ArticleSeriesPageFactory, StatisticalArticlePageFactory
+from cms.articles.tests.factories import (
+    ArticleSeriesPageFactory,
+    ArticlesIndexPageFactory,
+    StatisticalArticlePageFactory,
+)
 from cms.datasets.blocks import DatasetStoryBlock
 from cms.home.models import HomePage
 from cms.methodology.tests.factories import MethodologyIndexPageFactory, MethodologyPageFactory
+from cms.taxonomy.models import GenericPageToTaxonomyTopic
 from cms.taxonomy.tests.factories import TopicFactory
 from cms.topics.blocks import TimeSeriesPageStoryBlock
 from cms.topics.models import TopicPage, TopicPageRelatedArticle, TopicPageRelatedMethodology
@@ -30,7 +35,29 @@ class TopicPageTestCase(WagtailTestUtils, TestCase):
     def setUpTestData(cls):
         cls.superuser = cls.create_superuser(username="superuser")
         cls.home_page = HomePage.objects.first()
-        cls.topic_page = TopicPageFactory(title="Test Topic")
+
+        cls.topic_1 = TopicFactory(
+            id="12345678901234567890123456789012345678901234567890",
+            slug="dummy-slug",
+            title="Dummy Title Here",
+            description="This is a dummy description for the topic page test.",
+        )
+        cls.topic_2 = TopicFactory(
+            id="12345678901234567890123456789012345678901234567891",
+            slug="dummy-slug-2",
+            title="Dummy Title Here 2",
+            description="This is a dummy description for the topic page test 2.",
+        )
+        cls.topic_3 = TopicFactory(
+            id="12345678901234567890123456789012345678901234567892",
+            slug="dummy-slug-3",
+            title="Dummy Title Here 3",
+            description="This is a dummy description for the topic page test 3.",
+        )
+
+        cls.topic_page = TopicPageFactory(title="Test Topic", topic=cls.topic_1)
+        cls.other_topic_page_1 = TopicPageFactory(topic=cls.topic_2)
+        cls.other_topic_page_2 = TopicPageFactory(topic=cls.topic_3)
 
         # Create relevant pages
         cls.article_series = ArticleSeriesPageFactory(title="Article Series", parent__parent=cls.topic_page)
@@ -234,6 +261,56 @@ class TopicPageTestCase(WagtailTestUtils, TestCase):
             {"internal_page": new_methodology},
         ]
         self.assertListEqual(self.topic_page.processed_methodologies, expected)
+
+    def test_processed_articles_with_only_tagged_articles(self):
+        """When there are no descendant articles but 3 articles tagged with the same topic elsewhere,
+        show all 3. Articles should be under other topic pages, not this one.
+        """
+        # Remove descendant articles from this topic
+        self.article_series.delete()
+
+        # Create an ArticlesIndexPage under other_topic_page_1
+        articles_index = ArticlesIndexPageFactory(parent=self.other_topic_page_1)
+        # Article 1 and 2 editions under other_topic_page_1
+        series_1 = ArticleSeriesPageFactory(parent=articles_index)
+        GenericPageToTaxonomyTopic.objects.create(page=series_1, topic=self.topic_1)
+        StatisticalArticlePageFactory(
+            title="Tagged Article 1",
+            parent=series_1,
+            release_date=datetime(2025, 1, 2),
+        )
+        tagged_article_2 = StatisticalArticlePageFactory(
+            title="Tagged Article 2",
+            parent=series_1,
+            release_date=datetime(2025, 1, 3),
+        )
+
+        # Create another article series under other_topic_page_1
+        another_series = ArticleSeriesPageFactory(parent=articles_index)
+        GenericPageToTaxonomyTopic.objects.create(page=another_series, topic=self.topic_1)
+        # Optionally, add articles to this series as needed for your test
+        another_tagged_article = StatisticalArticlePageFactory(
+            title="Another Tagged Article",
+            parent=another_series,
+            release_date=datetime(2025, 1, 4),
+        )
+
+        # Article 3 under other_topic_page_2
+        series_2 = ArticleSeriesPageFactory(parent__parent=self.other_topic_page_2)
+        GenericPageToTaxonomyTopic.objects.create(page=series_2, topic=self.topic_1)
+        tagged_article_3 = StatisticalArticlePageFactory(
+            title="Tagged Article 3",
+            parent=series_2,
+            release_date=datetime(2025, 1, 1),
+        )
+
+        # Should return all 3 tagged articles, sorted by release_date desc
+        expected = [
+            {"internal_page": another_tagged_article},
+            {"internal_page": tagged_article_2},
+            {"internal_page": tagged_article_3},
+        ]
+        self.assertListEqual(self.topic_page.processed_articles, expected)
 
     def test_table_of_contents_includes_all_sections(self):
         manual_dataset = {"title": "test manual", "description": "manual description", "url": "https://example.com"}
