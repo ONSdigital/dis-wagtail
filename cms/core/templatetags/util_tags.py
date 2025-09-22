@@ -179,6 +179,11 @@ def extend(value: list[Any], element: Any) -> None:
 
 
 @register.filter(name="routablepageurl")
-def routablepageurl_no_trailing_slash(context: jinja2.runtime.Context, page: "Page", *args, **kwargs) -> Any:
+def routablepageurl_no_trailing_slash(
+    context: jinja2.runtime.Context,
+    page: "Page",
+    *args: Any,
+    **kwargs: Any,
+) -> Any:
     """Overwrite Wagtail's routablepageurl to remove trailing slash."""
     return routablepageurl(context, page, *args, **kwargs).rstrip("/")
