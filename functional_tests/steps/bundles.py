@@ -128,11 +128,13 @@ def bundle_inspect_show(context: Context) -> None:
 
 
 @given("a release calendar page with a future release date exists")
-def future_release_calendar_page_exists(context: Context) -> None:
+@given('a release calendar page with a "{status}" status and future release date exists')
+def future_release_calendar_page_exists(context: Context, status: str = "Provisional") -> None:
     tomorrow = timezone.now() + timedelta(days=1)
     context.release_calendar_page = ReleaseCalendarPageFactory(
         title="Future Release Calendar Page",
         release_date=tomorrow,
+        status=status.upper(),
     )
     context.release_calendar_page.save_revision().save()
 
@@ -158,7 +160,7 @@ def user_sees_release_calendar_title_status_release_date(
             f"Future Release Calendar Page ({context.release_calendar_page.status},"
             f" {context.release_calendar_page.release_date_value})"
         )
-    )
+    ).to_be_visible()
 
 
 @step('the user updates the selected release calendar\'s title, release date and sets the status to "{status}"')
@@ -199,7 +201,9 @@ def returns_to_bundle_edit_page(
 
 @then('the user sees the updated release calendar page title, release date and the status "{status}"')
 def user_sees_updated_release_calendar_details(context: Context, status: str) -> None:
-    expect(context.page.get_by_text(f"New title ({status}, {context.release_calendar_page.release_date_value}))"))
+    expect(
+        context.page.get_by_text(f"New title ({status}, {context.release_calendar_page.release_date_value}))")
+    ).to_be_visible()
     expect(
         context.page.get_by_text(f"{context.original_title} ({context.original_status}, {context.original_date})")
     ).not_to_be_visible()

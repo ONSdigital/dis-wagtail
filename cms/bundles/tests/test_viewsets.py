@@ -198,12 +198,17 @@ class BundleViewSetEditTestCase(BundleViewSetTestCaseBase):
     def chooser_panel_display(page) -> str:
         return f"{page.title} ({page.get_status_display()}, {page.release_date_value})"
 
-    def assign_release_calendar_page_to_bundle(self):
+    def assign_release_calendar_page_to_bundle(
+        self,
+        title: str = "Future Release Calendar page",
+        status: ReleaseStatus = ReleaseStatus.PROVISIONAL,
+    ):
         """Assigns a release calendar page to the bundle."""
         release_date = timezone.now() + timedelta(days=1)
         release_calendar_page = ReleaseCalendarPageFactory(
-            title="Future Release Calendar page",
+            title=title,
             release_date=release_date,
+            status=status,
         )
         self.bundle.release_calendar_page = release_calendar_page
         self.bundle.save(update_fields=["release_calendar_page"])
@@ -360,10 +365,18 @@ class BundleViewSetEditTestCase(BundleViewSetTestCaseBase):
         self,
     ):
         """To test release calendar page's title, status and release date are displayed when selected."""
-        release_calendar_page = self.assign_release_calendar_page_to_bundle()
-        response = self.client.get(self.edit_url)
-
-        self.assertContains(response, self.chooser_panel_display(release_calendar_page))
+        cases = {
+            (
+                "Provisional title",
+                ReleaseStatus.PROVISIONAL,
+            ),
+            ("Confirmed title", ReleaseStatus.CONFIRMED),
+        }
+        for title, status in cases:
+            with self.subTest(title=title, status=status):
+                release_calendar_page = self.assign_release_calendar_page_to_bundle(title=title, status=status)
+                response = self.client.get(self.edit_url)
+                self.assertContains(response, self.chooser_panel_display(release_calendar_page))
 
     def test_bundle_edit_view__shows_updated_release_calendar_details(
         self,
