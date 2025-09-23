@@ -60,6 +60,19 @@ class ArticleSeriesPageTests(WagtailPageTestCase):
         self.assertContains(response, first_article.title)
         self.assertContains(response, second_article.title)
 
+    def test_previous_releases_breadcrumbs(self):
+        """Test that the previous releases page includes a breadcrumb for the latest article."""
+        StatisticalArticlePageFactory(parent=self.page, title="Latest Article")
+        response = self.client.get(f"{self.page.url}/editions")
+        self.assertEqual(response.status_code, HTTPStatus.OK)
+
+        # Check the breadcrumbs include the series page link, which serves the evergreen latest article
+        self.assertContains(
+            response,
+            f'<a class="ons-breadcrumbs__link" href="{self.page.full_url}">{self.page.title}</a>',
+            html=True,
+        )
+
 
 class StatisticalArticlePageTests(WagtailPageTestCase):
     @classmethod
@@ -522,7 +535,7 @@ class StatisticalArticlePageTests(WagtailPageTestCase):
         lookup_dataset = Dataset.objects.create(
             namespace="LOOKUP",
             edition="lookup_edition",
-            version="lookup_version",
+            version=1,
             title="test lookup",
             description="lookup description",
         )
@@ -620,7 +633,7 @@ class StatisticalArticlePageTests(WagtailPageTestCase):
         lookup_dataset = Dataset.objects.create(
             namespace="LOOKUP",
             edition="lookup_edition",
-            version="lookup_version",
+            version=1,
             title="test lookup",
             description="lookup description",
         )
