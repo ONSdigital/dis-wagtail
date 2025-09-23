@@ -228,6 +228,12 @@ class BasePage(PageLDMixin, ListingFieldsMixin, SocialFieldsMixin, Page):  # typ
 
         return site_id, root_url, page_path
 
+    def get_relative_path(self, request: Optional["HttpRequest"] = None) -> str:
+        """Get the relative path for this page, without the domain or any locale prefix.
+        This will be the path portion of the URL returned by `get_url_parts()`.
+        """
+        return self.get_url_parts(request=request)[-1]
+
     @cached_property
     def cached_analytics_values(self) -> dict[str, str | bool]:
         """Return a dictionary of the cachable analytics values for this page."""

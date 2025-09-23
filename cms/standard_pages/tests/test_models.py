@@ -142,7 +142,7 @@ class IndexPageTestCase(WagtailTestUtils, TestCase):
         self.assertEqual(
             self.index_page.get_formatted_related_links_list(),
             [
-                {"title": internal_page.title, "url": internal_page.get_url_parts(request=self.dummy_request)[-1]}
+                {"title": internal_page.title, "url": internal_page.get_relative_path(request=self.dummy_request)}
             ],  # Get path only
         )
 

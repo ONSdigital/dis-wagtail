@@ -100,6 +100,26 @@ class PageCanonicalUrlTests(WagtailPageTestCase):
         )
 
 
+class PageRelativePathTests(WagtailPageTestCase):
+    @classmethod
+    def setUpTestData(cls):
+        cls.page = InformationPageFactory()
+        cls.home_page = HomePage.objects.first()
+
+    def test_get_relative_path(self):
+        """Test that get_relative_path returns the correct path portion of the URL."""
+        relative_path = self.page.get_relative_path(request=self.dummy_request)
+        full_url = self.page.get_full_url(request=self.dummy_request)
+        self.assertTrue(full_url.endswith(relative_path), "Full URL does not contain the relative path")
+        self.assertTrue(relative_path.startswith("/"))
+        self.assertEqual(full_url.replace(self.page.get_site().root_url, ""), relative_path)
+
+    def test_home_page_relative_path(self):
+        """Test that the home page relative path is '/'."""
+        relative_path = self.home_page.get_relative_path(request=self.dummy_request)
+        self.assertEqual(relative_path, "/", "Home page relative path should be '/'")
+
+
 class PageSchemaOrgTests(WagtailPageTestCase):
     @classmethod
     def setUpTestData(cls):
