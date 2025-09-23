@@ -463,7 +463,7 @@ class TopicPageTestCase(WagtailTestUtils, TestCase):
             self.topic_page.clean()
 
     def test_cannot_add_children_once_articles_and_methodologies_index_are_created(self):
-        self.assertEqual(TopicPage.objects.count(), 1)
+        self.assertEqual(TopicPage.objects.count(), 3)
         self.client.force_login(self.superuser)
         response = self.client.post(
             reverse("wagtailadmin_pages:add", args=("topics", "topicpage", self.home_page.pk)),
@@ -484,7 +484,7 @@ class TopicPageTestCase(WagtailTestUtils, TestCase):
             ),
         )
         topics_qs = TopicPage.objects.child_of(self.home_page)
-        self.assertEqual(topics_qs.count(), 2)
+        self.assertEqual(topics_qs.count(), 4)
         new_topic_page = topics_qs.filter(title="Fresh topic").first()
 
         self.assertFalse(new_topic_page.permissions_for_user(self.superuser).can_add_subpage())
