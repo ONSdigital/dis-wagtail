@@ -166,7 +166,9 @@ def get_custom_release_calendar_page_chooser() -> "BaseChooser":
     to avoid circular import errors.
     """
     # pylint: disable=import-outside-toplevel
-    from cms.release_calendar.viewsets import FutureReleaseCalendarChooserWidget
+    from cms.release_calendar.viewsets import (
+        FutureReleaseCalendarChooserWidget,
+    )  # pylint: disable=cyclic-import
 
     class CustomReleaseCalendarPageChooser(FutureReleaseCalendarChooserWidget):
         def get_display_title(self, instance: "Page") -> str:
