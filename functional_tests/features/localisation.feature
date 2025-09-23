@@ -2,10 +2,6 @@ Feature: Users can create localised content in the CMS
     Background:
         Given a CMS user logs into the admin site
 
-    Scenario: The user is able to translate a page
-        And a CMS user edits the home page
-        Then the user can see the option to add a translation
-
     Scenario: The user is able to create a translated version of a page
         When the user creates an information page as a child of the home page
         And the user adds content to the new information page

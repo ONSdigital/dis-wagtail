@@ -3,6 +3,7 @@ from behave.runner import Context
 from django.conf import settings
 from django.urls import reverse
 from playwright.sync_api import expect
+from wagtail.models import Locale
 
 from cms.articles.tests.factories import (
     ArticleSeriesPageFactory,
@@ -16,6 +17,12 @@ from cms.topics.tests.factories import TopicPageFactory
 @given("a topic page exists under the homepage")
 def the_user_creates_theme_and_topic_pages(context: Context) -> None:
     context.topic_page = TopicPageFactory(title="Public Sector Finance")
+
+    # Ensure the topic page has a translation in Welsh
+    context.topic_page.copy_for_translation(
+        locale=Locale.objects.get(language_code="cy"),
+        copy_parents=True,
+    )
 
 
 @given("the topic page has a statistical article in a series")
