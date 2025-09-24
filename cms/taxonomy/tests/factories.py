@@ -1,4 +1,4 @@
-import factory.enums
+import factory.enums  # TODO: do we need factory.enums? factory shall suffice
 from factory import Factory, faker, post_generation
 
 from cms.taxonomy.models import Topic
