@@ -168,8 +168,6 @@ class StatisticalArticlePageTestCase(WagtailTestUtils, TestCase):
 
         response = self.client.get(f"{parent_article_series.url}/related-data")
 
-        print("PRINTING: " + self.page.get_full_url())
-
         self.assertContains(
             response, f'<link rel="canonical" href="{parent_article_series.get_full_url()}/related-data">', html=True
         )

@@ -646,15 +646,13 @@ class StatisticalArticlePage(  # type: ignore[django-manager-missing]
             raise Http404
 
         request.is_for_subpage = True  # type: ignore[attr-defined]
-        paginator = Paginator(self.dataset_document_list, per_page=settings.RELATED_DATASETS_PER_PAGE)
-
-        request.is_for_subpage = True  # type: ignore[attr-defined]
 
         if self.is_latest:
             request.canonical_url = (  # type: ignore[attr-defined]
                 self.get_parent().get_full_url(request=request) + "/related-data"
             )
 
+        paginator = Paginator(self.dataset_document_list, per_page=settings.RELATED_DATASETS_PER_PAGE)
         try:
             paginated_datasets = paginator.page(request.GET.get("page", 1))
             ons_pagination_url_list = [{"url": f"?page={n}"} for n in paginator.page_range]
