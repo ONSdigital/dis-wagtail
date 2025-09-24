@@ -1,5 +1,6 @@
 from typing import TYPE_CHECKING, Any, ClassVar, Optional, cast
 
+from bs4 import BeautifulSoup
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.core.paginator import EmptyPage, PageNotAnInteger, Paginator
@@ -10,8 +11,8 @@ from django.utils.functional import cached_property
 from django.utils.html import strip_tags
 from django.utils.translation import gettext_lazy as _
 from wagtail.admin.panels import FieldPanel, FieldRowPanel, HelpPanel, MultiFieldPanel, TitleFieldPanel
-from wagtail.contrib.routable_page.models import RoutablePageMixin, path
-from wagtail.coreutils import resolve_model_string
+from wagtail.contrib.routable_page.models import path
+from wagtail.coreutils import WAGTAIL_APPEND_SLASH, resolve_model_string
 from wagtail.fields import RichTextField
 from wagtail.models import Page
 from wagtail.search import index
@@ -22,12 +23,14 @@ from cms.articles.forms import StatisticalArticlePageAdminForm
 from cms.articles.panels import HeadlineFiguresFieldPanel
 from cms.articles.utils import serialize_correction_or_notice
 from cms.bundles.mixins import BundledPageMixin
+from cms.core.analytics_utils import add_table_of_contents_gtm_attributes, bool_to_yes_no, format_date_for_gtm
 from cms.core.blocks.headline_figures import HeadlineFiguresItemBlock
 from cms.core.blocks.panels import CorrectionBlock, NoticeBlock
 from cms.core.blocks.stream_blocks import SectionStoryBlock
 from cms.core.custom_date_format import ons_date_format
 from cms.core.fields import StreamField
 from cms.core.models import BasePage
+from cms.core.models.mixins import NoTrailingSlashRoutablePageMixin
 from cms.core.widgets import date_widget
 from cms.datasets.blocks import DatasetStoryBlock
 from cms.datasets.utils import format_datasets_as_document_list
@@ -71,7 +74,11 @@ class ArticlesIndexPage(BasePage):  # type: ignore[django-manager-missing]
         return redirect(self.get_parent().get_url(request=request))
 
 
-class ArticleSeriesPage(RoutablePageMixin, GenericTaxonomyMixin, BasePage):  # type: ignore[django-manager-missing]
+class ArticleSeriesPage(  # type: ignore[django-manager-missing]
+    NoTrailingSlashRoutablePageMixin,
+    GenericTaxonomyMixin,
+    BasePage,
+):
     """The article series model."""
 
     parent_page_types: ClassVar[list[str]] = ["ArticlesIndexPage"]
@@ -145,7 +152,11 @@ class ArticleSeriesPage(RoutablePageMixin, GenericTaxonomyMixin, BasePage):  # t
 
 
 # pylint: disable=too-many-public-methods
-class StatisticalArticlePage(BundledPageMixin, RoutablePageMixin, BasePage):  # type: ignore[django-manager-missing]
+class StatisticalArticlePage(  # type: ignore[django-manager-missing]
+    BundledPageMixin,
+    NoTrailingSlashRoutablePageMixin,
+    BasePage,
+):
     """The statistical article page model.
 
     Previously known as statistical bulletin, statistical analysis article, analysis page.
@@ -303,6 +314,8 @@ class StatisticalArticlePage(BundledPageMixin, RoutablePageMixin, BasePage):  # 
         index.AutocompleteField("news_headline"),
     ]
 
+    _analytics_content_type = "statistical-articles"
+
     def clean(self) -> None:
         """Additional validation on save."""
         super().clean()
@@ -392,6 +405,7 @@ class StatisticalArticlePage(BundledPageMixin, RoutablePageMixin, BasePage):  # 
             items += [{"url": "#cite-this-page", "text": _("Cite this article")}]
         if self.contact_details_id:
             items += [{"url": "#contact-details", "text": _("Contact details")}]
+        add_table_of_contents_gtm_attributes(items)
         return items
 
     @property
@@ -450,7 +464,10 @@ class StatisticalArticlePage(BundledPageMixin, RoutablePageMixin, BasePage):  # 
         self, request: "HttpRequest"
     ) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
         """Returns a list of corrections and notices for the page."""
-        base_url = self.get_url(request)
+        base_url = self.get_url(request) or ""
+        if not WAGTAIL_APPEND_SLASH:
+            # Add the trailing slash as this will be concatenated
+            base_url += "/"
         corrections = (
             [
                 serialize_correction_or_notice(
@@ -577,7 +594,7 @@ class StatisticalArticlePage(BundledPageMixin, RoutablePageMixin, BasePage):  # 
             raise Http404
 
         # Find correction by version
-        for correction in self.corrections:  # pylint: disable=not-an-iterable
+        for correction in self.corrections:
             if correction.value["version_id"] == version:
                 break
         else:
@@ -646,6 +663,9 @@ class StatisticalArticlePage(BundledPageMixin, RoutablePageMixin, BasePage):  # 
         split.insert(-1, "editions")
         page_path = "/".join(["", *split, ""])
 
+        if not WAGTAIL_APPEND_SLASH and page_path != "/":
+            page_path = page_path.rstrip("/")
+
         return site_id, root_url, page_path
 
     def serve(self, request: "HttpRequest", *args: Any, **kwargs: Any) -> "HttpResponse":
@@ -658,6 +678,8 @@ class StatisticalArticlePage(BundledPageMixin, RoutablePageMixin, BasePage):  # 
             # if for some reason we're getting the non-editioned path
             # redirect to the path with the /edition/ slug
             page_url = self.get_url(request=request)
+            if not page_url:
+                raise Http404
             if page_url != request.path:
                 return redirect(page_url)
 
@@ -672,3 +694,42 @@ class StatisticalArticlePage(BundledPageMixin, RoutablePageMixin, BasePage):  # 
             return cast("HttpResponse", super().serve(request, view=view, args=args, kwargs=serve_kwargs))
 
         return cast("HttpResponse", super().serve(request, *args, **kwargs))
+
+    @cached_property
+    def cached_analytics_values(self) -> dict[str, str | bool]:
+        parent_series = self.get_parent()
+
+        values = {
+            "pageTitle": self.display_title,
+            "outputSeries": parent_series.slug,
+            "outputEdition": self.slug,
+            "releaseDate": format_date_for_gtm(self.release_date),
+            "latestRelease": bool_to_yes_no(self.is_latest),
+            "wordCount": self.word_count,
+        }
+
+        if self.next_release_date:
+            values["nextReleaseDate"] = format_date_for_gtm(self.next_release_date)
+        return super().cached_analytics_values | values
+
+    def get_analytics_values(self, request: "HttpRequest") -> dict[str, str | bool]:
+        values = self.cached_analytics_values
+        if self.is_latest and request.path == self.get_url(request):
+            # If this is the latest release, but the request path is the full page URL, not the evergreen latest,
+            # then include the evergreen latest URL (the parent series URL) in the analytics values.
+            values["pageURL"] = self.get_parent().get_full_url(request)
+        return values
+
+    @cached_property
+    def word_count(self) -> int:
+        """Returns the total word count for the article page's display title, summary and content."""
+        # Render the content as HTML and get the text without HTML tags so we can count words
+        html_content = self.content.render_as_block()
+        soup_content = BeautifulSoup(str(html_content), "html.parser")
+        stripped_content = soup_content.get_text()
+        content_word_count = len(str(stripped_content).split())
+
+        title_word_count = len(self.display_title.split())
+        summary_word_count = len(strip_tags(self.summary).split())
+
+        return title_word_count + summary_word_count + content_word_count

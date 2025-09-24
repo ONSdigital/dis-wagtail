@@ -9,17 +9,19 @@ and 'search-content-deleted' (deleted) events, aligning with the `StandardPayloa
 - [Search metadata contract](https://github.com/ONSdigital/dis-search-upstream-stub/blob/main/docs/contract/resource_metadata.yml)
 - [Search upstream service endpoints spec](https://github.com/ONSdigital/dis-search-upstream-stub/blob/main/specification.yml)
 
-The CMS also provides a paginated Resource API endpoint with all published pages at `/v1/resources/`. This is
-used by the search service for reindexing.
+The CMS also provides a paginated Resource API endpoint with all published pages at `/v1/resources` if `CMS_RESOURCES_ENDPOINT_ENABLED` is set to `true`.
+This is used by the search service for reindexing and is meant to be only accessible in the internal instance.
 
 ## Environment variables
 
-| Var                              | Notes                                                                 |
-| -------------------------------- | --------------------------------------------------------------------- |
-| `SEARCH_INDEX_PUBLISHER_BACKEND` | Set to `kafka` to enable send data to the Search service Kafka broker |
-| `KAFKA_SERVERS`                  | A comma-separated list of Kafka broker URLs.                          |
-| `KAFKA_API_VERSION`              | Defaults to "3.5.1"                                                   |
-| `KAFKA_USE_IAM_AUTH`             | Defaults to `false`. Set to `true` to enable IAM authentication.      |
+| Var                                        | Notes                                                                                       |
+| ------------------------------------------ | ------------------------------------------------------------------------------------------- |
+| `SEARCH_INDEX_PUBLISHER_BACKEND`           | Set to `kafka` to enable send data to the Search service Kafka broker                       |
+| `KAFKA_SERVERS`                            | A comma-separated list of Kafka broker URLs.                                                |
+| `KAFKA_API_VERSION`                        | Defaults to "3.5.1"                                                                         |
+| `KAFKA_USE_IAM_AUTH`                       | Defaults to `false`. Set to `true` to enable IAM authentication.                            |
+| `CMS_SEARCH_NOTIFY_ON_DELETE_OR_UNPUBLISH` | Defaults to `true`. Set to `false` to disable firing kafka events on deletion or unpublish. |
+| `CMS_RESOURCES_ENDPOINT_ENABLED`           | Set to `true` to enable the Resource API endpoint.                                          |
 
 ## Developer notes
 

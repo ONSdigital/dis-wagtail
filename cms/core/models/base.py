@@ -5,15 +5,18 @@ from django.utils.decorators import method_decorator
 from django.utils.functional import cached_property
 from django.utils.translation import gettext_lazy as _
 from wagtail.admin.panels import ObjectList, TabbedInterface
+from wagtail.coreutils import WAGTAIL_APPEND_SLASH
 from wagtail.models import Page
 from wagtail.query import PageQuerySet
 from wagtail.utils.decorators import cached_classmethod
 from wagtailschemaorg.models import PageLDMixin
 from wagtailschemaorg.utils import extend
 
+from cms.core.analytics_utils import format_date_for_gtm
 from cms.core.cache import get_default_cache_control_decorator
 from cms.core.forms import DeduplicateTopicsAdminForm, ONSCopyForm
 from cms.core.query import order_by_pk_position
+from cms.taxonomy.mixins import ExclusiveTaxonomyMixin
 
 from .mixins import ListingFieldsMixin, SocialFieldsMixin
 
@@ -76,6 +79,8 @@ class BasePage(PageLDMixin, ListingFieldsMixin, SocialFieldsMixin, Page):  # typ
     ]
 
     additional_panel_tabs: ClassVar[list[tuple[list["FieldPanel"], str]]] = []
+
+    _analytics_content_type: ClassVar[str | None] = None
 
     @cached_classmethod
     def get_edit_handler(cls) -> TabbedInterface:  # pylint: disable=no-self-argument
@@ -214,6 +219,75 @@ class BasePage(PageLDMixin, ListingFieldsMixin, SocialFieldsMixin, Page):  # typ
             return cast(str, canonical_page.get_full_url(request=request) + resolver_match.route)
 
         return cast(str, canonical_page.get_full_url(request=request))
+
+    def get_url(self, request: Optional["HttpRequest"] = None, current_site: Optional["Site"] = None) -> Optional[str]:
+        """Override get_url to return URLs without trailing slashes."""
+        url: str = super().get_url(request, current_site)
+
+        if not WAGTAIL_APPEND_SLASH and url and url != "/":
+            return url.rstrip("/")
+        return url
+
+    @cached_property
+    def cached_analytics_values(self) -> dict[str, str | bool]:
+        """Return a dictionary of the cachable analytics values for this page."""
+        values = {"pageTitle": self.title}
+        if content_type := self.analytics_content_type:
+            values["contentType"] = content_type
+        if content_group := self.analytics_content_group:
+            values["contentGroup"] = content_group
+        if content_theme := self.analytics_content_theme:
+            values["contentTheme"] = content_theme
+        if publication_date := self.publication_date:
+            values["releaseDate"] = format_date_for_gtm(publication_date)
+        return values
+
+    def get_analytics_values(self, request: "HttpRequest") -> dict[str, str | bool]:
+        """Return a dictionary of analytics values for this page.
+        By default, this only returns the cached analytics values, but it exists to be overridden in places where the
+        analytics values require the request object.
+        """
+        return self.cached_analytics_values
+
+    @cached_property
+    def parent_topic_or_theme(self) -> "BasePage | None":
+        """Returns the first parent topic or theme page of this page (including this page itself, if it is a topic or
+        theme page), if one exists.
+        """
+        for ancestor in self.get_ancestors(inclusive=True).reverse():
+            if ancestor.specific_deferred.__class__.__name__ in ("TopicPage", "ThemePage"):
+                return cast("BasePage", ancestor.specific_deferred)
+        return None
+
+    @property
+    def analytics_content_type(self) -> str | None:
+        """Returns the GTM content type for a page, if it has one."""
+        return self._analytics_content_type
+
+    @cached_property
+    def analytics_content_group(self) -> str | None:
+        """Returns the GTM content group for a page, if it has one.
+        This is the slug of the topic associated with the page, for a theme or topic page this will be it's own slug,
+        otherwise it will be the slug of the parent topic page if it exists.
+        """
+        if parent_topic_or_theme := self.parent_topic_or_theme:
+            return cast(str, parent_topic_or_theme.slug)
+        return None
+
+    @cached_property
+    def analytics_content_theme(self) -> str | None:
+        """Returns the title of the top ancestor taxonomic topic for the pages parent topic or theme page,
+        if one exists.
+        """
+        if not self.parent_topic_or_theme:
+            return None
+        parent_topic_or_theme = cast(ExclusiveTaxonomyMixin, self.parent_topic_or_theme)
+        page_topic = parent_topic_or_theme.topic
+        if not page_topic:
+            return None
+
+        parent_theme = page_topic.get_base_parent()
+        return cast(str, parent_theme.title)
 
 
 class BaseSiteSetting(WagtailBaseSiteSetting):

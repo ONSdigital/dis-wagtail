@@ -10,12 +10,15 @@ from django.urls import reverse
 from django.utils import timezone
 from django.utils.formats import date_format
 from wagtail.blocks import StreamValue
+from wagtail.coreutils import get_dummy_request
 from wagtail.test.utils import WagtailTestUtils
 from wagtail.test.utils.form_data import nested_form_data, rich_text, streamfield
 
 from cms.articles.enums import SortingChoices
 from cms.articles.tests.factories import ArticleSeriesPageFactory, StatisticalArticlePageFactory
+from cms.core.analytics_utils import format_date_for_gtm
 from cms.core.tests.factories import ContactDetailsFactory
+from cms.core.tests.utils import extract_datalayer_pushed_values
 from cms.datasets.blocks import DatasetStoryBlock
 from cms.datasets.models import Dataset
 from cms.datavis.tests.factories import TableDataFactory
@@ -100,20 +103,66 @@ class StatisticalArticlePageTestCase(WagtailTestUtils, TestCase):
             {"type": "section", "value": {"title": "Test Section", "content": [{"type": "rich_text", "value": "text"}]}}
         ]
 
-        self.assertListEqual(self.page.table_of_contents, [{"url": "#test-section", "text": "Test Section"}])
+        toc = self.page.table_of_contents
+        self.assertEqual(len(toc), 1)
+        self.assertEqual(toc[0]["url"], "#test-section")
+        self.assertEqual(toc[0]["text"], "Test Section")
 
     def test_table_of_contents_with_cite_this_page(self):
         """Test table_of_contents includes cite this page when enabled."""
         self.page.show_cite_this_page = True
 
         toc = self.page.table_of_contents
-        self.assertIn({"url": "#cite-this-page", "text": "Cite this article"}, toc)
+        self.assertEqual(len(toc), 1)
+        self.assertEqual(toc[0]["url"], "#cite-this-page")
+        self.assertEqual(toc[0]["text"], "Cite this article")
 
     def test_table_of_contents_with_contact_details(self):
         """Test table_of_contents includes contact details when present."""
         self.page.contact_details = ContactDetailsFactory()
         toc = self.page.table_of_contents
-        self.assertIn({"url": "#contact-details", "text": "Contact details"}, toc)
+        self.assertEqual(len(toc), 1)
+        self.assertEqual(
+            toc[0]["url"],
+            "#contact-details",
+        )
+        self.assertEqual(toc[0]["text"], "Contact details")
+
+    def test_table_of_contents_with_no_content(self):
+        """Test table_of_contents returns empty list when no content."""
+        self.page.content = []
+        self.assertListEqual(self.page.table_of_contents, [])
+
+    def test_table_of_contents_with_multiple_sections(self):
+        """Test table_of_contents with multiple content sections."""
+        self.page.content = [
+            {"type": "section", "value": {"title": "Section 1", "content": [{"type": "rich_text", "value": "text"}]}},
+            {"type": "section", "value": {"title": "Section 2", "content": [{"type": "rich_text", "value": "text"}]}},
+        ]
+
+        toc = self.page.table_of_contents
+        self.assertEqual(len(toc), 2)
+        self.assertEqual(toc[0]["text"], "Section 1")
+        self.assertEqual(toc[0]["url"], "#section-1")
+        self.assertEqual(toc[1]["text"], "Section 2")
+        self.assertEqual(toc[1]["url"], "#section-2")
+
+    def test_table_of_contents_attributes(self):
+        """Test table_of_contents returns correct attributes."""
+        self.page.content = [
+            {"type": "section", "value": {"title": "Section 1", "content": [{"type": "rich_text", "value": "text"}]}},
+            {"type": "section", "value": {"title": "Section 2", "content": [{"type": "rich_text", "value": "text"}]}},
+        ]
+        self.page.show_cite_this_page = True
+        self.page.contact_details = ContactDetailsFactory()
+
+        toc = self.page.table_of_contents
+        self.assertEqual(len(toc), 4)
+        expected_attribute_labels = ["Section 1", "Section 2", "Cite this article", "Contact details"]
+        for idx, toc_item in enumerate(toc):
+            self.assertEqual(toc_item["attributes"]["data-ga-section-title"], expected_attribute_labels[idx])
+            self.assertEqual(toc_item["attributes"]["data-ga-event"], "navigation-onpage")
+            self.assertEqual(toc_item["attributes"]["data-ga-navigation-type"], "table-of-contents")
 
     def test_is_latest(self):
         """Test is_latest returns True for most recent page."""
@@ -337,6 +386,105 @@ class StatisticalArticlePageTestCase(WagtailTestUtils, TestCase):
 
     def test_parent_for_choosers(self):
         self.assertEqual(self.page.parent_for_choosers, TopicPage.objects.ancestor_of(self.page).first())
+
+    def test_word_count_simple_content(self):
+        self.page.content = [
+            {
+                "type": "section",
+                "value": {
+                    "title": "Test",
+                    "content": [
+                        {"type": "rich_text", "value": "Foobar " * 100},
+                    ],
+                },
+            }
+        ]
+        self.page.news_headline = "Test1"
+        self.page.summary = "Test2"
+        self.page.save_revision().publish()
+
+        self.assertEqual(self.page.word_count, 103)
+
+    def test_word_count_varied_content(self):
+        words = "Foo Bar 123"
+        self.page.content = [
+            {
+                "type": "section",
+                "value": {
+                    "title": words,
+                    "content": [
+                        {"type": "rich_text", "value": f"<b>{words}</b>"},
+                        {
+                            "type": "quote",
+                            "value": {
+                                "quote": words,
+                                "attribution": words,
+                            },
+                        },
+                        {
+                            "type": "related_links",
+                            "value": [
+                                {
+                                    "page": None,
+                                    "external_url": "https://example.com",
+                                    "title": words,
+                                    "description": words,
+                                    "content_type": "ARTICLE",
+                                    "release_date": None,
+                                }
+                            ],
+                        },
+                    ],
+                },
+            }
+        ]
+        self.page.news_headline = words
+        self.page.summary = words
+        self.page.save_revision().publish()
+
+        # Count each place where `words` is used, plus the `-` in the quote attribution and the "Article" label
+        # on the related link
+        expected_word_count = (8 * len(words.split())) + 2
+
+        self.assertEqual(self.page.word_count, expected_word_count)
+
+    def test_word_count_no_content(self):
+        self.page.content = None
+        self.page.news_headline = "Test"
+        self.page.summary = "Test"
+        self.page.save_revision().publish()
+
+        self.assertEqual(self.page.word_count, 2)
+
+    def test_get_analytics_values(self):
+        analytics_values = self.page.get_analytics_values(get_dummy_request())
+        self.assertEqual(analytics_values.get("pageTitle"), self.page.get_full_display_title())
+        self.assertEqual(analytics_values.get("contentType"), self.page.analytics_content_type)
+        self.assertEqual(analytics_values.get("contentGroup"), self.page.analytics_content_group)
+        self.assertEqual(analytics_values.get("contentTheme"), self.page.analytics_content_theme)
+        self.assertEqual(analytics_values.get("outputSeries"), self.page.get_parent().slug)
+        self.assertEqual(analytics_values.get("latestRelease"), "yes")
+        self.assertEqual(analytics_values.get("releaseDate"), format_date_for_gtm(self.page.release_date))
+        self.assertEqual(analytics_values.get("wordCount"), self.page.word_count)
+
+    def test_get_analytics_values_for_latest_via_non_evergreen_url(self):
+        """Test that that page analytics values contains the evergreen series URL if the page is requested from it's
+        full, non-evergreen URL.
+        """
+        analytics_values = self.page.get_analytics_values(get_dummy_request(path=self.page.get_full_url()))
+        self.assertEqual(analytics_values.get("pageURL"), self.page.get_parent().get_full_url())
+
+    def test_get_analytics_values_for_non_latest(self):
+        """Test that the analytics values do not contain the evergreen series URL if the page is not the latest."""
+        series = self.page.get_parent()
+        new_latest_article = StatisticalArticlePageFactory(
+            parent=series, release_date=self.page.release_date + timezone.timedelta(days=1)
+        )
+        new_latest_article.save_revision().publish()
+
+        analytics_values = self.page.get_analytics_values(get_dummy_request(path=self.page.get_full_url()))
+        self.assertEqual(analytics_values.get("latestRelease"), "no")
+        self.assertNotIn("pageURL", analytics_values.keys())
 
 
 class StatisticalArticlePageRenderTestCase(WagtailTestUtils, TestCase):
@@ -572,6 +720,22 @@ class StatisticalArticlePageRenderTestCase(WagtailTestUtils, TestCase):
         response = self.client.get(self.basic_page_url)
         self.assertEqual(response.status_code, 200)
 
+    def test_page_gtm_attributes(self):
+        response = self.client.get(self.page_url)
+
+        self.assertEqual(response.status_code, 200)
+
+        datalayer_values = extract_datalayer_pushed_values(response.text)
+        self.assertEqual(datalayer_values["product"], "wagtail")
+        self.assertEqual(datalayer_values["gtm.allowlist"], ["google", "hjtc", "lcl"])
+        self.assertEqual(datalayer_values["gtm.blocklist"], ["customScripts", "sp", "adm", "awct", "k", "d", "j"])
+        self.assertEqual(datalayer_values["contentType"], self.page.analytics_content_type)
+        self.assertEqual(datalayer_values["contentGroup"], self.page.analytics_content_group)
+        self.assertEqual(datalayer_values["contentTheme"], self.page.analytics_content_theme)
+        for key, value in self.page.get_analytics_values(get_dummy_request(path=self.page_url)).items():
+            self.assertIn(key, datalayer_values)
+            self.assertEqual(datalayer_values[key], value)
+
 
 class StatisticalArticlePageFeaturedArticleTestCase(WagtailTestUtils, TestCase):
     def setUp(self):
@@ -657,7 +821,9 @@ class PreviousReleasesWithoutPaginationTestCase(TestCase):
     def setUpTestData(cls):
         cls.article_series = ArticleSeriesPageFactory(title="Article Series")
         cls.articles = StatisticalArticlePageFactory.create_batch(9, parent=cls.article_series)
-        cls.previous_releases_url = cls.article_series.url + cls.article_series.reverse_subpage("previous_releases")
+        cls.previous_releases_url = (
+            f"{cls.article_series.url}/{cls.article_series.reverse_subpage('previous_releases')}"
+        )
 
     def test_breadcrumb_does_contains_series_url(self):
         response = self.client.get(self.previous_releases_url)
@@ -696,8 +862,8 @@ class PreviousReleasesWithPaginationPagesTestCase(TestCase):
     def setUpTestData(cls):
         cls.article_series = ArticleSeriesPageFactory(title="Article Series")
         cls.articles = StatisticalArticlePageFactory.create_batch(cls.total_batch, parent=cls.article_series)
-        cls.previous_releases_base_url = cls.article_series.url + cls.article_series.reverse_subpage(
-            "previous_releases"
+        cls.previous_releases_base_url = (
+            f"{cls.article_series.url}/{cls.article_series.reverse_subpage('previous_releases')}"
         )
 
     def assert_pagination(self, page_number, expected_contains, expected_not_contains):

@@ -3,9 +3,7 @@ from wagtail.blocks import StreamValue
 
 from cms.datasets.blocks import DatasetStoryBlock
 from cms.datasets.models import Dataset
-from cms.datasets.utils import (
-    format_datasets_as_document_list,
-)
+from cms.datasets.utils import format_datasets_as_document_list
 
 
 class TestUtils(TestCase):
@@ -13,7 +11,7 @@ class TestUtils(TestCase):
         lookup_dataset = Dataset.objects.create(
             namespace="LOOKUP",
             edition="lookup_edition",
-            version="lookup_version",
+            version=1,
             title="test lookup",
             description="lookup description",
         )

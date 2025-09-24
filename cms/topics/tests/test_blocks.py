@@ -1,5 +1,4 @@
-from django.conf import settings
-from django.test import TestCase
+from django.test import TestCase, override_settings
 from wagtail.blocks import StreamBlockValidationError, StructBlockValidationError
 from wagtail.blocks.stream_block import StreamValue
 from wagtail.images.tests.utils import get_test_image_file
@@ -204,6 +203,7 @@ class TimeSeriesPageStoryBlockTestCase(TestCase):
 
 
 class TimeSeriesPageLinkBlockTestCase(TestCase):
+    @override_settings(ONS_ALLOWED_LINK_DOMAINS=["domain1.com"])
     def test_time_series_page_link_block_validation_fails_on_invalid_domain(self):
         block = TimeSeriesPageLinkBlock()
         value = {
@@ -215,9 +215,58 @@ class TimeSeriesPageLinkBlockTestCase(TestCase):
         with self.assertRaises(StructBlockValidationError) as info:
             block.clean(value)
 
-        patterns_str = " or ".join(settings.ONS_ALLOWED_LINK_DOMAINS)
-
         self.assertEqual(
             info.exception.block_errors["url"].message,
-            f"The URL hostname is not in the list of allowed domains or their subdomains: {patterns_str}",
+            "The URL hostname is not in the list of allowed domains or their subdomains: domain1.com",
         )
+
+    def test_raises_errors_for_empty_mandatory_fields(self):
+        block = TimeSeriesPageLinkBlock()
+        value = {
+            "title": "",
+            "description": "",
+            "url": "",
+        }
+
+        with self.assertRaises(StructBlockValidationError) as info:
+            block.clean(value)
+
+        self.assertEqual(info.exception.block_errors["title"].message, "This field is required.")
+        self.assertEqual(info.exception.block_errors["description"].message, "This field is required.")
+        self.assertEqual(info.exception.block_errors["url"].message, "This field is required.")
+
+    @override_settings(ONS_ALLOWED_LINK_DOMAINS=["domain1.com", "domain2.example.com"])
+    def test_raises_error_even_when_only_some_mandatory_fields_are_absent(self):
+        """Check that the validation error is raised correctly when only some mandatory fields aren't present."""
+        block = TimeSeriesPageLinkBlock()
+        value = {
+            "title": "",
+            "description": "",
+            "url": "https://invalid-domain.com/time-series",
+        }
+
+        expected_validation_error = (
+            "The URL hostname is not in the list of allowed domains or their subdomains: "
+            "domain1.com or domain2.example.com"
+        )
+
+        with self.assertRaises(StructBlockValidationError) as info:
+            block.clean(value)
+
+        self.assertEqual(info.exception.block_errors["title"].message, "This field is required.")
+        self.assertEqual(info.exception.block_errors["description"].message, "This field is required.")
+        self.assertEqual(info.exception.block_errors["url"].message, expected_validation_error)
+
+        # Now, run validation on non-empty title and description and (the same) invalid URL
+        value = {
+            "title": "Title",
+            "description": "Description",
+            "url": "https://invalid-domain.com/time-series",
+        }
+
+        with self.assertRaises(StructBlockValidationError) as info:
+            block.clean(value)
+
+        self.assertNotIn("title", info.exception.block_errors)
+        self.assertNotIn("description", info.exception.block_errors)
+        self.assertEqual(info.exception.block_errors["url"].message, expected_validation_error)

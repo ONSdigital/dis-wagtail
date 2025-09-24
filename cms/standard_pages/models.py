@@ -2,17 +2,20 @@ from typing import TYPE_CHECKING, Any, ClassVar
 
 from django.conf import settings
 from django.db import models
+from django.utils.functional import cached_property
 from wagtail.admin.panels import FieldPanel, InlinePanel
 from wagtail.fields import RichTextField
 from wagtail.search import index
 
 from cms.bundles.mixins import BundledPageMixin
+from cms.core.analytics_utils import format_date_for_gtm
 from cms.core.blocks.related import RelatedContentBlock
 from cms.core.blocks.stream_blocks import CoreStoryBlock
 from cms.core.fields import StreamField
+from cms.core.formatting_utils import get_document_metadata
 from cms.core.forms import PageWithEquationsAdminForm
 from cms.core.models import BasePage
-from cms.core.utils import get_content_type_for_page, get_document_metadata
+from cms.core.utils import get_content_type_for_page
 from cms.core.widgets import date_widget
 from cms.taxonomy.mixins import GenericTaxonomyMixin
 
@@ -35,6 +38,8 @@ class InformationPage(BundledPageMixin, GenericTaxonomyMixin, BasePage):  # type
     last_updated = models.DateField(blank=True, null=True)
     content = StreamField(CoreStoryBlock())
 
+    _analytics_content_type: ClassVar[str] = "information"
+
     content_panels: ClassVar[list["Panel"]] = [
         *BundledPageMixin.panels,
         *BasePage.content_panels,
@@ -49,6 +54,13 @@ class InformationPage(BundledPageMixin, GenericTaxonomyMixin, BasePage):  # type
         index.SearchField("summary"),
         index.SearchField("content"),
     ]
+
+    @cached_property
+    def cached_analytics_values(self) -> dict[str, str | bool]:
+        values = super().cached_analytics_values
+        if self.last_updated:
+            values["lastUpdatedDate"] = format_date_for_gtm(self.last_updated)
+        return values
 
 
 class IndexPage(BundledPageMixin, BasePage):  # type: ignore[django-manager-missing]
@@ -82,6 +94,8 @@ class IndexPage(BundledPageMixin, BasePage):  # type: ignore[django-manager-miss
         index.SearchField("summary"),
         index.SearchField("content"),
     ]
+
+    _analytics_content_type: ClassVar[str] = "index-pages"
 
     def get_formatted_items(self, request: "HttpRequest") -> list[dict[str, str | dict[str, str]]]:
         """Returns a formatted list of Featured items
