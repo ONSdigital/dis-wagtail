@@ -1,8 +1,12 @@
 from datetime import datetime
 
 from django.template import engines
-from django.test import SimpleTestCase
+from django.test import SimpleTestCase, TestCase
 from django.utils.translation import override
+from wagtail.coreutils import get_dummy_request
+
+from cms.articles.tests.factories import StatisticalArticlePageFactory
+from cms.core.templatetags.util_tags import routablepageurl_no_trailing_slash
 
 
 class OnsDateFilterInJinjaTests(SimpleTestCase):
@@ -35,3 +39,19 @@ class OnsDateFilterInJinjaTests(SimpleTestCase):
                 ts=dt,
             )
         self.assertIn("Gorffennaf", rendered, msg="Expected 'Gorffenaf' to be corrected to 'Gorffennaf'.")
+
+
+class RoutablePageURLNoTrailingSlashTests(TestCase):
+    """Ensure the routablepageurl filter is registered in Jinja
+    and produces the expected url without a trailing slash.
+    """
+
+    def test_routablepageurl_no_trailing_slash(self):
+        """Test that the routablepageurl filter correctly removes trailing slashes."""
+        article_page = StatisticalArticlePageFactory()
+
+        page_route = routablepageurl_no_trailing_slash(
+            context=article_page.get_context(get_dummy_request()), page=article_page, url_name="related_data"
+        )
+
+        self.assertFalse(page_route.endswith("/"), "URL should not have a trailing slash")

@@ -6,6 +6,7 @@ from django import template
 from django.template.loader import render_to_string
 from django.utils.html import json_script as _json_script
 from django_jinja import library
+from wagtail.contrib.routable_page.templatetags.wagtailroutablepage_tags import routablepageurl
 from wagtail.models import Locale
 
 from cms.core.custom_date_format import ons_date_format
@@ -137,6 +138,7 @@ def get_hreflangs(context: jinja2.runtime.Context) -> list[HreflangDict]:
     """Returns a list of dictionaries containing URL and the full locale code.
     Typically used for HTML 'hreflang' tags.
     """
+    # TODO make aware of subpage routing!
     base_urls = _build_locale_urls(context)
     hreflangs: list[HreflangDict] = [{"url": item["url"], "lang": item["locale"].language_code} for item in base_urls]
     return hreflangs
@@ -174,3 +176,14 @@ def extend(value: list[Any], element: Any) -> None:
         # can't rely on annotations and tooling for type safety.
         raise TypeError("First argument must be a list.")
     return value.append(element)
+
+
+@register.filter(name="routablepageurl")
+def routablepageurl_no_trailing_slash(
+    context: jinja2.runtime.Context,
+    page: "Page",
+    *args: Any,
+    **kwargs: Any,
+) -> Any:
+    """Overwrite Wagtail's routablepageurl to remove trailing slash."""
+    return routablepageurl(context, page, *args, **kwargs).rstrip("/")
