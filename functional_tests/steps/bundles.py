@@ -10,7 +10,7 @@ from playwright.sync_api import expect
 from cms.articles.tests.factories import ArticleSeriesPageFactory, StatisticalArticlePageFactory
 from cms.bundles.enums import BundleStatus
 from cms.bundles.models import BundlePage, BundleTeam
-from cms.bundles.tests.factories import BundleFactory
+from cms.bundles.tests.factories import BundleFactory, BundlePageFactory
 from cms.release_calendar.enums import ReleaseStatus
 from cms.release_calendar.tests.factories import ReleaseCalendarPageFactory
 from cms.teams.models import Team
@@ -167,21 +167,15 @@ def multiple_release_calendar(context: Context, no_release_calendar: str) -> Non
             )
 
 
-@given("there are {no_preview_teams} Preview teams")
-def multiple_preview_teams_create(context: Context, no_preview_teams: str) -> None:
-    context.teams = []
-    if no_preview_teams.isdigit():
-        for preview_team_index in range(int(no_preview_teams)):
-            context.teams.append(
-                Team.objects.create(
-                    identifier=f"preview-team- {preview_team_index}", name=f"Preview_Team_{preview_team_index}"
-                )
-            )
+@given("there is a preview team")
+def multiple_preview_teams_create(context: Context) -> None:
+    context.team = Team.objects.create(identifier="preview-team", name="Preview team", is_active=True)
 
 
-@given("the {user_role} is a member of the Preview teams")
+@given("the {user_role} is a member of the preview team")
 def add_user_to_preview_teams(context: Context, user_role: str) -> None:
-    next((item[user_role]["user"] for item in context.users if item[user_role]), None).teams.add(*context.teams)
+    user = next((item[user_role]["user"] for item in context.users if item[user_role]), None)
+    user.teams.add(context.team)
 
 
 @given("there are {number_of_bundles} bundles with {bundle_details}")
@@ -189,6 +183,8 @@ def multiple_bundles_create(context: Context, number_of_bundles: str, bundle_det
     bundle_dets = json_str_to_dict(bundle_details)
     if bundle_dets:
         context.bundles = []
+        context.bundlepages = []
+        context.bundleteams = []
 
         if number_of_bundles.isdigit():
             for __ in range(int(number_of_bundles)):
@@ -204,39 +200,32 @@ def multiple_bundles_create(context: Context, number_of_bundles: str, bundle_det
                 if bundle_dets["status"] == "In_Review":
                     bundle_status = BundleStatus.IN_REVIEW
                 bundle = BundleFactory(
-                    created_by=bundle_creator.get("user"),
+                    created_by=bundle_creator[bundle_dets["Creator Role"]]["user"],
                     status=bundle_status,
                     approved=bundle_approved,
                 )
 
-                if bool(bundle_dets["preview_teams"]) and hasattr(context, "teams"):
-                    add_teams(context)
+                if bool(bundle_dets["preview_teams"]) and hasattr(context, "team"):
+                    BundleTeam.objects.create(parent=bundle, team=context.team)
+                    context.bundleteams.append({"parent": bundle, "team": context.team})
+                bundle.save()
 
                 if bool(bundle_dets["add_rel_cal"]) and hasattr(context, "release_calendar_pages"):
-                    add_release_calendar(context)
+                    # print("Adding rel cal", bundle_dets["add_rel_cal"],context.release_calendar_pages)
+                    for page in context.release_calendar_pages:
+                        BundlePage.objects.create(parent=bundle, page=page)
+                        # print(BundlePage.objects.count())
+                        context.bundlepages.append(BundlePageFactory(parent=bundle, page=page))
+                bundle.save()
 
                 if bool(bundle_dets["add_stat_page"]) and hasattr(context, "statistical_article_pages"):
-                    add_article_pages(context)
-
+                    # print("Adding article page", bundle_dets["add_stat_page"],context.statistical_article_pages)
+                    for page in context.statistical_article_pages:
+                        BundlePage.objects.create(parent=bundle, page=page)
+                        # print(BundlePage.objects.count())
+                        context.bundlepages.append(BundlePageFactory(parent=bundle, page=page))
+                bundle.save()
                 context.bundles.append(bundle)
-
-
-def add_article_pages(context: Context) -> None:
-    for page in context.statistical_article_pages:
-        for bundle in context.bundles:
-            BundlePage.objects.create(parent=bundle, page=page)
-
-
-def add_release_calendar(context: Context):
-    for page in context.release_calendar_pages:
-        for bundle in context.bundles:
-            BundlePage.objects.create(parent=bundle, page=page)
-
-
-def add_teams(context: Context) -> None:
-    for team in context.teams:
-        for bundle in context.bundles:
-            BundleTeam.objects.create(parent=bundle, team=team)
 
 
 def json_str_to_dict(bundle_details):
@@ -268,39 +257,45 @@ def add_bundle_details(context: Context) -> None:
     context.page.get_by_role("button", name="Save as draft").click()
     context.page.get_by_role("link", name="Dashboard").click()
 
+
+@then("the user can see the created bundle")
+def can_see_bundle(context: Context) -> None:
+    bundle_name = "Bundle UI Test 1"
     expect(context.page.locator("#latest-bundles-content")).to_contain_text("Add bundle")
     expect(context.page.get_by_text("Latest active bundles")).to_be_visible()
     expect(context.page.get_by_role("link", name=bundle_name)).to_be_visible()
 
 
 @then("the user cannot create a bundle")
-def the_user_cannot_add_bundles(context: Context) -> None:
+def cannot_add_bundles(context: Context) -> None:
     expect(context.page.get_by_role("link", name="Add bundle")).not_to_be_visible()
     expect(context.page.get_by_text("Bundles ready for preview")).to_be_visible()
     expect(context.page.get_by_text("There are currently no")).to_be_visible()
 
 
-@step("the user can edit a bundle")
-def can_edit_bundle(context: Context) -> None:
+@step("the user can find the bundle")
+def can_find_bundle(context: Context) -> None:
     expect(context.page.locator("#latest-bundles-heading")).to_contain_text("Latest active bundles")
     expect(context.page.locator("#latest-bundles-content")).to_contain_text(context.bundles[0].name)
+
+
+@step("the user can edit the bundle")
+def can_edit_bundle(context: Context) -> None:
     context.page.get_by_role("row", name=context.bundles[0].name + " Actions").get_by_label("Actions").click()
     context.page.get_by_role("link", name="Edit", exact=True).click()
-
     add_reslease_calendar_in_edit(context)
     context.page.get_by_role("button", name="Save").click()
     add_article_page_in_edit(context)
     context.page.get_by_role("button", name="Save").click()
     add_preview_team_in_edit(context)
     context.page.get_by_role("button", name="Save").click()
-
     context.page.get_by_role("button", name="More actions").click()
     context.page.get_by_role("button", name="Save to preview").click()
 
 
 def add_preview_team_in_edit(context: Context) -> None:
     # add preview team
-    if hasattr(context, "teams"):
+    if hasattr(context, "team"):
         expect(context.page.locator("#panel-preview_teams-heading")).to_contain_text("Preview teams")
         context.page.get_by_role("button", name="Add preview team").click()
         expect(context.page.get_by_role("textbox", name="Search term")).to_be_visible()
@@ -349,18 +344,31 @@ def add_reslease_calendar_in_edit(context: Context) -> None:
         context.page.get_by_role("link", name=context.release_calendar_pages[0].title).click()
 
 
-@step("the user can preview a bundle")
-def can_preview_bundle(context: Context) -> None:
+@step("the user can see the Bundles ready for preview")
+def can_access_preview_bundle(context: Context) -> None:
     expect(context.page.locator("#bundles-for-preview-heading")).to_contain_text("Bundles ready for preview")
     expect(context.page.locator("#bundles-for-preview-content")).to_contain_text(context.bundles[0].name)
     context.page.get_by_title("View").click()
+    context.page.wait_for_timeout(200)
 
+
+@step("the {user_role} can preview a bundle")
+def can_preview_bundle(context: Context, user_role: str) -> None:
     expect(context.page.get_by_text("Name")).to_be_visible()
     expect(context.page.get_by_text("Created at")).to_be_visible()
     expect(context.page.get_by_text("Created by")).to_be_visible()
-    expect(context.page.get_by_text("Approval status")).to_be_visible()
+
+    if user_role != "Viewer":
+        expect(context.page.get_by_text("Approval status")).to_be_visible()
+        expect(context.page.get_by_text("Pending approval")).to_be_visible()
+
     expect(context.page.get_by_text("Associated release calendar")).to_be_visible()
-    expect(context.page.get_by_text("Teams", exact=True)).to_be_visible()
+
+    if user_role != "Viewer":
+        expect(context.page.get_by_text("Teams", exact=True)).to_be_visible()
+        expect(context.page.get_by_role("link", name=context.team.name)).to_be_visible()
+        expect(context.page.get_by_text(context.team.name, exact=True)).to_be_visible()
+
     expect(context.page.locator("#main").get_by_text("Pages")).to_be_visible()
     expect(context.page.get_by_text("Datasets", exact=True)).to_be_visible()
 
@@ -397,3 +405,8 @@ def create_user_by_role(context, user_role):
     context.user_data = create_user(user_role)
     if not next((item for item in context.users if item[user_role]), False):
         context.users.append({user_role: context.user_data})
+
+
+@step("the user can see the created bundle")
+def step_impl(context):
+    raise NotImplementedError("STEP: And the user can see the created bundle")

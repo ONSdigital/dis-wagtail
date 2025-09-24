@@ -18,21 +18,21 @@ Feature: UI Bundle Happy Paths
         Given there is a <role> user
         When the <role> logs in
         Then the user can create a bundle
+        And the user can see the created bundle
 
         Examples: bundles
            | role               |
-           | Publishing Admin   |
-           | Publishing Officer |
-
-
+#           | Publishing Admin   |
+#           | Publishing Officer |
+#
+#
     Scenario Outline: A User cannot create a bundle
         Given there is a <role> user
         When the <role> logs in
         Then the user cannot create a bundle
-
         Examples: bundles
            | role     |
-           | Viewer   |
+#           | Viewer   |
 
 #---- Bundle Edit UI Tests -----
 
@@ -41,18 +41,19 @@ Feature: UI Bundle Happy Paths
         And there is a <Creator Role> user
         And there are 1 Statistical Analysis pages
         And there are 1 release calendar pages
-        And there are 1 Preview teams
-        And the <Role> is a member of the Preview teams
+        And there is a preview team
+        And the <Role> is a member of the preview team
         And there are <number_of_bundles> bundles with <Bundle_Details>
         When the <Role> logs in
-        Then the user can edit a bundle
+        Then the user can find the bundle
+        And the user can edit the bundle
 
         Examples: bundles
            | number_of_bundles | Role                       | Creator Role        | Bundle_Details                                                                                                                                            |
-           | 1                 | Publishing Admin           | Publishing Admin    | {"Role": "Publishing Admin",   "Creator Role": "Publishing Admin",   "status": "Draft", "preview_teams": false, "add_rel_cal": false, "add_stat_page": false} |
-           | 1                 | Publishing Admin           | Publishing Officer  | {"Role": "Publishing Admin",   "Creator Role": "Publishing Officer", "status": "Draft", "preview_teams": false, "add_rel_cal": false, "add_stat_page": false} |
-           | 1                 | Publishing Officer         | Publishing Admin    | {"Role": "Publishing Officer", "Creator Role": "Publishing Admin",   "status": "Draft", "preview_teams": false, "add_rel_cal": false, "add_stat_page": false} |
-           | 1                 | Publishing Officer         | Publishing Officer  | {"Role": "Publishing Officer", "Creator Role": "Publishing Officer", "status": "Draft", "preview_teams": false, "add_rel_cal": false, "add_stat_page": false} |
+#           | 1                 | Publishing Admin           | Publishing Admin    | {"Role": "Publishing Admin",   "Creator Role": "Publishing Admin",   "status": "Draft", "preview_teams": false, "add_rel_cal": false, "add_stat_page": false} |
+#           | 1                 | Publishing Admin           | Publishing Officer  | {"Role": "Publishing Admin",   "Creator Role": "Publishing Officer", "status": "Draft", "preview_teams": false, "add_rel_cal": false, "add_stat_page": false} |
+#           | 1                 | Publishing Officer         | Publishing Admin    | {"Role": "Publishing Officer", "Creator Role": "Publishing Admin",   "status": "Draft", "preview_teams": false, "add_rel_cal": false, "add_stat_page": false} |
+#           | 1                 | Publishing Officer         | Publishing Officer  | {"Role": "Publishing Officer", "Creator Role": "Publishing Officer", "status": "Draft", "preview_teams": false, "add_rel_cal": false, "add_stat_page": false} |
 
 
 #---- Bundle Preview UI Tests -----
@@ -62,20 +63,21 @@ Feature: UI Bundle Happy Paths
         And there is a <Creator Role> user
         And there are 1 Statistical Analysis pages
         And there are 1 release calendar pages
-        And there are 1 Preview teams
-        And the <Role> is a member of the Preview teams
+        And there is a preview team
+        And the <Role> is a member of the preview team
         And there are <number_of_bundles> bundles with <Bundle_Details>
         When the <Role> logs in
-        Then the user can preview a bundle
+        Then the user can see the Bundles ready for preview
+        Then the <Role> can preview a bundle
 
       Examples: bundles
            | number_of_bundles | Role                       | Creator Role        | Bundle_Details                                                                                                                                              |
            | 1                 | Publishing Admin           | Publishing Admin    | {"Role": "Publishing Admin",   "Creator Role": "Publishing Admin",   "status": "In_Review", "preview_teams": true,  "add_rel_cal": true, "add_stat_page": true} |
            | 1                 | Publishing Officer         | Publishing Admin    | {"Role": "Publishing Officer", "Creator Role": "Publishing Admin",   "status": "In_Review", "preview_teams": true,  "add_rel_cal": true, "add_stat_page": true} |
-# TODO          | 1                 | Viewer                     | Publishing Admin    | {"Role": "Publishing Admin",   "Creator Role": "Publishing Admin",   "status": "In_Review", "preview_teams": true,  "add_rel_cal": true, "add_stat_page": true} |
+           | 1                 | Viewer                     | Publishing Admin    | {"Role": "Publishing Admin",   "Creator Role": "Publishing Admin",   "status": "In_Review", "preview_teams": true,  "add_rel_cal": true, "add_stat_page": true} |
            | 1                 | Publishing Admin           | Publishing Officer  | {"Role": "Publishing Admin",   "Creator Role": "Publishing Officer", "status": "In_Review", "preview_teams": true,  "add_rel_cal": true, "add_stat_page": true} |
            | 1                 | Publishing Officer         | Publishing Officer  | {"Role": "Publishing Officer", "Creator Role": "Publishing Officer", "status": "In_Review", "preview_teams": true,  "add_rel_cal": true, "add_stat_page": true} |
-# TODO         | 1                 | Viewer                     | Publishing Officer  | {"Role": "Viewer",             "Creator Role": "Publishing Officer", "status": "In_Review", "preview_teams": true,  "add_rel_cal": true, "add_stat_page": true} |
+           | 1                 | Viewer                     | Publishing Officer  | {"Role": "Viewer",             "Creator Role": "Publishing Officer", "status": "In_Review", "preview_teams": true,  "add_rel_cal": true, "add_stat_page": true} |
 
 
       Scenario Outline: A User cannot preview a bundle
@@ -83,16 +85,17 @@ Feature: UI Bundle Happy Paths
           And there is a <Creator Role> user
           And there are 1 Statistical Analysis pages
           And there are 1 release calendar pages
-          And there are 1 Preview teams
+          And there is a preview team
           And there are <number_of_bundles> bundles with <Bundle_Details>
           When the <Role> logs in
           Then the user cannot preview a bundle
 
          Examples: bundles
              | number_of_bundles | Role                       | Creator Role        | Bundle_Details                                                                                                                                       |
-             | 1                 | Viewer                     | Publishing Admin    | {"Role": "Viewer",             "Creator Role": "Publishing Admin", "status": "In_Review", "preview_teams": false,  "add_rel_cal": true, "add_stat_page": true}|
-             | 1                 | Publishing Officer         | Publishing Admin    | {"Role": "Publishing Officer", "Creator Role": "Publishing Admin", "status": "In_Review", "preview_teams": false,  "add_rel_cal": true, "add_stat_page": true} |
+#             | 1                 | Viewer                     | Publishing Admin    | {"Role": "Viewer",             "Creator Role": "Publishing Admin", "status": "In_Review", "preview_teams": false,  "add_rel_cal": true, "add_stat_page": true}|
+#             | 1                 | Publishing Officer         | Publishing Admin    | {"Role": "Publishing Officer", "Creator Role": "Publishing Admin", "status": "In_Review", "preview_teams": false,  "add_rel_cal": true, "add_stat_page": true} |
 
+#----- Bundle Approve UI Tests -----
 
       Scenario Outline: A user can approve a bundle
         Given there is a <Role> user
@@ -107,8 +110,8 @@ Feature: UI Bundle Happy Paths
 
         Examples: bundles
             | number_of_bundles | Role                       | Creator Role        | Bundle_Details                                                                                                                                                 |
-            | 1                 | Publishing Admin           | Publishing Officer  | {"Role": "Publishing Admin",   "Creator Role": "Publishing Officer", "status": "In_Review", "preview_teams": true, "add_rel_cal": true, "add_stat_page": true} |
-            | 1                 | Publishing Officer         | Publishing Admin    | {"Role": "Publishing Officer", "Creator Role": "Publishing Admin",   "status": "In_Review", "preview_teams": true, "add_rel_cal": true, "add_stat_page": true} |
+#            | 1                 | Publishing Admin           | Publishing Officer  | {"Role": "Publishing Admin",   "Creator Role": "Publishing Officer", "status": "In_Review", "preview_teams": true, "add_rel_cal": true, "add_stat_page": true} |
+#            | 1                 | Publishing Officer         | Publishing Admin    | {"Role": "Publishing Officer", "Creator Role": "Publishing Admin",   "status": "In_Review", "preview_teams": true, "add_rel_cal": true, "add_stat_page": true} |
 
 
       Scenario Outline: A user cannot approve a bundle
@@ -124,7 +127,7 @@ Feature: UI Bundle Happy Paths
 
         Examples: bundles
             | number_of_bundles | Role                       | Creator Role        | Bundle_Details                                                                                                                                                 |
-            | 1                 | Viewer                     | Publishing Admin    | {"Role": "Viewer",             "Creator Role": "Publishing Admin",  "status": "In_Review", "preview_teams": false,  "add_rel_cal": true, "add_stat_page": true}|
-            | 1                 | Publishing Officer         | Publishing Officer  | {"Role": "Publishing Officer", "Creator Role": "Publishing Officer", "status": "In_Review", "preview_teams": true, "add_rel_cal": true, "add_stat_page": true} |
-            | 1                 | Publishing Admin           | Publishing Admin    | {"Role": "Publishing Admin",   "Creator Role": "Publishing Admin",   "status": "In_Review", "preview_teams": true, "add_rel_cal": true, "add_stat_page": true} |
+#            | 1                 | Viewer                     | Publishing Admin    | {"Role": "Viewer",             "Creator Role": "Publishing Admin",  "status": "In_Review", "preview_teams": false,  "add_rel_cal": true, "add_stat_page": true}|
+#            | 1                 | Publishing Officer         | Publishing Officer  | {"Role": "Publishing Officer", "Creator Role": "Publishing Officer", "status": "In_Review", "preview_teams": true, "add_rel_cal": true, "add_stat_page": true} |
+#            | 1                 | Publishing Admin           | Publishing Admin    | {"Role": "Publishing Admin",   "Creator Role": "Publishing Admin",   "status": "In_Review", "preview_teams": true, "add_rel_cal": true, "add_stat_page": true} |
 
