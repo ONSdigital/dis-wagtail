@@ -136,9 +136,8 @@ def bundle_inspect_show(context: Context) -> None:
 @given("there is a {user_role} user")
 def a_user_exists_by_role(context: Context, user_role: str) -> None:
     if not hasattr(context, "users"):
-        context.users = []
-
-    context.users.append({user_role: create_user(user_role)})
+        context.users = {}
+    context.users[user_role] = create_user(user_role)
 
 
 @given("there are {no_statistical_analysis} Statistical Analysis pages")
@@ -174,7 +173,7 @@ def multiple_preview_teams_create(context: Context) -> None:
 
 @given("the {user_role} is a member of the preview team")
 def add_user_to_preview_teams(context: Context, user_role: str) -> None:
-    user = next((item[user_role]["user"] for item in context.users if item[user_role]), None)
+    user = context.users[user_role]["user"]
     user.teams.add(context.team)
 
 
@@ -188,10 +187,9 @@ def multiple_bundles_create(context: Context, number_of_bundles: str, bundle_det
 
         if number_of_bundles.isdigit():
             for __ in range(int(number_of_bundles)):
-                if not next(item for item in context.users if bundle_dets["Creator Role"] in item):
-                    context.users.append({bundle_dets["Creator Role"]: create_user(bundle_dets["Creator Role"])})
+                if not context.users[bundle_dets["Creator Role"]]:
+                    context.users[bundle_dets["Creator Role"]] = create_user(bundle_dets["Creator Role"])
 
-                bundle_creator = next(item for item in context.users if bundle_dets["Creator Role"] in item)
                 bundle_status = BundleStatus.DRAFT
                 bundle_approved = False
                 if bundle_dets["status"] == "Approved":
@@ -200,7 +198,7 @@ def multiple_bundles_create(context: Context, number_of_bundles: str, bundle_det
                 if bundle_dets["status"] == "In_Review":
                     bundle_status = BundleStatus.IN_REVIEW
                 bundle = BundleFactory(
-                    created_by=bundle_creator[bundle_dets["Creator Role"]]["user"],
+                    created_by=context.users[bundle_dets["Creator Role"]]["user"],
                     status=bundle_status,
                     approved=bundle_approved,
                 )
@@ -211,18 +209,14 @@ def multiple_bundles_create(context: Context, number_of_bundles: str, bundle_det
                 bundle.save()
 
                 if bool(bundle_dets["add_rel_cal"]) and hasattr(context, "release_calendar_pages"):
-                    # print("Adding rel cal", bundle_dets["add_rel_cal"],context.release_calendar_pages)
                     for page in context.release_calendar_pages:
                         BundlePage.objects.create(parent=bundle, page=page)
-                        # print(BundlePage.objects.count())
                         context.bundlepages.append(BundlePageFactory(parent=bundle, page=page))
                 bundle.save()
 
                 if bool(bundle_dets["add_stat_page"]) and hasattr(context, "statistical_article_pages"):
-                    # print("Adding article page", bundle_dets["add_stat_page"],context.statistical_article_pages)
                     for page in context.statistical_article_pages:
                         BundlePage.objects.create(parent=bundle, page=page)
-                        # print(BundlePage.objects.count())
                         context.bundlepages.append(BundlePageFactory(parent=bundle, page=page))
                 bundle.save()
                 context.bundles.append(bundle)
@@ -240,10 +234,8 @@ def json_str_to_dict(bundle_details):
 @when("the {user_role} logs in")
 def log_in_user_by_role(context: Context, user_role: str) -> None:
     context.page.goto(f"{context.base_url}/admin/login/")
-    context.page.get_by_placeholder("Enter your username").fill(
-        next(d.get(user_role)["username"] for d in context.users)
-    )
-    context.page.get_by_placeholder("Enter password").fill(next(d.get(user_role)["password"] for d in context.users))
+    context.page.get_by_placeholder("Enter your username").fill(context.users[user_role]["username"])
+    context.page.get_by_placeholder("Enter password").fill(context.users[user_role]["password"])
     context.page.get_by_role("button", name="Sign in").click()
 
 
@@ -283,7 +275,7 @@ def can_find_bundle(context: Context) -> None:
 def can_edit_bundle(context: Context) -> None:
     context.page.get_by_role("row", name=context.bundles[0].name + " Actions").get_by_label("Actions").click()
     context.page.get_by_role("link", name="Edit", exact=True).click()
-    add_reslease_calendar_in_edit(context)
+    add_release_calendar_in_edit(context)
     context.page.get_by_role("button", name="Save").click()
     add_article_page_in_edit(context)
     context.page.get_by_role("button", name="Save").click()
@@ -332,7 +324,7 @@ def add_article_page_in_edit(context: Context) -> None:
         context.page.get_by_role("button", name="Confirm selection").click()
 
 
-def add_reslease_calendar_in_edit(context: Context) -> None:
+def add_release_calendar_in_edit(context: Context) -> None:
     # add Release Calendar
     if hasattr(context, "search_release_calendar"):
         expect(context.page.get_by_role("button", name="Choose Release Calendar page")).to_be_visible()
@@ -399,14 +391,3 @@ def can_approve_bundle(context: Context) -> None:
         context.page.get_by_role("row", name="no documents Actions 31").get_by_role("link").click()
         context.page.get_by_role("button", name="More actions").click()
         context.page.get_by_role("button", name="Approve").click()
-
-
-def create_user_by_role(context, user_role):
-    context.user_data = create_user(user_role)
-    if not next((item for item in context.users if item[user_role]), False):
-        context.users.append({user_role: context.user_data})
-
-
-@step("the user can see the created bundle")
-def step_impl(context):
-    raise NotImplementedError("STEP: And the user can see the created bundle")
