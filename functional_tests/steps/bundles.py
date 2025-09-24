@@ -275,12 +275,14 @@ def can_find_bundle(context: Context) -> None:
 def can_edit_bundle(context: Context) -> None:
     context.page.get_by_role("row", name=context.bundles[0].name + " Actions").get_by_label("Actions").click()
     context.page.get_by_role("link", name="Edit", exact=True).click()
+
     add_release_calendar_in_edit(context)
-    context.page.get_by_role("button", name="Save").click()
-    add_article_page_in_edit(context)
     context.page.get_by_role("button", name="Save").click()
     add_preview_team_in_edit(context)
     context.page.get_by_role("button", name="Save").click()
+    add_release_calendar_in_edit(context)
+    context.page.get_by_role("button", name="Save").click()
+
     context.page.get_by_role("button", name="More actions").click()
     context.page.get_by_role("button", name="Save to preview").click()
 
