@@ -133,7 +133,7 @@ class AnalyticsValuesTestCase(TestCase):
 
     def test_parent_topic_or_theme_none(self):
         """Test that the parent_topic_or_theme property returns None for a HomePage (which has no parent topic)."""
-        home_page = HomePage.objects.get()
+        home_page = HomePage.objects.first()
         self.assertIsNone(home_page.parent_topic_or_theme)
 
     def test_parent_topic_or_theme_for_topic_page(self):

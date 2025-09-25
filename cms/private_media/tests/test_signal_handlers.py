@@ -11,7 +11,7 @@ from cms.standard_pages.models import InformationPage
 class SignalHandlersTestCase(TestCase):
     @classmethod
     def setUpTestData(cls):
-        cls.site = Site.objects.select_related("root_page").get()
+        cls.site = Site.objects.select_related("root_page").first()
         cls.home_page = cls.site.root_page
         cls.test_page = cls.make_information_page([])
 

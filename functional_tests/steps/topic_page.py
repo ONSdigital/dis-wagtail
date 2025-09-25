@@ -3,6 +3,7 @@ from behave.runner import Context
 from django.conf import settings
 from django.urls import reverse
 from playwright.sync_api import expect
+from wagtail.models import Locale
 
 from cms.articles.tests.factories import (
     ArticleSeriesPageFactory,
@@ -16,6 +17,12 @@ from cms.topics.tests.factories import TopicPageFactory
 @given("a topic page exists under the homepage")
 def the_user_creates_theme_and_topic_pages(context: Context) -> None:
     context.topic_page = TopicPageFactory(title="Public Sector Finance")
+
+    # Ensure the topic page has a translation in Welsh
+    context.topic_page.copy_for_translation(
+        locale=Locale.objects.get(language_code="cy"),
+        copy_parents=True,
+    )
 
 
 @given("the topic page has a statistical article in a series")
@@ -38,8 +45,9 @@ def the_user_has_featured_the_series(context: Context) -> None:
 
 
 @when("the user visits the topic page")
-def visit_topic_page(context: Context) -> None:
-    context.page.goto(f"{context.base_url}{context.topic_page.url}")
+@step("the user views the topic page")
+def visit_topic_page(context: Context):
+    context.page.goto(context.topic_page.full_url)
 
 
 @when("the user selects the article series")
@@ -51,11 +59,6 @@ def the_user_select_article_series(context: Context) -> None:
 def user_edits_the_ancestor_topic(context: Context) -> None:
     edit_url = reverse("wagtailadmin_pages:edit", args=(context.topic_page.id,))
     context.page.goto(f"{context.base_url}{edit_url}")
-
-
-@step("the user views the topic page")
-def user_views_the_topic_page(context: Context) -> None:
-    context.page.goto(f"{context.base_url}{context.topic_page.url}")
 
 
 @step("the user clicks to add headline figures to the topic page")
