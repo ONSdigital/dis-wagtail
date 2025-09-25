@@ -10,9 +10,7 @@ from cms.bundles.utils import (
     get_page_title_with_workflow_status,
     get_release_calendar_page_title_with_status_and_release_date,
 )
-from cms.bundles.viewsets.bundle_page_chooser import (
-    PagesWithDraftsForBundleChooserWidget,
-)
+from cms.bundles.viewsets.bundle_page_chooser import PagesWithDraftsForBundleChooserWidget
 
 if TYPE_CHECKING:
     from django.db.models import Model
@@ -166,9 +164,7 @@ def get_custom_release_calendar_page_chooser() -> "BaseChooser":
     to avoid circular import errors.
     """
     # pylint: disable=import-outside-toplevel
-    from cms.release_calendar.viewsets import (
-        FutureReleaseCalendarChooserWidget,
-    )  # pylint: disable=cyclic-import
+    from cms.release_calendar.viewsets import FutureReleaseCalendarChooserWidget
 
     class CustomReleaseCalendarPageChooser(FutureReleaseCalendarChooserWidget):
         def get_display_title(self, instance: "Page") -> str:
