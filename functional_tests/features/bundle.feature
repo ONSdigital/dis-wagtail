@@ -22,25 +22,27 @@ Feature: CMS users can manage bundles
         And the user selects multiple datasets
         Then the selected datasets are displayed in the "Data API datasets" section
     
-     Scenario Outline: A content editor can see the release calendar page title, status and release date when a release calendar page has been selected under scheduling
+     Scenario Outline: A content editor can see the release calendar page title, status and release date when it has been selected under scheduling
         Given a release calendar page with a "<Release Status>" status and future release date exists
         When the user goes to the bundle creation page
         And the user creates a bundle with this release calendar page
         And the user saves the bundle
         Then the user sees the release calendar page title, status and release date
+
     Examples:
       | Release Status |
       | Provisional    |
       | Confirmed      |
-    
-    Scenario Outline: A content editor updates the release calendar details and sees the changes reflected on the bundle edit page
-        Given a release calendar page with a future release date exists
-        When the user goes to the bundle creation page
+
+    Scenario Outline: A content editor updates the release calendar page details, after it has been assigned to a bundle and the change is reflected on the bundle edit page
+        When the user manually creates a future release calendar page with a "Provisional" status
+        And the user clicks the "Save Draft" button
+        And the user goes to the bundle creation page
         And the user creates a bundle with this release calendar page
         And the user saves the bundle
-        And the user updates the selected release calendar's title, release date and sets the status to "<New Status>"
+        And the user updates the selected release calendar page's title, release date and sets the status to "<New Status>"
         And returns to the bundle edit page
-        Then the user sees the updated release calendar page title, release date and the status "<New Status>"
+        Then the user sees the updated release calendar page's title, release date and the status "<New Status>"
 
     Examples:
       | New Status  |
