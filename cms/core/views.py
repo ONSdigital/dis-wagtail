@@ -175,3 +175,8 @@ def health(request: "HttpRequest") -> HttpResponse:
     data["checks"] = checks
 
     return JsonResponse(data, status=500 if checks_failed else 200)
+
+
+@require_GET
+def cookies(request: "HttpRequest") -> HttpResponse:
+    return render(request=request, template_name="templates/pages/cookies.html", status=200)
