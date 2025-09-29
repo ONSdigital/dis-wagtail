@@ -122,7 +122,7 @@ Feature: CMS users can draft, edit, and publish topic pages
             | Topic Page C | CPI       |
         And "Topic Page B" has the following articles:
             | series           | article   | release_date | topic   |
-            | Article Series 1 | Article 1 | 2025-01-01   | Economy | # TODO: To support adding multiple topics to an article series
+            | Article Series 1 | Article 1 | 2025-01-01   | Economy |
             | Article Series 2 | Article 2 | 2025-01-02   | Economy |
         And "Topic Page C" has the following articles:
             | series           | article   | release_date | topic   |
@@ -196,3 +196,24 @@ Feature: CMS users can draft, edit, and publish topic pages
             | Series 1: Descendant Article 1 |
             | C Series: Tagged Article C     |
             | Series 3: Descendant Article 3 |
+
+    Scenario: Topic page highlighted methodologies show tagged methodologies from other topic pages when there are no descendants
+        Given the following topic pages exist:
+            | title        | topic     |
+            | Topic Page A | Economy   |
+            | Topic Page B | Inflation |
+            | Topic Page C | CPI       |
+        And "Topic Page B" has the following methodologies:
+            | title              | publication_date | topic   |
+            | Methodology Page 1 | 2025-01-01       | Economy |
+            | Methodology Page 2 | 2025-01-02       | Economy |
+        And "Topic Page C" has the following methodologies:
+            | title              | publication_date | topic   |
+            | Methodology Page 3 | 2025-01-04       | Economy |
+        When the user visits "Topic Page A"
+        Then the highlighted methodologies section is visible
+        And the highlighted methodologies are displayed in this order:
+            | methodology_name   |
+            | Methodology Page 3 |
+            | Methodology Page 2 |
+            | Methodology Page 1 |
