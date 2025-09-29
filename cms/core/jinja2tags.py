@@ -3,6 +3,8 @@ from typing import TYPE_CHECKING
 from django.templatetags.static import static
 from jinja2 import pass_context
 from jinja2.ext import Extension
+from wagtail.contrib.routable_page.templatetags.wagtailroutablepage_tags import routablepageurl
+from wagtail.coreutils import WAGTAIL_APPEND_SLASH
 from wagtailmath.templatetags.wagtailmath import mathjax
 
 from cms.core.templatetags.util_tags import (
@@ -33,7 +35,9 @@ class CoreExtension(Extension):  # pylint: disable=abstract-method
             {
                 "mathjax": mathjax,
                 "static": static,
-                "routablepageurl": pass_context(routablepageurl_no_trailing_slash),
+                "routablepageurl": pass_context(
+                    routablepageurl if WAGTAIL_APPEND_SLASH else routablepageurl_no_trailing_slash
+                ),
                 "get_translation_urls": get_translation_urls,
                 "get_hreflangs": get_hreflangs,
                 "extend": extend,
