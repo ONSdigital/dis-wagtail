@@ -170,40 +170,6 @@ def user_can_see_link(context: Context, link_text: str) -> None:
     expect(context.page.get_by_role("link", name=link_text)).to_be_visible()
 
 
-# @given('a topic page exists under the homepage titled "{topic_page_title}" tagged with the topic "{topic}"')
-# def the_user_creates_topic_page_under_home_page(context: Context, topic_page_title: str, topic: str) -> None:
-#     context.topic_page = TopicPageFactory(title=topic_page_title, topic=TopicFactory(title=topic))
-
-
-# @given('an article series "{series_title}" exists under "{topic_page_title}" tagged with the topic "{topic}"')
-# def article_series_exists_under_topic_page_tagged_with_topic(
-#     context: Context, topic_page_title: str, series_title: str, topic: str
-# ) -> None:
-#     context.series = ArticleSeriesPageFactory(parent__parent=context.topic_page, title=series_title)
-#     GenericPageToTaxonomyTopic.objects.create(page=context.series, topic=context.topic_page.topic)
-
-
-# @given('a statistical article titled "{article_title}" with release date "{release_date}" exists in that series')
-# def statistical_article_exists_in_series(context: Context, article_title: str, release_date: str) -> None:
-#     release_date = datetime.strptime(release_date, "%Y-%m-%d").date()
-#     StatisticalArticlePageFactory(
-#         title=article_title,
-#         parent=context.series,
-#         release_date=release_date,
-#     )
-
-
-# @when('the user visits the "{topic_page_title}"')
-# def user_visits_topic_page(context: Context, topic_page_title: str) -> None:
-#     import time
-
-#     time.sleep(100)
-#     topic_page = context.topic_page
-#     if topic_page.title != topic_page_title:
-#         raise AssertionError(f"Expected topic page title '{topic_page_title}', got '{topic_page.title}'")
-#     context.page.goto(f"{context.base_url}{topic_page.url}")
-
-
 @given("the following topic pages exist")
 def create_topic_pages_from_table(context: Context) -> None:
     """Create multiple topic pages from a table."""
