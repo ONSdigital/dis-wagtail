@@ -27,20 +27,12 @@ class TopicPageBuilder:
     def __init__(self) -> None:
         self.series_cache: dict[str, ArticleSeriesPage] = {}
         self.topic_cache: dict[str, Topic] = {}
-        self.article_index_cache: dict[str, ArticlesIndexPage] = {}  # Cache per topic page
+        self.article_index_cache: dict[str, ArticlesIndexPage] = {}
 
     def create_articles_for_topic_page(
         self, topic_page: "TopicPage", articles_data: list[ArticleDataDict]
     ) -> dict[str, "StatisticalArticlePage"]:
-        """Create articles with series under a specific topic page.
-
-        Args:
-            topic_page: The topic page to create articles under
-            articles_data: List of dicts with keys: series, article, release_date, topic (optional)
-
-        Returns:
-            Dictionary mapping article titles to created article objects
-        """
+        """Create articles with series under a specific topic page."""
         created_articles = {}
 
         # Get or create article index for this topic page
@@ -113,9 +105,3 @@ class TopicPageBuilder:
         return StatisticalArticlePageFactory(
             title=title, parent=series, release_date=release_date_obj, news_headline=""
         )
-
-    def reset(self) -> None:
-        """Reset caches for new test scenario."""
-        self.series_cache.clear()
-        self.topic_cache.clear()
-        self.article_index_cache.clear()
