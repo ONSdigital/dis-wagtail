@@ -217,3 +217,62 @@ Feature: CMS users can draft, edit, and publish topic pages
             | Methodology Page 3 |
             | Methodology Page 2 |
             | Methodology Page 1 |
+
+    Scenario: Manually selected methodologies appear first, followed by tagged methodologies sorted by publication date
+        Given the following topic pages exist:
+            | title        | topic     |
+            | Topic Page A | Economy   |
+            | Topic Page B | Inflation |
+            | Topic Page C | CPI       |
+        And "Topic Page A" has the following methodologies:
+            | title                | publication_date | topic   |
+            # The methodology below won't be automatically pulled in as the publication date is the oldest here
+            # The methodology below should show if manually selected
+            | Manual Methodology 1 | 2024-12-01       | Housing |
+        And "Topic Page B" has the following methodologies:
+            | title              | publication_date | topic   |
+            | Methodology Page 1 | 2025-01-01       | Economy |
+            | Methodology Page 2 | 2025-01-02       | Economy |
+            | Methodology Page 3 | 2025-01-03       | Economy |
+        And "Topic Page C" has the following methodologies:
+            | title              | publication_date | topic   |
+            | Methodology Page 4 | 2025-01-04       | Economy |
+        When the user edits "Topic Page A"
+        And the user manually adds "Manual Methodology 1" in the highlighted methodologies section
+        And the user clicks "Publish"
+        And the user visits "Topic Page A"
+        Then the highlighted methodologies section is visible
+        And the highlighted methodologies are displayed in this order:
+            | methodology_name     |
+            | Manual Methodology 1 |
+            | Methodology Page 4   |
+            | Methodology Page 3   |
+
+    Scenario: Highlighted methodologies show a mix of descendant, manually selected, and tagged methodologies
+        Given the following topic pages exist:
+            | title        | topic     |
+            | Topic Page A | Economy   |
+            | Topic Page B | Inflation |
+            | Topic Page C | CPI       |
+        And "Topic Page A" has the following methodologies:
+            | title                         | publication_date | topic          |
+            | Descendant Methodology Page 1 | 2025-01-02       | Housing        |
+            | Descendant Methodology Page 2 | 2025-01-03       | Prices         |
+            | Descendant Methodology Page 3 | 2025-01-04       | Sustainability |
+        And "Topic Page B" has the following methodologies:
+            | title                     | publication_date | topic   |
+            | Tagged Methodology Page B | 2025-01-01       | Economy |
+        And "Topic Page C" has the following methodologies:
+            | title                     | publication_date | topic   |
+            | Tagged Methodology Page C | 2025-01-05       | Economy |
+        # Manually select Descendant Methodology Page 1 (oldest, would not surface)
+        When the user edits "Topic Page A"
+        And the user manually adds "Descendant Methodology Page 1" in the highlighted methodologies section
+        And the user clicks "Publish"
+        And the user visits "Topic Page A"
+        Then the highlighted methodologies section is visible
+        And the highlighted methodologies are displayed in this order:
+            | methodology_name              |
+            | Descendant Methodology Page 1 |
+            | Tagged Methodology Page C     |
+            | Descendant Methodology Page 3 |
