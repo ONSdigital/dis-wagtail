@@ -16,7 +16,7 @@
 
 {%- set page_title_default -%}
     {%- with current_site=wagtail_site() -%}
-        {# TODO: This is doesn't work if there is no page object, and we fall back on back DS default #}
+        {# TODO: This doesn't account for no pages objects, in which case it falls back on back on a bad DS default #}
         {% if page %}
             {% if current_site and page.pk == current_site.root_page.pk and current_site.site_name %}
                 {{ current_site.site_name }} -
