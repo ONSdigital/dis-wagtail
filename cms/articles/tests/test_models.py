@@ -727,6 +727,8 @@ class StatisticalArticlePageRenderTestCase(WagtailTestUtils, TestCase):
 
         datalayer_values = extract_datalayer_pushed_values(response.text)
         self.assertEqual(datalayer_values["product"], "wagtail")
+        self.assertEqual(datalayer_values["gtm.allowlist"], ["google", "hjtc", "lcl"])
+        self.assertEqual(datalayer_values["gtm.blocklist"], ["customScripts", "sp", "adm", "awct", "k", "d", "j"])
         self.assertEqual(datalayer_values["contentType"], self.page.analytics_content_type)
         self.assertEqual(datalayer_values["contentGroup"], self.page.analytics_content_group)
         self.assertEqual(datalayer_values["contentTheme"], self.page.analytics_content_theme)
