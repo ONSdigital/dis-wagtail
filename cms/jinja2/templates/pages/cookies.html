@@ -63,24 +63,28 @@
                     <li>{{ _("the way in which you interact with a page") }}</li>
                     <li>{{ _("whether you have participated in a Hotjar survey") }}</li>
                 </ul>
+
+                {% set usage_legend = _("Do you want to allow usage tracking?") %}
+                {% set radio_on = _("On") %}
+                {% set radio_off = _("Off") %}
                 {# fmt:off #}
                 <div class="ons-u-mb-s">
                     {{ onsRadios({
                             "id": "cookies-measure-website-use",
                             "name": "cookies-usage",
-                            "legend": _("Do you want to allow usage tracking?"),
+                            "legend": usage_legend ,
                             "radios": [
                                 {
                                     "id": "on-1",
                                     "label": {
-                                        "text": _("On")
+                                        "text": radio_on
                                     },
                                     "value": "on"
                                 },
                                 {
                                     "id": "off-1",
                                     "label": {
-                                        "text": _("Off")
+                                        "text": radio_off
                                     },
                                     "value": "off"
                                 }
@@ -96,24 +100,26 @@
                     sites, like YouTube and Vimeo, to set cookies on our website when you view this content, they will
                     measure how you engage with the content on our website.") }}
                 </p>
+
+                {% set campaigns_legend = _("Do you want to allow third party usage tracking?") %}
                 {# fmt:off #}
                 <div class="ons-u-mb-s">
                     {{ onsRadios({
                             "id": "cookies-measure-website-comms",
                             "name": "cookies-campaigns",
-                            "legend": _("Do you want to allow third party usage tracking?"),
+                            "legend": campaigns_legend,
                             "radios": [
                                 {
                                     "id": "on-2",
                                     "label": {
-                                        "text": _("On")
+                                        "text": radio_on
                                     },
                                     "value": "on"
                                 },
                                 {
                                     "id": "off-2",
                                     "label": {
-                                        "text": _("Off")
+                                        "text": radio_off
                                     },
                                     "value": "off"
                                 }
@@ -135,24 +141,26 @@
                     These cookies do not currently collect anydata and but are set in preparation for potential future
                     use.") }}
                 </p>
+
+                {% set settings_legend = _("Do you want to allow cookies for potential future use that tailor your experience?") %}
                 {# fmt:off #}
                 <div>
                     {{ onsRadios({
                         "id": "cookies-measure-website-settings",
                         "name": "cookies-settings",
-                        "legend": _("Do you want to allow cookies for potential future use that tailor your experience?"),
+                        "legend": settings_legend,
                         "radios": [
                             {
                                 "id": "on-3",
                                 "label": {
-                                    "text": _("On")
+                                    "text": radio_on
                                 },
                                 "value": "on"
                             },
                             {
                                 "id": "off-3",
                                 "label": {
-                                    "text": _("Off")
+                                    "text": radio_off
                                 },
                                 "value": "off"
                             }
@@ -174,10 +182,11 @@
                     <a href="https://www.ons.gov.uk/help/cookies">{{ _("Find out more about cookies on ons.gov.uk") }}</a>
                 </p>
 
+                {% set save_changes_button = _('Save changes') %}
                 {# fmt:off #}
                 {{ onsButton({
                         "type": 'submit',
-                        "text": _('Save changes')
+                        "text": save_changes_button
                     }) }}
                 {# fmt:on #}
 
