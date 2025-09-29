@@ -120,16 +120,16 @@ Feature: CMS users can draft, edit, and publish topic pages
             | Topic Page A | Economy   |
             | Topic Page B | Inflation |
             | Topic Page C | CPI       |
-        And "Topic Page B" has the following articles:
+        And "Topic Page B" has the following "articles":
             | series           | article   | release_date | topic   |
             | Article Series 1 | Article 1 | 2025-01-01   | Economy |
             | Article Series 2 | Article 2 | 2025-01-02   | Economy |
-        And "Topic Page C" has the following articles:
+        And "Topic Page C" has the following "articles":
             | series           | article   | release_date | topic   |
             | Article Series 3 | Article 3 | 2025-01-04   | Economy |
         When the user visits "Topic Page A"
-        Then the highlighted articles section is visible
-        And the highlighted articles are displayed in this order:
+        Then the highlighted "articles" section is visible
+        And the highlighted "articles" are displayed in this order:
             | article_name                |
             | Article Series 3: Article 3 |
             | Article Series 2: Article 2 |
@@ -141,12 +141,12 @@ Feature: CMS users can draft, edit, and publish topic pages
             | Topic Page A | Economy   |
             | Topic Page B | Inflation |
             | Topic Page C | CPI       |
-        And "Topic Page A" has the following articles:
+        And "Topic Page A" has the following "articles":
             | series                | article          | release_date | topic   |
             # The article below won't be automatically pulled in as the release date is the oldest here
             # The article below should show if manually selected
             | Article Series Manual | Manual Article 1 | 2024-12-01   | Housing |
-        And "Topic Page B" has the following articles:
+        And "Topic Page B" has the following "articles":
             | series           | article                  | release_date | topic   |
             # Older statistical article from the same series wouldn't surface due
             # to only the latest edition of the statistical article from the article series being shown
@@ -154,15 +154,15 @@ Feature: CMS users can draft, edit, and publish topic pages
             | Article Series 1 | Article 1 Older Edition  | 2025-01-01   | Economy |
             | Article Series 1 | Article 2 Latest Edition | 2025-01-02   | Economy |
             | Article Series 2 | Article 3                | 2025-01-03   | Economy |
-        And "Topic Page C" has the following articles:
+        And "Topic Page C" has the following "articles":
             | series           | article   | release_date | topic   |
             | Article Series 3 | Article 4 | 2025-01-04   | Economy |
         When the user edits "Topic Page A"
-        And the user manually adds "Manual Article 1" in the highlighted articles section
+        And the user manually adds "Manual Article 1" in the highlighted "articles" section
         And the user clicks "Publish"
         And the user visits "Topic Page A"
-        Then the highlighted articles section is visible
-        And the highlighted articles are displayed in this order:
+        Then the highlighted "articles" section is visible
+        And the highlighted "articles" are displayed in this order:
             | article_name                            |
             | Article Series Manual: Manual Article 1 |
             | Article Series 3: Article 4             |
@@ -174,24 +174,24 @@ Feature: CMS users can draft, edit, and publish topic pages
             | Topic Page A | Economy   |
             | Topic Page B | Inflation |
             | Topic Page C | CPI       |
-        And "Topic Page A" has the following articles:
+        And "Topic Page A" has the following "articles":
             | series   | article              | release_date | topic          |
             | Series 1 | Descendant Article 1 | 2025-01-02   | Housing        |
             | Series 2 | Descendant Article 2 | 2025-01-03   | Prices         |
             | Series 3 | Descendant Article 3 | 2025-01-04   | Sustainability |
-        And "Topic Page B" has the following articles:
+        And "Topic Page B" has the following "articles":
             | series   | article          | release_date | topic   |
             | B Series | Tagged Article B | 2025-01-01   | Economy |
-        And "Topic Page C" has the following articles:
+        And "Topic Page C" has the following "articles":
             | series   | article          | release_date | topic   |
             | C Series | Tagged Article C | 2025-01-05   | Economy |
         # Manually select Descendant Article 1 (oldest, would not usually surface)
         When the user edits "Topic Page A"
-        And the user manually adds "Descendant Article 1" in the highlighted articles section
+        And the user manually adds "Descendant Article 1" in the highlighted "articles" section
         And the user clicks "Publish"
         And the user visits "Topic Page A"
-        Then the highlighted articles section is visible
-        And the highlighted articles are displayed in this order:
+        Then the highlighted "articles" section is visible
+        And the highlighted "articles" are displayed in this order:
             | article_name                   |
             | Series 1: Descendant Article 1 |
             | C Series: Tagged Article C     |
@@ -203,16 +203,16 @@ Feature: CMS users can draft, edit, and publish topic pages
             | Topic Page A | Economy   |
             | Topic Page B | Inflation |
             | Topic Page C | CPI       |
-        And "Topic Page B" has the following methodologies:
+        And "Topic Page B" has the following "methodologies":
             | title              | publication_date | topic   |
             | Methodology Page 1 | 2025-01-01       | Economy |
             | Methodology Page 2 | 2025-01-02       | Economy |
-        And "Topic Page C" has the following methodologies:
+        And "Topic Page C" has the following "methodologies":
             | title              | publication_date | topic   |
             | Methodology Page 3 | 2025-01-04       | Economy |
         When the user visits "Topic Page A"
-        Then the highlighted methodologies section is visible
-        And the highlighted methodologies are displayed in this order:
+        Then the highlighted "methodologies" section is visible
+        And the highlighted "methodologies" are displayed in this order:
             | methodology_name   |
             | Methodology Page 3 |
             | Methodology Page 2 |
@@ -224,25 +224,25 @@ Feature: CMS users can draft, edit, and publish topic pages
             | Topic Page A | Economy   |
             | Topic Page B | Inflation |
             | Topic Page C | CPI       |
-        And "Topic Page A" has the following methodologies:
+        And "Topic Page A" has the following "methodologies":
             | title                | publication_date | topic   |
             # The methodology below won't be automatically pulled in as the publication date is the oldest here
             # The methodology below should show if manually selected
             | Manual Methodology 1 | 2024-12-01       | Housing |
-        And "Topic Page B" has the following methodologies:
+        And "Topic Page B" has the following "methodologies":
             | title              | publication_date | topic   |
             | Methodology Page 1 | 2025-01-01       | Economy |
             | Methodology Page 2 | 2025-01-02       | Economy |
             | Methodology Page 3 | 2025-01-03       | Economy |
-        And "Topic Page C" has the following methodologies:
+        And "Topic Page C" has the following "methodologies":
             | title              | publication_date | topic   |
             | Methodology Page 4 | 2025-01-04       | Economy |
         When the user edits "Topic Page A"
-        And the user manually adds "Manual Methodology 1" in the highlighted methodologies section
+        And the user manually adds "Manual Methodology 1" in the highlighted "methodologies" section
         And the user clicks "Publish"
         And the user visits "Topic Page A"
-        Then the highlighted methodologies section is visible
-        And the highlighted methodologies are displayed in this order:
+        Then the highlighted "methodologies" section is visible
+        And the highlighted "methodologies" are displayed in this order:
             | methodology_name     |
             | Manual Methodology 1 |
             | Methodology Page 4   |
@@ -254,24 +254,24 @@ Feature: CMS users can draft, edit, and publish topic pages
             | Topic Page A | Economy   |
             | Topic Page B | Inflation |
             | Topic Page C | CPI       |
-        And "Topic Page A" has the following methodologies:
+        And "Topic Page A" has the following "methodologies":
             | title                         | publication_date | topic          |
             | Descendant Methodology Page 1 | 2025-01-02       | Housing        |
             | Descendant Methodology Page 2 | 2025-01-03       | Prices         |
             | Descendant Methodology Page 3 | 2025-01-04       | Sustainability |
-        And "Topic Page B" has the following methodologies:
+        And "Topic Page B" has the following "methodologies":
             | title                     | publication_date | topic   |
             | Tagged Methodology Page B | 2025-01-01       | Economy |
-        And "Topic Page C" has the following methodologies:
+        And "Topic Page C" has the following "methodologies":
             | title                     | publication_date | topic   |
             | Tagged Methodology Page C | 2025-01-05       | Economy |
         # Manually select Descendant Methodology Page 1 (oldest, would not surface)
         When the user edits "Topic Page A"
-        And the user manually adds "Descendant Methodology Page 1" in the highlighted methodologies section
+        And the user manually adds "Descendant Methodology Page 1" in the highlighted "methodologies" section
         And the user clicks "Publish"
         And the user visits "Topic Page A"
-        Then the highlighted methodologies section is visible
-        And the highlighted methodologies are displayed in this order:
+        Then the highlighted "methodologies" section is visible
+        And the highlighted "methodologies" are displayed in this order:
             | methodology_name              |
             | Descendant Methodology Page 1 |
             | Tagged Methodology Page C     |

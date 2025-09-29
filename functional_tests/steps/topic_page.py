@@ -193,25 +193,34 @@ def create_topic_pages_from_table(context: Context) -> None:
         context.topic_pages[title] = topic_page
 
 
-@given('"{topic_page_title}" has the following articles')
-def create_articles_for_topic_page(context: Context, topic_page_title: str) -> None:
-    """Create articles with series under a specific topic page."""
+@given('"{topic_page_title}" has the following "{item_type}"')
+def create_items_for_topic_page(context: Context, topic_page_title: str, item_type: str) -> None:
+    """Create articles or methodologies under a specific topic page."""
     topic_page = context.topic_pages[topic_page_title]
 
-    # Initialise builder if not exists
     if not hasattr(context, "topic_page_builder"):
         context.topic_page_builder = TopicContentBuilder()
 
-    # Convert table rows to list of dicts
-    articles_data = [row.as_dict() for row in context.table]
+    items_data = [row.as_dict() for row in context.table]
 
-    # Use builder to create articles
-    created_articles = context.topic_page_builder.create_articles_for_topic_page(topic_page, articles_data)
+    # Map item_type to builder method and context attribute
+    builder_methods = {
+        "articles": context.topic_page_builder.create_articles_for_topic_page,
+        "methodologies": context.topic_page_builder.create_methodologies_for_topic_page,
+    }
+    context_attrs = {
+        "articles": "articles",
+        "methodologies": "methodologies",
+    }
 
-    # Store created articles in context if needed for assertions
-    if not hasattr(context, "articles"):
-        context.articles = {}
-    context.articles.update(created_articles)
+    if item_type not in builder_methods:
+        raise ValueError(f"Unsupported item_type: {item_type}")
+
+    created_items = builder_methods[item_type](topic_page, items_data)
+
+    if not hasattr(context, context_attrs[item_type]):
+        setattr(context, context_attrs[item_type], {})
+    getattr(context, context_attrs[item_type]).update(created_items)
 
 
 @when('the user visits "{topic_page_title}"')
@@ -227,121 +236,56 @@ def user_edits_topic_page(context: Context, topic_page_title: str) -> None:
     context.page.goto(f"{context.base_url}{edit_url}")
 
 
-@when('the user manually adds "{article_title}" in the highlighted articles section')
-def user_manually_adds_article(context: Context, article_title: str) -> None:
-    context.page.get_by_role("button", name="Add topic page related article").click()
-    context.page.get_by_role("button", name="Choose Article page").click()
-    context.page.get_by_role("link", name=article_title).click()
+@when('the user manually adds "{item_title}" in the highlighted "{item_type}" section')
+def user_manually_adds_item(context: Context, item_title: str, item_type: str) -> None:
+    button_map = {
+        "articles": ("Add topic page related article", "Choose Article page"),
+        "methodologies": ("Add topic page related methodology", "Choose Methodology page"),
+    }
+
+    if item_type not in button_map:
+        raise ValueError(f"Unsupported item_type: {item_type}")
+
+    add_button, choose_button = button_map[item_type]
+    context.page.get_by_role("button", name=add_button).click()
+    context.page.get_by_role("button", name=choose_button).click()
+    context.page.get_by_role("link", name=item_title).click()
 
 
-@when('the user manually adds "{methodology_title}" in the highlighted methodologies section')
-def user_manually_adds_methodology(context: Context, methodology_title: str) -> None:
-    context.page.get_by_role("button", name="Add topic page related methodology").click()
-    context.page.get_by_role("button", name="Choose Methodology page").click()
-    context.page.get_by_role("link", name=methodology_title).click()
+@then('the highlighted "{section_type}" section is visible')
+def highlighted_section_visible(context: Context, section_type: str) -> None:
+    """Check if the highlighted articles or methodologies section is visible."""
+    section_map = {
+        "articles": ("#related-articles", "Related articles"),
+        "methodologies": ("#related-methods", "Methods and quality information"),
+    }
+
+    if section_type not in section_map:
+        raise ValueError(f"Unsupported section_type: {section_type}")
+
+    selector, expected_text = section_map[section_type]
+    expect(context.page.locator(selector)).to_contain_text(expected_text)
 
 
-@then("the highlighted articles section is visible")
-def highlighted_articles_section_visible(context: Context) -> None:
-    """Check if the highlighted articles section is visible."""
-    expect(context.page.get_by_role("heading", name="Related articles")).to_be_visible()
-
-
-@then("the highlighted articles are displayed in this order")
-def check_highlighted_articles_order(context: Context) -> None:
-    """Check the order of highlighted articles matches the table."""
-    # Get expected titles from the table
+@then('the highlighted "{item_type}" are displayed in this order')
+def check_highlighted_items_order(context: Context, item_type: str) -> None:
+    """Check the order of highlighted articles or methodologies matches the table."""
     expected_titles = [row[0] for row in context.table]
-
-    # Find the document list
     document_list = context.page.locator("ul.ons-document-list").first
-
-    # Get all list items
     list_items = document_list.locator("li.ons-document-list__item").all()
 
-    # Extract titles from each list item
     actual_titles = []
     for item in list_items:
-        # Get the title from the link within each list item
         title_link = item.locator("h3.ons-document-list__item-title a").first
         title = title_link.text_content().strip()
         actual_titles.append(title)
 
-    # Verify we have the expected number of articles
     assert len(actual_titles) == len(expected_titles), (
-        f"Expected {len(expected_titles)} articles, but found {len(actual_titles)}"
+        f"Expected {len(expected_titles)} {item_type}, but found {len(actual_titles)}"
     )
 
-    # Verify the order matches
-    assert actual_titles == expected_titles, f"Expected articles in order {expected_titles}, but got {actual_titles}"
+    assert actual_titles == expected_titles, f"Expected {item_type} in order {expected_titles}, but got {actual_titles}"
 
-    # Verify each article link is visible
     for title in expected_titles:
-        article_link = document_list.locator("h3.ons-document-list__item-title a").filter(has_text=title).first
-        expect(article_link).to_be_visible()
-
-
-@given('"{topic_page_title}" has the following methodologies')
-def create_methodologies_for_topic_page(context: Context, topic_page_title: str) -> None:
-    """Create methodologies under a specific topic page."""
-    topic_page = context.topic_pages[topic_page_title]
-
-    # Initialise methodology builder if not exists
-    # Use the SAME builder instance that was used for topic pages and articles
-    if not hasattr(context, "topic_page_builder"):
-        context.topic_page_builder = TopicContentBuilder()
-
-    # Convert table rows to list of dicts
-    methodologies_data = [row.as_dict() for row in context.table]
-
-    # Use builder to create methodologies
-    created_methodologies = context.topic_page_builder.create_methodologies_for_topic_page(
-        topic_page, methodologies_data
-    )
-
-    # Store created methodologies in context if needed for assertions
-    if not hasattr(context, "methodologies"):
-        context.methodologies = {}
-    context.methodologies.update(created_methodologies)
-
-
-@then("the highlighted methodologies section is visible")
-def highlighted_methodologies_section_visible(context: Context) -> None:
-    """Check if the highlighted methodologies section is visible."""
-    expect(context.page.locator("#related-methods")).to_contain_text("Methods and quality information")
-
-
-@then("the highlighted methodologies are displayed in this order")
-def check_highlighted_methodologies_order(context: Context) -> None:
-    """Check the order of highlighted methodologies matches the table."""
-    # Get expected titles from the table
-    expected_titles = [row[0] for row in context.table]
-
-    # Find the methodologies document list
-    document_list = context.page.locator("ul.ons-document-list").first
-
-    # Get all list items
-    list_items = document_list.locator("li.ons-document-list__item").all()
-
-    # Extract titles from each list item
-    actual_titles = []
-    for item in list_items:
-        # Get the title from the link within each list item
-        title_link = item.locator("h3.ons-document-list__item-title a").first
-        title = title_link.text_content().strip()
-        actual_titles.append(title)
-
-    # Verify we have the expected number of methodologies
-    assert len(actual_titles) == len(expected_titles), (
-        f"Expected {len(expected_titles)} methodologies, but found {len(actual_titles)}"
-    )
-
-    # Verify the order matches
-    assert actual_titles == expected_titles, (
-        f"Expected methodologies in order {expected_titles}, but got {actual_titles}"
-    )
-
-    # Verify each methodology link is visible
-    for title in expected_titles:
-        methodology_link = document_list.locator("h3.ons-document-list__item-title a").filter(has_text=title).first
-        expect(methodology_link).to_be_visible()
+        link = document_list.locator("h3.ons-document-list__item-title a").filter(has_text=title).first
+        expect(link).to_be_visible()
