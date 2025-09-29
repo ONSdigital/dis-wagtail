@@ -9,7 +9,7 @@
 
 {% block main %}
     <div class="ons-page__body">
-        <h1 class="ons-u-fs-2xl">Cookies on ONS.GOV.UK</h1>
+        <h1 class="ons-u-fs-2xl">{{ _("Cookies on ONS.GOV.UK") }}</h1>
 
         {# fmt:off #}
         {% call onsPanel({
@@ -18,69 +18,69 @@
                 "iconType": "check",
                 "iconSize": "xl"
         }) %}
-            <h2>Your cookie settings have been saved</h2>
+            <h2>{{ _("Your cookie settings have been saved") }}</h2>
             <p class="ons-u-mb-no">
-                Some parts of this website may use additional cookies and will have their own cookie policy and banner.
+                {{ _("Some parts of this website may use additional cookies and will have their own cookie policy and banner.") }}
             </p>
             <a class="ons-u-mt-s ons-u-dib{{ ' ons-js-return-link' if not isDesignSystemExample }}"
-               href="#0">Return to previous page</a>
+               href="#0">{{ _("Return to previous page") }}</a>
         {% endcall %}
         {# fmt:on #}
 
-        <p>Cookies are files saved on your phone, tablet or computer when you visit a website.</p>
-        <p>We use cookies to store information about how you use the ONS website, such as the pages you visit.</p>
+        <p>{{ _("Cookies are files saved on your phone, tablet or computer when you visit a website.") }}</p>
+        <p>{{ _("We use cookies to store information about how you use the ONS website, such as the pages you visit.") }}</p>
 
-        <h2>Cookie settings</h2>
+        <h2>{{ _("Cookie settings") }}</h2>
 
         <div class="ons-u-db-no-js_enabled">
             <p>
-                We use JavaScript to set our cookies. Javascript is not running on your browser so you cannot change
-                your settings.
+                {{ _("We use JavaScript to set our cookies. Javascript is not running on your browser so you cannot change
+                your settings.") }}
             </p>
-            <p>You can try:</p>Cookie settings
+            <p>{{ _("You can try:") }}</p>{{ _("Cookie settings") }}
             <ul>
-                <li>turning on JavaScript in your browser</li>
-                <li>reloading the page in case there was a temporary fault with JavaScript</li>
+                <li>{{ _("turning on JavaScript in your browser") }}</li>
+                <li>{{ _("reloading the page in case there was a temporary fault with JavaScript") }}</li>
             </ul>
         </div>
 
         <div class="ons-u-db-no-js_disabled">
             <p>
-                We use three types of cookie. There are two kinds of non-essential cookies that you can choose if you’re
-                happy for us to use, there are also strictly necessary cookies that must be turned on.
+                {{ _("We use four types of cookie. There are three kinds of non-essential cookies that you can choose if
+                you’re happy for us to use, there are also strictly necessary cookies that must be turned on.") }}
             </p>
 
             <form data-module="cookie-settings">
-                <h3>Cookies that measure website use</h3>
+                <h3>{{ _("Cookies that measure website use") }}</h3>
                 <p>
-                    We use Google Analytics and Hotjar to measure how you use the website so we can improve it based on
-                    user needs. Google Analytics and Hotjar set cookies that store anonymised information about:
+                    {{ _("We use Google Analytics and Hotjar to measure how you use the website so we can improve it based on
+                    user needs. Google Analytics and Hotjar set cookies that store anonymised information about:") }}
                 </p>
                 <ul>
-                    <li>how you got to the site</li>
-                    <li>the pages you visit on ons.gov.uk and how long you spend on each page</li>
-                    <li>what you click on while you are visiting the site</li>
-                    <li>the way in which you interact with a page</li>
-                    <li>whether you have participated in a Hotjar survey</li>
+                    <li>{{ _("how you got to the site") }}</li>
+                    <li>{{ _("the pages you visit on ons.gov.uk and how long you spend on each page") }}</li>
+                    <li>{{ _("what you click on while you are visiting the site") }}</li>
+                    <li>{{ _("the way in which you interact with a page") }}</li>
+                    <li>{{ _("whether you have participated in a Hotjar survey") }}</li>
                 </ul>
                 {# fmt:off #}
                 <div class="ons-u-mb-s">
                     {{ onsRadios({
                             "id": "cookies-measure-website-use",
                             "name": "cookies-usage",
-                            "legend": "Do you want to allow usage tracking?",
+                            "legend": _("Do you want to allow usage tracking?"),
                             "radios": [
                                 {
                                     "id": "on-1",
                                     "label": {
-                                        "text": "On"
+                                        "text": _("On")
                                     },
                                     "value": "on"
                                 },
                                 {
                                     "id": "off-1",
                                     "label": {
-                                        "text": "Off"
+                                        "text": _("Off")
                                     },
                                     "value": "off"
                                 }
@@ -88,32 +88,32 @@
                         }) }}
                 </div>
                 {# fmt:on #}
-                <p>Your preference selection will expire after one year.</p>
+                <p>{{ _("Your preference selection will expire after one year.") }}</p>
 
-                <h3>Cookies that help with our communications</h3>
+                <h3>{{ _("Cookies that help with our communications") }}</h3>
                 <p>
-                    Some of our pages may contain content from other sites, like YouTube and Vimeo. We allow third party
+                    {{ _("Some of our pages may contain content from other sites, like YouTube and Vimeo. We allow third party
                     sites, like YouTube and Vimeo, to set cookies on our website when you view this content, they will
-                    measure how you engage with the content on our website.
+                    measure how you engage with the content on our website.") }}
                 </p>
                 {# fmt:off #}
                 <div class="ons-u-mb-s">
                     {{ onsRadios({
                             "id": "cookies-measure-website-comms",
                             "name": "cookies-campaigns",
-                            "legend": "Do you want to allow third party usage tracking?",
+                            "legend": _("Do you want to allow third party usage tracking?"),
                             "radios": [
                                 {
                                     "id": "on-2",
                                     "label": {
-                                        "text": "On"
+                                        "text": _("On")
                                     },
                                     "value": "on"
                                 },
                                 {
                                     "id": "off-2",
                                     "label": {
-                                        "text": "Off"
+                                        "text": _("Off")
                                     },
                                     "value": "off"
                                 }
@@ -122,30 +122,62 @@
                 </div>
                 {# fmt:on #}
 
-                <p>Your preference selection will expire after one year.</p>
+                <p>{{ _("Your preference selection will expire after one year.") }}</p>
                 <p>
-                    In addition, if you share a link to ons.gov.uk page, the service you share it on may set a cookie.
-                    We have no control over cookies set on other websites – you can turn them off, but not through us.
+                    {{ _("In addition, if you share a link to ons.gov.uk page, the service you share it on may set a cookie.
+                    We have no control over cookies set on other websites – you can turn them off, but not through us.") }}
                 </p>
 
-                {# TODO: Third optional cookie toggle? Docs unclear #}
 
-                <h3>Strictly necessary cookies</h3>
-                <p>These essential cookies do things like:</p>
-                <ul>
-                    <li>remember the notifications you’ve seen so we do not show them to you again</li>
-                    <li>remember your progress through a form (for example, an ONS study)</li>
-                    <li>improve performance and identify potential security threats</li>
-                </ul>
-                <p>They are necessary for proper website functionality and always need to be on.</p>
+                <h3>{{ _("Cookies that remember your preference settings to tailor your experience") }}</h3>
                 <p>
-                    <a href="https://www.ons.gov.uk/help/cookies">Find out more about cookies on ons.gov.uk</a>
+                    {{ _("These cookies remember the choices you make when using the site to personalise your experience.
+                    These cookies do not currently collect anydata and but are set in preparation for potential future
+                    use.") }}
+                </p>
+                {# fmt:off #}
+                <div>
+                    {{ onsRadios({
+                        "id": "cookies-measure-website-settings",
+                        "name": "cookies-settings",
+                        "legend": _("Do you want to allow cookies for potential future use that tailor your experience?"),
+                        "radios": [
+                            {
+                                "id": "on-3",
+                                "label": {
+                                    "text": _("On")
+                                },
+                                "value": "on"
+                            },
+                            {
+                                "id": "off-3",
+                                "label": {
+                                    "text": _("Off")
+                                },
+                                "value": "off"
+                            }
+                        ]
+                    }) }}
+                </div>
+                {# fmt:on #}
+                <p>{{ _("Your preference selection will expire after one year.") }}</p>
+
+                <h3>{{ _("Strictly necessary cookies") }}</h3>
+                <p>{{ _("These essential cookies do things like:") }}</p>
+                <ul>
+                    <li>{{ _("remember the notifications you’ve seen so we do not show them to you again") }}</li>
+                    <li>{{ _("remember your progress through a form (for example, an ONS study)") }}</li>
+                    <li>{{ _("improve performance and identify potential security threats") }}</li>
+                </ul>
+                <p>{{ _("They are necessary for proper website functionality and always need to be on.") }}</p>
+                <p>
+                    <a href="https://www.ons.gov.uk/help/cookies">{{ _("Find out more about cookies on ons.gov.uk") }}</a>
                 </p>
 
                 {# fmt:off #}
                 {{ onsButton({
                         "type": 'submit',
-                        "text": 'Save changes'
+                        "text": _('Save changes')
                     }) }}
                 {# fmt:on #}
 
