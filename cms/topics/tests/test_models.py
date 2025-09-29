@@ -267,7 +267,7 @@ class TopicPageTestCase(WagtailTestUtils, TestCase):
         )
 
         # Create another article series under other_topic_page_1
-        another_series = ArticleSeriesPageFactory(parent=series_1.get_parent(), parent__parent=self.other_topic_page_1)
+        another_series = ArticleSeriesPageFactory(parent=series_1.get_parent())
         GenericPageToTaxonomyTopic.objects.create(page=another_series, topic=self.topic_1)
         another_tagged_article = StatisticalArticlePageFactory(
             title="Another Tagged Article",
@@ -276,7 +276,7 @@ class TopicPageTestCase(WagtailTestUtils, TestCase):
         )
 
         # Article 3 under other_topic_page_2
-        series_2 = ArticleSeriesPageFactory(parent=series_1.get_parent(), parent__parent=self.other_topic_page_2)
+        series_2 = ArticleSeriesPageFactory(parent__parent=self.other_topic_page_2)
         GenericPageToTaxonomyTopic.objects.create(page=series_2, topic=self.topic_1)
         tagged_article_3 = StatisticalArticlePageFactory(
             title="Tagged Article 3",
@@ -306,7 +306,7 @@ class TopicPageTestCase(WagtailTestUtils, TestCase):
         )
 
         # Article 2 under other_topic_page_2
-        series_2 = ArticleSeriesPageFactory(parent=series_1.get_parent(), parent__parent=self.other_topic_page_2)
+        series_2 = ArticleSeriesPageFactory(parent__parent=self.other_topic_page_2)
         GenericPageToTaxonomyTopic.objects.create(page=series_2, topic=self.topic_1)
         tagged_article_2 = StatisticalArticlePageFactory(
             title="Tagged Article 2",
@@ -314,9 +314,7 @@ class TopicPageTestCase(WagtailTestUtils, TestCase):
             release_date=datetime(2025, 1, 2),
         )
 
-        series_3 = ArticleSeriesPageFactory(
-            parent=series_1.get_parent(), parent__parent=self.cross_pollination_topic_page
-        )
+        series_3 = ArticleSeriesPageFactory(parent__parent=self.cross_pollination_topic_page)
 
         # Add a manually selected article (not one of the tagged articles)
         manual_article = StatisticalArticlePageFactory(
@@ -386,7 +384,6 @@ class TopicPageTestCase(WagtailTestUtils, TestCase):
         tagged_methodology_2 = MethodologyPageFactory(
             title="Tagged Methodology 2",
             parent=tagged_methodology_1.get_parent(),
-            parent__parent=self.other_topic_page_1,
             publication_date=datetime(2025, 1, 4),
         )
         # Tagged methodology 2 shouldn't show up as it's not tagged with the same topic as the topic page
@@ -395,7 +392,6 @@ class TopicPageTestCase(WagtailTestUtils, TestCase):
         tagged_methodology_3 = MethodologyPageFactory(
             title="Tagged Methodology 3",
             parent=tagged_methodology_1.get_parent(),
-            parent__parent=self.other_topic_page_1,
             publication_date=datetime(2025, 1, 5),
         )
         GenericPageToTaxonomyTopic.objects.create(page=tagged_methodology_3, topic=self.topic_1)
@@ -463,7 +459,6 @@ class TopicPageTestCase(WagtailTestUtils, TestCase):
         descendant_methodology_2 = MethodologyPageFactory(
             title="Descendant Methodology 2",
             parent=descendant_methodology_1.get_parent(),
-            parent__parent=self.cross_pollination_topic_page,
             publication_date=datetime(2025, 1, 2),
         )
 

@@ -11,10 +11,11 @@ from cms.articles.tests.factories import (
 )
 from cms.methodology.tests.factories import MethodologyIndexPageFactory, MethodologyPageFactory
 from cms.topics.tests.factories import TopicPageFactory
+from functional_tests.step_helpers.topic_page_utils import TopicPageBuilder
 
 
 @given("a topic page exists under the homepage")
-def the_user_creates_theme_and_topic_pages(context: Context) -> None:
+def the_user_creates_topic_page(context: Context) -> None:
     context.topic_page = TopicPageFactory(title="Public Sector Finance")
 
 
@@ -167,3 +168,128 @@ def the_time_series_item_appears_in_the_table_of_contents(context: Context) -> N
 @then("the user sees the '{link_text}' link")
 def user_can_see_link(context: Context, link_text: str) -> None:
     expect(context.page.get_by_role("link", name=link_text)).to_be_visible()
+
+
+# @given('a topic page exists under the homepage titled "{topic_page_title}" tagged with the topic "{topic}"')
+# def the_user_creates_topic_page_under_home_page(context: Context, topic_page_title: str, topic: str) -> None:
+#     context.topic_page = TopicPageFactory(title=topic_page_title, topic=TopicFactory(title=topic))
+
+
+# @given('an article series "{series_title}" exists under "{topic_page_title}" tagged with the topic "{topic}"')
+# def article_series_exists_under_topic_page_tagged_with_topic(
+#     context: Context, topic_page_title: str, series_title: str, topic: str
+# ) -> None:
+#     context.series = ArticleSeriesPageFactory(parent__parent=context.topic_page, title=series_title)
+#     GenericPageToTaxonomyTopic.objects.create(page=context.series, topic=context.topic_page.topic)
+
+
+# @given('a statistical article titled "{article_title}" with release date "{release_date}" exists in that series')
+# def statistical_article_exists_in_series(context: Context, article_title: str, release_date: str) -> None:
+#     release_date = datetime.strptime(release_date, "%Y-%m-%d").date()
+#     StatisticalArticlePageFactory(
+#         title=article_title,
+#         parent=context.series,
+#         release_date=release_date,
+#     )
+
+
+# @when('the user visits the "{topic_page_title}"')
+# def user_visits_topic_page(context: Context, topic_page_title: str) -> None:
+#     import time
+
+#     time.sleep(100)
+#     topic_page = context.topic_page
+#     if topic_page.title != topic_page_title:
+#         raise AssertionError(f"Expected topic page title '{topic_page_title}', got '{topic_page.title}'")
+#     context.page.goto(f"{context.base_url}{topic_page.url}")
+
+
+@given("the following topic pages exist")
+def create_topic_pages_from_table(context: Context) -> None:
+    """Create multiple topic pages from a table."""
+    context.topic_pages = {}  # Store all topic pages by title
+
+    # Initialise builder if not exists
+    if not hasattr(context, "topic_page_builder"):
+        context.topic_page_builder = TopicPageBuilder()
+
+    for row in context.table:
+        title = row["title"]
+        topic_name = row["topic"]
+
+        # Create or reuse the topic
+        topic = context.topic_page_builder._get_or_create_topic(topic_name)  # pylint: disable=protected-access
+
+        # Create the topic page
+        topic_page = TopicPageFactory(title=title, topic=topic)
+
+        # Store it in context for later reference
+        context.topic_pages[title] = topic_page
+
+
+@given('"{topic_page_title}" has the following articles')
+def create_articles_for_topic_page(context: Context, topic_page_title: str) -> None:
+    """Create articles with series under a specific topic page."""
+    topic_page = context.topic_pages[topic_page_title]
+
+    # Initialise builder if not exists
+    if not hasattr(context, "topic_page_builder"):
+        context.topic_page_builder = TopicPageBuilder()
+
+    # Convert table rows to list of dicts
+    articles_data = [row.as_dict() for row in context.table]
+
+    # Use builder to create articles
+    created_articles = context.topic_page_builder.create_articles_for_topic_page(topic_page, articles_data)
+
+    # Store created articles in context if needed for assertions
+    if not hasattr(context, "articles"):
+        context.articles = {}
+    context.articles.update(created_articles)
+
+
+@when('the user visits "{topic_page_title}"')
+def user_visits_topic_page(context: Context, topic_page_title: str) -> None:
+    topic_page = context.topic_pages[topic_page_title]
+    context.current_page = topic_page
+    context.page.goto(f"{context.base_url}{topic_page.url}")
+
+
+@then("the highlighted articles section is visible")
+def highlighted_articles_section_visible(context: Context) -> None:
+    """Check if the highlighted articles section is visible."""
+    expect(context.page.get_by_role("heading", name="Related articles")).to_be_visible()
+
+
+@then("the highlighted articles are displayed in this order")
+def check_highlighted_articles_order(context: Context) -> None:
+    """Check the order of highlighted articles matches the table."""
+    # Get expected titles from the table
+    expected_titles = [row[0] for row in context.table]
+
+    # Find the document list
+    document_list = context.page.locator("ul.ons-document-list").first
+
+    # Get all list items
+    list_items = document_list.locator("li.ons-document-list__item").all()
+
+    # Extract titles from each list item
+    actual_titles = []
+    for item in list_items:
+        # Get the title from the link within each list item
+        title_link = item.locator("h3.ons-document-list__item-title a").first
+        title = title_link.text_content().strip()
+        actual_titles.append(title)
+
+    # Verify we have the expected number of articles
+    assert len(actual_titles) == len(expected_titles), (
+        f"Expected {len(expected_titles)} articles, but found {len(actual_titles)}"
+    )
+
+    # Verify the order matches
+    assert actual_titles == expected_titles, f"Expected articles in order {expected_titles}, but got {actual_titles}"
+
+    # Verify each article link is visible
+    for title in expected_titles:
+        article_link = document_list.locator("h3.ons-document-list__item-title a").filter(has_text=title).first
+        expect(article_link).to_be_visible()

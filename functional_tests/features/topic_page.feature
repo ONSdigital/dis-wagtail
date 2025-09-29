@@ -113,3 +113,59 @@ Feature: CMS users can draft, edit, and publish topic pages
         Then the time series section is displayed on the page
         And the user sees the 'View all related time series' link
         And the time series item appears in the table of contents
+
+    @smoke
+    Scenario: Topic page highlighted articles show tagged articles from other topic pages when there are no descendants
+        Given the following topic pages exist:
+            | title        | topic     |
+            | Topic Page A | Economy   |
+            | Topic Page B | Inflation |
+            | Topic Page C | CPI       |
+        And "Topic Page B" has the following articles:
+            | series           | article   | release_date | topic   |
+            | Article Series 1 | Article 1 | 2025-01-01   | Economy |
+            | Article Series 2 | Article 2 | 2025-01-02   | Economy |
+        And "Topic Page C" has the following articles:
+            | series           | article   | release_date | topic   |
+            | Article Series 3 | Article 3 | 2025-01-04   | Economy |
+        When the user visits "Topic Page A"
+        Then the highlighted articles section is visible
+        And the highlighted articles are displayed in this order:
+            | article_name                |
+            | Article Series 3: Article 3 |
+            | Article Series 2: Article 2 |
+            | Article Series 1: Article 1 |
+
+    Scenario: Manually selected article appear first, followed by tagged articles sorted by latest release date
+        Given the following topic pages exist:
+            | title        | topic     |
+            | Topic Page A | Economy   |
+            | Topic Page B | Inflation |
+            | Topic Page C | CPI       |
+        And "Topic Page A" has the following articles:
+            | series                | article          | release_date | topic   |
+            # The article below won't be automatically pulled in as the release date is the oldest here
+            # The article below should show if manually selected
+            | Article Series Manual | Manual Article 1 | 2024-12-01   | Housing |
+        And "Topic Page B" has the following articles:
+            | series           | article   | release_date             | topic   |
+            # Older statistical article from the same series wouldn't surface due
+            # to only the latest edition of the statistical article from the article series being shown
+            # this is to test make sure it doesn't appear when we automatically pull in articles
+            | Article Series 1 | Article 1 | 2025-01-01 Older Edition | Economy |
+            | Article Series 1 | Article 2 | 2025-01-02               | Economy |
+            | Article Series 2 | Article 3 | 2025-01-03               | Economy |
+        And "Topic Page C" has the following articles:
+            | series           | article   | release_date | topic   |
+            | Article Series 3 | Article 4 | 2025-01-04   | Economy |
+        When the user edits "Topic Page A"
+        And the user clicks the "Choose highlighted articles" button
+        And the user selects "Article 1" and "Article 3"
+        And the user clicks "Publish"
+        And the user visits "Topic Page A"
+        Then the highlighted articles section is visible
+        And the highlighted articles are displayed in this order:
+            | article_name                |
+            | Article Series 1: Article 1 |
+            | Article Series 3: Article 3 |
+            | Article Series 2: Article 2 |
