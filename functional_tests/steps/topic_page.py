@@ -217,8 +217,21 @@ def create_articles_for_topic_page(context: Context, topic_page_title: str) -> N
 @when('the user visits "{topic_page_title}"')
 def user_visits_topic_page(context: Context, topic_page_title: str) -> None:
     topic_page = context.topic_pages[topic_page_title]
-    context.current_page = topic_page
     context.page.goto(f"{context.base_url}{topic_page.url}")
+
+
+@when('the user edits "{topic_page_title}"')
+def user_edits_topic_page(context: Context, topic_page_title: str) -> None:
+    topic_page = context.topic_pages[topic_page_title]
+    edit_url = reverse("wagtailadmin_pages:edit", args=[topic_page.id])
+    context.page.goto(f"{context.base_url}{edit_url}")
+
+
+@when('the user manually adds "{article_title}" in the highlighted articles section')
+def user_manually_adds_article(context: Context, article_title: str) -> None:
+    context.page.get_by_role("button", name="Add topic page related article").click()
+    context.page.get_by_role("button", name="Choose Article page").click()
+    context.page.get_by_role("link", name=article_title).click()
 
 
 @then("the highlighted articles section is visible")
