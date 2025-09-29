@@ -234,6 +234,13 @@ def user_manually_adds_article(context: Context, article_title: str) -> None:
     context.page.get_by_role("link", name=article_title).click()
 
 
+@when('the user manually adds "{methodology_title}" in the highlighted methodologies section')
+def user_manually_adds_methodology(context: Context, methodology_title: str) -> None:
+    context.page.get_by_role("button", name="Add topic page related methodology").click()
+    context.page.get_by_role("button", name="Choose Methodology page").click()
+    context.page.get_by_role("link", name=methodology_title).click()
+
+
 @then("the highlighted articles section is visible")
 def highlighted_articles_section_visible(context: Context) -> None:
     """Check if the highlighted articles section is visible."""
