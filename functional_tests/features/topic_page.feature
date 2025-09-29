@@ -122,7 +122,7 @@ Feature: CMS users can draft, edit, and publish topic pages
             | Topic Page C | CPI       |
         And "Topic Page B" has the following articles:
             | series           | article   | release_date | topic   |
-            | Article Series 1 | Article 1 | 2025-01-01   | Economy |
+            | Article Series 1 | Article 1 | 2025-01-01   | Economy | # TODO: To support adding multiple topics to an article series
             | Article Series 2 | Article 2 | 2025-01-02   | Economy |
         And "Topic Page C" has the following articles:
             | series           | article   | release_date | topic   |
@@ -134,7 +134,7 @@ Feature: CMS users can draft, edit, and publish topic pages
             | Article Series 3: Article 3 |
             | Article Series 2: Article 2 |
             | Article Series 1: Article 1 |
-    @smoke
+
     Scenario: Manually selected article appear first, followed by tagged articles sorted by latest release date
         Given the following topic pages exist:
             | title        | topic     |
@@ -163,7 +163,36 @@ Feature: CMS users can draft, edit, and publish topic pages
         And the user visits "Topic Page A"
         Then the highlighted articles section is visible
         And the highlighted articles are displayed in this order:
-            | article_name                |
+            | article_name                            |
             | Article Series Manual: Manual Article 1 |
-            | Article Series 3: Article 4 |
-            | Article Series 2: Article 3 |
+            | Article Series 3: Article 4             |
+            | Article Series 2: Article 3             |
+
+    Scenario: Highlighted articles show a mix of descendant, manually selected, and tagged articles
+        Given the following topic pages exist:
+            | title        | topic     |
+            | Topic Page A | Economy   |
+            | Topic Page B | Inflation |
+            | Topic Page C | CPI       |
+        And "Topic Page A" has the following articles:
+            | series   | article              | release_date | topic          |
+            | Series 1 | Descendant Article 1 | 2025-01-02   | Housing        |
+            | Series 2 | Descendant Article 2 | 2025-01-03   | Prices         |
+            | Series 3 | Descendant Article 3 | 2025-01-04   | Sustainability |
+        And "Topic Page B" has the following articles:
+            | series   | article          | release_date | topic   |
+            | B Series | Tagged Article B | 2025-01-01   | Economy |
+        And "Topic Page C" has the following articles:
+            | series   | article          | release_date | topic   |
+            | C Series | Tagged Article C | 2025-01-05   | Economy |
+        # Manually select Descendant Article 1 (oldest, would not usually surface)
+        When the user edits "Topic Page A"
+        And the user manually adds "Descendant Article 1" in the highlighted articles section
+        And the user clicks "Publish"
+        And the user visits "Topic Page A"
+        Then the highlighted articles section is visible
+        And the highlighted articles are displayed in this order:
+            | article_name                   |
+            | Series 1: Descendant Article 1 |
+            | C Series: Tagged Article C     |
+            | Series 3: Descendant Article 3 |
