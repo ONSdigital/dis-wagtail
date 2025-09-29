@@ -11,7 +11,7 @@ from cms.articles.tests.factories import (
 )
 from cms.methodology.tests.factories import MethodologyIndexPageFactory, MethodologyPageFactory
 from cms.topics.tests.factories import TopicPageFactory
-from functional_tests.step_helpers.topic_page_utils import TopicPageBuilder
+from functional_tests.step_helpers.topic_page_utils import TopicContentBuilder
 
 
 @given("a topic page exists under the homepage")
@@ -177,7 +177,7 @@ def create_topic_pages_from_table(context: Context) -> None:
 
     # Initialise builder if not exists
     if not hasattr(context, "topic_page_builder"):
-        context.topic_page_builder = TopicPageBuilder()
+        context.topic_page_builder = TopicContentBuilder()
 
     for row in context.table:
         title = row["title"]
@@ -200,7 +200,7 @@ def create_articles_for_topic_page(context: Context, topic_page_title: str) -> N
 
     # Initialise builder if not exists
     if not hasattr(context, "topic_page_builder"):
-        context.topic_page_builder = TopicPageBuilder()
+        context.topic_page_builder = TopicContentBuilder()
 
     # Convert table rows to list of dicts
     articles_data = [row.as_dict() for row in context.table]
@@ -272,3 +272,69 @@ def check_highlighted_articles_order(context: Context) -> None:
     for title in expected_titles:
         article_link = document_list.locator("h3.ons-document-list__item-title a").filter(has_text=title).first
         expect(article_link).to_be_visible()
+
+
+@given('"{topic_page_title}" has the following methodologies')
+def create_methodologies_for_topic_page(context: Context, topic_page_title: str) -> None:
+    """Create methodologies under a specific topic page."""
+    topic_page = context.topic_pages[topic_page_title]
+
+    # Initialise methodology builder if not exists
+    # Use the SAME builder instance that was used for topic pages and articles
+    if not hasattr(context, "topic_page_builder"):
+        context.topic_page_builder = TopicContentBuilder()
+
+    # Convert table rows to list of dicts
+    methodologies_data = [row.as_dict() for row in context.table]
+
+    # Use builder to create methodologies
+    created_methodologies = context.topic_page_builder.create_methodologies_for_topic_page(
+        topic_page, methodologies_data
+    )
+
+    # Store created methodologies in context if needed for assertions
+    if not hasattr(context, "methodologies"):
+        context.methodologies = {}
+    context.methodologies.update(created_methodologies)
+
+
+@then("the highlighted methodologies section is visible")
+def highlighted_methodologies_section_visible(context: Context) -> None:
+    """Check if the highlighted methodologies section is visible."""
+    expect(context.page.locator("#related-methods")).to_contain_text("Methods and quality information")
+
+
+@then("the highlighted methodologies are displayed in this order")
+def check_highlighted_methodologies_order(context: Context) -> None:
+    """Check the order of highlighted methodologies matches the table."""
+    # Get expected titles from the table
+    expected_titles = [row[0] for row in context.table]
+
+    # Find the methodologies document list
+    document_list = context.page.locator("ul.ons-document-list").first
+
+    # Get all list items
+    list_items = document_list.locator("li.ons-document-list__item").all()
+
+    # Extract titles from each list item
+    actual_titles = []
+    for item in list_items:
+        # Get the title from the link within each list item
+        title_link = item.locator("h3.ons-document-list__item-title a").first
+        title = title_link.text_content().strip()
+        actual_titles.append(title)
+
+    # Verify we have the expected number of methodologies
+    assert len(actual_titles) == len(expected_titles), (
+        f"Expected {len(expected_titles)} methodologies, but found {len(actual_titles)}"
+    )
+
+    # Verify the order matches
+    assert actual_titles == expected_titles, (
+        f"Expected methodologies in order {expected_titles}, but got {actual_titles}"
+    )
+
+    # Verify each methodology link is visible
+    for title in expected_titles:
+        methodology_link = document_list.locator("h3.ons-document-list__item-title a").filter(has_text=title).first
+        expect(methodology_link).to_be_visible()
