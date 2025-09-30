@@ -4,9 +4,9 @@ from django.db import migrations
 
 
 def create_cookies_page(apps, schema_editor):
-    Page = apps.get_model("wagtailcore.Page")
+    HomePage = apps.get_model("home.HomePage")
     CookiesPage = apps.get_model("standard_pages.CookiesPage")
-    homepage = Page.objects.get(slug="home")
+    homepage = HomePage.objects.all()[0]
 
     homepage.add_child(
         instance=CookiesPage(
