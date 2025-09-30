@@ -35,8 +35,6 @@ class AnnouncementPanelBlock(BasePanelBlock):
 
 
 class InformationPanelBlock(BasePanelBlock):
-    title = blocks.CharBlock(required=True, label="Title")
-
     class Meta:
         template = "templates/components/streamfield/information_panel.html"
         icon = "info-circle"
