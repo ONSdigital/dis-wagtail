@@ -1,6 +1,7 @@
 from typing import TYPE_CHECKING, Any, TypedDict
 
-from django.db.models import OuterRef, Subquery
+from django.db.models import OuterRef, Q, Subquery
+from django.db.models.functions import Coalesce
 from wagtail.blocks import StreamValue
 
 from cms.articles.models import ArticleSeriesPage, StatisticalArticlePage
@@ -256,54 +257,19 @@ class MethodologyProcessor:
         )
 
     def _get_automatic_methodologies(self, excluded_pks: list[int], limit: int) -> list[MethodologyDict]:
-        """Get automatically selected methodologies based on topic relationships."""
-        # Get methodologies from descendants of this topic page
-        descendant_methodologies = self._get_descendant_methodologies(excluded_pks)
+        """Get automatically selected methodologies based on topic relationships using a single query."""
+        descendant_qs = MethodologyPage.objects.descendant_of(self.topic_page)
+        descendant_condition = Q(pk__in=descendant_qs.values("pk"))
+        tagged_condition = Q(topics__topic_id=self.topic_page.topic_id)
 
-        # Get methodologies tagged with this topic from across the CMS
-        tagged_methodologies = self._get_topic_tagged_methodologies(excluded_pks)
-
-        # Combine and sort by last revised date
-        combined_methodologies = self._combine_and_sort_methodologies(descendant_methodologies, tagged_methodologies)
-
-        # Convert to dict format and apply limit
-        result: list[MethodologyDict] = [{"internal_page": page} for page in combined_methodologies[:limit]]
-        return result
-
-    def _get_descendant_methodologies(self, excluded_pks: list[int]) -> list[MethodologyPage]:
-        """Get methodology pages that are descendants of this topic page."""
-        return list(
-            MethodologyPage.objects.descendant_of(self.topic_page)
-            .exclude(pk__in=excluded_pks)
-            .live()
-            .public()
-            .order_by("-last_revised_date")
-        )
-
-    def _get_topic_tagged_methodologies(self, excluded_pks: list[int]) -> list[MethodologyPage]:
-        """Get methodology pages tagged with this topic but not descendants of this topic page."""
-        descendant_methodology_pks = set(
-            MethodologyPage.objects.descendant_of(self.topic_page).values_list("pk", flat=True)
-        )
-
-        # Get methodologies tagged with this topic from across the CMS
-        return list(
+        methodologies = (
             MethodologyPage.objects.live()
-            .filter(locale=self.topic_page.locale)  # Ensure methodologies are in the same locale as the topic page
             .public()
-            .filter(topics__topic_id=self.topic_page.topic_id)
-            .exclude(pk__in=descendant_methodology_pks)
+            .filter(locale=self.topic_page.locale)
+            .filter(descendant_condition | tagged_condition)
             .exclude(pk__in=excluded_pks)
-            .order_by("-last_revised_date")
+            .distinct()
+            .order_by(Coalesce("last_revised_date", "publication_date").desc())
         )
 
-    def _combine_and_sort_methodologies(self, *methodology_lists: list[MethodologyPage]) -> list[MethodologyPage]:
-        """Combine methodologies lists and sort them by last revised date."""
-        combined = []
-        for methodologies in methodology_lists:
-            combined.extend(methodologies)
-
-        # Sort by last_revised date, falling back to publication_date if not available
-        combined.sort(key=lambda page: page.last_revised_date or page.publication_date, reverse=True)
-
-        return combined
+        return [{"internal_page": page} for page in methodologies[:limit]]
