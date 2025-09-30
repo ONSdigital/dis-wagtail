@@ -43,7 +43,7 @@ def check_user_is_on_cookies_management_page(context: Context) -> None:
     expect(context.page.get_by_role("heading", name="Cookie settings")).to_be_visible()
 
 
-@then("all the optional cookies are disabled in the browser")
+@then("all the optional cookies are disabled in the ons_cookie_policy cookie in the browser")
 def check_all_optional_cookies_are_disabled(context: Context) -> None:
     cookies = context.page.context.cookies(urls=[context.base_url])
     check_ons_cookie_policy_values(
@@ -57,7 +57,7 @@ def check_all_optional_cookies_are_disabled(context: Context) -> None:
     )
 
 
-@then("all the optional cookies are enabled in the browser")
+@then("all the optional cookies are enabled in the ons_cookie_policy cookie in the browser")
 def check_all_optional_cookies_are_set_in_browser(context: Context) -> None:
     cookies = context.page.context.cookies(urls=[context.base_url])
     check_ons_cookie_policy_values(
@@ -91,13 +91,20 @@ def user_saves_cookie_settings(context: Context) -> None:
 def the_user_sees_confirmation_message(context: Context) -> None:
     expect(context.page.get_by_role("alert", name="Completed:")).to_be_visible()
     expect(context.page.get_by_role("heading", name="Your cookie settings have been saved")).to_be_visible()
+    expect(context.page.get_by_role("link", name="Return to previous page")).to_be_visible()
 
 
-@then("only the {cookie_type} cookies are enabled in the browser")
+@then("only the {cookie_type} cookies are enabled in the ons_cookie_policy cookie in the browser")
 def check_only_cookie_type_cookies_are_enabled_in_browser(context: Context, cookie_type: str) -> None:
     cookies = context.page.context.cookies(urls=[context.base_url])
     expected_values = {"essential": True, "campaigns": False, "usage": False, "settings": False, cookie_type: True}
     check_ons_cookie_policy_values(cookies, expected_values)
+
+
+@then('the "Return to previous page" link takes the user back to the homepage')
+def check_return_to_previous_page_link_goes_back_home(context: Context) -> None:
+    context.page.get_by_role("link", name="Return to previous page").click()
+    expect(context.page).to_have_url(f"{context.base_url}/")
 
 
 def check_ons_cookie_policy_values(cookies: Iterable[dict], expected_values: dict[str, bool]) -> None:
