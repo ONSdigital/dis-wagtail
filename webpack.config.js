@@ -194,10 +194,12 @@ const webpackConfig = (environment, argv) => {
       // When set to 'auto' this option always allows localhost, host, and client.webSocketURL.hostname
       allowedHosts: 'auto',
       port: 3000,
-      proxy: {
-        context: () => true,
-        target: 'http://localhost:8000',
-      },
+      proxy: [
+        {
+          context: () => true,
+          target: 'http://localhost:8000',
+        },
+      ],
       client: {
         // Shows a full-screen overlay in the browser when there are compiler errors.
         overlay: {
