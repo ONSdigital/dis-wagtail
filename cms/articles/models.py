@@ -5,7 +5,7 @@ from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.core.paginator import EmptyPage, PageNotAnInteger, Paginator
 from django.db import models
-from django.http import Http404
+from django.http import Http404, HttpResponseRedirect
 from django.shortcuts import get_object_or_404, redirect
 from django.utils.functional import cached_property
 from django.utils.html import strip_tags
@@ -71,6 +71,15 @@ class ArticlesIndexPage(BasePage):  # type: ignore[django-manager-missing]
 
     def serve(self, request: "HttpRequest", *args: Any, **kwargs: Any) -> "HttpResponse":
         # FIXME: redirect to the publications listing for the topic
+        # Get the parent topic page
+        parent = self.get_parent()
+
+        if parent and hasattr(parent.specific, "get_articles_search_url"):
+            redirect_url = parent.specific.get_articles_search_url()
+            if redirect_url:
+                # Use HttpResponseRedirect with status=307 for temporary redirect
+                return HttpResponseRedirect(redirect_url, status=307)
+        # Fallback to parent page if no search URL is available
         return redirect(self.get_parent().get_url(request=request))
 
 

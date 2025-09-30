@@ -397,13 +397,11 @@ class TopicPage(BundledPageMixin, ExclusiveTaxonomyMixin, BasePage):  # type: ig
 
         links: dict[str, str] = {}
 
-        if self.processed_articles:
-            links["related_articles"] = f"{settings.ONS_WEBSITE_BASE_URL}/{topic.slug_path}/publications"
+        if self.processed_articles and (articles_url := self.get_articles_search_url()):
+            links["related_articles"] = articles_url
 
-        if self.processed_methodologies:
-            links["related_methodologies"] = (
-                f"{settings.ONS_WEBSITE_BASE_URL}/{topic.slug_path}/topicspecificmethodology"
-            )
+        if self.processed_methodologies and (methodologies_url := self.get_methodologies_search_url()):
+            links["related_methodologies"] = methodologies_url
 
         if self.datasets:
             links["related_data"] = f"{settings.ONS_WEBSITE_BASE_URL}/{topic.slug_path}/datalist?filter=datasets"
@@ -412,3 +410,27 @@ class TopicPage(BundledPageMixin, ExclusiveTaxonomyMixin, BasePage):  # type: ig
             links["related_time_series"] = f"{settings.ONS_WEBSITE_BASE_URL}/timeseriestool?topic={topic.slug_path}"
 
         return links
+
+    def get_articles_search_url(self) -> str | None:
+        """Returns the URL for the articles search listing page for this topic.
+        Returns None if the topic is not set or if ONS_WEBSITE_BASE_URL is not configured.
+        """
+        if not (topic := self.topic):
+            return None
+
+        if not settings.ONS_WEBSITE_BASE_URL:
+            return None
+
+        return f"{settings.ONS_WEBSITE_BASE_URL}/{topic.slug_path}/publications"
+
+    def get_methodologies_search_url(self) -> str | None:
+        """Returns the URL for the methodologies search listing page for this topic.
+        Returns None if the topic is not set or if ONS_WEBSITE_BASE_URL is not configured.
+        """
+        if not (topic := self.topic):
+            return None
+
+        if not settings.ONS_WEBSITE_BASE_URL:
+            return None
+
+        return f"{settings.ONS_WEBSITE_BASE_URL}/{topic.slug_path}/topicspecificmethodology"
