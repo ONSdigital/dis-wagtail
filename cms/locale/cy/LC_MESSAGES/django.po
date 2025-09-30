@@ -309,7 +309,7 @@ msgid ""
 "Office for National Statistics (ONS), last revised "
 "%(latest_date_formatted)s, ONS website, methodology, %(cite_link)s"
 msgstr ""
- "Y Swyddfa Ystadegau Gwladol (SYG), diwygiwyd ddiwethaf "
+"Y Swyddfa Ystadegau Gwladol (SYG), diwygiwyd ddiwethaf "
 "%(latest_date_formatted)s, Gwefan SYG, %(cite_link)s"
 
 #: cms/jinja2/templates/pages/release_calendar/release_calendar_page--cancelled.html:6
