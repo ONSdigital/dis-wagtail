@@ -9,5 +9,5 @@ SHOW_TOOLBAR = True
 PREVIOUS_RELEASES_PER_PAGE = 3
 
 # Search Integration Kafka configuration
-# SEARCH_INDEX_PUBLISHER_BACKEND = "kafka" # comment this out to use LogPublisher
+# SEARCH_INDEX_PUBLISHER_BACKEND = "" # comment this out to use LogPublisher
 # KAFKA_SERVERS = os.getenv("KAFKA_SERVERS", "localhost:9094").split(",")
