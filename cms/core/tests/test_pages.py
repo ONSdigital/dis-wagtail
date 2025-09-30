@@ -68,6 +68,8 @@ class HomePageTests(WagtailPageTestCase):
 
         datalayer_values = extract_datalayer_pushed_values(response.text)
         self.assertEqual(datalayer_values["product"], "wagtail")
+        self.assertEqual(datalayer_values["gtm.allowlist"], ["google", "hjtc", "lcl"])
+        self.assertEqual(datalayer_values["gtm.blocklist"], ["customScripts", "sp", "adm", "awct", "k", "d", "j"])
         for key, value in self.page.get_analytics_values(get_dummy_request(path="/")).items():
             self.assertIn(key, datalayer_values)
             self.assertEqual(datalayer_values[key], value)
@@ -272,6 +274,8 @@ class ErrorPageTests(WagtailPageTestCase):
         self.assertEqual(response.status_code, HTTPStatus.NOT_FOUND)
         datalayer_values = extract_datalayer_pushed_values(response.text)
         self.assertEqual(datalayer_values["product"], "wagtail")
+        self.assertEqual(datalayer_values["gtm.allowlist"], ["google", "hjtc", "lcl"])
+        self.assertEqual(datalayer_values["gtm.blocklist"], ["customScripts", "sp", "adm", "awct", "k", "d", "j"])
         self.assertEqual(datalayer_values["contentType"], "404-pages")
         self.assertEqual(datalayer_values["contentGroup"], "404-pages")
 
