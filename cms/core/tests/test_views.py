@@ -254,6 +254,15 @@ class HealthProbeTestCase(TestCase):
         self.assertEqual(response.status_code, 200)
 
 
+class CookiesTestCase(TestCase):
+    def test_get_cookies_management_page(self):
+        url = reverse("cookies")
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Cookies on ONS.GOV.UK")
+        self.assertContains(response, "Cookie settings")
+
+
 class AdminPageTreeTestCase(WagtailTestUtils, TestCase):
     @classmethod
     def setUpTestData(cls):
