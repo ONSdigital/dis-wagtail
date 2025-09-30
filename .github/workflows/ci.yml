@@ -213,6 +213,7 @@ jobs:
       PLAYWRIGHT_BROWSER: ${{ matrix.browser }}
       PLAYWRIGHT_TRACES_DIR: playwright_traces
       PLAYWRIGHT_TRACE: 'true'
+      KAFKA_SERVERS: localhost:9092
 
     services:
       broker:
