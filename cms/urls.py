@@ -111,7 +111,7 @@ if settings.DEBUG:
 
 # Public URLs that are meant to be cached.
 urlpatterns: list[URLResolver | URLPattern] = [
-    path("cookies", core_views.cookies, name="cookies"),
+    # path("cookies", core_views.cookies, name="cookies"),
 ]
 
 if settings.IS_EXTERNAL_ENV:

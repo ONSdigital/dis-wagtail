@@ -1000,6 +1000,7 @@ SEARCH_INDEX_EXCLUDED_PAGE_TYPES = (
     "ThemeIndexPage",
     "ThemePage",
     "TopicPage",
+    "CookiesPage",
     "Page",
 )
 
