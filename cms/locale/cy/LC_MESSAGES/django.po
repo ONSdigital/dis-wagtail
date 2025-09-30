@@ -1,5 +1,5 @@
 # SOME DESCRIPTIVE TITLE.
-# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# Copyright (C) YEAR THE PACKAGE’S COPYRIGHT HOLDER
 # This file is distributed under the same license as the PACKAGE package.
 # FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
 #
@@ -36,7 +36,7 @@ msgstr "Manylion cyswllt"
 
 #: cms/articles/models.py:435
 msgid "All data related to"
-msgstr "Yr holl ddata sy'n gysylltiedig â"
+msgstr "Yr holl ddata sy’n gysylltiedig â"
 
 #: cms/articles/models.py:491
 msgid "Release date"
@@ -131,7 +131,7 @@ msgstr "Togl y brif ddewislen"
 
 #: cms/jinja2/templates/base.html:36
 msgid "All content is available under the"
-msgstr "Mae'r holl gynnwys ar gael o dan y"
+msgstr "Mae’r holl gynnwys ar gael o dan y"
 
 #: cms/jinja2/templates/base.html:39
 msgid ", except where otherwise stated"
@@ -151,7 +151,7 @@ msgid ""
 "This page is currently not available %(in_language)s. It is displayed in its "
 "original language."
 msgstr ""
-"Nid yw'r dudalen hon ar gael %(in_language)s ar hyn o bryd. Fe'i "
+"Nid yw’r dudalen hon ar gael %(in_language)s ar hyn o bryd. Fe’i "
 "harddangosir yn ei hiaith wreiddiol."
 
 #: cms/jinja2/templates/components/accredited/accredited-information.html:7
@@ -220,7 +220,7 @@ msgstr "Os gwnaethoch chi roi cyfeiriad gwe, gwiriwch ei fod yn gywir."
 
 #: cms/jinja2/templates/pages/errors/404.html:18
 msgid "If you pasted the web address, check you copied the whole address."
-msgstr "Os gwnaethoch chi gludo'r cyfeiriad gwe, gwiriwch eich bod wedi copio'r cyfeiriad cyfan."
+msgstr "Os gwnaethoch chi gludo’r cyfeiriad gwe, gwiriwch eich bod wedi copio’r cyfeiriad cyfan."
 
 #: cms/jinja2/templates/pages/errors/404.html:19
 #: cms/jinja2/templates/pages/errors/500.html:7
@@ -228,19 +228,19 @@ msgstr "Os gwnaethoch chi gludo'r cyfeiriad gwe, gwiriwch eich bod wedi copio'r 
 msgid ""
 "If the web address is correct, or you selected a link or button, <a "
 "href=\"%(contact_url)s\">contact us</a>."
-msgstr "Os yw'r cyfeiriad gwe yn gywir, neu os ydych wedi dewis dolen neu botwm,<a "
+msgstr "Os yw’r cyfeiriad gwe yn gywir, neu os ydych wedi dewis dolen neu botwm,<a "
 "href=\"%(contact_url)s\">cysylltwch â ni</a>."
 
 #: cms/jinja2/templates/pages/errors/500.html:2
-msgid "Sorry, there's a problem with the service"
-msgstr "Mae'n ddrwg gennym, mae problem gyda'r gwasanaeth"
+msgid "Sorry, there’s a problem with the service"
+msgstr "Mae’n ddrwg gennym, mae problem gyda’r gwasanaeth"
 
 #: cms/jinja2/templates/pages/errors/500.html:6
 #, python-format
 msgid ""
 "Our scheduled publications can also be found on our <a "
 "href=\"%(backup_url)s\">backup site</a>."
-msgstr "Gellir dod o hyd i'n cyhoeddiadau wedi'u trefnu hefyd ar ein <a "
+msgstr "Gellir dod o hyd i’n cyhoeddiadau wedi’u trefnu hefyd ar ein <a "
 "href=\"%(backup_url)s\">gwefan wrth gefn"
 
 #: cms/jinja2/templates/pages/information_page.html:8
@@ -337,7 +337,7 @@ msgstr "Wedi’i ganslo"
 #: cms/jinja2/templates/pages/release_calendar/release_calendar_page.html:108
 #: cms/release_calendar/models.py:241
 msgid "Changes to this release date"
-msgstr "Newidiadau i'r dyddiad rhyddhau hwn"
+msgstr "Newidiadau i’r dyddiad rhyddhau hwn"
 
 #: cms/jinja2/templates/pages/release_calendar/release_calendar_page--confirmed.html:39
 #: cms/jinja2/templates/pages/release_calendar/release_calendar_page--provisional.html:39
@@ -366,10 +366,10 @@ msgid ""
 "href=\"https://code.statisticsauthority.gov.uk/the-code/\">Code of Practice "
 "for Statistics</a>. This broadly means that the statistics:"
 msgstr ""
-"Mae'r rhain yn ystadegau swyddogol achrededig. Adolygwyd yn annibynnol"
+"Mae’r rhain yn ystadegau swyddogol achrededig. Adolygwyd yn annibynnol"
 "gan y Swyddfa Rheoleiddio Ystadegau (OSR) ac a ganfuwyd ei fod yn cydymffurfio "
 "gyda safonau dibynadwyedd, ansawdd a gwerth yn y "
-"<a href='https://code.statisticsauthority.gov.uk/the-code/'>Cod Ymarfer ar gyfer Ystadegau</"
+"<a href=’https://code.statisticsauthority.gov.uk/the-code/’>Cod Ymarfer ar gyfer Ystadegau</"
 "a>. Mae hyn yn golygu yn fras bod yr ystadegau:"
 
 #: cms/jinja2/templates/pages/release_calendar/release_calendar_page.html:135
@@ -378,7 +378,7 @@ msgstr "diwallu anghenion defnyddwyr"
 
 #: cms/jinja2/templates/pages/release_calendar/release_calendar_page.html:136
 msgid "are presented clearly and accessibly"
-msgstr "yn cael eu cyflwyno'n glir ac yn hygyrch"
+msgstr "yn cael eu cyflwyno’n glir ac yn hygyrch"
 
 #: cms/jinja2/templates/pages/release_calendar/release_calendar_page.html:137
 msgid "are produced using appropriate data and sound methods"
@@ -436,7 +436,7 @@ msgstr "Cyhoeddiad nesaf"
 
 #: cms/jinja2/templates/pages/statistical_article_page.html:25
 msgid "This version has been amended since publication"
-msgstr "Mae'r fersiwn hon wedi'i diwygio ers ei chyhoeddi"
+msgstr "Mae’r fersiwn hon wedi’i diwygio ers ei chyhoeddi"
 
 #: cms/jinja2/templates/pages/statistical_article_page.html:26
 msgid "View amended version"
@@ -456,7 +456,7 @@ msgstr "Gweld y datganiad diweddaraf"
 
 #: cms/jinja2/templates/pages/statistical_article_page.html:71
 msgid "To be announced"
-msgstr "I'w gyhoeddi"
+msgstr "I’w gyhoeddi"
 
 #: cms/jinja2/templates/pages/statistical_article_page.html:137
 msgid "Show detail"
@@ -500,7 +500,7 @@ msgstr "Dyfynnwch y dadansoddiad hwn"
 msgid ""
 "Office for National Statistics (ONS), released %(release_date)s, ONS "
 "website, statistical article, %(cite_link)s"
-msgstr "Y Swyddfa Ystadegau Gwladol (SYG), wedi'i ryddhau %(release_date)s, SYG  "
+msgstr "Y Swyddfa Ystadegau Gwladol (SYG), wedi’i ryddhau %(release_date)s, SYG  "
 "gwefan, erthygl ystadegol, %(cite_link)s"
 
 #: cms/jinja2/templates/pages/theme_index_page.html:6
@@ -558,7 +558,7 @@ msgstr "Cyhoeddiadau cysylltiedig"
 
 #: cms/release_calendar/forms.py:227
 msgid "To be confirmed"
-msgstr "I'w gadarnhau"
+msgstr "I’w gadarnhau"
 
 #: cms/settings/base.py:365
 msgid "English"
