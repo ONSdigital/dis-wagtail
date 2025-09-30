@@ -985,7 +985,7 @@ class PanelBlockTests(TestCase):
     expected_panel_fields: ClassVar[set[str]] = {"body"}
     panel_block_classes: ClassVar[list[type]] = [WarningPanelBlock, AnnouncementPanelBlock, InformationPanelBlock]
 
-    def assertPanelBlockFields(self, value, expected_fields=None, block_class=None): # pylint: disable=invalid-name
+    def assertPanelBlockFields(self, value, expected_fields=None, block_class=None):  # pylint: disable=invalid-name
         if expected_fields is None:
             expected_fields = self.expected_panel_fields
         block_name = block_class.__name__ if block_class else "Block"
