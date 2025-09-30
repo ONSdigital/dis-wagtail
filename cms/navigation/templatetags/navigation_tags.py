@@ -55,7 +55,7 @@ def _extract_item(
     elif (page := value.get("page")) and page.live:
         item[text_key] = value["title"] or getattr(page.specific_deferred, "display_title", page.title)
 
-        item["url"] = page.get_relative_path(request=request)
+        item["url"] = page.specific_deferred.get_relative_path(request=request)
 
         item["attributes"]["data-ga-link-text"] = item[text_key]
         item["attributes"]["data-ga-click-path"] = item["url"]
