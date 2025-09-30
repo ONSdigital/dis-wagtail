@@ -12,6 +12,13 @@ services:
       service: redis
     ports: !override
       - '16379:6379'
+    
+  broker:
+    extends:
+      file: ../docker-compose-dev.yml
+      service: broker
+    ports: !override
+      - '19094:9094'
 
 volumes:
   pgdata:
