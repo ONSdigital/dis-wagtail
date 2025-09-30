@@ -6,4 +6,4 @@ DATABASES["default"]["PORT"] = DATABASES["read_replica"]["PORT"] = 15432  # noqa
 
 SEARCH_INDEX_PUBLISHER_BACKEND = "kafka"
 
-KAFKA_SERVERS = ["localhost:19094"]
+# KAFKA_SERVERS = ["localhost:19094"]
