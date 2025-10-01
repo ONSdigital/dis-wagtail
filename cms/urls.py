@@ -110,9 +110,7 @@ if settings.DEBUG:
         debug_urlpatterns = [path("__debug__/", include(debug_toolbar.urls)), *debug_urlpatterns]
 
 # Public URLs that are meant to be cached.
-urlpatterns: list[URLResolver | URLPattern] = [
-    # path("cookies", core_views.cookies, name="cookies"),
-]
+urlpatterns: list[URLResolver | URLPattern] = []
 
 if settings.IS_EXTERNAL_ENV:
     urlpatterns += [

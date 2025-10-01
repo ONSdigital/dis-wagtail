@@ -17,19 +17,7 @@
 {%- set page_title_default -%}
     {%- with current_site=wagtail_site() -%}
         {# TODO: This doesn't account for no pages object, in which case it falls back on a bad DS default #}
-        {% if page %}
-            {% if current_site and page.pk == current_site.root_page.pk and current_site.site_name %}
-                {{ current_site.site_name }} -
-            {% endif %}
-            {% if page.seo_title %}
-                {{ page.seo_title }}
-            {% else %}
-                {{ page.display_title | default(page.title) }}
-            {% endif %}
-            {% if current_site and page.pk != current_site.root_page.pk and current_site.site_name %}
-                - {{ current_site.site_name }}
-            {% endif %}
-        {% endif %}
+        {% if current_site and page.pk == current_site.root_page.pk and current_site.site_name %}{{ current_site.site_name }} -{% endif %}{% if page.seo_title %}{{ page.seo_title }}{% else %}{{ page.display_title | default(page.title) }}{% endif %}{% if current_site and page.pk != current_site.root_page.pk and current_site.site_name %}- {{ current_site.site_name }}{% endif %}
     {%- endwith -%}
 {%- endset -%}
 {%- set page_title = page_title | default(page_title_default) -%}
@@ -187,7 +175,7 @@
     onsCookiesBanner({
       'lang': "cy" if LANGUAGE_CODE == "cy" else "en",
       'serviceName': COOKIE_BANNER_SERVICE_NAME,
-      'settingsLinkUrl': url("cookies"),
+      'settingsLinkUrl': "/cookies",
     })
   }}
   {# fmt:on #}
