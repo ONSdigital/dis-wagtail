@@ -46,9 +46,8 @@ class PanelBlockAssertions(SimpleTestCase):
     def assertPanelBlockFields(
         self, value: "StructValue", expected_fields: set[str], block_class: "DeclarativeSubBlocksMetaclass"
     ):  # pylint: disable=invalid-name
-        block_name = block_class.__name__ if block_class else "Block"
         self.assertEqual(
             set(value.keys()),
             expected_fields,
-            f"Unexpected fields in block value for {block_name}: {set(value.keys()) - expected_fields}",
+            f"Unexpected fields in block value for {block_class.__name__}: {set(value.keys()) - expected_fields}",
         )
