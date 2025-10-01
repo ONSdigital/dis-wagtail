@@ -12,10 +12,7 @@ from wagtail.models import Page
 from wagtail.search import index
 
 from cms.bundles.mixins import BundledPageMixin
-from cms.core.analytics_utils import (
-    add_table_of_contents_gtm_attributes,
-    format_date_for_gtm,
-)
+from cms.core.analytics_utils import add_table_of_contents_gtm_attributes, format_date_for_gtm
 from cms.core.custom_date_format import ons_date_format, ons_default_datetime
 from cms.core.fields import StreamField
 from cms.core.models import BasePage

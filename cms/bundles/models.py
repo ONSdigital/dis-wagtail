@@ -19,12 +19,7 @@ from cms.home.models import HomePage
 from cms.topics.models import TopicPage
 from cms.workflows.utils import is_page_ready_to_preview, is_page_ready_to_publish
 
-from .enums import (
-    ACTIVE_BUNDLE_STATUSES,
-    EDITABLE_BUNDLE_STATUSES,
-    PREVIEWABLE_BUNDLE_STATUSES,
-    BundleStatus,
-)
+from .enums import ACTIVE_BUNDLE_STATUSES, EDITABLE_BUNDLE_STATUSES, PREVIEWABLE_BUNDLE_STATUSES, BundleStatus
 from .forms import BundleAdminForm
 from .panels import (
     BundleFieldPanel,
@@ -168,15 +163,8 @@ class Bundle(index.Indexed, ClusterableModel, models.Model):  # type: ignore[dja
         BundleFieldPanel("name"),
         FieldRowPanel(
             [
-                ReleaseCalendarChooserPanel(
-                    "release_calendar_page",
-                    heading="Release Calendar page",
-                ),
-                BundleFieldPanel(
-                    "publication_date",
-                    widget=ONSAdminDateTimeInput(),
-                    heading="or Publication date",
-                ),
+                ReleaseCalendarChooserPanel("release_calendar_page", heading="Release Calendar page"),
+                BundleFieldPanel("publication_date", widget=ONSAdminDateTimeInput(), heading="or Publication date"),
             ],
             heading="Scheduling",
             icon="calendar",

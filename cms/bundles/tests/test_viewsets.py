@@ -17,17 +17,10 @@ from wagtail.test.utils.form_data import inline_formset, nested_form_data
 from cms.articles.tests.factories import StatisticalArticlePageFactory
 from cms.bundles.enums import BundleStatus
 from cms.bundles.models import Bundle, BundleTeam
-from cms.bundles.tests.factories import (
-    BundleDatasetFactory,
-    BundleFactory,
-    BundlePageFactory,
-)
+from cms.bundles.tests.factories import BundleDatasetFactory, BundleFactory, BundlePageFactory
 from cms.bundles.tests.utils import grant_all_bundle_permissions, make_bundle_viewer
 from cms.bundles.viewsets.bundle_chooser import bundle_chooser_viewset
-from cms.bundles.viewsets.bundle_page_chooser import (
-    PagesWithDraftsForBundleChooserWidget,
-    bundle_page_chooser_viewset,
-)
+from cms.bundles.viewsets.bundle_page_chooser import PagesWithDraftsForBundleChooserWidget, bundle_page_chooser_viewset
 from cms.methodology.tests.factories import MethodologyPageFactory
 from cms.release_calendar.enums import ReleaseStatus
 from cms.release_calendar.tests.factories import ReleaseCalendarPageFactory
@@ -187,10 +180,7 @@ class BundleViewSetAddTestCase(BundleViewSetTestCaseBase):
 
         self.client.cookies[settings.ACCESS_TOKEN_COOKIE_NAME] = "the-access-token"
         response = self.client.get(self.bundle_add_url)
-        self.assertEqual(
-            response.context["form"].datasets_bundle_api_user_access_token,
-            "the-access-token",
-        )
+        self.assertEqual(response.context["form"].datasets_bundle_api_user_access_token, "the-access-token")
 
 
 class BundleViewSetEditTestCase(BundleViewSetTestCaseBase):
@@ -299,19 +289,13 @@ class BundleViewSetEditTestCase(BundleViewSetTestCaseBase):
         self.bundle.status = BundleStatus.DRAFT
         self.bundle.save(update_fields=["status"])
         response = self.post_with_action_and_test("action-publish", BundleStatus.DRAFT, self.dashboard_url)
-        self.assertEqual(
-            response.context["message"],
-            "Sorry, you do not have permission to access this area.",
-        )
+        self.assertEqual(response.context["message"], "Sorry, you do not have permission to access this area.")
 
     def test_bundle_edit_view__publish__from_invalid_status__preview(self):
         self.bundle.status = BundleStatus.IN_REVIEW
         self.bundle.save(update_fields=["status"])
         response = self.post_with_action_and_test("action-publish", BundleStatus.IN_REVIEW, self.dashboard_url)
-        self.assertEqual(
-            response.context["message"],
-            "Sorry, you do not have permission to access this area.",
-        )
+        self.assertEqual(response.context["message"], "Sorry, you do not have permission to access this area.")
 
     def test_bundle_edit_view__manual_publish__disallowed_when_scheduled_and_date_in_future(
         self,
@@ -361,7 +345,7 @@ class BundleViewSetEditTestCase(BundleViewSetTestCaseBase):
         self.bundle.save(update_fields=["status"])
         self.post_with_action_and_test("action-publish", BundleStatus.PUBLISHED, self.bundle_index_url)
 
-    def test_bundle_edit_view__shows_release_calendar_title_status_date(
+    def test_bundle_edit_view__shows_release_calendar_page_title_status_date(
         self,
     ):
         """To test release calendar page's title, status and release date are displayed when selected."""
@@ -378,7 +362,7 @@ class BundleViewSetEditTestCase(BundleViewSetTestCaseBase):
                 response = self.client.get(self.edit_url)
                 self.assertContains(response, self.chooser_panel_display(release_calendar_page))
 
-    def test_bundle_edit_view__shows_updated_release_calendar_details(
+    def test_bundle_edit_view__shows_updated_release_calendar_page_details(
         self,
     ):
         """When release calendar page details are updated, this tests that the updates are reflected and checks stale
@@ -458,12 +442,7 @@ class BundleViewSetEditTestCase(BundleViewSetTestCaseBase):
         self.assertIsNone(form.fields["approved_by"].initial)
         self.assertIsNone(form.fields["approved_at"].initial)
 
-        self.assertFormSetError(
-            form.formsets["bundled_pages"],
-            0,
-            "page",
-            "This page is not ready to be published",
-        )
+        self.assertFormSetError(form.formsets["bundled_pages"], 0, "page", "This page is not ready to be published")
 
         self.bundle.refresh_from_db()
         self.assertEqual(self.bundle.status, original_status)
@@ -499,10 +478,7 @@ class BundleViewSetEditTestCase(BundleViewSetTestCaseBase):
 
         self.client.cookies[settings.ACCESS_TOKEN_COOKIE_NAME] = "the-access-token"
         response = self.client.get(self.edit_url)
-        self.assertEqual(
-            response.context["form"].datasets_bundle_api_user_access_token,
-            "the-access-token",
-        )
+        self.assertEqual(response.context["form"].datasets_bundle_api_user_access_token, "the-access-token")
 
 
 class BundleViewSetInspectTestCase(BundleViewSetTestCaseBase):
@@ -522,8 +498,7 @@ class BundleViewSetInspectTestCase(BundleViewSetTestCaseBase):
                 self.assertEqual(response.status_code, status_code)
                 if check_message:
                     self.assertEqual(
-                        response.context["message"],
-                        "Sorry, you do not have permission to access this area.",
+                        response.context["message"], "Sorry, you do not have permission to access this area."
                     )
 
     def test_inspect_view__managers__contains_all_fields(self):
@@ -824,11 +799,7 @@ class BundlePageChooserViewsetTestCase(WagtailTestUtils, TestCase):
         self.assertContains(response, self.page_draft.get_admin_display_title(), 2)  # en + cy
         self.assertContains(response, self.page_live_plus_draft.get_admin_display_title(), 1)
         self.assertContains(response, self.page_live_plus_draft.get_parent().title, 1)  # as part of the article
-        self.assertContains(
-            response,
-            TopicPage.objects.ancestor_of(self.page_live_plus_draft).first().title,
-            1,
-        )
+        self.assertContains(response, TopicPage.objects.ancestor_of(self.page_live_plus_draft).first().title, 1)
         self.assertContains(response, information_page.title, 1)
         self.assertContains(response, information_page.get_parent(), 1)
         self.assertNotContains(response, self.page_live.get_admin_display_title())
@@ -970,10 +941,7 @@ class BundlePageChooserViewsetTestCase(WagtailTestUtils, TestCase):
         response_json = response.json()
 
         self.assertEqual(response_json["result"]["id"], str(self.page_draft.pk))
-        self.assertEqual(
-            response_json["result"]["title"],
-            f"{self.page_draft.get_admin_display_title()} (Draft)",
-        )
+        self.assertEqual(response_json["result"]["title"], f"{self.page_draft.get_admin_display_title()} (Draft)")
 
     def test_chosen_multiple(self):
         mark_page_as_ready_for_review(self.page_draft)
@@ -988,6 +956,5 @@ class BundlePageChooserViewsetTestCase(WagtailTestUtils, TestCase):
 
         self.assertEqual(response_json["result"][0]["id"], str(self.page_draft.pk))
         self.assertEqual(
-            response_json["result"][0]["title"],
-            f"{self.page_draft.get_admin_display_title()} (In Preview)",
+            response_json["result"][0]["title"], f"{self.page_draft.get_admin_display_title()} (In Preview)"
         )

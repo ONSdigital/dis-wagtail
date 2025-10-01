@@ -61,11 +61,7 @@ class BundleNotePanel(HelpPanel):
                 return format_html(
                     "<p>This page is not part of any bundles. "
                     '<a href="{}" class="button button-small button-secondary">Add to Bundle</a></p>',
-                    reverse(
-                        "bundles:add_to_bundle",
-                        args=(instance.pk,),
-                        query={"next": self.request.path},
-                    ),
+                    reverse("bundles:add_to_bundle", args=(instance.pk,), query={"next": self.request.path}),
                 )
             return format_html("<p>{}</p>", "This page is not part of any bundles.")
 
