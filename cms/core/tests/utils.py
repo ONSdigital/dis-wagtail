@@ -1,11 +1,16 @@
 import json
 import re
+from typing import TYPE_CHECKING
 from unittest import TestCase
 
 from bs4 import BeautifulSoup
 from django.core.files.base import ContentFile
+from django.test import SimpleTestCase
 
 from cms.documents.models import CustomDocument
+
+if TYPE_CHECKING:
+    from wagtail.blocks import DeclarativeSubBlocksMetaclass, StructValue
 
 
 def get_test_document():
@@ -33,3 +38,17 @@ def extract_datalayer_pushed_values(html_content: str) -> dict[str, object]:
         arg_values = json.loads(datalayer_arg)
         datalayer_values.update(arg_values)
     return datalayer_values
+
+
+class PanelBlockAssertions(SimpleTestCase):
+    """Mixin that provides shared assertions for panel blocks."""
+
+    def assertPanelBlockFields(
+        self, value: "StructValue", expected_fields: set[str], block_class: "DeclarativeSubBlocksMetaclass"
+    ):  # pylint: disable=invalid-name
+        block_name = block_class.__name__ if block_class else "Block"
+        self.assertEqual(
+            set(value.keys()),
+            expected_fields,
+            f"Unexpected fields in block value for {block_name}: {set(value.keys()) - expected_fields}",
+        )
