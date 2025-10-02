@@ -13,7 +13,6 @@ from cms.release_calendar.enums import ReleaseStatus
 
 if TYPE_CHECKING:
     from wagtail.admin.widgets import BaseChooser
-    from wagtail.models import Page
 
     from cms.release_calendar.models import ReleaseCalendarPage
 
@@ -65,7 +64,7 @@ class FutureReleaseCalendarPageChooseResultsView(FutureReleaseCalendarMixin, Cho
 
 
 class ReleaseCalendarPageChosenView(ChosenView):
-    def get_display_title(self, instance: "Page") -> str:
+    def get_display_title(self, instance: "ReleaseCalendarPage") -> str:
         return get_release_calendar_page_title_with_status_and_release_date(instance)
 
 

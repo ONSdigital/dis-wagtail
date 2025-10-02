@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, Any, Union, cast
+from typing import TYPE_CHECKING, Any, Optional, Union, cast
 
 from django.urls import reverse
 from django.utils.functional import cached_property
@@ -17,6 +17,8 @@ if TYPE_CHECKING:
     from django.utils.safestring import SafeString
     from wagtail.admin.widgets import BaseChooser
     from wagtail.models import Page
+
+    from .models import ReleaseCalendarPage
 
 
 class BundleStatusPanel(HelpPanel):
@@ -163,6 +165,7 @@ def get_custom_release_calendar_page_chooser() -> "BaseChooser":
     from cms.release_calendar.viewsets import FutureReleaseCalendarChooserWidget
 
     class CustomReleaseCalendarPageChooser(FutureReleaseCalendarChooserWidget):
+        # Override BaseChooser's default get_display_title to return custom text display
         def get_display_title(self, instance: "Page") -> str:
             return get_release_calendar_page_title_with_status_and_release_date(instance)
 
@@ -180,7 +183,7 @@ class ReleaseCalendarChooserPanel(BundleFieldPanel):
 
         return opts
 
-    def format_value_for_display(self, value: Any) -> str:
+    def format_value_for_display(self, value: Optional["ReleaseCalendarPage"]) -> str:
         if value is None:
             return ""
         return get_release_calendar_page_title_with_status_and_release_date(value)

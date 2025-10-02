@@ -20,6 +20,7 @@ if TYPE_CHECKING:
     from django.contrib.auth.models import AnonymousUser
 
     from cms.bundles.models import Bundle
+    from cms.release_calendar.models import ReleaseCalendarPage
     from cms.users.models import User
 
 
@@ -196,7 +197,7 @@ def build_bundle_data_for_api(bundle: "Bundle") -> dict[str, Any]:
 
 
 def get_release_calendar_page_title_with_status_and_release_date(
-    release_calendar_page: "Page",
+    release_calendar_page: "ReleaseCalendarPage",
 ) -> str:
     """Returns the release page title, status and release date."""
     return (
