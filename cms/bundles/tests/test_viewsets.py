@@ -1,5 +1,6 @@
 from datetime import UTC, datetime, timedelta
 from http import HTTPStatus
+from typing import ClassVar
 from unittest import mock
 from unittest.mock import patch
 
@@ -345,43 +346,31 @@ class BundleViewSetEditTestCase(BundleViewSetTestCaseBase):
         self.bundle.save(update_fields=["status"])
         self.post_with_action_and_test("action-publish", BundleStatus.PUBLISHED, self.bundle_index_url)
 
-    def test_bundle_edit_view__shows_release_calendar_page_title_status_date(
-        self,
-    ):
-        """To test release calendar page's title, status and release date are displayed when selected."""
-        cases = {
-            (
-                "Provisional title",
-                ReleaseStatus.PROVISIONAL,
-            ),
-            ("Confirmed title", ReleaseStatus.CONFIRMED),
-        }
-        for title, status in cases:
+    release_calendar_page_cases: ClassVar[list[tuple[str, ReleaseStatus, str]]] = [
+        ("Provisional title", ReleaseStatus.PROVISIONAL, "Provisional title (Provisional,"),
+        ("Confirmed title", ReleaseStatus.CONFIRMED, "Confirmed title (Confirmed,"),
+        # should not be added to bundle but currently works when updating release calendar page
+        ("Cancelled title", ReleaseStatus.CANCELLED, "Cancelled title (Cancelled,"),
+    ]
+
+    def test_bundle_edit_view__shows_release_calendar_page_title_status_date(self):
+        """Release calendar page's title, status and release date are displayed when selected."""
+        for title, status, _ in self.release_calendar_page_cases:
             with self.subTest(title=title, status=status):
+                if status == ReleaseStatus.CANCELLED:
+                    self.skipTest("Cancelled is not an available option")
                 release_calendar_page = self.assign_release_calendar_page_to_bundle(title=title, status=status)
                 response = self.client.get(self.edit_url)
                 self.assertContains(response, self.chooser_panel_display(release_calendar_page))
 
-    def test_bundle_edit_view__shows_updated_release_calendar_page_details(
-        self,
-    ):
+    def test_bundle_edit_view__shows_updated_release_calendar_page_details(self):
         """When release calendar page details are updated, this tests that the updates are reflected and checks stale
         values are not present.
         """
         release_calendar_page = self.assign_release_calendar_page_to_bundle()
-        # To track previous values
         original_text = self.chooser_panel_display(release_calendar_page)
 
-        cases = {
-            (
-                "Provisional title",
-                ReleaseStatus.PROVISIONAL,
-            ): "Provisional title (Provisional,",
-            ("Confirmed title", ReleaseStatus.CONFIRMED): "Confirmed title (Confirmed,",
-            ("Cancelled title", ReleaseStatus.CANCELLED): "Cancelled title (Cancelled,",
-        }
-
-        for (title, status), expected_text in cases.items():
+        for title, status, expected_text in self.release_calendar_page_cases:
             with self.subTest(title=title, status=status):
                 release_calendar_page.title = title
                 release_calendar_page.status = status
@@ -390,9 +379,9 @@ class BundleViewSetEditTestCase(BundleViewSetTestCaseBase):
                 self.bundle.save()
 
                 response = self.client.get(self.edit_url)
+                expected_display_panel = f"{expected_text} {release_calendar_page.release_date_value})"
 
-                updated_text = f"{expected_text} {release_calendar_page.release_date_value})"
-                self.assertContains(response, updated_text)
+                self.assertContains(response, expected_display_panel)
                 self.assertNotContains(response, original_text)
 
     def test_bundle_edit_view__page_chooser_contain_workflow_state_information(self):

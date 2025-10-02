@@ -1,6 +1,6 @@
 from datetime import datetime, time, timedelta
 
-from behave import given, step, then  # pylint: disable=no-name-in-module
+from behave import given, step, then, when  # pylint: disable=no-name-in-module
 from behave.runner import Context
 from django.urls import reverse
 from django.utils import timezone
@@ -39,7 +39,7 @@ def the_viewer_is_in_the_preview_team(context: Context) -> None:
     user.teams.add(context.team)
 
 
-@step("the user goes to the bundle creation page")
+@step("the user navigates to the bundle creation page")
 def the_user_goes_to_the_bundle_creation_page(context: Context) -> None:
     context.page.goto(context.base_url + "/admin/bundle/new/")
 
@@ -132,13 +132,14 @@ def bundle_inspect_show(context: Context) -> None:
 tomorrow = timezone.now() + timedelta(days=1)
 
 
+# To test release calendar page panel
 @given("a release calendar page with a future release date exists")
 @given('a release calendar page with a "{status}" status and future release date exists')
 def release_calendar_page_with_status_and_future_date_exists(context: Context, status: str = "Provisional") -> None:
     context.release_calendar_page = ReleaseCalendarPageFactory(
-        title="Future Release Calendar Page",
         release_date=tomorrow,
         status=status.upper(),
+        notice="default notice",
     )
     context.release_calendar_page.save_revision().save()
 
@@ -162,15 +163,23 @@ def user_manually_creates_future_release_calendar(context: Context, status: str)
     }
 
 
-@step("the user creates a bundle with this release calendar page")
-def user_creates_bundle_with_future_release_calendar_page(context: Context) -> None:
+@when("the user enters a title")
+def user_enters_title(context: Context):
     context.page.get_by_role("textbox", name="Name*").fill("Test Bundles")
-    the_user_selects_a_release_calendar(context)
-    context.page.get_by_text("Future Release Calendar Page").click()
 
 
-@step("the user saves the bundle")
-def user_saves_bundle(context: Context) -> None:
+@step("the user selects the existing release calendar page")
+def user_creates_bundle_with_future_release_calendar_page(context: Context) -> None:
+    try:
+        title = context.release_calendar_page.title
+    except AttributeError:
+        title = context.release_calendar_page["title"]
+
+    context.page.get_by_text(title).click()
+
+
+@step('the user clicks "Save as draft"')
+def user_clicks_save_as_draft(context: Context) -> None:
     context.page.get_by_role("button", name="Save as draft").click()
 
 
@@ -180,10 +189,15 @@ def user_sees_release_calendar_page_title_status_release_date(
 ) -> None:
     expect(
         context.page.get_by_text(
-            f"Future Release Calendar Page ({context.release_calendar_page.status},"
+            f"{context.release_calendar_page.title} ({context.release_calendar_page.status},"
             f" {context.release_calendar_page.release_date_value})"
         )
     ).to_be_visible()
+
+
+@then("the user cannot select the existing release calendar page")
+def user_cannot_select_existing_release_calendar_page(context: Context):
+    expect(context.page.get_by_text(context.release_calendar_page.title)).not_to_be_visible()
 
 
 day_after_tomorrow = timezone.localdate() + timedelta(days=2)
@@ -201,7 +215,6 @@ def user_updates_selected_release_calendar_page_title_release_date_status(contex
     context.page.close()
     # assigns context to new release calendar page edit view
     context.page = edit_release_calendar_page.value
-
     # tracks original release calendar details
     context.original_date = context.release_calendar_page["release_date_value"]
     context.original_title = context.release_calendar_page["title"]
@@ -210,7 +223,7 @@ def user_updates_selected_release_calendar_page_title_release_date_status(contex
     if status == "Cancelled":
         context.page.locator("#panel-child-content-metadata-content div").filter(
             has_text="Cancellation notice Used for"
-        ).get_by_role("textbox").fill("yo")
+        ).get_by_role("textbox").fill("Cancelled notice")
 
     # enter new details
     context.page.get_by_placeholder("Page title*").fill("New title")
@@ -218,7 +231,7 @@ def user_updates_selected_release_calendar_page_title_release_date_status(contex
     formatted_date = new_date.strftime("%Y-%m-%d %H:%M")
     context.page.get_by_role("textbox", name="Release date*").fill(formatted_date)
     context.page.get_by_role("button", name="Save draft").click()
-    # tracks new release date
+    # tracks new release date with ons date format
     context.release_calendar_page["release_date_value"] = ons_date_format(new_date, "DATETIME_FORMAT")
 
 
@@ -230,7 +243,6 @@ def returns_to_bundle_edit_page(
         context.page.locator("#panel-child-content-metadata-content").get_by_role("link", name="Bundle").click()
     # closes release calendar page edit view
     context.page.close()
-
     # assigns context to new bundles edit view
     context.page = bundle_admin_view.value
 
