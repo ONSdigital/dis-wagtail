@@ -67,7 +67,10 @@ def check_information_page_content(context: Context, default_language: bool = Tr
 
     expect(page.get_by_role("heading", name="Some example rich text content")).to_be_visible()
     expect(page.get_by_text("n∑i=0i2=(n2+n)(2n+1)")).to_be_visible()
-    expect(page.get_by_role("navigation", name="Related content").get_by_role("listitem")).to_be_visible()
+    if default_language:
+        expect(page.get_by_role("navigation", name="Related content").get_by_role("listitem")).to_be_visible()
+    else:
+        expect(page.get_by_role("navigation", name="Cynnwys cysylltiedig").get_by_role("listitem")).to_be_visible()
 
     expect(page.get_by_role("link", name="Test Home")).to_be_visible()
     expect(page.get_by_text("Our test home page")).to_be_visible()

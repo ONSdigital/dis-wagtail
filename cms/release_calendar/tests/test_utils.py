@@ -48,7 +48,7 @@ class GetTranslatedStringTestCase(TestCase):
         """Test translation with a string that has an actual Welsh translation."""
         # This string has a known translation in the Welsh .po file
         english_string = "Not the latest release"
-        expected_welsh = "Cyhoeddiad nesaf"
+        expected_welsh = "Nid y datganiad diweddaraf"
 
         # Test English (should return original)
         english_result = get_translated_string(english_string, "en")
