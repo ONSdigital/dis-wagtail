@@ -201,7 +201,7 @@ msgstr "Ffynhonnell"
 
 #: cms/jinja2/templates/pages/cookies.html:12
 msgid "Cookies on ONS.GOV.UK"
-msgstr ""
+msgstr "Cwcis ar ONS.GOV.UK"
 
 #: cms/jinja2/templates/pages/cookies.html:21
 msgid "Your cookie settings have been saved"
@@ -232,7 +232,7 @@ msgstr ""
 #: cms/jinja2/templates/pages/cookies.html:33
 #: cms/jinja2/templates/pages/cookies.html:40
 msgid "Cookie settings"
-msgstr ""
+msgstr "Gosodiadau cwcis"
 
 #: cms/jinja2/templates/pages/cookies.html:40
 msgid "You can try:"

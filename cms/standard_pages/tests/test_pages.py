@@ -47,6 +47,5 @@ class CookiesPageTest(WagtailPageTestCase):
     def test_get_welsh_cookies_page(self):
         response = self.client.get("/cy/cookies")
         self.assertEqual(response.status_code, 200)
-        # Content isn't currently translated, so we check for the English text
-        self.assertContains(response, "Cookies on ONS.GOV.UK")
-        self.assertContains(response, "Cookie settings")
+        self.assertContains(response, "Cwcis ar ONS.GOV.UK")
+        self.assertContains(response, "Gosodiadau cwcis")
