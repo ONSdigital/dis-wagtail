@@ -41,7 +41,7 @@ Feature: CMS users can manage bundles
         When the user navigates to the bundle creation page
         And the user enters a title
         And the user opens the release calendar page chooser
-        Then the user cannot select the existing release calendar page
+        Then the user cannot see the "Cancelled" release calendar page
 
     Scenario Outline: A content editor updates the release calendar page details, after it has been assigned to a bundle and the change is reflected on the bundle edit page
         When the user manually creates a future release calendar page with a "Provisional" status
@@ -59,5 +59,6 @@ Feature: CMS users can manage bundles
       | New Status  |
       | Provisional |
       | Confirmed   |
-      # A Cancelled release calendar page should not be added to bundle
+    # Note: This test case exists because currently, it is possible to update a release calendar page's status to "Cancelled" even though "Cancelled" pages are not allowed in bundles.
+    # This can be removed once validation between release calendar pages and bundles is improved.
       | Cancelled   |

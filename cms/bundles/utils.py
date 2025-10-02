@@ -83,7 +83,7 @@ def serialize_preview_page(page: "Page", bundle_id: int, is_previewable: bool) -
             "page": None,
             "title": f"{specific_page.title} ({state})",
             "description": getattr(specific_page, "summary", ""),
-            "external_url": (reverse("bundles:preview", args=[bundle_id, page.pk]) if is_previewable else "#"),
+            "external_url": reverse("bundles:preview", args=[bundle_id, page.pk]) if is_previewable else "#",
         },
     }
 
@@ -191,7 +191,7 @@ def build_bundle_data_for_api(bundle: "Bundle") -> dict[str, Any]:
         "state": bundle.status,
         "managed_by": "WAGTAIL",
         "preview_teams": preview_teams,
-        "scheduled_at": (bundle.scheduled_publication_date.isoformat() if bundle.scheduled_publication_date else None),
+        "scheduled_at": bundle.scheduled_publication_date.isoformat() if bundle.scheduled_publication_date else None,
         "e_tag": bundle.bundle_api_etag,
     }
 

@@ -189,7 +189,7 @@ class BundleViewSetEditTestCase(BundleViewSetTestCaseBase):
     def chooser_panel_display(page) -> str:
         return f"{page.title} ({page.get_status_display()}, {page.release_date_value})"
 
-    def assign_release_calendar_page_to_bundle(
+    def _assign_release_calendar_page_to_bundle(
         self,
         title: str = "Future Release Calendar page",
         status: ReleaseStatus = ReleaseStatus.PROVISIONAL,
@@ -298,17 +298,13 @@ class BundleViewSetEditTestCase(BundleViewSetTestCaseBase):
         response = self.post_with_action_and_test("action-publish", BundleStatus.IN_REVIEW, self.dashboard_url)
         self.assertEqual(response.context["message"], "Sorry, you do not have permission to access this area.")
 
-    def test_bundle_edit_view__manual_publish__disallowed_when_scheduled_and_date_in_future(
-        self,
-    ):
+    def test_bundle_edit_view__manual_publish__disallowed_when_scheduled_and_date_in_future(self):
         self.bundle.status = BundleStatus.APPROVED
         self.bundle.publication_date = timezone.now() + timedelta(days=1)
         self.bundle.save(update_fields=["status", "publication_date"])
         self.post_with_action_and_test("action-publish", BundleStatus.APPROVED, self.dashboard_url)
 
-    def test_bundle_edit_view__manual_publish__happy_path__when_scheduled_and_date_in_past(
-        self,
-    ):
+    def test_bundle_edit_view__manual_publish__happy_path__when_scheduled_and_date_in_past(self):
         self.bundle.status = BundleStatus.APPROVED
         self.bundle.publication_date = timezone.now()
         self.bundle.save(update_fields=["status", "publication_date"])
@@ -349,7 +345,8 @@ class BundleViewSetEditTestCase(BundleViewSetTestCaseBase):
     release_calendar_page_cases: ClassVar[list[tuple[str, ReleaseStatus, str]]] = [
         ("Provisional title", ReleaseStatus.PROVISIONAL, "Provisional title (Provisional,"),
         ("Confirmed title", ReleaseStatus.CONFIRMED, "Confirmed title (Confirmed,"),
-        # should not be added to bundle but currently works when updating release calendar page
+        # This should not be added to bundle but currently works when updating release calendar page
+        # To remove once release calendar page and bundle validation is improved
         ("Cancelled title", ReleaseStatus.CANCELLED, "Cancelled title (Cancelled,"),
     ]
 
@@ -358,8 +355,8 @@ class BundleViewSetEditTestCase(BundleViewSetTestCaseBase):
         for title, status, _ in self.release_calendar_page_cases:
             with self.subTest(title=title, status=status):
                 if status == ReleaseStatus.CANCELLED:
-                    self.skipTest("Cancelled is not an available option")
-                release_calendar_page = self.assign_release_calendar_page_to_bundle(title=title, status=status)
+                    self.skipTest("Cancelled page cannot be assigned to bundle")
+                release_calendar_page = self._assign_release_calendar_page_to_bundle(title=title, status=status)
                 response = self.client.get(self.edit_url)
                 self.assertContains(response, self.chooser_panel_display(release_calendar_page))
 
@@ -367,7 +364,7 @@ class BundleViewSetEditTestCase(BundleViewSetTestCaseBase):
         """When release calendar page details are updated, this tests that the updates are reflected and checks stale
         values are not present.
         """
-        release_calendar_page = self.assign_release_calendar_page_to_bundle()
+        release_calendar_page = self._assign_release_calendar_page_to_bundle()
         original_text = self.chooser_panel_display(release_calendar_page)
 
         for title, status, expected_text in self.release_calendar_page_cases:

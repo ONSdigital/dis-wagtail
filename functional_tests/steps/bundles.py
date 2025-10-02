@@ -195,8 +195,8 @@ def user_sees_release_calendar_page_title_status_release_date(
     ).to_be_visible()
 
 
-@then("the user cannot select the existing release calendar page")
-def user_cannot_select_existing_release_calendar_page(context: Context):
+@then('the user cannot see the "Cancelled" release calendar page')
+def user_cannot_see_cancelled_release_calendar_page(context: Context):
     expect(context.page.get_by_text(context.release_calendar_page.title)).not_to_be_visible()
 
 
