@@ -172,3 +172,4 @@ class CookiesPage(BasePage):  # type: ignore[django-manager-missing]
     template = "templates/pages/cookies.html"
 
     parent_page_types: ClassVar[list[str]] = ["home.HomePage"]
+    _analytics_content_type = "cookies"

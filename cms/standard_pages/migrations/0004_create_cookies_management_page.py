@@ -36,8 +36,6 @@ def create_cookies_page(apps, schema_editor):
     home_page.numchild += 1
     home_page.save()
 
-    # TODO: This will fail if migrating from a fresh DB, until the welsh homepage is created programmatically first.
-    #       In the meantime, manually translate the homepage to Welsh before running this migration.
     home_page_cy = HomePage.objects.get(locale=Locale.objects.get(language_code="cy"))
 
     # Create the Welsh translation alias cookies page
@@ -64,6 +62,7 @@ def create_cookies_page(apps, schema_editor):
 class Migration(migrations.Migration):
     dependencies = [
         ("standard_pages", "0003_cookiespage"),
+        ("home", "0003_create_welsh_homepage"),
     ]
 
     operations = [migrations.RunPython(create_cookies_page, migrations.RunPython.noop)]

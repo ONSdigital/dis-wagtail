@@ -1,5 +1,3 @@
-from unittest import expectedFailure
-
 from django.urls import reverse
 from wagtail.test.utils import WagtailPageTestCase
 
@@ -42,8 +40,6 @@ class CookiesPageTest(WagtailPageTestCase):
         self.assertContains(response, "Cookies on ONS.GOV.UK")
         self.assertContains(response, "Cookie settings")
 
-    # TODO: Expected to fail until the welsh alias is created under the welsh homepage in the migration
-    @expectedFailure
     def test_get_welsh_cookies_page(self):
         response = self.client.get("/cy/cookies")
         self.assertEqual(response.status_code, 200)
