@@ -36,7 +36,7 @@ Feature: CMS users can draft, edit, and publish topic pages
 
     Scenario: The translated version of the topic page uses the same taxonomy
         Given a topic page exists under the homepage
-        And the user creates a Welsh version of the home page
+        And the topic page has a Welsh translation
         When the user edits the topic page
         And the user switches to the Welsh locale
         And the user goes to the Taxonomy tab

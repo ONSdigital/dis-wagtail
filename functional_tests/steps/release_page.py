@@ -18,7 +18,7 @@ from functional_tests.steps.page_editor import user_clicks_publish
 @given("the user navigates to the release calendar page")
 def navigate_to_release_calendar_page(context: Context) -> None:
     context.page.get_by_role("button", name="Pages").click()
-    context.page.get_by_role("link", name="View child pages of 'Home'").click()
+    context.page.get_by_role("link", name="View child pages of 'Home'").first.click()
     context.page.get_by_role("link", name="Release calendar", exact=True).click()
 
 
