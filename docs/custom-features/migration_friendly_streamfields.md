@@ -41,4 +41,4 @@ If the block is later reintroduced, only those scenarios will surface the previo
 
 If automatic cleanup becomes a priority, using the default `wagtail.fields.StreamField` may be simpler than extending the custom one.
 
-Once a page models are stable and block changes are unlikely, reverting to the standard `StreamField` will be clearer and more predictable.
+Once the page models are stable and block changes are unlikely, reverting to the standard `StreamField` will be clearer and more predictable.
