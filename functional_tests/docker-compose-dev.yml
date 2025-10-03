@@ -36,6 +36,13 @@ services:
     ports: !override
       - '16379:6379'
 
+  broker:
+    extends:
+      file: docker-compose.yml
+      service: broker
+    ports: !override
+      - '19094:9094'
+
 volumes:
   node_modules:
   pgdata:

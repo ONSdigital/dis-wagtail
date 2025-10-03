@@ -82,6 +82,9 @@ AWS_COGNITO_APP_CLIENT_ID = "dis-authentication-stub"
 IDENTITY_API_BASE_URL = env.get("IDENTITY_API_BASE_URL", f"{AUTH_STUB_URL}/v1")
 AUTH_TOKEN_REFRESH_URL = env.get("AUTH_TOKEN_REFRESH_URL", f"{AUTH_STUB_URL}/tokens/self")
 
+# External search service
+SEARCH_INDEX_PUBLISHER_BACKEND = "kafka"
+
 if AWS_COGNITO_LOGIN_ENABLED:  # noqa: F405
     WAGTAILADMIN_LOGIN_URL = env.get("WAGTAILADMIN_LOGIN_URL", f"{AUTH_STUB_URL}/florence/login")
     LOGOUT_REDIRECT_URL = env.get("LOGOUT_REDIRECT_URL", f"{AUTH_STUB_URL}/florence/logout")

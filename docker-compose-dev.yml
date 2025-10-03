@@ -25,7 +25,6 @@ services:
 
   broker:
     image: bitnamilegacy/kafka:3.5.1
-    container_name: broker
     environment:
       # Enable plaintext connections for local testing.
       ALLOW_PLAINTEXT_LISTENER: 'yes'
