@@ -36,10 +36,9 @@ def create_cookies_page(apps, schema_editor):
     home_page.numchild += 1
     home_page.save()
 
-    # TODO: use the actual welsh homepage,
-    #       this can be updated once the welsh homepage is being created programmatically in migrations
-    # home_page_cy = HomePage.objects.get(locale=Locale.objects.get(language_code="cy"))
-    home_page_cy = home_page
+    # TODO: This will fail if migrating from a fresh DB, until the welsh homepage is created programmatically first.
+    #       In the meantime, manually translate the homepage to Welsh before running this migration.
+    home_page_cy = HomePage.objects.get(locale=Locale.objects.get(language_code="cy"))
 
     # Create the Welsh translation alias cookies page
     CookiesPage.objects.create(
@@ -48,11 +47,11 @@ def create_cookies_page(apps, schema_editor):
         live=True,
         first_published_at=now,
         last_published_at=now,
-        slug="cycookies",  # TODO change back to "cookies"
+        slug="cookies",
         path=f"{home_page_cy.path}00{home_page_cy.numchild + 1:02d}",
         content_type=cookies_page_type,
-        depth=home_page.depth + 1,
-        url_path=f"{home_page_cy.url_path}cycookies/",  # TODO change back to "cookies"
+        depth=home_page_cy.depth + 1,
+        url_path=f"{home_page_cy.url_path}cookies/",
         locale=Locale.objects.get(language_code="cy"),
         alias_of=cookies_page,
         translation_key=cookies_page.translation_key,
