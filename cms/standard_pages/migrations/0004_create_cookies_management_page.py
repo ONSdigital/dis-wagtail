@@ -10,11 +10,13 @@ def create_cookies_page(apps, schema_editor):
     CookiesPage = apps.get_model("standard_pages.CookiesPage")
     HomePage = apps.get_model("home.HomePage")
     Locale = apps.get_model("wagtailcore.Locale")
+    english_locale = Locale.objects.get(language_code="en-gb")
+    welsh_locale = Locale.objects.get(language_code="cy")
 
     # Create content type for the model
     cookies_page_type, _created = ContentType.objects.get_or_create(model="cookiespage", app_label="standard_pages")
 
-    home_page = HomePage.objects.get(locale=Locale.objects.get(language_code="en-gb"), slug="home")
+    home_page = HomePage.objects.get(locale=english_locale, slug="home")
 
     now = timezone.now()
 
@@ -30,13 +32,13 @@ def create_cookies_page(apps, schema_editor):
         content_type=cookies_page_type,
         depth=home_page.depth + 1,
         url_path=f"{home_page.url_path}cookies/",
-        locale=Locale.objects.get(language_code="en-gb"),
+        locale=english_locale,
     )
 
     home_page.numchild += 1
     home_page.save()
 
-    home_page_cy = HomePage.objects.get(locale=Locale.objects.get(language_code="cy"))
+    welsh_home_page = HomePage.objects.get(locale=welsh_locale)
 
     # Create the Welsh translation alias cookies page
     CookiesPage.objects.create(
@@ -46,17 +48,17 @@ def create_cookies_page(apps, schema_editor):
         first_published_at=now,
         last_published_at=now,
         slug="cookies",
-        path=f"{home_page_cy.path}00{home_page_cy.numchild + 1:02d}",
+        path=f"{welsh_home_page.path}00{welsh_home_page.numchild + 1:02d}",
         content_type=cookies_page_type,
-        depth=home_page_cy.depth + 1,
-        url_path=f"{home_page_cy.url_path}cookies/",
-        locale=Locale.objects.get(language_code="cy"),
+        depth=welsh_home_page.depth + 1,
+        url_path=f"{welsh_home_page.url_path}cookies/",
+        locale=welsh_locale,
         alias_of=cookies_page,
         translation_key=cookies_page.translation_key,
     )
 
-    home_page_cy.numchild += 1
-    home_page_cy.save()
+    welsh_home_page.numchild += 1
+    welsh_home_page.save()
 
 
 class Migration(migrations.Migration):
