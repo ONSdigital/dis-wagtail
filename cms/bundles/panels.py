@@ -18,7 +18,7 @@ if TYPE_CHECKING:
     from wagtail.admin.widgets import BaseChooser
     from wagtail.models import Page
 
-    from .models import ReleaseCalendarPage
+    from cms.release_calendar.models import ReleaseCalendarPage
 
 
 class BundleStatusPanel(HelpPanel):
