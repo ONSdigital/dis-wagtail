@@ -31,7 +31,6 @@ GOOGLE_TAG_MANAGER_CONTAINER_ID = "GTM-123456789"
 
 # Cookie banner config
 ONS_COOKIE_BANNER_SERVICE_NAME = "example.ons.gov.uk"
-MANAGE_COOKIE_SETTINGS_URL = "example.ons.gov.uk/cookies"
 
 # #############
 # Performance

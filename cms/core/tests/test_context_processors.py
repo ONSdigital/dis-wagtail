@@ -19,7 +19,6 @@ class ContextProcessorTestCase(TestCase):
         expected = {
             "GOOGLE_TAG_MANAGER_CONTAINER_ID": settings.GOOGLE_TAG_MANAGER_CONTAINER_ID,
             "ONS_COOKIE_BANNER_SERVICE_NAME": settings.ONS_COOKIE_BANNER_SERVICE_NAME,
-            "MANAGE_COOKIE_SETTINGS_URL": settings.MANAGE_COOKIE_SETTINGS_URL,
             "SEO_NOINDEX": False,
             "LANGUAGE_CODE": "en-gb",
             "IS_EXTERNAL_ENV": False,

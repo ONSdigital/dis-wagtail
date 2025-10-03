@@ -165,3 +165,11 @@ class IndexPage(BundledPageMixin, BasePage):  # type: ignore[django-manager-miss
         context["related_links_list"] = self.get_formatted_related_links_list()
 
         return context
+
+
+class CookiesPage(BasePage):  # type: ignore[django-manager-missing]
+    max_count_per_parent = 1
+    template = "templates/pages/cookies.html"
+
+    parent_page_types: ClassVar[list[str]] = ["home.HomePage"]
+    _analytics_content_type = "cookies"

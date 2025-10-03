@@ -31,3 +31,17 @@ class DatePlaceholderTestCase(WagtailPageTestCase):
             ),
             content,
         )
+
+
+class CookiesPageTest(WagtailPageTestCase):
+    def test_get_cookies_page(self):
+        response = self.client.get("/cookies")
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Cookies on ONS.GOV.UK")
+        self.assertContains(response, "Cookie settings")
+
+    def test_get_welsh_cookies_page(self):
+        response = self.client.get("/cy/cookies")
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Cwcis ar ONS.GOV.UK")
+        self.assertContains(response, "Gosodiadau cwcis")
