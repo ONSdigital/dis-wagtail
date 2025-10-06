@@ -1,4 +1,5 @@
-from typing import TYPE_CHECKING, Any, TypedDict
+from abc import ABC, abstractmethod
+from typing import TYPE_CHECKING, Any, Generic, TypedDict, TypeVar
 
 from django.db.models import OuterRef, Q, Subquery
 from django.db.models.functions import Coalesce
@@ -13,6 +14,8 @@ if TYPE_CHECKING:
     from wagtail.query import PageQuerySet
 
     from .models import TopicPage, TopicPageRelatedArticle
+
+T = TypeVar("T")
 
 
 class InternalArticleDict(TypedDict, total=False):
@@ -57,14 +60,25 @@ def format_time_series_as_document_list(time_series: StreamValue) -> list[dict[s
     return time_series_documents
 
 
-class ArticleProcessor:
-    """Service class for processing related articles for topic pages."""
+class BaseProcessor(ABC, Generic[T]):
+    """Abstract base class for processors handling related content for topic pages."""
 
     def __init__(self, topic_page: "TopicPage", max_items_per_section: int) -> None:
         self.topic_page = topic_page
         self.max_items_per_section = max_items_per_section
 
-    def get_processed_articles(self) -> list[ArticleDict]:
+    def __call__(self) -> list[T]:
+        return self.process()
+
+    @abstractmethod
+    def process(self) -> list[T]:
+        """Abstract method to be implemented by subclasses to return processed items."""
+
+
+class ArticleProcessor(BaseProcessor[ArticleDict]):
+    """Processor for handling related articles for topic pages."""
+
+    def process(self) -> list[ArticleDict]:
         """Returns a list of dictionaries representing related articles.
 
         Each dict has 'internal_page' pointing to a Page (or None for external) and optional 'title'.
@@ -206,14 +220,10 @@ class ArticleProcessor:
         return combined
 
 
-class MethodologyProcessor:
-    """Service class for processing related methodologies for topic pages."""
+class MethodologyProcessor(BaseProcessor[MethodologyDict]):
+    """Processor for handling related methodologies for topic pages."""
 
-    def __init__(self, topic_page: "TopicPage", max_items_per_section: int) -> None:
-        self.topic_page = topic_page
-        self.max_items_per_section = max_items_per_section
-
-    def get_processed_methodologies(self) -> list[MethodologyDict]:
+    def process(self) -> list[MethodologyDict]:
         """Returns a list of dictionaries representing methodologies relevant for this topic.
 
         Each dict has 'internal_page' pointing to a MethodologyPage.

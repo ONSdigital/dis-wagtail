@@ -239,7 +239,7 @@ class TopicPage(BundledPageMixin, ExclusiveTaxonomyMixin, BasePage):  # type: ig
         Manually added articles (both internal and external) are prioritised.
         """
         processor = ArticleProcessor(topic_page=self, max_items_per_section=MAX_ITEMS_PER_SECTION)
-        return processor.get_processed_articles()
+        return processor()
 
     @cached_property
     def processed_methodologies(self) -> list[MethodologyDict]:
@@ -247,7 +247,7 @@ class TopicPage(BundledPageMixin, ExclusiveTaxonomyMixin, BasePage):  # type: ig
         Each dict has 'internal_page' pointing to a MethodologyPage.
         """
         processor = MethodologyProcessor(topic_page=self, max_items_per_section=MAX_ITEMS_PER_SECTION)
-        return processor.get_processed_methodologies()
+        return processor()
 
     @cached_property
     def table_of_contents(self) -> list[dict[str, str | object]]:
