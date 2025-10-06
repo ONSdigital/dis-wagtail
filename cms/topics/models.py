@@ -22,11 +22,13 @@ from cms.datasets.utils import format_datasets_as_document_list
 from cms.taxonomy.mixins import ExclusiveTaxonomyMixin
 from cms.topics.blocks import ExploreMoreStoryBlock, TimeSeriesPageStoryBlock, TopicHeadlineFigureBlock
 from cms.topics.forms import TopicPageAdminForm
-from cms.topics.utils import (
+from cms.topics.related_content_processors import (
     ArticleDict,
-    ArticleProcessor,
     MethodologyDict,
-    MethodologyProcessor,
+    RelatedArticleProcessor,
+    RelatedMethodologyProcessor,
+)
+from cms.topics.utils import (
     format_time_series_as_document_list,
 )
 from cms.topics.viewsets import (
@@ -238,7 +240,7 @@ class TopicPage(BundledPageMixin, ExclusiveTaxonomyMixin, BasePage):  # type: ig
         Each dict has 'internal_page' pointing to a Page (or None for external) and optional 'title'.
         Manually added articles (both internal and external) are prioritised.
         """
-        processor = ArticleProcessor(topic_page=self, max_items_per_section=MAX_ITEMS_PER_SECTION)
+        processor = RelatedArticleProcessor(topic_page=self, max_items_per_section=MAX_ITEMS_PER_SECTION)
         return processor()
 
     @cached_property
@@ -246,7 +248,7 @@ class TopicPage(BundledPageMixin, ExclusiveTaxonomyMixin, BasePage):  # type: ig
         """Returns a list of dictionaries representing methodologies relevant for this topic.
         Each dict has 'internal_page' pointing to a MethodologyPage.
         """
-        processor = MethodologyProcessor(topic_page=self, max_items_per_section=MAX_ITEMS_PER_SECTION)
+        processor = RelatedMethodologyProcessor(topic_page=self, max_items_per_section=MAX_ITEMS_PER_SECTION)
         return processor()
 
     @cached_property
