@@ -69,7 +69,7 @@ def user_tries_to_create_new_theme_page(context: Context) -> None:
         context.theme_index_page = theme_index_page
 
     context.page.get_by_role("button", name="Pages").click()
-    context.page.get_by_role("link", name="View child pages of 'Home'").click()
+    context.page.get_by_role("link", name="View child pages of 'Home'").first.click()
     context.page.get_by_role("link", name=context.theme_index_page.title, exact=True).click()
     context.page.get_by_role("link", name="Add child page").click()
 
