@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+from collections.abc import Iterable
 from typing import TYPE_CHECKING, Generic, TypedDict, TypeVar
 
 from django.db.models import OuterRef, Q, Subquery
@@ -112,7 +113,7 @@ class RelatedArticleProcessor(BaseProcessor[ArticleDict]):
 
         return article_dict
 
-    def _get_automatic_articles(self, excluded_pks: list[int], limit: int) -> list[ArticleDict]:
+    def _get_automatic_articles(self, excluded_pks: Iterable[int], limit: int) -> list[ArticleDict]:
         """Get automatically selected articles based on topic relationships."""
         # Get articles from descendant series
         descendant_articles = self._get_descendant_articles(excluded_pks)
@@ -121,30 +122,29 @@ class RelatedArticleProcessor(BaseProcessor[ArticleDict]):
         tagged_articles = self._get_topic_tagged_articles(excluded_pks)
 
         # Combine and sort by release date
-        combined_articles = self._combine_and_sort_articles(descendant_articles, tagged_articles)
+        combined_qs = descendant_articles.union(tagged_articles).order_by("-release_date")
 
         # Convert to dict format and apply limit
-        return [{"internal_page": page} for page in combined_articles[:limit]]
+        return [{"internal_page": page} for page in combined_qs[:limit]]
 
-    def _get_descendant_articles(self, excluded_pks: list[int]) -> list[StatisticalArticlePage]:
-        descendant_series = ArticleSeriesPage.objects.descendant_of(self.topic_page)
+    def _get_descendant_articles(self, excluded_pks: Iterable[int]) -> "PageQuerySet":
+        descendant_series = ArticleSeriesPage.objects.descendant_of(self.topic_page).live().public()
         latest_pks = self._get_latest_articles_by_series(descendant_series)
 
         # Get the latest articles under this topic page (topic page -> articles index -> article series page ->
         # latest stats article page), excluding those already highlighted
-        return list(
+        return (
             StatisticalArticlePage.objects.filter(pk__in=latest_pks)
+            .filter(locale=self.topic_page.locale)
             .exclude(pk__in=excluded_pks)
-            .live()
-            .public()
             .defer_streamfields()
             .order_by("-release_date")
         )
 
-    def _get_topic_tagged_articles(self, excluded_pks: list[int]) -> list[StatisticalArticlePage]:
+    def _get_topic_tagged_articles(self, excluded_pks: Iterable[int]) -> "PageQuerySet":
         # Get descendant series PKs to exclude
-        descendant_series_pks = set(
-            ArticleSeriesPage.objects.descendant_of(self.topic_page).values_list("pk", flat=True)
+        descendant_series_pks = (
+            ArticleSeriesPage.objects.descendant_of(self.topic_page).live().public().values_list("pk", flat=True)
         )
 
         # Get all other article series across the CMS that are tagged with this topic of this topic page
@@ -159,12 +159,10 @@ class RelatedArticleProcessor(BaseProcessor[ArticleDict]):
         latest_pks = self._get_latest_articles_by_series(tagged_series)
 
         # Get the latest articles, excluding those already highlighted
-        return list(
+        return (
             StatisticalArticlePage.objects.filter(pk__in=latest_pks)
             .filter(locale=self.topic_page.locale)  # Ensure articles are in the same locale as the topic page
             .exclude(pk__in=excluded_pks)
-            .live()
-            .public()
             .defer_streamfields()
             .order_by("-release_date")
         )
@@ -184,15 +182,6 @@ class RelatedArticleProcessor(BaseProcessor[ArticleDict]):
                 "latest_child_page", flat=True
             )
         )
-
-    def _combine_and_sort_articles(self, *articles_lists: list[StatisticalArticlePage]) -> list[StatisticalArticlePage]:
-        """Combine articles lists and sort them by release date."""
-        combined = []
-        for articles in articles_lists:
-            combined.extend(articles)
-
-        combined.sort(key=lambda page: page.release_date, reverse=True)
-        return combined
 
 
 class RelatedMethodologyProcessor(BaseProcessor[MethodologyDict]):

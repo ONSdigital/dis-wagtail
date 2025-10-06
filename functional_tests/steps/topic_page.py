@@ -184,7 +184,7 @@ def create_topic_pages_from_table(context: Context) -> None:
         topic_name = row["topic"]
 
         # Create or reuse the topic
-        topic = context.topic_page_builder._get_or_create_topic(topic_name)  # pylint: disable=protected-access
+        topic = context.topic_page_builder.get_or_create_topic(topic_name)  # pylint: disable=protected-access
 
         # Create the topic page
         topic_page = TopicPageFactory(title=title, topic=topic)

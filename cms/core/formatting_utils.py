@@ -12,7 +12,7 @@ if TYPE_CHECKING:
     from django.http import HttpRequest
     from django_stubs_ext import StrOrPromise
 
-    from cms.topics.utils import ArticleDict, ExternalArticleDict, MethodologyDict
+    from cms.topics.related_content_processors import ArticleDict, ExternalArticleDict, MethodologyDict
 
 
 class DocumentListItem(TypedDict):

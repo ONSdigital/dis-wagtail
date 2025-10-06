@@ -43,7 +43,7 @@ class TopicContentBuilder:
         """Create relationship between series, methodology page and topic."""
         GenericPageToTaxonomyTopic.objects.create(page=page, topic=topic)
 
-    def _get_or_create_topic(self, topic_name: str) -> str:
+    def get_or_create_topic(self, topic_name: str) -> str:
         """Get existing topic or create new one."""
         if topic_name not in self.topic_cache:
             self.topic_cache[topic_name] = TopicFactory(title=topic_name)
@@ -127,7 +127,7 @@ class TopicContentBuilder:
                     self.article_index_cache[topic_page_id] = article_index
 
                 # Tag the series with topic
-                topic = self._get_or_create_topic(series_topic_name or topic_page.topic.title)
+                topic = self.get_or_create_topic(series_topic_name or topic_page.topic.title)
                 self._tag_page_with_topic(series, topic)
 
                 self.series_cache[series_key] = series
@@ -168,7 +168,7 @@ class TopicContentBuilder:
 
             # Tag the methodology with topic if specified
             if topic_name:
-                topic = self._get_or_create_topic(topic_name)
+                topic = self.get_or_create_topic(topic_name)
                 self._tag_page_with_topic(methodology, topic)
 
             created_methodologies[methodology_title] = methodology
