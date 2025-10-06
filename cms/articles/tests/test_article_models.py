@@ -1,5 +1,4 @@
 import math
-import unittest
 from datetime import datetime
 from urllib.parse import urlparse
 
@@ -172,7 +171,6 @@ class StatisticalArticlePageTestCase(WagtailTestUtils, TestCase):
             response, f'<link rel="canonical" href="{parent_article_series.get_full_url()}/related-data">', html=True
         )
 
-    @unittest.skip("Failing because the expected domain is localhost, and testserver in the HTML")
     def test_related_data_canonical_points_to_self_if_not_latest_article_in_series(self):
         self.page.datasets = StreamValue(
             DatasetStoryBlock(),
@@ -188,9 +186,14 @@ class StatisticalArticlePageTestCase(WagtailTestUtils, TestCase):
 
         response = self.client.get(f"{self.page.url}/related-data")
 
+        # The RequestFactory's default SERVER_NAME is 'testserver'.
+        # This is what is used in the request when building canonical URLs for this specific page.
+        request_factory = RequestFactory()
+        request_factory_server_name = request_factory._base_environ()["SERVER_NAME"]  # pylint: disable=protected-access
+
         self.assertContains(
             response,
-            f'<link rel="canonical" href="{self.page.get_full_url()}/related-data">',
+            f'<link rel="canonical" href="http://{request_factory_server_name}{self.page.url}/related-data">',
             html=True,
         )
 

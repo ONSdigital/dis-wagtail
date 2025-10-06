@@ -1,6 +1,6 @@
 from http import HTTPStatus
 
-from django.test import TestCase, override_settings
+from django.test import RequestFactory, TestCase, override_settings
 from django.utils import timezone
 from wagtail.blocks import StreamValue
 from wagtail.models import Locale
@@ -143,10 +143,26 @@ class ArticleSeriesEvergreenUrlTestCase(WagtailTestUtils, TestCase):
 
         response = self.client.get(f"{self.article_with_datasets.url}/related-data")
         self.assertEqual(response.status_code, HTTPStatus.OK)
-        # The canonical URL should be the article's own URL + /related-data (not the series)
-        # Check that it contains the article's edition URL path, not the series path
-        self.assertContains(response, f"{self.article_with_datasets.url}/related-data")
-        self.assertNotContains(response, f"{self.article_series_page.url}/related-data")
+
+        # The RequestFactory's default SERVER_NAME is 'testserver'.
+        # This is what is used in the request when building canonical URLs for this specific page.
+        request_factory = RequestFactory()
+        request_factory_server_name = request_factory._base_environ()["SERVER_NAME"]  # pylint: disable=protected-access
+
+        self.assertContains(
+            response,
+            f'<link rel="canonical" href="http://{request_factory_server_name}{
+                self.article_with_datasets.url
+            }/related-data">',
+            html=True,
+        )
+        self.assertNotContains(
+            response,
+            f'<link rel="canonical" href="http://{request_factory_server_name}{
+                self.article_series_page.url
+            }/related-data">',
+            html=True,
+        )
 
     def test_evergreen_route_related_data_returns_404_when_no_live_editions(self):
         series_with_no_editions = ArticleSeriesPageFactory()
@@ -197,13 +213,13 @@ class ArticleSeriesEvergreenUrlTestCase(WagtailTestUtils, TestCase):
         welsh_article.save_revision().publish()
         response = self.client.get(f"{self.article_series_page.url}/related-data")
         self.assertEqual(response.status_code, HTTPStatus.OK)
-        # TODO: Change to {self.article_with_datasets.url}/related-data once CMS-765 is resolved.
+        # TODO: Change to {self.article_series_page.url}/related-data once CMS-765 is resolved.
         self.assertContains(
             response,
             f'<link rel="alternate" href="{self.article_with_datasets.url}" hreflang="en-gb" />',
             html=True,
         )
-        # TODO: Change to {welsh_article.url}/related-data once CMS-765 is resolved.
+        # TODO: Change to {welsh_series_url}/related-data once CMS-765 is resolved.
         self.assertContains(
             response,
             f'<link rel="alternate" href="{welsh_article.url}" hreflang="cy" />',
