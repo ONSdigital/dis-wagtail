@@ -2,6 +2,7 @@ from behave import step, then, when  # pylint: disable=no-name-in-module
 from behave.runner import Context
 from django.urls import reverse
 from playwright.sync_api import expect
+from wagtail.models import Locale
 
 from cms.themes.models import ThemeIndexPage
 from cms.themes.tests.factories import ThemeIndexPageFactory
@@ -57,6 +58,15 @@ def the_user_edits_a_page(context: Context, page: str) -> None:
         the_page += "_page"
     edit_url = reverse("wagtailadmin_pages:edit", args=[getattr(context, the_page).pk])
     context.page.goto(f"{context.base_url}{edit_url}")
+
+
+@step("the {page} page has a Welsh translation")
+def the_page_has_a_welsh_alias(context: Context, page: str) -> None:
+    the_page_str = page.lower().replace(" ", "_")
+    if not the_page_str.endswith("_page"):
+        the_page_str += "_page"
+    the_page = getattr(context, the_page_str)
+    the_page.copy_for_translation(Locale.objects.get(language_code="cy"), copy_parents=True)
 
 
 @when("the user tries to create a new theme page")
