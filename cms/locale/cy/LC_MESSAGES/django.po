@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-10-03 10:43+0100\n"
+"POT-Creation-Date: 2025-10-06 09:36+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -34,12 +34,12 @@ msgstr "Dyfynnwch yr erthygl hon"
 msgid "Contact details"
 msgstr "Manylion cyswllt"
 
-#: cms/articles/models.py:445
+#: cms/articles/models.py:444
 #, python-format
 msgid "All data related to %(article_title)s"
 msgstr "Yr holl ddata sy'n gysylltiedig â %(article_title)s"
 
-#: cms/articles/models.py:504
+#: cms/articles/models.py:503
 msgid "Release date"
 msgstr "Dyddiad y datganiad"
 
