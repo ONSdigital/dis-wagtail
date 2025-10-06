@@ -83,8 +83,8 @@ class LangageTemplateTagTests(TestCase):
 
         self.assertEqual(hreflangs[0]["url"], "/")
         self.assertEqual(hreflangs[0]["lang"], "pl")
-        self.assertEqual(hreflangs[1]["lang"], "cy")
         self.assertEqual(hreflangs[1]["url"], "/cy")
+        self.assertEqual(hreflangs[1]["lang"], "cy")
 
 
 class ExtendFunctionTest(TestCase):
