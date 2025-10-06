@@ -1,4 +1,4 @@
-import factory
+import factory.enums
 from factory import Factory, faker, post_generation
 
 from cms.taxonomy.models import Topic
