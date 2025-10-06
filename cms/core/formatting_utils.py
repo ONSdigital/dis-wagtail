@@ -1,6 +1,6 @@
 from collections.abc import Iterable
 from datetime import date, datetime
-from typing import TYPE_CHECKING, Any, Optional, TypedDict, Union, cast
+from typing import TYPE_CHECKING, Any, Optional, TypedDict, Union
 
 from django.utils.formats import date_format
 from django.utils.translation import gettext_lazy as _
@@ -12,7 +12,7 @@ if TYPE_CHECKING:
     from django.http import HttpRequest
     from django_stubs_ext import StrOrPromise
 
-    from cms.topics.utils import ArticleDict, ExternalArticleDict, InternalArticleDict, MethodologyDict
+    from cms.topics.utils import ArticleDict, ExternalArticleDict, MethodologyDict
 
 
 class DocumentListItem(TypedDict):
@@ -75,18 +75,23 @@ def get_formatted_pages_list(
     for page in pages:
         # Check for external article (only ExternalArticleDict has is_external=True)
         if page.get("is_external"):
-            datum = _format_external_link(cast("ExternalArticleDict", page))
+            # mypy: We know only ExternalArticleDict has is_external=True,
+            # but mypy can't narrow the union type at runtime, so type: ignore is required.
+            datum = _format_external_link(page)  # type: ignore
         else:
-            # If not external, must be internal (or invalid)
-            if "internal_page" not in page:
-                # This should not happen in production but is a safeguard for unexpected data types
-                continue
-
             # Handle dict format with internal_page and optional title
-            internal_dict = cast("InternalArticleDict", page)
-            internal_page = internal_dict["internal_page"]  # Extract the actual Page object
-            custom_title = cast(Optional[str], page.get("title") if "title" in page else None)
-            datum = _format_page_object(internal_page, request, custom_title)
+            internal_dict = page
+
+            # Extract the actual Page object
+            # mypy: We know only InternalArticleDict has "internal_page",
+            # but mypy can't narrow the union type at runtime, so type: ignore is required.
+            internal_page = internal_dict["internal_page"]  # type: ignore
+
+            custom_title = page.get("title") if "title" in page else None
+
+            # mypy: custom_title will always be str or None for internal articles,
+            # but mypy can't guarantee this due to TypedDict union, so type: ignore is required.
+            datum = _format_page_object(internal_page, request, custom_title)  # type: ignore
 
         data.append(datum)
 
