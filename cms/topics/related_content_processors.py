@@ -230,7 +230,7 @@ class RelatedMethodologyProcessor(BaseProcessor[MethodologyDict]):
             )
         )
 
-    def _get_automatic_methodologies(self, excluded_pks: list[int], limit: int) -> list[MethodologyDict]:
+    def _get_automatic_methodologies(self, excluded_pks: Iterable[int], limit: int) -> list[MethodologyDict]:
         """Get automatically selected methodologies based on topic relationships using a single query."""
         descendant_qs = MethodologyPage.objects.descendant_of(self.topic_page)
         descendant_condition = Q(pk__in=descendant_qs.values("pk"))
