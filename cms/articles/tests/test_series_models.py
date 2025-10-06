@@ -3,6 +3,7 @@ from http import HTTPStatus
 from django.test import TestCase, override_settings
 from django.utils import timezone
 from wagtail.blocks import StreamValue
+from wagtail.models import Locale
 from wagtail.test.utils import WagtailTestUtils
 
 from cms.articles.tests.factories import ArticleSeriesPageFactory, StatisticalArticlePageFactory
@@ -99,13 +100,53 @@ class ArticleSeriesEvergreenUrlTestCase(WagtailTestUtils, TestCase):
         self.assertContains(response, f"All data related to {self.article_with_datasets.title}")
         self.assertContains(response, "Test dataset")
 
-    def test_evergreen_route_canonical_url(self):
+    def test_evergreen_route_related_data_canonical_url(self):
         """Test that the canonical URL on the related data page is the evergreen series URL."""
         response = self.client.get(f"{self.article_series_page.url}/related-data")
         self.assertEqual(response.status_code, HTTPStatus.OK)
         self.assertContains(
             response, f'<link rel="canonical" href="{self.article_series_page.get_full_url()}/related-data">', html=True
         )
+
+    def test_evergreen_route_related_data_latest_article_canonical_url(self):
+        """Test that latest article's related data page has evergreen canonical URL."""
+        # article_with_datasets is the latest article in setUp
+        response = self.client.get(f"{self.article_with_datasets.url}/related-data")
+        self.assertEqual(response.status_code, HTTPStatus.OK)
+        self.assertContains(
+            response, f'<link rel="canonical" href="{self.article_series_page.get_full_url()}/related-data">', html=True
+        )
+
+    def test_evergreen_route_related_data_non_latest_article_canonical_url(self):
+        """Test that non-latest article's related data page has its own canonical URL."""
+        # Create newer article to make the existing one non-latest
+        newer_article = StatisticalArticlePageFactory(
+            parent=self.article_series_page,
+            release_date=self.article_with_datasets.release_date + timezone.timedelta(days=1),
+        )
+        newer_article.datasets = StreamValue(
+            DatasetStoryBlock(),
+            stream_data=[
+                (
+                    "manual_link",
+                    {
+                        "title": "Newer dataset",
+                        "description": "Newer description",
+                        "url": "https://example.com/newer",
+                    },
+                )
+            ],
+        )
+        newer_article.save_revision().publish()
+
+        self.assertFalse(self.article_with_datasets.is_latest)
+
+        response = self.client.get(f"{self.article_with_datasets.url}/related-data")
+        self.assertEqual(response.status_code, HTTPStatus.OK)
+        # The canonical URL should be the article's own URL + /related-data (not the series)
+        # Check that it contains the article's edition URL path, not the series path
+        self.assertContains(response, f"{self.article_with_datasets.url}/related-data")
+        self.assertNotContains(response, f"{self.article_series_page.url}/related-data")
 
     def test_evergreen_route_related_data_returns_404_when_no_live_editions(self):
         series_with_no_editions = ArticleSeriesPageFactory()
@@ -122,3 +163,49 @@ class ArticleSeriesEvergreenUrlTestCase(WagtailTestUtils, TestCase):
 
         response = self.client.get(f"{self.article_series_page.url}/related-data")
         self.assertEqual(response.status_code, HTTPStatus.NOT_FOUND)
+
+    def test_evergreen_route_related_data_welsh_alias_canonical_url(self):
+        """Test that Welsh alias article's related data page has English canonical URL."""
+        welsh_article_alias = self.article_with_datasets.copy_for_translation(
+            locale=Locale.objects.get(language_code="cy"), copy_parents=True, alias=True
+        )
+        response = self.client.get(f"{welsh_article_alias.url}/related-data")
+        self.assertEqual(response.status_code, HTTPStatus.OK)
+        self.assertContains(
+            response, f'<link rel="canonical" href="{self.article_series_page.get_full_url()}/related-data">', html=True
+        )
+
+    def test_evergreen_route_related_data_translated_welsh_canonical_url(self):
+        """Test that translated Welsh article's related data page has Welsh canonical URL."""
+        welsh_article = self.article_with_datasets.copy_for_translation(
+            locale=Locale.objects.get(language_code="cy"), copy_parents=True
+        )
+        welsh_article.save_revision().publish()
+        response = self.client.get(f"{welsh_article.url}/related-data")
+        self.assertEqual(response.status_code, HTTPStatus.OK)
+        welsh_series_url = welsh_article.get_parent().get_full_url()
+        self.assertContains(response, f'<link rel="canonical" href="{welsh_series_url}/related-data">', html=True)
+
+    def test_evergreen_route_related_data_alternate_urls(self):
+        """Test that the related data page has correct hreflang alternate URLs."""
+        # TODO: Update tests once bug CMS-765 is resolved.
+        # For now, always use the article URL and not the series URL for hreflang links,
+        # nor the /related-data suffix.
+        welsh_article = self.article_with_datasets.copy_for_translation(
+            locale=Locale.objects.get(language_code="cy"), copy_parents=True
+        )
+        welsh_article.save_revision().publish()
+        response = self.client.get(f"{self.article_series_page.url}/related-data")
+        self.assertEqual(response.status_code, HTTPStatus.OK)
+        # TODO: Change to {self.article_with_datasets.url}/related-data once CMS-765 is resolved.
+        self.assertContains(
+            response,
+            f'<link rel="alternate" href="{self.article_with_datasets.url}" hreflang="en-gb" />',
+            html=True,
+        )
+        # TODO: Change to {welsh_article.url}/related-data once CMS-765 is resolved.
+        self.assertContains(
+            response,
+            f'<link rel="alternate" href="{welsh_article.url}" hreflang="cy" />',
+            html=True,
+        )
