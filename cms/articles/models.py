@@ -441,7 +441,7 @@ class StatisticalArticlePage(  # type: ignore[django-manager-missing]
 
     @cached_property
     def related_data_display_title(self) -> str:
-        return f"{_('All data related to')} {self.title}"
+        return _("All data related to %(article_title)s") % {"article_title": self.title}
 
     @cached_property
     def dataset_document_list(self) -> list[dict[str, Any]]:
