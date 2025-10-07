@@ -715,6 +715,3 @@ msgstr "Saesneg"
 #: cms/settings/base.py:369
 msgid "Welsh"
 msgstr "Cymraeg"
-
-#~ msgid "Ukrainian"
-#~ msgstr "Wcreineg"
