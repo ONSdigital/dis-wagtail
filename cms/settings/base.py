@@ -367,7 +367,6 @@ LANGUAGE_CODE = "en-gb"
 WAGTAIL_CONTENT_LANGUAGES = LANGUAGES = [
     ("en-gb", _("English")),
     ("cy", _("Welsh")),
-    ("uk", _("Ukrainian")),
 ]
 
 LOCALE_PATHS = [PROJECT_DIR / "locale"]

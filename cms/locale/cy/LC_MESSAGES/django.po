@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-10-06 12:34+0100\n"
+"POT-Creation-Date: 2025-10-07 13:39+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -237,7 +237,6 @@ msgid ""
 msgstr ""
 
 #: cms/jinja2/templates/pages/cookies.html:30
-#: cms/jinja2/templates/pages/cookies.html:37
 msgid "Cookie settings"
 msgstr "Gosodiadau cwcis"
 
@@ -717,6 +716,5 @@ msgstr "Saesneg"
 msgid "Welsh"
 msgstr "Cymraeg"
 
-#: cms/settings/base.py:370
-msgid "Ukrainian"
-msgstr "Wcreineg"
+#~ msgid "Ukrainian"
+#~ msgstr "Wcreineg"
