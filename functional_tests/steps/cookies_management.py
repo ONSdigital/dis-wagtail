@@ -3,6 +3,7 @@ from collections.abc import Iterable
 
 from behave import given, then, when  # pylint: disable=no-name-in-module
 from behave.runner import Context
+from django.conf import settings
 from playwright.sync_api import expect
 
 
@@ -24,7 +25,9 @@ def user_rejects_additional_cookies_in_banner(context: Context) -> None:
 @when("the cookies banner is displayed")
 def check_cookies_banner_is_displayed(context: Context) -> None:
     expect(context.page.get_by_role("region", name="Cookies banner")).to_be_visible()
-    expect(context.page.get_by_role("heading", name="Cookies on ons.gov.uk")).to_be_visible()
+    expect(
+        context.page.get_by_role("heading", name=f"Cookies on {settings.ONS_COOKIE_BANNER_SERVICE_NAME}")
+    ).to_be_visible()
     expect(context.page.get_by_role("button", name="Accept additional cookies")).to_be_visible()
     expect(context.page.get_by_role("button", name="Reject additional cookies")).to_be_visible()
     expect(context.page.get_by_role("link", name="additional cookies")).to_be_visible()
