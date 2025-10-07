@@ -84,7 +84,7 @@ jobs:
 
     env:
       DJANGO_SETTINGS_MODULE: cms.settings.test
-      DATABASE_URL: postgres://postgres:postgres@localhost/postgres # pragma: allowlist secret
+      DATABASE_URL: postgres://postgres:postgres@localhost/postgres # pragma: allowlist secret secretlint-disable-line
       ENABLE_DJANGO_DEFENDER: 'false'
       POSTGRES_HOST_AUTH_METHOD: trust
       SECRET_KEY: fake_secret_key_to_run_tests # pragma: allowlist secret
