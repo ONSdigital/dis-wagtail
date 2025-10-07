@@ -22,7 +22,7 @@ from cms.datasets.utils import format_datasets_as_document_list
 from cms.taxonomy.mixins import ExclusiveTaxonomyMixin
 from cms.topics.blocks import ExploreMoreStoryBlock, TimeSeriesPageStoryBlock, TopicHeadlineFigureBlock
 from cms.topics.forms import TopicPageAdminForm
-from cms.topics.related_content_processors import (
+from cms.topics.services.related_content import (
     ArticleDict,
     MethodologyDict,
     RelatedArticleProcessor,

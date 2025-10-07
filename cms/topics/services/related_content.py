@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from collections.abc import Iterable
-from typing import TYPE_CHECKING, Generic, TypedDict, TypeVar
+from typing import TYPE_CHECKING, Generic
 
 from django.db.models import OuterRef, Q, Subquery
 from django.db.models.functions import Coalesce
@@ -8,32 +8,12 @@ from django.db.models.functions import Coalesce
 from cms.articles.models import ArticleSeriesPage, StatisticalArticlePage
 from cms.core.query import order_by_pk_position
 from cms.methodology.models import MethodologyPage
+from cms.topics.services.types import ArticleDict, InternalArticleDict, MethodologyDict, T
 
 if TYPE_CHECKING:
     from wagtail.query import PageQuerySet
 
-    from .models import TopicPage, TopicPageRelatedArticle
-
-T = TypeVar("T")
-
-
-class InternalArticleDict(TypedDict, total=False):
-    internal_page: "StatisticalArticlePage"
-    title: str
-
-
-class ExternalArticleDict(TypedDict):
-    url: str
-    title: str
-    description: str
-    is_external: bool
-
-
-class MethodologyDict(TypedDict):
-    internal_page: MethodologyPage
-
-
-ArticleDict = InternalArticleDict | ExternalArticleDict
+    from ..models import TopicPage, TopicPageRelatedArticle
 
 
 class BaseProcessor(ABC, Generic[T]):
