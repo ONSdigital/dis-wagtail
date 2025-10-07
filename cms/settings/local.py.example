@@ -10,4 +10,5 @@ PREVIOUS_RELEASES_PER_PAGE = 3
 
 # Search Integration Kafka configuration
 # SEARCH_INDEX_PUBLISHER_BACKEND = "" # comment this out to use LogPublisher
-# KAFKA_SERVERS = os.getenv("KAFKA_SERVERS", "localhost:9094").split(",")
+# Can configure kafka servers below
+# KAFKA_SERVERS = ["localhost:9094"]
