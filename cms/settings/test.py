@@ -1,4 +1,8 @@
+import os
+
 from .base import *  # noqa: F403  # pylint: disable=wildcard-import,unused-wildcard-import
+
+env = os.environ.copy()
 
 # #############
 # General
@@ -68,7 +72,7 @@ SLACK_NOTIFICATIONS_WEBHOOK_URL = None
 
 ONS_API_BASE_URL = "https://dummy_base_api"
 DATASETS_BASE_API_URL = "https://dummy_base_api/datasets"
-KAFKA_SERVERS = ["localhost:9094"]
+KAFKA_SERVERS = env.get("KAFKA_SERVERS", "localhost:9094").split(",")
 
 # Ignore proxy count in tests
 XFF_STRICT = False
