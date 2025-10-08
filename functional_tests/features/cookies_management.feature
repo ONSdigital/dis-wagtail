@@ -24,10 +24,10 @@ Feature: An ONS website user can accept, reject, and manage cookies using the co
         And the cookies banner is displayed
         And the user clicks "View cookies" on the cookies banner
         And the user is taken to the cookies management page
-        And the user turns on only the <cookie_type> cookies
+        And the user turns on only the "<cookie_type>" cookies
         And the user clicks "Save settings"
-        Then a confirmation message is displayed
-        And only the <cookie_type> cookies are enabled in the ons_cookie_policy cookie in the browser
+        Then a message confirming cookies settings have been saved is displayed
+        And only the "<cookie_type>" cookies are enabled in the ons_cookie_policy cookie in the browser
         And the "Return to previous page" link takes the user back to the homepage
 
         Examples:
@@ -36,3 +36,7 @@ Feature: An ONS website user can accept, reject, and manage cookies using the co
             | campaigns   |
             | settings    |
 
+    Scenario: A Wagtail CMS user cannot see the cookies page in the Wagtail page explorer
+        Given a CMS user logs into the admin site
+        When the user navigates to the English home page in the Wagtail page explorer
+        Then the cookies page is not visible in the page explorer

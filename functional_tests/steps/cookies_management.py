@@ -74,7 +74,7 @@ def check_all_optional_cookies_are_set_in_browser(context: Context) -> None:
     )
 
 
-@when("the user turns on only the {cookie_type} cookies")
+@when('the user turns on only the "{cookie_type}" cookies')
 def user_turns_on_only_cookie_type_cookies(context: Context, cookie_type: str) -> None:
     cookie_type_radio_locator = {
         "usage": "Do you want to allow usage tracking?",
@@ -90,14 +90,14 @@ def user_saves_cookie_settings(context: Context) -> None:
     context.page.get_by_role("button", name="Save changes").click()
 
 
-@then("a confirmation message is displayed")
-def the_user_sees_confirmation_message(context: Context) -> None:
+@then("a message confirming cookies settings have been saved is displayed")
+def the_user_sees_cookies_confirmation_message(context: Context) -> None:
     expect(context.page.get_by_role("alert", name="Completed:")).to_be_visible()
     expect(context.page.get_by_role("heading", name="Your cookie settings have been saved")).to_be_visible()
     expect(context.page.get_by_role("link", name="Return to previous page")).to_be_visible()
 
 
-@then("only the {cookie_type} cookies are enabled in the ons_cookie_policy cookie in the browser")
+@then('only the "{cookie_type}" cookies are enabled in the ons_cookie_policy cookie in the browser')
 def check_only_cookie_type_cookies_are_enabled_in_browser(context: Context, cookie_type: str) -> None:
     cookies = context.page.context.cookies(urls=[context.base_url])
     expected_values = {"essential": True, "campaigns": False, "usage": False, "settings": False, cookie_type: True}
@@ -108,6 +108,11 @@ def check_only_cookie_type_cookies_are_enabled_in_browser(context: Context, cook
 def check_return_to_previous_page_link_goes_back_home(context: Context) -> None:
     context.page.get_by_role("link", name="Return to previous page").click()
     expect(context.page).to_have_url(f"{context.base_url}/")
+
+
+@then("the cookies page is not visible in the page explorer")
+def check_cookies_page_not_in_page_explorer(context: Context) -> None:
+    expect(context.page.get_by_role("link", name="Cookies")).not_to_be_visible()
 
 
 def check_ons_cookie_policy_values(cookies: Iterable[dict], expected_values: dict[str, bool]) -> None:
