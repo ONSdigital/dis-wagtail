@@ -84,6 +84,7 @@ AUTH_TOKEN_REFRESH_URL = env.get("AUTH_TOKEN_REFRESH_URL", f"{AUTH_STUB_URL}/tok
 
 # External search service
 SEARCH_INDEX_PUBLISHER_BACKEND = "kafka"
+KAFKA_SERVERS = env.get("KAFKA_SERVERS", "localhost:9094").split(",")
 
 if AWS_COGNITO_LOGIN_ENABLED:  # noqa: F405
     WAGTAILADMIN_LOGIN_URL = env.get("WAGTAILADMIN_LOGIN_URL", f"{AUTH_STUB_URL}/florence/login")
