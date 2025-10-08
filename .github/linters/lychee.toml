@@ -1,0 +1,11 @@
+# Maximum number of allowed retries before a link is declared dead.
+max_retries = 3
+
+# Minimum wait time in seconds between retries of failed requests.
+retry_wait_time = 5
+
+# Exclude URLs and mail addresses from checking (supports regex).
+exclude = ["^https?://jwt\\.io"]
+
+# Exclude all private IPs from checking.
+exclude_all_private = true

@@ -12,5 +12,6 @@ paths = [
     '''(?i)^.*\.env\..*$''',  # Matches files like .env.test, .env.local, .env.production, etc.
     ".secrets.baseline",  # Ignore the detect-secrets baseline file
     "cms/settings/local.py",  # Ignore local.py in the cms/settings directory
-    "megalinter-reports"  # Ignore megalinter-reports directory
+    "megalinter-reports",  # Ignore megalinter-reports directory
+    ".mypy_cache"  # Ignore mypy cache directory
 ]

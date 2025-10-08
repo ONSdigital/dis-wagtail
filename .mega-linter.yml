@@ -23,10 +23,7 @@ DISABLE:
   - JAVASCRIPT
   - CSS
   - EDITORCONFIG
-  - SPELL
 
-# REPOSITORY_TRIVY, REPOSITORY_DUSTILOCK, HTML_HTMLHINT Have been disabled as part of the initial set up
-# CMS_
 DISABLE_LINTERS:
   - REPOSITORY_DEVSKIM
   - REPOSITORY_TRUFFLEHOG
@@ -37,6 +34,8 @@ DISABLE_LINTERS:
   - MARKDOWN_MARKDOWNLINT
   - MARKDOWN_MARKDOWN_TABLE_FORMATTER
   - MARKDOWN_REMARK_LINT
+  - SPELL_PROSELINT
+  - SPELL_CSPELL
 
 SHOW_ELAPSED_TIME: true
 
@@ -56,3 +55,11 @@ REPOSITORY_GITLEAKS_ARGUMENTS: '--no-git'
 
 # .gitignore files are excluded by default
 ADDITIONAL_EXCLUDED_DIRECTORIES: ['.git']
+
+# Enable Markdown/txt link checking via Lychee
+SPELL_LYCHEE_FILE_EXTENSIONS: ['.md', '.txt']
+
+# Install additional SecretLint rules not included in the MegaLinter Docker image
+REPOSITORY_SECRETLINT_PRE_COMMANDS:
+  # Allows disabling rules inline in files via comments
+  - 'command': 'npm install --no-save --ignore-scripts --omit=dev @secretlint/secretlint-rule-filter-comments'
