@@ -84,6 +84,7 @@ AUTH_TOKEN_REFRESH_URL = env.get("AUTH_TOKEN_REFRESH_URL", f"{AUTH_STUB_URL}/tok
 
 # External search service
 SEARCH_INDEX_PUBLISHER_BACKEND = "kafka"
+KAFKA_SERVERS = env.get("KAFKA_SERVERS", "localhost:9094").split(",")
 
 if AWS_COGNITO_LOGIN_ENABLED:  # noqa: F405
     WAGTAILADMIN_LOGIN_URL = env.get("WAGTAILADMIN_LOGIN_URL", f"{AUTH_STUB_URL}/florence/login")
@@ -95,14 +96,6 @@ else:
 # Set auth stub as a trusted origin
 CSRF_TRUSTED_ORIGINS = env.get("CSRF_TRUSTED_ORIGINS", AUTH_STUB_URL).split(",")
 
-# Import settings from local.py file if it exists. Please use it to keep
-# settings that are not meant to be checked into Git and never check it in.
-# pylint: disable=unused-wildcard-import,useless-suppression
-try:
-    from .local import *  # noqa: F403  # pylint: disable=wildcard-import  # type: ignore[assignment]
-except ImportError:
-    pass
-# pylint: enable=unused-wildcard-import,useless-suppression
 
 MIGRATION_LINTER_OPTIONS = {
     "exclude_apps": [
@@ -152,3 +145,17 @@ TAG = "dev"
 # Allow to override but default to enabled
 CMS_RESOURCES_ENDPOINT_ENABLED = env.get("CMS_RESOURCES_ENDPOINT_ENABLED", "true").lower() == "true"
 USE_I18N_ROOT_NO_TRAILING_SLASH = env.get("USE_I18N_ROOT_NO_TRAILING_SLASH", "true").lower() == "true"
+
+# -----------------------------------------------------------------------------
+# ⚠️ DO NOT EDIT BELOW THIS LINE
+# -----------------------------------------------------------------------------
+# Import settings from local.py if it exists.
+# This is used for local overrides (e.g. developer-specific or untracked secrets).
+# Do NOT check local.py into Git, and do NOT add new configuration here.
+# All new settings or environment-based configuration should be added ABOVE this block.
+# -----------------------------------------------------------------------------
+# pylint: disable=unused-wildcard-import,useless-suppression
+try:
+    from .local import *  # noqa: F403  # pylint: disable=wildcard-import  # type: ignore[assignment]
+except ImportError:
+    pass
