@@ -43,9 +43,9 @@ def extract_datalayer_pushed_values(html_content: str) -> dict[str, object]:
 class PanelBlockAssertions(SimpleTestCase):
     """Mixin that provides shared assertions for panel blocks."""
 
-    def assertPanelBlockFields(
+    def assertPanelBlockFields(  # pylint: disable=invalid-name
         self, value: "StructValue", expected_fields: set[str], block_class: "DeclarativeSubBlocksMetaclass"
-    ) -> None:  # pylint: disable=invalid-name
+    ) -> None:
         self.assertEqual(
             set(value.keys()),
             expected_fields,
