@@ -20,6 +20,7 @@ if TYPE_CHECKING:
     from django.contrib.auth.models import AnonymousUser
 
     from cms.bundles.models import Bundle
+    from cms.release_calendar.models import ReleaseCalendarPage
     from cms.users.models import User
 
 
@@ -193,6 +194,17 @@ def build_bundle_data_for_api(bundle: "Bundle") -> dict[str, Any]:
         "scheduled_at": bundle.scheduled_publication_date.isoformat() if bundle.scheduled_publication_date else None,
         "e_tag": bundle.bundle_api_etag,
     }
+
+
+def get_release_calendar_page_title_with_status_and_release_date(
+    release_calendar_page: "ReleaseCalendarPage",
+) -> str:
+    """Returns the release page title, status and release date."""
+    return (
+        f"{release_calendar_page.specific_deferred.title} "
+        f"({release_calendar_page.specific_deferred.get_status_display()}, "
+        f"{release_calendar_page.specific_deferred.release_date_value})"
+    )
 
 
 def get_page_title_with_workflow_status(page: Page) -> str:

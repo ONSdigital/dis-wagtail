@@ -1,19 +1,29 @@
+from typing import TYPE_CHECKING
+
 from django.db.models import Q, QuerySet
 from django.utils import timezone
 from wagtail.admin.ui.tables import Column, DateColumn, LocaleColumn
-from wagtail.admin.views.generic.chooser import ChooseResultsView, ChooseView
+from wagtail.admin.views.generic.chooser import ChooseResultsView, ChooseView, ChosenView
 from wagtail.admin.viewsets.chooser import ChooserViewSet
 from wagtail.permission_policies.pages import PagePermissionPolicy
 
 from cms.bundles.enums import ACTIVE_BUNDLE_STATUSES
+from cms.bundles.utils import get_release_calendar_page_title_with_status_and_release_date
 from cms.release_calendar.enums import ReleaseStatus
-from cms.release_calendar.models import ReleaseCalendarPage
+
+if TYPE_CHECKING:
+    from wagtail.admin.widgets import BaseChooser
+
+    from cms.release_calendar.models import ReleaseCalendarPage
 
 
 class FutureReleaseCalendarMixin:
     results_template_name = "wagtailadmin/panels/future_release_calendar_page_chooser_results.html"
 
-    def get_object_list(self) -> QuerySet[ReleaseCalendarPage]:
+    def get_object_list(self) -> QuerySet["ReleaseCalendarPage"]:
+        # imported inline to prevent circular import errors
+        from cms.release_calendar.models import ReleaseCalendarPage  # pylint: disable=import-outside-toplevel
+
         # note: using this method to allow search to work without adding the bundle data in the index
         explorable_pages = PagePermissionPolicy().explorable_instances(self.request.user)  # type: ignore[attr-defined]
 
@@ -53,10 +63,19 @@ class FutureReleaseCalendarPageChooseView(FutureReleaseCalendarMixin, ChooseView
 class FutureReleaseCalendarPageChooseResultsView(FutureReleaseCalendarMixin, ChooseResultsView): ...
 
 
+class ReleaseCalendarPageChosenView(ChosenView):
+    def get_display_title(self, instance: "ReleaseCalendarPage") -> str:
+        return get_release_calendar_page_title_with_status_and_release_date(instance)
+
+
 class FutureReleaseCalendarPageChooserViewSet(ChooserViewSet):
+    # imported inline to prevent circular import errors
+    from cms.release_calendar.models import ReleaseCalendarPage  # pylint: disable=import-outside-toplevel
+
     model = ReleaseCalendarPage
     choose_view_class = FutureReleaseCalendarPageChooseView
     choose_results_view_class = FutureReleaseCalendarPageChooseResultsView
+    chosen_view_class = ReleaseCalendarPageChosenView
     register_widget = False
 
     icon = "calendar-check"
@@ -66,4 +85,4 @@ class FutureReleaseCalendarPageChooserViewSet(ChooserViewSet):
 
 
 release_calendar_chooser_viewset = FutureReleaseCalendarPageChooserViewSet("release_calendar_chooser")
-FutureReleaseCalendarChooserWidget = release_calendar_chooser_viewset.widget_class
+FutureReleaseCalendarChooserWidget: type["BaseChooser"] = release_calendar_chooser_viewset.widget_class
