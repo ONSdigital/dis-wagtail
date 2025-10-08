@@ -13,3 +13,32 @@ when writing a [Data Migration](https://docs.djangoproject.com/en/stable/topics/
 than the standard field. Because the block definitions are unavailable, it is not possible to turn raw data into a fully-fledged,
 renderable `StreamField` value in a data migration. However, you **CAN** access the raw streamfield data via the `obj.streamfield_name.raw_data` attribute,
 and update the value in the usual fashion (dumping the data to a string with `json.dumps()` and using that as the new field value).
+
+---
+
+## Behaviour when blocks are removed (orphaned data)
+
+Removing a block from our custom StreamField does **not** delete its data immediately. The data remains until the page is interacted with.
+
+### What actually happens
+
+- The raw data stays in the database after the block is removed.
+- On the **next save**, the data is dropped from the revisions table.
+- On **publish**, it is also removed from the main page table.
+
+Old data will only reappear if:
+
+- the page hasn’t been saved or published since the block was removed, or
+- an older revision (created before the removal) is restored.
+
+If the block is later reintroduced, only those scenarios will surface the previous values.
+
+### Cleanup considerations
+
+- Orphaned data is not removed automatically.
+- Once a page is saved or published, the data is dropped from the relevant records.
+- Whether to remove it should be considered case by case.
+
+If automatic cleanup becomes a priority, using the default `wagtail.fields.StreamField` may be simpler than extending the custom one.
+
+Once the page models are stable and block changes are unlikely, reverting to the standard `StreamField` will be clearer and more predictable.
