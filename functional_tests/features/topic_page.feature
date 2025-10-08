@@ -143,14 +143,9 @@ Feature: CMS users can draft, edit, and publish topic pages
             | Topic Page C | CPI       |
         And "Topic Page A" has the following "articles":
             | series                | article          | release_date | topic   |
-            # The article below won't be automatically pulled in as the release date is the oldest here
-            # The article below should show if manually selected
             | Article Series Manual | Manual Article 1 | 2024-12-01   | Housing |
         And "Topic Page B" has the following "articles":
             | series           | article                  | release_date | topic   |
-            # Older statistical article from the same series wouldn't surface due
-            # to only the latest edition of the statistical article from the article series being shown
-            # this is to test make sure it doesn't appear when we automatically pull in articles
             | Article Series 1 | Article 1 Older Edition  | 2025-01-01   | Economy |
             | Article Series 1 | Article 2 Latest Edition | 2025-01-02   | Economy |
             | Article Series 2 | Article 3                | 2025-01-03   | Economy |
@@ -185,7 +180,6 @@ Feature: CMS users can draft, edit, and publish topic pages
         And "Topic Page C" has the following "articles":
             | series   | article          | release_date | topic   |
             | C Series | Tagged Article C | 2025-01-05   | Economy |
-        # Manually select Descendant Article 1 (oldest, would not usually surface)
         When the user edits "Topic Page A"
         And the user manually adds "Descendant Article 1" in the highlighted "articles" section
         And the user clicks "Publish"
@@ -226,8 +220,6 @@ Feature: CMS users can draft, edit, and publish topic pages
             | Topic Page C | CPI       |
         And "Topic Page A" has the following "methodologies":
             | title                | publication_date | topic   |
-            # The methodology below won't be automatically pulled in as the publication date is the oldest here
-            # The methodology below should show if manually selected
             | Manual Methodology 1 | 2024-12-01       | Housing |
         And "Topic Page B" has the following "methodologies":
             | title              | publication_date | topic   |
@@ -265,7 +257,6 @@ Feature: CMS users can draft, edit, and publish topic pages
         And "Topic Page C" has the following "methodologies":
             | title                     | publication_date | topic   |
             | Tagged Methodology Page C | 2025-01-05       | Economy |
-        # Manually select Descendant Methodology Page 1 (oldest, would not surface)
         When the user edits "Topic Page A"
         And the user manually adds "Descendant Methodology Page 1" in the highlighted "methodologies" section
         And the user clicks "Publish"
