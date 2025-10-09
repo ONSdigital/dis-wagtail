@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-10-07 13:39+0100\n"
+"POT-Creation-Date: 2025-10-09 15:52+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -109,31 +109,31 @@ msgstr "Troednodiadau"
 msgid "Data"
 msgstr "Data"
 
-#: cms/jinja2/templates/base.html:31
+#: cms/jinja2/templates/base.html:32
 msgid "Beta"
 msgstr "Beta"
 
-#: cms/jinja2/templates/base.html:32
+#: cms/jinja2/templates/base.html:33
 msgid "This is a new service."
 msgstr "Mae hwn yn wasanaeth newydd."
 
-#: cms/jinja2/templates/base.html:33
+#: cms/jinja2/templates/base.html:34
 msgid "Menu"
 msgstr "Dewislen"
 
-#: cms/jinja2/templates/base.html:34
+#: cms/jinja2/templates/base.html:35
 msgid "Main menu"
 msgstr "Prif ddewislen"
 
-#: cms/jinja2/templates/base.html:35
+#: cms/jinja2/templates/base.html:36
 msgid "Toggle main menu"
 msgstr "Togl y brif ddewislen"
 
-#: cms/jinja2/templates/base.html:37
+#: cms/jinja2/templates/base.html:38
 msgid "All content is available under the"
 msgstr "Mae’r holl gynnwys ar gael o dan y"
 
-#: cms/jinja2/templates/base.html:40
+#: cms/jinja2/templates/base.html:41
 msgid ", except where otherwise stated"
 msgstr ", ac eithrio lle y nodir fel arall"
 
@@ -207,7 +207,9 @@ msgid "Source"
 msgstr "Ffynhonnell"
 
 #: cms/jinja2/templates/pages/cookies.html:10
-msgid "Cookies on ONS.GOV.UK"
+#, fuzzy
+#| msgid "Cookies on ONS.GOV.UK"
+msgid "Cookies on"
 msgstr "Cwcis ar ONS.GOV.UK"
 
 #: cms/jinja2/templates/pages/cookies.html:19

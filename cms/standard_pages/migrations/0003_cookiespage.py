@@ -3,6 +3,64 @@
 import django.db.models.deletion
 import wagtailschemaorg.models
 from django.db import migrations, models
+from django.utils import timezone
+
+
+def create_cookies_page(apps, schema_editor):
+    # Get models
+    ContentType = apps.get_model("contenttypes.ContentType")
+    CookiesPage = apps.get_model("standard_pages.CookiesPage")
+    HomePage = apps.get_model("home.HomePage")
+    Locale = apps.get_model("wagtailcore.Locale")
+    english_locale = Locale.objects.get(language_code="en-gb")
+    welsh_locale = Locale.objects.get(language_code="cy")
+
+    # Create content type for the model
+    cookies_page_type, _created = ContentType.objects.get_or_create(model="cookiespage", app_label="standard_pages")
+
+    home_page = HomePage.objects.get(locale=english_locale, slug="home")
+
+    now = timezone.now()
+
+    # Create the English cookies page
+    cookies_page = CookiesPage.objects.create(
+        title="Cookies",
+        draft_title="Cookies",
+        live=True,
+        first_published_at=now,
+        last_published_at=now,
+        slug="cookies",
+        path=f"{home_page.path}00{home_page.numchild + 1:02d}",
+        content_type=cookies_page_type,
+        depth=home_page.depth + 1,
+        url_path=f"{home_page.url_path}cookies/",
+        locale=english_locale,
+    )
+
+    home_page.numchild += 1
+    home_page.save()
+
+    welsh_home_page = HomePage.objects.get(locale=welsh_locale)
+
+    # Create the Welsh translation alias cookies page
+    CookiesPage.objects.create(
+        title="Cookies",
+        draft_title="Cookies",
+        live=True,
+        first_published_at=now,
+        last_published_at=now,
+        slug="cookies",
+        path=f"{welsh_home_page.path}00{welsh_home_page.numchild + 1:02d}",
+        content_type=cookies_page_type,
+        depth=welsh_home_page.depth + 1,
+        url_path=f"{welsh_home_page.url_path}cookies/",
+        locale=welsh_locale,
+        alias_of=cookies_page,
+        translation_key=cookies_page.translation_key,
+    )
+
+    welsh_home_page.numchild += 1
+    welsh_home_page.save()
 
 
 class Migration(migrations.Migration):
@@ -10,6 +68,7 @@ class Migration(migrations.Migration):
         ("images", "0004_alter_customimage__privacy"),
         ("standard_pages", "0002_alter_informationpage_summary_indexpage"),
         ("wagtailcore", "0094_alter_page_locale"),
+        ("home", "0003_create_welsh_homepage"),
     ]
 
     operations = [
@@ -56,4 +115,5 @@ class Migration(migrations.Migration):
             },
             bases=(wagtailschemaorg.models.PageLDMixin, "wagtailcore.page", models.Model),
         ),
+        migrations.RunPython(create_cookies_page, migrations.RunPython.noop),
     ]

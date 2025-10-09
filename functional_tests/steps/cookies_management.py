@@ -6,6 +6,12 @@ from behave.runner import Context
 from django.conf import settings
 from playwright.sync_api import expect
 
+COOKIE_TYPE_RADIO_LOCATOR = {
+    "usage": "Do you want to allow usage tracking?",
+    "campaigns": "Do you want to allow third party usage tracking?",
+    "settings": "Do you want to allow cookies for potential future use that tailor your experience?",
+}
+
 
 @given("the browsers cookies are cleared")
 def clear_browser_cookies(context: Context) -> None:
@@ -74,15 +80,12 @@ def check_all_optional_cookies_are_set_in_browser(context: Context) -> None:
     )
 
 
-@when('the user turns on only the "{cookie_type}" cookies')
-def user_turns_on_only_cookie_type_cookies(context: Context, cookie_type: str) -> None:
-    cookie_type_radio_locator = {
-        "usage": "Do you want to allow usage tracking?",
-        "campaigns": "Do you want to allow third party usage tracking?",
-        "settings": "Do you want to allow cookies for potential future use that tailor your experience?",
-    }
-
-    context.page.get_by_role("group", name=cookie_type_radio_locator[cookie_type]).get_by_label("On").check()
+@when('the user turns "{cookie_state}" the "{cookie_type}" cookies')
+def set_optional_cookie_toggle(context: Context, cookie_state: str, cookie_type: str) -> None:
+    context.page.get_by_role("group", name=COOKIE_TYPE_RADIO_LOCATOR[cookie_type]).get_by_label(cookie_state).check()
+    optional_cookies_state = getattr(context, "optional_cookies_state", {})
+    optional_cookies_state[cookie_type] = cookie_state
+    context.optional_cookies_state = optional_cookies_state
 
 
 @when('the user clicks "Save settings"')
@@ -97,10 +100,13 @@ def the_user_sees_cookies_confirmation_message(context: Context) -> None:
     expect(context.page.get_by_role("link", name="Return to previous page")).to_be_visible()
 
 
-@then('only the "{cookie_type}" cookies are enabled in the ons_cookie_policy cookie in the browser')
-def check_only_cookie_type_cookies_are_enabled_in_browser(context: Context, cookie_type: str) -> None:
+@then("only the chosen optional cookies are enabled in the ons_cookie_policy cookie in the browser")
+def check_only_cookie_type_cookies_are_enabled_in_browser(context: Context) -> None:
     cookies = context.page.context.cookies(urls=[context.base_url])
-    expected_values = {"essential": True, "campaigns": False, "usage": False, "settings": False, cookie_type: True}
+    expected_values = {
+        cookie_type: cookie_state == "On" for cookie_type, cookie_state in context.optional_cookies_state.items()
+    }
+    expected_values["essential"] = True
     check_ons_cookie_policy_values(cookies, expected_values)
 
 
@@ -110,9 +116,18 @@ def check_return_to_previous_page_link_goes_back_home(context: Context) -> None:
     expect(context.page).to_have_url(f"{context.base_url}/")
 
 
-@then("the cookies page is not visible in the page explorer")
-def check_cookies_page_not_in_page_explorer(context: Context) -> None:
-    expect(context.page.get_by_role("link", name="Cookies")).not_to_be_visible()
+@then("all the optional cookies are turned off by default")
+def check_all_optional_cookies_are_off_by_default(context: Context) -> None:
+    for cookies_type_locator in COOKIE_TYPE_RADIO_LOCATOR.values():
+        expect(context.page.get_by_role("group", name=cookies_type_locator).get_by_label("Off")).to_be_checked()
+
+
+@then("the cookies options still reflect the user's choices")
+def check_cookies_options_reflect_user_choices(context: Context) -> None:
+    for cookie_type, state in context.optional_cookies_state.items():
+        expect(
+            context.page.get_by_role("group", name=COOKIE_TYPE_RADIO_LOCATOR[cookie_type]).get_by_label(state)
+        ).to_be_checked()
 
 
 def check_ons_cookie_policy_values(cookies: Iterable[dict], expected_values: dict[str, bool]) -> None:

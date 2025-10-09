@@ -7,7 +7,7 @@
 
 {% block main %}
     <div class="ons-page__body">
-        <h1 class="ons-u-fs-2xl">{{ _("Cookies on ONS.GOV.UK") }}</h1>
+        <h1 class="ons-u-fs-2xl">{{ _("Cookies on") }} {{ ONS_COOKIE_BANNER_SERVICE_NAME | upper }}</h1>
 
         {# fmt:off #}
         {% call onsPanel({
