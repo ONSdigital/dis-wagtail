@@ -647,7 +647,7 @@ class StatisticalArticlePage(  # type: ignore[django-manager-missing]
         canonical_page = self.alias_of.specific_deferred if self.alias_of_id else self
         if canonical_page.is_latest:
             request.canonical_url = (  # type: ignore[attr-defined]
-                canonical_page.get_parent().get_full_url(request=request) + "/related-data"
+                canonical_page.get_parent().url + "/related-data"
             )
 
         paginator = Paginator(self.dataset_document_list, per_page=settings.RELATED_DATASETS_PER_PAGE)
@@ -667,14 +667,14 @@ class StatisticalArticlePage(  # type: ignore[django-manager-missing]
         )
         return response
 
-    def get_url_parts(self, request: Optional["HttpRequest"] = None) -> tuple[int, str | None, str | None] | None:
+    def get_url_parts(self, request: Optional["HttpRequest"] = None) -> tuple[int, str, str]:
         url_parts = super().get_url_parts(request=request)
         if url_parts is None:
             return None
 
         site_id: int = url_parts[0]
-        root_url: str | None = url_parts[1]
-        page_path: str | None = url_parts[2]
+        root_url: str = url_parts[1]
+        page_path: str = url_parts[2]
 
         if not (root_url and page_path):
             return site_id, root_url, page_path

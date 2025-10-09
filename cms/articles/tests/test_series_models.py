@@ -87,7 +87,7 @@ class ArticleSeriesEvergreenUrlTestCase(WagtailTestUtils, TestCase):
 
         self.assertContains(
             response,
-            f'<a href="{self.article_series_page.url}/related-data" class="ons-list__link">'
+            f'<a href="{self.article_series_page.get_relative_path()}/related-data" class="ons-list__link">'
             + "View data used in this article</a>",
             html=True,
         )
@@ -152,7 +152,7 @@ class ArticleSeriesEvergreenUrlTestCase(WagtailTestUtils, TestCase):
         self.assertContains(
             response,
             f'<link rel="canonical" href="http://{request_factory_server_name}{
-                self.article_with_datasets.url
+                self.article_with_datasets.get_relative_path()
             }/related-data">',
             html=True,
         )
