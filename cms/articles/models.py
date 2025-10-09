@@ -647,7 +647,7 @@ class StatisticalArticlePage(  # type: ignore[django-manager-missing]
         canonical_page = self.alias_of.specific_deferred if self.alias_of_id else self
         if canonical_page.is_latest:
             request.canonical_url = (  # type: ignore[attr-defined]
-                canonical_page.get_parent().get_full_url(request=request) + "/related-data"
+                canonical_page.get_parent().url + "/related-data"
             )
 
         paginator = Paginator(self.dataset_document_list, per_page=settings.RELATED_DATASETS_PER_PAGE)

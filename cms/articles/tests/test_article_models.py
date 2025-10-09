@@ -191,9 +191,11 @@ class StatisticalArticlePageTestCase(WagtailTestUtils, TestCase):
         request_factory = RequestFactory()
         request_factory_server_name = request_factory._base_environ()["SERVER_NAME"]  # pylint: disable=protected-access
 
+        page_path = self.page.get_relative_path()
+
         self.assertContains(
             response,
-            f'<link rel="canonical" href="http://{request_factory_server_name}{self.page.url}/related-data">',
+            f'<link rel="canonical" href="http://{request_factory_server_name}{page_path}/related-data">',
             html=True,
         )
 
