@@ -3411,6 +3411,25 @@ linting = ["pre-commit (>=3.6.0,<4)"]
 testing = ["dj-database-url (==2.1.0)", "pytest (==8.1.1)", "pytest-cov (==5.0.0)", "pytest-django (==4.8.0)"]
 
 [[package]]
+name = "wagtailmedia"
+version = "0.17.1"
+description = "A Wagtail module for audio and video files."
+optional = false
+python-versions = ">=3.9"
+files = [
+    {file = "wagtailmedia-0.17.1-py3-none-any.whl", hash = "sha256:d103d61c2a3549f01493c59a5a47c41636ce438b49ad61c43e8e9a9fb5a8488f"},
+    {file = "wagtailmedia-0.17.1.tar.gz", hash = "sha256:89f184ea61491d12f551b5b2a019dabad387912ba45419d04c7ee3417a1738c5"},
+]
+
+[package.dependencies]
+Django = ">=4.2"
+Wagtail = ">=6.3"
+
+[package.extras]
+linting = ["pre-commit (>=4.3.0)"]
+testing = ["coverage (>=7.10.0)", "tox (>=4.28.4)"]
+
+[[package]]
 name = "wagtailtables"
 version = "0.2.2"
 description = "jSpreadsheet table blocks for Wagtail"
@@ -3509,4 +3528,8 @@ files = [
 [metadata]
 lock-version = "2.1"
 python-versions = "^3.13"
+<<<<<<< Updated upstream
 content-hash = "ba15989923e67c97604990044a270772f631e83df117f27c8bcc14a83c4b5717"
+=======
+content-hash = "f35950625a24b9814a34950257eb800bf90621b3e20ef743ac3bb16b17f8668b"
+>>>>>>> Stashed changes

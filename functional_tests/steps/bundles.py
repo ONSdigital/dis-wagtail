@@ -179,7 +179,7 @@ def add_user_to_preview_teams(context: Context, user_role: str) -> None:
 
 @given("there are {number_of_bundles} bundles with {bundle_details}")
 def multiple_bundles_create(context: Context, number_of_bundles: str, bundle_details: str) -> None:
-    bundle_dets = json_str_to_dict(bundle_details)
+    bundle_dets = json.loads(bundle_details)
     if bundle_dets:
         context.bundles = []
         context.bundlepages = []
@@ -221,13 +221,7 @@ def multiple_bundles_create(context: Context, number_of_bundles: str, bundle_det
                 bundle.save()
                 context.bundles.append(bundle)
 
-
-def json_str_to_dict(bundle_details):
-    try:
-        return json.loads(bundle_details)
-    except ValueError as e:
-        print(e)
-        return False
+    context.bundles.sort(key=lambda x: x.name)
 
 
 # Bundles UI Triggers
@@ -265,16 +259,19 @@ def cannot_add_bundles(context: Context) -> None:
     expect(context.page.get_by_text("There are currently no")).to_be_visible()
 
 
-@step("the user can find the bundle")
-def can_find_bundle(context: Context) -> None:
-    expect(context.page.locator("#latest-bundles-heading")).to_contain_text("Latest active bundles")
-    expect(context.page.locator("#latest-bundles-content")).to_contain_text(context.bundles[0].name)
-
-
 @step("the user can edit the bundle")
 def can_edit_bundle(context: Context) -> None:
-    context.page.get_by_role("row", name=context.bundles[0].name + " Actions").get_by_label("Actions").click()
-    context.page.get_by_role("link", name="Edit", exact=True).click()
+    # Search for the required bundle on the landing page
+    if context.bundles[-1].name in context.page.get_by_role("link").all_inner_texts():
+        context.page.get_by_role("row", name=context.bundles[-1].name + " Actions").get_by_label("Actions").click()
+        context.page.get_by_role("link", name="Edit", exact=True).click()
+    else:
+        context.page.get_by_role("link", name="View all bundles").click()
+        context.page.get_by_role("textbox", name="Search term").fill(context.bundles[-1].name)
+        context.page.goto(f"{context.base_url}/admin/bundle/?q={context.bundles[-1].name}")
+        context.page.wait_for_timeout(250)
+        bundle_name = f"Edit '{context.bundles[-1].name}'"
+        context.page.get_by_role("link", name=bundle_name).click()
 
     add_release_calendar_in_edit(context)
     context.page.get_by_role("button", name="Save").click()
@@ -294,10 +291,10 @@ def add_preview_team_in_edit(context: Context) -> None:
         context.page.get_by_role("button", name="Add preview team").click()
         expect(context.page.get_by_role("textbox", name="Search term")).to_be_visible()
         context.page.get_by_role("textbox", name="Search term").click()
-        context.page.get_by_role("textbox", name="Search term").fill(context.teams[0].name)
+        context.page.get_by_role("textbox", name="Search term").fill(context.team.name)
         context.page.wait_for_timeout(200)
-        expect(context.page.get_by_role("checkbox", name=context.teams[0].name)).to_be_visible()
-        context.page.get_by_role("checkbox", name=context.teams[0].name).check()
+        expect(context.page.get_by_role("checkbox", name=context.team.name)).to_be_visible()
+        context.page.get_by_role("checkbox", name=context.team.name).check()
         expect(context.page.get_by_role("button", name="Confirm selection")).to_be_visible()
         context.page.get_by_role("button", name="Confirm selection").click()
 
@@ -311,15 +308,15 @@ def add_article_page_in_edit(context: Context) -> None:
         expect(context.page.get_by_role("heading", name="Choose a page")).to_be_visible()
         expect(context.page.get_by_text("Page type", exact=True)).to_be_visible()
         context.page.get_by_label("Page type").select_option("StatisticalArticlePage")
-        expect(context.page.get_by_text(context.statistical_article_pages[0].title)).to_be_visible()
+        expect(context.page.get_by_text(context.statistical_article_pages[-1].title)).to_be_visible()
         context.page.wait_for_timeout(200)
         expect(
             context.page.get_by_role(
-                "checkbox", name=f"{context.article_series_page.title}: {context.statistical_article_pages[0].title}"
+                "checkbox", name=f"{context.article_series_page.title}: {context.statistical_article_pages[-1].title}"
             )
         ).to_be_visible()
         context.page.get_by_role(
-            "checkbox", name=f"{context.article_series_page.title}: {context.statistical_article_pages[0].title}"
+            "checkbox", name=f"{context.article_series_page.title}: {context.statistical_article_pages[-1].title}"
         ).check()
         context.page.wait_for_timeout(100)
         expect(context.page.get_by_role("button", name="Confirm selection")).to_be_visible()
@@ -332,22 +329,19 @@ def add_release_calendar_in_edit(context: Context) -> None:
         expect(context.page.get_by_role("button", name="Choose Release Calendar page")).to_be_visible()
         context.page.get_by_role("button", name="Choose Release Calendar page").click()
         context.page.get_by_role("textbox", name="Search term").click()
-        context.page.get_by_role("textbox", name="Search term").fill(context.release_calendar_pages[0].title)
-        expect(context.page.get_by_role("link", name=context.release_calendar_pages[0].title)).to_be_visible()
-        context.page.get_by_role("row", name=context.release_calendar_pages[0].title).get_by_role("link").click()
-        context.page.get_by_role("link", name=context.release_calendar_pages[0].title).click()
-
-
-@step("the user can see the Bundles ready for preview")
-def can_access_preview_bundle(context: Context) -> None:
-    expect(context.page.locator("#bundles-for-preview-heading")).to_contain_text("Bundles ready for preview")
-    expect(context.page.locator("#bundles-for-preview-content")).to_contain_text(context.bundles[0].name)
-    context.page.get_by_title("View").click()
-    context.page.wait_for_timeout(200)
+        context.page.get_by_role("textbox", name="Search term").fill(context.release_calendar_pages[-1].title)
+        expect(context.page.get_by_role("link", name=context.release_calendar_pages[-1].title)).to_be_visible()
+        context.page.get_by_role("row", name=context.release_calendar_pages[-1].title).get_by_role("link").click()
+        context.page.get_by_role("link", name=context.release_calendar_pages[-1].title).click()
 
 
 @step("the {user_role} can preview a bundle")
 def can_preview_bundle(context: Context, user_role: str) -> None:
+    bundle_name = f"Inspect '{context.bundles[-1].name}'"
+    context.page.get_by_role("link", name="Bundles", exact=True).click()
+    context.page.get_by_role("textbox", name="Search term").fill(context.bundles[-1].name)
+    context.page.get_by_role("link", name=bundle_name).click()
+
     expect(context.page.get_by_text("Name")).to_be_visible()
     expect(context.page.get_by_text("Created at")).to_be_visible()
     expect(context.page.get_by_text("Created by")).to_be_visible()
@@ -370,20 +364,24 @@ def can_preview_bundle(context: Context, user_role: str) -> None:
 @step("the user cannot preview a bundle")
 def cannot_preview_bundle(context: Context) -> None:
     context.page.get_by_role("link", name="Bundles", exact=True).click()
-    expect(context.page.get_by_role("button", name=f"More options for '{context.bundles[0].name}'")).not_to_be_visible()
+    expect(
+        context.page.get_by_role("button", name=f"More options for '{context.bundles[-1].name}'")
+    ).not_to_be_visible()
 
 
 @step("the user cannot approve a bundle")
 def cannot_approve_bundle(context: Context) -> None:
     context.page.get_by_role("link", name="Bundles", exact=True).click()
-    expect(context.page.get_by_role("button", name=f"More options for '{context.bundles[0].name}'")).not_to_be_visible()
+    expect(
+        context.page.get_by_role("button", name=f"More options for '{context.bundles[-1].name}'")
+    ).not_to_be_visible()
 
 
 @step("the user can approve a bundle")
 def can_approve_bundle(context: Context) -> None:
     if len(context.bundles) == 1:
         expect(context.page.locator("#latest-bundles-heading")).to_contain_text("Latest active bundles")
-        expect(context.page.locator("#latest-bundles-content")).to_contain_text(context.bundles[0].name)
+        expect(context.page.locator("#latest-bundles-content")).to_contain_text(context.bundles[-1].name)
         context.page.get_by_title("Edit this bundle").click()
         context.page.get_by_role("button", name="More actions").click()
         context.page.get_by_role("button", name="Approve").click()
