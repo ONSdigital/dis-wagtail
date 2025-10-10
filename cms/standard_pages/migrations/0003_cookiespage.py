@@ -2,6 +2,7 @@
 
 import django.db.models.deletion
 import wagtailschemaorg.models
+from django.conf import settings
 from django.db import migrations, models
 from django.utils import timezone
 
@@ -29,11 +30,11 @@ def create_cookies_page(apps, schema_editor):
         live=True,
         first_published_at=now,
         last_published_at=now,
-        slug="cookies",
+        slug=settings.ONS_COOKIES_PAGE_DEFAULT_SLUG,
         path=f"{home_page.path}00{home_page.numchild + 1:02d}",
         content_type=cookies_page_type,
         depth=home_page.depth + 1,
-        url_path=f"{home_page.url_path}cookies/",
+        url_path=f"{home_page.url_path}{settings.ONS_COOKIES_PAGE_DEFAULT_SLUG}/",
         locale=english_locale,
     )
 

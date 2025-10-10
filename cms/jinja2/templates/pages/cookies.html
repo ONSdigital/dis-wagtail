@@ -7,6 +7,7 @@
 
 {% block main %}
     <div class="ons-page__body">
+        {# TODO: pass the variable into gettext for context once we have babel #}
         <h1 class="ons-u-fs-2xl">{{ _("Cookies on") }} {{ ONS_COOKIE_BANNER_SERVICE_NAME | upper }}</h1>
 
         {# fmt:off #}
@@ -55,6 +56,7 @@
                 </p>
                 <ul>
                     <li>{{ _("how you got to the site") }}</li>
+                    {# TODO replace ons.gov.uk with ONS_COOKIE_BANNER_SERVICE_NAME one we have babel #}
                     <li>{{ _("the pages you visit on ons.gov.uk and how long you spend on each page") }}</li>
                     <li>{{ _("what you click on while you are visiting the site") }}</li>
                     <li>{{ _("the way in which you interact with a page") }}</li>
@@ -175,7 +177,11 @@
                 </ul>
                 <p>{{ _("They are necessary for proper website functionality and always need to be on.") }}</p>
                 <p>
-                    <a href="https://www.ons.gov.uk/help/cookies">{{ _("Find out more about cookies on ons.gov.uk") }}</a>
+                    <a href={{ "https://cy.ons.gov.uk/help/cookies" if LANGUAGE_CODE == 'cy' else "https://www.ons.gov.uk/help/cookies" }}
+                       target="_blank" rel="noopener">
+                        {# TODO: pass the variable into gettext for context once we have babel #}
+                        {{ _("Find out more about cookies on") }} {{ ONS_COOKIE_BANNER_SERVICE_NAME }}
+                    </a>
                 </p>
 
                 {% set save_changes_button = _('Save changes') %}

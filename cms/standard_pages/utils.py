@@ -24,5 +24,5 @@ def get_cookies_page_url(language_code: str) -> str | None:
         cookies_page = CookiesPage.objects.get(locale__language_code=language_code)
     except CookiesPage.DoesNotExist:
         logger.error("Cookies page does not exist for language code", extra={language_code: language_code})
-        return settings.ONS_COOKIES_PAGE_DEFAULT_URL
+        return settings.ONS_COOKIES_PAGE_DEFAULT_SLUG
     return cookies_page.get_url()

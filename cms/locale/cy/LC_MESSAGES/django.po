@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-10-09 15:52+0100\n"
+"POT-Creation-Date: 2025-10-10 09:28+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -206,146 +206,144 @@ msgstr "Rheswm dros newid"
 msgid "Source"
 msgstr "Ffynhonnell"
 
-#: cms/jinja2/templates/pages/cookies.html:10
-#, fuzzy
-#| msgid "Cookies on ONS.GOV.UK"
+#: cms/jinja2/templates/pages/cookies.html:11
 msgid "Cookies on"
-msgstr "Cwcis ar ONS.GOV.UK"
+msgstr "Cwcis ar"
 
-#: cms/jinja2/templates/pages/cookies.html:19
+#: cms/jinja2/templates/pages/cookies.html:20
 msgid "Your cookie settings have been saved"
 msgstr ""
 
-#: cms/jinja2/templates/pages/cookies.html:21
+#: cms/jinja2/templates/pages/cookies.html:22
 msgid ""
 "Some parts of this website may use additional cookies and will have their "
 "own cookie policy and banner."
 msgstr ""
 
-#: cms/jinja2/templates/pages/cookies.html:23
+#: cms/jinja2/templates/pages/cookies.html:24
 msgid "Return to previous page"
 msgstr ""
 
-#: cms/jinja2/templates/pages/cookies.html:27
+#: cms/jinja2/templates/pages/cookies.html:28
 msgid ""
 "Cookies are files saved on your phone, tablet or computer when you visit a "
 "website."
 msgstr ""
 
-#: cms/jinja2/templates/pages/cookies.html:28
+#: cms/jinja2/templates/pages/cookies.html:29
 msgid ""
 "We use cookies to store information about how you use the ONS website, such "
 "as the pages you visit."
 msgstr ""
 
-#: cms/jinja2/templates/pages/cookies.html:30
+#: cms/jinja2/templates/pages/cookies.html:31
 msgid "Cookie settings"
 msgstr "Gosodiadau cwcis"
 
-#: cms/jinja2/templates/pages/cookies.html:37
+#: cms/jinja2/templates/pages/cookies.html:38
 msgid "You can try:"
 msgstr ""
 
-#: cms/jinja2/templates/pages/cookies.html:39
+#: cms/jinja2/templates/pages/cookies.html:40
 msgid "turning on JavaScript in your browser"
 msgstr ""
 
-#: cms/jinja2/templates/pages/cookies.html:40
+#: cms/jinja2/templates/pages/cookies.html:41
 msgid "reloading the page in case there was a temporary fault with JavaScript"
 msgstr ""
 
-#: cms/jinja2/templates/pages/cookies.html:51
+#: cms/jinja2/templates/pages/cookies.html:52
 msgid "Cookies that measure website use"
 msgstr ""
 
-#: cms/jinja2/templates/pages/cookies.html:57
+#: cms/jinja2/templates/pages/cookies.html:58
 msgid "how you got to the site"
 msgstr ""
 
-#: cms/jinja2/templates/pages/cookies.html:58
+#: cms/jinja2/templates/pages/cookies.html:60
 msgid "the pages you visit on ons.gov.uk and how long you spend on each page"
 msgstr ""
 
-#: cms/jinja2/templates/pages/cookies.html:59
+#: cms/jinja2/templates/pages/cookies.html:61
 msgid "what you click on while you are visiting the site"
 msgstr ""
 
-#: cms/jinja2/templates/pages/cookies.html:60
+#: cms/jinja2/templates/pages/cookies.html:62
 msgid "the way in which you interact with a page"
 msgstr ""
 
-#: cms/jinja2/templates/pages/cookies.html:61
+#: cms/jinja2/templates/pages/cookies.html:63
 msgid "whether you have participated in a Hotjar survey"
 msgstr ""
 
-#: cms/jinja2/templates/pages/cookies.html:64
+#: cms/jinja2/templates/pages/cookies.html:66
 msgid "Do you want to allow usage tracking?"
 msgstr ""
 
-#: cms/jinja2/templates/pages/cookies.html:65
+#: cms/jinja2/templates/pages/cookies.html:67
 msgid "On"
 msgstr ""
 
-#: cms/jinja2/templates/pages/cookies.html:66
+#: cms/jinja2/templates/pages/cookies.html:68
 msgid "Off"
 msgstr ""
 
-#: cms/jinja2/templates/pages/cookies.html:92
-#: cms/jinja2/templates/pages/cookies.html:128
-#: cms/jinja2/templates/pages/cookies.html:167
+#: cms/jinja2/templates/pages/cookies.html:94
+#: cms/jinja2/templates/pages/cookies.html:130
+#: cms/jinja2/templates/pages/cookies.html:169
 msgid "Your preference selection will expire after one year."
 msgstr ""
 
-#: cms/jinja2/templates/pages/cookies.html:94
+#: cms/jinja2/templates/pages/cookies.html:96
 msgid "Cookies that help with our communications"
 msgstr ""
 
-#: cms/jinja2/templates/pages/cookies.html:101
+#: cms/jinja2/templates/pages/cookies.html:103
 msgid "Do you want to allow third party usage tracking?"
 msgstr ""
 
-#: cms/jinja2/templates/pages/cookies.html:134
+#: cms/jinja2/templates/pages/cookies.html:136
 msgid ""
 "Cookies that remember your preference settings to tailor your experience"
 msgstr ""
 
-#: cms/jinja2/templates/pages/cookies.html:141
+#: cms/jinja2/templates/pages/cookies.html:143
 msgid ""
 "Do you want to allow cookies for potential future use that tailor your "
 "experience?"
 msgstr ""
 
-#: cms/jinja2/templates/pages/cookies.html:169
+#: cms/jinja2/templates/pages/cookies.html:171
 msgid "Strictly necessary cookies"
 msgstr ""
 
-#: cms/jinja2/templates/pages/cookies.html:170
+#: cms/jinja2/templates/pages/cookies.html:172
 msgid "These essential cookies do things like:"
 msgstr ""
 
-#: cms/jinja2/templates/pages/cookies.html:172
+#: cms/jinja2/templates/pages/cookies.html:174
 msgid ""
 "remember the notifications you’ve seen so we do not show them to you again"
 msgstr ""
 
-#: cms/jinja2/templates/pages/cookies.html:173
+#: cms/jinja2/templates/pages/cookies.html:175
 msgid "remember your progress through a form (for example, an ONS study)"
 msgstr ""
 
-#: cms/jinja2/templates/pages/cookies.html:174
+#: cms/jinja2/templates/pages/cookies.html:176
 msgid "improve performance and identify potential security threats"
 msgstr ""
 
-#: cms/jinja2/templates/pages/cookies.html:176
+#: cms/jinja2/templates/pages/cookies.html:178
 msgid ""
 "They are necessary for proper website functionality and always need to be on."
 msgstr ""
 
-#: cms/jinja2/templates/pages/cookies.html:178
-msgid "Find out more about cookies on ons.gov.uk"
+#: cms/jinja2/templates/pages/cookies.html:183
+msgid "Find out more about cookies on"
 msgstr ""
 
-#: cms/jinja2/templates/pages/cookies.html:181
+#: cms/jinja2/templates/pages/cookies.html:187
 msgid "Save changes"
 msgstr ""
 
