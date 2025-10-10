@@ -47,5 +47,6 @@ class CoreExtension(Extension):  # pylint: disable=abstract-method
                 "setAttributes": set_attributes_filter,
                 "ons_date": ons_date_format_filter,
                 "json_script": json_script,
+                "jsonScript": json_script,
             }
         )
