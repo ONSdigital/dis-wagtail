@@ -24,5 +24,5 @@ def global_vars(request: "HttpRequest") -> dict[str, Any]:
         "DEFAULT_OG_IMAGE_URL": settings.DEFAULT_OG_IMAGE_URL,
         "CONTACT_US_URL": settings.CONTACT_US_URL,
         "BACKUP_SITE_URL": settings.BACKUP_SITE_URL,
-        "COOKIES_PAGE_URL": get_cookies_page_url(getattr(request, "LANGUAGE_CODE", settings.LANGUAGE_CODE)),
+        "COOKIES_PAGE_URL": get_cookies_page_url(request),
     }
