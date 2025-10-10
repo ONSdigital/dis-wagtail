@@ -113,3 +113,157 @@ Feature: CMS users can draft, edit, and publish topic pages
         Then the time series section is displayed on the page
         And the user sees the 'View all related time series' link
         And the time series item appears in the table of contents
+
+    Scenario: Topic page highlighted articles show tagged articles from other topic pages when there are no descendants
+        Given the following topic pages exist:
+            | title        | topic     |
+            | Topic Page A | Economy   |
+            | Topic Page B | Inflation |
+            | Topic Page C | CPI       |
+        And "Topic Page B" has the following "articles":
+            | series           | article   | release_date | topic   |
+            | Article Series 1 | Article 1 | 2025-01-01   | Economy |
+            | Article Series 2 | Article 2 | 2025-01-02   | Economy |
+        And "Topic Page C" has the following "articles":
+            | series           | article   | release_date | topic   |
+            | Article Series 3 | Article 3 | 2025-01-04   | Economy |
+        When the user visits "Topic Page A"
+        Then the highlighted "articles" section is visible
+        And the highlighted "articles" are displayed in this order:
+            | article_name                |
+            | Article Series 3: Article 3 |
+            | Article Series 2: Article 2 |
+            | Article Series 1: Article 1 |
+
+    Scenario: Manually selected article appear first, followed by tagged articles sorted by latest release date
+        Given the following topic pages exist:
+            | title        | topic     |
+            | Topic Page A | Economy   |
+            | Topic Page B | Inflation |
+            | Topic Page C | CPI       |
+        And "Topic Page A" has the following "articles":
+            | series                | article          | release_date | topic   |
+            | Article Series Manual | Manual Article 1 | 2024-12-01   | Housing |
+        And "Topic Page B" has the following "articles":
+            | series           | article                  | release_date | topic   |
+            | Article Series 1 | Article 1 Older Edition  | 2025-01-01   | Economy |
+            | Article Series 1 | Article 2 Latest Edition | 2025-01-02   | Economy |
+            | Article Series 2 | Article 3                | 2025-01-03   | Economy |
+        And "Topic Page C" has the following "articles":
+            | series           | article   | release_date | topic   |
+            | Article Series 3 | Article 4 | 2025-01-04   | Economy |
+        When the user edits "Topic Page A"
+        And the user manually adds "Manual Article 1" in the highlighted "articles" section
+        And the user clicks "Publish"
+        And the user visits "Topic Page A"
+        Then the highlighted "articles" section is visible
+        And the highlighted "articles" are displayed in this order:
+            | article_name                            |
+            | Article Series Manual: Manual Article 1 |
+            | Article Series 3: Article 4             |
+            | Article Series 2: Article 3             |
+
+    Scenario: Highlighted articles show a mix of descendant, manually selected, and tagged articles
+        Given the following topic pages exist:
+            | title        | topic     |
+            | Topic Page A | Economy   |
+            | Topic Page B | Inflation |
+            | Topic Page C | CPI       |
+        And "Topic Page A" has the following "articles":
+            | series   | article              | release_date | topic          |
+            | Series 1 | Descendant Article 1 | 2025-01-02   | Housing        |
+            | Series 2 | Descendant Article 2 | 2025-01-03   | Prices         |
+            | Series 3 | Descendant Article 3 | 2025-01-04   | Sustainability |
+        And "Topic Page B" has the following "articles":
+            | series   | article          | release_date | topic   |
+            | B Series | Tagged Article B | 2025-01-01   | Economy |
+        And "Topic Page C" has the following "articles":
+            | series   | article          | release_date | topic   |
+            | C Series | Tagged Article C | 2025-01-05   | Economy |
+        When the user edits "Topic Page A"
+        And the user manually adds "Descendant Article 1" in the highlighted "articles" section
+        And the user clicks "Publish"
+        And the user visits "Topic Page A"
+        Then the highlighted "articles" section is visible
+        And the highlighted "articles" are displayed in this order:
+            | article_name                   |
+            | Series 1: Descendant Article 1 |
+            | C Series: Tagged Article C     |
+            | Series 3: Descendant Article 3 |
+
+    Scenario: Topic page highlighted methodologies show tagged methodologies from other topic pages when there are no descendants
+        Given the following topic pages exist:
+            | title        | topic     |
+            | Topic Page A | Economy   |
+            | Topic Page B | Inflation |
+            | Topic Page C | CPI       |
+        And "Topic Page B" has the following "methodologies":
+            | title              | publication_date | topic   |
+            | Methodology Page 1 | 2025-01-01       | Economy |
+            | Methodology Page 2 | 2025-01-02       | Economy |
+        And "Topic Page C" has the following "methodologies":
+            | title              | publication_date | topic   |
+            | Methodology Page 3 | 2025-01-04       | Economy |
+        When the user visits "Topic Page A"
+        Then the highlighted "methodologies" section is visible
+        And the highlighted "methodologies" are displayed in this order:
+            | methodology_name   |
+            | Methodology Page 3 |
+            | Methodology Page 2 |
+            | Methodology Page 1 |
+
+    Scenario: Manually selected methodologies appear first, followed by tagged methodologies sorted by publication date
+        Given the following topic pages exist:
+            | title        | topic     |
+            | Topic Page A | Economy   |
+            | Topic Page B | Inflation |
+            | Topic Page C | CPI       |
+        And "Topic Page A" has the following "methodologies":
+            | title                | publication_date | topic   |
+            | Manual Methodology 1 | 2024-12-01       | Housing |
+        And "Topic Page B" has the following "methodologies":
+            | title              | publication_date | topic   |
+            | Methodology Page 1 | 2025-01-01       | Economy |
+            | Methodology Page 2 | 2025-01-02       | Economy |
+            | Methodology Page 3 | 2025-01-03       | Economy |
+        And "Topic Page C" has the following "methodologies":
+            | title              | publication_date | topic   |
+            | Methodology Page 4 | 2025-01-04       | Economy |
+        When the user edits "Topic Page A"
+        And the user manually adds "Manual Methodology 1" in the highlighted "methodologies" section
+        And the user clicks "Publish"
+        And the user visits "Topic Page A"
+        Then the highlighted "methodologies" section is visible
+        And the highlighted "methodologies" are displayed in this order:
+            | methodology_name     |
+            | Manual Methodology 1 |
+            | Methodology Page 4   |
+            | Methodology Page 3   |
+
+    Scenario: Highlighted methodologies show a mix of descendant, manually selected, and tagged methodologies
+        Given the following topic pages exist:
+            | title        | topic     |
+            | Topic Page A | Economy   |
+            | Topic Page B | Inflation |
+            | Topic Page C | CPI       |
+        And "Topic Page A" has the following "methodologies":
+            | title                         | publication_date | topic          |
+            | Descendant Methodology Page 1 | 2025-01-02       | Housing        |
+            | Descendant Methodology Page 2 | 2025-01-03       | Prices         |
+            | Descendant Methodology Page 3 | 2025-01-04       | Sustainability |
+        And "Topic Page B" has the following "methodologies":
+            | title                     | publication_date | topic   |
+            | Tagged Methodology Page B | 2025-01-01       | Economy |
+        And "Topic Page C" has the following "methodologies":
+            | title                     | publication_date | topic   |
+            | Tagged Methodology Page C | 2025-01-05       | Economy |
+        When the user edits "Topic Page A"
+        And the user manually adds "Descendant Methodology Page 1" in the highlighted "methodologies" section
+        And the user clicks "Publish"
+        And the user visits "Topic Page A"
+        Then the highlighted "methodologies" section is visible
+        And the highlighted "methodologies" are displayed in this order:
+            | methodology_name              |
+            | Descendant Methodology Page 1 |
+            | Tagged Methodology Page C     |
+            | Descendant Methodology Page 3 |
