@@ -1,4 +1,5 @@
 from django.conf import settings
+from django.test import override_settings
 from django.urls import reverse
 from wagtail.test.utils import WagtailPageTestCase
 
@@ -43,6 +44,7 @@ class CookiesPageTest(WagtailPageTestCase):
         self.assertContains(response, "Cookies on ONS.GOV.UK")
         self.assertContains(response, "Cookie settings")
 
+    @override_settings(CMS_USE_SUBDOMAIN_LOCALES=False)
     def test_get_welsh_cookies_page(self):
         response = self.client.get("/cy/cookies")
         self.assertEqual(response.status_code, 200)
@@ -64,6 +66,11 @@ class CookiesPageTest(WagtailPageTestCase):
         response = self.client.get("/")
         self.assertContains(response, 'href="/cookies"')
 
-    def test_view_cookies_link_is_localised(self):
+    def test_view_cookies_link_is_present_welsh(self):
+        response = self.client.get("/cy")
+        self.assertContains(response, 'href="/cookies"')
+
+    @override_settings(CMS_USE_SUBDOMAIN_LOCALES=False)
+    def test_view_cookies_link_is_localised_subdomain_routing_off(self):
         response = self.client.get("/cy")
         self.assertContains(response, 'href="/cy/cookies"')
