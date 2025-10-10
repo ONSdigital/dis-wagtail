@@ -4,6 +4,7 @@ from wagtail.test.utils import WagtailPageTestCase
 
 from cms.standard_pages.models import CookiesPage
 from cms.standard_pages.tests.factories import InformationPageFactory
+from cms.standard_pages.utils import SUPPORTED_LANGUAGE_CODES
 
 
 class DatePlaceholderTestCase(WagtailPageTestCase):
@@ -49,13 +50,11 @@ class CookiesPageTest(WagtailPageTestCase):
         self.assertContains(response, "Gosodiadau cwcis")
 
     def test_cookies_page_exists_for_all_supported_language(self):
-        language_codes = [lang[0] for lang in settings.LANGUAGES]
-
         # The english cookies page should be the original
         english_cookies_page = CookiesPage.objects.get(locale__language_code=settings.LANGUAGE_CODE)
-        language_codes.remove(settings.LANGUAGE_CODE)
+        other_supported_languages = SUPPORTED_LANGUAGE_CODES - {settings.LANGUAGE_CODE}
 
-        for language_code in language_codes:
+        for language_code in other_supported_languages:
             with self.subTest(language_code=language_code):
                 # Check that a cookies page exists for each other supported language, with matching translation key
                 cookies_page = CookiesPage.objects.get(locale__language_code=language_code)

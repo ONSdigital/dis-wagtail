@@ -10,7 +10,7 @@ SUPPORTED_LANGUAGE_CODES = {lang[0] for lang in settings.LANGUAGES}
 
 
 @lru_cache
-def get_cookies_page_url(language_code: str) -> str | None:
+def get_cookies_page_url(language_code: str) -> str:
     """Get the URL of the cookies page for the given language code.
     Note that this is cached for performance, as this needs to be called on every page load.
     This creates some edge cases we add or change cookies pages (especially if we change their slug) where instances may

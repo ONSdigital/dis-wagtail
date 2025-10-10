@@ -177,8 +177,7 @@
                 </ul>
                 <p>{{ _("They are necessary for proper website functionality and always need to be on.") }}</p>
                 <p>
-                    <a href={{ "https://cy.ons.gov.uk/help/cookies" if LANGUAGE_CODE == 'cy' else "https://www.ons.gov.uk/help/cookies" }}
-                       target="_blank" rel="noopener">
+                    <a href="/help/cookies" target="_blank" rel="noopener">
                         {# TODO: pass the variable into gettext for context once we have babel #}
                         {{ _("Find out more about cookies on") }} {{ ONS_COOKIE_BANNER_SERVICE_NAME }}
                     </a>
