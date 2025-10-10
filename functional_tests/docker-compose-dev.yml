@@ -36,6 +36,15 @@ services:
     ports: !override
       - '16379:6379'
 
+  broker:
+    extends:
+      file: docker-compose.yml
+      service: broker
+    environment:
+      KAFKA_CFG_ADVERTISED_LISTENERS: 'PLAINTEXT://broker:9092,EXTERNAL://localhost:19094'
+    ports: !override
+      - '19094:9094'
+
 volumes:
   node_modules:
   pgdata:
