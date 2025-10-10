@@ -25,7 +25,7 @@ class ArticleDataDict(TypedDict, total=False):
 
 class MethodologyDataDict(TypedDict, total=False):
     title: str
-    methodology: str  # Alternative to title
+    methodology: str
     publication_date: str
     topic: Optional[str]
 

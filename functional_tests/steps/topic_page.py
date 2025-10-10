@@ -208,19 +208,11 @@ def create_items_for_topic_page(context: Context, topic_page_title: str, item_ty
         "articles": context.topic_page_builder.create_articles_for_topic_page,
         "methodologies": context.topic_page_builder.create_methodologies_for_topic_page,
     }
-    context_attrs = {
-        "articles": "articles",
-        "methodologies": "methodologies",
-    }
 
     if item_type not in builder_methods:
         raise ValueError(f"Unsupported item_type: {item_type}")
 
-    created_items = builder_methods[item_type](topic_page, items_data)
-
-    if not hasattr(context, context_attrs[item_type]):
-        setattr(context, context_attrs[item_type], {})
-    getattr(context, context_attrs[item_type]).update(created_items)
+    builder_methods[item_type](topic_page, items_data)
 
 
 @when('the user visits "{topic_page_title}"')
@@ -271,12 +263,12 @@ def highlighted_section_visible(context: Context, section_type: str) -> None:
 def check_highlighted_items_order(context: Context, item_type: str) -> None:
     """Check the order of highlighted articles or methodologies matches the table."""
     expected_titles = [row[0] for row in context.table]
-    document_list = context.page.locator("ul.ons-document-list").first
-    list_items = document_list.locator("li.ons-document-list__item").all()
+    document_list = context.page.locator(".ons-document-list").first
+    list_items = document_list.locator(".ons-document-list__item").all()
 
     actual_titles = []
     for item in list_items:
-        title_link = item.locator("h3.ons-document-list__item-title a").first
+        title_link = item.locator(".ons-document-list__item-title a").first
         title = title_link.text_content().strip()
         actual_titles.append(title)
 
