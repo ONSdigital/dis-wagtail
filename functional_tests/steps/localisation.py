@@ -6,23 +6,7 @@ from playwright.sync_api import expect
 @given("a CMS user edits the home page")
 def user_goes_to_edit_home_page(context: Context) -> None:
     context.page.get_by_role("button", name="Pages").click()
-    context.page.get_by_role("link", name="Edit 'Home'").click()
-
-
-@step("the user creates a Welsh version of the home page")
-def user_creates_welsh_version_of_home_page(context: Context) -> None:
-    user_goes_to_edit_home_page(context)
-    user_creates_welsh_version_of_page(context)
-    context.page.get_by_role("button", name="Pages").click()
-    context.page.get_by_role("link", name="Edit 'Home'").nth(1).click()
-    context.page.get_by_role("button", name="More actions").click()
-    context.page.get_by_role("button", name="Publish").click()
-
-
-@then("the user can see the option to add a translation")
-def user_can_see_the_option_to_add_a_translation(context: Context) -> None:
-    context.page.get_by_role("button", name="Actions", exact=True).click()
-    expect(context.page.get_by_role("link", name="Translate")).to_be_visible()
+    context.page.get_by_role("link", name="Edit 'Home'").first.click()
 
 
 @step("the user creates a Welsh version of the page")

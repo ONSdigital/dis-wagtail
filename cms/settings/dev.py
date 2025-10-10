@@ -146,6 +146,9 @@ TAG = "dev"
 CMS_RESOURCES_ENDPOINT_ENABLED = env.get("CMS_RESOURCES_ENDPOINT_ENABLED", "true").lower() == "true"
 USE_I18N_ROOT_NO_TRAILING_SLASH = env.get("USE_I18N_ROOT_NO_TRAILING_SLASH", "true").lower() == "true"
 
+# Domain-based locale configuration
+CMS_USE_SUBDOMAIN_LOCALES = env.get("CMS_USE_SUBDOMAIN_LOCALES", "False").lower() == "true"
+
 # -----------------------------------------------------------------------------
 # ⚠️ DO NOT EDIT BELOW THIS LINE
 # -----------------------------------------------------------------------------

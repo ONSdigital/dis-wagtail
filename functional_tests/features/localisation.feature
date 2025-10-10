@@ -2,12 +2,7 @@ Feature: Users can create localised content in the CMS
     Background:
         Given a CMS user logs into the admin site
 
-    Scenario: The user is able to translate a page
-        And a CMS user edits the home page
-        Then the user can see the option to add a translation
-
     Scenario: The user is able to create a translated version of a page
-        And the user creates a Welsh version of the home page
         When the user creates an information page as a child of the home page
         And the user adds content to the new information page
         And the user clicks "Publish"
@@ -21,7 +16,6 @@ Feature: Users can create localised content in the CMS
         And the page furniture is displayed in Welsh
 
     Scenario: The user is able to switch between different language versions of a page
-        And the user creates a Welsh version of the home page
         When the user creates an information page as a child of the home page
         And the user adds content to the new information page
         And the user clicks "Publish"
@@ -56,8 +50,7 @@ Feature: Users can create localised content in the CMS
         Then a message is displayed explaining that the content is not translated
 
     Scenario: The user is warned when editing an English version of a page with existing translations
-        When the user creates a Welsh version of the home page
-        And the user creates an information page as a child of the home page
+        When the user creates an information page as a child of the home page
         And the user adds content to the new information page
         And the user clicks "Publish"
         And the user returns to editing the information page
@@ -72,8 +65,7 @@ Feature: Users can create localised content in the CMS
         Then a warning is displayed explaining that the page has existing translations
 
     Scenario: The user doesn't change the translation when editing the English page
-        When the user creates a Welsh version of the home page
-        And the user creates an information page as a child of the home page
+        When the user creates an information page as a child of the home page
         And the user adds content to the new information page
         And the user clicks "Publish"
         And the user returns to editing the information page
@@ -90,8 +82,7 @@ Feature: Users can create localised content in the CMS
         Then the published information page is displayed with Welsh content
 
     Scenario: The user doesn't change the English page when editing the translation
-        When the user creates a Welsh version of the home page
-        And the user creates an information page as a child of the home page
+        When the user creates an information page as a child of the home page
         And the user adds content to the new information page
         And the user clicks "Publish"
         And the user returns to editing the information page

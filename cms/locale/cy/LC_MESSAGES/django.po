@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-10-06 09:36+0100\n"
+"POT-Creation-Date: 2025-10-10 11:52+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -19,27 +19,27 @@ msgstr ""
 "Plural-Forms: nplurals=4; plural=(n==1) ? 0 : (n==2) ? 1 : (n != 8 && n != "
 "11) ? 2 : 3;\n"
 
-#: cms/articles/models.py:173 cms/core/enums.py:8
+#: cms/articles/models.py:182 cms/core/enums.py:8
 #: cms/core/formatting_utils.py:42
 msgid "Article"
 msgstr "Erthygl"
 
-#: cms/articles/models.py:405
+#: cms/articles/models.py:414
 msgid "Cite this article"
 msgstr "Dyfynnwch yr erthygl hon"
 
-#: cms/articles/models.py:407
+#: cms/articles/models.py:416
 #: cms/jinja2/templates/components/contact_details/contact_details.html:6
 #: cms/methodology/models.py:188 cms/release_calendar/models.py:246
 msgid "Contact details"
 msgstr "Manylion cyswllt"
 
-#: cms/articles/models.py:444
+#: cms/articles/models.py:453
 #, python-format
 msgid "All data related to %(article_title)s"
 msgstr "Yr holl ddata sy'n gysylltiedig â %(article_title)s"
 
-#: cms/articles/models.py:503
+#: cms/articles/models.py:512
 msgid "Release date"
 msgstr "Dyddiad y datganiad"
 
@@ -109,31 +109,31 @@ msgstr "Troednodiadau"
 msgid "Data"
 msgstr "Data"
 
-#: cms/jinja2/templates/base.html:30
+#: cms/jinja2/templates/base.html:32
 msgid "Beta"
 msgstr "Beta"
 
-#: cms/jinja2/templates/base.html:31
+#: cms/jinja2/templates/base.html:33
 msgid "This is a new service."
 msgstr "Mae hwn yn wasanaeth newydd."
 
-#: cms/jinja2/templates/base.html:32
+#: cms/jinja2/templates/base.html:34
 msgid "Menu"
 msgstr "Dewislen"
 
-#: cms/jinja2/templates/base.html:33
+#: cms/jinja2/templates/base.html:35
 msgid "Main menu"
 msgstr "Prif ddewislen"
 
-#: cms/jinja2/templates/base.html:34
+#: cms/jinja2/templates/base.html:36
 msgid "Toggle main menu"
 msgstr "Togl y brif ddewislen"
 
-#: cms/jinja2/templates/base.html:36
+#: cms/jinja2/templates/base.html:38
 msgid "All content is available under the"
 msgstr "Mae’r holl gynnwys ar gael o dan y"
 
-#: cms/jinja2/templates/base.html:39
+#: cms/jinja2/templates/base.html:41
 msgid ", except where otherwise stated"
 msgstr ", ac eithrio lle y nodir fel arall"
 
@@ -205,6 +205,147 @@ msgstr "Rheswm dros newid"
 #: cms/jinja2/templates/components/streamfield/table_block.html:8
 msgid "Source"
 msgstr "Ffynhonnell"
+
+#: cms/jinja2/templates/pages/cookies.html:11
+msgid "Cookies on"
+msgstr "Cwcis ar"
+
+#: cms/jinja2/templates/pages/cookies.html:20
+msgid "Your cookie settings have been saved"
+msgstr ""
+
+#: cms/jinja2/templates/pages/cookies.html:22
+msgid ""
+"Some parts of this website may use additional cookies and will have their "
+"own cookie policy and banner."
+msgstr ""
+
+#: cms/jinja2/templates/pages/cookies.html:24
+msgid "Return to previous page"
+msgstr ""
+
+#: cms/jinja2/templates/pages/cookies.html:28
+msgid ""
+"Cookies are files saved on your phone, tablet or computer when you visit a "
+"website."
+msgstr ""
+
+#: cms/jinja2/templates/pages/cookies.html:29
+msgid ""
+"We use cookies to store information about how you use the ONS website, such "
+"as the pages you visit."
+msgstr ""
+
+#: cms/jinja2/templates/pages/cookies.html:31
+msgid "Cookie settings"
+msgstr "Gosodiadau cwcis"
+
+#: cms/jinja2/templates/pages/cookies.html:38
+msgid "You can try:"
+msgstr ""
+
+#: cms/jinja2/templates/pages/cookies.html:40
+msgid "turning on JavaScript in your browser"
+msgstr ""
+
+#: cms/jinja2/templates/pages/cookies.html:41
+msgid "reloading the page in case there was a temporary fault with JavaScript"
+msgstr ""
+
+#: cms/jinja2/templates/pages/cookies.html:52
+msgid "Cookies that measure website use"
+msgstr ""
+
+#: cms/jinja2/templates/pages/cookies.html:58
+msgid "how you got to the site"
+msgstr ""
+
+#: cms/jinja2/templates/pages/cookies.html:60
+msgid "the pages you visit on ons.gov.uk and how long you spend on each page"
+msgstr ""
+
+#: cms/jinja2/templates/pages/cookies.html:61
+msgid "what you click on while you are visiting the site"
+msgstr ""
+
+#: cms/jinja2/templates/pages/cookies.html:62
+msgid "the way in which you interact with a page"
+msgstr ""
+
+#: cms/jinja2/templates/pages/cookies.html:63
+msgid "whether you have participated in a Hotjar survey"
+msgstr ""
+
+#: cms/jinja2/templates/pages/cookies.html:66
+msgid "Do you want to allow usage tracking?"
+msgstr ""
+
+#: cms/jinja2/templates/pages/cookies.html:67
+msgid "On"
+msgstr ""
+
+#: cms/jinja2/templates/pages/cookies.html:68
+msgid "Off"
+msgstr ""
+
+#: cms/jinja2/templates/pages/cookies.html:94
+#: cms/jinja2/templates/pages/cookies.html:130
+#: cms/jinja2/templates/pages/cookies.html:169
+msgid "Your preference selection will expire after one year."
+msgstr ""
+
+#: cms/jinja2/templates/pages/cookies.html:96
+msgid "Cookies that help with our communications"
+msgstr ""
+
+#: cms/jinja2/templates/pages/cookies.html:103
+msgid "Do you want to allow third party usage tracking?"
+msgstr ""
+
+#: cms/jinja2/templates/pages/cookies.html:136
+msgid ""
+"Cookies that remember your preference settings to tailor your experience"
+msgstr ""
+
+#: cms/jinja2/templates/pages/cookies.html:143
+msgid ""
+"Do you want to allow cookies for potential future use that tailor your "
+"experience?"
+msgstr ""
+
+#: cms/jinja2/templates/pages/cookies.html:171
+msgid "Strictly necessary cookies"
+msgstr ""
+
+#: cms/jinja2/templates/pages/cookies.html:172
+msgid "These essential cookies do things like:"
+msgstr ""
+
+#: cms/jinja2/templates/pages/cookies.html:174
+msgid ""
+"remember the notifications you’ve seen so we do not show them to you again"
+msgstr ""
+
+#: cms/jinja2/templates/pages/cookies.html:175
+msgid "remember your progress through a form (for example, an ONS study)"
+msgstr ""
+
+#: cms/jinja2/templates/pages/cookies.html:176
+msgid "improve performance and identify potential security threats"
+msgstr ""
+
+#: cms/jinja2/templates/pages/cookies.html:178
+msgid ""
+"They are necessary for proper website functionality and always need to be on."
+msgstr ""
+
+#: cms/jinja2/templates/pages/cookies.html:183
+msgid "Find out more about cookies on"
+msgstr ""
+
+#: cms/jinja2/templates/pages/cookies.html:187
+msgid "Save changes"
+msgstr ""
 
 #: cms/jinja2/templates/pages/defender/lockout.html:6
 #: cms/jinja2/templates/pages/defender/lockout.html:8
@@ -293,13 +434,13 @@ msgid "Contact:"
 msgstr "Cyswllt"
 
 #: cms/jinja2/templates/pages/methodology_page.html:87
-#: cms/jinja2/templates/pages/statistical_article_page.html:205
+#: cms/jinja2/templates/pages/statistical_article_page.html:207
 #: cms/jinja2/templates/pages/topic_page.html:41
 msgid "Contents"
 msgstr "Cynnwys"
 
 #: cms/jinja2/templates/pages/methodology_page.html:87
-#: cms/jinja2/templates/pages/statistical_article_page.html:205
+#: cms/jinja2/templates/pages/statistical_article_page.html:207
 #: cms/jinja2/templates/pages/topic_page.html:41
 msgid "Sections in this page"
 msgstr "Adrannau ar y dudalen hon"
@@ -374,7 +515,7 @@ msgid ""
 msgstr ""
 "Mae’r rhain yn ystadegau swyddogol achrededig. Adolygwyd yn annibynnolgan y "
 "Swyddfa Rheoleiddio Ystadegau (OSR) ac a ganfuwyd ei fod yn cydymffurfio "
-"gyda safonau dibynadwyedd, ansawdd a gwerth yn y  <a href='https://code."
+"gyda safonau dibynadwyedd, ansawdd a gwerth yn y <a href='https://code."
 "statisticsauthority.gov.uk/the-code/'>Cod Ymarfer ar gyfer Ystadegau</a>. "
 "Mae hyn yn golygu yn fras bod yr ystadegau:"
 
@@ -489,19 +630,19 @@ msgstr "Cywiriadau"
 msgid "Headline facts and figures"
 msgstr "Y prif ffeithiau a ffigurau"
 
-#: cms/jinja2/templates/pages/statistical_article_page.html:185
+#: cms/jinja2/templates/pages/statistical_article_page.html:187
 msgid "Explore Data"
 msgstr "Archwilio Data"
 
-#: cms/jinja2/templates/pages/statistical_article_page.html:186
+#: cms/jinja2/templates/pages/statistical_article_page.html:188
 msgid "View data used in this article"
 msgstr "Gweld y data a ddefnyddir yn yr erthygl hon"
 
-#: cms/jinja2/templates/pages/statistical_article_page.html:227
+#: cms/jinja2/templates/pages/statistical_article_page.html:229
 msgid "Cite this analysis"
 msgstr "Dyfynnwch y dadansoddiad hwn"
 
-#: cms/jinja2/templates/pages/statistical_article_page.html:232
+#: cms/jinja2/templates/pages/statistical_article_page.html:234
 #, python-format
 msgid ""
 "Office for National Statistics (ONS), released %(release_date)s, ONS "
@@ -574,7 +715,3 @@ msgstr "Saesneg"
 #: cms/settings/base.py:369
 msgid "Welsh"
 msgstr "Cymraeg"
-
-#: cms/settings/base.py:370
-msgid "Ukrainian"
-msgstr "Wcreineg"

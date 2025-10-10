@@ -367,7 +367,6 @@ LANGUAGE_CODE = "en-gb"
 WAGTAIL_CONTENT_LANGUAGES = LANGUAGES = [
     ("en-gb", _("English")),
     ("cy", _("Welsh")),
-    ("uk", _("Ukrainian")),
 ]
 
 LOCALE_PATHS = [PROJECT_DIR / "locale"]
@@ -959,8 +958,8 @@ DATETIME_FORMAT = "j F Y g:ia"  # 1 November 2024, 1 p.m.
 ONS_EMBED_PREFIX = env.get("ONS_EMBED_PREFIX", "https://www.ons.gov.uk/visualisations/")
 
 # ONS Cookie banner settings
-ONS_COOKIE_BANNER_SERVICE_NAME = env.get("ONS_COOKIE_BANNER_SERVICE_NAME", "www.ons.gov.uk")
-MANAGE_COOKIE_SETTINGS_URL = env.get("MANAGE_COOKIE_SETTINGS_URL", "https://www.ons.gov.uk/cookies")
+ONS_COOKIE_BANNER_SERVICE_NAME = env.get("ONS_COOKIE_BANNER_SERVICE_NAME", "ons.gov.uk")
+ONS_COOKIES_PAGE_SLUG = "cookies"
 
 # Project information
 BUILD_TIME = datetime.datetime.fromtimestamp(int(env["BUILD_TIME"])) if env.get("BUILD_TIME") else None
@@ -1001,6 +1000,7 @@ SEARCH_INDEX_EXCLUDED_PAGE_TYPES = (
     "ThemeIndexPage",
     "ThemePage",
     "TopicPage",
+    "CookiesPage",
     "Page",
 )
 
@@ -1063,3 +1063,6 @@ USE_I18N_ROOT_NO_TRAILING_SLASH = env.get("USE_I18N_ROOT_NO_TRAILING_SLASH", "fa
 
 # Allow to override but default to enabled
 CMS_SEARCH_NOTIFY_ON_DELETE_OR_UNPUBLISH = env.get("CMS_SEARCH_NOTIFY_ON_DELETE_OR_UNPUBLISH", "true").lower() == "true"
+
+# Domain-based locale configuration
+CMS_USE_SUBDOMAIN_LOCALES = env.get("CMS_USE_SUBDOMAIN_LOCALES", "true").lower() == "true"
