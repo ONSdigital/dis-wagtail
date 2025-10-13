@@ -31,3 +31,9 @@ def user_redirected_to_wagtail_admin_login_page(context: Context) -> None:
     expect(context.page.get_by_label("Username")).to_be_visible()
     expect(context.page.get_by_label("Password")).to_be_visible()
     expect(context.page.get_by_role("button", name="Sign in")).to_be_visible()
+
+
+@when("the user navigates to the English home page in the Wagtail page explorer")
+def navigate_to_english_home_page_in_page_explorer(context: Context) -> None:
+    context.page.get_by_role("button", name="Pages").click()
+    context.page.get_by_role("link", name="Home English").click()

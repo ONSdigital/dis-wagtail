@@ -3,6 +3,7 @@ from typing import TYPE_CHECKING, Any
 from django.conf import settings
 
 from cms.auth.utils import get_auth_config
+from cms.standard_pages.utils import get_cookies_page_url
 
 if TYPE_CHECKING:
     from django.http import HttpRequest
@@ -14,7 +15,6 @@ def global_vars(request: "HttpRequest") -> dict[str, Any]:
         "GOOGLE_TAG_MANAGER_CONTAINER_ID": settings.GOOGLE_TAG_MANAGER_CONTAINER_ID,
         # Cookie banner settings
         "ONS_COOKIE_BANNER_SERVICE_NAME": settings.ONS_COOKIE_BANNER_SERVICE_NAME,
-        "MANAGE_COOKIE_SETTINGS_URL": settings.MANAGE_COOKIE_SETTINGS_URL,
         "SEO_NOINDEX": settings.SEO_NOINDEX,
         "LANGUAGE_CODE": settings.LANGUAGE_CODE,
         "IS_EXTERNAL_ENV": settings.IS_EXTERNAL_ENV,
@@ -24,4 +24,5 @@ def global_vars(request: "HttpRequest") -> dict[str, Any]:
         "DEFAULT_OG_IMAGE_URL": settings.DEFAULT_OG_IMAGE_URL,
         "CONTACT_US_URL": settings.CONTACT_US_URL,
         "BACKUP_SITE_URL": settings.BACKUP_SITE_URL,
+        "COOKIES_PAGE_URL": get_cookies_page_url(getattr(request, "LANGUAGE_CODE", settings.LANGUAGE_CODE)),
     }
