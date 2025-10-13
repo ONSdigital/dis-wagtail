@@ -1,6 +1,5 @@
 import math
 from datetime import datetime
-from http import HTTPStatus
 from urllib.parse import urlparse
 
 from django.conf import settings
@@ -21,59 +20,9 @@ from cms.core.tests.factories import ContactDetailsFactory
 from cms.core.tests.utils import extract_datalayer_pushed_values
 from cms.datasets.blocks import DatasetStoryBlock
 from cms.datasets.models import Dataset
+from cms.datasets.tests.factories import DatasetFactory
 from cms.datavis.tests.factories import TableDataFactory
 from cms.topics.models import TopicPage
-
-
-class ArticleSeriesTestCase(WagtailTestUtils, TestCase):
-    """Test ArticleSeriesPage model methods."""
-
-    @classmethod
-    def setUpTestData(cls):
-        cls.series = ArticleSeriesPageFactory()
-
-    def test_index_redirect_404_with_no_subpages(self):
-        """Test index path redirects to latest."""
-        response = self.client.get(self.series.url)
-        self.assertEqual(response.status_code, HTTPStatus.NOT_FOUND)
-
-    def test_get_latest_no_subpages(self):
-        """Test get_latest returns None when no pages exist."""
-        self.assertIsNone(self.series.get_latest())
-
-    def test_get_latest_with_subpages(self):
-        StatisticalArticlePageFactory(parent=self.series, release_date=timezone.now().date())
-        latest_page = StatisticalArticlePageFactory(
-            parent=self.series,
-            release_date=timezone.now().date() + timezone.timedelta(days=1),
-        )
-
-        self.assertEqual(self.series.get_latest(), latest_page)
-
-    def test_latest_release_404(self):
-        """Test latest_release returns 404 when no pages exist."""
-        response = self.client.get(self.series.url)
-        self.assertEqual(response.status_code, 404)
-
-    def test_latest_release_success(self):
-        """Test latest_release returns the latest page."""
-        article_page = StatisticalArticlePageFactory(parent=self.series)
-        series_response = self.client.get(self.series.url)
-        self.assertEqual(series_response.status_code, 200)
-
-        article_page_response = self.client.get(article_page.url)
-        self.assertEqual(article_page_response.status_code, 200)
-
-        self.assertEqual(series_response.context, article_page_response.context)
-
-    def test_latest_release_external_env(self):
-        """Test latest_release in external env."""
-        StatisticalArticlePageFactory(parent=self.series)
-
-        with override_settings(IS_EXTERNAL_ENV=True):
-            series_response = self.client.get(self.series.url)
-
-        self.assertEqual(series_response.status_code, 200)
 
 
 class StatisticalArticlePageTestCase(WagtailTestUtils, TestCase):
@@ -181,6 +130,72 @@ class StatisticalArticlePageTestCase(WagtailTestUtils, TestCase):
             release_date=self.page.release_date + timezone.timedelta(days=1),
         )
         self.assertFalse(self.page.is_latest)
+
+    def test_canonical_points_to_evergreen_if_latest_article_in_series(self):
+        parent_article_series = self.page.get_parent()
+        self.assertTrue(self.page.is_latest)
+
+        response = self.client.get(parent_article_series.url)
+
+        self.assertContains(
+            response, f'<link rel="canonical" href="{parent_article_series.get_full_url()}">', html=True
+        )
+
+    def test_canonical_points_to_self_if_not_latest_article(self):
+        """Test that the canonical link is self referential if the article is not the latest in the series."""
+        StatisticalArticlePageFactory(  # New latest article in the series
+            parent=self.page.get_parent(),
+            release_date=self.page.release_date + timezone.timedelta(days=1),
+        )
+
+        self.assertFalse(self.page.is_latest)
+
+        response = self.client.get(self.page.url)
+
+        self.assertContains(response, f'<link rel="canonical" href="{self.page.get_full_url()}">', html=True)
+
+    def test_related_data_canonical_points_to_evergreen_if_latest_article_in_series(self):
+        self.page.datasets = StreamValue(
+            DatasetStoryBlock(),
+            stream_data=[("dataset_lookup", DatasetFactory())],
+        )
+        self.page.save_revision().publish()
+
+        self.assertTrue(self.page.is_latest)
+
+        parent_article_series = self.page.get_parent()
+
+        response = self.client.get(f"{parent_article_series.url}/related-data")
+
+        self.assertContains(
+            response, f'<link rel="canonical" href="{parent_article_series.get_full_url()}/related-data">', html=True
+        )
+
+    def test_related_data_canonical_points_to_self_if_not_latest_article_in_series(self):
+        self.page.datasets = StreamValue(
+            DatasetStoryBlock(),
+            stream_data=[("dataset_lookup", DatasetFactory())],
+        )
+        self.page.save_revision().publish()
+
+        StatisticalArticlePageFactory(  # New latest article in the series
+            parent=self.page.get_parent(),
+            release_date=self.page.release_date + timezone.timedelta(days=1),
+        )
+        self.assertFalse(self.page.is_latest)
+
+        response = self.client.get(f"{self.page.url}/related-data")
+
+        # The RequestFactory's default SERVER_NAME is 'testserver'.
+        # This is what is used in the request when building canonical URLs for this specific page.
+        request_factory = RequestFactory()
+        request_factory_server_name = request_factory._base_environ()["SERVER_NAME"]  # pylint: disable=protected-access
+
+        self.assertContains(
+            response,
+            f'<link rel="canonical" href="http://{request_factory_server_name}{self.page.url}/related-data">',
+            html=True,
+        )
 
     def test_has_equations(self):
         """Test has_equations property."""
@@ -727,6 +742,8 @@ class StatisticalArticlePageRenderTestCase(WagtailTestUtils, TestCase):
 
         datalayer_values = extract_datalayer_pushed_values(response.text)
         self.assertEqual(datalayer_values["product"], "wagtail")
+        self.assertEqual(datalayer_values["gtm.allowlist"], ["google", "hjtc", "lcl"])
+        self.assertEqual(datalayer_values["gtm.blocklist"], ["customScripts", "sp", "adm", "awct", "k", "d", "j"])
         self.assertEqual(datalayer_values["contentType"], self.page.analytics_content_type)
         self.assertEqual(datalayer_values["contentGroup"], self.page.analytics_content_group)
         self.assertEqual(datalayer_values["contentTheme"], self.page.analytics_content_theme)
@@ -819,7 +836,9 @@ class PreviousReleasesWithoutPaginationTestCase(TestCase):
     def setUpTestData(cls):
         cls.article_series = ArticleSeriesPageFactory(title="Article Series")
         cls.articles = StatisticalArticlePageFactory.create_batch(9, parent=cls.article_series)
-        cls.previous_releases_url = cls.article_series.url + cls.article_series.reverse_subpage("previous_releases")
+        cls.previous_releases_url = (
+            f"{cls.article_series.url}/{cls.article_series.reverse_subpage('previous_releases')}"
+        )
 
     def test_breadcrumb_does_contains_series_url(self):
         response = self.client.get(self.previous_releases_url)
@@ -858,8 +877,8 @@ class PreviousReleasesWithPaginationPagesTestCase(TestCase):
     def setUpTestData(cls):
         cls.article_series = ArticleSeriesPageFactory(title="Article Series")
         cls.articles = StatisticalArticlePageFactory.create_batch(cls.total_batch, parent=cls.article_series)
-        cls.previous_releases_base_url = cls.article_series.url + cls.article_series.reverse_subpage(
-            "previous_releases"
+        cls.previous_releases_base_url = (
+            f"{cls.article_series.url}/{cls.article_series.reverse_subpage('previous_releases')}"
         )
 
     def assert_pagination(self, page_number, expected_contains, expected_not_contains):

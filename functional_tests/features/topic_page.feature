@@ -22,9 +22,21 @@ Feature: CMS users can draft, edit, and publish topic pages
         And the user visits the topic page
         Then the user can see the newly created article in featured spot
 
+    Scenario: The 'View all related articles' link appears on a topic page
+        Given a topic page exists under the homepage
+        And the user has created a statistical article in a series
+        When the user visits the topic page
+        Then the user sees the 'View all related articles' link
+
+    Scenario: The 'View all related methodology' link appears on a topic page
+        Given a topic page exists under the homepage
+        And the topic page has a child methodology page
+        When the user visits the topic page
+        Then the user sees the 'View all related methodology' link
+
     Scenario: The translated version of the topic page uses the same taxonomy
         Given a topic page exists under the homepage
-        And the user creates a Welsh version of the home page
+        And the topic page has a Welsh translation
         When the user edits the topic page
         And the user switches to the Welsh locale
         And the user goes to the Taxonomy tab
@@ -90,6 +102,7 @@ Feature: CMS users can draft, edit, and publish topic pages
         And the user clicks "Publish"
         And the user views the topic page
         Then the selected datasets are displayed on the page
+        And the user sees the 'View all related data' link
 
     Scenario: A CMS user can add a time series section to a topic page
         Given a topic page exists under the homepage
@@ -98,4 +111,5 @@ Feature: CMS users can draft, edit, and publish topic pages
         And the user clicks "Publish"
         And the user views the topic page
         Then the time series section is displayed on the page
+        And the user sees the 'View all related time series' link
         And the time series item appears in the table of contents

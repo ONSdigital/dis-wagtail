@@ -11,8 +11,8 @@ from django.utils.functional import cached_property
 from django.utils.html import strip_tags
 from django.utils.translation import gettext_lazy as _
 from wagtail.admin.panels import FieldPanel, FieldRowPanel, HelpPanel, MultiFieldPanel, TitleFieldPanel
-from wagtail.contrib.routable_page.models import RoutablePageMixin, path
-from wagtail.coreutils import resolve_model_string
+from wagtail.contrib.routable_page.models import path
+from wagtail.coreutils import WAGTAIL_APPEND_SLASH, resolve_model_string
 from wagtail.fields import RichTextField
 from wagtail.models import Page
 from wagtail.search import index
@@ -30,6 +30,7 @@ from cms.core.blocks.stream_blocks import SectionStoryBlock
 from cms.core.custom_date_format import ons_date_format
 from cms.core.fields import StreamField
 from cms.core.models import BasePage
+from cms.core.models.mixins import NoTrailingSlashRoutablePageMixin
 from cms.core.widgets import date_widget
 from cms.datasets.blocks import DatasetStoryBlock
 from cms.datasets.utils import format_datasets_as_document_list
@@ -73,7 +74,11 @@ class ArticlesIndexPage(BasePage):  # type: ignore[django-manager-missing]
         return redirect(self.get_parent().get_url(request=request))
 
 
-class ArticleSeriesPage(RoutablePageMixin, GenericTaxonomyMixin, BasePage):  # type: ignore[django-manager-missing]
+class ArticleSeriesPage(  # type: ignore[django-manager-missing]
+    NoTrailingSlashRoutablePageMixin,
+    GenericTaxonomyMixin,
+    BasePage,
+):
     """The article series model."""
 
     parent_page_types: ClassVar[list[str]] = ["ArticlesIndexPage"]
@@ -103,13 +108,22 @@ class ArticleSeriesPage(RoutablePageMixin, GenericTaxonomyMixin, BasePage):  # t
         return latest
 
     @path("")
-    def index_route(self, request: "HttpRequest", *args: Any, **kwargs: Any) -> "HttpResponse":
+    def latest_article(self, request: "HttpRequest", *args: Any, **kwargs: Any) -> "HttpResponse":
         """Serves the latest statistical article page in the series."""
         if not (latest := self.get_latest()):
             raise Http404
 
-        request.is_preview = getattr(request, "is_preview", False)  # type: ignore[attr-defined]
         return latest.serve(request, *args, serve_as_edition=True, **kwargs)
+
+    @path("related-data/")
+    def latest_article_related_data(self, request: "HttpRequest", *args: Any, **kwargs: Any) -> "HttpResponse":
+        """Serves the related data for the latest statistical article page in the series."""
+        if not (latest := self.get_latest()):
+            raise Http404
+
+        request.is_for_subpage = True  # type: ignore[attr-defined]
+
+        return cast("HttpResponse", latest.related_data(request, *args, **kwargs))
 
     @path("editions/")
     def previous_releases(self, request: "HttpRequest") -> "TemplateResponse":
@@ -147,7 +161,11 @@ class ArticleSeriesPage(RoutablePageMixin, GenericTaxonomyMixin, BasePage):  # t
 
 
 # pylint: disable=too-many-public-methods
-class StatisticalArticlePage(BundledPageMixin, RoutablePageMixin, BasePage):  # type: ignore[django-manager-missing]
+class StatisticalArticlePage(  # type: ignore[django-manager-missing]
+    BundledPageMixin,
+    NoTrailingSlashRoutablePageMixin,
+    BasePage,
+):
     """The statistical article page model.
 
     Previously known as statistical bulletin, statistical analysis article, analysis page.
@@ -432,7 +450,7 @@ class StatisticalArticlePage(BundledPageMixin, RoutablePageMixin, BasePage):  # 
 
     @cached_property
     def related_data_display_title(self) -> str:
-        return f"{_('All data related to')} {self.title}"
+        return _("All data related to %(article_title)s") % {"article_title": self.title}
 
     @cached_property
     def dataset_document_list(self) -> list[dict[str, Any]]:
@@ -455,7 +473,10 @@ class StatisticalArticlePage(BundledPageMixin, RoutablePageMixin, BasePage):  # 
         self, request: "HttpRequest"
     ) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
         """Returns a list of corrections and notices for the page."""
-        base_url = self.get_url(request)
+        base_url = self.get_url(request) or ""
+        if not WAGTAIL_APPEND_SLASH:
+            # Add the trailing slash as this will be concatenated
+            base_url += "/"
         corrections = (
             [
                 serialize_correction_or_notice(
@@ -541,7 +562,12 @@ class StatisticalArticlePage(BundledPageMixin, RoutablePageMixin, BasePage):  # 
         Otherwise, it will be the default canonical page URL.
         """
         canonical_page = self.alias_of.specific_deferred if self.alias_of_id else self
-        if canonical_page.is_latest and not getattr(request, "is_for_subpage", False):
+
+        if canonical_page.is_latest:
+            if getattr(request, "is_for_subpage", False) and getattr(request, "canonical_url", False):
+                # Special case for sub-routes of latest article in a series
+                url = request.canonical_url  # type: ignore[attr-defined]
+                return cast(str, url)
             return cast(str, canonical_page.get_parent().get_full_url(request=request))
 
         return super().get_canonical_url(request=request)
@@ -582,7 +608,7 @@ class StatisticalArticlePage(BundledPageMixin, RoutablePageMixin, BasePage):  # 
             raise Http404
 
         # Find correction by version
-        for correction in self.corrections:  # pylint: disable=not-an-iterable
+        for correction in self.corrections:
             if correction.value["version_id"] == version:
                 break
         else:
@@ -615,8 +641,16 @@ class StatisticalArticlePage(BundledPageMixin, RoutablePageMixin, BasePage):  # 
     def related_data(self, request: "HttpRequest") -> "TemplateResponse":
         if not self.dataset_document_list:
             raise Http404
-        paginator = Paginator(self.dataset_document_list, per_page=settings.RELATED_DATASETS_PER_PAGE)
 
+        request.is_for_subpage = True  # type: ignore[attr-defined]
+
+        canonical_page = self.alias_of.specific_deferred if self.alias_of_id else self
+        if canonical_page.is_latest:
+            request.canonical_url = (  # type: ignore[attr-defined]
+                canonical_page.get_parent().get_full_url(request=request) + "/related-data"
+            )
+
+        paginator = Paginator(self.dataset_document_list, per_page=settings.RELATED_DATASETS_PER_PAGE)
         try:
             paginated_datasets = paginator.page(request.GET.get("page", 1))
             ons_pagination_url_list = [{"url": f"?page={n}"} for n in paginator.page_range]
@@ -651,6 +685,9 @@ class StatisticalArticlePage(BundledPageMixin, RoutablePageMixin, BasePage):  # 
         split.insert(-1, "editions")
         page_path = "/".join(["", *split, ""])
 
+        if not WAGTAIL_APPEND_SLASH and page_path != "/":
+            page_path = page_path.rstrip("/")
+
         return site_id, root_url, page_path
 
     def serve(self, request: "HttpRequest", *args: Any, **kwargs: Any) -> "HttpResponse":
@@ -663,6 +700,8 @@ class StatisticalArticlePage(BundledPageMixin, RoutablePageMixin, BasePage):  # 
             # if for some reason we're getting the non-editioned path
             # redirect to the path with the /edition/ slug
             page_url = self.get_url(request=request)
+            if not page_url:
+                raise Http404
             if page_url != request.path:
                 return redirect(page_url)
 

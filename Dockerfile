@@ -61,7 +61,8 @@ RUN apt --quiet --yes update \
     && /usr/share/postgresql-common/pgdg/apt.postgresql.org.sh -y \
     # Install the Postgres client (matching production version)
     && apt --quiet --yes install --no-install-recommends postgresql-client-${POSTGRES_VERSION} \
-    && apt --quiet --yes autoremove
+    && apt --quiet --yes autoremove \
+    && rm -rf /var/lib/apt/lists/*
 
 
 # Create an unprivileged user and virtual environment for the app
@@ -267,6 +268,7 @@ RUN <<EOF
     apt --quiet --yes install nodejs
     # Tidy up
     apt --quiet --yes autoremove
+    rm -rf /var/lib/apt/lists/*
 EOF
 
 # Give the unprivileged user passwordless sudo access
@@ -284,8 +286,8 @@ USER $USERNAME
 
 # Copy in the node_modules directory from the frontend-deps stage to initialise
 # the volume that gets mounted here
-ARG UID
-ARG GID
+ARG UID=1000
+ARG GID=1000
 COPY --chown=$UID:$GID --from=frontend-deps --link /build/node_modules ./node_modules
 
 # Install the dev dependencies (they're omitted in the base stage)

@@ -136,6 +136,9 @@ MIDDLEWARE = [
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    # Custom middleware to redirect trailing slash URLs to non-trailing-slash equivalent
+    # which needs to be placed after CommonMiddleware to avoid double redirects.
+    "cms.core.middleware.NonTrailingSlashRedirectMiddleware",
     "wagtail.contrib.redirects.middleware.RedirectMiddleware",
 ]
 
@@ -364,7 +367,6 @@ LANGUAGE_CODE = "en-gb"
 WAGTAIL_CONTENT_LANGUAGES = LANGUAGES = [
     ("en-gb", _("English")),
     ("cy", _("Welsh")),
-    ("uk", _("Ukrainian")),
 ]
 
 LOCALE_PATHS = [PROJECT_DIR / "locale"]
@@ -857,6 +859,10 @@ if ENABLE_DJANGO_DEFENDER:
 # This name is displayed in the Wagtail admin.
 WAGTAIL_SITE_NAME = "Office for National Statistics"
 
+# Enforce non-trailing slash URLs
+APPEND_SLASH = False
+WAGTAIL_APPEND_SLASH = False
+
 # Base URL to use when formatting absolute URLs within the Wagtail admin in
 # contexts without a request, e.g. in notification emails. Don't include '/admin'
 # or a trailing slash.
@@ -952,8 +958,8 @@ DATETIME_FORMAT = "j F Y g:ia"  # 1 November 2024, 1 p.m.
 ONS_EMBED_PREFIX = env.get("ONS_EMBED_PREFIX", "https://www.ons.gov.uk/visualisations/")
 
 # ONS Cookie banner settings
-ONS_COOKIE_BANNER_SERVICE_NAME = env.get("ONS_COOKIE_BANNER_SERVICE_NAME", "www.ons.gov.uk")
-MANAGE_COOKIE_SETTINGS_URL = env.get("MANAGE_COOKIE_SETTINGS_URL", "https://www.ons.gov.uk/cookies")
+ONS_COOKIE_BANNER_SERVICE_NAME = env.get("ONS_COOKIE_BANNER_SERVICE_NAME", "ons.gov.uk")
+ONS_COOKIES_PAGE_SLUG = "cookies"
 
 # Project information
 BUILD_TIME = datetime.datetime.fromtimestamp(int(env["BUILD_TIME"])) if env.get("BUILD_TIME") else None
@@ -963,7 +969,15 @@ START_TIME = datetime.datetime.now(tz=datetime.UTC)
 
 SLACK_NOTIFICATIONS_WEBHOOK_URL = env.get("SLACK_NOTIFICATIONS_WEBHOOK_URL")
 
+# API bases
 ONS_API_BASE_URL = env.get("ONS_API_BASE_URL", "https://api.beta.ons.gov.uk/v1")
+DATASETS_API_BASE_URL = env.get("DATASETS_API_BASE_URL", f"{ONS_API_BASE_URL}/datasets")  # used for dataset choosers
+DIS_DATASETS_BUNDLE_API_BASE_URL = env.get("DIS_DATASETS_BUNDLE_API_BASE_URL", ONS_API_BASE_URL)
+TOPIC_API_BASE_URL = env.get("TOPIC_API_BASE_URL", f"{ONS_API_BASE_URL}/topics")  # used to sync topics
+
+# Feature flag to enable/disable interaction with the ONS Bundle API
+DIS_DATASETS_BUNDLE_API_ENABLED = env.get("DIS_DATASETS_BUNDLE_API_ENABLED", "false").lower() == "true"
+
 ONS_WEBSITE_BASE_URL = env.get("ONS_WEBSITE_BASE_URL", "https://www.ons.gov.uk")
 ONS_ORGANISATION_NAME = env.get("ONS_ORGANISATION_NAME", "Office for National Statistics")
 
@@ -986,6 +1000,7 @@ SEARCH_INDEX_EXCLUDED_PAGE_TYPES = (
     "ThemeIndexPage",
     "ThemePage",
     "TopicPage",
+    "CookiesPage",
     "Page",
 )
 
@@ -1044,5 +1059,10 @@ BACKUP_SITE_URL = env.get("BACKUP_SITE_URL", "https://backup.ons.gov.uk")
 
 CMS_RESOURCES_ENDPOINT_ENABLED = env.get("CMS_RESOURCES_ENDPOINT_ENABLED", "false").lower() == "true"
 
+USE_I18N_ROOT_NO_TRAILING_SLASH = env.get("USE_I18N_ROOT_NO_TRAILING_SLASH", "false").lower() == "true"
+
 # Allow to override but default to enabled
 CMS_SEARCH_NOTIFY_ON_DELETE_OR_UNPUBLISH = env.get("CMS_SEARCH_NOTIFY_ON_DELETE_OR_UNPUBLISH", "true").lower() == "true"
+
+# Domain-based locale configuration
+CMS_USE_SUBDOMAIN_LOCALES = env.get("CMS_USE_SUBDOMAIN_LOCALES", "true").lower() == "true"

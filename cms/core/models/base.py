@@ -5,6 +5,7 @@ from django.utils.decorators import method_decorator
 from django.utils.functional import cached_property
 from django.utils.translation import gettext_lazy as _
 from wagtail.admin.panels import ObjectList, TabbedInterface
+from wagtail.coreutils import WAGTAIL_APPEND_SLASH
 from wagtail.models import Page
 from wagtail.query import PageQuerySet
 from wagtail.utils.decorators import cached_classmethod
@@ -214,10 +215,16 @@ class BasePage(PageLDMixin, ListingFieldsMixin, SocialFieldsMixin, Page):  # typ
         """
         canonical_page = self.alias_of or self
         if getattr(request, "is_for_subpage", False) and getattr(request, "routable_resolver_match", None):
-            resolver_match = request.routable_resolver_match  # type: ignore[attr-defined]
-            return cast(str, canonical_page.get_full_url(request=request) + resolver_match.route)
-
+            return request.build_absolute_uri(request.get_full_path())
         return cast(str, canonical_page.get_full_url(request=request))
+
+    def get_url(self, request: Optional["HttpRequest"] = None, current_site: Optional["Site"] = None) -> Optional[str]:
+        """Override get_url to return URLs without trailing slashes."""
+        url: str = super().get_url(request, current_site)
+
+        if not WAGTAIL_APPEND_SLASH and url and url != "/":
+            return url.rstrip("/")
+        return url
 
     @cached_property
     def cached_analytics_values(self) -> dict[str, str | bool]:

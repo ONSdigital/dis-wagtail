@@ -16,6 +16,8 @@
 
 {%- set page_title_default -%}
     {%- with current_site=wagtail_site() -%}
+        {# TODO: This doesn't account for no page object, in which case it falls back on a bad DS default
+                 This logic must remain on a single line when done in template, could be moved to python to be more readable #}
         {% if current_site and page.pk == current_site.root_page.pk and current_site.site_name %}{{ current_site.site_name }} - {% endif %}{% if page.seo_title %}{{ page.seo_title }}{% else %}{{ page.display_title | default(page.title) }}{% endif %}{% if current_site and page.pk != current_site.root_page.pk and current_site.site_name %} - {{ current_site.site_name }}{% endif %}
     {%- endwith -%}
 {%- endset -%}
@@ -86,7 +88,11 @@
     {% if GOOGLE_TAG_MANAGER_CONTAINER_ID and not request.is_preview %}
         <script>
             window.dataLayer = window.dataLayer || [];
-            dataLayer.push({"product": "wagtail"});
+            dataLayer.push({
+                "product": "wagtail",
+                "gtm.allowlist": ["google", "hjtc", "lcl"],
+                "gtm.blocklist": ["customScripts", "sp", "adm", "awct", "k", "d", "j"]
+            });
         </script>
 
         {% if page %}
@@ -169,8 +175,8 @@
   {{
     onsCookiesBanner({
       'lang': "cy" if LANGUAGE_CODE == "cy" else "en",
-      'serviceName': COOKIE_BANNER_SERVICE_NAME,
-      'settingsLinkUrl': MANAGE_COOKIE_SETTINGS_URL,
+      'serviceName': ONS_COOKIE_BANNER_SERVICE_NAME,
+      'settingsLinkUrl': COOKIES_PAGE_URL,
     })
   }}
   {# fmt:on #}

@@ -26,40 +26,54 @@ from cms.topics.tests.utils import post_page_add_form_to_create_topic_page
 class ArticleSeriesPageTests(WagtailPageTestCase):
     @classmethod
     def setUpTestData(cls):
-        cls.page = ArticleSeriesPageFactory(title="The Article Series")
+        cls.article_series_page = ArticleSeriesPageFactory(title="The Article Series")
 
     def test_default_route(self):
-        self.assertPageIsRoutable(self.page)
+        self.assertPageIsRoutable(self.article_series_page)
 
     def test_default_route_rendering(self):
-        self.assertPageIsRenderable(self.page, accept_404=True)
-        StatisticalArticlePageFactory(parent=self.page, title="Statistical Article")
-        self.assertPageIsRenderable(self.page, accept_404=False, accept_redirect=True)
+        self.assertPageIsRenderable(self.article_series_page, accept_404=True)
+        StatisticalArticlePageFactory(parent=self.article_series_page, title="Statistical Article")
+        self.assertPageIsRenderable(self.article_series_page, accept_404=False, accept_redirect=True)
 
     def test_default_route_renders_latest_article(self):
-        article = StatisticalArticlePageFactory(parent=self.page, title="Latest Article")
-        response = self.client.get(self.page.url)
+        article = StatisticalArticlePageFactory(parent=self.article_series_page, title="Latest Article")
+        response = self.client.get(self.article_series_page.url)
         self.assertEqual(response.status_code, HTTPStatus.OK)
         self.assertContains(response, article.title)
 
     def test_previous_releases_route(self):
-        self.assertPageIsRoutable(self.page, "editions/")
+        self.assertPageIsRoutable(self.article_series_page, "editions")
 
     def test_previous_releases_route_rendering(self):
-        self.assertPageIsRenderable(self.page, "editions/")
+        self.assertPageIsRenderable(self.article_series_page, "editions")
 
     def test_previous_releases_article_list(self):
-        response = self.client.get(self.page.url + "editions/")
+        response = self.client.get(f"{self.article_series_page.url}/editions")
         self.assertEqual(response.status_code, HTTPStatus.OK)
         self.assertContains(response, "There are currently no releases")
 
-        first_article = StatisticalArticlePageFactory(parent=self.page)
-        second_article = StatisticalArticlePageFactory(parent=self.page)
+        first_article = StatisticalArticlePageFactory(parent=self.article_series_page)
+        second_article = StatisticalArticlePageFactory(parent=self.article_series_page)
 
-        response = self.client.get(self.page.url + "editions/")
+        response = self.client.get(f"{self.article_series_page.url}/editions")
         self.assertEqual(response.status_code, HTTPStatus.OK)
         self.assertContains(response, first_article.title)
         self.assertContains(response, second_article.title)
+
+    def test_previous_releases_breadcrumbs(self):
+        """Test that the previous releases page includes a breadcrumb for the latest article."""
+        StatisticalArticlePageFactory(parent=self.article_series_page, title="Latest Article")
+        response = self.client.get(f"{self.article_series_page.url}/editions")
+        self.assertEqual(response.status_code, HTTPStatus.OK)
+
+        # Check the breadcrumbs include the series page link, which serves the evergreen latest article
+        self.assertContains(
+            response,
+            f'<a class="ons-breadcrumbs__link" href="{self.article_series_page.full_url}">'
+            f"{self.article_series_page.title}</a>",
+            html=True,
+        )
 
 
 class StatisticalArticlePageTests(WagtailPageTestCase):
@@ -119,6 +133,7 @@ class StatisticalArticlePageTests(WagtailPageTestCase):
         self.assertContains(response, "Cite this article")
 
     def test_localised_version_of_page_works(self):
+        self.page.copy_for_translation(locale=Locale.objects.get(language_code="cy"), copy_parents=True, alias=True)
         response = self.client.get("/cy" + self.page.url)
         self.assertEqual(response.status_code, HTTPStatus.OK)
         # Body of the page is still English
@@ -133,9 +148,9 @@ class StatisticalArticlePageTests(WagtailPageTestCase):
         self.assertEqual(response.status_code, HTTPStatus.NOT_FOUND)
 
     def test_correction_routes(self):
-        self.assertPageIsRoutable(self.page, "versions/1/")
-        self.assertPageIsRoutable(self.page, "versions/2/")
-        self.assertPageIsRoutable(self.page, "versions/3/")
+        self.assertPageIsRoutable(self.page, "versions/1")
+        self.assertPageIsRoutable(self.page, "versions/2")
+        self.assertPageIsRoutable(self.page, "versions/3")
 
     def test_can_add_correction(self):  # pylint: disable=too-many-statements # noqa
         response = self.client.get(self.page.url)
@@ -179,7 +194,7 @@ class StatisticalArticlePageTests(WagtailPageTestCase):
         self.assertNotContains(response, original_summary)
         self.assertContains(response, "Corrected summary")
 
-        v1_response = self.client.get(self.page.url + "versions/1/")
+        v1_response = self.client.get(f"{self.page.url}/versions/1")
 
         # The old version should not contain corrections
         self.assertNotContains(v1_response, "Corrections")
@@ -187,7 +202,7 @@ class StatisticalArticlePageTests(WagtailPageTestCase):
         self.assertContains(v1_response, original_summary)
 
         # V2 doesn't exist yet, should return 404
-        v2_response = self.client.get(self.page.url + "versions/2/")
+        v2_response = self.client.get(f"{self.page.url}/versions/2")
         self.assertEqual(v2_response.status_code, HTTPStatus.NOT_FOUND)
 
         second_correction = {
@@ -223,7 +238,7 @@ class StatisticalArticlePageTests(WagtailPageTestCase):
         self.assertContains(response, "Second corrected summary")
 
         # V2 now exists
-        v2_response = self.client.get(self.page.url + "versions/2/")
+        v2_response = self.client.get(f"{self.page.url}/versions/2")
         self.assertEqual(v2_response.status_code, HTTPStatus.OK)
 
         self.assertContains(v2_response, "Corrections")
@@ -231,7 +246,7 @@ class StatisticalArticlePageTests(WagtailPageTestCase):
         self.assertNotContains(v2_response, "Second correction text")
 
         # V3 doesn't exist yet, should return 404
-        v3_response = self.client.get(self.page.url + "versions/3/")
+        v3_response = self.client.get(f"{self.page.url}/versions/3")
         self.assertEqual(v3_response.status_code, HTTPStatus.NOT_FOUND)
 
         third_correction = {
@@ -270,7 +285,7 @@ class StatisticalArticlePageTests(WagtailPageTestCase):
         self.assertContains(response, "Third corrected summary")
 
         # V3 now exists
-        v3_response = self.client.get(self.page.url + "versions/3/")
+        v3_response = self.client.get(f"{self.page.url}/versions/3")
         self.assertEqual(v3_response.status_code, HTTPStatus.OK)
 
         self.assertContains(v3_response, "Corrections")
@@ -279,12 +294,12 @@ class StatisticalArticlePageTests(WagtailPageTestCase):
         self.assertNotContains(v3_response, "Third correction text")
 
         # Check that at this stage all other versions are still correct
-        v1_response = self.client.get(self.page.url + "versions/1/")
+        v1_response = self.client.get(f"{self.page.url}/versions/1")
         self.assertNotContains(v1_response, "Corrections")
         self.assertNotContains(v1_response, "View superseded version")
         self.assertContains(v1_response, original_summary)
 
-        v2_response = self.client.get(self.page.url + "versions/2/")
+        v2_response = self.client.get(f"{self.page.url}/versions/2")
         self.assertContains(v2_response, "Corrections")
         self.assertContains(v2_response, "First correction text")
         self.assertNotContains(v2_response, "Second correction text")
@@ -320,7 +335,7 @@ class StatisticalArticlePageTests(WagtailPageTestCase):
         self.assertContains(live_response, "New title")
         self.assertNotContains(live_response, old_title)
 
-        v1_response = self.client.get(self.page.url + "versions/1/")
+        v1_response = self.client.get(f"{self.page.url}/versions/1")
 
         self.assertNotContains(v1_response, "New title")
         self.assertContains(v1_response, old_title)
@@ -383,7 +398,7 @@ class StatisticalArticlePageTests(WagtailPageTestCase):
             page_content,
         )
 
-        v1_response = self.client.get(self.page.url + "versions/1/")
+        v1_response = self.client.get(f"{self.page.url}/versions/1")
 
         page_content = v1_response.content.decode(encoding="utf-8")
 
@@ -537,7 +552,7 @@ class StatisticalArticlePageTests(WagtailPageTestCase):
         lookup_dataset = Dataset.objects.create(
             namespace="LOOKUP",
             edition="lookup_edition",
-            version="lookup_version",
+            version=1,
             title="test lookup",
             description="lookup description",
         )
@@ -551,7 +566,7 @@ class StatisticalArticlePageTests(WagtailPageTestCase):
             ],
         )
         self.page.save_revision().publish()
-        response = self.client.get(self.page.url + "related-data/")
+        response = self.client.get(f"{self.page.url}/related-data")
         content = response.content.decode(encoding="utf-8")
 
         self.assertIn(self.page.related_data_display_title, content)
@@ -563,7 +578,7 @@ class StatisticalArticlePageTests(WagtailPageTestCase):
         self.assertIn(manual_dataset["url"], content)
 
     def test_empty_related_data_page(self):
-        response = self.client.get(self.page.url + "related-data/")
+        response = self.client.get(f"{self.page.url}/related-data")
         self.assertEqual(response.status_code, HTTPStatus.NOT_FOUND)
 
     def test_related_data_link_present(self):
@@ -602,7 +617,7 @@ class StatisticalArticlePageTests(WagtailPageTestCase):
             ],
         )
         self.page.save_revision().publish()
-        response = self.client.get(self.page.url + "related-data/")
+        response = self.client.get(f"{self.page.url}/related-data")
         content = response.content.decode(encoding="utf-8")
 
         self.assertNotIn('class="ons-pagination__item ons-pagination__item--previous"', content)
@@ -623,7 +638,7 @@ class StatisticalArticlePageTests(WagtailPageTestCase):
             stream_data=[("manual_link", dataset) for dataset in manual_datasets],
         )
         self.page.save_revision().publish()
-        response = self.client.get(self.page.url + "related-data/?page=2")
+        response = self.client.get(f"{self.page.url}/related-data?page=2")
         content = response.content.decode(encoding="utf-8")
 
         self.assertIn('class="ons-pagination__item ons-pagination__item--previous"', content)
@@ -635,7 +650,7 @@ class StatisticalArticlePageTests(WagtailPageTestCase):
         lookup_dataset = Dataset.objects.create(
             namespace="LOOKUP",
             edition="lookup_edition",
-            version="lookup_version",
+            version=1,
             title="test lookup",
             description="lookup description",
         )
@@ -740,7 +755,7 @@ class StatisticalArticlePageTests(WagtailPageTestCase):
 
         self.page.save_revision().publish()
 
-        v1_response = self.client.get(self.page.get_url(request=self.dummy_request) + "versions/1/")
+        v1_response = self.client.get(self.page.get_url(request=self.dummy_request) + "/versions/1")
         self.assertContains(v1_response, '<meta name="robots" content="noindex" />')
 
     def test_schema_org_data(self):
