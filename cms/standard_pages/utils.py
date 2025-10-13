@@ -4,7 +4,7 @@ from django.conf import settings
 
 logger = logging.getLogger(__name__)
 SUPPORTED_LANGUAGE_CODES = {lang[0] for lang in settings.LANGUAGES}
-DEFAULT_COOKIES_PAGE_URL = f"/{settings.ONS_COOKIES_PAGE_SLUG}"
+COOKIES_PAGE_URL = f"/{settings.ONS_COOKIES_PAGE_SLUG}"
 
 
 def get_cookies_page_url(language_code: str) -> str:
@@ -18,5 +18,5 @@ def get_cookies_page_url(language_code: str) -> str:
     ):
         # Only prefix the URL with the language code if not using subdomain locales and the language code is not the
         # default English and is a supported language
-        return f"/{language_code}{DEFAULT_COOKIES_PAGE_URL}"
-    return DEFAULT_COOKIES_PAGE_URL
+        return f"/{language_code}{COOKIES_PAGE_URL}"
+    return COOKIES_PAGE_URL
