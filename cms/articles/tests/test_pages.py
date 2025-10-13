@@ -133,6 +133,7 @@ class StatisticalArticlePageTests(WagtailPageTestCase):
         self.assertContains(response, "Cite this article")
 
     def test_localised_version_of_page_works(self):
+        self.page.copy_for_translation(locale=Locale.objects.get(language_code="cy"), copy_parents=True, alias=True)
         response = self.client.get("/cy" + self.page.url)
         self.assertEqual(response.status_code, HTTPStatus.OK)
         # Body of the page is still English
