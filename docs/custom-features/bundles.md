@@ -442,7 +442,9 @@ The bundle app makes use of signal handlers to send email notifications to previ
 
 ### Wagtail admin
 
--   Admin interface - custom [viewsets](<(https://docs.wagtail.org/en/stable/reference/viewsets.html#modelviewset)>) with bundle-specific actions; choosers; page explorer buttons
+-   Admin interface
+    -   [custom viewsets](https://docs.wagtail.org/en/stable/reference/viewsets.html#modelviewset) with bundle-specific actions; choosers; page explorer buttons
+    -   [dedicated panels](https://docs.wagtail.org/en/stable/reference/panels.html#module-wagtail.admin.panels) such as `BundleStatusPanel`, `BundleNotePanel` or `BundleMultipleChooserPanel`
 -   Workflow - checks page workflow states before bundle approval
 -   Search - bundles are indexed for admin search
 -   Permissions - add/edit/inspect permissions and user group roles are used for controlling access
@@ -486,6 +488,7 @@ As well as Wagtail [audit log](https://docs.wagtail.org/en/stable/extending/audi
 
 -   Wagtail
     -   [ModelViewSet](https://docs.wagtail.org/en/stable/reference/viewsets.html#modelviewset)
+    -   [Panels](https://docs.wagtail.org/en/stable/reference/panels.html#module-wagtail.admin.panels)
     -   [Workflows](https://docs.wagtail.org/en/stable/reference/models.html#workflowmixin)
     -   [Audit log](https://docs.wagtail.org/en/stable/extending/audit_log.html#audit-log)
         -   [Hook to register actions](https://docs.wagtail.org/en/stable/reference/hooks.html#register-log-actions)
