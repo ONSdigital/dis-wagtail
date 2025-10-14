@@ -3,8 +3,7 @@ from typing import TYPE_CHECKING, Any, ClassVar, Union
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.db import models
-from django.http import HttpRequest, HttpResponseRedirect
-from django.shortcuts import redirect
+from django.http import HttpRequest
 from django.utils.functional import cached_property
 from django.utils.translation import gettext_lazy as _
 from modelcluster.fields import ParentalKey
@@ -20,6 +19,7 @@ from cms.core.fields import StreamField
 from cms.core.forms import PageWithEquationsAdminForm
 from cms.core.models import BasePage
 from cms.core.query import order_by_pk_position
+from cms.core.utils import redirect_to_parent_listing
 from cms.core.widgets import date_widget
 from cms.taxonomy.mixins import GenericTaxonomyMixin
 
@@ -57,16 +57,7 @@ class MethodologyIndexPage(BasePage):  # type: ignore[django-manager-missing]
     def serve(self, request: "HttpRequest", *args: Any, **kwargs: Any) -> "HttpResponse":
         # FIXME: redirect to the publications listing for the topic
         # Get the parent topic page
-        parent = self.get_parent()
-
-        if parent and hasattr(parent.specific, "get_methodologies_search_url"):
-            redirect_url = parent.specific.get_methodologies_search_url()
-            if redirect_url:
-                # Use HttpResponseRedirect with status=307 for temporary redirect
-                return HttpResponseRedirect(redirect_url, status=307)
-
-        # Fallback to parent page if no search URL is available
-        return redirect(self.get_parent().get_url(request=request))
+        return redirect_to_parent_listing(self, request, "get_methodologies_search_url")
 
 
 class MethodologyRelatedPage(Orderable):
