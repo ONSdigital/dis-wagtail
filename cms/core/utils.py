@@ -7,7 +7,6 @@ from django.conf import settings
 from django.http import HttpResponseRedirect
 from django.shortcuts import redirect
 from matplotlib.figure import Figure
-from wagtail.models import Page
 
 from cms.core.enums import RelatedContentType
 
