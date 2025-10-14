@@ -82,7 +82,7 @@ class KafkaPublisherTests(TestCase, ResourceDictAssertions):
         KafkaPublisher()
         mock_producer_class.assert_called_once_with(
             bootstrap_servers=["localhost:9092"],
-            api_version=(3, 8),
+            api_version_auto_timeout_ms=5000,
             value_serializer=ANY,
             retries=5,
         )
