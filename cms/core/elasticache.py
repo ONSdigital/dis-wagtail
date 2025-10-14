@@ -30,14 +30,14 @@ class ElastiCacheIAMCredentialProvider(redis.CredentialProvider):
         self._cluster_name = cluster_name
         self._region = region
 
-        session = botocore.session.get_session()
+        self._session = botocore.session.get_session()
         self._request_signer = RequestSigner(
             ServiceId("elasticache"),
             self._region,
             "elasticache",
             "v4",
-            session.get_credentials(),
-            session.get_component("event_emitter"),
+            self._session.get_credentials(),
+            self._session.get_component("event_emitter"),
         )
 
         self._cache_key = f"elasticache_{user}_{cluster_name}_{region}"
