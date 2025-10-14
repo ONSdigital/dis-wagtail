@@ -143,7 +143,7 @@ MIDDLEWARE = [
     "wagtail.contrib.redirects.middleware.RedirectMiddleware",
 ]
 
-# Some middleware isn't needed for a external environment.
+# Some middleware isn't needed for an external environment.
 # Disable them to improve performance
 if not IS_EXTERNAL_ENV:
     common_middleware_index = MIDDLEWARE.index("django.middleware.common.CommonMiddleware")

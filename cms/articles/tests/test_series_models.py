@@ -197,7 +197,7 @@ class ArticleSeriesEvergreenUrlTestCase(WagtailTestUtils, TestCase):
             locale=Locale.objects.get(language_code="cy"), copy_parents=True
         )
         welsh_article.save_revision().publish()
-        response = self.client.get(f"{welsh_article.url}/related-data")
+        response = self.client.get(f"{welsh_article.url}/related-data", headers={"host": "cy.ons.localhost"})
         self.assertEqual(response.status_code, HTTPStatus.OK)
         welsh_series_url = welsh_article.get_parent().get_full_url()
         self.assertContains(response, f'<link rel="canonical" href="{welsh_series_url}/related-data">', html=True)
@@ -211,7 +211,7 @@ class ArticleSeriesEvergreenUrlTestCase(WagtailTestUtils, TestCase):
             locale=Locale.objects.get(language_code="cy"), copy_parents=True
         )
         welsh_article.save_revision().publish()
-        response = self.client.get(f"{self.article_series_page.url}/related-data")
+        response = self.client.get(f"{self.article_series_page.url}/related-data", headers={"host": "cy.ons.localhost"})
         self.assertEqual(response.status_code, HTTPStatus.OK)
         # TODO: Change to {self.article_series_page.url}/related-data once CMS-765 is resolved.
         self.assertContains(

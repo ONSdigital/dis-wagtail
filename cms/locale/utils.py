@@ -47,7 +47,6 @@ def get_mapped_site_root_paths(host: str | None = None) -> list[SiteRootPath]:
                     site.root_page.locale.language_code,
                 )
             )
-
         if len(result) == 1 and site:
             # If we have only one site, expand to include the translated root pages as alternatives
             for root_page in site.root_page.get_translations(inclusive=False).select_related("locale"):

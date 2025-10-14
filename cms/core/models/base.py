@@ -217,9 +217,14 @@ class BasePage(PageLDMixin, ListingFieldsMixin, SocialFieldsMixin, Page):  # typ
             return request.build_absolute_uri(request.get_full_path())
         return cast(str, canonical_page.get_full_url(request=request))
 
-    def get_url_parts(self, request: "Optional[HttpRequest]" = None) -> tuple[int, str, str]:
+    def get_url_parts(self, request: "Optional[HttpRequest]" = None) -> tuple[int, str, str] | None:
         """Override get_url_parts to generate URLs without trailing slashes."""
-        site_id, root_url, page_path = super().get_url_parts(request)
+        parts = super().get_url_parts(request)
+
+        if parts is None:
+            return None
+
+        site_id, root_url, page_path = parts
 
         if not settings.WAGTAIL_APPEND_SLASH and page_path and page_path != "/":
             page_path = page_path.rstrip("/")
@@ -230,7 +235,8 @@ class BasePage(PageLDMixin, ListingFieldsMixin, SocialFieldsMixin, Page):  # typ
         """Get the relative path for this page, without the domain or any locale prefix.
         This will be the path portion of the URL returned by `get_url_parts()`.
         """
-        return self.get_url_parts(request=request)[-1]
+        parts = self.get_url_parts(request=request)  # returns site_id, root_url, page_path | None
+        return parts[-1] if parts is not None else ""
 
     @cached_property
     def cached_analytics_values(self) -> dict[str, str | bool]:
