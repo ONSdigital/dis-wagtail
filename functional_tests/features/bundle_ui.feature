@@ -12,7 +12,7 @@ Feature: UI Bundle Happy Paths
             not in preview team  | Cannot         | N/A              | N/A    | N/A  | Cannot  | N/A     |
             in preview team      | Can            | N/A              | N/A    | N/A  | Can     | N/A     |
     """
-    
+
 #---- Bundle Create UI Tests -----
     Scenario Outline: A User can create a bundle
         Given there is a <role> user

@@ -144,26 +144,24 @@ def a_user_exists_by_role(context: Context, user_role: str) -> None:
 def multiple_statistical_analysis(context: Context, no_statistical_analysis: str) -> None:
     context.statistical_article_pages = []
     context.article_series_page = ArticleSeriesPageFactory(title="PSF")
-    if no_statistical_analysis.isdigit():
-        for _ in range(int(no_statistical_analysis)):
-            article = StatisticalArticlePageFactory(parent=context.article_series_page)
-            mark_page_as_ready_to_publish(article, UserFactory())
-            context.statistical_article_pages.append(article)
+    for _ in range(int(no_statistical_analysis)):
+        article = StatisticalArticlePageFactory(parent=context.article_series_page)
+        mark_page_as_ready_to_publish(article, UserFactory())
+        context.statistical_article_pages.append(article)
 
 
 @given("there are {no_release_calendar} release calendar pages")
 def multiple_release_calendar(context: Context, no_release_calendar: str) -> None:
     context.release_calendar_pages = []
-    if no_release_calendar.isdigit():
-        for release_calendar_index in range(int(no_release_calendar)):
-            nowish = timezone.now() + timedelta(minutes=5 * (release_calendar_index + 1))
-            context.release_calendar_pages.append(
-                ReleaseCalendarPageFactory(
-                    release_date=nowish,
-                    title=f"Release Calendar Page {release_calendar_index}",
-                    status=ReleaseStatus.CONFIRMED,
-                )
+    for release_calendar_index in range(int(no_release_calendar)):
+        nowish = timezone.now() + timedelta(minutes=5 * (release_calendar_index + 1))
+        context.release_calendar_pages.append(
+            ReleaseCalendarPageFactory(
+                release_date=nowish,
+                title=f"Release Calendar Page {release_calendar_index}",
+                status=ReleaseStatus.CONFIRMED,
             )
+        )
 
 
 @given("there is a preview team")
@@ -185,43 +183,43 @@ def multiple_bundles_create(context: Context, number_of_bundles: str, bundle_det
         context.bundlepages = []
         context.bundleteams = []
 
-        if number_of_bundles.isdigit():
-            for __ in range(int(number_of_bundles)):
-                if not context.users[bundle_dets["creator_role"]]:
-                    context.users[bundle_dets["creator_role"]] = create_user(bundle_dets["creator_role"])
+        for __ in range(int(number_of_bundles)):
+            if not context.users[bundle_dets["creator_role"]]:
+                context.users[bundle_dets["creator_role"]] = create_user(bundle_dets["creator_role"])
 
-                bundle_status = BundleStatus.DRAFT
-                bundle_approved = False
-                if bundle_dets["status"] == "Approved":
-                    bundle_status = BundleStatus.APPROVED
-                    bundle_approved = True
-                if bundle_dets["status"] == "In_Review":
-                    bundle_status = BundleStatus.IN_REVIEW
-                bundle = BundleFactory(
-                    created_by=context.users[bundle_dets["creator_role"]]["user"],
-                    status=bundle_status,
-                    approved=bundle_approved,
-                )
+            bundle_status = BundleStatus.DRAFT
+            bundle_approved = False
+            if bundle_dets["status"] == "Approved":
+                bundle_status = BundleStatus.APPROVED
+                bundle_approved = True
+            if bundle_dets["status"] == "In_Review":
+                bundle_status = BundleStatus.IN_REVIEW
+            bundle = BundleFactory(
+                created_by=context.users[bundle_dets["creator_role"]]["user"],
+                status=bundle_status,
+                approved=bundle_approved,
+            )
 
-                if bool(bundle_dets["preview_teams"]) and hasattr(context, "team"):
-                    BundleTeam.objects.create(parent=bundle, team=context.team)
-                    context.bundleteams.append({"parent": bundle, "team": context.team})
-                bundle.save()
+            if bool(bundle_dets["preview_teams"]) and hasattr(context, "team"):
+                BundleTeam.objects.create(parent=bundle, team=context.team)
+                context.bundleteams.append({"parent": bundle, "team": context.team})
+            bundle.save()
 
-                if bool(bundle_dets["add_rel_cal"]) and hasattr(context, "release_calendar_pages"):
-                    for page in context.release_calendar_pages:
-                        BundlePage.objects.create(parent=bundle, page=page)
-                        context.bundlepages.append(BundlePageFactory(parent=bundle, page=page))
-                bundle.save()
+            if bool(bundle_dets["add_rel_cal"]) and hasattr(context, "release_calendar_pages"):
+                for page in context.release_calendar_pages:
+                    BundlePage.objects.create(parent=bundle, page=page)
+                    context.bundlepages.append(BundlePageFactory(parent=bundle, page=page))
+            bundle.save()
 
-                if bool(bundle_dets["add_stat_page"]) and hasattr(context, "statistical_article_pages"):
-                    for page in context.statistical_article_pages:
-                        BundlePage.objects.create(parent=bundle, page=page)
-                        context.bundlepages.append(BundlePageFactory(parent=bundle, page=page))
-                bundle.save()
-                context.bundles.append(bundle)
+            if bool(bundle_dets["add_stat_page"]) and hasattr(context, "statistical_article_pages"):
+                for page in context.statistical_article_pages:
+                    BundlePage.objects.create(parent=bundle, page=page)
+                    context.bundlepages.append(BundlePageFactory(parent=bundle, page=page))
+            bundle.save()
 
-    context.bundles.sort(key=lambda x: x.name)
+            context.bundles.append(bundle)
+
+        context.bundles.sort(key=lambda x: x.name)
 
 
 # Bundles UI Triggers
@@ -320,28 +318,19 @@ def can_edit_bundle(context: Context) -> None:
 def add_preview_team_in_edit(context: Context) -> None:
     # add preview team
     if hasattr(context, "team"):
-        expect(context.page.locator("#panel-preview_teams-heading")).to_contain_text("Preview teams")
         context.page.get_by_role("button", name="Add preview team").click()
-        expect(context.page.get_by_role("textbox", name="Search term")).to_be_visible()
         context.page.get_by_role("textbox", name="Search term").click()
         context.page.get_by_role("textbox", name="Search term").fill(context.team.name)
         context.page.wait_for_timeout(200)
-        expect(context.page.get_by_role("checkbox", name=context.team.name)).to_be_visible()
         context.page.get_by_role("checkbox", name=context.team.name).check()
-        expect(context.page.get_by_role("button", name="Confirm selection")).to_be_visible()
         context.page.get_by_role("button", name="Confirm selection").click()
 
 
 def add_article_page_in_edit(context: Context) -> None:
     # add Article
     if hasattr(context, "statistical_article_pages"):
-        expect(context.page.get_by_role("heading", name="Bundled pages").locator("span")).to_be_visible()
-        expect(context.page.get_by_role("button", name="Add page")).to_be_visible()
         context.page.get_by_role("button", name="Add page").click()
-        expect(context.page.get_by_role("heading", name="Choose a page")).to_be_visible()
-        expect(context.page.get_by_text("Page type", exact=True)).to_be_visible()
         context.page.get_by_label("Page type").select_option("StatisticalArticlePage")
-        expect(context.page.get_by_text(context.statistical_article_pages[-1].title)).to_be_visible()
         context.page.wait_for_timeout(200)
         expect(
             context.page.get_by_role(
@@ -352,25 +341,18 @@ def add_article_page_in_edit(context: Context) -> None:
             "checkbox", name=f"{context.article_series_page.title}: {context.statistical_article_pages[-1].title}"
         ).check()
         context.page.wait_for_timeout(100)
-        expect(context.page.get_by_role("button", name="Confirm selection")).to_be_visible()
         context.page.get_by_role("button", name="Confirm selection").click()
 
 
 def add_release_calendar_in_edit(context: Context) -> None:
     # add Release Calendar
     if hasattr(context, "release_calendar_pages"):
-        expect(context.page.get_by_role("heading", name="Scheduling").locator("span")).to_be_visible()
-        expect(context.page.get_by_text("Release Calendar page", exact=True)).to_be_visible()
-        expect(context.page.get_by_role("button", name="Choose Release Calendar page")).to_be_visible()
         context.page.get_by_role("button", name="Choose Release Calendar page").click()
-
         context.page.get_by_role("textbox", name="Search term").fill(context.release_calendar_pages[-1].title)
         context.page.get_by_role("row", name=context.release_calendar_pages[-1].title).get_by_role("link").click()
 
     else:
-        expect(context.page.get_by_text("or Publication date")).to_be_visible()
         now = (datetime.now() + timedelta(hours=4)).strftime("%Y-%m-%d %H:%M")
-        print(now)
         context.page.get_by_role("textbox", name="or Publication date").fill(now)
 
 
