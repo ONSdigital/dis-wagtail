@@ -1,8 +1,11 @@
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from wagtail.blocks import StreamValue
 
 from cms.core.formatting_utils import format_as_document_list_item
+
+if TYPE_CHECKING:
+    from cms.taxonomy.models import Topic
 
 
 def format_time_series_as_document_list(time_series: StreamValue) -> list[dict[str, Any]]:
@@ -26,3 +29,10 @@ def format_time_series_as_document_list(time_series: StreamValue) -> list[dict[s
         time_series_documents.append(time_series_document)
 
     return time_series_documents
+
+
+def get_topic_search_url(topic: "Topic", base_url: str, suffix: str) -> str | None:
+    """Returns a formatted search URL for a topic, or None if topic/base_url is missing."""
+    if not topic or not base_url:
+        return None
+    return f"{base_url}/{topic.slug_path}/{suffix}"

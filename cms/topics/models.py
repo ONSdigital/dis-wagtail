@@ -25,7 +25,7 @@ from cms.methodology.models import MethodologyPage
 from cms.taxonomy.mixins import ExclusiveTaxonomyMixin
 from cms.topics.blocks import ExploreMoreStoryBlock, TimeSeriesPageStoryBlock, TopicHeadlineFigureBlock
 from cms.topics.forms import TopicPageAdminForm
-from cms.topics.utils import format_time_series_as_document_list
+from cms.topics.utils import format_time_series_as_document_list, get_topic_search_url
 from cms.topics.viewsets import (
     FeaturedSeriesPageChooserWidget,
     HighlightedArticlePageChooserWidget,
@@ -412,25 +412,7 @@ class TopicPage(BundledPageMixin, ExclusiveTaxonomyMixin, BasePage):  # type: ig
         return links
 
     def get_articles_search_url(self) -> str | None:
-        """Returns the URL for the articles search listing page for this topic.
-        Returns None if the topic is not set or if ONS_WEBSITE_BASE_URL is not configured.
-        """
-        if not (topic := self.topic):
-            return None
-
-        if not settings.ONS_WEBSITE_BASE_URL:
-            return None
-
-        return f"{settings.ONS_WEBSITE_BASE_URL}/{topic.slug_path}/publications"
+        return get_topic_search_url(self.topic, settings.ONS_WEBSITE_BASE_URL, "publications")
 
     def get_methodologies_search_url(self) -> str | None:
-        """Returns the URL for the methodologies search listing page for this topic.
-        Returns None if the topic is not set or if ONS_WEBSITE_BASE_URL is not configured.
-        """
-        if not (topic := self.topic):
-            return None
-
-        if not settings.ONS_WEBSITE_BASE_URL:
-            return None
-
-        return f"{settings.ONS_WEBSITE_BASE_URL}/{topic.slug_path}/topicspecificmethodology"
+        return get_topic_search_url(self.topic, settings.ONS_WEBSITE_BASE_URL, "topicspecificmethodology")
