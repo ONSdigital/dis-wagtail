@@ -192,7 +192,7 @@ def multiple_bundles_create(context: Context, number_of_bundles: str, bundle_det
             if bundle_dets["status"] == "Approved":
                 bundle_status = BundleStatus.APPROVED
                 bundle_approved = True
-            if bundle_dets["status"] == "In_Review":
+            elif bundle_dets["status"] == "In_Review":
                 bundle_status = BundleStatus.IN_REVIEW
             bundle = BundleFactory(
                 created_by=context.users[bundle_dets["creator_role"]]["user"],
