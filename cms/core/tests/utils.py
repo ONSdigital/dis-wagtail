@@ -1,15 +1,20 @@
 import json
 import re
 import sys
+from typing import TYPE_CHECKING
 from unittest import TestCase
 
 from bs4 import BeautifulSoup
 from django.conf import settings
 from django.conf.urls.i18n import is_language_prefix_patterns_used
 from django.core.files.base import ContentFile
+from django.test import SimpleTestCase
 from django.urls import clear_url_caches
 
 from cms.documents.models import CustomDocument
+
+if TYPE_CHECKING:
+    from wagtail.blocks import DeclarativeSubBlocksMetaclass, StructValue
 
 
 def get_test_document():
@@ -52,3 +57,16 @@ def reset_url_caches():
             del sys.modules[mod]
 
     is_language_prefix_patterns_used.cache_clear()
+
+
+class PanelBlockAssertions(SimpleTestCase):
+    """Mixin that provides shared assertions for panel blocks."""
+
+    def assertPanelBlockFields(  # pylint: disable=invalid-name
+        self, value: "StructValue", expected_fields: set[str], block_class: "DeclarativeSubBlocksMetaclass"
+    ) -> None:
+        self.assertEqual(
+            set(value.keys()),
+            expected_fields,
+            f"Unexpected fields in block value for {block_class.__name__}: {set(value.keys()) - expected_fields}",
+        )

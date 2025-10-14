@@ -2,39 +2,6 @@ from django.conf import settings
 from django.db import migrations
 
 
-def create_welsh_homepage(apps, schema_editor):
-    # Get models
-    ContentType = apps.get_model("contenttypes.ContentType")
-    Page = apps.get_model("wagtailcore.Page")
-    HomePage = apps.get_model("home.HomePage")
-    Locale = apps.get_model("wagtailcore", "Locale")
-
-    welsh_locale = Locale.objects.get(language_code="cy")
-    if HomePage.objects.filter(url_path="/home-cy/", locale=welsh_locale).exists():
-        return
-
-    homepage_content_type, created = ContentType.objects.get_or_create(model="homepage", app_label="home")
-
-    root_page = Page.objects.get(depth=1)
-    default_homepage = HomePage.objects.first()
-
-    HomePage.objects.create(
-        title="Home",
-        draft_title="Home",
-        slug="home-cy",
-        content_type=homepage_content_type,
-        alias_of=default_homepage,
-        translation_key=default_homepage.translation_key,
-        locale=welsh_locale,
-        path=f"{root_page.path}00{root_page.numchild + 1:02d}",
-        depth=2,
-        numchild=0,
-        url_path="/home-cy/",
-    )
-    root_page.numchild += 1
-    root_page.save()
-
-
 def _get_default_hostnames_by_country_code() -> dict[str, str]:
     return {settings.CMS_HOSTNAME_LOCALE_MAP[host]: host for host in settings.CMS_HOSTNAME_ALTERNATIVES}
 
@@ -76,10 +43,12 @@ def create_welsh_site_entry(apps, schema_editor):
 
 
 class Migration(migrations.Migration):
-    dependencies = [("core", "0007_remove_glossaryterm_core_glossary_term_name_unique_and_more")]
+    dependencies = [
+        ("core", "0007_remove_glossaryterm_core_glossary_term_name_unique_and_more"),
+        ("home", "0003_create_welsh_homepage"),
+    ]
 
     operations = [
-        migrations.RunPython(create_welsh_homepage, migrations.RunPython.noop),
         migrations.RunPython(create_welsh_site_entry, migrations.RunPython.noop),
         migrations.RunPython(update_english_site_entry, migrations.RunPython.noop),
     ]
