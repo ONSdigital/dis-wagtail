@@ -1,8 +1,10 @@
 import logging
 import re
 from collections.abc import Iterable, Mapping
+from http import HTTPStatus
 from typing import ClassVar
 
+import requests
 from django.conf import settings
 from django.db import models
 from django.db.models import UniqueConstraint
@@ -15,16 +17,66 @@ EDITIONS_PATTERN = re.compile(r"/editions/([^/]+)/")
 
 # TODO: This needs a revisit. Consider caching + fewer requests
 class ONSDatasetApiQuerySet(APIQuerySet):
+    def __init__(self, *args: object, **kwargs: object) -> None:
+        super().__init__(*args, **kwargs)
+        self.token: str | None = None
+
+    def with_token(self, token: str) -> "ONSDatasetApiQuerySet":
+        """Return a cloned queryset with the given authentication token.
+
+        We clone the queryset to ensure the method is stateless and doesn't mutate
+        the original queryset. This allows chaining operations (e.g.,
+        ONSDataset.objects.with_token(token).filter(...).all()) without affecting
+        other code that may be using the same base queryset instance.
+
+        Args:
+            token: Bearer token for API authentication
+
+        Returns:
+            Cloned queryset with token attached
+        """
+        clone: ONSDatasetApiQuerySet = self.clone()
+        clone.token = token
+        return clone
+
     def get_results_from_response(self, response: Mapping) -> Iterable:
         results: Iterable = response["items"]
         return results
 
     def fetch_api_response(self, url: str | None = None, params: Mapping | None = None) -> dict:
-        api_response: dict = super().fetch_api_response(url=url, params=params)
+        # Add Authorization header if token is set
+        headers = dict(self.http_headers) if self.http_headers else {}
+        if self.token:
+            headers["Authorization"] = f"Bearer {self.token}"
+
+        if url is None:
+            url = self.base_url
+        if params is None:
+            params = {}
+
+        try:
+            response = requests.get(url, params=params, headers=headers, timeout=30)
+            response.raise_for_status()
+        except requests.exceptions.HTTPError as e:
+            if e.response.status_code == HTTPStatus.TOO_MANY_REQUESTS:
+                logger.warning("Rate limit exceeded when fetching datasets: %s", url)
+                raise
+            # Check for 5xx server errors (500-599)
+            if e.response.status_code >= HTTPStatus.INTERNAL_SERVER_ERROR:
+                logger.error("Server error when fetching datasets: %s - Status: %s", url, e.response.status_code)
+                raise
+            raise
+        except requests.exceptions.RequestException as e:
+            logger.error("Request failed when fetching datasets: %s - Error: %s", url, e)
+            raise
+
+        api_response: dict = response.json()
+
         # The dataset API returns the per page count as "count" and the total results as "total_count"
         # Queryish expects "count" to be the total results count, so override it here
         if count := api_response.get("total_count"):
             api_response["count"] = count
+
         return api_response
 
 
@@ -34,24 +86,29 @@ class ONSDataset(APIModel):
     search_fields: ClassVar[list[str]] = ["title", "version", "formatted_edition"]
 
     class Meta:
-        base_url: str = settings.DATASETS_API_BASE_URL
-        detail_url: str = f"{settings.DATASETS_API_BASE_URL}/%s"
+        base_url: str = settings.DATASET_EDITIONS_API_URL
+        detail_url: str = f"{settings.DATASET_EDITIONS_API_URL}/%s"
         fields: ClassVar = ["id", "description", "title", "version", "edition"]
         pagination_style = "offset-limit"
         verbose_name_plural = "ONS Datasets"
 
     @classmethod
     def from_query_data(cls, data: Mapping) -> "ONSDataset":
-        url: str = data["links"]["latest_version"]["href"]
-        edition_match = EDITIONS_PATTERN.search(url)
-        if not edition_match:
-            raise ValueError(f"Found invalid dataset URL, missing edition: {url} for dataset: {data['id']}")
-        edition = edition_match.group(1)
+        # Handle new /v1/dataset-editions response structure
+        dataset_id = data.get("dataset_id", data.get("id", ""))
+        title = data.get("title", "Title not provided")
+        description = data.get("description", "Description not provided")
+        edition = data.get("edition", "")
+
+        # Extract version from latest_version object
+        latest_version = data.get("latest_version", {})
+        version_id = latest_version.get("id", "1") if isinstance(latest_version, dict) else "1"
+
         return cls(
-            id=data["id"],
-            title=data["title"],
-            description=data["description"],
-            version=data["links"]["latest_version"]["id"],
+            id=dataset_id,
+            title=title,
+            description=description,
+            version=version_id,
             edition=edition,
         )
 
