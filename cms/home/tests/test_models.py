@@ -6,7 +6,7 @@ from cms.home.models import HomePage
 
 class HomePageTestCase(TestCase):
     def setUp(self):
-        self.home_page = HomePage.objects.get()
+        self.home_page = HomePage.objects.get(slug="home")
 
         self.url = self.home_page.get_url()
 

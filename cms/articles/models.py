@@ -117,13 +117,22 @@ class ArticleSeriesPage(  # type: ignore[django-manager-missing]
         return latest
 
     @path("")
-    def index_route(self, request: "HttpRequest", *args: Any, **kwargs: Any) -> "HttpResponse":
+    def latest_article(self, request: "HttpRequest", *args: Any, **kwargs: Any) -> "HttpResponse":
         """Serves the latest statistical article page in the series."""
         if not (latest := self.get_latest()):
             raise Http404
 
-        request.is_preview = getattr(request, "is_preview", False)  # type: ignore[attr-defined]
         return latest.serve(request, *args, serve_as_edition=True, **kwargs)
+
+    @path("related-data/")
+    def latest_article_related_data(self, request: "HttpRequest", *args: Any, **kwargs: Any) -> "HttpResponse":
+        """Serves the related data for the latest statistical article page in the series."""
+        if not (latest := self.get_latest()):
+            raise Http404
+
+        request.is_for_subpage = True  # type: ignore[attr-defined]
+
+        return cast("HttpResponse", latest.related_data(request, *args, **kwargs))
 
     @path("editions/")
     def previous_releases(self, request: "HttpRequest") -> "TemplateResponse":
@@ -450,7 +459,7 @@ class StatisticalArticlePage(  # type: ignore[django-manager-missing]
 
     @cached_property
     def related_data_display_title(self) -> str:
-        return f"{_('All data related to')} {self.title}"
+        return _("All data related to %(article_title)s") % {"article_title": self.title}
 
     @cached_property
     def dataset_document_list(self) -> list[dict[str, Any]]:
@@ -562,7 +571,12 @@ class StatisticalArticlePage(  # type: ignore[django-manager-missing]
         Otherwise, it will be the default canonical page URL.
         """
         canonical_page = self.alias_of.specific_deferred if self.alias_of_id else self
-        if canonical_page.is_latest and not getattr(request, "is_for_subpage", False):
+
+        if canonical_page.is_latest:
+            if getattr(request, "is_for_subpage", False) and getattr(request, "canonical_url", False):
+                # Special case for sub-routes of latest article in a series
+                url = request.canonical_url  # type: ignore[attr-defined]
+                return cast(str, url)
             return cast(str, canonical_page.get_parent().get_full_url(request=request))
 
         return super().get_canonical_url(request=request)
@@ -636,8 +650,16 @@ class StatisticalArticlePage(  # type: ignore[django-manager-missing]
     def related_data(self, request: "HttpRequest") -> "TemplateResponse":
         if not self.dataset_document_list:
             raise Http404
-        paginator = Paginator(self.dataset_document_list, per_page=settings.RELATED_DATASETS_PER_PAGE)
 
+        request.is_for_subpage = True  # type: ignore[attr-defined]
+
+        canonical_page = self.alias_of.specific_deferred if self.alias_of_id else self
+        if canonical_page.is_latest:
+            request.canonical_url = (  # type: ignore[attr-defined]
+                canonical_page.get_parent().get_full_url(request=request) + "/related-data"
+            )
+
+        paginator = Paginator(self.dataset_document_list, per_page=settings.RELATED_DATASETS_PER_PAGE)
         try:
             paginated_datasets = paginator.page(request.GET.get("page", 1))
             ons_pagination_url_list = [{"url": f"?page={n}"} for n in paginator.page_range]

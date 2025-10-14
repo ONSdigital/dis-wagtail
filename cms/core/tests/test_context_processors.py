@@ -19,7 +19,6 @@ class ContextProcessorTestCase(TestCase):
         expected = {
             "GOOGLE_TAG_MANAGER_CONTAINER_ID": settings.GOOGLE_TAG_MANAGER_CONTAINER_ID,
             "ONS_COOKIE_BANNER_SERVICE_NAME": settings.ONS_COOKIE_BANNER_SERVICE_NAME,
-            "MANAGE_COOKIE_SETTINGS_URL": settings.MANAGE_COOKIE_SETTINGS_URL,
             "SEO_NOINDEX": False,
             "LANGUAGE_CODE": "en-gb",
             "IS_EXTERNAL_ENV": False,
@@ -29,5 +28,6 @@ class ContextProcessorTestCase(TestCase):
             "DEFAULT_OG_IMAGE_URL": settings.DEFAULT_OG_IMAGE_URL,
             "CONTACT_US_URL": settings.CONTACT_US_URL,
             "BACKUP_SITE_URL": settings.BACKUP_SITE_URL,
+            "COOKIES_PAGE_URL": f"/{settings.ONS_COOKIES_PAGE_SLUG}",
         }
         self.assertEqual(global_vars(self.request), expected)
