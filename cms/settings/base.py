@@ -989,7 +989,7 @@ WAGTAILSIMPLETRANSLATION_SYNC_PAGE_TREE = True
 SEARCH_INDEX_PUBLISHER_BACKEND = os.getenv("SEARCH_INDEX_PUBLISHER_BACKEND")
 KAFKA_SERVERS = os.getenv("KAFKA_SERVERS", "").split(",")
 KAFKA_USE_IAM_AUTH = os.getenv("KAFKA_USE_IAM_AUTH", "false").lower() == "true"
-KAFKA_API_VERSION = tuple(map(int, os.getenv("KAFKA_API_VERSION", "3.5.1").split(".")))
+KAFKA_API_VERSION = tuple(map(int, os.getenv("KAFKA_API_VERSION", "3.8").split(".")))
 
 SEARCH_INDEX_EXCLUDED_PAGE_TYPES = (
     "HomePage",
