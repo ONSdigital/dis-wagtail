@@ -31,7 +31,7 @@ def format_time_series_as_document_list(time_series: StreamValue) -> list[dict[s
     return time_series_documents
 
 
-def get_topic_search_url(topic: "Topic", base_url: str, suffix: str) -> str | None:
+def get_topic_search_url(topic: "Topic | None", base_url: str, suffix: str) -> str | None:
     """Returns a formatted search URL for a topic, or None if topic/base_url is missing."""
     if not topic or not base_url:
         return None
