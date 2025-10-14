@@ -155,7 +155,9 @@ class PathBasedLocalisationTests(WagtailPageTestCase):
     @patch("cms.home.models.HomePage.serve")
     @patch("django.template.loader.get_template")
     def test_500_primary_fallback(self, mock_get_template, mock_homepage_serve):
-        """Test that the 500 error page falls back to a basic HTML response."""
+        """Test that if the primary 500 error template ('500.html') cannot be loaded, we fall back to rendering
+        the '500_fallback.html' template.
+        """
         self.client.raise_request_exception = False
         mock_homepage_serve.side_effect = ValueError("Deliberate test error")
         # The side effect will raise TemplateDoesNotExist for the primary 500 template, but in general
@@ -190,7 +192,9 @@ class PathBasedLocalisationTests(WagtailPageTestCase):
     @patch("cms.home.models.HomePage.serve")
     @patch("cms.core.views.render")
     def test_500_fallback(self, mock_render, mock_homepage_serve):
-        """Test that the 500 error page falls back to a basic HTML response."""
+        """Test that if all template rendering fails (including the fallback template), the system returns a plain,
+        hardcoded HTML error response for a 500 error.
+        """
         self.client.raise_request_exception = False
         mock_homepage_serve.side_effect = ValueError("Deliberate test error")
         # Mock the render function to raise an exception, so that no rendering works

@@ -43,8 +43,6 @@ services:
     depends_on:
       - db
       - redis
-    labels:
-      - dev.orbstack.domains=web.ons.orb.local,*.web.ons.orb.local
 
   db:
     extends:

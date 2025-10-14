@@ -13,6 +13,16 @@ language_subdomain_prefix_re = _lazy_re_compile(r"^(\w+([@-]\w+){0,2})\.")
 
 
 class SubdomainLocaleMiddleware(LocaleMiddleware):
+    """This middleware enables locale selection based on subdomain or hostname,
+    with fallback to Django's normal locale handling.
+
+    It checks the request host against a mapping or extracts a language code from the subdomain,
+    then activates that language for the request and sets the appropriate cookie.
+
+    This allows URLs like `cy.example.com` or `en.example.com` to automatically serve content in the correct language,
+    and supports explicit host-to-language mapping.
+    """
+
     def __init__(self, get_response: Any) -> None:
         self.use_locale_subdomain = settings.CMS_USE_SUBDOMAIN_LOCALES
         super().__init__(get_response)
