@@ -15,6 +15,7 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 JWT_SESSION_ID_KEY = "jwt_session_id"
+BYPASSED_INTERNAL_PATHS = {"/-/readiness", "/-/liveness", "/-/health", "/health"}
 
 
 class ONSAuthMiddleware(AuthenticationMiddleware):
@@ -31,6 +32,11 @@ class ONSAuthMiddleware(AuthenticationMiddleware):
         user authentication.
         """
         super().process_request(request)
+
+        # Bypass authentication for internal health check endpoints.
+        if request.path in BYPASSED_INTERNAL_PATHS:
+            logger.debug("Bypassing authentication for internal health check request.", extra={"path": request.path})
+            return
 
         # If Cognito is off, we only want normal Django auth.
         if not settings.AWS_COGNITO_LOGIN_ENABLED:
