@@ -6,7 +6,7 @@
 {# fmt:off #}
 {{
     onsVideo({
-        "videoEmbedUrl": value.embed_url,
+        "videoEmbedUrl": value.get_embed_url(value.link_url, REQUEST),
         "videoLinkUrl": value.link_url,
         "image": {
             "largeSrc": large_image.url,

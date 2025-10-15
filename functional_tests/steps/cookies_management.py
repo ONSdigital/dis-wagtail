@@ -1,10 +1,11 @@
-import json
 from collections.abc import Iterable
 
 from behave import given, then, when  # pylint: disable=no-name-in-module
 from behave.runner import Context
 from django.conf import settings
 from playwright.sync_api import expect
+
+from cms.standard_pages.utils import load_cookies_policy_string
 
 COOKIE_TYPE_RADIO_LOCATOR = {
     "usage": "Do you want to allow usage tracking?",
@@ -136,7 +137,7 @@ def check_ons_cookie_policy_values(cookies: Iterable[dict], expected_values: dic
 
     cookie_policy_cookie = policy_cookies[0]
     cookie_policy_values_raw = cookie_policy_cookie["value"]
-    cookie_policy_values = json.loads(cookie_policy_values_raw.replace("'", '"'))
+    cookie_policy_values = load_cookies_policy_string(cookie_policy_values_raw)
     for value_name, expected_value in expected_values.items():
         assert cookie_policy_values.get(value_name) is expected_value, (
             f'Value of "{value_name}" must be set to {expected_value} in ons_cookie_policy cookie, '

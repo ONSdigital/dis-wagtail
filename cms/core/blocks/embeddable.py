@@ -4,11 +4,14 @@ from urllib.parse import urlparse
 
 from django.conf import settings
 from django.core.exceptions import ValidationError
+from django.core.handlers.wsgi import WSGIRequest
 from django.template.defaultfilters import filesizeformat
 from wagtail import blocks
 from wagtail.blocks import StructBlockValidationError
 from wagtail.documents.blocks import DocumentChooserBlock
 from wagtail.images.blocks import ImageChooserBlock
+
+from cms.standard_pages.utils import load_cookies_policy_string
 
 if TYPE_CHECKING:
     from wagtail.blocks import StreamValue, StructValue
@@ -124,44 +127,71 @@ class VideoEmbedBlock(blocks.StructBlock):
         help_text="The text to be shown when cookies are not enabled e.g. 'Watch the {title} on Youtube'."
     )
 
-    def get_embed_url(self, link_url: str) -> str:
+    def get_embed_url(self, link_url: str, request: "WSGIRequest") -> str:
         """Get the embed URL for the video based on the link URL."""
         embed_url = ""
+        if not request:
+            campaign_cookies_consent = False
+        else:
+            ons_cookie_policy_string = request.COOKIES.get("ons_cookie_policy")
+            ons_cookie_policy = load_cookies_policy_string(ons_cookie_policy_string) if ons_cookie_policy_string else {}
+            campaign_cookies_consent = ons_cookie_policy.get("campaigns") if request else False
+        print(request, campaign_cookies_consent)
+
         # Vimeo
-        if urlparse(link_url).hostname in ["www.vimeo.com", "vimeo.com", "player.vimeo.com"]:
-            url_path = urlparse(link_url).path.strip("/")
-            # Handle different Vimeo URL patterns
-            if "video/" in url_path:  # noqa: SIM108
-                # Handle https://vimeo.com/showcase/7934865/video/ID format
-                video_id = url_path.split("video/")[-1]
-            else:
-                # Handle https://player.vimeo.com/video/ID or https://vimeo.com/ID format
-                video_id = url_path.split("/")[0]
-            # Remove any query parameters from video ID
-            video_id = video_id.split("?")[0]
-            embed_url = "https://player.vimeo.com/video/" + video_id
+        if urlparse(link_url).hostname in {"www.vimeo.com", "vimeo.com", "player.vimeo.com"}:
+            embed_url = self.build_vimeo_embed_url(link_url, cookies_consent=campaign_cookies_consent)
         # YouTube
-        elif urlparse(link_url).hostname in ["www.youtube.com", "youtube.com", "youtu.be"]:
-            url_parts = urlparse(link_url)
-            if url_parts.hostname == "youtu.be":
-                # Handle https://youtu.be/ID format
-                video_id = url_parts.path.lstrip("/")
-            elif "/v/" in url_parts.path:
-                # Handle https://www.youtube.com/v/ID format
-                video_id = url_parts.path.split("/v/")[-1]
-            else:
-                # Handle https://www.youtube.com/watch?v=ID format
-                query = dict(param.split("=") for param in url_parts.query.split("&"))
-                video_id = query.get("v", "")
-            # Remove any query parameters from video ID
-            video_id = video_id.split("?")[0]
-            embed_url = "https://www.youtube.com/embed/" + video_id
+        elif urlparse(link_url).hostname in {"www.youtube.com", "youtube.com", "youtu.be"}:
+            embed_url = self.build_youtube_embed_url(link_url, cookies_consent=campaign_cookies_consent)
+        print(embed_url)
         return embed_url
+
+    def build_vimeo_embed_url(self, link_url: str, cookies_consent=False) -> str:
+        """Build the Vimeo embed URL from a given Vimeo video link_url. Handles different valid Vimeo URL patterns.
+        Includes Do Not Track query parameter if cookies_consent is False.
+        """
+        url_path = urlparse(link_url).path.strip("/")
+        # Handle different Vimeo URL patterns
+        if "video/" in url_path:  # noqa: SIM108
+            # Handle https://vimeo.com/showcase/7934865/video/<ID> format
+            video_id = url_path.split("video/")[-1]
+        else:
+            # Handle https://player.vimeo.com/video/<ID> or https://vimeo.com/<ID> format
+            video_id = url_path.split("/")[0]
+        # Remove any query parameters from video ID
+        video_id = video_id.split("?")[0]
+        embed_url = "https://player.vimeo.com/video/" + video_id
+        if not cookies_consent:
+            embed_url += "?dnt=1"  # Vimeo handles Do Not Track with query Param
+        return embed_url
+
+    def build_youtube_embed_url(self, link_url: str, cookies_consent=False) -> str:
+        """Build the YouTube embed URL from a given Vimeo video link_url. Handles different valid YouTube URL patterns.
+        Uses YouTube's nocookie domain if cookies_consent is False.
+        """
+        url_parts = urlparse(link_url)
+        if url_parts.hostname == "youtu.be":
+            # Handle https://youtu.be/ID format
+            video_id = url_parts.path.lstrip("/")
+        elif "/v/" in url_parts.path:
+            # Handle https://www.youtube.com/v/ID format
+            video_id = url_parts.path.split("/v/")[-1]
+        else:
+            # Handle https://www.youtube.com/watch?v=ID format
+            query = dict(param.split("=") for param in url_parts.query.split("&"))
+            video_id = query.get("v", "")
+        # Remove any query parameters from video ID
+        video_id = video_id.split("?")[0]
+
+        # YouTube handles enhanced privacy mode with a different hostname, youtube-nocookie.com
+        base_url = "https://www.youtube.com/embed/" if cookies_consent else "https://www.youtube-nocookie.com/embed/"
+        return f"{base_url}{video_id}"
 
     def get_context(self, value: "StreamValue", parent_context: dict | None = None) -> dict:
         """Get the embed URL for the video based on the link URL."""
         context: dict = super().get_context(value, parent_context=parent_context)
-        context["value"]["embed_url"] = self.get_embed_url(value["link_url"])
+        context["value"]["get_embed_url"] = self.get_embed_url
         return context
 
     def clean(self, value: "StructValue") -> "StructValue":

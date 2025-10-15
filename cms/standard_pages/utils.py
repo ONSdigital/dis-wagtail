@@ -1,3 +1,4 @@
+import json
 import logging
 
 from django.conf import settings
@@ -20,3 +21,10 @@ def get_cookies_page_url(language_code: str) -> str:
         # default English and is a supported language
         return f"/{language_code}{COOKIES_PAGE_URL}"
     return COOKIES_PAGE_URL
+
+
+def load_cookies_policy_string(cookie_policy_string: str) -> dict:
+    """The cookies preferences are stored in a json like format string, single quote delimited.
+    This function converts the string to a dictionary.
+    """
+    return json.loads(cookie_policy_string.replace("'", '"'))

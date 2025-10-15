@@ -25,4 +25,6 @@ def global_vars(request: "HttpRequest") -> dict[str, Any]:
         "CONTACT_US_URL": settings.CONTACT_US_URL,
         "BACKUP_SITE_URL": settings.BACKUP_SITE_URL,
         "COOKIES_PAGE_URL": get_cookies_page_url(getattr(request, "LANGUAGE_CODE", settings.LANGUAGE_CODE)),
+        # The default request object is not available globally in jinja in partials/blocks, add it globally ourselves
+        "REQUEST": request,
     }
