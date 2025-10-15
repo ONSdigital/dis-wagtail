@@ -149,11 +149,10 @@ class ArticleSeriesEvergreenUrlTestCase(WagtailTestUtils, TestCase):
         request_factory = RequestFactory()
         request_factory_server_name = request_factory._base_environ()["SERVER_NAME"]  # pylint: disable=protected-access
 
+        relative_path = self.article_with_datasets.get_relative_path()
         self.assertContains(
             response,
-            f'<link rel="canonical" href="http://{request_factory_server_name}{
-                self.article_with_datasets.get_relative_path()
-            }/related-data">',
+            f'<link rel="canonical" href="http://{request_factory_server_name}{relative_path}/related-data">',
             html=True,
         )
         self.assertNotContains(
