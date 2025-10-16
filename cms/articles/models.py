@@ -71,7 +71,6 @@ class ArticlesIndexPage(BasePage):  # type: ignore[django-manager-missing]
         super().minimal_clean()
 
     def serve(self, request: "HttpRequest", *args: Any, **kwargs: Any) -> "HttpResponse":
-        # FIXME: redirect to the publications listing for the topic
         # Get the parent topic page
         return redirect_to_parent_listing(self, request, "get_articles_search_url")
 
