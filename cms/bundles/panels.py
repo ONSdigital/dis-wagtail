@@ -5,12 +5,11 @@ from django.utils.functional import cached_property
 from django.utils.html import format_html
 from wagtail.admin.panels import FieldPanel, HelpPanel, MultipleChooserPanel
 
-from cms.bundles.permissions import user_can_manage_bundles
-from cms.bundles.utils import (
-    get_page_title_with_workflow_status,
-    get_release_calendar_page_title_with_status_and_release_date,
-)
-from cms.bundles.viewsets.bundle_page_chooser import PagesWithDraftsForBundleChooserWidget
+from cms.release_calendar.utils import get_release_calendar_page_details
+
+from .permissions import user_can_manage_bundles
+from .utils import get_page_title_with_workflow_status
+from .viewsets.bundle_page_chooser import PagesWithDraftsForBundleChooserWidget
 
 if TYPE_CHECKING:
     from django.db.models import Model
@@ -167,13 +166,13 @@ def get_custom_release_calendar_page_chooser() -> "BaseChooser":
     class CustomReleaseCalendarPageChooser(FutureReleaseCalendarChooserWidget):
         # Override BaseChooser's default get_display_title to return custom text display
         def get_display_title(self, instance: "Page") -> str:
-            return get_release_calendar_page_title_with_status_and_release_date(instance)
+            return get_release_calendar_page_details(instance)
 
     return CustomReleaseCalendarPageChooser
 
 
-class ReleaseCalendarChooserPanel(BundleFieldPanel):
-    """A custom page chooser panel that includes the release calendar page status and release date."""
+class ReleaseChooserWithDetailsPanel(BundleFieldPanel):
+    """A custom page chooser panel that includes the release calendar page title, status and release date."""
 
     def get_form_options(self) -> dict[str, list | dict]:
         opts: dict[str, list | dict] = super().get_form_options()
@@ -186,4 +185,4 @@ class ReleaseCalendarChooserPanel(BundleFieldPanel):
     def format_value_for_display(self, value: Optional["ReleaseCalendarPage"]) -> str:
         if value is None:
             return ""
-        return get_release_calendar_page_title_with_status_and_release_date(value)
+        return get_release_calendar_page_details(value)

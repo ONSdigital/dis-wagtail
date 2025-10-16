@@ -8,8 +8,9 @@ from wagtail.admin.viewsets.chooser import ChooserViewSet
 from wagtail.permission_policies.pages import PagePermissionPolicy
 
 from cms.bundles.enums import ACTIVE_BUNDLE_STATUSES
-from cms.bundles.utils import get_release_calendar_page_title_with_status_and_release_date
-from cms.release_calendar.enums import ReleaseStatus
+
+from .enums import ReleaseStatus
+from .utils import get_release_calendar_page_details
 
 if TYPE_CHECKING:
     from wagtail.admin.widgets import BaseChooser
@@ -63,9 +64,9 @@ class FutureReleaseCalendarPageChooseView(FutureReleaseCalendarMixin, ChooseView
 class FutureReleaseCalendarPageChooseResultsView(FutureReleaseCalendarMixin, ChooseResultsView): ...
 
 
-class ReleaseCalendarPageChosenView(ChosenView):
+class FutureReleaseCalendarPageChosenMixin(ChosenView):
     def get_display_title(self, instance: "ReleaseCalendarPage") -> str:
-        return get_release_calendar_page_title_with_status_and_release_date(instance)
+        return get_release_calendar_page_details(instance)
 
 
 class FutureReleaseCalendarPageChooserViewSet(ChooserViewSet):
@@ -75,7 +76,7 @@ class FutureReleaseCalendarPageChooserViewSet(ChooserViewSet):
     model = ReleaseCalendarPage
     choose_view_class = FutureReleaseCalendarPageChooseView
     choose_results_view_class = FutureReleaseCalendarPageChooseResultsView
-    chosen_view_class = ReleaseCalendarPageChosenView
+    chosen_view_class = FutureReleaseCalendarPageChosenMixin
     register_widget = False
 
     icon = "calendar-check"
