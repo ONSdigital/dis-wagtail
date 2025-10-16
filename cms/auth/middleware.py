@@ -15,7 +15,6 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 JWT_SESSION_ID_KEY = "jwt_session_id"
-BYPASSED_INTERNAL_PATHS = {"/-/readiness", "/-/liveness", "/-/health", "/health"}
 
 
 class ONSAuthMiddleware(AuthenticationMiddleware):
@@ -34,7 +33,7 @@ class ONSAuthMiddleware(AuthenticationMiddleware):
         super().process_request(request)
 
         # Bypass authentication for internal health check endpoints.
-        if request.path in BYPASSED_INTERNAL_PATHS:
+        if request.path == "/health" or request.path.startswith("/-/"):
             logger.debug("Bypassing authentication for internal health check request.", extra={"path": request.path})
             return
 

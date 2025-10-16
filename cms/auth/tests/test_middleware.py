@@ -4,7 +4,7 @@ from unittest import mock
 from django.contrib.sessions.middleware import SessionMiddleware
 from django.test import RequestFactory, TestCase, override_settings
 
-from cms.auth.middleware import BYPASSED_INTERNAL_PATHS, JWT_SESSION_ID_KEY, ONSAuthMiddleware
+from cms.auth.middleware import JWT_SESSION_ID_KEY, ONSAuthMiddleware
 from cms.users.models import User
 
 
@@ -591,7 +591,7 @@ class ONSAuthMiddlewareTests(TestCase):
 
     @override_settings(AWS_COGNITO_LOGIN_ENABLED=True)
     def test_internal_health_endpoints_bypass_auth(self):
-        for path in BYPASSED_INTERNAL_PATHS:
+        for path in ("/-/readiness", "/-/liveness", "/-/health", "/health"):
             with self.subTest(path=path):
                 req = self._request(path=path)
                 req.COOKIES = {}  # no cookies, simulating unauthenticated internal API requests
