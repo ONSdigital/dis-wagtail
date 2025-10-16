@@ -56,6 +56,10 @@ class ReadinessProbeTestCase(SimpleTestCase):
         self.assertEqual(response.templates, [])
         self.assertEqual(response.headers["Cache-Control"], "max-age=0, no-cache, no-store, must-revalidate, private")
 
+    @override_settings(AWS_COGNITO_LOGIN_ENABLED=True, WAGTAIL_CORE_ADMIN_LOGIN_ENABLED=False)
+    def test_success_cognito_login_enabled(self):
+        self.test_success()
+
     @override_settings(XFF_STRICT=True)
     def test_xff_exempt(self):
         # Send too many IPs
@@ -87,6 +91,10 @@ class LivenessProbeTestCase(TestCase):
 
         self.assertEqual(response.status_code, 200, response.content)
         self.assertEqual(response.headers["Cache-Control"], "max-age=0, no-cache, no-store, must-revalidate, private")
+
+    @override_settings(AWS_COGNITO_LOGIN_ENABLED=True, WAGTAIL_CORE_ADMIN_LOGIN_ENABLED=False)
+    def test_success_cognito_login_enabled(self):
+        self.test_success()
 
     @mock.patch("cms.core.views.DB_HEALTHCHECK_QUERY", "SELECT 0")
     def test_closed_database_fails(self):
@@ -180,6 +188,10 @@ class HealthProbeTestCase(TestCase):
             self.assertEqual(check["last_checked"], "2000-01-02T00:00:00+00:00")
             self.assertIsNone(check["last_failure"])
             self.assertEqual(check["last_success"], "2000-01-02T00:00:00+00:00")
+
+    @override_settings(AWS_COGNITO_LOGIN_ENABLED=True, WAGTAIL_CORE_ADMIN_LOGIN_ENABLED=False)
+    def test_success_cognito_login_enabled(self):
+        self.test_success()
 
     @mock.patch("cms.core.views.DB_HEALTHCHECK_QUERY", "SELECT 0")
     def test_closed_database_fails(self):
