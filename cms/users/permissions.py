@@ -22,4 +22,4 @@ def user_can_access_unpublished_datasets(user: "User | AnonymousUser") -> bool:
     Uses the view_previewteam permission which is granted to Publishing Admins
     and Publishing Officers who are authorized to access unpublished content.
     """
-    return user.has_perm("users.view_previewteam")
+    return user.is_superuser or user.has_perm("users.view_previewteam")

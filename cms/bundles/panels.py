@@ -1,4 +1,5 @@
 from typing import TYPE_CHECKING, Any, Union, cast
+from urllib.parse import urlencode
 
 from django.urls import reverse
 from django.utils.functional import cached_property
@@ -112,16 +113,14 @@ class BundleMultipleChooserPanel(MultipleChooserPanel):
         @property
         def chooser_url(self) -> str:
             """Override chooser_url to add for_bundle parameter for bundled_datasets."""
-            url = super().chooser_url  # pylint: disable=no-member
+            url: str = super().chooser_url  # pylint: disable=no-member
 
             # If this is the bundled_datasets panel, add for_bundle=true parameter
             if self.panel.relation_name == "bundled_datasets":
-                from urllib.parse import urlencode  # pylint: disable=import-outside-toplevel
-
                 separator = "&" if "?" in url else "?"
                 url = f"{url}{separator}{urlencode({'for_bundle': 'true'})}"
 
-            return url  # type: ignore[no-any-return]
+            return url
 
         def get_context_data(self, parent_context: dict[str, Any] | None = None) -> dict[str, Any]:
             context: dict[str, Any] = super().get_context_data(parent_context)

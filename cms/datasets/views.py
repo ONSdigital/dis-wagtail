@@ -90,13 +90,18 @@ class ONSDatasetBaseChooseView(BaseChooseView):
     model_class = ONSDataset
     filter_form_class = DatasetSearchFilterForm
 
+    def request_is_for_bundle(self) -> bool:
+        """Check if the request is for selecting datasets for a bundle."""
+        for_bundle_value: str = self.request.GET.get("for_bundle", "false")
+        return for_bundle_value.lower() == "true"
+
     def get_object_list(self) -> Iterable[ONSDataset]:
         """Get the list of datasets with auth token and published filter."""
         # Get the auth token from the request
         access_token = self.request.COOKIES.get(settings.ACCESS_TOKEN_COOKIE_NAME)
 
         # Check if this is for a bundle - if so, force published=false
-        for_bundle = self.request.GET.get("for_bundle", "false").lower() == "true"
+        for_bundle = self.request_is_for_bundle()
 
         # Get the published filter value from GET params or form
         published = "false" if for_bundle else self.request.GET.get("published") or "false"
@@ -118,8 +123,7 @@ class ONSDatasetBaseChooseView(BaseChooseView):
         context: dict[str, Any] = super().get_context_data(**kwargs)
 
         # Hide the filter UI if this is for a bundle
-        for_bundle = self.request.GET.get("for_bundle", "false").lower() == "true"
-        context["hide_published_filter"] = for_bundle
+        context["hide_published_filter"] = self.request_is_for_bundle()
 
         return context
 
