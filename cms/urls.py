@@ -23,6 +23,7 @@ internal_urlpatterns = [
 ]
 
 # Private URLs are not meant to be cached.
+# The internal and health paths are also bypassed in authentication middleware in cms/auth/middleware.py.
 private_urlpatterns = [
     path("-/", include((internal_urlpatterns, "internal"))),
     path("health", core_views.health, name="health"),
