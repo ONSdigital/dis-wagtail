@@ -94,73 +94,55 @@ class RelatedArticleProcessor(BaseProcessor[ArticleDict]):
         return article_dict
 
     def _get_automatic_articles(self, excluded_pks: Iterable[int], limit: int) -> list[ArticleDict]:
-        """Get automatically selected articles based on topic relationships."""
-        # Get articles from descendant series
-        descendant_articles = self._get_descendant_articles(excluded_pks)
+        """Return up to `limit` latest StatisticalArticlePages related to this topic."""
+        excluded_pks = set(excluded_pks)
 
-        # Get articles from topic-tagged series across the CMS
-        tagged_articles = self._get_topic_tagged_articles(excluded_pks)
+        # Collect latest article from descendant series
+        descendant_series = ArticleSeriesPage.objects.descendant_of(self.topic_page).live()
+        descendant_latest_pks = self._latest_article_pks_for_series(descendant_series)
 
-        # Combine and sort by release date
-        combined_qs = descendant_articles.union(tagged_articles).order_by("-release_date")
-
-        # Convert to dict format and apply limit
-        return [{"internal_page": page} for page in combined_qs[:limit]]
-
-    def _get_descendant_articles(self, excluded_pks: Iterable[int]) -> "PageQuerySet":
-        descendant_series = ArticleSeriesPage.objects.descendant_of(self.topic_page).live().public()
-        latest_pks = self._get_latest_articles_by_series(descendant_series)
-
-        # Get the latest articles under this topic page (topic page -> articles index -> article series page ->
-        # latest stats article page), excluding those already highlighted
-        return (
-            StatisticalArticlePage.objects.filter(pk__in=latest_pks)
-            .filter(locale=self.topic_page.locale)
-            .exclude(pk__in=excluded_pks)
-            .defer_streamfields()
-            .order_by("-release_date")
-        )
-
-    def _get_topic_tagged_articles(self, excluded_pks: Iterable[int]) -> "PageQuerySet":
-        # Get descendant series PKs to exclude
-        descendant_series_pks = (
-            ArticleSeriesPage.objects.descendant_of(self.topic_page).live().public().values_list("pk", flat=True)
-        )
-
-        # Get all other article series across the CMS that are tagged with this topic of this topic page
-        # (excluding descendants)
+        # Collect latest article PKs for other tagged series across topic pages
+        descendant_series_pks = descendant_series.values_list("pk", flat=True)
         tagged_series = (
             ArticleSeriesPage.objects.live()
-            .public()
-            .filter(topics__topic_id=self.topic_page.topic_id)
+            .filter(topics__topic_id=self.topic_page.topic_id, locale_id=self.topic_page.locale_id)
             .exclude(pk__in=descendant_series_pks)
         )
+        tagged_latest_pks = self._latest_article_pks_for_series(tagged_series)
 
-        latest_pks = self._get_latest_articles_by_series(tagged_series)
+        # Combine and fetch once with a single order and limit
+        source_pks: set[int] = descendant_latest_pks | tagged_latest_pks
+        if excluded_pks:
+            source_pks.difference_update(excluded_pks)
 
-        # Get the latest articles, excluding those already highlighted
-        return (
-            StatisticalArticlePage.objects.filter(pk__in=latest_pks)
-            .filter(locale=self.topic_page.locale)  # Ensure articles are in the same locale as the topic page
-            .exclude(pk__in=excluded_pks)
+        if not source_pks:
+            return []
+
+        qs = (
+            StatisticalArticlePage.objects.live()
+            .public()
+            .filter(pk__in=source_pks)
             .defer_streamfields()
-            .order_by("-release_date")
+            .order_by("-release_date", "-pk")
         )
 
-    def _get_latest_articles_by_series(self, series_qs: "PageQuerySet") -> list[int]:
-        """Get the PK of the latest article for each series."""
-        # Subquery to find the latest article that is a descendant of each series
-        newest_qs = (
+        return [{"internal_page": page} for page in qs[:limit]]
+
+    def _latest_article_pks_for_series(self, series_qs: "PageQuerySet") -> set[int]:
+        """For each series in `series_qs`, return the PK of its latest StatisticalArticlePage."""
+        newest_child = (
             StatisticalArticlePage.objects.live()
             .public()
             .filter(path__startswith=OuterRef("path"), depth__gte=OuterRef("depth"))
-            .order_by("-release_date")
+            .order_by("-release_date", "-pk")
+            .values("pk")[:1]
         )
 
-        return list(
-            series_qs.annotate(latest_child_page=Subquery(newest_qs.values("pk")[:1])).values_list(
-                "latest_child_page", flat=True
-            )
+        # Annotate each series with its newest child PK, filter out nulls
+        return set(
+            series_qs.annotate(latest_child_pk=Subquery(newest_child))
+            .exclude(latest_child_pk__isnull=True)
+            .values_list("latest_child_pk", flat=True)
         )
 
 
