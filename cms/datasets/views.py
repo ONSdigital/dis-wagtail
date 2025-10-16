@@ -1,8 +1,12 @@
+import logging
 from collections.abc import Iterable
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from django import forms
+from django.conf import settings
+from django.core.exceptions import PermissionDenied
 from django.db.models import Q, QuerySet
+from django.forms import Media
 from django.views import View
 from wagtail.admin.forms.choosers import BaseFilterForm
 from wagtail.admin.ui.tables import Column
@@ -18,6 +22,25 @@ from wagtail.admin.views.generic.chooser import (
 from wagtail.admin.viewsets.chooser import ChooserViewSet
 
 from cms.datasets.models import Dataset, ONSDataset
+from cms.users.permissions import user_can_access_unpublished_datasets
+
+if TYPE_CHECKING:
+    from django.http import HttpRequest, HttpResponse
+
+logger = logging.getLogger(__name__)
+
+
+class DatasetChooserPermissionMixin:
+    """Mixin to check permissions for accessing unpublished datasets."""
+
+    def dispatch(self, request: "HttpRequest", *args: Any, **kwargs: Any) -> "HttpResponse":
+        # Check if requesting unpublished datasets
+        published = request.GET.get("published", "false")
+
+        if published == "false" and not user_can_access_unpublished_datasets(request.user):
+            raise PermissionDenied
+
+        return super().dispatch(request, *args, **kwargs)  # type: ignore[misc,no-any-return]
 
 
 class DatasetBaseChooseViewMixin:
@@ -34,6 +57,15 @@ class DatasetSearchFilterForm(BaseFilterForm):
     q = forms.CharField(
         label="Search datasets",
         widget=forms.TextInput(attrs={"placeholder": "Dataset title"}),
+        required=False,
+    )
+    published = forms.ChoiceField(
+        label="Published status",
+        choices=[
+            ("false", "Unpublished"),
+            ("true", "Published"),
+        ],
+        initial="false",
         required=False,
     )
 
@@ -58,6 +90,39 @@ class ONSDatasetBaseChooseView(BaseChooseView):
     model_class = ONSDataset
     filter_form_class = DatasetSearchFilterForm
 
+    def get_object_list(self) -> Iterable[ONSDataset]:
+        """Get the list of datasets with auth token and published filter."""
+        # Get the auth token from the request
+        access_token = self.request.COOKIES.get(settings.ACCESS_TOKEN_COOKIE_NAME)
+
+        # Check if this is for a bundle - if so, force published=false
+        for_bundle = self.request.GET.get("for_bundle", "false").lower() == "true"
+
+        # Get the published filter value from GET params or form
+        published = "false" if for_bundle else self.request.GET.get("published", "false")
+
+        # Log audit event when accessing unpublished datasets
+        if published == "false":
+            logger.info("User %s has listed unpublished datasets", self.request.user.username)
+
+        # Build the queryset with token and published filter
+        queryset = ONSDataset.objects.filter(published=published)  # pylint: disable=no-member
+
+        if access_token:
+            queryset = queryset.with_token(access_token)
+
+        return queryset.all()  # type: ignore[no-any-return]
+
+    def get_context_data(self, **kwargs: Any) -> dict[str, Any]:
+        """Add context for hiding the filter UI when for_bundle=true."""
+        context: dict[str, Any] = super().get_context_data(**kwargs)
+
+        # Hide the filter UI if this is for a bundle
+        for_bundle = self.request.GET.get("for_bundle", "false").lower() == "true"
+        context["hide_published_filter"] = for_bundle
+
+        return context
+
     def render_to_response(self) -> None:
         raise NotImplementedError()
 
@@ -68,10 +133,10 @@ class CustomChooseView(ChooseViewMixin, CreationFormMixin, ONSDatasetBaseChooseV
 class CustomChooseResultView(ChooseResultsViewMixin, CreationFormMixin, ONSDatasetBaseChooseView): ...
 
 
-class DatasetChooseView(DatasetBaseChooseViewMixin, CustomChooseView): ...
+class DatasetChooseView(DatasetChooserPermissionMixin, DatasetBaseChooseViewMixin, CustomChooseView): ...
 
 
-class DatasetChooseResultsView(DatasetBaseChooseViewMixin, CustomChooseResultView): ...
+class DatasetChooseResultsView(DatasetChooserPermissionMixin, DatasetBaseChooseViewMixin, CustomChooseResultView): ...
 
 
 class DatasetChosenView(ChosenViewMixin, ChosenResponseMixin, View):
@@ -149,6 +214,21 @@ class DatasetChooserViewSet(ChooserViewSet):
     choose_results_view_class = DatasetChooseResultsView
     chosen_view_class = DatasetChosenView
     chosen_multiple_view_class = DatasetChosenMultipleView
+
+    @property
+    def choose_template_name(self) -> str:
+        """Override to use custom chooser template."""
+        return "admin/datasets/chooser/chooser.html"
+
+    @property
+    def choose_results_template_name(self) -> str:
+        """Override to use custom results template."""
+        return "admin/datasets/chooser/results.html"
+
+    @property
+    def media(self) -> Media:
+        """Include the dataset chooser JavaScript."""
+        return Media(js=["javascript/dataset-chooser.js"])
 
 
 dataset_chooser_viewset = DatasetChooserViewSet("dataset_chooser")
