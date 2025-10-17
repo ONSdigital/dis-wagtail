@@ -15,21 +15,25 @@ def mock_datasets_responses(datasets: list[Mapping[str, Any]]) -> Generator[resp
 
     Yields the mock responses object, which can be used to make assertions about what exact calls were made.
 
-    Example expected datasets format:
+    Example expected datasets format (matching /v1/dataset-editions API response):
     datasets = [{
-        "id": "example1",
         "dataset_id": "example1",
-        "description": "Example dataset for functional testing",
         "title": "Looked Up Dataset",
-        "version": "1",
+        "description": "Example dataset for functional testing",
         "edition": "example-dataset-1",
-        "latest_version": {"id": "1"},
+        "edition_title": "Example Dataset 1",
+        "latest_version": {
+            "href": "/datasets/example1/editions/example-dataset-1/versions/1",
+            "id": "1",
+        },
+        "release_date": "2025-01-01T00:00:00.000Z",
+        "state": "associated",
     }]
     """
     with responses.RequestsMock(assert_all_requests_are_fired=False) as mock_responses:
         # Mock the list endpoint
         mock_responses.get(
-            settings.DATASET_EDITIONS_API_URL,
+            settings.DATASETS_API_EDITIONS_URL,
             json={
                 "items": datasets,
                 "total_count": len(datasets),
@@ -38,7 +42,7 @@ def mock_datasets_responses(datasets: list[Mapping[str, Any]]) -> Generator[resp
         # Mock individual dataset detail endpoints
         for dataset in datasets:
             mock_responses.get(
-                f"{settings.DATASET_EDITIONS_API_URL}/{dataset['id']}",
+                f"{settings.DATASETS_API_EDITIONS_URL}/{dataset['dataset_id']}",
                 json=dataset,
             )
 

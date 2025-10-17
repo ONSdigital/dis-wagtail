@@ -13,10 +13,10 @@ class TestONSDatasetApiQuerySet(TestCase):
     @responses.activate
     def test_count_uses_total_count(self):
         responses.add(
-            responses.GET, settings.DATASET_EDITIONS_API_URL, json={"total_count": 2, "count": 0, "items": []}
+            responses.GET, settings.DATASETS_API_EDITIONS_URL, json={"total_count": 2, "count": 0, "items": []}
         )
         api_queryset = ONSDatasetApiQuerySet()
-        api_queryset.base_url = settings.DATASET_EDITIONS_API_URL
+        api_queryset.base_url = settings.DATASETS_API_EDITIONS_URL
         api_queryset.pagination_style = "offset-limit"
         self.assertEqual(api_queryset.count(), 2)
 
@@ -24,7 +24,7 @@ class TestONSDatasetApiQuerySet(TestCase):
     def test_count_defaults_to_item_count(self):
         responses.add(
             responses.GET,
-            settings.DATASET_EDITIONS_API_URL,
+            settings.DATASETS_API_EDITIONS_URL,
             json={
                 "items": [
                     {"dummy": "test"},
@@ -34,13 +34,13 @@ class TestONSDatasetApiQuerySet(TestCase):
         )
 
         api_queryset = ONSDatasetApiQuerySet()
-        api_queryset.base_url = settings.DATASET_EDITIONS_API_URL
+        api_queryset.base_url = settings.DATASETS_API_EDITIONS_URL
         self.assertEqual(api_queryset.count(), 2)
 
     def test_with_token_clones_queryset(self):
         """Test that with_token() returns a cloned queryset with token attached."""
         api_queryset = ONSDatasetApiQuerySet()
-        api_queryset.base_url = settings.DATASET_EDITIONS_API_URL
+        api_queryset.base_url = settings.DATASETS_API_EDITIONS_URL
         test_token = "test-token-123"  # noqa: S105
 
         cloned = api_queryset.with_token(test_token)
@@ -69,13 +69,13 @@ class TestONSDatasetApiQuerySet(TestCase):
         test_token = "test-token"  # noqa: S105
         responses.add(
             responses.GET,
-            settings.DATASET_EDITIONS_API_URL,
+            settings.DATASETS_API_EDITIONS_URL,
             json={"items": [], "total_count": 0},
             match=[responses.matchers.header_matcher({"Authorization": test_token})],
         )
 
         api_queryset = ONSDatasetApiQuerySet()
-        api_queryset.base_url = settings.DATASET_EDITIONS_API_URL
+        api_queryset.base_url = settings.DATASETS_API_EDITIONS_URL
         api_queryset.token = test_token
 
         api_queryset.fetch_api_response()
@@ -88,12 +88,12 @@ class TestONSDatasetApiQuerySet(TestCase):
         """Test that fetch_api_response() works without token."""
         responses.add(
             responses.GET,
-            settings.DATASET_EDITIONS_API_URL,
+            settings.DATASETS_API_EDITIONS_URL,
             json={"items": [], "total_count": 0},
         )
 
         api_queryset = ONSDatasetApiQuerySet()
-        api_queryset.base_url = settings.DATASET_EDITIONS_API_URL
+        api_queryset.base_url = settings.DATASETS_API_EDITIONS_URL
 
         result = api_queryset.fetch_api_response()
 
@@ -105,38 +105,41 @@ class TestONSDatasetApiQuerySet(TestCase):
         """Test that 429 rate limit errors are logged and raised."""
         responses.add(
             responses.GET,
-            settings.DATASET_EDITIONS_API_URL,
+            settings.DATASETS_API_EDITIONS_URL,
             status=HTTPStatus.TOO_MANY_REQUESTS,
         )
 
         api_queryset = ONSDatasetApiQuerySet()
-        api_queryset.base_url = settings.DATASET_EDITIONS_API_URL
+        api_queryset.base_url = settings.DATASETS_API_EDITIONS_URL
 
         with patch("cms.datasets.models.logger") as mock_logger:
             with self.assertRaises(requests.exceptions.HTTPError):
                 api_queryset.fetch_api_response()
 
-            mock_logger.warning.assert_called_once()
-            self.assertIn("Rate limit exceeded", mock_logger.warning.call_args[0][0])
+            mock_logger.warning.assert_called_once_with(
+                "Rate limit exceeded when fetching datasets", extra={"url": settings.DATASETS_API_EDITIONS_URL}
+            )
 
     @responses.activate
     def test_fetch_api_response_handles_5xx_errors(self):
         """Test that 5xx server errors are logged and raised."""
         responses.add(
             responses.GET,
-            settings.DATASET_EDITIONS_API_URL,
+            settings.DATASETS_API_EDITIONS_URL,
             status=HTTPStatus.INTERNAL_SERVER_ERROR,
         )
 
         api_queryset = ONSDatasetApiQuerySet()
-        api_queryset.base_url = settings.DATASET_EDITIONS_API_URL
+        api_queryset.base_url = settings.DATASETS_API_EDITIONS_URL
 
         with patch("cms.datasets.models.logger") as mock_logger:
             with self.assertRaises(requests.exceptions.HTTPError):
                 api_queryset.fetch_api_response()
 
-            mock_logger.error.assert_called_once()
-            self.assertIn("Server error", mock_logger.error.call_args[0][0])
+            mock_logger.error.assert_called_once_with(
+                "Server error when fetching datasets",
+                extra={"url": settings.DATASETS_API_EDITIONS_URL, "status_code": HTTPStatus.INTERNAL_SERVER_ERROR},
+            )
 
     @responses.activate
     def test_fetch_api_response_handles_request_exception(self):
@@ -148,8 +151,11 @@ class TestONSDatasetApiQuerySet(TestCase):
             with self.assertRaises(requests.exceptions.RequestException):
                 api_queryset.fetch_api_response()
 
-            mock_logger.error.assert_called()
-            self.assertIn("Request failed", mock_logger.error.call_args[0][0])
+            mock_logger.error.assert_called_once()
+            call_args = mock_logger.error.call_args
+            self.assertEqual(call_args[0][0], "Request failed when fetching datasets")
+            self.assertIn("url", call_args[1]["extra"])
+            self.assertIn("error", call_args[1]["extra"])
 
 
 class TestONSDataset(TestCase):
@@ -258,7 +264,7 @@ class TestONSDataset(TestCase):
 
         responses.add(
             responses.GET,
-            settings.DATASET_EDITIONS_API_URL,
+            settings.DATASETS_API_EDITIONS_URL,
             json=response_data,
         )
 

@@ -170,8 +170,10 @@ class TestONSDatasetBaseChooseView(TestCase):
         self.view.request = request
         self.view.get_object_list()
 
-        # Verify audit log was created
-        mock_logger.info.assert_called_once_with("User %s has listed unpublished datasets", self.user.username)
+        # Verify audit log was created with structured logging
+        mock_logger.info.assert_called_once_with(
+            "Unpublished datasets requested", extra={"username": self.user.username}
+        )
 
     @patch("cms.datasets.views.BaseChooseView.get_context_data")
     def test_get_context_data_hides_filter_for_bundles(self, mock_super_context):

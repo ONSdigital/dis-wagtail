@@ -22,7 +22,7 @@ from wagtail.admin.views.generic.chooser import (
 from wagtail.admin.viewsets.chooser import ChooserViewSet
 
 from cms.datasets.models import Dataset, ONSDataset
-from cms.users.permissions import user_can_access_unpublished_datasets
+from cms.datasets.permissions import user_can_access_unpublished_datasets
 
 if TYPE_CHECKING:
     from django.http import HttpRequest, HttpResponse

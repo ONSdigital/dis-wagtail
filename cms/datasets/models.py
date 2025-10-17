@@ -60,15 +60,18 @@ class ONSDatasetApiQuerySet(APIQuerySet):
             response.raise_for_status()
         except requests.exceptions.HTTPError as e:
             if e.response.status_code == HTTPStatus.TOO_MANY_REQUESTS:
-                logger.warning("Rate limit exceeded when fetching datasets: %s", url)
+                logger.warning("Rate limit exceeded when fetching datasets", extra={"url": url})
                 raise
             # Check for 5xx server errors (500-599)
             if e.response.status_code >= HTTPStatus.INTERNAL_SERVER_ERROR:
-                logger.error("Server error when fetching datasets: %s - Status: %s", url, e.response.status_code)
+                logger.error(
+                    "Server error when fetching datasets",
+                    extra={"url": url, "status_code": e.response.status_code},
+                )
                 raise
             raise
         except requests.exceptions.RequestException as e:
-            logger.error("Request failed when fetching datasets: %s - Error: %s", url, e)
+            logger.error("Request failed when fetching datasets", extra={"url": url, "error": str(e)})
             raise
 
         api_response: dict = response.json()
@@ -87,8 +90,8 @@ class ONSDataset(APIModel):
     search_fields: ClassVar[list[str]] = ["title", "version", "formatted_edition"]
 
     class Meta:
-        base_url: str = settings.DATASET_EDITIONS_API_URL
-        detail_url: str = f"{settings.DATASET_EDITIONS_API_URL}/%s"
+        base_url: str = settings.DATASETS_API_EDITIONS_URL
+        detail_url: str = f"{settings.DATASETS_API_BASE_URL}/%s"
         fields: ClassVar = ["id", "description", "title", "version", "edition"]
         pagination_style = "offset-limit"
         verbose_name_plural = "ONS Datasets"
