@@ -1,14 +1,17 @@
-# import os
+# import os
+
+# env = os.environ.copy()
+
 # uncomment to use memory cache rather than the Redis service (from docker compose)
 # CACHES["default"]["BACKEND"] = "django.core.cache.backends.locmem.LocMemCache"
 
-# Django Debug Toolbar
+# Django Debug Toolbar
 SHOW_TOOLBAR = True
 
 # Override size of the pagination used on the previous_release page.
 PREVIOUS_RELEASES_PER_PAGE = 3
 
-# Search Integration Kafka configuration
+# Search Integration Kafka configuration
 # SEARCH_INDEX_PUBLISHER_BACKEND = "" # comment this out to use LogPublisher
-# Can configure kafka servers below
+# Can configure kafka servers below
 # KAFKA_SERVERS = env.get("KAFKA_SERVERS", "localhost:9094").split(",")
