@@ -171,7 +171,7 @@ class RelatedMethodologyProcessor(BaseProcessor[MethodologyDict]):
 
     def _get_manual_methodologies(self) -> tuple[list[MethodologyPage], list[int]]:
         """Get manually highlighted methodologies in their configured order."""
-        highlighted_page_pks = list(self.topic_page.related_methodologies.values_list("page_id", flat=True))[
+        highlighted_page_pks = tuple(self.topic_page.related_methodologies.values_list("page_id", flat=True))[
             : self.max_items_per_section
         ]
 
