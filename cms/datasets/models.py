@@ -96,8 +96,8 @@ class ONSDataset(APIModel):
     def from_query_data(cls, data: Mapping) -> "ONSDataset":
         # Handle new /v1/dataset-editions response structure
         dataset_id = data.get("dataset_id", data.get("id", ""))
-        title = data.get("title", "Title not provided")
-        description = data.get("description", "Description not provided")
+        title = data.get("title") or "Title not provided"
+        description = data.get("description") or "Description not provided"
         edition = data.get("edition", "")
 
         # Extract version from latest_version object
