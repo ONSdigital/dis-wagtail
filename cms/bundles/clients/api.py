@@ -41,6 +41,7 @@ class BundleAPIClient:
             "Accept": "application/json",
         }
         if access_token is not None:
+            # Note: Don't prepend "Bearer " - it's already in the token
             headers["Authorization"] = access_token
         self.session.headers.update(headers)
 

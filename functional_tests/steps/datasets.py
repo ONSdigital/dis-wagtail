@@ -10,21 +10,22 @@ from functional_tests.step_helpers.datasets import mock_datasets_responses
 @when("looks up and selects a dataset")
 def look_up_and_select_dataset(context: Context) -> None:
     mock_dataset = {
-        "id": "example1",
+        "dataset_id": "example1",
         "description": "Example dataset for functional testing",
         "title": "Looked Up Dataset",
-        "version": 1,
-        "links": {
-            "latest_version": {
-                "href": "/datasets/example1/editions/example-dataset-1/versions/1",
-                "id": 1,
-            },
+        "edition": "example-dataset-1",
+        "edition_title": "Example Dataset 1",
+        "latest_version": {
+            "href": "/datasets/example1/editions/example-dataset-1/versions/1",
+            "id": "1",
         },
+        "release_date": "2025-01-01T00:00:00.000Z",
+        "state": "associated",
     }
     dataset_displayed_fields = {
         "title": mock_dataset["title"],
         "description": mock_dataset["description"],
-        "url": settings.DATASETS_API_BASE_URL + mock_dataset["links"]["latest_version"]["href"],
+        "url": f"{settings.ONS_WEBSITE_BASE_URL}/datasets/{mock_dataset['dataset_id']}",
     }
 
     context.selected_datasets = [
@@ -32,8 +33,10 @@ def look_up_and_select_dataset(context: Context) -> None:
         dataset_displayed_fields,
     ]
 
-    with mock_datasets_responses(datasets=[mock_dataset]):
-        editor_tab = getattr(context, "editor_tab", "content")
+    editor_tab = getattr(context, "editor_tab", "content")
+
+    # Mock dataset API responses
+    with mock_datasets_responses([mock_dataset]):
         context.page.locator(get_datasets_panel_locator(editor_tab)).get_by_role(
             "button", name="Insert a block"
         ).first.click()
@@ -67,45 +70,49 @@ def manually_enter_dataset_link(context: Context) -> None:
 @step("the user selects multiple datasets")
 def the_user_selects_multiple_datasets(context: Context) -> None:
     mock_dataset_a = {
-        "id": "example1",
+        "dataset_id": "example1",
         "description": "Example dataset for functional testing",
         "title": "Looked Up Dataset",
-        "version": 1,
-        "links": {
-            "latest_version": {
-                "href": "/datasets/example1/editions/example-dataset-1/versions/1",
-                "id": "example1",
-            },
+        "edition": "example-dataset-1",
+        "edition_title": "Example Dataset 1",
+        "latest_version": {
+            "href": "/datasets/example1/editions/example-dataset-1/versions/1",
+            "id": "1",
         },
+        "release_date": "2025-01-01T00:00:00.000Z",
+        "state": "associated",
     }
 
     mock_dataset_b = {
-        "id": "example2",
+        "dataset_id": "example2",
         "description": "Second example dataset for functional testing",
         "title": "Personal well-being estimates by local authority",
-        "version": 1,
-        "links": {
-            "latest_version": {
-                "href": "/datasets/example2/editions/example-dataset-2/versions/1",
-                "id": "example2",
-            },
+        "edition": "example-dataset-2",
+        "edition_title": "Example Dataset 2",
+        "latest_version": {
+            "href": "/datasets/example2/editions/example-dataset-2/versions/1",
+            "id": "1",
         },
+        "release_date": "2025-01-02T00:00:00.000Z",
+        "state": "associated",
     }
 
     mock_dataset_c = {
-        "id": "example3",
+        "dataset_id": "example3",
         "description": "Third example dataset for functional testing",
         "title": "Deaths registered weekly in England and Wales by region",
-        "version": 1,
-        "links": {
-            "latest_version": {
-                "href": "/datasets/example3/editions/example-dataset-3/versions/1",
-                "id": "example3",
-            },
+        "edition": "example-dataset-3",
+        "edition_title": "Example Dataset 3",
+        "latest_version": {
+            "href": "/datasets/example3/editions/example-dataset-3/versions/1",
+            "id": "1",
         },
+        "release_date": "2025-01-03T00:00:00.000Z",
+        "state": "associated",
     }
 
-    with mock_datasets_responses(datasets=[mock_dataset_a, mock_dataset_b, mock_dataset_c]):
+    # Mock dataset API responses
+    with mock_datasets_responses([mock_dataset_a, mock_dataset_b, mock_dataset_c]):
         context.page.get_by_role("button", name="Add dataset").click()
         context.page.get_by_text("Looked up dataset").click()
         context.page.get_by_text("Personal well-being estimates by local authority").click()

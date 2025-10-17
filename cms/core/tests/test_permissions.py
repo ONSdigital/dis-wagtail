@@ -230,6 +230,8 @@ class PublishingAdminPermissionsTestCase(BaseGroupPermissionTestCase):
 
         self.check_and_remove_from_user_permissions_helper("release_calendar", "notice", "modify")
 
+        self.check_and_remove_from_user_permissions_helper("datasets", "datasets", "access_unpublished")
+
         # Check that there are no other unexpected permissions
         self.assertListEqual([], self.user_permissions)
 
@@ -270,6 +272,8 @@ class PublishingOfficerPermissionsTestCase(BaseGroupPermissionTestCase):
             self.check_and_remove_from_user_permissions_helper("bundles", "bundle", permission_type)
 
         self.check_and_remove_from_user_permissions_helper("teams", "team", "view")
+
+        self.check_and_remove_from_user_permissions_helper("datasets", "datasets", "access_unpublished")
 
         # Check that there are no other unexpected permissions
         self.assertListEqual([], self.user_permissions)
