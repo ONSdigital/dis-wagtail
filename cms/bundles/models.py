@@ -16,13 +16,18 @@ from wagtail.search import index
 
 from cms.core.widgets import ONSAdminDateTimeInput
 from cms.home.models import HomePage
-from cms.release_calendar.viewsets import FutureReleaseCalendarChooserWidget
 from cms.topics.models import TopicPage
 from cms.workflows.utils import is_page_ready_to_preview, is_page_ready_to_publish
 
 from .enums import ACTIVE_BUNDLE_STATUSES, EDITABLE_BUNDLE_STATUSES, PREVIEWABLE_BUNDLE_STATUSES, BundleStatus
 from .forms import BundleAdminForm
-from .panels import BundleFieldPanel, BundleMultipleChooserPanel, BundleStatusPanel, PageChooserWithStatusPanel
+from .panels import (
+    BundleFieldPanel,
+    BundleMultipleChooserPanel,
+    BundleStatusPanel,
+    PageChooserWithStatusPanel,
+    ReleaseChooserWithDetailsPanel,
+)
 
 if TYPE_CHECKING:
     import datetime
@@ -158,11 +163,7 @@ class Bundle(index.Indexed, ClusterableModel, models.Model):  # type: ignore[dja
         BundleFieldPanel("name"),
         FieldRowPanel(
             [
-                BundleFieldPanel(
-                    "release_calendar_page",
-                    heading="Release Calendar page",
-                    widget=FutureReleaseCalendarChooserWidget,
-                ),
+                ReleaseChooserWithDetailsPanel("release_calendar_page", heading="Release Calendar page"),
                 BundleFieldPanel("publication_date", widget=ONSAdminDateTimeInput(), heading="or Publication date"),
             ],
             heading="Scheduling",
