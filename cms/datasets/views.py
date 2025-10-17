@@ -108,7 +108,7 @@ class ONSDatasetBaseChooseView(BaseChooseView):
 
         # Log audit event when accessing unpublished datasets
         if published == "false":
-            logger.info("User %s has listed unpublished datasets", self.request.user.username)
+            logger.info("Unpublished datasets requested", extra={"username": self.request.user.username})
 
         # Build the queryset with token and published filter
         queryset = ONSDataset.objects.filter(published=published)  # pylint: disable=no-member
