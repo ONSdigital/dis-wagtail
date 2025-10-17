@@ -25,7 +25,7 @@ from cms.methodology.models import MethodologyPage
 from cms.taxonomy.mixins import ExclusiveTaxonomyMixin
 from cms.topics.blocks import ExploreMoreStoryBlock, TimeSeriesPageStoryBlock, TopicHeadlineFigureBlock
 from cms.topics.forms import TopicPageAdminForm
-from cms.topics.utils import format_time_series_as_document_list
+from cms.topics.utils import format_time_series_as_document_list, get_topic_search_url
 from cms.topics.viewsets import (
     FeaturedSeriesPageChooserWidget,
     HighlightedArticlePageChooserWidget,
@@ -397,13 +397,11 @@ class TopicPage(BundledPageMixin, ExclusiveTaxonomyMixin, BasePage):  # type: ig
 
         links: dict[str, str] = {}
 
-        if self.processed_articles:
-            links["related_articles"] = f"{settings.ONS_WEBSITE_BASE_URL}/{topic.slug_path}/publications"
+        if self.processed_articles and (articles_url := self.get_articles_search_url()):
+            links["related_articles"] = articles_url
 
-        if self.processed_methodologies:
-            links["related_methodologies"] = (
-                f"{settings.ONS_WEBSITE_BASE_URL}/{topic.slug_path}/topicspecificmethodology"
-            )
+        if self.processed_methodologies and (methodologies_url := self.get_methodologies_search_url()):
+            links["related_methodologies"] = methodologies_url
 
         if self.datasets:
             links["related_data"] = f"{settings.ONS_WEBSITE_BASE_URL}/{topic.slug_path}/datalist?filter=datasets"
@@ -412,3 +410,9 @@ class TopicPage(BundledPageMixin, ExclusiveTaxonomyMixin, BasePage):  # type: ig
             links["related_time_series"] = f"{settings.ONS_WEBSITE_BASE_URL}/timeseriestool?topic={topic.slug_path}"
 
         return links
+
+    def get_articles_search_url(self) -> str | None:
+        return get_topic_search_url(self.topic, settings.ONS_WEBSITE_BASE_URL, "publications")
+
+    def get_methodologies_search_url(self) -> str | None:
+        return get_topic_search_url(self.topic, settings.ONS_WEBSITE_BASE_URL, "topicspecificmethodology")

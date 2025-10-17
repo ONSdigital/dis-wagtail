@@ -4,10 +4,16 @@ from typing import TYPE_CHECKING
 
 import matplotlib as mpl
 from django.conf import settings
+from django.http import HttpResponseRedirect
+from django.shortcuts import redirect
 from matplotlib.figure import Figure
-from wagtail.models import Page
 
 from cms.core.enums import RelatedContentType
+
+if TYPE_CHECKING:
+    from django.http import HttpRequest
+    from wagtail.models import Page
+
 
 matplotlib_lock = Lock()
 
@@ -75,3 +81,13 @@ def latex_formula_to_svg(latex: str, *, fontsize: int = 18, transparent: bool = 
         svg_string = "\n".join(svg_string.split("\n")[3:])
 
     return svg_string
+
+
+def redirect_to_parent_listing(
+    page: "Page", request: "HttpRequest", get_listing_url_method: str, redirect_status: int = 307
+) -> HttpResponseRedirect:
+    """Redirects to the parent page's listing URL if available, otherwise to the parent page itself."""
+    parent = page.get_parent().specific_deferred
+    if parent and hasattr(parent, get_listing_url_method) and (redirect_url := parent.get_listing_url_method()):
+        return HttpResponseRedirect(redirect_url, status=redirect_status)
+    return redirect(parent.get_url(request=request))

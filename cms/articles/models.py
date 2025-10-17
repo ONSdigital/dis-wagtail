@@ -31,6 +31,7 @@ from cms.core.custom_date_format import ons_date_format
 from cms.core.fields import StreamField
 from cms.core.models import BasePage
 from cms.core.models.mixins import NoTrailingSlashRoutablePageMixin
+from cms.core.utils import redirect_to_parent_listing
 from cms.core.widgets import date_widget
 from cms.datasets.blocks import DatasetStoryBlock
 from cms.datasets.utils import format_datasets_as_document_list
@@ -70,8 +71,8 @@ class ArticlesIndexPage(BasePage):  # type: ignore[django-manager-missing]
         super().minimal_clean()
 
     def serve(self, request: "HttpRequest", *args: Any, **kwargs: Any) -> "HttpResponse":
-        # FIXME: redirect to the publications listing for the topic
-        return redirect(self.get_parent().get_url(request=request))
+        # Get the parent topic page
+        return redirect_to_parent_listing(self, request, "get_articles_search_url")
 
 
 class ArticleSeriesPage(  # type: ignore[django-manager-missing]
