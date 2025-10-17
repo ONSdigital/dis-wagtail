@@ -71,7 +71,7 @@ class TestONSDatasetApiQuerySet(TestCase):
             responses.GET,
             settings.DATASET_EDITIONS_API_URL,
             json={"items": [], "total_count": 0},
-            match=[responses.matchers.header_matcher({"Authorization": f"Bearer {test_token}"})],
+            match=[responses.matchers.header_matcher({"Authorization": test_token})],
         )
 
         api_queryset = ONSDatasetApiQuerySet()

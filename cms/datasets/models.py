@@ -47,7 +47,8 @@ class ONSDatasetApiQuerySet(APIQuerySet):
         # Add Authorization header if token is set
         headers = dict(self.http_headers) if self.http_headers else {}
         if self.token:
-            headers["Authorization"] = f"Bearer {self.token}"
+            # Note: Don't prepend "Bearer " - it's already in the token
+            headers["Authorization"] = self.token
 
         if url is None:
             url = self.base_url
