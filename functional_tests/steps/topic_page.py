@@ -279,5 +279,5 @@ def check_highlighted_items_order(context: Context, item_type: str) -> None:
     assert actual_titles == expected_titles, f"Expected {item_type} in order {expected_titles}, but got {actual_titles}"
 
     for title in expected_titles:
-        link = document_list.locator("h3.ons-document-list__item-title a").filter(has_text=title).first
+        link = document_list.locator("ons-document-list__item-title a").filter(has_text=title).first
         expect(link).to_be_visible()

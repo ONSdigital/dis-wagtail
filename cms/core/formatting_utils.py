@@ -85,7 +85,7 @@ def get_formatted_pages_list(
             # but mypy can't narrow the union type at runtime, so type: ignore is required.
             internal_page = page["internal_page"]  # type: ignore
 
-            custom_title = page.get("title") if "title" in page else None
+            custom_title = page.get("title")
 
             # mypy: custom_title will always be str or None for internal articles,
             # but mypy can't guarantee this due to TypedDict union, so type: ignore is required.
