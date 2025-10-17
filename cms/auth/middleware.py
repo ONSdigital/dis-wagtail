@@ -32,6 +32,11 @@ class ONSAuthMiddleware(AuthenticationMiddleware):
         """
         super().process_request(request)
 
+        # Bypass authentication for internal health check endpoints.
+        if request.path == "/health" or request.path.startswith("/-/"):
+            logger.debug("Bypassing authentication for internal health check request.", extra={"path": request.path})
+            return
+
         # If Cognito is off, we only want normal Django auth.
         if not settings.AWS_COGNITO_LOGIN_ENABLED:
             # Ensures service users with unusable passwords are logged out.
