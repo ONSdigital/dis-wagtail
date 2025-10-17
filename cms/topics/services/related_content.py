@@ -42,6 +42,10 @@ class RelatedArticleProcessor(BaseProcessor[ArticleDict]):
         """
         manual_articles, highlighted_page_pks = self._get_manual_articles()
 
+        # If we have enough manual articles, return early
+        if len(manual_articles) >= self.max_items_per_section:
+            return manual_articles
+
         # Calculate remaining slots and fetch automatic articles
         remaining_slots = self.max_items_per_section - len(manual_articles)
         auto_articles = self._get_automatic_articles(highlighted_page_pks, remaining_slots)
@@ -50,12 +54,10 @@ class RelatedArticleProcessor(BaseProcessor[ArticleDict]):
 
     def _get_manual_articles(self) -> tuple[list[ArticleDict], list[int]]:
         """Extract manually configured related articles."""
-        manual_articles: list[ArticleDict] = []
+        manual_articles = []
         highlighted_page_pks = []
 
-        for related in self.topic_page.related_articles.select_related("page").all():
-            if len(manual_articles) >= self.max_items_per_section:
-                break  # Limit reached, stop collecting
+        for related in self.topic_page.related_articles.select_related("page").all()[: self.max_items_per_section]:
             article = self._process_related_article(related)
             if article:
                 manual_articles.append(article)
@@ -153,42 +155,38 @@ class RelatedMethodologyProcessor(BaseProcessor[MethodologyDict]):
         Each dict has 'internal_page' pointing to a MethodologyPage.
         Manually highlighted methodologies are prioritised and shown in their configured order.
         """
-        highlighted_pages = self._get_highlighted_methodologies()
+        highlighted_pages, highlighted_page_pks = self._get_manual_methodologies()
+        highlighted_dicts: list[MethodologyDict] = [{"internal_page": page} for page in highlighted_pages]
 
         # If we have enough highlighted methodologies, return early
         if len(highlighted_pages) >= self.max_items_per_section:
-            result: list[MethodologyDict] = [
-                {"internal_page": page} for page in highlighted_pages[: self.max_items_per_section]
-            ]
-            return result
+            return highlighted_dicts
 
         # Calculate remaining slots and fetch automatic methodologies
         remaining_slots = self.max_items_per_section - len(highlighted_pages)
-        highlighted_pages_pks = [page.pk for page in highlighted_pages]
-        auto_pages = self._get_automatic_methodologies(highlighted_pages_pks, remaining_slots)
+        auto_pages = self._get_automatic_methodologies(highlighted_page_pks, remaining_slots)
 
         # Combine highlighted and automatic methodologies
-        highlighted_dicts: list[MethodologyDict] = [{"internal_page": page} for page in highlighted_pages]
+        return highlighted_dicts + auto_pages
 
-        return [*highlighted_dicts, *auto_pages]
-
-    def _get_highlighted_methodologies(self) -> list[MethodologyPage]:
+    def _get_manual_methodologies(self) -> tuple[list[MethodologyPage], list[int]]:
         """Get manually highlighted methodologies in their configured order."""
-        highlighted_page_pks = tuple(
-            page_id for page_id in self.topic_page.related_methodologies.values_list("page_id", flat=True)
+        highlighted_page_pks = list(
+            self.topic_page.related_methodologies.values_list("page_id", flat=True)[: self.max_items_per_section]
         )
 
         if not highlighted_page_pks:
-            return []
+            return [], []
 
         # Fetch pages in the order they were added
-        return list(
+        pages = list(
             order_by_pk_position(
                 MethodologyPage.objects.live().public().defer_streamfields(),
                 pks=highlighted_page_pks,
                 exclude_non_matches=True,
             )
         )
+        return pages, highlighted_page_pks
 
     def _get_automatic_methodologies(self, excluded_pks: Iterable[int], limit: int) -> list[MethodologyDict]:
         """Get automatically selected methodologies based on topic relationships using a single query."""
