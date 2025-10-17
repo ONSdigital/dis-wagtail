@@ -80,12 +80,10 @@ def get_formatted_pages_list(
             datum = _format_external_link(page)  # type: ignore
         else:
             # Handle dict format with internal_page and optional title
-            internal_dict = page
-
             # Extract the actual Page object
             # mypy: We know only InternalArticleDict has "internal_page",
             # but mypy can't narrow the union type at runtime, so type: ignore is required.
-            internal_page = internal_dict["internal_page"]  # type: ignore
+            internal_page = page["internal_page"]  # type: ignore
 
             custom_title = page.get("title") if "title" in page else None
 

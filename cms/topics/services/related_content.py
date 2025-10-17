@@ -42,10 +42,6 @@ class RelatedArticleProcessor(BaseProcessor[ArticleDict]):
         """
         manual_articles, highlighted_page_pks = self._get_manual_articles()
 
-        # If we have enough manual articles, return early
-        if len(manual_articles) >= self.max_items_per_section:
-            return manual_articles[: self.max_items_per_section]
-
         # Calculate remaining slots and fetch automatic articles
         remaining_slots = self.max_items_per_section - len(manual_articles)
         auto_articles = self._get_automatic_articles(highlighted_page_pks, remaining_slots)
@@ -54,10 +50,12 @@ class RelatedArticleProcessor(BaseProcessor[ArticleDict]):
 
     def _get_manual_articles(self) -> tuple[list[ArticleDict], list[int]]:
         """Extract manually configured related articles."""
-        manual_articles = []
+        manual_articles: list[ArticleDict] = []
         highlighted_page_pks = []
 
         for related in self.topic_page.related_articles.select_related("page").all():
+            if len(manual_articles) >= self.max_items_per_section:
+                break  # Limit reached, stop collecting
             article = self._process_related_article(related)
             if article:
                 manual_articles.append(article)
