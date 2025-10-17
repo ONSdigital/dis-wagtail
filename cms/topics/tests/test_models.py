@@ -11,10 +11,14 @@ from wagtail.models import Locale
 from wagtail.test.utils import WagtailTestUtils
 from wagtail.test.utils.form_data import inline_formset, nested_form_data, rich_text, streamfield
 
-from cms.articles.tests.factories import ArticleSeriesPageFactory, StatisticalArticlePageFactory
+from cms.articles.tests.factories import (
+    ArticleSeriesPageFactory,
+    StatisticalArticlePageFactory,
+)
 from cms.datasets.blocks import DatasetStoryBlock
 from cms.home.models import HomePage
 from cms.methodology.tests.factories import MethodologyIndexPageFactory, MethodologyPageFactory
+from cms.taxonomy.models import GenericPageToTaxonomyTopic
 from cms.taxonomy.tests.factories import TopicFactory
 from cms.topics.blocks import TimeSeriesPageStoryBlock
 from cms.topics.models import TopicPage, TopicPageRelatedArticle, TopicPageRelatedMethodology
@@ -30,7 +34,16 @@ class TopicPageTestCase(WagtailTestUtils, TestCase):
     def setUpTestData(cls):
         cls.superuser = cls.create_superuser(username="superuser")
         cls.home_page = HomePage.objects.first()
+
+        cls.topic_1 = TopicFactory()
+        cls.topic_2 = TopicFactory()
+        cls.topic_3 = TopicFactory()
+
         cls.topic_page = TopicPageFactory(title="Test Topic")
+
+        cls.cross_pollination_topic_page = TopicPageFactory(topic=cls.topic_1)
+        cls.other_topic_page_1 = TopicPageFactory(topic=cls.topic_2)
+        cls.other_topic_page_2 = TopicPageFactory(topic=cls.topic_3)
 
         # Create relevant pages
         cls.article_series = ArticleSeriesPageFactory(title="Article Series", parent__parent=cls.topic_page)
@@ -235,6 +248,236 @@ class TopicPageTestCase(WagtailTestUtils, TestCase):
         ]
         self.assertListEqual(self.topic_page.processed_methodologies, expected)
 
+    def test_processed_articles_with_only_tagged_articles(self):
+        """When there are no descendant articles but 3 articles tagged with the same topic elsewhere,
+        show all 3. Articles should be under other topic pages, not this one.
+        """
+        series_1 = ArticleSeriesPageFactory(parent__parent=self.other_topic_page_1)
+        GenericPageToTaxonomyTopic.objects.create(page=series_1, topic=self.topic_1)
+        StatisticalArticlePageFactory(
+            title="Tagged Article 1",
+            parent=series_1,
+            release_date=datetime(2025, 1, 3),
+        )
+        # Another statistical article edition
+        tagged_article_2 = StatisticalArticlePageFactory(
+            title="Tagged Article 2",
+            parent=series_1,
+            release_date=datetime(2025, 1, 4),
+        )
+
+        # Create another article series under other_topic_page_1
+        another_series = ArticleSeriesPageFactory(parent=series_1.get_parent())
+        GenericPageToTaxonomyTopic.objects.create(page=another_series, topic=self.topic_1)
+        another_tagged_article = StatisticalArticlePageFactory(
+            title="Another Tagged Article",
+            parent=another_series,
+            release_date=datetime(2025, 1, 2),
+        )
+
+        # Article 3 under other_topic_page_2
+        series_2 = ArticleSeriesPageFactory(parent__parent=self.other_topic_page_2)
+        GenericPageToTaxonomyTopic.objects.create(page=series_2, topic=self.topic_1)
+        tagged_article_3 = StatisticalArticlePageFactory(
+            title="Tagged Article 3",
+            parent=series_2,
+            release_date=datetime(2025, 1, 1),
+        )
+
+        # Should return all 3 tagged articles, sorted by release_date desc
+        expected = [
+            {"internal_page": tagged_article_2},
+            {"internal_page": another_tagged_article},
+            {"internal_page": tagged_article_3},
+        ]
+        self.assertListEqual(self.cross_pollination_topic_page.processed_articles, expected)
+
+    def test_processed_articles_with_manual_and_tagged_articles(self):
+        """When there is 1 descendant article but 2 articles tagged with the same topic elsewhere,
+        show both tagged articles (up to 2), but a manually selected article should show first.
+        """
+        # Article 1 under other_topic_page_1
+        series_1 = ArticleSeriesPageFactory(parent__parent=self.other_topic_page_1)
+        GenericPageToTaxonomyTopic.objects.create(page=series_1, topic=self.topic_1)
+        tagged_article_1 = StatisticalArticlePageFactory(
+            title="Tagged Article 1",
+            parent=series_1,
+            release_date=datetime(2025, 1, 3),
+        )
+
+        # Article 2 under other_topic_page_2
+        series_2 = ArticleSeriesPageFactory(parent__parent=self.other_topic_page_2)
+        GenericPageToTaxonomyTopic.objects.create(page=series_2, topic=self.topic_1)
+        tagged_article_2 = StatisticalArticlePageFactory(
+            title="Tagged Article 2",
+            parent=series_2,
+            release_date=datetime(2025, 1, 2),
+        )
+
+        series_3 = ArticleSeriesPageFactory(parent__parent=self.cross_pollination_topic_page)
+
+        # Add a manually selected article (not one of the tagged articles)
+        manual_article = StatisticalArticlePageFactory(
+            title="Manual Article",
+            parent=series_3,
+            release_date=datetime(2025, 1, 1),
+        )
+        TopicPageRelatedArticleFactory(parent=self.cross_pollination_topic_page, page=manual_article)
+
+        # Should return the manually selected article first, then the two tagged articles (sorted by release_date desc)
+        expected = [
+            {"internal_page": manual_article},
+            {"internal_page": tagged_article_1},
+            {"internal_page": tagged_article_2},
+        ]
+        # Only up to 2 tagged articles should be shown after the manual one
+        self.assertListEqual(self.cross_pollination_topic_page.processed_articles, expected)
+
+    def test_processed_articles_with_descendants_and_one_tagged_article(self):
+        """When there are 2 descendant articles and 1 article tagged with the same topic elsewhere."""
+        # Ensure there are 2 descendant articles under the current topic page
+        series = ArticleSeriesPageFactory(parent__parent=self.cross_pollination_topic_page)
+        descendant_article_1 = StatisticalArticlePageFactory(
+            title="Descendant Article 1",
+            parent=series,
+            release_date=datetime(2025, 1, 3),
+        )
+
+        series_2 = ArticleSeriesPageFactory(
+            parent=series.get_parent(), parent__parent=self.cross_pollination_topic_page
+        )
+        descendant_article_2 = StatisticalArticlePageFactory(
+            title="Descendant Article 2",
+            parent=series_2,
+            release_date=datetime(2025, 1, 2),
+        )
+
+        # Create an article series under another topic page and tag it with this topic
+        tagged_series = ArticleSeriesPageFactory(parent__parent=self.other_topic_page_1)
+        GenericPageToTaxonomyTopic.objects.create(page=tagged_series, topic=self.topic_1)
+        tagged_article = StatisticalArticlePageFactory(
+            title="Tagged Article",
+            parent=tagged_series,
+            release_date=datetime(2025, 1, 1),
+        )
+
+        # The expected order: descendant articles (sorted by release_date desc), then tagged article
+        expected = [
+            {"internal_page": descendant_article_1},
+            {"internal_page": descendant_article_2},
+            {"internal_page": tagged_article},
+        ]
+        self.assertListEqual(self.cross_pollination_topic_page.processed_articles, expected)
+
+    def test_processed_methodologies_with_only_tagged_methodologies(self):
+        """When there are no descendant methodologies on a topic page but
+        3 methodologies tagged with the same topic elsewhere.
+        """
+        # Create a methodology pages elsewhere and tag it with the current topic of the topic page
+        tagged_methodology_1 = MethodologyPageFactory(
+            title="Tagged Methodology 1",
+            parent__parent=self.other_topic_page_1,
+            publication_date=datetime(2025, 1, 3),
+        )
+        GenericPageToTaxonomyTopic.objects.create(page=tagged_methodology_1, topic=self.topic_1)
+
+        tagged_methodology_2 = MethodologyPageFactory(
+            title="Tagged Methodology 2",
+            parent=tagged_methodology_1.get_parent(),
+            publication_date=datetime(2025, 1, 4),
+        )
+        # Tagged methodology 2 shouldn't show up as it's not tagged with the same topic as the topic page
+        GenericPageToTaxonomyTopic.objects.create(page=tagged_methodology_2, topic=self.topic_2)
+
+        tagged_methodology_3 = MethodologyPageFactory(
+            title="Tagged Methodology 3",
+            parent=tagged_methodology_1.get_parent(),
+            publication_date=datetime(2025, 1, 5),
+        )
+        GenericPageToTaxonomyTopic.objects.create(page=tagged_methodology_3, topic=self.topic_1)
+
+        # Create another methodology under a different topic page and tag it with the current topic of the topic page
+        another_tagged_methodology = MethodologyPageFactory(
+            title="Another Tagged Methodology",
+            parent__parent=self.other_topic_page_2,
+            publication_date=datetime(2025, 1, 6),
+        )
+        GenericPageToTaxonomyTopic.objects.create(page=another_tagged_methodology, topic=self.topic_1)
+
+        # Should return all 3 tagged methodologies, sorted by publication_date desc
+        expected = [
+            {"internal_page": another_tagged_methodology},
+            {"internal_page": tagged_methodology_3},
+            {"internal_page": tagged_methodology_1},
+        ]
+        self.assertListEqual(self.cross_pollination_topic_page.processed_methodologies, expected)
+
+    def test_processed_methodologies_with_manual_and_tagged_methodologies(self):
+        """When there are no descendant methodologies on a topic page but
+        2 methodologies tagged with the same topic elsewhere and 1 manually selected methodology.
+        The manually selected methodology should show first.
+        """
+        # Create a methodology pages elsewhere and tag it with the topic of the topic page
+        tagged_methodology_1 = MethodologyPageFactory(
+            title="Tagged Methodology 1",
+            parent__parent=self.other_topic_page_1,
+            publication_date=datetime(2025, 1, 3),
+        )
+        GenericPageToTaxonomyTopic.objects.create(page=tagged_methodology_1, topic=self.topic_1)
+
+        tagged_methodology_2 = MethodologyPageFactory(
+            title="Tagged Methodology 2",
+            parent__parent=self.other_topic_page_2,
+            publication_date=datetime(2025, 1, 4),
+        )
+        GenericPageToTaxonomyTopic.objects.create(page=tagged_methodology_2, topic=self.topic_1)
+
+        manual_methodology = MethodologyPageFactory(
+            parent__parent=self.cross_pollination_topic_page, publication_date=datetime(2025, 1, 5)
+        )
+
+        TopicPageRelatedMethodologyFactory(page=manual_methodology)
+
+        # Should return the manually selected methodology first,
+        # then the two tagged methodologies (sorted by publication_date desc)
+        expected = [
+            {"internal_page": manual_methodology},
+            {"internal_page": tagged_methodology_2},
+            {"internal_page": tagged_methodology_1},
+        ]
+        self.assertListEqual(self.cross_pollination_topic_page.processed_methodologies, expected)
+
+    def test_processed_methodologies_with_descendants_and_one_tagged_methodology(self):
+        """When there are 2 descendant methodologies and 1 methodology tagged with the same topic elsewhere."""
+        # Ensure there are 2 descendant methodologies under the current topic page
+        descendant_methodology_1 = MethodologyPageFactory(
+            title="Descendant Methodology 1",
+            parent__parent=self.cross_pollination_topic_page,
+            publication_date=datetime(2025, 1, 3),
+        )
+
+        descendant_methodology_2 = MethodologyPageFactory(
+            title="Descendant Methodology 2",
+            parent=descendant_methodology_1.get_parent(),
+            publication_date=datetime(2025, 1, 2),
+        )
+
+        # Create a methodology page under another topic page and tag it with this topic
+        tagged_methodology = MethodologyPageFactory(
+            title="Tagged Methodology",
+            parent__parent=self.other_topic_page_1,
+            publication_date=datetime(2025, 1, 1),
+        )
+        GenericPageToTaxonomyTopic.objects.create(page=tagged_methodology, topic=self.topic_1)
+
+        # The expected order: descendant methodologies (sorted by publication_date desc), then tagged methodology
+        expected = [
+            {"internal_page": descendant_methodology_1},
+            {"internal_page": descendant_methodology_2},
+            {"internal_page": tagged_methodology},
+        ]
+        self.assertListEqual(self.cross_pollination_topic_page.processed_methodologies, expected)
+
     def test_table_of_contents_includes_all_sections(self):
         manual_dataset = {"title": "test manual", "description": "manual description", "url": "https://example.com"}
 
@@ -386,7 +629,7 @@ class TopicPageTestCase(WagtailTestUtils, TestCase):
             self.topic_page.clean()
 
     def test_cannot_add_children_once_articles_and_methodologies_index_are_created(self):
-        self.assertEqual(TopicPage.objects.count(), 1)
+        self.assertEqual(TopicPage.objects.count(), 4)  # 4 created in setUpTestData
         self.client.force_login(self.superuser)
         response = self.client.post(
             reverse("wagtailadmin_pages:add", args=("topics", "topicpage", self.home_page.pk)),
@@ -407,7 +650,7 @@ class TopicPageTestCase(WagtailTestUtils, TestCase):
             ),
         )
         topics_qs = TopicPage.objects.child_of(self.home_page)
-        self.assertEqual(topics_qs.count(), 2)
+        self.assertEqual(topics_qs.count(), 5)
         new_topic_page = topics_qs.filter(title="Fresh topic").first()
 
         self.assertFalse(new_topic_page.permissions_for_user(self.superuser).can_add_subpage())
