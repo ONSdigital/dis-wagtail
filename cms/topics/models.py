@@ -330,8 +330,8 @@ class TopicPage(BundledPageMixin, ExclusiveTaxonomyMixin, BasePage):  # type: ig
 
         return links
 
-    def get_articles_search_url(self) -> str | None:
+    def get_articles_search_url(self) -> str:
         return get_topic_search_url(self.topic, settings.ONS_WEBSITE_BASE_URL, "publications")
 
-    def get_methodologies_search_url(self) -> str | None:
+    def get_methodologies_search_url(self) -> str:
         return get_topic_search_url(self.topic, settings.ONS_WEBSITE_BASE_URL, "topicspecificmethodology")

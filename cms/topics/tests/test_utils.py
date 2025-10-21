@@ -1,3 +1,4 @@
+from django.conf import settings
 from django.test import TestCase
 from wagtail.blocks import StreamValue
 
@@ -9,7 +10,6 @@ from cms.topics.utils import format_time_series_as_document_list, get_topic_sear
 class TestUtils(TestCase):
     @classmethod
     def setUpTestData(cls):
-        cls.base_url = "https://example.com"
         cls.suffix = "search"
         cls.topic = TopicFactory(slug="my-topic")
 
@@ -39,5 +39,5 @@ class TestUtils(TestCase):
         self.assertEqual(formatted_time_series[0], expected)
 
     def test_get_topic_search_url_returns_correct_url(self):
-        result = get_topic_search_url(self.topic, self.base_url, self.suffix)
-        self.assertEqual(result, "https://example.com/my-topic/search")
+        result = get_topic_search_url(self.topic, settings.ONS_WEBSITE_BASE_URL, self.suffix)
+        self.assertEqual(result, "https://www.ons.gov.uk/my-topic/search")
