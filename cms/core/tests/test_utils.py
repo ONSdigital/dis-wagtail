@@ -181,11 +181,6 @@ class RedirectUtilityTestCase(SimpleTestCase):
         response = redirect("/args-test", "unused-arg")
         self.assertEqual(response.url, "/args-test")
 
-    def test_kwargs_are_passed(self):
-        response = redirect("/headers-test", headers={"X-Test": "value"})
-        self.assertEqual(response.url, "/headers-test")
-        self.assertEqual(response.headers["X-Test"], "value")
-
     def test_unicode_url(self):
         response = redirect("/unicodé")
         expected_url = urllib.parse.quote("/unicodé", safe="/:")

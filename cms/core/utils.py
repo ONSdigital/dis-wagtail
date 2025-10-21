@@ -5,6 +5,7 @@ from typing import TYPE_CHECKING, Any
 import matplotlib as mpl
 from django.conf import settings
 from django.http import HttpResponsePermanentRedirect, HttpResponseRedirect
+from django.shortcuts import redirect as _redirect
 from matplotlib.figure import Figure
 
 from cms.core.enums import RelatedContentType
@@ -85,23 +86,14 @@ def latex_formula_to_svg(latex: str, *, fontsize: int = 18, transparent: bool = 
 def redirect(
     to: str, *args: Any, permanent: bool = False, preserve_request: bool = True, **kwargs: Any
 ) -> HttpResponseRedirect | HttpResponsePermanentRedirect:
-    """Returns an HttpResponseRedirect or HttpResponsePermanentRedirect to the specified URL.
-
-    Args:
-        to (str): The URL to redirect to.
-        *args (Any): Additional positional arguments for the response.
-        permanent (bool, optional): If True, returns a permanent redirect (status 308 or 301). Defaults to False.
-        preserve_request (bool, optional): If True, preserves the request method (status 307 or 308). Defaults to True.
-        **kwargs (Any): Additional keyword arguments for the response.
-
-    Returns:
-        HttpResponseRedirect or HttpResponsePermanentRedirect: The redirect response with the appropriate status code.
-    """
-    status = 308 if permanent and preserve_request else 307 if preserve_request else 301 if permanent else 302
-    response_class = HttpResponsePermanentRedirect if permanent else HttpResponseRedirect
-    response = response_class(to, *args, **kwargs)
-    response.status_code = status
-    return response
+    """Wrapper for Django's redirect that defaults preserve_request=True."""
+    return _redirect(
+        to,
+        *args,
+        permanent=permanent,
+        preserve_request=preserve_request,
+        **kwargs,
+    )
 
 
 def redirect_to_parent_listing(
