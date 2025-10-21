@@ -120,27 +120,35 @@ class RedirectToParentListingTestCase(SimpleTestCase):
 
     def test_redirects_to_root_if_no_parent(self):
         self.page.get_parent.return_value = None
-        response = redirect_to_parent_listing(self.page, self.request, "get_articles_search_url")
+        response = redirect_to_parent_listing(
+            page=self.page, request=self.request, listing_url_method_name="get_articles_search_url"
+        )
         self.assertIsInstance(response, HttpResponseRedirect)
         self.assertEqual(response.url, "/")
 
     def test_redirects_to_listing_url_if_method_exists_and_returns_url(self):
         self.parent.get_articles_search_url = Mock(return_value="/articles/search/")
-        response = redirect_to_parent_listing(self.page, self.request, "get_articles_search_url")
+        response = redirect_to_parent_listing(
+            page=self.page, request=self.request, listing_url_method_name="get_articles_search_url"
+        )
         self.assertIsInstance(response, HttpResponseRedirect)
         self.assertEqual(response.status_code, 307)
         self.assertEqual(response.url, "/articles/search/")
 
     def test_redirects_to_parent_url_if_listing_method_missing(self):
         self.parent.get_url = Mock(return_value="/parent/")
-        response = redirect_to_parent_listing(self.page, self.request, "nonexistent_method")
+        response = redirect_to_parent_listing(
+            page=self.page, request=self.request, listing_url_method_name="nonexistent_method"
+        )
         self.assertIsInstance(response, HttpResponseRedirect)
         self.assertEqual(response.url, "/parent/")
 
     def test_redirects_to_parent_url_if_listing_method_returns_none(self):
         self.parent.get_articles_search_url = Mock(return_value=None)
         self.parent.get_url = Mock(return_value="/parent/")
-        response = redirect_to_parent_listing(self.page, self.request, "get_articles_search_url")
+        response = redirect_to_parent_listing(
+            page=self.page, request=self.request, listing_url_method_name="get_articles_search_url"
+        )
         self.assertIsInstance(response, HttpResponseRedirect)
         self.assertEqual(response.url, "/parent/")
 
