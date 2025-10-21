@@ -39,6 +39,12 @@ from cms.workflows.tests.utils import (
 
 
 class BundleViewSetTestCaseBase(WagtailTestUtils, TestCase):
+    RELEASE_CALENDAR_PAGE_CASES: ClassVar[list[tuple[str, ReleaseStatus, str]]] = [
+        ("Provisional title", ReleaseStatus.PROVISIONAL, "Provisional title (Provisional,"),
+        ("Confirmed title", ReleaseStatus.CONFIRMED, "Confirmed title (Confirmed,"),
+        ("Cancelled title", ReleaseStatus.CANCELLED, "Cancelled title (Cancelled,"),
+    ]
+
     @classmethod
     def setUpTestData(cls):
         cls.superuser = cls.create_superuser(username="admin")
@@ -94,6 +100,28 @@ class BundleViewSetTestCaseBase(WagtailTestUtils, TestCase):
                 "teams": inline_formset([]),
             }
         )
+
+    @staticmethod
+    def chooser_panel_display(page) -> str:
+        return f"{page.title} ({page.get_status_display()}, {page.release_date_value})"
+
+    def _create_release_calendar_page(
+        self,
+        title="Future Release Calendar page",
+        status=ReleaseStatus.PROVISIONAL,
+    ):
+        """Assigns a release calendar page to the bundle."""
+        release_date = timezone.now() + timedelta(days=1)
+        release_calendar_page = ReleaseCalendarPageFactory(
+            title=title,
+            release_date=release_date,
+            status=status,
+        )
+        return release_calendar_page
+
+    def _assign_release_calendar_page_to_bundle(self, release_calendar_page):
+        self.bundle.release_calendar_page = release_calendar_page
+        self.bundle.save(update_fields=["release_calendar_page"])
 
 
 class BundleViewSetAddTestCase(BundleViewSetTestCaseBase):
@@ -185,26 +213,6 @@ class BundleViewSetAddTestCase(BundleViewSetTestCaseBase):
 
 
 class BundleViewSetEditTestCase(BundleViewSetTestCaseBase):
-    @staticmethod
-    def chooser_panel_display(page) -> str:
-        return f"{page.title} ({page.get_status_display()}, {page.release_date_value})"
-
-    def _assign_release_calendar_page_to_bundle(
-        self,
-        title: str = "Future Release Calendar page",
-        status: ReleaseStatus = ReleaseStatus.PROVISIONAL,
-    ):
-        """Assigns a release calendar page to the bundle."""
-        release_date = timezone.now() + timedelta(days=1)
-        release_calendar_page = ReleaseCalendarPageFactory(
-            title=title,
-            release_date=release_date,
-            status=status,
-        )
-        self.bundle.release_calendar_page = release_calendar_page
-        self.bundle.save(update_fields=["release_calendar_page"])
-        return release_calendar_page
-
     def test_bundle_edit_view(self):
         """Test bundle editing."""
         response = self.client.post(
@@ -342,32 +350,27 @@ class BundleViewSetEditTestCase(BundleViewSetTestCaseBase):
         self.bundle.save(update_fields=["status"])
         self.post_with_action_and_test("action-publish", BundleStatus.PUBLISHED, self.bundle_index_url)
 
-    release_calendar_page_cases: ClassVar[list[tuple[str, ReleaseStatus, str]]] = [
-        ("Provisional title", ReleaseStatus.PROVISIONAL, "Provisional title (Provisional,"),
-        ("Confirmed title", ReleaseStatus.CONFIRMED, "Confirmed title (Confirmed,"),
-        # This should not be added to bundle but currently works when updating release calendar page
-        # To remove once release calendar page and bundle validation is improved
-        ("Cancelled title", ReleaseStatus.CANCELLED, "Cancelled title (Cancelled,"),
-    ]
-
     def test_bundle_edit_view__shows_release_calendar_page_title_status_date(self):
         """Release calendar page's title, status and release date are displayed when selected."""
-        for title, status, _ in self.release_calendar_page_cases:
+        for title, status, expected_text in self.RELEASE_CALENDAR_PAGE_CASES:
             with self.subTest(title=title, status=status):
-                if status == ReleaseStatus.CANCELLED:
-                    self.skipTest("Cancelled page cannot be assigned to bundle")
-                release_calendar_page = self._assign_release_calendar_page_to_bundle(title=title, status=status)
+                release_calendar_page = self._create_release_calendar_page(title=title, status=status)
+                # when validation of assigning cancelled pages to bundles are improved
+                # test for cancelled pages should fail for cancelled pages
+                self._assign_release_calendar_page_to_bundle(release_calendar_page=release_calendar_page)
                 response = self.client.get(self.edit_url)
-                self.assertContains(response, self.chooser_panel_display(release_calendar_page))
+                expected_display_panel = f"{expected_text} {release_calendar_page.release_date_value})"
+                self.assertContains(response, expected_display_panel)
 
     def test_bundle_edit_view__shows_updated_release_calendar_page_details(self):
         """When release calendar page details are updated, this tests that the updates are reflected and checks stale
         values are not present.
         """
-        release_calendar_page = self._assign_release_calendar_page_to_bundle()
+        release_calendar_page = self._create_release_calendar_page()
+        self._assign_release_calendar_page_to_bundle(release_calendar_page=release_calendar_page)
         original_text = self.chooser_panel_display(release_calendar_page)
 
-        for title, status, expected_text in self.release_calendar_page_cases:
+        for title, status, expected_text in self.RELEASE_CALENDAR_PAGE_CASES:
             with self.subTest(title=title, status=status):
                 release_calendar_page.title = title
                 release_calendar_page.status = status
