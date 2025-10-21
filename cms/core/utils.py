@@ -105,14 +105,14 @@ def redirect(
 
 
 def redirect_to_parent_listing(
-    page: "Page", request: "HttpRequest", get_listing_url_method: str
+    page: "Page", request: "HttpRequest", listing_url_method_name: str
 ) -> HttpResponseRedirect | HttpResponsePermanentRedirect:
     """Redirects to the parent page's listing URL if available, otherwise to the parent page itself."""
     parent = page.get_parent().specific_deferred
     if (
         parent
-        and hasattr(parent, get_listing_url_method)
-        and (redirect_url := getattr(parent, get_listing_url_method)())
+        and hasattr(parent, listing_url_method_name)
+        and (redirect_url := getattr(parent, listing_url_method_name)())
     ):
         return redirect(redirect_url)
     return redirect(parent.get_url(request=request))
