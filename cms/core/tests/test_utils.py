@@ -118,6 +118,12 @@ class RedirectToParentListingTestCase(SimpleTestCase):
         self.page = Mock()
         self.page.get_parent.return_value.specific_deferred = self.parent
 
+    def test_redirects_to_root_if_no_parent(self):
+        self.page.get_parent.return_value = None
+        response = redirect_to_parent_listing(self.page, self.request, "get_articles_search_url")
+        self.assertIsInstance(response, HttpResponseRedirect)
+        self.assertEqual(response.url, "/")
+
     def test_redirects_to_listing_url_if_method_exists_and_returns_url(self):
         self.parent.get_articles_search_url = Mock(return_value="/articles/search/")
         response = redirect_to_parent_listing(self.page, self.request, "get_articles_search_url")
