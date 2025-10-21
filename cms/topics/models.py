@@ -316,11 +316,11 @@ class TopicPage(BundledPageMixin, ExclusiveTaxonomyMixin, BasePage):  # type: ig
 
         links: dict[str, str] = {}
 
-        if self.processed_articles and (articles_url := self.get_articles_search_url()):
-            links["related_articles"] = articles_url
+        if self.processed_articles:
+            links["related_articles"] = self.get_articles_search_url()
 
-        if self.processed_methodologies and (methodologies_url := self.get_methodologies_search_url()):
-            links["related_methodologies"] = methodologies_url
+        if self.processed_methodologies:
+            links["related_methodologies"] = self.get_methodologies_search_url()
 
         if self.datasets:
             links["related_data"] = f"{settings.ONS_WEBSITE_BASE_URL}/{topic.slug_path}/datalist?filter=datasets"
