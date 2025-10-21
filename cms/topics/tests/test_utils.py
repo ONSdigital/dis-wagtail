@@ -39,5 +39,5 @@ class TestUtils(TestCase):
         self.assertEqual(formatted_time_series[0], expected)
 
     def test_get_topic_search_url_returns_correct_url(self):
-        result = get_topic_search_url(self.topic, settings.ONS_WEBSITE_BASE_URL, self.suffix)
+        result = get_topic_search_url(self.topic, self.suffix)
         self.assertEqual(result, "https://www.ons.gov.uk/my-topic/search")

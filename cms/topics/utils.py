@@ -1,5 +1,6 @@
 from typing import TYPE_CHECKING, Any
 
+from django.conf import settings
 from wagtail.blocks import StreamValue
 
 from cms.core.formatting_utils import format_as_document_list_item
@@ -31,6 +32,6 @@ def format_time_series_as_document_list(time_series: StreamValue) -> list[dict[s
     return time_series_documents
 
 
-def get_topic_search_url(topic: "Topic", base_url: str, suffix: str) -> str:
+def get_topic_search_url(topic: "Topic", suffix: str) -> str:
     """Returns a formatted search URL for a topic."""
-    return f"{base_url}/{topic.slug_path}/{suffix}"
+    return f"{settings.ONS_WEBSITE_BASE_URL}/{topic.slug_path}/{suffix}"
