@@ -9,7 +9,6 @@ from cms.core.blocks import (
     DocumentsBlock,
     HeadingBlock,
     InformationPanelBlock,
-    ONSEmbedBlock,
     ONSTableBlock,
     QuoteBlock,
     RelatedLinksBlock,
@@ -18,6 +17,7 @@ from cms.core.blocks import (
 )
 from cms.core.blocks.equation import EquationBlock
 from cms.core.blocks.section_blocks import SectionBlock
+from cms.datavis.blocks.charts import IframeBlock
 
 if TYPE_CHECKING:
     from wagtail.blocks import StreamValue
@@ -56,7 +56,7 @@ class CoreStoryBlock(StreamBlock):
     related_links = RelatedLinksBlock(add_heading=True)  # Add a heading as this is outside of a section block
     table = ONSTableBlock(group="DataVis", allow_links=True)
     equation = EquationBlock(group="DataVis", icon="decimal")
-    ons_embed = ONSEmbedBlock(group="DataVis", label="ONS General Embed")
+    iframe_visualisation = IframeBlock(group="DataVis", label="Iframe Visualisation")
 
     class Meta:
         block_counts: ClassVar[dict[str, dict]] = {"related_links": {"max_num": 1}}

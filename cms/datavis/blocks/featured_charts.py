@@ -4,6 +4,7 @@ from cms.datavis.blocks.charts import (
     AreaChartBlock,
     BarColumnChartBlock,
     BarColumnConfidenceIntervalChartBlock,
+    IframeBlock,
     LineChartBlock,
     ScatterPlotBlock,
 )
@@ -62,6 +63,4 @@ class FeaturedChartBlock(StreamBlock):
     )
     scatter_plot = FeaturedScatterPlotBlock(label="Scatter Plot")
     area_chart = FeaturedAreaChartBlock(label="Area Chart")
-    # TODO: enable iframe once supported by the Design System, see
-    # https://github.com/ONSdigital/design-system/pull/3641
-    # iframe = ONSEmbedBlock(label="Iframe Embed")
+    iframe_visualisation = IframeBlock(group="DataVis", label="Iframe Visualisation")
