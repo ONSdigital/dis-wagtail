@@ -1,4 +1,3 @@
-from django.conf import settings
 from django.test import TestCase
 from wagtail.blocks import StreamValue
 
