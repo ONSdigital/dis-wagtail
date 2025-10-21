@@ -97,7 +97,7 @@ def redirect(
 
 
 def redirect_to_parent_listing(
-    page: "Page", request: "HttpRequest", listing_url_method_name: str
+    *, page: "Page", request: "HttpRequest", listing_url_method_name: str
 ) -> HttpResponseRedirect | HttpResponsePermanentRedirect:
     """Redirects to the parent page's listing URL if available, otherwise to the parent page itself."""
     if not (parent := getattr(page.get_parent(), "specific_deferred", None)):

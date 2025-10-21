@@ -56,7 +56,9 @@ class MethodologyIndexPage(BasePage):  # type: ignore[django-manager-missing]
 
     def serve(self, request: "HttpRequest", *args: Any, **kwargs: Any) -> "HttpResponse":
         # Get the parent topic page
-        return redirect_to_parent_listing(self, request, "get_methodologies_search_url")
+        return redirect_to_parent_listing(
+            page=self, request=request, listing_url_method_name="get_methodologies_search_url"
+        )
 
 
 class MethodologyRelatedPage(Orderable):
