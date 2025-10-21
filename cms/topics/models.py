@@ -331,7 +331,16 @@ class TopicPage(BundledPageMixin, ExclusiveTaxonomyMixin, BasePage):  # type: ig
         return links
 
     def get_articles_search_url(self) -> str:
-        return get_topic_search_url(self.topic, settings.ONS_WEBSITE_BASE_URL, "publications")
+        # We enforce topic selection at the application level (via clean()),
+        # so topic will always be set for valid TopicPage instances.
+        # The ForeignKey is nullable for migration and legacy reasons,
+        # but business logic guarantees non-None.
+        return get_topic_search_url(self.topic, settings.ONS_WEBSITE_BASE_URL, "publications")  # type: ignore[arg-type]
 
     def get_methodologies_search_url(self) -> str:
-        return get_topic_search_url(self.topic, settings.ONS_WEBSITE_BASE_URL, "topicspecificmethodology")
+        # Returns the search URL for methodologies related to this topic.
+        return get_topic_search_url(
+            self.topic,  # type: ignore[arg-type]
+            settings.ONS_WEBSITE_BASE_URL,
+            "topicspecificmethodology",
+        )
