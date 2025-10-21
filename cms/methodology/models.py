@@ -56,7 +56,7 @@ class MethodologyIndexPage(BasePage):  # type: ignore[django-manager-missing]
 
     def serve(self, request: "HttpRequest", *args: Any, **kwargs: Any) -> "HttpResponse":
         # FIXME: redirect to the publications listing for the topic
-        return redirect(self.get_parent().get_url(request=request))
+        return redirect(self.get_parent().specific_deferred.get_url(request=request))
 
 
 class MethodologyRelatedPage(Orderable):
