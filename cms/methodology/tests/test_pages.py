@@ -3,7 +3,12 @@ from wagtail.test.utils import WagtailPageTestCase
 
 from cms.home.models import HomePage
 from cms.methodology.models import MethodologyIndexPage
-from cms.methodology.tests.factories import MethodologyPageFactory, MethodologyRelatedPageFactory
+from cms.methodology.tests.factories import (
+    MethodologyIndexPageFactory,
+    MethodologyPageFactory,
+    MethodologyRelatedPageFactory,
+)
+from cms.topics.tests.factories import TopicPageFactory
 from cms.topics.tests.utils import post_page_add_form_to_create_topic_page
 
 
@@ -12,6 +17,14 @@ class MethodologyPageTest(WagtailPageTestCase):
     def setUpTestData(cls):
         cls.page = MethodologyPageFactory()
         cls.user = cls.create_superuser("admin")
+        cls.topic_page = TopicPageFactory()
+        cls.methodology_index_page = MethodologyIndexPageFactory(parent=cls.topic_page)
+
+    def test_methodology_index_page_redirects_to_topic_listing(self):
+        response = self.client.get(self.methodology_index_page.url)
+        self.assertEqual(response.status_code, 307)
+        expected_url = self.topic_page.get_methodologies_search_url()
+        self.assertEqual(response["Location"], expected_url)
 
     def test_default_route(self):
         self.assertPageIsRoutable(self.page)

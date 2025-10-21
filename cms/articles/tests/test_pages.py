@@ -14,12 +14,17 @@ from wagtail.test.utils import WagtailPageTestCase
 
 from cms.articles.enums import SortingChoices
 from cms.articles.models import ArticlesIndexPage
-from cms.articles.tests.factories import ArticleSeriesPageFactory, StatisticalArticlePageFactory
+from cms.articles.tests.factories import (
+    ArticleSeriesPageFactory,
+    ArticlesIndexPageFactory,
+    StatisticalArticlePageFactory,
+)
 from cms.core.tests.utils import extract_response_jsonld
 from cms.datasets.blocks import DatasetStoryBlock
 from cms.datasets.models import Dataset
 from cms.home.models import HomePage
 from cms.topics.models import TopicPage
+from cms.topics.tests.factories import TopicPageFactory
 from cms.topics.tests.utils import post_page_add_form_to_create_topic_page
 
 
@@ -27,6 +32,15 @@ class ArticleSeriesPageTests(WagtailPageTestCase):
     @classmethod
     def setUpTestData(cls):
         cls.article_series_page = ArticleSeriesPageFactory(title="The Article Series")
+        cls.topic_page = TopicPageFactory()
+        cls.articles_index_page = ArticlesIndexPageFactory(parent=cls.topic_page)
+
+    def test_articles_index_page_redirects_to_topic_listing(self):
+        response = self.client.get(self.articles_index_page.url)
+        # Should redirect (307) to the topic's articles search URL
+        self.assertEqual(response.status_code, 307)
+        expected_url = self.topic_page.get_articles_search_url()
+        self.assertEqual(response["Location"], expected_url)
 
     def test_default_route(self):
         self.assertPageIsRoutable(self.article_series_page)

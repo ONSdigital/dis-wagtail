@@ -1,3 +1,6 @@
+from unittest.mock import Mock
+
+from django.http import HttpRequest, HttpResponseRedirect
 from django.test import RequestFactory, SimpleTestCase, TestCase, override_settings
 
 from cms.articles.tests.factories import StatisticalArticlePageFactory
@@ -5,6 +8,7 @@ from cms.core.utils import (
     get_client_ip,
     get_content_type_for_page,
     latex_formula_to_svg,
+    redirect_to_parent_listing,
 )
 from cms.methodology.tests.factories import MethodologyPageFactory
 from cms.topics.tests.factories import TopicPageFactory
@@ -103,3 +107,36 @@ class TestContentTypeForPage(TestCase):
         page = MethodologyPageFactory(title="Test Methodology")
         content_type = get_content_type_for_page(page)
         self.assertEqual(content_type, "Methodology")
+
+
+class RedirectToParentListingTestCase(TestCase):
+    def setUp(self):
+        self.request = HttpRequest()
+        self.parent = Mock(spec_set=["get_url", "get_articles_search_url"])
+        self.page = Mock()
+        self.page.get_parent.return_value.specific_deferred = self.parent
+
+    def test_redirects_to_listing_url_if_method_exists_and_returns_url(self):
+        self.parent.get_articles_search_url = Mock(return_value="/articles/search/")
+        response = redirect_to_parent_listing(self.page, self.request, "get_articles_search_url")
+        self.assertIsInstance(response, HttpResponseRedirect)
+        self.assertEqual(response.status_code, 307)
+        self.assertEqual(response.url, "/articles/search/")
+
+    def test_redirects_to_parent_url_if_listing_method_missing(self):
+        self.parent.get_url = Mock(return_value="/parent/")
+        response = redirect_to_parent_listing(self.page, self.request, "nonexistent_method")
+        self.assertIsInstance(response, HttpResponseRedirect)
+        self.assertEqual(response.url, "/parent/")
+
+    def test_redirects_to_parent_url_if_listing_method_returns_none(self):
+        self.parent.get_articles_search_url = Mock(return_value=None)
+        self.parent.get_url = Mock(return_value="/parent/")
+        response = redirect_to_parent_listing(self.page, self.request, "get_articles_search_url")
+        self.assertIsInstance(response, HttpResponseRedirect)
+        self.assertEqual(response.url, "/parent/")
+
+    def test_custom_redirect_status(self):
+        self.parent.get_articles_search_url = Mock(return_value="/articles/search/")
+        response = redirect_to_parent_listing(self.page, self.request, "get_articles_search_url", redirect_status=302)
+        self.assertEqual(response.status_code, 302)
