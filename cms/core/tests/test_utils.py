@@ -1,6 +1,7 @@
+import urllib.parse
 from unittest.mock import Mock
 
-from django.http import HttpRequest, HttpResponseRedirect
+from django.http import HttpRequest, HttpResponsePermanentRedirect, HttpResponseRedirect
 from django.test import RequestFactory, SimpleTestCase, TestCase, override_settings
 
 from cms.articles.tests.factories import StatisticalArticlePageFactory
@@ -8,6 +9,7 @@ from cms.core.utils import (
     get_client_ip,
     get_content_type_for_page,
     latex_formula_to_svg,
+    redirect,
     redirect_to_parent_listing,
 )
 from cms.methodology.tests.factories import MethodologyPageFactory
@@ -109,7 +111,7 @@ class TestContentTypeForPage(TestCase):
         self.assertEqual(content_type, "Methodology")
 
 
-class RedirectToParentListingTestCase(TestCase):
+class RedirectToParentListingTestCase(SimpleTestCase):
     def setUp(self):
         self.request = HttpRequest()
         self.parent = Mock(spec_set=["get_url", "get_articles_search_url"])
@@ -136,7 +138,49 @@ class RedirectToParentListingTestCase(TestCase):
         self.assertIsInstance(response, HttpResponseRedirect)
         self.assertEqual(response.url, "/parent/")
 
-    def test_custom_redirect_status(self):
-        self.parent.get_articles_search_url = Mock(return_value="/articles/search/")
-        response = redirect_to_parent_listing(self.page, self.request, "get_articles_search_url", redirect_status=302)
+
+class RedirectUtilityTestCase(SimpleTestCase):
+    def test_temporary_redirect_default(self):
+        response = redirect("/foo")
+        self.assertIsInstance(response, HttpResponseRedirect)
+        self.assertEqual(response.status_code, 307)
+        self.assertEqual(response.url, "/foo")
+
+    def test_temporary_redirect_preserve_request_false(self):
+        response = redirect("/bar", preserve_request=False)
+        self.assertIsInstance(response, HttpResponseRedirect)
         self.assertEqual(response.status_code, 302)
+        self.assertEqual(response.url, "/bar")
+
+    def test_permanent_redirect_preserve_request_false(self):
+        response = redirect("/baz", permanent=True, preserve_request=False)
+        self.assertIsInstance(response, HttpResponsePermanentRedirect)
+        self.assertEqual(response.status_code, 301)
+        self.assertEqual(response.url, "/baz")
+
+    def test_permanent_redirect_preserve_request_true(self):
+        response = redirect("/qux", permanent=True, preserve_request=True)
+        self.assertIsInstance(response, HttpResponsePermanentRedirect)
+        self.assertEqual(response.status_code, 308)
+        self.assertEqual(response.url, "/qux")
+
+    def test_temporary_redirect_preserve_request_true(self):
+        response = redirect("/quux", preserve_request=True)
+        self.assertIsInstance(response, HttpResponseRedirect)
+        self.assertEqual(response.status_code, 307)
+        self.assertEqual(response.url, "/quux")
+
+    def test_args_are_passed(self):
+        # HttpResponseRedirect only uses the first positional argument (the URL)
+        response = redirect("/args-test", "unused-arg")
+        self.assertEqual(response.url, "/args-test")
+
+    def test_kwargs_are_passed(self):
+        response = redirect("/headers-test", headers={"X-Test": "value"})
+        self.assertEqual(response.url, "/headers-test")
+        self.assertEqual(response.headers["X-Test"], "value")
+
+    def test_unicode_url(self):
+        response = redirect("/unicodé")
+        expected_url = urllib.parse.quote("/unicodé", safe="/:")
+        self.assertEqual(response.url, expected_url)
