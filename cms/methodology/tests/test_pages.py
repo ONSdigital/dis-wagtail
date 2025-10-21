@@ -22,9 +22,9 @@ class MethodologyPageTest(WagtailPageTestCase):
 
     def test_methodology_index_page_redirects_to_topic_listing(self):
         response = self.client.get(self.methodology_index_page.url)
-        self.assertEqual(response.status_code, 307)
-        expected_url = self.topic_page.get_methodologies_search_url()
-        self.assertEqual(response["Location"], expected_url)
+        self.assertRedirects(
+            response, self.topic_page.get_methodologies_search_url(), 307, fetch_redirect_response=False
+        )
 
     def test_default_route(self):
         self.assertPageIsRoutable(self.page)

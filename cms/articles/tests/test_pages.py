@@ -38,9 +38,7 @@ class ArticleSeriesPageTests(WagtailPageTestCase):
     def test_articles_index_page_redirects_to_topic_listing(self):
         response = self.client.get(self.articles_index_page.url)
         # Should redirect (307) to the topic's articles search URL
-        self.assertEqual(response.status_code, 307)
-        expected_url = self.topic_page.get_articles_search_url()
-        self.assertEqual(response["Location"], expected_url)
+        self.assertRedirects(response, self.topic_page.get_articles_search_url(), 307, fetch_redirect_response=False)
 
     def test_default_route(self):
         self.assertPageIsRoutable(self.article_series_page)
