@@ -275,3 +275,84 @@ class TestONSDataset(TestCase):
         self.assertEqual(datasets[0].title, "Dataset 1")
         self.assertEqual(datasets[1].id, "dataset2")
         self.assertEqual(datasets[1].edition, "2024-q1")
+
+    @responses.activate
+    def test_queryset_with_filter(self):
+        """Test that the parameter gets passed correctly when filtering."""
+        response_data = {
+            "items": [
+                {
+                    "dataset_id": "dataset1",
+                    "title": "Dataset 1",
+                    "description": "Description 1",
+                    "edition": "2024",
+                    "latest_version": {"id": "1"},
+                },
+                {
+                    "dataset_id": "dataset2",
+                    "title": "Dataset 2",
+                    "description": "Description 2",
+                    "edition": "2024-q1",
+                    "latest_version": {"id": "2"},
+                },
+            ],
+            "count": 2,
+            "offset": 0,
+            "limit": 2,
+            "total_count": 2,
+        }
+
+        responses.add(
+            responses.GET,
+            settings.DATASETS_API_EDITIONS_URL + "?offset=0&published=false",
+            json=response_data,
+        )
+
+        datasets = list(ONSDataset.objects.filter(published="false"))  # pylint: disable=no-member
+
+        self.assertEqual(len(datasets), 2)
+
+    @responses.activate
+    def test_response_with_old_dataset_format(self):
+        """Test that the queryset can handle old dataset format with 'current' and 'next'."""
+        old_format_response = {
+            "current": {
+                "id": "dataset1",
+                "title": "Dataset 1",
+                "description": "Description 1",
+                "links": {
+                    "latest_version": {
+                        "href": "/datasets/dataset1/editions/2024/versions/1",
+                        "id": "1",
+                    },
+                },
+                "state": "published",
+            },
+            "next": {
+                "id": "dataset1",
+                "title": "Dataset 1 Unpublished",
+                "description": "Description 1 Unpublished",
+                "links": {
+                    "latest_version": {
+                        "href": "/datasets/dataset1/editions/2024/versions/2",
+                        "id": "2",
+                    },
+                },
+                "state": "unpublished",
+            },
+        }
+
+        responses.add(
+            responses.GET,
+            settings.DATASETS_API_BASE_URL + "/dataset1",
+            json=old_format_response,
+        )
+
+        dataset = ONSDataset.objects.get(pk="dataset1")  # pylint: disable=no-member
+
+        self.assertEqual(dataset.id, "dataset1")
+        self.assertEqual(dataset.title, "Dataset 1")
+        self.assertEqual(dataset.version, "1")
+        self.assertIsNotNone(dataset.next)
+        self.assertEqual(dataset.next.title, "Dataset 1 Unpublished")
+        self.assertEqual(dataset.next.version, "2")

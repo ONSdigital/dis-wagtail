@@ -1,5 +1,4 @@
 import logging
-import re
 from collections.abc import Iterable, Mapping
 from http import HTTPStatus
 from typing import ClassVar
@@ -10,9 +9,9 @@ from django.db import models
 from django.db.models import UniqueConstraint
 from queryish.rest import APIModel, APIQuerySet
 
-logger = logging.getLogger(__name__)
+from cms.datasets.utils import convert_old_dataset_format
 
-EDITIONS_PATTERN = re.compile(r"/editions/([^/]+)/")
+logger = logging.getLogger(__name__)
 
 
 # TODO: This needs a revisit. Consider caching + fewer requests
@@ -41,6 +40,11 @@ class ONSDatasetApiQuerySet(APIQuerySet):
 
     def get_results_from_response(self, response: Mapping) -> Iterable:
         results: Iterable = response["items"]
+        published = response.get("published", True)
+        # Annotate results if unpublished datasets were fetched
+        for item in results:
+            item["published"] = published
+
         return results
 
     def fetch_api_response(self, url: str | None = None, params: Mapping | None = None) -> dict:
@@ -54,6 +58,8 @@ class ONSDatasetApiQuerySet(APIQuerySet):
             url = self.base_url
         if params is None:
             params = {}
+
+        is_detail_request = url.startswith(ONSDataset.Meta.detail_url.split("%s", maxsplit=1)[0])
 
         try:
             response = requests.get(url, params=params, headers=headers, timeout=30)
@@ -75,6 +81,10 @@ class ONSDatasetApiQuerySet(APIQuerySet):
             raise
 
         api_response: dict = response.json()
+        if is_detail_request:
+            api_response = self._process_detail_response(api_response)
+        else:
+            api_response["published"] = params.get("published", "").lower() != "false"
 
         # The dataset API returns the per page count as "count" and the total results as "total_count"
         # Queryish expects "count" to be the total results count, so override it here
@@ -82,6 +92,18 @@ class ONSDatasetApiQuerySet(APIQuerySet):
             api_response["count"] = count
 
         return api_response
+
+    def _process_detail_response(self, response: dict) -> dict:
+        # For detail responses, we may need to adjust the structure.
+        # This only applies to the detail URL which currently uses the old format.
+        if response.get("current"):
+            # If it's a versioned dataset response using the old format, convert to new format
+            dataset_data = convert_old_dataset_format(response["current"])
+            # Store the next version info if available (this becomes our unpublished version)
+            next_entry = response.get("next")
+            dataset_data["next"] = convert_old_dataset_format(next_entry) if next_entry else {}
+            return dataset_data
+        return response
 
 
 class ONSDataset(APIModel):
@@ -92,7 +114,7 @@ class ONSDataset(APIModel):
     class Meta:
         base_url: str = settings.DATASETS_API_EDITIONS_URL
         detail_url: str = f"{settings.DATASETS_API_BASE_URL}/%s"
-        fields: ClassVar = ["id", "description", "title", "version", "edition"]
+        fields: ClassVar = ["id", "description", "title", "version", "edition", "published", "next"]
         pagination_style = "offset-limit"
         verbose_name_plural = "ONS Datasets"
 
@@ -103,6 +125,13 @@ class ONSDataset(APIModel):
         title = data.get("title") or "Title not provided"
         description = data.get("description") or "Description not provided"
         edition = data.get("edition", "")
+        published = data.get("published", True)
+        # Handle next (unpublished) version if present
+        next_dataset_entry = data.get("next")
+
+        if next_dataset_entry:
+            # Recursively create ONSDataset for the unpublished version
+            next_dataset_entry = ONSDataset.from_query_data(next_dataset_entry)
 
         # Extract version from latest_version object
         latest_version = data.get("latest_version", {})
@@ -114,6 +143,8 @@ class ONSDataset(APIModel):
             description=description,
             version=version_id,
             edition=edition,
+            published=published,
+            next=next_dataset_entry,
         )
 
     @property

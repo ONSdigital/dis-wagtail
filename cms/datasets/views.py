@@ -1,15 +1,17 @@
 import logging
 from collections.abc import Iterable
 from typing import TYPE_CHECKING, Any
+from urllib.parse import urlencode
 
 from django import forms
 from django.conf import settings
+from django.contrib.admin.utils import quote
 from django.core.exceptions import PermissionDenied
 from django.db.models import Q, QuerySet
-from django.forms import Media
+from django.urls import reverse
 from django.views import View
 from wagtail.admin.forms.choosers import BaseFilterForm
-from wagtail.admin.ui.tables import Column
+from wagtail.admin.ui.tables import Column, TitleColumn
 from wagtail.admin.views.generic.chooser import (
     BaseChooseView,
     ChooseResultsViewMixin,
@@ -28,6 +30,18 @@ if TYPE_CHECKING:
     from django.http import HttpRequest, HttpResponse
 
 logger = logging.getLogger(__name__)
+
+
+class SpecialTitleColumn(TitleColumn):
+    def get_link_url(self, instance: Column, parent_context: Any) -> str:
+        """Extends the core chooser title column to pass on the published state."""
+        url: str = super().get_link_url(instance, parent_context)
+        separator = "&" if "?" in url else "?"
+        params = {
+            "published": "true" if instance.published else "false",
+        }
+        url += f"{separator}{urlencode(params)}"
+        return url
 
 
 class DatasetChooserPermissionMixin:
@@ -62,10 +76,10 @@ class DatasetSearchFilterForm(BaseFilterForm):
     published = forms.ChoiceField(
         label="Published status",
         choices=[
-            ("false", "Unpublished"),
             ("true", "Published"),
+            ("false", "Unpublished"),
         ],
-        initial="false",
+        initial="true",
         required=False,
     )
 
@@ -104,7 +118,8 @@ class ONSDatasetBaseChooseView(BaseChooseView):
         for_bundle = self.request_is_for_bundle()
 
         # Get the published filter value from GET params or form
-        published = "false" if for_bundle else self.request.GET.get("published") or "false"
+        # Default to "true" (published) unless explicitly requesting unpublished or for bundles
+        published = "false" if for_bundle else self.request.GET.get("published", "true")
 
         # Log audit event when accessing unpublished datasets
         if published == "false":
@@ -115,7 +130,6 @@ class ONSDatasetBaseChooseView(BaseChooseView):
 
         if access_token:
             queryset = queryset.with_token(access_token)
-
         return queryset.all()  # type: ignore[no-any-return]
 
     def get_context_data(self, **kwargs: Any) -> dict[str, Any]:
@@ -129,6 +143,19 @@ class ONSDatasetBaseChooseView(BaseChooseView):
 
     def render_to_response(self) -> None:
         raise NotImplementedError()
+
+    @property
+    def title_column(self) -> SpecialTitleColumn:
+        """Mirrors the base title_column, just instantiates our TitleColumn subclass."""
+        return SpecialTitleColumn(
+            "title",
+            label="Title",
+            accessor=str,
+            get_url=(
+                lambda obj: self.append_preserved_url_parameters(reverse(self.chosen_url_name, args=(quote(obj.pk),)))
+            ),
+            link_attrs={"data-chooser-modal-choice": True},
+        )
 
 
 class CustomChooseView(ChooseViewMixin, CreationFormMixin, ONSDatasetBaseChooseView): ...
@@ -149,6 +176,11 @@ class DatasetChosenView(ChosenViewMixin, ChosenResponseMixin, View):
         # and self.model_class is Dataset, so we get or create the Dataset from ONSDatasets here
         # create the dataset object from the API response
         item = ONSDataset.objects.get(pk=pk)  # pylint: disable=no-member
+        if self.request.GET.get("published", "").lower() == "false" and (
+            unpublished_version := getattr(item, "next", None)
+        ):
+            # Use unpublished version if requested and available
+            item = unpublished_version
         dataset, _ = Dataset.objects.get_or_create(
             namespace=item.id,
             edition=item.edition,
@@ -228,11 +260,6 @@ class DatasetChooserViewSet(ChooserViewSet):
     def choose_results_template_name(self) -> str:
         """Override to use custom results template."""
         return "admin/datasets/chooser/results.html"
-
-    @property
-    def media(self) -> Media:
-        """Include the dataset chooser JavaScript."""
-        return Media(js=["javascript/dataset-chooser.js"])
 
 
 dataset_chooser_viewset = DatasetChooserViewSet("dataset_chooser")

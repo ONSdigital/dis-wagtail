@@ -1,4 +1,4 @@
-from behave import step, then, when  # pylint: disable=no-name-in-module
+from behave import given, step, then, when  # pylint: disable=no-name-in-module
 from behave.runner import Context
 from django.conf import settings
 from playwright.sync_api import expect
@@ -7,8 +7,13 @@ from cms.settings.base import ONS_ALLOWED_LINK_DOMAINS
 from functional_tests.step_helpers.datasets import mock_datasets_responses
 
 
+@given("the user is in an internal environment")
+def user_in_internal_environment(context: Context) -> None:
+    context.is_internal_environment = True
+
+
 @when("looks up and selects a dataset")
-def look_up_and_select_dataset(context: Context) -> None:
+def look_up_and_select_published_dataset(context: Context) -> None:
     mock_dataset = {
         "dataset_id": "example1",
         "description": "Example dataset for functional testing",
@@ -36,7 +41,8 @@ def look_up_and_select_dataset(context: Context) -> None:
     editor_tab = getattr(context, "editor_tab", "content")
 
     # Mock dataset API responses
-    with mock_datasets_responses([mock_dataset]):
+    is_internal_environment = getattr(context, "is_internal_environment", False)
+    with mock_datasets_responses([mock_dataset], with_unpublished=is_internal_environment):
         context.page.locator(get_datasets_panel_locator(editor_tab)).get_by_role(
             "button", name="Insert a block"
         ).first.click()
@@ -111,8 +117,12 @@ def the_user_selects_multiple_datasets(context: Context) -> None:
         "state": "associated",
     }
 
+    is_internal_environment = getattr(context, "is_internal_environment", False)
+
     # Mock dataset API responses
-    with mock_datasets_responses([mock_dataset_a, mock_dataset_b, mock_dataset_c]):
+    with mock_datasets_responses(
+        [mock_dataset_a, mock_dataset_b, mock_dataset_c], with_unpublished=is_internal_environment
+    ):
         context.page.get_by_role("button", name="Add dataset").click()
         context.page.get_by_text("Looked up dataset").click()
         context.page.get_by_text("Personal well-being estimates by local authority").click()
