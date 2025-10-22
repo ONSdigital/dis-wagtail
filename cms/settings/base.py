@@ -955,9 +955,6 @@ FORMAT_MODULE_PATH = ["cms.settings.formats"]
 DATE_FORMAT = "j F Y"
 DATETIME_FORMAT = "j F Y g:ia"  # 1 November 2024, 1 p.m.
 
-# Allowed path prefixes for iframe visualisations
-IFRAME_VISUALISATION_PATH_PREFIXES = env.get("IFRAME_VISUALISATION_PATH_PREFIXES", "/visualisations").split(",")
-
 # ONS Cookie banner settings
 ONS_COOKIE_BANNER_SERVICE_NAME = env.get("ONS_COOKIE_BANNER_SERVICE_NAME", "ons.gov.uk")
 ONS_COOKIES_PAGE_SLUG = "cookies"
@@ -1009,7 +1006,7 @@ ONS_ALLOWED_LINK_DOMAINS = env.get("ONS_ALLOWED_LINK_DOMAINS", "ons.gov.uk").spl
 
 # Allowed prefixes for iframe visualisations
 if "IFRAME_VISUALISATION_ALLOWED_DOMAINS" in env:
-    IFRAME_VISUALISATION_ALLOWED_DOMAINS = env["IFRAME_VISUALISATION_ALLOWED_DOMAINS"].split(",")
+    IFRAME_VISUALISATION_ALLOWED_DOMAINS = env["IFRAME_VISUALISATION_ALLOWED_DOMAINS", "/visualisations"].split(",")
 else:  # Default to ONS allowed link domains if not set
     IFRAME_VISUALISATION_ALLOWED_DOMAINS = ONS_ALLOWED_LINK_DOMAINS
 
