@@ -81,7 +81,7 @@ INSTALLED_APPS = [
     "cms.taxonomy",
     "cms.search",
     "cms.workflows",
-    "wagtail.embeds",
+    "wagtail.embeds",  # TODO: Now that the ONSEmbedBlock is gone, I am guessing I can remove this?
     "wagtail.sites",
     "wagtail.users",
     "wagtail.snippets",
@@ -929,7 +929,7 @@ if TESTING:
 
 
 # Wagtail embeds responsive html
-WAGTAILEMBEDS_RESPONSIVE_HTML = True
+WAGTAILEMBEDS_RESPONSIVE_HTML = True  # TODO: Now that the ONSEmbedBlock is gone, I am guessing I can remove this?
 
 # Disable new version check and "what's new" banner
 WAGTAIL_ENABLE_UPDATE_CHECK = False
@@ -955,7 +955,8 @@ FORMAT_MODULE_PATH = ["cms.settings.formats"]
 DATE_FORMAT = "j F Y"
 DATETIME_FORMAT = "j F Y g:ia"  # 1 November 2024, 1 p.m.
 
-ONS_EMBED_PREFIX = env.get("ONS_EMBED_PREFIX", "https://www.ons.gov.uk/visualisations/")
+# Allowed path prefixes for iframe visualisations
+IFRAME_VISUALISATION_PATH_PREFIXES = env.get("IFRAME_VISUALISATION_PATH_PREFIXES", "/visualisations").split(",")
 
 # ONS Cookie banner settings
 ONS_COOKIE_BANNER_SERVICE_NAME = env.get("ONS_COOKIE_BANNER_SERVICE_NAME", "ons.gov.uk")

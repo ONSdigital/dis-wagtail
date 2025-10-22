@@ -35,10 +35,6 @@ class SectionStoryBlock(StreamBlock):
         """Checks if there are any equation blocks."""
         return any(block.value["content"].first_block_by_name(block_name="equation") is not None for block in value)
 
-    def has_ons_embed(self, value: "StreamValue") -> bool:
-        """Checks if there are any ONS embed blocks."""
-        return any(block.value["content"].first_block_by_name(block_name="ons_embed") is not None for block in value)
-
 
 class CoreStoryBlock(StreamBlock):
     """The core StreamField block definition."""
@@ -65,7 +61,3 @@ class CoreStoryBlock(StreamBlock):
     def has_equations(self, value: "StreamValue") -> bool:
         """Checks if there are any equation blocks."""
         return value.first_block_by_name(block_name="equation") is not None
-
-    def has_ons_embed(self, value: "StreamValue") -> bool:
-        """Checks if there are any ONS embed blocks."""
-        return value.first_block_by_name(block_name="ons_embed") is not None
