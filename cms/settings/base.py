@@ -1006,7 +1006,7 @@ ONS_ALLOWED_LINK_DOMAINS = env.get("ONS_ALLOWED_LINK_DOMAINS", "ons.gov.uk").spl
 
 # Allowed prefixes for iframe visualisations
 if "IFRAME_VISUALISATION_ALLOWED_DOMAINS" in env:
-    IFRAME_VISUALISATION_ALLOWED_DOMAINS = env["IFRAME_VISUALISATION_ALLOWED_DOMAINS", "/visualisations"].split(",")
+    IFRAME_VISUALISATION_ALLOWED_DOMAINS = env.get("IFRAME_VISUALISATION_ALLOWED_DOMAINS", "https://www.ons.gov.uk/visualisations/").split(",")
 else:  # Default to ONS allowed link domains if not set
     IFRAME_VISUALISATION_ALLOWED_DOMAINS = ONS_ALLOWED_LINK_DOMAINS
 
