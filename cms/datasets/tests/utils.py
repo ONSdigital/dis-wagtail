@@ -29,7 +29,7 @@ def convert_dataset_to_old_format(dataset: dict[str, Any]) -> dict[str, Any]:
         "links": {
             "latest_version": dataset.get("latest_version", {}),
         },
-        "state": dataset.get("state", "associated"),
+        "state": dataset.get("state", "created"),
         "title": dataset.get("title", "Title not provided"),
     }
     return old_format
