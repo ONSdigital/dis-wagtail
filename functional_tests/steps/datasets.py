@@ -124,9 +124,10 @@ def the_user_selects_multiple_datasets(context: Context) -> None:
         [mock_dataset_a, mock_dataset_b, mock_dataset_c], with_unpublished=is_internal_environment
     ):
         context.page.get_by_role("button", name="Add dataset").click()
-        context.page.get_by_text("Looked up dataset").click()
-        context.page.get_by_text("Personal well-being estimates by local authority").click()
-        context.page.get_by_text("Deaths registered weekly in England and Wales by region").click()
+        context.page.wait_for_timeout(500)  # Wait for modal to open and the events to settle
+        context.page.get_by_role("checkbox", name="Looked up dataset").click()
+        context.page.get_by_role("checkbox", name="Personal well-being estimates by local authority").click()
+        context.page.get_by_role("checkbox", name="Deaths registered weekly in England and Wales by region").click()
         context.page.get_by_role("button", name="Confirm selection").click()
 
 

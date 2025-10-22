@@ -198,6 +198,8 @@ class DatasetChosenMultipleViewMixin(ChosenMultipleViewMixin):
         if not pks:
             return Dataset.objects.none()
 
+        published = self.request.GET.get("published", "true").lower() == "true"
+
         api_data_for_datasets: list[ONSDataset] = []
 
         # List of tuples (namespace, edition, version) for querying existing datasets
@@ -206,6 +208,10 @@ class DatasetChosenMultipleViewMixin(ChosenMultipleViewMixin):
         # TODO: update when we can fetch items in bulk from the dataset API or use the cached listing view?
         for pk in pks:
             item_from_api = ONSDataset.objects.get(pk=pk)  # pylint: disable=no-member
+
+            if not published:
+                # Use unpublished version if requested and available
+                item_from_api = getattr(item_from_api, "next", item_from_api)
 
             api_data_for_datasets.append(item_from_api)
             lookup_criteria.append((item_from_api.id, item_from_api.edition, item_from_api.version))
@@ -221,8 +227,7 @@ class DatasetChosenMultipleViewMixin(ChosenMultipleViewMixin):
         datasets_to_create_instances: list[Dataset] = []
         for data in api_data_for_datasets:
             data_version = int(data.version)
-            key = (data.id, data.edition, data_version)
-            if key not in existing_datasets_map:
+            if (data.id, data.edition, data_version) not in existing_datasets_map:
                 datasets_to_create_instances.append(
                     Dataset(
                         namespace=data.id,
