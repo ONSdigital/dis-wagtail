@@ -81,7 +81,6 @@ INSTALLED_APPS = [
     "cms.taxonomy",
     "cms.search",
     "cms.workflows",
-    "wagtail.embeds",  # TODO: Now that the ONSEmbedBlock is gone, I am guessing I can remove this?
     "wagtail.sites",
     "wagtail.users",
     "wagtail.snippets",
@@ -927,9 +926,6 @@ TESTING = "test" in sys.argv
 if TESTING:
     PASSWORD_HASHERS = ["django.contrib.auth.hashers.MD5PasswordHasher"]
 
-
-# Wagtail embeds responsive html
-WAGTAILEMBEDS_RESPONSIVE_HTML = True  # TODO: Now that the ONSEmbedBlock is gone, I am guessing I can remove this?
 
 # Disable new version check and "what's new" banner
 WAGTAIL_ENABLE_UPDATE_CHECK = False
