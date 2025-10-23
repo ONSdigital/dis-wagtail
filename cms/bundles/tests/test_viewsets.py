@@ -105,11 +105,7 @@ class BundleViewSetTestCaseBase(WagtailTestUtils, TestCase):
     def chooser_panel_display(page) -> str:
         return f"{page.title} ({page.get_status_display()}, {page.release_date_value})"
 
-    def _create_release_calendar_page(
-        self,
-        title="Future Release Calendar page",
-        status=ReleaseStatus.PROVISIONAL,
-    ):
+    def _create_release_calendar_page(self, title, status):
         """Assigns a release calendar page to the bundle."""
         release_date = timezone.now() + timedelta(days=1)
         release_calendar_page = ReleaseCalendarPageFactory(
@@ -366,7 +362,9 @@ class BundleViewSetEditTestCase(BundleViewSetTestCaseBase):
         """When release calendar page details are updated, this tests that the updates are reflected and checks stale
         values are not present.
         """
-        release_calendar_page = self._create_release_calendar_page()
+        release_calendar_page = self._create_release_calendar_page(
+            title="Future Release calendar Page", status=ReleaseStatus.PROVISIONAL
+        )
         self._assign_release_calendar_page_to_bundle(release_calendar_page=release_calendar_page)
         original_text = self.chooser_panel_display(release_calendar_page)
 
