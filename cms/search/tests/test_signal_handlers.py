@@ -2,7 +2,7 @@ from unittest.mock import patch
 
 from django.db.models.signals import post_delete
 from django.test import TestCase, override_settings
-from wagtail.models import Page
+from wagtail.models import Page, PageViewRestriction
 from wagtail.signals import page_published, page_unpublished, post_page_move
 
 from cms.articles.tests.factories import ArticleSeriesPageFactory, StatisticalArticlePageFactory
@@ -116,6 +116,7 @@ class SearchSignalsTest(TestCase):
             self.mock_publisher.publish_deleted.assert_not_called()
 
     def test_on_page_moved_included_pages(self):
+        """Test all non excluded pages trigger publish_created_or_updated on move."""
         for page in self.included_pages:
             with self.subTest(page=page):
                 post_page_move.send(
@@ -125,6 +126,7 @@ class SearchSignalsTest(TestCase):
                 self.mock_publisher.publish_created_or_updated.reset_mock()
 
     def test_on_page_moved_ignores_draft_page(self):
+        """Draft pages should not trigger publish_created_or_updated on move."""
         page = StatisticalArticlePageFactory()
         page.live = False
         page.save()
@@ -132,16 +134,26 @@ class SearchSignalsTest(TestCase):
         self.mock_publisher.publish_created_or_updated.assert_not_called()
 
     def test_on_page_moved_no_url_change(self):
+        """Moves that do not change the URL path should not trigger publish_created_or_updated."""
         page = StatisticalArticlePageFactory()
         post_page_move.send(sender=Page, instance=page, url_path_before="/old-path/", url_path_after="/old-path/")
         self.mock_publisher.publish_created_or_updated.assert_not_called()
 
     def test_on_page_moved_excluded_page(self):
+        """Excluded pages should not trigger publish_created_or_updated on move."""
         page = ArticleSeriesPageFactory()
         post_page_move.send(sender=Page, instance=page, url_path_before="/old-path/", url_path_after="/new-path/")
         self.mock_publisher.publish_created_or_updated.assert_not_called()
 
+    def test_on_page_moved_private_page(self):
+        """Pages with view restrictions should not trigger publish_created_or_updated on move."""
+        page = ArticleSeriesPageFactory()
+        PageViewRestriction.objects.create(page=page, restriction_type=PageViewRestriction.LOGIN)
+        post_page_move.send(sender=Page, instance=page, url_path_before="/old-path/", url_path_after="/new-path/")
+        self.mock_publisher.publish_created_or_updated.assert_not_called()
+
     def test_on_page_moved_with_descendants(self):
+        """Moving a parent page should trigger publish_created_or_updated for descendants if they are not excluded."""
         topic_page = TopicPageFactory()
         series_page = ArticleSeriesPageFactory(parent=topic_page)
         article_page = StatisticalArticlePageFactory(parent=series_page)

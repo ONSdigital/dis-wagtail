@@ -57,11 +57,15 @@ def on_page_deleted(sender: "type[Page]", instance: "Page", **kwargs: dict) -> N
 def on_page_moved(sender: "type[Page]", instance: "Page", **kwargs: dict) -> None:  # pylint: disable=unused-argument
     """Called whenever a Wagtail Page is moved in the tree (UI or code).
     instance is the moved Page object.
-    We use the publish_created_or_updated method to update search for the moved page and any of it's non-excluded
+    We use the publish_created_or_updated method to update search for the moved page and any of its non-excluded
     descendants, which will also be affected by the move.
     """
     if kwargs["url_path_before"] == kwargs["url_path_after"]:
         # No change in URL path, no need to update search index of the instance or descendants
+        return
+    if instance.get_view_restrictions().exists():
+        # Pages with view restrictions should not be exposed in search
+        # this is inherited by descendants, so nothing more to do
         return
     for moved_page in instance.get_descendants(inclusive=True):  # inclusive=True includes instance itself
         if moved_page.live and moved_page.specific_class.__name__ not in settings.SEARCH_INDEX_EXCLUDED_PAGE_TYPES:
