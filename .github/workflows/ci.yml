@@ -43,7 +43,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
-      - uses: actions/setup-node@v5
+      - uses: actions/setup-node@v6
         with:
           node-version-file: '.nvmrc'
       - name: Install npm dependencies
@@ -59,7 +59,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
-      - uses: actions/setup-node@v5
+      - uses: actions/setup-node@v6
         with:
           node-version-file: '.nvmrc'
       - id: node-cache
@@ -84,7 +84,7 @@ jobs:
 
     env:
       DJANGO_SETTINGS_MODULE: cms.settings.test
-      DATABASE_URL: postgres://postgres:postgres@localhost/postgres # pragma: allowlist secret
+      DATABASE_URL: postgres://postgres:postgres@localhost/postgres # pragma: allowlist secret secretlint-disable-line
       ENABLE_DJANGO_DEFENDER: 'false'
       POSTGRES_HOST_AUTH_METHOD: trust
       SECRET_KEY: fake_secret_key_to_run_tests # pragma: allowlist secret
@@ -102,7 +102,7 @@ jobs:
         options: --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
 
       broker:
-        image: bitnamilegacy/kafka:3.5.1
+        image: bitnamilegacy/kafka:3.8 # Match Kafka version in production
         env:
           # Enable plaintext connections for local testing.
           ALLOW_PLAINTEXT_LISTENER: 'yes'

@@ -95,7 +95,7 @@ class KafkaPublisher(BasePublisher):
 
         self.producer = KafkaProducer(
             bootstrap_servers=settings.KAFKA_SERVERS,
-            api_version=settings.KAFKA_API_VERSION,
+            api_version_auto_timeout_ms=5000,
             value_serializer=lambda v: json.dumps(v).encode("utf-8"),
             retries=5,
             **auth_config,

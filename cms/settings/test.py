@@ -2,6 +2,8 @@ import os
 
 from .base import *  # noqa: F403  # pylint: disable=wildcard-import,unused-wildcard-import
 
+env = os.environ.copy()
+
 # #############
 # General
 
@@ -28,10 +30,6 @@ WAGTAILADMIN_BASE_URL = "http://testserver"
 
 # Google Tag Manager
 GOOGLE_TAG_MANAGER_CONTAINER_ID = "GTM-123456789"
-
-# Cookie banner config
-ONS_COOKIE_BANNER_SERVICE_NAME = "example.ons.gov.uk"
-MANAGE_COOKIE_SETTINGS_URL = "example.ons.gov.uk/cookies"
 
 # #############
 # Performance
@@ -70,7 +68,7 @@ SLACK_NOTIFICATIONS_WEBHOOK_URL = None
 
 ONS_API_BASE_URL = "https://dummy_base_api"
 DATASETS_BASE_API_URL = "https://dummy_base_api/datasets"
-KAFKA_SERVERS = os.getenv("KAFKA_SERVERS", "localhost:9094").split(",")
+KAFKA_SERVERS = env.get("KAFKA_SERVERS", "localhost:9094").split(",")
 
 # Ignore proxy count in tests
 XFF_STRICT = False

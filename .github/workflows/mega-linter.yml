@@ -79,7 +79,7 @@ jobs:
 
         # You can override MegaLinter flavor used to have faster performances
         # More info at https://megalinter.io/latest/flavors/
-        uses: oxsecurity/megalinter/flavors/cupcake@v8
+        uses: oxsecurity/megalinter/flavors/cupcake@v9
 
         id: ml
 
@@ -174,7 +174,7 @@ jobs:
         run: sudo chown -Rc $UID .git/
 
       - name: Commit and push applied linter fixes
-        uses: stefanzweifel/git-auto-commit-action@v6
+        uses: stefanzweifel/git-auto-commit-action@v7
         if: >-
           steps.ml.outputs.has_updated_sources == 1 &&
           (
