@@ -1,7 +1,6 @@
 from datetime import datetime
 from urllib.parse import urlparse
 
-from django.conf import settings
 from django.test import TestCase
 from wagtail.blocks import StreamBlockValidationError, StructBlockValidationError
 from wagtail.rich_text import RichText
@@ -15,7 +14,6 @@ from cms.core.blocks import (
     DocumentBlock,
     DocumentsBlock,
     HeadingBlock,
-    ONSEmbedBlock,
     ONSTableBlock,
     RelatedContentBlock,
     RelatedLinksBlock,
@@ -140,24 +138,6 @@ class CoreBlocksTestCase(TestCase):
                 }
             ],
         )
-
-    def test_onsemebedblock__clean(self):
-        """Check the ONSEmbedBlock validates the supplied URL."""
-        block = ONSEmbedBlock()
-
-        with self.assertRaises(StructBlockValidationError) as info:
-            value = block.to_python({"url": "https://ons.gov.uk"})
-            block.clean(value)
-
-        self.assertEqual(
-            info.exception.block_errors["url"].message, f"The URL must start with {settings.ONS_EMBED_PREFIX}"
-        )
-
-    def test_onsemebedblock__clean__happy_path(self):
-        """Check the ONSEmbedBlock clean method returns the value."""
-        block = ONSEmbedBlock()
-        value = block.to_python({"url": settings.ONS_EMBED_PREFIX})
-        self.assertEqual(block.clean(value), value)
 
     def test_relatedcontentblock_clean__no_page_nor_url(self):
         """Checks that the RelatedContentBlock validates that one of page or URL is supplied."""

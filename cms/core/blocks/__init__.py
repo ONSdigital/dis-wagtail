@@ -3,7 +3,6 @@ from .embeddable import (
     DocumentBlock,
     DocumentsBlock,
     ImageBlock,
-    ONSEmbedBlock,
     VideoEmbedBlock,
 )
 from .markup import BasicTableBlock, HeadingBlock, ONSTableBlock, QuoteBlock
@@ -22,7 +21,6 @@ __all__ = [
     "InformationPanelBlock",
     "LinkBlock",
     "LinkBlockWithDescription",
-    "ONSEmbedBlock",
     "ONSTableBlock",
     "QuoteBlock",
     "RelatedContentBlock",

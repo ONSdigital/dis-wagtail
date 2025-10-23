@@ -85,29 +85,6 @@ class DocumentsBlock(blocks.StreamBlock):
         template = "templates/components/streamfield/documents_block.html"
 
 
-class ONSEmbedBlock(blocks.StructBlock):
-    """An embed block for only pages starting with ONS_EMBED_PREFIX."""
-
-    url = blocks.URLBlock(help_text=f"Must start with <code>{settings.ONS_EMBED_PREFIX}</code> to your URL.")
-    title = blocks.CharBlock(default="Interactive chart")
-
-    def clean(self, value: "StructValue") -> "StructValue":
-        """Checks that the given URL matches the ONS_EMBED_PREFIX."""
-        errors = {}
-
-        if not value["url"].startswith(settings.ONS_EMBED_PREFIX):
-            errors["url"] = ValidationError(f"The URL must start with {settings.ONS_EMBED_PREFIX}")
-
-        if errors:
-            raise StructBlockValidationError(block_errors=errors)
-
-        return super().clean(value)
-
-    class Meta:
-        icon = "code"
-        template = "templates/components/streamfield/ons_embed_block.html"
-
-
 class VideoEmbedBlock(blocks.StructBlock):
     """A video embed block."""
 

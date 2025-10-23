@@ -10,7 +10,6 @@ from cms.core.blocks import (
     DocumentsBlock,
     HeadingBlock,
     InformationPanelBlock,
-    ONSEmbedBlock,
     QuoteBlock,
     RelatedLinksBlock,
     VideoEmbedBlock,
@@ -46,7 +45,6 @@ class SectionContentBlock(StreamBlock):
     video_embed = VideoEmbedBlock(group="Media")
     table = ONSTableBlock(group="DataVis", allow_links=True)
     equation = EquationBlock(group="DataVis", icon="decimal")
-    ons_embed = ONSEmbedBlock(group="DataVis", label="ONS General Embed")
     related_links = RelatedLinksBlock(icon="link")
     definitions = GlossaryTermsBlock()
 

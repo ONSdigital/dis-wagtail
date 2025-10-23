@@ -42,6 +42,10 @@ class IframeBlockTestCase(BaseVisualisationBlockTestCase):
             "https://www.random.url.com": "The URL hostname is not in the list of allowed domains: ons.gov.uk",
             "http://ons.gov.uk": "Please enter a valid URL. "
             "It should start with 'https://' and contain a valid domain name.",
+            "https://ons.gov.uk/invalidpath/12345": (
+                f"The URL path is not allowed. It must start with: "
+                f"{' or '.join(settings.IFRAME_VISUALISATION_PATH_PREFIXES)}"
+            ),
         }
 
         for bad_url, message in cases.items():
