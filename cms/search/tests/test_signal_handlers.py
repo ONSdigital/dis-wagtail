@@ -147,7 +147,7 @@ class SearchSignalsTest(TestCase):
 
     def test_on_page_moved_private_page(self):
         """Pages with view restrictions should not trigger publish_created_or_updated on move."""
-        page = ArticleSeriesPageFactory()
+        page = StatisticalArticlePageFactory()
         PageViewRestriction.objects.create(page=page, restriction_type=PageViewRestriction.LOGIN)
         post_page_move.send(sender=Page, instance=page, url_path_before="/old-path/", url_path_after="/new-path/")
         self.mock_publisher.publish_created_or_updated.assert_not_called()
