@@ -1,17 +1,14 @@
 import logging
 from collections.abc import Iterable
 from typing import TYPE_CHECKING, Any
-from urllib.parse import urlencode
 
 from django import forms
 from django.conf import settings
-from django.contrib.admin.utils import quote
 from django.core.exceptions import PermissionDenied
 from django.db.models import Q, QuerySet
-from django.urls import reverse
 from django.views import View
 from wagtail.admin.forms.choosers import BaseFilterForm
-from wagtail.admin.ui.tables import Column, TitleColumn
+from wagtail.admin.ui.tables import Column
 from wagtail.admin.views.generic.chooser import (
     BaseChooseView,
     ChooseResultsViewMixin,
@@ -25,23 +22,12 @@ from wagtail.admin.viewsets.chooser import ChooserViewSet
 
 from cms.datasets.models import Dataset, ONSDataset
 from cms.datasets.permissions import user_can_access_unpublished_datasets
+from cms.datasets.utils import deconstruct_dataset_compound_id
 
 if TYPE_CHECKING:
     from django.http import HttpRequest, HttpResponse
 
 logger = logging.getLogger(__name__)
-
-
-class SpecialTitleColumn(TitleColumn):
-    def get_link_url(self, instance: Column, parent_context: Any) -> str:
-        """Extends the core chooser title column to pass on the published state."""
-        url: str = super().get_link_url(instance, parent_context)
-        separator = "&" if "?" in url else "?"
-        params = {
-            "published": "true" if instance.published else "false",
-        }
-        url += f"{separator}{urlencode(params)}"
-        return url
 
 
 class DatasetChooserPermissionMixin:
@@ -144,19 +130,6 @@ class ONSDatasetBaseChooseView(BaseChooseView):
     def render_to_response(self) -> None:
         raise NotImplementedError()
 
-    @property
-    def title_column(self) -> SpecialTitleColumn:
-        """Mirrors the base title_column, just instantiates our TitleColumn subclass."""
-        return SpecialTitleColumn(
-            "title",
-            label="Title",
-            accessor=str,
-            get_url=(
-                lambda obj: self.append_preserved_url_parameters(reverse(self.chosen_url_name, args=(quote(obj.pk),)))
-            ),
-            link_attrs={"data-chooser-modal-choice": True},
-        )
-
 
 class CustomChooseView(ChooseViewMixin, CreationFormMixin, ONSDatasetBaseChooseView): ...
 
@@ -175,16 +148,17 @@ class DatasetChosenView(ChosenViewMixin, ChosenResponseMixin, View):
         # get_object is called before get_chosen_response_data
         # and self.model_class is Dataset, so we get or create the Dataset from ONSDatasets here
         # create the dataset object from the API response
-        item = ONSDataset.objects.get(pk=pk)  # pylint: disable=no-member
-        if self.request.GET.get("published", "").lower() == "false" and (
-            unpublished_version := getattr(item, "next", None)
-        ):
-            # Use unpublished version if requested and available
-            item = unpublished_version
+
+        # The provided PK is actually a combination of dataset_id/edition/version
+        dataset_id, edition, version = deconstruct_dataset_compound_id(str(pk))
+
+        # We fetch the dataset from the API to get the title and description
+        item = ONSDataset.objects.get(pk=dataset_id)  # pylint: disable=no-member
+
         dataset, _ = Dataset.objects.get_or_create(
-            namespace=item.id,
-            edition=item.edition,
-            version=item.version,
+            namespace=dataset_id,
+            edition=edition,
+            version=version,
             defaults={
                 "title": item.title,
                 "description": item.description,
@@ -198,8 +172,6 @@ class DatasetChosenMultipleViewMixin(ChosenMultipleViewMixin):
         if not pks:
             return Dataset.objects.none()
 
-        published = self.request.GET.get("published", "true").lower() == "true"
-
         api_data_for_datasets: list[ONSDataset] = []
 
         # List of tuples (namespace, edition, version) for querying existing datasets
@@ -207,14 +179,13 @@ class DatasetChosenMultipleViewMixin(ChosenMultipleViewMixin):
 
         # TODO: update when we can fetch items in bulk from the dataset API or use the cached listing view?
         for pk in pks:
-            item_from_api = ONSDataset.objects.get(pk=pk)  # pylint: disable=no-member
+            # The provided PK is actually a combination of dataset_id/edition/version
+            dataset_id, edition, version = deconstruct_dataset_compound_id(str(pk))
 
-            if not published:
-                # Use unpublished version if requested and available
-                item_from_api = getattr(item_from_api, "next", item_from_api)
+            item_from_api = ONSDataset.objects.get(pk=dataset_id)  # pylint: disable=no-member
 
             api_data_for_datasets.append(item_from_api)
-            lookup_criteria.append((item_from_api.id, item_from_api.edition, item_from_api.version))
+            lookup_criteria.append((dataset_id, edition, version))
 
         existing_query = Q()
         for namespace, edition, version in lookup_criteria:

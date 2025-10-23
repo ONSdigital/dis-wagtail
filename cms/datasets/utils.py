@@ -7,6 +7,8 @@ from cms.core.formatting_utils import format_as_document_list_item
 
 EDITIONS_PATTERN = re.compile(r"/editions/([^/]+)/")
 
+COMPOUND_ID_PARTS_COUNT = 3
+
 
 def format_datasets_as_document_list(datasets: StreamValue) -> list[dict[str, Any]]:
     """Takes a StreamValue of dataset blocks (the value of a StreamField of DatasetStoryBlocks).
@@ -95,3 +97,16 @@ def convert_old_dataset_format(data: dict[str, Any]) -> dict[str, Any]:
         "release_date": data.get("last_updated", ""),
         "state": data.get("state", "associated"),
     }
+
+
+def construct_dataset_compound_id(dataset_id: str, edition: str, version_id: str) -> str:
+    """Construct a compound ID for the dataset based on dataset_id, edition, and version_id."""
+    return f"{dataset_id},{edition},{version_id}"
+
+
+def deconstruct_dataset_compound_id(compound_id: str) -> tuple[str, str, str]:
+    """Deconstruct a compound ID into its components: dataset_id, edition, and version_id."""
+    parts = compound_id.split(",")
+    if len(parts) != COMPOUND_ID_PARTS_COUNT:
+        raise ValueError(f"Invalid compound ID format: {compound_id}")
+    return parts[0], parts[1], parts[2]

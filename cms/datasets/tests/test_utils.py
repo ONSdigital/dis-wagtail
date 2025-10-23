@@ -4,7 +4,9 @@ from wagtail.blocks import StreamValue
 from cms.datasets.blocks import DatasetStoryBlock
 from cms.datasets.models import Dataset
 from cms.datasets.utils import (
+    construct_dataset_compound_id,
     convert_old_dataset_format,
+    deconstruct_dataset_compound_id,
     extract_edition_from_dataset_url,
     format_datasets_as_document_list,
 )
@@ -89,3 +91,19 @@ class TestUtils(TestCase):
 
         converted_dataset = convert_old_dataset_format(old_format_dataset)
         self.assertEqual(converted_dataset, new_format_dataset)
+
+    def test_compound_id_construction_and_deconstruction(self):
+        dataset_id = "wellbeing-quarterly"
+        edition = "september"
+        version_id = "9"
+
+        compound_tuple = (dataset_id, edition, version_id)
+        self.assertEqual(
+            compound_tuple,
+            deconstruct_dataset_compound_id(construct_dataset_compound_id(*compound_tuple)),
+        )
+
+    def test_deconstruct_compound_id_invalid(self):
+        invalid_compound_id = "invalidcompoundidformat"
+        with self.assertRaises(ValueError):
+            deconstruct_dataset_compound_id(invalid_compound_id)
