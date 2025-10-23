@@ -731,6 +731,10 @@ class IframeBlock(BaseVisualisationBlock):
         errors = {}
         parsed_url = urlparse(value["iframe_source_url"])
 
+        for field_name, field in self.child_blocks.items():
+            if field.required and not value.get(field_name):
+                errors[field_name] = ValidationError("This field is required.")
+
         if not (value["iframe_source_url"].startswith("https://") and parsed_url.hostname):
             errors["iframe_source_url"] = ValidationError(
                 "Please enter a valid URL. It should start with 'https://' and contain a valid domain name."
