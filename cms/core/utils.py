@@ -1,13 +1,19 @@
 import io
 from threading import Lock
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 import matplotlib as mpl
 from django.conf import settings
+from django.http import HttpResponsePermanentRedirect, HttpResponseRedirect
+from django.shortcuts import redirect as _redirect
 from matplotlib.figure import Figure
-from wagtail.models import Page
 
 from cms.core.enums import RelatedContentType
+
+if TYPE_CHECKING:
+    from django.http import HttpRequest
+    from wagtail.models import Page
+
 
 matplotlib_lock = Lock()
 
@@ -75,3 +81,29 @@ def latex_formula_to_svg(latex: str, *, fontsize: int = 18, transparent: bool = 
         svg_string = "\n".join(svg_string.split("\n")[3:])
 
     return svg_string
+
+
+def redirect(
+    to: str, *args: Any, permanent: bool = False, preserve_request: bool = True, **kwargs: Any
+) -> HttpResponseRedirect | HttpResponsePermanentRedirect:
+    """Wrapper for Django's redirect that defaults preserve_request=True."""
+    return _redirect(
+        to,
+        *args,
+        permanent=permanent,
+        preserve_request=preserve_request,
+        **kwargs,
+    )
+
+
+def redirect_to_parent_listing(
+    *, page: "Page", request: "HttpRequest", listing_url_method_name: str
+) -> HttpResponseRedirect | HttpResponsePermanentRedirect:
+    """Redirects to the parent page's listing URL if available, otherwise to the parent page itself."""
+    if not (parent := getattr(page.get_parent(), "specific_deferred", None)):
+        return redirect("/")
+
+    method = getattr(parent, listing_url_method_name, None)
+    if callable(method) and (redirect_url := method()):
+        return redirect(redirect_url)
+    return redirect(parent.get_url(request=request))
