@@ -72,3 +72,76 @@ class IframeBlockTestCase(BaseVisualisationBlockTestCase):
                     valid_data["iframe_source_url"] = url
                     value = self.get_value(valid_data)
                     self.block.clean(value)
+
+    def test_multiple_validation_errors_shown_together(self):
+        """Test that all validation errors (required fields + invalid URL) are shown together."""
+        invalid_data = {
+            # All required fields are missing
+            "title": "",
+            "subtitle": "",
+            "audio_description": "",
+            "iframe_source_url": "",
+            # Optional fields
+            "caption": "",
+            "footnotes": "",
+        }
+
+        value = self.get_value(invalid_data)
+
+        with self.assertRaises(ValidationError) as context:
+            self.block.clean(value)
+
+        # Check that we have errors for all required fields
+        errors = context.exception.block_errors
+
+        # All required fields should have errors
+        self.assertIn("title", errors)
+        self.assertIn("subtitle", errors)
+        self.assertIn("audio_description", errors)
+        self.assertIn("iframe_source_url", errors)
+
+        # Check the error messages
+        self.assertEqual(errors["title"].message, "This field is required.")
+        self.assertEqual(errors["subtitle"].message, "This field is required.")
+        self.assertEqual(errors["audio_description"].message, "This field is required.")
+        self.assertEqual(
+            errors["iframe_source_url"].message,
+            "Please enter a valid URL. It should start with 'https://' and contain a valid domain name.",
+        )
+
+        # Optional fields should not have errors
+        self.assertNotIn("caption", errors)
+        self.assertNotIn("footnotes", errors)
+
+    def test_partial_validation_errors(self):
+        """Test that missing required fields are shown along with URL validation errors."""
+        invalid_data = {
+            "title": "",  # Missing
+            "subtitle": "Test subtitle",  # Provided
+            "audio_description": "",  # Missing
+            "iframe_source_url": "https://www.invalid-domain.com/visualisations/dvc/123",  # Invalid domain
+            "caption": "",
+            "footnotes": "",
+        }
+
+        value = self.get_value(invalid_data)
+
+        with self.assertRaises(ValidationError) as context:
+            self.block.clean(value)
+
+        errors = context.exception.block_errors
+
+        # Should have exactly 3 errors
+        self.assertEqual(len(errors), 3)
+
+        # Check which fields have errors
+        self.assertIn("title", errors)
+        self.assertIn("audio_description", errors)
+        self.assertIn("iframe_source_url", errors)
+
+        # Check error messages
+        self.assertEqual(errors["title"].message, "This field is required.")
+        self.assertEqual(errors["audio_description"].message, "This field is required.")
+        self.assertEqual(
+            errors["iframe_source_url"].message, "The URL hostname is not in the list of allowed domains: ons.gov.uk"
+        )
