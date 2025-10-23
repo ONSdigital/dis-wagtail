@@ -6,8 +6,6 @@ from django.dispatch import receiver
 from wagtail.models import Page
 from wagtail.signals import page_published, page_unpublished, post_page_move
 
-from cms.settings.base import SEARCH_INDEX_EXCLUDED_PAGE_TYPES
-
 from .publishers import KafkaPublisher, LogPublisher
 
 
@@ -25,7 +23,7 @@ def on_page_published(sender: "type[Page]", instance: "Page", **kwargs: dict) ->
     """Called whenever a Wagtail Page is published (UI or code).
     instance is the published Page object.
     """
-    if instance.specific_class.__name__ not in SEARCH_INDEX_EXCLUDED_PAGE_TYPES:
+    if instance.specific_class.__name__ not in settings.SEARCH_INDEX_EXCLUDED_PAGE_TYPES:
         get_publisher().publish_created_or_updated(instance)
 
 
@@ -36,7 +34,7 @@ def on_page_unpublished(sender: "type[Page]", instance: "Page", **kwargs: dict) 
     """
     if (
         settings.CMS_SEARCH_NOTIFY_ON_DELETE_OR_UNPUBLISH
-        and instance.specific_class.__name__ not in SEARCH_INDEX_EXCLUDED_PAGE_TYPES
+        and instance.specific_class.__name__ not in settings.SEARCH_INDEX_EXCLUDED_PAGE_TYPES
     ):
         get_publisher().publish_deleted(instance)
 
@@ -50,7 +48,7 @@ def on_page_deleted(sender: "type[Page]", instance: "Page", **kwargs: dict) -> N
     if (
         settings.CMS_SEARCH_NOTIFY_ON_DELETE_OR_UNPUBLISH
         and instance.live
-        and instance.specific_class.__name__ not in SEARCH_INDEX_EXCLUDED_PAGE_TYPES
+        and instance.specific_class.__name__ not in settings.SEARCH_INDEX_EXCLUDED_PAGE_TYPES
     ):
         get_publisher().publish_deleted(instance)
 
@@ -66,5 +64,5 @@ def on_page_moved(sender: "type[Page]", instance: "Page", **kwargs: dict) -> Non
         # No change in URL path, no need to update search index of the instance or descendants
         return
     for moved_page in instance.get_descendants(inclusive=True):  # inclusive=True includes instance itself
-        if moved_page.live and moved_page.specific_class.__name__ not in SEARCH_INDEX_EXCLUDED_PAGE_TYPES:
+        if moved_page.live and moved_page.specific_class.__name__ not in settings.SEARCH_INDEX_EXCLUDED_PAGE_TYPES:
             get_publisher().publish_created_or_updated(moved_page.specific_deferred)
