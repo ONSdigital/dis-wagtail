@@ -104,7 +104,6 @@ class ONSDatasetBaseChooseView(BaseChooseView):
         for_bundle = self.request_is_for_bundle()
 
         # Get the published filter value from GET params or form
-        # Default to "true" (published) unless explicitly requesting unpublished or for bundles
         published = "false" if for_bundle else self.request.GET.get("published", "false")
 
         # Log audit event when accessing unpublished datasets
