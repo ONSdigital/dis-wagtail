@@ -49,7 +49,7 @@ class DatasetBaseChooseViewMixin:
         return [
             *getattr(super(), "columns", []),
             Column("edition", label="Edition", accessor="formatted_edition"),
-            Column("version", label="Latest Version", accessor="version"),
+            Column("version", label="Version", accessor="version"),
         ]
 
 
@@ -150,8 +150,14 @@ class DatasetChosenView(ChosenViewMixin, ChosenResponseMixin, View):
         # The provided PK is actually a combination of dataset_id/edition/version
         dataset_id, edition, version = deconstruct_dataset_compound_id(str(pk))
 
+        # Get the auth token from the request
+        access_token = self.request.COOKIES.get(settings.ACCESS_TOKEN_COOKIE_NAME)
+
         # We fetch the dataset from the API to get the title and description
-        item = ONSDataset.objects.get(pk=dataset_id)  # pylint: disable=no-member
+        queryset = ONSDataset.objects  # pylint: disable=no-member
+        if access_token:
+            queryset = queryset.with_token(access_token)
+        item = queryset.get(pk=dataset_id)
 
         dataset, _ = Dataset.objects.get_or_create(
             namespace=dataset_id,
@@ -166,7 +172,8 @@ class DatasetChosenView(ChosenViewMixin, ChosenResponseMixin, View):
 
 
 class DatasetChosenMultipleViewMixin(ChosenMultipleViewMixin):
-    def get_objects(self, pks: list[Any]) -> QuerySet[Dataset]:
+    def get_objects(self, pks: list[Any]) -> QuerySet[Dataset]:  # pylint: disable=too-many-locals
+        # TODO: Potentially split this function into smaller parts to avoid too-many-locals warning
         if not pks:
             return Dataset.objects.none()
 
@@ -175,12 +182,18 @@ class DatasetChosenMultipleViewMixin(ChosenMultipleViewMixin):
         # List of tuples (namespace, edition, version) for querying existing datasets
         lookup_criteria: list[tuple[str, str, str]] = []
 
+        # Get the auth token from the request
+        access_token = self.request.COOKIES.get(settings.ACCESS_TOKEN_COOKIE_NAME)
+
         # TODO: update when we can fetch items in bulk from the dataset API or use the cached listing view?
         for pk in pks:
             # The provided PK is actually a combination of dataset_id/edition/version
             dataset_id, edition, version = deconstruct_dataset_compound_id(str(pk))
 
-            item_from_api = ONSDataset.objects.get(pk=dataset_id)  # pylint: disable=no-member
+            queryset = ONSDataset.objects  # pylint: disable=no-member
+            if access_token:
+                queryset = queryset.with_token(access_token)
+            item_from_api = queryset.get(pk=dataset_id)
 
             api_data_for_datasets.append(item_from_api)
             lookup_criteria.append((dataset_id, edition, version))

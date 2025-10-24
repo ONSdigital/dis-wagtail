@@ -129,7 +129,7 @@ class ONSDataset(APIModel):
         version_id = latest_version.get("id", "1") if isinstance(latest_version, dict) else "1"
 
         return cls(
-            id=construct_dataset_compound_id(dataset_id, edition, version_id),
+            id=construct_dataset_compound_id(dataset_id=dataset_id, edition=edition, version_id=version_id),
             dataset_id=dataset_id,
             title=title,
             description=description,

@@ -99,7 +99,7 @@ def convert_old_dataset_format(data: dict[str, Any]) -> dict[str, Any]:
     }
 
 
-def construct_dataset_compound_id(dataset_id: str, edition: str, version_id: str) -> str:
+def construct_dataset_compound_id(*, dataset_id: str, edition: str, version_id: str) -> str:
     """Construct a compound ID for the dataset based on dataset_id, edition, and version_id."""
     return f"{dataset_id},{edition},{version_id}"
 

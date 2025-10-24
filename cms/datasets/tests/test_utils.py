@@ -100,7 +100,13 @@ class TestUtils(TestCase):
         compound_tuple = (dataset_id, edition, version_id)
         self.assertEqual(
             compound_tuple,
-            deconstruct_dataset_compound_id(construct_dataset_compound_id(*compound_tuple)),
+            deconstruct_dataset_compound_id(
+                construct_dataset_compound_id(
+                    dataset_id=dataset_id,
+                    edition=edition,
+                    version_id=version_id,
+                )
+            ),
         )
 
     def test_deconstruct_compound_id_invalid(self):

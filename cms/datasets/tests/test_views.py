@@ -8,6 +8,8 @@ from django.test import RequestFactory, TestCase
 
 from cms.datasets.views import (
     DatasetChooserPermissionMixin,
+    DatasetChosenMultipleViewMixin,
+    DatasetChosenView,
     DatasetSearchFilterForm,
     ONSDatasetBaseChooseView,
 )
@@ -174,3 +176,154 @@ class TestONSDatasetBaseChooseView(TestCase):
         mock_logger.info.assert_called_once_with(
             "Unpublished datasets requested", extra={"username": self.user.username}
         )
+
+
+class TestDatasetChosenView(TestCase):
+    """Test the DatasetChosenView functionality."""
+
+    def setUp(self):
+        self.factory = RequestFactory()
+        # Create a user for the request
+        self.user = User.objects.create_user(username="testuser", password="testpass")
+        self.view = DatasetChosenView()
+
+    @patch("cms.datasets.views.Dataset")
+    @patch("cms.datasets.views.ONSDataset")
+    def test_get_object_with_token(self, mock_ons_dataset, mock_dataset):
+        """Test get_object passes auth token when fetching dataset from API."""
+        # Mock the API dataset
+        mock_api_dataset = Mock()
+        mock_api_dataset.title = "Test Dataset"
+        mock_api_dataset.description = "Test Description"
+
+        mock_queryset = MagicMock()
+        mock_ons_dataset.objects = mock_queryset
+        mock_queryset.with_token.return_value = mock_queryset
+        mock_queryset.get.return_value = mock_api_dataset
+
+        # Mock the Django Dataset model
+        mock_dataset_instance = Mock()
+        mock_dataset.objects.get_or_create.return_value = (mock_dataset_instance, True)
+
+        request = self.factory.get("/chooser/")
+        request.user = self.user
+        request.COOKIES = {settings.ACCESS_TOKEN_COOKIE_NAME: "test_token"}
+
+        self.view.request = request
+        self.view.get_object("dataset-123,2021,1")
+
+        # Verify token was passed
+        mock_queryset.with_token.assert_called_once_with("test_token")
+        mock_queryset.get.assert_called_once_with(pk="dataset-123")
+
+    @patch("cms.datasets.views.Dataset")
+    @patch("cms.datasets.views.ONSDataset")
+    def test_get_object_without_token(self, mock_ons_dataset, mock_dataset):
+        """Test get_object works without auth token."""
+        # Mock the API dataset
+        mock_api_dataset = Mock()
+        mock_api_dataset.title = "Test Dataset"
+        mock_api_dataset.description = "Test Description"
+
+        mock_queryset = MagicMock()
+        mock_ons_dataset.objects = mock_queryset
+        mock_queryset.get.return_value = mock_api_dataset
+
+        # Mock the Django Dataset model
+        mock_dataset_instance = Mock()
+        mock_dataset.objects.get_or_create.return_value = (mock_dataset_instance, True)
+
+        request = self.factory.get("/chooser/")
+        request.user = self.user
+        request.COOKIES = {}
+
+        self.view.request = request
+        self.view.get_object("dataset-123,2021,1")
+
+        # Verify with_token was NOT called
+        mock_queryset.with_token.assert_not_called()
+        mock_queryset.get.assert_called_once_with(pk="dataset-123")
+
+
+class TestDatasetChosenMultipleViewMixin(TestCase):
+    """Test the DatasetChosenMultipleViewMixin functionality."""
+
+    def setUp(self):
+        self.factory = RequestFactory()
+        # Create a user for the request
+        self.user = User.objects.create_user(username="testuser", password="testpass")
+        self.view = DatasetChosenMultipleViewMixin()
+
+    @patch("cms.datasets.views.Dataset")
+    @patch("cms.datasets.views.ONSDataset")
+    def test_get_objects_with_token(self, mock_ons_dataset, mock_dataset):
+        """Test get_objects passes auth token when fetching datasets from API."""
+        # Mock the API datasets
+        mock_api_dataset_1 = Mock()
+        mock_api_dataset_1.id = "dataset-123"
+        mock_api_dataset_1.edition = "2021"
+        mock_api_dataset_1.version = "1"
+        mock_api_dataset_1.title = "Test Dataset 1"
+        mock_api_dataset_1.description = "Test Description 1"
+
+        mock_api_dataset_2 = Mock()
+        mock_api_dataset_2.id = "dataset-456"
+        mock_api_dataset_2.edition = "2022"
+        mock_api_dataset_2.version = "2"
+        mock_api_dataset_2.title = "Test Dataset 2"
+        mock_api_dataset_2.description = "Test Description 2"
+
+        mock_queryset = MagicMock()
+        mock_ons_dataset.objects = mock_queryset
+        mock_queryset.with_token.return_value = mock_queryset
+        mock_queryset.get.side_effect = [mock_api_dataset_1, mock_api_dataset_2]
+
+        # Mock the Django Dataset queryset - first call returns empty list (existing_datasets_map)
+        # second call returns the final queryset after bulk_create
+        mock_final_queryset = Mock()
+        mock_dataset.objects.filter.side_effect = [[], mock_final_queryset]
+        mock_dataset.objects.bulk_create.return_value = None
+
+        request = self.factory.get("/chooser/")
+        request.user = self.user
+        request.COOKIES = {settings.ACCESS_TOKEN_COOKIE_NAME: "test_token"}
+
+        self.view.request = request
+        self.view.get_objects(["dataset-123,2021,1", "dataset-456,2022,2"])
+
+        # Verify token was passed (should be called twice, once for each dataset)
+        self.assertEqual(mock_queryset.with_token.call_count, 2)
+        mock_queryset.with_token.assert_called_with("test_token")
+
+    @patch("cms.datasets.views.Dataset")
+    @patch("cms.datasets.views.ONSDataset")
+    def test_get_objects_without_token(self, mock_ons_dataset, mock_dataset):
+        """Test get_objects works without auth token."""
+        # Mock the API dataset
+        mock_api_dataset = Mock()
+        mock_api_dataset.id = "dataset-123"
+        mock_api_dataset.edition = "2021"
+        mock_api_dataset.version = "1"
+        mock_api_dataset.title = "Test Dataset"
+        mock_api_dataset.description = "Test Description"
+
+        mock_queryset = MagicMock()
+        mock_ons_dataset.objects = mock_queryset
+        mock_queryset.get.return_value = mock_api_dataset
+
+        # Mock the Django Dataset queryset - first call returns empty list (existing_datasets_map)
+        # second call returns the final queryset after bulk_create
+        mock_final_queryset = Mock()
+        mock_dataset.objects.filter.side_effect = [[], mock_final_queryset]
+        mock_dataset.objects.bulk_create.return_value = None
+
+        request = self.factory.get("/chooser/")
+        request.user = self.user
+        request.COOKIES = {}
+
+        self.view.request = request
+        self.view.get_objects(["dataset-123,2021,1"])
+
+        # Verify with_token was NOT called
+        mock_queryset.with_token.assert_not_called()
+        mock_queryset.get.assert_called_once_with(pk="dataset-123")
