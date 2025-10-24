@@ -180,6 +180,15 @@ def the_user_selects_multiple_datasets(context: Context) -> None:
         context.page.get_by_role("button", name="Confirm selection").click()
 
 
+@when("the user opens the bundle datasets chooser")
+def user_opens_bundle_datasets_chooser(context: Context) -> None:
+    mock_dataset = MOCK_DATASETS[0]
+
+    with mock_datasets_responses([mock_dataset]):
+        context.page.get_by_role("button", name="Add dataset").click()
+        context.page.wait_for_timeout(500)  # Wait for modal to open and the events to settle
+
+
 def get_datasets_panel_locator(editor_tab: str = "content") -> str:
     return f"#panel-child-{editor_tab}-datasets-content"
 
@@ -204,3 +213,8 @@ def check_unpublished_datasets_shown_by_default(context: Context) -> None:
 def check_only_published_datasets_shown(context: Context) -> None:
     expect(context.page.get_by_role("link", name="Looked Up Dataset", exact=True)).to_be_visible()
     expect(context.page.get_by_role("link", name="Unpublished Looked Up Dataset")).not_to_be_visible()
+
+
+@then("the published state filter is not displayed in the chooser")
+def check_published_state_filter_not_displayed(context: Context) -> None:
+    expect(context.page.get_by_label("Published status")).not_to_be_visible()

@@ -157,6 +157,66 @@ class TestONSDatasetApiQuerySet(TestCase):
             self.assertIn("url", call_args[1]["extra"])
             self.assertIn("error", call_args[1]["extra"])
 
+    @responses.activate
+    def test_fetch_api_response_raises_on_non_dict_response(self):
+        """Test that ValueError is raised when API returns non-dict response (e.g., list)."""
+        responses.add(
+            responses.GET,
+            settings.DATASETS_API_EDITIONS_URL,
+            json=[{"id": "dataset1"}, {"id": "dataset2"}],
+        )
+
+        api_queryset = ONSDatasetApiQuerySet()
+        api_queryset.base_url = settings.DATASETS_API_EDITIONS_URL
+
+        with patch("cms.datasets.models.logger") as mock_logger:
+            with self.assertRaises(ValueError) as context:
+                api_queryset.fetch_api_response()
+
+            self.assertEqual(str(context.exception), "Invalid API response format, expected a dictionary-like object")
+            mock_logger.error.assert_called_once_with(
+                "Invalid API response format when fetching datasets",
+                extra={"url": settings.DATASETS_API_EDITIONS_URL, "params": {}},
+            )
+
+    @responses.activate
+    def test_fetch_api_response_raises_on_string_response(self):
+        """Test that ValueError is raised when API returns a string instead of dict."""
+        responses.add(
+            responses.GET,
+            settings.DATASETS_API_EDITIONS_URL,
+            body='"just a string"',
+            content_type="application/json",
+        )
+
+        api_queryset = ONSDatasetApiQuerySet()
+        api_queryset.base_url = settings.DATASETS_API_EDITIONS_URL
+
+        with patch("cms.datasets.models.logger") as mock_logger:
+            with self.assertRaises(ValueError) as context:
+                api_queryset.fetch_api_response()
+
+            self.assertEqual(str(context.exception), "Invalid API response format, expected a dictionary-like object")
+            mock_logger.error.assert_called_once()
+
+    @responses.activate
+    def test_fetch_api_response_succeeds_with_valid_dict(self):
+        """Test that valid dict response is processed correctly."""
+        valid_response = {"items": [], "total_count": 0, "count": 0}
+        responses.add(
+            responses.GET,
+            settings.DATASETS_API_EDITIONS_URL,
+            json=valid_response,
+        )
+
+        api_queryset = ONSDatasetApiQuerySet()
+        api_queryset.base_url = settings.DATASETS_API_EDITIONS_URL
+
+        result = api_queryset.fetch_api_response()
+
+        self.assertIsInstance(result, dict)
+        self.assertEqual(result["count"], 0)
+
 
 class TestONSDataset(TestCase):
     @responses.activate

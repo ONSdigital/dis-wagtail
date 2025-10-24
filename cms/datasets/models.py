@@ -77,6 +77,12 @@ class ONSDatasetApiQuerySet(APIQuerySet):
             raise
 
         api_response: dict = response.json()
+
+        # api_response should be a dict, let's raise a clear error if not
+        if not isinstance(api_response, dict):
+            logger.error("Invalid API response format when fetching datasets", extra={"url": url, "params": params})
+            raise ValueError("Invalid API response format, expected a dictionary-like object")
+
         if is_detail_request:
             api_response = self._process_detail_response(api_response)
 

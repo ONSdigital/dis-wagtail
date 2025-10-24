@@ -174,31 +174,3 @@ class TestONSDatasetBaseChooseView(TestCase):
         mock_logger.info.assert_called_once_with(
             "Unpublished datasets requested", extra={"username": self.user.username}
         )
-
-    @patch("cms.datasets.views.BaseChooseView.get_context_data")
-    def test_get_context_data_hides_filter_for_bundles(self, mock_super_context):
-        """Test that the filter UI is hidden when for_bundle=true."""
-        mock_super_context.return_value = {}
-
-        request = self.factory.get("/chooser/?for_bundle=true")
-        request.user = self.user
-
-        self.view.request = request
-        context = self.view.get_context_data()
-
-        # Verify hide_published_filter is set
-        self.assertTrue(context["hide_published_filter"])
-
-    @patch("cms.datasets.views.BaseChooseView.get_context_data")
-    def test_get_context_data_shows_filter_normally(self, mock_super_context):
-        """Test that the filter UI is shown normally."""
-        mock_super_context.return_value = {}
-
-        request = self.factory.get("/chooser/?published=false")
-        request.user = self.user
-
-        self.view.request = request
-        context = self.view.get_context_data()
-
-        # Verify hide_published_filter is not set
-        self.assertFalse(context["hide_published_filter"])
