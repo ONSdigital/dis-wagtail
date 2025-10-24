@@ -1,7 +1,10 @@
+import logging
 from collections.abc import Iterable
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from django import forms
+from django.conf import settings
+from django.core.exceptions import PermissionDenied
 from django.db.models import Q, QuerySet
 from django.views import View
 from wagtail.admin.forms.choosers import BaseFilterForm
@@ -18,6 +21,26 @@ from wagtail.admin.views.generic.chooser import (
 from wagtail.admin.viewsets.chooser import ChooserViewSet
 
 from cms.datasets.models import Dataset, ONSDataset
+from cms.datasets.permissions import user_can_access_unpublished_datasets
+from cms.datasets.utils import deconstruct_dataset_compound_id
+
+if TYPE_CHECKING:
+    from django.http import HttpRequest, HttpResponse
+
+logger = logging.getLogger(__name__)
+
+
+class DatasetChooserPermissionMixin:
+    """Mixin to check permissions for accessing unpublished datasets."""
+
+    def dispatch(self, request: "HttpRequest", *args: Any, **kwargs: Any) -> "HttpResponse":
+        # Check if requesting unpublished datasets
+        published = request.GET.get("published", "false")
+
+        if published == "false" and not user_can_access_unpublished_datasets(request.user):
+            raise PermissionDenied
+
+        return super().dispatch(request, *args, **kwargs)  # type: ignore[misc,no-any-return]
 
 
 class DatasetBaseChooseViewMixin:
@@ -26,7 +49,7 @@ class DatasetBaseChooseViewMixin:
         return [
             *getattr(super(), "columns", []),
             Column("edition", label="Edition", accessor="formatted_edition"),
-            Column("version", label="Latest Version", accessor="version"),
+            Column("version", label="Version", accessor="version"),
         ]
 
 
@@ -36,6 +59,22 @@ class DatasetSearchFilterForm(BaseFilterForm):
         widget=forms.TextInput(attrs={"placeholder": "Dataset title"}),
         required=False,
     )
+    published = forms.ChoiceField(
+        label="Published status",
+        choices=[
+            ("false", "Unpublished"),
+            ("true", "Published"),
+        ],
+        initial="false",
+        required=False,
+    )
+
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        super().__init__(*args, **kwargs)
+
+        # Hide the published filter when selecting datasets for a bundle
+        if self.data.get("for_bundle") == "true":
+            self.fields["published"].widget = forms.HiddenInput()
 
     def filter(self, objects: Iterable[Any]) -> Iterable[Any]:
         objects = super().filter(objects)
@@ -58,7 +97,35 @@ class ONSDatasetBaseChooseView(BaseChooseView):
     model_class = ONSDataset
     filter_form_class = DatasetSearchFilterForm
 
+    def request_is_for_bundle(self) -> bool:
+        """Check if the request is for selecting datasets for a bundle."""
+        for_bundle_value: str = self.request.GET.get("for_bundle", "false")
+        return for_bundle_value.lower() == "true"
+
+    def get_object_list(self) -> Iterable[ONSDataset]:
+        """Get the list of datasets with auth token and published filter."""
+        # Get the auth token from the request
+        access_token = self.request.COOKIES.get(settings.ACCESS_TOKEN_COOKIE_NAME)
+
+        # Check if this is for a bundle - if so, force published=false
+        for_bundle = self.request_is_for_bundle()
+
+        # Get the published filter value from GET params or form
+        published = "false" if for_bundle else self.request.GET.get("published", "false")
+
+        # Log audit event when accessing unpublished datasets
+        if published == "false":
+            logger.info("Unpublished datasets requested", extra={"username": self.request.user.username})
+
+        # Build the queryset with token and published filter
+        queryset = ONSDataset.objects.filter(published=published)  # pylint: disable=no-member
+
+        if access_token:
+            queryset = queryset.with_token(access_token)
+        return queryset.all()  # type: ignore[no-any-return]
+
     def render_to_response(self) -> None:
+        # This base class should not be used directly
         raise NotImplementedError()
 
 
@@ -68,10 +135,10 @@ class CustomChooseView(ChooseViewMixin, CreationFormMixin, ONSDatasetBaseChooseV
 class CustomChooseResultView(ChooseResultsViewMixin, CreationFormMixin, ONSDatasetBaseChooseView): ...
 
 
-class DatasetChooseView(DatasetBaseChooseViewMixin, CustomChooseView): ...
+class DatasetChooseView(DatasetChooserPermissionMixin, DatasetBaseChooseViewMixin, CustomChooseView): ...
 
 
-class DatasetChooseResultsView(DatasetBaseChooseViewMixin, CustomChooseResultView): ...
+class DatasetChooseResultsView(DatasetChooserPermissionMixin, DatasetBaseChooseViewMixin, CustomChooseResultView): ...
 
 
 class DatasetChosenView(ChosenViewMixin, ChosenResponseMixin, View):
@@ -79,11 +146,23 @@ class DatasetChosenView(ChosenViewMixin, ChosenResponseMixin, View):
         # get_object is called before get_chosen_response_data
         # and self.model_class is Dataset, so we get or create the Dataset from ONSDatasets here
         # create the dataset object from the API response
-        item = ONSDataset.objects.get(pk=pk)  # pylint: disable=no-member
+
+        # The provided PK is actually a combination of dataset_id, edition and version
+        dataset_id, edition, version = deconstruct_dataset_compound_id(str(pk))
+
+        # Get the auth token from the request
+        access_token = self.request.COOKIES.get(settings.ACCESS_TOKEN_COOKIE_NAME)
+
+        # We fetch the dataset from the API to get the title and description
+        queryset = ONSDataset.objects  # pylint: disable=no-member
+        if access_token:
+            queryset = queryset.with_token(access_token)
+        item = queryset.get(pk=dataset_id)
+
         dataset, _ = Dataset.objects.get_or_create(
-            namespace=item.id,
-            edition=item.edition,
-            version=item.version,
+            namespace=dataset_id,
+            edition=edition,
+            version=version,
             defaults={
                 "title": item.title,
                 "description": item.description,
@@ -93,21 +172,39 @@ class DatasetChosenView(ChosenViewMixin, ChosenResponseMixin, View):
 
 
 class DatasetChosenMultipleViewMixin(ChosenMultipleViewMixin):
-    def get_objects(self, pks: list[Any]) -> QuerySet[Dataset]:
+    def get_objects(self, pks: list[Any]) -> QuerySet[Dataset]:  # pylint: disable=too-many-locals
+        # TODO: Potentially split this function into smaller parts to avoid too-many-locals warning
         if not pks:
             return Dataset.objects.none()
 
-        api_data_for_datasets: list[ONSDataset] = []
+        api_data_for_datasets: list[dict] = []
 
         # List of tuples (namespace, edition, version) for querying existing datasets
         lookup_criteria: list[tuple[str, str, str]] = []
 
+        # Get the auth token from the request
+        access_token = self.request.COOKIES.get(settings.ACCESS_TOKEN_COOKIE_NAME)
+
         # TODO: update when we can fetch items in bulk from the dataset API or use the cached listing view?
         for pk in pks:
-            item_from_api = ONSDataset.objects.get(pk=pk)  # pylint: disable=no-member
+            # The provided PK is actually a combination of dataset_id, edition and version
+            dataset_id, edition, version = deconstruct_dataset_compound_id(str(pk))
 
-            api_data_for_datasets.append(item_from_api)
-            lookup_criteria.append((item_from_api.id, item_from_api.edition, item_from_api.version))
+            queryset = ONSDataset.objects  # pylint: disable=no-member
+            if access_token:
+                queryset = queryset.with_token(access_token)
+            item_from_api = queryset.get(pk=dataset_id)
+
+            api_data_for_datasets.append(
+                {
+                    "id": dataset_id,
+                    "title": item_from_api.title,
+                    "description": item_from_api.description,
+                    "edition": edition,
+                    "version": version,
+                }
+            )
+            lookup_criteria.append((dataset_id, edition, version))
 
         existing_query = Q()
         for namespace, edition, version in lookup_criteria:
@@ -119,16 +216,15 @@ class DatasetChosenMultipleViewMixin(ChosenMultipleViewMixin):
 
         datasets_to_create_instances: list[Dataset] = []
         for data in api_data_for_datasets:
-            data_version = int(data.version)
-            key = (data.id, data.edition, data_version)
-            if key not in existing_datasets_map:
+            data_version = int(data["version"])
+            if (data["id"], data["edition"], data_version) not in existing_datasets_map:
                 datasets_to_create_instances.append(
                     Dataset(
-                        namespace=data.id,
-                        edition=data.edition,
+                        namespace=data["id"],
+                        edition=data["edition"],
                         version=data_version,
-                        title=data.title,
-                        description=data.description,
+                        title=data["title"],
+                        description=data["description"],
                     )
                 )
 
