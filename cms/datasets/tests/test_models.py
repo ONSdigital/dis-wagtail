@@ -178,7 +178,8 @@ class TestONSDataset(TestCase):
 
         dataset = ONSDataset.from_query_data(response_dataset)
 
-        self.assertEqual(dataset.id, "test-static-dataset")  # pylint: disable=no-member
+        self.assertEqual(dataset.id, "test-static-dataset,march,66")  # pylint: disable=no-member
+        self.assertEqual(dataset.dataset_id, "test-static-dataset")
         self.assertEqual(dataset.title, "testing static edit")  # pylint: disable=no-member
         self.assertEqual(dataset.description, "Test dataset description")  # pylint: disable=no-member
         self.assertEqual(dataset.edition, "march")  # pylint: disable=no-member
@@ -234,7 +235,8 @@ class TestONSDataset(TestCase):
 
         dataset = ONSDataset.from_query_data(response_dataset)
 
-        self.assertEqual(dataset.id, "legacy-dataset-id")  # pylint: disable=no-member
+        self.assertEqual(dataset.id, "legacy-dataset-id,q1,5")  # pylint: disable=no-member
+        self.assertEqual(dataset.dataset_id, "legacy-dataset-id")
 
     @responses.activate
     def test_queryset_integration_with_new_api(self):
@@ -271,9 +273,11 @@ class TestONSDataset(TestCase):
         datasets = list(ONSDataset.objects.all())  # pylint: disable=no-member
 
         self.assertEqual(len(datasets), 2)
-        self.assertEqual(datasets[0].id, "dataset1")
+        self.assertEqual(datasets[0].id, "dataset1,2024,1")
+        self.assertEqual(datasets[0].dataset_id, "dataset1")
         self.assertEqual(datasets[0].title, "Dataset 1")
-        self.assertEqual(datasets[1].id, "dataset2")
+        self.assertEqual(datasets[1].id, "dataset2,2024-q1,2")
+        self.assertEqual(datasets[1].dataset_id, "dataset2")
         self.assertEqual(datasets[1].edition, "2024-q1")
 
     @responses.activate
@@ -344,15 +348,16 @@ class TestONSDataset(TestCase):
 
         responses.add(
             responses.GET,
-            settings.DATASETS_API_BASE_URL + "/dataset1",
+            settings.DATASETS_API_BASE_URL + "/dataset1,2024,2",
             json=old_format_response,
         )
 
-        dataset = ONSDataset.objects.get(pk="dataset1")  # pylint: disable=no-member
+        dataset = ONSDataset.objects.get(pk="dataset1,2024,2")  # pylint: disable=no-member
 
-        self.assertEqual(dataset.id, "dataset1")
-        self.assertEqual(dataset.title, "Dataset 1")
-        self.assertEqual(dataset.version, "1")
-        self.assertIsNotNone(dataset.next)
-        self.assertEqual(dataset.next.title, "Dataset 1 Unpublished")
-        self.assertEqual(dataset.next.version, "2")
+        # The _process_detail_response method takes the "next" version as the main dataset data
+        self.assertEqual(dataset.id, "dataset1,2024,2")
+        self.assertEqual(dataset.dataset_id, "dataset1")
+        self.assertEqual(dataset.title, "Dataset 1 Unpublished")
+        self.assertEqual(dataset.description, "Description 1 Unpublished")
+        self.assertEqual(dataset.edition, "2024")
+        self.assertEqual(dataset.version, "2")

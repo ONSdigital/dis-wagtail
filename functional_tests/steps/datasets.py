@@ -6,15 +6,8 @@ from playwright.sync_api import expect
 from cms.settings.base import ONS_ALLOWED_LINK_DOMAINS
 from functional_tests.step_helpers.datasets import mock_datasets_responses
 
-
-@given("the user is in an internal environment")
-def user_in_internal_environment(context: Context) -> None:
-    context.is_internal_environment = True
-
-
-@when("looks up and selects a dataset")
-def look_up_and_select_published_dataset(context: Context) -> None:
-    mock_dataset = {
+MOCK_DATASETS = (
+    {
         "dataset_id": "example1",
         "description": "Example dataset for functional testing",
         "title": "Looked Up Dataset",
@@ -25,8 +18,32 @@ def look_up_and_select_published_dataset(context: Context) -> None:
             "id": "1",
         },
         "release_date": "2025-01-01T00:00:00.000Z",
-        "state": "associated",
-    }
+        "state": "published",
+    },
+    {
+        "dataset_id": "example1",
+        "description": "Example dataset for functional testing unpublished",
+        "title": "Unpublished Looked Up Dataset",
+        "edition": "example-dataset-1",
+        "edition_title": "Example Dataset 1",
+        "latest_version": {
+            "href": "/datasets/example1/editions/example-dataset-1/versions/1",
+            "id": "1",
+        },
+        "release_date": "2025-01-01T00:00:00.000Z",
+        "state": "unpublished",
+    },
+)
+
+
+@given("the user is in an internal environment")
+def user_in_internal_environment(context: Context) -> None:
+    context.is_internal_environment = True
+
+
+@when("looks up and selects a dataset")
+def look_up_and_select_published_dataset(context: Context) -> None:
+    mock_dataset, unpublished_mock_dataset = MOCK_DATASETS
     dataset_displayed_fields = {
         "title": mock_dataset["title"],
         "description": mock_dataset["description"],
@@ -42,7 +59,7 @@ def look_up_and_select_published_dataset(context: Context) -> None:
 
     # Mock dataset API responses
     is_internal_environment = getattr(context, "is_internal_environment", False)
-    with mock_datasets_responses([mock_dataset], with_unpublished=is_internal_environment):
+    with mock_datasets_responses([mock_dataset, unpublished_mock_dataset], use_old_schema=is_internal_environment):
         context.page.locator(get_datasets_panel_locator(editor_tab)).get_by_role(
             "button", name="Insert a block"
         ).first.click()
@@ -50,6 +67,38 @@ def look_up_and_select_published_dataset(context: Context) -> None:
         context.page.get_by_role("button", name="Choose a dataset").click()
         context.page.get_by_role("link", name=mock_dataset["title"]).click()
         context.page.wait_for_timeout(500)
+
+
+@when("the user opens the dataset chooser")
+def open_dataset_chooser(context: Context) -> None:
+    mock_dataset, unpublished_mock_dataset = MOCK_DATASETS
+
+    editor_tab = getattr(context, "editor_tab", "content")
+
+    with mock_datasets_responses([mock_dataset, unpublished_mock_dataset]):
+        context.page.locator(get_datasets_panel_locator(editor_tab)).get_by_role(
+            "button", name="Insert a block"
+        ).first.click()
+        context.page.get_by_text("Lookup Dataset").click()
+        context.page.get_by_role("button", name="Choose a dataset").click()
+        context.page.wait_for_timeout(500)  # Wait for modal to open and the events to settle
+
+
+@when("the user opens the dataset chooser and sets the filter to published datasets")
+def set_filter_to_published_datasets(context: Context) -> None:
+    mock_dataset, unpublished_mock_dataset = MOCK_DATASETS
+
+    editor_tab = getattr(context, "editor_tab", "content")
+
+    with mock_datasets_responses([mock_dataset, unpublished_mock_dataset]):
+        context.page.locator(get_datasets_panel_locator(editor_tab)).get_by_role(
+            "button", name="Insert a block"
+        ).first.click()
+        context.page.get_by_text("Lookup Dataset").click()
+        context.page.get_by_role("button", name="Choose a dataset").click()
+        context.page.wait_for_timeout(500)  # Wait for modal to open and the events to settle
+        context.page.get_by_label("Published status").select_option("true")
+        context.page.wait_for_timeout(500)  # Wait for filter to apply
 
 
 @when("manually enters a dataset link")
@@ -121,7 +170,7 @@ def the_user_selects_multiple_datasets(context: Context) -> None:
 
     # Mock dataset API responses
     with mock_datasets_responses(
-        [mock_dataset_a, mock_dataset_b, mock_dataset_c], with_unpublished=is_internal_environment
+        [mock_dataset_a, mock_dataset_b, mock_dataset_c], use_old_schema=is_internal_environment
     ):
         context.page.get_by_role("button", name="Add dataset").click()
         context.page.wait_for_timeout(500)  # Wait for modal to open and the events to settle
@@ -143,3 +192,15 @@ def check_selected_datasets_are_displayed(context: Context) -> None:
     for dataset in context.selected_datasets:
         expect(context.page.get_by_role("link", name=dataset["title"])).to_be_visible()
         expect(context.page.get_by_text(dataset["description"])).to_be_visible()
+
+
+@then("unpublished datasets are shown by default in the dataset chooser")
+def check_unpublished_datasets_shown_by_default(context: Context) -> None:
+    expect(context.page.get_by_role("link", name="Unpublished Looked Up Dataset")).to_be_visible()
+    expect(context.page.get_by_role("link", name="Looked Up Dataset", exact=True)).not_to_be_visible()
+
+
+@then("only published datasets are shown in the dataset chooser")
+def check_only_published_datasets_shown(context: Context) -> None:
+    expect(context.page.get_by_role("link", name="Looked Up Dataset", exact=True)).to_be_visible()
+    expect(context.page.get_by_role("link", name="Unpublished Looked Up Dataset")).not_to_be_visible()

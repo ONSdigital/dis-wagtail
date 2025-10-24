@@ -135,6 +135,20 @@ Feature: Statistical Article Page components
         And the user clicks "View data used in this article" on the article page
         Then the related data page for the article is shown
 
+    Scenario: When selecting related data for a statistical article the user sees unpublished datasets as default
+        When the user goes to add a new statistical article page
+        And the user adds basic statistical article page content
+        And the user navigates to the related data editor tab
+        And the user opens the dataset chooser
+        Then unpublished datasets are shown by default in the dataset chooser
+
+    Scenario: The dataset chooser shows published datasets when filter is set to published only
+        When the user goes to add a new statistical article page
+        And the user adds basic statistical article page content
+        And the user navigates to the related data editor tab
+        And the user opens the dataset chooser and sets the filter to published datasets
+        Then only published datasets are shown in the dataset chooser
+
     Scenario: A CMS user can see a featured chart field on a Statistical Article Page
         When the user goes to add a new statistical article page
         And the user switches to the Promote tab

@@ -62,10 +62,10 @@ class DatasetSearchFilterForm(BaseFilterForm):
     published = forms.ChoiceField(
         label="Published status",
         choices=[
-            ("true", "Published"),
             ("false", "Unpublished"),
+            ("true", "Published"),
         ],
-        initial="true",
+        initial="false",
         required=False,
     )
 
@@ -105,7 +105,7 @@ class ONSDatasetBaseChooseView(BaseChooseView):
 
         # Get the published filter value from GET params or form
         # Default to "true" (published) unless explicitly requesting unpublished or for bundles
-        published = "false" if for_bundle else self.request.GET.get("published", "true")
+        published = "false" if for_bundle else self.request.GET.get("published", "false")
 
         # Log audit event when accessing unpublished datasets
         if published == "false":

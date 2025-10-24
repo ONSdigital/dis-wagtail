@@ -1,3 +1,4 @@
+import re
 from collections.abc import Generator, Mapping
 from contextlib import contextmanager
 from typing import Any
@@ -8,9 +9,17 @@ from django.conf import settings
 from cms.datasets.tests.utils import convert_dataset_to_old_format
 
 
+def _prepare_datasets_response(datasets: list[Mapping[str, Any]]) -> dict[str, Any]:
+    """Prepare the datasets API response format."""
+    return {
+        "items": datasets,
+        "total_count": len(datasets),
+    }
+
+
 @contextmanager
 def mock_datasets_responses(
-    datasets: list[Mapping[str, Any]], with_unpublished: bool = False
+    datasets: list[Mapping[str, Any]], use_old_schema: bool = False
 ) -> Generator[responses.RequestsMock]:
     """Mock the response from the dataset API, using responses.
 
@@ -36,30 +45,41 @@ def mock_datasets_responses(
     """
     with responses.RequestsMock(assert_all_requests_are_fired=False) as mock_responses:
         # Mock the list endpoint - need to match with any query parameters
+        unpublished_datasets = [d for d in datasets if d["state"] != "published"]
+        published_datasets = [d for d in datasets if d["state"] == "published"]
+
+        unpublished_datasets_response = _prepare_datasets_response(unpublished_datasets)
+        published_datasets_response = _prepare_datasets_response(published_datasets)
+
+        escaped_editions_url = re.escape(settings.DATASETS_API_EDITIONS_URL)
+
+        # Mock any query string containing published parameter using regex
         mock_responses.get(
-            settings.DATASETS_API_EDITIONS_URL,
-            json={
-                "items": datasets,
-                "total_count": len(datasets),
-            },
-            match_querystring=False,
+            re.compile(rf"{escaped_editions_url}\?.*published=false.*"),
+            json=unpublished_datasets_response,
         )
-        # Mock individual dataset detail endpoints
+
+        mock_responses.get(
+            re.compile(rf"{escaped_editions_url}\?.*published=true.*"),
+            json=published_datasets_response,
+        )
+
+        # Mock individual dataset detail endpointsgit
         for dataset in datasets:
-            if with_unpublished:
-                # This version uses the old format for detail responses with "current" and "next"
+            if use_old_schema:
+                # This version uses the old format for detail responses with "current" and "next".
+                # Find matching unpublished dataset if exists, otherwise use current dataset.
+                unpublished_version = next(
+                    (
+                        unpublished_dataset
+                        for unpublished_dataset in unpublished_datasets
+                        if unpublished_dataset["dataset_id"] == dataset["dataset_id"]
+                    ),
+                    dataset,
+                )
                 dataset_entry = {
                     "current": convert_dataset_to_old_format(dataset),
-                    "next": convert_dataset_to_old_format(
-                        {
-                            **dataset,
-                            "title": dataset["title"] + " unpublished",
-                            "latest_version": {
-                                "href": dataset["latest_version"]["href"],
-                                "id": str(int(dataset["latest_version"]["id"]) + 1),
-                            },
-                        }
-                    ),
+                    "next": convert_dataset_to_old_format(unpublished_version),
                 }
             else:
                 dataset_entry = dataset
