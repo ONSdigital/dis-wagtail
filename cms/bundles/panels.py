@@ -9,11 +9,22 @@ from wagtail.admin.panels import FieldPanel, HelpPanel, MultipleChooserPanel
 from cms.bundles.permissions import user_can_manage_bundles
 from cms.bundles.utils import get_page_title_with_workflow_status
 from cms.bundles.viewsets.bundle_page_chooser import PagesWithDraftsForBundleChooserWidget
+from cms.datasets.views import dataset_chooser_viewset
 
 if TYPE_CHECKING:
     from django.db.models import Model
     from django.utils.safestring import SafeString
     from wagtail.models import Page
+
+
+class BundleDatasetChooserWidget(dataset_chooser_viewset.widget_class):  # type: ignore[name-defined]
+    """Custom dataset chooser widget that adds for_bundle=true parameter to the chooser URL."""
+
+    def get_chooser_modal_url(self) -> str:
+        """Override to add for_bundle=true query parameter."""
+        base_url: str = super().get_chooser_modal_url()
+        separator = "&" if "?" in base_url else "?"
+        return f"{base_url}{separator}{urlencode({'for_bundle': 'true'})}"
 
 
 class BundleStatusPanel(HelpPanel):
@@ -94,6 +105,18 @@ class BundleFieldPanel(FieldPanel):
 class BundleMultipleChooserPanel(MultipleChooserPanel):
     """Defines a bundle-specific MultiFieldPanel that is conditionally read-only."""
 
+    def get_form_options(self) -> dict[str, Any]:
+        """Override to inject custom widget for bundled_datasets."""
+        opts: dict[str, Any] = super().get_form_options()
+
+        # If this is the bundled_datasets panel, inject our custom widget
+        if self.relation_name == "bundled_datasets":
+            formset_opts = opts["formsets"][self.relation_name]
+            widgets = formset_opts.setdefault("widgets", {})
+            widgets[self.chooser_field_name] = BundleDatasetChooserWidget()
+
+        return opts
+
     class BoundPanel(MultipleChooserPanel.BoundPanel):
         def __init__(self, **kwargs: Any) -> None:
             super().__init__(**kwargs)
@@ -109,18 +132,6 @@ class BundleMultipleChooserPanel(MultipleChooserPanel):
         @cached_property
         def value_from_instance(self) -> Any:
             return getattr(self.instance, self.panel.relation_name)
-
-        @property
-        def chooser_url(self) -> str:
-            """Override chooser_url to add for_bundle parameter for bundled_datasets."""
-            url: str = super().chooser_url  # pylint: disable=no-member
-
-            # If this is the bundled_datasets panel, add for_bundle=true parameter
-            if self.panel.relation_name == "bundled_datasets":
-                separator = "&" if "?" in url else "?"
-                url = f"{url}{separator}{urlencode({'for_bundle': 'true'})}"
-
-            return url
 
         def get_context_data(self, parent_context: dict[str, Any] | None = None) -> dict[str, Any]:
             context: dict[str, Any] = super().get_context_data(parent_context)

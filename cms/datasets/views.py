@@ -69,6 +69,13 @@ class DatasetSearchFilterForm(BaseFilterForm):
         required=False,
     )
 
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        super().__init__(*args, **kwargs)
+
+        # Hide the published filter when selecting datasets for a bundle
+        if self.data.get("for_bundle") == "true":
+            self.fields["published"].widget = forms.HiddenInput()
+
     def filter(self, objects: Iterable[Any]) -> Iterable[Any]:
         objects = super().filter(objects)
 
@@ -117,16 +124,8 @@ class ONSDatasetBaseChooseView(BaseChooseView):
             queryset = queryset.with_token(access_token)
         return queryset.all()  # type: ignore[no-any-return]
 
-    def get_context_data(self, **kwargs: Any) -> dict[str, Any]:
-        """Add context for hiding the filter UI when for_bundle=true."""
-        context: dict[str, Any] = super().get_context_data(**kwargs)
-
-        # Hide the filter UI if this is for a bundle
-        context["hide_published_filter"] = self.request_is_for_bundle()
-
-        return context
-
     def render_to_response(self) -> None:
+        # This base class should not be used directly
         raise NotImplementedError()
 
 
@@ -225,16 +224,6 @@ class DatasetChooserViewSet(ChooserViewSet):
     choose_results_view_class = DatasetChooseResultsView
     chosen_view_class = DatasetChosenView
     chosen_multiple_view_class = DatasetChosenMultipleView
-
-    @property
-    def choose_template_name(self) -> str:
-        """Override to use custom chooser template."""
-        return "admin/datasets/chooser/chooser.html"
-
-    @property
-    def choose_results_template_name(self) -> str:
-        """Override to use custom results template."""
-        return "admin/datasets/chooser/results.html"
 
 
 dataset_chooser_viewset = DatasetChooserViewSet("dataset_chooser")
