@@ -147,7 +147,7 @@ class DatasetChosenView(ChosenViewMixin, ChosenResponseMixin, View):
         # and self.model_class is Dataset, so we get or create the Dataset from ONSDatasets here
         # create the dataset object from the API response
 
-        # The provided PK is actually a combination of dataset_id/edition/version
+        # The provided PK is actually a combination of dataset_id, edition and version
         dataset_id, edition, version = deconstruct_dataset_compound_id(str(pk))
 
         # Get the auth token from the request
@@ -177,7 +177,7 @@ class DatasetChosenMultipleViewMixin(ChosenMultipleViewMixin):
         if not pks:
             return Dataset.objects.none()
 
-        api_data_for_datasets: list[ONSDataset] = []
+        api_data_for_datasets: list[dict] = []
 
         # List of tuples (namespace, edition, version) for querying existing datasets
         lookup_criteria: list[tuple[str, str, str]] = []
@@ -187,7 +187,7 @@ class DatasetChosenMultipleViewMixin(ChosenMultipleViewMixin):
 
         # TODO: update when we can fetch items in bulk from the dataset API or use the cached listing view?
         for pk in pks:
-            # The provided PK is actually a combination of dataset_id/edition/version
+            # The provided PK is actually a combination of dataset_id, edition and version
             dataset_id, edition, version = deconstruct_dataset_compound_id(str(pk))
 
             queryset = ONSDataset.objects  # pylint: disable=no-member
@@ -195,7 +195,15 @@ class DatasetChosenMultipleViewMixin(ChosenMultipleViewMixin):
                 queryset = queryset.with_token(access_token)
             item_from_api = queryset.get(pk=dataset_id)
 
-            api_data_for_datasets.append(item_from_api)
+            api_data_for_datasets.append(
+                {
+                    "id": dataset_id,
+                    "title": item_from_api.title,
+                    "description": item_from_api.description,
+                    "edition": edition,
+                    "version": version,
+                }
+            )
             lookup_criteria.append((dataset_id, edition, version))
 
         existing_query = Q()
@@ -208,15 +216,15 @@ class DatasetChosenMultipleViewMixin(ChosenMultipleViewMixin):
 
         datasets_to_create_instances: list[Dataset] = []
         for data in api_data_for_datasets:
-            data_version = int(data.version)
-            if (data.id, data.edition, data_version) not in existing_datasets_map:
+            data_version = int(data["version"])
+            if (data["id"], data["edition"], data_version) not in existing_datasets_map:
                 datasets_to_create_instances.append(
                     Dataset(
-                        namespace=data.id,
-                        edition=data.edition,
+                        namespace=data["id"],
+                        edition=data["edition"],
                         version=data_version,
-                        title=data.title,
-                        description=data.description,
+                        title=data["title"],
+                        description=data["description"],
                     )
                 )
 
