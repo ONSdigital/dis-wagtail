@@ -9,7 +9,7 @@ from django.db import models
 from django.db.models import UniqueConstraint
 from queryish.rest import APIModel, APIQuerySet
 
-from cms.datasets.utils import construct_dataset_compound_id, convert_old_dataset_format
+from cms.datasets.utils import construct_dataset_compound_id, convert_old_dataset_format, get_published_from_state
 
 logger = logging.getLogger(__name__)
 
@@ -96,10 +96,12 @@ class ONSDatasetApiQuerySet(APIQuerySet):
     def _process_detail_response(self, response: dict) -> dict:
         # For detail responses, we may need to adjust the structure.
         # This only applies to the detail URL which currently uses the old format.
-        if response.get("next"):
-            # If it's a versioned dataset response using the old format, convert to new format.
-            # We take the "next" version as the main dataset data, as it is guaranteed to exist.
-            dataset_data = convert_old_dataset_format(response["next"])
+        if response.get("current"):
+            # If it's a versioned dataset response using the old format, convert to new format
+            dataset_data = convert_old_dataset_format(response["current"])
+            # Store the next version info if available (this becomes our unpublished version)
+            next_entry = response.get("next")
+            dataset_data["next"] = convert_old_dataset_format(next_entry) if next_entry else {}
             return dataset_data
         return response
 
@@ -112,7 +114,7 @@ class ONSDataset(APIModel):
     class Meta:
         base_url: str = settings.DATASETS_API_EDITIONS_URL
         detail_url: str = f"{settings.DATASETS_API_BASE_URL}/%s"
-        fields: ClassVar = ["id", "dataset_id", "description", "title", "version", "edition"]
+        fields: ClassVar = ["id", "dataset_id", "description", "title", "version", "edition", "next"]
         pagination_style = "offset-limit"
         verbose_name_plural = "ONS Datasets"
 
@@ -123,18 +125,27 @@ class ONSDataset(APIModel):
         title = data.get("title") or "Title not provided"
         description = data.get("description") or "Description not provided"
         edition = data.get("edition", "")
+        next_version = data.get("next", {})
+        published = get_published_from_state(data.get("state", "unknown"))
 
         # Extract version from latest_version object
         latest_version = data.get("latest_version", {})
         version_id = latest_version.get("id", "1") if isinstance(latest_version, dict) else "1"
 
         return cls(
-            id=construct_dataset_compound_id(dataset_id=dataset_id, edition=edition, version_id=version_id),
+            # We construct the compound ID here. Note that we append the published state only as a
+            # workaround so that the published state can be determined from the id alone.
+            # This is necessary because we need to know which version to extract when using
+            # the detail endpoint which returns "current" and "next" versions.
+            id=construct_dataset_compound_id(
+                dataset_id=dataset_id, edition=edition, version_id=version_id, published=published
+            ),
             dataset_id=dataset_id,
             title=title,
             description=description,
             version=version_id,
             edition=edition,
+            next=next_version,
         )
 
     @property

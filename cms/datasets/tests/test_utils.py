@@ -9,6 +9,8 @@ from cms.datasets.utils import (
     deconstruct_dataset_compound_id,
     extract_edition_from_dataset_url,
     format_datasets_as_document_list,
+    get_dataset_for_published_state,
+    get_published_from_state,
 )
 
 
@@ -97,19 +99,47 @@ class TestUtils(TestCase):
         edition = "september"
         version_id = "9"
 
-        compound_tuple = (dataset_id, edition, version_id)
-        self.assertEqual(
-            compound_tuple,
-            deconstruct_dataset_compound_id(
-                construct_dataset_compound_id(
-                    dataset_id=dataset_id,
-                    edition=edition,
-                    version_id=version_id,
+        for published in [True, False]:
+            with self.subTest(published=published):
+                compound_tuple = (dataset_id, edition, version_id, published)
+                self.assertEqual(
+                    compound_tuple,
+                    deconstruct_dataset_compound_id(
+                        construct_dataset_compound_id(
+                            dataset_id=dataset_id,
+                            edition=edition,
+                            version_id=version_id,
+                            published=published,
+                        )
+                    ),
                 )
-            ),
-        )
 
     def test_deconstruct_compound_id_invalid(self):
         invalid_compound_id = "invalidcompoundidformat"
         with self.assertRaises(ValueError):
             deconstruct_dataset_compound_id(invalid_compound_id)
+
+    def test_get_published_from_state(self):
+        self.assertTrue(get_published_from_state("published"))
+        self.assertTrue(get_published_from_state("PUBLISHED"))
+
+        self.assertFalse(get_published_from_state("draft"))
+        self.assertFalse(get_published_from_state("associated"))
+
+    def test_get_dataset_for_published_state(self):
+        dataset = {"id": "dataset1", "title": "Test Dataset", "next": {"id": "dataset1-next", "title": "Next Dataset"}}
+
+        published_dataset = get_dataset_for_published_state(dataset, True)
+        self.assertEqual(published_dataset, dataset)
+
+        unpublished_dataset = get_dataset_for_published_state(dataset, False)
+        self.assertEqual(unpublished_dataset, dataset["next"])
+
+        # Test when there is no 'next' dataset
+        dataset = {"id": "dataset1", "title": "Test Dataset"}
+
+        published_dataset = get_dataset_for_published_state(dataset, True)
+        self.assertEqual(published_dataset, dataset)
+        unpublished_dataset = get_dataset_for_published_state(dataset, False)
+        # Since there's no 'next', it should return the original dataset
+        self.assertEqual(unpublished_dataset, dataset)

@@ -22,7 +22,7 @@ from wagtail.admin.viewsets.chooser import ChooserViewSet
 
 from cms.datasets.models import Dataset, ONSDataset
 from cms.datasets.permissions import user_can_access_unpublished_datasets
-from cms.datasets.utils import deconstruct_dataset_compound_id
+from cms.datasets.utils import deconstruct_dataset_compound_id, get_dataset_for_published_state
 
 if TYPE_CHECKING:
     from django.http import HttpRequest, HttpResponse
@@ -142,30 +142,35 @@ class DatasetChooseResultsView(DatasetChooserPermissionMixin, DatasetBaseChooseV
 
 
 class DatasetChosenView(ChosenViewMixin, ChosenResponseMixin, View):
+    def retrieve_dataset(self, dataset_id: str, published: bool, access_token: str | None) -> dict[str, Any]:
+        # We fetch the dataset from the API to get the title and description
+        queryset = ONSDataset.objects  # pylint: disable=no-member
+        if access_token:
+            queryset = queryset.with_token(access_token)
+        item_from_api = queryset.get(pk=dataset_id)
+
+        return get_dataset_for_published_state(item_from_api, published)
+
     def get_object(self, pk: Any) -> Dataset:
         # get_object is called before get_chosen_response_data
         # and self.model_class is Dataset, so we get or create the Dataset from ONSDatasets here
         # create the dataset object from the API response
 
         # The provided PK is actually a combination of dataset_id, edition and version
-        dataset_id, edition, version = deconstruct_dataset_compound_id(str(pk))
+        dataset_id, edition, version, published = deconstruct_dataset_compound_id(str(pk))
 
         # Get the auth token from the request
         access_token = self.request.COOKIES.get(settings.ACCESS_TOKEN_COOKIE_NAME)
 
-        # We fetch the dataset from the API to get the title and description
-        queryset = ONSDataset.objects  # pylint: disable=no-member
-        if access_token:
-            queryset = queryset.with_token(access_token)
-        item = queryset.get(pk=dataset_id)
+        item_from_api = self.retrieve_dataset(dataset_id, published, access_token)
 
         dataset, _ = Dataset.objects.get_or_create(
             namespace=dataset_id,
             edition=edition,
             version=version,
             defaults={
-                "title": item.title,
-                "description": item.description,
+                "title": item_from_api.title,  # type: ignore[attr-defined]
+                "description": item_from_api.description,  # type: ignore[attr-defined]
             },
         )
         return dataset
@@ -173,7 +178,6 @@ class DatasetChosenView(ChosenViewMixin, ChosenResponseMixin, View):
 
 class DatasetChosenMultipleViewMixin(ChosenMultipleViewMixin):
     def get_objects(self, pks: list[Any]) -> QuerySet[Dataset]:  # pylint: disable=too-many-locals
-        # TODO: Potentially split this function into smaller parts to avoid too-many-locals warning
         if not pks:
             return Dataset.objects.none()
 
@@ -188,12 +192,9 @@ class DatasetChosenMultipleViewMixin(ChosenMultipleViewMixin):
         # TODO: update when we can fetch items in bulk from the dataset API or use the cached listing view?
         for pk in pks:
             # The provided PK is actually a combination of dataset_id, edition and version
-            dataset_id, edition, version = deconstruct_dataset_compound_id(str(pk))
+            dataset_id, edition, version, published = deconstruct_dataset_compound_id(str(pk))
 
-            queryset = ONSDataset.objects  # pylint: disable=no-member
-            if access_token:
-                queryset = queryset.with_token(access_token)
-            item_from_api = queryset.get(pk=dataset_id)
+            item_from_api = self.retrieve_dataset(dataset_id, published, access_token)
 
             api_data_for_datasets.append(
                 {

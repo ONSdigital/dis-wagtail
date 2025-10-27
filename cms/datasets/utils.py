@@ -7,7 +7,7 @@ from cms.core.formatting_utils import format_as_document_list_item
 
 EDITIONS_PATTERN = re.compile(r"/editions/([^/]+)/")
 
-COMPOUND_ID_PARTS_COUNT = 3
+COMPOUND_ID_PARTS_COUNT = 4
 
 
 def format_datasets_as_document_list(datasets: StreamValue) -> list[dict[str, Any]]:
@@ -99,14 +99,27 @@ def convert_old_dataset_format(data: dict[str, Any]) -> dict[str, Any]:
     }
 
 
-def construct_dataset_compound_id(*, dataset_id: str, edition: str, version_id: str) -> str:
-    """Construct a compound ID for the dataset based on dataset_id, edition, and version_id."""
-    return f"{dataset_id},{edition},{version_id}"
+def construct_dataset_compound_id(*, dataset_id: str, edition: str, version_id: str, published: bool) -> str:
+    """Construct a compound ID for the dataset based on dataset_id, edition, version_id and published.
+
+    Note that `published` is added to the compound ID to uniquely identify published vs unpublished
+    versions, but it is not part of the unique constraints on the Dataset model.
+    """
+    return f"{dataset_id},{edition},{version_id},{str(published).lower()}"
 
 
-def deconstruct_dataset_compound_id(compound_id: str) -> tuple[str, str, str]:
-    """Deconstruct a compound ID into its components: dataset_id, edition, and version_id."""
+def deconstruct_dataset_compound_id(compound_id: str) -> tuple[str, str, str, bool]:
+    """Deconstruct a compound ID into its components: dataset_id, edition, version_id and published."""
     parts = compound_id.split(",")
     if len(parts) != COMPOUND_ID_PARTS_COUNT:
         raise ValueError(f"Invalid compound ID format: {compound_id}")
-    return parts[0], parts[1], parts[2]
+    return parts[0], parts[1], parts[2], parts[3] == "true"
+
+
+def get_published_from_state(state: str) -> bool:
+    """Determine if the dataset is published based on its state."""
+    return state.lower() == "published"
+
+
+def get_dataset_for_published_state(dataset: dict[str, Any], published: bool) -> dict[str, Any]:
+    return dataset if published else dataset.get("next", dataset)
