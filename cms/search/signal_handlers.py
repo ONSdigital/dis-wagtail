@@ -1,4 +1,6 @@
+import logging
 from functools import cache
+from typing import Any, cast
 
 from django.conf import settings
 from django.db.models.signals import post_delete
@@ -6,7 +8,9 @@ from django.dispatch import receiver
 from wagtail.models import Page
 from wagtail.signals import page_published, page_unpublished, post_page_move
 
-from .publishers import KafkaPublisher, LogPublisher
+from cms.search.publishers import KafkaPublisher, LogPublisher
+
+logger = logging.getLogger(__name__)
 
 
 @cache
@@ -19,7 +23,7 @@ def get_publisher() -> KafkaPublisher | LogPublisher:
 
 
 @receiver(page_published)
-def on_page_published(sender: "type[Page]", instance: "Page", **kwargs: dict) -> None:  # pylint: disable=unused-argument
+def on_page_published(sender: "type[Page]", instance: "Page", **kwargs: Any) -> None:  # pylint: disable=unused-argument
     """Called whenever a Wagtail Page is published (UI or code).
     instance is the published Page object.
     """
@@ -28,7 +32,7 @@ def on_page_published(sender: "type[Page]", instance: "Page", **kwargs: dict) ->
 
 
 @receiver(page_unpublished)
-def on_page_unpublished(sender: "type[Page]", instance: "Page", **kwargs: dict) -> None:  # pylint: disable=unused-argument
+def on_page_unpublished(sender: "type[Page]", instance: "Page", **kwargs: Any) -> None:  # pylint: disable=unused-argument
     """Called whenever a Wagtail Page is unpublished (UI or code).
     instance is the unpublished Page object.
     """
@@ -40,7 +44,7 @@ def on_page_unpublished(sender: "type[Page]", instance: "Page", **kwargs: dict) 
 
 
 @receiver(post_delete, sender=Page)
-def on_page_deleted(sender: "type[Page]", instance: "Page", **kwargs: dict) -> None:  # pylint: disable=unused-argument
+def on_page_deleted(sender: "type[Page]", instance: "Page", **kwargs: Any) -> None:  # pylint: disable=unused-argument
     """Catches all subclass deletions of Wagtail's Page model.
     Only fires if the page is published and not in SEARCH_INDEX_EXCLUDED_PAGE_TYPES.
     """
@@ -54,12 +58,13 @@ def on_page_deleted(sender: "type[Page]", instance: "Page", **kwargs: dict) -> N
 
 
 @receiver(post_page_move)
-def on_page_moved(sender: "type[Page]", instance: "Page", **kwargs: dict) -> None:  # pylint: disable=unused-argument
-    """Called whenever a Wagtail Page is moved in the tree (UI or code).
-    instance is the moved Page object.
+def on_page_moved(sender: "type[Page]", instance: "Page", **kwargs: Any) -> None:  # pylint: disable=unused-argument
+    """Called after a Wagtail Page is moved in the tree.
+    "instance" is the moved Page object.
     We use the publish_created_or_updated method to update search for the moved page and any of its non-excluded
     descendants, which will also be affected by the move.
     """
+    print(__name__)
     if kwargs["url_path_before"] == kwargs["url_path_after"]:
         # No change in URL path, no need to update search index of the instance or descendants
         return
@@ -67,6 +72,53 @@ def on_page_moved(sender: "type[Page]", instance: "Page", **kwargs: dict) -> Non
         # Pages with view restrictions should not be exposed in search
         # this is inherited by descendants, so nothing more to do
         return
-    for moved_page in instance.get_descendants(inclusive=True):  # inclusive=True includes instance itself
-        if moved_page.live and moved_page.specific_class.__name__ not in settings.SEARCH_INDEX_EXCLUDED_PAGE_TYPES:
-            get_publisher().publish_created_or_updated(moved_page.specific_deferred)
+    old_url_path = cast(str, kwargs["url_path_before"])
+    new_url_path = cast(str, kwargs["url_path_after"])
+    if instance.live and instance.specific_class.__name__ not in settings.SEARCH_INDEX_EXCLUDED_PAGE_TYPES:
+        try:
+            get_publisher().publish_created_or_updated(instance.specific_deferred, old_url_path=old_url_path)
+        except Exception:  # pylint: disable=broad-except
+            logger.exception(
+                "Error publishing moved page updated to search",
+                extra={"page_id": instance.id, "old_url_path": old_url_path, "new_url_path": new_url_path},
+            )
+
+    for moved_descendant in instance.get_descendants().filter():
+        if (
+            moved_descendant.specific_class.__name__ not in settings.SEARCH_INDEX_EXCLUDED_PAGE_TYPES
+            and not moved_descendant.get_view_restrictions().exists()
+        ):
+            old_descendant_path = build_old_descendant_path(
+                instance, moved_descendant, parent_path_before=old_url_path, parent_path_after=new_url_path
+            )
+
+            try:
+                get_publisher().publish_created_or_updated(
+                    moved_descendant.specific_deferred, old_url_path=old_descendant_path
+                )
+            except Exception:  # pylint: disable=broad-except
+                logger.exception(
+                    "Error publishing moved descendant page updated to search",
+                    extra={"page_id": moved_descendant.id, "old_url_path": old_url_path, "new_url_path": new_url_path},
+                )
+
+
+def build_old_descendant_path(
+    parent_page: "Page", descendant_page: "Page", parent_path_before: str, parent_path_after: str
+) -> str | None:
+    """Build the old URL path for a moved descendant page."""
+    if descendant_page.url_path.startswith(parent_path_after):
+        # We expect the old URL path to be derivable from the new URL path of the parent and the descendant
+        # Strip the url_path_after prefix from the descendant's url_path and prepend the url_path_before
+        return f"{parent_path_before}{descendant_page.url_path[len(parent_path_after) :]}"
+    logger.error(
+        "Found mismatching descendant page url_path while handling page move, cannot build old URL "
+        "path to remove from search index.",
+        extra={
+            "parent_url_path": parent_path_after,
+            "descendant_url_path": descendant_page.url_path,
+            "parent_page": parent_page.id,
+            "descendant_page": descendant_page.id,
+        },
+    )
+    return None
