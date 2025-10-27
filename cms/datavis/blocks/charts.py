@@ -744,13 +744,16 @@ class IframeBlock(BaseVisualisationBlock):
                 f"The URL hostname is not in the list of allowed domains: {allowed_domains}"
             )
         else:
-            url_path = parsed_url.path
+            url_path = parsed_url.path.rstrip("/")
+            allowed_prefixes = [prefix.rstrip("/") for prefix in settings.IFRAME_VISUALISATION_PATH_PREFIXES]
+
             if not any(
-                url_path.startswith(prefix.rstrip("/") + "/") for prefix in settings.IFRAME_VISUALISATION_PATH_PREFIXES
+                url_path.startswith(prefix + "/") and len(url_path) > len(prefix) + 1 for prefix in allowed_prefixes
             ):
-                allowed_prefixes = " or ".join(settings.IFRAME_VISUALISATION_PATH_PREFIXES)
+                readable_prefixes = " or ".join(settings.IFRAME_VISUALISATION_PATH_PREFIXES)
                 errors["iframe_source_url"] = ValidationError(
-                    f"The URL path is not allowed. It must start with: {allowed_prefixes}"
+                    f"The URL path is not allowed. It must start with one of: {readable_prefixes}, "
+                    "and include a subpath after the prefix."
                 )
 
         if errors:
