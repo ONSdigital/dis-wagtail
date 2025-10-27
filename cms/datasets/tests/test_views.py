@@ -122,7 +122,8 @@ class TestDatasetRetrievalMixin(TestCase):
 
         # Create a test view instance with the mixin
         class TestView(DatasetRetrievalMixin):
-            pass
+            def __init__(self):
+                self.request = None
 
         self.view = TestView()
 

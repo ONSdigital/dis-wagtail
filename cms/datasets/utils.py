@@ -1,9 +1,12 @@
 import re
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from wagtail.blocks import StreamValue
 
 from cms.core.formatting_utils import format_as_document_list_item
+
+if TYPE_CHECKING:
+    from cms.datasets.models import ONSDataset
 
 EDITIONS_PATTERN = re.compile(r"/editions/([^/]+)/")
 
@@ -121,5 +124,5 @@ def get_published_from_state(state: str) -> bool:
     return state.lower() == "published"
 
 
-def get_dataset_for_published_state(dataset: dict[str, Any], published: bool) -> dict[str, Any]:
-    return dataset if published else dataset.get("next", dataset)
+def get_dataset_for_published_state(dataset: "ONSDataset", published: bool) -> "ONSDataset":
+    return dataset if published else dataset.next or dataset

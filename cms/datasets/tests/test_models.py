@@ -424,8 +424,41 @@ class TestONSDataset(TestCase):
         self.assertEqual(dataset.edition, "2024")
         self.assertEqual(dataset.version, "1")
 
-        self.assertEqual(dataset.next["title"], "Dataset 1 Unpublished")
-        self.assertEqual(dataset.next["description"], "Description 1 Unpublished")
-        self.assertEqual(dataset.next["edition"], "2024")
-        self.assertEqual(dataset.next["version"], "2")
-        self.assertEqual(dataset.next["state"], "unpublished")
+        self.assertEqual(dataset.next.title, "Dataset 1 Unpublished")
+        self.assertEqual(dataset.next.description, "Description 1 Unpublished")
+        self.assertEqual(dataset.next.edition, "2024")
+        self.assertEqual(dataset.next.version, "2")
+
+    @responses.activate
+    def test_response_with_only_next_version(self):
+        """Test that the queryset can handle response with only 'next' version (no published version)."""
+        only_next_response = {
+            "next": {
+                "id": "dataset2",
+                "title": "Dataset 2 Unpublished",
+                "description": "Description 2 Unpublished",
+                "links": {
+                    "latest_version": {
+                        "href": "/datasets/dataset2/editions/2025/versions/1",
+                        "id": "1",
+                    },
+                },
+                "state": "unpublished",
+            },
+        }
+
+        responses.add(
+            responses.GET,
+            settings.DATASETS_API_BASE_URL + "/dataset2,2025,1,false",
+            json=only_next_response,
+        )
+
+        dataset = ONSDataset.objects.get(pk="dataset2,2025,1,false")  # pylint: disable=no-member
+
+        # When there's no published version, the main dataset fields should have placeholder values
+        self.assertEqual(dataset.title, "No published version")
+        self.assertEqual(dataset.description, "Description not provided")
+
+        # The unpublished version should be in the 'next' field
+        self.assertEqual(dataset.next.title, "Dataset 2 Unpublished")
+        self.assertEqual(dataset.next.description, "Description 2 Unpublished")

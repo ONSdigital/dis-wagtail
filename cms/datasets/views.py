@@ -46,8 +46,8 @@ class DatasetChooserPermissionMixin:
 class DatasetRetrievalMixin:
     """Mixin to retrieve dataset details from the API."""
 
-    def retrieve_dataset(self, dataset_id: str, published: bool, access_token: str | None) -> dict[str, Any]:
-        if not published and not user_can_access_unpublished_datasets(self.request.user):
+    def retrieve_dataset(self, dataset_id: str, published: bool, access_token: str | None) -> ONSDataset:
+        if not published and not user_can_access_unpublished_datasets(self.request.user):  # type: ignore[attr-defined]
             raise PermissionDenied
         # We fetch the dataset from the API to get the title and description
         queryset = ONSDataset.objects  # pylint: disable=no-member
@@ -175,8 +175,8 @@ class DatasetChosenView(ChosenViewMixin, ChosenResponseMixin, DatasetRetrievalMi
             edition=edition,
             version=version,
             defaults={
-                "title": item_from_api.title,  # type: ignore[attr-defined]
-                "description": item_from_api.description,  # type: ignore[attr-defined]
+                "title": item_from_api.title,
+                "description": item_from_api.description,
             },
         )
         return dataset

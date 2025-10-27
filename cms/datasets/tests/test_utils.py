@@ -2,7 +2,7 @@ from django.test import TestCase
 from wagtail.blocks import StreamValue
 
 from cms.datasets.blocks import DatasetStoryBlock
-from cms.datasets.models import Dataset
+from cms.datasets.models import Dataset, ONSDataset
 from cms.datasets.utils import (
     construct_dataset_compound_id,
     convert_old_dataset_format,
@@ -127,16 +127,35 @@ class TestUtils(TestCase):
         self.assertFalse(get_published_from_state("associated"))
 
     def test_get_dataset_for_published_state(self):
-        dataset = {"id": "dataset1", "title": "Test Dataset", "next": {"id": "dataset1-next", "title": "Next Dataset"}}
+        dataset = ONSDataset(
+            id="dataset1",
+            title="Test Dataset",
+            description="A test dataset",
+            edition="2024",
+            version="1",
+            next=ONSDataset(
+                id="dataset1-next",
+                title="Test Dataset Next",
+                description="Next version of test dataset",
+                edition="2025",
+                version="1",
+            ),
+        )
 
         published_dataset = get_dataset_for_published_state(dataset, True)
         self.assertEqual(published_dataset, dataset)
 
         unpublished_dataset = get_dataset_for_published_state(dataset, False)
-        self.assertEqual(unpublished_dataset, dataset["next"])
+        self.assertEqual(unpublished_dataset, dataset.next)  # pylint: disable=no-member
 
         # Test when there is no 'next' dataset
-        dataset = {"id": "dataset1", "title": "Test Dataset"}
+        dataset = ONSDataset(
+            id="dataset1",
+            title="Test Dataset",
+            description="A test dataset",
+            edition="2024",
+            version="1",
+        )
 
         published_dataset = get_dataset_for_published_state(dataset, True)
         self.assertEqual(published_dataset, dataset)

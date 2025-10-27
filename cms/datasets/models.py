@@ -103,6 +103,18 @@ class ONSDatasetApiQuerySet(APIQuerySet):
             next_entry = response.get("next")
             dataset_data["next"] = convert_old_dataset_format(next_entry) if next_entry else {}
             return dataset_data
+        if response.get("next"):
+            # If it's only the next version (unpublished), convert that
+            dataset_data = convert_old_dataset_format(response["next"])
+
+            # Return a minimal structure indicating no published version - this is necessary
+            # if someone constructs a request for an unpublished version directly but indicating
+            # they want the published one.
+            return {
+                "title": "No published version",
+                "description": "",
+                "next": dataset_data,
+            }
         return response
 
 
@@ -127,6 +139,10 @@ class ONSDataset(APIModel):
         edition = data.get("edition", "")
         next_version = data.get("next", {})
         published = get_published_from_state(data.get("state", "unknown"))
+
+        if next_version:
+            # Recursively create ONSDataset for the unpublished version
+            next_version = ONSDataset.from_query_data(next_version)
 
         # Extract version from latest_version object
         latest_version = data.get("latest_version", {})
