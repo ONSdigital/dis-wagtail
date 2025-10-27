@@ -1,6 +1,6 @@
 import logging
 from functools import cache
-from typing import Any, cast
+from typing import Any
 
 from django.conf import settings
 from django.db.models.signals import post_delete
@@ -72,8 +72,8 @@ def on_page_moved(sender: "type[Page]", instance: "Page", **kwargs: Any) -> None
         # Pages with view restrictions should not be exposed in search
         # this is inherited by descendants, so nothing more to do
         return
-    old_url_path = cast(str, kwargs["url_path_before"])
-    new_url_path = cast(str, kwargs["url_path_after"])
+    old_url_path: str = kwargs["url_path_before"]
+    new_url_path: str = kwargs["url_path_after"]
     if instance.live and instance.specific_class.__name__ not in settings.SEARCH_INDEX_EXCLUDED_PAGE_TYPES:
         try:
             get_publisher().publish_created_or_updated(instance.specific_deferred, old_url_path=old_url_path)
