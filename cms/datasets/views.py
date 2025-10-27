@@ -43,6 +43,21 @@ class DatasetChooserPermissionMixin:
         return super().dispatch(request, *args, **kwargs)  # type: ignore[misc,no-any-return]
 
 
+class DatasetRetrievalMixin:
+    """Mixin to retrieve dataset details from the API."""
+
+    def retrieve_dataset(self, dataset_id: str, published: bool, access_token: str | None) -> dict[str, Any]:
+        if not published and not user_can_access_unpublished_datasets(self.request.user):
+            raise PermissionDenied
+        # We fetch the dataset from the API to get the title and description
+        queryset = ONSDataset.objects  # pylint: disable=no-member
+        if access_token:
+            queryset = queryset.with_token(access_token)
+        item_from_api = queryset.get(pk=dataset_id)
+
+        return get_dataset_for_published_state(item_from_api, published)
+
+
 class DatasetBaseChooseViewMixin:
     @property
     def columns(self):  # type: ignore
@@ -141,16 +156,7 @@ class DatasetChooseView(DatasetChooserPermissionMixin, DatasetBaseChooseViewMixi
 class DatasetChooseResultsView(DatasetChooserPermissionMixin, DatasetBaseChooseViewMixin, CustomChooseResultView): ...
 
 
-class DatasetChosenView(ChosenViewMixin, ChosenResponseMixin, View):
-    def retrieve_dataset(self, dataset_id: str, published: bool, access_token: str | None) -> dict[str, Any]:
-        # We fetch the dataset from the API to get the title and description
-        queryset = ONSDataset.objects  # pylint: disable=no-member
-        if access_token:
-            queryset = queryset.with_token(access_token)
-        item_from_api = queryset.get(pk=dataset_id)
-
-        return get_dataset_for_published_state(item_from_api, published)
-
+class DatasetChosenView(ChosenViewMixin, ChosenResponseMixin, DatasetRetrievalMixin, View):
     def get_object(self, pk: Any) -> Dataset:
         # get_object is called before get_chosen_response_data
         # and self.model_class is Dataset, so we get or create the Dataset from ONSDatasets here
@@ -176,7 +182,7 @@ class DatasetChosenView(ChosenViewMixin, ChosenResponseMixin, View):
         return dataset
 
 
-class DatasetChosenMultipleViewMixin(ChosenMultipleViewMixin):
+class DatasetChosenMultipleViewMixin(ChosenMultipleViewMixin, DatasetRetrievalMixin):
     def get_objects(self, pks: list[Any]) -> QuerySet[Dataset]:  # pylint: disable=too-many-locals
         if not pks:
             return Dataset.objects.none()
