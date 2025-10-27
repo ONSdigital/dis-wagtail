@@ -83,7 +83,7 @@ def on_page_moved(sender: "type[Page]", instance: "Page", **kwargs: Any) -> None
                 extra={"page_id": instance.id, "old_url_path": old_url_path, "new_url_path": new_url_path},
             )
 
-    for moved_descendant in instance.get_descendants().filter():
+    for moved_descendant in instance.get_descendants().filter(live=True):
         if (
             moved_descendant.specific_class.__name__ not in settings.SEARCH_INDEX_EXCLUDED_PAGE_TYPES
             and not moved_descendant.get_view_restrictions().exists()
