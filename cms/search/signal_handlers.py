@@ -64,7 +64,6 @@ def on_page_moved(sender: "type[Page]", instance: "Page", **kwargs: Any) -> None
     We use the publish_created_or_updated method to update search for the moved page and any of its non-excluded
     descendants, which will also be affected by the move.
     """
-    print(__name__)
     if kwargs["url_path_before"] == kwargs["url_path_after"]:
         # No change in URL path, no need to update search index of the instance or descendants
         return
