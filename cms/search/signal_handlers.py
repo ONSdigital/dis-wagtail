@@ -88,7 +88,10 @@ def on_page_moved(sender: "type[Page]", instance: "Page", **kwargs: Any) -> None
             and not moved_descendant.get_view_restrictions().exists()
         ):
             old_descendant_path = build_old_descendant_path(
-                instance, moved_descendant, parent_path_before=old_url_path, parent_path_after=new_url_path
+                parent_page=instance,
+                descendant_page=moved_descendant,
+                parent_path_before=old_url_path,
+                parent_path_after=new_url_path,
             )
 
             try:
@@ -103,13 +106,14 @@ def on_page_moved(sender: "type[Page]", instance: "Page", **kwargs: Any) -> None
 
 
 def build_old_descendant_path(
-    parent_page: "Page", descendant_page: "Page", parent_path_before: str, parent_path_after: str
+    *, parent_page: "Page", descendant_page: "Page", parent_path_before: str, parent_path_after: str
 ) -> str | None:
     """Build the old URL path for a moved descendant page."""
     if descendant_page.url_path.startswith(parent_path_after):
         # We expect the old URL path to be derivable from the new URL path of the parent and the descendant
         # Strip the url_path_after prefix from the descendant's url_path and prepend the url_path_before
         return f"{parent_path_before}{descendant_page.url_path[len(parent_path_after) :]}"
+
     logger.error(
         "Found mismatching descendant page url_path while handling page move, cannot build old URL "
         "path to remove from search index.",

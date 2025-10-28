@@ -137,9 +137,9 @@ class SearchSignalsTest(TestCase):
     def test_on_page_moved_ignores_draft_descendant_page(self):
         """Draft pages should not trigger publish_created_or_updated on move."""
         parent_page = ArticleSeriesPageFactory()
-        child_page = StatisticalArticlePageFactory(parent=parent_page)
-        child_page.live = False
-        child_page.save()
+        descendant_page = StatisticalArticlePageFactory(parent=parent_page)
+        descendant_page.live = False
+        descendant_page.save()
         post_page_move.send(
             sender=Page, instance=parent_page, url_path_before="/old-path/", url_path_after="/new-path/"
         )
@@ -167,8 +167,8 @@ class SearchSignalsTest(TestCase):
     def test_on_page_moved_private_descendant_page(self):
         """Descendant pages with view restrictions should not trigger publish_created_or_updated on move."""
         parent_page = ArticleSeriesPageFactory()
-        child_page = StatisticalArticlePageFactory(parent=parent_page)
-        PageViewRestriction.objects.create(page=child_page, restriction_type=PageViewRestriction.LOGIN)
+        descendant_page = StatisticalArticlePageFactory(parent=parent_page)
+        PageViewRestriction.objects.create(page=descendant_page, restriction_type=PageViewRestriction.LOGIN)
 
         post_page_move.send(
             sender=Page, instance=parent_page, url_path_before="/old-path/", url_path_after="/new-path/"
@@ -191,19 +191,26 @@ class SearchSignalsTest(TestCase):
         # Expect only the article page to have search update events published, topic and series pages are excluded
         self.mock_publisher.publish_created_or_updated.assert_called_once_with(
             article_page,
-            old_url_path=build_old_descendant_path(topic_page, article_page, url_path_before, topic_page.url_path),
+            old_url_path=build_old_descendant_path(
+                parent_page=topic_page,
+                descendant_page=article_page,
+                parent_path_before=url_path_before,
+                parent_path_after=topic_page.url_path,
+            ),
         )
 
     def test_build_old_descendant_path(self):
-        """Test building old descendant path during page move."""
         parent_page = ArticleSeriesPageFactory(slug="parent-page")
-        child_page = StatisticalArticlePageFactory(parent=parent_page, slug="child-page")
+        descendant_page = StatisticalArticlePageFactory(parent=parent_page, slug="descendant-page")
 
         old_parent_path = "/home/old-parent-page/"
-        expected_old_child_path = "/home/old-parent-page/child-page/"
+        expected_old_child_path = "/home/old-parent-page/descendant-page/"
 
         old_child_path = build_old_descendant_path(
-            parent_page, child_page, parent_path_before=old_parent_path, parent_path_after=parent_page.url_path
+            parent_page=parent_page,
+            descendant_page=descendant_page,
+            parent_path_before=old_parent_path,
+            parent_path_after=parent_page.url_path,
         )
 
         self.assertEqual(old_child_path, expected_old_child_path)
@@ -213,16 +220,16 @@ class SearchSignalsTest(TestCase):
         is not prefixed with the new parent path as expected.
         """
         parent_page = ArticleSeriesPageFactory(slug="parent-page")
-        child_page = StatisticalArticlePageFactory(parent=parent_page, slug="child-page")
+        descendant_page = StatisticalArticlePageFactory(parent=parent_page, slug="descendant-page")
 
         with self.assertLogs(logger="cms.search.signal_handlers", level="ERROR") as assert_logger:
-            old_child_path = build_old_descendant_path(
-                parent_page,
-                child_page,
+            old_descendant_path = build_old_descendant_path(
+                parent_page=parent_page,
+                descendant_page=descendant_page,
                 parent_path_before="/home/old-parent-page/",
                 parent_path_after="/unexpected-mismatching-path/",
             )
-            self.assertIsNone(old_child_path)
+            self.assertIsNone(old_descendant_path)
             self.assertEqual(len(assert_logger.output), 1)
             error_log = assert_logger.output[0]
             self.assertIn(
