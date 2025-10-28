@@ -43,7 +43,7 @@ def format_datasets_as_document_list(datasets: StreamValue) -> list[dict[str, An
     return dataset_documents
 
 
-def extract_edition_from_dataset_url(url: str) -> str:
+def extract_edition_from_dataset_url(url: str) -> str | None:
     """Extract the edition from a dataset URL.
 
     Example URL: /datasets/wellbeing-quarterly/editions/september/versions/9
@@ -53,7 +53,7 @@ def extract_edition_from_dataset_url(url: str) -> str:
     """
     edition_match = EDITIONS_PATTERN.search(url)
     if not edition_match:
-        raise ValueError(f"Found invalid dataset URL, missing edition: {url}")
+        return None
     edition = edition_match.group(1)
     return edition
 
@@ -90,15 +90,21 @@ def convert_old_dataset_format(data: dict[str, Any]) -> dict[str, Any]:
       "state": "associated",
     }
     """
-    latest_version = data.get("links", {}).get("latest_version", {})
+    try:
+        latest_version = data.get("links", {}).get("latest_version", None)
+        edition = extract_edition_from_dataset_url(latest_version.get("href", ""))
+    except (AttributeError, ValueError):
+        latest_version = None
+        edition = None
+
     return {
-        "dataset_id": data.get("id", ""),
-        "title": data.get("title", "Title not provided"),
-        "description": data.get("description", "Description not provided"),
-        "edition": extract_edition_from_dataset_url(latest_version.get("href", "")),
+        "dataset_id": data.get("id"),
+        "title": data.get("title"),
+        "description": data.get("description"),
+        "edition": edition,
         "latest_version": latest_version,
-        "release_date": data.get("last_updated", ""),
-        "state": data.get("state", "associated"),
+        "release_date": data.get("last_updated"),
+        "state": data.get("state"),
     }
 
 

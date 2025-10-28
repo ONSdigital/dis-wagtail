@@ -60,8 +60,12 @@ class TestUtils(TestCase):
 
     def test_extract_edition_from_dataset_url_invalid(self):
         url = "/datasets/wellbeing-quarterly/versions/9"  # Missing edition part
-        with self.assertRaises(ValueError):
-            extract_edition_from_dataset_url(url)
+        extracted_version = extract_edition_from_dataset_url(url)
+        self.assertIsNone(extracted_version)
+
+        url = ""
+        extracted_version = extract_edition_from_dataset_url(url)
+        self.assertIsNone(extracted_version)
 
     def test_convert_old_dataset_format(self):
         old_format_dataset = {
@@ -93,6 +97,38 @@ class TestUtils(TestCase):
 
         converted_dataset = convert_old_dataset_format(old_format_dataset)
         self.assertEqual(converted_dataset, new_format_dataset)
+
+    def test_convert_old_dataset_format_with_bad_data(self):
+        new_format_dataset = {
+            "dataset_id": None,
+            "title": None,
+            "description": None,
+            "edition": None,
+            "latest_version": None,
+            "release_date": None,
+            "state": None,
+        }
+        converted_dataset = convert_old_dataset_format({})
+        self.assertEqual(converted_dataset, new_format_dataset)
+
+        # Partially wrong data
+        converted_dataset = convert_old_dataset_format({"title": "Foobar", "links": "a string instead of dict"})
+        partially_formed_dataset = {
+            "dataset_id": None,
+            "title": "Foobar",
+            "description": None,
+            "edition": None,
+            "latest_version": None,
+            "release_date": None,
+            "state": None,
+        }
+
+        self.assertEqual(converted_dataset, partially_formed_dataset)
+
+        # Partially wrong data with links.latest_version not being a dict
+        converted_dataset = convert_old_dataset_format({"title": "Foobar", "links": {"latest_version": "not a dict"}})
+
+        self.assertEqual(converted_dataset, partially_formed_dataset)
 
     def test_compound_id_construction_and_deconstruction(self):
         dataset_id = "wellbeing-quarterly"
