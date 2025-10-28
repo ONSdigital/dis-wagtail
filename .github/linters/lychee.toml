@@ -11,6 +11,3 @@ exclude = ["^https?://jwt\\.io",
 
 # Exclude all private IPs from checking.
 exclude_all_private = true
-
-# Ignore contributor-covenant.org and all sub-paths to prevent false-positive link check failures.
-
