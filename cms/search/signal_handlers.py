@@ -100,7 +100,7 @@ def on_page_moved(sender: "type[Page]", instance: "Page", **kwargs: Any) -> None
                 )
             except Exception:  # pylint: disable=broad-except
                 logger.exception(
-                    "Error publishing moved descendant page updated to search",
+                    "Failed to publish moved descendant page to search index",
                     extra={"page_id": moved_descendant.id, "old_url_path": old_url_path, "new_url_path": new_url_path},
                 )
 
