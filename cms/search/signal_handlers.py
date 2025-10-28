@@ -78,7 +78,7 @@ def on_page_moved(sender: "type[Page]", instance: "Page", **kwargs: Any) -> None
             get_publisher().publish_created_or_updated(instance.specific_deferred, old_url_path=old_url_path)
         except Exception:  # pylint: disable=broad-except
             logger.exception(
-                "Error publishing moved page updated to search",
+                "Failed to publish moved page to search index",
                 extra={"page_id": instance.id, "old_url_path": old_url_path, "new_url_path": new_url_path},
             )
 
