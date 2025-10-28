@@ -9,6 +9,7 @@ from wagtail.models import Page
 from wagtail.signals import page_published, page_unpublished, post_page_move
 
 from cms.search.publishers import KafkaPublisher, LogPublisher
+from cms.search.utils import get_model_by_name
 
 logger = logging.getLogger(__name__)
 
@@ -82,27 +83,27 @@ def on_page_moved(sender: "type[Page]", instance: "Page", **kwargs: Any) -> None
                 extra={"page_id": instance.id, "old_url_path": old_url_path, "new_url_path": new_url_path},
             )
 
-    for moved_descendant in instance.get_descendants().filter(live=True):
-        if (
-            moved_descendant.specific_class.__name__ not in settings.SEARCH_INDEX_EXCLUDED_PAGE_TYPES
-            and not moved_descendant.get_view_restrictions().exists()
-        ):
-            old_descendant_path = build_old_descendant_path(
-                parent_page=instance,
-                descendant_page=moved_descendant,
-                parent_path_before=old_url_path,
-                parent_path_after=new_url_path,
-            )
+    for moved_descendant in (
+        instance.get_descendants()
+        .filter(live=True)
+        .public()
+        .not_exact_type(*(get_model_by_name(page_type) for page_type in settings.SEARCH_INDEX_EXCLUDED_PAGE_TYPES))
+        .specific(defer=True)
+    ):
+        old_descendant_path = build_old_descendant_path(
+            parent_page=instance,
+            descendant_page=moved_descendant,
+            parent_path_before=old_url_path,
+            parent_path_after=new_url_path,
+        )
 
-            try:
-                get_publisher().publish_created_or_updated(
-                    moved_descendant.specific_deferred, old_url_path=old_descendant_path
-                )
-            except Exception:  # pylint: disable=broad-except
-                logger.exception(
-                    "Failed to publish moved descendant page to search index",
-                    extra={"page_id": moved_descendant.id, "old_url_path": old_url_path, "new_url_path": new_url_path},
-                )
+        try:
+            get_publisher().publish_created_or_updated(moved_descendant, old_url_path=old_descendant_path)
+        except Exception:  # pylint: disable=broad-except
+            logger.exception(
+                "Failed to publish moved descendant page to search index",
+                extra={"page_id": moved_descendant.id, "old_url_path": old_url_path, "new_url_path": new_url_path},
+            )
 
 
 def build_old_descendant_path(
