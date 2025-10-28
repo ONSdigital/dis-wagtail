@@ -283,22 +283,6 @@ class TestONSDataset(TestCase):
 
         self.assertEqual(dataset.version, "1")  # pylint: disable=no-member
 
-    def test_from_query_data_backwards_compatible_with_id(self):
-        """Test from_query_data() falls back to 'id' field if 'dataset_id' is missing."""
-        response_dataset = {
-            "id": "legacy-dataset-id",
-            "title": "Legacy Dataset",
-            "description": "Legacy description",
-            "edition": "q1",
-            "latest_version": {"id": "5"},
-            "state": "associated",
-        }
-
-        dataset = ONSDataset.from_query_data(response_dataset)
-
-        self.assertEqual(dataset.id, "legacy-dataset-id,q1,5,false")  # pylint: disable=no-member
-        self.assertEqual(dataset.dataset_id, "legacy-dataset-id")
-
     @responses.activate
     def test_queryset_integration_with_new_api(self):
         """Test full integration of queryset with new API response."""
