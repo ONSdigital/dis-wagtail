@@ -133,10 +133,10 @@ class ONSDataset(APIModel):
     @classmethod
     def from_query_data(cls, data: Mapping) -> "ONSDataset":
         # Handle new /v1/dataset-editions response structure
-        dataset_id = data.get("dataset_id", data.get("id", ""))
+        dataset_id = data.get("dataset_id", "id-not-provided")
         title = data.get("title") or "Title not provided"
         description = data.get("description") or "Description not provided"
-        edition = data.get("edition", "")
+        edition = data.get("edition", "edition-not-provided")
         next_version = data.get("next", {})
         published = get_published_from_state(data.get("state", "unknown"))
 
