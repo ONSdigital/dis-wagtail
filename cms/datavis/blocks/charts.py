@@ -715,8 +715,12 @@ class IframeBlock(BaseVisualisationBlock):
         required=True,
         help_text=(
             "Enter the full URL of the visualisation you want to embed. "
-            "The URL must start with <code>https://</code> and the hostname must match one of the allowed domains: "
-            f"{' or '.join(f'<code>{prefix}</code>' for prefix in settings.IFRAME_VISUALISATION_ALLOWED_DOMAINS)}."
+            "The URL must start with <code>https://</code>, the hostname must match one of the allowed domains, "
+            "and the path must start with an allowed prefix. "
+            f"Allowed domains: "
+            f"{' or '.join(f'<code>{d}</code>' for d in settings.IFRAME_VISUALISATION_ALLOWED_DOMAINS)}. "
+            f"Allowed path prefixes: "
+            f"{' or '.join(f'<code>{p}</code>' for p in settings.IFRAME_VISUALISATION_PATH_PREFIXES)}."
         ),
     )
 
@@ -739,6 +743,18 @@ class IframeBlock(BaseVisualisationBlock):
             errors["iframe_source_url"] = ValidationError(
                 f"The URL hostname is not in the list of allowed domains: {allowed_domains}"
             )
+        else:
+            url_path = parsed_url.path.rstrip("/")
+            allowed_prefixes = [prefix.rstrip("/") for prefix in settings.IFRAME_VISUALISATION_PATH_PREFIXES]
+
+            if not any(
+                url_path.startswith(prefix + "/") and len(url_path) > len(prefix) + 1 for prefix in allowed_prefixes
+            ):
+                readable_prefixes = " or ".join(settings.IFRAME_VISUALISATION_PATH_PREFIXES)
+                errors["iframe_source_url"] = ValidationError(
+                    f"The URL path is not allowed. It must start with one of: {readable_prefixes}, "
+                    "and include a subpath after the prefix."
+                )
 
         if errors:
             raise blocks.StructBlockValidationError(errors)

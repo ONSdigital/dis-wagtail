@@ -28,9 +28,7 @@ from cms.topics.services.related_content import (
     RelatedArticleProcessor,
     RelatedMethodologyProcessor,
 )
-from cms.topics.utils import (
-    format_time_series_as_document_list,
-)
+from cms.topics.utils import format_time_series_as_document_list, get_topic_search_url
 from cms.topics.viewsets import (
     FeaturedSeriesPageChooserWidget,
     HighlightedArticlePageChooserWidget,
@@ -319,12 +317,10 @@ class TopicPage(BundledPageMixin, ExclusiveTaxonomyMixin, BasePage):  # type: ig
         links: dict[str, str] = {}
 
         if self.processed_articles:
-            links["related_articles"] = f"{settings.ONS_WEBSITE_BASE_URL}/{topic.slug_path}/publications"
+            links["related_articles"] = self.get_articles_search_url()
 
         if self.processed_methodologies:
-            links["related_methodologies"] = (
-                f"{settings.ONS_WEBSITE_BASE_URL}/{topic.slug_path}/topicspecificmethodology"
-            )
+            links["related_methodologies"] = self.get_methodologies_search_url()
 
         if self.datasets:
             links["related_data"] = f"{settings.ONS_WEBSITE_BASE_URL}/{topic.slug_path}/datalist?filter=datasets"
@@ -333,3 +329,17 @@ class TopicPage(BundledPageMixin, ExclusiveTaxonomyMixin, BasePage):  # type: ig
             links["related_time_series"] = f"{settings.ONS_WEBSITE_BASE_URL}/timeseriestool?topic={topic.slug_path}"
 
         return links
+
+    def get_articles_search_url(self) -> str:
+        # We enforce topic selection at the application level (via clean()),
+        # so topic will always be set for valid TopicPage instances.
+        # The ForeignKey is nullable for migration and legacy reasons,
+        # but business logic guarantees non-None.
+        return get_topic_search_url(self.topic, "publications")  # type: ignore[arg-type]
+
+    def get_methodologies_search_url(self) -> str:
+        # Returns the search URL for methodologies related to this topic.
+        return get_topic_search_url(
+            self.topic,  # type: ignore[arg-type]
+            "topicspecificmethodology",
+        )

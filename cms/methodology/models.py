@@ -4,7 +4,6 @@ from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.db import models
 from django.http import HttpRequest
-from django.shortcuts import redirect
 from django.utils.functional import cached_property
 from django.utils.translation import gettext_lazy as _
 from modelcluster.fields import ParentalKey
@@ -20,6 +19,7 @@ from cms.core.fields import StreamField
 from cms.core.forms import PageWithEquationsAdminForm
 from cms.core.models import BasePage
 from cms.core.query import order_by_pk_position
+from cms.core.utils import redirect_to_parent_listing
 from cms.core.widgets import date_widget
 from cms.taxonomy.mixins import GenericTaxonomyMixin
 
@@ -55,8 +55,10 @@ class MethodologyIndexPage(BasePage):  # type: ignore[django-manager-missing]
         super().minimal_clean()
 
     def serve(self, request: "HttpRequest", *args: Any, **kwargs: Any) -> "HttpResponse":
-        # FIXME: redirect to the publications listing for the topic
-        return redirect(self.get_parent().get_url(request=request))
+        # Redirects methodology index page requests to the parent topic's methodologies search URL.
+        return redirect_to_parent_listing(
+            page=self, request=request, listing_url_method_name="get_methodologies_search_url"
+        )
 
 
 class MethodologyRelatedPage(Orderable):
