@@ -323,9 +323,17 @@ class TestONSDataset(TestCase):
         self.assertEqual(datasets[0].id, "dataset1,2024,1,false")
         self.assertEqual(datasets[0].dataset_id, "dataset1")
         self.assertEqual(datasets[0].title, "Dataset 1")
+        self.assertEqual(datasets[0].description, "Description 1")
+        self.assertEqual(datasets[0].edition, "2024")
+        self.assertEqual(datasets[0].version, "1")
+        self.assertEqual(datasets[0].next, {})
         self.assertEqual(datasets[1].id, "dataset2,2024-q1,2,true")
         self.assertEqual(datasets[1].dataset_id, "dataset2")
+        self.assertEqual(datasets[1].title, "Dataset 2")
+        self.assertEqual(datasets[1].description, "Description 2")
         self.assertEqual(datasets[1].edition, "2024-q1")
+        self.assertEqual(datasets[1].version, "2")
+        self.assertEqual(datasets[1].next, {})
 
     @responses.activate
     def test_queryset_with_filter(self):

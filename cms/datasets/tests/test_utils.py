@@ -152,7 +152,7 @@ class TestUtils(TestCase):
 
     def test_deconstruct_compound_id_invalid(self):
         invalid_compound_id = "invalidcompoundidformat"
-        with self.assertRaises(ValueError):
+        with self.assertRaisesRegex(ValueError, f"Invalid compound ID format: {invalid_compound_id}"):
             deconstruct_dataset_compound_id(invalid_compound_id)
 
     def test_get_published_from_state(self):
