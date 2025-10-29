@@ -431,6 +431,7 @@ class BundleAdminForm(DeduplicateInlinePanelAdminForm):
         # and m2m relations if commit=True.
         bundle: Bundle = super().save(commit=commit)
 
+        # Test change
         if commit:
             self._check_and_sync_with_dataset_api(bundle)
         return bundle
