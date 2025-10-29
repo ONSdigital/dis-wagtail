@@ -31,6 +31,5 @@ class Migration(migrations.Migration):
         migrations.RunPython(
             create_access_unpublished_permission,
             reverse_code=migrations.RunPython.noop,
-            elidable=True,
         ),
     ]

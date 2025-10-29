@@ -64,7 +64,7 @@ def mock_datasets_responses(
             json=published_datasets_response,
         )
 
-        # Mock individual dataset detail endpointsgit
+        # Mock individual dataset detail endpoints
         for dataset in datasets:
             if use_old_schema:
                 # This version uses the old format for detail responses with "current" and "next".
