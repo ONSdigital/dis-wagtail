@@ -76,7 +76,11 @@ class ONSDatasetApiQuerySet(APIQuerySet):
             logger.error("Request failed when fetching datasets", extra={"url": url, "error": str(e)})
             raise
 
-        api_response: dict = response.json()
+        try:
+            api_response: dict = response.json()
+        except ValueError as e:
+            logger.error("Failed to parse JSON response when fetching datasets", extra={"url": url, "params": params})
+            raise ValueError("Failed to parse JSON response from datasets API") from e
 
         # api_response should be a dict, let's raise a clear error if not
         if not isinstance(api_response, dict):
@@ -93,7 +97,8 @@ class ONSDatasetApiQuerySet(APIQuerySet):
 
         return api_response
 
-    def _process_detail_response(self, response: dict) -> dict:
+    @staticmethod
+    def _process_detail_response(response: dict) -> dict:
         # For detail responses, we may need to adjust the structure.
         # This only applies to the detail URL which currently uses the old format.
         if response.get("current"):

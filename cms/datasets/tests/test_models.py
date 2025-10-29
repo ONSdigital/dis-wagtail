@@ -170,12 +170,33 @@ class TestONSDatasetApiQuerySet(TestCase):
         api_queryset.base_url = settings.DATASETS_API_EDITIONS_URL
 
         with patch("cms.datasets.models.logger") as mock_logger:
-            with self.assertRaises(ValueError) as context:
+            with self.assertRaisesRegex(ValueError, "Invalid API response format, expected a dictionary-like object"):
                 api_queryset.fetch_api_response()
 
-            self.assertEqual(str(context.exception), "Invalid API response format, expected a dictionary-like object")
             mock_logger.error.assert_called_once_with(
                 "Invalid API response format when fetching datasets",
+                extra={"url": settings.DATASETS_API_EDITIONS_URL, "params": {}},
+            )
+
+    @responses.activate
+    def test_fetch_api_response_raises_on_text_response(self):
+        """Test that ValueError is raised when API returns non-dict response (e.g., list)."""
+        responses.add(
+            responses.GET,
+            settings.DATASETS_API_EDITIONS_URL,
+            body="Just a plain text response",
+            content_type="text/plain",
+        )
+
+        api_queryset = ONSDatasetApiQuerySet()
+        api_queryset.base_url = settings.DATASETS_API_EDITIONS_URL
+
+        with patch("cms.datasets.models.logger") as mock_logger:
+            with self.assertRaisesRegex(ValueError, "Failed to parse JSON response from datasets API"):
+                api_queryset.fetch_api_response()
+
+            mock_logger.error.assert_called_once_with(
+                "Failed to parse JSON response when fetching datasets",
                 extra={"url": settings.DATASETS_API_EDITIONS_URL, "params": {}},
             )
 

@@ -35,9 +35,9 @@ class DatasetChooserPermissionMixin:
 
     def dispatch(self, request: "HttpRequest", *args: Any, **kwargs: Any) -> "HttpResponse":
         # Check if requesting unpublished datasets
-        published = request.GET.get("published", "false")
+        is_published = request.GET.get("published", "").lower() == "true"
 
-        if published == "false" and not user_can_access_unpublished_datasets(request.user):
+        if not is_published and not user_can_access_unpublished_datasets(request.user):
             raise PermissionDenied
 
         return super().dispatch(request, *args, **kwargs)  # type: ignore[misc,no-any-return]
@@ -46,7 +46,7 @@ class DatasetChooserPermissionMixin:
 class DatasetRetrievalMixin:
     """Mixin to retrieve dataset details from the API."""
 
-    def retrieve_dataset(self, dataset_id: str, published: bool, access_token: str | None) -> ONSDataset:
+    def retrieve_dataset(self, *, dataset_id: str, published: bool, access_token: str | None) -> ONSDataset:
         if not published and not user_can_access_unpublished_datasets(self.request.user):  # type: ignore[attr-defined]
             raise PermissionDenied
         # We fetch the dataset from the API to get the title and description
@@ -122,7 +122,8 @@ class ONSDatasetBaseChooseView(BaseChooseView):
         # Get the auth token from the request
         access_token = self.request.COOKIES.get(settings.ACCESS_TOKEN_COOKIE_NAME)
 
-        # Check if this is for a bundle - if so, force published=false
+        # Check if this is for a bundle - if so, force published=false as bundles
+        # only allow unpublished datasets to be selected
         for_bundle = self.request_is_for_bundle()
 
         # Get the published filter value from GET params or form
@@ -168,13 +169,14 @@ class DatasetChosenView(ChosenViewMixin, ChosenResponseMixin, DatasetRetrievalMi
         # Get the auth token from the request
         access_token = self.request.COOKIES.get(settings.ACCESS_TOKEN_COOKIE_NAME)
 
-        item_from_api = self.retrieve_dataset(dataset_id, published, access_token)
+        item_from_api = self.retrieve_dataset(dataset_id=dataset_id, published=published, access_token=access_token)
 
         dataset, _ = Dataset.objects.get_or_create(
             namespace=dataset_id,
             edition=edition,
             version=version,
             defaults={
+                # Use title and description from the API, the rest was grabbed from the compound ID
                 "title": item_from_api.title,
                 "description": item_from_api.description,
             },
@@ -200,8 +202,9 @@ class DatasetChosenMultipleViewMixin(ChosenMultipleViewMixin, DatasetRetrievalMi
             # The provided PK is actually a combination of dataset_id, edition and version
             dataset_id, edition, version, published = deconstruct_dataset_compound_id(str(pk))
 
-            item_from_api = self.retrieve_dataset(dataset_id, published, access_token)
+            item_from_api = self.retrieve_dataset(dataset_id=dataset_id, published=published, access_token=access_token)
 
+            # Use title and description from the API, the rest was grabbed from the compound ID
             api_data_for_datasets.append(
                 {
                     "id": dataset_id,

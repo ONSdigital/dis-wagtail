@@ -140,7 +140,7 @@ class TestDatasetRetrievalMixin(TestCase):
         self.view.request = request
 
         with self.assertRaises(PermissionDenied):
-            self.view.retrieve_dataset("dataset-123", published=False, access_token=None)
+            self.view.retrieve_dataset(dataset_id="dataset-123", published=False, access_token=None)
 
         # Verify permission check was called
         mock_permission_check.assert_called_once_with(self.user)
@@ -168,7 +168,7 @@ class TestDatasetRetrievalMixin(TestCase):
         request.user = self.user
         self.view.request = request
 
-        result = self.view.retrieve_dataset("dataset-123", published=False, access_token=None)
+        result = self.view.retrieve_dataset(dataset_id="dataset-123", published=False, access_token=None)
 
         # Verify permission check was called
         mock_permission_check.assert_called_once_with(self.user)
@@ -193,7 +193,7 @@ class TestDatasetRetrievalMixin(TestCase):
         request.user = self.user
         self.view.request = request
 
-        result = self.view.retrieve_dataset("dataset-123", published=True, access_token=None)
+        result = self.view.retrieve_dataset(dataset_id="dataset-123", published=True, access_token=None)
 
         # Verify API was called
         mock_queryset.get.assert_called_once_with(pk="dataset-123")
@@ -220,7 +220,7 @@ class TestDatasetRetrievalMixin(TestCase):
         request.user = self.user
         self.view.request = request
 
-        self.view.retrieve_dataset("dataset-123", published=False, access_token="test_token")
+        self.view.retrieve_dataset(dataset_id="dataset-123", published=False, access_token="test_token")
 
         # Verify token was passed
         mock_queryset.with_token.assert_called_once_with("test_token")
