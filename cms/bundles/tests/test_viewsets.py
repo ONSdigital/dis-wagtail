@@ -480,8 +480,13 @@ class BundleViewSetInspectTestCase(BundleViewSetTestCaseBase):
         self.assertContains(response, "The Test Statistical Article")
         self.assertContains(response, "The Test Topic Page")
 
-    def test_inspect_view__displays_message_when_no_datasets(self):
-        """Checks that the inspect view displays datasets."""
+    @patch("cms.bundles.viewsets.bundle.BundleAPIClient")
+    def test_inspect_view__displays_message_when_no_datasets(self, mock_api_client):
+        """Checks that the inspect view displays message when no datasets in bundle."""
+        # Mock the Bundle API response with no datasets
+        mock_client_instance = mock_api_client.return_value
+        mock_client_instance.get_bundle_contents.return_value = {"contents": []}
+
         response = self.client.get(reverse("bundle:inspect", args=[self.bundle.pk]))
 
         self.assertContains(response, "No datasets in bundle")
@@ -593,8 +598,6 @@ class BundleViewSetInspectTestCase(BundleViewSetTestCaseBase):
     @patch("cms.bundles.viewsets.bundle.BundleAPIClient")
     def test_inspect_view__datasets_table_display(self, mock_api_client):
         """Test that datasets are displayed in a table format with correct headers and data."""
-        BundleDatasetFactory(parent=self.bundle)
-
         # Mock the Bundle API response
         mock_client_instance = mock_api_client.return_value
         mock_client_instance.get_bundle_contents.return_value = {
@@ -636,9 +639,6 @@ class BundleViewSetInspectTestCase(BundleViewSetTestCaseBase):
     @patch("cms.bundles.viewsets.bundle.BundleAPIClient")
     def test_inspect_view__datasets_table_with_multiple_datasets(self, mock_api_client):
         """Test that multiple datasets are displayed correctly in the table."""
-        BundleDatasetFactory(parent=self.bundle)
-        BundleDatasetFactory(parent=self.bundle)
-
         # Mock the Bundle API response with multiple datasets
         mock_client_instance = mock_api_client.return_value
         mock_client_instance.get_bundle_contents.return_value = {
@@ -687,8 +687,6 @@ class BundleViewSetInspectTestCase(BundleViewSetTestCaseBase):
     @patch("cms.bundles.viewsets.bundle.BundleAPIClient")
     def test_inspect_view__datasets_table_with_missing_metadata(self, mock_api_client):
         """Test that datasets with missing metadata display N/A."""
-        BundleDatasetFactory(parent=self.bundle)
-
         # Mock the Bundle API response with missing metadata
         mock_client_instance = mock_api_client.return_value
         mock_client_instance.get_bundle_contents.return_value = {

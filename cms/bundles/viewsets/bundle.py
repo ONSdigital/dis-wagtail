@@ -467,15 +467,17 @@ class BundleInspectView(InspectView):
     @staticmethod
     def get_human_readable_state(state: str) -> str:
         """Converts a machine-readable state string to a human-readable format."""
+        if not state or state == "N/A":
+            return "N/A"
         match state:
             case "APPROVED":
                 return "Approved"
             case "PUBLISHED":
                 return "Published"
             case _:
-                return state.replace("_", " ").title() if state != "N/A" else state
+                return state.replace("_", " ").title()
 
-    def get_datasets_for_manager(self) -> "SafeString":
+    def get_datasets_for_manager(self) -> "SafeString | str":
         """Returns all the bundle datasets.
         For now, there is no distinction between roles for datasets.
         """
@@ -500,6 +502,9 @@ class BundleInspectView(InspectView):
                     )
                 )
 
+        if not data:
+            return "No datasets in bundle"
+
         dataset_data = format_html_join(
             "\n",
             '<tr><td class="title"><strong><a href="{}">{}</a></strong></td><td>{}</td><td>{}</td><td>{}</td>'
@@ -516,9 +521,6 @@ class BundleInspectView(InspectView):
 
     def get_bundled_datasets_display_value(self) -> "SafeString | str":
         """Returns formatted markup for datasets linked to the Bundle."""
-        if not self.object.bundled_datasets.exists():
-            return "No datasets in bundle"
-
         return self.get_datasets_for_manager()
 
 
