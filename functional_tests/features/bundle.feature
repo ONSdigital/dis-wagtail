@@ -62,3 +62,14 @@ Feature: CMS users can manage bundles
     # Note: This test case exists because currently, it is possible to update a release calendar page's status to "Cancelled" even though "Cancelled" pages are not allowed in bundles.
     # This can be removed once validation between release calendar pages and bundles is improved.
       | Cancelled   |
+
+    Scenario: A content editor can select multiple datasets on the bundle page when the user is in an internal environment
+        Given the user is in an internal environment
+        When the user goes to the bundle creation page
+        And the user selects multiple datasets
+        Then the selected datasets are displayed in the "Data API datasets" section
+
+    Scenario: A CMS user cannot see the published state dropdown when selecting datasets for a bundle
+        When the user goes to the bundle creation page
+        And the user opens the bundle datasets chooser
+        Then the published state filter is not displayed in the chooser
