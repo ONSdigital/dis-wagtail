@@ -156,7 +156,7 @@ def user_manually_creates_future_release_calendar(context: Context, status: str)
     context.page.get_by_role("region", name="Summary*").get_by_role("textbox").fill("My example release page")
 
     # Save the values to access later
-    context.release_calendar_page = {
+    context.saved_release_calendar_page_details = {
         "title": title,
         "release_date_value": ons_date_format(tomorrow, "DATETIME_FORMAT"),
         "status": status,
@@ -173,7 +173,7 @@ def user_creates_bundle_with_future_release_calendar_page(context: Context) -> N
     try:
         title = context.release_calendar_page.title
     except AttributeError:
-        title = context.release_calendar_page["title"]
+        title = context.saved_release_calendar_page_details["title"]
 
     context.page.get_by_text(title).click()
 
@@ -216,9 +216,9 @@ def user_updates_selected_release_calendar_page_title_release_date_status(contex
     # assigns context to new release calendar page edit view
     context.page = edit_release_calendar_page.value
     # tracks original release calendar details
-    context.original_date = context.release_calendar_page["release_date_value"]
-    context.original_title = context.release_calendar_page["title"]
-    context.original_status = context.release_calendar_page["status"]
+    context.original_date = context.saved_release_calendar_page_details["release_date_value"]
+    context.original_title = context.saved_release_calendar_page_details["title"]
+    context.original_status = context.saved_release_calendar_page_details["status"]
 
     if status == "Cancelled":
         context.page.locator("#panel-child-content-metadata-content div").filter(
@@ -232,7 +232,7 @@ def user_updates_selected_release_calendar_page_title_release_date_status(contex
     context.page.get_by_role("textbox", name="Release date*").fill(formatted_date)
     context.page.get_by_role("button", name="Save draft").click()
     # tracks new release date with ons date format
-    context.release_calendar_page["release_date_value"] = ons_date_format(new_date, "DATETIME_FORMAT")
+    context.saved_release_calendar_page_details["release_date_value"] = ons_date_format(new_date, "DATETIME_FORMAT")
 
 
 @step("returns to the bundle edit page")
@@ -250,7 +250,9 @@ def returns_to_bundle_edit_page(
 @then('the user sees the updated release calendar page\'s title, release date and the status "{status}"')
 def user_sees_updated_release_calendar_page_title_release_date_status(context: Context, status: str) -> None:
     expect(
-        context.page.get_by_text(f"New title ({status}, {context.release_calendar_page['release_date_value']})")
+        context.page.get_by_text(
+            f"New title ({status}, {context.saved_release_calendar_page_details['release_date_value']})"
+        )
     ).to_be_visible()
     expect(
         context.page.get_by_text(f"{context.original_title} ({context.original_status}, {context.original_date})")
