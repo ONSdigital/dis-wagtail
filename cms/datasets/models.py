@@ -101,25 +101,21 @@ class ONSDatasetApiQuerySet(APIQuerySet):
     def _process_detail_response(response: dict) -> dict:
         # For detail responses, we may need to adjust the structure.
         # This only applies to the detail URL which currently uses the old format.
-        if response.get("current"):
-            # If it's a versioned dataset response using the old format, convert to new format
-            dataset_data = convert_old_dataset_format(response["current"])
-            # Store the next version info if available (this becomes our unpublished version)
-            next_entry = response.get("next")
-            dataset_data["next"] = convert_old_dataset_format(next_entry) if next_entry else {}
-            return dataset_data
-        if response.get("next"):
-            # If it's only the next version (unpublished), convert that
-            dataset_data = convert_old_dataset_format(response["next"])
+        current = response.get("current")
+        next_converted = convert_old_dataset_format(next_entry) if (next_entry := response.get("next")) else {}
 
+        if current:
+            dataset = convert_old_dataset_format(current)
+            # Store the next version info if available (this becomes our unpublished version)
+            dataset["next"] = next_converted
+            return dataset
+
+        if next_converted:
             # Return a minimal structure indicating no published version - this is necessary
             # if someone constructs a request for an unpublished version directly but indicating
             # they want the published one.
-            return {
-                "title": "No published version",
-                "description": "",
-                "next": dataset_data,
-            }
+            return {"title": "No published version", "description": "", "next": next_converted}
+
         return response
 
 

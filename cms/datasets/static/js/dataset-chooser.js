@@ -3,7 +3,8 @@
  * Automatically submits the search form when the published status filter changes
  */
 (function initDatasetChooser() {
-  const PUBLISHED_SELECTOR = 'select[name="published"]';
+  const PUBLISHED_SELECTOR =
+    'form[action="/admin/dataset_chooser/results/"] select[name="published"]';
 
   // Use event delegation to handle changes to the published filter
   // This works for both initial page load and dynamically loaded modals
