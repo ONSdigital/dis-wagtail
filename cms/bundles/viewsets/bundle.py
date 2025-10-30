@@ -372,7 +372,7 @@ class BundleInspectView(InspectView):
         return "N/A"
 
     def get_pages_for_manager(self) -> "SafeString":
-        """Returns all the bundle page.
+        """Returns all the bundle pages.
         Publishing Admins / Officers can see everything when inspecting the bundle.
         """
         pages = self.object.get_bundled_pages().specific().defer_streamfields()
@@ -464,19 +464,62 @@ class BundleInspectView(InspectView):
         value: str = self.object.get_teams_display()
         return value
 
-    def get_bundled_datasets_display_value(self) -> str:
+    @staticmethod
+    def get_human_readable_state(state: str) -> str:
+        """Converts a machine-readable state string to a human-readable format."""
+        match state:
+            case "APPROVED":
+                return "Approved"
+            case "PUBLISHED":
+                return "Published"
+            case _:
+                return state.replace("_", " ").title() if state != "N/A" else state
+
+    def get_datasets_for_manager(self) -> "SafeString":
+        """Returns all the bundle datasets.
+        For now, there is no distinction between roles for datasets.
+        """
+        client = BundleAPIClient(access_token=self.request.COOKIES.get(settings.ACCESS_TOKEN_COOKIE_NAME))
+        bundle_contents = client.get_bundle_contents(self.object.bundle_api_content_id)
+
+        data = []
+        for content_item in bundle_contents.get("contents", []):
+            if content_item.get("content_type") == "DATASET":
+                metadata = content_item.get("metadata", {})
+                links = content_item.get("links", {})
+                data.append(
+                    (
+                        links.get("edit", "#"),  # Link to admin edit page
+                        metadata.get("title", "N/A"),
+                        metadata.get("edition_id", "N/A"),
+                        metadata.get("version_id", "N/A"),
+                        self.get_human_readable_state(
+                            content_item.get("state", "N/A")
+                        ),  # Human-readable state from API
+                        links.get("preview", "#"),  # Link to public view
+                    )
+                )
+
+        dataset_data = format_html_join(
+            "\n",
+            '<tr><td class="title"><strong><a href="{}">{}</a></strong></td><td>{}</td><td>{}</td><td>{}</td>'
+            '<td><a href="{}" class="button button-small button-secondary" target="_blank" '
+            'rel="noopener">View</a></td></tr>',
+            data,
+        )
+
+        return format_html(
+            "<table class='listing'><thead><tr><th>Title</th><th>Edition</th><th>Version</th><th>State</th>"
+            "<th>Actions</th></tr></thead>{}</table>",
+            dataset_data,
+        )
+
+    def get_bundled_datasets_display_value(self) -> "SafeString | str":
         """Returns formatted markup for datasets linked to the Bundle."""
-        if self.object.bundled_datasets.exists():
-            datasets = Dataset.objects.filter(pk__in=self.object.bundled_datasets.values_list("dataset__pk", flat=True))
-            return format_html(
-                "<ol>{}</ol>",
-                format_html_join(
-                    "\n",
-                    '<li><a href="{}" target="_blank" rel="noopener">{}</a></li>',
-                    ((bundled_dataset.website_url, bundled_dataset) for bundled_dataset in datasets),
-                ),
-            )
-        return "No datasets in bundle"
+        if not self.object.bundled_datasets.exists():
+            return "No datasets in bundle"
+
+        return self.get_datasets_for_manager()
 
 
 class BundleDeleteView(DeleteView):

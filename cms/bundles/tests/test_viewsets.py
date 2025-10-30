@@ -486,10 +486,44 @@ class BundleViewSetInspectTestCase(BundleViewSetTestCaseBase):
 
         self.assertContains(response, "No datasets in bundle")
 
-    def test_inspect_view__contains_datasets(self):
+    @patch("cms.bundles.viewsets.bundle.BundleAPIClient")
+    def test_inspect_view__contains_datasets(self, mock_api_client):
         """Checks that the inspect view displays datasets."""
         bundle_dataset_a = BundleDatasetFactory(parent=self.bundle)
         bundle_dataset_b = BundleDatasetFactory(parent=self.bundle)
+
+        # Mock the Bundle API response
+        mock_client_instance = mock_api_client.return_value
+        mock_client_instance.get_bundle_contents.return_value = {
+            "contents": [
+                {
+                    "content_type": "DATASET",
+                    "metadata": {
+                        "title": bundle_dataset_a.dataset.title,
+                        "edition_id": bundle_dataset_a.dataset.edition,
+                        "version_id": bundle_dataset_a.dataset.version,
+                    },
+                    "state": "PUBLISHED",
+                    "links": {
+                        "edit": "https://example.com/admin/dataset/edit",
+                        "preview": bundle_dataset_a.dataset.website_url,
+                    },
+                },
+                {
+                    "content_type": "DATASET",
+                    "metadata": {
+                        "title": bundle_dataset_b.dataset.title,
+                        "edition_id": bundle_dataset_b.dataset.edition,
+                        "version_id": bundle_dataset_b.dataset.version,
+                    },
+                    "state": "APPROVED",
+                    "links": {
+                        "edit": "https://example.com/admin/dataset2/edit",
+                        "preview": bundle_dataset_b.dataset.website_url,
+                    },
+                },
+            ]
+        }
 
         response = self.client.get(reverse("bundle:inspect", args=[self.bundle.pk]))
 
@@ -555,6 +589,123 @@ class BundleViewSetInspectTestCase(BundleViewSetTestCaseBase):
         self.assertContains(response, "1 July 2025 1:37pm")
         self.assertContains(response, "1 July 2025 1:45pm")
         self.assertContains(response, "1 July 2025 2:00pm")
+
+    @patch("cms.bundles.viewsets.bundle.BundleAPIClient")
+    def test_inspect_view__datasets_table_display(self, mock_api_client):
+        """Test that datasets are displayed in a table format with correct headers and data."""
+        BundleDatasetFactory(parent=self.bundle)
+
+        # Mock the Bundle API response
+        mock_client_instance = mock_api_client.return_value
+        mock_client_instance.get_bundle_contents.return_value = {
+            "contents": [
+                {
+                    "content_type": "DATASET",
+                    "metadata": {
+                        "title": "Test Dataset",
+                        "edition_id": "2024",
+                        "version_id": "1",
+                    },
+                    "state": "APPROVED",
+                    "links": {
+                        "edit": "https://example.com/admin/dataset/edit",
+                        "preview": "https://example.com/dataset/preview",
+                    },
+                }
+            ]
+        }
+
+        response = self.client.get(reverse("bundle:inspect", args=[self.bundle.pk]))
+
+        # Check that the table headers are present
+        self.assertContains(response, "<th>Title</th>")
+        self.assertContains(response, "<th>Edition</th>")
+        self.assertContains(response, "<th>Version</th>")
+        self.assertContains(response, "<th>State</th>")
+        self.assertContains(response, "<th>Actions</th>")
+
+        # Check that the dataset data is present
+        self.assertContains(response, "Test Dataset")
+        self.assertContains(response, "2024")
+        self.assertContains(response, "1")
+        self.assertContains(response, "Approved")
+        self.assertContains(response, 'href="https://example.com/admin/dataset/edit"')
+        self.assertContains(response, 'href="https://example.com/dataset/preview"')
+        self.assertContains(response, "View</a>")
+
+    @patch("cms.bundles.viewsets.bundle.BundleAPIClient")
+    def test_inspect_view__datasets_table_with_multiple_datasets(self, mock_api_client):
+        """Test that multiple datasets are displayed correctly in the table."""
+        BundleDatasetFactory(parent=self.bundle)
+        BundleDatasetFactory(parent=self.bundle)
+
+        # Mock the Bundle API response with multiple datasets
+        mock_client_instance = mock_api_client.return_value
+        mock_client_instance.get_bundle_contents.return_value = {
+            "contents": [
+                {
+                    "content_type": "DATASET",
+                    "metadata": {
+                        "title": "Dataset One",
+                        "edition_id": "2024",
+                        "version_id": "1",
+                    },
+                    "state": "APPROVED",
+                    "links": {
+                        "edit": "https://example.com/admin/dataset1/edit",
+                        "preview": "https://example.com/dataset1/preview",
+                    },
+                },
+                {
+                    "content_type": "DATASET",
+                    "metadata": {
+                        "title": "Dataset Two",
+                        "edition_id": "2023",
+                        "version_id": "2",
+                    },
+                    "state": "PUBLISHED",
+                    "links": {
+                        "edit": "https://example.com/admin/dataset2/edit",
+                        "preview": "https://example.com/dataset2/preview",
+                    },
+                },
+            ]
+        }
+
+        response = self.client.get(reverse("bundle:inspect", args=[self.bundle.pk]))
+
+        # Check that both datasets are present
+        self.assertContains(response, "Dataset One")
+        self.assertContains(response, "2024")
+        self.assertContains(response, "Approved")
+
+        self.assertContains(response, "Dataset Two")
+        self.assertContains(response, "2023")
+        self.assertContains(response, "2")
+        self.assertContains(response, "Published")
+
+    @patch("cms.bundles.viewsets.bundle.BundleAPIClient")
+    def test_inspect_view__datasets_table_with_missing_metadata(self, mock_api_client):
+        """Test that datasets with missing metadata display N/A."""
+        BundleDatasetFactory(parent=self.bundle)
+
+        # Mock the Bundle API response with missing metadata
+        mock_client_instance = mock_api_client.return_value
+        mock_client_instance.get_bundle_contents.return_value = {
+            "contents": [
+                {
+                    "content_type": "DATASET",
+                    "metadata": {},
+                    "links": {},
+                }
+            ]
+        }
+
+        response = self.client.get(reverse("bundle:inspect", args=[self.bundle.pk]))
+
+        # Check that N/A is displayed for missing data
+        self.assertContains(response, "N/A")
+        self.assertContains(response, 'href="#"')
 
 
 class BundleIndexViewTestCase(BundleViewSetTestCaseBase):
