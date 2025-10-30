@@ -1,3 +1,4 @@
+# pylint: disable=too-many-lines
 from datetime import UTC, datetime, timedelta
 from http import HTTPStatus
 from unittest import mock
@@ -17,7 +18,7 @@ from wagtail.test.utils.form_data import inline_formset, nested_form_data
 from cms.articles.tests.factories import StatisticalArticlePageFactory
 from cms.bundles.enums import BundleStatus
 from cms.bundles.models import Bundle, BundleTeam
-from cms.bundles.tests.factories import BundleDatasetFactory, BundleFactory, BundlePageFactory
+from cms.bundles.tests.factories import BundleFactory, BundlePageFactory
 from cms.bundles.tests.utils import grant_all_bundle_permissions, make_bundle_viewer
 from cms.bundles.viewsets.bundle_chooser import bundle_chooser_viewset
 from cms.bundles.viewsets.bundle_page_chooser import PagesWithDraftsForBundleChooserWidget, bundle_page_chooser_viewset
@@ -493,9 +494,13 @@ class BundleViewSetInspectTestCase(BundleViewSetTestCaseBase):
 
     @patch("cms.bundles.viewsets.bundle.BundleAPIClient")
     def test_inspect_view__contains_datasets(self, mock_api_client):
-        """Checks that the inspect view displays datasets."""
-        bundle_dataset_a = BundleDatasetFactory(parent=self.bundle)
-        bundle_dataset_b = BundleDatasetFactory(parent=self.bundle)
+        """Checks that the inspect view displays datasets for managers with edit links."""
+        dataset_id_a = "dataset-123"
+        dataset_id_b = "dataset-456"
+        edition_a = "2024"
+        edition_b = "2023"
+        version_a = "1"
+        version_b = "2"
 
         # Mock the Bundle API response
         mock_client_instance = mock_api_client.return_value
@@ -504,28 +509,22 @@ class BundleViewSetInspectTestCase(BundleViewSetTestCaseBase):
                 {
                     "content_type": "DATASET",
                     "metadata": {
-                        "title": bundle_dataset_a.dataset.title,
-                        "edition_id": bundle_dataset_a.dataset.edition,
-                        "version_id": bundle_dataset_a.dataset.version,
+                        "dataset_id": dataset_id_a,
+                        "title": "Dataset A",
+                        "edition_id": edition_a,
+                        "version_id": version_a,
                     },
                     "state": "PUBLISHED",
-                    "links": {
-                        "edit": "https://example.com/admin/dataset/edit",
-                        "preview": bundle_dataset_a.dataset.website_url,
-                    },
                 },
                 {
                     "content_type": "DATASET",
                     "metadata": {
-                        "title": bundle_dataset_b.dataset.title,
-                        "edition_id": bundle_dataset_b.dataset.edition,
-                        "version_id": bundle_dataset_b.dataset.version,
+                        "dataset_id": dataset_id_b,
+                        "title": "Dataset B",
+                        "edition_id": edition_b,
+                        "version_id": version_b,
                     },
                     "state": "APPROVED",
-                    "links": {
-                        "edit": "https://example.com/admin/dataset2/edit",
-                        "preview": bundle_dataset_b.dataset.website_url,
-                    },
                 },
             ]
         }
@@ -534,14 +533,22 @@ class BundleViewSetInspectTestCase(BundleViewSetTestCaseBase):
 
         self.assertNotContains(response, "No datasets in bundle")
 
-        self.assertContains(response, bundle_dataset_a.dataset.title)
-        self.assertContains(response, bundle_dataset_a.dataset.version)
-        self.assertContains(response, bundle_dataset_a.dataset.edition)
-        self.assertContains(response, f'href="{bundle_dataset_a.dataset.website_url}"')
-        self.assertContains(response, bundle_dataset_b.dataset.title)
-        self.assertContains(response, bundle_dataset_b.dataset.version)
-        self.assertContains(response, bundle_dataset_b.dataset.edition)
-        self.assertContains(response, f'href="{bundle_dataset_b.dataset.website_url}"')
+        # Check dataset A (published - should have View Live link)
+        self.assertContains(response, "Dataset A")
+        self.assertContains(response, version_a)
+        self.assertContains(response, edition_a)
+        expected_edit_url_a = f"/data-admin/series/{dataset_id_a}/editions/{edition_a}/versions/{version_a}"
+        expected_view_url_a = f"/datasets/{dataset_id_a}/editions/{edition_a}/versions/{version_a}"
+        self.assertContains(response, f'href="{expected_edit_url_a}"')
+        self.assertContains(response, f'href="{expected_view_url_a}"')
+        self.assertContains(response, "View Live")
+
+        # Check dataset B (approved - should NOT have View Live link)
+        self.assertContains(response, "Dataset B")
+        self.assertContains(response, version_b)
+        self.assertContains(response, edition_b)
+        expected_edit_url_b = f"/data-admin/series/{dataset_id_b}/editions/{edition_b}/versions/{version_b}"
+        self.assertContains(response, f'href="{expected_edit_url_b}"')
 
     @override_settings(  # Address race condition in tests caused when calling delete() on a page
         WAGTAILSEARCH_BACKENDS={
@@ -605,15 +612,12 @@ class BundleViewSetInspectTestCase(BundleViewSetTestCaseBase):
                 {
                     "content_type": "DATASET",
                     "metadata": {
+                        "dataset_id": "test-dataset-123",
                         "title": "Test Dataset",
                         "edition_id": "2024",
                         "version_id": "1",
                     },
                     "state": "APPROVED",
-                    "links": {
-                        "edit": "https://example.com/admin/dataset/edit",
-                        "preview": "https://example.com/dataset/preview",
-                    },
                 }
             ]
         }
@@ -632,9 +636,10 @@ class BundleViewSetInspectTestCase(BundleViewSetTestCaseBase):
         self.assertContains(response, "2024")
         self.assertContains(response, "1")
         self.assertContains(response, "Approved")
-        self.assertContains(response, 'href="https://example.com/admin/dataset/edit"')
-        self.assertContains(response, 'href="https://example.com/dataset/preview"')
-        self.assertContains(response, "View</a>")
+        # Check for data admin URL
+        self.assertContains(response, 'href="/data-admin/series/test-dataset-123/editions/2024/versions/1"')
+        # APPROVED datasets should not have View Live button
+        self.assertNotContains(response, "View Live")
 
     @patch("cms.bundles.viewsets.bundle.BundleAPIClient")
     def test_inspect_view__datasets_table_with_multiple_datasets(self, mock_api_client):
@@ -646,28 +651,22 @@ class BundleViewSetInspectTestCase(BundleViewSetTestCaseBase):
                 {
                     "content_type": "DATASET",
                     "metadata": {
+                        "dataset_id": "dataset-one",
                         "title": "Dataset One",
                         "edition_id": "2024",
                         "version_id": "1",
                     },
                     "state": "APPROVED",
-                    "links": {
-                        "edit": "https://example.com/admin/dataset1/edit",
-                        "preview": "https://example.com/dataset1/preview",
-                    },
                 },
                 {
                     "content_type": "DATASET",
                     "metadata": {
+                        "dataset_id": "dataset-two",
                         "title": "Dataset Two",
                         "edition_id": "2023",
                         "version_id": "2",
                     },
                     "state": "PUBLISHED",
-                    "links": {
-                        "edit": "https://example.com/admin/dataset2/edit",
-                        "preview": "https://example.com/dataset2/preview",
-                    },
                 },
             ]
         }
@@ -683,6 +682,9 @@ class BundleViewSetInspectTestCase(BundleViewSetTestCaseBase):
         self.assertContains(response, "2023")
         self.assertContains(response, "2")
         self.assertContains(response, "Published")
+        # Published dataset should have View Live link
+        self.assertContains(response, "View Live")
+        self.assertContains(response, 'href="/datasets/dataset-two/editions/2023/versions/2"')
 
     @patch("cms.bundles.viewsets.bundle.BundleAPIClient")
     def test_inspect_view__datasets_table_with_missing_metadata(self, mock_api_client):
@@ -704,6 +706,78 @@ class BundleViewSetInspectTestCase(BundleViewSetTestCaseBase):
         # Check that N/A is displayed for missing data
         self.assertContains(response, "N/A")
         self.assertContains(response, 'href="#"')
+
+    @patch("cms.bundles.viewsets.bundle.BundleAPIClient")
+    def test_inspect_view__datasets_for_viewer_without_edit_links(self, mock_api_client):
+        """Test that viewers see datasets without edit links."""
+        # Login as bundle viewer (non-manager)
+        self.client.force_login(self.bundle_viewer)
+
+        # Mock the Bundle API response
+        mock_client_instance = mock_api_client.return_value
+        mock_client_instance.get_bundle_contents.return_value = {
+            "contents": [
+                {
+                    "content_type": "DATASET",
+                    "metadata": {
+                        "dataset_id": "dataset-123",
+                        "title": "Test Dataset",
+                        "edition_id": "2024",
+                        "version_id": "1",
+                    },
+                    "state": "PUBLISHED",
+                }
+            ]
+        }
+
+        response = self.client.get(reverse("bundle:inspect", args=[self.in_review_bundle.pk]))
+
+        # Dataset title should be present but NOT as a hyperlink
+        self.assertContains(response, "Test Dataset")
+        self.assertContains(response, "2024")
+        self.assertContains(response, "1")
+        self.assertContains(response, "Published")
+
+        # Should NOT contain data-admin link
+        self.assertNotContains(response, "/data-admin/series/")
+
+        # Should contain View Live link for published datasets
+        self.assertContains(response, "View Live")
+        self.assertContains(response, 'href="/datasets/dataset-123/editions/2024/versions/1"')
+
+    @patch("cms.bundles.viewsets.bundle.BundleAPIClient")
+    def test_inspect_view__datasets_for_viewer_approved_no_view_live(self, mock_api_client):
+        """Test that viewers see approved datasets without View Live link."""
+        # Login as bundle viewer (non-manager)
+        self.client.force_login(self.bundle_viewer)
+
+        # Mock the Bundle API response
+        mock_client_instance = mock_api_client.return_value
+        mock_client_instance.get_bundle_contents.return_value = {
+            "contents": [
+                {
+                    "content_type": "DATASET",
+                    "metadata": {
+                        "dataset_id": "dataset-456",
+                        "title": "Approved Dataset",
+                        "edition_id": "2023",
+                        "version_id": "2",
+                    },
+                    "state": "APPROVED",
+                }
+            ]
+        }
+
+        response = self.client.get(reverse("bundle:inspect", args=[self.in_review_bundle.pk]))
+
+        # Dataset should be present
+        self.assertContains(response, "Approved Dataset")
+        self.assertContains(response, "2023")
+        self.assertContains(response, "2")
+        self.assertContains(response, "Approved")
+
+        # Should NOT contain View Live link for non-published datasets
+        self.assertNotContains(response, "View Live")
 
 
 class BundleIndexViewTestCase(BundleViewSetTestCaseBase):

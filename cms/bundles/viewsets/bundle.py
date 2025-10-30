@@ -30,7 +30,6 @@ from cms.bundles.notifications.slack import (
 from cms.bundles.permissions import user_can_manage_bundles, user_can_preview_bundle
 from cms.bundles.utils import publish_bundle
 from cms.core.custom_date_format import ons_date_format
-from cms.datasets.models import Dataset
 
 if TYPE_CHECKING:
     from django.db.models.fields import Field
@@ -44,6 +43,9 @@ if TYPE_CHECKING:
 
 
 logger = logging.getLogger(__name__)
+
+# Fallback value for missing dataset metadata
+MISSING_VALUE = "N/A"
 
 
 class BundleCreateView(CreateView):
@@ -467,8 +469,8 @@ class BundleInspectView(InspectView):
     @staticmethod
     def get_human_readable_state(state: str) -> str:
         """Converts a machine-readable state string to a human-readable format."""
-        if not state or state == "N/A":
-            return "N/A"
+        if not state or state == MISSING_VALUE:
+            return MISSING_VALUE
         match state:
             case "APPROVED":
                 return "Approved"
@@ -478,9 +480,7 @@ class BundleInspectView(InspectView):
                 return state.replace("_", " ").title()
 
     def get_datasets_for_manager(self) -> "SafeString | str":
-        """Returns all the bundle datasets.
-        For now, there is no distinction between roles for datasets.
-        """
+        """Returns all the bundle datasets for managers with edit links."""
         client = BundleAPIClient(access_token=self.request.COOKIES.get(settings.ACCESS_TOKEN_COOKIE_NAME))
         bundle_contents = client.get_bundle_contents(self.object.bundle_api_content_id)
 
@@ -488,17 +488,36 @@ class BundleInspectView(InspectView):
         for content_item in bundle_contents.get("contents", []):
             if content_item.get("content_type") == "DATASET":
                 metadata = content_item.get("metadata", {})
-                links = content_item.get("links", {})
+                state = content_item.get("state", "")
+                dataset_id = metadata.get("dataset_id", "")
+                edition_id = metadata.get("edition_id", "")
+                version_id = metadata.get("version_id", "")
+
+                # Construct data admin URL
+                if dataset_id and edition_id and version_id:
+                    edit_url = f"/data-admin/series/{dataset_id}/editions/{edition_id}/versions/{version_id}"
+                else:
+                    edit_url = "#"
+
+                # Construct public URL for published datasets
+                if state == "PUBLISHED" and dataset_id and edition_id and version_id:
+                    view_url = f"/datasets/{dataset_id}/editions/{edition_id}/versions/{version_id}"
+                    action_button: SafeString | str = format_html(
+                        '<a href="{}" class="button button-small button-secondary" target="_blank" '
+                        'rel="noopener">View Live</a>',
+                        view_url,
+                    )
+                else:
+                    action_button = ""
+
                 data.append(
                     (
-                        links.get("edit", "#"),  # Link to admin edit page
-                        metadata.get("title", "N/A"),
-                        metadata.get("edition_id", "N/A"),
-                        metadata.get("version_id", "N/A"),
-                        self.get_human_readable_state(
-                            content_item.get("state", "N/A")
-                        ),  # Human-readable state from API
-                        links.get("preview", "#"),  # Link to public view
+                        edit_url,
+                        metadata.get("title", MISSING_VALUE),
+                        edition_id or MISSING_VALUE,
+                        version_id or MISSING_VALUE,
+                        self.get_human_readable_state(state),
+                        action_button,
                     )
                 )
 
@@ -508,8 +527,57 @@ class BundleInspectView(InspectView):
         dataset_data = format_html_join(
             "\n",
             '<tr><td class="title"><strong><a href="{}">{}</a></strong></td><td>{}</td><td>{}</td><td>{}</td>'
-            '<td><a href="{}" class="button button-small button-secondary" target="_blank" '
-            'rel="noopener">View</a></td></tr>',
+            "<td>{}</td></tr>",
+            data,
+        )
+
+        return format_html(
+            "<table class='listing'><thead><tr><th>Title</th><th>Edition</th><th>Version</th><th>State</th>"
+            "<th>Actions</th></tr></thead>{}</table>",
+            dataset_data,
+        )
+
+    def get_datasets_for_viewer(self) -> "SafeString | str":
+        """Returns all the bundle datasets for viewers without edit links."""
+        client = BundleAPIClient(access_token=self.request.COOKIES.get(settings.ACCESS_TOKEN_COOKIE_NAME))
+        bundle_contents = client.get_bundle_contents(self.object.bundle_api_content_id)
+
+        data = []
+        for content_item in bundle_contents.get("contents", []):
+            if content_item.get("content_type") == "DATASET":
+                metadata = content_item.get("metadata", {})
+                state = content_item.get("state", "")
+                dataset_id = metadata.get("dataset_id", "")
+                edition_id = metadata.get("edition_id", "")
+                version_id = metadata.get("version_id", "")
+
+                # Construct public URL for published datasets
+                if state == "PUBLISHED" and dataset_id and edition_id and version_id:
+                    view_url = f"/datasets/{dataset_id}/editions/{edition_id}/versions/{version_id}"
+                    action_button: SafeString | str = format_html(
+                        '<a href="{}" class="button button-small button-secondary" target="_blank" '
+                        'rel="noopener">View Live</a>',
+                        view_url,
+                    )
+                else:
+                    action_button = ""
+
+                data.append(
+                    (
+                        metadata.get("title", MISSING_VALUE),
+                        edition_id or MISSING_VALUE,
+                        version_id or MISSING_VALUE,
+                        self.get_human_readable_state(state),
+                        action_button,
+                    )
+                )
+
+        if not data:
+            return "No datasets in bundle"
+
+        dataset_data = format_html_join(
+            "\n",
+            '<tr><td class="title"><strong>{}</strong></td><td>{}</td><td>{}</td><td>{}</td><td>{}</td></tr>',
             data,
         )
 
@@ -521,7 +589,10 @@ class BundleInspectView(InspectView):
 
     def get_bundled_datasets_display_value(self) -> "SafeString | str":
         """Returns formatted markup for datasets linked to the Bundle."""
-        return self.get_datasets_for_manager()
+        if self.can_manage:
+            return self.get_datasets_for_manager()
+
+        return self.get_datasets_for_viewer()
 
 
 class BundleDeleteView(DeleteView):
