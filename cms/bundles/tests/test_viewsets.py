@@ -481,6 +481,7 @@ class BundleViewSetInspectTestCase(BundleViewSetTestCaseBase):
         self.assertContains(response, "The Test Statistical Article")
         self.assertContains(response, "The Test Topic Page")
 
+    @override_settings(DIS_DATASETS_BUNDLE_API_ENABLED=True)
     @patch("cms.bundles.viewsets.bundle.BundleAPIClient")
     def test_inspect_view__displays_message_when_no_datasets(self, mock_api_client):
         """Checks that the inspect view displays message when no datasets in bundle."""
@@ -492,6 +493,7 @@ class BundleViewSetInspectTestCase(BundleViewSetTestCaseBase):
 
         self.assertContains(response, "No datasets in bundle")
 
+    @override_settings(DIS_DATASETS_BUNDLE_API_ENABLED=True)
     @patch("cms.bundles.viewsets.bundle.BundleAPIClient")
     def test_inspect_view__contains_datasets(self, mock_api_client):
         """Checks that the inspect view displays datasets for managers with edit links."""
@@ -602,6 +604,7 @@ class BundleViewSetInspectTestCase(BundleViewSetTestCaseBase):
         self.assertContains(response, "1 July 2025 1:45pm")
         self.assertContains(response, "1 July 2025 2:00pm")
 
+    @override_settings(DIS_DATASETS_BUNDLE_API_ENABLED=True)
     @patch("cms.bundles.viewsets.bundle.BundleAPIClient")
     def test_inspect_view__datasets_table_display(self, mock_api_client):
         """Test that datasets are displayed in a table format with correct headers and data."""
@@ -641,6 +644,7 @@ class BundleViewSetInspectTestCase(BundleViewSetTestCaseBase):
         # APPROVED datasets should not have View Live button
         self.assertNotContains(response, "View Live")
 
+    @override_settings(DIS_DATASETS_BUNDLE_API_ENABLED=True)
     @patch("cms.bundles.viewsets.bundle.BundleAPIClient")
     def test_inspect_view__datasets_table_with_multiple_datasets(self, mock_api_client):
         """Test that multiple datasets are displayed correctly in the table."""
@@ -680,12 +684,12 @@ class BundleViewSetInspectTestCase(BundleViewSetTestCaseBase):
 
         self.assertContains(response, "Dataset Two")
         self.assertContains(response, "2023")
-        self.assertContains(response, "2")
         self.assertContains(response, "Published")
         # Published dataset should have View Live link
         self.assertContains(response, "View Live")
         self.assertContains(response, 'href="/datasets/dataset-two/editions/2023/versions/2"')
 
+    @override_settings(DIS_DATASETS_BUNDLE_API_ENABLED=True)
     @patch("cms.bundles.viewsets.bundle.BundleAPIClient")
     def test_inspect_view__datasets_table_with_missing_metadata(self, mock_api_client):
         """Test that datasets with missing metadata display N/A."""
@@ -707,6 +711,7 @@ class BundleViewSetInspectTestCase(BundleViewSetTestCaseBase):
         self.assertContains(response, "N/A")
         self.assertContains(response, 'href="#"')
 
+    @override_settings(DIS_DATASETS_BUNDLE_API_ENABLED=True)
     @patch("cms.bundles.viewsets.bundle.BundleAPIClient")
     def test_inspect_view__datasets_for_viewer_without_edit_links(self, mock_api_client):
         """Test that viewers see datasets without edit links."""
@@ -745,6 +750,7 @@ class BundleViewSetInspectTestCase(BundleViewSetTestCaseBase):
         self.assertContains(response, "View Live")
         self.assertContains(response, 'href="/datasets/dataset-123/editions/2024/versions/1"')
 
+    @override_settings(DIS_DATASETS_BUNDLE_API_ENABLED=True)
     @patch("cms.bundles.viewsets.bundle.BundleAPIClient")
     def test_inspect_view__datasets_for_viewer_approved_no_view_live(self, mock_api_client):
         """Test that viewers see approved datasets without View Live link."""
@@ -778,6 +784,71 @@ class BundleViewSetInspectTestCase(BundleViewSetTestCaseBase):
 
         # Should NOT contain View Live link for non-published datasets
         self.assertNotContains(response, "View Live")
+
+    @override_settings(DIS_DATASETS_BUNDLE_API_ENABLED=False)
+    def test_inspect_view__datasets_when_api_disabled(self):
+        """Test that the inspect view displays a message when the Bundle API is disabled."""
+        response = self.client.get(reverse("bundle:inspect", args=[self.bundle.pk]))
+
+        self.assertContains(response, "Dataset API integration is disabled, can&#x27;t display datasets.")
+
+    @override_settings(DIS_DATASETS_BUNDLE_API_ENABLED=True)
+    @patch("cms.bundles.viewsets.bundle.BundleAPIClient")
+    def test_inspect_view__manager_sees_title_as_hyperlink(self, mock_api_client):
+        """Test that managers see dataset titles as hyperlinks to data-admin."""
+        # Mock the Bundle API response
+        mock_client_instance = mock_api_client.return_value
+        mock_client_instance.get_bundle_contents.return_value = {
+            "contents": [
+                {
+                    "content_type": "DATASET",
+                    "metadata": {
+                        "dataset_id": "test-123",
+                        "title": "Manager Test Dataset",
+                        "edition_id": "2024",
+                        "version_id": "1",
+                    },
+                    "state": "APPROVED",
+                }
+            ]
+        }
+
+        response = self.client.get(reverse("bundle:inspect", args=[self.bundle.pk]))
+
+        # Check that the title is hyperlinked to data-admin
+        expected_url = "/data-admin/series/test-123/editions/2024/versions/1"
+        self.assertContains(response, f'<a href="{expected_url}">Manager Test Dataset</a>')
+
+    @override_settings(DIS_DATASETS_BUNDLE_API_ENABLED=True)
+    @patch("cms.bundles.viewsets.bundle.BundleAPIClient")
+    def test_inspect_view__viewer_sees_title_as_plain_text(self, mock_api_client):
+        """Test that viewers see dataset titles as plain text (not hyperlinked)."""
+        # Login as bundle viewer (non-manager)
+        self.client.force_login(self.bundle_viewer)
+
+        # Mock the Bundle API response
+        mock_client_instance = mock_api_client.return_value
+        mock_client_instance.get_bundle_contents.return_value = {
+            "contents": [
+                {
+                    "content_type": "DATASET",
+                    "metadata": {
+                        "dataset_id": "test-456",
+                        "title": "Viewer Test Dataset",
+                        "edition_id": "2023",
+                        "version_id": "2",
+                    },
+                    "state": "APPROVED",
+                }
+            ]
+        }
+
+        response = self.client.get(reverse("bundle:inspect", args=[self.in_review_bundle.pk]))
+
+        # Check that the title is plain text (wrapped in <strong> but no <a> tag)
+        self.assertContains(response, "<strong>Viewer Test Dataset</strong>")
+        # Make sure there's NO hyperlink to data-admin with this title
+        self.assertNotContains(response, '<a href="/data-admin/series/test-456')
 
 
 class BundleIndexViewTestCase(BundleViewSetTestCaseBase):

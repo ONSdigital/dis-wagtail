@@ -550,7 +550,7 @@ class BundleInspectView(InspectView):
 
             row_html_list.append(format_html("<tr>{}{}</tr>", title_col, other_cols))
 
-        dataset_data = format_html_join("\n", "{}", row_html_list)
+        dataset_data = format_html_join("\n", "{}", ((row,) for row in row_html_list))
 
         return format_html(
             "<table class='listing'>"
@@ -570,6 +570,11 @@ class BundleInspectView(InspectView):
 
     def get_bundled_datasets_display_value(self) -> "SafeString | str":
         """Returns formatted markup for datasets linked to the Bundle."""
+        if settings.DIS_DATASETS_BUNDLE_API_ENABLED is False:
+            # Note: We don't use the @datasets_bundle_api_enabled decorator here because we want to
+            # show a message in the inspect view.
+            return "Dataset API integration is disabled, can't display datasets."
+
         if self.can_manage:
             return self.get_datasets_for_manager()
 
