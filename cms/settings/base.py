@@ -966,6 +966,7 @@ SLACK_NOTIFICATIONS_WEBHOOK_URL = env.get("SLACK_NOTIFICATIONS_WEBHOOK_URL")
 # API bases
 ONS_API_BASE_URL = env.get("ONS_API_BASE_URL", "https://api.beta.ons.gov.uk/v1")
 DATASETS_API_BASE_URL = env.get("DATASETS_API_BASE_URL", f"{ONS_API_BASE_URL}/datasets")  # used for dataset choosers
+DATASETS_API_EDITIONS_URL = env.get("DATASETS_API_EDITIONS_URL", f"{ONS_API_BASE_URL}/dataset-editions")
 DIS_DATASETS_BUNDLE_API_BASE_URL = env.get("DIS_DATASETS_BUNDLE_API_BASE_URL", ONS_API_BASE_URL)
 TOPIC_API_BASE_URL = env.get("TOPIC_API_BASE_URL", f"{ONS_API_BASE_URL}/topics")  # used to sync topics
 
@@ -984,7 +985,7 @@ SEARCH_INDEX_PUBLISHER_BACKEND = os.getenv("SEARCH_INDEX_PUBLISHER_BACKEND")
 KAFKA_SERVERS = os.getenv("KAFKA_SERVERS", "").split(",")
 KAFKA_USE_IAM_AUTH = os.getenv("KAFKA_USE_IAM_AUTH", "false").lower() == "true"
 
-SEARCH_INDEX_EXCLUDED_PAGE_TYPES = (
+SEARCH_INDEX_EXCLUDED_PAGE_TYPES = {
     "HomePage",
     "ArticlesIndexPage",
     "ArticleSeriesPage",
@@ -995,7 +996,7 @@ SEARCH_INDEX_EXCLUDED_PAGE_TYPES = (
     "TopicPage",
     "CookiesPage",
     "Page",
-)
+}
 
 # Allowed domains for linking to other parts of the ONS website (for datasets or time series)
 ONS_ALLOWED_LINK_DOMAINS = env.get("ONS_ALLOWED_LINK_DOMAINS", "ons.gov.uk").split(",")

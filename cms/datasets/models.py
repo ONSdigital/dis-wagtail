@@ -1,31 +1,122 @@
 import logging
-import re
 from collections.abc import Iterable, Mapping
+from http import HTTPStatus
 from typing import ClassVar
 
+import requests
 from django.conf import settings
 from django.db import models
 from django.db.models import UniqueConstraint
 from queryish.rest import APIModel, APIQuerySet
 
-logger = logging.getLogger(__name__)
+from cms.datasets.utils import construct_dataset_compound_id, convert_old_dataset_format, get_published_from_state
 
-EDITIONS_PATTERN = re.compile(r"/editions/([^/]+)/")
+logger = logging.getLogger(__name__)
 
 
 # TODO: This needs a revisit. Consider caching + fewer requests
 class ONSDatasetApiQuerySet(APIQuerySet):
+    def __init__(self, *args: object, **kwargs: object) -> None:
+        super().__init__(*args, **kwargs)
+        self.token: str | None = None
+
+    def with_token(self, token: str) -> "ONSDatasetApiQuerySet":
+        """Return a cloned queryset with the given authentication token.
+
+        We clone the queryset to ensure the method is stateless and doesn't mutate
+        the original queryset. This allows chaining operations (e.g.,
+        ONSDataset.objects.with_token(token).filter(...).all()) without affecting
+        other code that may be using the same base queryset instance.
+
+        Args:
+            token: Bearer token for API authentication
+
+        Returns:
+            Cloned queryset with token attached
+        """
+        clone: ONSDatasetApiQuerySet = self.clone()
+        clone.token = token
+        return clone
+
     def get_results_from_response(self, response: Mapping) -> Iterable:
         results: Iterable = response["items"]
+
         return results
 
     def fetch_api_response(self, url: str | None = None, params: Mapping | None = None) -> dict:
-        api_response: dict = super().fetch_api_response(url=url, params=params)
+        # Add Authorization header if token is set
+        headers = dict(self.http_headers) if self.http_headers else {}
+        if self.token:
+            # Note: Don't prepend "Bearer " - it's already in the token
+            headers["Authorization"] = self.token
+
+        if url is None:
+            url = self.base_url
+        if params is None:
+            params = {}
+
+        is_detail_request = url.startswith(ONSDataset.Meta.detail_url.split("%s", maxsplit=1)[0])
+
+        try:
+            response = requests.get(url, params=params, headers=headers, timeout=30)
+            response.raise_for_status()
+        except requests.exceptions.HTTPError as e:
+            if e.response.status_code == HTTPStatus.TOO_MANY_REQUESTS:
+                logger.warning("Rate limit exceeded when fetching datasets", extra={"url": url})
+                raise
+            # Check for 5xx server errors (500-599)
+            if e.response.status_code >= HTTPStatus.INTERNAL_SERVER_ERROR:
+                logger.error(
+                    "Server error when fetching datasets",
+                    extra={"url": url, "status_code": e.response.status_code},
+                )
+                raise
+            raise
+        except requests.exceptions.RequestException as e:
+            logger.error("Request failed when fetching datasets", extra={"url": url, "error": str(e)})
+            raise
+
+        try:
+            api_response: dict = response.json()
+        except ValueError as e:
+            logger.error("Failed to parse JSON response when fetching datasets", extra={"url": url, "params": params})
+            raise ValueError("Failed to parse JSON response from datasets API") from e
+
+        # api_response should be a dict, let's raise a clear error if not
+        if not isinstance(api_response, dict):
+            logger.error("Invalid API response format when fetching datasets", extra={"url": url, "params": params})
+            raise ValueError("Invalid API response format, expected a dictionary-like object")
+
+        if is_detail_request:
+            api_response = self._process_detail_response(api_response)
+
         # The dataset API returns the per page count as "count" and the total results as "total_count"
         # Queryish expects "count" to be the total results count, so override it here
         if count := api_response.get("total_count"):
             api_response["count"] = count
+
         return api_response
+
+    @staticmethod
+    def _process_detail_response(response: dict) -> dict:
+        # For detail responses, we may need to adjust the structure.
+        # This only applies to the detail URL which currently uses the old format.
+        current = response.get("current")
+        next_converted = convert_old_dataset_format(next_entry) if (next_entry := response.get("next")) else {}
+
+        if current:
+            dataset = convert_old_dataset_format(current)
+            # Store the next version info if available (this becomes our unpublished version)
+            dataset["next"] = next_converted
+            return dataset
+
+        if next_converted:
+            # Return a minimal structure indicating no published version - this is necessary
+            # if someone constructs a request for an unpublished version directly but indicating
+            # they want the published one.
+            return {"title": "No published version", "description": "", "next": next_converted}
+
+        return response
 
 
 class ONSDataset(APIModel):
@@ -34,25 +125,44 @@ class ONSDataset(APIModel):
     search_fields: ClassVar[list[str]] = ["title", "version", "formatted_edition"]
 
     class Meta:
-        base_url: str = settings.DATASETS_API_BASE_URL
+        base_url: str = settings.DATASETS_API_EDITIONS_URL
         detail_url: str = f"{settings.DATASETS_API_BASE_URL}/%s"
-        fields: ClassVar = ["id", "description", "title", "version", "edition"]
+        fields: ClassVar = ["id", "dataset_id", "description", "title", "version", "edition", "next"]
         pagination_style = "offset-limit"
         verbose_name_plural = "ONS Datasets"
 
     @classmethod
     def from_query_data(cls, data: Mapping) -> "ONSDataset":
-        url: str = data["links"]["latest_version"]["href"]
-        edition_match = EDITIONS_PATTERN.search(url)
-        if not edition_match:
-            raise ValueError(f"Found invalid dataset URL, missing edition: {url} for dataset: {data['id']}")
-        edition = edition_match.group(1)
+        # Handle new /v1/dataset-editions response structure
+        dataset_id = data.get("dataset_id", "id-not-provided")
+        title = data.get("title") or "Title not provided"
+        description = data.get("description") or "Description not provided"
+        edition = data.get("edition", "edition-not-provided")
+        next_version = data.get("next", {})
+        published = get_published_from_state(data.get("state", "unknown"))
+
+        if next_version:
+            # Recursively create ONSDataset for the unpublished version
+            next_version = ONSDataset.from_query_data(next_version)
+
+        # Extract version from latest_version object
+        latest_version = data.get("latest_version", {})
+        version_id = latest_version.get("id", "1") if isinstance(latest_version, dict) else "1"
+
         return cls(
-            id=data["id"],
-            title=data["title"],
-            description=data["description"],
-            version=data["links"]["latest_version"]["id"],
+            # We construct the compound ID here. Note that we append the published state only as a
+            # workaround so that the published state can be determined from the id alone.
+            # This is necessary because we need to know which version to extract when using
+            # the detail endpoint which returns "current" and "next" versions.
+            id=construct_dataset_compound_id(
+                dataset_id=dataset_id, edition=edition, version_id=version_id, published=published
+            ),
+            dataset_id=dataset_id,
+            title=title,
+            description=description,
+            version=version_id,
             edition=edition,
+            next=next_version,
         )
 
     @property
