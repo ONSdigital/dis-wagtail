@@ -49,7 +49,7 @@ def extract_edition_from_dataset_url(url: str) -> str | None:
     Example URL: /datasets/wellbeing-quarterly/editions/september/versions/9
     This would extract "september" as the edition.
 
-    Raises ValueError if the edition cannot be found in the URL.
+    Returns None if the edition cannot be found in the URL.
     """
     edition_match = EDITIONS_PATTERN.search(url)
     if not edition_match:
