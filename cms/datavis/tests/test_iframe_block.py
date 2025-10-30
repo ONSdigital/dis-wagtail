@@ -1,18 +1,26 @@
+from typing import ClassVar
+
 from django.conf import settings
 from django.core.exceptions import ValidationError
+from django.test import override_settings
 from wagtail.blocks.struct_block import StructValue
 
 from cms.datavis.blocks.charts import IframeBlock
 from cms.datavis.tests.test_chart_blocks_base import BaseVisualisationBlockTestCase
 
 
+@override_settings(
+    ONS_ALLOWED_LINK_DOMAINS=["example.com"],
+    IFRAME_VISUALISATION_ALLOWED_DOMAINS=["example.com"],
+    IFRAME_VISUALISATION_PATH_PREFIXES=["/visualisations"],
+)
 class IframeBlockTestCase(BaseVisualisationBlockTestCase):
     block_type = IframeBlock
-    valid_domains = settings.IFRAME_VISUALISATION_ALLOWED_DOMAINS
+    valid_domains: ClassVar[list[str]] = ["example.com"]
 
     def setUp(self):
         super().setUp()
-        self.raw_data["iframe_source_url"] = "https://www.ons.gov.uk/visualisations/dvc/1234567890"
+        self.raw_data["iframe_source_url"] = "https://www.example.com/visualisations/dvc/1234567890"
 
     def test_generic_properties(self):
         self._test_generic_properties()
@@ -40,18 +48,18 @@ class IframeBlockTestCase(BaseVisualisationBlockTestCase):
 
         readable_prefixes = " or ".join(settings.IFRAME_VISUALISATION_PATH_PREFIXES)
         cases = {
-            "https://www.random.url.com": "The URL hostname is not in the list of allowed domains: ons.gov.uk",
-            "http://ons.gov.uk": "Please enter a valid URL. "
+            "https://www.random.url.com": "The URL hostname is not in the list of allowed domains: example.com",
+            "http://example.com": "Please enter a valid URL. "
             "It should start with 'https://' and contain a valid domain name.",
-            "https://ons.gov.uk/invalidpath/12345": (
+            "https://example.com/invalidpath/12345": (
                 f"The URL path is not allowed. It must start with one of: {readable_prefixes}, "
                 "and include a subpath after the prefix."
             ),
-            "https://www.ons.gov.uk/visualisations/": (
+            "https://www.example.com/visualisations/": (
                 f"The URL path is not allowed. It must start with one of: {readable_prefixes}, "
                 "and include a subpath after the prefix."
             ),
-            "https://www.ons.gov.uk/visualisations": (
+            "https://www.example.com/visualisations": (
                 f"The URL path is not allowed. It must start with one of: {readable_prefixes}, "
                 "and include a subpath after the prefix."
             ),
@@ -152,5 +160,5 @@ class IframeBlockTestCase(BaseVisualisationBlockTestCase):
         self.assertEqual(errors["title"].message, "This field is required.")
         self.assertEqual(errors["audio_description"].message, "This field is required.")
         self.assertEqual(
-            errors["iframe_source_url"].message, "The URL hostname is not in the list of allowed domains: ons.gov.uk"
+            errors["iframe_source_url"].message, "The URL hostname is not in the list of allowed domains: example.com"
         )
