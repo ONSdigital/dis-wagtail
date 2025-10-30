@@ -1,5 +1,7 @@
 from http import HTTPStatus
 
+import responses
+from django.conf import settings
 from django.test import TestCase, override_settings
 from django.urls import reverse
 from wagtail.models import ModelLogEntry
@@ -10,6 +12,7 @@ from cms.bundles.admin_forms import AddToBundleForm
 from cms.bundles.enums import PREVIEWABLE_BUNDLE_STATUSES, BundleStatus
 from cms.bundles.models import Bundle, BundleTeam
 from cms.bundles.tests.factories import BundleDatasetFactory, BundleFactory, BundlePageFactory
+from cms.bundles.tests.test_viewsets import BundleViewSetTestCaseBase
 from cms.bundles.tests.utils import (
     create_bundle_manager,
     create_bundle_viewer,
@@ -266,6 +269,40 @@ class PreviewBundleViewTestCase(WagtailTestUtils, TestCase):
         )
 
         self.assertEqual(ModelLogEntry.objects.filter(action="bundles.preview").count(), 0)
+
+
+class DeleteBundleViewTestCase(BundleViewSetTestCaseBase, WagtailTestUtils, TestCase):
+    @responses.activate
+    @override_settings(
+        DIS_DATASETS_BUNDLE_API_ENABLED=True, DIS_DATASETS_BUNDLE_API_BASE_URL="https://test-api.example.com"
+    )
+    def test_bundle_delete_dataset_api_call_includes_access_token(self):
+        # Set up the bundle with a bundle_api_content_id so there is something to call to delete
+        self.bundle.bundle_api_content_id = "bundle-content-id-123"
+        self.bundle.save()
+
+        self.client.cookies[settings.ACCESS_TOKEN_COOKIE_NAME] = "the-access-token"
+
+        # Mock the response from the dataset bundle API
+        response_mock = responses.delete(
+            f"{settings.DIS_DATASETS_BUNDLE_API_BASE_URL}/bundles/{self.bundle.bundle_api_content_id}",
+            status=HTTPStatus.NO_CONTENT,
+        )
+
+        # Post the admin bundle delete request
+        response = self.client.post(
+            f"/admin/bundle/delete/{self.bundle.pk}/", follow=True, data={"action-delete": "delete"}
+        )
+        self.assertEqual(response.status_code, HTTPStatus.OK)
+
+        # Check the bundle is deleted
+        with self.assertRaises(Bundle.DoesNotExist):
+            Bundle.objects.get(pk=self.bundle.pk)
+
+        # Check the bundle dataset API was called with the correct Authorization header
+        self.assertEqual(response_mock.call_count, 1)
+        bundle_delete_call = response_mock.calls[0]
+        self.assertEqual(bundle_delete_call.request.headers["Authorization"], "the-access-token")
 
 
 class PreviewBundleReleaseCalendarViewTestCase(WagtailTestUtils, TestCase):
