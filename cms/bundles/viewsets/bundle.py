@@ -479,12 +479,12 @@ class BundleInspectView(InspectView):
             case _:
                 return state.replace("_", " ").title()
 
-    def get_datasets_for_manager(self) -> "SafeString | str":
-        """Returns all the bundle datasets for managers with edit links."""
+    def _get_processed_datasets(self) -> list[dict[str, "SafeString | str"]]:
+        """Fetches and processes dataset information from the bundle API."""
         client = BundleAPIClient(access_token=self.request.COOKIES.get(settings.ACCESS_TOKEN_COOKIE_NAME))
         bundle_contents = client.get_bundle_contents(self.object.bundle_api_content_id)
+        processed_data = []
 
-        data = []
         for content_item in bundle_contents.get("contents", []):
             if content_item.get("content_type") == "DATASET":
                 metadata = content_item.get("metadata", {})
@@ -493,36 +493,46 @@ class BundleInspectView(InspectView):
                 edition_id = metadata.get("edition_id", "")
                 version_id = metadata.get("version_id", "")
 
-                # Construct data admin URL
+                item: dict[str, SafeString | str] = {
+                    "title": metadata.get("title", MISSING_VALUE),
+                    "edition": edition_id or MISSING_VALUE,
+                    "version": version_id or MISSING_VALUE,
+                    "state": self.get_human_readable_state(state),
+                    "action_button": "",
+                    "edit_url": "#",
+                }
+
                 if dataset_id and edition_id and version_id:
-                    edit_url = f"/data-admin/series/{dataset_id}/editions/{edition_id}/versions/{version_id}"
-                else:
-                    edit_url = "#"
-
-                # Construct public URL for published datasets
-                if state == "PUBLISHED" and dataset_id and edition_id and version_id:
-                    view_url = f"/datasets/{dataset_id}/editions/{edition_id}/versions/{version_id}"
-                    action_button: SafeString | str = format_html(
-                        '<a href="{}" class="button button-small button-secondary" target="_blank" '
-                        'rel="noopener">View Live</a>',
-                        view_url,
+                    item["edit_url"] = (
+                        f"/data-admin/series/{dataset_id}/editions/{edition_id}/versions/{version_id}"
                     )
-                else:
-                    action_button = ""
+                    if state == "PUBLISHED":
+                        view_url = f"/datasets/{dataset_id}/editions/{edition_id}/versions/{version_id}"
+                        item["action_button"] = format_html(
+                            '<a href="{}" class="button button-small button-secondary" target="_blank" '
+                            'rel="noopener">View Live</a>',
+                            view_url,
+                        )
+                processed_data.append(item)
+        return processed_data
 
-                data.append(
-                    (
-                        edit_url,
-                        metadata.get("title", MISSING_VALUE),
-                        edition_id or MISSING_VALUE,
-                        version_id or MISSING_VALUE,
-                        self.get_human_readable_state(state),
-                        action_button,
-                    )
-                )
-
-        if not data:
+    def get_datasets_for_manager(self) -> "SafeString | str":
+        """Returns all the bundle datasets for managers with edit links."""
+        processed_datasets = self._get_processed_datasets()
+        if not processed_datasets:
             return "No datasets in bundle"
+
+        data = [
+            (
+                item["edit_url"],
+                item["title"],
+                item["edition"],
+                item["version"],
+                item["state"],
+                item["action_button"],
+            )
+            for item in processed_datasets
+        ]
 
         dataset_data = format_html_join(
             "\n",
@@ -539,41 +549,20 @@ class BundleInspectView(InspectView):
 
     def get_datasets_for_viewer(self) -> "SafeString | str":
         """Returns all the bundle datasets for viewers without edit links."""
-        client = BundleAPIClient(access_token=self.request.COOKIES.get(settings.ACCESS_TOKEN_COOKIE_NAME))
-        bundle_contents = client.get_bundle_contents(self.object.bundle_api_content_id)
-
-        data = []
-        for content_item in bundle_contents.get("contents", []):
-            if content_item.get("content_type") == "DATASET":
-                metadata = content_item.get("metadata", {})
-                state = content_item.get("state", "")
-                dataset_id = metadata.get("dataset_id", "")
-                edition_id = metadata.get("edition_id", "")
-                version_id = metadata.get("version_id", "")
-
-                # Construct public URL for published datasets
-                if state == "PUBLISHED" and dataset_id and edition_id and version_id:
-                    view_url = f"/datasets/{dataset_id}/editions/{edition_id}/versions/{version_id}"
-                    action_button: SafeString | str = format_html(
-                        '<a href="{}" class="button button-small button-secondary" target="_blank" '
-                        'rel="noopener">View Live</a>',
-                        view_url,
-                    )
-                else:
-                    action_button = ""
-
-                data.append(
-                    (
-                        metadata.get("title", MISSING_VALUE),
-                        edition_id or MISSING_VALUE,
-                        version_id or MISSING_VALUE,
-                        self.get_human_readable_state(state),
-                        action_button,
-                    )
-                )
-
-        if not data:
+        processed_datasets = self._get_processed_datasets()
+        if not processed_datasets:
             return "No datasets in bundle"
+
+        data = [
+            (
+                item["title"],
+                item["edition"],
+                item["version"],
+                item["state"],
+                item["action_button"],
+            )
+            for item in processed_datasets
+        ]
 
         dataset_data = format_html_join(
             "\n",
