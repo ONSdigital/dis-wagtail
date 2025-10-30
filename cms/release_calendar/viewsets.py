@@ -69,6 +69,7 @@ class FutureReleaseCalendarPageChosenMixin(ChosenView):
 
 
 class FutureReleaseCalendarPageChooserViewSet(ChooserViewSet):
+    # Used a string reference so the model is lazily loaded and circular imports are avoided
     model = "release_calendar.ReleaseCalendarPage"
     choose_view_class = FutureReleaseCalendarPageChooseView
     choose_results_view_class = FutureReleaseCalendarPageChooseResultsView
