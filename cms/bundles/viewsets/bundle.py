@@ -503,9 +503,7 @@ class BundleInspectView(InspectView):
                 }
 
                 if dataset_id and edition_id and version_id:
-                    item["edit_url"] = (
-                        f"/data-admin/series/{dataset_id}/editions/{edition_id}/versions/{version_id}"
-                    )
+                    item["edit_url"] = f"/data-admin/series/{dataset_id}/editions/{edition_id}/versions/{version_id}"
                     if state == "PUBLISHED":
                         view_url = f"/datasets/{dataset_id}/editions/{edition_id}/versions/{version_id}"
                         item["action_button"] = format_html(
@@ -516,65 +514,59 @@ class BundleInspectView(InspectView):
                 processed_data.append(item)
         return processed_data
 
-    def get_datasets_for_manager(self) -> "SafeString | str":
-        """Returns all the bundle datasets for managers with edit links."""
-        processed_datasets = self._get_processed_datasets()
+    def _render_datasets_table(self, include_edit_links: bool) -> "SafeString | str":
+        """Renders datasets as an HTML table.
+
+        Args:
+            include_edit_links: If True, titles are hyperlinked to data admin.
+                            If False, titles are plain text.
+        """
+        try:
+            processed_datasets = self._get_processed_datasets()
+        except BundleAPIClientError as e:
+            return f"Could not retrieve datasets from Dataset API: {e}"
+
         if not processed_datasets:
             return "No datasets in bundle"
 
-        data = [
-            (
-                item["edit_url"],
-                item["title"],
+        row_html_list: list[SafeString] = []
+        for item in processed_datasets:
+            if include_edit_links:
+                title_col = format_html(
+                    '<td class="title"><strong><a href="{}">{}</a></strong></td>',
+                    item["edit_url"],
+                    item["title"],
+                )
+            else:
+                title_col = format_html('<td class="title"><strong>{}</strong></td>', item["title"])
+
+            other_cols = format_html(
+                "<td>{}</td><td>{}</td><td>{}</td><td>{}</td>",
                 item["edition"],
                 item["version"],
                 item["state"],
                 item["action_button"],
             )
-            for item in processed_datasets
-        ]
 
-        dataset_data = format_html_join(
-            "\n",
-            '<tr><td class="title"><strong><a href="{}">{}</a></strong></td><td>{}</td><td>{}</td><td>{}</td>'
-            "<td>{}</td></tr>",
-            data,
-        )
+            row_html_list.append(format_html("<tr>{}{}</tr>", title_col, other_cols))
+
+        dataset_data = format_html_join("\n", "{}", row_html_list)
 
         return format_html(
-            "<table class='listing'><thead><tr><th>Title</th><th>Edition</th><th>Version</th><th>State</th>"
-            "<th>Actions</th></tr></thead>{}</table>",
+            "<table class='listing'>"
+            "<thead><tr><th>Title</th><th>Edition</th><th>Version</th><th>State</th><th>Actions</th></tr></thead>"
+            "<tbody>{}</tbody>"
+            "</table>",
             dataset_data,
         )
+
+    def get_datasets_for_manager(self) -> "SafeString | str":
+        """Returns all the bundle datasets for managers with edit links."""
+        return self._render_datasets_table(include_edit_links=True)
 
     def get_datasets_for_viewer(self) -> "SafeString | str":
         """Returns all the bundle datasets for viewers without edit links."""
-        processed_datasets = self._get_processed_datasets()
-        if not processed_datasets:
-            return "No datasets in bundle"
-
-        data = [
-            (
-                item["title"],
-                item["edition"],
-                item["version"],
-                item["state"],
-                item["action_button"],
-            )
-            for item in processed_datasets
-        ]
-
-        dataset_data = format_html_join(
-            "\n",
-            '<tr><td class="title"><strong>{}</strong></td><td>{}</td><td>{}</td><td>{}</td><td>{}</td></tr>',
-            data,
-        )
-
-        return format_html(
-            "<table class='listing'><thead><tr><th>Title</th><th>Edition</th><th>Version</th><th>State</th>"
-            "<th>Actions</th></tr></thead>{}</table>",
-            dataset_data,
-        )
+        return self._render_datasets_table(include_edit_links=False)
 
     def get_bundled_datasets_display_value(self) -> "SafeString | str":
         """Returns formatted markup for datasets linked to the Bundle."""
