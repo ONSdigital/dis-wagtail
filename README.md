@@ -196,7 +196,7 @@ In order to run it:
 
 #### Environment Configuration
 
-By default, `make` targets will use the `cms.settings.dev` settings unless their commands explicitly use a different setting (via the `--settings` parameter or `DJANGO_SETTINGS_MODULE` environment variable).
+By default, `make` targets will use the `cms.settings.dev` settings unless their commands explicitly use a different setting (via the `--settings` parameter or `DJANGO_SETTINGS_MODULE` environment variable)
 is set in the environment. This default should work out of the box for local development.
 
 To override settings in the environment, you can use a `.env` file. Note, however, that settings this file may also be picked up in the docker container, so
@@ -208,6 +208,11 @@ you may need to remove or rename the file, or comment out specific variables if 
 > However, if you installed Poetry with `brew` rather than `pip` that currently isn't going to
 > work (see the [issue](https://github.com/pivoshenko/poetry-plugin-dotenv/issues/327)) and you'll need to install an older and
 > seemingly no longer maintained [poetry-dotenv-plugin](https://github.com/mpeteuil/poetry-dotenv-plugin).
+
+### External services
+
+Some functionality in the application relies on external services, which the default configuration points to. An example is the Dataset API.
+Access to these services may require additional setup, or a mocked version. Without it, the functionality will not work correctly.
 
 ## Development
 
