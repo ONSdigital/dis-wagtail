@@ -5,7 +5,9 @@ max_retries = 3
 retry_wait_time = 5
 
 # Exclude URLs and mail addresses from checking (supports regex).
-exclude = ["^https?://jwt\\.io"]
+exclude = ["^https?://jwt\\.io",
+          "^https?://www\\.contributor-covenant\\.org(/.*)?$"
+]
 
 # Exclude all private IPs from checking.
 exclude_all_private = true

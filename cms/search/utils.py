@@ -54,9 +54,11 @@ def build_release_specific_fields(page: "Page") -> dict:
     return data
 
 
-def build_resource_dict(page: "Page") -> dict:
+def build_resource_dict(page: "Page", old_url_path: str | None = None) -> dict:
     """Single entry point that decides if we build standard or release payload.
     Returns a dict shaped according to the resource_metadata.yml spec.
+    old_url_path is optional, if provided it will be used to populate the old_uri field, which is used to remove
+    old URIs from the search index.
     """
     base_data = build_standard_resource_dict(page)
 
@@ -64,6 +66,9 @@ def build_resource_dict(page: "Page") -> dict:
         # If it's a release, update with release-specific fields
         release_data = build_release_specific_fields(page)
         base_data.update(release_data)
+
+    if old_url_path:
+        base_data["old_uri"] = build_uri_from_url_path(old_url_path)
 
     return base_data
 
@@ -77,5 +82,11 @@ def get_model_by_name(model_name: str) -> type:
 
 def build_page_uri(page: "Page") -> str:
     """Build the URI for a given page based on its URL path."""
-    path = page.url_path.strip("/").split("/", 1)[-1]
+    return build_uri_from_url_path(page.url_path)
+
+
+def build_uri_from_url_path(url_path: str) -> str:
+    """Build the URI for a given page url_path."""
+    # The url_path includes the home page's "/home/" slug at the start, but our URLs don't, so we strip it out
+    path = url_path.strip("/").split("/", 1)[-1]
     return f"/{path}" if not getattr(settings, "WAGTAIL_APPEND_SLASH", True) else f"/{path}/"
