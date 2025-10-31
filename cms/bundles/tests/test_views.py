@@ -12,15 +12,15 @@ from cms.bundles.admin_forms import AddToBundleForm
 from cms.bundles.enums import PREVIEWABLE_BUNDLE_STATUSES, BundleStatus
 from cms.bundles.models import Bundle, BundleTeam
 from cms.bundles.tests.factories import BundleDatasetFactory, BundleFactory, BundlePageFactory
-from cms.bundles.tests.test_viewsets import BundleViewSetTestCaseBase
 from cms.bundles.tests.utils import (
     create_bundle_manager,
     create_bundle_viewer,
+    grant_all_bundle_permissions,
 )
 from cms.home.models import HomePage
 from cms.release_calendar.tests.factories import ReleaseCalendarPageFactory
 from cms.teams.models import Team
-from cms.users.tests.factories import UserFactory
+from cms.users.tests.factories import GroupFactory, UserFactory
 from cms.workflows.tests.utils import (
     mark_page_as_ready_for_review,
     mark_page_as_ready_to_publish,
@@ -271,7 +271,18 @@ class PreviewBundleViewTestCase(WagtailTestUtils, TestCase):
         self.assertEqual(ModelLogEntry.objects.filter(action="bundles.preview").count(), 0)
 
 
-class DeleteBundleViewTestCase(BundleViewSetTestCaseBase, WagtailTestUtils, TestCase):
+class DeleteBundleViewTestCase(WagtailTestUtils, TestCase):
+    @classmethod
+    def setUpTestData(cls):
+        cls.publishing_group = GroupFactory(name="Publishing Officers", access_admin=True)
+        grant_all_bundle_permissions(cls.publishing_group)
+        cls.publishing_officer = UserFactory(username="publishing_officer")
+        cls.publishing_officer.groups.add(cls.publishing_group)
+
+    def setUp(self):
+        self.bundle = BundleFactory(name="A Bundle", created_by=self.publishing_officer)
+        self.client.force_login(self.publishing_officer)
+
     @responses.activate
     @override_settings(
         DIS_DATASETS_BUNDLE_API_ENABLED=True, DIS_DATASETS_BUNDLE_API_BASE_URL="https://test-api.example.com"
@@ -290,9 +301,8 @@ class DeleteBundleViewTestCase(BundleViewSetTestCaseBase, WagtailTestUtils, Test
         )
 
         # Post the admin bundle delete request
-        response = self.client.post(
-            f"/admin/bundle/delete/{self.bundle.pk}/", follow=True, data={"action-delete": "delete"}
-        )
+        bundle_delete_url = reverse("bundle:delete", args=[self.bundle.pk])
+        response = self.client.post(bundle_delete_url, follow=True, data={"action-delete": "delete"})
         self.assertEqual(response.status_code, HTTPStatus.OK)
 
         # Check the bundle is deleted
