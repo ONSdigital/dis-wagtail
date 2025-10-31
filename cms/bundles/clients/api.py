@@ -53,15 +53,13 @@ class BundleAPIClient:
             headers["Authorization"] = access_token
         self.session.headers.update(headers)
 
-    def _normalise_limit(self, limit: int | None) -> int:
+    @classmethod
+    def _normalise_limit(cls, limit: int | None) -> int:
         """Clamp requested limit to swagger bounds, applying a high default for throughput."""
         if limit is None:
-            return self.DEFAULT_PAGE_LIMIT
-        if limit < self.MIN_LIMIT:
-            return self.MIN_LIMIT
-        if limit > self.MAX_LIMIT:
-            return self.MAX_LIMIT
-        return limit
+            return cls.DEFAULT_PAGE_LIMIT
+
+        return max(cls.MIN_LIMIT, min(limit, cls.MAX_LIMIT))
 
     def _make_request(  # pylint: disable=too-many-arguments,too-many-positional-arguments  # noqa: PLR0913
         self,
