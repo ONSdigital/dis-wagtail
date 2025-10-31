@@ -11,10 +11,11 @@ from cms.articles.tests.factories import (
 )
 from cms.methodology.tests.factories import MethodologyIndexPageFactory, MethodologyPageFactory
 from cms.topics.tests.factories import TopicPageFactory
+from functional_tests.step_helpers.topic_page_utils import TopicContentBuilder
 
 
 @given("a topic page exists under the homepage")
-def the_user_creates_theme_and_topic_pages(context: Context) -> None:
+def the_user_creates_topic_page(context: Context) -> None:
     context.topic_page = TopicPageFactory(title="Public Sector Finance")
 
 
@@ -163,3 +164,116 @@ def the_time_series_item_appears_in_the_table_of_contents(context: Context) -> N
 @then("the user sees the '{link_text}' link")
 def user_can_see_link(context: Context, link_text: str) -> None:
     expect(context.page.get_by_role("link", name=link_text)).to_be_visible()
+
+
+@given("the following topic pages exist")
+def create_topic_pages_from_table(context: Context) -> None:
+    """Create multiple topic pages from a table."""
+    context.topic_pages = {}  # Store all topic pages by title
+
+    # Initialise builder if not exists
+    if not hasattr(context, "topic_page_builder"):
+        context.topic_page_builder = TopicContentBuilder()
+
+    for row in context.table:
+        title = row["title"]
+        topic_name = row["topic"]
+
+        # Create or reuse the topic
+        topic = context.topic_page_builder.get_or_create_topic(topic_name)
+
+        # Create the topic page
+        topic_page = TopicPageFactory(title=title, topic=topic)
+
+        # Store it in context for later reference
+        context.topic_pages[title] = topic_page
+
+
+@given('"{topic_page_title}" has the following "{item_type}"')
+def create_items_for_topic_page(context: Context, topic_page_title: str, item_type: str) -> None:
+    """Create articles or methodologies under a specific topic page."""
+    topic_page = context.topic_pages[topic_page_title]
+
+    if not hasattr(context, "topic_page_builder"):
+        context.topic_page_builder = TopicContentBuilder()
+
+    items_data = [row.as_dict() for row in context.table]
+
+    # Map item_type to builder method and context attribute
+    builder_methods = {
+        "articles": context.topic_page_builder.create_articles_for_topic_page,
+        "methodologies": context.topic_page_builder.create_methodologies_for_topic_page,
+    }
+
+    if item_type not in builder_methods:
+        raise ValueError(f"Unsupported item_type: {item_type}")
+
+    builder_methods[item_type](topic_page, items_data)
+
+
+@when('the user visits "{topic_page_title}"')
+def user_visits_topic_page(context: Context, topic_page_title: str) -> None:
+    topic_page = context.topic_pages[topic_page_title]
+    context.page.goto(f"{context.base_url}{topic_page.url}")
+
+
+@when('the user edits "{topic_page_title}"')
+def user_edits_topic_page(context: Context, topic_page_title: str) -> None:
+    topic_page = context.topic_pages[topic_page_title]
+    edit_url = reverse("wagtailadmin_pages:edit", args=[topic_page.id])
+    context.page.goto(f"{context.base_url}{edit_url}")
+
+
+@when('the user manually adds "{item_title}" in the highlighted "{item_type}" section')
+def user_manually_adds_item(context: Context, item_title: str, item_type: str) -> None:
+    button_map = {
+        "articles": ("Add topic page related article", "Choose Article page"),
+        "methodologies": ("Add topic page related methodology", "Choose Methodology page"),
+    }
+
+    if item_type not in button_map:
+        raise ValueError(f"Unsupported item_type: {item_type}")
+
+    add_button, choose_button = button_map[item_type]
+    context.page.get_by_role("button", name=add_button).click()
+    context.page.get_by_role("button", name=choose_button).click()
+    context.page.get_by_role("link", name=item_title).click()
+
+
+@then('the highlighted "{section_type}" section is visible')
+def highlighted_section_visible(context: Context, section_type: str) -> None:
+    """Check if the highlighted articles or methodologies section is visible."""
+    section_map = {
+        "articles": ("#related-articles", "Related articles"),
+        "methodologies": ("#related-methods", "Methods and quality information"),
+    }
+
+    if section_type not in section_map:
+        raise ValueError(f"Unsupported section_type: {section_type}")
+
+    selector, expected_text = section_map[section_type]
+    expect(context.page.locator(selector)).to_contain_text(expected_text)
+
+
+@then('the highlighted "{item_type}" are displayed in this order')
+def check_highlighted_items_order(context: Context, item_type: str) -> None:
+    """Check the order of highlighted articles or methodologies matches the table."""
+    expected_titles = [row[0] for row in context.table]
+    document_list = context.page.locator(".ons-document-list").first
+    list_items = document_list.locator(".ons-document-list__item").all()
+
+    actual_titles = []
+    for item in list_items:
+        title_link = item.locator(".ons-document-list__item-title a").first
+        title = title_link.text_content().strip()
+        actual_titles.append(title)
+
+    assert len(actual_titles) == len(expected_titles), (
+        f"Expected {len(expected_titles)} {item_type}, but found {len(actual_titles)}"
+    )
+
+    assert actual_titles == expected_titles, f"Expected {item_type} in order {expected_titles}, but got {actual_titles}"
+
+    for title in expected_titles:
+        link = document_list.locator(".ons-document-list__item-title a").filter(has_text=title).first
+        expect(link).to_be_visible()

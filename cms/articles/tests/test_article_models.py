@@ -211,21 +211,6 @@ class StatisticalArticlePageTestCase(WagtailTestUtils, TestCase):
         del self.page.has_equations  # clear cached property
         self.assertTrue(self.page.has_equations)
 
-    def test_has_ons_embed(self):
-        """Test has_ons_embed property."""
-        self.assertFalse(self.page.has_ons_embed)
-        self.page.content = [
-            {
-                "type": "section",
-                "value": {
-                    "title": "Test Section",
-                    "content": [{"type": "ons_embed", "value": {"url": "https://ons.gov.uk/embed"}}],
-                },
-            }
-        ]
-        del self.page.has_ons_embed  # clear cached property
-        self.assertTrue(self.page.has_ons_embed)
-
     def test_next_date_must_be_after_release_date(self):
         """Tests the model validates next release date is after the release date."""
         self.page.next_release_date = self.page.release_date

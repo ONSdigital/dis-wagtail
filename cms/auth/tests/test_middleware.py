@@ -588,3 +588,25 @@ class ONSAuthMiddlewareTests(TestCase):
 
         user.assign_groups_and_teams.assert_called_once_with(["role-admin", "team-alpha"])
         m_login.assert_called_once_with(req, user)
+
+    @override_settings(AWS_COGNITO_LOGIN_ENABLED=True)
+    def test_internal_health_endpoints_bypass_auth(self):
+        for path in ("/-/readiness", "/-/liveness", "/-/health", "/health"):
+            with self.subTest(path=path):
+                req = self._request(path=path)
+                req.COOKIES = {}  # no cookies, simulating unauthenticated internal API requests
+
+                with (
+                    mock.patch.object(
+                        self.middleware,
+                        "_handle_unauthenticated_user",
+                        wraps=self.middleware._handle_unauthenticated_user,  # pylint: disable=protected-access
+                    ) as m_unauth,
+                    mock.patch("cms.auth.middleware.logout") as m_logout,
+                ):
+                    self.middleware.process_request(req)
+
+                    # Check that the unauthenticated handler was NOT called, must be bypassed
+                    m_unauth.assert_not_called()
+                    # No logout should occur when auth is bypassed
+                    m_logout.assert_not_called()

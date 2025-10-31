@@ -82,7 +82,6 @@ INSTALLED_APPS = [
     "cms.taxonomy",
     "cms.search",
     "cms.workflows",
-    "wagtail.embeds",
     "wagtail.sites",
     "wagtail.users",
     "wagtail.snippets",
@@ -929,9 +928,6 @@ if TESTING:
     PASSWORD_HASHERS = ["django.contrib.auth.hashers.MD5PasswordHasher"]
 
 
-# Wagtail embeds responsive html
-WAGTAILEMBEDS_RESPONSIVE_HTML = True
-
 # Disable new version check and "what's new" banner
 WAGTAIL_ENABLE_UPDATE_CHECK = False
 WAGTAIL_ENABLE_WHATS_NEW_BANNER = False
@@ -956,8 +952,6 @@ FORMAT_MODULE_PATH = ["cms.settings.formats"]
 DATE_FORMAT = "j F Y"
 DATETIME_FORMAT = "j F Y g:ia"  # 1 November 2024, 1 p.m.
 
-ONS_EMBED_PREFIX = env.get("ONS_EMBED_PREFIX", "https://www.ons.gov.uk/visualisations/")
-
 # ONS Cookie banner settings
 ONS_COOKIE_BANNER_SERVICE_NAME = env.get("ONS_COOKIE_BANNER_SERVICE_NAME", "ons.gov.uk")
 ONS_COOKIES_PAGE_SLUG = "cookies"
@@ -973,6 +967,7 @@ SLACK_NOTIFICATIONS_WEBHOOK_URL = env.get("SLACK_NOTIFICATIONS_WEBHOOK_URL")
 # API bases
 ONS_API_BASE_URL = env.get("ONS_API_BASE_URL", "https://api.beta.ons.gov.uk/v1")
 DATASETS_API_BASE_URL = env.get("DATASETS_API_BASE_URL", f"{ONS_API_BASE_URL}/datasets")  # used for dataset choosers
+DATASETS_API_EDITIONS_URL = env.get("DATASETS_API_EDITIONS_URL", f"{ONS_API_BASE_URL}/dataset-editions")
 DIS_DATASETS_BUNDLE_API_BASE_URL = env.get("DIS_DATASETS_BUNDLE_API_BASE_URL", ONS_API_BASE_URL)
 TOPIC_API_BASE_URL = env.get("TOPIC_API_BASE_URL", f"{ONS_API_BASE_URL}/topics")  # used to sync topics
 
@@ -990,9 +985,8 @@ WAGTAILSIMPLETRANSLATION_SYNC_PAGE_TREE = True
 SEARCH_INDEX_PUBLISHER_BACKEND = os.getenv("SEARCH_INDEX_PUBLISHER_BACKEND")
 KAFKA_SERVERS = os.getenv("KAFKA_SERVERS", "").split(",")
 KAFKA_USE_IAM_AUTH = os.getenv("KAFKA_USE_IAM_AUTH", "false").lower() == "true"
-KAFKA_API_VERSION = tuple(map(int, os.getenv("KAFKA_API_VERSION", "3.5.1").split(".")))
 
-SEARCH_INDEX_EXCLUDED_PAGE_TYPES = (
+SEARCH_INDEX_EXCLUDED_PAGE_TYPES = {
     "HomePage",
     "ArticlesIndexPage",
     "ArticleSeriesPage",
@@ -1003,7 +997,7 @@ SEARCH_INDEX_EXCLUDED_PAGE_TYPES = (
     "TopicPage",
     "CookiesPage",
     "Page",
-)
+}
 
 # Allowed domains for linking to other parts of the ONS website (for datasets or time series)
 ONS_ALLOWED_LINK_DOMAINS = env.get("ONS_ALLOWED_LINK_DOMAINS", "ons.gov.uk").split(",")
@@ -1013,6 +1007,13 @@ if "IFRAME_VISUALISATION_ALLOWED_DOMAINS" in env:
     IFRAME_VISUALISATION_ALLOWED_DOMAINS = env["IFRAME_VISUALISATION_ALLOWED_DOMAINS"].split(",")
 else:  # Default to ONS allowed link domains if not set
     IFRAME_VISUALISATION_ALLOWED_DOMAINS = ONS_ALLOWED_LINK_DOMAINS
+
+
+# Allowed path prefixes for iframe visualisations
+IFRAME_VISUALISATION_PATH_PREFIXES = env.get(
+    "IFRAME_VISUALISATION_PATH_PREFIXES",
+    "/visualisations",
+).split(",")
 
 # FIXME: remove before going live
 ENFORCE_EXCLUSIVE_TAXONOMY = env.get("ENFORCE_EXCLUSIVE_TAXONOMY", "true").lower() == "true"

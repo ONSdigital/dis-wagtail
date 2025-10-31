@@ -9,13 +9,12 @@ from wagtail.test.utils import WagtailTestUtils
 
 from cms.articles.tests.factories import StatisticalArticlePageFactory
 from cms.bundles.enums import BundleStatus
-from cms.bundles.panels import BundleMultipleChooserPanel, BundleNotePanel
+from cms.bundles.models import Bundle
+from cms.bundles.panels import BundleDatasetChooserWidget, BundleMultipleChooserPanel, BundleNotePanel
 from cms.bundles.tests.factories import BundleFactory, BundlePageFactory
 
 if TYPE_CHECKING:
     from wagtail.models import Page
-
-    from cms.bundles.models import Bundle
 
 
 class BundleNotePanelTestCase(WagtailTestUtils, TestCase):
@@ -116,3 +115,40 @@ class BundleMultipleChooserPanelTestCase(WagtailTestUtils, TestCase):
     def test_value_from_instance(self):
         bound_panel = self.get_bound_panel(self.bundle)
         self.assertEqual(bound_panel.value_from_instance, self.bundle.bundled_pages)
+
+
+class BundleDatasetChooserPanelTestCase(TestCase):
+    """Test BundleMultipleChooserPanel with bundled_datasets."""
+
+    def test_custom_widget_injected_for_bundled_datasets(self):
+        """Test that BundleDatasetChooserWidget is used for bundled_datasets panel."""
+        panel = BundleMultipleChooserPanel("bundled_datasets", chooser_field_name="dataset")
+        bound_panel_class = panel.bind_to_model(Bundle)
+
+        form_options = bound_panel_class.get_form_options()
+
+        # Verify that our custom widget is in the form options
+        formset_opts = form_options["formsets"]["bundled_datasets"]
+        self.assertIn("widgets", formset_opts)
+        self.assertIn("dataset", formset_opts["widgets"])
+        self.assertIsInstance(formset_opts["widgets"]["dataset"], BundleDatasetChooserWidget)
+
+    def test_custom_widget_not_injected_for_other_panels(self):
+        """Test that BundleDatasetChooserWidget is NOT used for non-dataset panels."""
+        panel = BundleMultipleChooserPanel("bundled_pages", chooser_field_name="page")
+        bound_panel_class = panel.bind_to_model(Bundle)
+
+        form_options = bound_panel_class.get_form_options()
+
+        # Verify that BundleDatasetChooserWidget is not used
+        formset_opts = form_options["formsets"]["bundled_pages"]
+        widget = formset_opts.get("widgets", {}).get("page")
+        self.assertNotIsInstance(widget, BundleDatasetChooserWidget)
+
+    def test_bundle_dataset_chooser_widget_url(self):
+        """Test that BundleDatasetChooserWidget adds for_bundle parameter to URL."""
+        widget = BundleDatasetChooserWidget()
+        chooser_url = widget.get_chooser_modal_url()
+
+        # Verify that for_bundle=true is in the URL
+        self.assertIn("for_bundle=true", chooser_url)
