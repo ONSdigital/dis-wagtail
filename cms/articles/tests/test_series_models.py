@@ -87,7 +87,7 @@ class ArticleSeriesEvergreenUrlTestCase(WagtailTestUtils, TestCase):
 
         self.assertContains(
             response,
-            f'<a href="{self.article_series_page.url}/related-data" class="ons-list__link">'
+            f'<a href="{self.article_series_page.get_relative_path()}/related-data" class="ons-list__link">'
             + "View data used in this article</a>",
             html=True,
         )
@@ -149,11 +149,10 @@ class ArticleSeriesEvergreenUrlTestCase(WagtailTestUtils, TestCase):
         request_factory = RequestFactory()
         request_factory_server_name = request_factory._base_environ()["SERVER_NAME"]  # pylint: disable=protected-access
 
+        relative_path = self.article_with_datasets.get_relative_path()
         self.assertContains(
             response,
-            f'<link rel="canonical" href="http://{request_factory_server_name}{
-                self.article_with_datasets.url
-            }/related-data">',
+            f'<link rel="canonical" href="http://{request_factory_server_name}{relative_path}/related-data">',
             html=True,
         )
         self.assertNotContains(
@@ -197,7 +196,7 @@ class ArticleSeriesEvergreenUrlTestCase(WagtailTestUtils, TestCase):
             locale=Locale.objects.get(language_code="cy"), copy_parents=True
         )
         welsh_article.save_revision().publish()
-        response = self.client.get(f"{welsh_article.url}/related-data")
+        response = self.client.get(f"{welsh_article.url}/related-data", headers={"host": "cy.ons.localhost"})
         self.assertEqual(response.status_code, HTTPStatus.OK)
         welsh_series_url = welsh_article.get_parent().get_full_url()
         self.assertContains(response, f'<link rel="canonical" href="{welsh_series_url}/related-data">', html=True)
@@ -211,7 +210,7 @@ class ArticleSeriesEvergreenUrlTestCase(WagtailTestUtils, TestCase):
             locale=Locale.objects.get(language_code="cy"), copy_parents=True
         )
         welsh_article.save_revision().publish()
-        response = self.client.get(f"{self.article_series_page.url}/related-data")
+        response = self.client.get(f"{self.article_series_page.url}/related-data", headers={"host": "cy.ons.localhost"})
         self.assertEqual(response.status_code, HTTPStatus.OK)
         # TODO: Change to {self.article_series_page.url}/related-data once CMS-765 is resolved.
         self.assertContains(
