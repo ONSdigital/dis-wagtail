@@ -1,9 +1,9 @@
-from unittest.mock import patch
+from unittest.mock import call, patch
 
 from django.db.models.signals import post_delete
 from django.test import TestCase, override_settings
 from wagtail.models import Page, PageViewRestriction
-from wagtail.signals import page_published, page_unpublished, post_page_move
+from wagtail.signals import page_published, page_slug_changed, page_unpublished, post_page_move
 
 from cms.articles.tests.factories import ArticleSeriesPageFactory, StatisticalArticlePageFactory
 from cms.home.models import HomePage
@@ -37,6 +37,7 @@ class SearchSignalsTest(TestCase):
             StatisticalArticlePageFactory(),
             IndexPageFactory(slug="custom-slug-1"),
         ]
+        cls.included_page = StatisticalArticlePageFactory()
 
     def setUp(self):
         super().setUp()
@@ -63,6 +64,12 @@ class SearchSignalsTest(TestCase):
             self.mock_publisher.publish_created_or_updated.assert_called_once_with(page)
             self.mock_publisher.publish_created_or_updated.reset_mock()
 
+    def test_on_page_published_private_page(self):
+        """Pages with view restrictions should not trigger publish_created_or_updated."""
+        PageViewRestriction.objects.create(page=self.included_page, restriction_type=PageViewRestriction.LOGIN)
+        page_published.send(sender=type(self.included_page), instance=self.included_page)
+        self.mock_publisher.publish_created_or_updated.assert_not_called()
+
     def test_on_page_unpublished_excluded_page_type(self):
         """Excluded pages should not trigger publish_deleted."""
         for page in self.excluded_pages:
@@ -77,6 +84,12 @@ class SearchSignalsTest(TestCase):
             self.mock_publisher.publish_deleted.assert_called_once_with(page)
             self.mock_publisher.publish_deleted.reset_mock()
 
+    def test_on_page_unpublished_private_page(self):
+        """Pages with view restrictions should not trigger publish_deleted."""
+        PageViewRestriction.objects.create(page=self.included_page, restriction_type=PageViewRestriction.LOGIN)
+        page_unpublished.send(sender=type(self.included_page), instance=self.included_page)
+        self.mock_publisher.publish_deleted.assert_not_called()
+
     def test_on_page_deleted_excluded_page_type(self):
         """Excluded pages should not trigger publish_deleted on delete."""
         for page in self.excluded_pages:
@@ -90,6 +103,12 @@ class SearchSignalsTest(TestCase):
             post_delete.send(sender=Page, instance=page)
             self.mock_publisher.publish_deleted.assert_called_once_with(page)
             self.mock_publisher.publish_deleted.reset_mock()
+
+    def test_on_page_deleted_private_page(self):
+        """Pages with view restrictions should not trigger publish_deleted."""
+        PageViewRestriction.objects.create(page=self.included_page, restriction_type=PageViewRestriction.LOGIN)
+        post_delete.send(sender=type(self.included_page), instance=self.included_page)
+        self.mock_publisher.publish_deleted.assert_not_called()
 
     def test_on_page_deleted_draft_page(self):
         """Draft pages should not trigger publish_deleted on delete."""
@@ -198,6 +217,122 @@ class SearchSignalsTest(TestCase):
                 parent_path_after=topic_page.url_path,
             ),
         )
+
+    def test_on_page_slug_changed(self):
+        """Changing the slug of a page should trigger publish_created_or_updated including the old_url_path."""
+        # Set up the page with an initial slug and publish it to ensure we have a revision
+        page = IndexPageFactory(slug="old-slug")
+        page.save_revision().publish()
+        self.mock_publisher.publish_created_or_updated.reset_mock()
+
+        page.slug = "new-slug"
+        page.save_revision().publish()
+        page.refresh_from_db()
+
+        page_before = page.revisions.order_by("-created_at")[1].as_object()
+
+        page_slug_changed.send(sender=type(page), instance=page, instance_before=page_before)
+
+        # Check that the publisher was called twice: once from the publish
+        # and once from the slug change, including the old_url_path
+        self.assertEqual(self.mock_publisher.publish_created_or_updated.call_count, 2)
+        self.mock_publisher.publish_created_or_updated.assert_has_calls(
+            (call(page), call(page, old_url_path=page_before.url_path))
+        )
+
+    def test_on_page_slug_changed_with_descendant(self):
+        """Changing the slug of a page should trigger publish_created_or_updated including the old_url_path."""
+        parent_page = IndexPageFactory(slug="old-slug")
+        descendant_page = IndexPageFactory(parent=parent_page)
+        parent_page.save_revision().publish()
+
+        parent_page.slug = "new-slug"
+        parent_page.save_revision().publish()
+        parent_page.refresh_from_db()
+        descendant_page.refresh_from_db()
+        page_before = parent_page.revisions.order_by("-created_at")[1].as_object()
+
+        self.mock_publisher.publish_created_or_updated.reset_mock()
+        page_slug_changed.send(sender=type(parent_page), instance=parent_page, instance_before=page_before)
+
+        self.assertEqual(self.mock_publisher.publish_created_or_updated.call_count, 2)
+        self.mock_publisher.publish_created_or_updated.assert_has_calls(
+            (
+                call(parent_page, old_url_path=page_before.url_path),
+                call(
+                    descendant_page,
+                    old_url_path=build_old_descendant_path(
+                        parent_page=parent_page,
+                        descendant_page=descendant_page,
+                        parent_path_before=page_before.url_path,
+                        parent_path_after=parent_page.url_path,
+                    ),
+                ),
+            )
+        )
+
+    def test_on_page_slug_changed_excluded_descendant(self):
+        """Changing the slug of a page should trigger publish_created_or_updated for descendants
+        if they are not excluded.
+        """
+        parent_page = TopicPageFactory(slug="old-slug")  # An excluded parent page
+        descendant_page = ArticleSeriesPageFactory(parent=parent_page)
+        parent_page.save_revision().publish()
+        parent_page.slug = "new-slug"
+        parent_page.save_revision().publish()
+        parent_page.refresh_from_db()
+        descendant_page.refresh_from_db()
+
+        parent_page_before = parent_page.revisions.order_by("-created_at")[1].as_object()
+
+        self.mock_publisher.publish_created_or_updated.reset_mock()
+        page_slug_changed.send(sender=type(parent_page), instance=parent_page, instance_before=parent_page_before)
+
+        # The only descendant page is excluded, so no search update events should be published
+        self.mock_publisher.publish_created_or_updated.assert_not_called()
+
+    def test_on_page_slug_changed_draft_descendant(self):
+        """Changing the slug of a page should trigger publish_created_or_updated for descendants
+        if they are not excluded.
+        """
+        parent_page = ArticleSeriesPageFactory(slug="old-slug")  # An excluded parent page
+        descendant_page = StatisticalArticlePageFactory(parent=parent_page)
+        descendant_page.live = False
+        descendant_page.save()
+        parent_page.save_revision().publish()
+        parent_page.slug = "new-slug"
+        parent_page.save_revision().publish()
+        parent_page.refresh_from_db()
+        descendant_page.refresh_from_db()
+
+        parent_page_before = parent_page.revisions.order_by("-created_at")[1].as_object()
+
+        self.mock_publisher.publish_created_or_updated.reset_mock()
+        page_slug_changed.send(sender=type(parent_page), instance=parent_page, instance_before=parent_page_before)
+
+        # The only descendant page is excluded, so no search update events should be published
+        self.mock_publisher.publish_created_or_updated.assert_not_called()
+
+    def test_on_page_slug_changed_private_descendant(self):
+        """Changing the slug of a page should trigger publish_created_or_updated for descendants
+        if they are not excluded.
+        """
+        parent_page = ArticleSeriesPageFactory(slug="old-slug")  # An excluded parent page
+        descendant_page = StatisticalArticlePageFactory(parent=parent_page)
+        PageViewRestriction.objects.create(page=descendant_page, restriction_type=PageViewRestriction.LOGIN)
+        parent_page.save_revision().publish()
+        parent_page.slug = "new-slug"
+        parent_page.save_revision().publish()
+        parent_page.refresh_from_db()
+        descendant_page.refresh_from_db()
+
+        parent_page_before = parent_page.revisions.order_by("-created_at")[1].as_object()
+
+        self.mock_publisher.publish_created_or_updated.reset_mock()
+        page_slug_changed.send(sender=type(parent_page), instance=parent_page, instance_before=parent_page_before)
+
+        # The only descendant page is excluded, so no search update events should be published
+        self.mock_publisher.publish_created_or_updated.assert_not_called()
 
     def test_build_old_descendant_path(self):
         parent_page = ArticleSeriesPageFactory(slug="parent-page")
