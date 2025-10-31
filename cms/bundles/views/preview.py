@@ -26,7 +26,18 @@ if TYPE_CHECKING:
     from django.http import HttpRequest
 
 
-class PreviewBundleView(TemplateView):
+class BundleContentsMixin:
+    """Mixin to fetch bundle contents from the API."""
+
+    def get_bundle_contents(self, bundle: "Bundle") -> dict[str, Any]:
+        """Initializes API client and fetches bundle contents."""
+        cookie_name = settings.ACCESS_TOKEN_COOKIE_NAME
+        access_token = self.request.COOKIES.get(cookie_name)  # type: ignore[attr-defined]
+        client = BundleAPIClient(access_token=access_token)
+        return client.get_bundle_contents(bundle.bundle_api_content_id)
+
+
+class PreviewBundleView(BundleContentsMixin, TemplateView):
     http_method_names: Sequence[str] = ["get"]
 
     def get(self, request: "HttpRequest", *args: Any, **kwargs: Any) -> TemplateResponse:
@@ -61,8 +72,7 @@ class PreviewBundleView(TemplateView):
         context["bundle_inspect_url"] = reverse("bundle:inspect", args=[bundle_id])
 
         # Fetch bundle contents to include datasets in preview items
-        client = BundleAPIClient(access_token=request.COOKIES.get(settings.ACCESS_TOKEN_COOKIE_NAME))
-        bundle_contents = client.get_bundle_contents(bundle.bundle_api_content_id)
+        bundle_contents = self.get_bundle_contents(bundle)
 
         context["preview_items"] = get_preview_items_for_bundle(bundle, page_id, pages_in_bundle, bundle_contents)
 
@@ -75,7 +85,7 @@ class PreviewBundleView(TemplateView):
         return TemplateResponse(request, page.get_template(request), context)
 
 
-class PreviewBundleReleaseCalendarView(TemplateView):
+class PreviewBundleReleaseCalendarView(BundleContentsMixin, TemplateView):
     http_method_names: Sequence[str] = ["get"]
 
     def get(self, request: "HttpRequest", *args: Any, **kwargs: Any) -> TemplateResponse:
@@ -128,8 +138,7 @@ class PreviewBundleReleaseCalendarView(TemplateView):
         context["bundle_inspect_url"] = reverse("bundle:inspect", args=[bundle_id])
 
         # Fetch bundle contents to include datasets in preview items
-        client = BundleAPIClient(access_token=request.COOKIES.get(settings.ACCESS_TOKEN_COOKIE_NAME))
-        bundle_contents = client.get_bundle_contents(bundle.bundle_api_content_id)
+        bundle_contents = self.get_bundle_contents(bundle)
 
         context["preview_items"] = get_preview_items_for_bundle(
             bundle, release_calendar_page.id, pages_in_bundle, bundle_contents
@@ -138,7 +147,7 @@ class PreviewBundleReleaseCalendarView(TemplateView):
         return TemplateResponse(request, release_calendar_page.get_template(request), context)
 
 
-class PreviewBundleDatasetView(TemplateView):
+class PreviewBundleDatasetView(BundleContentsMixin, TemplateView):
     template_name = "templates/bundles/preview.html"
     http_method_names: Sequence[str] = ["get"]
 
@@ -150,8 +159,7 @@ class PreviewBundleDatasetView(TemplateView):
         if not user_can_preview_bundle(self.request.user, bundle):
             raise PermissionDenied
 
-        client = BundleAPIClient(access_token=self.request.COOKIES.get(settings.ACCESS_TOKEN_COOKIE_NAME))
-        bundle_contents = client.get_bundle_contents(bundle.bundle_api_content_id)
+        bundle_contents = self.get_bundle_contents(bundle)
 
         dataset_id = self.kwargs["dataset_id"]
         edition_id = self.kwargs["edition_id"]
