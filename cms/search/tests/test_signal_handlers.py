@@ -1,4 +1,4 @@
-from unittest.mock import patch
+from unittest.mock import call, patch
 
 from django.db.models.signals import post_delete
 from django.test import TestCase, override_settings
@@ -219,38 +219,63 @@ class SearchSignalsTest(TestCase):
         )
 
     def test_on_page_slug_changed(self):
-        """Changing the slug of a page should trigger publish_created_or_updated for descendants
-        if they are not excluded.
-        """
+        """Changing the slug of a page should trigger publish_created_or_updated including the old_url_path."""
+        # Set up the page with an initial slug and publish it to ensure we have a revision
+        page = IndexPageFactory(slug="old-slug")
+        page.save_revision().publish()
+        self.mock_publisher.publish_created_or_updated.reset_mock()
+
+        page.slug = "new-slug"
+        page.save_revision().publish()
+        page.refresh_from_db()
+
+        page_before = page.revisions.order_by("-created_at")[1].as_object()
+
+        page_slug_changed.send(sender=type(page), instance=page, instance_before=page_before)
+
+        # Check that the publisher was called twice: once from the publish
+        # and once from the slug change, including the old_url_path
+        self.assertEqual(self.mock_publisher.publish_created_or_updated.call_count, 2)
+        self.mock_publisher.publish_created_or_updated.assert_has_calls(
+            (call(page), call(page, old_url_path=page_before.url_path))
+        )
+
+    def test_on_page_slug_changed_with_descendant(self):
+        """Changing the slug of a page should trigger publish_created_or_updated including the old_url_path."""
         parent_page = IndexPageFactory(slug="old-slug")
         descendant_page = IndexPageFactory(parent=parent_page)
         parent_page.save_revision().publish()
+
         parent_page.slug = "new-slug"
         parent_page.save_revision().publish()
         parent_page.refresh_from_db()
         descendant_page.refresh_from_db()
-
-        parent_page_before = parent_page.revisions.order_by("-created_at")[1].as_object()
+        page_before = parent_page.revisions.order_by("-created_at")[1].as_object()
 
         self.mock_publisher.publish_created_or_updated.reset_mock()
-        page_slug_changed.send(sender=type(parent_page), instance=parent_page, instance_before=parent_page_before)
+        page_slug_changed.send(sender=type(parent_page), instance=parent_page, instance_before=page_before)
 
-        # Expect only the descendant page to have search update events published
-        self.mock_publisher.publish_created_or_updated.assert_called_once_with(
-            descendant_page,
-            old_url_path=build_old_descendant_path(
-                parent_page=parent_page,
-                descendant_page=descendant_page,
-                parent_path_before=parent_page_before.url_path,
-                parent_path_after=parent_page.url_path,
-            ),
+        self.assertEqual(self.mock_publisher.publish_created_or_updated.call_count, 2)
+        self.mock_publisher.publish_created_or_updated.assert_has_calls(
+            (
+                call(parent_page, old_url_path=page_before.url_path),
+                call(
+                    descendant_page,
+                    old_url_path=build_old_descendant_path(
+                        parent_page=parent_page,
+                        descendant_page=descendant_page,
+                        parent_path_before=page_before.url_path,
+                        parent_path_after=parent_page.url_path,
+                    ),
+                ),
+            )
         )
 
     def test_on_page_slug_changed_excluded_descendant(self):
         """Changing the slug of a page should trigger publish_created_or_updated for descendants
         if they are not excluded.
         """
-        parent_page = TopicPageFactory(slug="old-slug")
+        parent_page = TopicPageFactory(slug="old-slug")  # An excluded parent page
         descendant_page = ArticleSeriesPageFactory(parent=parent_page)
         parent_page.save_revision().publish()
         parent_page.slug = "new-slug"
@@ -270,8 +295,8 @@ class SearchSignalsTest(TestCase):
         """Changing the slug of a page should trigger publish_created_or_updated for descendants
         if they are not excluded.
         """
-        parent_page = IndexPageFactory(slug="old-slug")
-        descendant_page = IndexPageFactory(parent=parent_page)
+        parent_page = ArticleSeriesPageFactory(slug="old-slug")  # An excluded parent page
+        descendant_page = StatisticalArticlePageFactory(parent=parent_page)
         descendant_page.live = False
         descendant_page.save()
         parent_page.save_revision().publish()
@@ -292,8 +317,8 @@ class SearchSignalsTest(TestCase):
         """Changing the slug of a page should trigger publish_created_or_updated for descendants
         if they are not excluded.
         """
-        parent_page = IndexPageFactory(slug="old-slug")
-        descendant_page = IndexPageFactory(parent=parent_page)
+        parent_page = ArticleSeriesPageFactory(slug="old-slug")  # An excluded parent page
+        descendant_page = StatisticalArticlePageFactory(parent=parent_page)
         PageViewRestriction.objects.create(page=descendant_page, restriction_type=PageViewRestriction.LOGIN)
         parent_page.save_revision().publish()
         parent_page.slug = "new-slug"

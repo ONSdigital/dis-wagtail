@@ -68,15 +68,13 @@ def on_page_slug_changed(sender: "type[Page]", instance: "Page", instance_before
     """Called after a Wagtail Page's slug is changed.
     "instance" is the updated Page object, "instance_before" is the Page object before the slug change.
     We need to update the search index for pages descendants whose URL paths have changed as a result.
-    This handler does not update search for the instance itself, as that is handled by the page_published signal.
+    This will also send an update for the page itself, which will be mostly identical to the event from page_published
+    signal, but is needed to additionally include the `old_uri` to ensure the old URL path is removed from the search
+    index.
     """
-    if instance.get_view_restrictions().exists():
-        # If the page has view restrictions then it and all descendants are excluded from search indexing,
-        # we can short-circuit
-        return
-    old_url_path = instance_before.url_path
-    new_url_path = instance.url_path
-    _update_page_descendant_paths(instance, old_url_path, new_url_path)
+    _update_for_page_and_descendant_paths(
+        instance=instance, old_url_path=instance_before.url_path, new_url_path=instance.url_path
+    )
 
 
 @receiver(post_page_move)
@@ -86,15 +84,21 @@ def on_page_moved(sender: "type[Page]", instance: "Page", **kwargs: Any) -> None
     We use the publish_created_or_updated method to update search for the moved page and any of its non-excluded
     descendants, which will also be affected by the move.
     """
-    if kwargs["url_path_before"] == kwargs["url_path_after"]:
+    old_url_path: str = kwargs["url_path_before"]
+    new_url_path: str = kwargs["url_path_after"]
+    if old_url_path == new_url_path:
         # No change in URL path, no need to update search index of the instance or descendants
         return
+
+    _update_for_page_and_descendant_paths(instance=instance, old_url_path=old_url_path, new_url_path=new_url_path)
+
+
+def _update_for_page_and_descendant_paths(*, instance: "Page", old_url_path: str, new_url_path: str) -> None:
+    """Update the search index for all descendants of a page whose URL paths have changed."""
     if instance.get_view_restrictions().exists():
         # Pages with view restrictions should not be exposed in search
         # this is inherited by descendants, so nothing more to do
         return
-    old_url_path: str = kwargs["url_path_before"]
-    new_url_path: str = kwargs["url_path_after"]
     if instance.live and instance.specific_class.__name__ not in settings.SEARCH_INDEX_EXCLUDED_PAGE_TYPES:
         try:
             get_publisher().publish_created_or_updated(instance.specific_deferred, old_url_path=old_url_path)
@@ -103,11 +107,7 @@ def on_page_moved(sender: "type[Page]", instance: "Page", **kwargs: Any) -> None
                 "Failed to publish moved page to search index",
                 extra={"page_id": instance.id, "old_url_path": old_url_path, "new_url_path": new_url_path},
             )
-    _update_page_descendant_paths(instance, old_url_path, new_url_path)
 
-
-def _update_page_descendant_paths(instance: "Page", old_url_path: str, new_url_path: str) -> None:
-    """Update the search index for all descendants of a page whose URL paths have changed."""
     for descendant in (
         instance.get_descendants()
         .filter(live=True)
