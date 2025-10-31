@@ -1,0 +1,10 @@
+{% extends "templates/base.html" %}
+
+{% block bodyStart %}
+    {% include "templates/components/preview-bar/preview-bar.html" %}
+    {{ super() }}
+{% endblock %}
+
+{% block pageContent %}
+    <iframe src="{{ iframe_url }}" class="preview-iframe"></iframe>
+{% endblock %}

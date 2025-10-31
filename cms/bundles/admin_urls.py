@@ -1,7 +1,11 @@
 from django.urls import path
 
 from .views.add_to_bundle import AddToBundleView
-from .views.preview import PreviewBundleReleaseCalendarView, PreviewBundleView
+from .views.preview import (
+    PreviewBundleDatasetView,
+    PreviewBundleReleaseCalendarView,
+    PreviewBundleView,
+)
 
 app_name = "bundles"
 urlpatterns = [
@@ -11,5 +15,10 @@ urlpatterns = [
         "preview/<int:bundle_id>/release-calendar/",
         PreviewBundleReleaseCalendarView.as_view(),
         name="preview_release_calendar",
+    ),
+    path(
+        "preview/<int:bundle_id>/dataset/<str:dataset_id>/<str:edition_id>/<str:version_id>/",
+        PreviewBundleDatasetView.as_view(),
+        name="preview_dataset",
     ),
 ]

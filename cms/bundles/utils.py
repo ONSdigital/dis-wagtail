@@ -137,13 +137,19 @@ def serialize_datasets_for_release_calendar_page(bundle: "Bundle") -> list[dict[
     ]
 
 
-def get_preview_items_for_bundle(bundle: "Bundle", page_id: int, pages_in_bundle: list[Page]) -> list[dict[str, Any]]:
+def get_preview_items_for_bundle(
+    bundle: "Bundle",
+    current_id: int | str,
+    pages_in_bundle: list[Page],
+    bundle_contents: dict[str, Any] | None = None,
+) -> list[dict[str, Any]]:
     """Generates a list of preview items for the bundle.
 
     Args:
         bundle (Bundle): The bundle for which to generate preview items.
-        page_id (int): The ID of the page being currently previewed.
+        current_id (int | str): The ID of the page or dataset key being currently previewed.
         pages_in_bundle (list[Page]): The list of pages in the bundle to be used for generating preview items.
+        bundle_contents (dict[str, Any] | None): Optional bundle contents from API for including datasets.
 
     Returns:
         list[dict[str, Any]]: A list of dictionaries representing the preview items.
@@ -152,7 +158,7 @@ def get_preview_items_for_bundle(bundle: "Bundle", page_id: int, pages_in_bundle
         {
             "text": getattr(item, "display_title", item.title),
             "value": reverse("bundles:preview", args=[bundle.id, item.pk]),
-            "selected": item.pk == page_id,
+            "selected": item.pk == current_id,
         }
         for item in pages_in_bundle
     ]
@@ -166,6 +172,29 @@ def get_preview_items_for_bundle(bundle: "Bundle", page_id: int, pages_in_bundle
                 "selected": False,
             },
         )
+
+    # Add datasets to preview items if bundle_contents is provided
+    if bundle_contents:
+        for item in bundle_contents.get("contents", []):
+            if item.get("content_type") == "DATASET":
+                metadata = item.get("metadata", {})
+                dataset_id = metadata.get("dataset_id", "")
+                edition_id = metadata.get("edition_id", "")
+                version_id = metadata.get("version_id", "")
+                title = metadata.get("title", "Untitled Dataset")
+
+                if dataset_id and edition_id and version_id:
+                    dataset_key = f"dataset-{dataset_id}-{edition_id}-{version_id}"
+                    preview_items.append(
+                        {
+                            "text": f"{title} (Dataset)",
+                            "value": reverse(
+                                "bundles:preview_dataset",
+                                args=[bundle.id, dataset_id, edition_id, version_id],
+                            ),
+                            "selected": dataset_key == current_id,
+                        }
+                    )
 
     return preview_items
 

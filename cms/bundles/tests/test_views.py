@@ -1,4 +1,5 @@
 from http import HTTPStatus
+from unittest.mock import patch
 
 from django.test import TestCase, override_settings
 from django.urls import reverse
@@ -438,3 +439,155 @@ class PreviewBundleReleaseCalendarViewTestCase(WagtailTestUtils, TestCase):
             f"{methodology_article.display_title}</option>",
             content,
         )
+
+
+class PreviewBundleDatasetViewTestCase(WagtailTestUtils, TestCase):
+    @classmethod
+    def setUpTestData(cls):
+        cls.superuser = cls.create_superuser(username="admin")
+        cls.publishing_officer = create_bundle_manager()
+        cls.previewer = create_bundle_viewer()
+        cls.user_with_only_admin_access = UserFactory(access_admin=True)
+
+        cls.bundle = BundleFactory(
+            name="Dataset Bundle", in_review=True, created_by=cls.publishing_officer, bundle_api_content_id="test-123"
+        )
+
+        cls.preview_team = Team.objects.create(identifier="data-team", name="Data Team")
+        BundleTeam.objects.create(parent=cls.bundle, team=cls.preview_team)
+
+        cls.dataset_id = "cpih01"
+        cls.edition_id = "time-series"
+        cls.version_id = "1"
+        cls.preview_url = reverse(
+            "bundles:preview_dataset",
+            args=[cls.bundle.pk, cls.dataset_id, cls.edition_id, cls.version_id],
+        )
+
+        # Mock API response
+        cls.mock_bundle_contents = {
+            "contents": [
+                {
+                    "content_type": "DATASET",
+                    "state": "APPROVED",
+                    "metadata": {
+                        "dataset_id": cls.dataset_id,
+                        "edition_id": cls.edition_id,
+                        "version_id": cls.version_id,
+                        "title": "Consumer Price Inflation",
+                    },
+                    "links": {"preview": "http://data-admin.local/preview/dataset/cpih01/time-series/1"},
+                }
+            ]
+        }
+
+    def test_view_requires_access_to_admin(self):
+        response = self.client.get(self.preview_url, follow=True)
+        self.assertRedirects(response, f"/admin/login/?next={self.preview_url}")
+
+    @patch("cms.bundles.views.preview.BundleAPIClient")
+    def test_view_checks_bundle_exists(self, mock_client_class):  # pylint: disable=unused-argument
+        self.client.force_login(self.superuser)
+        response = self.client.get(
+            reverse("bundles:preview_dataset", args=[99999, self.dataset_id, self.edition_id, self.version_id])
+        )
+        self.assertEqual(response.status_code, HTTPStatus.NOT_FOUND)
+
+    @patch("cms.bundles.views.preview.BundleAPIClient")
+    def test_view_checks_user_can_preview(self, mock_client_class):
+        mock_instance = mock_client_class.return_value
+        mock_instance.get_bundle_contents.return_value = self.mock_bundle_contents
+
+        scenarios = [
+            (self.superuser, HTTPStatus.OK),
+            (self.publishing_officer, HTTPStatus.OK),
+            (self.previewer, HTTPStatus.FOUND),
+            (self.user_with_only_admin_access, HTTPStatus.FOUND),
+        ]
+
+        for user, expected_status in scenarios:
+            with self.subTest(f"User: {user}, Expected status: {expected_status}"):
+                self.client.force_login(user)
+                response = self.client.get(self.preview_url)
+                self.assertEqual(response.status_code, expected_status)
+
+    @patch("cms.bundles.views.preview.BundleAPIClient")
+    def test_view_returns_iframe_url_from_api(self, mock_client_class):
+        self.client.force_login(self.publishing_officer)
+        mock_instance = mock_client_class.return_value
+        mock_instance.get_bundle_contents.return_value = self.mock_bundle_contents
+
+        response = self.client.get(self.preview_url)
+        self.assertEqual(response.status_code, HTTPStatus.OK)
+        # Check the iframe URL is in the response content
+        self.assertContains(response, "http://data-admin.local/preview/dataset/cpih01/time-series/1")
+
+    @patch("cms.bundles.views.preview.BundleAPIClient")
+    def test_view_returns_404_if_dataset_not_in_bundle(self, mock_client_class):
+        self.client.force_login(self.publishing_officer)
+        mock_instance = mock_client_class.return_value
+        mock_instance.get_bundle_contents.return_value = {"contents": []}
+
+        response = self.client.get(self.preview_url)
+        self.assertEqual(response.status_code, HTTPStatus.NOT_FOUND)
+
+    @patch("cms.bundles.views.preview.BundleAPIClient")
+    def test_view_returns_404_if_preview_url_missing(self, mock_client_class):
+        self.client.force_login(self.publishing_officer)
+        mock_instance = mock_client_class.return_value
+        mock_bundle_contents_no_preview = {
+            "contents": [
+                {
+                    "content_type": "DATASET",
+                    "state": "APPROVED",
+                    "metadata": {
+                        "dataset_id": self.dataset_id,
+                        "edition_id": self.edition_id,
+                        "version_id": self.version_id,
+                        "title": "Consumer Price Inflation",
+                    },
+                    "links": {},
+                }
+            ]
+        }
+        mock_instance.get_bundle_contents.return_value = mock_bundle_contents_no_preview
+
+        response = self.client.get(self.preview_url)
+        self.assertEqual(response.status_code, HTTPStatus.NOT_FOUND)
+
+    @patch("cms.bundles.views.preview.BundleAPIClient")
+    def test_preview_logs_action(self, mock_client_class):
+        self.client.force_login(self.publishing_officer)
+        mock_instance = mock_client_class.return_value
+        mock_instance.get_bundle_contents.return_value = self.mock_bundle_contents
+
+        self.assertEqual(ModelLogEntry.objects.filter(action="bundles.preview").count(), 0)
+
+        self.client.get(self.preview_url)
+
+        log_entries = ModelLogEntry.objects.filter(action="bundles.preview")
+        self.assertEqual(len(log_entries), 1)
+
+        entry = log_entries[0]
+        self.assertEqual(entry.user, self.publishing_officer)
+        self.assertDictEqual(
+            entry.data,
+            {
+                "type": "dataset",
+                "dataset_id": self.dataset_id,
+                "edition_id": self.edition_id,
+                "version_id": self.version_id,
+            },
+        )
+
+    @patch("cms.bundles.views.preview.BundleAPIClient")
+    def test_preview_includes_iframe_element(self, mock_client_class):
+        self.client.force_login(self.publishing_officer)
+        mock_instance = mock_client_class.return_value
+        mock_instance.get_bundle_contents.return_value = self.mock_bundle_contents
+
+        response = self.client.get(self.preview_url)
+        self.assertEqual(response.status_code, HTTPStatus.OK)
+        self.assertContains(response, "<iframe")
+        self.assertContains(response, 'class="preview-iframe"')
+        self.assertContains(response, self.mock_bundle_contents["contents"][0]["links"]["preview"])

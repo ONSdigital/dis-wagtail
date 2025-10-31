@@ -489,9 +489,11 @@ class BundleInspectView(InspectView):
             if content_item.get("content_type") == "DATASET":
                 metadata = content_item.get("metadata", {})
                 state = content_item.get("state", "")
+                links = content_item.get("links", {})
                 dataset_id = metadata.get("dataset_id", "")
                 edition_id = metadata.get("edition_id", "")
                 version_id = metadata.get("version_id", "")
+                preview_url = links.get("preview")
 
                 item: dict[str, SafeString | str] = {
                     "title": metadata.get("title", MISSING_VALUE),
@@ -510,6 +512,15 @@ class BundleInspectView(InspectView):
                             '<a href="{}" class="button button-small button-secondary" target="_blank" '
                             'rel="noopener">View Live</a>',
                             view_url,
+                        )
+                    elif preview_url:
+                        cms_preview_url = reverse(
+                            "bundles:preview_dataset",
+                            args=[self.object.pk, dataset_id, edition_id, version_id],
+                        )
+                        item["action_button"] = format_html(
+                            '<a href="{}" class="button button-small button-secondary">Preview</a>',
+                            cms_preview_url,
                         )
                 processed_data.append(item)
         return processed_data
