@@ -1,6 +1,6 @@
 {% load i18n wagtailadmin_tags wagtailcore_tags %}
 {% comment %}
-    FIXME: Remove once using a releasee which includes the fix for github.com/wagtail/wagtail/issues/13325
+    FIXME: Remove once using a release which includes the fix for github.com/wagtail/wagtail/issues/13325
 {% endcomment %}
 
 {% if page.live %}
