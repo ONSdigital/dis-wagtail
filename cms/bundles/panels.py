@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, Any, Union, cast
+from typing import TYPE_CHECKING, Any, Optional, Union, cast
 from urllib.parse import urlencode
 
 from django.urls import reverse
@@ -6,15 +6,20 @@ from django.utils.functional import cached_property
 from django.utils.html import format_html
 from wagtail.admin.panels import FieldPanel, HelpPanel, MultipleChooserPanel
 
-from cms.bundles.permissions import user_can_manage_bundles
-from cms.bundles.utils import get_page_title_with_workflow_status
-from cms.bundles.viewsets.bundle_page_chooser import PagesWithDraftsForBundleChooserWidget
 from cms.datasets.views import dataset_chooser_viewset
+from cms.release_calendar.utils import get_release_calendar_page_details
+from cms.release_calendar.viewsets import FutureReleaseCalendarChooserWidget
+
+from .permissions import user_can_manage_bundles
+from .utils import get_page_title_with_workflow_status
+from .viewsets.bundle_page_chooser import PagesWithDraftsForBundleChooserWidget
 
 if TYPE_CHECKING:
     from django.db.models import Model
     from django.utils.safestring import SafeString
     from wagtail.models import Page
+
+    from cms.release_calendar.models import ReleaseCalendarPage
 
 
 class BundleDatasetChooserWidget(dataset_chooser_viewset.widget_class):  # type: ignore[name-defined]
@@ -172,3 +177,26 @@ class PageChooserWithStatusPanel(BundleFieldPanel):
             super().__init__(**kwargs)
             if page := self.instance.page:
                 self.heading = page.specific_deferred.get_verbose_name()
+
+
+class CustomReleaseCalendarPageChooser(FutureReleaseCalendarChooserWidget):
+    # Override BaseChooser's default get_display_title to return custom text display
+    def get_display_title(self, instance: "Page") -> str:
+        return get_release_calendar_page_details(instance)
+
+
+class ReleaseChooserWithDetailsPanel(BundleFieldPanel):
+    """A custom page chooser panel that includes the release calendar page title, status and release date."""
+
+    def get_form_options(self) -> dict[str, list | dict]:
+        opts: dict[str, list | dict] = super().get_form_options()
+
+        widgets = opts.setdefault("widgets", {})
+        widgets[self.field_name] = CustomReleaseCalendarPageChooser()
+
+        return opts
+
+    def format_value_for_display(self, value: Optional["ReleaseCalendarPage"]) -> str:
+        if value is None:
+            return ""
+        return get_release_calendar_page_details(value)

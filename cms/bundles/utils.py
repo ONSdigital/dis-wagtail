@@ -9,18 +9,20 @@ from wagtail.coreutils import resolve_model_string
 from wagtail.log_actions import log
 from wagtail.models import Page, get_page_models
 
-from cms.bundles.enums import ACTIVE_BUNDLE_STATUSES, BundleStatus
-from cms.bundles.permissions import user_can_manage_bundles
 from cms.core.fields import StreamField
 from cms.release_calendar.enums import ReleaseStatus
+
+from .enums import ACTIVE_BUNDLE_STATUSES, BundleStatus
+from .permissions import user_can_manage_bundles
 
 logger = logging.getLogger(__name__)
 
 if TYPE_CHECKING:
     from django.contrib.auth.models import AnonymousUser
 
-    from cms.bundles.models import Bundle
     from cms.users.models import User
+
+    from .models import Bundle
 
 
 @cache
