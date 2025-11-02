@@ -275,7 +275,7 @@ class BundleAdminForm(DeduplicateInlinePanelAdminForm):
 
     @datasets_bundle_api_enabled
     def _push_bundle_to_dataset_api(self, client: BundleAPIClient, bundle: "Bundle") -> "Bundle":
-        """Pushes the bundle to the Dataset API if it does."""
+        """Pushes the bundle to the Bundle API if it does."""
         try:
             # Create the bundle in the API with the correct payload
             bundle_data = build_bundle_data_for_api(bundle)
@@ -284,12 +284,12 @@ class BundleAdminForm(DeduplicateInlinePanelAdminForm):
             bundle.bundle_api_content_id = str(response["id"])
             bundle.bundle_api_etag = response["etag_header"]
             bundle.save(update_fields=["bundle_api_content_id", "bundle_api_etag"])
-            logger.info("Created bundle %s in Dataset API with ID: %s", bundle.pk, bundle.bundle_api_content_id)
+            logger.info("Created bundle %s in Bundle API with ID: %s", bundle.pk, bundle.bundle_api_content_id)
             return bundle
 
         except (BundleAPIClientError, KeyError) as e:
-            logger.exception("Failed to create bundle %s in Dataset API: %s", bundle.pk, e)
-            raise ValidationError("Could not communicate with the Dataset API") from e
+            logger.exception("Failed to create bundle %s in Bundle API: %s", bundle.pk, e)
+            raise ValidationError("Could not communicate with the Bundle API") from e
 
     @datasets_bundle_api_enabled
     def _sync_bundle_status_with_dataset_api(self, client: BundleAPIClient, bundle: "Bundle") -> None:
@@ -301,10 +301,10 @@ class BundleAdminForm(DeduplicateInlinePanelAdminForm):
 
             bundle.bundle_api_etag = response["etag_header"]
             bundle.save(update_fields=["bundle_api_etag"])
-            logger.info("Updated bundle %s status to %s in Dataset API", bundle.pk, bundle.status)
+            logger.info("Updated bundle %s status to %s in Bundle API", bundle.pk, bundle.status)
         except BundleAPIClientError as e:
-            logger.exception("Failed to sync bundle %s with Dataset API: %s", bundle.pk, e)
-            raise ValidationError("Could not communicate with the Dataset API") from e
+            logger.exception("Failed to sync bundle %s with Bundle API: %s", bundle.pk, e)
+            raise ValidationError("Could not communicate with the Bundle API") from e
 
     @datasets_bundle_api_enabled
     def _sync_datasets_with_dataset_api(
@@ -318,12 +318,12 @@ class BundleAdminForm(DeduplicateInlinePanelAdminForm):
             # If we have no more dataset, remove the bundle from the API
             try:
                 client.delete_bundle(bundle.bundle_api_content_id)
-                logger.info("Deleted bundle %s from Dataset API", bundle.pk)
+                logger.info("Deleted bundle %s from Bundle API", bundle.pk)
                 bundle.bundle_api_content_id = ""
                 bundle.save(update_fields=["bundle_api_content_id"])
             except BundleAPIClientError as e:
-                logger.exception("Failed to delete bundle %s from Dataset API: %s", bundle.pk, e)
-                raise ValidationError("Could not communicate with the Dataset API") from e
+                logger.exception("Failed to delete bundle %s from Bundle API: %s", bundle.pk, e)
+                raise ValidationError("Could not communicate with the Bundle API") from e
             return
 
         # Handle addition and removals.
@@ -345,7 +345,7 @@ class BundleAdminForm(DeduplicateInlinePanelAdminForm):
                     item.bundle_api_content_id = content_id
                     item.save(update_fields=["bundle_api_content_id"])
                     logger.info(
-                        "Added content %s to bundle %s in Dataset API with ID %s",
+                        "Added content %s to bundle %s in Bundle API with ID %s",
                         item.dataset.namespace,
                         bundle.pk,
                         content_id,
@@ -357,19 +357,19 @@ class BundleAdminForm(DeduplicateInlinePanelAdminForm):
                 bundle.bundle_api_etag = etag
                 bundle.save(update_fields=["bundle_api_etag"])
         except BundleAPIClientError as e:
-            logger.exception("Failed to add content to bundle %s in Dataset API: %s", bundle.pk, e)
-            raise ValidationError("Could not communicate with the Dataset API") from e
+            logger.exception("Failed to add content to bundle %s in Bundle API: %s", bundle.pk, e)
+            raise ValidationError("Could not communicate with the Bundle API") from e
 
         for item in removed:
             try:
                 content_id = item.bundle_api_content_id
                 client.delete_content_from_bundle(bundle.bundle_api_content_id, content_id)
-                logger.info("Deleted content %s from bundle %s in Dataset API", content_id, bundle.pk)
+                logger.info("Deleted content %s from bundle %s in Bundle API", content_id, bundle.pk)
             except BundleAPIClientError as e:
                 logger.exception(
-                    "Failed to delete content %s from bundle %s in Dataset API: %s", content_id, bundle.pk, e
+                    "Failed to delete content %s from bundle %s in Bundle API: %s", content_id, bundle.pk, e
                 )
-                raise ValidationError("Could not communicate with the Dataset API") from e
+                raise ValidationError("Could not communicate with the Bundle API") from e
 
     @datasets_bundle_api_enabled
     def _sync_teams_with_dataset_api(self, client: BundleAPIClient, bundle: "Bundle") -> None:
@@ -396,7 +396,7 @@ class BundleAdminForm(DeduplicateInlinePanelAdminForm):
                 bundle.pk,
                 e,
             )
-            raise ValidationError("Could not communicate with the Dataset API") from e
+            raise ValidationError("Could not communicate with the Bundle API") from e
 
     @datasets_bundle_api_enabled
     def _check_and_sync_with_dataset_api(self, bundle: "Bundle") -> None:

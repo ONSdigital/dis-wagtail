@@ -309,7 +309,7 @@ class DeleteBundleViewTestCase(WagtailTestUtils, TestCase):
         with self.assertRaises(Bundle.DoesNotExist):
             Bundle.objects.get(pk=self.bundle.pk)
 
-        # Check the bundle dataset API was called with the correct Authorization header
+        # Check the bundle API was called with the correct Authorization header
         self.assertEqual(response_mock.call_count, 1)
         bundle_delete_call = response_mock.calls[0]
         self.assertEqual(bundle_delete_call.request.headers["Authorization"], "the-access-token")
