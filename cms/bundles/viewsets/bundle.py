@@ -488,7 +488,8 @@ class BundleDeleteView(DeleteView):
         if not instance.bundle_api_content_id:
             return
 
-        client = BundleAPIClient()
+        access_token = self.request.COOKIES.get(settings.ACCESS_TOKEN_COOKIE_NAME)
+        client = BundleAPIClient(access_token=access_token)
 
         try:
             client.delete_bundle(instance.bundle_api_content_id)
