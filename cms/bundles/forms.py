@@ -289,10 +289,10 @@ class BundleAdminForm(DeduplicateInlinePanelAdminForm):
                 cleaned_data["approved_by"] = None
 
                 # we went from "ready to publish" to a lower status, preserve the linked RC or publication date
-                if self.instance.release_calendar_page:
-                    cleaned_data["release_calendar_page"] = self.instance.release_calendar_page
-                elif self.instance.publication_date:
-                    cleaned_data["publication_date"] = self.instance.publication_date
+                if original_release_calendar_page:
+                    cleaned_data["release_calendar_page"] = original_release_calendar_page
+                elif original_publication_date:
+                    cleaned_data["publication_date"] = original_publication_date
 
         return cleaned_data
 
