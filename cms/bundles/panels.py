@@ -94,11 +94,7 @@ class BundleFieldPanel(FieldPanel):
             if self.panel.accessor and getattr(self.instance, f"{self.panel.accessor}_id"):
                 instance = getattr(self.instance, self.panel.accessor)
 
-             # Only read-only if approved AND saved to database with that status
-            self.read_only = (
-                getattr(instance, "is_ready_to_be_published", False) 
-                and not getattr(self.form, 'errors', {})
-            )
+            self.read_only = getattr(instance, "is_ready_to_be_published", False)
 
     def format_value_for_display(self, value: Any) -> str:
         if value is None:
@@ -125,11 +121,7 @@ class BundleMultipleChooserPanel(MultipleChooserPanel):
         def __init__(self, **kwargs: Any) -> None:
             super().__init__(**kwargs)
 
-            # Only read-only if approved AND saved to database with that status
-            self.read_only = (
-                self.instance.is_ready_to_be_published 
-                and not getattr(self.form, 'errors', {})
-            )
+            self.read_only = self.instance.is_ready_to_be_published
 
         @property
         def template_name(self) -> str:
