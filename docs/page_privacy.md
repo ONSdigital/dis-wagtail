@@ -1,7 +1,7 @@
 # Page Privacy in Wagtail
 
 Wagtail has out of the box page privacy settings, which allow you to restrict access to published pages by password or login/group access rules,
-see https://docs.wagtail.org/en/stable/advanced_topics/privacy.html.
+see [Wagtail Docs: Privacy](https://docs.wagtail.org/en/stable/advanced_topics/privacy.html).
 
 However, the way these settings are applied at a page level makes them unsuitable for our use.
 
@@ -13,6 +13,7 @@ descendants of a page, so, for example, making a topic page private would instan
 too.
 
 Disabling page privacy is not currently easily supported by Wagtail, see this issue: https://github.com/wagtail/wagtail/issues/11640
+
 This means it will require custom code to fully disable page privacy settings in the CMS, which is under investigation.
 
 ## Search Integration
