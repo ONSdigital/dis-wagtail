@@ -274,7 +274,7 @@ class BundleAdminForm(DeduplicateInlinePanelAdminForm):
         return cleaned_data
 
     @datasets_bundle_api_enabled
-    def _push_bundle_to_dataset_api(self, client: BundleAPIClient, bundle: "Bundle") -> "Bundle":
+    def _push_bundle_to_bundle_api(self, client: BundleAPIClient, bundle: "Bundle") -> "Bundle":
         """Pushes the bundle to the Bundle API if it does."""
         try:
             # Create the bundle in the API with the correct payload
@@ -292,7 +292,7 @@ class BundleAdminForm(DeduplicateInlinePanelAdminForm):
             raise ValidationError("Could not communicate with the Bundle API") from e
 
     @datasets_bundle_api_enabled
-    def _sync_bundle_status_with_dataset_api(self, client: BundleAPIClient, bundle: "Bundle") -> None:
+    def _sync_bundle_status_with_bundle_api(self, client: BundleAPIClient, bundle: "Bundle") -> None:
         if not bundle.bundle_api_content_id:
             return
 
@@ -307,7 +307,7 @@ class BundleAdminForm(DeduplicateInlinePanelAdminForm):
             raise ValidationError("Could not communicate with the Bundle API") from e
 
     @datasets_bundle_api_enabled
-    def _sync_datasets_with_dataset_api(
+    def _sync_datasets_with_bundle_api(
         self, client: BundleAPIClient, bundle: "Bundle", current_datasets: set["BundleDataset"]
     ) -> None:
         """Sync dataset changes to the API."""
@@ -372,7 +372,7 @@ class BundleAdminForm(DeduplicateInlinePanelAdminForm):
                 raise ValidationError("Could not communicate with the Bundle API") from e
 
     @datasets_bundle_api_enabled
-    def _sync_teams_with_dataset_api(self, client: BundleAPIClient, bundle: "Bundle") -> None:
+    def _sync_teams_with_bundle_api(self, client: BundleAPIClient, bundle: "Bundle") -> None:
         if not bundle.bundle_api_content_id:
             return
 
@@ -399,7 +399,7 @@ class BundleAdminForm(DeduplicateInlinePanelAdminForm):
             raise ValidationError("Could not communicate with the Bundle API") from e
 
     @datasets_bundle_api_enabled
-    def _check_and_sync_with_dataset_api(self, bundle: "Bundle") -> None:
+    def _check_and_sync_with_bundle_api(self, bundle: "Bundle") -> None:
         should_push_bundle_to_api = not bundle.bundle_api_content_id and self._has_datasets()
         status_has_changed = bundle.bundle_api_content_id and self.original_status != bundle.status
 
@@ -417,13 +417,13 @@ class BundleAdminForm(DeduplicateInlinePanelAdminForm):
             client = BundleAPIClient(access_token=self.datasets_bundle_api_user_access_token)
             if should_push_bundle_to_api:
                 # The bundle should be created in the API if it has datasets, and it doesn't have an API ID.
-                bundle = self._push_bundle_to_dataset_api(client, bundle)
+                bundle = self._push_bundle_to_bundle_api(client, bundle)
             if status_has_changed:
-                self._sync_bundle_status_with_dataset_api(client, bundle)
+                self._sync_bundle_status_with_bundle_api(client, bundle)
             if should_push_dataset_changes_to_api:
-                self._sync_datasets_with_dataset_api(client, bundle, current_datasets)
+                self._sync_datasets_with_bundle_api(client, bundle, current_datasets)
             if should_push_team_changes_to_api:
-                self._sync_teams_with_dataset_api(client, bundle)
+                self._sync_teams_with_bundle_api(client, bundle)
 
     def save(self, commit: bool = True) -> "Bundle":
         """Save the bundle and create in API if it has datasets but no API ID."""
@@ -432,5 +432,5 @@ class BundleAdminForm(DeduplicateInlinePanelAdminForm):
         bundle: Bundle = super().save(commit=commit)
 
         if commit:
-            self._check_and_sync_with_dataset_api(bundle)
+            self._check_and_sync_with_bundle_api(bundle)
         return bundle

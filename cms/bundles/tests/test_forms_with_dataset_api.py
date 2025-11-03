@@ -19,7 +19,7 @@ from cms.users.tests.factories import UserFactory
 
 
 @override_settings(DIS_DATASETS_BUNDLE_API_ENABLED=True)
-class BundleFormSaveWithDatasetAPITestCase(TestCase):
+class BundleFormSaveWithBundleAPITestCase(TestCase):
     """Test cases for the BundleAdminForm save method."""
 
     @classmethod
@@ -448,7 +448,7 @@ class BundleFormSaveWithDatasetAPITestCase(TestCase):
 
 
 @override_settings(DIS_DATASETS_BUNDLE_API_ENABLED=False)
-class BundleFormSaveWithDatasetAPIDisabledTestCase(TestCase):
+class BundleFormSaveWithBundleAPIDisabledTestCase(TestCase):
     """Test cases for the BundleAdminForm save method when API is disabled."""
 
     @classmethod

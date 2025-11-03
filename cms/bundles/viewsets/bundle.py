@@ -483,7 +483,7 @@ class BundleDeleteView(DeleteView):
     has_errors = False
 
     @datasets_bundle_api_enabled
-    def sync_bundle_deletion_with_dataset_api(self, instance: Bundle) -> None:
+    def sync_bundle_deletion_with_bundle_api(self, instance: Bundle) -> None:
         """Handle when a bundle is deleted."""
         if not instance.bundle_api_content_id:
             return
@@ -504,7 +504,7 @@ class BundleDeleteView(DeleteView):
             bundle = self.object
             log(instance=self.object, action="wagtail.delete")
             self.object.delete()
-            self.sync_bundle_deletion_with_dataset_api(bundle)
+            self.sync_bundle_deletion_with_bundle_api(bundle)
 
     def form_valid(self, form: "BundleAdminForm") -> "HttpResponseBase":
         try:
