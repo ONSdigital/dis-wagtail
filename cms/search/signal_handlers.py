@@ -65,7 +65,7 @@ def on_page_deleted(sender: "type[Page]", instance: "Page", **kwargs: Any) -> No
 
 @receiver(page_slug_changed)
 def on_page_slug_changed(sender: "type[Page]", instance: "Page", instance_before: "Page", **kwargs: Any) -> None:  # pylint: disable=unused-argument
-    """Called after a Wagtail Page's slug is changed.
+    """Called after a slug change to a Wagtail Page is published.
     "instance" is the updated Page object, "instance_before" is the Page object before the slug change.
     We need to update the search index for pages descendants whose URL paths have changed as a result.
     This will also send an update for the page itself, which will be mostly identical to the event from page_published
