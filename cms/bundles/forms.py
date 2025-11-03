@@ -249,17 +249,40 @@ class BundleAdminForm(DeduplicateInlinePanelAdminForm):
         self._validate_bundled_pages()
 
         submitted_status = cleaned_data["status"]
+
+        # Preserve original persisted values to restore on failed approval attempt
+        original_name = self.instance.name
+        original_release_calendar_page = self.instance.release_calendar_page
+        original_publication_date = self.instance.publication_date
+
         if self.instance.status != submitted_status:
             # the status has changed
             if submitted_status == BundleStatus.APPROVED:
-                # ensure all bundled pages are ready to publish
-                self._validate_bundled_pages_status()
+                try:
+                    # ensure all bundled pages are ready to publish
+                    self._validate_bundled_pages_status()
 
-                # ensure all bundled datasets are approved (the function will check if the API is enabled)
-                self._validate_bundled_datasets_status()
+                    # ensure all bundled datasets are approved (the function will check if the API is enabled)
+                    self._validate_bundled_datasets_status()
 
-                cleaned_data["approved_at"] = timezone.now()
-                cleaned_data["approved_by"] = self.for_user
+                    cleaned_data["approved_at"] = timezone.now()
+                    cleaned_data["approved_by"] = self.for_user
+                except ValidationError as e:
+                    # Revert status and restore original field values to avoid clearing them
+                    cleaned_data["status"] = self.instance.status
+                    cleaned_data["name"] = original_name
+                    # Only restore scheduling fields if they were set on the instance
+                    if original_release_calendar_page:
+                        cleaned_data["release_calendar_page"] = original_release_calendar_page
+                    if original_publication_date:
+                        cleaned_data["publication_date"] = original_publication_date
+                    # Restore teams (formsets may have lost data if the browser omitted them)
+                    # NB: Only inject if teams key exists; otherwise leave for default rendering.
+                    if "teams" in self.formsets:
+                        # No direct assignment to cleaned_data for inline formsets; they will re-render from instance.
+                        pass
+                    # Propagate the validation error
+                    raise e
             elif self.instance.status == BundleStatus.APPROVED:
                 # the bundle was approved, and is now unapproved.
                 cleaned_data["approved_at"] = None
