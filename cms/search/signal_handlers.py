@@ -94,7 +94,7 @@ def on_page_moved(sender: "type[Page]", instance: "Page", **kwargs: Any) -> None
 
 
 def _update_for_page_and_descendant_paths(*, instance: "Page", old_url_path: str, new_url_path: str) -> None:
-    """Update the search index for all descendants of a page whose URL paths have changed."""
+    """Update the search index for the page and all affected descendants whose URL paths have changed."""
     if instance.get_view_restrictions().exists():
         # Pages with view restrictions should not be exposed in search
         # this is inherited by descendants, so nothing more to do
