@@ -288,15 +288,15 @@ class DeleteBundleViewTestCase(WagtailTestUtils, TestCase):
         DIS_DATASETS_BUNDLE_API_ENABLED=True, DIS_DATASETS_BUNDLE_API_BASE_URL="https://test-api.example.com"
     )
     def test_bundle_delete_bundle_api_call_includes_access_token(self):
-        # Set up the bundle with a bundle_api_content_id so there is something to call to delete
-        self.bundle.bundle_api_content_id = "bundle-content-id-123"
+        # Set up the bundle with a bundle_api_bundle_id so there is something to call to delete
+        self.bundle.bundle_api_bundle_id = "bundle-content-id-123"
         self.bundle.save()
 
         self.client.cookies[settings.ACCESS_TOKEN_COOKIE_NAME] = "the-access-token"
 
         # Mock the response from the dataset bundle API
         response_mock = responses.delete(
-            f"{settings.DIS_DATASETS_BUNDLE_API_BASE_URL}/bundles/{self.bundle.bundle_api_content_id}",
+            f"{settings.DIS_DATASETS_BUNDLE_API_BASE_URL}/bundles/{self.bundle.bundle_api_bundle_id}",
             status=HTTPStatus.NO_CONTENT,
         )
 

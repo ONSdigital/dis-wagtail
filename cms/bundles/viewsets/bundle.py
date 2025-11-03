@@ -485,14 +485,14 @@ class BundleDeleteView(DeleteView):
     @datasets_bundle_api_enabled
     def sync_bundle_deletion_with_bundle_api(self, instance: Bundle) -> None:
         """Handle when a bundle is deleted."""
-        if not instance.bundle_api_content_id:
+        if not instance.bundle_api_bundle_id:
             return
 
         access_token = self.request.COOKIES.get(settings.ACCESS_TOKEN_COOKIE_NAME)
         client = BundleAPIClient(access_token=access_token)
 
         try:
-            client.delete_bundle(instance.bundle_api_content_id)
+            client.delete_bundle(instance.bundle_api_bundle_id)
             logger.info("Deleted bundle %s from Bundle API", instance.pk)
 
         except BundleAPIClientError as e:
