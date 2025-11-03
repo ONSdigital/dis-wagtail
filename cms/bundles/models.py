@@ -147,7 +147,7 @@ class Bundle(index.Indexed, ClusterableModel, models.Model):  # type: ignore[dja
         related_name="bundles",
     )
     status = models.CharField(choices=BundleStatus.choices, default=BundleStatus.DRAFT, max_length=32)
-    bundle_api_content_id = models.CharField(max_length=255, blank=True, editable=False)
+    bundle_api_bundle_id = models.CharField(max_length=255, blank=True, editable=False)
     # note: it looks like etag is SHA-1, so 40 chars, but using 255 for safety
     # https://github.com/ONSdigital/dp-net/blob/a17216881f99417aefa7aa256a337e2ad635866d/handlers/response/etag.go#L13
     bundle_api_etag = models.CharField(max_length=255, blank=True, editable=False)
