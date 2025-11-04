@@ -333,9 +333,7 @@ class BundleAdminForm(DeduplicateInlinePanelAdminForm):
             etag = None
             for item in added | common_but_not_linked:
                 content_item = build_content_item_for_dataset(item.dataset)
-                response = client.add_content_to_bundle(
-                    bundle.bundle_api_bundle_id, content_item, bundle.bundle_api_etag
-                )
+                response = client.add_content_to_bundle(bundle.bundle_api_bundle_id, content_item)
                 etag = response["etag_header"]
 
                 # Extract content_id from the response

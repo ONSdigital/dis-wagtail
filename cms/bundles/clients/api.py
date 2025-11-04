@@ -259,18 +259,17 @@ class BundleAPIClient:
         # The swagger spec expects a JSON object with a 'state' field
         return self._make_request("PUT", f"/bundles/{bundle_id}/state", data={"state": state}, etag=etag)
 
-    def add_content_to_bundle(self, bundle_id: str, content_item: dict[str, Any], etag: str) -> dict[str, Any]:
+    def add_content_to_bundle(self, bundle_id: str, content_item: dict[str, Any]) -> dict[str, Any]:
         """Add a content item to a bundle.
 
         Args:
             bundle_id: The ID of the bundle to add content to.
             content_item: The content item to add.
-            etag: The bundle ETag
 
         Returns:
             API response data
         """
-        return self._make_request("POST", f"/bundles/{bundle_id}/contents", data=content_item, etag=etag)
+        return self._make_request("POST", f"/bundles/{bundle_id}/contents", data=content_item)
 
     def delete_content_from_bundle(self, bundle_id: str, content_id: str) -> dict[str, Any]:
         """Delete a content item from a bundle.
