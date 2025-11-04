@@ -154,11 +154,12 @@ class BundleAPIClientTests(TestCase):
     @responses.activate
     def test_delete_bundle_success(self):
         responses.delete(f"{self.base_url}/bundles/test-bundle-123", status=HTTPStatus.NO_CONTENT)
-
         client = BundleAPIClient(base_url=self.base_url)
         result = client.delete_bundle("test-bundle-123")
 
-        self.assertEqual(result, {"status": "success", "message": "Operation completed successfully"})
+        self.assertEqual(
+            result, {"status": "success", "message": "Operation completed successfully", "etag_header": ""}
+        )
 
     @responses.activate
     def test_get_bundle_contents_success(self):
