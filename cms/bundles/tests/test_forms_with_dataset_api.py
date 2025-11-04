@@ -17,6 +17,12 @@ from cms.datasets.tests.factories import DatasetFactory
 from cms.teams.tests.factories import TeamFactory
 from cms.users.tests.factories import UserFactory
 
+# TODO: Refactor these tests to patch and assert calls on the BundleAPIClient
+# instead of mocking HTTP via `responses`. These tests should focus on verifying
+# that the form/service logic invokes the correct client methods with the expected
+# arguments and sequencing. Low-level HTTP behaviour (method, headers, payload,
+# ETag handling, etc.) should be covered separately in test_client_api.py.
+
 
 @override_settings(DIS_DATASETS_BUNDLE_API_ENABLED=True)
 class BundleFormSaveWithBundleAPITestCase(TestCase):
