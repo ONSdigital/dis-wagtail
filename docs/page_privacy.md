@@ -32,5 +32,5 @@ privacy settings for a page and it's descendants.
 
 We have also discovered a bug in the current handling of privacy settings on Statistical Article pages. Because the statistical article page can be served by
 editions page handler, the hooks which check for page privacy do not correctly detect and block acccess when a statistical article page is private. This means
-that if a statistical article page is set to private, so the page is still visible publicly despite having privacy settings applied. If we were to support page
+that if a statistical article page is set to private, the page is still visible publicly despite having privacy settings applied. If we were to support page
 privacy features, this would need to be fixed.
