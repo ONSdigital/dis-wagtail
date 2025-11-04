@@ -26,7 +26,9 @@ page.
 
 As we intend to disable page privacy settings entirely, we are leaving search integration with only simple checks for if a page currently has privacy settings,
 as a belt and braces measure, but if we were to support privacy settings in future this would need to be revisited to properly support the cases of changing
-privacy settings for a page and it's descendants.
+privacy settings for a page and it's descendants. Developers should ensure that all queries for search integrations are filtered with `.public()`, or pages are
+checked for privacy settings with `page.get_view_restrictions().exists()` before being sent to search indexing for forward compatibility, in case we ever do use
+privacy settings in the future.
 
 ## Statistical Article Page Privacy Issue
 
