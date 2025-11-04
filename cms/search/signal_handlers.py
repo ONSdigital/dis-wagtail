@@ -86,11 +86,9 @@ def on_page_moved(sender: "type[Page]", instance: "Page", **kwargs: Any) -> None
     """
     old_url_path: str = kwargs["url_path_before"]
     new_url_path: str = kwargs["url_path_after"]
-    if old_url_path == new_url_path:
-        # No change in URL path, no need to update search index of the instance or descendants
-        return
-
-    _update_for_page_and_descendant_paths(instance=instance, old_url_path=old_url_path, new_url_path=new_url_path)
+    if old_url_path != new_url_path:
+        # We only need to update search if the URL path has actually changed
+        _update_for_page_and_descendant_paths(instance=instance, old_url_path=old_url_path, new_url_path=new_url_path)
 
 
 def _update_for_page_and_descendant_paths(*, instance: "Page", old_url_path: str, new_url_path: str) -> None:
