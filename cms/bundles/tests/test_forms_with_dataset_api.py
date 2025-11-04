@@ -388,7 +388,7 @@ class BundleFormSaveWithBundleAPITestCase(TestCase):
 
     @responses.activate
     def test_add_dataset_no_content_id_from_bundle_response_raises_validation_error(self):
-        """Test that missing content ID from API response fpr the added dataset raises ValidationError."""
+        """Test that missing content ID from API response for the added dataset raises ValidationError."""
         bundle = BundleFactory(name="Bundle", bundle_api_bundle_id=self.bundle_api_id)
         dataset = DatasetFactory(
             namespace="cpih",
