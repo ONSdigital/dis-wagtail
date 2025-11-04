@@ -86,6 +86,7 @@ class BundleAPIClientTests(TestCase):
                 "status": "accepted",
                 "location": "/bundles/test-bundle-123/status",
                 "message": "Request accepted and is being processed",
+                "etag_header": "",
             },
         )
 
