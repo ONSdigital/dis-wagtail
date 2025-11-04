@@ -22,6 +22,7 @@ class FutureReleaseCalendarMixin:
     results_template_name = "wagtailadmin/panels/future_release_calendar_page_chooser_results.html"
 
     def get_object_list(self) -> QuerySet["ReleaseCalendarPage"]:
+        # To avoid circular import
         from cms.release_calendar.models import ReleaseCalendarPage  # pylint: disable=import-outside-toplevel
 
         # note: using this method to allow search to work without adding the bundle data in the index
