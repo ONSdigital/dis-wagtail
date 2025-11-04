@@ -63,7 +63,7 @@ class BundleCreateView(CreateView):
                 self.object = self.save_instance()  # pylint: disable=attribute-defined-outside-init
         except Exception as e:  # pylint: disable=broad-exception-caught
             error = getattr(e, "message", str(e))
-            error_message = f"Could not create the bundle due to one or more Dataset API errors: {error}"
+            error_message = f"Could not create the bundle due to one or more Bundle API errors: {error}"
             messages.validation_error(self.request, error_message, form)
             error_response: HttpResponseBase = self.render_to_response(self.get_context_data(form=form))
             return error_response
@@ -298,6 +298,7 @@ class BundleInspectView(InspectView):
         if self.can_manage:
             return [
                 "name",
+                "bundle_api_bundle_id",
                 "status",
                 "created_at",
                 "created_by",
@@ -322,17 +323,22 @@ class BundleInspectView(InspectView):
     def get_field_label(self, field_name: str, field: "Field") -> str:
         match field_name:
             case "approved":
-                return "Approval status"
+                label = "Approval status"
             case "scheduled_publication":
-                return "Scheduled publication"
+                label = "Scheduled publication"
             case "pages":
-                return "Pages"
+                label = "Pages"
             case "bundled_datasets":
-                return "Datasets"
+                label = "Datasets"
             case "release_calendar_page":
-                return "Associated release calendar page"
+                label = "Associated release calendar page"
+            case "bundle_api_bundle_id":
+                value = self.get_field_display_value(field_name, field)
+                label = "Dataset Bundle API ID" if value else ""
             case _:
-                return super().get_field_label(field_name, field)  # type: ignore[no-any-return]
+                label = super().get_field_label(field_name, field)
+
+        return label
 
     def get_created_at_display_value(self) -> str:
         return ons_date_format(self.object.created_at, settings.DATETIME_FORMAT)
@@ -464,6 +470,10 @@ class BundleInspectView(InspectView):
         value: str = self.object.get_teams_display()
         return value
 
+    def get_bundle_api_bundle_id_display_value(self) -> str:
+        value: str = self.object.bundle_api_bundle_id
+        return value
+
     def get_bundled_datasets_display_value(self) -> str:
         """Returns formatted markup for datasets linked to the Bundle."""
         if self.object.bundled_datasets.exists():
@@ -483,28 +493,28 @@ class BundleDeleteView(DeleteView):
     has_errors = False
 
     @datasets_bundle_api_enabled
-    def sync_bundle_deletion_with_dataset_api(self, instance: Bundle) -> None:
+    def sync_bundle_deletion_with_bundle_api(self, instance: Bundle) -> None:
         """Handle when a bundle is deleted."""
-        if not instance.bundle_api_content_id:
+        if not instance.bundle_api_bundle_id:
             return
 
         access_token = self.request.COOKIES.get(settings.ACCESS_TOKEN_COOKIE_NAME)
         client = BundleAPIClient(access_token=access_token)
 
         try:
-            client.delete_bundle(instance.bundle_api_content_id)
-            logger.info("Deleted bundle %s from Dataset API", instance.pk)
+            client.delete_bundle(instance.bundle_api_bundle_id)
+            logger.info("Deleted bundle %s from Bundle API", instance.pk)
 
         except BundleAPIClientError as e:
-            logger.exception("Failed to delete bundle %s from Dataset API: %s", instance.pk, e)
-            raise ValidationError("Could not communicate with the Dataset API") from e
+            logger.exception("Failed to delete bundle %s from Bundle API: %s", instance.pk, e)
+            raise ValidationError("Could not communicate with the Bundle API") from e
 
     def delete_action(self) -> None:
         with transaction.atomic():
             bundle = self.object
             log(instance=self.object, action="wagtail.delete")
             self.object.delete()
-            self.sync_bundle_deletion_with_dataset_api(bundle)
+            self.sync_bundle_deletion_with_bundle_api(bundle)
 
     def form_valid(self, form: "BundleAdminForm") -> "HttpResponseBase":
         try:
