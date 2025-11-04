@@ -287,7 +287,7 @@ class DeleteBundleViewTestCase(WagtailTestUtils, TestCase):
     @override_settings(
         DIS_DATASETS_BUNDLE_API_ENABLED=True, DIS_DATASETS_BUNDLE_API_BASE_URL="https://test-api.example.com"
     )
-    def test_bundle_delete_dataset_api_call_includes_access_token(self):
+    def test_bundle_delete_bundle_api_call_includes_access_token(self):
         # Set up the bundle with a bundle_api_bundle_id so there is something to call to delete
         self.bundle.bundle_api_bundle_id = "bundle-content-id-123"
         self.bundle.save()
@@ -309,7 +309,7 @@ class DeleteBundleViewTestCase(WagtailTestUtils, TestCase):
         with self.assertRaises(Bundle.DoesNotExist):
             Bundle.objects.get(pk=self.bundle.pk)
 
-        # Check the bundle dataset API was called with the correct Authorization header
+        # Check the bundle API was called with the correct Authorization header
         self.assertEqual(response_mock.call_count, 1)
         bundle_delete_call = response_mock.calls[0]
         self.assertEqual(bundle_delete_call.request.headers["Authorization"], "the-access-token")
