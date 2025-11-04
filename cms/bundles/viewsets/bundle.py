@@ -63,7 +63,7 @@ class BundleCreateView(CreateView):
                 self.object = self.save_instance()  # pylint: disable=attribute-defined-outside-init
         except Exception as e:  # pylint: disable=broad-exception-caught
             error = getattr(e, "message", str(e))
-            error_message = f"Could not create the bundle due to one or more Dataset API errors: {error}"
+            error_message = f"Could not create the bundle due to one or more Bundle API errors: {error}"
             messages.validation_error(self.request, error_message, form)
             error_response: HttpResponseBase = self.render_to_response(self.get_context_data(form=form))
             return error_response
@@ -483,7 +483,7 @@ class BundleDeleteView(DeleteView):
     has_errors = False
 
     @datasets_bundle_api_enabled
-    def sync_bundle_deletion_with_dataset_api(self, instance: Bundle) -> None:
+    def sync_bundle_deletion_with_bundle_api(self, instance: Bundle) -> None:
         """Handle when a bundle is deleted."""
         if not instance.bundle_api_bundle_id:
             return
@@ -493,18 +493,18 @@ class BundleDeleteView(DeleteView):
 
         try:
             client.delete_bundle(instance.bundle_api_bundle_id)
-            logger.info("Deleted bundle %s from Dataset API", instance.pk)
+            logger.info("Deleted bundle %s from Bundle API", instance.pk)
 
         except BundleAPIClientError as e:
-            logger.exception("Failed to delete bundle %s from Dataset API: %s", instance.pk, e)
-            raise ValidationError("Could not communicate with the Dataset API") from e
+            logger.exception("Failed to delete bundle %s from Bundle API: %s", instance.pk, e)
+            raise ValidationError("Could not communicate with the Bundle API") from e
 
     def delete_action(self) -> None:
         with transaction.atomic():
             bundle = self.object
             log(instance=self.object, action="wagtail.delete")
             self.object.delete()
-            self.sync_bundle_deletion_with_dataset_api(bundle)
+            self.sync_bundle_deletion_with_bundle_api(bundle)
 
     def form_valid(self, form: "BundleAdminForm") -> "HttpResponseBase":
         try:

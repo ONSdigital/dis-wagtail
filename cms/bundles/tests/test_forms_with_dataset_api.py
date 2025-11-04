@@ -19,7 +19,7 @@ from cms.users.tests.factories import UserFactory
 
 
 @override_settings(DIS_DATASETS_BUNDLE_API_ENABLED=True)
-class BundleFormSaveWithDatasetAPITestCase(TestCase):
+class BundleFormSaveWithBundleAPITestCase(TestCase):
     """Test cases for the BundleAdminForm save method."""
 
     @classmethod
@@ -147,7 +147,7 @@ class BundleFormSaveWithDatasetAPITestCase(TestCase):
         self.assertTrue(form.is_valid())
         with self.assertRaises(ValidationError) as context:
             form.save()
-        self.assertEqual(context.exception.message, "Could not communicate with the Dataset API")
+        self.assertEqual(context.exception.message, "Could not communicate with the Bundle API")
 
     @responses.activate
     def test_save_new_bundle_with_datasets_no_api_id_returned(self):
@@ -171,7 +171,7 @@ class BundleFormSaveWithDatasetAPITestCase(TestCase):
         with self.assertRaises(ValidationError) as context:
             form.save()
 
-        self.assertEqual(context.exception.message, "Could not communicate with the Dataset API")
+        self.assertEqual(context.exception.message, "Could not communicate with the Bundle API")
 
         # API should be called
         responses.assert_call_count(self.bundle_endpoint, 1)
@@ -244,7 +244,7 @@ class BundleFormSaveWithDatasetAPITestCase(TestCase):
 
     @responses.activate
     def test_status_change__calls_update_state_api(self):
-        """Test that updating bundle status calls the Dataset API."""
+        """Test that updating bundle status calls the Bundle API."""
         BundleDataset.objects.create(parent=self.bundle, dataset=DatasetFactory(), bundle_api_content_id="123")
 
         mock_response_data = {"id": self.bundle_api_id, "etag_header": "etag-123"}
@@ -285,7 +285,7 @@ class BundleFormSaveWithDatasetAPITestCase(TestCase):
         self.assertTrue(form.is_valid())
         with self.assertRaises(ValidationError) as context:
             form.save()
-        self.assertEqual(context.exception.message, "Could not communicate with the Dataset API")
+        self.assertEqual(context.exception.message, "Could not communicate with the Bundle API")
 
     @responses.activate
     def test_remove_dataset__calls_delete_content_api(self):
@@ -371,7 +371,7 @@ class BundleFormSaveWithDatasetAPITestCase(TestCase):
         self.assertTrue(form.is_valid())
         with self.assertRaises(ValidationError) as context:
             form.save()
-        self.assertEqual(context.exception.message, "Could not communicate with the Dataset API")
+        self.assertEqual(context.exception.message, "Could not communicate with the Bundle API")
 
     @responses.activate
     def test_add_team__calls_update_bundle_api(self):
@@ -419,7 +419,7 @@ class BundleFormSaveWithDatasetAPITestCase(TestCase):
         self.assertTrue(form.is_valid())
         with self.assertRaises(ValidationError) as context:
             form.save()
-        self.assertEqual(context.exception.message, "Could not communicate with the Dataset API")
+        self.assertEqual(context.exception.message, "Could not communicate with the Bundle API")
 
     @patch("cms.bundles.forms.BundleAPIClient")
     def test_save_bundle_no_datasets_skips_api_calls(self, mock_client):
@@ -448,7 +448,7 @@ class BundleFormSaveWithDatasetAPITestCase(TestCase):
 
 
 @override_settings(DIS_DATASETS_BUNDLE_API_ENABLED=False)
-class BundleFormSaveWithDatasetAPIDisabledTestCase(TestCase):
+class BundleFormSaveWithBundleAPIDisabledTestCase(TestCase):
     """Test cases for the BundleAdminForm save method when API is disabled."""
 
     @classmethod
