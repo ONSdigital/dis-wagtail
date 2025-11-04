@@ -318,54 +318,113 @@ class BundleAdminForm(DeduplicateInlinePanelAdminForm):
                 client.delete_bundle(bundle.bundle_api_bundle_id)
                 logger.info("Deleted bundle %s from Bundle API", bundle.pk)
                 bundle.bundle_api_bundle_id = ""
-                bundle.save(update_fields=["bundle_api_bundle_id"])
+                bundle.bundle_api_etag = ""
+                bundle.save(update_fields=["bundle_api_bundle_id", "bundle_api_etag"])
             except BundleAPIClientError as e:
                 logger.exception("Failed to delete bundle %s from Bundle API: %s", bundle.pk, e)
                 raise ValidationError("Could not communicate with the Bundle API") from e
             return
 
-        # Handle addition and removals.
+        # Calculate diffs
         added = {d for d in current_datasets - self.original_datasets if not d.bundle_api_content_id}
         removed = {d for d in self.original_datasets - current_datasets if d.bundle_api_content_id}
         common_but_not_linked = {d for d in self.original_datasets & current_datasets if not d.bundle_api_content_id}
 
-        try:
-            etag = None
-            for item in added | common_but_not_linked:
-                content_item = build_content_item_for_dataset(item.dataset)
-                response = client.add_content_to_bundle(bundle.bundle_api_bundle_id, content_item)
+        # Add or link items
+        etag_after_addition = self._handle_api_add_items(
+            client=client,
+            bundle=bundle,
+            items=(added | common_but_not_linked),
+        )
+
+        # Remove items
+        etag_after_deletion = self._handle_api_delete_items(
+            client=client,
+            bundle=bundle,
+            items=removed,
+        )
+
+        # Persist the final ETag once everything has succeeded
+        final_etag = etag_after_deletion or etag_after_addition
+        if final_etag and final_etag != bundle.bundle_api_etag:
+            bundle.bundle_api_etag = final_etag
+            bundle.save(update_fields=["bundle_api_etag"])
+
+    @staticmethod
+    def _handle_api_add_items(
+        *,
+        client: BundleAPIClient,
+        bundle: "Bundle",
+        items: set["BundleDataset"],
+    ) -> str | None:
+        """Add or link content items to the bundle. Stops on first error. Advances ETag after each success."""
+        if not items:
+            return None
+
+        etag = None
+        for item in items:
+            content_item = build_content_item_for_dataset(item.dataset)
+            try:
+                # Client handles If-Match internally. We only read the returned ETag.
+                response = client.add_content_to_bundle(
+                    bundle_id=bundle.bundle_api_bundle_id,
+                    content_item=content_item,
+                )
                 etag = response["etag_header"]
 
-                # Extract content_id from the response
-                if content_id := extract_content_id_from_bundle_response(response, item.dataset):
-                    item.bundle_api_content_id = content_id
-                    item.save(update_fields=["bundle_api_content_id"])
-                    logger.info(
-                        "Added content %s to bundle %s in Bundle API with ID %s",
-                        item.dataset.namespace,
-                        bundle.pk,
-                        content_id,
+                content_id = extract_content_id_from_bundle_response(response, item.dataset)
+                if not content_id:
+                    logger.error(
+                        "Could not find content_id in response for bundle",
+                        extra={"id": bundle.pk, "api_id": bundle.bundle_api_bundle_id},
                     )
-                else:
-                    logger.exception("Could not find content_id in response for bundle %s", bundle.pk)
+                    raise ValidationError("Bundle API did not return an ID for the added content")
 
-            if etag is not None:
-                bundle.bundle_api_etag = etag
-                bundle.save(update_fields=["bundle_api_etag"])
-        except BundleAPIClientError as e:
-            logger.exception("Failed to add content to bundle %s in Bundle API: %s", bundle.pk, e)
-            raise ValidationError("Could not communicate with the Bundle API") from e
+                item.bundle_api_content_id = content_id
+                item.save(update_fields=["bundle_api_content_id"])
 
-        for item in removed:
+                logger.info(
+                    "Added content %s to bundle %s in Bundle API with ID %s",
+                    item.dataset.namespace,
+                    bundle.pk,
+                    content_id,
+                )
+            except BundleAPIClientError as e:
+                logger.exception("Failed to add content to bundle %s in Bundle API: %s", bundle.pk, e)
+                raise ValidationError("Could not communicate with the Bundle API") from e
+
+        return etag
+
+    @staticmethod
+    def _handle_api_delete_items(
+        *,
+        client: BundleAPIClient,
+        bundle: "Bundle",
+        items: set["BundleDataset"],
+    ) -> str | None:
+        """Remove content items from the bundle. Stops on first error. Advances ETag after each success."""
+        if not items:
+            return None
+
+        etag = None
+        for item in items:
+            content_id = item.bundle_api_content_id
             try:
-                content_id = item.bundle_api_content_id
-                client.delete_content_from_bundle(bundle.bundle_api_bundle_id, content_id)
+                # Client handles If-Match internally. We only read the returned ETag.
+                response = client.delete_content_from_bundle(
+                    bundle_id=bundle.bundle_api_bundle_id,
+                    content_id=content_id,
+                )
+                etag = response["etag_header"]
+
                 logger.info("Deleted content %s from bundle %s in Bundle API", content_id, bundle.pk)
             except BundleAPIClientError as e:
                 logger.exception(
                     "Failed to delete content %s from bundle %s in Bundle API: %s", content_id, bundle.pk, e
                 )
                 raise ValidationError("Could not communicate with the Bundle API") from e
+
+        return etag
 
     @datasets_bundle_api_enabled
     def _sync_teams_with_bundle_api(self, client: BundleAPIClient, bundle: "Bundle") -> None:
