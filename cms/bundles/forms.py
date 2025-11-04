@@ -374,7 +374,7 @@ class BundleAdminForm(DeduplicateInlinePanelAdminForm):
 
                 content_id = extract_content_id_from_bundle_response(response, item.dataset)
                 if not content_id:
-                    logger.exception(
+                    logger.error(
                         "Could not find content_id in response for bundle",
                         extra={"id": bundle.pk, "api_id": bundle.bundle_api_bundle_id},
                     )
