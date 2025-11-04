@@ -387,6 +387,36 @@ class BundleFormSaveWithBundleAPITestCase(TestCase):
         self.assertEqual(context.exception.message, "Could not communicate with the Bundle API")
 
     @responses.activate
+    def test_add_dataset_no_content_id_from_bundle_response_raises_validation_error(self):
+        """Test that missing content ID from API response fpr the added dataset raises ValidationError."""
+        bundle = BundleFactory(name="Bundle", bundle_api_bundle_id=self.bundle_api_id)
+        dataset = DatasetFactory(
+            namespace="cpih",
+            edition="time-series",
+            version=2,  # different version compared to self.content_item_json
+        )
+
+        responses.post(
+            self.content_endpoint, json=self.content_item_json, status=HTTPStatus.OK, headers={"ETag": "etag-123"}
+        )
+
+        raw_data = {
+            "name": "Updated Bundle",
+            "status": BundleStatus.DRAFT,
+            "bundled_pages": inline_formset([]),
+            "bundled_datasets": inline_formset([{"dataset": dataset.id}]),
+            "teams": inline_formset([]),
+        }
+
+        form = self.form_class(instance=bundle, data=nested_form_data(raw_data), for_user=self.approver)
+
+        self.assertTrue(form.is_valid())
+
+        with self.assertRaises(ValidationError) as context:
+            form.save()
+        self.assertEqual(context.exception.message, "Bundle API did not return an ID for the added content")
+
+    @responses.activate
     def test_add_team__calls_update_bundle_api(self):
         """Test that adding a team to a bundle calls the API to update preview teams."""
         team = TeamFactory(identifier="team-identifier-1")

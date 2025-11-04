@@ -378,7 +378,7 @@ class BundleAdminForm(DeduplicateInlinePanelAdminForm):
                         "Could not find content_id in response for bundle",
                         extra={"id": bundle.pk, "api_id": bundle.bundle_api_bundle_id},
                     )
-                    raise ValidationError("Bundle API did not return a ID for the added content")
+                    raise ValidationError("Bundle API did not return an ID for the added content")
 
                 item.bundle_api_content_id = content_id
                 item.save(update_fields=["bundle_api_content_id"])
