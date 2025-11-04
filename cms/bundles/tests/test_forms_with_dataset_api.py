@@ -17,6 +17,12 @@ from cms.datasets.tests.factories import DatasetFactory
 from cms.teams.tests.factories import TeamFactory
 from cms.users.tests.factories import UserFactory
 
+# TODO: Refactor these tests to patch and assert calls on the BundleAPIClient
+# instead of mocking HTTP via `responses`. These tests should focus on verifying
+# that the form/service logic invokes the correct client methods with the expected
+# arguments and sequencing. Low-level HTTP behaviour (method, headers, payload,
+# ETag handling, etc.) should be covered separately in test_client_api.py.
+
 
 @override_settings(DIS_DATASETS_BUNDLE_API_ENABLED=True)
 class BundleFormSaveWithBundleAPITestCase(TestCase):
@@ -191,7 +197,7 @@ class BundleFormSaveWithBundleAPITestCase(TestCase):
         )
 
         # Create an existing bundle without datasets
-        bundle = BundleFactory(name="Existing Bundle", bundle_api_bundle_id="")
+        bundle = BundleFactory(name="Existing Bundle", bundle_api_bundle_id="", bundle_api_etag="")
         dataset = DatasetFactory(namespace="cpih", edition="time-series", version=1)
 
         raw_data = {
@@ -210,8 +216,9 @@ class BundleFormSaveWithBundleAPITestCase(TestCase):
         responses.assert_call_count(self.bundle_endpoint, 1)
         responses.assert_call_count(self.content_endpoint, 1)
 
-        # Bundle should have the API ID set
+        # Bundle should have the API fields set
         self.assertEqual(bundle.bundle_api_bundle_id, self.bundle_api_id)
+        self.assertEqual(bundle.bundle_api_etag, "etag-123")
         self.assertEqual(bundle.bundled_datasets.first().bundle_api_content_id, "content-123")
 
     @responses.activate
