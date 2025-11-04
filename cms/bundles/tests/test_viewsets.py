@@ -346,8 +346,8 @@ class BundleViewSetEditTestCase(BundleViewSetTestCaseBase):
         self.bundle.save(update_fields=["status"])
         self.post_with_action_and_test("action-publish", BundleStatus.PUBLISHED, self.bundle_index_url)
 
-    def test_bundle_edit_view__shows_release_calendar_page_title_status_date(self):
-        """Release calendar page's title, status and release date are displayed when selected."""
+    def test_bundle_edit_view__shows_release_calendar_page_details(self):
+        """Release calendar page's title, status and release date are displayed when selected in bundles."""
         for title, status, expected_text in self.RELEASE_CALENDAR_PAGE_CASES:
             with self.subTest(title=title, status=status):
                 release_calendar_page = self._create_release_calendar_page(title=title, status=status)
@@ -359,8 +359,8 @@ class BundleViewSetEditTestCase(BundleViewSetTestCaseBase):
                 self.assertContains(response, expected_display_panel)
 
     def test_bundle_edit_view__shows_updated_release_calendar_page_details(self):
-        """When release calendar page details are updated, this tests that the updates are reflected and checks stale
-        values are not present.
+        """When release calendar page details are updated, this tests that the updates are reflected on the bundles edit
+        page and checks stale values are not present.
         """
         release_calendar_page = self._create_release_calendar_page(
             title="Future Release calendar Page", status=ReleaseStatus.PROVISIONAL
