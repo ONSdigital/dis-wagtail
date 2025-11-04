@@ -34,7 +34,7 @@ class BundleFormSaveWithBundleAPITestCase(TestCase):
         cls.approver = UserFactory()
 
         cls.bundle_api_id = "api-bundle-123"
-        cls.bundle = BundleFactory(bundle_api_bundle_id=cls.bundle_api_id)
+        cls.bundle = BundleFactory(bundle_api_bundle_id=cls.bundle_api_id, bundle_api_etag="etag-123")
 
         cls.base_api_url = settings.DIS_DATASETS_BUNDLE_API_BASE_URL
         cls.bundle_endpoint = f"{cls.base_api_url}/bundles"
@@ -225,7 +225,11 @@ class BundleFormSaveWithBundleAPITestCase(TestCase):
     def test_save_existing_bundle_with_existing_api_id_does_not_call_api(self):
         """Test that editing an existing bundle that already has an API ID doesn't call create_bundle."""
         bundle = BundleFactory(name="Existing Bundle", bundle_api_bundle_id=self.bundle_api_id)
-        dataset = DatasetFactory()
+        dataset = DatasetFactory(
+            namespace="cpih",
+            edition="time-series",
+            version=1,
+        )
 
         responses.post(
             self.content_endpoint, json=self.content_item_json, status=HTTPStatus.OK, headers={"ETag": "etag-123"}
@@ -307,7 +311,7 @@ class BundleFormSaveWithBundleAPITestCase(TestCase):
         )
 
         content_endpoint = f"{self.base_api_url}/bundles/api-bundle-123/contents/content-456"
-        responses.delete(content_endpoint, status=HTTPStatus.NO_CONTENT)
+        responses.delete(content_endpoint, status=HTTPStatus.NO_CONTENT, headers={"ETag": "etag-after-delete"})
 
         # Remove dataset1, keep dataset2
         raw_data = {
@@ -330,6 +334,7 @@ class BundleFormSaveWithBundleAPITestCase(TestCase):
         form.save()
 
         responses.assert_call_count(content_endpoint, 1)
+        self.assertEqual(self.bundle.bundle_api_etag, "etag-after-delete")
 
     @responses.activate
     def test_remove_all_datasets__deletes_bundle_from_api(self):
@@ -356,6 +361,7 @@ class BundleFormSaveWithBundleAPITestCase(TestCase):
         # API should be called to delete bundle
         responses.assert_call_count(self.delete_endpoint, 1)
         self.assertEqual(bundle.bundle_api_bundle_id, "")
+        self.assertEqual(bundle.bundle_api_etag, "")
 
     @responses.activate
     def test_remove_all_datasets__with_api_error_raises_validation_error(self):
@@ -379,6 +385,36 @@ class BundleFormSaveWithBundleAPITestCase(TestCase):
         with self.assertRaises(ValidationError) as context:
             form.save()
         self.assertEqual(context.exception.message, "Could not communicate with the Bundle API")
+
+    @responses.activate
+    def test_add_dataset_no_content_id_from_bundle_response_raises_validation_error(self):
+        """Test that missing content ID from API response for the added dataset raises ValidationError."""
+        bundle = BundleFactory(name="Bundle", bundle_api_bundle_id=self.bundle_api_id)
+        dataset = DatasetFactory(
+            namespace="cpih",
+            edition="time-series",
+            version=2,  # different version compared to self.content_item_json
+        )
+
+        responses.post(
+            self.content_endpoint, json=self.content_item_json, status=HTTPStatus.OK, headers={"ETag": "etag-123"}
+        )
+
+        raw_data = {
+            "name": "Updated Bundle",
+            "status": BundleStatus.DRAFT,
+            "bundled_pages": inline_formset([]),
+            "bundled_datasets": inline_formset([{"dataset": dataset.id}]),
+            "teams": inline_formset([]),
+        }
+
+        form = self.form_class(instance=bundle, data=nested_form_data(raw_data), for_user=self.approver)
+
+        self.assertTrue(form.is_valid())
+
+        with self.assertRaises(ValidationError) as context:
+            form.save()
+        self.assertEqual(context.exception.message, "Bundle API did not return an ID for the added content")
 
     @responses.activate
     def test_add_team__calls_update_bundle_api(self):
