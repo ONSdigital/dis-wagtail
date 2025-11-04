@@ -128,21 +128,24 @@ class BundleAPIClient:
         Returns:
             Response data as a dictionary
         """
+        etag = response.headers.get("etag", "")
+
         # Handle 202 responses (accepted, but processing)
         if response.status_code == HTTPStatus.ACCEPTED:
             return {
                 "status": "accepted",
                 "location": response.headers.get("Location", ""),
                 "message": BundleAPIMessage.REQUEST_ACCEPTED,
+                "etag_header": etag,
             }
 
         # Handle 204 responses (no content)
         if response.status_code == HTTPStatus.NO_CONTENT:
-            return {"status": "success", "message": BundleAPIMessage.OPERATION_SUCCESS}
+            return {"status": "success", "message": BundleAPIMessage.OPERATION_SUCCESS, "etag_header": etag}
 
         json_data: dict[str, Any] = response.json()
         # ETag is usually returned as a header, so inject it in the response JSON
-        json_data["etag_header"] = response.headers.get("etag", "")
+        json_data["etag_header"] = etag
         return json_data
 
     @staticmethod

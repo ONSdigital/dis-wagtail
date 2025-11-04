@@ -504,7 +504,6 @@ class BundleDeleteView(DeleteView):
         try:
             client.delete_bundle(instance.bundle_api_bundle_id)
             logger.info("Deleted bundle %s from Bundle API", instance.pk)
-
         except BundleAPIClientError as e:
             logger.exception("Failed to delete bundle %s from Bundle API: %s", instance.pk, e)
             raise ValidationError("Could not communicate with the Bundle API") from e
