@@ -1,5 +1,6 @@
 from http import HTTPStatus
 from typing import Literal
+from unittest.mock import patch
 
 import requests
 import responses
@@ -15,7 +16,7 @@ from cms.bundles.clients.api import (
 )
 
 
-@override_settings(DIS_DATASETS_BUNDLE_API_ENABLED=True)
+@override_settings(DIS_DATASETS_BUNDLE_API_ENABLED=True, DIS_DATASETS_BUNDLE_API_REQUEST_TIMEOUT_SECONDS=5)
 class BundleAPIClientTests(TestCase):
     def setUp(self):
         self.base_url = "https://test-api.example.com"
@@ -192,7 +193,10 @@ class BundleAPIClientTests(TestCase):
                     },
                 },
             ],
-            "etag_header": "bundle-etag",
+            "count": 2,
+            "limit": 100,
+            "offset": 0,
+            "total_count": 2,
         }
         responses.get(
             f"{self.base_url}/bundles/test-bundle-123/contents",
@@ -204,11 +208,12 @@ class BundleAPIClientTests(TestCase):
         client = BundleAPIClient(base_url=self.base_url)
         result = client.get_bundle_contents("test-bundle-123")
 
+        mock_response_data["etag_header"] = "bundle-etag"
         self.assertEqual(result, mock_response_data)
 
     @responses.activate
     def test_get_bundle_contents_empty(self):
-        mock_response_data = {"items": [], "etag_header": ""}
+        mock_response_data = {"items": [], "count": 0, "limit": 100, "offset": 0, "total_count": 0}
         responses.get(
             f"{self.base_url}/bundles/empty-bundle-123/contents", json=mock_response_data, status=HTTPStatus.OK
         )
@@ -216,6 +221,7 @@ class BundleAPIClientTests(TestCase):
         client = BundleAPIClient(base_url=self.base_url)
         result = client.get_bundle_contents("empty-bundle-123")
 
+        mock_response_data["etag_header"] = ""
         self.assertEqual(result, mock_response_data)
 
     @responses.activate
@@ -311,6 +317,20 @@ class BundleAPIClientTests(TestCase):
     def test_client_initialization_with_custom_url(self):
         client = BundleAPIClient(base_url="https://custom-api.example.com")
         self.assertEqual(client.base_url, "https://custom-api.example.com")
+
+    @responses.activate
+    def test_timeout_is_applied_from_settings(self):
+        client = BundleAPIClient(base_url=self.base_url)
+
+        responses.get(
+            f"{self.base_url}/bundles",
+            json={"items": [], "count": 0, "limit": 1, "offset": 0, "total_count": 0},
+        )
+
+        with patch.object(client.session, "request", wraps=client.session.request) as mock_request:
+            client.get_bundles(limit=1, offset=0)
+            _, kwargs = mock_request.call_args
+            self.assertEqual(kwargs.get("timeout"), 5)
 
 
 @override_settings(DIS_DATASETS_BUNDLE_API_ENABLED=False)
@@ -440,3 +460,156 @@ class ContentItemUtilityTests(TestCase):
         """Test extracting content_id when the response has no contents."""
         content_id = extract_content_id_from_bundle_response({}, self.dataset)
         self.assertIsNone(content_id)
+
+
+@override_settings(DIS_DATASETS_BUNDLE_API_ENABLED=True)
+class BundleAPIClientPaginationTests(TestCase):
+    def setUp(self):
+        self.base_url = "https://test-api.example.com"
+        self.bundle_client = BundleAPIClient(base_url=self.base_url)
+
+    @responses.activate
+    def test_get_bundle_contents_aggregates_across_pages(self):
+        bundle_id = "test-bundle-123"
+        page1 = {
+            "items": [{"id": "c1"}, {"id": "c2"}],
+            "count": 2,
+            "limit": 2,
+            "offset": 0,
+            "total_count": 3,
+        }
+        page2 = {
+            "items": [{"id": "c3"}],
+            "count": 1,
+            "limit": 2,
+            "offset": 2,
+            "total_count": 3,
+        }
+        url = f"{self.base_url}/bundles/{bundle_id}/contents"
+
+        responses.get(
+            url,
+            json=page1,
+            headers={"ETag": "etag-content-1"},
+            match=[responses.matchers.query_param_matcher({"limit": "2", "offset": "0"})],
+        )
+        responses.get(
+            url,
+            json=page2,
+            headers={"ETag": "etag-content-2"},
+            match=[responses.matchers.query_param_matcher({"limit": "2", "offset": "2"})],
+        )
+
+        result = self.bundle_client.get_bundle_contents(bundle_id, limit=2)
+
+        self.assertEqual([i["id"] for i in result["items"]], ["c1", "c2", "c3"])
+        self.assertEqual(result["count"], 3)
+        self.assertEqual(result["limit"], 2)
+        self.assertEqual(result["offset"], 0)
+        self.assertEqual(result["total_count"], 3)
+        self.assertEqual(result["etag_header"], "etag-content-1")
+        calls = [c.request.url for c in responses.calls if c.request.url.startswith(url)]
+        self.assertEqual(len(calls), 2)
+
+    @responses.activate
+    def test_get_bundles_aggregates_and_passes_publish_date(self):
+        publish_date = "2025-04-04T07:00:00.000Z"
+        page1 = {"items": [{"id": "b1"}], "count": 1, "limit": 1, "offset": 0, "total_count": 2}
+        page2 = {"items": [{"id": "b2"}], "count": 1, "limit": 1, "offset": 1, "total_count": 2}
+        url = f"{self.base_url}/bundles"
+
+        responses.get(
+            url,
+            json=page1,
+            headers={"ETag": "etag-bundles-1"},
+            match=[responses.matchers.query_param_matcher({"limit": "1", "offset": "0", "publish_date": publish_date})],
+        )
+        responses.get(
+            url,
+            json=page2,
+            headers={"ETag": "etag-bundles-2"},
+            match=[responses.matchers.query_param_matcher({"limit": "1", "offset": "1", "publish_date": publish_date})],
+        )
+
+        result = self.bundle_client.get_bundles(limit=1, offset=0, publish_date=publish_date)
+
+        self.assertEqual([i["id"] for i in result["items"]], ["b1", "b2"])
+        self.assertEqual(result["count"], 2)
+        self.assertEqual(result["total_count"], 2)
+        self.assertEqual(result["etag_header"], "etag-bundles-1")
+        calls = [c.request.url for c in responses.calls if c.request.url.startswith(url)]
+        self.assertEqual(len(calls), 2)
+
+    @responses.activate
+    def test_limit_is_clamped_to_max(self):
+        bundle_id = "test-bundle-123"
+
+        responses.get(
+            f"{self.base_url}/bundles/{bundle_id}/contents",
+            json={"items": [{"id": "c1"}], "count": 1, "limit": 1000, "offset": 0, "total_count": 1},
+        )
+
+        result = self.bundle_client.get_bundle_contents(bundle_id, limit=5000)
+        self.assertEqual(result["limit"], 1000)
+        self.assertEqual(result["count"], 1)
+
+    @responses.activate
+    def test_start_offset_is_respected(self):
+        bundle_id = "test-bundle-123"
+
+        page1 = {
+            "items": [{"id": "c3"}],
+            "count": 1,
+            "limit": 1,
+            "offset": 2,
+            "total_count": 4,
+        }
+        page2 = {
+            "items": [{"id": "c4"}],
+            "count": 1,
+            "limit": 1,
+            "offset": 3,
+            "total_count": 4,
+        }
+        url = f"{self.base_url}/bundles/{bundle_id}/contents"
+
+        responses.get(
+            url,
+            json=page1,
+            match=[responses.matchers.query_param_matcher({"limit": "1", "offset": "2"})],
+        )
+        responses.get(
+            url,
+            json=page2,
+            match=[responses.matchers.query_param_matcher({"limit": "1", "offset": "3"})],
+        )
+
+        result = self.bundle_client.get_bundle_contents(bundle_id, limit=1, offset=3)
+        self.assertEqual([i["id"] for i in result["items"]], ["c4"])
+        self.assertEqual(result["count"], 1)
+        self.assertEqual(result["offset"], 0)
+
+    @responses.activate
+    def test_default_limit_of_100_is_used_when_not_provided_for_contents(self):
+        bundle_id = "test-bundle-123"
+        responses.get(
+            f"{self.base_url}/bundles/{bundle_id}/contents",
+            json={"items": [], "count": 0, "limit": 100, "offset": 0, "total_count": 0},
+        )
+
+        result = self.bundle_client.get_bundle_contents(bundle_id)
+        self.assertEqual(result["limit"], 100)
+        self.assertEqual(result["count"], 0)
+        self.assertEqual(result["total_count"], 0)
+
+    @responses.activate
+    def test_limit_below_min_is_clamped_to_one(self):
+        bundle_id = "test-bundle-123"
+        responses.get(
+            f"{self.base_url}/bundles/{bundle_id}/contents",
+            json={"items": [{"id": "c1"}], "count": 1, "limit": 1, "offset": 0, "total_count": 1},
+        )
+
+        result = self.bundle_client.get_bundle_contents(bundle_id, limit=0)
+        self.assertEqual(result["limit"], 1)
+        self.assertEqual(result["count"], 1)

@@ -1,5 +1,7 @@
 from http import HTTPStatus
 
+import responses
+from django.conf import settings
 from django.test import TestCase, override_settings
 from django.urls import reverse
 from wagtail.models import ModelLogEntry
@@ -13,11 +15,12 @@ from cms.bundles.tests.factories import BundleDatasetFactory, BundleFactory, Bun
 from cms.bundles.tests.utils import (
     create_bundle_manager,
     create_bundle_viewer,
+    grant_all_bundle_permissions,
 )
 from cms.home.models import HomePage
 from cms.release_calendar.tests.factories import ReleaseCalendarPageFactory
 from cms.teams.models import Team
-from cms.users.tests.factories import UserFactory
+from cms.users.tests.factories import GroupFactory, UserFactory
 from cms.workflows.tests.utils import (
     mark_page_as_ready_for_review,
     mark_page_as_ready_to_publish,
@@ -266,6 +269,50 @@ class PreviewBundleViewTestCase(WagtailTestUtils, TestCase):
         )
 
         self.assertEqual(ModelLogEntry.objects.filter(action="bundles.preview").count(), 0)
+
+
+class DeleteBundleViewTestCase(WagtailTestUtils, TestCase):
+    @classmethod
+    def setUpTestData(cls):
+        cls.publishing_group = GroupFactory(name="Publishing Officers", access_admin=True)
+        grant_all_bundle_permissions(cls.publishing_group)
+        cls.publishing_officer = UserFactory(username="publishing_officer")
+        cls.publishing_officer.groups.add(cls.publishing_group)
+
+    def setUp(self):
+        self.bundle = BundleFactory(name="A Bundle", created_by=self.publishing_officer)
+        self.client.force_login(self.publishing_officer)
+
+    @responses.activate
+    @override_settings(
+        DIS_DATASETS_BUNDLE_API_ENABLED=True, DIS_DATASETS_BUNDLE_API_BASE_URL="https://test-api.example.com"
+    )
+    def test_bundle_delete_bundle_api_call_includes_access_token(self):
+        # Set up the bundle with a bundle_api_bundle_id so there is something to call to delete
+        self.bundle.bundle_api_bundle_id = "bundle-content-id-123"
+        self.bundle.save()
+
+        self.client.cookies[settings.ACCESS_TOKEN_COOKIE_NAME] = "the-access-token"
+
+        # Mock the response from the dataset bundle API
+        response_mock = responses.delete(
+            f"{settings.DIS_DATASETS_BUNDLE_API_BASE_URL}/bundles/{self.bundle.bundle_api_bundle_id}",
+            status=HTTPStatus.NO_CONTENT,
+        )
+
+        # Post the admin bundle delete request
+        bundle_delete_url = reverse("bundle:delete", args=[self.bundle.pk])
+        response = self.client.post(bundle_delete_url, follow=True, data={"action-delete": "delete"})
+        self.assertEqual(response.status_code, HTTPStatus.OK)
+
+        # Check the bundle is deleted
+        with self.assertRaises(Bundle.DoesNotExist):
+            Bundle.objects.get(pk=self.bundle.pk)
+
+        # Check the bundle API was called with the correct Authorization header
+        self.assertEqual(response_mock.call_count, 1)
+        bundle_delete_call = response_mock.calls[0]
+        self.assertEqual(bundle_delete_call.request.headers["Authorization"], "the-access-token")
 
 
 class PreviewBundleReleaseCalendarViewTestCase(WagtailTestUtils, TestCase):
