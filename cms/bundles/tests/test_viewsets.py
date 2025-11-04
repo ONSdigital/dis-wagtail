@@ -556,6 +556,41 @@ class BundleViewSetInspectTestCase(BundleViewSetTestCaseBase):
         self.assertContains(response, "1 July 2025 1:45pm")
         self.assertContains(response, "1 July 2025 2:00pm")
 
+    def test_inspect_view__shows_bundle_api_bundle_id_when_exists(self):
+        # Ensure the bundle has "bundle_api_bundle_id" set
+        self.bundle.bundle_api_bundle_id = "bundle-api-id-123"
+        self.bundle.save(update_fields=["bundle_api_bundle_id"])
+
+        response = self.client.get(reverse("bundle:inspect", args=[self.bundle.pk]))
+
+        # Label and value are shown
+        self.assertContains(response, "Dataset Bundle API ID")
+        self.assertContains(response, "bundle-api-id-123")
+
+    def test_inspect_view__hides_bundle_api_bundle_id_when_not_exists(self):
+        # Ensure the bundle does not have "bundle_api_bundle_id" set.
+        self.bundle.bundle_api_bundle_id = ""
+        self.bundle.save(update_fields=["bundle_api_bundle_id"])
+
+        response = self.client.get(reverse("bundle:inspect", args=[self.bundle.pk]))
+
+        # Label not shown
+        self.assertNotContains(response, "Dataset Bundle API ID")
+
+    def test_inspect_view__previewers__never_shown_bundle_api_bundle_id(self):
+        """Previewers should not see the API ID, even if it exists."""
+        # Give the in-review bundle datasets and an API ID
+        self.in_review_bundle.bundle_api_bundle_id = "bundle-api-id-123"
+        self.in_review_bundle.save(update_fields=["bundle_api_bundle_id"])
+
+        # Login as viewer (previewer flow)
+        self.client.force_login(self.bundle_viewer)
+        response = self.client.get(reverse("bundle:inspect", args=[self.in_review_bundle.pk]))
+
+        # Label and value are not shown
+        self.assertNotContains(response, "Dataset Bundle API ID")
+        self.assertNotContains(response, "bundle-api-id-123")
+
 
 class BundleIndexViewTestCase(BundleViewSetTestCaseBase):
     def test_bundle_index__unhappy_paths(self):

@@ -298,6 +298,7 @@ class BundleInspectView(InspectView):
         if self.can_manage:
             return [
                 "name",
+                "bundle_api_bundle_id",
                 "status",
                 "created_at",
                 "created_by",
@@ -322,17 +323,22 @@ class BundleInspectView(InspectView):
     def get_field_label(self, field_name: str, field: "Field") -> str:
         match field_name:
             case "approved":
-                return "Approval status"
+                label = "Approval status"
             case "scheduled_publication":
-                return "Scheduled publication"
+                label = "Scheduled publication"
             case "pages":
-                return "Pages"
+                label = "Pages"
             case "bundled_datasets":
-                return "Datasets"
+                label = "Datasets"
             case "release_calendar_page":
-                return "Associated release calendar page"
+                label = "Associated release calendar page"
+            case "bundle_api_bundle_id":
+                value = self.get_field_display_value(field_name, field)
+                label = "Dataset Bundle API ID" if value else ""
             case _:
-                return super().get_field_label(field_name, field)  # type: ignore[no-any-return]
+                label = super().get_field_label(field_name, field)
+
+        return label
 
     def get_created_at_display_value(self) -> str:
         return ons_date_format(self.object.created_at, settings.DATETIME_FORMAT)
@@ -462,6 +468,10 @@ class BundleInspectView(InspectView):
 
     def get_teams_display_value(self) -> str:
         value: str = self.object.get_teams_display()
+        return value
+
+    def get_bundle_api_bundle_id_display_value(self) -> str:
+        value: str = self.object.bundle_api_bundle_id
         return value
 
     def get_bundled_datasets_display_value(self) -> str:
