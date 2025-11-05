@@ -144,7 +144,7 @@ def release_calendar_page_with_status_and_future_date_exists(context: Context, s
 
 
 @step('the user manually creates a future release calendar page with a "{status}" status')
-def user_manually_creates_future_release_calendar(context: Context, status: str):
+def user_manually_creates_future_release_calendar(context: Context, status: str) -> None:
     navigate_to_release_calendar_page(context)
     click_add_child_page(context)
     title = "Future Release Calendar Page"
@@ -163,7 +163,7 @@ def user_manually_creates_future_release_calendar(context: Context, status: str)
 
 
 @when("the user enters a title")
-def user_enters_title(context: Context):
+def user_enters_title(context: Context) -> None:
     context.page.get_by_role("textbox", name="Name*").fill("Test Bundles")
 
 
@@ -195,7 +195,7 @@ def user_sees_release_calendar_page_title_status_release_date(
 
 
 @then('the user cannot see the "Cancelled" release calendar page')
-def user_cannot_see_cancelled_release_calendar_page(context: Context):
+def user_cannot_see_cancelled_release_calendar_page(context: Context) -> None:
     expect(context.page.get_by_text(context.release_calendar_page.title)).not_to_be_visible()
 
 
