@@ -199,7 +199,9 @@ class Bundle(index.Indexed, ClusterableModel, models.Model):  # type: ignore[dja
     search_fields: ClassVar[list[index.BaseField]] = [
         index.SearchField("name"),
         index.AutocompleteField("name"),
+        index.FilterField("id"),
         index.FilterField("status"),
+        index.FilterField("team_id"),
     ]
 
     def __str__(self) -> str:
@@ -216,6 +218,12 @@ class Bundle(index.Indexed, ClusterableModel, models.Model):  # type: ignore[dja
     @cached_property
     def active_team_ids(self) -> list[int]:
         return list(self.teams.filter(team__is_active=True).values_list("team__pk", flat=True))
+
+    @cached_property
+    def team_id(self) -> list[int]:
+        # Workaround for https://github.com/wagtail/wagtail/issues/6616
+        # Currently Wagtail cannot search a QuerySet that's been filtered by a field on a related object
+        return self.active_team_ids
 
     @property
     def can_be_approved(self) -> bool:

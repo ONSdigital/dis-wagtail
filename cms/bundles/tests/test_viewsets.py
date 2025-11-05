@@ -719,6 +719,26 @@ class BundleIndexViewTestCase(BundleViewSetTestCaseBase):
         self.assertNotContains(response, self.another_in_review_bundle.name)
         self.assertNotContains(response, "View &quot;Ready to publish&quot;")
 
+    def test_index_view__previewers__search(self):
+        self.client.force_login(self.bundle_viewer)
+
+        another_preview_team = Team.objects.create(identifier="bar", name="Another preview team")
+        self.bundle_viewer.teams.add(another_preview_team)
+        BundleTeam.objects.create(parent=self.in_review_bundle, team=another_preview_team)
+        BundleTeam.objects.create(parent=self.approved_bundle, team=another_preview_team)
+
+        response = self.client.get(self.bundle_index_url, query_params={"q": "Bundle"})
+        self.assertContains(response, self.in_review_bundle.name, 2)
+        self.assertContains(response, self.approved_bundle.name, 2)
+        self.assertNotContains(response, self.published_bundle.name)
+        self.assertNotContains(response, self.another_in_review_bundle.name)
+
+        response = self.client.get(self.bundle_index_url, query_params={"q": "Preview"})
+        self.assertContains(response, self.in_review_bundle.name, 2)
+        self.assertNotContains(response, self.approved_bundle.name)
+        self.assertNotContains(response, self.published_bundle.name)
+        self.assertNotContains(response, self.another_in_review_bundle.name)
+
     def test_ordering(self):
         """Checks that the correct ordering is applied."""
         cases = {
