@@ -630,7 +630,7 @@ class BundleViewSetInspectTestCase(BundleViewSetTestCaseBase):
         self.assertContains(response, "bundle-api-id-123")
 
     def test_inspect_view__hides_bundle_api_bundle_id_when_not_exists(self):
-        # Ensure the bundle does not have "bundle_api_bundle_id" set.
+        # Ensure the bundle does not have "bundle_api_bundle_id" set
         self.bundle.bundle_api_bundle_id = ""
         self.bundle.save(update_fields=["bundle_api_bundle_id"])
 
