@@ -40,9 +40,9 @@ from cms.workflows.tests.utils import (
 
 class BundleViewSetTestCaseBase(WagtailTestUtils, TestCase):
     RELEASE_CALENDAR_PAGE_CASES: ClassVar[list[tuple[str, ReleaseStatus, str]]] = [
-        ("Provisional title", ReleaseStatus.PROVISIONAL, "Provisional title (Provisional,"),
-        ("Confirmed title", ReleaseStatus.CONFIRMED, "Confirmed title (Confirmed,"),
-        ("Cancelled title", ReleaseStatus.CANCELLED, "Cancelled title (Cancelled,"),
+        ("Release Calendar Page 1", ReleaseStatus.PROVISIONAL, "Release Calendar Page 1 (Provisional,"),
+        ("Release Calendar Page 2", ReleaseStatus.CONFIRMED, "Release Calendar Page 2 (Confirmed,"),
+        ("Release Calendar Page 3", ReleaseStatus.CANCELLED, "Release Calendar Page 3 (Cancelled,"),
     ]
 
     @classmethod
@@ -352,7 +352,7 @@ class BundleViewSetEditTestCase(BundleViewSetTestCaseBase):
             with self.subTest(title=title, status=status):
                 release_calendar_page = self._create_release_calendar_page(title=title, status=status)
                 # when validation of assigning cancelled pages to bundles are improved
-                # test for cancelled pages should fail for cancelled pages
+                # test for cancelled pages should fail
                 self._assign_release_calendar_page_to_bundle(release_calendar_page=release_calendar_page)
                 response = self.client.get(self.edit_url)
                 expected_display_panel = f"{expected_text} {release_calendar_page.release_date_value})"

@@ -15,6 +15,8 @@ from cms.teams.models import Team
 from cms.users.tests.factories import UserFactory
 from functional_tests.steps.release_page import click_add_child_page, navigate_to_release_calendar_page
 
+tomorrow = timezone.now() + timedelta(days=1)
+
 
 @step("a bundle has been created")
 def a_bundle_has_been_created(context: Context) -> None:
@@ -129,9 +131,6 @@ def bundle_inspect_show(context: Context) -> None:
     expect(context.page.get_by_text(context.bundle_creator.get_username())).not_to_be_visible()
 
 
-tomorrow = timezone.now() + timedelta(days=1)
-
-
 # To test release calendar page panel
 @given("a release calendar page with a future release date exists")
 @given('a release calendar page with a "{status}" status and future release date exists')
@@ -200,14 +199,13 @@ def user_cannot_see_cancelled_release_calendar_page(context: Context):
     expect(context.page.get_by_text(context.release_calendar_page.title)).not_to_be_visible()
 
 
-day_after_tomorrow = timezone.localdate() + timedelta(days=2)
-
-# Set time to 10 am as using datetime.now() displayed an hour earlier than actual time for checking the updated time
-new_date = timezone.make_aware(datetime.combine(day_after_tomorrow, time(10, 0)), timezone.get_current_timezone())
-
-
 @step('the user updates the selected release calendar page\'s title, release date and sets the status to "{status}"')
 def user_updates_selected_release_calendar_page_title_release_date_status(context: Context, status: str) -> None:
+    day_after_tomorrow = timezone.localdate() + timedelta(days=2)
+
+    # Set time to 10 am as using datetime.now() displayed an hour earlier than actual time for checking the updated time
+    new_date = timezone.make_aware(datetime.combine(day_after_tomorrow, time(10, 0)), timezone.get_current_timezone())
+
     context.page.get_by_role("region", name="Scheduling").get_by_label("Actions").click()
     with context.page.expect_popup() as edit_release_calendar_page:
         context.page.get_by_role("link", name="Edit Release Calendar page").click()
