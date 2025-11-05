@@ -8,6 +8,77 @@ from django.conf import settings
 
 from cms.datasets.tests.utils import convert_dataset_to_old_format
 
+TEST_UNPUBLISHED_DATASETS = (
+    {
+        "dataset_id": "example1",
+        "description": "Example dataset for functional testing",
+        "title": "Looked Up Dataset",
+        "edition": "example-dataset-1",
+        "edition_title": "Example Dataset 1",
+        "latest_version": {
+            "href": "/datasets/example1/editions/example-dataset-1/versions/1",
+            "id": "1",
+        },
+        "release_date": "2025-01-01T00:00:00.000Z",
+        "state": "associated",
+    },
+    {
+        "dataset_id": "example2",
+        "description": "Second example dataset for functional testing",
+        "title": "Personal well-being estimates by local authority",
+        "edition": "example-dataset-2",
+        "edition_title": "Example Dataset 2",
+        "latest_version": {
+            "href": "/datasets/example2/editions/example-dataset-2/versions/1",
+            "id": "1",
+        },
+        "release_date": "2025-01-02T00:00:00.000Z",
+        "state": "unpublished",
+    },
+    {
+        "dataset_id": "example3",
+        "description": "Third example dataset for functional testing",
+        "title": "Deaths registered weekly in England and Wales by region",
+        "edition": "example-dataset-3",
+        "edition_title": "Example Dataset 3",
+        "latest_version": {
+            "href": "/datasets/example3/editions/example-dataset-3/versions/1",
+            "id": "1",
+        },
+        "release_date": "2025-01-03T00:00:00.000Z",
+        "state": "associated",
+    },
+)
+
+TEST_MIXED_STATES_DATASETS = (
+    {
+        "dataset_id": "example1",
+        "description": "Example dataset for functional testing",
+        "title": "Looked Up Dataset",
+        "edition": "example-dataset-1",
+        "edition_title": "Example Dataset 1",
+        "latest_version": {
+            "href": "/datasets/example1/editions/example-dataset-1/versions/1",
+            "id": "1",
+        },
+        "release_date": "2025-01-01T00:00:00.000Z",
+        "state": "published",
+    },
+    {
+        "dataset_id": "example1",
+        "description": "Example dataset for functional testing unpublished",
+        "title": "Unpublished Looked Up Dataset",
+        "edition": "example-dataset-1",
+        "edition_title": "Example Dataset 1",
+        "latest_version": {
+            "href": "/datasets/example1/editions/example-dataset-1/versions/1",
+            "id": "1",
+        },
+        "release_date": "2025-01-01T00:00:00.000Z",
+        "state": "unpublished",
+    },
+)
+
 
 def _prepare_datasets_response(datasets: list[Mapping[str, Any]]) -> dict[str, Any]:
     """Prepare the datasets API response format."""

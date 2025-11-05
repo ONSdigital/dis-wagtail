@@ -485,7 +485,7 @@ class BundleInspectView(InspectView):
         bundle_contents = client.get_bundle_contents(self.object.bundle_api_content_id)
         processed_data = []
 
-        for content_item in bundle_contents.get("contents", []):
+        for content_item in bundle_contents.get("items", []):
             if content_item.get("content_type") == "DATASET":
                 metadata = content_item.get("metadata", {})
                 state = content_item.get("state", "")

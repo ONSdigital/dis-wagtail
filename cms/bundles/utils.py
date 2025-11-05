@@ -175,7 +175,7 @@ def get_preview_items_for_bundle(
 
     # Add datasets to preview items if bundle_contents is provided
     if bundle_contents:
-        for item in bundle_contents.get("contents", []):
+        for item in bundle_contents.get("items", []):
             if item.get("content_type") != "DATASET":
                 continue
 

@@ -17,7 +17,7 @@ urlpatterns = [
         name="preview_release_calendar",
     ),
     path(
-        "preview/<int:bundle_id>/dataset/<str:dataset_id>/<str:edition_id>/<str:version_id>/",
+        "preview/<int:bundle_id>/dataset/<str:dataset_id>/<str:edition_id>/<int:version_id>/",
         PreviewBundleDatasetView.as_view(),
         name="preview_dataset",
     ),

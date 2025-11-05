@@ -487,7 +487,7 @@ class BundleViewSetInspectTestCase(BundleViewSetTestCaseBase):
         """Checks that the inspect view displays message when no datasets in bundle."""
         # Mock the Bundle API response with no datasets
         mock_client_instance = mock_api_client.return_value
-        mock_client_instance.get_bundle_contents.return_value = {"contents": []}
+        mock_client_instance.get_bundle_contents.return_value = {"items": []}
 
         response = self.client.get(reverse("bundle:inspect", args=[self.bundle.pk]))
 
@@ -507,7 +507,7 @@ class BundleViewSetInspectTestCase(BundleViewSetTestCaseBase):
         # Mock the Bundle API response
         mock_client_instance = mock_api_client.return_value
         mock_client_instance.get_bundle_contents.return_value = {
-            "contents": [
+            "items": [
                 {
                     "content_type": "DATASET",
                     "metadata": {
@@ -611,7 +611,7 @@ class BundleViewSetInspectTestCase(BundleViewSetTestCaseBase):
         # Mock the Bundle API response
         mock_client_instance = mock_api_client.return_value
         mock_client_instance.get_bundle_contents.return_value = {
-            "contents": [
+            "items": [
                 {
                     "content_type": "DATASET",
                     "metadata": {
@@ -651,7 +651,7 @@ class BundleViewSetInspectTestCase(BundleViewSetTestCaseBase):
         # Mock the Bundle API response with multiple datasets
         mock_client_instance = mock_api_client.return_value
         mock_client_instance.get_bundle_contents.return_value = {
-            "contents": [
+            "items": [
                 {
                     "content_type": "DATASET",
                     "metadata": {
@@ -696,7 +696,7 @@ class BundleViewSetInspectTestCase(BundleViewSetTestCaseBase):
         # Mock the Bundle API response with missing metadata
         mock_client_instance = mock_api_client.return_value
         mock_client_instance.get_bundle_contents.return_value = {
-            "contents": [
+            "items": [
                 {
                     "content_type": "DATASET",
                     "metadata": {},
@@ -721,7 +721,7 @@ class BundleViewSetInspectTestCase(BundleViewSetTestCaseBase):
         # Mock the Bundle API response
         mock_client_instance = mock_api_client.return_value
         mock_client_instance.get_bundle_contents.return_value = {
-            "contents": [
+            "items": [
                 {
                     "content_type": "DATASET",
                     "metadata": {
@@ -760,7 +760,7 @@ class BundleViewSetInspectTestCase(BundleViewSetTestCaseBase):
         # Mock the Bundle API response
         mock_client_instance = mock_api_client.return_value
         mock_client_instance.get_bundle_contents.return_value = {
-            "contents": [
+            "items": [
                 {
                     "content_type": "DATASET",
                     "metadata": {
@@ -799,7 +799,7 @@ class BundleViewSetInspectTestCase(BundleViewSetTestCaseBase):
         # Mock the Bundle API response
         mock_client_instance = mock_api_client.return_value
         mock_client_instance.get_bundle_contents.return_value = {
-            "contents": [
+            "items": [
                 {
                     "content_type": "DATASET",
                     "metadata": {
@@ -829,7 +829,7 @@ class BundleViewSetInspectTestCase(BundleViewSetTestCaseBase):
         # Mock the Bundle API response
         mock_client_instance = mock_api_client.return_value
         mock_client_instance.get_bundle_contents.return_value = {
-            "contents": [
+            "items": [
                 {
                     "content_type": "DATASET",
                     "metadata": {

@@ -466,7 +466,7 @@ class PreviewBundleDatasetViewTestCase(WagtailTestUtils, TestCase):
 
         # Mock API response
         cls.mock_bundle_contents = {
-            "contents": [
+            "items": [
                 {
                     "content_type": "DATASET",
                     "state": "APPROVED",
@@ -526,7 +526,7 @@ class PreviewBundleDatasetViewTestCase(WagtailTestUtils, TestCase):
     def test_view_returns_404_if_dataset_not_in_bundle(self, mock_client_class):
         self.client.force_login(self.publishing_officer)
         mock_instance = mock_client_class.return_value
-        mock_instance.get_bundle_contents.return_value = {"contents": []}
+        mock_instance.get_bundle_contents.return_value = {"items": []}
 
         response = self.client.get(self.preview_url)
         self.assertEqual(response.status_code, HTTPStatus.NOT_FOUND)
@@ -536,7 +536,7 @@ class PreviewBundleDatasetViewTestCase(WagtailTestUtils, TestCase):
         self.client.force_login(self.publishing_officer)
         mock_instance = mock_client_class.return_value
         mock_bundle_contents_no_preview = {
-            "contents": [
+            "items": [
                 {
                     "content_type": "DATASET",
                     "state": "APPROVED",
@@ -590,4 +590,4 @@ class PreviewBundleDatasetViewTestCase(WagtailTestUtils, TestCase):
         self.assertEqual(response.status_code, HTTPStatus.OK)
         self.assertContains(response, "<iframe")
         self.assertContains(response, 'class="preview-iframe"')
-        self.assertContains(response, self.mock_bundle_contents["contents"][0]["links"]["preview"])
+        self.assertContains(response, self.mock_bundle_contents["items"][0]["links"]["preview"])

@@ -58,6 +58,7 @@ def the_locale_column_is_displayed(context: Context) -> None:
     modal.get_by_role("columnheader", name="Locale").is_visible()
 
 
+@then("the selected datasets are displayed in the inspect view")
 @then('the selected datasets are displayed in the "Data API datasets" section')
 def the_selected_datasets_are_displayed(context: Context) -> None:
     context.page.get_by_role("heading", name="Dataset 1").is_visible()
@@ -90,6 +91,13 @@ def go_to_bundle_inspect(context: Context) -> None:
     context.page.goto(context.base_url + reverse("bundle:inspect", args=[context.bundle.pk]))
 
 
+@step("the user clicks on the inspect link for the created bundle")
+def user_clicks_on_inspect_link_for_created_bundle(context: Context) -> None:
+    # This is a different approach when bundle does not exist in the context
+    context.page.locator("#w-slim-header-buttons").get_by_role("button", name="Actions").click()
+    context.page.get_by_role("link", name="Inspect", exact=True).click()
+
+
 @step("the user goes to the bundle menu page")
 def go_to_bundle_menu(context: Context) -> None:
     context.page.goto(context.base_url + reverse("bundle:index"))
@@ -108,6 +116,26 @@ def bundle_menu_contains_value(
 def bundle_menu_does_not_contain_value(context: Context) -> None:
     expect(context.page.get_by_role("table")).to_contain_text(context.bundle.name)
     expect(context.page.get_by_role("table")).not_to_contain_text(context.bundle_creator.get_full_name())
+
+
+@step("the user saves the bundle as draft")
+def user_saves_bundle_as_draft(context: Context) -> None:
+    context.page.get_by_role("button", name="Save as Draft").click()
+
+
+@step("the user sets the bundle title")
+def user_sets_bundle_title(context: Context) -> None:
+    context.page.get_by_role("textbox", name="Name*").fill("Test Bundle")
+
+
+@step("the user opens the preview for one of the selected datasets")
+def user_opens_preview_for_one_of_the_selected_datasets(context: Context) -> None:
+    context.page.get_by_role("link", name="Preview", exact=True).nth(0).click()
+
+
+@step("the user can see the preview items dropdown")
+def user_can_see_preview_items_dropdown(context: Context) -> None:
+    context.page.get_by_label("Preview items").is_visible()
 
 
 # bundle Inspect

@@ -167,7 +167,7 @@ class PreviewBundleDatasetView(BundleContentsMixin, TemplateView):
 
         # Find the specific dataset being previewed to get its preview URL
         iframe_url = None
-        for item in bundle_contents.get("contents", []):
+        for item in bundle_contents.get("items", []):
             if item.get("content_type") == "DATASET":
                 metadata = item.get("metadata", {})
                 if (
