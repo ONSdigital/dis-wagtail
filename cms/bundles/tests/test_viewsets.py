@@ -1,3 +1,5 @@
+# pylint: disable=too-many-lines
+
 from datetime import UTC, datetime, timedelta
 from http import HTTPStatus
 from typing import ClassVar
