@@ -22,7 +22,7 @@ Feature: CMS users can manage bundles
         And the user selects multiple datasets
         Then the selected datasets are displayed in the "Data API datasets" section
 
-     Scenario Outline: A content editor can see the release calendar page title, status and release date when it has been selected under scheduling
+    Scenario Outline: A content editor can see the release calendar page title, status and release date when it has been selected under scheduling
         Given a release calendar page with a "<Release Status>" status and future release date exists
         When the user navigates to the bundle creation page
         And the user enters a title
