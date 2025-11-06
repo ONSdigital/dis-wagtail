@@ -2,8 +2,10 @@
 
 {% block bodyStart %}
     {% include "templates/components/preview-bar/preview-bar.html" %}
-    {{ super() }}
 {% endblock %}
+
+{% block preHeader %}{% endblock %}
+{% block header %}{% endblock %}
 
 {% block pageContent %}
     <iframe src="{{ iframe_url }}" class="preview-iframe"></iframe>

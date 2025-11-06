@@ -174,31 +174,30 @@ def get_preview_items_for_bundle(
         )
 
     # Add datasets to preview items if bundle_contents is provided
-    if bundle_contents:
-        for item in bundle_contents.get("items", []):
-            if item.get("content_type") != "DATASET":
-                continue
+    for item in (bundle_contents or {}).get("items", []):
+        if item.get("content_type") != "DATASET":
+            continue
 
-            metadata = item.get("metadata", {})
-            dataset_id = metadata.get("dataset_id")
-            edition_id = metadata.get("edition_id")
-            version_id = metadata.get("version_id")
+        metadata = item.get("metadata", {})
+        dataset_id = metadata.get("dataset_id")
+        edition_id = metadata.get("edition_id")
+        version_id = metadata.get("version_id")
 
-            if not all((dataset_id, edition_id, version_id)):
-                continue
+        if not all((dataset_id, edition_id, version_id)):
+            continue
 
-            title = metadata.get("title", "Untitled Dataset")
-            dataset_key = f"dataset-{dataset_id}-{edition_id}-{version_id}"
-            preview_items.append(
-                {
-                    "text": f"{title} (Dataset)",
-                    "value": reverse(
-                        "bundles:preview_dataset",
-                        args=[bundle.id, dataset_id, edition_id, version_id],
-                    ),
-                    "selected": dataset_key == current_id,
-                }
-            )
+        title = metadata.get("title", "Untitled Dataset")
+        dataset_key = f"dataset-{dataset_id}-{edition_id}-{version_id}"
+        preview_items.append(
+            {
+                "text": f"{title} (Dataset)",
+                "value": reverse(
+                    "bundles:preview_dataset",
+                    args=[bundle.id, dataset_id, edition_id, version_id],
+                ),
+                "selected": dataset_key == current_id,
+            }
+        )
 
     return preview_items
 
