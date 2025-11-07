@@ -2,6 +2,7 @@
 
 {% from "components/details/_macro.njk" import onsDetails %}
 {% from "components/panel/_macro.njk" import onsPanel %}
+{% from "components/breadcrumbs/_macro.njk" import onsBreadcrumbs %}
 {% from "components/hero/_macro.njk" import onsHero %}
 {% from "components/table-of-contents/_macro.njk" import onsTableOfContents %}
 {% from "components/details-panel/_macro.njk" import onsDetailsPanel %}
@@ -103,6 +104,13 @@
 
     {# fmt:off #}
     {{
+        onsBreadcrumbs({
+            "ariaLabel": breadcrumbs_aria_label,
+            "itemsList": page.get_breadcrumbs(request=request),
+            "variant": 'grey'
+        })
+    }}
+    {{
         onsHero({
             "topic": statistical_article_label,
             "title": page.display_title,
@@ -126,10 +134,6 @@
                 "descriptionCol": "6",
                 "itemsList": [release_item, next_release_item, contact_item] | selectattr('term') | list,
             },
-            "breadcrumbs": {
-                "ariaLabel": breadcrumbs_label,
-                "itemsList": page.get_breadcrumbs(request=request),
-            }
         })
     }}
     {# fmt:on #}

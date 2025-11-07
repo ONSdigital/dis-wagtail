@@ -1,6 +1,7 @@
 {% extends "templates/base_page.html" %}
 
 {% from "components/document-list/_macro.njk" import onsDocumentList %}
+{% from "components/breadcrumbs/_macro.njk" import onsBreadcrumbs %}
 {% from "components/hero/_macro.njk" import onsHero %}
 {% from "components/pagination/_macro.njk" import onsPagination %}
 
@@ -14,6 +15,13 @@
     {%- set breadcrumbs_aria_label = _("Breadcrumbs") -%}
 
     {# fmt:off #}
+    {{
+        onsBreadcrumbs({
+            "ariaLabel": breadcrumbs_aria_label,
+            "itemsList": page.get_breadcrumbs(request=request),
+            "variant": 'grey'
+        })
+    }}
     {{-
         onsHero({
             "topic": hero_topic,
@@ -21,10 +29,6 @@
             "variants": 'grey',
             "text": page.summary,
             "detailsColumns": 12,
-            "breadcrumbs": {
-                "ariaLabel": breadcrumbs_aria_label,
-                "itemsList": page.get_breadcrumbs(request),
-            }
         })
     -}}
     {# fmt:on #}
