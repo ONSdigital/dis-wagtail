@@ -492,7 +492,7 @@ class BundleInspectView(InspectView):
     def _get_processed_datasets(self) -> list[dict[str, "SafeString | str"]]:
         """Fetches and processes dataset information from the bundle API."""
         client = BundleAPIClient(access_token=self.request.COOKIES.get(settings.ACCESS_TOKEN_COOKIE_NAME))
-        bundle_contents = client.get_bundle_contents(self.object.bundle_api_content_id)
+        bundle_contents = client.get_bundle_contents(self.object.bundle_api_bundle_id)
         processed_data = []
 
         for content_item in bundle_contents.get("items", []):

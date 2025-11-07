@@ -35,7 +35,7 @@ class BundleContentsMixin:
         cookie_name = settings.ACCESS_TOKEN_COOKIE_NAME
         access_token = self.request.COOKIES.get(cookie_name)  # type: ignore[attr-defined]
         client = BundleAPIClient(access_token=access_token)
-        return client.get_bundle_contents(bundle.bundle_api_content_id)
+        return client.get_bundle_contents(bundle.bundle_api_bundle_id)
 
     def get_pages_in_bundle(self, bundle: Bundle) -> list[Page]:
         """Fetches pages in the bundle based on user permissions."""

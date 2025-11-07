@@ -498,7 +498,7 @@ class PreviewBundleDatasetViewTestCase(WagtailTestUtils, TestCase):
         cls.user_with_only_admin_access = UserFactory(access_admin=True)
 
         cls.bundle = BundleFactory(
-            name="Dataset Bundle", in_review=True, created_by=cls.publishing_officer, bundle_api_content_id="test-123"
+            name="Dataset Bundle", in_review=True, created_by=cls.publishing_officer, bundle_api_bundle_id="test-123"
         )
 
         cls.preview_team = Team.objects.create(identifier="data-team", name="Data Team")
