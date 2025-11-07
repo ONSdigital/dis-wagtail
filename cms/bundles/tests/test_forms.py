@@ -262,7 +262,7 @@ class BundleAdminFormTestCase(TestCase):
         data = self.form_data
 
         data["release_calendar_page"] = release_calendar_page.id
-        data["status"] = BundleStatus.APPROVED
+        data["status"] = BundleStatus.DRAFT
         form = self.form_class(instance=self.bundle, data=data)
         self.assertFalse(form.is_valid())
 
@@ -273,7 +273,7 @@ class BundleAdminFormTestCase(TestCase):
     def test_clean_validates_release_date_is_in_future(self):
         data = self.form_data
         data["publication_date"] = timezone.now() - timedelta(hours=2)
-        data["status"] = BundleStatus.APPROVED
+        data["status"] = BundleStatus.DRAFT
         form = self.form_class(instance=self.bundle, data=data)
         self.assertFalse(form.is_valid())
 
@@ -479,3 +479,29 @@ class BundleAdminFormTestCase(TestCase):
         self.assertFalse(form.fields["name"].disabled)
         self.assertFalse(form.fields["publication_date"].disabled)
         self.assertFalse(form.fields["release_calendar_page"].disabled)
+
+    # test to validate approval validation is run before other clean logic
+    def test_clean__approval_validated_before_other_logic(self):
+        """When approving, approval validation should run before other clean logic like field validation."""
+        # Given
+        raw_data = self._setup_bundle()
+
+        # Add publication date in the past to trigger validation error
+        raw_data["publication_date"] = timezone.now() - timedelta(days=2)
+
+        for status in [BundleStatus.DRAFT, BundleStatus.APPROVED]:
+            with self.subTest(status=status):
+                raw_data["status"] = status
+
+                form = self.form_class(instance=self.bundle, data=nested_form_data(raw_data), for_user=self.approver)
+
+                self.assertFalse(form.is_valid())
+                if status == BundleStatus.APPROVED:
+                    error_msg = (
+                        "You cannot make changes to this field when approving a bundle. "
+                        "Please save your changes first, then Approve the bundle in a separate step."
+                    )
+                else:
+                    error_msg = "The release date cannot be in the past."
+
+                self.assertFormError(form, "publication_date", [error_msg])

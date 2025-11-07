@@ -194,7 +194,13 @@ class BundleAdminForm(DeduplicateInlinePanelAdminForm):
     def _validate_bundled_pages_status(self) -> None:
         has_pages = False
         num_pages_not_ready = 0
+        if "bundled_pages" not in self.formsets:
+            return
+
         for form in self.formsets["bundled_pages"].forms:
+            if not form.is_valid():
+                continue
+
             if form.cleaned_data["DELETE"]:
                 continue
 
@@ -247,9 +253,6 @@ class BundleAdminForm(DeduplicateInlinePanelAdminForm):
         approvals are not permitted at the same time as other edits. The user must
         first save any changes, then approve the bundle in a separate step.
         """
-        if self.cleaned_data.get("status") != BundleStatus.APPROVED.value:
-            return
-
         allowed = {"status", "approved_at", "approved_by"}
         disallowed_changes = [field for field in self.changed_data if field not in allowed]
         if disallowed_changes:
@@ -268,6 +271,9 @@ class BundleAdminForm(DeduplicateInlinePanelAdminForm):
             )
 
     def _validate_approval(self) -> None:
+        if self.cleaned_data.get("status") != BundleStatus.APPROVED.value:
+            return
+
         try:
             # ensure no other changes are made when approving
             self._validate_no_changes_on_approve()
@@ -296,6 +302,9 @@ class BundleAdminForm(DeduplicateInlinePanelAdminForm):
         """
         cleaned_data: dict[str, Any] = super().clean()
 
+        # On approval, this must run before any other validation
+        self._validate_approval()
+
         self._validate_publication_date()
 
         # deduplicate entries
@@ -309,8 +318,6 @@ class BundleAdminForm(DeduplicateInlinePanelAdminForm):
         if self.instance.status != submitted_status:
             # the status has changed
             if submitted_status == BundleStatus.APPROVED:
-                self._validate_approval()
-
                 cleaned_data["approved_at"] = timezone.now()
                 cleaned_data["approved_by"] = self.for_user
             elif self.instance.status == BundleStatus.APPROVED:
