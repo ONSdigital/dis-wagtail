@@ -65,7 +65,7 @@ Feature: CMS users can manage bundles
 
     @bundle_api_enabled
     Scenario: A content editor can see selected datasets on the inspect page
-        When the user goes to the bundle creation page
+        When the user navigates to the bundle creation page
         And the user sets the bundle title
         And the user selects multiple datasets
         And the user saves the bundle as draft
@@ -74,7 +74,7 @@ Feature: CMS users can manage bundles
 
     @bundle_api_enabled
     Scenario: A content editor can preview selected datasets on the inspect page
-        When the user goes to the bundle creation page
+        When the user navigates to the bundle creation page
         And the user sets the bundle title
         And the user selects multiple datasets
         And the user saves the bundle as draft
