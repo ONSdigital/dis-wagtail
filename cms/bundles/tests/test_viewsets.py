@@ -96,7 +96,7 @@ class BundleViewSetTestCaseBase(WagtailTestUtils, TestCase):
     def get_base_form_data(self):
         return nested_form_data(
             {
-                "name": "The bundle",
+                "name": "Original bundle",
                 "bundled_pages": inline_formset([{"page": self.statistical_article_page.id}]),
                 "bundled_datasets": inline_formset([]),
                 "teams": inline_formset([]),
