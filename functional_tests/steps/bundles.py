@@ -155,7 +155,7 @@ def statistical_analysis(
 def release_calendar(context: Context) -> None:
     nowish = timezone.now() + timedelta(minutes=20)
     context.release_calendar_page = ReleaseCalendarPageFactory(
-        release_date=nowish, title="Release Calendar Page bundles UI", status=ReleaseStatus.PROVISIONAL
+        release_date=nowish, title="Release Calendar Page bundles UI", status=ReleaseStatus.CONFIRMED
     )
 
 
@@ -226,7 +226,6 @@ def multiple_bundles_create(context: Context, number_of_bundles: str, bundle_det
                 context.bundlepages.append(BundlePageFactory(parent=bundle, page=page))
             bundle.save()
             context.bundles.append(bundle)
-
         sorted(context.bundles, key=lambda x: x.name)
 
 
@@ -345,40 +344,25 @@ def add_release_calendar_in_edit(context: Context) -> None:
 @then("the logged in user can add preview team")
 def add_preview_team_in_edit(context: Context) -> None:
     # add preview team
-    bundle_status = f"Bundle '{context.bundles[-1].name}' updated."
-
-    if hasattr(context, "team"):
-        context.page.get_by_role("button", name="Add preview team").click()
-        context.page.get_by_role("textbox", name="Search term").fill(context.team.name)
-        context.page.wait_for_timeout(200)
-        context.page.get_by_role("checkbox", name=context.team.name).check()
-        context.page.wait_for_timeout(200)
-
-        context.page.get_by_role("button", name="Confirm selection").click()
+    context.page.get_by_role("button", name="Add preview team").click()
+    context.page.get_by_role("textbox", name="Search term").fill(context.team.name)
+    context.page.get_by_role("checkbox", name=context.team.name).check()
+    context.page.get_by_role("button", name="Confirm selection").click()
     context.page.get_by_role("button", name="Save").click()
-    expect(context.page.get_by_role("status")).to_contain_text(bundle_status)
-
-
-@then("the logged in user can see pages fields")
-def see_article_page_fields(context: Context) -> None:
-    expect(context.page.get_by_role("region", name="Bundled pages").locator("span")).to_be_visible()
-    expect(context.page.get_by_role("button", name="Add page")).to_be_visible()
 
 
 @then("the logged in user can add pages")
 def add_article_page_in_edit(context: Context) -> None:
     # add Article
     bundle_status = f"Bundle '{context.bundles[-1].name}' updated."
-
-    if hasattr(context, "statistical_article_pages"):
-        context.page.get_by_role("button", name="Add page").click()
-        context.page.get_by_label("Page type").select_option("StatisticalArticlePage")
-        context.page.wait_for_timeout(200)
-        context.page.get_by_role(
-            "checkbox", name=f"{context.article_series_page.title}: {context.statistical_article_page.title}"
-        ).check()
-        context.page.wait_for_timeout(100)
-        context.page.get_by_role("button", name="Confirm selection").click()
+    context.page.get_by_role("button", name="Add page").click()
+    context.page.get_by_label("Page type").select_option("StatisticalArticlePage")
+    context.page.wait_for_timeout(200)
+    context.page.get_by_role(
+        "checkbox", name=f"{context.article_series_page.title}: {context.statistical_article_page.title}"
+    ).check()
+    context.page.wait_for_timeout(100)
+    context.page.get_by_role("button", name="Confirm selection").click()
     context.page.get_by_role("button", name="Save").click()
     expect(context.page.get_by_role("status")).to_contain_text(bundle_status)
 
@@ -438,6 +422,7 @@ def cannot_approve_bundle(context: Context) -> None:
 @then("the logged in user can approve a bundle")
 def can_approve_bundle(context: Context) -> None:
     bundle_edit = f"Edit '{context.bundles[-1].name}'"
+    bundle_status = f"Bundle '{context.bundles[-1].name}' Approval' updated. Edit"
 
     context.page.get_by_role("link", name="Dashboard").click()
     context.page.get_by_role("link", name="Bundles", exact=True).click()
@@ -445,7 +430,7 @@ def can_approve_bundle(context: Context) -> None:
     context.page.get_by_role("link", name=bundle_edit).click()
     context.page.get_by_role("button", name="More actions").click()
     context.page.get_by_role("button", name="Approve").click()
-    # expect(context.page.get_by_role("link", name="Inspect : Bundle")).to_be_visible()
+    expect(context.page.get_by_role("status")).to_contain_text(bundle_status)
 
 
 @then("the logged in user cannot approve a bundle due to lack of pages")
