@@ -2,9 +2,10 @@ from collections.abc import Sequence
 from typing import TYPE_CHECKING, Any, cast
 
 from django.conf import settings
+from django.contrib import messages
 from django.core.exceptions import PermissionDenied
 from django.http import Http404
-from django.shortcuts import get_object_or_404
+from django.shortcuts import get_object_or_404, redirect
 from django.template.response import TemplateResponse
 from django.urls import reverse
 from django.views.generic import TemplateView
@@ -23,18 +24,27 @@ from cms.core.fields import StreamField
 from cms.release_calendar.enums import ReleaseStatus
 
 if TYPE_CHECKING:
-    from django.http import HttpRequest
+    from django.http import HttpRequest, HttpResponseRedirect
 
 
 class BundleContentsMixin:
     """Mixin to fetch bundle contents from the API."""
 
-    def get_bundle_contents(self, bundle: "Bundle") -> dict[str, Any]:
+    def get_bundle_contents(self, bundle: Bundle) -> dict[str, Any]:
         """Initializes API client and fetches bundle contents."""
         cookie_name = settings.ACCESS_TOKEN_COOKIE_NAME
         access_token = self.request.COOKIES.get(cookie_name)  # type: ignore[attr-defined]
         client = BundleAPIClient(access_token=access_token)
         return client.get_bundle_contents(bundle.bundle_api_content_id)
+
+    def get_pages_in_bundle(self, bundle: Bundle) -> list[Page]:
+        """Fetches pages in the bundle based on user permissions."""
+        pages: list[Page] = []
+        if user_can_manage_bundles(self.request.user):  # type: ignore[attr-defined]
+            pages = bundle.get_bundled_pages(specific=True)
+        else:
+            pages = bundle.get_pages_for_previewers()
+        return pages
 
 
 class PreviewBundleView(BundleContentsMixin, TemplateView):
@@ -55,10 +65,7 @@ class PreviewBundleView(BundleContentsMixin, TemplateView):
             )
             raise PermissionDenied
 
-        if user_can_manage_bundles(self.request.user):
-            pages_in_bundle = bundle.get_bundled_pages(specific=True)
-        else:
-            pages_in_bundle = bundle.get_pages_for_previewers()
+        pages_in_bundle = self.get_pages_in_bundle(bundle)
 
         if page not in pages_in_bundle:
             raise Http404
@@ -126,10 +133,7 @@ class PreviewBundleReleaseCalendarView(BundleContentsMixin, TemplateView):
             data=log_data_entry,
         )
 
-        if user_can_manage_bundles(self.request.user):
-            pages_in_bundle = bundle.get_bundled_pages(specific=True)
-        else:
-            pages_in_bundle = bundle.get_pages_for_previewers()
+        pages_in_bundle = self.get_pages_in_bundle(bundle)
 
         request.is_dummy = True  # type: ignore[attr-defined]
         request.is_preview = True  # type: ignore[attr-defined]
@@ -151,49 +155,72 @@ class PreviewBundleDatasetView(BundleContentsMixin, TemplateView):
     template_name = "templates/bundles/preview.html"
     http_method_names: Sequence[str] = ["get"]
 
-    def get_context_data(self, **kwargs: Any) -> dict[str, Any]:
-        context = super().get_context_data(**kwargs)
-        bundle_id = self.kwargs["bundle_id"]
+    @staticmethod
+    def find_dataset_preview_url(
+        bundle_contents: dict[str, Any], dataset_id: str, edition_id: str, version_id: str
+    ) -> str | None:
+        """Find the preview URL for a specific dataset in the bundle contents.
+
+        Args:
+            bundle_contents: The bundle contents from the API
+            dataset_id: The dataset identifier
+            edition_id: The edition identifier
+            version_id: The version identifier
+
+        Returns:
+            The preview URL if found, None otherwise
+        """
+        for item in bundle_contents.get("items", []):
+            if item.get("content_type") != "DATASET":
+                continue
+
+            metadata = item.get("metadata", {})
+            if (
+                metadata.get("dataset_id") == dataset_id
+                and metadata.get("edition_id") == edition_id
+                and metadata.get("version_id") == version_id
+            ):
+                return item.get("links", {}).get("preview", "") or None
+
+        return None
+
+    def get(self, request: "HttpRequest", *args: Any, **kwargs: Any) -> "TemplateResponse | HttpResponseRedirect":
+        bundle_id = kwargs["bundle_id"]
         bundle = get_object_or_404(Bundle, pk=bundle_id)
 
-        if not user_can_preview_bundle(self.request.user, bundle):
+        if not user_can_preview_bundle(request.user, bundle):
             raise PermissionDenied
 
         bundle_contents = self.get_bundle_contents(bundle)
 
-        dataset_id = self.kwargs["dataset_id"]
-        edition_id = self.kwargs["edition_id"]
-        version_id = self.kwargs["version_id"]
+        dataset_id = kwargs["dataset_id"]
+        edition_id = kwargs["edition_id"]
+        version_id = str(kwargs["version_id"])  # Convert to string for consistency with API
 
         # Find the specific dataset being previewed to get its preview URL
-        iframe_url = None
-        for item in bundle_contents.get("items", []):
-            if item.get("content_type") == "DATASET":
-                metadata = item.get("metadata", {})
-                if (
-                    metadata.get("dataset_id") == dataset_id
-                    and metadata.get("edition_id") == edition_id
-                    and metadata.get("version_id") == version_id
-                ):
-                    iframe_url = item.get("links", {}).get("preview")
-                    break
+        iframe_url = self.find_dataset_preview_url(bundle_contents, dataset_id, edition_id, version_id)
 
         if not iframe_url:
-            raise Http404("Dataset not found in bundle or preview URL missing.")
+            messages.error(
+                request,
+                f"Dataset {dataset_id} (edition: {edition_id}, version: {version_id}) "
+                "could not be found in this bundle or does not have a preview available.",
+            )
+            return redirect("bundle:inspect", bundle_id)
 
         # Build preview items for all pages and datasets in the bundle
-        if user_can_manage_bundles(self.request.user):
-            pages_in_bundle = bundle.get_bundled_pages(specific=True)
-        else:
-            pages_in_bundle = bundle.get_pages_for_previewers()
+        pages_in_bundle = self.get_pages_in_bundle(bundle)
 
         # Create a unique identifier for this dataset to mark it as selected
         dataset_key = f"dataset-{dataset_id}-{edition_id}-{version_id}"
 
-        context["bundle"] = bundle
-        context["bundle_inspect_url"] = reverse("bundle:inspect", args=[bundle.pk])
-        context["preview_items"] = get_preview_items_for_bundle(bundle, dataset_key, pages_in_bundle, bundle_contents)
-        context["iframe_url"] = iframe_url
+        context = {
+            "view": self,  # for TemplateView compatibility
+            "bundle": bundle,
+            "bundle_inspect_url": reverse("bundle:inspect", args=[bundle_id]),
+            "preview_items": get_preview_items_for_bundle(bundle, dataset_key, pages_in_bundle, bundle_contents),
+            "iframe_url": iframe_url,
+        }
 
         log(
             action="bundles.preview",
@@ -206,4 +233,4 @@ class PreviewBundleDatasetView(BundleContentsMixin, TemplateView):
             },
         )
 
-        return context
+        return TemplateResponse(request, self.template_name, context)
