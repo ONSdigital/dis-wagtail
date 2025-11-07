@@ -301,27 +301,27 @@ class BundleFormSaveWithBundleAPITestCase(TestCase):
     @responses.activate
     def test_remove_dataset__calls_delete_content_api(self):
         """Test that removing datasets calls the delete content API."""
-        dataset2 = DatasetFactory(id=456, title="Dataset 2")
+        dataset_2 = DatasetFactory(id=456, title="Dataset 2")
 
-        bundle_dataset1 = BundleDataset.objects.create(
+        bundle_dataset_1 = BundleDataset.objects.create(
             parent=self.bundle, dataset=self.dataset, bundle_api_content_id="content-123"
         )
-        bundle_dataset2 = BundleDataset.objects.create(
-            parent=self.bundle, dataset=dataset2, bundle_api_content_id="content-456"
+        bundle_dataset_2 = BundleDataset.objects.create(
+            parent=self.bundle, dataset=dataset_2, bundle_api_content_id="content-456"
         )
 
         content_endpoint = f"{self.base_api_url}/bundles/api-bundle-123/contents/content-456"
         responses.delete(content_endpoint, status=HTTPStatus.NO_CONTENT, headers={"ETag": "etag-after-delete"})
 
-        # Remove dataset1, keep dataset2
+        # Remove dataset_1, keep dataset_2
         raw_data = {
             "name": "Updated Bundle",
             "status": BundleStatus.DRAFT,
             "bundled_pages": inline_formset([]),
             "bundled_datasets": inline_formset(
                 [
-                    {"id": bundle_dataset1.pk, "dataset": self.dataset.pk},
-                    {"id": bundle_dataset2.pk, "dataset": dataset2.pk, "DELETE": 1},
+                    {"id": bundle_dataset_1.pk, "dataset": self.dataset.pk},
+                    {"id": bundle_dataset_2.pk, "dataset": dataset_2.pk, "DELETE": 1},
                 ],
                 initial=2,
             ),
@@ -624,10 +624,10 @@ class BundleDatasetValidationTestCase(TestCase):
 
     def test_dataset_validation_multiple_datasets_mixed_statuses(self):
         """Test validation with multiple datasets having different statuses."""
-        dataset1 = DatasetFactory(id=123, title="Approved Dataset")
-        dataset2 = DatasetFactory(id=124, title="Draft Dataset")
-        bundled_dataset1 = BundleDatasetFactory(parent=self.bundle, dataset=dataset1)
-        bundled_dataset2 = BundleDatasetFactory(parent=self.bundle, dataset=dataset2)
+        dataset_1 = DatasetFactory(id=123, title="Approved Dataset")
+        dataset_2 = DatasetFactory(id=124, title="Draft Dataset")
+        bundled_dataset_1 = BundleDatasetFactory(parent=self.bundle, dataset=dataset_1)
+        bundled_dataset_2 = BundleDatasetFactory(parent=self.bundle, dataset=dataset_2)
         self.bundle.bundle_api_bundle_id = "test-bundle-123"
         self.bundle.save(update_fields=["bundle_api_bundle_id"])
 
@@ -637,18 +637,18 @@ class BundleDatasetValidationTestCase(TestCase):
                     "id": "content-1",
                     "state": "APPROVED",
                     "metadata": {
-                        "dataset_id": dataset1.namespace,
-                        "edition_id": dataset1.edition,
-                        "version_id": dataset1.version,
+                        "dataset_id": dataset_1.namespace,
+                        "edition_id": dataset_1.edition,
+                        "version_id": dataset_1.version,
                     },
                 },
                 {
                     "id": "content-2",
                     "state": "DRAFT",
                     "metadata": {
-                        "dataset_id": dataset2.namespace,
-                        "edition_id": dataset2.edition,
-                        "version_id": dataset2.version,
+                        "dataset_id": dataset_2.namespace,
+                        "edition_id": dataset_2.edition,
+                        "version_id": dataset_2.version,
                     },
                 },
             ],
@@ -661,8 +661,8 @@ class BundleDatasetValidationTestCase(TestCase):
             "bundled_pages": inline_formset([]),
             "bundled_datasets": inline_formset(
                 [
-                    {"id": bundled_dataset1.id, "dataset": bundled_dataset1.dataset_id, "ORDER": "1"},
-                    {"id": bundled_dataset2.id, "dataset": bundled_dataset2.dataset_id, "ORDER": "2"},
+                    {"id": bundled_dataset_1.id, "dataset": bundled_dataset_1.dataset_id, "ORDER": "1"},
+                    {"id": bundled_dataset_2.id, "dataset": bundled_dataset_2.dataset_id, "ORDER": "2"},
                 ],
                 initial=2,
             ),
@@ -677,16 +677,16 @@ class BundleDatasetValidationTestCase(TestCase):
             None,
             [
                 "Cannot approve the bundle with 1 dataset not ready to be published: "
-                f"Draft Dataset (Edition: {dataset2.edition}, Status: DRAFT)"
+                f"Draft Dataset (Edition: {dataset_2.edition}, Status: DRAFT)"
             ],
         )
 
     def test_dataset_validation_multiple_datasets_not_ready(self):
         """Test that multiple datasets not ready shows proper pluralization."""
-        dataset1 = DatasetFactory(id=123, title="Draft Dataset 1")
-        dataset2 = DatasetFactory(id=124, title="Draft Dataset 2")
-        bundle_dataset1 = BundleDatasetFactory(parent=self.bundle, dataset=dataset1)
-        bundle_dataset2 = BundleDatasetFactory(parent=self.bundle, dataset=dataset2)
+        dataset_1 = DatasetFactory(id=123, title="Draft Dataset 1")
+        dataset_2 = DatasetFactory(id=124, title="Draft Dataset 2")
+        bundle_dataset_1 = BundleDatasetFactory(parent=self.bundle, dataset=dataset_1)
+        bundle_dataset_2 = BundleDatasetFactory(parent=self.bundle, dataset=dataset_2)
         self.bundle.bundle_api_bundle_id = "test-bundle-123"
         self.bundle.save(update_fields=["bundle_api_bundle_id"])
 
@@ -696,18 +696,18 @@ class BundleDatasetValidationTestCase(TestCase):
                     "id": "content-1",
                     "state": "DRAFT",
                     "metadata": {
-                        "dataset_id": dataset1.namespace,
-                        "edition_id": dataset1.edition,
-                        "version_id": dataset1.version,
+                        "dataset_id": dataset_1.namespace,
+                        "edition_id": dataset_1.edition,
+                        "version_id": dataset_1.version,
                     },
                 },
                 {
                     "id": "content-2",
                     "state": "DRAFT",
                     "metadata": {
-                        "dataset_id": dataset2.namespace,
-                        "edition_id": dataset2.edition,
-                        "version_id": dataset2.version,
+                        "dataset_id": dataset_2.namespace,
+                        "edition_id": dataset_2.edition,
+                        "version_id": dataset_2.version,
                     },
                 },
             ],
@@ -720,8 +720,8 @@ class BundleDatasetValidationTestCase(TestCase):
             "bundled_pages": inline_formset([]),
             "bundled_datasets": inline_formset(
                 [
-                    {"id": bundle_dataset1.id, "dataset": bundle_dataset1.dataset_id, "ORDER": "1"},
-                    {"id": bundle_dataset2.id, "dataset": bundle_dataset2.dataset_id, "ORDER": "2"},
+                    {"id": bundle_dataset_1.id, "dataset": bundle_dataset_1.dataset_id, "ORDER": "1"},
+                    {"id": bundle_dataset_2.id, "dataset": bundle_dataset_2.dataset_id, "ORDER": "2"},
                 ],
                 initial=2,
             ),
@@ -736,8 +736,8 @@ class BundleDatasetValidationTestCase(TestCase):
             None,
             [
                 "Cannot approve the bundle with 2 datasets not ready to be published: "
-                f"Draft Dataset 1 (Edition: {dataset1.edition}, Status: DRAFT), "
-                f"Draft Dataset 2 (Edition: {dataset2.edition}, Status: DRAFT)"
+                f"Draft Dataset 1 (Edition: {dataset_1.edition}, Status: DRAFT), "
+                f"Draft Dataset 2 (Edition: {dataset_2.edition}, Status: DRAFT)"
             ],
         )
 
