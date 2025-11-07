@@ -17,9 +17,15 @@ from cms.datasets.tests.factories import DatasetFactory
 from cms.teams.tests.factories import TeamFactory
 from cms.users.tests.factories import UserFactory
 
+# TODO: Refactor these tests to patch and assert calls on the BundleAPIClient
+# instead of mocking HTTP via `responses`. These tests should focus on verifying
+# that the form/service logic invokes the correct client methods with the expected
+# arguments and sequencing. Low-level HTTP behaviour (method, headers, payload,
+# ETag handling, etc.) should be covered separately in test_client_api.py.
+
 
 @override_settings(DIS_DATASETS_BUNDLE_API_ENABLED=True)
-class BundleFormSaveWithDatasetAPITestCase(TestCase):
+class BundleFormSaveWithBundleAPITestCase(TestCase):
     """Test cases for the BundleAdminForm save method."""
 
     @classmethod
@@ -28,7 +34,7 @@ class BundleFormSaveWithDatasetAPITestCase(TestCase):
         cls.approver = UserFactory()
 
         cls.bundle_api_id = "api-bundle-123"
-        cls.bundle = BundleFactory(bundle_api_content_id=cls.bundle_api_id)
+        cls.bundle = BundleFactory(bundle_api_bundle_id=cls.bundle_api_id, bundle_api_etag="etag-123")
 
         cls.base_api_url = settings.DIS_DATASETS_BUNDLE_API_BASE_URL
         cls.bundle_endpoint = f"{cls.base_api_url}/bundles"
@@ -68,7 +74,7 @@ class BundleFormSaveWithDatasetAPITestCase(TestCase):
 
         # API should not be called for bundles without datasets
         responses.assert_call_count(self.bundle_endpoint, 0)
-        self.assertEqual(bundle.bundle_api_content_id, "")
+        self.assertEqual(bundle.bundle_api_bundle_id, "")
 
     @responses.activate
     def test_save_new_bundle_with_datasets_calls_api(self):
@@ -103,7 +109,7 @@ class BundleFormSaveWithDatasetAPITestCase(TestCase):
         responses.assert_call_count(self.content_endpoint, 1)
 
         # Bundle should have the API ID set
-        self.assertEqual(bundle.bundle_api_content_id, self.bundle_api_id)
+        self.assertEqual(bundle.bundle_api_bundle_id, self.bundle_api_id)
         self.assertEqual(bundle.bundle_api_etag, "etag-123")
         self.assertEqual(bundle.bundled_datasets.first().bundle_api_content_id, "content-123")
 
@@ -147,7 +153,7 @@ class BundleFormSaveWithDatasetAPITestCase(TestCase):
         self.assertTrue(form.is_valid())
         with self.assertRaises(ValidationError) as context:
             form.save()
-        self.assertEqual(context.exception.message, "Could not communicate with the Dataset API")
+        self.assertEqual(context.exception.message, "Could not communicate with the Bundle API")
 
     @responses.activate
     def test_save_new_bundle_with_datasets_no_api_id_returned(self):
@@ -171,7 +177,7 @@ class BundleFormSaveWithDatasetAPITestCase(TestCase):
         with self.assertRaises(ValidationError) as context:
             form.save()
 
-        self.assertEqual(context.exception.message, "Could not communicate with the Dataset API")
+        self.assertEqual(context.exception.message, "Could not communicate with the Bundle API")
 
         # API should be called
         responses.assert_call_count(self.bundle_endpoint, 1)
@@ -191,7 +197,7 @@ class BundleFormSaveWithDatasetAPITestCase(TestCase):
         )
 
         # Create an existing bundle without datasets
-        bundle = BundleFactory(name="Existing Bundle", bundle_api_content_id="")
+        bundle = BundleFactory(name="Existing Bundle", bundle_api_bundle_id="", bundle_api_etag="")
         dataset = DatasetFactory(namespace="cpih", edition="time-series", version=1)
 
         raw_data = {
@@ -210,15 +216,20 @@ class BundleFormSaveWithDatasetAPITestCase(TestCase):
         responses.assert_call_count(self.bundle_endpoint, 1)
         responses.assert_call_count(self.content_endpoint, 1)
 
-        # Bundle should have the API ID set
-        self.assertEqual(bundle.bundle_api_content_id, self.bundle_api_id)
+        # Bundle should have the API fields set
+        self.assertEqual(bundle.bundle_api_bundle_id, self.bundle_api_id)
+        self.assertEqual(bundle.bundle_api_etag, "etag-123")
         self.assertEqual(bundle.bundled_datasets.first().bundle_api_content_id, "content-123")
 
     @responses.activate
     def test_save_existing_bundle_with_existing_api_id_does_not_call_api(self):
         """Test that editing an existing bundle that already has an API ID doesn't call create_bundle."""
-        bundle = BundleFactory(name="Existing Bundle", bundle_api_content_id=self.bundle_api_id)
-        dataset = DatasetFactory()
+        bundle = BundleFactory(name="Existing Bundle", bundle_api_bundle_id=self.bundle_api_id)
+        dataset = DatasetFactory(
+            namespace="cpih",
+            edition="time-series",
+            version=1,
+        )
 
         responses.post(
             self.content_endpoint, json=self.content_item_json, status=HTTPStatus.OK, headers={"ETag": "etag-123"}
@@ -239,12 +250,12 @@ class BundleFormSaveWithDatasetAPITestCase(TestCase):
 
         # API should NOT be called for bundles that already have an API ID
         responses.assert_call_count(self.bundle_endpoint, 0)
-        self.assertEqual(bundle.bundle_api_content_id, self.bundle_api_id)
+        self.assertEqual(bundle.bundle_api_bundle_id, self.bundle_api_id)
         responses.assert_call_count(self.content_endpoint, 1)
 
     @responses.activate
     def test_status_change__calls_update_state_api(self):
-        """Test that updating bundle status calls the Dataset API."""
+        """Test that updating bundle status calls the Bundle API."""
         BundleDataset.objects.create(parent=self.bundle, dataset=DatasetFactory(), bundle_api_content_id="123")
 
         mock_response_data = {"id": self.bundle_api_id, "etag_header": "etag-123"}
@@ -285,7 +296,7 @@ class BundleFormSaveWithDatasetAPITestCase(TestCase):
         self.assertTrue(form.is_valid())
         with self.assertRaises(ValidationError) as context:
             form.save()
-        self.assertEqual(context.exception.message, "Could not communicate with the Dataset API")
+        self.assertEqual(context.exception.message, "Could not communicate with the Bundle API")
 
     @responses.activate
     def test_remove_dataset__calls_delete_content_api(self):
@@ -300,7 +311,7 @@ class BundleFormSaveWithDatasetAPITestCase(TestCase):
         )
 
         content_endpoint = f"{self.base_api_url}/bundles/api-bundle-123/contents/content-456"
-        responses.delete(content_endpoint, status=HTTPStatus.NO_CONTENT)
+        responses.delete(content_endpoint, status=HTTPStatus.NO_CONTENT, headers={"ETag": "etag-after-delete"})
 
         # Remove dataset1, keep dataset2
         raw_data = {
@@ -323,6 +334,7 @@ class BundleFormSaveWithDatasetAPITestCase(TestCase):
         form.save()
 
         responses.assert_call_count(content_endpoint, 1)
+        self.assertEqual(self.bundle.bundle_api_etag, "etag-after-delete")
 
     @responses.activate
     def test_remove_all_datasets__deletes_bundle_from_api(self):
@@ -348,7 +360,8 @@ class BundleFormSaveWithDatasetAPITestCase(TestCase):
 
         # API should be called to delete bundle
         responses.assert_call_count(self.delete_endpoint, 1)
-        self.assertEqual(bundle.bundle_api_content_id, "")
+        self.assertEqual(bundle.bundle_api_bundle_id, "")
+        self.assertEqual(bundle.bundle_api_etag, "")
 
     @responses.activate
     def test_remove_all_datasets__with_api_error_raises_validation_error(self):
@@ -371,7 +384,37 @@ class BundleFormSaveWithDatasetAPITestCase(TestCase):
         self.assertTrue(form.is_valid())
         with self.assertRaises(ValidationError) as context:
             form.save()
-        self.assertEqual(context.exception.message, "Could not communicate with the Dataset API")
+        self.assertEqual(context.exception.message, "Could not communicate with the Bundle API")
+
+    @responses.activate
+    def test_add_dataset_no_content_id_from_bundle_response_raises_validation_error(self):
+        """Test that missing content ID from API response for the added dataset raises ValidationError."""
+        bundle = BundleFactory(name="Bundle", bundle_api_bundle_id=self.bundle_api_id)
+        dataset = DatasetFactory(
+            namespace="cpih",
+            edition="time-series",
+            version=2,  # different version compared to self.content_item_json
+        )
+
+        responses.post(
+            self.content_endpoint, json=self.content_item_json, status=HTTPStatus.OK, headers={"ETag": "etag-123"}
+        )
+
+        raw_data = {
+            "name": "Updated Bundle",
+            "status": BundleStatus.DRAFT,
+            "bundled_pages": inline_formset([]),
+            "bundled_datasets": inline_formset([{"dataset": dataset.id}]),
+            "teams": inline_formset([]),
+        }
+
+        form = self.form_class(instance=bundle, data=nested_form_data(raw_data), for_user=self.approver)
+
+        self.assertTrue(form.is_valid())
+
+        with self.assertRaises(ValidationError) as context:
+            form.save()
+        self.assertEqual(context.exception.message, "Bundle API did not return an ID for the added content")
 
     @responses.activate
     def test_add_team__calls_update_bundle_api(self):
@@ -419,7 +462,7 @@ class BundleFormSaveWithDatasetAPITestCase(TestCase):
         self.assertTrue(form.is_valid())
         with self.assertRaises(ValidationError) as context:
             form.save()
-        self.assertEqual(context.exception.message, "Could not communicate with the Dataset API")
+        self.assertEqual(context.exception.message, "Could not communicate with the Bundle API")
 
     @patch("cms.bundles.forms.BundleAPIClient")
     def test_save_bundle_no_datasets_skips_api_calls(self, mock_client):
@@ -448,7 +491,7 @@ class BundleFormSaveWithDatasetAPITestCase(TestCase):
 
 
 @override_settings(DIS_DATASETS_BUNDLE_API_ENABLED=False)
-class BundleFormSaveWithDatasetAPIDisabledTestCase(TestCase):
+class BundleFormSaveWithBundleAPIDisabledTestCase(TestCase):
     """Test cases for the BundleAdminForm save method when API is disabled."""
 
     @classmethod
@@ -482,7 +525,7 @@ class BundleFormSaveWithDatasetAPIDisabledTestCase(TestCase):
 
         # API should not be called when disabled
         self.mock_client.create_bundle.assert_not_called()
-        self.assertEqual(bundle.bundle_api_content_id, "")
+        self.assertEqual(bundle.bundle_api_bundle_id, "")
 
 
 @override_settings(DIS_DATASETS_BUNDLE_API_ENABLED=True)
@@ -516,8 +559,8 @@ class BundleDatasetValidationTestCase(TestCase):
     def test_dataset_validation_approved_dataset_passes(self):
         """Test that approved datasets pass validation."""
         dataset = DatasetFactory(id=123)
-        self.bundle.bundle_api_content_id = "test-bundle-123"
-        self.bundle.save(update_fields=["bundle_api_content_id"])
+        self.bundle.bundle_api_bundle_id = "test-bundle-123"
+        self.bundle.save(update_fields=["bundle_api_bundle_id"])
 
         self.mock_client.get_bundle_contents.return_value = {
             "items": [
@@ -543,8 +586,8 @@ class BundleDatasetValidationTestCase(TestCase):
     def test_dataset_validation_unapproved_dataset_fails(self):
         """Test that unapproved datasets fail validation."""
         dataset = DatasetFactory(id=123, title="Test Dataset")
-        self.bundle.bundle_api_content_id = "test-bundle-123"
-        self.bundle.save(update_fields=["bundle_api_content_id"])
+        self.bundle.bundle_api_bundle_id = "test-bundle-123"
+        self.bundle.save(update_fields=["bundle_api_bundle_id"])
 
         self.mock_client.get_bundle_contents.return_value = {
             "items": [
@@ -578,8 +621,8 @@ class BundleDatasetValidationTestCase(TestCase):
         """Test validation with multiple datasets having different statuses."""
         dataset1 = DatasetFactory(id=123, title="Approved Dataset")
         dataset2 = DatasetFactory(id=124, title="Draft Dataset")
-        self.bundle.bundle_api_content_id = "test-bundle-123"
-        self.bundle.save(update_fields=["bundle_api_content_id"])
+        self.bundle.bundle_api_bundle_id = "test-bundle-123"
+        self.bundle.save(update_fields=["bundle_api_bundle_id"])
 
         self.mock_client.get_bundle_contents.return_value = {
             "items": [
@@ -629,8 +672,8 @@ class BundleDatasetValidationTestCase(TestCase):
         """Test that multiple datasets not ready shows proper pluralization."""
         dataset1 = DatasetFactory(id=123, title="Draft Dataset 1")
         dataset2 = DatasetFactory(id=124, title="Draft Dataset 2")
-        self.bundle.bundle_api_content_id = "test-bundle-123"
-        self.bundle.save(update_fields=["bundle_api_content_id"])
+        self.bundle.bundle_api_bundle_id = "test-bundle-123"
+        self.bundle.save(update_fields=["bundle_api_bundle_id"])
 
         self.mock_client.get_bundle_contents.return_value = {
             "items": [
@@ -680,8 +723,8 @@ class BundleDatasetValidationTestCase(TestCase):
     def test_dataset_validation_api_error_fails_gracefully(self):
         """Test that API errors are handled gracefully."""
         dataset = DatasetFactory(id=123, title="Test Dataset")
-        self.bundle.bundle_api_content_id = "test-bundle-123"
-        self.bundle.save(update_fields=["bundle_api_content_id"])
+        self.bundle.bundle_api_bundle_id = "test-bundle-123"
+        self.bundle.save(update_fields=["bundle_api_bundle_id"])
 
         self.mock_client.get_bundle_contents.side_effect = BundleAPIClientError("API Error")
 
@@ -698,8 +741,8 @@ class BundleDatasetValidationTestCase(TestCase):
     def test_dataset_validation_only_runs_when_approving(self):
         """Test that dataset validation only runs when changing status to APPROVED."""
         dataset = DatasetFactory(id=123)
-        self.bundle.bundle_api_content_id = "test-bundle-123"
-        self.bundle.save(update_fields=["bundle_api_content_id"])
+        self.bundle.bundle_api_bundle_id = "test-bundle-123"
+        self.bundle.save(update_fields=["bundle_api_bundle_id"])
 
         self.mock_client.get_bundle_contents.return_value = {
             "items": [
@@ -738,11 +781,11 @@ class BundleDatasetValidationTestCase(TestCase):
         self.assertFalse(form.is_valid())  # Should fail because no pages or datasets
         self.mock_client.get_bundle_contents.assert_not_called()
 
-    def test_dataset_validation_skipped_when_no_bundle_api_content_id(self):
+    def test_dataset_validation_skipped_when_no_bundle_api_bundle_id(self):
         """Test that dataset validation is skipped when bundle has no API ID."""
         dataset = DatasetFactory(id=123, title="Test Dataset")
-        # Bundle doesn't have bundle_api_content_id set
-        self.assertEqual(self.bundle.bundle_api_content_id, "")
+        # Bundle doesn't have bundle_api_bundle_id set
+        self.assertEqual(self.bundle.bundle_api_bundle_id, "")
 
         raw_data = self.raw_form_data_with_dataset(dataset.id)
         form = self.form_class(instance=self.bundle, data=nested_form_data(raw_data), for_user=self.approver)
@@ -753,8 +796,8 @@ class BundleDatasetValidationTestCase(TestCase):
     def test_dataset_validation_empty_contents_array(self):
         """Test validation handles empty contents array from API."""
         dataset = DatasetFactory(id=123, title="Test Dataset")
-        self.bundle.bundle_api_content_id = "test-bundle-123"
-        self.bundle.save(update_fields=["bundle_api_content_id"])
+        self.bundle.bundle_api_bundle_id = "test-bundle-123"
+        self.bundle.save(update_fields=["bundle_api_bundle_id"])
 
         self.mock_client.get_bundle_contents.return_value = {"items": [], "etag_header": "etag"}
 
@@ -768,8 +811,8 @@ class BundleDatasetValidationTestCase(TestCase):
         """Test that validation handles datasets marked for deletion."""
         dataset1 = DatasetFactory(id=123, title="Approved Dataset")
         dataset2 = DatasetFactory(id=124, title="Deleted Dataset")
-        self.bundle.bundle_api_content_id = "test-bundle-123"
-        self.bundle.save(update_fields=["bundle_api_content_id"])
+        self.bundle.bundle_api_bundle_id = "test-bundle-123"
+        self.bundle.save(update_fields=["bundle_api_bundle_id"])
 
         self.mock_client.get_bundle_contents.return_value = {
             "items": [

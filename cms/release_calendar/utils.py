@@ -1,7 +1,10 @@
 from datetime import date, datetime
+from typing import TYPE_CHECKING
 
 from django.utils.translation import gettext, override
 
+if TYPE_CHECKING:
+    from .models import ReleaseCalendarPage
 FULL_ENGLISH_MONTHS = [
     "January",
     "February",
@@ -91,3 +94,14 @@ def get_translated_string(string_to_translate: str, language_code: str) -> str:
     with override(language_code):
         translated_string = gettext(string_to_translate)
     return translated_string
+
+
+def get_release_calendar_page_details(
+    release_calendar_page: "ReleaseCalendarPage",
+) -> str:
+    """Returns the release page title, status and release date."""
+    return (
+        f"{release_calendar_page.title} "
+        f"({release_calendar_page.specific_deferred.get_status_display()}, "
+        f"{release_calendar_page.specific_deferred.release_date_value})"
+    )

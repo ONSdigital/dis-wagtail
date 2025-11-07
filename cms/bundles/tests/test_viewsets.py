@@ -1,6 +1,7 @@
 # pylint: disable=too-many-lines
 from datetime import UTC, datetime, timedelta
 from http import HTTPStatus
+from typing import ClassVar
 from unittest import mock
 from unittest.mock import patch
 
@@ -23,6 +24,7 @@ from cms.bundles.tests.utils import grant_all_bundle_permissions, make_bundle_vi
 from cms.bundles.viewsets.bundle_chooser import bundle_chooser_viewset
 from cms.bundles.viewsets.bundle_page_chooser import PagesWithDraftsForBundleChooserWidget, bundle_page_chooser_viewset
 from cms.methodology.tests.factories import MethodologyPageFactory
+from cms.release_calendar.enums import ReleaseStatus
 from cms.release_calendar.tests.factories import ReleaseCalendarPageFactory
 from cms.release_calendar.viewsets import FutureReleaseCalendarChooserWidget
 from cms.standard_pages.tests.factories import InformationPageFactory
@@ -38,6 +40,12 @@ from cms.workflows.tests.utils import (
 
 
 class BundleViewSetTestCaseBase(WagtailTestUtils, TestCase):
+    RELEASE_CALENDAR_PAGE_CASES: ClassVar[list[tuple[str, ReleaseStatus, str]]] = [
+        ("Release Calendar Page 1", ReleaseStatus.PROVISIONAL, "Release Calendar Page 1 (Provisional,"),
+        ("Release Calendar Page 2", ReleaseStatus.CONFIRMED, "Release Calendar Page 2 (Confirmed,"),
+        ("Release Calendar Page 3", ReleaseStatus.CANCELLED, "Release Calendar Page 3 (Cancelled,"),
+    ]
+
     @classmethod
     def setUpTestData(cls):
         cls.superuser = cls.create_superuser(username="admin")
@@ -93,6 +101,24 @@ class BundleViewSetTestCaseBase(WagtailTestUtils, TestCase):
                 "teams": inline_formset([]),
             }
         )
+
+    @staticmethod
+    def chooser_panel_display(page) -> str:
+        return f"{page.title} ({page.get_status_display()}, {page.release_date_value})"
+
+    def _create_release_calendar_page(self, title, status):
+        """Assigns a release calendar page to the bundle."""
+        release_date = timezone.now() + timedelta(days=1)
+        release_calendar_page = ReleaseCalendarPageFactory(
+            title=title,
+            release_date=release_date,
+            status=status,
+        )
+        return release_calendar_page
+
+    def _assign_release_calendar_page_to_bundle(self, release_calendar_page):
+        self.bundle.release_calendar_page = release_calendar_page
+        self.bundle.save(update_fields=["release_calendar_page"])
 
 
 class BundleViewSetAddTestCase(BundleViewSetTestCaseBase):
@@ -320,6 +346,42 @@ class BundleViewSetEditTestCase(BundleViewSetTestCaseBase):
         self.bundle.status = BundleStatus.APPROVED
         self.bundle.save(update_fields=["status"])
         self.post_with_action_and_test("action-publish", BundleStatus.PUBLISHED, self.bundle_index_url)
+
+    def test_bundle_edit_view__shows_release_calendar_page_details(self):
+        """Release calendar page's title, status and release date are displayed when selected in bundles."""
+        for title, status, expected_text in self.RELEASE_CALENDAR_PAGE_CASES:
+            with self.subTest(title=title, status=status):
+                release_calendar_page = self._create_release_calendar_page(title=title, status=status)
+                # when validation of assigning cancelled pages to bundles are improved
+                # test for cancelled pages should fail
+                self._assign_release_calendar_page_to_bundle(release_calendar_page=release_calendar_page)
+                response = self.client.get(self.edit_url)
+                expected_display_panel = f"{expected_text} {release_calendar_page.release_date_value})"
+                self.assertContains(response, expected_display_panel)
+
+    def test_bundle_edit_view__shows_updated_release_calendar_page_details(self):
+        """When release calendar page details are updated, this tests that the updates are reflected on the bundles edit
+        page and checks stale values are not present.
+        """
+        release_calendar_page = self._create_release_calendar_page(
+            title="Future Release calendar Page", status=ReleaseStatus.PROVISIONAL
+        )
+        self._assign_release_calendar_page_to_bundle(release_calendar_page=release_calendar_page)
+        original_text = self.chooser_panel_display(release_calendar_page)
+
+        for title, status, expected_text in self.RELEASE_CALENDAR_PAGE_CASES:
+            with self.subTest(title=title, status=status):
+                release_calendar_page.title = title
+                release_calendar_page.status = status
+                release_calendar_page.release_date = timezone.now() + timedelta(days=2)
+                release_calendar_page.save()
+                self.bundle.save()
+
+                response = self.client.get(self.edit_url)
+                expected_display_panel = f"{expected_text} {release_calendar_page.release_date_value})"
+
+                self.assertContains(response, expected_display_panel)
+                self.assertNotContains(response, original_text)
 
     def test_bundle_edit_view__page_chooser_contain_workflow_state_information(self):
         BundlePageFactory(parent=self.bundle, page=self.statistical_article_page)
@@ -603,6 +665,41 @@ class BundleViewSetInspectTestCase(BundleViewSetTestCaseBase):
         self.assertContains(response, "1 July 2025 1:37pm")
         self.assertContains(response, "1 July 2025 1:45pm")
         self.assertContains(response, "1 July 2025 2:00pm")
+
+    def test_inspect_view__shows_bundle_api_bundle_id_when_exists(self):
+        # Ensure the bundle has "bundle_api_bundle_id" set
+        self.bundle.bundle_api_bundle_id = "bundle-api-id-123"
+        self.bundle.save(update_fields=["bundle_api_bundle_id"])
+
+        response = self.client.get(reverse("bundle:inspect", args=[self.bundle.pk]))
+
+        # Label and value are shown
+        self.assertContains(response, "Dataset Bundle API ID")
+        self.assertContains(response, "bundle-api-id-123")
+
+    def test_inspect_view__hides_bundle_api_bundle_id_when_not_exists(self):
+        # Ensure the bundle does not have "bundle_api_bundle_id" set
+        self.bundle.bundle_api_bundle_id = ""
+        self.bundle.save(update_fields=["bundle_api_bundle_id"])
+
+        response = self.client.get(reverse("bundle:inspect", args=[self.bundle.pk]))
+
+        # Label not shown
+        self.assertNotContains(response, "Dataset Bundle API ID")
+
+    def test_inspect_view__previewers__never_shown_bundle_api_bundle_id(self):
+        """Previewers should not see the API ID, even if it exists."""
+        # Give the in-review bundle datasets and an API ID
+        self.in_review_bundle.bundle_api_bundle_id = "bundle-api-id-123"
+        self.in_review_bundle.save(update_fields=["bundle_api_bundle_id"])
+
+        # Login as viewer (previewer flow)
+        self.client.force_login(self.bundle_viewer)
+        response = self.client.get(reverse("bundle:inspect", args=[self.in_review_bundle.pk]))
+
+        # Label and value are not shown
+        self.assertNotContains(response, "Dataset Bundle API ID")
+        self.assertNotContains(response, "bundle-api-id-123")
 
     @override_settings(DIS_DATASETS_BUNDLE_API_ENABLED=True)
     @patch("cms.bundles.viewsets.bundle.BundleAPIClient")
@@ -915,6 +1012,26 @@ class BundleIndexViewTestCase(BundleViewSetTestCaseBase):
         self.assertNotContains(response, self.approved_bundle.name)
         self.assertNotContains(response, self.another_in_review_bundle.name)
         self.assertNotContains(response, "View &quot;Ready to publish&quot;")
+
+    def test_index_view__previewers__search(self):
+        self.client.force_login(self.bundle_viewer)
+
+        another_preview_team = Team.objects.create(identifier="bar", name="Another preview team")
+        self.bundle_viewer.teams.add(another_preview_team)
+        BundleTeam.objects.create(parent=self.in_review_bundle, team=another_preview_team)
+        BundleTeam.objects.create(parent=self.approved_bundle, team=another_preview_team)
+
+        response = self.client.get(self.bundle_index_url, query_params={"q": "Bundle"})
+        self.assertContains(response, self.in_review_bundle.name, 2)
+        self.assertContains(response, self.approved_bundle.name, 2)
+        self.assertNotContains(response, self.published_bundle.name)
+        self.assertNotContains(response, self.another_in_review_bundle.name)
+
+        response = self.client.get(self.bundle_index_url, query_params={"q": "Preview"})
+        self.assertContains(response, self.in_review_bundle.name, 2)
+        self.assertNotContains(response, self.approved_bundle.name)
+        self.assertNotContains(response, self.published_bundle.name)
+        self.assertNotContains(response, self.another_in_review_bundle.name)
 
     def test_ordering(self):
         """Checks that the correct ordering is applied."""
