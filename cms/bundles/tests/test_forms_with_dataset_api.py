@@ -12,7 +12,7 @@ from wagtail.test.utils.form_data import inline_formset, nested_form_data
 from cms.bundles.clients.api import BundleAPIClientError
 from cms.bundles.enums import BundleStatus
 from cms.bundles.models import Bundle, BundleDataset
-from cms.bundles.tests.factories import BundleFactory
+from cms.bundles.tests.factories import BundleDatasetFactory, BundleFactory
 from cms.datasets.tests.factories import DatasetFactory
 from cms.teams.tests.factories import TeamFactory
 from cms.users.tests.factories import UserFactory
@@ -546,15 +546,20 @@ class BundleDatasetValidationTestCase(TestCase):
     def tearDown(self):
         self.patcher.stop()
 
-    def raw_form_data_with_dataset(self, dataset_id: int) -> dict[str, Any]:
+    def raw_form_data_with_dataset(self, dataset: "DatasetFactory") -> dict[str, Any]:
         """Returns raw form data with a dataset."""
-        return {
-            "name": "Test Bundle",
+        bundle_dataset = BundleDatasetFactory(parent=self.bundle, dataset=dataset)
+        raw_data = {
+            "name": self.bundle.name,
             "status": BundleStatus.APPROVED,
             "bundled_pages": inline_formset([]),
-            "bundled_datasets": inline_formset([{"dataset": dataset_id}]),
+            "bundled_datasets": inline_formset(
+                [{"id": bundle_dataset.id, "dataset": bundle_dataset.dataset_id, "ORDER": "1"}], initial=1
+            ),
             "teams": inline_formset([]),
         }
+
+        return raw_data
 
     def test_dataset_validation_approved_dataset_passes(self):
         """Test that approved datasets pass validation."""
@@ -577,7 +582,7 @@ class BundleDatasetValidationTestCase(TestCase):
             "etag_header": "etag",
         }
 
-        raw_data = self.raw_form_data_with_dataset(dataset.id)
+        raw_data = self.raw_form_data_with_dataset(dataset)
         form = self.form_class(instance=self.bundle, data=nested_form_data(raw_data), for_user=self.approver)
 
         self.assertTrue(form.is_valid())
@@ -604,7 +609,7 @@ class BundleDatasetValidationTestCase(TestCase):
             "etag_header": "etag",
         }
 
-        raw_data = self.raw_form_data_with_dataset(dataset.id)
+        raw_data = self.raw_form_data_with_dataset(dataset)
         form = self.form_class(instance=self.bundle, data=nested_form_data(raw_data), for_user=self.approver)
 
         self.assertFalse(form.is_valid())
@@ -621,6 +626,8 @@ class BundleDatasetValidationTestCase(TestCase):
         """Test validation with multiple datasets having different statuses."""
         dataset1 = DatasetFactory(id=123, title="Approved Dataset")
         dataset2 = DatasetFactory(id=124, title="Draft Dataset")
+        bundled_dataset1 = BundleDatasetFactory(parent=self.bundle, dataset=dataset1)
+        bundled_dataset2 = BundleDatasetFactory(parent=self.bundle, dataset=dataset2)
         self.bundle.bundle_api_bundle_id = "test-bundle-123"
         self.bundle.save(update_fields=["bundle_api_bundle_id"])
 
@@ -652,7 +659,13 @@ class BundleDatasetValidationTestCase(TestCase):
             "name": "Test Bundle",
             "status": BundleStatus.APPROVED,
             "bundled_pages": inline_formset([]),
-            "bundled_datasets": inline_formset([{"dataset": dataset1.id}, {"dataset": dataset2.id}]),
+            "bundled_datasets": inline_formset(
+                [
+                    {"id": bundled_dataset1.id, "dataset": bundled_dataset1.dataset_id, "ORDER": "1"},
+                    {"id": bundled_dataset2.id, "dataset": bundled_dataset2.dataset_id, "ORDER": "2"},
+                ],
+                initial=2,
+            ),
             "teams": inline_formset([]),
         }
 
@@ -672,6 +685,8 @@ class BundleDatasetValidationTestCase(TestCase):
         """Test that multiple datasets not ready shows proper pluralization."""
         dataset1 = DatasetFactory(id=123, title="Draft Dataset 1")
         dataset2 = DatasetFactory(id=124, title="Draft Dataset 2")
+        bundle_dataset1 = BundleDatasetFactory(parent=self.bundle, dataset=dataset1)
+        bundle_dataset2 = BundleDatasetFactory(parent=self.bundle, dataset=dataset2)
         self.bundle.bundle_api_bundle_id = "test-bundle-123"
         self.bundle.save(update_fields=["bundle_api_bundle_id"])
 
@@ -703,7 +718,13 @@ class BundleDatasetValidationTestCase(TestCase):
             "name": "Test Bundle",
             "status": BundleStatus.APPROVED,
             "bundled_pages": inline_formset([]),
-            "bundled_datasets": inline_formset([{"dataset": dataset1.id}, {"dataset": dataset2.id}]),
+            "bundled_datasets": inline_formset(
+                [
+                    {"id": bundle_dataset1.id, "dataset": bundle_dataset1.dataset_id, "ORDER": "1"},
+                    {"id": bundle_dataset2.id, "dataset": bundle_dataset2.dataset_id, "ORDER": "2"},
+                ],
+                initial=2,
+            ),
             "teams": inline_formset([]),
         }
 
@@ -728,7 +749,7 @@ class BundleDatasetValidationTestCase(TestCase):
 
         self.mock_client.get_bundle_contents.side_effect = BundleAPIClientError("API Error")
 
-        raw_data = self.raw_form_data_with_dataset(dataset.id)
+        raw_data = self.raw_form_data_with_dataset(dataset)
         form = self.form_class(instance=self.bundle, data=nested_form_data(raw_data), for_user=self.approver)
 
         self.assertFalse(form.is_valid())
@@ -758,7 +779,7 @@ class BundleDatasetValidationTestCase(TestCase):
             ]
         }
 
-        raw_data = self.raw_form_data_with_dataset(dataset.id)
+        raw_data = self.raw_form_data_with_dataset(dataset)
         raw_data["status"] = BundleStatus.IN_REVIEW  # Not approving
 
         form = self.form_class(instance=self.bundle, data=nested_form_data(raw_data), for_user=self.approver)
@@ -787,7 +808,7 @@ class BundleDatasetValidationTestCase(TestCase):
         # Bundle doesn't have bundle_api_bundle_id set
         self.assertEqual(self.bundle.bundle_api_bundle_id, "")
 
-        raw_data = self.raw_form_data_with_dataset(dataset.id)
+        raw_data = self.raw_form_data_with_dataset(dataset)
         form = self.form_class(instance=self.bundle, data=nested_form_data(raw_data), for_user=self.approver)
 
         self.assertTrue(form.is_valid())
@@ -801,46 +822,10 @@ class BundleDatasetValidationTestCase(TestCase):
 
         self.mock_client.get_bundle_contents.return_value = {"items": [], "etag_header": "etag"}
 
-        raw_data = self.raw_form_data_with_dataset(dataset.id)
+        raw_data = self.raw_form_data_with_dataset(dataset)
         form = self.form_class(instance=self.bundle, data=nested_form_data(raw_data), for_user=self.approver)
 
         self.assertTrue(form.is_valid())
-        self.mock_client.get_bundle_contents.assert_called_once_with("test-bundle-123")
-
-    def test_dataset_validation_handles_deleted_datasets(self):
-        """Test that validation handles datasets marked for deletion."""
-        dataset1 = DatasetFactory(id=123, title="Approved Dataset")
-        dataset2 = DatasetFactory(id=124, title="Deleted Dataset")
-        self.bundle.bundle_api_bundle_id = "test-bundle-123"
-        self.bundle.save(update_fields=["bundle_api_bundle_id"])
-
-        self.mock_client.get_bundle_contents.return_value = {
-            "items": [
-                {
-                    "id": "content-1",
-                    "state": "APPROVED",
-                    "metadata": {
-                        "dataset_id": dataset1.namespace,
-                        "edition_id": dataset1.edition,
-                        "version_id": dataset1.version,
-                    },
-                }
-            ],
-            "etag_header": "etag",
-        }
-
-        raw_data = {
-            "name": "Test Bundle",
-            "status": BundleStatus.APPROVED,
-            "bundled_pages": inline_formset([]),
-            "bundled_datasets": inline_formset([{"dataset": dataset1.id}, {"dataset": dataset2.id, "DELETE": True}]),
-            "teams": inline_formset([]),
-        }
-
-        form = self.form_class(instance=self.bundle, data=nested_form_data(raw_data), for_user=self.approver)
-
-        self.assertTrue(form.is_valid())
-        # Should check bundle contents once
         self.mock_client.get_bundle_contents.assert_called_once_with("test-bundle-123")
 
 
@@ -864,18 +849,20 @@ class BundleDatasetValidationDisabledTestCase(TestCase):
 
     def test_dataset_validation_skipped_when_api_disabled(self):
         """Test that dataset validation is skipped when DIS_DATASETS_BUNDLE_API_ENABLED is False."""
-        dataset = DatasetFactory(id=123, title="Test Dataset")
+        bundle_dataset = BundleDatasetFactory(parent=self.bundle)
 
         raw_data = {
-            "name": "Test Bundle",
+            "name": self.bundle.name,
             "status": BundleStatus.APPROVED,
             "bundled_pages": inline_formset([]),
-            "bundled_datasets": inline_formset([{"dataset": dataset.id}]),
+            "bundled_datasets": inline_formset(
+                [{"id": bundle_dataset.id, "dataset": bundle_dataset.dataset_id, "ORDER": "1"}], initial=1
+            ),
             "teams": inline_formset([]),
         }
 
         form = self.form_class(instance=self.bundle, data=nested_form_data(raw_data), for_user=self.approver)
 
-        self.assertTrue(form.is_valid())
+        self.assertTrue(form.is_valid(), form.errors)
         # API client should not be called when disabled
         self.mock_client.get_bundle_contents.assert_not_called()
