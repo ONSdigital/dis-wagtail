@@ -11,7 +11,6 @@ from cms.bundles.clients.api import (
     BundleAPIClient,
     BundleAPIClientError,
     build_content_item_for_dataset,
-    extract_content_id_from_bundle_response,
     get_data_admin_action_url,
 )
 
@@ -423,45 +422,6 @@ class ContentItemUtilityTests(TestCase):
         }
 
         self.assertEqual(content_item, expected)
-
-    def test_extract_content_id_from_bundle_response_found(self):
-        """Test extracting content_id when the dataset is found in the response."""
-        response = {
-            "bundle_id": "9e4e3628-fc85-48cd-80ad-e005d9d283ff",
-            "content_type": "DATASET",
-            "metadata": {
-                "dataset_id": "cpih",
-                "edition_id": "time-series",
-                "title": "Consumer Prices Index",
-                "version_id": 1,
-            },
-            "id": "content-123",
-        }
-
-        content_id = extract_content_id_from_bundle_response(response, self.dataset)
-        self.assertEqual(content_id, "content-123")
-
-    def test_extract_content_id_from_bundle_response_not_found(self):
-        """Test extracting content_id when the dataset is not found in the response."""
-        response = {
-            "bundle_id": "9e4e3628-fc85-48cd-80ad-e005d9d283ff",
-            "content_type": "DATASET",
-            "metadata": {
-                "dataset_id": "other-dataset",
-                "edition_id": "time-series",
-                "title": "Consumer Prices Index",
-                "version_id": 1,
-            },
-            "id": "content-456",
-        }
-
-        content_id = extract_content_id_from_bundle_response(response, self.dataset)
-        self.assertIsNone(content_id)
-
-    def test_extract_content_id_from_bundle_response_empty_contents(self):
-        """Test extracting content_id when the response has no contents."""
-        content_id = extract_content_id_from_bundle_response({}, self.dataset)
-        self.assertIsNone(content_id)
 
 
 @override_settings(DIS_DATASETS_BUNDLE_API_ENABLED=True)
