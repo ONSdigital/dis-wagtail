@@ -579,6 +579,10 @@ class BundleViewSetInspectTestCase(BundleViewSetTestCaseBase):
                         "version_id": version_a,
                     },
                     "state": "PUBLISHED",
+                    "links": {
+                        "edit": f"/data-admin/series/{dataset_id_a}/editions/{edition_a}/versions/{version_a}",
+                        "preview": f"/datasets/{dataset_id_a}/editions/{edition_a}/versions/{version_a}",
+                    },
                 },
                 {
                     "content_type": "DATASET",
@@ -589,6 +593,10 @@ class BundleViewSetInspectTestCase(BundleViewSetTestCaseBase):
                         "version_id": version_b,
                     },
                     "state": "APPROVED",
+                    "links": {
+                        "edit": f"/data-admin/series/{dataset_id_b}/editions/{edition_b}/versions/{version_b}",
+                        "preview": f"/datasets/{dataset_id_b}/editions/{edition_b}/versions/{version_b}",
+                    },
                 },
             ]
         }
@@ -718,6 +726,9 @@ class BundleViewSetInspectTestCase(BundleViewSetTestCaseBase):
                         "version_id": "1",
                     },
                     "state": "APPROVED",
+                    "links": {
+                        "edit": "/data-admin/series/test-dataset-123/editions/2024/versions/1",
+                    },
                 }
             ]
         }
@@ -906,6 +917,9 @@ class BundleViewSetInspectTestCase(BundleViewSetTestCaseBase):
                         "version_id": "1",
                     },
                     "state": "APPROVED",
+                    "links": {
+                        "edit": "/data-admin/series/test-123/editions/2024/versions/1",
+                    },
                 }
             ]
         }

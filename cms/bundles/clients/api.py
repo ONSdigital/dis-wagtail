@@ -396,6 +396,7 @@ def get_data_admin_action_url(
 
     Example:
         >>> get_data_admin_action_url("edit", "cpih", "time-series", "1")
-        "/edit/datasets/cpih/editions/time-series/versions/1"
+        "/data-admin/series/cpih/editions/time-series/versions/1"
     """
-    return f"/{action}/datasets/{dataset_id}/editions/{edition_id}/versions/{version_id}"
+    prefix = "data-admin/series" if action == "edit" else "datasets"
+    return f"/{prefix}/{dataset_id}/editions/{edition_id}/versions/{version_id}"

@@ -22,7 +22,7 @@ from wagtail.log_actions import log
 from cms.bundles.action_menu import BundleActionMenu
 from cms.bundles.clients.api import BundleAPIClient, BundleAPIClientError
 from cms.bundles.decorators import datasets_bundle_api_enabled
-from cms.bundles.enums import BundleStatus
+from cms.bundles.enums import BundleContentItemState, BundleStatus
 from cms.bundles.models import Bundle
 from cms.bundles.notifications.slack import (
     notify_slack_of_status_change,
@@ -482,9 +482,9 @@ class BundleInspectView(InspectView):
         if not state or state == MISSING_VALUE:
             return MISSING_VALUE
         match state:
-            case "APPROVED":
+            case BundleContentItemState.APPROVED:
                 return "Approved"
-            case "PUBLISHED":
+            case BundleContentItemState.PUBLISHED:
                 return "Published"
             case _:
                 return state.replace("_", " ").title()
@@ -515,8 +515,8 @@ class BundleInspectView(InspectView):
                 }
 
                 if dataset_id and edition_id and version_id:
-                    item["edit_url"] = f"/data-admin/series/{dataset_id}/editions/{edition_id}/versions/{version_id}"
-                    if state == "PUBLISHED":
+                    item["edit_url"] = links.get("edit") or "#"
+                    if state == BundleContentItemState.PUBLISHED:
                         view_url = f"/datasets/{dataset_id}/editions/{edition_id}/versions/{version_id}"
                         item["action_button"] = format_html(
                             '<a href="{}" class="button button-small button-secondary" target="_blank" '
