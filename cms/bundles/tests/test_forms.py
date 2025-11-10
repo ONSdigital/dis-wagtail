@@ -505,3 +505,37 @@ class BundleAdminFormTestCase(TestCase):
                     error_msg = "The release date cannot be in the past."
 
                 self.assertFormError(form, "publication_date", [error_msg])
+
+    def test_clean__no_changes_allowed_on_already_approved_bundle(self):
+        """No changes should be allowed on an already approved bundle.
+
+        This is to guard against any changes slipping through after approval.
+        """
+        # Given an already Approved bundle
+        raw_data = self._setup_bundle()
+        self.bundle.status = BundleStatus.APPROVED
+        self.bundle.approved_by = self.approver
+        self.bundle.approved_at = timezone.now()
+        self.bundle.save()
+
+        # When
+        # Attempt to change various fields
+        raw_data["name"] = "Renamed Bundle"
+        raw_data["publication_date"] = timezone.now() + timedelta(days=2)
+        raw_data["bundled_pages"] = inline_formset(
+            [{"page": self.bundle.bundled_pages.first().page.id}, {"page": StatisticalArticlePageFactory().id}]
+        )
+
+        form = self.form_class(instance=self.bundle, data=nested_form_data(raw_data), for_user=self.approver)
+
+        # Then
+        self.assertTrue(form.is_valid())
+
+        # All attempted changes are rejected, original values preserved
+        self.assertEqual(form.cleaned_data.get("name"), self.bundle.name)
+        self.assertEqual(form.cleaned_data.get("publication_date"), self.bundle.publication_date)
+        self.assertEqual(form.cleaned_data.get("approved_by"), self.bundle.approved_by)
+        self.assertEqual(form.cleaned_data.get("approved_at"), self.bundle.approved_at)
+
+        # assert bundled_pages not in formsets
+        self.assertEqual(form.formsets, {})
