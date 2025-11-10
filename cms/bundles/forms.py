@@ -100,7 +100,7 @@ class BundleAdminForm(DeduplicateInlinePanelAdminForm):
         if "bundled_datasets" not in self.formsets:
             return False
         for form in self.formsets["bundled_datasets"].forms:
-            if not form.is_valid() or form.cleaned_data["DELETE"]:
+            if not form.is_valid() or form.cleaned_data.get("DELETE"):
                 continue
 
             if form.clean().get("dataset"):
@@ -184,7 +184,7 @@ class BundleAdminForm(DeduplicateInlinePanelAdminForm):
 
             page = form.clean().get("page")
 
-            if not form.cleaned_data["DELETE"]:
+            if not form.cleaned_data.get("DELETE"):
                 page = page.specific
                 if page.in_active_bundle and page.active_bundle != self.instance:
                     raise ValidationError(f"'{page}' is already in an active bundle ({page.active_bundle})")
@@ -198,10 +198,7 @@ class BundleAdminForm(DeduplicateInlinePanelAdminForm):
             return
 
         for form in self.formsets["bundled_pages"].forms:
-            if not form.is_valid():
-                continue
-
-            if form.cleaned_data["DELETE"]:
+            if not form.is_valid() or form.cleaned_data.get("DELETE"):
                 continue
 
             if page := form.clean().get("page"):
