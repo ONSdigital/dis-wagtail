@@ -113,6 +113,7 @@ def the_user_selects_multiple_datasets(context: Context) -> None:
         context.page.get_by_role("checkbox", name="Personal well-being estimates by local authority").click()
         context.page.get_by_role("checkbox", name="Deaths registered weekly in England and Wales by region").click()
         context.page.get_by_role("button", name="Confirm selection").click()
+        context.page.wait_for_timeout(250)  # Wait for everything to process before leaving the with block
 
 
 @when("the user opens the bundle datasets chooser")
