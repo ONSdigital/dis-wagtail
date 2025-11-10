@@ -12,14 +12,12 @@
 {%- set statistical_article_label = _("Statistical article") -%}
 {%- set release_date_label = _("Release date:") -%}
 {%- set next_release_label = _("Next release:") -%}
-{%- set breadcrumbs_label = _("Breadcrumbs") -%}
 {%- set contact_label = _("Contact:") -%}
 
 {% block header_area %}
     {%- set hero_topic = _("Statistical article") -%}
     {%- set release_date_term = _("Release date:") -%}
     {%- set next_release_date_term = _("Next release:") -%}
-    {%- set breadcrumbs_aria_label = _("Breadcrumbs") -%}
 
     {% if page.is_latest %}
         {% if latest_version_url %}
