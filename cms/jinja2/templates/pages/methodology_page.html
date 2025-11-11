@@ -1,13 +1,13 @@
 {% extends "templates/base_page.html" %}
 
 {% from "components/table-of-contents/_macro.njk" import onsTableOfContents %}
+{% from "components/breadcrumbs/_macro.njk" import onsBreadcrumbs %}
 {% from "components/list/_macro.njk" import onsList %}
 {% from "components/hero/_macro.njk" import onsHero %}
 
 {#- We set variables for text so that it gets picked up by makemessages -#}
 {%- set last_revised_label = _("Last revised:") -%}
 {%- set published_label = _("Published:") -%}
-{%- set breadcrumbs_label = _("Breadcrumbs") -%}
 {%- set contact_label = _("Contact:") -%}
 
 {% block header_area %}
@@ -60,6 +60,13 @@
 
     {# fmt:off #}
     {{
+        onsBreadcrumbs({
+            "ariaLabel": breadcrumbs_aria_label,
+            "itemsList": page.get_breadcrumbs(request=request),
+            "variant": 'grey'
+        })
+    }}
+    {{
         onsHero({
             "topic": _("Methodology"),
             "title": page.title,
@@ -72,10 +79,6 @@
                 "descriptionCol": "6",
                 "itemsList": [publication_item, last_revised_item, contact_item] | selectattr('term') | list,
             },
-            "breadcrumbs": {
-                "ariaLabel": breadcrumbs_label,
-                "itemsList": page.get_breadcrumbs(request=request),
-            }
         })
     }}
     {# fmt:on #}
