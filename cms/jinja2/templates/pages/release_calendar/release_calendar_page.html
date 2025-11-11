@@ -1,5 +1,6 @@
 {% extends "templates/base_page.html" %}
 
+{% from "components/breadcrumbs/_macro.njk" import onsBreadcrumbs %}
 {% from "components/hero/_macro.njk" import onsHero %}
 {% from "components/table-of-contents/_macro.njk" import onsTableOfContents %}
 {% from "components/document-list/_macro.njk" import onsDocumentList %}
@@ -8,7 +9,6 @@
 
 {% block header_area %}
     {%- set hero_topic = _("Release") -%}
-    {%- set breadcrumbs_label = _("Breadcrumbs") -%}
     {%- set release_date_label = _("Release date:") -%}
     {%- set next_release_date_label = _("Next release date:") -%}
 
@@ -40,6 +40,13 @@
 
     {# fmt:off #}
     {{
+        onsBreadcrumbs({
+            "ariaLabel": breadcrumbs_aria_label,
+            "itemsList": page.get_breadcrumbs(request=request),
+            "variant": 'grey'
+        })
+    }}
+    {{
         onsHero({
             "topic": hero_topic,
             "title": page.title,
@@ -53,10 +60,6 @@
                 "termCol": "6",
                 "descriptionCol": "6",
                 "itemsList": release_dates_list
-            },
-            "breadcrumbs": {
-                "ariaLabel": breadcrumbs_label,
-                "itemsList": page.get_breadcrumbs(request=request),
             }
         })
     }}
@@ -65,7 +68,7 @@
 {% endblock %}
 
 {% block main %}
-    <div class="ons-grid ons-js-toc-container ons-u-ml-no">
+    <div class="ons-grid ons-js-table-of-contents-container ons-u-ml-no">
         <div class="ons-grid__col ons-grid__col--sticky@m ons-col-4@m ons-u-p-no">
         {# fmt:off #}
         {{-
