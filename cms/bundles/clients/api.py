@@ -217,7 +217,7 @@ class BundleAPIClient:
         for page in self._iter_pages(path=path, params=params):
             if first_page is None:
                 first_page = page
-            all_items.extend(page["items"])
+            all_items.extend(page.get("items") or [])
 
         return {
             "items": all_items,
