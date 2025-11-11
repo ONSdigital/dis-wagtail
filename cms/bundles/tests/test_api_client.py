@@ -1,5 +1,4 @@
 from http import HTTPStatus
-from typing import Literal
 from unittest.mock import patch
 
 import requests
@@ -10,9 +9,7 @@ from django.test import TestCase, override_settings
 from cms.bundles.clients.api import (
     BundleAPIClient,
     BundleAPIClientError,
-    build_content_item_for_dataset,
-    extract_content_id_from_bundle_response,
-    get_data_admin_action_url,
+    BundleAPIClientError404,
 )
 
 
@@ -119,7 +116,7 @@ class BundleAPIClientTests(TestCase):
             "preview_teams": [{"id": "team-uuid-1"}],
         }
 
-        result = client.update_bundle("test-bundle-123", bundle_data, "etag")
+        result = client.update_bundle("test-bundle-123", bundle_data=bundle_data, etag="etag")
 
         self.assertEqual(result, mock_response_data)
 
@@ -147,7 +144,7 @@ class BundleAPIClientTests(TestCase):
         )
 
         client = BundleAPIClient(base_url=self.base_url)
-        result = client.update_bundle_state("test-bundle-123", "APPROVED", "etag")
+        result = client.update_bundle_state("test-bundle-123", state="APPROVED", etag="etag")
 
         self.assertEqual(result, mock_response_data)
         self.assertTrue(responses.assert_call_count(endpoint, 1))
@@ -272,7 +269,7 @@ class BundleAPIClientTests(TestCase):
         )
 
         client = BundleAPIClient(base_url=self.base_url)
-        with self.assertRaises(BundleAPIClientError) as context:
+        with self.assertRaises(BundleAPIClientError404) as context:
             client.delete_bundle("nonexistent-bundle")
 
         self.assertIn("HTTP 404 error", str(context.exception))
@@ -352,12 +349,12 @@ class BundleAPIClientDisabledTests(TestCase):
             result, {"status": "disabled", "message": "The CMS integration with the Bundle API is disabled"}
         )
 
-        result = client.update_bundle("test-bundle-123", bundle_data, "etag")
+        result = client.update_bundle("test-bundle-123", bundle_data=bundle_data, etag="etag")
         self.assertEqual(
             result, {"status": "disabled", "message": "The CMS integration with the Bundle API is disabled"}
         )
 
-        result = client.update_bundle_state("test-bundle-123", "APPROVED", "etag")
+        result = client.update_bundle_state("test-bundle-123", state="APPROVED", etag="etag")
         self.assertEqual(
             result, {"status": "disabled", "message": "The CMS integration with the Bundle API is disabled"}
         )
@@ -371,97 +368,6 @@ class BundleAPIClientDisabledTests(TestCase):
         self.assertEqual(
             result, {"status": "disabled", "message": "The CMS integration with the Bundle API is disabled"}
         )
-
-
-class GetDataAdminActionUrlTests(TestCase):
-    """Tests for the get_data_admin_action_url function."""
-
-    def test_get_data_admin_action_url_with_different_actions(self):
-        """Test that different actions work correctly."""
-        dataset_id = "test-dataset"
-        edition_id = "time-series"
-        version_id = "2"
-
-        # Test multiple actions
-        actions: Literal["edit", "preview"] = ["edit", "preview"]
-        for action in actions:
-            url = get_data_admin_action_url(action, dataset_id, edition_id, version_id)
-            expected = f"/{action}/datasets/{dataset_id}/editions/{edition_id}/versions/{version_id}"
-            self.assertEqual(url, expected)
-
-
-class ContentItemUtilityTests(TestCase):
-    """Tests for content item utility functions."""
-
-    def setUp(self):
-        # Create a mock dataset object
-        self.dataset = type(
-            "Dataset",
-            (),
-            {
-                "namespace": "cpih",
-                "edition": "time-series",
-                "version": 1,
-            },
-        )()
-
-    def test_build_content_item_for_dataset(self):
-        """Test that build_content_item_for_dataset creates the correct structure."""
-        content_item = build_content_item_for_dataset(self.dataset)
-
-        expected = {
-            "content_type": "DATASET",
-            "metadata": {
-                "dataset_id": "cpih",
-                "edition_id": "time-series",
-                "version_id": 1,
-            },
-            "links": {
-                "edit": "/edit/datasets/cpih/editions/time-series/versions/1",
-                "preview": "/preview/datasets/cpih/editions/time-series/versions/1",
-            },
-        }
-
-        self.assertEqual(content_item, expected)
-
-    def test_extract_content_id_from_bundle_response_found(self):
-        """Test extracting content_id when the dataset is found in the response."""
-        response = {
-            "bundle_id": "9e4e3628-fc85-48cd-80ad-e005d9d283ff",
-            "content_type": "DATASET",
-            "metadata": {
-                "dataset_id": "cpih",
-                "edition_id": "time-series",
-                "title": "Consumer Prices Index",
-                "version_id": 1,
-            },
-            "id": "content-123",
-        }
-
-        content_id = extract_content_id_from_bundle_response(response, self.dataset)
-        self.assertEqual(content_id, "content-123")
-
-    def test_extract_content_id_from_bundle_response_not_found(self):
-        """Test extracting content_id when the dataset is not found in the response."""
-        response = {
-            "bundle_id": "9e4e3628-fc85-48cd-80ad-e005d9d283ff",
-            "content_type": "DATASET",
-            "metadata": {
-                "dataset_id": "other-dataset",
-                "edition_id": "time-series",
-                "title": "Consumer Prices Index",
-                "version_id": 1,
-            },
-            "id": "content-456",
-        }
-
-        content_id = extract_content_id_from_bundle_response(response, self.dataset)
-        self.assertIsNone(content_id)
-
-    def test_extract_content_id_from_bundle_response_empty_contents(self):
-        """Test extracting content_id when the response has no contents."""
-        content_id = extract_content_id_from_bundle_response({}, self.dataset)
-        self.assertIsNone(content_id)
 
 
 @override_settings(DIS_DATASETS_BUNDLE_API_ENABLED=True)

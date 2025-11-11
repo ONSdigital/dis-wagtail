@@ -1,7 +1,7 @@
 import logging
 from collections.abc import Iterator, Mapping
 from http import HTTPStatus
-from typing import Any, Literal
+from typing import Any
 
 import requests
 from django.conf import settings
@@ -18,10 +18,14 @@ class BundleAPIClientError(Exception):
     """Base exception for BundleAPIClient errors."""
 
 
+class BundleAPIClientError404(BundleAPIClientError):
+    """Exception for 404 Not Found errors from the Bundle API."""
+
+
 class BundleAPIClient:
     """Client for interacting with the ONS Dataset Bundle API endpoints.
 
-    https://github.com/ONSdigital/dis-bundle-api/blob/bd5e75290f3f1595d496902a73744e2084056944/swagger.yaml
+    https://github.com/ONSdigital/dis-bundle-api/blob/584dbae87ebcdf38626be8926496add22eb591bd/swagger.yaml
     """
 
     # Swagger default is 20, maximum is 1000. We prefer a high default for bulk reads.
@@ -61,10 +65,11 @@ class BundleAPIClient:
 
         return max(cls.MIN_LIMIT, min(limit, cls.MAX_LIMIT))
 
-    def _make_request(  # pylint: disable=too-many-arguments,too-many-positional-arguments  # noqa: PLR0913
+    def _make_request(  # pylint: disable=too-many-arguments  # noqa: PLR0913
         self,
         method: str,
         endpoint: str,
+        *,
         data: dict[str, Any] | None = None,
         params: dict[str, str] | None = None,
         etag: str | None = None,
@@ -111,6 +116,10 @@ class BundleAPIClient:
         except requests.exceptions.HTTPError as e:
             error_msg = self._format_http_error(e, method, url)
             logger.error("HTTP error occurred: %s", error_msg)
+
+            if e.response.status_code == HTTPStatus.NOT_FOUND:
+                raise BundleAPIClientError404(error_msg) from e
+
             raise BundleAPIClientError(error_msg) from e
 
         except requests.exceptions.RequestException as e:
@@ -235,7 +244,7 @@ class BundleAPIClient:
         """
         return self._make_request("POST", "/bundles", data=bundle_data)
 
-    def update_bundle(self, bundle_id: str, bundle_data: dict[str, Any], etag: str) -> dict[str, Any]:
+    def update_bundle(self, bundle_id: str, *, bundle_data: dict[str, Any], etag: str) -> dict[str, Any]:
         """Update an existing bundle via the API.
 
         Args:
@@ -248,7 +257,7 @@ class BundleAPIClient:
         """
         return self._make_request("PUT", f"/bundles/{bundle_id}", data=bundle_data, etag=etag)
 
-    def update_bundle_state(self, bundle_id: str, state: str, etag: str) -> dict[str, Any]:
+    def update_bundle_state(self, bundle_id: str, *, state: str, etag: str) -> dict[str, Any]:
         """Update the state of a bundle via the API.
 
         Args:
@@ -262,7 +271,7 @@ class BundleAPIClient:
         # The swagger spec expects a JSON object with a 'state' field
         return self._make_request("PUT", f"/bundles/{bundle_id}/state", data={"state": state}, etag=etag)
 
-    def add_content_to_bundle(self, bundle_id: str, content_item: dict[str, Any]) -> dict[str, Any]:
+    def add_content_to_bundle(self, bundle_id: str, *, content_item: dict[str, Any]) -> dict[str, Any]:
         """Add a content item to a bundle.
 
         Args:
@@ -274,7 +283,7 @@ class BundleAPIClient:
         """
         return self._make_request("POST", f"/bundles/{bundle_id}/contents", data=content_item)
 
-    def delete_content_from_bundle(self, bundle_id: str, content_id: str) -> dict[str, Any]:
+    def delete_content_from_bundle(self, bundle_id: str, *, content_id: str) -> dict[str, Any]:
         """Delete a content item from a bundle.
 
         Args:
@@ -286,7 +295,7 @@ class BundleAPIClient:
         """
         return self._make_request("DELETE", f"/bundles/{bundle_id}/contents/{content_id}")
 
-    def get_bundle_contents(self, bundle_id: str, limit: int | None = None, offset: int = 0) -> dict[str, Any]:
+    def get_bundle_contents(self, bundle_id: str, *, limit: int | None = None, offset: int = 0) -> dict[str, Any]:
         """Get the list of all contents for a specific bundle.
 
         Args:
@@ -314,7 +323,9 @@ class BundleAPIClient:
         """
         return self._make_request("DELETE", f"/bundles/{bundle_id}")
 
-    def get_bundles(self, limit: int | None = None, offset: int = 0, publish_date: str | None = None) -> dict[str, Any]:
+    def get_bundles(
+        self, *, limit: int | None = None, offset: int = 0, publish_date: str | None = None
+    ) -> dict[str, Any]:
         """Get a list of all bundles.
 
         Args:
@@ -352,72 +363,3 @@ class BundleAPIClient:
             API response data containing the health status.
         """
         return self._make_request("GET", "/health")
-
-
-def build_content_item_for_dataset(dataset: Any) -> dict[str, Any]:
-    """Build a content item dict for a dataset following Bundle API swagger spec.
-
-    Args:
-        dataset: A Dataset instance with namespace, edition, and version fields
-
-    Returns:
-        A dictionary representing a ContentItem for the Bundle API
-    """
-    return {
-        "content_type": "DATASET",
-        "metadata": {
-            "dataset_id": dataset.namespace,
-            "edition_id": dataset.edition,
-            "version_id": dataset.version,
-        },
-        "links": {
-            "edit": get_data_admin_action_url("edit", dataset.namespace, dataset.edition, dataset.version),
-            "preview": get_data_admin_action_url("preview", dataset.namespace, dataset.edition, dataset.version),
-        },
-    }
-
-
-def extract_content_id_from_bundle_response(response: dict[str, Any], dataset: Any) -> str | None:
-    """Extract content_id from Bundle API response for a specific dataset.
-
-    Args:
-        response: Bundle API response
-        dataset: Dataset instance to find in the response
-
-    Returns:
-        The content_id if found, None otherwise
-    """
-    metadata = response.get("metadata", {})
-    if (
-        metadata.get("dataset_id") == dataset.namespace
-        and metadata.get("edition_id") == dataset.edition
-        and metadata.get("version_id") == dataset.version
-    ):
-        content_id = response.get("id")
-        return content_id if content_id is not None else None
-
-    return None
-
-
-def get_data_admin_action_url(
-    action: Literal["edit", "preview"], dataset_id: str, edition_id: str, version_id: str
-) -> str:
-    """Generate a relative URL for dataset actions in the ONS Data Admin interface.
-
-    This function constructs relative URLs for dataset operations in the ONS Data Admin
-    system, which is used for editing and previewing datasets.
-
-    Args:
-        action: The action to perform ("edit", "preview")
-        dataset_id: The unique identifier for the dataset
-        edition_id: The edition identifier for the dataset
-        version_id: The version identifier for the dataset
-
-    Returns:
-        A relative URL string for the specified dataset action
-
-    Example:
-        >>> get_data_admin_action_url("edit", "cpih", "time-series", "1")
-        "/edit/datasets/cpih/editions/time-series/versions/1"
-    """
-    return f"/{action}/datasets/{dataset_id}/editions/{edition_id}/versions/{version_id}"

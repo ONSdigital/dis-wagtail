@@ -10,12 +10,14 @@ from django.utils import timezone
 from cms.bundles.clients.api import (
     BundleAPIClient,
     BundleAPIClientError,
-    build_content_item_for_dataset,
-    extract_content_id_from_bundle_response,
 )
 from cms.bundles.decorators import datasets_bundle_api_enabled
 from cms.bundles.enums import ACTIVE_BUNDLE_STATUS_CHOICES, EDITABLE_BUNDLE_STATUSES, BundleStatus
-from cms.bundles.utils import build_bundle_data_for_api
+from cms.bundles.utils import (
+    build_bundle_data_for_api,
+    build_content_item_for_dataset,
+    extract_content_id_from_bundle_response,
+)
 from cms.core.forms import DeduplicateInlinePanelAdminForm
 from cms.workflows.models import ReadyToPublishGroupTask
 
