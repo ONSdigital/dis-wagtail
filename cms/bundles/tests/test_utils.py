@@ -50,7 +50,7 @@ class BundlesUtilsTestCase(TestCase):
         self.assertListEqual(get_pages_in_active_bundles(), [page_in_active_bundle.pk])
 
 
-class GetDataAdminActionUrlTests(TestCase):
+class DatasetGetDataAdminActionUrlTests(TestCase):
     """Tests for the get_data_admin_action_url function."""
 
     def test_get_data_admin_action_url_with_different_actions(self):
@@ -67,7 +67,7 @@ class GetDataAdminActionUrlTests(TestCase):
             self.assertEqual(url, expected)
 
 
-class ContentItemUtilityTests(TestCase):
+class DatasetContentItemUtilityTests(TestCase):
     """Tests for content item utility functions."""
 
     def setUp(self):
