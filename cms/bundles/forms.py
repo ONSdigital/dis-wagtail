@@ -356,7 +356,9 @@ class BundleAdminForm(DeduplicateInlinePanelAdminForm):
             return
 
         try:
-            response = client.update_bundle_state(bundle.bundle_api_bundle_id, bundle.status, bundle.bundle_api_etag)
+            response = client.update_bundle_state(
+                bundle.bundle_api_bundle_id, state=bundle.status, etag=bundle.bundle_api_etag
+            )
 
             bundle.bundle_api_etag = response["etag_header"]
             bundle.save(update_fields=["bundle_api_etag"])
