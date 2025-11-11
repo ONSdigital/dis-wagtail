@@ -25,6 +25,7 @@ class BundleAPIClientError404(BundleAPIClientError):
 class BundleAPIClient:
     """Client for interacting with the ONS Dataset Bundle API endpoints.
 
+    API spec (as of 2025-10-27)
     https://github.com/ONSdigital/dis-bundle-api/blob/584dbae87ebcdf38626be8926496add22eb591bd/swagger.yaml
     """
 
