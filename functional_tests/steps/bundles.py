@@ -143,7 +143,8 @@ def user_opens_preview_for_one_of_the_selected_datasets(context: Context) -> Non
 
 @step("the user can see the preview items dropdown")
 def user_can_see_preview_items_dropdown(context: Context) -> None:
-    context.page.get_by_label("Preview items").is_visible()
+    # Ensure we look for a select element with the specific id to avoid false positives
+    context.page.locator("select#preview-items").is_visible()
 
 
 # bundle Inspect

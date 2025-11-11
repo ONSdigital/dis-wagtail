@@ -178,7 +178,7 @@ class PreviewBundleDatasetView(BundleContentsMixin, TemplateView):
             if (
                 metadata.get("dataset_id") == dataset_id
                 and metadata.get("edition_id") == edition_id
-                and metadata.get("version_id") == version_id
+                and str(metadata.get("version_id")) == version_id
             ):
                 return item.get("links", {}).get("preview", "") or None
 
