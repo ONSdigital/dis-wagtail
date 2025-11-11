@@ -4,11 +4,17 @@
 
 {% block header_area %}
     {%- set hero_topic = _("Release") -%}
-    {%- set breadcrumbs_label = _("Breadcrumbs") -%}
     {%- set release_date_label = _("Release date:") -%}
     {%- set release_date_description = _("Cancelled") -%}
 
     {# fmt:off #}
+    {{
+        onsBreadcrumbs({
+            "ariaLabel": breadcrumbs_aria_label,
+            "itemsList": page.get_breadcrumbs(request=request),
+            "variant": 'grey'
+    })
+    }}
     {{
         onsHero({
             "topic": hero_topic,
@@ -28,10 +34,6 @@
                             "description": release_date_description
                     }]
                 }]
-            },
-            "breadcrumbs": {
-                "ariaLabel": breadcrumbs_label,
-                "itemsList": page.get_breadcrumbs(request=request),
             }
         })
     }}

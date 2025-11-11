@@ -577,3 +577,35 @@ class BundleAPIClientPaginationTests(TestCase):
         result = self.bundle_client.get_bundle_contents(bundle_id, limit=0)
         self.assertEqual(result["limit"], 1)
         self.assertEqual(result["count"], 1)
+
+    @responses.activate
+    def test_get_bundle_contents_handles_missing_or_none_items(self):
+        """Test that missing or None 'items' key in paginated responses is handled gracefully."""
+        bundle_id = "test-bundle-123"
+
+        for page in [
+            {  # item key missing
+                "count": 2,
+                "limit": 2,
+                "offset": 0,
+                "total_count": 2,
+            },
+            {
+                "items": None,
+                "count": 1,
+                "limit": 2,
+                "offset": 2,
+                "total_count": 2,
+            },
+        ]:
+            with self.subTest(page=page):
+                responses.get(
+                    f"{self.base_url}/bundles/{bundle_id}/contents",
+                    json=page,
+                    headers={"ETag": "etag-content"},
+                )
+
+                result = self.bundle_client.get_bundle_contents(bundle_id, limit=2)
+
+                self.assertEqual(result["items"], [])
+                self.assertEqual(result["count"], 0)

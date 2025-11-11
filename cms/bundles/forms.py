@@ -77,12 +77,29 @@ class BundleAdminForm(DeduplicateInlinePanelAdminForm):
         self.original_datasets = set(self.instance.bundled_datasets.all().order_by("id").select_related("dataset"))
         self.original_teams = set(self.instance.teams.all().order_by("id").select_related("team"))
 
+    def _formsets_have_changes(self) -> bool:
+        """Detect any adds/edits/deletes in our inline panels."""
+        for key in ("bundled_pages", "bundled_datasets", "teams"):
+            formset = self.formsets.get(key)
+            if not formset:
+                continue
+            # any delete/add/change counts as a change
+            if formset.deleted_forms:
+                return True
+            for form in formset.forms:
+                # Ignore empty forms and forms marked for deletion
+                if form.cleaned_data.get("DELETE"):
+                    return True  # deleting a specific row
+                if form.has_changed():
+                    return True
+        return False
+
     def _has_datasets(self) -> bool:
         has_datasets = False
         if "bundled_datasets" not in self.formsets:
             return False
         for form in self.formsets["bundled_datasets"].forms:
-            if not form.is_valid() or form.cleaned_data["DELETE"]:
+            if not form.is_valid() or form.cleaned_data.get("DELETE"):
                 continue
 
             if form.clean().get("dataset"):
@@ -166,7 +183,7 @@ class BundleAdminForm(DeduplicateInlinePanelAdminForm):
 
             page = form.clean().get("page")
 
-            if not form.cleaned_data["DELETE"]:
+            if not form.cleaned_data.get("DELETE"):
                 page = page.specific
                 if page.in_active_bundle and page.active_bundle != self.instance:
                     raise ValidationError(f"'{page}' is already in an active bundle ({page.active_bundle})")
@@ -176,8 +193,11 @@ class BundleAdminForm(DeduplicateInlinePanelAdminForm):
     def _validate_bundled_pages_status(self) -> None:
         has_pages = False
         num_pages_not_ready = 0
+        if "bundled_pages" not in self.formsets:
+            return
+
         for form in self.formsets["bundled_pages"].forms:
-            if form.cleaned_data["DELETE"]:
+            if not form.is_valid() or form.cleaned_data.get("DELETE"):
                 continue
 
             if page := form.clean().get("page"):
@@ -222,6 +242,48 @@ class BundleAdminForm(DeduplicateInlinePanelAdminForm):
         if publication_date and publication_date < timezone.now() and not self.instance.can_be_manually_published:
             raise ValidationError({"publication_date": "The release date cannot be in the past."})
 
+    def _validate_no_changes_on_approve(self) -> None:
+        """Validates that no other changes are made when approving a bundle.
+
+        To avoid mixing two different kinds of changes in one action, bundle
+        approvals are not permitted at the same time as other edits. The user must
+        first save any changes, then approve the bundle in a separate step.
+        """
+        allowed = {"status", "approved_at", "approved_by"}
+        disallowed_changes = [field for field in self.changed_data if field not in allowed]
+        if disallowed_changes:
+            raise ValidationError(
+                dict.fromkeys(
+                    disallowed_changes,
+                    "You cannot make changes to this field when approving a bundle. "
+                    "Please save your changes first, then Approve the bundle in a separate step.",
+                )
+            )
+
+        if self._formsets_have_changes():
+            raise ValidationError(
+                "You cannot make changes to pages, datasets, or teams when approving a bundle. "
+                "Please save your changes first, then Approve the bundle in a separate step."
+            )
+
+    def _validate_approval(self) -> None:
+        if self.cleaned_data.get("status") != BundleStatus.APPROVED.value:
+            return
+
+        try:
+            # ensure no other changes are made when approving
+            self._validate_no_changes_on_approve()
+
+            # ensure all bundled pages are ready to publish
+            self._validate_bundled_pages_status()
+
+            # ensure all bundled datasets are approved (the function will check if the API is enabled)
+            self._validate_bundled_datasets_status()
+        except ValidationError as e:
+            # revert the status change back to original to prevent "Approve" specific logic from applying
+            self.cleaned_data["status"] = self.instance.status
+            raise e
+
     def clean_publication_date(self) -> datetime | None:
         # Set seconds to 0 to make scheduling less surprising
         if publication_date := self.cleaned_data["publication_date"]:
@@ -236,6 +298,9 @@ class BundleAdminForm(DeduplicateInlinePanelAdminForm):
         """
         cleaned_data: dict[str, Any] = super().clean()
 
+        # On approval, this must run before any other validation
+        self._validate_approval()
+
         self._validate_publication_date()
 
         # deduplicate entries
@@ -249,12 +314,6 @@ class BundleAdminForm(DeduplicateInlinePanelAdminForm):
         if self.instance.status != submitted_status:
             # the status has changed
             if submitted_status == BundleStatus.APPROVED:
-                # ensure all bundled pages are ready to publish
-                self._validate_bundled_pages_status()
-
-                # ensure all bundled datasets are approved (the function will check if the API is enabled)
-                self._validate_bundled_datasets_status()
-
                 cleaned_data["approved_at"] = timezone.now()
                 cleaned_data["approved_by"] = self.for_user
             elif self.instance.status == BundleStatus.APPROVED:
