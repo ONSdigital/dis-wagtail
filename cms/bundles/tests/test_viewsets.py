@@ -93,15 +93,28 @@ class BundleViewSetTestCaseBase(WagtailTestUtils, TestCase):
 
         self.client.force_login(self.publishing_officer)
 
-    def get_base_form_data(self):
-        return nested_form_data(
-            {
-                "name": "The bundle",
-                "bundled_pages": inline_formset([{"page": self.statistical_article_page.id}]),
-                "bundled_datasets": inline_formset([]),
-                "teams": inline_formset([]),
-            }
-        )
+    def get_base_form_data(self, status: BundleStatus | None = None):
+        data = {
+            "name": "Original bundle",
+            "bundled_datasets": inline_formset([]),
+            "teams": inline_formset([]),
+        }
+
+        if status in {BundleStatus.APPROVED, BundleStatus.PUBLISHED}:
+            # If approved or published, page data must be existing and not considered new
+            bundled_pages = BundlePageFactory(parent=self.bundle, page=self.statistical_article_page)
+            page_formset = inline_formset(
+                [
+                    {"id": bundled_pages.id, "page": self.statistical_article_page.id, "ORDER": 1},
+                ],
+                initial=1,
+            )
+        else:
+            page_formset = inline_formset([{"page": self.statistical_article_page.id}])
+
+        data["bundled_pages"] = page_formset
+
+        return nested_form_data(data)
 
     @staticmethod
     def chooser_panel_display(page) -> str:
@@ -240,7 +253,7 @@ class BundleViewSetEditTestCase(BundleViewSetTestCaseBase):
         self.client.force_login(self.superuser)
         mark_page_as_ready_to_publish(self.statistical_article_page, self.superuser)
 
-        data = self.get_base_form_data()
+        data = self.get_base_form_data(status=expected_status)
         data[action] = action
         data["status"] = BundleStatus.PUBLISHED.value  # attempting to force it
 
@@ -405,6 +418,7 @@ class BundleViewSetEditTestCase(BundleViewSetTestCaseBase):
         self.client.force_login(self.publishing_officer)
         self.bundle.status = BundleStatus.IN_REVIEW
         self.bundle.save(update_fields=["status"])
+        bundled_page = BundlePageFactory(parent=self.bundle, page=self.statistical_article_page)
         original_status = self.bundle.status
 
         response = self.client.post(
@@ -413,7 +427,16 @@ class BundleViewSetEditTestCase(BundleViewSetTestCaseBase):
                 {
                     "name": self.bundle.name,
                     "status": BundleStatus.APPROVED,
-                    "bundled_pages": inline_formset([{"page": self.statistical_article_page.id}]),
+                    "bundled_pages": inline_formset(
+                        [
+                            {
+                                "id": bundled_page.id,
+                                "page": self.statistical_article_page.id,
+                                "ORDER": 1,
+                            }
+                        ],
+                        initial=1,
+                    ),
                     "teams": inline_formset([]),
                     "action-approve": "action-approve",
                 }
