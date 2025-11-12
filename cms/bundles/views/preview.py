@@ -152,6 +152,9 @@ class PreviewBundleReleaseCalendarView(BundleContentsMixin, TemplateView):
 
 
 class PreviewBundleDatasetView(BundleContentsMixin, TemplateView):
+    """View to preview a dataset within a bundle."""
+
+    # We use a custom template with an iframe to display the dataset preview
     template_name = "templates/bundles/preview.html"
     http_method_names: Sequence[str] = ["get"]
 
@@ -206,9 +209,12 @@ class PreviewBundleDatasetView(BundleContentsMixin, TemplateView):
                 f"Dataset {dataset_id} (edition: {edition_id}, version: {version_id}) "
                 "could not be found in this bundle or does not have a preview available.",
             )
+            # Return to the bundle inspect page if we cannot show a preview of the dataset
             return redirect("bundle:inspect", bundle_id)
 
-        # Build preview items for all pages and datasets in the bundle
+        # Build preview items for all pages and datasets in the bundle.
+        # While the view is for previewing a dataset, we still want to show all
+        # items in the preview list.
         pages_in_bundle = self.get_pages_in_bundle(bundle)
 
         # Create a unique identifier for this dataset to mark it as selected
@@ -219,7 +225,7 @@ class PreviewBundleDatasetView(BundleContentsMixin, TemplateView):
             "bundle": bundle,
             "bundle_inspect_url": reverse("bundle:inspect", args=[bundle_id]),
             "preview_items": get_preview_items_for_bundle(bundle, dataset_key, pages_in_bundle, bundle_contents),
-            "iframe_url": iframe_url,
+            "iframe_url": iframe_url,  # Preview URL to load in the iframe
         }
 
         log(
