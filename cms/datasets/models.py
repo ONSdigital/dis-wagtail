@@ -204,3 +204,7 @@ class Dataset(models.Model):  # type: ignore[django-manager-missing]
     @property
     def website_url(self) -> str:
         return f"{settings.ONS_WEBSITE_BASE_URL}{self.url_path}"
+
+    @property
+    def compound_id(self) -> str:
+        return f"{self.namespace},{self.edition},{self.version}"
