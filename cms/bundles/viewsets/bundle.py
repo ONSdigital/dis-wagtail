@@ -493,7 +493,6 @@ class BundleDeleteView(DeleteView):
     has_errors = False
 
     @datasets_bundle_api_enabled
-    @datasets_bundle_api_enabled
     def sync_bundle_deletion_with_bundle_api(self, instance: Bundle) -> None:
         """Syncs the deletion of the Bundle in the CMS with the Bundle API by deleting the corresponding Bundle API
         bundle.
@@ -507,7 +506,8 @@ class BundleDeleteView(DeleteView):
         try:
             client.delete_bundle(instance.bundle_api_bundle_id)
             logger.info(
-                "Deleted bundle from Bundle API", extra={"id": instance.pk, "api_id": instance.bundle_api_bundle_id}
+                "Deleted bundle from Bundle API",
+                extra={"id": instance.pk, "api_id": instance.bundle_api_bundle_id},
             )
         except BundleAPIClientError404:
             logger.warning(
