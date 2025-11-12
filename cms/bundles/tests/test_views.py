@@ -364,6 +364,7 @@ class DeleteBundleViewTestCase(WagtailTestUtils, TestCase):
         # Then
         self.assertRedirects(response, reverse("bundle:index"))
         self.assertContains(response, "Could not delete bundle due to one or more errors")
+        self.assertContains(response, "Failed to delete bundle from Bundle API")
 
         bundle = Bundle.objects.get(pk=self.bundle.pk)
         self.assertEqual(bundle.name, "A Bundle")
