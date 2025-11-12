@@ -6,6 +6,8 @@ from typing import Any
 import requests
 from django.conf import settings
 
+from cms.bundles.utils import BundleAPIBundleMetadata
+
 logger = logging.getLogger(__name__)
 
 
@@ -234,7 +236,7 @@ class BundleAPIClient:
     # Public operations
     # --------------------------
 
-    def create_bundle(self, bundle_data: dict[str, Any]) -> dict[str, Any]:
+    def create_bundle(self, bundle_data: BundleAPIBundleMetadata) -> dict[str, Any]:
         """Create a new bundle via the API.
 
         Args:
@@ -243,9 +245,9 @@ class BundleAPIClient:
         Returns:
             API response data
         """
-        return self._make_request("POST", "/bundles", data=bundle_data)
+        return self._make_request("POST", "/bundles", data=bundle_data.as_dict())
 
-    def update_bundle(self, bundle_id: str, *, bundle_data: dict[str, Any], etag: str) -> dict[str, Any]:
+    def update_bundle(self, bundle_id: str, *, bundle_data: BundleAPIBundleMetadata, etag: str) -> dict[str, Any]:
         """Update an existing bundle via the API.
 
         Args:
@@ -256,7 +258,7 @@ class BundleAPIClient:
         Returns:
             API response data
         """
-        return self._make_request("PUT", f"/bundles/{bundle_id}", data=bundle_data, etag=etag)
+        return self._make_request("PUT", f"/bundles/{bundle_id}", data=bundle_data.as_dict(), etag=etag)
 
     def update_bundle_state(self, bundle_id: str, *, state: str, etag: str) -> dict[str, Any]:
         """Update the state of a bundle via the API.
