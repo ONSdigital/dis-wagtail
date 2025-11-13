@@ -108,17 +108,23 @@ def convert_old_dataset_format(data: dict[str, Any]) -> dict[str, Any]:
     }
 
 
-def construct_dataset_compound_id(*, dataset_id: str, edition: str, version_id: str, published: bool) -> str:
-    """Construct a compound ID for the dataset based on dataset_id, edition, version_id and published.
+def construct_chooser_dataset_compound_id(*, dataset_id: str, edition: str, version_id: str, published: bool) -> str:
+    """Construct the chooser dataset compound ID used by ONSDataset (API data).
 
-    Note that `published` is added to the compound ID to uniquely identify published vs unpublished
-    versions, but it is not part of the unique constraints on the Dataset model.
+    Format: "<dataset_id>,<edition>,<version_id>,<published>"
+
+    The `published` flag is included only to differentiate published and
+    unpublished versions when fetching datasets via the Dataset API.
+    It does not form part of the local Dataset model’s uniqueness.
     """
     return f"{dataset_id},{edition},{version_id},{str(published).lower()}"
 
 
-def deconstruct_dataset_compound_id(compound_id: str) -> tuple[str, str, str, bool]:
-    """Deconstruct a compound ID into its components: dataset_id, edition, version_id and published."""
+def deconstruct_chooser_dataset_compound_id(compound_id: str) -> tuple[str, str, str, bool]:
+    """Deconstruct a chooser dataset compound ID into its components.
+
+    Splits the compound ID string back into: (dataset_id, edition, version_id, published)
+    """
     parts = compound_id.split(",")
     if len(parts) != COMPOUND_ID_PARTS_COUNT:
         raise ValueError(f"Invalid compound ID format: {compound_id}")
