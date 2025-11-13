@@ -42,7 +42,7 @@ class BundleAPISyncServiceTests(TestCase):
             "scheduled_at": kwargs.get("scheduled_at"),
         }
 
-    def _mock_api_content_item(self, *, content_id, dataset_id, edition_id, version_id, etag="etag-123"):
+    def _mock_api_content_item(self, *, content_id, dataset_id, edition_id, version_id, etag="etag-123"):  # pylint: disable=too-many-arguments
         """Helper to create a standard API content item."""
         return {
             "etag_header": etag,

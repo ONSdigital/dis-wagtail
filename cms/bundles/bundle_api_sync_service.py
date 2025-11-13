@@ -214,15 +214,15 @@ class BundleAPISyncService:
         """Determine if the current CMS set implies API reconciliation.
 
         True when any of the following hold:
-          - a removed dataset had a content id previously
-          - a removed dataset had no content id locally which still requires checking API-only items
+          - a removed dataset, regardless of content id presence
           - a current dataset is missing a content id which implies add or link
         """
         removed = self.original_datasets - self.bundled_datasets
-        has_items_to_delete = any(d.bundle_api_content_id for d in removed)
-        has_removed_but_unlinked = any(not d.bundle_api_content_id for d in removed)
+        if removed:
+            return True
+
         has_items_to_add_or_link = any(not d.bundle_api_content_id for d in self.bundled_datasets)
-        return has_items_to_delete or has_removed_but_unlinked or has_items_to_add_or_link
+        return has_items_to_add_or_link
 
     def _backfill_missing_content_ids(
         self,
