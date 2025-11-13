@@ -218,9 +218,11 @@ class BundleAPISyncService:
           - a current dataset is missing a content id which implies add or link
         """
         removed = self.original_datasets - self.bundled_datasets
+        # If any items were removed, we *always* need to reconcile.
         if removed:
             return True
 
+        # If no items were removed, check if we need to add/link ones in bundled_datasets
         has_items_to_add_or_link = any(not d.bundle_api_content_id for d in self.bundled_datasets)
         return has_items_to_add_or_link
 
