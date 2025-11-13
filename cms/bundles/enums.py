@@ -1,3 +1,5 @@
+from enum import StrEnum
+
 from django.db import models
 
 
@@ -8,6 +10,11 @@ class BundleStatus(models.TextChoices):
     IN_REVIEW = "IN_REVIEW", "In Preview"
     APPROVED = "APPROVED", "Ready to publish"
     PUBLISHED = "PUBLISHED", "Published"
+
+
+class BundleContentItemState(StrEnum):
+    APPROVED = "APPROVED"
+    PUBLISHED = "PUBLISHED"
 
 
 ACTIVE_BUNDLE_STATUSES = [BundleStatus.DRAFT, BundleStatus.IN_REVIEW, BundleStatus.APPROVED]

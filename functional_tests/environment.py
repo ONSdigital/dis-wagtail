@@ -30,6 +30,13 @@ from functional_tests.step_helpers.auth_utils import (  # noqa: E402 # pylint: d
     capture_request,
     get_cognito_overridden_settings,
 )
+from functional_tests.step_helpers.bundles_api import (  # noqa: E402 # pylint: disable=wrong-import-position
+    mock_bundle_api,
+    prepare_dataset_content_item,
+)
+from functional_tests.step_helpers.datasets import (  # noqa: E402 # pylint: disable=wrong-import-position
+    TEST_UNPUBLISHED_DATASETS,
+)
 
 
 def before_all(context: Context) -> None:
@@ -155,10 +162,40 @@ def before_tag(context: Context, tag: str) -> None:
         settings = get_cognito_overridden_settings()
         context.aws_override = override_settings(**settings)
         context.aws_override.enable()
+    elif tag == "bundle_api_enabled":
+        # Enable Bundle API integration for this scenario
+        context.bundle_api_override = override_settings(DIS_DATASETS_BUNDLE_API_ENABLED=True)
+        context.bundle_api_override.enable()
+
+        # Create Bundle API content items from TEST_UNPUBLISHED_DATASETS
+        contents = []
+        for idx, dataset in enumerate(TEST_UNPUBLISHED_DATASETS, start=1):
+            contents.append(
+                prepare_dataset_content_item(
+                    content_id=f"content-{idx}",  # We use start=1 to avoid content-0
+                    dataset_id=dataset["dataset_id"],
+                    edition_id=dataset["edition"],
+                    version_id=int(dataset["latest_version"]["id"]),
+                    title=dataset["title"],
+                    state="APPROVED",
+                )
+            )
+
+        # Set up Bundle API mocks for the scenario
+        context.bundle_api_cm = mock_bundle_api(contents=contents)
+        # Enter the Bundle API mock context manager - we have to do the dunder call manually here
+        # because our steps run within the scenario
+        context.bundle_api_cm.__enter__()  # pylint: disable=unnecessary-dunder-call
 
 
 def after_tag(context: Context, tag: str) -> None:
     """Handle tag-specific cleanup."""
-    if tag == "cognito_enabled" and hasattr(context, "aws_override"):
+    if tag == "cognito_enabled":
         # Disable settings override
         context.aws_override.disable()
+    elif tag == "bundle_api_enabled":
+        # Disable Bundle API settings override
+        context.bundle_api_override.disable()
+
+        # Exit the Bundle API mock context manager
+        context.bundle_api_cm.__exit__(None, None, None)

@@ -1,5 +1,3 @@
-from typing import Literal
-
 from django.test import TestCase
 
 from cms.articles.models import StatisticalArticlePage
@@ -60,11 +58,14 @@ class DatasetGetDataAdminActionUrlTests(TestCase):
         version_id = "2"
 
         # Test multiple actions
-        actions: Literal["edit", "preview"] = ["edit", "preview"]
-        for action in actions:
-            url = get_data_admin_action_url(action, dataset_id, edition_id, version_id)
-            expected = f"/{action}/datasets/{dataset_id}/editions/{edition_id}/versions/{version_id}"
-            self.assertEqual(url, expected)
+
+        url = get_data_admin_action_url("edit", dataset_id, edition_id, version_id)
+        expected = f"/data-admin/series/{dataset_id}/editions/{edition_id}/versions/{version_id}"
+        self.assertEqual(url, expected)
+
+        url = get_data_admin_action_url("preview", dataset_id, edition_id, version_id)
+        expected = f"/datasets/{dataset_id}/editions/{edition_id}/versions/{version_id}"
+        self.assertEqual(url, expected)
 
 
 class DatasetContentItemUtilityTests(TestCase):
@@ -94,8 +95,8 @@ class DatasetContentItemUtilityTests(TestCase):
                 "version_id": 1,
             },
             "links": {
-                "edit": "/edit/datasets/cpih/editions/time-series/versions/1",
-                "preview": "/preview/datasets/cpih/editions/time-series/versions/1",
+                "edit": "/data-admin/series/cpih/editions/time-series/versions/1",
+                "preview": "/datasets/cpih/editions/time-series/versions/1",
             },
         }
 

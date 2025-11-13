@@ -17,7 +17,6 @@ from cms.bundles.enums import ACTIVE_BUNDLE_STATUS_CHOICES, EDITABLE_BUNDLE_STAT
 from cms.bundles.utils import (
     build_bundle_data_for_api,
     build_content_item_for_dataset,
-    extract_content_id_from_bundle_response,
 )
 from cms.core.forms import DeduplicateInlinePanelAdminForm
 from cms.workflows.models import ReadyToPublishGroupTask
@@ -438,15 +437,16 @@ class BundleAdminForm(DeduplicateInlinePanelAdminForm):
                     bundle_id=bundle.bundle_api_bundle_id,
                     content_item=content_item,
                 )
-                etag = response["etag_header"]
 
-                content_id = extract_content_id_from_bundle_response(response, item.dataset)
+                content_id = response["id"]
                 if not content_id:
                     logger.error(
                         "Could not find content_id in response for bundle",
                         extra={"id": bundle.pk, "api_id": bundle.bundle_api_bundle_id},
                     )
                     raise ValidationError("Bundle API did not return an ID for the added content")
+
+                etag = response["etag_header"]
 
                 item.bundle_api_content_id = content_id
                 item.save(update_fields=["bundle_api_content_id"])
@@ -459,6 +459,11 @@ class BundleAdminForm(DeduplicateInlinePanelAdminForm):
                 )
             except BundleAPIClientError as e:
                 logger.exception("Failed to add content to bundle %s in Bundle API: %s", bundle.pk, e)
+                raise ValidationError("Could not communicate with the Bundle API") from e
+            except KeyError as e:
+                logger.exception(
+                    "Failed to parse response when adding content to bundle %s in Bundle API: %s", bundle.pk, e
+                )
                 raise ValidationError("Could not communicate with the Bundle API") from e
 
         return etag

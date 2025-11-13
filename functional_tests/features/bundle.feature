@@ -63,6 +63,25 @@ Feature: CMS users can manage bundles
     # This can be removed once validation between release calendar pages and bundles is improved.
       | Cancelled   |
 
+    @bundle_api_enabled
+    Scenario: A content editor can see selected datasets on the inspect page
+        When the user navigates to the bundle creation page
+        And the user sets the bundle title
+        And the user selects multiple datasets
+        And the user saves the bundle as draft
+        And the user clicks on the inspect link for the created bundle
+        Then the selected datasets are displayed in the inspect view
+
+    @bundle_api_enabled
+    Scenario: A content editor can preview selected datasets on the inspect page
+        When the user navigates to the bundle creation page
+        And the user sets the bundle title
+        And the user selects multiple datasets
+        And the user saves the bundle as draft
+        And the user clicks on the inspect link for the created bundle
+        And the user opens the preview for one of the selected datasets
+        Then the user can see the preview items dropdown
+
     Scenario: A content editor can select multiple datasets on the bundle page when the user is in an internal environment
         Given the user is in an internal environment
         When the user navigates to the bundle creation page
