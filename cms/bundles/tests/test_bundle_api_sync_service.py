@@ -1,3 +1,5 @@
+# pylint: disable=too-many-lines
+
 from unittest.mock import Mock, patch
 
 from django.core.exceptions import ValidationError
@@ -40,7 +42,7 @@ class BundleAPISyncServiceTests(TestCase):
             "scheduled_at": kwargs.get("scheduled_at"),
         }
 
-    def _mock_api_content_item(self, content_id, dataset_id, edition_id, version_id, etag="etag-123"):
+    def _mock_api_content_item(self, *, content_id, dataset_id, edition_id, version_id, etag="etag-123"):
         """Helper to create a standard API content item."""
         return {
             "etag_header": etag,
@@ -936,7 +938,7 @@ class BundleAPISyncServiceTests(TestCase):
         # Should re-raise the original ValidationError, not wrap it
         self.assertEqual(context.exception, original_validation_error)
 
-    def test_handles_missing_id_in_create_response(self):
+    def test_syncs_content_even_when_some_api_items_are_malformed(self):
         """Test sync raises ValidationError when API create response is missing 'id' field."""
         # Given
         dataset = DatasetFactory(namespace="test-ns", edition="2024", version=1)
@@ -955,6 +957,91 @@ class BundleAPISyncServiceTests(TestCase):
             service.sync()
 
         self.assertIn("Failed to create bundle in Bundle API", str(context.exception))
+
+    def test_handles_missing_keys_in_get_bundle_contents_response(self) -> None:
+        """Test sync handles missing keys in get_bundle_contents response gracefully."""
+        # Given
+        dataset = DatasetFactory(namespace="dataset-to-add", edition="2024", version=1)
+        BundleDatasetFactory(parent=self.bundle, dataset=dataset)
+
+        self._setup_bundle_with_api_id()
+
+        service = self._create_service()
+
+        self.api_client.get_bundle.return_value = self._mock_api_bundle()
+        # API returns content items with various missing required keys
+        # These malformed items should be skipped during reconciliation
+        self.api_client.get_bundle_contents.return_value = {
+            "items": [
+                {
+                    "id": "content-123",
+                    "metadata": {
+                        "dataset_id": "test-ns",
+                        "edition_id": "2024",
+                        # missing 'version_id' key - should be skipped
+                    },
+                },
+                {
+                    "id": "content-456",
+                    "metadata": {
+                        "dataset_id": "test-ns",
+                        # missing 'edition_id' key - should be skipped
+                        "version_id": 2,
+                    },
+                },
+                {
+                    "id": "content-789",
+                    "metadata": {
+                        # missing 'dataset_id' key - should be skipped
+                        "edition_id": "2024",
+                        "version_id": 1,
+                    },
+                },
+                {
+                    # missing 'id' key - should be skipped
+                    "metadata": {
+                        "dataset_id": "test-ns",
+                        "edition_id": "2024",
+                        "version_id": 1,
+                    }
+                },
+                {
+                    "id": "content-000",
+                    # missing 'metadata' key - should be skipped
+                },
+                {
+                    "id": "content-to-remove",
+                    "metadata": {
+                        "dataset_id": "nonexistent-ns",
+                        "edition_id": "2024",
+                        "version_id": 1,
+                    },
+                },
+            ]
+        }
+
+        self.api_client.add_content_to_bundle.return_value = {
+            "etag_header": "new-etag-add",
+            "id": "new-content-id",
+            "metadata": {"dataset_id": "dataset-to-add", "edition_id": "2024", "version_id": 1},
+        }
+        self.api_client.delete_content_from_bundle.return_value = {"etag_header": "new-etag-delete"}
+
+        # When
+        service.sync()
+
+        # Then
+        # Malformed items are ignored, valid item is deleted, missing dataset is added
+        self.api_client.delete_content_from_bundle.assert_called_once_with(
+            bundle_id="bundle-123", content_id="content-to-remove"
+        )
+
+        self.api_client.add_content_to_bundle.assert_called_once_with(
+            bundle_id="bundle-123",
+            content_item=build_content_item_for_dataset(
+                dataset=dataset,
+            ),
+        )
 
 
 @override_settings(DIS_DATASETS_BUNDLE_API_ENABLED=False)

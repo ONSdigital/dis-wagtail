@@ -438,9 +438,13 @@ class BundleAPISyncService:
         index: dict[str, str] = {}
         for item in api_contents.get("items", []):
             md = item.get("metadata", {}) or {}
-            dataset_id = md["dataset_id"]
-            edition_id = md["edition_id"]
-            version_id = md["version_id"]
-            key = f"{dataset_id},{edition_id},{version_id}"
-            index[key] = item["id"]
+            dataset_id = md.get("dataset_id")
+            edition_id = md.get("edition_id")
+            version_id = md.get("version_id")
+            item_id = item.get("id")
+
+            if all([dataset_id, edition_id, version_id, item_id]):
+                key = f"{dataset_id},{edition_id},{version_id}"
+                index[key] = item_id
+
         return index
