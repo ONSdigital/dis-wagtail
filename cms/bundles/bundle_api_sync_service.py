@@ -295,7 +295,7 @@ class BundleAPISyncService:
                         "id": self.bundle.pk,
                         "api_id": self.api_id,
                         "content_id": content_id,
-                        "dataset": item.dataset,
+                        "dataset": item.dataset.compound_id,
                     },
                 )
             except BundleAPIClientError as e:
