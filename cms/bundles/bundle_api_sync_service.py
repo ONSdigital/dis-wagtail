@@ -406,7 +406,7 @@ class BundleAPISyncService:
         if not api_id:
             return
 
-        errored = False
+        deletion_failed = False
         try:
             self.api_client.delete_bundle(api_id)
             logger.info("Deleted bundle from Bundle API", extra={"id": self.bundle.pk, "api_id": api_id})
@@ -416,7 +416,7 @@ class BundleAPISyncService:
                 extra={"id": self.bundle.pk, "api_id": api_id},
             )
         except Exception as e:  # pylint: disable=broad-exception-caught
-            errored = True
+            deletion_failed = True
             msg = "Failed to delete bundle from Bundle API"
             logger.exception(msg, extra={"id": self.bundle.pk, "api_id": api_id})
             if raise_exceptions:
@@ -424,7 +424,7 @@ class BundleAPISyncService:
                     raise
                 raise ValidationError(msg) from e
         finally:
-            if not errored:
+            if not deletion_failed:
                 self.bundle.bundle_api_bundle_id = ""
                 self.bundle.bundle_api_etag = ""
                 self.bundle.save(update_fields=["bundle_api_bundle_id", "bundle_api_etag"])
