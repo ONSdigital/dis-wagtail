@@ -28,7 +28,9 @@ if TYPE_CHECKING:
 
 
 class BundleContentsMixin:
-    """Mixin to fetch bundle contents from the API."""
+    """Mixin to fetch bundle contents: datasets from the API,
+    and pages from the database.
+    """
 
     def get_bundle_contents(self, bundle: Bundle) -> dict[str, Any]:
         """Initializes API client and fetches bundle contents."""
@@ -81,7 +83,9 @@ class PreviewBundleView(BundleContentsMixin, TemplateView):
         # Fetch bundle contents to include datasets in preview items
         bundle_contents = self.get_bundle_contents(bundle)
 
-        context["preview_items"] = get_preview_items_for_bundle(bundle, page_id, pages_in_bundle, bundle_contents)
+        context["preview_items"] = get_preview_items_for_bundle(
+            bundle=bundle, current_id=page_id, pages_in_bundle=pages_in_bundle, bundle_contents=bundle_contents
+        )
 
         log(
             action="bundles.preview",
@@ -145,7 +149,10 @@ class PreviewBundleReleaseCalendarView(BundleContentsMixin, TemplateView):
         bundle_contents = self.get_bundle_contents(bundle)
 
         context["preview_items"] = get_preview_items_for_bundle(
-            bundle, release_calendar_page.id, pages_in_bundle, bundle_contents
+            bundle=bundle,
+            current_id=release_calendar_page.id,
+            pages_in_bundle=pages_in_bundle,
+            bundle_contents=bundle_contents,
         )
 
         return TemplateResponse(request, release_calendar_page.get_template(request), context)
@@ -189,6 +196,14 @@ class PreviewBundleDatasetView(BundleContentsMixin, TemplateView):
 
     def get(self, request: "HttpRequest", *args: Any, **kwargs: Any) -> "TemplateResponse | HttpResponseRedirect":
         bundle_id = kwargs["bundle_id"]
+
+        if settings.DIS_DATASETS_BUNDLE_API_ENABLED is False:
+            messages.error(
+                request,
+                "The Datasets Bundle API is not enabled. Cannot preview dataset.",
+            )
+            return redirect("bundle:inspect", bundle_id)
+
         bundle = get_object_or_404(Bundle, pk=bundle_id)
 
         if not user_can_preview_bundle(request.user, bundle):
@@ -224,7 +239,9 @@ class PreviewBundleDatasetView(BundleContentsMixin, TemplateView):
             "view": self,  # for TemplateView compatibility
             "bundle": bundle,
             "bundle_inspect_url": reverse("bundle:inspect", args=[bundle_id]),
-            "preview_items": get_preview_items_for_bundle(bundle, dataset_key, pages_in_bundle, bundle_contents),
+            "preview_items": get_preview_items_for_bundle(
+                bundle=bundle, current_id=dataset_key, pages_in_bundle=pages_in_bundle, bundle_contents=bundle_contents
+            ),
             "iframe_url": iframe_url,  # Preview URL to load in the iframe
         }
 

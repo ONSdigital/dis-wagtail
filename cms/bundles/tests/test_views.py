@@ -875,3 +875,17 @@ class PreviewBundleDatasetViewTestCase(WagtailTestUtils, TestCase):
         result = PreviewBundleDatasetView.find_dataset_preview_url(bundle_contents, "test-dataset", "test-edition", "1")
 
         self.assertEqual(result, "https://example.com/first")
+
+    @override_settings(DIS_DATASETS_BUNDLE_API_ENABLED=False)
+    def test_view_redirects_when_bundle_api_disabled(self):
+        """Test that view redirects with error message when Bundle API is disabled."""
+        self.client.force_login(self.publishing_officer)
+
+        response = self.client.get(self.preview_url, follow=True)
+
+        # Verify we redirected to the inspect page
+        self.assertRedirects(response, reverse("bundle:inspect", args=[self.bundle.pk]))
+
+        # Verify the error message is displayed
+        self.assertContains(response, "The Datasets Bundle API is not enabled")
+        self.assertContains(response, "Cannot preview dataset")

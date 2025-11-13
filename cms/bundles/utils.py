@@ -140,6 +140,7 @@ def serialize_datasets_for_release_calendar_page(bundle: "Bundle") -> list[dict[
 
 
 def get_preview_items_for_bundle(
+    *,
     bundle: "Bundle",
     current_id: int | str,
     pages_in_bundle: list[Page],
@@ -310,28 +311,6 @@ def publish_bundle(bundle: "Bundle", *, update_status: bool = True) -> None:
     log(action="wagtail.publish.scheduled", instance=bundle)
 
 
-def extract_content_id_from_bundle_response(response: dict[str, Any], dataset: Any) -> str | None:
-    """Extract content_id from Bundle API response for a specific dataset.
-
-    Args:
-        response: Bundle API response
-        dataset: Dataset instance to find in the response
-
-    Returns:
-        The content_id if found, None otherwise
-    """
-    metadata = response.get("metadata", {})
-    if (
-        metadata.get("dataset_id") == dataset.namespace
-        and metadata.get("edition_id") == dataset.edition
-        and metadata.get("version_id") == dataset.version
-    ):
-        content_id = response.get("id")
-        return content_id if content_id is not None else None
-
-    return None
-
-
 def build_content_item_for_dataset(dataset: Any) -> dict[str, Any]:
     """Build a content item dict for a dataset following Bundle API swagger spec.
 
@@ -353,6 +332,28 @@ def build_content_item_for_dataset(dataset: Any) -> dict[str, Any]:
             "preview": get_data_admin_action_url("preview", dataset.namespace, dataset.edition, dataset.version),
         },
     }
+
+
+def extract_content_id_from_bundle_response(response: dict[str, Any], dataset: Any) -> str | None:
+    """Extract content_id from Bundle API response for a specific dataset.
+
+    Args:
+        response: Bundle API response
+        dataset: Dataset instance to find in the response
+
+    Returns:
+        The content_id if found, None otherwise
+    """
+    metadata = response.get("metadata", {})
+    if (
+        metadata.get("dataset_id") == dataset.namespace
+        and metadata.get("edition_id") == dataset.edition
+        and metadata.get("version_id") == dataset.version
+    ):
+        content_id = response.get("id")
+        return content_id if content_id is not None else None
+
+    return None
 
 
 def get_data_admin_action_url(
