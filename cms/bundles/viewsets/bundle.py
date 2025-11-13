@@ -591,6 +591,9 @@ class BundleInspectView(InspectView):
 
     def get_bundled_datasets_display_value(self) -> "SafeString | str":
         """Returns formatted markup for datasets linked to the Bundle."""
+        if not self.object.has_datasets:
+            return "No datasets in bundle"
+
         if settings.DIS_DATASETS_BUNDLE_API_ENABLED is False:
             # Note: We don't use the @datasets_bundle_api_enabled decorator here because we want to
             # show a message in the inspect view.

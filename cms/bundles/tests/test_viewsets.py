@@ -19,7 +19,7 @@ from wagtail.test.utils.form_data import inline_formset, nested_form_data
 from cms.articles.tests.factories import StatisticalArticlePageFactory
 from cms.bundles.enums import BundleStatus
 from cms.bundles.models import Bundle, BundleTeam
-from cms.bundles.tests.factories import BundleFactory, BundlePageFactory
+from cms.bundles.tests.factories import BundleDatasetFactory, BundleFactory, BundlePageFactory
 from cms.bundles.tests.utils import grant_all_bundle_permissions, make_bundle_viewer
 from cms.bundles.viewsets.bundle_chooser import bundle_chooser_viewset
 from cms.bundles.viewsets.bundle_page_chooser import PagesWithDraftsForBundleChooserWidget, bundle_page_chooser_viewset
@@ -568,8 +568,21 @@ class BundleViewSetInspectTestCase(BundleViewSetTestCaseBase):
 
     @override_settings(DIS_DATASETS_BUNDLE_API_ENABLED=True)
     @patch("cms.bundles.viewsets.bundle.BundleAPIClient")
+    def test_inspect_view__displays_message_when_bundle_has_no_dataset_records(self, mock_api_client):
+        """Checks that the inspect view displays message when bundle.has_datasets is False."""
+        response = self.client.get(reverse("bundle:inspect", args=[self.bundle.pk]))
+
+        self.assertContains(response, "No datasets in bundle")
+        # API should not be called when has_datasets is False
+        mock_api_client.assert_not_called()
+
+    @override_settings(DIS_DATASETS_BUNDLE_API_ENABLED=True)
+    @patch("cms.bundles.viewsets.bundle.BundleAPIClient")
     def test_inspect_view__displays_message_when_no_datasets(self, mock_api_client):
-        """Checks that the inspect view displays message when no datasets in bundle."""
+        """Checks that the inspect view displays message when API returns no datasets."""
+        # Create a bundled_datasets record so has_datasets returns True
+        BundleDatasetFactory(parent=self.bundle)
+
         # Mock the Bundle API response with no datasets
         mock_client_instance = mock_api_client.return_value
         mock_client_instance.get_bundle_contents.return_value = {"items": []}
@@ -582,6 +595,9 @@ class BundleViewSetInspectTestCase(BundleViewSetTestCaseBase):
     @patch("cms.bundles.viewsets.bundle.BundleAPIClient")
     def test_inspect_view__contains_datasets(self, mock_api_client):
         """Checks that the inspect view displays datasets for managers with edit links."""
+        # Create a bundled_datasets record so has_datasets returns True
+        BundleDatasetFactory(parent=self.bundle)
+
         dataset_id_a = "dataset-123"
         dataset_id_b = "dataset-456"
         edition_a = "2024"
@@ -736,6 +752,9 @@ class BundleViewSetInspectTestCase(BundleViewSetTestCaseBase):
     @patch("cms.bundles.viewsets.bundle.BundleAPIClient")
     def test_inspect_view__datasets_table_display(self, mock_api_client):
         """Test that datasets are displayed in a table format with correct headers and data."""
+        # Create a bundled_datasets record so has_datasets returns True
+        BundleDatasetFactory(parent=self.bundle)
+
         # Mock the Bundle API response
         mock_client_instance = mock_api_client.return_value
         mock_client_instance.get_bundle_contents.return_value = {
@@ -779,6 +798,9 @@ class BundleViewSetInspectTestCase(BundleViewSetTestCaseBase):
     @patch("cms.bundles.viewsets.bundle.BundleAPIClient")
     def test_inspect_view__datasets_table_with_multiple_datasets(self, mock_api_client):
         """Test that multiple datasets are displayed correctly in the table."""
+        # Create a bundled_datasets record so has_datasets returns True
+        BundleDatasetFactory(parent=self.bundle)
+
         # Mock the Bundle API response with multiple datasets
         mock_client_instance = mock_api_client.return_value
         mock_client_instance.get_bundle_contents.return_value = {
@@ -824,6 +846,9 @@ class BundleViewSetInspectTestCase(BundleViewSetTestCaseBase):
     @patch("cms.bundles.viewsets.bundle.BundleAPIClient")
     def test_inspect_view__datasets_table_with_missing_metadata(self, mock_api_client):
         """Test that datasets with missing metadata display N/A."""
+        # Create a bundled_datasets record so has_datasets returns True
+        BundleDatasetFactory(parent=self.bundle)
+
         # Mock the Bundle API response with missing metadata
         mock_client_instance = mock_api_client.return_value
         mock_client_instance.get_bundle_contents.return_value = {
@@ -846,6 +871,9 @@ class BundleViewSetInspectTestCase(BundleViewSetTestCaseBase):
     @patch("cms.bundles.viewsets.bundle.BundleAPIClient")
     def test_inspect_view__datasets_for_viewer_without_edit_links(self, mock_api_client):
         """Test that viewers see datasets without edit links."""
+        # Create a bundled_datasets record so has_datasets returns True
+        BundleDatasetFactory(parent=self.in_review_bundle)
+
         # Login as bundle viewer (non-manager)
         self.client.force_login(self.bundle_viewer)
 
@@ -885,6 +913,9 @@ class BundleViewSetInspectTestCase(BundleViewSetTestCaseBase):
     @patch("cms.bundles.viewsets.bundle.BundleAPIClient")
     def test_inspect_view__datasets_for_viewer_approved_no_view_live(self, mock_api_client):
         """Test that viewers see approved datasets without View Live link."""
+        # Create a bundled_datasets record so has_datasets returns True
+        BundleDatasetFactory(parent=self.in_review_bundle)
+
         # Login as bundle viewer (non-manager)
         self.client.force_login(self.bundle_viewer)
 
@@ -917,16 +948,29 @@ class BundleViewSetInspectTestCase(BundleViewSetTestCaseBase):
         self.assertNotContains(response, "View Live")
 
     @override_settings(DIS_DATASETS_BUNDLE_API_ENABLED=False)
-    def test_inspect_view__datasets_when_api_disabled(self):
-        """Test that the inspect view displays a message when the Bundle API is disabled."""
+    def test_inspect_view__datasets_when_api_disabled_with_datasets(self):
+        """Test that the inspect view displays a message when the Bundle API is disabled and there are datasets."""
+        # Create a bundled_datasets record so has_datasets returns True
+        BundleDatasetFactory(parent=self.bundle)
+
         response = self.client.get(reverse("bundle:inspect", args=[self.bundle.pk]))
 
         self.assertContains(response, "Dataset API integration is disabled, can&#x27;t display datasets.")
+
+    @override_settings(DIS_DATASETS_BUNDLE_API_ENABLED=False)
+    def test_inspect_view__datasets_when_api_disabled_without_datasets(self):
+        """Test that the inspect view displays 'No datasets in bundle' when API is disabled and no datasets exist."""
+        response = self.client.get(reverse("bundle:inspect", args=[self.bundle.pk]))
+
+        self.assertContains(response, "No datasets in bundle")
 
     @override_settings(DIS_DATASETS_BUNDLE_API_ENABLED=True)
     @patch("cms.bundles.viewsets.bundle.BundleAPIClient")
     def test_inspect_view__manager_sees_title_as_hyperlink(self, mock_api_client):
         """Test that managers see dataset titles as hyperlinks to data-admin."""
+        # Create a bundled_datasets record so has_datasets returns True
+        BundleDatasetFactory(parent=self.bundle)
+
         # Mock the Bundle API response
         mock_client_instance = mock_api_client.return_value
         mock_client_instance.get_bundle_contents.return_value = {
@@ -957,6 +1001,9 @@ class BundleViewSetInspectTestCase(BundleViewSetTestCaseBase):
     @patch("cms.bundles.viewsets.bundle.BundleAPIClient")
     def test_inspect_view__viewer_sees_title_as_plain_text(self, mock_api_client):
         """Test that viewers see dataset titles as plain text (not hyperlinked)."""
+        # Create a bundled_datasets record so has_datasets returns True
+        BundleDatasetFactory(parent=self.in_review_bundle)
+
         # Login as bundle viewer (non-manager)
         self.client.force_login(self.bundle_viewer)
 
