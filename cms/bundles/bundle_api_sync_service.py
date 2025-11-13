@@ -234,24 +234,24 @@ class BundleAPISyncService:
         """Populate local bundle_api_content_id for items that already exist
         in the API but are missing it locally.
         """
-        to_update = []
+        datasets_to_update = []
         for key in to_link_keys:
             bundled_dataset = cms_items[key]
             content_id = api_index[key]
             if bundled_dataset.bundle_api_content_id != content_id:
                 bundled_dataset.bundle_api_content_id = content_id
-                to_update.append(bundled_dataset)
+                datasets_to_update.append(bundled_dataset)
 
-        if to_update:
+        if datasets_to_update:
             logger.info(
                 "Backfilled missing bundle_api_content_id for existing content items",
                 extra={
                     "id": self.bundle.pk,
                     "api_id": self.api_id,
-                    "count": len(to_update),
+                    "count": len(datasets_to_update),
                 },
             )
-            self.bundle.bundled_datasets.bulk_update(to_update, ["bundle_api_content_id"])
+            self.bundle.bundled_datasets.bulk_update(datasets_to_update, ["bundle_api_content_id"])
 
     def _add_content_items(
         self,
