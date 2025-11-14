@@ -39,7 +39,7 @@ class TestUtils(TestCase):
         self.assertEqual(
             formatted_datasets[0],
             {
-                "title": {"text": lookup_dataset.title, "url": lookup_dataset.website_url},
+                "title": {"text": lookup_dataset.title, "url": lookup_dataset.url_path},
                 "metadata": {"object": {"text": "Dataset"}},
                 "description": f"<p>{lookup_dataset.description}</p>",
             },

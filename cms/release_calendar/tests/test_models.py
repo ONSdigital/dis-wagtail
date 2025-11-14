@@ -695,7 +695,7 @@ class ReleaseCalendarPageRenderTestCase(TestCase):
 
                 self.assertEqual(lookup_dataset.title in str(response.content), is_shown)
                 self.assertEqual(lookup_dataset.description in str(response.content), is_shown)
-                self.assertEqual(lookup_dataset.website_url in str(response.content), is_shown)
+                self.assertEqual(lookup_dataset.url_path in str(response.content), is_shown)
 
                 self.assertEqual(manual_dataset["title"] in str(response.content), is_shown)
                 self.assertEqual(manual_dataset["description"] in str(response.content), is_shown)

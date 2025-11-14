@@ -584,7 +584,7 @@ class StatisticalArticlePageTests(WagtailPageTestCase):
         self.assertIn(self.page.related_data_display_title, content)
         self.assertIn(lookup_dataset.title, content)
         self.assertIn(lookup_dataset.description, content)
-        self.assertIn(lookup_dataset.website_url, content)
+        self.assertIn(lookup_dataset.url_path, content)
         self.assertIn(manual_dataset["title"], content)
         self.assertIn(manual_dataset["description"], content)
         self.assertIn(manual_dataset["url"], content)

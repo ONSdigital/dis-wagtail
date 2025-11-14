@@ -170,7 +170,7 @@ class TopicPageTests(WagtailPageTestCase):
 
         self.assertContains(response, lookup_dataset.title)
         self.assertContains(response, lookup_dataset.description)
-        self.assertContains(response, lookup_dataset.website_url)
+        self.assertContains(response, lookup_dataset.url_path)
 
         self.assertContains(response, manual_dataset["title"])
         self.assertContains(response, manual_dataset["description"])

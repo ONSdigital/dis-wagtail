@@ -585,11 +585,11 @@ class BundleViewSetInspectTestCase(BundleViewSetTestCaseBase):
         self.assertContains(response, bundle_dataset_a.dataset.title)
         self.assertContains(response, bundle_dataset_a.dataset.version)
         self.assertContains(response, bundle_dataset_a.dataset.edition)
-        self.assertContains(response, f'href="{bundle_dataset_a.dataset.website_url}"')
+        self.assertContains(response, f'href="{bundle_dataset_a.dataset.url_path}"')
         self.assertContains(response, bundle_dataset_b.dataset.title)
         self.assertContains(response, bundle_dataset_b.dataset.version)
         self.assertContains(response, bundle_dataset_b.dataset.edition)
-        self.assertContains(response, f'href="{bundle_dataset_b.dataset.website_url}"')
+        self.assertContains(response, f'href="{bundle_dataset_b.dataset.url_path}"')
 
     @override_settings(  # Address race condition in tests caused when calling delete() on a page
         WAGTAILSEARCH_BACKENDS={

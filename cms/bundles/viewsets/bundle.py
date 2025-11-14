@@ -483,7 +483,7 @@ class BundleInspectView(InspectView):
                 format_html_join(
                     "\n",
                     '<li><a href="{}" target="_blank" rel="noopener">{}</a></li>',
-                    ((bundled_dataset.website_url, bundled_dataset) for bundled_dataset in datasets),
+                    ((bundled_dataset.url_path, bundled_dataset) for bundled_dataset in datasets),
                 ),
             )
         return "No datasets in bundle"
