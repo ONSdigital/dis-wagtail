@@ -340,15 +340,29 @@ class BundleAPISyncServiceTests(TestCase):
             "id": "new-bundle-123",
             "etag_header": "new-etag",
         }
-        self.api_client.get_bundle.side_effect = [{"etag_header": "new-etag"}]
-        self.api_client.get_bundle_contents.side_effect = BundleAPIClientError("API Error")
-        self.api_client.delete_bundle.return_value = None
 
-        # When/Then
-        with self.assertRaises(ValidationError):
-            service.sync()
+        cases = [
+            ("bundle fetch failure", self.api_client.get_bundle),
+            ("content fetch failure", self.api_client.get_bundle_contents),
+            ("metadata sync failure", self.api_client.update_bundle),
+        ]
 
-        self.api_client.delete_bundle.assert_called_once_with("new-bundle-123")
+        for case_name, api_call in cases:
+            with self.subTest(case=case_name):
+                # Reset side effects
+                api_call.reset_mock()
+                self.api_client.delete_bundle.reset_mock()
+
+                # Make the specified API call fail
+                api_call.side_effect = BundleAPIClientError("API Error")
+
+                self.api_client.delete_bundle.return_value = None
+
+                # When/Then
+                with self.assertRaises(ValidationError):
+                    service.sync()
+
+                self.api_client.delete_bundle.assert_called_once_with("new-bundle-123")
 
     def test_deletes_remote_bundle_when_no_datasets_remain(self):
         """Test sync deletes remote bundle when CMS bundle has no datasets."""

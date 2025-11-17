@@ -82,10 +82,10 @@ class BundleAPISyncService:
         if not self.api_id:
             return
 
-        # 2. Make sure we hold the latest ETag
-        etag_stale = self._refresh_local_etag_if_stale()
-
         try:
+            # 2. Make sure we hold the latest ETag
+            etag_stale = self._refresh_local_etag_if_stale()
+
             # 3. State-only path for immutable bundles
             if self.bundle.status in {BundleStatus.APPROVED, BundleStatus.PUBLISHED}:
                 # Approved and Published bundles are locked - CMS disallows edits to their
