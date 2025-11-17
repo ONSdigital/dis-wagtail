@@ -3,6 +3,7 @@ from datetime import datetime
 from typing import TYPE_CHECKING, Any
 
 from django import forms
+from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.template.defaultfilters import pluralize
 from django.utils import timezone
@@ -10,12 +11,14 @@ from django.utils import timezone
 from cms.bundles.clients.api import (
     BundleAPIClient,
     BundleAPIClientError,
-    build_content_item_for_dataset,
-    extract_content_id_from_bundle_response,
 )
 from cms.bundles.decorators import datasets_bundle_api_enabled
 from cms.bundles.enums import ACTIVE_BUNDLE_STATUS_CHOICES, EDITABLE_BUNDLE_STATUSES, BundleStatus
-from cms.bundles.utils import build_bundle_data_for_api
+from cms.bundles.utils import (
+    build_bundle_data_for_api,
+    build_content_item_for_dataset,
+    extract_content_id_from_bundle_response,
+)
 from cms.core.forms import DeduplicateInlinePanelAdminForm
 from cms.workflows.models import ReadyToPublishGroupTask
 
@@ -158,6 +161,10 @@ class BundleAdminForm(DeduplicateInlinePanelAdminForm):
     @datasets_bundle_api_enabled
     def _validate_bundled_datasets_status(self) -> None:
         """Validate that all bundled datasets are approved when bundle is set to approved status."""
+        # Skip validation if the feature flag is disabled
+        if not settings.BUNDLE_DATASET_STATUS_VALIDATION_ENABLED:
+            return
+
         # Skip validation if bundle doesn't have an API ID yet, or it doesn't have any datasets
         if not self.instance.bundle_api_bundle_id and not self._has_datasets():
             return
@@ -354,7 +361,9 @@ class BundleAdminForm(DeduplicateInlinePanelAdminForm):
             return
 
         try:
-            response = client.update_bundle_state(bundle.bundle_api_bundle_id, bundle.status, bundle.bundle_api_etag)
+            response = client.update_bundle_state(
+                bundle.bundle_api_bundle_id, state=bundle.status, etag=bundle.bundle_api_etag
+            )
 
             bundle.bundle_api_etag = response["etag_header"]
             bundle.save(update_fields=["bundle_api_etag"])
