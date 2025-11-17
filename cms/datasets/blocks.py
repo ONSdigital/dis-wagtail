@@ -13,7 +13,7 @@ from wagtail.blocks import (
     URLBlock,
 )
 
-from cms.core.url_utils import get_url_path, validate_ons_url_struct_block
+from cms.core.url_utils import extract_url_path, validate_ons_url_struct_block
 from cms.datasets.views import dataset_chooser_viewset
 
 DatasetChooserBlock = dataset_chooser_viewset.get_block_class(
@@ -55,7 +55,7 @@ class DatasetStoryBlock(StreamBlock):
         url_paths = defaultdict(set)
         for block_index, block in enumerate(cleaned_value):
             url_path = (
-                block.value.url_path if block.block_type == "dataset_lookup" else get_url_path(block.value["url"])
+                block.value.url_path if block.block_type == "dataset_lookup" else extract_url_path(block.value["url"])
             )
             url_paths[url_path].add(block_index)
 
