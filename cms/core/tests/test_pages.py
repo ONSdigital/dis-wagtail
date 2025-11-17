@@ -100,6 +100,18 @@ class HomePageTests(WagtailPageTestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(len(extract_datalayer_pushed_values(response.text)), 0)
 
+    def test_language_toggle_welsh_link(self):
+        """Test that the Welsh language toggle link is present on the home page."""
+        response = self.client.get("/")
+        self.assertEqual(response.status_code, HTTPStatus.OK)
+        self.assertContains(response, 'href="/cy"')
+
+    def test_language_toggle_english_link(self):
+        """Test that the English language toggle link is present on the Welsh home page."""
+        response = self.client.get("/cy")
+        self.assertEqual(response.status_code, HTTPStatus.OK)
+        self.assertContains(response, 'href="/"')
+
 
 class PageCanonicalUrlTests(WagtailPageTestCase):
     @classmethod
