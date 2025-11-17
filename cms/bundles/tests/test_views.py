@@ -576,6 +576,10 @@ class PreviewBundleReleaseCalendarViewTestCase(WagtailTestUtils, TestCase):
         )
 
 
+@override_settings(
+    DIS_DATASETS_BUNDLE_API_ENABLED=True,
+    DIS_DATASETS_BUNDLE_API_BASE_URL="https://test-api.example.com",
+)
 class PreviewBundleDatasetViewTestCase(WagtailTestUtils, TestCase):
     @classmethod
     def setUpTestData(cls):
