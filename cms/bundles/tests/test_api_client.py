@@ -370,22 +370,6 @@ class BundleAPIClientDisabledTests(TestCase):
         )
 
 
-class ContentItemUtilityTests(TestCase):
-    """Tests for content item utility functions."""
-
-    def setUp(self):
-        # Create a mock dataset object
-        self.dataset = type(
-            "Dataset",
-            (),
-            {
-                "namespace": "cpih",
-                "edition": "time-series",
-                "version": 1,
-            },
-        )()
-
-
 @override_settings(DIS_DATASETS_BUNDLE_API_ENABLED=True)
 class BundleAPIClientPaginationTests(TestCase):
     def setUp(self):

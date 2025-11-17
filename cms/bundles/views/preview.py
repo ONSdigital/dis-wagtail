@@ -16,6 +16,7 @@ from cms.bundles.clients.api import BundleAPIClient
 from cms.bundles.models import Bundle
 from cms.bundles.permissions import user_can_manage_bundles, user_can_preview_bundle
 from cms.bundles.utils import (
+    get_dataset_preview_key,
     get_preview_items_for_bundle,
     serialize_bundle_content_for_preview_release_calendar_page,
     serialize_datasets_for_release_calendar_page,
@@ -221,7 +222,7 @@ class PreviewBundleDatasetView(BundleContentsMixin, TemplateView):
         if not iframe_url:
             messages.error(
                 request,
-                f"Dataset {dataset_id} (edition: {edition_id}, version: {version_id}) "
+                f"Dataset {dataset_id} (Edition: {edition_id}, Ver: {version_id}) "
                 "could not be found in this bundle or does not have a preview available.",
             )
             # Return to the bundle inspect page if we cannot show a preview of the dataset
@@ -233,7 +234,7 @@ class PreviewBundleDatasetView(BundleContentsMixin, TemplateView):
         pages_in_bundle = self.get_pages_in_bundle(bundle)
 
         # Create a unique identifier for this dataset to mark it as selected
-        dataset_key = f"dataset-{dataset_id}-{edition_id}-{version_id}"
+        dataset_key = get_dataset_preview_key(dataset_id, edition_id, version_id)
 
         context = {
             "view": self,  # for TemplateView compatibility

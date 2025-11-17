@@ -8,6 +8,7 @@ from cms.bundles.utils import (
     extract_content_id_from_bundle_response,
     get_bundleable_page_types,
     get_data_admin_action_url,
+    get_dataset_preview_key,
     get_pages_in_active_bundles,
 )
 from cms.methodology.models import MethodologyPage
@@ -140,3 +141,18 @@ class DatasetContentItemUtilityTests(TestCase):
         """Test extracting content_id when the response has no contents."""
         content_id = extract_content_id_from_bundle_response({}, self.dataset)
         self.assertIsNone(content_id)
+
+
+class DatasetPreviewKeyTests(TestCase):
+    """Tests for the get_dataset_preview_key function."""
+
+    def test_get_dataset_preview_key_generates_correct_format(self):
+        """Test that the function generates the correct preview key format."""
+        dataset_id = "cpih"
+        edition_id = "time-series"
+        version_id = "1"
+
+        key = get_dataset_preview_key(dataset_id, edition_id, version_id)
+        expected = "dataset-cpih-time-series-1"
+
+        self.assertEqual(key, expected)

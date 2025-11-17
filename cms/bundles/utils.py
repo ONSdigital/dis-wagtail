@@ -139,6 +139,20 @@ def serialize_datasets_for_release_calendar_page(bundle: "Bundle") -> list[dict[
     ]
 
 
+def get_dataset_preview_key(dataset_id: str, edition_id: str, version_id: str) -> str:
+    """Generates a unique preview key for a dataset based on its identifiers.
+
+    Args:
+        dataset_id (str): The unique identifier for the dataset.
+        edition_id (str): The edition identifier for the dataset.
+        version_id (str): The version identifier for the dataset.
+
+    Returns:
+        str: A unique preview key for the dataset.
+    """
+    return f"dataset-{dataset_id}-{edition_id}-{version_id}"
+
+
 def get_preview_items_for_bundle(
     *,
     bundle: "Bundle",
@@ -190,7 +204,7 @@ def get_preview_items_for_bundle(
             continue
 
         title = metadata.get("title", "Untitled Dataset")
-        dataset_key = f"dataset-{dataset_id}-{edition_id}-{version_id}"
+        dataset_key = get_dataset_preview_key(dataset_id, edition_id, version_id)
         preview_items.append(
             {
                 "text": f"{title} (Dataset)",
