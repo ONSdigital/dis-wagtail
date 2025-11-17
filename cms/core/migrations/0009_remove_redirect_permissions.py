@@ -11,20 +11,16 @@ def remove_redirect_permissions(apps, schema_editor):
     Group = apps.get_model("auth", "Group")
     Permission = apps.get_model("auth", "Permission")
 
-    try:
-        publishing_admins = Group.objects.get(name=settings.PUBLISHING_ADMINS_GROUP_NAME)
+    publishing_admins = Group.objects.get(name=settings.PUBLISHING_ADMINS_GROUP_NAME)
 
-        # Find all redirect-related permissions
-        redirect_permissions = Permission.objects.filter(
-            content_type__app_label="wagtailredirects", content_type__model="redirect"
-        )
+    # Find all redirect-related permissions
+    redirect_permissions = Permission.objects.filter(
+        content_type__app_label="wagtailredirects", content_type__model="redirect"
+    )
 
-        # Remove each permission from the Publishing Admins group
-        for permission in redirect_permissions:
-            publishing_admins.permissions.remove(permission)
-
-    except Group.DoesNotExist:
-        pass
+    # Remove each permission from the Publishing Admins group
+    for permission in redirect_permissions:
+        publishing_admins.permissions.remove(permission)
 
 
 def restore_redirect_permissions(apps, schema_editor):
@@ -39,24 +35,20 @@ def restore_redirect_permissions(apps, schema_editor):
 
     PERMISSION_TYPES = ["add", "change", "delete"]
 
-    try:
-        publishing_admins = Group.objects.get(name=settings.PUBLISHING_ADMINS_GROUP_NAME)
+    publishing_admins = Group.objects.get(name=settings.PUBLISHING_ADMINS_GROUP_NAME)
 
-        # Get the redirect model's content type
-        redirect_model = apps.get_model("wagtailredirects", "Redirect")
-        content_type = ContentType.objects.get_for_model(redirect_model)
+    # Get the redirect model's content type
+    redirect_model = apps.get_model("wagtailredirects", "Redirect")
+    content_type = ContentType.objects.get_for_model(redirect_model)
 
-        # Re-add each permission type
-        for permission_type in PERMISSION_TYPES:
-            permission, created = Permission.objects.get_or_create(
-                content_type=content_type,
-                codename=f"{permission_type}_redirect",
-                defaults={"name": f"Can {permission_type} redirect"},
-            )
-            publishing_admins.permissions.add(permission)
-
-    except Group.DoesNotExist:
-        pass
+    # Re-add each permission type
+    for permission_type in PERMISSION_TYPES:
+        permission, created = Permission.objects.get_or_create(
+            content_type=content_type,
+            codename=f"{permission_type}_redirect",
+            defaults={"name": f"Can {permission_type} redirect"},
+        )
+        publishing_admins.permissions.add(permission)
 
 
 class Migration(migrations.Migration):
