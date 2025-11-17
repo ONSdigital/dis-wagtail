@@ -207,7 +207,7 @@ def get_preview_items_for_bundle(
         dataset_key = get_dataset_preview_key(dataset_id, edition_id, version_id)
         preview_items.append(
             {
-                "text": f"{title} (Dataset)",
+                "text": f"{title} ({edition_id.replace('-', ' ').title()} · v{version_id} · Dataset)",
                 "value": reverse(
                     "bundles:preview_dataset",
                     args=[bundle.id, dataset_id, edition_id, version_id],

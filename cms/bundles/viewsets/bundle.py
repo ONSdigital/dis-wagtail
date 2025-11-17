@@ -519,8 +519,7 @@ class BundleInspectView(InspectView):
                     if state == BundleContentItemState.PUBLISHED:
                         view_url = f"/datasets/{dataset_id}/editions/{edition_id}/versions/{version_id}"
                         item["action_button"] = format_html(
-                            '<a href="{}" class="button button-small button-secondary" target="_blank" '
-                            'rel="noopener">View Live</a>',
+                            '<a href="{}" class="button button-small button-secondary">View Live</a>',
                             view_url,
                         )
                     elif preview_url:
