@@ -1,6 +1,6 @@
 import contextlib
 import logging
-from collections.abc import Iterator, Mapping
+from collections.abc import Iterator, Mapping, Sequence
 from http import HTTPStatus
 from typing import Any
 
@@ -20,7 +20,7 @@ class BundleAPIMessage:
 class BundleAPIClientError(Exception):
     """Base exception for BundleAPIClient errors."""
 
-    def __init__(self, message: str, errors: list[dict] | None = None):
+    def __init__(self, message: str, errors: Sequence[dict] | None = None):
         """Initialize the exception with a message and optional error details.
 
         Args:
@@ -28,7 +28,7 @@ class BundleAPIClientError(Exception):
             errors: Optional list of error details from the API response
         """
         super().__init__(message)
-        self.errors: list[dict | str] = errors or [message]
+        self.errors: Sequence[dict] = errors or [{"description": message}]
 
 
 class BundleAPIClientError404(BundleAPIClientError):

@@ -58,8 +58,7 @@ def add_exception_cause_to_form(exception: Exception, *, form: "BaseForm") -> No
         return
 
     for error in cause.errors:
-        desc = error.get("description") if isinstance(error, dict) else error
-        desc = desc or "Unknown API Error"
+        desc = error.get("description") or "Unknown API Error"
         form.add_error(
             field=None,
             error=textwrap.shorten(desc, width=250, placeholder="..."),  # limit chars to avoid overly long errors
