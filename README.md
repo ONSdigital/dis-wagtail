@@ -205,9 +205,8 @@ you may need to remove or rename the file, or comment out specific variables if 
 > [!NOTE]
 > When running the application locally in a virtual environment via Poetry the `.env` file will not be picked up automatically.
 > For this to work you'll need to install the [poetry-plugin-dotenv](https://github.com/pivoshenko/poetry-plugin-dotenv).
-> However, if you installed Poetry with `brew` rather than `pip` that currently isn't going to
-> work (see the [issue](https://github.com/pivoshenko/poetry-plugin-dotenv/issues/327)) and you'll need to install an older and
-> seemingly no longer maintained [poetry-dotenv-plugin](https://github.com/mpeteuil/poetry-dotenv-plugin).
+> Note that this will not work if you have installed poetry via `brew`, it is recommended to install poetry via either `pipx` or the official installation
+> script, see the [poetry installation docs](https://python-poetry.org/docs/#installation).
 
 ### External services
 
