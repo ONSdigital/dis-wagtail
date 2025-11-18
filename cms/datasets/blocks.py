@@ -13,7 +13,7 @@ from wagtail.blocks import (
     URLBlock,
 )
 
-from cms.core.url_utils import normalise_url, validate_ons_url_struct_block
+from cms.core.url_utils import extract_url_path, validate_ons_url_struct_block
 from cms.datasets.views import dataset_chooser_viewset
 
 DatasetChooserBlock = dataset_chooser_viewset.get_block_class(
@@ -51,15 +51,18 @@ class DatasetStoryBlock(StreamBlock):
         # Validate there are no duplicate datasets,
         # including between manual and looked up datasets referencing the same URL
 
-        # For each dataset URL, record the indices of the blocks it appears in
-        urls = defaultdict(set)
+        # For each dataset URL path, record the indices of the blocks it appears in
+        url_paths = defaultdict(set)
         for block_index, block in enumerate(cleaned_value):
-            url = block.value.website_url if block.block_type == "dataset_lookup" else block.value["url"]
-            url = normalise_url(url)
-            urls[url].add(block_index)
+            url_path = (
+                block.value.url_path
+                if block.block_type == "dataset_lookup"
+                else extract_url_path(block.value["url"]).lower()
+            )
+            url_paths[url_path].add(block_index)
 
         block_errors = {}
-        for block_indices in urls.values():
+        for block_indices in url_paths.values():
             # Add a block error for any index which contains a duplicate URL,
             # so that the validation error messages appear on the actual duplicate entries
             if len(block_indices) > 1:
