@@ -2,7 +2,13 @@ from django.forms import ValidationError
 from django.test import TestCase, override_settings
 from wagtail.blocks import CharBlock, StructBlock, URLBlock
 
-from cms.core.url_utils import is_hostname_in_domain, normalise_url, validate_ons_url, validate_ons_url_struct_block
+from cms.core.url_utils import (
+    extract_url_path,
+    is_hostname_in_domain,
+    normalise_url,
+    validate_ons_url,
+    validate_ons_url_struct_block,
+)
 
 
 class TestIsHostnameInDomain(TestCase):
@@ -115,3 +121,17 @@ class TestNormaliseUrl(TestCase):
         url_with_prefixes = "https://www.example.com"
         url_without_prefixes = "example.com"
         self.assertEqual(normalise_url(url_with_prefixes), normalise_url(url_without_prefixes))
+
+
+class TestGetUrlPath(TestCase):
+    def test_extract_url_path(self):
+        test_cases = [
+            ("https://example.com/path/to/resource", "/path/to/resource"),
+            ("https://example.com/path/with/trailing/slash/", "/path/with/trailing/slash"),
+            ("https://example.com/", ""),
+            ("https://example.com", ""),
+        ]
+
+        for url, expected_path in test_cases:
+            with self.subTest(url=url):
+                self.assertEqual(extract_url_path(url), expected_path)
