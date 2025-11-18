@@ -28,7 +28,7 @@ from cms.bundles.notifications.slack import (
     notify_slack_of_status_change,
 )
 from cms.bundles.permissions import user_can_manage_bundles, user_can_preview_bundle
-from cms.bundles.utils import publish_bundle
+from cms.bundles.utils import get_data_admin_action_url, publish_bundle
 from cms.core.custom_date_format import ons_date_format
 
 if TYPE_CHECKING:
@@ -516,8 +516,9 @@ class BundleInspectView(InspectView):
 
                 if dataset_id and edition_id and version_id:
                     item["edit_url"] = links.get("edit") or "#"
-                    if state == BundleContentItemState.PUBLISHED:
-                        view_url = f"/datasets/{dataset_id}/editions/{edition_id}/versions/{version_id}"
+                    if self.object.status == BundleStatus.PUBLISHED:
+                        # TODO: Verify preview link is correct
+                        view_url = get_data_admin_action_url("preview", dataset_id, edition_id, version_id)
                         item["action_button"] = format_html(
                             '<a href="{}" class="button button-small button-secondary">View Live</a>',
                             view_url,

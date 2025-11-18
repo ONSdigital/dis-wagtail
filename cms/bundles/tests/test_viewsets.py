@@ -595,6 +595,9 @@ class BundleViewSetInspectTestCase(BundleViewSetTestCaseBase):
     @patch("cms.bundles.viewsets.bundle.BundleAPIClient")
     def test_inspect_view__contains_datasets(self, mock_api_client):
         """Checks that the inspect view displays datasets for managers with edit links."""
+        # Set bundle to published status so "View Live" button appears
+        self.bundle.status = BundleStatus.PUBLISHED
+        self.bundle.save(update_fields=["status"])
         # Create a bundled_datasets record so has_datasets returns True
         BundleDatasetFactory(parent=self.bundle)
 
@@ -798,6 +801,9 @@ class BundleViewSetInspectTestCase(BundleViewSetTestCaseBase):
     @patch("cms.bundles.viewsets.bundle.BundleAPIClient")
     def test_inspect_view__datasets_table_with_multiple_datasets(self, mock_api_client):
         """Test that multiple datasets are displayed correctly in the table."""
+        # Set bundle to published status so "View Live" button appears
+        self.bundle.status = BundleStatus.PUBLISHED
+        self.bundle.save(update_fields=["status"])
         # Create a bundled_datasets record so has_datasets returns True
         BundleDatasetFactory(parent=self.bundle)
 
@@ -904,10 +910,6 @@ class BundleViewSetInspectTestCase(BundleViewSetTestCaseBase):
 
         # Should NOT contain data-admin link
         self.assertNotContains(response, "/data-admin/series/")
-
-        # Should contain View Live link for published datasets
-        self.assertContains(response, "View Live")
-        self.assertContains(response, 'href="/datasets/dataset-123/editions/2024/versions/1"')
 
     @override_settings(DIS_DATASETS_BUNDLE_API_ENABLED=True)
     @patch("cms.bundles.viewsets.bundle.BundleAPIClient")
