@@ -194,20 +194,19 @@ class BundleAPIClient:
             Tuple of (formatted error message, list of error details or None)
         """
         status_code = error.response.status_code
+        try:
+            status_phrase = HTTPStatus(status_code).phrase
+        except ValueError:
+            # Handle non-standard or unknown status codes gracefully
+            status_phrase = "Unknown Error"
+
         # This message is shown to the user, we don't want to leak URLs or sensitive info
-        base_msg = f"HTTP {status_code} error"
+        formatted_msg = f"HTTP {status_code} error: {status_phrase}"
 
         # Try to extract error details from response body
         errors: list | None = None
         with contextlib.suppress(ValueError, AttributeError, requests.exceptions.JSONDecodeError):
             errors = error.response.json().get("errors")
-
-        try:
-            status_phrase = HTTPStatus(status_code).phrase
-            formatted_msg = f"{base_msg}: {status_phrase}"
-        except ValueError:
-            # Handle non-standard or unknown status codes gracefully
-            formatted_msg = f"{base_msg}: Unknown Error"
 
         return formatted_msg, errors
 

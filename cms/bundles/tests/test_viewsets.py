@@ -511,10 +511,11 @@ class BundleViewSetBundleAPIErrorTestCase(BundleViewSetTestCaseBase):
 
         return BundleAPIClientError("API Error", errors=errors)
 
+    # pylint: disable=too-many-locals
     @patch("cms.bundles.forms.BundleAdminForm.save")
     def test_add_and_edit_views_surface_bundle_api_errors(self, mock_save):
         """Both add and edit views should surface Bundle API errors on the form."""
-        # Eexpected banner prefixes for each action
+        # Expected banner prefixes for each action
         error_message_for_action = {
             "action-create": "The bundle could not be created due to errors.",
             "action-edit": "The bundle could not be saved due to errors.",
