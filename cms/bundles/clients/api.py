@@ -136,7 +136,7 @@ class BundleAPIClient:
                 "error_message": error_msg,
             }
             if errors:
-                logger_extra["errors"] = errors
+                logger_extra["api_errors"] = errors
 
             logger.exception(
                 "HTTP error occurred",
