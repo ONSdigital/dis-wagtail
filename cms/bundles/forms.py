@@ -175,14 +175,14 @@ class BundleAdminForm(DeduplicateInlinePanelAdminForm):
         datasets_not_approved = self._get_unapproved_bundle_contents()
 
         if datasets_not_approved:
-            # Return the original status
-            self.cleaned_data["status"] = self.instance.status
-            dataset_list = ", ".join(datasets_not_approved)
             num_not_approved = len(datasets_not_approved)
-            raise ValidationError(
+            errors = [
                 f"Cannot approve the bundle with {num_not_approved} dataset{pluralize(num_not_approved)} "
-                f"not ready to be published: {dataset_list}"
-            )
+                f"not ready to be published:",
+                *datasets_not_approved,
+            ]
+
+            raise ValidationError(errors)
 
     def _validate_bundled_pages(self) -> None:
         """Validates related pages to ensure the selected page is not in another active bundle."""
@@ -227,7 +227,6 @@ class BundleAdminForm(DeduplicateInlinePanelAdminForm):
             raise ValidationError("Cannot approve the bundle without any pages or datasets")
 
         if num_pages_not_ready:
-            self.cleaned_data["status"] = self.instance.status
             raise ValidationError(
                 f"Cannot approve the bundle with {num_pages_not_ready} "
                 f"page{pluralize(num_pages_not_ready)} not ready to be published."

@@ -165,8 +165,8 @@ class BundleDatasetValidationTestCase(TestCase):
             form,
             None,
             [
-                "Cannot approve the bundle with 1 dataset not ready to be published: "
-                f"Test Dataset (Edition: {dataset.edition}, Status: DRAFT)"
+                "Cannot approve the bundle with 1 dataset not ready to be published:",
+                f"Test Dataset (Edition: {dataset.edition}, Status: DRAFT)",
             ],
         )
 
@@ -224,8 +224,8 @@ class BundleDatasetValidationTestCase(TestCase):
             form,
             None,
             [
-                "Cannot approve the bundle with 1 dataset not ready to be published: "
-                f"Draft Dataset (Edition: {dataset_2.edition}, Status: DRAFT)"
+                "Cannot approve the bundle with 1 dataset not ready to be published:",
+                f"Draft Dataset (Edition: {dataset_2.edition}, Status: DRAFT)",
             ],
         )
 
@@ -283,9 +283,9 @@ class BundleDatasetValidationTestCase(TestCase):
             form,
             None,
             [
-                "Cannot approve the bundle with 2 datasets not ready to be published: "
-                f"Draft Dataset 1 (Edition: {dataset_1.edition}, Status: DRAFT), "
-                f"Draft Dataset 2 (Edition: {dataset_2.edition}, Status: DRAFT)"
+                "Cannot approve the bundle with 2 datasets not ready to be published:",
+                f"Draft Dataset 1 (Edition: {dataset_1.edition}, Status: DRAFT)",
+                f"Draft Dataset 2 (Edition: {dataset_2.edition}, Status: DRAFT)",
             ],
         )
 
@@ -304,7 +304,7 @@ class BundleDatasetValidationTestCase(TestCase):
         self.assertFormError(
             form,
             None,
-            ["Cannot approve the bundle with 1 dataset not ready to be published: Bundle content validation failed"],
+            ["Cannot approve the bundle with 1 dataset not ready to be published:", "Bundle content validation failed"],
         )
 
     def test_dataset_validation_only_runs_when_approving(self):

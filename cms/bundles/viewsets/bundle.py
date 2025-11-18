@@ -34,6 +34,7 @@ from cms.datasets.models import Dataset
 
 if TYPE_CHECKING:
     from django.db.models.fields import Field
+    from django.forms import BaseForm
     from django.http import HttpResponseBase
     from django.template.response import TemplateResponse
     from django.utils.safestring import SafeString
@@ -42,8 +43,23 @@ if TYPE_CHECKING:
     from cms.bundles.forms import BundleAdminForm
     from cms.bundles.models import BundlesQuerySet
 
-
 logger = logging.getLogger(__name__)
+
+
+def add_exception_cause_to_form(exception: Exception, *, form: "BaseForm") -> None:
+    """Adds errors from a BundleAPIClientError exception cause to the form errors."""
+    cause = getattr(exception, "__cause__", None)
+    if not cause:
+        return
+
+    # Currently only handle BundleAPIClientError causes
+    if not isinstance(cause, BundleAPIClientError):
+        return
+
+    for error in cause.errors:
+        desc = error.get("description") if isinstance(error, dict) else error
+        desc = desc or "Unknown API Error"
+        form.add_error(None, desc[:250])  # limit chars to avoid overly long errors
 
 
 class BundleCreateView(CreateView):
@@ -63,7 +79,8 @@ class BundleCreateView(CreateView):
                 self.object = self.save_instance()  # pylint: disable=attribute-defined-outside-init
         except Exception as e:  # pylint: disable=broad-exception-caught
             error = getattr(e, "message", str(e))
-            error_message = f"Could not create the bundle due to one or more Bundle API errors: {error}"
+            error_message = f"{self.get_error_message()} {error}."
+            add_exception_cause_to_form(e, form=form)
             messages.validation_error(self.request, error_message, form)
             error_response: HttpResponseBase = self.render_to_response(self.get_context_data(form=form))
             return error_response
@@ -150,7 +167,9 @@ class BundleEditView(EditView):
             with transaction.atomic():
                 self.object = self.save_instance()  # pylint: disable=attribute-defined-outside-init
         except Exception as e:  # pylint: disable=broad-exception-caught
-            error_message = f"Could not update bundle due to one or more errors: {getattr(e, 'message', str(e))}"
+            error = getattr(e, "message", str(e))
+            error_message = f"{self.get_error_message()} {error}."
+            add_exception_cause_to_form(e, form=form)
             messages.validation_error(self.request, error_message, form)
             error_response: HttpResponseBase = self.render_to_response(self.get_context_data(form=form))
             return error_response
@@ -520,7 +539,8 @@ class BundleDeleteView(DeleteView):
             response: HttpResponseBase = super().form_valid(form)
             return response
         except ValidationError as e:
-            error_message = f"Could not delete bundle due to one or more errors: {getattr(e, 'message', str(e))}"
+            error = getattr(e, "message", str(e))
+            error_message = f"The bundle could not be deleted due to errors. {error}."
             messages.error(self.request, error_message)
             return redirect(reverse(self.index_url_name))
 
