@@ -65,5 +65,5 @@ def normalise_url(url: str) -> str:
 def extract_url_path(url: str) -> str:
     """Extracts and returns the path component of a URL."""
     parsed_url = urlparse(url)
-    path = parsed_url.path.lower().rstrip("/")  # Treat paths with and without trailing slashes and caps as equivalent
+    path = parsed_url.path.rstrip("/")  # Treat paths with and without trailing slashes as equivalent
     return path

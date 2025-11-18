@@ -128,7 +128,6 @@ class TestGetUrlPath(TestCase):
         test_cases = [
             ("https://example.com/path/to/resource", "/path/to/resource"),
             ("https://example.com/path/with/trailing/slash/", "/path/with/trailing/slash"),
-            ("https://example.com/path/WITH/CAPS", "/path/with/caps"),
             ("https://example.com/", ""),
             ("https://example.com", ""),
         ]
