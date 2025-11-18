@@ -1,4 +1,5 @@
 from datetime import UTC, datetime
+
 from django.test import TestCase
 
 from cms.articles.models import StatisticalArticlePage
