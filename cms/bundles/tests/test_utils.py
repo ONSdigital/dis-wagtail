@@ -258,21 +258,21 @@ class BundleAPIBundleMetadataTests(TestCase):
         This validates the core purpose of BundleAPIBundleMetadata: enabling reliable
         comparison of bundle metadata from different sources (CMS vs Bundle API).
         """
-        data1 = BundleAPIBundleMetadata(
+        data_1 = BundleAPIBundleMetadata(
             title="Test",
             state="DRAFT",
             preview_teams=[{"id": "b"}, {"id": "a"}],
             scheduled_at=datetime(2025, 12, 1, 10, 0, 0, tzinfo=UTC),
         )
 
-        data2 = BundleAPIBundleMetadata(
+        data_2 = BundleAPIBundleMetadata(
             title="Test",
             state="DRAFT",
             preview_teams=[{"id": "a"}, {"id": "b"}],  # Different order
             scheduled_at="2025-12-01T11:00:00+01:00",  # Same instant in +1 offset
         )
 
-        self.assertEqual(data1.as_dict(), data2.as_dict())
+        self.assertEqual(data_1.as_dict(), data_2.as_dict())
 
 
 class BundleAPIBundleMetadataHelperTests(TestCase):

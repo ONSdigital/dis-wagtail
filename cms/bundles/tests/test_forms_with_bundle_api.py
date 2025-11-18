@@ -76,7 +76,7 @@ class BundleFormDelegationToBundleSyncServiceTestCase(TestCase):
             mock_svc_cls.assert_not_called()
 
 
-@override_settings(DIS_DATASETS_BUNDLE_API_ENABLED=True)
+@override_settings(DIS_DATASETS_BUNDLE_API_ENABLED=True, BUNDLE_DATASET_STATUS_VALIDATION_ENABLED=True)
 class BundleDatasetValidationTestCase(TestCase):
     """Test cases for dataset validation in the BundleAdminForm."""
 
@@ -377,13 +377,12 @@ class BundleDatasetValidationTestCase(TestCase):
         self.mock_client.get_bundle_contents.assert_called_once_with("test-bundle-123")
 
 
-@override_settings(DIS_DATASETS_BUNDLE_API_ENABLED=False)
 class BundleDatasetValidationDisabledTestCase(TestCase):
-    """Test cases for dataset validation when API is disabled."""
+    """Test cases for dataset validation when API or validation is disabled."""
 
     @classmethod
     def setUpTestData(cls):
-        cls.bundle = BundleFactory(name="Test Bundle")
+        cls.bundle = BundleFactory(name="Test Bundle", bundle_api_bundle_id="test-bundle-123")
         cls.form_class = get_edit_handler(Bundle).get_form_class()
         cls.approver = UserFactory()
 
@@ -395,8 +394,8 @@ class BundleDatasetValidationDisabledTestCase(TestCase):
     def tearDown(self):
         self.patcher.stop()
 
-    def test_dataset_validation_skipped_when_api_disabled(self):
-        """Test that dataset validation is skipped when DIS_DATASETS_BUNDLE_API_ENABLED is False."""
+    def _assert_validation_skipped(self):
+        """Helper method to assert dataset validation is skipped."""
         bundle_dataset = BundleDatasetFactory(parent=self.bundle)
 
         raw_data = {
@@ -414,3 +413,13 @@ class BundleDatasetValidationDisabledTestCase(TestCase):
         self.assertTrue(form.is_valid(), form.errors)
         # API client should not be called when disabled
         self.mock_client.get_bundle_contents.assert_not_called()
+
+    @override_settings(DIS_DATASETS_BUNDLE_API_ENABLED=False, BUNDLE_DATASET_STATUS_VALIDATION_ENABLED=True)
+    def test_dataset_validation_skipped_when_api_disabled(self):
+        """Test that dataset validation is skipped when DIS_DATASETS_BUNDLE_API_ENABLED is False."""
+        self._assert_validation_skipped()
+
+    @override_settings(DIS_DATASETS_BUNDLE_API_ENABLED=True, BUNDLE_DATASET_STATUS_VALIDATION_ENABLED=False)
+    def test_dataset_validation_skipped_when_validation_flag_disabled(self):
+        """Test that dataset validation is skipped when BUNDLE_DATASET_STATUS_VALIDATION_ENABLED is False."""
+        self._assert_validation_skipped()
