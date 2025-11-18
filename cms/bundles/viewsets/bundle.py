@@ -1,4 +1,5 @@
 import logging
+import textwrap
 import time
 from typing import TYPE_CHECKING, Any, ClassVar, Optional, cast
 
@@ -59,7 +60,10 @@ def add_exception_cause_to_form(exception: Exception, *, form: "BaseForm") -> No
     for error in cause.errors:
         desc = error.get("description") if isinstance(error, dict) else error
         desc = desc or "Unknown API Error"
-        form.add_error(None, desc[:250])  # limit chars to avoid overly long errors
+        form.add_error(
+            field=None,
+            error=textwrap.shorten(desc, width=250, placeholder="..."),  # limit chars to avoid overly long errors
+        )
 
 
 class BundleCreateView(CreateView):

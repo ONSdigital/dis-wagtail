@@ -1,5 +1,5 @@
 # pylint: disable=too-many-lines
-
+import textwrap
 from datetime import UTC, datetime, timedelta
 from http import HTTPStatus
 from typing import ClassVar
@@ -496,12 +496,14 @@ class BundleViewSetEditTestCase(BundleViewSetTestCaseBase):
 
 
 class BundleViewSetBundleAPIErrorTestCase(BundleViewSetTestCaseBase):
-    @staticmethod
-    def _build_api_error(has_detail_errors: bool) -> BundleAPIClientError:
+    LONG_TEXT = "Some long description to test truncation. " * 500
+
+    def _build_api_error(self, has_detail_errors: bool) -> BundleAPIClientError:
         if has_detail_errors:
             errors = [
                 {"description": "Title already in use"},
                 {"description": "Some other error"},
+                {"description": self.LONG_TEXT},
                 {"no-description-key": ""},
             ]
         else:
@@ -523,7 +525,14 @@ class BundleViewSetBundleAPIErrorTestCase(BundleViewSetTestCaseBase):
             "action-edit": self.edit_url,
         }
 
-        error_with_details = ["Title already in use", "Some other error", "Unknown API Error"]
+        truncated_long_description = textwrap.shorten(self.LONG_TEXT, width=250, placeholder="...")
+
+        error_with_details = [
+            "Title already in use",
+            "Some other error",
+            truncated_long_description,
+            "Unknown API Error",
+        ]
         error_no_details = ["API Error"]
 
         cases = [
