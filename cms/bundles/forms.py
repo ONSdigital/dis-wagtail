@@ -15,7 +15,7 @@ from cms.bundles.clients.api import (
 from cms.bundles.decorators import datasets_bundle_api_enabled
 from cms.bundles.enums import ACTIVE_BUNDLE_STATUS_CHOICES, EDITABLE_BUNDLE_STATUSES, BundleStatus
 from cms.bundles.utils import (
-    build_bundle_data_for_api,
+    BundleAPIBundleMetadata,
     build_content_item_for_dataset,
     extract_content_id_from_bundle_response,
 )
@@ -342,7 +342,7 @@ class BundleAdminForm(DeduplicateInlinePanelAdminForm):
         """Pushes the bundle to the Bundle API if it does."""
         try:
             # Create the bundle in the API with the correct payload
-            bundle_data = build_bundle_data_for_api(bundle)
+            bundle_data = BundleAPIBundleMetadata.from_bundle(bundle)
             response = client.create_bundle(bundle_data)
 
             bundle.bundle_api_bundle_id = str(response["id"])
@@ -499,7 +499,7 @@ class BundleAdminForm(DeduplicateInlinePanelAdminForm):
         if not bundle.bundle_api_bundle_id:
             return
 
-        bundle_data = build_bundle_data_for_api(bundle)
+        bundle_data = BundleAPIBundleMetadata.from_bundle(bundle)
 
         try:
             response = client.update_bundle(
