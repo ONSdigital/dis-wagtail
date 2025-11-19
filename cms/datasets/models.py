@@ -9,7 +9,11 @@ from django.db import models
 from django.db.models import UniqueConstraint
 from queryish.rest import APIModel, APIQuerySet
 
-from cms.datasets.utils import construct_dataset_compound_id, convert_old_dataset_format, get_published_from_state
+from cms.datasets.utils import (
+    construct_chooser_dataset_compound_id,
+    convert_old_dataset_format,
+    get_published_from_state,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -154,7 +158,7 @@ class ONSDataset(APIModel):
             # workaround so that the published state can be determined from the id alone.
             # This is necessary because we need to know which version to extract when using
             # the detail endpoint which returns "current" and "next" versions.
-            id=construct_dataset_compound_id(
+            id=construct_chooser_dataset_compound_id(
                 dataset_id=dataset_id, edition=edition, version_id=version_id, published=published
             ),
             dataset_id=dataset_id,
@@ -200,3 +204,18 @@ class Dataset(models.Model):  # type: ignore[django-manager-missing]
         Note that this may also direct to the latest version if the landing page doesn't exist.
         """
         return f"/datasets/{self.namespace}"
+
+    @property
+    def compound_id(self) -> str:
+        """Return the compound ID for this local Dataset instance.
+
+        Format: "<namespace>,<edition>,<version>"
+
+        This identifier is used within the CMS for uniquely identifying datasets
+        in the local database.
+
+        Do not confuse this with the chooser dataset compound ID (see
+        `construct_chooser_dataset_compound_id`), which includes an additional
+        `published` flag used only for distinguishing API datasets (ONSDataset).
+        """
+        return f"{self.namespace},{self.edition},{self.version}"
