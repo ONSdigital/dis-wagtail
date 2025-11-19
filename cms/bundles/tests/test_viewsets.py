@@ -677,10 +677,9 @@ class BundleViewSetInspectTestCase(BundleViewSetTestCaseBase):
     @patch("cms.bundles.viewsets.bundle.BundleAPIClient")
     def test_inspect_view__contains_datasets(self, mock_api_client):
         """Checks that the inspect view displays datasets for managers with edit links."""
-        # Set bundle to published status so "View Live" button appears and set API bundle ID
-        self.bundle.status = BundleStatus.PUBLISHED
+        # Set API bundle ID
         self.bundle.bundle_api_bundle_id = "test-bundle-id"
-        self.bundle.save(update_fields=["status", "bundle_api_bundle_id"])
+        self.bundle.save(update_fields=["bundle_api_bundle_id"])
         # Create a bundled_datasets record so has_datasets returns True
         BundleDatasetFactory(parent=self.bundle)
 
@@ -886,10 +885,8 @@ class BundleViewSetInspectTestCase(BundleViewSetTestCaseBase):
     @patch("cms.bundles.viewsets.bundle.BundleAPIClient")
     def test_inspect_view__datasets_table_with_multiple_datasets(self, mock_api_client):
         """Test that multiple datasets are displayed correctly in the table."""
-        # Set bundle to published status so "View Live" button appears and set API bundle ID
-        self.bundle.status = BundleStatus.PUBLISHED
         self.bundle.bundle_api_bundle_id = "test-bundle-id"
-        self.bundle.save(update_fields=["status", "bundle_api_bundle_id"])
+        self.bundle.save(update_fields=["bundle_api_bundle_id"])
         # Create a bundled_datasets record so has_datasets returns True
         BundleDatasetFactory(parent=self.bundle)
 

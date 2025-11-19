@@ -538,7 +538,7 @@ class BundleInspectView(InspectView):
 
                 if dataset_id and edition_id and version_id:
                     item["edit_url"] = links.get("edit") or "#"
-                    if self.object.status == BundleStatus.PUBLISHED:
+                    if state == BundleContentItemState.PUBLISHED:
                         # TODO: Verify preview link is correct
                         view_url = get_data_admin_action_url("preview", dataset_id, edition_id, version_id)
                         item["action_button"] = format_html(
