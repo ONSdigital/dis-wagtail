@@ -1,5 +1,4 @@
 from datetime import UTC, datetime
-from typing import Literal
 
 from django.test import TestCase
 
@@ -12,6 +11,7 @@ from cms.bundles.utils import (
     extract_content_id_from_bundle_response,
     get_bundleable_page_types,
     get_data_admin_action_url,
+    get_dataset_preview_key,
     get_pages_in_active_bundles,
 )
 from cms.methodology.models import MethodologyPage
@@ -62,11 +62,14 @@ class DatasetGetDataAdminActionUrlTests(TestCase):
         version_id = "2"
 
         # Test multiple actions
-        actions: Literal["edit", "preview"] = ["edit", "preview"]
-        for action in actions:
-            url = get_data_admin_action_url(action, dataset_id, edition_id, version_id)
-            expected = f"/{action}/datasets/{dataset_id}/editions/{edition_id}/versions/{version_id}"
-            self.assertEqual(url, expected)
+
+        url = get_data_admin_action_url("edit", dataset_id, edition_id, version_id)
+        expected = f"/data-admin/series/{dataset_id}/editions/{edition_id}/versions/{version_id}"
+        self.assertEqual(url, expected)
+
+        url = get_data_admin_action_url("preview", dataset_id, edition_id, version_id)
+        expected = f"/datasets/{dataset_id}/editions/{edition_id}/versions/{version_id}"
+        self.assertEqual(url, expected)
 
 
 class DatasetContentItemUtilityTests(TestCase):
@@ -96,8 +99,8 @@ class DatasetContentItemUtilityTests(TestCase):
                 "version_id": 1,
             },
             "links": {
-                "edit": "/edit/datasets/cpih/editions/time-series/versions/1",
-                "preview": "/preview/datasets/cpih/editions/time-series/versions/1",
+                "edit": "/data-admin/series/cpih/editions/time-series/versions/1",
+                "preview": "/datasets/cpih/editions/time-series/versions/1",
             },
         }
 
@@ -334,3 +337,18 @@ class BundleAPIBundleMetadataHelperTests(TestCase):
 
         self.assertEqual(result.preview_teams, [])
         self.assertEqual(result.scheduled_at, "2025-12-01T10:30:45+00:00")
+
+
+class DatasetPreviewKeyTests(TestCase):
+    """Tests for the get_dataset_preview_key function."""
+
+    def test_get_dataset_preview_key_generates_correct_format(self):
+        """Test that the function generates the correct preview key format."""
+        dataset_id = "cpih"
+        edition_id = "time-series"
+        version_id = "1"
+
+        key = get_dataset_preview_key(dataset_id, edition_id, version_id)
+        expected = "dataset-cpih-time-series-1"
+
+        self.assertEqual(key, expected)

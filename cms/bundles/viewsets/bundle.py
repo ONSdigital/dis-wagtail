@@ -23,15 +23,14 @@ from wagtail.log_actions import log
 from cms.bundles.action_menu import BundleActionMenu
 from cms.bundles.clients.api import BundleAPIClient, BundleAPIClientError, BundleAPIClientError404
 from cms.bundles.decorators import datasets_bundle_api_enabled
-from cms.bundles.enums import BundleStatus
+from cms.bundles.enums import BundleContentItemState, BundleStatus
 from cms.bundles.models import Bundle
 from cms.bundles.notifications.slack import (
     notify_slack_of_status_change,
 )
 from cms.bundles.permissions import user_can_manage_bundles, user_can_preview_bundle
-from cms.bundles.utils import publish_bundle
+from cms.bundles.utils import get_data_admin_action_url, publish_bundle
 from cms.core.custom_date_format import ons_date_format
-from cms.datasets.models import Dataset
 
 if TYPE_CHECKING:
     from django.db.models.fields import Field
@@ -45,6 +44,9 @@ if TYPE_CHECKING:
     from cms.bundles.models import BundlesQuerySet
 
 logger = logging.getLogger(__name__)
+
+# Fallback value for missing dataset metadata
+MISSING_VALUE = "Data missing"
 
 
 def add_exception_cause_to_form(exception: Exception, *, form: "BaseForm") -> None:
@@ -400,7 +402,7 @@ class BundleInspectView(InspectView):
         return "N/A"
 
     def get_pages_for_manager(self) -> "SafeString":
-        """Returns all the bundle page.
+        """Returns all the bundle pages.
         Publishing Admins / Officers can see everything when inspecting the bundle.
         """
         pages = self.object.get_bundled_pages().specific().defer_streamfields()
@@ -496,19 +498,131 @@ class BundleInspectView(InspectView):
         value: str = self.object.bundle_api_bundle_id
         return value
 
-    def get_bundled_datasets_display_value(self) -> str:
-        """Returns formatted markup for datasets linked to the Bundle."""
-        if self.object.bundled_datasets.exists():
-            datasets = Dataset.objects.filter(pk__in=self.object.bundled_datasets.values_list("dataset__pk", flat=True))
-            return format_html(
-                "<ol>{}</ol>",
-                format_html_join(
-                    "\n",
-                    '<li><a href="{}" target="_blank" rel="noopener">{}</a></li>',
-                    ((bundled_dataset.url_path, bundled_dataset) for bundled_dataset in datasets),
-                ),
+    @staticmethod
+    def get_human_readable_state(state: str) -> str:
+        """Converts a machine-readable state string to a human-readable format."""
+        if not state or state == MISSING_VALUE:
+            return MISSING_VALUE
+        match state:
+            case BundleContentItemState.APPROVED:
+                return "Approved"
+            case BundleContentItemState.PUBLISHED:
+                return "Published"
+            case _:
+                return state.replace("_", " ").title()
+
+    def _get_processed_datasets(self) -> list[dict[str, "SafeString | str"]]:
+        """Fetches and processes dataset information from the bundle API."""
+        client = BundleAPIClient(access_token=self.request.COOKIES.get(settings.ACCESS_TOKEN_COOKIE_NAME))
+        bundle_contents = client.get_bundle_contents(self.object.bundle_api_bundle_id)
+        processed_data = []
+
+        for content_item in bundle_contents.get("items", []):
+            if content_item.get("content_type") == "DATASET":
+                metadata = content_item.get("metadata", {})
+                state = content_item.get("state", "")
+                links = content_item.get("links", {})
+                dataset_id = metadata.get("dataset_id", "")
+                edition_id = metadata.get("edition_id", "")
+                version_id = metadata.get("version_id", "")
+                preview_url = links.get("preview")
+
+                item: dict[str, SafeString | str] = {
+                    "title": metadata.get("title", MISSING_VALUE),
+                    "edition": edition_id or MISSING_VALUE,
+                    "version": version_id or MISSING_VALUE,
+                    "state": self.get_human_readable_state(state),
+                    "action_button": "",
+                    "edit_url": "#",
+                }
+
+                if dataset_id and edition_id and version_id:
+                    item["edit_url"] = links.get("edit") or "#"
+                    if state == BundleContentItemState.PUBLISHED:
+                        # TODO: Verify preview link is correct
+                        view_url = get_data_admin_action_url("preview", dataset_id, edition_id, version_id)
+                        item["action_button"] = format_html(
+                            '<a href="{}" class="button button-small button-secondary">View Live</a>',
+                            view_url,
+                        )
+                    elif preview_url:
+                        cms_preview_url = reverse(
+                            "bundles:preview_dataset",
+                            args=[self.object.pk, dataset_id, edition_id, version_id],
+                        )
+                        item["action_button"] = format_html(
+                            '<a href="{}" class="button button-small button-secondary">Preview</a>',
+                            cms_preview_url,
+                        )
+                processed_data.append(item)
+        return processed_data
+
+    def _render_datasets_table(self, include_edit_links: bool) -> "SafeString | str":
+        """Renders datasets as an HTML table.
+
+        Args:
+            include_edit_links: If True, titles are hyperlinked to data admin.
+                            If False, titles are plain text.
+        """
+        try:
+            processed_datasets = self._get_processed_datasets()
+        except BundleAPIClientError as e:
+            return f"Could not retrieve datasets from Dataset API: {e}"
+
+        if not processed_datasets:
+            return "No datasets in bundle"
+
+        row_html_list: list[SafeString] = []
+        for item in processed_datasets:
+            if include_edit_links:
+                title_col = format_html(
+                    '<td class="title"><strong><a href="{}">{}</a></strong></td>',
+                    item["edit_url"],
+                    item["title"],
+                )
+            else:
+                title_col = format_html('<td class="title"><strong>{}</strong></td>', item["title"])
+
+            other_cols = format_html(
+                "<td>{}</td><td>{}</td><td>{}</td><td>{}</td>",
+                item["edition"],
+                item["version"],
+                item["state"],
+                item["action_button"],
             )
-        return "No datasets in bundle"
+
+            row_html_list.append(format_html("<tr>{}{}</tr>", title_col, other_cols))
+
+        dataset_data = format_html_join("\n", "{}", ((row,) for row in row_html_list))
+
+        return format_html(
+            "<table class='listing'>"
+            "<thead><tr><th>Title</th><th>Edition</th><th>Version</th><th>State</th><th>Actions</th></tr></thead>"
+            "<tbody>{}</tbody>"
+            "</table>",
+            dataset_data,
+        )
+
+    def get_datasets_for_manager(self) -> "SafeString | str":
+        """Returns all the bundle datasets for managers with edit links."""
+        return self._render_datasets_table(include_edit_links=True)
+
+    def get_datasets_for_viewer(self) -> "SafeString | str":
+        """Returns all the bundle datasets for viewers without edit links."""
+        return self._render_datasets_table(include_edit_links=False)
+
+    def get_bundled_datasets_display_value(self) -> "SafeString | str":
+        """Returns formatted markup for datasets linked to the Bundle."""
+        if not self.object.has_datasets:
+            return "No datasets in bundle"
+
+        if not self.object.bundle_api_bundle_id:
+            return "Unable to use the Dataset API to display datasets."
+
+        if self.can_manage:
+            return self.get_datasets_for_manager()
+
+        return self.get_datasets_for_viewer()
 
 
 class BundleDeleteView(DeleteView):
