@@ -1,5 +1,6 @@
+import contextlib
 import logging
-from collections.abc import Iterator, Mapping
+from collections.abc import Iterator, Mapping, Sequence
 from http import HTTPStatus
 from typing import Any
 
@@ -18,6 +19,16 @@ class BundleAPIMessage:
 
 class BundleAPIClientError(Exception):
     """Base exception for BundleAPIClient errors."""
+
+    def __init__(self, message: str, errors: Sequence[dict] | None = None):
+        """Initialize the exception with a message and optional error details.
+
+        Args:
+            message: The error message
+            errors: Optional list of error details from the API response
+        """
+        super().__init__(message)
+        self.errors: Sequence[dict] = errors or [{"description": message}]
 
 
 class BundleAPIClientError404(BundleAPIClientError):
@@ -117,13 +128,25 @@ class BundleAPIClient:
             return self._process_response(response)
 
         except requests.exceptions.HTTPError as e:
-            error_msg = self._format_http_error(e, method, url)
-            logger.error("HTTP error occurred: %s", error_msg)
+            error_msg, errors = self._format_http_error(e)
+            logger_extra: dict[str, Any] = {
+                "method": method,
+                "url": url,
+                "status_code": e.response.status_code,
+                "error_message": error_msg,
+            }
+            if errors:
+                logger_extra["api_errors"] = errors
+
+            logger.exception(
+                "HTTP error occurred",
+                extra=logger_extra,
+            )
 
             if e.response.status_code == HTTPStatus.NOT_FOUND:
-                raise BundleAPIClientError404(error_msg) from e
+                raise BundleAPIClientError404(error_msg, errors) from e
 
-            raise BundleAPIClientError(error_msg) from e
+            raise BundleAPIClientError(error_msg, errors) from e
 
         except requests.exceptions.RequestException as e:
             error_msg = f"Network error for {method} {url}: {e!s}"
@@ -161,25 +184,31 @@ class BundleAPIClient:
         return json_data
 
     @staticmethod
-    def _format_http_error(error: requests.exceptions.HTTPError, method: str, url: str) -> str:
+    def _format_http_error(error: requests.exceptions.HTTPError) -> tuple[str, list[dict] | None]:
         """Format HTTP error messages with appropriate context.
 
         Args:
             error: The HTTPError exception
-            method: HTTP method used
-            url: URL that failed
 
         Returns:
-            Formatted error message
+            Tuple of (formatted error message, list of error details or None)
         """
         status_code = error.response.status_code
-        base_msg = f"HTTP {status_code} error for {method} {url}"
-
         try:
-            return f"{base_msg}: {HTTPStatus(status_code).phrase}"
+            status_phrase = HTTPStatus(status_code).phrase
         except ValueError:
             # Handle non-standard or unknown status codes gracefully
-            return f"{base_msg}: Unknown Error"
+            status_phrase = "Unknown Error"
+
+        # This message is shown to the user, we don't want to leak URLs or sensitive info
+        formatted_msg = f"HTTP {status_code} error: {status_phrase}"
+
+        # Try to extract error details from response body
+        errors: list | None = None
+        with contextlib.suppress(ValueError, AttributeError, requests.exceptions.JSONDecodeError):
+            errors = error.response.json().get("errors")
+
+        return formatted_msg, errors
 
     def _iter_pages(self, *, path: str, params: Mapping[str, str]) -> Iterator[dict[str, Any]]:
         """Page iterator for endpoints that implement pagination.
