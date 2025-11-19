@@ -1,13 +1,14 @@
 import json
 from collections import defaultdict
 from typing import TYPE_CHECKING, Any, ClassVar, Optional
-from urllib.parse import urlparse
+from urllib.parse import ParseResult, urlparse
 
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.forms import widgets
 from wagtail import blocks
 
+from cms.core.blocks.struct_blocks import RelativeOrAbsoluteURLBlock
 from cms.core.url_utils import is_hostname_in_domain
 from cms.datavis.blocks.annotations import (
     LineAnnotationBarColumnBlock,
@@ -711,12 +712,12 @@ class AreaChartBlock(BaseChartBlock):
 
 
 class IframeBlock(BaseVisualisationBlock):
-    iframe_source_url = blocks.URLBlock(
+    iframe_source_url = RelativeOrAbsoluteURLBlock(
         required=True,
         help_text=(
-            "Enter the full URL of the visualisation you want to embed. "
-            "The URL must start with <code>https://</code>, the hostname must match one of the allowed domains, "
-            "and the path must start with an allowed prefix. "
+            "Enter the full URL or relative URL path (preferred) of the visualisation you want to embed. "
+            "A full URL must start with <code>https://</code>, the hostname must match one of the allowed domains. "
+            "The URL path must start with an allowed prefix for either full and relative URLs. "
             f"Allowed domains: "
             f"{' or '.join(f'<code>{d}</code>' for d in settings.IFRAME_VISUALISATION_ALLOWED_DOMAINS)}. "
             f"Allowed path prefixes: "
@@ -729,41 +730,75 @@ class IframeBlock(BaseVisualisationBlock):
 
     def clean(self, value: "StructValue") -> "StructValue":
         errors = {}
-        parsed_url = urlparse(value["iframe_source_url"])
 
         for field_name, field in self.child_blocks.items():
             if field.required and not value.get(field_name):
                 errors[field_name] = ValidationError("This field is required.")
 
-        if not (value["iframe_source_url"].startswith("https://") and parsed_url.hostname):
-            errors["iframe_source_url"] = ValidationError(
-                "Please enter a valid URL. It should start with 'https://' and contain a valid domain name."
-            )
-        elif not any(
-            is_hostname_in_domain(parsed_url.hostname, allowed_domain)
-            for allowed_domain in settings.IFRAME_VISUALISATION_ALLOWED_DOMAINS
-        ):
-            allowed_domains = " or ".join(settings.IFRAME_VISUALISATION_ALLOWED_DOMAINS)
-            errors["iframe_source_url"] = ValidationError(
-                f"The URL hostname is not in the list of allowed domains: {allowed_domains}"
-            )
-        else:
-            url_path = parsed_url.path.rstrip("/")
-            allowed_prefixes = [prefix.rstrip("/") for prefix in settings.IFRAME_VISUALISATION_PATH_PREFIXES]
-
-            if not any(
-                url_path.startswith(prefix + "/") and len(url_path) > len(prefix) + 1 for prefix in allowed_prefixes
-            ):
-                readable_prefixes = " or ".join(settings.IFRAME_VISUALISATION_PATH_PREFIXES)
-                errors["iframe_source_url"] = ValidationError(
-                    f"The URL path is not allowed. It must start with one of: {readable_prefixes}, "
-                    "and include a subpath after the prefix."
-                )
+        url_errors = self._validate_source_url(value)
+        errors.update(url_errors)
 
         if errors:
             raise blocks.StructBlockValidationError(errors)
 
         return super().clean(value)
+
+    def _validate_source_url(self, value: "StructValue") -> dict[str, ValidationError]:
+        """Validate the source URL of the iframe. Validation errors will are returned as an errors dict.
+        The URL can be either absolute (with scheme and hostname) or relative (path only).
+        """
+        source_url = value["iframe_source_url"]
+        if not source_url:
+            return {"iframe_source_url": ValidationError("Please enter a valid URL.")}
+
+        parsed_url = urlparse(source_url)
+
+        if parsed_url.scheme or parsed_url.netloc:
+            # If a scheme or netloc is present, validate as an absolute URL
+            return self._validate_absolute_source_url(parsed_url, source_url=source_url)
+
+        # Otherwise, validate as a relative URL path
+        return self._validate_source_url_path(parsed_url)
+
+    def _validate_absolute_source_url(self, parsed_url: ParseResult, *, source_url: str) -> dict[str, ValidationError]:
+        """Validate the absolute source URL of the iframe. Validation errors will are returned as an errors dict."""
+        errors = {}
+        allowed_domains = " or ".join(settings.IFRAME_VISUALISATION_ALLOWED_DOMAINS)
+
+        # Check the original source_url string scheme here, as URL parse is permissive of malformed schemes
+        if not (source_url.startswith("https://") and parsed_url.hostname):
+            errors["iframe_source_url"] = ValidationError(
+                "Please enter a valid URL. Full URLs must start with 'https://' and contain a valid domain"
+            )
+        elif not any(
+            is_hostname_in_domain(parsed_url.hostname, allowed_domain)
+            for allowed_domain in settings.IFRAME_VISUALISATION_ALLOWED_DOMAINS
+        ):
+            errors["iframe_source_url"] = ValidationError(
+                f"The URL hostname is not in the list of allowed domains: {allowed_domains}"
+            )
+        else:
+            path_errors = self._validate_source_url_path(parsed_url)
+            errors.update(path_errors)
+
+        return errors
+
+    @staticmethod
+    def _validate_source_url_path(parsed_url: ParseResult) -> dict[str, ValidationError]:
+        """Validate the path of the iframe source URL. Validation errors will are returned as an errors dict."""
+        errors = {}
+        url_path = parsed_url.path.rstrip("/")
+        allowed_prefixes = [prefix.rstrip("/") for prefix in settings.IFRAME_VISUALISATION_PATH_PREFIXES]
+
+        if not any(
+            url_path.startswith(prefix + "/") and len(url_path) > len(prefix) + 1 for prefix in allowed_prefixes
+        ):
+            readable_prefixes = " or ".join(settings.IFRAME_VISUALISATION_PATH_PREFIXES)
+            errors["iframe_source_url"] = ValidationError(
+                f"The URL path is not allowed. It must start with one of: {readable_prefixes}, "
+                "and include a subpath after the prefix."
+            )
+        return errors
 
     def get_component_config(self, value: "StructValue") -> dict[str, Any]:
         config = {
