@@ -200,7 +200,3 @@ class Dataset(models.Model):  # type: ignore[django-manager-missing]
         Note that this may also direct to the latest version if the landing page doesn't exist.
         """
         return f"/datasets/{self.namespace}"
-
-    @property
-    def website_url(self) -> str:
-        return f"{settings.ONS_WEBSITE_BASE_URL}{self.url_path}"

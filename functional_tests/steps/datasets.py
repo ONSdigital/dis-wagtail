@@ -1,6 +1,5 @@
 from behave import given, step, then, when  # pylint: disable=no-name-in-module
 from behave.runner import Context
-from django.conf import settings
 from playwright.sync_api import expect
 
 from cms.settings.base import ONS_ALLOWED_LINK_DOMAINS
@@ -22,7 +21,7 @@ def look_up_and_select_published_dataset(context: Context) -> None:
     dataset_displayed_fields = {
         "title": mock_dataset["title"],
         "description": mock_dataset["description"],
-        "url": f"{settings.ONS_WEBSITE_BASE_URL}/datasets/{mock_dataset['dataset_id']}",
+        "url": f"/datasets/{mock_dataset['dataset_id']}",
     }
 
     context.selected_datasets = [
