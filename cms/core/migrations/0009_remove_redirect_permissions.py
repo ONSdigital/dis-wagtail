@@ -43,10 +43,9 @@ def restore_redirect_permissions(apps, schema_editor):
 
     # Re-add each permission type
     for permission_type in PERMISSION_TYPES:
-        permission, created = Permission.objects.get_or_create(
+        permission = Permission.objects.get(
             content_type=content_type,
             codename=f"{permission_type}_redirect",
-            defaults={"name": f"Can {permission_type} redirect"},
         )
         publishing_admins.permissions.add(permission)
 
@@ -64,7 +63,6 @@ class Migration(migrations.Migration):
 
     dependencies = [
         ("core", "0008_delete_systemmessagessettings"),
-        ("wagtailredirects", "0008_add_verbose_name_plural"),  # Ensure redirect app is ready
     ]
 
     operations = [
