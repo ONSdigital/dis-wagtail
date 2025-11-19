@@ -11,6 +11,7 @@ from cms.bundles.clients.api import (
     BundleAPIClientError,
     BundleAPIClientError404,
 )
+from cms.bundles.utils import BundleAPIBundleMetadata
 
 
 @override_settings(DIS_DATASETS_BUNDLE_API_ENABLED=True, DIS_DATASETS_BUNDLE_API_REQUEST_TIMEOUT_SECONDS=5)
@@ -48,12 +49,11 @@ class BundleAPIClientTests(TestCase):
         )
 
         client = BundleAPIClient(base_url=self.base_url)
-        # Bundle data following Bundle API swagger spec
-        bundle_data = {
-            "title": "Test Bundle",
-            "bundle_type": "MANUAL",
-            "preview_teams": [{"id": "team-uuid-1"}],
-        }
+        bundle_data = BundleAPIBundleMetadata(
+            title="Test Bundle",
+            bundle_type="MANUAL",
+            preview_teams=[{"id": "team-uuid-1"}],
+        )
 
         result = client.create_bundle(bundle_data)
 
@@ -69,12 +69,11 @@ class BundleAPIClientTests(TestCase):
 
         client = BundleAPIClient(base_url=self.base_url)
         # Bundle data following Bundle API swagger spec
-        bundle_data = {
-            "title": "Test Bundle",
-            "bundle_type": "SCHEDULED",
-            "preview_teams": [{"id": "team-uuid-1"}],
-            "scheduled_at": "2025-04-04T07:00:00.000Z",
-        }
+        bundle_data = BundleAPIBundleMetadata(
+            title="Test Bundle",
+            preview_teams=[{"id": "team-uuid-1"}],
+            scheduled_at="2025-04-04T07:00:00.000Z",
+        )
         result = client.create_bundle(bundle_data)
 
         self.assertEqual(
@@ -110,11 +109,10 @@ class BundleAPIClientTests(TestCase):
 
         client = BundleAPIClient(base_url=self.base_url)
         # Bundle data following Bundle API swagger spec
-        bundle_data = {
-            "title": "Updated Bundle",
-            "bundle_type": "MANUAL",
-            "preview_teams": [{"id": "team-uuid-1"}],
-        }
+        bundle_data = BundleAPIBundleMetadata(
+            title="Updated Bundle",
+            state="DRAFT",
+        )
 
         result = client.update_bundle("test-bundle-123", bundle_data=bundle_data, etag="etag")
 
@@ -244,7 +242,7 @@ class BundleAPIClientTests(TestCase):
 
         client = BundleAPIClient(base_url=self.base_url)
         with self.assertRaises(BundleAPIClientError) as context:
-            client.create_bundle({"title": "Test"})
+            client.create_bundle(BundleAPIBundleMetadata(title="Test"))
 
         self.assertIn("HTTP 400 error", str(context.exception))
         self.assertIn("Bad Request", str(context.exception))
@@ -255,7 +253,7 @@ class BundleAPIClientTests(TestCase):
 
         client = BundleAPIClient(base_url=self.base_url)
         with self.assertRaises(BundleAPIClientError) as context:
-            client.create_bundle({"title": "Test"})
+            client.create_bundle(BundleAPIBundleMetadata(title="Test"))
 
         self.assertIn("HTTP 401 error", str(context.exception))
         self.assertIn("Unauthorized", str(context.exception))
@@ -283,7 +281,7 @@ class BundleAPIClientTests(TestCase):
 
         client = BundleAPIClient(base_url=self.base_url)
         with self.assertRaises(BundleAPIClientError) as context:
-            client.create_bundle({"title": "Test"})
+            client.create_bundle(BundleAPIBundleMetadata(title="Test"))
 
         self.assertIn("HTTP 500 error", str(context.exception))
         self.assertIn("Server Error", str(context.exception))
@@ -294,7 +292,7 @@ class BundleAPIClientTests(TestCase):
 
         client = BundleAPIClient(base_url=self.base_url)
         with self.assertRaises(BundleAPIClientError) as context:
-            client.create_bundle({"title": "Test"})
+            client.create_bundle(BundleAPIBundleMetadata(title="Test"))
 
         self.assertIn("Network error", str(context.exception))
 
@@ -305,7 +303,7 @@ class BundleAPIClientTests(TestCase):
         client = BundleAPIClient(base_url=self.base_url)
 
         with self.assertRaises(BundleAPIClientError) as context:
-            client.create_bundle({"title": "Test"})
+            client.create_bundle(BundleAPIBundleMetadata(title="Test"))
 
         self.assertIn("Expecting value: line 1 column 1 (char 0)", str(context.exception))
 
@@ -342,7 +340,10 @@ class BundleAPIClientDisabledTests(TestCase):
         client = BundleAPIClient(base_url=self.base_url)
 
         # Test various API methods
-        bundle_data = {"title": "Test Bundle", "content": []}
+        bundle_data = BundleAPIBundleMetadata(
+            title="Test Bundle",
+            state="DRAFT",
+        )
 
         result = client.create_bundle(bundle_data)
         self.assertEqual(

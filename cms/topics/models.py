@@ -323,10 +323,10 @@ class TopicPage(BundledPageMixin, ExclusiveTaxonomyMixin, BasePage):  # type: ig
             links["related_methodologies"] = self.get_methodologies_search_url()
 
         if self.datasets:
-            links["related_data"] = f"{settings.ONS_WEBSITE_BASE_URL}/{topic.slug_path}/datalist?filter=datasets"
+            links["related_data"] = f"/{topic.slug_path}/datalist?filter=datasets"
 
         if self.time_series:
-            links["related_time_series"] = f"{settings.ONS_WEBSITE_BASE_URL}/timeseriestool?topic={topic.slug_path}"
+            links["related_time_series"] = f"/timeseriestool?topic={topic.slug_path}"
 
         return links
 
