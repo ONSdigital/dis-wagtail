@@ -45,7 +45,7 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 # Fallback value for missing dataset metadata
-MISSING_VALUE = "N/A"
+MISSING_VALUE = "Data missing"
 
 
 class BundleCreateView(CreateView):
@@ -594,10 +594,8 @@ class BundleInspectView(InspectView):
         if not self.object.has_datasets:
             return "No datasets in bundle"
 
-        if settings.DIS_DATASETS_BUNDLE_API_ENABLED is False:
-            # Note: We don't use the @datasets_bundle_api_enabled decorator here because we want to
-            # show a message in the inspect view.
-            return "Dataset API integration is disabled, can't display datasets."
+        if not self.object.bundle_api_bundle_id:
+            return "Unable to use the Dataset API to display datasets."
 
         if self.can_manage:
             return self.get_datasets_for_manager()
