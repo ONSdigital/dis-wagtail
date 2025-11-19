@@ -137,6 +137,14 @@ def mock_bundle_api(
             headers={"ETag": bundle_etag},
         )
 
+        # Mock GET /bundles/{bundle_id} - retrieve bundle
+        mock_responses.get(
+            re.compile(rf"{escaped_base_url}/bundles/[^/]+$"),
+            json=bundle_response,
+            status=HTTPStatus.OK,
+            headers={"ETag": bundle_etag},
+        )
+
         # Mock PUT /bundles/{bundle_id} - update bundle
         mock_responses.put(
             re.compile(rf"{escaped_base_url}/bundles/[^/]+$"),
