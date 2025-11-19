@@ -1,4 +1,5 @@
 # pylint: disable=too-many-lines
+import textwrap
 from datetime import UTC, datetime, timedelta
 from http import HTTPStatus
 from typing import ClassVar
@@ -7,6 +8,7 @@ from unittest.mock import patch
 
 import time_machine
 from django.conf import settings
+from django.core.exceptions import ValidationError
 from django.db.models import F, OrderBy
 from django.test import TestCase, override_settings
 from django.urls import reverse
@@ -17,6 +19,7 @@ from wagtail.test.utils import WagtailTestUtils
 from wagtail.test.utils.form_data import inline_formset, nested_form_data
 
 from cms.articles.tests.factories import StatisticalArticlePageFactory
+from cms.bundles.clients.api import BundleAPIClientError
 from cms.bundles.enums import BundleStatus
 from cms.bundles.models import Bundle, BundleTeam
 from cms.bundles.tests.factories import BundleDatasetFactory, BundleFactory, BundlePageFactory
@@ -490,6 +493,83 @@ class BundleViewSetEditTestCase(BundleViewSetTestCaseBase):
         self.client.cookies[settings.ACCESS_TOKEN_COOKIE_NAME] = "the-access-token"
         response = self.client.get(self.edit_url)
         self.assertEqual(response.context["form"].datasets_bundle_api_user_access_token, "the-access-token")
+
+
+class BundleViewSetBundleAPIErrorTestCase(BundleViewSetTestCaseBase):
+    LONG_TEXT = "Some long description to test truncation. " * 500
+
+    def _build_api_error(self, has_detail_errors: bool) -> BundleAPIClientError:
+        if has_detail_errors:
+            errors = [
+                {"description": "Title already in use"},
+                {"description": "Some other error"},
+                {"description": self.LONG_TEXT},
+                {"no-description-key": ""},
+            ]
+        else:
+            errors = []
+
+        return BundleAPIClientError("API Error", errors=errors)
+
+    # pylint: disable=too-many-locals
+    @patch("cms.bundles.forms.BundleAdminForm.save")
+    def test_add_and_edit_views_surface_bundle_api_errors(self, mock_save):
+        """Both add and edit views should surface Bundle API errors on the form."""
+        # Expected banner prefixes for each action
+        error_message_for_action = {
+            "action-create": "The bundle could not be created due to errors.",
+            "action-edit": "The bundle could not be saved due to errors.",
+        }
+
+        url_for_action = {
+            "action-create": self.bundle_add_url,
+            "action-edit": self.edit_url,
+        }
+
+        truncated_long_description = textwrap.shorten(self.LONG_TEXT, width=250, placeholder="...")
+
+        error_with_details = [
+            "Title already in use",
+            "Some other error",
+            truncated_long_description,
+            "Unknown API Error",
+        ]
+        error_no_details = ["API Error"]
+
+        cases = [
+            ("action-create", True, error_with_details),
+            ("action-edit", True, error_with_details),
+            ("action-create", False, error_no_details),
+            ("action-edit", False, error_no_details),
+        ]
+
+        for action, has_detail_errors, expected_errors in cases:
+            with self.subTest(action=action, has_detail_errors=has_detail_errors):
+                url = url_for_action[action]
+                expected_banner_msg = error_message_for_action[action]
+
+                data = self.get_base_form_data(status=BundleStatus.DRAFT)
+                data.update(
+                    {
+                        "name": f"Bundle for {action}",
+                        "status": BundleStatus.DRAFT.value,
+                        action: action,
+                    }
+                )
+
+                api_error = self._build_api_error(has_detail_errors)
+                validation_error = ValidationError("Failed to sync bundle with Bundle API")
+                validation_error.__cause__ = api_error
+                mock_save.side_effect = validation_error
+
+                response = self.client.post(url, data, follow=True)
+                form = response.context["form"]
+
+                self.assertEqual(response.status_code, 200)
+
+                self.assertContains(response, f"{expected_banner_msg} Failed to sync bundle with Bundle API.")
+
+                self.assertFormError(form=form, field=None, errors=expected_errors)
 
 
 class BundleViewSetInspectTestCase(BundleViewSetTestCaseBase):
