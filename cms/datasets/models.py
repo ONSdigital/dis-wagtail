@@ -206,10 +206,6 @@ class Dataset(models.Model):  # type: ignore[django-manager-missing]
         return f"/datasets/{self.namespace}"
 
     @property
-    def website_url(self) -> str:
-        return f"{settings.ONS_WEBSITE_BASE_URL}{self.url_path}"
-
-    @property
     def compound_id(self) -> str:
         """Return the compound ID for this local Dataset instance.
 

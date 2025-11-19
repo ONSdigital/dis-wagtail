@@ -1,11 +1,14 @@
-[tool.poetry]
+[tool.project]
 name = "cms"
 version = "0.1.0"
 description = "The Wagtail CMS for managing and publishing content for the Office for National Statistics (ONS)"
 authors = ["ONSdigital"]
 license = "MIT"
 readme = "README.md"
+
+[tool.poetry]
 package-mode = false
+requires-poetry = ">=2.2"
 
 [tool.poetry.dependencies]
 python = "^3.13"

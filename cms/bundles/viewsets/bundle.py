@@ -21,7 +21,7 @@ from wagtail.admin.widgets import HeaderButton, ListingButton
 from wagtail.log_actions import log
 
 from cms.bundles.action_menu import BundleActionMenu
-from cms.bundles.clients.api import BundleAPIClient, BundleAPIClientError
+from cms.bundles.clients.api import BundleAPIClient, BundleAPIClientError, BundleAPIClientError404
 from cms.bundles.decorators import datasets_bundle_api_enabled
 from cms.bundles.enums import BundleStatus
 from cms.bundles.models import Bundle
@@ -505,7 +505,7 @@ class BundleInspectView(InspectView):
                 format_html_join(
                     "\n",
                     '<li><a href="{}" target="_blank" rel="noopener">{}</a></li>',
-                    ((bundled_dataset.website_url, bundled_dataset) for bundled_dataset in datasets),
+                    ((bundled_dataset.url_path, bundled_dataset) for bundled_dataset in datasets),
                 ),
             )
         return "No datasets in bundle"
@@ -516,7 +516,9 @@ class BundleDeleteView(DeleteView):
 
     @datasets_bundle_api_enabled
     def sync_bundle_deletion_with_bundle_api(self, instance: Bundle) -> None:
-        """Handle when a bundle is deleted."""
+        """Syncs the deletion of the Bundle in the CMS with the Bundle API by deleting the corresponding Bundle API
+        bundle.
+        """
         if not instance.bundle_api_bundle_id:
             return
 
@@ -525,10 +527,20 @@ class BundleDeleteView(DeleteView):
 
         try:
             client.delete_bundle(instance.bundle_api_bundle_id)
-            logger.info("Deleted bundle %s from Bundle API", instance.pk)
+            logger.info(
+                "Deleted bundle from Bundle API",
+                extra={"id": instance.pk, "api_id": instance.bundle_api_bundle_id},
+            )
+        except BundleAPIClientError404:
+            logger.warning(
+                "Bundle not found in Bundle API when deleting CMS bundle",
+                extra={"id": instance.pk, "api_id": instance.bundle_api_bundle_id},
+            )
+            # No need to save fields or raise an error as we are about to delete the CMS bundle anyway
         except BundleAPIClientError as e:
-            logger.exception("Failed to delete bundle %s from Bundle API: %s", instance.pk, e)
-            raise ValidationError("Could not communicate with the Bundle API") from e
+            msg = "Failed to delete bundle from Bundle API"
+            logger.exception(msg, extra={"id": instance.pk, "api_id": instance.bundle_api_bundle_id})
+            raise ValidationError(msg) from e
 
     def delete_action(self) -> None:
         with transaction.atomic():

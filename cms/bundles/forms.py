@@ -4,6 +4,7 @@ from functools import cached_property
 from typing import TYPE_CHECKING, Any
 
 from django import forms
+from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.template.defaultfilters import pluralize
 from django.utils import timezone
@@ -168,6 +169,10 @@ class BundleAdminForm(DeduplicateInlinePanelAdminForm):
         "approved" to allow normal reconciliation on save. This scenario is expected
         only in edge cases.
         """
+        # Skip validation if the feature flag is disabled
+        if not settings.BUNDLE_DATASET_STATUS_VALIDATION_ENABLED:
+            return
+
         # Skip validation if bundle doesn't have an API ID yet, or it doesn't have any datasets
         if not self.instance.bundle_api_bundle_id and not self._has_datasets():
             return

@@ -33,7 +33,7 @@ def format_datasets_as_document_list(datasets: StreamValue) -> list[dict[str, An
         else:
             dataset_document = format_as_document_list_item(
                 title=block_value.title,
-                url=block_value.website_url,
+                url=block_value.url_path,
                 content_type="Dataset",
                 description=dataset.value.description,
             )

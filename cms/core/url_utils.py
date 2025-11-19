@@ -60,3 +60,10 @@ def normalise_url(url: str) -> str:
     url = url.lower().rstrip("/")  # Treat URLs with and without trailing slashes as equivalent
     url = url.removeprefix("https://").removeprefix("www.")  # Normalise the URL
     return url
+
+
+def extract_url_path(url: str) -> str:
+    """Extracts and returns the path component of a URL."""
+    parsed_url = urlparse(url)
+    path = parsed_url.path.rstrip("/")  # Treat paths with and without trailing slashes as equivalent
+    return path
