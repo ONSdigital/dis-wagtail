@@ -55,27 +55,27 @@ class IframeBlockTestCase(BaseVisualisationBlockTestCase):
             "Full URLs must start with 'https://' and contain a valid domain",
             # Absolute URL with invalid prefix
             "https://example.com/invalidpath/12345": (
-                f"The URL path is not allowed. It must start with one of: {readable_prefixes}, "
+                f"The URL path is not allowed. It must start with: {readable_prefixes}, "
                 "and include a subpath after the prefix."
             ),
             # Absolute URL missing subpath after path prefix
             "https://www.example.com/visualisations/": (
-                f"The URL path is not allowed. It must start with one of: {readable_prefixes}, "
+                f"The URL path is not allowed. It must start with: {readable_prefixes}, "
                 "and include a subpath after the prefix."
             ),
             # Absolute URL missing subpath after path prefix
             "https://www.example.com/visualisations": (
-                f"The URL path is not allowed. It must start with one of: {readable_prefixes}, "
+                f"The URL path is not allowed. It must start with: {readable_prefixes}, "
                 "and include a subpath after the prefix."
             ),
             # Relative URL missing subpath after prefix
             "/visualisations": (
-                f"The URL path is not allowed. It must start with one of: {readable_prefixes}, "
+                f"The URL path is not allowed. It must start with: {readable_prefixes}, "
                 "and include a subpath after the prefix."
             ),
             # Relative URL with invalid prefix
             "/foo/bar": (
-                f"The URL path is not allowed. It must start with one of: {readable_prefixes}, "
+                f"The URL path is not allowed. It must start with: {readable_prefixes}, "
                 "and include a subpath after the prefix."
             ),
         }
