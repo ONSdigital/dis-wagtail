@@ -13,7 +13,7 @@ class RelativeOrAbsoluteURLBlock(blocks.URLBlock):
         # This allows us to leverage the URLBlock validation for relative URLs.
         # Note that this does mean that validation e.g. max length will include this dummy prefix which should be
         # considered carefully if setting those limits, the url being validated will be longer than the relative URL
-        # input. If exact length validation is required for use case, this block may not be suitable.
+        # input. If exact length validation is required for a particular use case, this block may not be suitable.
         absolute_value = f"https://a.aa{value}" if value and value.startswith("/") else value
 
         # Pass the definitely absolute URL shaped value to the parent clean method for validation
