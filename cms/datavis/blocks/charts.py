@@ -717,7 +717,7 @@ class IframeBlock(BaseVisualisationBlock):
         help_text=(
             "Enter the full URL or relative URL path (preferred) of the visualisation you want to embed. "
             "A full URL must start with <code>https://</code>, the hostname must match one of the allowed domains. "
-            "The URL path must start with an allowed prefix for either full and relative URLs. "
+            "The URL path must start with an allowed prefix for both full or relative URLs. "
             f"Allowed domains: "
             f"{' or '.join(f'<code>{d}</code>' for d in settings.IFRAME_VISUALISATION_ALLOWED_DOMAINS)}. "
             f"Allowed path prefixes: "
@@ -795,7 +795,7 @@ class IframeBlock(BaseVisualisationBlock):
         ):
             readable_prefixes = " or ".join(settings.IFRAME_VISUALISATION_PATH_PREFIXES)
             errors["iframe_source_url"] = ValidationError(
-                f"The URL path is not allowed. It must start with one of: {readable_prefixes}, "
+                f"The URL path is not allowed. It must start with: {readable_prefixes}, "
                 "and include a subpath after the prefix."
             )
         return errors
