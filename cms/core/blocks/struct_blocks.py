@@ -1,4 +1,6 @@
+from django.core.exceptions import ValidationError
 from wagtail import blocks
+from wagtail.blocks import StructValue
 
 
 class RelativeOrAbsoluteURLBlock(blocks.URLBlock):
@@ -7,7 +9,10 @@ class RelativeOrAbsoluteURLBlock(blocks.URLBlock):
     an inherited and intentional limitation from Django's URLField.
     """
 
-    def clean(self, value):
+    def clean(self, value: "StructValue") -> "StructValue":
+        if not isinstance(value, str):
+            raise ValidationError("Enter a valid URL.")
+
         # If the value starts with "/" we assume it is a relative URL, and prepend a minimal dummy domain "a.aa",
         # otherwise we assume it is an absolute URL and leave it unchanged.
         # This allows us to leverage the URLBlock validation for relative URLs.
