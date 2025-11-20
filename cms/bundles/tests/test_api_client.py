@@ -238,7 +238,7 @@ class BundleAPIClientTests(TestCase):
 
     @responses.activate
     def test_http_error_handling(self):
-        responses.post(f"{self.base_url}/bundles", json={"error": "Invalid request"}, status=HTTPStatus.BAD_REQUEST)
+        responses.post(f"{self.base_url}/bundles", status=HTTPStatus.BAD_REQUEST)
 
         client = BundleAPIClient(base_url=self.base_url)
         with self.assertRaises(BundleAPIClientError) as context:
@@ -246,6 +246,30 @@ class BundleAPIClientTests(TestCase):
 
         self.assertIn("HTTP 400 error", str(context.exception))
         self.assertIn("Bad Request", str(context.exception))
+
+    @responses.activate
+    def test_http_error_with_details(self):
+        """Test that error details from API response body are captured in the exception."""
+        errors = [
+            {
+                "code": "Conflict",
+                "description": "A bundle with the same title already exists.",
+                "source": {"field": "/title"},
+            }
+        ]
+        error_response = {"errors": errors}
+        responses.post(
+            f"{self.base_url}/bundles",
+            json=error_response,
+            status=HTTPStatus.CONFLICT,
+        )
+
+        client = BundleAPIClient(base_url=self.base_url)
+        with self.assertRaises(BundleAPIClientError) as context:
+            client.create_bundle(BundleAPIBundleMetadata(title="Test"))
+
+        self.assertIn("HTTP 409 error", str(context.exception))
+        self.assertEqual(errors, context.exception.errors)
 
     @responses.activate
     def test_unauthorized_error(self):

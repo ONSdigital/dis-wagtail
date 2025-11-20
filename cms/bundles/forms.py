@@ -1,5 +1,6 @@
 import logging
 from datetime import datetime
+from functools import cached_property
 from typing import TYPE_CHECKING, Any
 
 from django import forms
@@ -14,18 +15,15 @@ from cms.bundles.clients.api import (
 )
 from cms.bundles.decorators import datasets_bundle_api_enabled
 from cms.bundles.enums import ACTIVE_BUNDLE_STATUS_CHOICES, EDITABLE_BUNDLE_STATUSES, BundleStatus
-from cms.bundles.utils import (
-    BundleAPIBundleMetadata,
-    build_content_item_for_dataset,
-    extract_content_id_from_bundle_response,
-)
 from cms.core.forms import DeduplicateInlinePanelAdminForm
 from cms.workflows.models import ReadyToPublishGroupTask
+
+from .bundle_api_sync_service import BundleAPISyncService
 
 logger = logging.getLogger(__name__)
 
 if TYPE_CHECKING:
-    from .models import Bundle, BundleDataset
+    from .models import Bundle
 
 
 class BundleAdminForm(DeduplicateInlinePanelAdminForm):
@@ -81,6 +79,10 @@ class BundleAdminForm(DeduplicateInlinePanelAdminForm):
         self.original_datasets = set(self.instance.bundled_datasets.all().order_by("id").select_related("dataset"))
         self.original_teams = set(self.instance.teams.all().order_by("id").select_related("team"))
 
+    @cached_property
+    def bundle_api_client(self) -> BundleAPIClient:
+        return BundleAPIClient(access_token=self.datasets_bundle_api_user_access_token)
+
     def _formsets_have_changes(self) -> bool:
         """Detect any adds/edits/deletes in our inline panels."""
         for key in ("bundled_pages", "bundled_datasets", "teams"):
@@ -132,13 +134,8 @@ class BundleAdminForm(DeduplicateInlinePanelAdminForm):
         if not self.instance.bundle_api_bundle_id:
             return datasets_not_approved
 
-        client = BundleAPIClient(access_token=self.datasets_bundle_api_user_access_token)
         try:
-            response = client.get_bundle_contents(self.instance.bundle_api_bundle_id)
-
-            # update the etag value
-            self.instance.bundle_api_etag = response["etag_header"]
-            self.instance.save(update_fields=["bundle_api_etag"])
+            response = self.bundle_api_client.get_bundle_contents(self.instance.bundle_api_bundle_id)
 
             # Check each content item in the bundle
             for item in response.get("items", []):
@@ -160,7 +157,18 @@ class BundleAdminForm(DeduplicateInlinePanelAdminForm):
 
     @datasets_bundle_api_enabled
     def _validate_bundled_datasets_status(self) -> None:
-        """Validate that all bundled datasets are approved when bundle is set to approved status."""
+        """Validate that all bundled datasets are approved in
+        the Bundle API when bundle is set to approved status.
+
+        This validation checks the dataset status in the API.
+        If there have been previous sync issues, the Wagtail state and API state may
+        differ. Since approval is a finalising step, the authoritative state must
+        match what is stored in the API.
+
+        If a bundle needs reconciliation, its status can still be moved back from
+        "approved" to allow normal reconciliation on save. This scenario is expected
+        only in edge cases.
+        """
         # Skip validation if the feature flag is disabled
         if not settings.BUNDLE_DATASET_STATUS_VALIDATION_ENABLED:
             return
@@ -172,14 +180,14 @@ class BundleAdminForm(DeduplicateInlinePanelAdminForm):
         datasets_not_approved = self._get_unapproved_bundle_contents()
 
         if datasets_not_approved:
-            # Return the original status
-            self.cleaned_data["status"] = self.instance.status
-            dataset_list = ", ".join(datasets_not_approved)
             num_not_approved = len(datasets_not_approved)
-            raise ValidationError(
+            errors = [
                 f"Cannot approve the bundle with {num_not_approved} dataset{pluralize(num_not_approved)} "
-                f"not ready to be published: {dataset_list}"
-            )
+                f"not ready to be published:",
+                *datasets_not_approved,
+            ]
+
+            raise ValidationError(errors)
 
     def _validate_bundled_pages(self) -> None:
         """Validates related pages to ensure the selected page is not in another active bundle."""
@@ -224,7 +232,6 @@ class BundleAdminForm(DeduplicateInlinePanelAdminForm):
             raise ValidationError("Cannot approve the bundle without any pages or datasets")
 
         if num_pages_not_ready:
-            self.cleaned_data["status"] = self.instance.status
             raise ValidationError(
                 f"Cannot approve the bundle with {num_pages_not_ready} "
                 f"page{pluralize(num_pages_not_ready)} not ready to be published."
@@ -337,216 +344,13 @@ class BundleAdminForm(DeduplicateInlinePanelAdminForm):
 
         return cleaned_data
 
-    @datasets_bundle_api_enabled
-    def _push_bundle_to_bundle_api(self, client: BundleAPIClient, bundle: "Bundle") -> "Bundle":
-        """Pushes the bundle to the Bundle API if it does."""
-        try:
-            # Create the bundle in the API with the correct payload
-            bundle_data = BundleAPIBundleMetadata.from_bundle(bundle)
-            response = client.create_bundle(bundle_data)
-
-            bundle.bundle_api_bundle_id = str(response["id"])
-            bundle.bundle_api_etag = response["etag_header"]
-            bundle.save(update_fields=["bundle_api_bundle_id", "bundle_api_etag"])
-            logger.info("Created bundle %s in Bundle API with ID: %s", bundle.pk, bundle.bundle_api_bundle_id)
-            return bundle
-
-        except (BundleAPIClientError, KeyError) as e:
-            logger.exception("Failed to create bundle %s in Bundle API: %s", bundle.pk, e)
-            raise ValidationError("Could not communicate with the Bundle API") from e
-
-    @datasets_bundle_api_enabled
-    def _sync_bundle_status_with_bundle_api(self, client: BundleAPIClient, bundle: "Bundle") -> None:
-        if not bundle.bundle_api_bundle_id:
-            return
-
-        try:
-            response = client.update_bundle_state(
-                bundle.bundle_api_bundle_id, state=bundle.status, etag=bundle.bundle_api_etag
-            )
-
-            bundle.bundle_api_etag = response["etag_header"]
-            bundle.save(update_fields=["bundle_api_etag"])
-            logger.info("Updated bundle %s status to %s in Bundle API", bundle.pk, bundle.status)
-        except BundleAPIClientError as e:
-            logger.exception("Failed to sync bundle %s with Bundle API: %s", bundle.pk, e)
-            raise ValidationError("Could not communicate with the Bundle API") from e
-
-    @datasets_bundle_api_enabled
-    def _sync_datasets_with_bundle_api(
-        self, client: BundleAPIClient, bundle: "Bundle", current_datasets: set["BundleDataset"]
-    ) -> None:
-        """Sync dataset changes to the API."""
-        if not bundle.bundle_api_bundle_id:
-            return
-
-        if not current_datasets:
-            # If we have no more dataset, remove the bundle from the API
-            try:
-                client.delete_bundle(bundle.bundle_api_bundle_id)
-                logger.info("Deleted bundle %s from Bundle API", bundle.pk)
-                bundle.bundle_api_bundle_id = ""
-                bundle.bundle_api_etag = ""
-                bundle.save(update_fields=["bundle_api_bundle_id", "bundle_api_etag"])
-            except BundleAPIClientError as e:
-                logger.exception("Failed to delete bundle %s from Bundle API: %s", bundle.pk, e)
-                raise ValidationError("Could not communicate with the Bundle API") from e
-            return
-
-        # Calculate diffs
-        added = {d for d in current_datasets - self.original_datasets if not d.bundle_api_content_id}
-        removed = {d for d in self.original_datasets - current_datasets if d.bundle_api_content_id}
-        common_but_not_linked = {d for d in self.original_datasets & current_datasets if not d.bundle_api_content_id}
-
-        # Add or link items
-        etag_after_addition = self._handle_api_add_items(
-            client=client,
+    def _sync_with_bundle_api(self, bundle: "Bundle") -> None:
+        sync_service = BundleAPISyncService(
             bundle=bundle,
-            items=(added | common_but_not_linked),
+            api_client=self.bundle_api_client,
+            original_datasets=self.original_datasets,
         )
-
-        # Remove items
-        etag_after_deletion = self._handle_api_delete_items(
-            client=client,
-            bundle=bundle,
-            items=removed,
-        )
-
-        # Persist the final ETag once everything has succeeded
-        final_etag = etag_after_deletion or etag_after_addition
-        if final_etag and final_etag != bundle.bundle_api_etag:
-            bundle.bundle_api_etag = final_etag
-            bundle.save(update_fields=["bundle_api_etag"])
-
-    @staticmethod
-    def _handle_api_add_items(
-        *,
-        client: BundleAPIClient,
-        bundle: "Bundle",
-        items: set["BundleDataset"],
-    ) -> str | None:
-        """Add or link content items to the bundle. Stops on first error. Advances ETag after each success."""
-        if not items:
-            return None
-
-        etag = None
-        for item in items:
-            content_item = build_content_item_for_dataset(item.dataset)
-            try:
-                # Client handles If-Match internally. We only read the returned ETag.
-                response = client.add_content_to_bundle(
-                    bundle_id=bundle.bundle_api_bundle_id,
-                    content_item=content_item,
-                )
-                etag = response["etag_header"]
-
-                content_id = extract_content_id_from_bundle_response(response, item.dataset)
-                if not content_id:
-                    logger.error(
-                        "Could not find content_id in response for bundle",
-                        extra={"id": bundle.pk, "api_id": bundle.bundle_api_bundle_id},
-                    )
-                    raise ValidationError("Bundle API did not return an ID for the added content")
-
-                item.bundle_api_content_id = content_id
-                item.save(update_fields=["bundle_api_content_id"])
-
-                logger.info(
-                    "Added content %s to bundle %s in Bundle API with ID %s",
-                    item.dataset.namespace,
-                    bundle.pk,
-                    content_id,
-                )
-            except BundleAPIClientError as e:
-                logger.exception("Failed to add content to bundle %s in Bundle API: %s", bundle.pk, e)
-                raise ValidationError("Could not communicate with the Bundle API") from e
-
-        return etag
-
-    @staticmethod
-    def _handle_api_delete_items(
-        *,
-        client: BundleAPIClient,
-        bundle: "Bundle",
-        items: set["BundleDataset"],
-    ) -> str | None:
-        """Remove content items from the bundle. Stops on first error. Advances ETag after each success."""
-        if not items:
-            return None
-
-        etag = None
-        for item in items:
-            content_id = item.bundle_api_content_id
-            try:
-                # Client handles If-Match internally. We only read the returned ETag.
-                response = client.delete_content_from_bundle(
-                    bundle_id=bundle.bundle_api_bundle_id,
-                    content_id=content_id,
-                )
-                etag = response["etag_header"]
-
-                logger.info("Deleted content %s from bundle %s in Bundle API", content_id, bundle.pk)
-            except BundleAPIClientError as e:
-                logger.exception(
-                    "Failed to delete content %s from bundle %s in Bundle API: %s", content_id, bundle.pk, e
-                )
-                raise ValidationError("Could not communicate with the Bundle API") from e
-
-        return etag
-
-    @datasets_bundle_api_enabled
-    def _sync_teams_with_bundle_api(self, client: BundleAPIClient, bundle: "Bundle") -> None:
-        if not bundle.bundle_api_bundle_id:
-            return
-
-        bundle_data = BundleAPIBundleMetadata.from_bundle(bundle)
-
-        try:
-            response = client.update_bundle(
-                bundle_id=bundle.bundle_api_bundle_id, bundle_data=bundle_data, etag=bundle.bundle_api_etag
-            )
-            bundle.bundle_api_etag = response["etag_header"]
-            bundle.save(update_fields=["bundle_api_etag"])
-            logger.info(
-                "Successfully synced preview teams for bundle %s (Wagtail ID: %s).",
-                bundle.bundle_api_bundle_id,
-                bundle.pk,
-            )
-        except BundleAPIClientError as e:
-            logger.exception(
-                "Failed to sync preview teams for bundle %s (Wagtail ID: %s): %s",
-                bundle.bundle_api_bundle_id,
-                bundle.pk,
-                e,
-            )
-            raise ValidationError("Could not communicate with the Bundle API") from e
-
-    @datasets_bundle_api_enabled
-    def _check_and_sync_with_bundle_api(self, bundle: "Bundle") -> None:
-        should_push_bundle_to_api = not bundle.bundle_api_bundle_id and self._has_datasets()
-        status_has_changed = bundle.bundle_api_bundle_id and self.original_status != bundle.status
-
-        current_datasets = set(bundle.bundled_datasets.all().select_related("dataset").order_by("id"))
-        should_push_dataset_changes_to_api = self.original_datasets != current_datasets
-        should_push_team_changes_to_api = self.original_teams != set(
-            bundle.teams.all().select_related("team").order_by("id")
-        )
-        if (
-            should_push_bundle_to_api
-            or status_has_changed
-            or should_push_dataset_changes_to_api
-            or should_push_team_changes_to_api
-        ):
-            client = BundleAPIClient(access_token=self.datasets_bundle_api_user_access_token)
-            if should_push_bundle_to_api:
-                # The bundle should be created in the API if it has datasets, and it doesn't have an API ID.
-                bundle = self._push_bundle_to_bundle_api(client, bundle)
-            if status_has_changed:
-                self._sync_bundle_status_with_bundle_api(client, bundle)
-            if should_push_dataset_changes_to_api:
-                self._sync_datasets_with_bundle_api(client, bundle, current_datasets)
-            if should_push_team_changes_to_api:
-                self._sync_teams_with_bundle_api(client, bundle)
+        sync_service.sync()
 
     def save(self, commit: bool = True) -> "Bundle":
         """Save the bundle and create in API if it has datasets but no API ID."""
@@ -555,5 +359,5 @@ class BundleAdminForm(DeduplicateInlinePanelAdminForm):
         bundle: Bundle = super().save(commit=commit)
 
         if commit:
-            self._check_and_sync_with_bundle_api(bundle)
+            self._sync_with_bundle_api(bundle)
         return bundle
