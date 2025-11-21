@@ -242,8 +242,8 @@ class DatasetChosenMultipleViewMixin(ChosenMultipleViewMixin, DatasetRetrievalMi
         if datasets_to_create_instances:
             Dataset.objects.bulk_create(datasets_to_create_instances)
 
-        # Return the existing and newly created datasets, using the DEFAULT_DB_ALIAS to ensure we read from the main
-        # database, as the newly created datasets may not yet be replicated to read replicas.
+        # Return the existing and newly created datasets, using the DEFAULT_DB_ALIAS to ensure we read from the default
+        # database instance, as the newly created datasets may not yet be replicated to read replicas.
         return Dataset.objects.using(DEFAULT_DB_ALIAS).filter(existing_query)
 
 
