@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING, Any
 from django import forms
 from django.conf import settings
 from django.core.exceptions import PermissionDenied
-from django.db import transaction
+from django.db import DEFAULT_DB_ALIAS
 from django.db.models import Q, QuerySet
 from django.views import View
 from wagtail.admin.forms.choosers import BaseFilterForm
@@ -239,12 +239,9 @@ class DatasetChosenMultipleViewMixin(ChosenMultipleViewMixin, DatasetRetrievalMi
                     )
                 )
 
-        with transaction.atomic():
-            # Transaction ensures the subsequent read is done in the write instance, otherwise the read may be done from
-            # a read-replica which may not be up-to-date yet
-            if datasets_to_create_instances:
-                Dataset.objects.bulk_create(datasets_to_create_instances)
-            return Dataset.objects.filter(existing_query)
+        if datasets_to_create_instances:
+            Dataset.objects.bulk_create(datasets_to_create_instances)
+        return Dataset.objects.using(DEFAULT_DB_ALIAS).filter(existing_query)  # Force write alias for consistency
 
 
 class DatasetChosenMultipleView(DatasetChosenMultipleViewMixin, ChosenResponseMixin, View): ...
