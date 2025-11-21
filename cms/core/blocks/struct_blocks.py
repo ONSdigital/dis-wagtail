@@ -13,7 +13,7 @@ class RelativeOrAbsoluteURLBlock(blocks.URLBlock):
         if not isinstance(value, str):
             raise ValidationError("Enter a valid URL.")
 
-        # If the value starts with "/" we assume it is a relative URL, and prepend a minimal dummy domain "a.aa",
+        # If the value starts with "/" we assume it is a relative URL, and prepend a dummy scheme and domain,
         # otherwise we assume it is an absolute URL and leave it unchanged.
         # This allows us to leverage the URLBlock validation for relative URLs.
         # Note that this does mean that validation e.g. max length will include this dummy prefix which should be
