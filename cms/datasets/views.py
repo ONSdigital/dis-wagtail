@@ -5,6 +5,7 @@ from typing import TYPE_CHECKING, Any
 from django import forms
 from django.conf import settings
 from django.core.exceptions import PermissionDenied
+from django.db import DEFAULT_DB_ALIAS
 from django.db.models import Q, QuerySet
 from django.views import View
 from wagtail.admin.forms.choosers import BaseFilterForm
@@ -240,7 +241,10 @@ class DatasetChosenMultipleViewMixin(ChosenMultipleViewMixin, DatasetRetrievalMi
 
         if datasets_to_create_instances:
             Dataset.objects.bulk_create(datasets_to_create_instances)
-        return Dataset.objects.filter(existing_query)
+
+        # Return the existing and newly created datasets, using the DEFAULT_DB_ALIAS to ensure we read from the default
+        # database instance, as the newly created datasets may not yet be replicated to read replicas.
+        return Dataset.objects.using(DEFAULT_DB_ALIAS).filter(existing_query)
 
 
 class DatasetChosenMultipleView(DatasetChosenMultipleViewMixin, ChosenResponseMixin, View): ...
