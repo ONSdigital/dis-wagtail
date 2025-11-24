@@ -43,10 +43,10 @@ def _update_dataset_metadata(dataset: Dataset, *, title: str, description: str) 
         List of field names that were updated
     """
     updated_fields: list[str] = []
-    if dataset.title != title:
+    if title and dataset.title != title:
         dataset.title = title
         updated_fields.append("title")
-    if dataset.description != description:
+    if description and dataset.description != description:
         dataset.description = description
         updated_fields.append("description")
     return updated_fields
