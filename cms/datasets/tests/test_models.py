@@ -79,6 +79,19 @@ class TestONSDatasetApiQuerySet(TestCase):
             called_params = mock_fetch.call_args[1]["params"]
             self.assertEqual(called_params["limit"], 50)
 
+    def test_run_count_ignores_page_size_for_count(self):
+        """Test that run_count() does not use page size limit and always defaults to 1."""
+        api_queryset = ONSDatasetApiQuerySet()
+        api_queryset.base_url = settings.DATASETS_API_EDITIONS_URL
+        api_queryset.pagination_style = "offset-limit"
+
+        with patch.object(api_queryset, "fetch_api_response", return_value={"items": [], "count": 100}) as mock_fetch:
+            api_queryset.count()
+
+            # Check that fetch_api_response was called with limit=1
+            called_params = mock_fetch.call_args[1]["params"]
+            self.assertEqual(called_params["limit"], 1)
+
     @responses.activate
     def test_fetch_api_response_includes_auth_header(self):
         """Test that fetch_api_response() includes Authorization header when token is set."""
