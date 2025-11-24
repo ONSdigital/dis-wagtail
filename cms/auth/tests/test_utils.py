@@ -8,6 +8,7 @@ from unittest import mock
 
 import jwt
 import requests
+from django.conf import settings
 from django.test import SimpleTestCase, override_settings
 
 from cms.auth import utils
@@ -106,6 +107,20 @@ class ValidateJWTTests(SimpleTestCase):
         # JWKS dict is empty
         with mock.patch("cms.auth.utils.get_jwks", return_value={}):
             self.assertIsNone(utils.validate_jwt(token, token_type="access"))
+
+    def test_get_jwks_uses_configured_timeout(self):
+        token = build_jwt(
+            self.good_pair,
+            token_use="access",
+            username="u1",
+            client_id="expected",
+            sub="u1",
+        )
+        with mock.patch("cms.auth.utils.requests.get") as mock_get:
+            utils.validate_jwt(token, token_type="access")
+            mock_get.assert_called_once()
+            _, kwargs = mock_get.call_args
+            self.assertEqual(kwargs["timeout"], settings.HTTP_REQUEST_DEFAULT_TIMEOUT_SECONDS)
 
     def test_jwks_fetch_network_error_returns_none(self):
         token = build_jwt(

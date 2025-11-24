@@ -351,7 +351,7 @@ class BundleAPIClientTests(TestCase):
         with patch.object(client.session, "request", wraps=client.session.request) as mock_request:
             client.get_bundles(limit=1, offset=0)
             _, kwargs = mock_request.call_args
-            self.assertEqual(kwargs.get("timeout"), 5)
+            self.assertEqual(kwargs.get("timeout"), 10)
 
 
 @override_settings(DIS_DATASETS_BUNDLE_API_ENABLED=False)

@@ -238,6 +238,20 @@ class TestONSDatasetApiQuerySet(TestCase):
         self.assertIsInstance(result, dict)
         self.assertEqual(result["count"], 0)
 
+    def test_fetch_api_response_uses_configured_timeout(self):
+        """Test that the configured timeout is used in requests."""
+        api_queryset = ONSDatasetApiQuerySet()
+        api_queryset.base_url = settings.DATASETS_API_EDITIONS_URL
+
+        with patch("requests.get") as mock_get:
+            mock_get.return_value.json.return_value = {"items": [], "total_count": 0}
+
+            api_queryset.fetch_api_response()
+
+            mock_get.assert_called_once()
+            _, kwargs = mock_get.call_args
+            self.assertEqual(kwargs.get("timeout"), settings.HTTP_REQUEST_DEFAULT_TIMEOUT_SECONDS)
+
 
 class TestONSDataset(TestCase):
     @responses.activate
