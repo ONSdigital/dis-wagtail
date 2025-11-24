@@ -63,6 +63,7 @@ class ONSDatasetApiQuerySet(APIQuerySet):
         is_detail_request = url.startswith(ONSDataset.Meta.detail_url.split("%s", maxsplit=1)[0])
 
         try:
+            logger.debug("Fetching datasets from API", extra={"url": url, "params": params})
             response = requests.get(url, params=params, headers=headers, timeout=30)
             response.raise_for_status()
         except requests.exceptions.HTTPError as e:
