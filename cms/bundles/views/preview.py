@@ -35,6 +35,8 @@ class BundleContentsMixin:
 
     def get_bundle_contents(self, bundle: Bundle) -> dict[str, Any]:
         """Initializes API client and fetches bundle contents."""
+        if not settings.DIS_DATASETS_BUNDLE_API_ENABLED or not bundle.bundle_api_bundle_id:
+            return {}
         cookie_name = settings.ACCESS_TOKEN_COOKIE_NAME
         access_token = self.request.COOKIES.get(cookie_name)  # type: ignore[attr-defined]
         client = BundleAPIClient(access_token=access_token)

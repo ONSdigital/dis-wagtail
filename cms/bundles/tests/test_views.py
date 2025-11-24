@@ -893,3 +893,31 @@ class PreviewBundleDatasetViewTestCase(WagtailTestUtils, TestCase):
         # Verify the error message is displayed
         self.assertContains(response, "The Datasets Bundle API is not enabled")
         self.assertContains(response, "Cannot preview dataset")
+
+    @override_settings(DIS_DATASETS_BUNDLE_API_ENABLED=True)
+    def test_view_redirects_when_bundle_has_no_api_id(self):
+        """Test that view redirects with error message when bundle has no API bundle ID."""
+        self.client.force_login(self.publishing_officer)
+
+        # Create a bundle without bundle_api_bundle_id (empty string)
+        bundle_without_api_id = BundleFactory(
+            name="Bundle Without API ID",
+            in_review=True,
+            created_by=self.publishing_officer,
+            bundle_api_bundle_id="",
+        )
+        BundleTeam.objects.create(parent=bundle_without_api_id, team=self.preview_team)
+
+        preview_url = reverse(
+            "bundles:preview_dataset",
+            args=[bundle_without_api_id.pk, self.dataset_id, self.edition_id, self.version_id],
+        )
+
+        response = self.client.get(preview_url, follow=True)
+
+        # Verify we redirected to the inspect page
+        self.assertRedirects(response, reverse("bundle:inspect", args=[bundle_without_api_id.pk]))
+
+        # Verify the error message is displayed (dataset not found because get_bundle_contents returns {})
+        self.assertContains(response, "could not be found in this bundle")
+        self.assertContains(response, self.dataset_id)
