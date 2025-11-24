@@ -4,6 +4,7 @@ from unittest.mock import MagicMock, Mock, patch
 from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.core.exceptions import PermissionDenied
+from django.db import DEFAULT_DB_ALIAS
 from django.test import RequestFactory, TestCase
 
 from cms.datasets.views import (
@@ -506,9 +507,10 @@ class TestDatasetChosenMultipleViewMixin(TestCase):
         mock_get_dataset.return_value = mock_api_dataset
 
         # Mock the Django Dataset queryset - first call returns empty list (existing_datasets_map)
-        # second call returns the final queryset after bulk_create
+        # second call (with `.using`) returns the final queryset after bulk_create
         mock_final_queryset = Mock()
-        mock_dataset.objects.filter.side_effect = [[], mock_final_queryset]
+        mock_dataset.objects.filter.return_value = []
+        mock_dataset.objects.using.return_value.filter.return_value = mock_final_queryset
         mock_dataset.objects.bulk_create.return_value = None
 
         request = self.factory.get("/chooser/")
@@ -518,10 +520,16 @@ class TestDatasetChosenMultipleViewMixin(TestCase):
         self.view.request = request
         result = self.view.get_objects(["dataset-123,2021,1,false"])
 
+        # Verify the initial filter to find existing Datasets was called once
+        mock_dataset.objects.filter.assert_called_once()
         # Verify permission check was called
         mock_permission_check.assert_called_once_with(self.user)
         # Verify Datasets were created
         mock_dataset.objects.bulk_create.assert_called_once()
+        # Verify using(DEFAULT_DB_ALIAS) was called for final queryset
+        mock_dataset.objects.using.assert_called_once_with(DEFAULT_DB_ALIAS)
+        # Verify the results were fetched
+        mock_dataset.objects.using.return_value.filter.assert_called_once()
         self.assertEqual(result, mock_final_queryset)
 
     @patch("cms.datasets.views.user_can_access_unpublished_datasets")
@@ -574,9 +582,10 @@ class TestDatasetChosenMultipleViewMixin(TestCase):
         mock_get_dataset.return_value = mock_api_dataset
 
         # Mock the Django Dataset queryset - first call returns empty list (existing_datasets_map)
-        # second call returns the final queryset after bulk_create
+        # second call (with `.using`) returns the final queryset after bulk_create
         mock_final_queryset = Mock()
-        mock_dataset.objects.filter.side_effect = [[], mock_final_queryset]
+        mock_dataset.objects.filter.return_value = []
+        mock_dataset.objects.using.return_value.filter.return_value = mock_final_queryset
         mock_dataset.objects.bulk_create.return_value = None
 
         request = self.factory.get("/chooser/")
