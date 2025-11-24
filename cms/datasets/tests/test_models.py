@@ -67,7 +67,6 @@ class TestONSDatasetApiQuerySet(TestCase):
     def test_run_query_uses_configured_page_size_limit_when_called(self):
         """Test that run_query() uses the configured page size."""
         api_queryset = ONSDatasetApiQuerySet()
-        api_queryset.base_url = settings.DATASETS_API_EDITIONS_URL
         api_queryset.pagination_style = "offset-limit"
 
         with patch.object(
@@ -79,10 +78,22 @@ class TestONSDatasetApiQuerySet(TestCase):
             called_params = mock_fetch.call_args[1]["params"]
             self.assertEqual(called_params["limit"], 50)
 
+    def test_run_query_ignores_params_for_detail_requests(self):
+        """Test that run_query() does not pass params for detail requests."""
+        api_queryset = ONSDatasetApiQuerySet()
+        api_queryset.detail_url = f"{settings.DATASETS_API_BASE_URL}/%s"
+        with patch.object(
+            api_queryset, "fetch_api_response", return_value={"items": [], "total_count": 0}
+        ) as mock_fetch:
+            api_queryset.get(pk="dataset1")
+
+            # Check that fetch_api_response was called without params
+            called_params = mock_fetch.call_args[1].get("params", {})
+            self.assertEqual(called_params, {})
+
     def test_run_count_ignores_page_size_for_count(self):
         """Test that run_count() does not use page size limit and always defaults to 1."""
         api_queryset = ONSDatasetApiQuerySet()
-        api_queryset.base_url = settings.DATASETS_API_EDITIONS_URL
         api_queryset.pagination_style = "offset-limit"
 
         with patch.object(api_queryset, "fetch_api_response", return_value={"items": [], "count": 100}) as mock_fetch:
