@@ -1076,3 +1076,5 @@ CMS_USE_SUBDOMAIN_LOCALES = env.get("CMS_USE_SUBDOMAIN_LOCALES", "true").lower()
 # This must remain lower than the Gunicorn worker timeout.
 # Note, the Gunicorn timeout may itself be overridden in deployment config (e.g. gunicorn.conf.py, Helm chart values).
 HTTP_REQUEST_DEFAULT_TIMEOUT_SECONDS = int(env.get("HTTP_REQUEST_DEFAULT_TIMEOUT_SECONDS", 10))
+
+DATASETS_API_DEFAULT_PAGE_SIZE = int(env.get("DATASETS_API_DEFAULT_PAGE_SIZE", "100"))
