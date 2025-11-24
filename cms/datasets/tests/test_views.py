@@ -1,3 +1,5 @@
+# pylint: disable=too-many-lines
+
 from typing import ClassVar
 from unittest.mock import MagicMock, Mock, patch
 
@@ -455,6 +457,156 @@ class TestDatasetChosenView(TestCase):
         mock_queryset.with_token.assert_not_called()
         mock_queryset.get.assert_called_once_with(pk="dataset-123")
 
+    @patch("cms.datasets.views.get_dataset_for_published_state")
+    @patch("cms.datasets.views.Dataset")
+    @patch("cms.datasets.views.ONSDataset")
+    def test_get_object_updates_existing_dataset_with_changed_metadata(
+        self, mock_ons_dataset, mock_dataset, mock_get_dataset
+    ):
+        """Test that existing datasets get updated when API metadata changes."""
+        # Mock the API dataset with new metadata
+        mock_api_dataset = Mock()
+        mock_api_dataset.title = "Updated Title"
+        mock_api_dataset.description = "Updated Description"
+
+        mock_queryset = MagicMock()
+        mock_ons_dataset.objects = mock_queryset
+        mock_queryset.get.return_value = mock_api_dataset
+
+        mock_get_dataset.return_value = mock_api_dataset
+
+        # Mock existing dataset with old metadata
+        mock_dataset_instance = Mock()
+        mock_dataset_instance.title = "Old Title"
+        mock_dataset_instance.description = "Old Description"
+        # (existing dataset, created False)
+        mock_dataset.objects.get_or_create.return_value = (mock_dataset_instance, False)
+
+        request = self.factory.get("/chooser/")
+        request.user = self.user
+        request.COOKIES = {}
+
+        self.view.request = request
+        result = self.view.get_object("dataset-123,2021,1,true")
+
+        # Verify dataset was fetched (not created)
+        mock_dataset.objects.get_or_create.assert_called_once_with(
+            namespace="dataset-123",
+            edition="2021",
+            version=1,
+            defaults={"title": "Updated Title", "description": "Updated Description"},
+        )
+
+        # Verify metadata was updated
+        self.assertEqual(mock_dataset_instance.title, "Updated Title")
+        self.assertEqual(mock_dataset_instance.description, "Updated Description")
+
+        # Verify save was called with updated fields
+        mock_dataset_instance.save.assert_called_once_with(update_fields=["title", "description"])
+        self.assertEqual(result, mock_dataset_instance)
+
+    @patch("cms.datasets.views.get_dataset_for_published_state")
+    @patch("cms.datasets.views.Dataset")
+    @patch("cms.datasets.views.ONSDataset")
+    def test_get_object_skips_save_when_metadata_unchanged(self, mock_ons_dataset, mock_dataset, mock_get_dataset):
+        """Test that save is skipped when existing metadata matches API data."""
+        # Mock the API dataset
+        mock_api_dataset = Mock()
+        mock_api_dataset.title = "Same Title"
+        mock_api_dataset.description = "Same Description"
+
+        mock_queryset = MagicMock()
+        mock_ons_dataset.objects = mock_queryset
+        mock_queryset.get.return_value = mock_api_dataset
+
+        mock_get_dataset.return_value = mock_api_dataset
+
+        # Mock existing dataset with same metadata
+        mock_dataset_instance = Mock()
+        mock_dataset_instance.title = "Same Title"
+        mock_dataset_instance.description = "Same Description"
+        # (existing dataset, created False)
+        mock_dataset.objects.get_or_create.return_value = (mock_dataset_instance, False)
+
+        request = self.factory.get("/chooser/")
+        request.user = self.user
+        request.COOKIES = {}
+
+        self.view.request = request
+        result = self.view.get_object("dataset-123,2021,1,true")
+
+        # Verify save was NOT called since metadata hasn't changed
+        mock_dataset_instance.save.assert_not_called()
+        self.assertEqual(result, mock_dataset_instance)
+
+    @patch("cms.datasets.views.get_dataset_for_published_state")
+    @patch("cms.datasets.views.Dataset")
+    @patch("cms.datasets.views.ONSDataset")
+    def test_get_object_updates_only_changed_field(self, mock_ons_dataset, mock_dataset, mock_get_dataset):
+        """Test that only changed fields are included in save."""
+        # Mock the API dataset with one field changed
+        mock_api_dataset = Mock()
+        mock_api_dataset.title = "New Title"
+        mock_api_dataset.description = "Same Description"
+
+        mock_queryset = MagicMock()
+        mock_ons_dataset.objects = mock_queryset
+        mock_queryset.get.return_value = mock_api_dataset
+
+        mock_get_dataset.return_value = mock_api_dataset
+
+        # Mock existing dataset
+        mock_dataset_instance = Mock()
+        mock_dataset_instance.title = "Old Title"
+        mock_dataset_instance.description = "Same Description"
+        # (existing dataset, created False)
+        mock_dataset.objects.get_or_create.return_value = (mock_dataset_instance, False)
+
+        request = self.factory.get("/chooser/")
+        request.user = self.user
+        request.COOKIES = {}
+
+        self.view.request = request
+        self.view.get_object("dataset-123,2021,1,true")
+
+        # Verify only title was updated
+        self.assertEqual(mock_dataset_instance.title, "New Title")
+        self.assertEqual(mock_dataset_instance.description, "Same Description")
+
+        # Verify save was called with only title in update_fields
+        mock_dataset_instance.save.assert_called_once_with(update_fields=["title"])
+
+    @patch("cms.datasets.views.get_dataset_for_published_state")
+    @patch("cms.datasets.views.Dataset")
+    @patch("cms.datasets.views.ONSDataset")
+    def test_get_object_creates_new_dataset_without_update(self, mock_ons_dataset, mock_dataset, mock_get_dataset):
+        """Test that newly created datasets don't trigger update logic."""
+        # Mock the API dataset
+        mock_api_dataset = Mock()
+        mock_api_dataset.title = "New Dataset"
+        mock_api_dataset.description = "New Description"
+
+        mock_queryset = MagicMock()
+        mock_ons_dataset.objects = mock_queryset
+        mock_queryset.get.return_value = mock_api_dataset
+
+        mock_get_dataset.return_value = mock_api_dataset
+
+        # Mock newly created dataset
+        mock_dataset_instance = Mock()
+        mock_dataset.objects.get_or_create.return_value = (mock_dataset_instance, True)
+
+        request = self.factory.get("/chooser/")
+        request.user = self.user
+        request.COOKIES = {}
+
+        self.view.request = request
+        result = self.view.get_object("dataset-123,2021,1,true")
+
+        # Verify save was NOT called for newly created dataset
+        mock_dataset_instance.save.assert_not_called()
+        self.assertEqual(result, mock_dataset_instance)
+
 
 class TestDatasetChosenMultipleViewMixin(TestCase):
     """Test the DatasetChosenMultipleViewMixin functionality."""
@@ -669,3 +821,206 @@ class TestDatasetChosenMultipleViewMixin(TestCase):
         # Verify with_token was NOT called
         mock_queryset.with_token.assert_not_called()
         mock_queryset.get.assert_called_once_with(pk="dataset-123")
+
+    @patch("cms.datasets.views.get_dataset_for_published_state")
+    @patch("cms.datasets.views.Dataset")
+    @patch("cms.datasets.views.ONSDataset")
+    def test_get_objects_updates_existing_datasets_with_changed_metadata(
+        self, mock_ons_dataset, mock_dataset, mock_get_dataset
+    ):
+        """Test that existing datasets get bulk_update when API metadata changes."""
+        # Mock the API dataset with updated metadata
+        mock_api_dataset = Mock()
+        mock_api_dataset.title = "Updated Title"
+        mock_api_dataset.description = "Updated Description"
+
+        mock_queryset = MagicMock()
+        mock_ons_dataset.objects = mock_queryset
+        mock_queryset.get.return_value = mock_api_dataset
+
+        mock_get_dataset.return_value = mock_api_dataset
+
+        # Mock existing dataset with old metadata
+        existing_dataset = Mock()
+        existing_dataset.namespace = "dataset-123"
+        existing_dataset.edition = "2021"
+        existing_dataset.version = 1
+        existing_dataset.title = "Old Title"
+        existing_dataset.description = "Old Description"
+
+        mock_final_queryset = Mock()
+        mock_dataset.objects.filter.side_effect = [[existing_dataset], mock_final_queryset]
+        mock_dataset.objects.bulk_create.return_value = None
+        mock_dataset.objects.bulk_update.return_value = None
+
+        request = self.factory.get("/chooser/")
+        request.user = self.user
+        request.COOKIES = {}
+
+        self.view.request = request
+        result = self.view.get_objects(["dataset-123,2021,1,true"])
+
+        # Verify metadata was updated in memory
+        self.assertEqual(existing_dataset.title, "Updated Title")
+        self.assertEqual(existing_dataset.description, "Updated Description")
+
+        # Verify bulk_update was called with the updated dataset
+        mock_dataset.objects.bulk_create.assert_not_called()
+        mock_dataset.objects.bulk_update.assert_called_once_with([existing_dataset], ["title", "description"])
+        self.assertEqual(result, mock_final_queryset)
+
+    @patch("cms.datasets.views.get_dataset_for_published_state")
+    @patch("cms.datasets.views.Dataset")
+    @patch("cms.datasets.views.ONSDataset")
+    def test_get_objects_skips_bulk_update_when_metadata_unchanged(
+        self, mock_ons_dataset, mock_dataset, mock_get_dataset
+    ):
+        """Test that bulk_update is skipped when existing metadata matches API data."""
+        # Mock the API dataset
+        mock_api_dataset = Mock()
+        mock_api_dataset.title = "Same Title"
+        mock_api_dataset.description = "Same Description"
+
+        mock_queryset = MagicMock()
+        mock_ons_dataset.objects = mock_queryset
+        mock_queryset.get.return_value = mock_api_dataset
+
+        mock_get_dataset.return_value = mock_api_dataset
+
+        # Mock existing dataset with matching metadata
+        existing_dataset = Mock()
+        existing_dataset.namespace = "dataset-123"
+        existing_dataset.edition = "2021"
+        existing_dataset.version = 1
+        existing_dataset.title = "Same Title"
+        existing_dataset.description = "Same Description"
+
+        mock_final_queryset = Mock()
+        mock_dataset.objects.filter.side_effect = [[existing_dataset], mock_final_queryset]
+        mock_dataset.objects.bulk_create.return_value = None
+
+        request = self.factory.get("/chooser/")
+        request.user = self.user
+        request.COOKIES = {}
+
+        self.view.request = request
+        result = self.view.get_objects(["dataset-123,2021,1,true"])
+
+        # Verify no bulk operations were performed since metadata matches
+        mock_dataset.objects.bulk_update.assert_not_called()
+        mock_dataset.objects.bulk_create.assert_not_called()
+        self.assertEqual(result, mock_final_queryset)
+
+    @patch("cms.datasets.views.get_dataset_for_published_state")
+    @patch("cms.datasets.views.Dataset")
+    @patch("cms.datasets.views.ONSDataset")
+    def test_get_objects_handles_mixed_new_and_updated_datasets(self, mock_ons_dataset, mock_dataset, mock_get_dataset):
+        """Test that get_objects handles both creating new and updating existing datasets."""
+        # Mock two different API datasets
+        mock_api_dataset_1 = Mock()
+        mock_api_dataset_1.title = "New Dataset"
+        mock_api_dataset_1.description = "New Description"
+
+        mock_api_dataset_2 = Mock()
+        mock_api_dataset_2.title = "Updated Dataset"
+        mock_api_dataset_2.description = "Updated Description"
+
+        mock_queryset = MagicMock()
+        mock_ons_dataset.objects = mock_queryset
+        mock_queryset.get.side_effect = [mock_api_dataset_1, mock_api_dataset_2]
+
+        mock_get_dataset.side_effect = [mock_api_dataset_1, mock_api_dataset_2]
+
+        # Only the second dataset exists
+        existing_dataset = Mock()
+        existing_dataset.namespace = "dataset-456"
+        existing_dataset.edition = "2022"
+        existing_dataset.version = 2
+        existing_dataset.title = "Old Title"
+        existing_dataset.description = "Old Description"
+
+        mock_final_queryset = Mock()
+        mock_dataset.objects.filter.side_effect = [[existing_dataset], mock_final_queryset]
+        mock_dataset.objects.bulk_create.return_value = None
+        mock_dataset.objects.bulk_update.return_value = None
+
+        request = self.factory.get("/chooser/")
+        request.user = self.user
+        request.COOKIES = {}
+
+        self.view.request = request
+        result = self.view.get_objects(["dataset-123,2021,1,true", "dataset-456,2022,2,true"])
+
+        # Verify bulk_create was called for the new dataset
+        self.assertEqual(mock_dataset.objects.bulk_create.call_count, 1)
+        created_instances = mock_dataset.objects.bulk_create.call_args[0][0]
+        self.assertEqual(len(created_instances), 1)
+
+        # Verify bulk_update was called for the existing dataset
+        self.assertEqual(mock_dataset.objects.bulk_update.call_count, 1)
+        updated_instances = mock_dataset.objects.bulk_update.call_args[0][0]
+        self.assertEqual(len(updated_instances), 1)
+        self.assertEqual(updated_instances[0], existing_dataset)
+        self.assertEqual(existing_dataset.title, "Updated Dataset")
+        self.assertEqual(existing_dataset.description, "Updated Description")
+
+        self.assertEqual(result, mock_final_queryset)
+
+    @patch("cms.datasets.views.get_dataset_for_published_state")
+    @patch("cms.datasets.views.Dataset")
+    @patch("cms.datasets.views.ONSDataset")
+    def test_get_objects_updates_only_changed_fields_in_bulk(self, mock_ons_dataset, mock_dataset, mock_get_dataset):
+        """Test that bulk_update only includes datasets with changed fields."""
+        # Mock two API datasets - one with changes, one without
+        mock_api_dataset_1 = Mock()
+        mock_api_dataset_1.title = "Updated Title"
+        mock_api_dataset_1.description = "Updated Description"
+
+        mock_api_dataset_2 = Mock()
+        mock_api_dataset_2.title = "Same Title"
+        mock_api_dataset_2.description = "Same Description"
+
+        mock_queryset = MagicMock()
+        mock_ons_dataset.objects = mock_queryset
+        mock_queryset.get.side_effect = [mock_api_dataset_1, mock_api_dataset_2]
+
+        mock_get_dataset.side_effect = [mock_api_dataset_1, mock_api_dataset_2]
+
+        # Both datasets exist
+        existing_dataset_1 = Mock()
+        existing_dataset_1.namespace = "dataset-123"
+        existing_dataset_1.edition = "2021"
+        existing_dataset_1.version = 1
+        existing_dataset_1.title = "Old Title"
+        existing_dataset_1.description = "Old Description"
+
+        existing_dataset_2 = Mock()
+        existing_dataset_2.namespace = "dataset-456"
+        existing_dataset_2.edition = "2022"
+        existing_dataset_2.version = 2
+        existing_dataset_2.title = "Same Title"
+        existing_dataset_2.description = "Same Description"
+
+        mock_final_queryset = Mock()
+        mock_dataset.objects.filter.side_effect = [[existing_dataset_1, existing_dataset_2], mock_final_queryset]
+        mock_dataset.objects.bulk_create.return_value = None
+        mock_dataset.objects.bulk_update.return_value = None
+
+        request = self.factory.get("/chooser/")
+        request.user = self.user
+        request.COOKIES = {}
+
+        self.view.request = request
+        result = self.view.get_objects(["dataset-123,2021,1,true", "dataset-456,2022,2,true"])
+
+        # Verify bulk_create was NOT called (both exist)
+        mock_dataset.objects.bulk_create.assert_not_called()
+
+        # Verify bulk_update was called with only the changed dataset
+        self.assertEqual(mock_dataset.objects.bulk_update.call_count, 1)
+        updated_instances = mock_dataset.objects.bulk_update.call_args[0][0]
+        self.assertEqual(len(updated_instances), 1)
+        self.assertEqual(updated_instances[0], existing_dataset_1)
+        self.assertEqual(existing_dataset_1.title, "Updated Title")
+
+        self.assertEqual(result, mock_final_queryset)
