@@ -77,5 +77,5 @@ class KafkaIntegrationTests(TestCase):
 
         self.publisher.publish_deleted(page)
 
-        msg_found = self._poll_for_message(self.consumer_deleted, page.url_path)
+        msg_found = self._poll_for_message(self.consumer_deleted, build_page_uri(page))
         self.assertTrue(msg_found, "No matching message found in 'search-content-deleted' channel.")
