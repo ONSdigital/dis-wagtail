@@ -42,6 +42,7 @@ if TYPE_CHECKING:
 
     from cms.bundles.forms import BundleAdminForm
     from cms.bundles.models import BundlesQuerySet
+    from cms.datasets.models import Dataset
 
 logger = logging.getLogger(__name__)
 
@@ -511,50 +512,80 @@ class BundleInspectView(InspectView):
             case _:
                 return state.replace("_", " ").title()
 
-    def _get_processed_datasets(self) -> list[dict[str, "SafeString | str"]]:
-        """Fetches and processes dataset information from the bundle API."""
+    def _get_api_items_by_content_id(self) -> dict[str, dict[str, Any]]:
+        """Fetch Bundle API contents and build a lookup dict by content_id."""
         client = BundleAPIClient(access_token=self.request.COOKIES.get(settings.ACCESS_TOKEN_COOKIE_NAME))
         bundle_contents = client.get_bundle_contents(self.object.bundle_api_bundle_id)
-        processed_data = []
 
+        api_items: dict[str, dict[str, Any]] = {}
         for content_item in bundle_contents.get("items", []):
-            if content_item.get("content_type") == "DATASET":
-                metadata = content_item.get("metadata", {})
-                state = content_item.get("state", "")
-                links = content_item.get("links", {})
-                dataset_id = metadata.get("dataset_id", "")
-                edition_id = metadata.get("edition_id", "")
-                version_id = metadata.get("version_id", "")
-                preview_url = links.get("preview")
+            if content_item.get("content_type") == "DATASET" and (content_id := content_item.get("id")):
+                api_items[content_id] = content_item
+        return api_items
 
-                item: dict[str, SafeString | str] = {
-                    "title": metadata.get("title", MISSING_VALUE),
-                    "edition": edition_id or MISSING_VALUE,
-                    "version": version_id or MISSING_VALUE,
-                    "state": self.get_human_readable_state(state),
-                    "action_button": "",
-                    "edit_url": "#",
-                }
+    def _extract_api_fields(self, api_item: dict[str, Any] | None) -> tuple[str, str, str | None]:
+        """Extract state, edit_url, and preview_url from API item.
 
-                if dataset_id and edition_id and version_id:
-                    item["edit_url"] = links.get("edit") or "#"
-                    if state == BundleContentItemState.PUBLISHED:
-                        # TODO: Verify preview link is correct
-                        view_url = get_data_admin_action_url("preview", dataset_id, edition_id, version_id)
-                        item["action_button"] = format_html(
-                            '<a href="{}" class="button button-small button-secondary">View Live</a>',
-                            view_url,
-                        )
-                    elif preview_url:
-                        cms_preview_url = reverse(
-                            "bundles:preview_dataset",
-                            args=[self.object.pk, dataset_id, edition_id, version_id],
-                        )
-                        item["action_button"] = format_html(
-                            '<a href="{}" class="button button-small button-secondary">Preview</a>',
-                            cms_preview_url,
-                        )
-                processed_data.append(item)
+        Returns:
+            Tuple of (state, edit_url, preview_url)
+        """
+        if not api_item:
+            return "", "#", None
+
+        links = api_item.get("links", {})
+        return (
+            api_item.get("state", ""),
+            links.get("edit") or "#",
+            links.get("preview"),
+        )
+
+    def _build_action_button(self, state: str, preview_url: str | None, dataset: "Dataset") -> "SafeString | str":
+        """Build the action button HTML based on dataset state."""
+        if state == BundleContentItemState.PUBLISHED:
+            view_url = get_data_admin_action_url("preview", dataset.namespace, dataset.edition, str(dataset.version))
+            return format_html(
+                '<a href="{}" class="button button-small button-secondary">View Live</a>',
+                view_url,
+            )
+        if preview_url:
+            cms_preview_url = reverse(
+                "bundles:preview_dataset",
+                args=[self.object.pk, dataset.namespace, dataset.edition, dataset.version],
+            )
+            return format_html(
+                '<a href="{}" class="button button-small button-secondary">Preview</a>',
+                cms_preview_url,
+            )
+        return ""
+
+    def _get_processed_datasets(self) -> list[dict[str, "SafeString | str"]]:
+        """Processes dataset information by hydrating local DB records with API data.
+
+        Uses local database records as the source of truth, then enriches them with
+        state and edit URL information from the Bundle API.
+        """
+        api_items_by_content_id = self._get_api_items_by_content_id()
+
+        processed_data = []
+        for bundled_dataset in self.object.bundled_datasets.select_related("dataset").all():
+            if not bundled_dataset.dataset:
+                continue
+
+            dataset = bundled_dataset.dataset
+            api_item = api_items_by_content_id.get(bundled_dataset.bundle_api_content_id)
+            state, edit_url, preview_url = self._extract_api_fields(api_item)
+
+            item: dict[str, SafeString | str] = {
+                "title": dataset.title,
+                "edition": dataset.edition or MISSING_VALUE,
+                "version": str(dataset.version) if dataset.version else MISSING_VALUE,
+                "state": self.get_human_readable_state(state),
+                "action_button": self._build_action_button(state, preview_url, dataset),
+                "edit_url": edit_url,
+            }
+
+            processed_data.append(item)
+
         return processed_data
 
     def _render_datasets_table(self, include_edit_links: bool) -> "SafeString | str":
