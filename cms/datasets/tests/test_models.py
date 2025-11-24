@@ -400,7 +400,7 @@ class TestONSDataset(TestCase):
 
         responses.add(
             responses.GET,
-            settings.DATASETS_API_EDITIONS_URL + "?offset=0&published=false",
+            settings.DATASETS_API_EDITIONS_URL + "?offset=0&limit=100&published=false",
             json=response_data,
         )
 
