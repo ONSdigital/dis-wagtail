@@ -523,7 +523,8 @@ class BundleInspectView(InspectView):
                 api_items[content_id] = content_item
         return api_items
 
-    def _extract_api_fields(self, api_item: dict[str, Any] | None) -> tuple[str, str, str | None]:
+    @staticmethod
+    def _extract_api_fields(api_item: dict[str, Any] | None) -> tuple[str, str, str | None]:
         """Extract state, edit_url, and preview_url from API item.
 
         Returns:
@@ -564,7 +565,10 @@ class BundleInspectView(InspectView):
         Uses local database records as the source of truth, then enriches them with
         state and edit URL information from the Bundle API.
         """
-        api_items_by_content_id = self._get_api_items_by_content_id()
+        try:
+            api_items_by_content_id = self._get_api_items_by_content_id()
+        except BundleAPIClientError:
+            api_items_by_content_id = {}
 
         processed_data = []
         for bundled_dataset in self.object.bundled_datasets.select_related("dataset").all():
@@ -595,10 +599,7 @@ class BundleInspectView(InspectView):
             include_edit_links: If True, titles are hyperlinked to data admin.
                             If False, titles are plain text.
         """
-        try:
-            processed_datasets = self._get_processed_datasets()
-        except BundleAPIClientError as e:
-            return f"Could not retrieve datasets from Dataset API: {e}"
+        processed_datasets = self._get_processed_datasets()
 
         if not processed_datasets:
             return "No datasets in bundle"
