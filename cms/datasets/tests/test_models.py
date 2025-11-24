@@ -4,7 +4,7 @@ from unittest.mock import patch
 import requests
 import responses
 from django.conf import settings
-from django.test import TestCase
+from django.test import TestCase, override_settings
 
 from cms.datasets.models import ONSDataset, ONSDatasetApiQuerySet
 
@@ -62,6 +62,22 @@ class TestONSDatasetApiQuerySet(TestCase):
 
         self.assertEqual(cloned.token, test_token)
         self.assertIsNot(api_queryset, cloned)
+
+    @override_settings(DATASETS_API_DEFAULT_PAGE_SIZE=50)
+    def test_run_query_uses_configured_page_size_limit_when_called(self):
+        """Test that run_query() uses the configured page size."""
+        api_queryset = ONSDatasetApiQuerySet()
+        api_queryset.base_url = settings.DATASETS_API_EDITIONS_URL
+        api_queryset.pagination_style = "offset-limit"
+
+        with patch.object(
+            api_queryset, "fetch_api_response", return_value={"items": [], "total_count": 0}
+        ) as mock_fetch:
+            list(api_queryset.run_query())
+
+            # Check that fetch_api_response was called with limit=50
+            called_params = mock_fetch.call_args[1]["params"]
+            self.assertEqual(called_params["limit"], 50)
 
     @responses.activate
     def test_fetch_api_response_includes_auth_header(self):
