@@ -28,7 +28,7 @@ achieve this depending on the use-case:
     # Write data
     obj = MyModel.objects.create(field='value')
 
-    # Read data from primary to avoid replication lag
+    # Read data from default (write) DB alias to avoid replication lag
     obj = MyModel.objects.using(DEFAULT_DB_ALIAS).get(id=obj.id)
     ```
 
@@ -39,7 +39,7 @@ achieve this depending on the use-case:
         # Write data
         obj = MyModel.objects.create(field='value')
 
-        # Read data - will use primary due to open transaction
+        # Read data - will use primary due to open transaction which specifies use of the default (write) DB alias
         obj = MyModel.objects.get(id=obj.id)
     ```
 
