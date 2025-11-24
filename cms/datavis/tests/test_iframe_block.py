@@ -49,10 +49,9 @@ class IframeBlockTestCase(BaseVisualisationBlockTestCase):
         readable_prefixes = " or ".join(settings.IFRAME_VISUALISATION_PATH_PREFIXES)
         cases = {
             # Absolute URL with invalid domain
-            "https://www.random.url.com": "The URL hostname is not in the list of allowed domains: example.com",
+            "https://www.random.url.com": "The URL hostname is not in the list of allowed domains: example.com.",
             # Absolute URL with invalid scheme
-            "http://example.com": "Please enter a valid URL. "
-            "Full URLs must start with 'https://' and contain a valid domain",
+            "http://example.com": "Please enter a valid URL. Full URLs must start with 'https://'.",
             # Absolute URL with invalid prefix
             "https://example.com/invalidpath/12345": (
                 f"The URL path is not allowed. It must start with: {readable_prefixes}, "

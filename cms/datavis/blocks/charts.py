@@ -735,8 +735,7 @@ class IframeBlock(BaseVisualisationBlock):
             if field.required and not value.get(field_name):
                 errors[field_name] = ValidationError("This field is required.")
 
-        url_errors = self._validate_source_url(value)
-        errors.update(url_errors)
+        errors |= self._validate_source_url(value)
 
         if errors:
             raise blocks.StructBlockValidationError(errors)
@@ -744,7 +743,7 @@ class IframeBlock(BaseVisualisationBlock):
         return super().clean(value)
 
     def _validate_source_url(self, value: "StructValue") -> dict[str, ValidationError]:
-        """Validate the source URL of the iframe. Validation errors will are returned as an errors dict.
+        """Validate the source URL of the iframe. Validation errors are returned as an errors dict.
         The URL can be either absolute (with scheme and hostname) or relative (path only).
         """
         source_url = value["iframe_source_url"]
@@ -761,21 +760,21 @@ class IframeBlock(BaseVisualisationBlock):
         return self._validate_source_url_path(parsed_url)
 
     def _validate_absolute_source_url(self, parsed_url: ParseResult, *, source_url: str) -> dict[str, ValidationError]:
-        """Validate the absolute source URL of the iframe. Validation errors will are returned as an errors dict."""
+        """Validate the absolute source URL of the iframe. Validation errors are returned as an errors dict."""
         errors = {}
         allowed_domains = " or ".join(settings.IFRAME_VISUALISATION_ALLOWED_DOMAINS)
 
         # Check the original source_url string scheme here, as URL parse is permissive of malformed schemes
         if not (source_url.startswith("https://") and parsed_url.hostname):
             errors["iframe_source_url"] = ValidationError(
-                "Please enter a valid URL. Full URLs must start with 'https://' and contain a valid domain"
+                "Please enter a valid URL. Full URLs must start with 'https://'."
             )
         elif not any(
             is_hostname_in_domain(parsed_url.hostname, allowed_domain)
             for allowed_domain in settings.IFRAME_VISUALISATION_ALLOWED_DOMAINS
         ):
             errors["iframe_source_url"] = ValidationError(
-                f"The URL hostname is not in the list of allowed domains: {allowed_domains}"
+                f"The URL hostname is not in the list of allowed domains: {allowed_domains}."
             )
         else:
             path_errors = self._validate_source_url_path(parsed_url)
@@ -785,7 +784,7 @@ class IframeBlock(BaseVisualisationBlock):
 
     @staticmethod
     def _validate_source_url_path(parsed_url: ParseResult) -> dict[str, ValidationError]:
-        """Validate the path of the iframe source URL. Validation errors will are returned as an errors dict."""
+        """Validate the path of the iframe source URL. Validation errors are returned as an errors dict."""
         errors = {}
         url_path = parsed_url.path.rstrip("/")
         allowed_prefixes = [prefix.rstrip("/") for prefix in settings.IFRAME_VISUALISATION_PATH_PREFIXES]

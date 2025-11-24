@@ -1,6 +1,9 @@
-from django.core.exceptions import ValidationError
+from typing import TYPE_CHECKING
+
 from wagtail import blocks
-from wagtail.blocks import StructValue
+
+if TYPE_CHECKING:
+    from wagtail.blocks import StructValue
 
 
 class RelativeOrAbsoluteURLBlock(blocks.URLBlock):
@@ -10,16 +13,13 @@ class RelativeOrAbsoluteURLBlock(blocks.URLBlock):
     """
 
     def clean(self, value: "StructValue") -> "StructValue":
-        if not isinstance(value, str):
-            raise ValidationError("Enter a valid URL.")
-
         # If the value starts with "/" we assume it is a relative URL, and prepend a dummy scheme and domain,
         # otherwise we assume it is an absolute URL and leave it unchanged.
         # This allows us to leverage the URLBlock validation for relative URLs.
         # Note that this does mean that validation e.g. max length will include this dummy prefix which should be
         # considered carefully if setting those limits, the url being validated will be longer than the relative URL
         # input. If exact length validation is required for a particular use case, this block may not be suitable.
-        absolute_value = f"https://example.com{value}" if value and value.startswith("/") else value
+        absolute_value = f"https://example.com{value}" if isinstance(value, str) and value.startswith("/") else value
 
         # Pass the definitely absolute URL shaped value to the parent clean method for validation
         super().clean(absolute_value)
