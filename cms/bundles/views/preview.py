@@ -50,7 +50,7 @@ class BundleContentsMixin:
         return pages
 
 
-class PreviewBundleView(BundleContentsMixin, TemplateView):
+class PreviewBundlePageView(BundleContentsMixin, TemplateView):
     http_method_names: Sequence[str] = ["get"]
 
     def get(self, request: "HttpRequest", *args: Any, **kwargs: Any) -> TemplateResponse:

@@ -99,7 +99,7 @@ class AddToBundleViewTestCase(WagtailTestUtils, TestCase):
         self.assertQuerySetEqual(self.statistical_article_page.bundles, Bundle.objects.all())
 
 
-class PreviewBundleViewTestCase(WagtailTestUtils, TestCase):
+class PreviewBundlePageViewTestCase(WagtailTestUtils, TestCase):
     @classmethod
     def setUpTestData(cls):
         cls.superuser = cls.create_superuser(username="admin")
