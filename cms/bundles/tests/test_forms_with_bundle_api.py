@@ -314,7 +314,7 @@ class BundleDatasetValidationTestCase(TestCase):
         self.bundle.save(update_fields=["bundle_api_bundle_id"])
 
         self.mock_client.get_bundle_contents.return_value = {
-            "contents": [
+            "items": [
                 {
                     "id": "content-1",
                     "state": "DRAFT",
