@@ -1,4 +1,5 @@
 from http import HTTPStatus
+from unittest.mock import patch
 
 import responses
 from django.conf import settings
@@ -17,6 +18,7 @@ from cms.bundles.tests.utils import (
     create_bundle_viewer,
     grant_all_bundle_permissions,
 )
+from cms.bundles.views.preview import PreviewBundleDatasetView
 from cms.home.models import HomePage
 from cms.release_calendar.tests.factories import ReleaseCalendarPageFactory
 from cms.teams.models import Team
@@ -97,7 +99,7 @@ class AddToBundleViewTestCase(WagtailTestUtils, TestCase):
         self.assertQuerySetEqual(self.statistical_article_page.bundles, Bundle.objects.all())
 
 
-class PreviewBundleViewTestCase(WagtailTestUtils, TestCase):
+class PreviewBundlePageViewTestCase(WagtailTestUtils, TestCase):
     @classmethod
     def setUpTestData(cls):
         cls.superuser = cls.create_superuser(username="admin")
@@ -572,3 +574,350 @@ class PreviewBundleReleaseCalendarViewTestCase(WagtailTestUtils, TestCase):
             f"{methodology_article.display_title}</option>",
             content,
         )
+
+
+@override_settings(
+    DIS_DATASETS_BUNDLE_API_ENABLED=True,
+    DIS_DATASETS_BUNDLE_API_BASE_URL="https://test-api.example.com",
+)
+class PreviewBundleDatasetViewTestCase(WagtailTestUtils, TestCase):
+    @classmethod
+    def setUpTestData(cls):
+        cls.superuser = cls.create_superuser(username="admin")
+        cls.publishing_officer = create_bundle_manager()
+        cls.previewer = create_bundle_viewer()
+        cls.user_with_only_admin_access = UserFactory(access_admin=True)
+
+        cls.bundle = BundleFactory(
+            name="Dataset Bundle", in_review=True, created_by=cls.publishing_officer, bundle_api_bundle_id="test-123"
+        )
+
+        cls.preview_team = Team.objects.create(identifier="data-team", name="Data Team")
+        BundleTeam.objects.create(parent=cls.bundle, team=cls.preview_team)
+
+        cls.dataset_id = "cpih01"
+        cls.edition_id = "time-series"
+        cls.version_id = "1"
+        cls.preview_url = reverse(
+            "bundles:preview_dataset",
+            args=[cls.bundle.pk, cls.dataset_id, cls.edition_id, cls.version_id],
+        )
+
+        # Mock API response
+        cls.mock_bundle_contents = {
+            "items": [
+                {
+                    "content_type": "DATASET",
+                    "state": "APPROVED",
+                    "metadata": {
+                        "dataset_id": cls.dataset_id,
+                        "edition_id": cls.edition_id,
+                        "version_id": cls.version_id,
+                        "title": "Consumer Price Inflation",
+                    },
+                    "links": {"preview": "http://data-admin.local/preview/dataset/cpih01/time-series/1"},
+                }
+            ]
+        }
+
+    def test_view_requires_access_to_admin(self):
+        response = self.client.get(self.preview_url, follow=True)
+        self.assertRedirects(response, f"/admin/login/?next={self.preview_url}")
+
+    @patch("cms.bundles.views.preview.BundleAPIClient")
+    def test_view_checks_bundle_exists(self, mock_client_class):  # pylint: disable=unused-argument
+        self.client.force_login(self.superuser)
+        response = self.client.get(
+            reverse("bundles:preview_dataset", args=[99999, self.dataset_id, self.edition_id, self.version_id])
+        )
+        self.assertEqual(response.status_code, HTTPStatus.NOT_FOUND)
+
+    @patch("cms.bundles.views.preview.BundleAPIClient")
+    def test_view_checks_user_can_preview(self, mock_client_class):
+        mock_instance = mock_client_class.return_value
+        mock_instance.get_bundle_contents.return_value = self.mock_bundle_contents
+
+        scenarios = [
+            (self.superuser, HTTPStatus.OK),
+            (self.publishing_officer, HTTPStatus.OK),
+            (self.previewer, HTTPStatus.FOUND),
+            (self.user_with_only_admin_access, HTTPStatus.FOUND),
+        ]
+
+        for user, expected_status in scenarios:
+            with self.subTest(f"User: {user}, Expected status: {expected_status}"):
+                self.client.force_login(user)
+                response = self.client.get(self.preview_url)
+                self.assertEqual(response.status_code, expected_status)
+
+    @patch("cms.bundles.views.preview.BundleAPIClient")
+    def test_view_returns_iframe_url_from_api(self, mock_client_class):
+        self.client.force_login(self.publishing_officer)
+        mock_instance = mock_client_class.return_value
+        mock_instance.get_bundle_contents.return_value = self.mock_bundle_contents
+
+        response = self.client.get(self.preview_url)
+        self.assertEqual(response.status_code, HTTPStatus.OK)
+        # Check the iframe URL is in the response content
+        self.assertContains(response, "http://data-admin.local/preview/dataset/cpih01/time-series/1")
+
+    @patch("cms.bundles.views.preview.BundleAPIClient")
+    def test_view_redirects_if_dataset_not_in_bundle(self, mock_client_class):
+        self.client.force_login(self.publishing_officer)
+        mock_instance = mock_client_class.return_value
+        mock_instance.get_bundle_contents.return_value = {"items": []}
+
+        response = self.client.get(self.preview_url)
+        self.assertRedirects(response, reverse("bundle:inspect", args=[self.bundle.pk]), fetch_redirect_response=False)
+
+        # Check that an error message was added
+        messages_list = list(response.wsgi_request._messages)  # pylint: disable=protected-access
+        self.assertEqual(len(messages_list), 1)
+        self.assertIn("could not be found", str(messages_list[0]))
+
+    @patch("cms.bundles.views.preview.BundleAPIClient")
+    def test_view_displays_error_message_after_redirect(self, mock_client_class):
+        """Test that the error message is actually displayed on the inspect page after redirect."""
+        self.client.force_login(self.publishing_officer)
+        mock_instance = mock_client_class.return_value
+        mock_instance.get_bundle_contents.return_value = {"items": []}
+
+        response = self.client.get(self.preview_url, follow=True)
+
+        # Verify we ended up on the inspect page
+        self.assertEqual(response.status_code, HTTPStatus.OK)
+        self.assertContains(response, self.bundle.name)
+
+        # Verify the error message is displayed in the response
+        self.assertContains(response, "could not be found in this bundle")
+        self.assertContains(response, self.dataset_id)
+        self.assertContains(response, self.edition_id)
+        self.assertContains(response, self.version_id)
+
+    @patch("cms.bundles.views.preview.BundleAPIClient")
+    def test_view_redirects_if_preview_url_missing(self, mock_client_class):
+        self.client.force_login(self.publishing_officer)
+        mock_instance = mock_client_class.return_value
+        mock_bundle_contents_no_preview = {
+            "items": [
+                {
+                    "content_type": "DATASET",
+                    "state": "APPROVED",
+                    "metadata": {
+                        "dataset_id": self.dataset_id,
+                        "edition_id": self.edition_id,
+                        "version_id": self.version_id,
+                        "title": "Consumer Price Inflation",
+                    },
+                    "links": {},
+                }
+            ]
+        }
+        mock_instance.get_bundle_contents.return_value = mock_bundle_contents_no_preview
+
+        response = self.client.get(self.preview_url)
+        self.assertRedirects(response, reverse("bundle:inspect", args=[self.bundle.pk]), fetch_redirect_response=False)
+
+        # Check that an error message was added
+        messages_list = list(response.wsgi_request._messages)  # pylint: disable=protected-access
+        self.assertEqual(len(messages_list), 1)
+        self.assertIn("does not have a preview available", str(messages_list[0]))
+
+    @patch("cms.bundles.views.preview.BundleAPIClient")
+    def test_preview_logs_action(self, mock_client_class):
+        self.client.force_login(self.publishing_officer)
+        mock_instance = mock_client_class.return_value
+        mock_instance.get_bundle_contents.return_value = self.mock_bundle_contents
+
+        self.assertEqual(ModelLogEntry.objects.filter(action="bundles.preview").count(), 0)
+
+        self.client.get(self.preview_url)
+
+        log_entries = ModelLogEntry.objects.filter(action="bundles.preview")
+        self.assertEqual(len(log_entries), 1)
+
+        entry = log_entries[0]
+        self.assertEqual(entry.user, self.publishing_officer)
+        self.assertDictEqual(
+            entry.data,
+            {
+                "type": "dataset",
+                "dataset_id": self.dataset_id,
+                "edition_id": self.edition_id,
+                "version_id": self.version_id,
+            },
+        )
+
+    @patch("cms.bundles.views.preview.BundleAPIClient")
+    def test_preview_includes_iframe_element(self, mock_client_class):
+        self.client.force_login(self.publishing_officer)
+        mock_instance = mock_client_class.return_value
+        mock_instance.get_bundle_contents.return_value = self.mock_bundle_contents
+
+        response = self.client.get(self.preview_url)
+        self.assertEqual(response.status_code, HTTPStatus.OK)
+        self.assertContains(response, "<iframe")
+        self.assertContains(response, 'class="preview-iframe"')
+        self.assertContains(response, self.mock_bundle_contents["items"][0]["links"]["preview"])
+
+    def test_find_dataset_preview_url_returns_url_when_match_found(self):
+        """Test that find_dataset_preview_url returns the preview URL when dataset is found."""
+        bundle_contents = {
+            "items": [
+                {
+                    "content_type": "DATASET",
+                    "metadata": {
+                        "dataset_id": "test-dataset",
+                        "edition_id": "test-edition",
+                        "version_id": "1",
+                    },
+                    "links": {"preview": "https://example.com/preview/123"},
+                },
+            ]
+        }
+
+        result = PreviewBundleDatasetView.find_dataset_preview_url(bundle_contents, "test-dataset", "test-edition", "1")
+
+        self.assertEqual(result, "https://example.com/preview/123")
+
+    def test_find_dataset_preview_url_returns_none_when_no_match(self):
+        """Test that find_dataset_preview_url returns None when dataset is not found."""
+        bundle_contents = {
+            "items": [
+                {
+                    "content_type": "DATASET",
+                    "metadata": {
+                        "dataset_id": "test-dataset",
+                        "edition_id": "test-edition",
+                        "version_id": "1",
+                    },
+                    "links": {"preview": "https://example.com/preview/123"},
+                },
+            ]
+        }
+
+        result = PreviewBundleDatasetView.find_dataset_preview_url(
+            bundle_contents, "different-dataset", "test-edition", "1"
+        )
+
+        self.assertIsNone(result)
+
+    def test_find_dataset_preview_url_returns_none_when_no_preview_link(self):
+        """Test that find_dataset_preview_url returns None when preview link is missing."""
+        bundle_contents = {
+            "items": [
+                {
+                    "content_type": "DATASET",
+                    "metadata": {
+                        "dataset_id": "test-dataset",
+                        "edition_id": "test-edition",
+                        "version_id": "1",
+                    },
+                    "links": {},
+                },
+            ]
+        }
+
+        result = PreviewBundleDatasetView.find_dataset_preview_url(bundle_contents, "test-dataset", "test-edition", "1")
+
+        self.assertIsNone(result)
+
+    def test_find_dataset_preview_url_skips_non_dataset_items(self):
+        """Test that find_dataset_preview_url skips items that are not datasets."""
+        bundle_contents = {
+            "items": [
+                {
+                    "content_type": "PAGE",
+                    "metadata": {
+                        "dataset_id": "test-dataset",
+                        "edition_id": "test-edition",
+                        "version_id": "1",
+                    },
+                    "links": {"preview": "https://example.com/wrong"},
+                },
+                {
+                    "content_type": "DATASET",
+                    "metadata": {
+                        "dataset_id": "test-dataset",
+                        "edition_id": "test-edition",
+                        "version_id": "1",
+                    },
+                    "links": {"preview": "https://example.com/correct"},
+                },
+            ]
+        }
+
+        result = PreviewBundleDatasetView.find_dataset_preview_url(bundle_contents, "test-dataset", "test-edition", "1")
+
+        self.assertEqual(result, "https://example.com/correct")
+
+    def test_find_dataset_preview_url_returns_first_match(self):
+        """Test that find_dataset_preview_url returns the first matching dataset."""
+        bundle_contents = {
+            "items": [
+                {
+                    "content_type": "DATASET",
+                    "metadata": {
+                        "dataset_id": "test-dataset",
+                        "edition_id": "test-edition",
+                        "version_id": "1",
+                    },
+                    "links": {"preview": "https://example.com/first"},
+                },
+                {
+                    "content_type": "DATASET",
+                    "metadata": {
+                        "dataset_id": "test-dataset",
+                        "edition_id": "test-edition",
+                        "version_id": "1",
+                    },
+                    "links": {"preview": "https://example.com/second"},
+                },
+            ]
+        }
+
+        result = PreviewBundleDatasetView.find_dataset_preview_url(bundle_contents, "test-dataset", "test-edition", "1")
+
+        self.assertEqual(result, "https://example.com/first")
+
+    @override_settings(DIS_DATASETS_BUNDLE_API_ENABLED=False)
+    def test_view_redirects_when_bundle_api_disabled(self):
+        """Test that view redirects with error message when Bundle API is disabled."""
+        self.client.force_login(self.publishing_officer)
+
+        response = self.client.get(self.preview_url, follow=True)
+
+        # Verify we redirected to the inspect page
+        self.assertRedirects(response, reverse("bundle:inspect", args=[self.bundle.pk]))
+
+        # Verify the error message is displayed
+        self.assertContains(response, "The Datasets Bundle API is not enabled")
+        self.assertContains(response, "Cannot preview dataset")
+
+    @override_settings(DIS_DATASETS_BUNDLE_API_ENABLED=True)
+    def test_view_redirects_when_bundle_has_no_api_id(self):
+        """Test that view redirects with error message when bundle has no API bundle ID."""
+        self.client.force_login(self.publishing_officer)
+
+        # Create a bundle without bundle_api_bundle_id (empty string)
+        bundle_without_api_id = BundleFactory(
+            name="Bundle Without API ID",
+            in_review=True,
+            created_by=self.publishing_officer,
+            bundle_api_bundle_id="",
+        )
+        BundleTeam.objects.create(parent=bundle_without_api_id, team=self.preview_team)
+
+        preview_url = reverse(
+            "bundles:preview_dataset",
+            args=[bundle_without_api_id.pk, self.dataset_id, self.edition_id, self.version_id],
+        )
+
+        response = self.client.get(preview_url, follow=True)
+
+        # Verify we redirected to the inspect page
+        self.assertRedirects(response, reverse("bundle:inspect", args=[bundle_without_api_id.pk]))
+
+        # Verify the error message is displayed (dataset not found because get_bundle_contents returns {})
+        self.assertContains(response, "could not be found in this bundle")
+        self.assertContains(response, self.dataset_id)
