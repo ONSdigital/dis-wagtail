@@ -1063,3 +1063,50 @@ class TestDatasetChosenMultipleViewMixin(TestCase):
         self.assertEqual(existing_dataset_1.title, "Updated Title")
 
         self.assertEqual(result, mock_final_queryset)
+
+    @patch("cms.datasets.views.get_dataset_for_published_state")
+    @patch("cms.datasets.views.Dataset")
+    @patch("cms.datasets.views.ONSDataset")
+    def test_get_objects_skips_update_when_api_has_empty_values(self, mock_ons_dataset, mock_dataset, mock_get_dataset):
+        """Test that empty/None values from API don't trigger bulk updates."""
+        # Mock API dataset with empty values
+        mock_api_dataset = Mock()
+        mock_api_dataset.title = None
+        mock_api_dataset.description = ""
+
+        mock_queryset = MagicMock()
+        mock_ons_dataset.objects = mock_queryset
+        mock_queryset.get.return_value = mock_api_dataset
+
+        mock_get_dataset.return_value = mock_api_dataset
+
+        # Mock existing dataset with valid values
+        existing_dataset = Mock()
+        existing_dataset.namespace = "dataset-123"
+        existing_dataset.edition = "2021"
+        existing_dataset.version = 1
+        existing_dataset.title = "Existing Title"
+        existing_dataset.description = "Existing Description"
+
+        mock_final_queryset = Mock()
+        mock_using = Mock()
+        mock_using.filter.return_value = mock_final_queryset
+        mock_dataset.objects.filter.side_effect = [[existing_dataset]]
+        mock_dataset.objects.using.return_value = mock_using
+        mock_dataset.objects.bulk_create.return_value = None
+
+        request = self.factory.get("/chooser/")
+        request.user = self.user
+        request.COOKIES = {}
+
+        self.view.request = request
+        result = self.view.get_objects(["dataset-123,2021,1,true"])
+
+        # Verify existing values were preserved (not overwritten by empty API values)
+        self.assertEqual(existing_dataset.title, "Existing Title")
+        self.assertEqual(existing_dataset.description, "Existing Description")
+
+        # Verify no bulk operations were performed since API values were empty
+        mock_dataset.objects.bulk_update.assert_not_called()
+        mock_dataset.objects.bulk_create.assert_not_called()
+        self.assertEqual(result, mock_final_queryset)
