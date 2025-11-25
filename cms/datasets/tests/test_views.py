@@ -609,6 +609,43 @@ class TestDatasetChosenView(TestCase):
         mock_dataset_instance.save.assert_not_called()
         self.assertEqual(result, mock_dataset_instance)
 
+    @patch("cms.datasets.views.get_dataset_for_published_state")
+    @patch("cms.datasets.views.Dataset")
+    @patch("cms.datasets.views.ONSDataset")
+    def test_get_object_skips_update_when_api_has_empty_values(self, mock_ons_dataset, mock_dataset, mock_get_dataset):
+        """Test that empty/None values from API don't trigger updates."""
+        # Mock the API dataset with empty values
+        mock_api_dataset = Mock()
+        mock_api_dataset.title = ""
+        mock_api_dataset.description = None
+
+        mock_queryset = MagicMock()
+        mock_ons_dataset.objects = mock_queryset
+        mock_queryset.get.return_value = mock_api_dataset
+
+        mock_get_dataset.return_value = mock_api_dataset
+
+        # Mock existing dataset with valid values
+        mock_dataset_instance = Mock()
+        mock_dataset_instance.title = "Existing Title"
+        mock_dataset_instance.description = "Existing Description"
+        mock_dataset.objects.get_or_create.return_value = (mock_dataset_instance, False)
+
+        request = self.factory.get("/chooser/")
+        request.user = self.user
+        request.COOKIES = {}
+
+        self.view.request = request
+        result = self.view.get_object("dataset-123,2021,1,true")
+
+        # Verify existing values were preserved (not overwritten by empty API values)
+        self.assertEqual(mock_dataset_instance.title, "Existing Title")
+        self.assertEqual(mock_dataset_instance.description, "Existing Description")
+
+        # Verify save was NOT called since API values were empty/None
+        mock_dataset_instance.save.assert_not_called()
+        self.assertEqual(result, mock_dataset_instance)
+
 
 class TestDatasetChosenMultipleViewMixin(TestCase):
     """Test the DatasetChosenMultipleViewMixin functionality."""
