@@ -2,13 +2,13 @@ import base64
 import importlib
 import json
 import uuid
-from contextlib import suppress
 from datetime import UTC, datetime, timedelta
 from unittest import mock
 
 import jwt
 import requests
 from django.conf import settings
+from django.core.cache import caches
 from django.test import SimpleTestCase, override_settings
 
 from cms.auth import utils
@@ -26,9 +26,6 @@ class ValidateJWTTests(SimpleTestCase):
         """Patch utils.get_jwks() so only pair's public key is returned."""
         pair = pair or self.good_pair
         b64_der = base64.b64encode(pair.public_der).decode()
-
-        with suppress(AttributeError):
-            utils.get_jwks.cache_clear()  # functools.lru_cache
 
         return mock.patch("cms.auth.utils.get_jwks", return_value={pair.kid: b64_der})
 
@@ -109,6 +106,9 @@ class ValidateJWTTests(SimpleTestCase):
             self.assertIsNone(utils.validate_jwt(token, token_type="access"))
 
     def test_get_jwks_uses_configured_timeout(self):
+        # Reset any cached JWKS before running the test.
+        caches["memory"].clear()
+
         token = build_jwt(
             self.good_pair,
             token_use="access",
