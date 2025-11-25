@@ -7,16 +7,13 @@ from cms.search.utils import build_page_uri, get_model_by_name
 
 
 class SearchUtilsTests(TestCase):
-    @classmethod
-    def setUpTestData(cls):
-        cls.model_names = {
+    def test_get_model_by_name(self):
+        model_names = {
             "Page": Page,
             "ArticlesIndexPage": ArticlesIndexPage,
             "ArticleSeriesPage": ArticleSeriesPage,
         }
-
-    def test_get_model_by_name(self):
-        for name, model in self.model_names.items():
+        for name, model in model_names.items():
             with self.subTest(model_name=name):
                 result = get_model_by_name(name)
                 self.assertEqual(result, model)
