@@ -31,6 +31,27 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
+def _update_dataset_metadata(dataset: Dataset, *, title: str, description: str) -> list[str]:
+    """Apply API metadata to a Dataset instance and return the updated field names.
+
+    Args:
+        dataset: The Dataset instance to update
+        title: The new title from the API
+        description: The new description from the API
+
+    Returns:
+        List of field names that were updated
+    """
+    updated_fields: list[str] = []
+    if title and dataset.title != title:
+        dataset.title = title
+        updated_fields.append("title")
+    if description and dataset.description != description:
+        dataset.description = description
+        updated_fields.append("description")
+    return updated_fields
+
+
 class DatasetChooserPermissionMixin:
     """Mixin to check permissions for accessing unpublished datasets."""
 
@@ -172,16 +193,26 @@ class DatasetChosenView(ChosenViewMixin, ChosenResponseMixin, DatasetRetrievalMi
 
         item_from_api = self.retrieve_dataset(dataset_id=dataset_id, published=published, access_token=access_token)
 
-        dataset, _ = Dataset.objects.get_or_create(
+        dataset, created = Dataset.objects.get_or_create(
             namespace=dataset_id,
             edition=edition,
-            version=version,
+            version=int(version),
             defaults={
                 # Use title and description from the API, the rest was grabbed from the compound ID
                 "title": item_from_api.title,
                 "description": item_from_api.description,
             },
         )
+        if not created:
+            # Dataset already existed, check if metadata needs updating
+            updated_fields = _update_dataset_metadata(
+                dataset,
+                title=item_from_api.title,
+                description=item_from_api.description,
+            )
+            if updated_fields:
+                dataset.save(update_fields=updated_fields)
+
         return dataset
 
 
@@ -193,7 +224,7 @@ class DatasetChosenMultipleViewMixin(ChosenMultipleViewMixin, DatasetRetrievalMi
         api_data_for_datasets: list[dict] = []
 
         # List of tuples (namespace, edition, version) for querying existing datasets
-        lookup_criteria: list[tuple[str, str, str]] = []
+        lookup_criteria: list[tuple[str, str, int]] = []
 
         # Get the auth token from the request
         access_token = self.request.COOKIES.get(settings.ACCESS_TOKEN_COOKIE_NAME)
@@ -206,41 +237,59 @@ class DatasetChosenMultipleViewMixin(ChosenMultipleViewMixin, DatasetRetrievalMi
             item_from_api = self.retrieve_dataset(dataset_id=dataset_id, published=published, access_token=access_token)
 
             # Use title and description from the API, the rest was grabbed from the compound ID
+            version_int = int(version)
             api_data_for_datasets.append(
                 {
                     "id": dataset_id,
                     "title": item_from_api.title,
                     "description": item_from_api.description,
                     "edition": edition,
-                    "version": version,
+                    "version": version_int,
                 }
             )
-            lookup_criteria.append((dataset_id, edition, version))
+            lookup_criteria.append((dataset_id, edition, version_int))
 
         existing_query = Q()
-        for namespace, edition, version in lookup_criteria:
-            existing_query |= Q(namespace=namespace, edition=edition, version=int(version))
+        for namespace, edition, ver in lookup_criteria:
+            existing_query |= Q(namespace=namespace, edition=edition, version=ver)
 
         existing_datasets_map: dict[tuple[str, str, int], Dataset] = {
             (ds.namespace, ds.edition, ds.version): ds for ds in Dataset.objects.filter(existing_query)
         }
 
-        datasets_to_create_instances: list[Dataset] = []
+        datasets_to_create: list[Dataset] = []
+        datasets_to_update: list[Dataset] = []
+        all_updated_fields: set[str] = set()
         for data in api_data_for_datasets:
-            data_version = int(data["version"])
-            if (data["id"], data["edition"], data_version) not in existing_datasets_map:
-                datasets_to_create_instances.append(
+            key = (data["id"], data["edition"], data["version"])
+            existing_dataset = existing_datasets_map.get(key)
+
+            if existing_dataset is None:
+                # Dataset doesn't exist, create it
+                datasets_to_create.append(
                     Dataset(
                         namespace=data["id"],
                         edition=data["edition"],
-                        version=data_version,
+                        version=data["version"],
                         title=data["title"],
                         description=data["description"],
                     )
                 )
+            else:
+                # Dataset exists, check if metadata needs updating
+                updated_fields = _update_dataset_metadata(
+                    existing_dataset,
+                    title=data["title"],
+                    description=data["description"],
+                )
+                if updated_fields:
+                    datasets_to_update.append(existing_dataset)
+                    all_updated_fields.update(updated_fields)
 
-        if datasets_to_create_instances:
-            Dataset.objects.bulk_create(datasets_to_create_instances)
+        if datasets_to_create:
+            Dataset.objects.bulk_create(datasets_to_create)
+        if datasets_to_update:
+            Dataset.objects.bulk_update(datasets_to_update, all_updated_fields)
 
         # Return the existing and newly created datasets, using the DEFAULT_DB_ALIAS to ensure we read from the default
         # database instance, as the newly created datasets may not yet be replicated to read replicas.
