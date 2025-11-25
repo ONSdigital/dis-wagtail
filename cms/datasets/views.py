@@ -259,6 +259,7 @@ class DatasetChosenMultipleViewMixin(ChosenMultipleViewMixin, DatasetRetrievalMi
 
         datasets_to_create: list[Dataset] = []
         datasets_to_update: list[Dataset] = []
+        all_updated_fields: set[str] = set()
         for data in api_data_for_datasets:
             key = (data["id"], data["edition"], data["version"])
             existing_dataset = existing_datasets_map.get(key)
@@ -283,11 +284,12 @@ class DatasetChosenMultipleViewMixin(ChosenMultipleViewMixin, DatasetRetrievalMi
                 )
                 if updated_fields:
                     datasets_to_update.append(existing_dataset)
+                    all_updated_fields.update(updated_fields)
 
         if datasets_to_create:
             Dataset.objects.bulk_create(datasets_to_create)
         if datasets_to_update:
-            Dataset.objects.bulk_update(datasets_to_update, ["title", "description"])
+            Dataset.objects.bulk_update(datasets_to_update, all_updated_fields)
 
         # Return the existing and newly created datasets, using the DEFAULT_DB_ALIAS to ensure we read from the default
         # database instance, as the newly created datasets may not yet be replicated to read replicas.

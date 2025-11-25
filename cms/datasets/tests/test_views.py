@@ -502,7 +502,9 @@ class TestDatasetChosenView(TestCase):
         self.assertEqual(mock_dataset_instance.description, "Updated Description")
 
         # Verify save was called with updated fields
-        mock_dataset_instance.save.assert_called_once_with(update_fields=["title", "description"])
+        mock_dataset_instance.save.assert_called_once()
+        call_args = mock_dataset_instance.save.call_args
+        self.assertEqual(set(call_args.kwargs["update_fields"]), {"title", "description"})
         self.assertEqual(result, mock_dataset_instance)
 
     @patch("cms.datasets.views.get_dataset_for_published_state")
