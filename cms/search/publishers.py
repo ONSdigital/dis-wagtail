@@ -9,7 +9,7 @@ from kafka import KafkaProducer
 from kafka.sasl.oauth import AbstractTokenProvider
 
 from cms.core.cache import memory_cache
-from cms.search.utils import build_resource_dict
+from cms.search.utils import build_page_uri, build_resource_dict
 
 logger = logging.getLogger(__name__)
 
@@ -47,7 +47,7 @@ class BasePublisher(ABC):
         return self._publish(
             self.DELETED_CHANNEL,
             {
-                "uri": page.url_path,
+                "uri": build_page_uri(page),
             },
         )
 
