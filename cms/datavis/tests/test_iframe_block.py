@@ -48,19 +48,33 @@ class IframeBlockTestCase(BaseVisualisationBlockTestCase):
 
         readable_prefixes = " or ".join(settings.IFRAME_VISUALISATION_PATH_PREFIXES)
         cases = {
+            # Absolute URL with invalid domain
             "https://www.random.url.com": "The URL hostname is not in the list of allowed domains: example.com",
-            "http://example.com": "Please enter a valid URL. "
-            "It should start with 'https://' and contain a valid domain name.",
+            # Absolute URL with invalid scheme
+            "http://example.com": "Please enter a valid URL. Full URLs must start with 'https://'.",
+            # Absolute URL with invalid prefix
             "https://example.com/invalidpath/12345": (
-                f"The URL path is not allowed. It must start with one of: {readable_prefixes}, "
+                f"The URL path is not allowed. It must start with: {readable_prefixes}, "
                 "and include a subpath after the prefix."
             ),
+            # Absolute URL missing subpath after path prefix
             "https://www.example.com/visualisations/": (
-                f"The URL path is not allowed. It must start with one of: {readable_prefixes}, "
+                f"The URL path is not allowed. It must start with: {readable_prefixes}, "
                 "and include a subpath after the prefix."
             ),
+            # Absolute URL missing subpath after path prefix
             "https://www.example.com/visualisations": (
-                f"The URL path is not allowed. It must start with one of: {readable_prefixes}, "
+                f"The URL path is not allowed. It must start with: {readable_prefixes}, "
+                "and include a subpath after the prefix."
+            ),
+            # Relative URL missing subpath after prefix
+            "/visualisations": (
+                f"The URL path is not allowed. It must start with: {readable_prefixes}, "
+                "and include a subpath after the prefix."
+            ),
+            # Relative URL with invalid prefix
+            "/foo/bar": (
+                f"The URL path is not allowed. It must start with: {readable_prefixes}, "
                 "and include a subpath after the prefix."
             ),
         }
@@ -74,7 +88,7 @@ class IframeBlockTestCase(BaseVisualisationBlockTestCase):
 
                 self.assertEqual(info.exception.block_errors["iframe_source_url"].message, message)
 
-    def test_valid_urls(self):
+    def test_valid_absolute_urls(self):
         """Test valid URL patterns for each domain in the valid_domains list."""
         for base_domain in self.valid_domains:
             url_patterns = [
@@ -89,6 +103,13 @@ class IframeBlockTestCase(BaseVisualisationBlockTestCase):
                     valid_data["iframe_source_url"] = url
                     value = self.get_value(valid_data)
                     self.block.clean(value)
+
+    def test_valid_relative_url(self):
+        """Test valid relative URL patterns."""
+        valid_data = self.raw_data.copy()
+        valid_data["iframe_source_url"] = "/visualisations/dvc/1234567890"
+        value = self.get_value(valid_data)
+        self.block.clean(value)
 
     def test_multiple_validation_errors_shown_together(self):
         """Test that all validation errors (required fields + invalid URL) are shown together."""
@@ -121,10 +142,7 @@ class IframeBlockTestCase(BaseVisualisationBlockTestCase):
         self.assertEqual(errors["title"].message, "This field is required.")
         self.assertEqual(errors["subtitle"].message, "This field is required.")
         self.assertEqual(errors["audio_description"].message, "This field is required.")
-        self.assertEqual(
-            errors["iframe_source_url"].message,
-            "Please enter a valid URL. It should start with 'https://' and contain a valid domain name.",
-        )
+        self.assertEqual(errors["iframe_source_url"].message, "Please enter a valid URL.")
 
         # Optional fields should not have errors
         self.assertNotIn("caption", errors)
