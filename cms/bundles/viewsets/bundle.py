@@ -581,7 +581,7 @@ class BundleInspectView(InspectView):
 
             item: dict[str, SafeString | str] = {
                 "title": dataset.title,
-                "edition": dataset.edition or MISSING_VALUE,
+                "edition": dataset.formatted_edition or MISSING_VALUE,
                 "version": str(dataset.version) if dataset.version else MISSING_VALUE,
                 "state": self.get_human_readable_state(state),
                 "action_button": self._build_action_button(state, preview_url, dataset),
